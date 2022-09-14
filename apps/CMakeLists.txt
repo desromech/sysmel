@@ -1,1 +1,1 @@
-add_subdirectory(tuuvm-lisp)
+add_subdirectory(lispi)
