@@ -1,4 +1,5 @@
 set(tuuvm_sources
+    context.c
     heap.c
     tuple.c
 )

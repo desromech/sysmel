@@ -1,4 +1,4 @@
-#include "tuuvm/heap.h"
+#include "internal/heap.h"
 #include <stdlib.h>
 #include <string.h>
 /**
@@ -7,8 +7,7 @@
 TUUVM_API tuvvm_tuple_t *tuuvm_heap_allocateByteTuple(tuuvm_heap_t *heap, size_t byteSize)
 {
     size_t allocationSize = sizeof(tuvvm_tuple_t) + byteSize;
-    tuvvm_tuple_t *result = (tuvvm_tuple_t *)malloc(allocationSize);
-    memset(result, 0, allocationSize);
+    tuvvm_tuple_t *result = (tuvvm_tuple_t *)calloc(1, allocationSize);
     result->header.typePointerAndFlags = TUUVM_TUPLE_BYTES_BIT;
     result->header.objectSize = byteSize;
     return result;
@@ -20,8 +19,7 @@ TUUVM_API tuvvm_tuple_t *tuuvm_heap_allocateByteTuple(tuuvm_heap_t *heap, size_t
 TUUVM_API tuvvm_tuple_t *tuuvm_heap_allocatePointerTuple(tuuvm_heap_t *heap, size_t slotCount)
 {
     size_t allocationSize = sizeof(tuvvm_tuple_t) + slotCount*sizeof(tuvvm_tuple_t*);
-    tuvvm_tuple_t *result = (tuvvm_tuple_t *)malloc(allocationSize);
-    memset(result, 0, allocationSize);
+    tuvvm_tuple_t *result = (tuvvm_tuple_t *)calloc(1, allocationSize);
     result->header.typePointerAndFlags = TUUVM_TUPLE_BYTES_BIT;
     return result;
 }
