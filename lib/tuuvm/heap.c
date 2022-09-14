@@ -1,11 +1,17 @@
 #include "tuuvm/heap.h"
-
+#include <stdlib.h>
+#include <string.h>
 /**
  * Allocates a byte tuple with the specified size.
  */
 TUUVM_API tuvvm_tuple_t *tuuvm_heap_allocateByteTuple(tuuvm_heap_t *heap, size_t byteSize)
 {
-    return TUUVM_NULL_TUPLE;
+    size_t allocationSize = sizeof(tuvvm_tuple_t) + byteSize;
+    tuvvm_tuple_t *result = (tuvvm_tuple_t *)malloc(allocationSize);
+    memset(result, 0, allocationSize);
+    result->header.typePointerAndFlags = TUUVM_TUPLE_BYTES_BIT;
+    result->header.objectSize = byteSize;
+    return result;
 }
 
 /**
@@ -13,5 +19,9 @@ TUUVM_API tuvvm_tuple_t *tuuvm_heap_allocateByteTuple(tuuvm_heap_t *heap, size_t
  */
 TUUVM_API tuvvm_tuple_t *tuuvm_heap_allocatePointerTuple(tuuvm_heap_t *heap, size_t slotCount)
 {
-    return TUUVM_NULL_TUPLE;
+    size_t allocationSize = sizeof(tuvvm_tuple_t) + slotCount*sizeof(tuvvm_tuple_t*);
+    tuvvm_tuple_t *result = (tuvvm_tuple_t *)malloc(allocationSize);
+    memset(result, 0, allocationSize);
+    result->header.typePointerAndFlags = TUUVM_TUPLE_BYTES_BIT;
+    return result;
 }
