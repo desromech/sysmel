@@ -3,7 +3,7 @@
 
 #include "tuple.h"
 
-typedef struct tuvvm_context_s tuuvm_context_t;
+typedef struct tuuvm_context_s tuuvm_context_t;
 
 /**
  * Creates a tuuvm string

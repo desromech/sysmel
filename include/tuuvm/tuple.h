@@ -8,7 +8,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-typedef struct tuvvm_context_s tuuvm_context_t;
+typedef struct tuuvm_context_s tuuvm_context_t;
 
 /**
  * A tuple object pointer.
@@ -25,9 +25,52 @@ typedef uintptr_t tuuvm_tuple_t;
 #define TUUVM_TUPLE_TAG_BIT_COUNT 4
 #define TUUVM_TUPLE_TAG_BIT_MASK 15
 
-#define TUUVM_TUPLE_TAG_POINTER 0
-
 #define TUUVM_CAST_OOP_TO_OBJECT_TUPLE(oop) ((tuuvm_object_tuple_t*)oop)
+
+/**
+ * The different immediate pointer tags.
+ */ 
+typedef enum tuuvm_tuple_tag_e
+{
+    TUUVM_TUPLE_TAG_POINTER = 0,
+    TUUVM_TUPLE_TAG_NIL = 0,
+
+    TUUVM_TUPLE_TAG_INTEGER = 1,
+    TUUVM_TUPLE_TAG_CHAR8 = 2,
+    TUUVM_TUPLE_TAG_UINT8 = 3,
+    TUUVM_TUPLE_TAG_INT8 = 4,
+
+    TUUVM_TUPLE_TAG_CHAR16 = 5,
+    TUUVM_TUPLE_TAG_UINT16 = 6,
+    TUUVM_TUPLE_TAG_INT16 = 7,
+
+    TUUVM_TUPLE_TAG_CHAR32 = 8,
+    TUUVM_TUPLE_TAG_UINT32 = 9,
+    TUUVM_TUPLE_TAG_INT32 = 10,
+
+    TUUVM_TUPLE_TAG_UINT64 = 11,
+    TUUVM_TUPLE_TAG_INT64 = 12,
+
+    TUUVM_TUPLE_TAG_FLOAT = 13,
+    TUUVM_TUPLE_TAG_DOUBLE = 14,
+
+    TUUVM_TUPLE_TAG_TRIVIAL = 15,
+
+    TUUVM_TUPLE_TAG_COUNT = 16
+} tuuvm_tuple_tag_t;
+
+/**
+ * The indices for the different immediate trivial values.
+ */ 
+typedef enum tuuvm_tuple_immediate_trivial_index_e
+{
+    TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_FALSE = 0,
+    TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_TRUE,
+    TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_VOID,
+    TUUVM_TUPLE_IMMEDIATE_TRIVIAL_COUNT,
+} tuuvm_tuple_immediate_trivial_index_e;
+
+#define TUUVM_TUPLE_MAKE_IMMEDIATE_TRIVIAL_WITH_INDEX(immediateTrivialIndex) (immediateTrivialIndex << TUUVM_TUPLE_TAG_BIT_COUNT) | 
 /**
  * Tuple header that describes its content.
  */
@@ -85,18 +128,33 @@ static inline size_t tuuvm_tuple_getSizeInBytes(tuuvm_tuple_t tuple)
     return tuuvm_tuple_isNonNullPointer(tuple) ? TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.objectSize : 0;
 }
 
-TUUVM_API tuuvm_object_tuple_t *tuuvm_tuple_getImmediateTypeWithTag(tuuvm_context_t *context, size_t immediateTypeTag);
+/**
+ * Retrieves an immediate tuple type corresponding to a specific tag.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_getImmediateTypeWithTag(tuuvm_context_t *context, size_t immediateTypeTag);
+
+/**
+ * Retrieves an immediate trivial tuple corresponding to a specific index.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_getImmediateTrivialTypeWithIndex(tuuvm_context_t *context, size_t immediateTrivialIndex);
 
 /**
  * Gets the type tuple of the specified tuple.
  */
-static inline tuuvm_object_tuple_t *tuuvm_tuple_getType(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+static inline tuuvm_tuple_t tuuvm_tuple_getType(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
     if(tuuvm_tuple_isNonNullPointer(tuple))
-        return (tuuvm_object_tuple_t*)(TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_POINTER_MASK);
+    {
+        return TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_POINTER_MASK;
+    }
     else
-        return tuuvm_tuple_getImmediateTypeWithTag(context, tuple & TUUVM_TUPLE_TAG_BIT_MASK);
-        
+    {
+        size_t typeTag = tuple & TUUVM_TUPLE_TAG_BIT_MASK;
+        if(typeTag != TUUVM_TUPLE_TAG_TRIVIAL)
+            return tuuvm_tuple_getImmediateTypeWithTag(context, typeTag);
+        else
+            return tuuvm_tuple_getImmediateTrivialTypeWithIndex(context, tuple >> TUUVM_TUPLE_TAG_BIT_COUNT);
+    }
 }
 
 /**

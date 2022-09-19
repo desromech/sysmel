@@ -7,7 +7,7 @@
 #include "heap.h"
 #include "tuple.h"
 
-typedef struct tuvvm_context_s tuuvm_context_t;
+typedef struct tuuvm_context_s tuuvm_context_t;
 typedef struct tuuvm_heap_s tuuvm_heap_t;
 
 /**
