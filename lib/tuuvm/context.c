@@ -25,7 +25,7 @@ tuuvm_heap_t *tuuvm_context_getHeap(tuuvm_context_t *context)
     return &context->heap;
 }
 
-tuuvm_tuple_t *tuuvm_context_allocateByteTuple(tuuvm_context_t *context, size_t byteSize)
+tuuvm_object_tuple_t *tuuvm_context_allocateByteTuple(tuuvm_context_t *context, size_t byteSize)
 {
     if(!context)
         return 0;
@@ -33,7 +33,7 @@ tuuvm_tuple_t *tuuvm_context_allocateByteTuple(tuuvm_context_t *context, size_t 
     return tuuvm_heap_allocateByteTuple(&context->heap, byteSize);
 }
 
-tuuvm_tuple_t *tuuvm_context_allocatePointerTuple(tuuvm_context_t *context, size_t slotCount)
+tuuvm_object_tuple_t *tuuvm_context_allocatePointerTuple(tuuvm_context_t *context, size_t slotCount)
 {
     if(!context)
         return 0;

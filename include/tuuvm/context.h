@@ -28,11 +28,11 @@ TUUVM_API tuuvm_heap_t *tuuvm_context_getHeap(tuuvm_context_t *context);
 /**
  * Allocates a byte tuple with the specified size.
  */
-TUUVM_API tuuvm_tuple_t *tuuvm_context_allocateByteTuple(tuuvm_context_t *context, size_t byteSize);
+TUUVM_API tuuvm_object_tuple_t *tuuvm_context_allocateByteTuple(tuuvm_context_t *context, size_t byteSize);
 
 /**
  * Allocates a pointer tuple with the specified slot count.
  */
-TUUVM_API tuuvm_tuple_t *tuuvm_context_allocatePointerTuple(tuuvm_context_t *context, size_t slotCount);
+TUUVM_API tuuvm_object_tuple_t *tuuvm_context_allocatePointerTuple(tuuvm_context_t *context, size_t slotCount);
 
 #endif //TUUVM_CONTEXT_H

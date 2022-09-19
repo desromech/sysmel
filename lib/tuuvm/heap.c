@@ -86,7 +86,7 @@ static tuuvm_heap_chunk_t *tuuvm_heap_findOrAllocateChunkWithRequiredCapacity(tu
     return newChunk;
 }
 
-static tuuvm_tuple_t *tuuvm_heap_allocateTupleWithRawSize(tuuvm_heap_t *heap, size_t allocationSize, size_t allocationAlignment)
+static tuuvm_object_tuple_t *tuuvm_heap_allocateTupleWithRawSize(tuuvm_heap_t *heap, size_t allocationSize, size_t allocationAlignment)
 {
     tuuvm_heap_chunk_t *allocationChunk = tuuvm_heap_findOrAllocateChunkWithRequiredCapacity(heap, allocationSize, allocationAlignment);
     if(!allocationChunk)
@@ -95,16 +95,16 @@ static tuuvm_tuple_t *tuuvm_heap_allocateTupleWithRawSize(tuuvm_heap_t *heap, si
     size_t allocationOffset = uintptrAlignedTo(allocationChunk->size, allocationAlignment);
     allocationChunk->size = allocationOffset + allocationSize;
     TUUVM_ASSERT(allocationChunk->size <= allocationChunk->capacity);
-    return (tuuvm_tuple_t*)((uintptr_t)allocationChunk + allocationOffset);
+    return (tuuvm_object_tuple_t*)((uintptr_t)allocationChunk + allocationOffset);
 }
 
 /**
  * Allocates a byte tuple with the specified size.
  */
-TUUVM_API tuuvm_tuple_t *tuuvm_heap_allocateByteTuple(tuuvm_heap_t *heap, size_t byteSize)
+TUUVM_API tuuvm_object_tuple_t *tuuvm_heap_allocateByteTuple(tuuvm_heap_t *heap, size_t byteSize)
 {
-    size_t allocationSize = sizeof(tuuvm_tuple_t) + byteSize;
-    tuuvm_tuple_t *result = tuuvm_heap_allocateTupleWithRawSize(heap, allocationSize, 16);
+    size_t allocationSize = sizeof(tuuvm_object_tuple_t) + byteSize;
+    tuuvm_object_tuple_t *result = tuuvm_heap_allocateTupleWithRawSize(heap, allocationSize, 16);
     if(!result) return 0;
 
     result->header.typePointerAndFlags = TUUVM_TUPLE_BYTES_BIT;
@@ -115,10 +115,10 @@ TUUVM_API tuuvm_tuple_t *tuuvm_heap_allocateByteTuple(tuuvm_heap_t *heap, size_t
 /**
  * Allocates a pointer tuple with the specified slot count.
  */
-TUUVM_API tuuvm_tuple_t *tuuvm_heap_allocatePointerTuple(tuuvm_heap_t *heap, size_t slotCount)
+TUUVM_API tuuvm_object_tuple_t *tuuvm_heap_allocatePointerTuple(tuuvm_heap_t *heap, size_t slotCount)
 {
-    size_t allocationSize = sizeof(tuuvm_tuple_t) + slotCount*sizeof(tuuvm_tuple_t*);
-    tuuvm_tuple_t *result = tuuvm_heap_allocateTupleWithRawSize(heap, allocationSize, 16);
+    size_t allocationSize = sizeof(tuuvm_object_tuple_t) + slotCount*sizeof(tuuvm_object_tuple_t*);
+    tuuvm_object_tuple_t *result = tuuvm_heap_allocateTupleWithRawSize(heap, allocationSize, 16);
     if(!result) return 0;
 
     result->header.typePointerAndFlags = TUUVM_TUPLE_BYTES_BIT;
