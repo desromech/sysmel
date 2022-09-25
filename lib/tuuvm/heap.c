@@ -3,17 +3,18 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define TUUVM_HEAP_MIN_CHUNK_SIZE (2<<20)
+#define TUUVM_HEAP_MIN_CHUNK_SIZE (1<<20)
 
 #ifdef _WIN32
 
 #else
 
 #include <sys/mman.h>
+#include <unistd.h>
 
 static void *tuuvm_heap_allocateSystemMemory(size_t sizeToAllocate)
 {
-    void *result = mmap(0, sizeToAllocate, PROT_READ | PROT_WRITE, MAP_ANON, -1, 0);
+    void *result = mmap(0, sizeToAllocate, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
     if(result == MAP_FAILED)
         return 0;
 
@@ -23,6 +24,11 @@ static void *tuuvm_heap_allocateSystemMemory(size_t sizeToAllocate)
 static void tuuvm_heap_freeSystemMemory(void *memory, size_t sizeToFree)
 {
     munmap(memory, sizeToFree);
+}
+
+static size_t tuuvm_heap_getSystemAllocationAlignment(void)
+{
+    return getpagesize();
 }
 
 #endif
@@ -42,12 +48,13 @@ static tuuvm_heap_chunk_t *tuuvm_heap_findOrAllocateChunkWithRequiredCapacity(tu
             return currentChunk;
     }
 
-
     // Compute the chunk allocation size.
     size_t chunkCapacity = TUUVM_HEAP_MIN_CHUNK_SIZE;
     size_t requiredChunkCapacity = requiredCapacity + sizeof(tuuvm_heap_chunk_t);
     if(requiredChunkCapacity > chunkCapacity)
         chunkCapacity = requiredChunkCapacity;
+
+    chunkCapacity = uintptrAlignedTo(chunkCapacity, tuuvm_heap_getSystemAllocationAlignment());
 
     // Allocate the chunk.
     tuuvm_heap_chunk_t *newChunk = (tuuvm_heap_chunk_t*)tuuvm_heap_allocateSystemMemory(chunkCapacity);

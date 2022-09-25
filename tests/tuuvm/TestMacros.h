@@ -18,8 +18,9 @@ void TestSuite_##testSuiteName(void)
     tuuvm_test_currentTestCaseName = #testCaseName; \
     tuuvm_test_currentHasError = 0; \
     ++tuuvm_test_runCount; \
+    printf("---- " #testCaseName "..."); \
     testSuiteFixtureName##_initialize(); \
-    for(int testCaseName##_isRunning = 1; testCaseName ## _isRunning; testCaseName##_isRunning = 0, testSuiteFixtureName##_shutdown())
+    for(int testCaseName##_isRunning = 1; testCaseName ## _isRunning; testCaseName##_isRunning = 0, testSuiteFixtureName##_shutdown(), printf(tuuvm_test_currentHasError ? "" : " Success\n"))
 
 #define TEST_SUITE_FIXTURE_INITIALIZE(testSuiteFixtureName) \
 void testSuiteFixtureName ## _initialize(void)
@@ -35,6 +36,7 @@ extern int tuuvm_test_errorCount;
 
 #define RUN_TEST_SUITE(testSuiteName) \
     tuuvm_test_currentTestSuiteName = #testSuiteName; \
+    printf("Test suite " #testSuiteName "...\n"); \
     TestSuite_##testSuiteName()
 
 #define INCREMENT_TEST_ERROR_COUNT() \
@@ -48,7 +50,8 @@ extern int tuuvm_test_errorCount;
 
 #define TEST_ASSERT_DESCRIPTION(expression, description) \
     if(!(expression)) { \
-        printf(__FILE__ ":" TEST_LINE_TO_STRING(__LINE__) ": " description); \
+        if(!tuuvm_test_currentHasError) printf("\n"); \
+        printf(__FILE__ ":" TEST_LINE_TO_STRING(__LINE__) ": " description "\n"); \
         INCREMENT_TEST_ERROR_COUNT() \
     }
 

@@ -6,8 +6,10 @@
 // Extern C for using the public APIs in C++.
 #ifdef __cplusplus
 #   define TUUVM_EXTERN_C extern "C"
+#   define TUUVM_INLINE inline
 #else
 #   define TUUVM_EXTERN_C
+#   define TUUVM_INLINE static inline
 #endif
 
 // Export and import symbols

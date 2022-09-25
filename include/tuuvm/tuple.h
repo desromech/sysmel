@@ -99,7 +99,7 @@ typedef struct tuuvm_object_tuple_s
 /**
  * Is this a pointer tuple?
  */
-static inline size_t tuuvm_tuple_isPointer(tuuvm_tuple_t tuple)
+TUUVM_INLINE size_t tuuvm_tuple_isPointer(tuuvm_tuple_t tuple)
 {
     return (tuple & TUUVM_TUPLE_TAG_BIT_MASK) == TUUVM_TUPLE_TAG_POINTER;
 }
@@ -107,7 +107,7 @@ static inline size_t tuuvm_tuple_isPointer(tuuvm_tuple_t tuple)
 /**
  * Is this non-null pointer tuple?
  */
-static inline size_t tuuvm_tuple_isNonNullPointer(tuuvm_tuple_t tuple)
+TUUVM_INLINE size_t tuuvm_tuple_isNonNullPointer(tuuvm_tuple_t tuple)
 {
     return tuple != 0 && (tuple & TUUVM_TUPLE_TAG_BIT_MASK) == TUUVM_TUPLE_TAG_POINTER;
 }
@@ -115,7 +115,7 @@ static inline size_t tuuvm_tuple_isNonNullPointer(tuuvm_tuple_t tuple)
 /**
  * Is this an immediate tuple=
  */
-static inline size_t tuuvm_tuple_isImmediate(tuuvm_tuple_t tuple)
+TUUVM_INLINE size_t tuuvm_tuple_isImmediate(tuuvm_tuple_t tuple)
 {
     return (tuple & TUUVM_TUPLE_TAG_BIT_MASK) != TUUVM_TUPLE_TAG_POINTER;
 }
@@ -123,7 +123,7 @@ static inline size_t tuuvm_tuple_isImmediate(tuuvm_tuple_t tuple)
 /**
  * Gets the size in bytes of the specified tuple.
  */
-static inline size_t tuuvm_tuple_getSizeInBytes(tuuvm_tuple_t tuple)
+TUUVM_INLINE size_t tuuvm_tuple_getSizeInBytes(tuuvm_tuple_t tuple)
 {
     return tuuvm_tuple_isNonNullPointer(tuple) ? TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.objectSize : 0;
 }
@@ -141,7 +141,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_getImmediateTrivialTypeWithIndex(tuuvm_conte
 /**
  * Gets the type tuple of the specified tuple.
  */
-static inline tuuvm_tuple_t tuuvm_tuple_getType(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_getType(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
     if(tuuvm_tuple_isNonNullPointer(tuple))
     {
@@ -160,15 +160,15 @@ static inline tuuvm_tuple_t tuuvm_tuple_getType(tuuvm_context_t *context, tuuvm_
 /**
  * Is this a bytes tuple?
  */
-static inline bool tuuvm_tuple_isBytes(tuuvm_tuple_t tuple)
+TUUVM_INLINE bool tuuvm_tuple_isBytes(tuuvm_tuple_t tuple)
 {
-    return (TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & TUUVM_TUPLE_BYTES_BIT) != 0;
+    return tuuvm_tuple_isNonNullPointer(tuple) && (TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & TUUVM_TUPLE_BYTES_BIT) != 0;
 }
 
 /**
  * Is this an immutable tuple?
  */
-static inline bool tuuvm_tuple_isImmutable(tuuvm_tuple_t tuple)
+TUUVM_INLINE bool tuuvm_tuple_isImmutable(tuuvm_tuple_t tuple)
 {
     return !tuuvm_tuple_isNonNullPointer(tuple) || (TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & TUUVM_TUPLE_IMMUTABLE_BIT) != 0;
 }

@@ -32,8 +32,10 @@ int main(int argc, const char *argv[])
 #include "TestSuites.inc"
 #undef TEST_SUITE_NAME
 
-    printf("Run %d tests\n", tuuvm_test_runCount);
     if(tuuvm_test_errorCount)
-        printf("Error %d tests\n", tuuvm_test_errorCount);
+        printf("Run %d tests. Errors: %d\n", tuuvm_test_runCount, tuuvm_test_errorCount);
+    else
+        printf("Run %d tests. All tests passed.\n", tuuvm_test_runCount);
+
     return tuuvm_test_errorCount > 0 ? 1 : 0;
 }
