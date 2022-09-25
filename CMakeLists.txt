@@ -8,6 +8,8 @@ if(APPLE)
 	set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
 endif()
 
+include(CTest)
+
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     .
