@@ -5,6 +5,7 @@ set(tuuvm_sources
     heap.c
     string.c
     tuple.c
+    type.c
 )
 
 add_definitions(-DBUILD_LIB_TUUVM)

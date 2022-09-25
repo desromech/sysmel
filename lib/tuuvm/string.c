@@ -5,7 +5,7 @@
 
 TUUVM_API tuuvm_tuple_t tuuvm_string_createWithString(tuuvm_context_t *context, size_t stringSize, const char *string)
 {
-    tuuvm_object_tuple_t *result = tuuvm_context_allocateByteTuple(context, stringSize);
+    tuuvm_object_tuple_t *result = tuuvm_context_allocateByteTuple(context, context->roots.stringType, stringSize);
     if(!result) return 0;
 
     memcpy(result->bytes, string, stringSize);
@@ -19,7 +19,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_string_createWithCString(tuuvm_context_t *context,
 
 TUUVM_API tuuvm_tuple_t tuuvm_symbol_internWithString(tuuvm_context_t *context, size_t stringSize, const char *string)
 {
-    tuuvm_object_tuple_t *result = tuuvm_context_allocateByteTuple(context, stringSize);
+    tuuvm_object_tuple_t *result = tuuvm_context_allocateByteTuple(context, context->roots.symbolType, stringSize);
     if(!result) return 0;
 
     memcpy(result->bytes, string, stringSize);

@@ -96,6 +96,7 @@ typedef struct tuuvm_object_tuple_s
 
 #define TUUVM_NULL_TUPLE ((tuuvm_tuple_t)0)
 
+#define TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(structureType) ((sizeof(structureType) - sizeof(tuuvm_tuple_header_t)) / sizeof(tuuvm_tuple_t))
 /**
  * Is this a pointer tuple?
  */
@@ -137,6 +138,14 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_getImmediateTypeWithTag(tuuvm_context_t *con
  * Retrieves an immediate trivial tuple corresponding to a specific index.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_tuple_getImmediateTrivialTypeWithIndex(tuuvm_context_t *context, size_t immediateTrivialIndex);
+
+/**
+ * Sets the type of an object tuple
+ */
+TUUVM_INLINE void tuuvm_tuple_setType(tuuvm_object_tuple_t *objectTuple, tuuvm_tuple_t newType)
+{
+    objectTuple->header.typePointerAndFlags = (objectTuple->header.typePointerAndFlags & TUUVM_TUPLE_FLAGS_MASK) | newType;
+}
 
 /**
  * Gets the type tuple of the specified tuple.
