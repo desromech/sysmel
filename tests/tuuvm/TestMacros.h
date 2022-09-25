@@ -4,7 +4,22 @@
 #include <stdio.h>
 
 #define TEST_SUITE(testSuiteName) \
-void TestSuite_##testSuiteName()
+void TestSuite_##testSuiteName(void)
+
+#define TEST_SUITE_FIXTURE_INITIALIZE(testSuiteFixtureName) \
+void testSuiteFixtureName ## _initialize(void)
+
+#define TEST_SUITE_FIXTURE_SHUTDOWN(testSuiteFixtureName) \
+void testSuiteFixtureName ## _shutdown(void)
+
+#define TEST_SUITE_WITH_FIXTURE(testSuiteName, testSuiteFixtureName) \
+void TestSuite_##testSuiteName##_withFixture(void); \
+void TestSuite_##testSuiteName(void) { \
+    testSuiteFixtureName ## _initialize(); \
+    TestSuite_##testSuiteName##_withFixture(); \
+    testSuiteFixtureName ## _shutdown(); \
+} \
+void TestSuite_##testSuiteName##_withFixture(void)
 
 extern int tuuvm_test_currentHasError;
 extern int tuuvm_test_runCount;
