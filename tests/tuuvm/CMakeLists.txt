@@ -1,5 +1,6 @@
 set(TUUVM_TESTS_SOURCES
     Main.c
+    String.c
 )
 
 add_executable(TestTuuvm ${TUUVM_TESTS_SOURCES})
