@@ -1,2 +1,3 @@
+TEST_SUITE_NAME(Immediate)
 TEST_SUITE_NAME(String)
 TEST_SUITE_NAME(Symbol)

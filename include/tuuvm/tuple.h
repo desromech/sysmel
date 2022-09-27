@@ -10,10 +10,19 @@
 
 typedef struct tuuvm_context_s tuuvm_context_t;
 
+typedef uint8_t tuuvm_char8_t;
+typedef uint16_t tuuvm_char16_t;
+typedef uint32_t tuuvm_char32_t;
+
 /**
  * A tuple object pointer.
  */
 typedef uintptr_t tuuvm_tuple_t;
+
+/**
+ * A tuple object signed pointer.
+ */
+typedef intptr_t tuuvm_stuple_t;
 
 #define TUUVM_TUPLE_TYPE_POINTER_MASK ((uintptr_t)-16)
 #define TUUVM_TUPLE_FLAGS_MASK ((uintptr_t)15)
@@ -26,6 +35,18 @@ typedef uintptr_t tuuvm_tuple_t;
 #define TUUVM_TUPLE_TAG_BIT_MASK 15
 
 #define TUUVM_CAST_OOP_TO_OBJECT_TUPLE(oop) ((tuuvm_object_tuple_t*)oop)
+
+enum
+{
+    TUUVM_TUPLE_BIT_COUNT = sizeof(tuuvm_tuple_t)*8,
+    TUUVM_IMMEDIATE_BIT_COUNT = TUUVM_TUPLE_BIT_COUNT - TUUVM_TUPLE_TAG_BIT_COUNT,
+
+    TUUVM_IMMEDIATE_UINT_MIN = 0,
+    TUUVM_IMMEDIATE_UINT_MAX = ((tuuvm_tuple_t)1 << TUUVM_IMMEDIATE_BIT_COUNT) - 1,
+
+    TUUVM_IMMEDIATE_INT_MIN = -((tuuvm_stuple_t)1 << (TUUVM_IMMEDIATE_BIT_COUNT - 1)),
+    TUUVM_IMMEDIATE_INT_MAX = ((tuuvm_stuple_t)1 << (TUUVM_IMMEDIATE_BIT_COUNT - 1)) - 1,
+};
 
 /**
  * The different immediate pointer tags.
@@ -180,6 +201,339 @@ TUUVM_INLINE bool tuuvm_tuple_isBytes(tuuvm_tuple_t tuple)
 TUUVM_INLINE bool tuuvm_tuple_isImmutable(tuuvm_tuple_t tuple)
 {
     return !tuuvm_tuple_isNonNullPointer(tuple) || (TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & TUUVM_TUPLE_IMMUTABLE_BIT) != 0;
+}
+
+/**
+ * Encodes a Char8 as an immediate tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_char8_encode(tuuvm_char8_t value)
+{
+    return (((tuuvm_tuple_t)value) << TUUVM_TUPLE_TAG_BIT_COUNT) | TUUVM_TUPLE_TAG_CHAR8;
+}
+
+/**
+ * Decodes a Char from an immediate tuple.
+ */
+TUUVM_INLINE tuuvm_char8_t tuuvm_tuple_char8_decode(tuuvm_tuple_t tuple)
+{
+    return (tuuvm_char8_t)(tuple >> TUUVM_TUPLE_TAG_BIT_COUNT);
+}
+
+/**
+ * Encodes an UInt8 as an immediate tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_uint8_encode(uint8_t value)
+{
+    return ((tuuvm_tuple_t)value << TUUVM_TUPLE_TAG_BIT_COUNT) | TUUVM_TUPLE_TAG_UINT8;
+}
+
+/**
+ * Decodes an UInt8 from an immediate tuple.
+ */
+TUUVM_INLINE uint8_t tuuvm_tuple_uint8_decode(tuuvm_tuple_t tuple)
+{
+    return (uint8_t) (tuple >> TUUVM_TUPLE_TAG_BIT_COUNT);
+}
+
+/**
+ * Encodes an Int8 as an immediate tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_int8_encode(int8_t value)
+{
+    return ((tuuvm_stuple_t)value << TUUVM_TUPLE_TAG_BIT_COUNT) | TUUVM_TUPLE_TAG_INT8;
+}
+
+/**
+ * Decodes an Int8 from an immediate tuple.
+ */
+TUUVM_INLINE int8_t tuuvm_tuple_int8_decode(tuuvm_tuple_t tuple)
+{
+    return (int8_t) ((tuuvm_stuple_t)tuple >> TUUVM_TUPLE_TAG_BIT_COUNT);
+}
+
+/**
+ * Encodes a Char16 as an immediate tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_char16_encode(tuuvm_char16_t value)
+{
+    return (((tuuvm_tuple_t)value) << TUUVM_TUPLE_TAG_BIT_COUNT) | TUUVM_TUPLE_TAG_CHAR16;
+}
+
+/**
+ * Decodes a Char from an immediate tuple.
+ */
+TUUVM_INLINE tuuvm_char16_t tuuvm_tuple_char16_decode(tuuvm_tuple_t tuple)
+{
+    return (tuuvm_char16_t)(tuple >> TUUVM_TUPLE_TAG_BIT_COUNT);
+}
+
+/**
+ * Encodes an UInt16 as an immediate tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_uint16_encode(uint16_t value)
+{
+    return ((tuuvm_tuple_t)value << TUUVM_TUPLE_TAG_BIT_COUNT) | TUUVM_TUPLE_TAG_UINT16;
+}
+
+/**
+ * Decodes an UInt16 from an immediate tuple.
+ */
+TUUVM_INLINE uint16_t tuuvm_tuple_uint16_decode(tuuvm_tuple_t tuple)
+{
+    return (uint16_t) (tuple >> TUUVM_TUPLE_TAG_BIT_COUNT);
+}
+
+/**
+ * Encodes an Int16 as an immediate tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_int16_encode(int16_t value)
+{
+    return ((tuuvm_stuple_t)value << TUUVM_TUPLE_TAG_BIT_COUNT) | TUUVM_TUPLE_TAG_INT16;
+}
+
+/**
+ * Decodes an Int16 from an immediate tuple.
+ */
+TUUVM_INLINE int16_t tuuvm_tuple_int16_decode(tuuvm_tuple_t tuple)
+{
+    return (int16_t) ((tuuvm_stuple_t)tuple >> TUUVM_TUPLE_TAG_BIT_COUNT);
+}
+
+/**
+ * Encodes a Char32 as an immediate tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_char32_encodeSmall(tuuvm_char32_t value)
+{
+    return (((tuuvm_tuple_t)value) << TUUVM_TUPLE_TAG_BIT_COUNT) | TUUVM_TUPLE_TAG_CHAR32;
+}
+
+/*
+ * Encodes a Char32 as a tuple.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_char32_encodeBig(tuuvm_context_t *context, tuuvm_char32_t value);
+
+/**
+ * Decodes a Char from an immediate tuple.
+ */
+TUUVM_INLINE tuuvm_char32_t tuuvm_tuple_char32_decodeSmall(tuuvm_tuple_t tuple)
+{
+    return (tuuvm_char32_t)(tuple >> TUUVM_TUPLE_TAG_BIT_COUNT);
+}
+
+/*
+ * Decodes a Char32 from a tuple.
+ */
+TUUVM_INLINE tuuvm_char32_t tuuvm_tuple_char32_decode(tuuvm_tuple_t tuple)
+{
+    if(tuuvm_tuple_isImmediate(tuple))
+        return tuuvm_tuple_char32_decodeSmall(tuple);
+    return *((tuuvm_char32_t*)TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->bytes);
+}
+
+/**
+ * Encodes an UInt32 as an immediate tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_uint32_encodeSmall(uint32_t value)
+{
+    return ((tuuvm_tuple_t)value << TUUVM_TUPLE_TAG_BIT_COUNT) | TUUVM_TUPLE_TAG_UINT32;
+}
+
+/*
+ * Encodes an UInt32 as a bytes tuple.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_uint32_encodeBig(tuuvm_context_t *context, uint32_t value);
+
+/**
+ * Decodes an UInt32 from an immediate tuple.
+ */
+TUUVM_INLINE uint32_t tuuvm_tuple_uint32_decodeSmall(tuuvm_tuple_t tuple)
+{
+    return (uint32_t) (tuple >> TUUVM_TUPLE_TAG_BIT_COUNT);
+}
+
+/*
+ * Decodes an UInt32 from a tuple.
+ */
+TUUVM_INLINE uint32_t tuuvm_tuple_uint32_decode(tuuvm_tuple_t tuple)
+{
+    if(tuuvm_tuple_isImmediate(tuple))
+        return tuuvm_tuple_uint32_decodeSmall(tuple);
+    return *((uint32_t*)TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->bytes);
+}
+
+/**
+ * Encodes an Int32 as an immediate tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_int32_encodeSmall(int32_t value)
+{
+    return ((tuuvm_stuple_t)value << TUUVM_TUPLE_TAG_BIT_COUNT) | TUUVM_TUPLE_TAG_INT32;
+}
+
+/*
+ * Encodes an Int32 as a bytes tuple.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_int32_encodeBig(tuuvm_context_t *context, int32_t value);
+
+/**
+ * Decodes an Int32 from an immediate tuple.
+ */
+TUUVM_INLINE int32_t tuuvm_tuple_int32_decodeSmall(tuuvm_tuple_t tuple)
+{
+    return (int32_t) ((tuuvm_stuple_t)tuple >> TUUVM_TUPLE_TAG_BIT_COUNT);
+}
+
+/*
+ * Decodes an Int32 from a tuple.
+ */
+TUUVM_INLINE int32_t tuuvm_tuple_int32_decode(tuuvm_tuple_t tuple)
+{
+    if(tuuvm_tuple_isImmediate(tuple))
+        return tuuvm_tuple_int32_decodeSmall(tuple);
+    return *((int32_t*)TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->bytes);
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtype-limits"
+
+/*
+ * Encodes a Char32 as a tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_char32_encode(tuuvm_context_t *context, tuuvm_char32_t value)
+{
+    if(sizeof(tuuvm_char32_t) < sizeof(tuuvm_tuple_t) || value <= TUUVM_IMMEDIATE_UINT_MAX)
+        return tuuvm_tuple_char32_encodeSmall(value);
+    else
+        return tuuvm_tuple_char32_encodeBig(context, value);
+}
+
+/*
+ * Encodes an UInt32 as a tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_uint32_encode(tuuvm_context_t *context, uint32_t value)
+{
+    if(sizeof(uint32_t) < sizeof(tuuvm_tuple_t) || value <= TUUVM_IMMEDIATE_UINT_MAX)
+        return tuuvm_tuple_uint32_encodeSmall(value);
+    else
+        return tuuvm_tuple_uint32_encodeBig(context, value);
+}
+
+/*
+ * Encodes an Int32 as a tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_int32_encode(tuuvm_context_t *context, int32_t value)
+{
+    if(sizeof(int32_t) < sizeof(tuuvm_tuple_t) || (TUUVM_IMMEDIATE_INT_MIN <= value && value <= TUUVM_IMMEDIATE_INT_MAX))
+        return tuuvm_tuple_int32_encodeSmall(value);
+    else
+        return tuuvm_tuple_int32_encodeBig(context, value);
+}
+
+#pragma GCC diagnostic pop
+
+/**
+ * Encodes an UInt64 as an immediate tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_uint64_encodeSmall(uint64_t value)
+{
+    return ((tuuvm_tuple_t)value << TUUVM_TUPLE_TAG_BIT_COUNT) | TUUVM_TUPLE_TAG_UINT64;
+}
+
+/*
+ * Encodes an UInt64 as a bytes tuple.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_uint64_encodeBig(tuuvm_context_t *context, uint64_t value);
+
+/**
+ * Decodes an UInt64 from an immediate tuple.
+ */
+TUUVM_INLINE uint64_t tuuvm_tuple_uint64_decodeSmall(tuuvm_tuple_t tuple)
+{
+    return (uint64_t) (tuple >> TUUVM_TUPLE_TAG_BIT_COUNT);
+}
+
+/*
+ * Decodes an UInt64 from a tuple.
+ */
+TUUVM_INLINE uint64_t tuuvm_tuple_uint64_decode(tuuvm_tuple_t tuple)
+{
+    if(tuuvm_tuple_isImmediate(tuple))
+        return tuuvm_tuple_uint64_decodeSmall(tuple);
+    return *((uint64_t*)TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->bytes);
+}
+
+/**
+ * Encodes an Int64 as an immediate tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_int64_encodeSmall(int64_t value)
+{
+    return ((tuuvm_stuple_t)value << TUUVM_TUPLE_TAG_BIT_COUNT) | TUUVM_TUPLE_TAG_INT64;
+}
+
+/*
+ * Encodes an Int64 as a bytes tuple.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_int64_encodeBig(tuuvm_context_t *context, int64_t value);
+
+/**
+ * Decodes an Int64 from an immediate tuple.
+ */
+TUUVM_INLINE int64_t tuuvm_tuple_int64_decodeSmall(tuuvm_tuple_t tuple)
+{
+    return (int64_t) ((tuuvm_stuple_t)tuple >> TUUVM_TUPLE_TAG_BIT_COUNT);
+}
+
+/*
+ * Decodes an Int64 from a tuple.
+ */
+TUUVM_INLINE int64_t tuuvm_tuple_int64_decode(tuuvm_tuple_t tuple)
+{
+    if(tuuvm_tuple_isImmediate(tuple))
+        return tuuvm_tuple_int64_decodeSmall(tuple);
+    return *((int64_t*)TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->bytes);
+}
+
+/*
+ * Encodes an UInt64 as a tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_uint64_encode(tuuvm_context_t *context, uint64_t value)
+{
+    if(sizeof(uint64_t) < sizeof(tuuvm_tuple_t) || value <= TUUVM_IMMEDIATE_UINT_MAX)
+        return tuuvm_tuple_uint64_encodeSmall(value);
+    else
+        return tuuvm_tuple_uint64_encodeBig(context, value);
+}
+
+/*
+ * Encodes an Int64 as a tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_int64_encode(tuuvm_context_t *context, int64_t value)
+{
+    if(sizeof(int64_t) < sizeof(tuuvm_tuple_t) || (TUUVM_IMMEDIATE_INT_MIN <= value && value <= TUUVM_IMMEDIATE_INT_MAX))
+        return tuuvm_tuple_int64_encodeSmall(value);
+    else
+        return tuuvm_tuple_int64_encodeBig(context, value);
+}
+
+/*
+ * Encodes a size as a tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_size_encode(tuuvm_context_t *context, size_t value)
+{
+    if(sizeof(size_t) == sizeof(uint32_t))
+        return tuuvm_tuple_uint32_encode(context, (uint32_t)value);
+    else
+        return tuuvm_tuple_uint64_encode(context, (uint32_t)value);
+}
+
+/*
+ * Decodes a size from tuple.
+ */
+TUUVM_INLINE size_t tuuvm_tuple_size_decode(tuuvm_tuple_t tuple)
+{
+    if(sizeof(size_t) == sizeof(uint32_t))
+        return tuuvm_tuple_uint32_decode(tuple);
+    else
+        return tuuvm_tuple_uint64_decode(tuple);
 }
 
 #endif //TUUVM_TUPLE_H

@@ -21,7 +21,53 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     // Create other root basic types.
     context->roots.arrayType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Array"));
     context->roots.arrayListType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "ArrayList"));
+    context->roots.falseType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "False"));
+    context->roots.integerType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Integer"));
+    context->roots.nilType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Nil"));
     context->roots.stringType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "String"));
+    context->roots.trueType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "True"));
+    context->roots.voidType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Void"));
+
+    context->roots.char8Type = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Char8"));
+    context->roots.uint8Type = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "UInt8"));
+    context->roots.int8Type = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Int8"));
+
+    context->roots.char16Type = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Char16"));
+    context->roots.uint16Type = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "UInt16"));
+    context->roots.int16Type = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Int16"));
+
+    context->roots.char32Type = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Char32"));
+    context->roots.uint32Type = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "UInt32"));
+    context->roots.int32Type = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Int32"));
+
+    context->roots.uint64Type = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "UInt64"));
+    context->roots.int64Type = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Int64"));
+
+    context->roots.floatType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Float"));
+    context->roots.doubleType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Double"));
+
+    // Fill the immediate type table.
+    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_NIL] = context->roots.nilType;
+    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_INTEGER] = context->roots.integerType;
+    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_CHAR8] = context->roots.char8Type;
+    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_UINT8] = context->roots.uint8Type;
+    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_INT8] = context->roots.int8Type;
+    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_CHAR16] = context->roots.char16Type;
+    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_UINT16] = context->roots.uint16Type;
+    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_INT16] = context->roots.int16Type;
+    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_CHAR32] = context->roots.char32Type;
+    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_UINT32] = context->roots.uint32Type;
+    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_INT32] = context->roots.int32Type;
+    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_UINT64] = context->roots.uint64Type;
+    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_INT64] = context->roots.int64Type;
+    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_FLOAT] = context->roots.floatType;
+    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_DOUBLE] = context->roots.doubleType;
+    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_TRIVIAL] = context->roots.nilType;
+
+    // Fill the immediate trivial type table.
+    context->roots.immediateTrivialTypeTable[TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_FALSE] = context->roots.falseType;
+    context->roots.immediateTrivialTypeTable[TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_TRUE] = context->roots.trueType;
+    context->roots.immediateTrivialTypeTable[TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_VOID] = context->roots.voidType;
 }
 
 TUUVM_API tuuvm_context_t *tuuvm_context_create(void)

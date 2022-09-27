@@ -1,5 +1,6 @@
 set(tuuvm_sources
     arrayList.c
+    arraySlice.c
     assert.c
     context.c
     heap.c

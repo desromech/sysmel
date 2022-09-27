@@ -1,4 +1,5 @@
 set(TUUVM_TESTS_SOURCES
+    Immediate.c
     Main.c
     String.c
 )
