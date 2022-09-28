@@ -36,3 +36,26 @@ TUUVM_API tuuvm_tuple_t tuuvm_symbol_internWithCString(tuuvm_context_t *context,
 {
     return tuuvm_symbol_internWithString(context, strlen(cstring), cstring);
 }
+
+TUUVM_API size_t tuuvm_string_hash(tuuvm_tuple_t string)
+{
+    return 0;
+}
+
+TUUVM_API bool tuuvm_string_equals(tuuvm_tuple_t a, tuuvm_tuple_t b)
+{
+    if(a == b)
+        return true;
+
+    return false;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_string_primitive_hash(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    return tuuvm_tuple_size_encode(context, tuuvm_string_hash(arguments[0]));
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_string_primitive_equals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    return tuuvm_tuple_boolean_encode(context, tuuvm_string_equals(arguments[0], arguments[1]));
+}

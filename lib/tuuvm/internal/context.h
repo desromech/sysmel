@@ -10,11 +10,15 @@ typedef struct tuuvm_context_roots_s
 {
     tuuvm_tuple_t immediateTypeTable[TUUVM_TUPLE_TAG_COUNT];
     tuuvm_tuple_t immediateTrivialTypeTable[TUUVM_TUPLE_IMMEDIATE_TRIVIAL_COUNT];
+    tuuvm_tuple_t internedSymbolSet;
 
     tuuvm_tuple_t arrayType;
+    tuuvm_tuple_t arraySliceType;
     tuuvm_tuple_t arrayListType;
+    tuuvm_tuple_t byteArrayType;
     tuuvm_tuple_t falseType;
     tuuvm_tuple_t integerType;
+    tuuvm_tuple_t primitiveFunctionType;
     tuuvm_tuple_t setType;
     tuuvm_tuple_t stringType;
     tuuvm_tuple_t symbolType;

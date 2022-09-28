@@ -1,5 +1,5 @@
 #include "TestMacros.h"
-#include <tuuvm/string.h>
+#include "tuuvm/string.h"
 
 TEST_SUITE(String)
 {

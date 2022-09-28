@@ -1,6 +1,8 @@
 #include "internal/context.h"
 #include "tuuvm/type.h"
 #include "tuuvm/string.h"
+#include "tuuvm/set.h"
+#include "tuuvm/function.h"
 #include <stdlib.h>
 
 static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
@@ -11,15 +13,19 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 
     // Create the symbol and set type.
     context->roots.symbolType = tuuvm_type_createAnonymous(context);
+    context->roots.primitiveFunctionType = tuuvm_type_createAnonymous(context);
     context->roots.setType = tuuvm_type_createAnonymous(context);
+    context->roots.internedSymbolSet = tuuvm_set_create(context);
 
     // Set the name of the root basic type.
     tuuvm_type_setName(context->roots.typeType, tuuvm_symbol_internWithCString(context, "Type"));
+    tuuvm_type_setName(context->roots.primitiveFunctionType, tuuvm_symbol_internWithCString(context, "PrimitiveFunction"));
     tuuvm_type_setName(context->roots.symbolType, tuuvm_symbol_internWithCString(context, "Symbol"));
     tuuvm_type_setName(context->roots.setType, tuuvm_symbol_internWithCString(context, "Set"));
 
     // Create other root basic types.
     context->roots.arrayType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Array"));
+    context->roots.arraySliceType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "arraySliceType"));
     context->roots.arrayListType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "ArrayList"));
     context->roots.falseType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "False"));
     context->roots.integerType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Integer"));

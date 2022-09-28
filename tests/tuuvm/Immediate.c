@@ -1,5 +1,5 @@
 #include "TestMacros.h"
-#include <tuuvm/tuple.h>
+#include "tuuvm/tuple.h"
 
 TEST_SUITE(Immediate)
 {
