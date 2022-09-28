@@ -91,7 +91,7 @@ typedef enum tuuvm_tuple_immediate_trivial_index_e
     TUUVM_TUPLE_IMMEDIATE_TRIVIAL_COUNT,
 } tuuvm_tuple_immediate_trivial_index_e;
 
-#define TUUVM_TUPLE_MAKE_IMMEDIATE_TRIVIAL_WITH_INDEX(immediateTrivialIndex) (immediateTrivialIndex << TUUVM_TUPLE_TAG_BIT_COUNT) | 
+#define TUUVM_TUPLE_MAKE_IMMEDIATE_TRIVIAL_WITH_INDEX(immediateTrivialIndex) ((immediateTrivialIndex << TUUVM_TUPLE_TAG_BIT_COUNT) | TUUVM_TUPLE_TAG_TRIVIAL)
 /**
  * Tuple header that describes its content.
  */
@@ -116,8 +116,13 @@ typedef struct tuuvm_object_tuple_s
 } tuuvm_object_tuple_t;
 
 #define TUUVM_NULL_TUPLE ((tuuvm_tuple_t)0)
+#define TUUVM_FALSE_TUPLE TUUVM_TUPLE_MAKE_IMMEDIATE_TRIVIAL_WITH_INDEX(TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_FALSE)
+#define TUUVM_TRUE_TUPLE TUUVM_TUPLE_MAKE_IMMEDIATE_TRIVIAL_WITH_INDEX(TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_TRUE)
+#define TUUVM_VOID_TUPLE TUUVM_TUPLE_MAKE_IMMEDIATE_TRIVIAL_WITH_INDEX(TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_VOID)
 
 #define TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(structureType) ((sizeof(structureType) - sizeof(tuuvm_tuple_header_t)) / sizeof(tuuvm_tuple_t))
+#define TUUVM_BYTE_SIZE_FOR_STRUCTURE_TYPE(structureType) (sizeof(structureType) - sizeof(tuuvm_tuple_header_t))
+
 /**
  * Is this a pointer tuple?
  */
@@ -534,6 +539,14 @@ TUUVM_INLINE size_t tuuvm_tuple_size_decode(tuuvm_tuple_t tuple)
         return tuuvm_tuple_uint32_decode(tuple);
     else
         return tuuvm_tuple_uint64_decode(tuple);
+}
+
+/**
+ * Encodes a boolean value.
+ */ 
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_boolean_encode(bool value)
+{
+    return value ? TUUVM_TRUE_TUPLE : TUUVM_FALSE_TUPLE;
 }
 
 #endif //TUUVM_TUPLE_H

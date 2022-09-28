@@ -15,7 +15,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.symbolType = tuuvm_type_createAnonymous(context);
     context->roots.primitiveFunctionType = tuuvm_type_createAnonymous(context);
     context->roots.setType = tuuvm_type_createAnonymous(context);
-    context->roots.internedSymbolSet = tuuvm_set_create(context);
+    context->roots.internedSymbolSet = tuuvm_set_create(context, tuuvm_function_createPrimitive(context, 0, tuuvm_string_primitive_equals), tuuvm_function_createPrimitive(context, 0, tuuvm_string_primitive_hash));
 
     // Set the name of the root basic type.
     tuuvm_type_setName(context->roots.typeType, tuuvm_symbol_internWithCString(context, "Type"));

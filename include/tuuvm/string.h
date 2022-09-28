@@ -31,6 +31,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_symbol_internFromTuple(tuuvm_context_t *context, t
 TUUVM_API tuuvm_tuple_t tuuvm_symbol_internWithCString(tuuvm_context_t *context, const char *cstring);
 
 /**
+ * Computes the hash for a string with the specified bytes.
+ */
+TUUVM_API size_t tuuvm_string_computeHashWithBytes(size_t size, const uint8_t *bytes);
+
+/**
  * The hash for string.
  */
 TUUVM_API size_t tuuvm_string_hash(tuuvm_tuple_t string);
