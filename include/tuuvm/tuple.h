@@ -156,6 +156,14 @@ TUUVM_INLINE size_t tuuvm_tuple_getSizeInBytes(tuuvm_tuple_t tuple)
 }
 
 /**
+ * Gets the size in bytes of the specified tuple.
+ */
+TUUVM_INLINE size_t tuuvm_tuple_getSizeInSlots(tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_isNonNullPointer(tuple) ? TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.objectSize / sizeof(tuuvm_tuple_t) : 0;
+}
+
+/**
  * Retrieves an immediate tuple type corresponding to a specific tag.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_tuple_getImmediateTypeWithTag(tuuvm_context_t *context, size_t immediateTypeTag);
@@ -548,5 +556,14 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_boolean_encode(bool value)
 {
     return value ? TUUVM_TRUE_TUPLE : TUUVM_FALSE_TUPLE;
 }
+
+/**
+ * Encodes a boolean value.
+ */ 
+TUUVM_INLINE bool tuuvm_tuple_boolean_decode(tuuvm_tuple_t value)
+{
+    return value != TUUVM_FALSE_TUPLE;
+}
+
 
 #endif //TUUVM_TUPLE_H

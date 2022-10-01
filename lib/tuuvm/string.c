@@ -1,7 +1,31 @@
 #include "tuuvm/string.h"
 #include "tuuvm/context.h"
+#include "tuuvm/set.h"
 #include "internal/context.h"
 #include <string.h>
+
+
+typedef struct tuuvm_stringSlice_s
+{
+    const char *elements;
+    size_t size;
+} tuuvm_stringSlice_t;
+
+static size_t tuuvm_stringSlice_hashFunction(void *element);
+
+bool tuuvm_stringSlice_equalsFunction(void *element, tuuvm_tuple_t setElement)
+{
+    tuuvm_stringSlice_t *stringSlice = (tuuvm_stringSlice_t*)element;
+    if(tuuvm_tuple_isBytes(!setElement))
+        return false;
+
+    size_t setElementSize = tuuvm_tuple_getSizeInBytes(setElement);
+    if(setElementSize != stringSlice->size)
+        return false;
+
+    return memcmp(stringSlice->elements, TUUVM_CAST_OOP_TO_OBJECT_TUPLE(setElement)->bytes, setElementSize) == 0;
+}
+
 
 TUUVM_API tuuvm_tuple_t tuuvm_string_createWithString(tuuvm_context_t *context, size_t stringSize, const char *string)
 {
@@ -19,10 +43,22 @@ TUUVM_API tuuvm_tuple_t tuuvm_string_createWithCString(tuuvm_context_t *context,
 
 TUUVM_API tuuvm_tuple_t tuuvm_symbol_internWithString(tuuvm_context_t *context, size_t stringSize, const char *string)
 {
+    {
+        tuuvm_stringSlice_t stringSlice = {
+            .elements = string,
+            .size = stringSize
+        };
+
+        tuuvm_tuple_t existent = tuuvm_set_findOrNilWithExplicitHash(context->roots.internedSymbolSet, &stringSlice, tuuvm_stringSlice_hashFunction, tuuvm_stringSlice_equalsFunction);
+        if(existent != TUUVM_NULL_TUPLE)
+            return existent;
+    }
+
     tuuvm_object_tuple_t *result = tuuvm_context_allocateByteTuple(context, context->roots.symbolType, stringSize);
     if(!result) return 0;
 
     memcpy(result->bytes, string, stringSize);
+    tuuvm_set_insert(context, context->roots.internedSymbolSet, (tuuvm_tuple_t)result);
     return (tuuvm_tuple_t)result;
 }
 
@@ -44,6 +80,12 @@ TUUVM_API size_t tuuvm_string_computeHashWithBytes(size_t size, const uint8_t *b
     for(size_t i = 0; i < size; ++i)
         result = result * 33 + bytes[i];
     return 0;
+}
+
+static size_t tuuvm_stringSlice_hashFunction(void *element)
+{
+    tuuvm_stringSlice_t *stringSlice = (tuuvm_stringSlice_t*)element;
+    return tuuvm_string_computeHashWithBytes(stringSlice->size, (const uint8_t *)stringSlice->elements);
 }
 
 TUUVM_API size_t tuuvm_string_hash(tuuvm_tuple_t string)
