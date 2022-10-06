@@ -21,6 +21,6 @@ TUUVM_API tuuvm_tuple_t tuuvm_arraySlice_create(tuuvm_context_t *context, tuuvm_
 /**
  * Creates an array slice with the specified array.
  */
-TUUVM_API tuuvm_tuple_t tuuvm_arraySlice_createWithOffseAndSize(tuuvm_context_t *context, tuuvm_tuple_t elements, size_t offset, size_t count);
+TUUVM_API tuuvm_tuple_t tuuvm_arraySlice_createWithOffsetAndSize(tuuvm_context_t *context, tuuvm_tuple_t elements, size_t offset, size_t count);
 
 #endif //TUUVM_ARRAY_SLICE_H

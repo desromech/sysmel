@@ -10,7 +10,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_arraySlice_create(tuuvm_context_t *context, tuuvm_
     return (tuuvm_tuple_t)result;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_arraySlice_createWithOffseAndSize(tuuvm_context_t *context, tuuvm_tuple_t elements, size_t offset, size_t count)
+TUUVM_API tuuvm_tuple_t tuuvm_arraySlice_createWithOffsetAndSize(tuuvm_context_t *context, tuuvm_tuple_t elements, size_t offset, size_t count)
 {
     return tuuvm_arraySlice_create(context, elements, tuuvm_tuple_size_encode(context, offset), tuuvm_tuple_size_encode(context, count));
 }

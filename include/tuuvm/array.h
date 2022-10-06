@@ -23,8 +23,24 @@ typedef struct tuuvm_byteArray_s
 TUUVM_API tuuvm_tuple_t tuuvm_array_create(tuuvm_context_t *context, tuuvm_tuple_t slotCount);
 
 /**
+ * Gets an element from an array.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_array_at(tuuvm_context_t *context, tuuvm_tuple_t array, size_t index);
+
+/**
  * Creates a byte array with the specified size.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_byteArray_create(tuuvm_context_t *context, tuuvm_tuple_t size);
+
+/**
+ * Gets an element from a byte array.
+ */
+TUUVM_API uint8_t tuuvm_byteArray_at(tuuvm_context_t *context, tuuvm_tuple_t array, size_t index);
+
+/**
+ * Gets an element from an array or byte array.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_arrayOrByteArray_at(tuuvm_context_t *context, tuuvm_tuple_t array, size_t index);
+
 
 #endif //TUUVM_ARRAY_H
