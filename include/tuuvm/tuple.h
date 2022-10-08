@@ -535,7 +535,7 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_size_encode(tuuvm_context_t *context, siz
     if(sizeof(size_t) == sizeof(uint32_t))
         return tuuvm_tuple_uint32_encode(context, (uint32_t)value);
     else
-        return tuuvm_tuple_uint64_encode(context, (uint32_t)value);
+        return tuuvm_tuple_uint64_encode(context, (uint64_t)value);
 }
 
 /*

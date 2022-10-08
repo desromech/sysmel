@@ -4,6 +4,7 @@ set(tuuvm_sources
     arraySlice.c
     assert.c
     context.c
+    errors.c
     function.c
     heap.c
     set.c

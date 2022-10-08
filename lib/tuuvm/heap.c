@@ -129,7 +129,6 @@ TUUVM_API tuuvm_object_tuple_t *tuuvm_heap_allocatePointerTuple(tuuvm_heap_t *he
     tuuvm_object_tuple_t *result = tuuvm_heap_allocateTupleWithRawSize(heap, allocationSize, 16);
     if(!result) return 0;
 
-    result->header.typePointerAndFlags = TUUVM_TUPLE_BYTES_BIT;
     result->header.objectSize = objectSize;
     return result;
 }

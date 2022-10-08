@@ -23,4 +23,14 @@ TUUVM_API tuuvm_tuple_t tuuvm_arraySlice_create(tuuvm_context_t *context, tuuvm_
  */
 TUUVM_API tuuvm_tuple_t tuuvm_arraySlice_createWithOffsetAndSize(tuuvm_context_t *context, tuuvm_tuple_t elements, size_t offset, size_t count);
 
+/**
+ * Gets the size of an array slice.
+ */
+TUUVM_API size_t tuuvm_arraySlice_getSize(tuuvm_tuple_t arraySlice);
+
+/**
+ * Gets an element from the array slice.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_arraySlice_at(tuuvm_tuple_t arraySlice, size_t index);
+
 #endif //TUUVM_ARRAY_SLICE_H

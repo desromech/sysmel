@@ -1,6 +1,7 @@
 #include "tuuvm/arrayList.h"
 #include "tuuvm/array.h"
 #include "tuuvm/arraySlice.h"
+#include "tuuvm/errors.h"
 #include "internal/context.h"
 
 TUUVM_API tuuvm_tuple_t tuuvm_arrayList_create(tuuvm_context_t *context)
@@ -73,7 +74,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_arrayList_at(tuuvm_tuple_t arrayList, size_t index
 
     tuuvm_arrayList_t *arrayListObject = (tuuvm_arrayList_t*)arrayList;
     size_t size = tuuvm_tuple_size_decode(arrayListObject->size);
-    if(index >= size) return TUUVM_NULL_TUPLE; // FIXME: Raise out of bounds error.
+    if(index >= size)
+    {
+        tuuvm_error_indexOutOfBounds();
+        return TUUVM_NULL_TUPLE;
+    }
 
     return ((tuuvm_array_t*)arrayListObject->storage)->elements[index];
 }
