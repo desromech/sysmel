@@ -79,7 +79,7 @@ TUUVM_API size_t tuuvm_string_computeHashWithBytes(size_t size, const uint8_t *b
     size_t result = 0;
     for(size_t i = 0; i < size; ++i)
         result = result * 33 + bytes[i];
-    return 0;
+    return result;
 }
 
 static size_t tuuvm_stringSlice_hashFunction(void *element)

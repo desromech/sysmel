@@ -25,9 +25,10 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 
     // Create other root basic types.
     context->roots.arrayType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Array"));
-    context->roots.arraySliceType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "arraySliceType"));
+    context->roots.arraySliceType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "ArraySlice"));
     context->roots.arrayListType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "ArrayList"));
     context->roots.falseType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "False"));
+    context->roots.hashtableEmptyType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "HashtableEmpty"));
     context->roots.integerType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Integer"));
     context->roots.nilType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Nil"));
     context->roots.stringType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "String"));
@@ -74,6 +75,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.immediateTrivialTypeTable[TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_FALSE] = context->roots.falseType;
     context->roots.immediateTrivialTypeTable[TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_TRUE] = context->roots.trueType;
     context->roots.immediateTrivialTypeTable[TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_VOID] = context->roots.voidType;
+    context->roots.immediateTrivialTypeTable[TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_HASHTABLE_EMPTY_ELEMENT] = context->roots.hashtableEmptyType;
 }
 
 TUUVM_API tuuvm_context_t *tuuvm_context_create(void)

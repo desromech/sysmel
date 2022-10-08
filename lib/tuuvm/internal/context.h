@@ -17,6 +17,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t arrayListType;
     tuuvm_tuple_t byteArrayType;
     tuuvm_tuple_t falseType;
+    tuuvm_tuple_t hashtableEmptyType;
     tuuvm_tuple_t integerType;
     tuuvm_tuple_t primitiveFunctionType;
     tuuvm_tuple_t setType;
