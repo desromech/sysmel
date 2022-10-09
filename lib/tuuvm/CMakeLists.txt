@@ -13,5 +13,5 @@ set(tuuvm_sources
     type.c
 )
 
-add_definitions(-DBUILD_LIB_TUUVM)
+add_definitions(-DBUILD_TUUVM)
 add_library(tuuvm SHARED ${tuuvm_sources})

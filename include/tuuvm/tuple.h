@@ -3,6 +3,9 @@
 
 #pragma once
 
+#ifdef MSC_VER
+#endif
+
 #include "common.h"
 #include <stdint.h>
 #include <stddef.h>
@@ -36,17 +39,14 @@ typedef intptr_t tuuvm_stuple_t;
 
 #define TUUVM_CAST_OOP_TO_OBJECT_TUPLE(oop) ((tuuvm_object_tuple_t*)oop)
 
-enum
-{
-    TUUVM_TUPLE_BIT_COUNT = sizeof(tuuvm_tuple_t)*8,
-    TUUVM_IMMEDIATE_BIT_COUNT = TUUVM_TUPLE_BIT_COUNT - TUUVM_TUPLE_TAG_BIT_COUNT,
+#define TUUVM_TUPLE_BIT_COUNT ((sizeof(tuuvm_tuple_t)*8))
+#define TUUVM_IMMEDIATE_BIT_COUNT (TUUVM_TUPLE_BIT_COUNT - TUUVM_TUPLE_TAG_BIT_COUNT)
 
-    TUUVM_IMMEDIATE_UINT_MIN = 0,
-    TUUVM_IMMEDIATE_UINT_MAX = ((tuuvm_tuple_t)1 << TUUVM_IMMEDIATE_BIT_COUNT) - 1,
+#define TUUVM_IMMEDIATE_UINT_MIN ((tuuvm_tuple_t)0)
+#define TUUVM_IMMEDIATE_UINT_MAX ( ((tuuvm_tuple_t)1 << TUUVM_IMMEDIATE_BIT_COUNT) - 1 )
 
-    TUUVM_IMMEDIATE_INT_MIN = -((tuuvm_stuple_t)1 << (TUUVM_IMMEDIATE_BIT_COUNT - 1)),
-    TUUVM_IMMEDIATE_INT_MAX = ((tuuvm_stuple_t)1 << (TUUVM_IMMEDIATE_BIT_COUNT - 1)) - 1,
-};
+#define TUUVM_IMMEDIATE_INT_MIN ( -((tuuvm_stuple_t)1 << (TUUVM_IMMEDIATE_BIT_COUNT - 1)) )
+#define TUUVM_IMMEDIATE_INT_MAX ( ((tuuvm_stuple_t)1 << (TUUVM_IMMEDIATE_BIT_COUNT - 1)) - 1 )
 
 /**
  * The different immediate pointer tags.
@@ -407,8 +407,10 @@ TUUVM_INLINE int32_t tuuvm_tuple_int32_decode(tuuvm_tuple_t tuple)
     return *((int32_t*)TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->bytes);
 }
 
+#ifndef _MSC_VER
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wtype-limits"
+#endif
 
 /*
  * Encodes a Char32 as a tuple.
@@ -443,7 +445,9 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_int32_encode(tuuvm_context_t *context, in
         return tuuvm_tuple_int32_encodeBig(context, value);
 }
 
+#ifndef _MSC_VER
 #pragma GCC diagnostic pop
+#endif
 
 /**
  * Encodes an UInt64 as an immediate tuple.

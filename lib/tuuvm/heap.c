@@ -6,6 +6,28 @@
 #define TUUVM_HEAP_MIN_CHUNK_SIZE (1<<20)
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+
+static void *tuuvm_heap_allocateSystemMemory(size_t sizeToAllocate)
+{
+    return VirtualAlloc(NULL, sizeToAllocate, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+}
+
+static void tuuvm_heap_freeSystemMemory(void *memory, size_t sizeToFree)
+{
+    (void)sizeToFree;
+    VirtualFree(memory, 0, MEM_RELEASE);
+}
+
+static size_t tuuvm_heap_getSystemAllocationAlignment(void)
+{
+    SYSTEM_INFO systemInfo;
+    memset(&systemInfo, 0, sizeof(systemInfo));
+    GetSystemInfo(&systemInfo);
+    return systemInfo.dwPageSize;
+}
 
 #else
 
@@ -35,7 +57,7 @@ static size_t tuuvm_heap_getSystemAllocationAlignment(void)
 
 static uintptr_t uintptrAlignedTo(uintptr_t pointer, size_t alignment)
 {
-    return (pointer + alignment - 1) & (-alignment);
+    return (pointer + alignment - 1) & (~(alignment - 1));
 }
 
 static tuuvm_heap_chunk_t *tuuvm_heap_findOrAllocateChunkWithRequiredCapacity(tuuvm_heap_t *heap, size_t requiredCapacity, size_t requiredAlignment)
@@ -62,7 +84,7 @@ static tuuvm_heap_chunk_t *tuuvm_heap_findOrAllocateChunkWithRequiredCapacity(tu
         return 0;
 
     memset(newChunk, 0, sizeof(tuuvm_heap_chunk_t));
-    newChunk->capacity = chunkCapacity;
+    newChunk->capacity = (uint32_t)chunkCapacity;
     newChunk->size = sizeof(tuuvm_heap_chunk_t);
 
     // Find the chunk insertion position;
