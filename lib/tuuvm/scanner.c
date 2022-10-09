@@ -2,6 +2,7 @@
 #include "tuuvm/arrayList.h"
 #include "tuuvm/sourceCode.h"
 #include "tuuvm/sourcePosition.h"
+#include "tuuvm/string.h"
 #include "tuuvm/token.h"
 
 typedef struct tuuvm_scannerState_s
@@ -12,15 +13,50 @@ typedef struct tuuvm_scannerState_s
     size_t position;
 } tuuvm_scannerState_t;
 
+typedef tuuvm_tuple_t (*tuuvm_scanner_tokenConversionFunction_t)(tuuvm_context_t *context, size_t stringSize, const uint8_t *string);
+
+static tuuvm_tuple_t tuuvm_scanner_tokenAsSymbol(tuuvm_context_t *context, size_t stringSize, const uint8_t *string)
+{
+    return tuuvm_symbol_internWithString(context, stringSize, (const char*)string);
+}
+
+static tuuvm_tuple_t tuuvm_scanner_tokenAsSymbolWithoutPrefix(tuuvm_context_t *context, size_t stringSize, const uint8_t *string)
+{
+    return tuuvm_symbol_internWithString(context, stringSize - 1, (const char*)(string + 1));
+}
+
+static tuuvm_tuple_t tuuvm_scanner_tokenAsInteger(tuuvm_context_t *context, size_t stringSize, const uint8_t *string)
+{
+    // TODO: Implement this part properly.
+    return TUUVM_NULL_TUPLE;
+}
+
+static tuuvm_tuple_t tuuvm_scanner_tokenAsFloat(tuuvm_context_t *context, size_t stringSize, const uint8_t *string)
+{
+    // TODO: Implement this part properly.
+    return TUUVM_NULL_TUPLE;
+}
+
+static tuuvm_tuple_t tuuvm_scanner_incompleteMultilineCommentError(tuuvm_context_t *context, size_t stringSize, const uint8_t *string)
+{
+    return tuuvm_symbol_internWithCString(context, "Incomplete multiline comment.");
+}
+
+static tuuvm_tuple_t tuuvm_scanner_unrecognizedTokenError(tuuvm_context_t *context, size_t stringSize, const uint8_t *string)
+{
+    return tuuvm_symbol_internWithCString(context, "Unrecognized token.");
+}
+
 static int tuuvm_scanner_lookAt(tuuvm_scannerState_t *state, size_t offset)
 {
     return state->position + offset < state->size ? state->text[state->position + offset] : -1;
 }
 
-static void tuuvm_scanner_emitTokenForStateRange(tuuvm_context_t *context, tuuvm_scannerState_t *startState, tuuvm_scannerState_t *endState, tuuvm_tokenKind_t kind, tuuvm_tuple_t outTokenList)
+static void tuuvm_scanner_emitTokenForStateRange(tuuvm_context_t *context, tuuvm_scannerState_t *startState, tuuvm_scannerState_t *endState, tuuvm_tokenKind_t kind, tuuvm_scanner_tokenConversionFunction_t tokenConversionFunction, tuuvm_tuple_t outTokenList)
 {
     tuuvm_tuple_t sourcePosition = tuuvm_sourcePosition_createWithIndices(context, startState->sourceCode, startState->position, endState->position);
-    tuuvm_tuple_t token = tuuvm_token_createWithKind(context, kind, sourcePosition, TUUVM_NULL_TUPLE);
+    tuuvm_tuple_t value = tokenConversionFunction(context, endState->position - startState->position, startState->text + startState->position);
+    tuuvm_tuple_t token = tuuvm_token_createWithKind(context, kind, sourcePosition, value);
     tuuvm_arrayList_add(context, outTokenList, token);
 }
 
@@ -61,7 +97,7 @@ static bool tuuvm_scanner_skipMultiLineComment(tuuvm_context_t *context, tuuvm_s
         ++state->position;
     }
 
-    tuuvm_scanner_emitTokenForStateRange(context, &startState, state, TUUVM_TOKEN_KIND_ERROR, outTokenList);
+    tuuvm_scanner_emitTokenForStateRange(context, &startState, state, TUUVM_TOKEN_KIND_ERROR, tuuvm_scanner_incompleteMultilineCommentError, outTokenList);
     return false;
 }
 
@@ -167,11 +203,11 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
             while(tuuvm_scanner_advanceKeyword(state))
                 isMultikeyword = true;
 
-            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, isMultikeyword ? TUUVM_TOKEN_KIND_MULTI_KEYWORD : TUUVM_TOKEN_KIND_KEYWORD, outTokenList);
+            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, isMultikeyword ? TUUVM_TOKEN_KIND_MULTI_KEYWORD : TUUVM_TOKEN_KIND_KEYWORD, tuuvm_scanner_tokenAsSymbol, outTokenList);
             return true;
         }
 
-        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_IDENTIFIER, outTokenList);
+        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_IDENTIFIER, tuuvm_scanner_tokenAsSymbol, outTokenList);
         return true;
     }
 
@@ -198,12 +234,12 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
                 while(tuuvm_scanner_isDigit(tuuvm_scanner_lookAt(state, 0)))
                     ++state->position;
 
-                tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_FLOAT, outTokenList);
+                tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_FLOAT, tuuvm_scanner_tokenAsSymbol, outTokenList);
                 return true;
             }
         }
 
-        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_INTEGER, outTokenList);
+        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_INTEGER, tuuvm_scanner_tokenAsInteger, outTokenList);
         return true;
     }
 
@@ -226,7 +262,7 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
                     ;
             }
 
-            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_SYMBOL, outTokenList);
+            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_SYMBOL, tuuvm_scanner_tokenAsSymbolWithoutPrefix, outTokenList);
             return true;
         }
 
@@ -234,15 +270,15 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
         {
         case '[':
             state->position += 2;
-            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_BYTE_ARRAY_START, outTokenList);
+            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_BYTE_ARRAY_START, tuuvm_scanner_tokenAsSymbol, outTokenList);
             return true;
         case '{':
             state->position += 2;
-            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_DICTIONARY_START, outTokenList);
+            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_DICTIONARY_START, tuuvm_scanner_tokenAsSymbol, outTokenList);
             return true;
         case '(':
             state->position += 2;
-            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_LITERAL_ARRAY_START, outTokenList);
+            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_LITERAL_ARRAY_START, tuuvm_scanner_tokenAsSymbol, outTokenList);
             return true;
         default:
             break;
@@ -253,27 +289,27 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
     {
     case '(':
         ++state->position;
-        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_LPARENT, outTokenList);
+        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_LPARENT, tuuvm_scanner_tokenAsSymbol, outTokenList);
         return true;
     case ')':
         ++state->position;
-        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_RPARENT, outTokenList);
+        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_RPARENT, tuuvm_scanner_tokenAsSymbol, outTokenList);
         return true;
     case '[':
         ++state->position;
-        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_LBRACKET, outTokenList);
+        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_LBRACKET, tuuvm_scanner_tokenAsSymbol, outTokenList);
         return true;
     case ']':
         ++state->position;
-        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_RBRACKET, outTokenList);
+        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_RBRACKET, tuuvm_scanner_tokenAsSymbol, outTokenList);
         return true;
     case '{':
         ++state->position;
-        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_LCBRACKET, outTokenList);
+        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_LCBRACKET, tuuvm_scanner_tokenAsSymbol, outTokenList);
         return true;
     case '}':
         ++state->position;
-        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_RCBRACKET, outTokenList);
+        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_RCBRACKET, tuuvm_scanner_tokenAsSymbol, outTokenList);
         return true;
 
     case ':':
@@ -281,16 +317,16 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
         if(':' == tuuvm_scanner_lookAt(state, 0))
         {
             ++state->position;
-            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_COLON_COLON, outTokenList);
+            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_COLON_COLON, tuuvm_scanner_tokenAsSymbol, outTokenList);
             return true;
         }
 
-        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_COLON, outTokenList);
+        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_COLON, tuuvm_scanner_tokenAsSymbol, outTokenList);
         return true;
 
     case '|':
         ++state->position;
-        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_BAR, outTokenList);
+        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_BAR, tuuvm_scanner_tokenAsSymbol, outTokenList);
         return true;
 
     case '`':
@@ -299,19 +335,19 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
             {
             case '\'':
                 state->position += 2;
-                tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_QUOTE, outTokenList);
+                tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_QUOTE, tuuvm_scanner_tokenAsSymbol, outTokenList);
                 return true;
             case '`':
                 state->position += 2;
-                tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_QUASI_QUOTE, outTokenList);
+                tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_QUASI_QUOTE, tuuvm_scanner_tokenAsSymbol, outTokenList);
                 return true;
             case ',':
                 state->position += 2;
-                tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_QUASI_UNQUOTE, outTokenList);
+                tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_QUASI_UNQUOTE, tuuvm_scanner_tokenAsSymbol, outTokenList);
                 return true;
             case '@':
                 state->position += 2;
-                tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_SPLICE, outTokenList);
+                tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_SPLICE, tuuvm_scanner_tokenAsSymbol, outTokenList);
                 return true;
             default:
                 break;
@@ -322,7 +358,9 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
         break;
     }
 
-    return false;
+    ++state->position;
+    tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_ERROR, tuuvm_scanner_unrecognizedTokenError, outTokenList);
+    return true;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_scanner_scan(tuuvm_context_t *context, tuuvm_tuple_t sourceCode)
