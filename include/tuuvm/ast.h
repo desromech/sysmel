@@ -13,6 +13,12 @@ typedef struct tuuvm_astNode_s
     tuuvm_tuple_t sourcePosition;
 } tuuvm_astNode_t;
 
+typedef struct tuuvm_astErrorNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t errorMessage;
+} tuuvm_astErrorNode_t;
+
 typedef struct tuuvm_astFunctionApplicationNode_s
 {
     tuuvm_astNode_t super;
@@ -45,6 +51,35 @@ typedef struct tuuvm_astUnexpandedApplicationNode_s
     tuuvm_tuple_t arguments;
 } tuuvm_astUnexpandedApplicationNode_t;
 
+typedef struct tuuvm_astQuoteNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t node;
+} tuuvm_astQuoteNode_t;
+
+typedef struct tuuvm_astQuasiQuoteNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t node;
+} tuuvm_astQuasiQuoteNode_t;
+
+typedef struct tuuvm_astQuasiUnquoteNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t expression;
+} tuuvm_astQuasiUnquoteNode_t;
+
+typedef struct tuuvm_astSpliceNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t expression;
+} tuuvm_astSpliceNode_t;
+
+/**
+ * Is this an error node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isErrorNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
 /**
  * Is this a function application node?
  */ 
@@ -69,6 +104,36 @@ TUUVM_API bool tuuvm_astNode_isSequenceNode(tuuvm_context_t *context, tuuvm_tupl
  * Is this an unexpanded application node?
  */ 
 TUUVM_API bool tuuvm_astNode_isUnexpandedApplicationNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this a quote node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isQuoteNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this a quasi quote node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isQuasiQuoteNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this a quasi unquote node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isQuasiUnquoteNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this a splice node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isSpliceNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Creates an error node
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astErrorNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t errorMessage);
+
+/**
+ * Creates an error node
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astErrorNode_createWithCString(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, const char *errorMessage);
 
 /**
  * Creates a function application node
@@ -115,5 +180,25 @@ TUUVM_API tuuvm_tuple_t tuuvm_astSequenceNode_getExpressionAt(tuuvm_tuple_t sequ
  * Creates an unexpanded application node
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astUnexpandedApplicationNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t functionOrMacroExpression, tuuvm_tuple_t arguments);
+
+/**
+ * Creates a quote node
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astQuoteNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t node);
+
+/**
+ * Creates a quasi quote node
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astQuasiQuoteNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t node);
+
+/**
+ * Creates a quasi unquote node
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astQuasiUnquoteNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t expression);
+
+/**
+ * Creates a splice node
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astSpliceNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t expression);
 
 #endif //TUUVM_AST_H

@@ -51,11 +51,17 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t tokenType;
 
     tuuvm_tuple_t astNodeType;
+    tuuvm_tuple_t astErrorNodeType;
     tuuvm_tuple_t astFunctionApplicationNodeType;
     tuuvm_tuple_t astLiteralNodeType;
     tuuvm_tuple_t astIdentifierReferenceNodeType;
     tuuvm_tuple_t astSequenceNodeType;
     tuuvm_tuple_t astUnexpandedApplicationNodeType;
+
+    tuuvm_tuple_t astQuoteNodeType;
+    tuuvm_tuple_t astQuasiQuoteNodeType;
+    tuuvm_tuple_t astQuasiUnquoteNodeType;
+    tuuvm_tuple_t astSpliceNodeType;
 
 } tuuvm_context_roots_t;
 

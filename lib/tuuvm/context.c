@@ -58,11 +58,17 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.tokenType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Token"));
 
     context->roots.astNodeType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "ASTNode"));
+    context->roots.astErrorNodeType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "ASTErrorNode"));
     context->roots.astFunctionApplicationNodeType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "ASTFunctionApplicationNode"));
     context->roots.astLiteralNodeType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "ASTLiteralNode"));
     context->roots.astIdentifierReferenceNodeType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "ASTIdentifierReferenceNode"));
     context->roots.astSequenceNodeType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "ASTSequenceNode"));
     context->roots.astUnexpandedApplicationNodeType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "ASTUnexpandedApplicationNode"));
+
+    context->roots.astQuoteNodeType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "ASTQuoteNode"));
+    context->roots.astQuasiQuoteNodeType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "ASTQuasiQuoteNode"));
+    context->roots.astQuasiUnquoteNodeType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "ASTQuasiUnquoteNode"));
+    context->roots.astSpliceNodeType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "ASTSpliceNode"));
 
     // Fill the immediate type table.
     context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_NIL] = context->roots.nilType;
