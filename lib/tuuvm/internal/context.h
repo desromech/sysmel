@@ -50,6 +50,13 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t sourcePositionType;
     tuuvm_tuple_t tokenType;
 
+    tuuvm_tuple_t astNodeType;
+    tuuvm_tuple_t astFunctionApplicationNodeType;
+    tuuvm_tuple_t astLiteralNodeType;
+    tuuvm_tuple_t astIdentifierReferenceNodeType;
+    tuuvm_tuple_t astSequenceNodeType;
+    tuuvm_tuple_t astUnexpandedApplicationNodeType;
+
 } tuuvm_context_roots_t;
 
 struct tuuvm_context_s
