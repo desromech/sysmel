@@ -89,6 +89,7 @@ typedef enum tuuvm_tuple_immediate_trivial_index_e
     TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_TRUE,
     TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_VOID,
     TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_HASHTABLE_EMPTY_ELEMENT,
+
     TUUVM_TUPLE_IMMEDIATE_TRIVIAL_COUNT,
 } tuuvm_tuple_immediate_trivial_index_e;
 
@@ -142,7 +143,7 @@ TUUVM_INLINE size_t tuuvm_tuple_isNonNullPointer(tuuvm_tuple_t tuple)
 }
 
 /**
- * Is this an immediate tuple=
+ * Is this an immediate tuple?
  */
 TUUVM_INLINE size_t tuuvm_tuple_isImmediate(tuuvm_tuple_t tuple)
 {

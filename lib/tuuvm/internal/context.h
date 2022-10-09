@@ -45,6 +45,11 @@ typedef struct tuuvm_context_roots_s
 
     tuuvm_tuple_t floatType;
     tuuvm_tuple_t doubleType;
+
+    tuuvm_tuple_t sourceCodeType;
+    tuuvm_tuple_t sourcePositionType;
+    tuuvm_tuple_t tokenType;
+
 } tuuvm_context_roots_t;
 
 struct tuuvm_context_s

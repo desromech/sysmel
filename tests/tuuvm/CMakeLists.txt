@@ -3,6 +3,8 @@ set(TUUVM_TESTS_SOURCES
     Immediate.c
     Main.c
     String.c
+    Scanner.c
+    Parser.c
 )
 
 add_executable(TestTuuvm ${TUUVM_TESTS_SOURCES})

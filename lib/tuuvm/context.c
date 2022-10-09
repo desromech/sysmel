@@ -53,6 +53,10 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.floatType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Float"));
     context->roots.doubleType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Double"));
 
+    context->roots.sourceCodeType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "SourceCode"));
+    context->roots.sourcePositionType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "SourcePosition"));
+    context->roots.tokenType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Token"));
+
     // Fill the immediate type table.
     context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_NIL] = context->roots.nilType;
     context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_INTEGER] = context->roots.integerType;

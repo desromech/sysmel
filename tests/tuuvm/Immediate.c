@@ -281,8 +281,8 @@ TEST_SUITE(Immediate)
         TEST_ASSERT(tuuvm_tuple_isImmediate(tuuvm_tuple_int64_encode(tuuvm_test_context, -65535)));
         TEST_ASSERT_EQUALS(TUUVM_TUPLE_TAG_INT64, tuuvm_tuple_int64_encode(tuuvm_test_context, -65535) & TUUVM_TUPLE_TAG_BIT_MASK);
 
-        TEST_ASSERT(tuuvm_tuple_isImmediate(tuuvm_tuple_int64_encode(tuuvm_test_context, -4294967295)));
-        TEST_ASSERT_EQUALS(TUUVM_TUPLE_TAG_INT64, tuuvm_tuple_int64_encode(tuuvm_test_context, -4294967295) & TUUVM_TUPLE_TAG_BIT_MASK);
+        TEST_ASSERT(tuuvm_tuple_isImmediate(tuuvm_tuple_int64_encode(tuuvm_test_context, -4294967295ll)));
+        TEST_ASSERT_EQUALS(TUUVM_TUPLE_TAG_INT64, tuuvm_tuple_int64_encode(tuuvm_test_context, -4294967295ll) & TUUVM_TUPLE_TAG_BIT_MASK);
 
         TEST_ASSERT_EQUALS(0, tuuvm_tuple_int64_decode(tuuvm_tuple_int64_encode(tuuvm_test_context, 0)));
         TEST_ASSERT_EQUALS(1, tuuvm_tuple_int64_decode(tuuvm_tuple_int64_encode(tuuvm_test_context, 1)));
@@ -294,6 +294,6 @@ TEST_SUITE(Immediate)
         TEST_ASSERT_EQUALS(-2, tuuvm_tuple_int64_decode(tuuvm_tuple_int64_encode(tuuvm_test_context, -2)));
         TEST_ASSERT_EQUALS(-255, tuuvm_tuple_int64_decode(tuuvm_tuple_int64_encode(tuuvm_test_context, -255)));
         TEST_ASSERT_EQUALS(-65535, tuuvm_tuple_int64_decode(tuuvm_tuple_int64_encode(tuuvm_test_context, -65535)));
-        TEST_ASSERT_EQUALS(-4294967295, tuuvm_tuple_int64_decode(tuuvm_tuple_int64_encode(tuuvm_test_context, -4294967295)));
+        TEST_ASSERT_EQUALS(-4294967295ll, tuuvm_tuple_int64_decode(tuuvm_tuple_int64_encode(tuuvm_test_context, -4294967295ll)));
     }
 }

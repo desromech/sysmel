@@ -7,8 +7,13 @@ set(tuuvm_sources
     errors.c
     function.c
     heap.c
+    parser.c
+    scanner.c
     set.c
+    sourceCode.c
+    sourcePosition.c
     string.c
+    token.c
     tuple.c
     type.c
 )
