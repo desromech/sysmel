@@ -177,9 +177,19 @@ TUUVM_API size_t tuuvm_astSequenceNode_getExpressionCount(tuuvm_tuple_t sequence
 TUUVM_API tuuvm_tuple_t tuuvm_astSequenceNode_getExpressionAt(tuuvm_tuple_t sequenceNode, size_t index);
 
 /**
- * Creates an unexpanded application node
+ * Creates an unexpanded application node-
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astUnexpandedApplicationNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t functionOrMacroExpression, tuuvm_tuple_t arguments);
+
+/**
+ * Gets the function or macro expression from the unexpanded application node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astUnexpandedApplicationNode_getFunctionOrMacroExpression(tuuvm_tuple_t unexpandedApplication);
+
+/**
+ * Gets the arguments from the unexpanded application node
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astUnexpandedApplicationNode_getArguments(tuuvm_tuple_t unexpandedApplication);
 
 /**
  * Creates a quote node

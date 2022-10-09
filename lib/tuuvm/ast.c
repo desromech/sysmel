@@ -132,6 +132,17 @@ TUUVM_API tuuvm_tuple_t tuuvm_astUnexpandedApplicationNode_create(tuuvm_context_
     return (tuuvm_tuple_t)result;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_astUnexpandedApplicationNode_getFunctionOrMacroExpression(tuuvm_tuple_t unexpandedApplication)
+{
+    if(!tuuvm_tuple_isNonNullPointer(unexpandedApplication)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_astUnexpandedApplicationNode_t*)unexpandedApplication)->functionOrMacroExpression;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astUnexpandedApplicationNode_getArguments(tuuvm_tuple_t unexpandedApplication)
+{
+    if(!tuuvm_tuple_isNonNullPointer(unexpandedApplication)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_astUnexpandedApplicationNode_t*)unexpandedApplication)->arguments;
+}
 
 TUUVM_API tuuvm_tuple_t tuuvm_astQuoteNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t node)
 {

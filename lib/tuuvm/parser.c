@@ -71,7 +71,7 @@ static tuuvm_tuple_t tuuvm_parser_unexpectedTokenAt(tuuvm_context_t *context, tu
 static tuuvm_tuple_t tuuvm_parser_parseIdentifierReferenceReference(tuuvm_context_t *context, tuuvm_parser_state_t *state)
 {
     tuuvm_tuple_t token = tuuvm_parser_lookAt(state, 0);
-    if(token == TUUVM_NULL_TUPLE || tuuvm_token_getKind(token) != TUUVM_TOKEN_KIND_IDENTIFIER)
+    if(token == TUUVM_NULL_TUPLE)
         return tuuvm_astErrorNode_createWithCString(context, tuuvm_parser_makeSourcePositionForParserState(context, state), "Expected an identifier.");
 
     ++state->tokenPosition;
@@ -130,14 +130,15 @@ static tuuvm_tuple_t tuuvm_parser_parseUnexpandedApplication(tuuvm_context_t *co
         tuuvm_arrayList_add(context, argumentList, tuuvm_parser_parseExpression(context, state));
 
     // Right closing parenthesis.
-    if(tuuvm_parser_lookKindAt(state, 0) != openingToken)
+    if(tuuvm_parser_lookKindAt(state, 0) != closingToken)
         return tuuvm_astErrorNode_createWithCString(context, tuuvm_parser_makeSourcePositionForParserState(context, state), "Expected a closing parentheses.");
 
     ++state->tokenPosition;
     size_t endPosition = state->tokenPosition;
 
     tuuvm_tuple_t sourcePosition = tuuvm_parser_makeSourcePositionForTokenRange(context, state->tokenSequence, startPosition, endPosition);
-    return tuuvm_astUnexpandedApplicationNode_create(context, sourcePosition, functionOrMacroExpression, tuuvm_arrayList_asArraySlice(context, argumentList));
+    tuuvm_tuple_t argumentsArraySlice = tuuvm_arrayList_asArraySlice(context, argumentList);
+    return tuuvm_astUnexpandedApplicationNode_create(context, sourcePosition, functionOrMacroExpression, argumentsArraySlice);
 }
 
 static tuuvm_tuple_t tuuvm_parser_parseQuote(tuuvm_context_t *context, tuuvm_parser_state_t *state)
@@ -222,7 +223,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_parser_parseTokens(tuuvm_context_t *context, tuuvm
     tuuvm_tuple_t expressionArrayList = tuuvm_arrayList_create(context);
 
     // Parse the expressions on the sequence.
-    while(tuuvm_parser_lookKindAt(&parserState, 0))
+    while(tuuvm_parser_lookKindAt(&parserState, 0) >= 0)
     {
         tuuvm_tuple_t expression = tuuvm_parser_parseExpression(context, &parserState);
         if(TUUVM_NULL_TUPLE == expression)
