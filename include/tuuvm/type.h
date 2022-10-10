@@ -9,6 +9,13 @@ typedef struct tuuvm_type_tuple_s
 {
     tuuvm_tuple_header_t header;
     tuuvm_tuple_t name;
+    tuuvm_tuple_t supertype;
+    tuuvm_tuple_t slotNames;
+
+    tuuvm_tuple_t equalsFunction;
+    tuuvm_tuple_t hashFunction;
+    tuuvm_tuple_t toStringFunction;
+    tuuvm_tuple_t printStringFunction;
 } tuuvm_type_tuple_t;
 
 /**
@@ -22,10 +29,93 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymous(tuuvm_context_t *context);
 TUUVM_API tuuvm_tuple_t tuuvm_type_createWithName(tuuvm_context_t *context, tuuvm_tuple_t name);
 
 /**
+ * Gets the name of a type
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getName(tuuvm_tuple_t type)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_type_tuple_t*)type)->name;
+}
+
+/**
  * Sets the name of a type
  */
-TUUVM_INLINE void tuuvm_type_setName(tuuvm_tuple_t type, tuuvm_tuple_t newName)
+TUUVM_INLINE void tuuvm_type_setName(tuuvm_tuple_t type, tuuvm_tuple_t name)
 {
-    ((tuuvm_type_tuple_t*)type)->name = newName;
+    if(!tuuvm_tuple_isNonNullPointer(type)) return;
+    ((tuuvm_type_tuple_t*)type)->name = name;
 }
+
+/**
+ * Gets the equals function of a type
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getEqualsFunction(tuuvm_tuple_t type)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_type_tuple_t*)type)->equalsFunction;
+}
+
+/**
+ * Sets the equals function of a type
+ */
+TUUVM_INLINE void tuuvm_type_setEqualsFunction(tuuvm_tuple_t type, tuuvm_tuple_t equalsFunction)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return;
+    ((tuuvm_type_tuple_t*)type)->equalsFunction = equalsFunction;
+}
+
+/**
+ * Gets the hash function of a type
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getHashFunction(tuuvm_tuple_t type)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_type_tuple_t*)type)->hashFunction;
+}
+
+/**
+ * Sets the hash function of a type
+ */
+TUUVM_INLINE void tuuvm_type_setHashFunction(tuuvm_tuple_t type, tuuvm_tuple_t hashFunction)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return;
+    ((tuuvm_type_tuple_t*)type)->hashFunction = hashFunction;
+}
+
+/**
+ * Gets the toString function of a type.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getToStringFunction(tuuvm_tuple_t type)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_type_tuple_t*)type)->toStringFunction;
+}
+
+/**
+ * Sets the toString function of a type
+ */
+TUUVM_INLINE void tuuvm_type_setToStringFunction(tuuvm_tuple_t type, tuuvm_tuple_t toStringFunction)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return;
+    ((tuuvm_type_tuple_t*)type)->toStringFunction = toStringFunction;
+}
+
+/**
+ * Gets the printString function of a type.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getPrintStringFunction(tuuvm_tuple_t type)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_type_tuple_t*)type)->printStringFunction;
+}
+
+/**
+ * Sets the printString function of a type
+ */
+TUUVM_INLINE void tuuvm_type_setPrintStringFunction(tuuvm_tuple_t type, tuuvm_tuple_t printStringFunction)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return;
+    ((tuuvm_type_tuple_t*)type)->printStringFunction = printStringFunction;
+}
+
 #endif //TUUVM_TYPE_H

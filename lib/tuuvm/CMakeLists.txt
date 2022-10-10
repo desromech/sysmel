@@ -5,6 +5,8 @@ set(tuuvm_sources
     assert.c
     ast.c
     context.c
+    dictionary.c
+    environment.c
     errors.c
     function.c
     heap.c

@@ -122,7 +122,7 @@ static tuuvm_object_tuple_t *tuuvm_heap_allocateTupleWithRawSize(tuuvm_heap_t *h
         return 0;
 
     size_t allocationOffset = uintptrAlignedTo(allocationChunk->size, allocationAlignment);
-    allocationChunk->size = allocationOffset + allocationSize;
+    allocationChunk->size = (uint32_t)(allocationOffset + allocationSize);
     TUUVM_ASSERT(allocationChunk->size <= allocationChunk->capacity);
     return (tuuvm_object_tuple_t*)((uintptr_t)allocationChunk + allocationOffset);
 }

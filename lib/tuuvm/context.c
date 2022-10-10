@@ -12,10 +12,17 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)context->roots.typeType, context->roots.typeType);
 
     // Create the symbol and set type.
-    context->roots.symbolType = tuuvm_type_createAnonymous(context);
     context->roots.primitiveFunctionType = tuuvm_type_createAnonymous(context);
+
+    // Create the basic hash functions.
+    context->roots.identityEqualsFunction = tuuvm_function_createPrimitive(context, 0, tuuvm_tuple_primitive_identityEquals);
+    context->roots.identityHashFunction = tuuvm_function_createPrimitive(context, 0, tuuvm_tuple_primitive_identityHash);
+    context->roots.stringEqualsFunction = tuuvm_function_createPrimitive(context, 0, tuuvm_string_primitive_equals);
+    context->roots.stringHashFunction = tuuvm_function_createPrimitive(context, 0, tuuvm_string_primitive_hash);
+
+    context->roots.symbolType = tuuvm_type_createAnonymous(context);
     context->roots.setType = tuuvm_type_createAnonymous(context);
-    context->roots.internedSymbolSet = tuuvm_set_create(context, tuuvm_function_createPrimitive(context, 0, tuuvm_string_primitive_equals), tuuvm_function_createPrimitive(context, 0, tuuvm_string_primitive_hash));
+    context->roots.internedSymbolSet = tuuvm_set_create(context, context->roots.stringEqualsFunction, context->roots.stringHashFunction);
 
     // Set the name of the root basic type.
     tuuvm_type_setName(context->roots.typeType, tuuvm_symbol_internWithCString(context, "Type"));
@@ -27,6 +34,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.arrayType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Array"));
     context->roots.arraySliceType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "ArraySlice"));
     context->roots.arrayListType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "ArrayList"));
+    context->roots.dictionaryType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Dictionary"));
+    context->roots.environmentType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Environment"));
     context->roots.falseType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "False"));
     context->roots.hashtableEmptyType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "HashtableEmpty"));
     context->roots.integerType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Integer"));
@@ -98,6 +107,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
 {
     tuuvm_context_t *context = (tuuvm_context_t*)calloc(1, sizeof(tuuvm_context_t));
+    context->identityHashSeed = 1;
     tuuvm_context_createBasicTypes(context);
 
     return context;
@@ -119,11 +129,17 @@ tuuvm_heap_t *tuuvm_context_getHeap(tuuvm_context_t *context)
     return &context->heap;
 }
 
+static size_t tuuvm_context_generateIdentityHash(tuuvm_context_t *context)
+{
+    return context->identityHashSeed = tuuvm_hashMultiply(context->identityHashSeed) + 12345;
+}
+
 tuuvm_object_tuple_t *tuuvm_context_allocateByteTuple(tuuvm_context_t *context, tuuvm_tuple_t type, size_t byteSize)
 {
     if(!context) return 0;
 
     tuuvm_object_tuple_t *result = tuuvm_heap_allocateByteTuple(&context->heap, byteSize);
+    result->header.identityHash = tuuvm_context_generateIdentityHash(context);
     if(result)
         tuuvm_tuple_setType(result, type);
     return result;
@@ -134,6 +150,7 @@ tuuvm_object_tuple_t *tuuvm_context_allocatePointerTuple(tuuvm_context_t *contex
     if(!context) return 0;
 
     tuuvm_object_tuple_t *result = tuuvm_heap_allocatePointerTuple(&context->heap, slotCount);
+    result->header.identityHash = tuuvm_context_generateIdentityHash(context);
     if(result)
         tuuvm_tuple_setType(result, type);
     return result;

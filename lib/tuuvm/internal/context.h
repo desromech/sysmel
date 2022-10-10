@@ -12,10 +12,17 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t immediateTrivialTypeTable[TUUVM_TUPLE_IMMEDIATE_TRIVIAL_COUNT];
     tuuvm_tuple_t internedSymbolSet;
 
+    tuuvm_tuple_t identityEqualsFunction;
+    tuuvm_tuple_t identityHashFunction;
+    tuuvm_tuple_t stringEqualsFunction;
+    tuuvm_tuple_t stringHashFunction;
+
     tuuvm_tuple_t arrayType;
     tuuvm_tuple_t arraySliceType;
     tuuvm_tuple_t arrayListType;
     tuuvm_tuple_t byteArrayType;
+    tuuvm_tuple_t dictionaryType;
+    tuuvm_tuple_t environmentType;
     tuuvm_tuple_t falseType;
     tuuvm_tuple_t hashtableEmptyType;
     tuuvm_tuple_t integerType;
@@ -69,6 +76,7 @@ struct tuuvm_context_s
 {
     tuuvm_heap_t heap;
     tuuvm_context_roots_t roots;
+    size_t identityHashSeed;
 };
 
 #endif //TUUVM_INTERNAL_CONTEXT_H

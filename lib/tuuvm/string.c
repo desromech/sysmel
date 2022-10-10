@@ -57,6 +57,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_symbol_internWithString(tuuvm_context_t *context, 
     tuuvm_object_tuple_t *result = tuuvm_context_allocateByteTuple(context, context->roots.symbolType, stringSize);
     if(!result) return 0;
 
+    // In the case of symbols, make the identity hash match with the string hash.
+    result->header.identityHash = tuuvm_string_computeHashWithBytes(stringSize, (const uint8_t*)string);
+
     memcpy(result->bytes, string, stringSize);
     tuuvm_set_insert(context, context->roots.internedSymbolSet, (tuuvm_tuple_t)result);
     return (tuuvm_tuple_t)result;
@@ -75,10 +78,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_symbol_internWithCString(tuuvm_context_t *context,
 
 TUUVM_API size_t tuuvm_string_computeHashWithBytes(size_t size, const uint8_t *bytes)
 {
-    // TODO: Use a better hash function.
-    size_t result = 0;
+    size_t result = tuuvm_hashMultiply(1);
     for(size_t i = 0; i < size; ++i)
-        result = result * 33 + bytes[i];
+        result = tuuvm_hashMultiply(result) + bytes[i];
     return result;
 }
 

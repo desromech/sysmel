@@ -7,6 +7,7 @@
 #endif
 
 #include "common.h"
+#include "hash.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -99,6 +100,8 @@ typedef enum tuuvm_tuple_immediate_trivial_index_e
  */
 typedef struct tuuvm_tuple_header_s
 {
+    tuuvm_tuple_t forwardingPointer; // Used by the moving GC
+    size_t identityHash;
     uintptr_t typePointerAndFlags;
     size_t objectSize;
 } tuuvm_tuple_header_t;
@@ -572,5 +575,30 @@ TUUVM_INLINE bool tuuvm_tuple_boolean_decode(tuuvm_tuple_t value)
     return value != TUUVM_FALSE_TUPLE;
 }
 
+/**
+ * Computes or retrieves the identity hash 
+ */
+TUUVM_INLINE size_t tuuvm_tuple_identityHash(tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_isNonNullPointer(tuple) ? TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHash : tuuvm_hashMultiply(tuple);
+}
+
+/**
+ * Computes or retrieves the identity hash 
+ */
+TUUVM_INLINE bool tuuvm_tuple_identityEquals(tuuvm_tuple_t a, tuuvm_tuple_t b)
+{
+    return a == b;
+}
+
+/**
+ * The primitive identity hash function.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_primitive_identityHash(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments);
+
+/**
+ * The primitive string equals function.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_primitive_identityEquals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments);;
 
 #endif //TUUVM_TUPLE_H
