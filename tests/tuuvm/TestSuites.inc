@@ -5,3 +5,4 @@ TEST_SUITE_NAME(Symbol)
 
 TEST_SUITE_NAME(Scanner)
 TEST_SUITE_NAME(Parser)
+TEST_SUITE_NAME(Interpreter)

@@ -1,6 +1,7 @@
 set(TUUVM_TESTS_SOURCES
     ArrayList.c
     Immediate.c
+    Interpreter.c
     Main.c
     String.c
     Scanner.c
