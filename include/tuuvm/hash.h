@@ -2,7 +2,7 @@
 #define TUUVM_HASH_H
 
 #include "common.h"
-#include <stdint.h>
+#include <stddef.h>
 
 TUUVM_INLINE size_t tuuvm_hashMultiply(size_t hash)
 {
