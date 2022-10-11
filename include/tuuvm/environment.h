@@ -17,4 +17,14 @@ typedef struct tuuvm_environment_s
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_environment_create(tuuvm_context_t *context, tuuvm_tuple_t parent);
 
+/**
+ * Creates an environment.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_environment_getIntrinsicsBuiltInEnvironment(tuuvm_context_t *context);
+
+/**
+ * Creates an environment.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_environment_createDefaultForEvaluation(tuuvm_context_t *context);
+
 #endif //TUUVM_ENVIRONMENT_H

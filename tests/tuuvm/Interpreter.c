@@ -1,27 +1,18 @@
 #include "TestMacros.h"
-#include "tuuvm/tuple.h"
+#include "tuuvm/interpreter.h"
+#include "tuuvm/environment.h"
+
+static tuuvm_tuple_t testAnalyzeAndEvaluate(const char *sourceCode)
+{
+    return tuuvm_interpreter_analyzeAndEvaluateCStringWithEnvironment(tuuvm_test_context,
+        tuuvm_environment_createDefaultForEvaluation(tuuvm_test_context),
+        sourceCode, "test");
+}
 
 TEST_SUITE(Interpreter)
 {
     TEST_CASE_WITH_FIXTURE(EmptyString, TuuvmCore)
     {
-        /*
-        TEST_ASSERT(tuuvm_tuple_isImmediate(tuuvm_tuple_char8_encode(0)));
-        TEST_ASSERT_EQUALS(TUUVM_TUPLE_TAG_CHAR8, tuuvm_tuple_char8_encode(0) & TUUVM_TUPLE_TAG_BIT_MASK);
-
-        TEST_ASSERT(tuuvm_tuple_isImmediate(tuuvm_tuple_char8_encode(1)));
-        TEST_ASSERT_EQUALS(TUUVM_TUPLE_TAG_CHAR8, tuuvm_tuple_char8_encode(1) & TUUVM_TUPLE_TAG_BIT_MASK);
-
-        TEST_ASSERT(tuuvm_tuple_isImmediate(tuuvm_tuple_char8_encode(2)));
-        TEST_ASSERT_EQUALS(TUUVM_TUPLE_TAG_CHAR8, tuuvm_tuple_char8_encode(2) & TUUVM_TUPLE_TAG_BIT_MASK);
-
-        TEST_ASSERT(tuuvm_tuple_isImmediate(tuuvm_tuple_char8_encode(255)));
-        TEST_ASSERT_EQUALS(TUUVM_TUPLE_TAG_CHAR8, tuuvm_tuple_char8_encode(255) & TUUVM_TUPLE_TAG_BIT_MASK);
-
-        TEST_ASSERT_EQUALS(0, tuuvm_tuple_char8_decode(tuuvm_tuple_char8_encode(0)));
-        TEST_ASSERT_EQUALS(1, tuuvm_tuple_char8_decode(tuuvm_tuple_char8_encode(1)));
-        TEST_ASSERT_EQUALS(2, tuuvm_tuple_char8_decode(tuuvm_tuple_char8_encode(2)));
-        TEST_ASSERT_EQUALS(255, tuuvm_tuple_char8_decode(tuuvm_tuple_char8_encode(255)));
-        */
+        TEST_ASSERT_EQUALS(TUUVM_VOID_TUPLE, testAnalyzeAndEvaluate(""));
     }
 }

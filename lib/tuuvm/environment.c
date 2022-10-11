@@ -9,3 +9,13 @@ TUUVM_API tuuvm_tuple_t tuuvm_environment_create(tuuvm_context_t *context, tuuvm
     result->symbolTable = tuuvm_identityDictionary_create(context);
     return (tuuvm_tuple_t)result;
 }
+
+TUUVM_API tuuvm_tuple_t tuuvm_environment_getIntrinsicsBuiltInEnvironment(tuuvm_context_t *context)
+{
+    return TUUVM_NULL_TUPLE;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_environment_createDefaultForEvaluation(tuuvm_context_t *context)
+{
+    return tuuvm_environment_create(context, tuuvm_environment_getIntrinsicsBuiltInEnvironment(context));
+}
