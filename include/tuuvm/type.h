@@ -16,6 +16,11 @@ typedef struct tuuvm_type_tuple_s
     tuuvm_tuple_t hashFunction;
     tuuvm_tuple_t toStringFunction;
     tuuvm_tuple_t printStringFunction;
+
+    tuuvm_tuple_t astNodeAnalysisFunction;
+    tuuvm_tuple_t astNodeEvaluationFunction;
+    tuuvm_tuple_t astNodeAnalysisAndEvaluationFunction;
+
 } tuuvm_type_tuple_t;
 
 /**
@@ -116,6 +121,60 @@ TUUVM_INLINE void tuuvm_type_setPrintStringFunction(tuuvm_tuple_t type, tuuvm_tu
 {
     if(!tuuvm_tuple_isNonNullPointer(type)) return;
     ((tuuvm_type_tuple_t*)type)->printStringFunction = printStringFunction;
+}
+
+/**
+ * Gets the astNodeAnalysisFunction function of a type.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getAstNodeAnalysisFunction(tuuvm_tuple_t type)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_type_tuple_t*)type)->astNodeAnalysisFunction;
+}
+
+/**
+ * Sets the astNodeAnalysisFunction function of a type
+ */
+TUUVM_INLINE void tuuvm_type_setAstNodeAnalysisFunction(tuuvm_tuple_t type, tuuvm_tuple_t astNodeAnalysisFunction)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return;
+    ((tuuvm_type_tuple_t*)type)->astNodeAnalysisFunction = astNodeAnalysisFunction;
+}
+
+/**
+ * Gets the astNodeEvaluationFunction function of a type.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getAstNodeEvaluationFunction(tuuvm_tuple_t type)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_type_tuple_t*)type)->astNodeEvaluationFunction;
+}
+
+/**
+ * Sets the astNodeEvaluationFunction function of a type
+ */
+TUUVM_INLINE void tuuvm_type_setAstNodeEvaluationFunction(tuuvm_tuple_t type, tuuvm_tuple_t astNodeEvaluationFunction)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return;
+    ((tuuvm_type_tuple_t*)type)->astNodeEvaluationFunction = astNodeEvaluationFunction;
+}
+
+/**
+ * Gets the astNodeAnalysisAndEvaluationFunction function of a type.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getAstNodeAnalysisAndEvaluationFunction(tuuvm_tuple_t type)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_type_tuple_t*)type)->astNodeAnalysisAndEvaluationFunction;
+}
+
+/**
+ * Sets the astNodeAnalysisAndEvaluationFunction function of a type
+ */
+TUUVM_INLINE void tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(tuuvm_tuple_t type, tuuvm_tuple_t astNodeAnalysisAndEvaluationFunction)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return;
+    ((tuuvm_type_tuple_t*)type)->astNodeAnalysisAndEvaluationFunction = astNodeAnalysisAndEvaluationFunction;
 }
 
 #endif //TUUVM_TYPE_H

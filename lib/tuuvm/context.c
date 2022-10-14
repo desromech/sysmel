@@ -5,6 +5,8 @@
 #include "tuuvm/function.h"
 #include <stdlib.h>
 
+extern void tuuvm_astInterpreter_setupTypes(tuuvm_context_t *context);
+
 static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 {
     // Make a circular base type.
@@ -109,6 +111,7 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
     tuuvm_context_t *context = (tuuvm_context_t*)calloc(1, sizeof(tuuvm_context_t));
     context->identityHashSeed = 1;
     tuuvm_context_createBasicTypes(context);
+    tuuvm_astInterpreter_setupTypes(context);
 
     return context;
 }

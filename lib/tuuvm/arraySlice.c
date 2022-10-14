@@ -17,6 +17,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_arraySlice_createWithOffsetAndSize(tuuvm_context_t
     return tuuvm_arraySlice_create(context, elements, tuuvm_tuple_size_encode(context, offset), tuuvm_tuple_size_encode(context, count));
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_arraySlice_createWithArrayOfSize(tuuvm_context_t *context, size_t size)
+{
+    return tuuvm_arraySlice_createWithOffsetAndSize(context, tuuvm_array_create(context, size), 0, size);
+}
+
 TUUVM_API size_t tuuvm_arraySlice_getSize(tuuvm_tuple_t arraySlice)
 {
     if(!tuuvm_tuple_isNonNullPointer(arraySlice)) return 0;
@@ -31,10 +36,21 @@ TUUVM_API tuuvm_tuple_t tuuvm_arraySlice_at(tuuvm_tuple_t arraySlice, size_t ind
     size_t offset = tuuvm_tuple_size_decode(arraySliceObject->offset);
     size_t size = tuuvm_tuple_size_decode(arraySliceObject->size);
     if(index >= size)
-    {
         tuuvm_error_indexOutOfBounds();
-        return TUUVM_NULL_TUPLE;
-    }
 
     return tuuvm_arrayOrByteArray_at(arraySliceObject->elements, offset + index);
+}
+
+TUUVM_API void tuuvm_arraySlice_atPut(tuuvm_tuple_t arraySlice, size_t index, tuuvm_tuple_t value)
+{
+    if(!tuuvm_tuple_isNonNullPointer(arraySlice))
+        return;
+
+    tuuvm_arraySlice_t *arraySliceObject = (tuuvm_arraySlice_t*)arraySlice;
+    size_t offset = tuuvm_tuple_size_decode(arraySliceObject->offset);
+    size_t size = tuuvm_tuple_size_decode(arraySliceObject->size);
+    if(index >= size)
+        tuuvm_error_indexOutOfBounds();
+ 
+    return tuuvm_arrayOrByteArray_atPut(arraySliceObject->elements, offset + index, value);
 }

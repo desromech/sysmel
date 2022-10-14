@@ -42,5 +42,9 @@ TUUVM_API uint8_t tuuvm_byteArray_at(tuuvm_tuple_t array, size_t index);
  */
 TUUVM_API tuuvm_tuple_t tuuvm_arrayOrByteArray_at(tuuvm_tuple_t array, size_t index);
 
+/**
+ * Sets an element in an array or byte array.
+ */
+TUUVM_API void tuuvm_arrayOrByteArray_atPut(tuuvm_tuple_t array, size_t index, tuuvm_tuple_t value);
 
 #endif //TUUVM_ARRAY_H

@@ -2,14 +2,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void tuuvm_error_assertionFailure(const char *message)
+TUUVM_API void tuuvm_error(const char *message)
 {
     fprintf(stderr, "%s\n", message);
     abort();
 }
 
-void tuuvm_error_indexOutOfBounds()
+TUUVM_API void tuuvm_error_assertionFailure(const char *message)
 {
-    fprintf(stderr, "Index out of bounds\n");
-    abort();
+    tuuvm_error(message);
+}
+
+TUUVM_API void tuuvm_error_indexOutOfBounds()
+{
+    tuuvm_error("Index out of bounds");
 }
