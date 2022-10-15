@@ -27,4 +27,14 @@ TUUVM_API tuuvm_tuple_t tuuvm_environment_getIntrinsicsBuiltInEnvironment(tuuvm_
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_environment_createDefaultForEvaluation(tuuvm_context_t *context);
 
+/**
+ * Looks a symbol recursively on an environment.
+ */ 
+TUUVM_API void tuuvm_environment_setSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t symbol, tuuvm_tuple_t binding);
+
+/**
+ * Looks a symbol recursively on an environment.
+ */ 
+TUUVM_API bool tuuvm_environment_lookSymbolRecursively(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t symbol, tuuvm_tuple_t *outBinding);
+
 #endif //TUUVM_ENVIRONMENT_H

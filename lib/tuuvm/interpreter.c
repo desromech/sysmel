@@ -112,6 +112,31 @@ static tuuvm_tuple_t tuuvm_astLiteralNode_primitiveEvaluate(tuuvm_context_t *con
     return ((tuuvm_astLiteralNode_t*)node)->value;
 }
 
+static tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    tuuvm_tuple_t node = arguments[0];
+
+    return node;
+}
+
+static tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_primitiveEvaluate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    tuuvm_tuple_t node = arguments[0];
+    tuuvm_tuple_t environment = arguments[1];
+
+    tuuvm_astIdentifierReferenceNode_t *referenceNode = (tuuvm_astIdentifierReferenceNode_t*)node;
+    tuuvm_tuple_t binding;
+
+    if(tuuvm_environment_lookSymbolRecursively(context, environment, referenceNode->value, &binding))
+        return binding;
+
+    
+    tuuvm_error("Failed to find symbol binding");
+    return TUUVM_NULL_TUPLE;
+}
 void tuuvm_astInterpreter_setupTypes(tuuvm_context_t *context)
 {
     tuuvm_type_setAstNodeAnalysisFunction(context->roots.astSequenceNodeType, tuuvm_function_createPrimitive(context, NULL, tuuvm_astSequenceNode_primitiveAnalyze));
@@ -121,4 +146,8 @@ void tuuvm_astInterpreter_setupTypes(tuuvm_context_t *context)
     tuuvm_type_setAstNodeAnalysisFunction(context->roots.astLiteralNodeType, tuuvm_function_createPrimitive(context, NULL, tuuvm_astLiteralNode_primitiveAnalyze));
     tuuvm_type_setAstNodeEvaluationFunction(context->roots.astLiteralNodeType, tuuvm_function_createPrimitive(context, NULL, tuuvm_astLiteralNode_primitiveEvaluate));
     tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context->roots.astLiteralNodeType, tuuvm_function_createPrimitive(context, NULL, tuuvm_astLiteralNode_primitiveEvaluate));
+
+    tuuvm_type_setAstNodeAnalysisFunction(context->roots.astIdentifierReferenceNodeType, tuuvm_function_createPrimitive(context, NULL, tuuvm_astIdentifierReferenceNode_primitiveAnalyze));
+    tuuvm_type_setAstNodeEvaluationFunction(context->roots.astIdentifierReferenceNodeType, tuuvm_function_createPrimitive(context, NULL, tuuvm_astIdentifierReferenceNode_primitiveEvaluate));
+    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context->roots.astIdentifierReferenceNodeType, tuuvm_function_createPrimitive(context, NULL, tuuvm_astIdentifierReferenceNode_primitiveEvaluate));
 }

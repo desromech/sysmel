@@ -25,12 +25,12 @@ TUUVM_API tuuvm_tuple_t tuuvm_set_create(tuuvm_context_t *context, tuuvm_tuple_t
 /**
  * Inserts an element in the set.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_set_findOrNilWithExplicitHash(tuuvm_tuple_t set, void *element, tuuvm_set_explicitHashFunction_t hashFunction, tuuvm_set_explicitEqualsFunction_t equalsFunction);
+TUUVM_API bool tuuvm_set_findWithExplicitHash(tuuvm_tuple_t set, void *element, tuuvm_set_explicitHashFunction_t hashFunction, tuuvm_set_explicitEqualsFunction_t equalsFunction, tuuvm_tuple_t *outFoundElement);
 
 /**
  * Inserts an element in the set.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_set_findOrNil(tuuvm_context_t *context, tuuvm_tuple_t set, tuuvm_tuple_t element);
+TUUVM_API bool tuuvm_set_find(tuuvm_context_t *context, tuuvm_tuple_t set, tuuvm_tuple_t element, tuuvm_tuple_t *outFoundElement);
 
 /**
  * Inserts an element in the set.

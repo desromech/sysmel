@@ -25,7 +25,7 @@ static intptr_t tuuvm_dictionary_scanFor(tuuvm_context_t *context, tuuvm_tuple_t
         return -1;
 
     tuuvm_dictionary_t *dictionaryObject = (tuuvm_dictionary_t*)dictionary;
-    size_t capacity = tuuvm_tuple_getSizeInSlots(dictionaryObject->storage);
+    size_t capacity = tuuvm_tuple_getSizeInSlots(dictionaryObject->storage) / 2;
     if(capacity == 0)
         return -1;
 
@@ -48,18 +48,20 @@ static intptr_t tuuvm_dictionary_scanFor(tuuvm_context_t *context, tuuvm_tuple_t
     return -1;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_dictionary_findOrNil(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t element)
+TUUVM_API bool tuuvm_dictionary_find(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t element, tuuvm_tuple_t *outValue)
 {
+    *outValue = TUUVM_NULL_TUPLE;
     if(!tuuvm_tuple_isNonNullPointer(dictionary))
-        return TUUVM_NULL_TUPLE;
+        return false;
 
     intptr_t elementIndex = tuuvm_dictionary_scanFor(context, dictionary, element);
     if(elementIndex < 0)
-        return TUUVM_NULL_TUPLE;
+        return false;
 
     tuuvm_dictionary_t *dictionaryObject = (tuuvm_dictionary_t*)dictionary;
     tuuvm_array_t *storage = (tuuvm_array_t*)dictionaryObject->storage;
-    return storage->elements[elementIndex*2 + 1];
+    *outValue = storage->elements[elementIndex*2 + 1];
+    return true;
 }
 
 static void tuuvm_dictionary_insertNoCheck(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t value)
@@ -78,7 +80,7 @@ static void tuuvm_dictionary_increaseCapacity(tuuvm_context_t *context, tuuvm_tu
     tuuvm_dictionary_t *dictionaryObject = (tuuvm_dictionary_t*)dictionary;
     tuuvm_array_t *oldStorage = (tuuvm_array_t*)dictionaryObject->storage;
 
-    size_t oldCapacity = tuuvm_tuple_getSizeInSlots(dictionaryObject->storage);
+    size_t oldCapacity = tuuvm_tuple_getSizeInSlots(dictionaryObject->storage) / 2;
     size_t newCapacity = oldCapacity * 2;
     if(newCapacity < 8)
         newCapacity = 8;
@@ -125,7 +127,7 @@ TUUVM_API void tuuvm_dictionary_atPut(tuuvm_context_t *context, tuuvm_tuple_t di
     // Count the newly inserted element.
     if(isNewElement)
     {
-        size_t capacity = tuuvm_tuple_getSizeInSlots(dictionaryObject->storage);
+        size_t capacity = tuuvm_tuple_getSizeInSlots(dictionaryObject->storage) / 2;
         size_t newSize = tuuvm_tuple_size_decode(dictionaryObject->size) + 1;
         dictionaryObject->size = tuuvm_tuple_size_encode(context, newSize);
         size_t capacityThreshold = capacity * 3 / 4;

@@ -30,12 +30,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_identityDictionary_create(tuuvm_context_t *context
 /**
  * Inserts an element in the dictionary.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_dictionary_findOrNilWithExplicitHash(tuuvm_tuple_t dictionary, void *element, tuuvm_dictionary_explicitHashFunction_t hashFunction, tuuvm_dictionary_explicitEqualsFunction_t equalsFunction);
-
-/**
- * Inserts an element in the dictionary.
- */ 
-TUUVM_API tuuvm_tuple_t tuuvm_dictionary_findOrNil(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t key);
+TUUVM_API bool tuuvm_dictionary_find(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t *outValue);
 
 /**
  * Inserts an element in the dictionary.

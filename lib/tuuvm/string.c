@@ -49,8 +49,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_symbol_internWithString(tuuvm_context_t *context, 
             .size = stringSize
         };
 
-        tuuvm_tuple_t existent = tuuvm_set_findOrNilWithExplicitHash(context->roots.internedSymbolSet, &stringSlice, tuuvm_stringSlice_hashFunction, tuuvm_stringSlice_equalsFunction);
-        if(existent != TUUVM_NULL_TUPLE)
+        tuuvm_tuple_t existent;
+        if(tuuvm_set_findWithExplicitHash(context->roots.internedSymbolSet, &stringSlice, tuuvm_stringSlice_hashFunction, tuuvm_stringSlice_equalsFunction, &existent))
             return existent;
     }
 

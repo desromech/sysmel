@@ -14,15 +14,16 @@ TUUVM_API tuuvm_tuple_t tuuvm_set_create(tuuvm_context_t *context, tuuvm_tuple_t
     return (tuuvm_tuple_t)result;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_set_findOrNilWithExplicitHash(tuuvm_tuple_t set, void *element, tuuvm_set_explicitHashFunction_t hashFunction, tuuvm_set_explicitEqualsFunction_t equalsFunction)
+TUUVM_API bool tuuvm_set_findWithExplicitHash(tuuvm_tuple_t set, void *element, tuuvm_set_explicitHashFunction_t hashFunction, tuuvm_set_explicitEqualsFunction_t equalsFunction, tuuvm_tuple_t *outFoundElement)
 {
+    *outFoundElement = TUUVM_NULL_TUPLE;
     if(!tuuvm_tuple_isNonNullPointer(set))
-        return TUUVM_NULL_TUPLE;
+        return false;
 
     tuuvm_set_t *setObject = (tuuvm_set_t*)set;
     size_t capacity = tuuvm_tuple_getSizeInSlots(setObject->storage);
     if(capacity == 0)
-        return TUUVM_NULL_TUPLE;
+        return false;
 
     tuuvm_array_t *storage = (tuuvm_array_t*)setObject->storage;
     size_t hashIndex = hashFunction(element) % capacity;
@@ -30,23 +31,29 @@ TUUVM_API tuuvm_tuple_t tuuvm_set_findOrNilWithExplicitHash(tuuvm_tuple_t set, v
     {
         tuuvm_tuple_t setElement = storage->elements[i];
         if(setElement == TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE)
-            return TUUVM_NULL_TUPLE;
+            return false;
         
         if(equalsFunction(element, setElement))
-            return setElement;
+        {
+            *outFoundElement = setElement;
+            return true;
+        }
     }
 
     for(size_t i = 0; i < hashIndex; ++i)
     {
         tuuvm_tuple_t setElement = storage->elements[i];
         if(setElement == TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE)
-            return TUUVM_NULL_TUPLE;
+            return false;
         
         if(equalsFunction(element, setElement))
-            return setElement;
+        {
+            *outFoundElement = setElement;
+            return true;
+        }
     }
 
-    return TUUVM_NULL_TUPLE;
+    return false;
 }
 
 static intptr_t tuuvm_set_scanFor(tuuvm_context_t *context, tuuvm_tuple_t set, tuuvm_tuple_t element)
@@ -78,18 +85,20 @@ static intptr_t tuuvm_set_scanFor(tuuvm_context_t *context, tuuvm_tuple_t set, t
     return -1;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_set_findOrNil(tuuvm_context_t *context, tuuvm_tuple_t set, tuuvm_tuple_t element)
+TUUVM_API bool tuuvm_set_find(tuuvm_context_t *context, tuuvm_tuple_t set, tuuvm_tuple_t element, tuuvm_tuple_t *outFoundElement)
 {
+    *outFoundElement = TUUVM_NULL_TUPLE;
     if(!tuuvm_tuple_isNonNullPointer(set))
-        return TUUVM_NULL_TUPLE;
+        return false;
 
     intptr_t elementIndex = tuuvm_set_scanFor(context, set, element);
     if(elementIndex < 0)
-        return TUUVM_NULL_TUPLE;
+        return false;
 
     tuuvm_set_t *setObject = (tuuvm_set_t*)set;
     tuuvm_array_t *storage = (tuuvm_array_t*)setObject->storage;
-    return storage->elements[elementIndex];
+    *outFoundElement = storage->elements[elementIndex];
+    return true;
 }
 
 static void tuuvm_set_insertNoCheck(tuuvm_context_t *context, tuuvm_tuple_t set, tuuvm_tuple_t element)
