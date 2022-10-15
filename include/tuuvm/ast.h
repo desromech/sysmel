@@ -11,6 +11,7 @@ typedef struct tuuvm_astNode_s
 {
     tuuvm_tuple_header_t header;
     tuuvm_tuple_t sourcePosition;
+    tuuvm_tuple_t analyzedType; // Placeholder for typechecker. Unused by base interpreter.
 } tuuvm_astNode_t;
 
 typedef struct tuuvm_astErrorNode_s

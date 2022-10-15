@@ -8,12 +8,24 @@
 
 extern void tuuvm_astInterpreter_setupTypes(tuuvm_context_t *context);
 
-static tuuvm_tuple_t tuuvm_context_createIntrinsicType(tuuvm_context_t *context, const char *name)
+TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicType(tuuvm_context_t *context, const char *name)
 {
     tuuvm_tuple_t nameSymbol = tuuvm_symbol_internWithCString(context, name);
     tuuvm_tuple_t type = tuuvm_type_createWithName(context, nameSymbol);
     tuuvm_environment_setSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, nameSymbol, type);
     return type;
+}
+
+TUUVM_API void tuuvm_context_setIntrinsicSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t symbol, tuuvm_tuple_t binding)
+{
+    tuuvm_environment_setSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, symbol, binding);
+}
+
+static void tuuvm_context_setIntrinsicTypeName(tuuvm_context_t *context, tuuvm_tuple_t type, const char *name)
+{
+    tuuvm_tuple_t nameSymbol = tuuvm_symbol_internWithCString(context, name);
+    tuuvm_type_setName(type, nameSymbol);
+    tuuvm_environment_setSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, nameSymbol, type);
 }
 
 static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
@@ -39,23 +51,25 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.environmentType = tuuvm_type_createWithName(context, tuuvm_symbol_internWithCString(context, "Environment"));
     context->roots.intrinsicsBuiltInEnvironment = tuuvm_environment_create(context, TUUVM_NULL_TUPLE);
 
-    tuuvm_environment_setSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, tuuvm_symbol_internWithCString(context, "nil"), TUUVM_NULL_TUPLE);
-    tuuvm_environment_setSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, tuuvm_symbol_internWithCString(context, "false"), TUUVM_FALSE_TUPLE);
-    tuuvm_environment_setSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, tuuvm_symbol_internWithCString(context, "true"), TUUVM_TRUE_TUPLE);
-    tuuvm_environment_setSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, tuuvm_symbol_internWithCString(context, "void"), TUUVM_VOID_TUPLE);
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "nil"), TUUVM_NULL_TUPLE);
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "false"), TUUVM_FALSE_TUPLE);
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "true"), TUUVM_TRUE_TUPLE);
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "void"), TUUVM_VOID_TUPLE);
+
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "IntrinsicsBuiltInEnvironment"), context->roots.intrinsicsBuiltInEnvironment);
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "InternentSymbolsSet"), context->roots.internedSymbolSet);
+
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Tuple:identityHash:"), context->roots.identityHashFunction);
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Tuple:identityEquals:"), context->roots.identityEqualsFunction);
+
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "String:hash:"), context->roots.stringHashFunction);
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "String:equals:"), context->roots.stringEqualsFunction);
 
     // Set the name of the root basic type.
-    tuuvm_type_setName(context->roots.typeType, tuuvm_symbol_internWithCString(context, "Type"));
-    tuuvm_environment_setSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, tuuvm_type_getName(context->roots.typeType), context->roots.typeType);
-
-    tuuvm_type_setName(context->roots.primitiveFunctionType, tuuvm_symbol_internWithCString(context, "PrimitiveFunction"));
-    tuuvm_environment_setSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, tuuvm_type_getName(context->roots.primitiveFunctionType), context->roots.primitiveFunctionType);
-
-    tuuvm_type_setName(context->roots.symbolType, tuuvm_symbol_internWithCString(context, "Symbol"));
-    tuuvm_environment_setSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, tuuvm_type_getName(context->roots.symbolType), context->roots.symbolType);
-
-    tuuvm_type_setName(context->roots.setType, tuuvm_symbol_internWithCString(context, "Set"));
-    tuuvm_environment_setSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, tuuvm_type_getName(context->roots.setType), context->roots.setType);
+    tuuvm_context_setIntrinsicTypeName(context, context->roots.typeType, "Type");
+    tuuvm_context_setIntrinsicTypeName(context, context->roots.primitiveFunctionType, "PrimitiveFunction");
+    tuuvm_context_setIntrinsicTypeName(context, context->roots.symbolType, "Symbol");
+    tuuvm_context_setIntrinsicTypeName(context, context->roots.setType, "Set");
 
     // Create other root basic types.
     context->roots.arrayType = tuuvm_context_createIntrinsicType(context, "Array");

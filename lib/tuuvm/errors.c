@@ -17,3 +17,10 @@ TUUVM_API void tuuvm_error_indexOutOfBounds()
 {
     tuuvm_error("Index out of bounds");
 }
+
+TUUVM_API void tuuvm_error_argumentCountMismatch(size_t expected, size_t gotten)
+{
+    (void)expected;
+    (void)gotten;
+    tuuvm_error("Argument count mismatch");
+}

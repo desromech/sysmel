@@ -15,6 +15,8 @@ typedef struct tuuvm_primitiveFunction_s
 } tuuvm_primitiveFunction_t;
 
 
+#define TUUVM_MAX_FUNCTION_ARGUMENTS 16
+
 /**
  * Creates a primitive function tuple.
  */
