@@ -1,26 +1,61 @@
 #ifndef TUUVM_FUNCTION_H
 #define TUUVM_FUNCTION_H
 
+#pragma once
+
 #include "tuple.h"
 
 typedef struct tuuvm_context_s tuuvm_context_t;
 
 typedef tuuvm_tuple_t (*tuuvm_functionEntryPoint_t)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments);
 
+enum tuuvm_primitiveFunctionFlags_e
+{
+    TUUVM_FUNCTION_FLAGS_NONE = 0,
+    TUUVM_FUNCTION_FLAGS_MACRO = 1<<0,
+} tuuvm_primitiveFunctionFlags_t;
+
 typedef struct tuuvm_primitiveFunction_s
 {
     tuuvm_tuple_header_t header;
+    size_t flags;
     void *userdata;
     tuuvm_functionEntryPoint_t entryPoint;
 } tuuvm_primitiveFunction_t;
 
+typedef struct tuuvm_closureASTFunction_s
+{
+    tuuvm_tuple_header_t header;
+    tuuvm_tuple_t flags;
+    tuuvm_tuple_t closureEnvironment;
+    tuuvm_tuple_t argumentSymbols;
+    tuuvm_tuple_t body;
+} tuuvm_closureASTFunction_t;
 
 #define TUUVM_MAX_FUNCTION_ARGUMENTS 16
 
 /**
  * Creates a primitive function tuple.
  */
-TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context, void *userdata, tuuvm_functionEntryPoint_t entryPoint);
+TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint);
+
+/**
+ * Creates a function that uses a closure and an AST for its definition.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_function_createClosureAST(tuuvm_context_t *context, size_t flags, tuuvm_tuple_t closureEnvironment, tuuvm_tuple_t argumentSymbols, tuuvm_tuple_t body);
+
+/**
+ * Get the function flags.
+ */
+TUUVM_API size_t tuuvm_function_getFlags(tuuvm_context_t *context, tuuvm_tuple_t function);
+
+/**
+ * Is this function a macro?
+ */
+TUUVM_INLINE bool tuuvm_function_isMacro(tuuvm_context_t *context, tuuvm_tuple_t function)
+{
+    return (tuuvm_function_getFlags(context, function) & TUUVM_FUNCTION_FLAGS_MACRO) != 0;
+}
 
 /**
  * Applies a function tuple with the given parameters

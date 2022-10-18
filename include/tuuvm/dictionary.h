@@ -1,6 +1,8 @@
 #ifndef TUUVM_DICTIONARY_H
 #define TUUVM_DICTIONARY_H
 
+#pragma once
+
 #include "tuple.h"
 
 typedef struct tuuvm_context_s tuuvm_context_t;

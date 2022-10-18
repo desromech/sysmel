@@ -1,6 +1,8 @@
 #ifndef TUUVM_ENVIRONMENT_H
 #define TUUVM_ENVIRONMENT_H
 
+#pragma once
+
 #include "tuple.h"
 
 typedef struct tuuvm_context_s tuuvm_context_t;

@@ -1,6 +1,7 @@
 #include "tuuvm/ast.h"
 #include "tuuvm/arraySlice.h"
 #include "tuuvm/string.h"
+#include "tuuvm/function.h"
 #include "internal/context.h"
 
 TUUVM_API bool tuuvm_astNode_isErrorNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
@@ -46,6 +47,14 @@ TUUVM_API bool tuuvm_astNode_isQuasiUnquoteNode(tuuvm_context_t *context, tuuvm_
 TUUVM_API bool tuuvm_astNode_isSpliceNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
     return tuuvm_tuple_getType(context, tuple) == context->roots.astSpliceNodeType;
+}
+
+TUUVM_API bool tuuvm_astNode_isMacroExpression(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    if(tuuvm_astNode_isLiteralNode(context, tuple))
+        return tuuvm_function_isMacro(context, tuuvm_astLiteralNode_getValue(tuple));
+
+    return false;
 }
 
 TUUVM_API bool tuuvm_astNode_isUnexpandedApplicationNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)

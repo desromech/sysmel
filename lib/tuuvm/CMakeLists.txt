@@ -11,6 +11,7 @@ set(tuuvm_sources
     function.c
     heap.c
     interpreter.c
+    macro.c
     parser.c
     scanner.c
     set.c

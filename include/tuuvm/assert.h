@@ -1,6 +1,8 @@
 #ifndef TUUVM_ASSERT_H
 #define TUUVM_ASSERT_H
 
+#pragma once
+
 #include "errors.h"
 
 #define TUUVM_ASSERT_LINE_TO_STRING_(x) #x

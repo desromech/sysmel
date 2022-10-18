@@ -1,6 +1,8 @@
 #ifndef TUUVM_ERRORS_H
 #define TUUVM_ERRORS_H
 
+#pragma once
+
 #include "common.h"
 #include <stddef.h>
 

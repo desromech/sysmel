@@ -1,6 +1,8 @@
 #ifndef TUUVM_HASH_H
 #define TUUVM_HASH_H
 
+#pragma once
+
 #include "common.h"
 #include <stddef.h>
 

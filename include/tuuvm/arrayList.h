@@ -1,6 +1,8 @@
 #ifndef TUUVM_ARRAY_LIST_H
 #define TUUVM_ARRAY_LIST_H
 
+#pragma once
+
 #include "tuple.h"
 
 typedef struct tuuvm_context_s tuuvm_context_t;

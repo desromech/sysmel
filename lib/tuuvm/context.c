@@ -38,10 +38,10 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.primitiveFunctionType = tuuvm_type_createAnonymous(context);
 
     // Create the basic hash functions.
-    context->roots.identityEqualsFunction = tuuvm_function_createPrimitive(context, 0, tuuvm_tuple_primitive_identityEquals);
-    context->roots.identityHashFunction = tuuvm_function_createPrimitive(context, 0, tuuvm_tuple_primitive_identityHash);
-    context->roots.stringEqualsFunction = tuuvm_function_createPrimitive(context, 0, tuuvm_string_primitive_equals);
-    context->roots.stringHashFunction = tuuvm_function_createPrimitive(context, 0, tuuvm_string_primitive_hash);
+    context->roots.identityEqualsFunction = tuuvm_function_createPrimitive(context, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_identityEquals);
+    context->roots.identityHashFunction = tuuvm_function_createPrimitive(context, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_identityHash);
+    context->roots.stringEqualsFunction = tuuvm_function_createPrimitive(context, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_string_primitive_equals);
+    context->roots.stringHashFunction = tuuvm_function_createPrimitive(context, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_string_primitive_hash);
 
     context->roots.symbolType = tuuvm_type_createAnonymous(context);
     context->roots.setType = tuuvm_type_createAnonymous(context);
@@ -75,9 +75,11 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.arrayType = tuuvm_context_createIntrinsicType(context, "Array");
     context->roots.arraySliceType = tuuvm_context_createIntrinsicType(context, "ArraySlice");
     context->roots.arrayListType = tuuvm_context_createIntrinsicType(context, "ArrayList");
+    context->roots.closureASTFunctionType = tuuvm_context_createIntrinsicType(context, "ClosureASTFunction");
     context->roots.dictionaryType = tuuvm_context_createIntrinsicType(context, "Dictionary");
     context->roots.falseType = tuuvm_context_createIntrinsicType(context, "False");
     context->roots.hashtableEmptyType = tuuvm_context_createIntrinsicType(context, "HashtableEmpty");
+    context->roots.macroContextType = tuuvm_context_createIntrinsicType(context, "MacroContext");
     context->roots.integerType = tuuvm_context_createIntrinsicType(context, "Integer");
     context->roots.nilType = tuuvm_context_createIntrinsicType(context, "Nil");
     context->roots.stringType = tuuvm_context_createIntrinsicType(context, "String");
