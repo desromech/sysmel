@@ -66,6 +66,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t astIdentifierReferenceNodeType;
     tuuvm_tuple_t astSequenceNodeType;
     tuuvm_tuple_t astUnexpandedApplicationNodeType;
+    tuuvm_tuple_t astUnexpandedSExpressionNodeType;
 
     tuuvm_tuple_t astQuoteNodeType;
     tuuvm_tuple_t astQuasiQuoteNodeType;

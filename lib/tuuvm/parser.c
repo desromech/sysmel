@@ -112,7 +112,7 @@ static tuuvm_tuple_t tuuvm_parser_parsePrimaryExpression(tuuvm_context_t *contex
     }
 }
 
-static tuuvm_tuple_t tuuvm_parser_parseUnexpandedApplication(tuuvm_context_t *context, tuuvm_parser_state_t *state, tuuvm_tokenKind_t openingToken, tuuvm_tokenKind_t closingToken)
+static tuuvm_tuple_t tuuvm_parser_parseUnexpandedSExpression(tuuvm_context_t *context, tuuvm_parser_state_t *state, tuuvm_tokenKind_t openingToken, tuuvm_tokenKind_t closingToken)
 {
     // Left opening parenthesis.
     if(tuuvm_parser_lookKindAt(state, 0) != openingToken)
@@ -121,24 +121,22 @@ static tuuvm_tuple_t tuuvm_parser_parseUnexpandedApplication(tuuvm_context_t *co
     size_t startPosition = state->tokenPosition;
     ++state->tokenPosition;
 
-    // Function expression.
-    tuuvm_tuple_t functionOrMacroExpression = tuuvm_parser_parseExpression(context, state);
-    tuuvm_tuple_t argumentList = tuuvm_arrayList_create(context);
 
-    // Function arguments.
-    while(tuuvm_parser_lookKindAt(state, 0) >= 0 && tuuvm_parser_lookKindAt(state, 0) != closingToken)
-        tuuvm_arrayList_add(context, argumentList, tuuvm_parser_parseExpression(context, state));
+    // Elements.
+    tuuvm_tuple_t elementList = tuuvm_arrayList_create(context);
+    while(tuuvm_parser_lookKindAt(state, 0) >= 0 && tuuvm_parser_lookKindAt(state, 0) != (int)closingToken)
+        tuuvm_arrayList_add(context, elementList, tuuvm_parser_parseExpression(context, state));
 
     // Right closing parenthesis.
-    if(tuuvm_parser_lookKindAt(state, 0) != closingToken)
+    if(tuuvm_parser_lookKindAt(state, 0) != (int)closingToken)
         return tuuvm_astErrorNode_createWithCString(context, tuuvm_parser_makeSourcePositionForParserState(context, state), "Expected a closing parentheses.");
 
     ++state->tokenPosition;
     size_t endPosition = state->tokenPosition;
 
     tuuvm_tuple_t sourcePosition = tuuvm_parser_makeSourcePositionForTokenRange(context, state->tokenSequence, startPosition, endPosition);
-    tuuvm_tuple_t argumentsArraySlice = tuuvm_arrayList_asArraySlice(context, argumentList);
-    return tuuvm_astUnexpandedApplicationNode_create(context, sourcePosition, functionOrMacroExpression, argumentsArraySlice);
+    tuuvm_tuple_t elementsArraySlice = tuuvm_arrayList_asArraySlice(context, elementList);
+    return tuuvm_astUnexpandedSExpressionNode_create(context, sourcePosition, elementsArraySlice);
 }
 
 static tuuvm_tuple_t tuuvm_parser_parseQuote(tuuvm_context_t *context, tuuvm_parser_state_t *state)
@@ -202,9 +200,9 @@ static tuuvm_tuple_t tuuvm_parser_parseExpression(tuuvm_context_t *context, tuuv
     case TUUVM_TOKEN_KIND_QUASI_UNQUOTE: return tuuvm_parser_parseQuasiUnquote(context, state);
     case TUUVM_TOKEN_KIND_SPLICE: return tuuvm_parser_parseSplice(context, state);
 
-    case TUUVM_TOKEN_KIND_LPARENT: return tuuvm_parser_parseUnexpandedApplication(context, state, TUUVM_TOKEN_KIND_LPARENT, TUUVM_TOKEN_KIND_RPARENT);
-    case TUUVM_TOKEN_KIND_LBRACKET: return tuuvm_parser_parseUnexpandedApplication(context, state, TUUVM_TOKEN_KIND_LBRACKET, TUUVM_TOKEN_KIND_RBRACKET);
-    case TUUVM_TOKEN_KIND_LCBRACKET: return tuuvm_parser_parseUnexpandedApplication(context, state, TUUVM_TOKEN_KIND_LCBRACKET, TUUVM_TOKEN_KIND_RCBRACKET);
+    case TUUVM_TOKEN_KIND_LPARENT: return tuuvm_parser_parseUnexpandedSExpression(context, state, TUUVM_TOKEN_KIND_LPARENT, TUUVM_TOKEN_KIND_RPARENT);
+    case TUUVM_TOKEN_KIND_LBRACKET: return tuuvm_parser_parseUnexpandedSExpression(context, state, TUUVM_TOKEN_KIND_LBRACKET, TUUVM_TOKEN_KIND_RBRACKET);
+    case TUUVM_TOKEN_KIND_LCBRACKET: return tuuvm_parser_parseUnexpandedSExpression(context, state, TUUVM_TOKEN_KIND_LCBRACKET, TUUVM_TOKEN_KIND_RCBRACKET);
 
     default:
         return tuuvm_parser_parsePrimaryExpression(context, state);

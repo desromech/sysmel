@@ -62,6 +62,11 @@ TUUVM_API bool tuuvm_astNode_isUnexpandedApplicationNode(tuuvm_context_t *contex
     return tuuvm_tuple_getType(context, tuple) == context->roots.astUnexpandedApplicationNodeType;
 }
 
+TUUVM_API bool tuuvm_astNode_isUnexpandedSExpressionNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_getType(context, tuple) == context->roots.astUnexpandedSExpressionNodeType;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_astErrorNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t errorMessage)
 {
     tuuvm_astErrorNode_t *result = (tuuvm_astErrorNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astErrorNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astErrorNode_t));
@@ -151,6 +156,20 @@ TUUVM_API tuuvm_tuple_t tuuvm_astUnexpandedApplicationNode_getArguments(tuuvm_tu
 {
     if(!tuuvm_tuple_isNonNullPointer(unexpandedApplication)) return TUUVM_NULL_TUPLE;
     return ((tuuvm_astUnexpandedApplicationNode_t*)unexpandedApplication)->arguments;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astUnexpandedSExpressionNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t elements)
+{
+    tuuvm_astUnexpandedSExpressionNode_t *result = (tuuvm_astUnexpandedSExpressionNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astUnexpandedSExpressionNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astUnexpandedSExpressionNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->elements = elements;
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astUnexpandedSExpressionNode_getElements(tuuvm_tuple_t unexpandedSExpressionNode)
+{
+    if(!tuuvm_tuple_isNonNullPointer(unexpandedSExpressionNode)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_astUnexpandedSExpressionNode_t*)unexpandedSExpressionNode)->elements;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_astQuoteNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t node)

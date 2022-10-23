@@ -115,6 +115,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.astIdentifierReferenceNodeType = tuuvm_context_createIntrinsicType(context, "ASTIdentifierReferenceNode");
     context->roots.astSequenceNodeType = tuuvm_context_createIntrinsicType(context, "ASTSequenceNode");
     context->roots.astUnexpandedApplicationNodeType = tuuvm_context_createIntrinsicType(context, "ASTUnexpandedApplicationNode");
+    context->roots.astUnexpandedSExpressionNodeType = tuuvm_context_createIntrinsicType(context, "ASTUnexpandedSExpressionNode");
 
     context->roots.astQuoteNodeType = tuuvm_context_createIntrinsicType(context, "ASTQuoteNode");
     context->roots.astQuasiQuoteNodeType = tuuvm_context_createIntrinsicType(context, "ASTQuasiQuoteNode");

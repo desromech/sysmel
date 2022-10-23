@@ -52,6 +52,12 @@ typedef struct tuuvm_astUnexpandedApplicationNode_s
     tuuvm_tuple_t arguments;
 } tuuvm_astUnexpandedApplicationNode_t;
 
+typedef struct tuuvm_astUnexpandedSExpressionNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t elements;
+} tuuvm_astUnexpandedSExpressionNode_t;
+
 typedef struct tuuvm_astQuoteNode_s
 {
     tuuvm_astNode_t super;
@@ -105,6 +111,11 @@ TUUVM_API bool tuuvm_astNode_isSequenceNode(tuuvm_context_t *context, tuuvm_tupl
  * Is this an unexpanded application node?
  */ 
 TUUVM_API bool tuuvm_astNode_isUnexpandedApplicationNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this an unexpanded s-expression node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isUnexpandedSExpressionNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
 
 /**
  * Is this a quote node?
@@ -183,7 +194,7 @@ TUUVM_API size_t tuuvm_astSequenceNode_getExpressionCount(tuuvm_tuple_t sequence
 TUUVM_API tuuvm_tuple_t tuuvm_astSequenceNode_getExpressionAt(tuuvm_tuple_t sequenceNode, size_t index);
 
 /**
- * Creates an unexpanded application node-
+ * Creates an unexpanded application node.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astUnexpandedApplicationNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t functionOrMacroExpression, tuuvm_tuple_t arguments);
 
@@ -196,6 +207,16 @@ TUUVM_API tuuvm_tuple_t tuuvm_astUnexpandedApplicationNode_getFunctionOrMacroExp
  * Gets the arguments from the unexpanded application node
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astUnexpandedApplicationNode_getArguments(tuuvm_tuple_t unexpandedApplication);
+
+/**
+ * Creates an unexpanded s-expression node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astUnexpandedSExpressionNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t elements);
+
+/**
+ * Gets the elements from the unexpanded s-expression node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astUnexpandedSExpressionNode_getElements(tuuvm_tuple_t unexpandedSExpressionNode);
 
 /**
  * Creates a quote node

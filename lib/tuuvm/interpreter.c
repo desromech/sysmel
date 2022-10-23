@@ -1,5 +1,6 @@
 #include "tuuvm/interpreter.h"
 #include "tuuvm/environment.h"
+#include "tuuvm/array.h"
 #include "tuuvm/arraySlice.h"
 #include "tuuvm/ast.h"
 #include "tuuvm/assert.h"
@@ -270,6 +271,59 @@ static tuuvm_tuple_t tuuvm_astUnexpandedApplicationNode_primitiveAnalyzeAndEvalu
     return tuuvm_function_apply(context, functionOrMacro, applicationArgumentCount, applicationArguments);
 }
 
+static tuuvm_tuple_t tuuvm_astUnexpandedSExpressionNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t node = arguments[0];
+    tuuvm_tuple_t environment = arguments[1];
+
+    tuuvm_astUnexpandedSExpressionNode_t *unexpandedSExpressionNode = (tuuvm_astUnexpandedSExpressionNode_t*)node;
+    size_t elementCount = tuuvm_arraySlice_getSize(unexpandedSExpressionNode->elements);
+    if(elementCount == 0)
+    {
+        // Empty array.
+        tuuvm_tuple_t array = tuuvm_array_create(context, 0);
+        tuuvm_tuple_t literalNode = tuuvm_astLiteralNode_create(context, unexpandedSExpressionNode->super.sourcePosition, array);
+        return tuuvm_interpreter_analyzeASTWithEnvironment(context, literalNode, environment);
+    }
+    else
+    {
+        // Unexpanded application node.
+        tuuvm_tuple_t functionOrMacroExpression = tuuvm_arraySlice_at(unexpandedSExpressionNode->elements, 0);
+        tuuvm_tuple_t argumentExpressions = tuuvm_arraySlice_fromOffset(context, unexpandedSExpressionNode->elements, 1);
+        tuuvm_tuple_t unexpandedApplicationNode = tuuvm_astUnexpandedApplicationNode_create(context, unexpandedSExpressionNode->super.sourcePosition, functionOrMacroExpression, argumentExpressions);
+        return tuuvm_interpreter_analyzeASTWithEnvironment(context, unexpandedApplicationNode, environment);
+    }
+}
+
+static tuuvm_tuple_t tuuvm_astUnexpandedSExpressionNode_primitiveAnalyzeAndEvaluate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t node = arguments[0];
+    tuuvm_tuple_t environment = arguments[1];
+
+    tuuvm_astUnexpandedSExpressionNode_t *unexpandedSExpressionNode = (tuuvm_astUnexpandedSExpressionNode_t*)node;
+    size_t elementCount = tuuvm_arraySlice_getSize(unexpandedSExpressionNode->elements);
+    if(elementCount == 0)
+    {
+        return tuuvm_array_create(context, 0);
+    }
+    else
+    {
+        // Unexpanded application node.
+        tuuvm_tuple_t functionOrMacroExpression = tuuvm_arraySlice_at(unexpandedSExpressionNode->elements, 0);
+        tuuvm_tuple_t argumentExpressions = tuuvm_arraySlice_fromOffset(context, unexpandedSExpressionNode->elements, 1);
+        tuuvm_tuple_t unexpandedApplicationNode = tuuvm_astUnexpandedApplicationNode_create(context, unexpandedSExpressionNode->super.sourcePosition, functionOrMacroExpression, argumentExpressions);
+        return tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, unexpandedApplicationNode, environment);
+    }
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     tuuvm_closureASTFunction_t *closureASTFunction = (tuuvm_closureASTFunction_t*)function;
@@ -302,4 +356,9 @@ void tuuvm_astInterpreter_setupTypes(tuuvm_context_t *context)
     tuuvm_type_setAstNodeAnalysisFunction(context->roots.astUnexpandedApplicationNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astUnexpandedApplicationNode_primitiveAnalyze));
     tuuvm_type_setAstNodeEvaluationFunction(context->roots.astUnexpandedApplicationNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astUnexpandedApplicationNode_primitiveAnalyzeAndEvaluate));
     tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context->roots.astUnexpandedApplicationNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astUnexpandedApplicationNode_primitiveAnalyzeAndEvaluate));
+
+    tuuvm_type_setAstNodeAnalysisFunction(context->roots.astUnexpandedSExpressionNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astUnexpandedSExpressionNode_primitiveAnalyze));
+    tuuvm_type_setAstNodeEvaluationFunction(context->roots.astUnexpandedSExpressionNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astUnexpandedSExpressionNode_primitiveAnalyzeAndEvaluate));
+    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context->roots.astUnexpandedSExpressionNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astUnexpandedSExpressionNode_primitiveAnalyzeAndEvaluate));
+
 }
