@@ -13,11 +13,13 @@ enum tuuvm_primitiveFunctionFlags_e
 {
     TUUVM_FUNCTION_FLAGS_NONE = 0,
     TUUVM_FUNCTION_FLAGS_MACRO = 1<<0,
+    TUUVM_FUNCTION_FLAGS_VARIADIC = 1<<1,
 } tuuvm_primitiveFunctionFlags_t;
 
 typedef struct tuuvm_primitiveFunction_s
 {
     tuuvm_tuple_header_t header;
+    size_t argumentCount;
     size_t flags;
     void *userdata;
     tuuvm_functionEntryPoint_t entryPoint;
@@ -37,7 +39,7 @@ typedef struct tuuvm_closureASTFunction_s
 /**
  * Creates a primitive function tuple.
  */
-TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint);
+TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint);
 
 /**
  * Creates a function that uses a closure and an AST for its definition.
@@ -45,7 +47,12 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context,
 TUUVM_API tuuvm_tuple_t tuuvm_function_createClosureAST(tuuvm_context_t *context, size_t flags, tuuvm_tuple_t closureEnvironment, tuuvm_tuple_t argumentSymbols, tuuvm_tuple_t body);
 
 /**
- * Get the function flags.
+ * Gets the function argument count.
+ */
+TUUVM_API size_t tuuvm_function_getArgumentCount(tuuvm_context_t *context, tuuvm_tuple_t function);
+
+/**
+ * Gets the function flags.
  */
 TUUVM_API size_t tuuvm_function_getFlags(tuuvm_context_t *context, tuuvm_tuple_t function);
 
@@ -55,6 +62,14 @@ TUUVM_API size_t tuuvm_function_getFlags(tuuvm_context_t *context, tuuvm_tuple_t
 TUUVM_INLINE bool tuuvm_function_isMacro(tuuvm_context_t *context, tuuvm_tuple_t function)
 {
     return (tuuvm_function_getFlags(context, function) & TUUVM_FUNCTION_FLAGS_MACRO) != 0;
+}
+
+/**
+ * Is this function a macro?
+ */
+TUUVM_INLINE bool tuuvm_function_isVariadic(tuuvm_context_t *context, tuuvm_tuple_t function)
+{
+    return (tuuvm_function_getFlags(context, function) & TUUVM_FUNCTION_FLAGS_VARIADIC) != 0;
 }
 
 /**

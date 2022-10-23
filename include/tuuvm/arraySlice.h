@@ -45,4 +45,14 @@ TUUVM_API tuuvm_tuple_t tuuvm_arraySlice_at(tuuvm_tuple_t arraySlice, size_t ind
  */
 TUUVM_API void tuuvm_arraySlice_atPut(tuuvm_tuple_t arraySlice, size_t index, tuuvm_tuple_t value);
 
+/**
+ * Makes an array slice from the specified position.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_arraySlice_at(tuuvm_tuple_t arraySlice, size_t index);
+
+/**
+ * Makes an array slice from the specified position.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_arraySlice_fromOffset(tuuvm_context_t *context, tuuvm_tuple_t arraySlice, size_t fromOffset);
+
 #endif //TUUVM_ARRAY_SLICE_H

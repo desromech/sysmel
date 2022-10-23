@@ -39,11 +39,15 @@ static tuuvm_tuple_t tuuvm_scanner_tokenAsFloat(tuuvm_context_t *context, size_t
 
 static tuuvm_tuple_t tuuvm_scanner_incompleteMultilineCommentError(tuuvm_context_t *context, size_t stringSize, const uint8_t *string)
 {
+    (void)stringSize;
+    (void)string;
     return tuuvm_symbol_internWithCString(context, "Incomplete multiline comment.");
 }
 
 static tuuvm_tuple_t tuuvm_scanner_unrecognizedTokenError(tuuvm_context_t *context, size_t stringSize, const uint8_t *string)
 {
+    (void)stringSize;
+    (void)string;
     return tuuvm_symbol_internWithCString(context, "Unrecognized token.");
 }
 
@@ -213,7 +217,7 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
 
     // Is this a number?
     if(tuuvm_scanner_isDigit(c) ||
-        tuuvm_scanner_isSign(c) && tuuvm_scanner_isDigit(tuuvm_scanner_lookAt(state, 1)))
+        (tuuvm_scanner_isSign(c) && tuuvm_scanner_isDigit(tuuvm_scanner_lookAt(state, 1))))
     {
         ++state->position;
         while(tuuvm_scanner_isDigit(tuuvm_scanner_lookAt(state, 0)))
@@ -223,7 +227,7 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
         if(tuuvm_scanner_lookAt(state, 0) == '.')
         {
             if(tuuvm_scanner_isDigit(tuuvm_scanner_lookAt(state, 1)) ||
-                tuuvm_scanner_isSign(tuuvm_scanner_lookAt(state, 1)) && tuuvm_scanner_isDigit(tuuvm_scanner_lookAt(state, 2)))
+                (tuuvm_scanner_isSign(tuuvm_scanner_lookAt(state, 1)) && tuuvm_scanner_isDigit(tuuvm_scanner_lookAt(state, 2))))
             {
                 ++state->position; // Dot
                 if(tuuvm_scanner_isSign(tuuvm_scanner_lookAt(state, 1)))
@@ -312,6 +316,22 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
         tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_RCBRACKET, tuuvm_scanner_tokenAsSymbol, outTokenList);
         return true;
 
+    case ';':
+        ++state->position;
+        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_SEMICOLON, tuuvm_scanner_tokenAsSymbol, outTokenList);
+        return true;
+
+    case '.':
+        ++state->position;
+        if('.' == tuuvm_scanner_lookAt(state, 0) && '.' == tuuvm_scanner_lookAt(state, 1))
+        {
+            state->position += 2;
+            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_ELLIPSIS, tuuvm_scanner_tokenAsSymbol, outTokenList);
+            return true;
+        }
+
+        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_DOT, tuuvm_scanner_tokenAsSymbol, outTokenList);
+        return true;
     case ':':
         ++state->position;
         if(':' == tuuvm_scanner_lookAt(state, 0))
