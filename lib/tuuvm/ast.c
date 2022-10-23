@@ -19,6 +19,11 @@ TUUVM_API bool tuuvm_astNode_isIdentifierReferenceNode(tuuvm_context_t *context,
     return tuuvm_tuple_getType(context, tuple) == context->roots.astIdentifierReferenceNodeType;
 }
 
+TUUVM_API bool tuuvm_astNode_isLambdaNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_getType(context, tuple) == context->roots.astLambdaNodeType;
+}
+
 TUUVM_API bool tuuvm_astNode_isLiteralNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
     return tuuvm_tuple_getType(context, tuple) == context->roots.astLiteralNodeType;
@@ -101,6 +106,34 @@ TUUVM_API tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_getValue(tuuvm_tuple_t 
 {
     if(!tuuvm_tuple_isNonNullPointer(node)) return 0;
     return ((tuuvm_astIdentifierReferenceNode_t*)node)->value;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astLambdaNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t arguments, tuuvm_tuple_t body)
+{
+    tuuvm_astLambdaNode_t *result = (tuuvm_astLambdaNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astLambdaNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astLambdaNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->flags = flags;
+    result->arguments = arguments;
+    result->body = body;
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astLambdaNode_getFlags(tuuvm_tuple_t node)
+{
+    if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_astLambdaNode_t*)node)->flags;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astLambdaNode_getArguments(tuuvm_tuple_t node)
+{
+    if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_astLambdaNode_t*)node)->arguments;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astLambdaNode_getBody(tuuvm_tuple_t node)
+{
+    if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_astLambdaNode_t*)node)->body;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_astLiteralNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t value)

@@ -9,3 +9,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_macroContext_create(tuuvm_context_t *context, tuuv
     result->sourcePosition = sourcePosition;
     return (tuuvm_tuple_t)result;
 }
+
+TUUVM_API tuuvm_tuple_t tuuvm_macroContext_getSourcePosition(tuuvm_tuple_t macroContext)
+{
+    if(!tuuvm_tuple_isNonNullPointer(macroContext)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_macroContext_t*)macroContext)->sourcePosition;
+}

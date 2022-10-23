@@ -27,6 +27,14 @@ typedef struct tuuvm_astFunctionApplicationNode_s
     tuuvm_tuple_t arguments;
 } tuuvm_astFunctionApplicationNode_t;
 
+typedef struct tuuvm_astLambdaNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t flags;
+    tuuvm_tuple_t arguments;
+    tuuvm_tuple_t body;
+} tuuvm_astLambdaNode_t;
+
 typedef struct tuuvm_astLiteralNode_s
 {
     tuuvm_astNode_t super;
@@ -98,6 +106,11 @@ TUUVM_API bool tuuvm_astNode_isFunctionApplicationNode(tuuvm_context_t *context,
 TUUVM_API bool tuuvm_astNode_isIdentifierReferenceNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
 
 /**
+ * Is this a lambda node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isLambdaNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
  * Is this a literal node?
  */ 
 TUUVM_API bool tuuvm_astNode_isLiteralNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
@@ -157,7 +170,6 @@ TUUVM_API tuuvm_tuple_t tuuvm_astErrorNode_createWithCString(tuuvm_context_t *co
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astFunctionApplicationNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t functionExpression, tuuvm_tuple_t arguments);
 
-
 /**
  * Creates an identifier reference node.
  */ 
@@ -167,6 +179,26 @@ TUUVM_API tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_create(tuuvm_context_t 
  * Gets the value from an identifier reference node.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_getValue(tuuvm_tuple_t node);
+
+/**
+ * Creates a lambda node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astLambdaNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t arguments, tuuvm_tuple_t body);
+
+/**
+ * Gets the flags from the lambda node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astLambdaNode_getFlags(tuuvm_tuple_t node);
+
+/**
+ * Gets the arguments from the lambda node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astLambdaNode_getArguments(tuuvm_tuple_t node);
+
+/**
+ * Gets the body from the lambda node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astLambdaNode_getBody(tuuvm_tuple_t node);
 
 /**
  * Creates a literal node.

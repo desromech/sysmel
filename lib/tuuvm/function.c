@@ -14,10 +14,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context,
     return (tuuvm_tuple_t)result;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_function_createClosureAST(tuuvm_context_t *context, size_t flags, tuuvm_tuple_t closureEnvironment, tuuvm_tuple_t argumentSymbols, tuuvm_tuple_t body)
+TUUVM_API tuuvm_tuple_t tuuvm_function_createClosureAST(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t closureEnvironment, tuuvm_tuple_t argumentSymbols, tuuvm_tuple_t body)
 {
     tuuvm_closureASTFunction_t *result = (tuuvm_closureASTFunction_t*)tuuvm_context_allocateByteTuple(context, context->roots.closureASTFunctionType, TUUVM_BYTE_SIZE_FOR_STRUCTURE_TYPE(tuuvm_closureASTFunction_t));
-    result->flags = tuuvm_tuple_size_encode(context, flags);
+    result->sourcePosition = sourcePosition;
+    result->flags = flags;
     result->closureEnvironment = closureEnvironment;
     result->argumentSymbols = argumentSymbols;
     result->body = body;

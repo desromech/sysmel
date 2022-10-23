@@ -60,6 +60,9 @@ TUUVM_API bool tuuvm_dictionary_find(tuuvm_context_t *context, tuuvm_tuple_t dic
 
     tuuvm_dictionary_t *dictionaryObject = (tuuvm_dictionary_t*)dictionary;
     tuuvm_array_t *storage = (tuuvm_array_t*)dictionaryObject->storage;
+    if(storage->elements[elementIndex*2] == TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE)
+        return false;
+
     *outValue = storage->elements[elementIndex*2 + 1];
     return true;
 }

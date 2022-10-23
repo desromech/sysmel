@@ -47,5 +47,11 @@ TEST_SUITE(Interpreter)
         TEST_ASSERT_EQUALS(TUUVM_VOID_TUPLE, testAnalyzeAndEvaluate("((lambda () void))"));
     }
 
-
+    TEST_CASE_WITH_FIXTURE(IdentityLambdaApplication, TuuvmCore)
+    {
+        TEST_ASSERT_EQUALS(TUUVM_NULL_TUPLE, testAnalyzeAndEvaluate("((lambda (x) x) nil)"));
+        TEST_ASSERT_EQUALS(TUUVM_FALSE_TUPLE, testAnalyzeAndEvaluate("((lambda (x) x) false)"));
+        TEST_ASSERT_EQUALS(TUUVM_TRUE_TUPLE, testAnalyzeAndEvaluate("((lambda (x) x) true)"));
+        TEST_ASSERT_EQUALS(TUUVM_VOID_TUPLE, testAnalyzeAndEvaluate("((lambda (x) x) void)"));
+    }
 }

@@ -97,6 +97,9 @@ TUUVM_API bool tuuvm_set_find(tuuvm_context_t *context, tuuvm_tuple_t set, tuuvm
 
     tuuvm_set_t *setObject = (tuuvm_set_t*)set;
     tuuvm_array_t *storage = (tuuvm_array_t*)setObject->storage;
+    if(storage->elements[elementIndex] == TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE)
+        return false;
+
     *outFoundElement = storage->elements[elementIndex];
     return true;
 }

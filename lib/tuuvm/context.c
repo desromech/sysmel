@@ -6,7 +6,7 @@
 #include "tuuvm/function.h"
 #include <stdlib.h>
 
-extern void tuuvm_astInterpreter_setupTypes(tuuvm_context_t *context);
+extern void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context);
 
 TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicType(tuuvm_context_t *context, const char *name)
 {
@@ -111,6 +111,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.astNodeType = tuuvm_context_createIntrinsicType(context, "ASTNode");
     context->roots.astErrorNodeType = tuuvm_context_createIntrinsicType(context, "ASTErrorNode");
     context->roots.astFunctionApplicationNodeType = tuuvm_context_createIntrinsicType(context, "ASTFunctionApplicationNode");
+    context->roots.astLambdaNodeType = tuuvm_context_createIntrinsicType(context, "ASTLambdaNode");
     context->roots.astLiteralNodeType = tuuvm_context_createIntrinsicType(context, "ASTLiteralNode");
     context->roots.astIdentifierReferenceNodeType = tuuvm_context_createIntrinsicType(context, "ASTIdentifierReferenceNode");
     context->roots.astSequenceNodeType = tuuvm_context_createIntrinsicType(context, "ASTSequenceNode");
@@ -152,7 +153,7 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
     tuuvm_context_t *context = (tuuvm_context_t*)calloc(1, sizeof(tuuvm_context_t));
     context->identityHashSeed = 1;
     tuuvm_context_createBasicTypes(context);
-    tuuvm_astInterpreter_setupTypes(context);
+    tuuvm_astInterpreter_setupASTInterpreter(context);
 
     return context;
 }
