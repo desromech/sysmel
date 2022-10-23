@@ -64,6 +64,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t astFunctionApplicationNodeType;
     tuuvm_tuple_t astLambdaNodeType;
     tuuvm_tuple_t astLiteralNodeType;
+    tuuvm_tuple_t astLocalDefinitionNodeType;
     tuuvm_tuple_t astIdentifierReferenceNodeType;
     tuuvm_tuple_t astSequenceNodeType;
     tuuvm_tuple_t astUnexpandedApplicationNodeType;

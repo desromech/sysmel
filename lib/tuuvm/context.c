@@ -113,6 +113,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.astFunctionApplicationNodeType = tuuvm_context_createIntrinsicType(context, "ASTFunctionApplicationNode");
     context->roots.astLambdaNodeType = tuuvm_context_createIntrinsicType(context, "ASTLambdaNode");
     context->roots.astLiteralNodeType = tuuvm_context_createIntrinsicType(context, "ASTLiteralNode");
+    context->roots.astLocalDefinitionNodeType = tuuvm_context_createIntrinsicType(context, "ASTLocalDefinitionNode");
     context->roots.astIdentifierReferenceNodeType = tuuvm_context_createIntrinsicType(context, "ASTIdentifierReferenceNode");
     context->roots.astSequenceNodeType = tuuvm_context_createIntrinsicType(context, "ASTSequenceNode");
     context->roots.astUnexpandedApplicationNodeType = tuuvm_context_createIntrinsicType(context, "ASTUnexpandedApplicationNode");

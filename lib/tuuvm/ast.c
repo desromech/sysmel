@@ -29,6 +29,11 @@ TUUVM_API bool tuuvm_astNode_isLiteralNode(tuuvm_context_t *context, tuuvm_tuple
     return tuuvm_tuple_getType(context, tuple) == context->roots.astLiteralNodeType;
 }
 
+TUUVM_API bool tuuvm_astNode_isLocalDefinitionNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_getType(context, tuple) == context->roots.astLocalDefinitionNodeType;
+}
+
 TUUVM_API bool tuuvm_astNode_isSequenceNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
     return tuuvm_tuple_getType(context, tuple) == context->roots.astSequenceNodeType;
@@ -70,6 +75,12 @@ TUUVM_API bool tuuvm_astNode_isUnexpandedApplicationNode(tuuvm_context_t *contex
 TUUVM_API bool tuuvm_astNode_isUnexpandedSExpressionNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
     return tuuvm_tuple_getType(context, tuple) == context->roots.astUnexpandedSExpressionNodeType;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astNode_getSourcePosition(tuuvm_tuple_t node)
+{
+    if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_astNode_t*)node)->sourcePosition;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_astErrorNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t errorMessage)
@@ -148,6 +159,27 @@ TUUVM_API tuuvm_tuple_t tuuvm_astLiteralNode_getValue(tuuvm_tuple_t node)
 {
     if(!tuuvm_tuple_isNonNullPointer(node)) return 0;
     return ((tuuvm_astLiteralNode_t*)node)->value;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t nameExpression, tuuvm_tuple_t valueExpression)
+{
+    tuuvm_astLocalDefinitionNode_t *result = (tuuvm_astLocalDefinitionNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astLocalDefinitionNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astLocalDefinitionNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->nameExpression = nameExpression;
+    result->valueExpression = valueExpression;
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_getNameExpression(tuuvm_tuple_t node)
+{
+    if(!tuuvm_tuple_isNonNullPointer(node)) return 0;
+    return ((tuuvm_astLocalDefinitionNode_t*)node)->nameExpression;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_getValueExpression(tuuvm_tuple_t node)
+{
+    if(!tuuvm_tuple_isNonNullPointer(node)) return 0;
+    return ((tuuvm_astLocalDefinitionNode_t*)node)->valueExpression;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_astSequenceNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t expressions)

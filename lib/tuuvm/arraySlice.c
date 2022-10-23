@@ -52,7 +52,7 @@ TUUVM_API void tuuvm_arraySlice_atPut(tuuvm_tuple_t arraySlice, size_t index, tu
     if(index >= size)
         tuuvm_error_indexOutOfBounds();
  
-    return tuuvm_arrayOrByteArray_atPut(arraySliceObject->elements, offset + index, value);
+    tuuvm_arrayOrByteArray_atPut(arraySliceObject->elements, offset + index, value);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_arraySlice_fromOffset(tuuvm_context_t *context, tuuvm_tuple_t arraySlice, size_t fromOffset)

@@ -41,6 +41,13 @@ typedef struct tuuvm_astLiteralNode_s
     tuuvm_tuple_t value;
 } tuuvm_astLiteralNode_t;
 
+typedef struct tuuvm_astLocalDefinitionNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t nameExpression;
+    tuuvm_tuple_t valueExpression;
+} tuuvm_astLocalDefinitionNode_t;
+
 typedef struct tuuvm_astIdentifierReferenceNode_s
 {
     tuuvm_astNode_t super;
@@ -116,6 +123,11 @@ TUUVM_API bool tuuvm_astNode_isLambdaNode(tuuvm_context_t *context, tuuvm_tuple_
 TUUVM_API bool tuuvm_astNode_isLiteralNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
 
 /**
+ * Is this a local definition node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isLocalDefinitionNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
  * Is this a sequence node?
  */ 
 TUUVM_API bool tuuvm_astNode_isSequenceNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
@@ -154,6 +166,11 @@ TUUVM_API bool tuuvm_astNode_isSpliceNode(tuuvm_context_t *context, tuuvm_tuple_
  * Is this a macro evaluable expression?
  */ 
 TUUVM_API bool tuuvm_astNode_isMacroExpression(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Gets the source position from the ast node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astNode_getSourcePosition(tuuvm_tuple_t node);
 
 /**
  * Creates an error node
@@ -209,6 +226,21 @@ TUUVM_API tuuvm_tuple_t tuuvm_astLiteralNode_create(tuuvm_context_t *context, tu
  * Gets the value from a literal node.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astLiteralNode_getValue(tuuvm_tuple_t node);
+
+/**
+ * Creates a local definition node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t nameExpression, tuuvm_tuple_t valueExpression);
+
+/**
+ * Gets the value from a local definition node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_getNameExpression(tuuvm_tuple_t node);
+
+/**
+ * Gets the value from a local definition node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_getValueExpression(tuuvm_tuple_t node);
 
 /**
  * Creates a sequence node.
