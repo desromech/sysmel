@@ -38,4 +38,14 @@ TEST_SUITE(Interpreter)
         TEST_ASSERT_EQUALS(tuuvm_tuple_identityHash(TUUVM_TRUE_TUPLE), tuuvm_tuple_size_decode(testAnalyzeAndEvaluate("(Tuple:identityHash: true)")));
         TEST_ASSERT_EQUALS(tuuvm_tuple_identityHash(TUUVM_VOID_TUPLE), tuuvm_tuple_size_decode(testAnalyzeAndEvaluate("(Tuple:identityHash: void)")));
     }
+
+    TEST_CASE_WITH_FIXTURE(NullaryLambdaApplication, TuuvmCore)
+    {
+        TEST_ASSERT_EQUALS(TUUVM_NULL_TUPLE, testAnalyzeAndEvaluate("((lambda () nil))"));
+        TEST_ASSERT_EQUALS(TUUVM_FALSE_TUPLE, testAnalyzeAndEvaluate("((lambda () false))"));
+        TEST_ASSERT_EQUALS(TUUVM_TRUE_TUPLE, testAnalyzeAndEvaluate("((lambda () true))"));
+        TEST_ASSERT_EQUALS(TUUVM_VOID_TUPLE, testAnalyzeAndEvaluate("((lambda () void))"));
+    }
+
+
 }
