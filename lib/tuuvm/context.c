@@ -201,3 +201,13 @@ tuuvm_object_tuple_t *tuuvm_context_allocatePointerTuple(tuuvm_context_t *contex
         tuuvm_tuple_setType(result, type);
     return result;
 }
+
+TUUVM_API tuuvm_tuple_t tuuvm_context_shallowCopy(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    if(!tuuvm_tuple_isNonNullPointer(tuple))
+        return tuple;
+
+    tuuvm_object_tuple_t *result = tuuvm_heap_shallowCopyTuple(&context->heap, (tuuvm_object_tuple_t*)tuple);
+    result->header.identityHash = tuuvm_context_generateIdentityHash(context);
+    return (tuuvm_tuple_t)result;    
+}

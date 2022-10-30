@@ -127,9 +127,6 @@ static tuuvm_object_tuple_t *tuuvm_heap_allocateTupleWithRawSize(tuuvm_heap_t *h
     return (tuuvm_object_tuple_t*)((uintptr_t)allocationChunk + allocationOffset);
 }
 
-/**
- * Allocates a byte tuple with the specified size.
- */
 TUUVM_API tuuvm_object_tuple_t *tuuvm_heap_allocateByteTuple(tuuvm_heap_t *heap, size_t byteSize)
 {
     size_t allocationSize = sizeof(tuuvm_object_tuple_t) + byteSize;
@@ -141,9 +138,6 @@ TUUVM_API tuuvm_object_tuple_t *tuuvm_heap_allocateByteTuple(tuuvm_heap_t *heap,
     return result;
 }
 
-/**
- * Allocates a pointer tuple with the specified slot count.
- */
 TUUVM_API tuuvm_object_tuple_t *tuuvm_heap_allocatePointerTuple(tuuvm_heap_t *heap, size_t slotCount)
 {
     size_t objectSize = slotCount*sizeof(tuuvm_object_tuple_t*);
@@ -155,9 +149,18 @@ TUUVM_API tuuvm_object_tuple_t *tuuvm_heap_allocatePointerTuple(tuuvm_heap_t *he
     return result;
 }
 
-/**
- * Release all of the chunks back to the operating system.
- */
+TUUVM_API tuuvm_object_tuple_t *tuuvm_heap_shallowCopyTuple(tuuvm_heap_t *heap, tuuvm_object_tuple_t *tupleToCopy)
+{
+    size_t objectSize = tupleToCopy->header.objectSize;
+    size_t allocationSize = sizeof(tuuvm_object_tuple_t) + objectSize;
+
+    tuuvm_object_tuple_t *result = tuuvm_heap_allocateTupleWithRawSize(heap, allocationSize, 16);
+    if(!result) return 0;
+
+    memcpy(result, tupleToCopy, allocationSize);
+    return result;
+}
+
 void tuuvm_heap_destroy(tuuvm_heap_t *heap)
 {
     tuuvm_heap_chunk_t *position = heap->firstChunk;

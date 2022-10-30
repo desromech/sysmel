@@ -54,4 +54,10 @@ TEST_SUITE(Interpreter)
         TEST_ASSERT_EQUALS(TUUVM_TRUE_TUPLE, testAnalyzeAndEvaluate("((lambda (x) x) true)"));
         TEST_ASSERT_EQUALS(TUUVM_VOID_TUPLE, testAnalyzeAndEvaluate("((lambda (x) x) void)"));
     }
+
+    TEST_CASE_WITH_FIXTURE(Define, TuuvmCore)
+    {
+        TEST_ASSERT_EQUALS(TUUVM_FALSE_TUPLE, testAnalyzeAndEvaluate("(define myvar false) myvar"));
+        TEST_ASSERT_EQUALS(TUUVM_FALSE_TUPLE, testAnalyzeAndEvaluate("(define (myfunction) false) (myfunction)"));
+    }
 }

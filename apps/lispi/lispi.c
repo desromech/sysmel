@@ -5,6 +5,8 @@ static tuuvm_context_t *context;
 
 int main(int argc, const char *argv[])
 {
+    (void)argc;
+    (void)argv;
     context = tuuvm_context_create();
     if(!context)
     {

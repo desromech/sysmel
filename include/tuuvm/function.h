@@ -9,7 +9,7 @@ typedef struct tuuvm_context_s tuuvm_context_t;
 
 typedef tuuvm_tuple_t (*tuuvm_functionEntryPoint_t)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments);
 
-enum tuuvm_primitiveFunctionFlags_e
+typedef enum tuuvm_primitiveFunctionFlags_e
 {
     TUUVM_FUNCTION_FLAGS_NONE = 0,
     TUUVM_FUNCTION_FLAGS_MACRO = 1<<0,
