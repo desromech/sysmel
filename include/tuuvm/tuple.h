@@ -129,6 +129,9 @@ typedef struct tuuvm_object_tuple_s
 #define TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(structureType) ((sizeof(structureType) - sizeof(tuuvm_tuple_header_t)) / sizeof(tuuvm_tuple_t))
 #define TUUVM_BYTE_SIZE_FOR_STRUCTURE_TYPE(structureType) (sizeof(structureType) - sizeof(tuuvm_tuple_header_t))
 
+#define TUUVM_STRING_PRINTF_FORMAT "%.*s"
+#define TUUVM_STRING_PRINTF_ARG(arg) (int)tuuvm_tuple_getSizeInBytes(arg), TUUVM_CAST_OOP_TO_OBJECT_TUPLE(arg)->bytes
+
 /**
  * Is this a pointer tuple?
  */
@@ -600,5 +603,15 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_primitive_identityHash(tuuvm_context_t *cont
  * The primitive string equals function.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_tuple_primitive_identityEquals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments);;
+
+/**
+ * Makes a C string with the specified bytes tuple.
+ */
+TUUVM_API char *tuuvm_tuple_bytesToCString(tuuvm_tuple_t tuple);
+
+/**
+ * Frees a C string that was allocated for converting a tuple into a C string.
+ */
+TUUVM_API void tuuvm_tuple_bytesToCStringFree(char *cstring);
 
 #endif //TUUVM_TUPLE_H

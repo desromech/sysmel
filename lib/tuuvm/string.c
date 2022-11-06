@@ -36,6 +36,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_string_createWithString(tuuvm_context_t *context, 
     return (tuuvm_tuple_t)result;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_string_createEmptyWithSize(tuuvm_context_t *context, size_t stringSize)
+{
+    return (tuuvm_tuple_t)tuuvm_context_allocateByteTuple(context, context->roots.stringType, stringSize);
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_string_createWithCString(tuuvm_context_t *context, const char *cstring)
 {
     return tuuvm_string_createWithString(context, strlen(cstring), cstring);

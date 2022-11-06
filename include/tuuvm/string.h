@@ -13,6 +13,11 @@ typedef struct tuuvm_context_s tuuvm_context_t;
 TUUVM_API tuuvm_tuple_t tuuvm_string_createWithString(tuuvm_context_t *context, size_t stringSize, const char *string);
 
 /**
+ * Creates an empty with the specified size.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_string_createEmptyWithSize(tuuvm_context_t *context, size_t stringSize);
+
+/**
  * Creates a tuuvm string
  */
 TUUVM_API tuuvm_tuple_t tuuvm_string_createWithCString(tuuvm_context_t *context, const char *cstring);

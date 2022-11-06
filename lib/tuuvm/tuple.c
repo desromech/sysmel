@@ -1,5 +1,7 @@
 #include "tuuvm/tuple.h"
 #include "internal/context.h"
+#include <stdlib.h>
+#include <string.h>
 
 TUUVM_API tuuvm_tuple_t tuuvm_tuple_getImmediateTypeWithTag(tuuvm_context_t *context, size_t immediateTypeTag)
 {
@@ -59,4 +61,19 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_primitive_identityEquals(tuuvm_context_t *co
     (void)closure;
     (void)argumentCount;
     return tuuvm_tuple_boolean_encode(tuuvm_tuple_identityEquals(arguments[0], arguments[1]));
+}
+
+TUUVM_API char *tuuvm_tuple_bytesToCString(tuuvm_tuple_t tuple)
+{
+    size_t stringSize = tuuvm_tuple_getSizeInBytes(tuple);
+    size_t sizeToAllocate = stringSize + 1;
+    char *cstring = (char*)malloc(sizeToAllocate);
+    memcpy(cstring, TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->bytes, sizeToAllocate);
+    cstring[stringSize] = 0;
+    return cstring;
+}
+
+TUUVM_API void tuuvm_tuple_bytesToCStringFree(char *cstring)
+{
+    free(cstring);
 }
