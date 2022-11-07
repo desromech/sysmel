@@ -1,5 +1,6 @@
 #include "tuuvm/io.h"
 #include "tuuvm/context.h"
+#include "tuuvm/errors.h"
 #include "tuuvm/function.h"
 #include "tuuvm/string.h"
 #include <stdio.h>

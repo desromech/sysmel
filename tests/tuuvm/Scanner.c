@@ -70,6 +70,22 @@ TEST_SUITE(Scanner)
         TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_FLOAT, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 0)));
     }
 
+    TEST_CASE_WITH_FIXTURE(Character, TuuvmCore)
+    {
+        tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "'T'", "test");
+        TEST_ASSERT_EQUALS(1, tuuvm_arraySlice_getSize(tokenList));
+        TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_CHARACTER, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 0)));
+        TEST_ASSERT_EQUALS('T', tuuvm_tuple_char32_decode(tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 0))));
+    }
+
+    TEST_CASE_WITH_FIXTURE(String, TuuvmCore)
+    {
+        tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "\"Hello World\\r\\n\"", "test");
+        TEST_ASSERT_EQUALS(1, tuuvm_arraySlice_getSize(tokenList));
+        TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_STRING, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 0)));
+        TEST_ASSERT(tuuvm_string_equals(tuuvm_string_createWithCString(tuuvm_test_context, "Hello World\r\n"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 0))));
+    }
+
     TEST_CASE_WITH_FIXTURE(Delimiters, TuuvmCore)
     {
         tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "() [] {} : :: `' `` `, `@ | .. ... ;", "test");

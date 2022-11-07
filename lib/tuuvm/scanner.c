@@ -1,5 +1,6 @@
 #include "tuuvm/scanner.h"
 #include "tuuvm/arrayList.h"
+#include "tuuvm/assert.h"
 #include "tuuvm/sourceCode.h"
 #include "tuuvm/sourcePosition.h"
 #include "tuuvm/string.h"
@@ -37,6 +38,81 @@ static tuuvm_tuple_t tuuvm_scanner_tokenAsFloat(tuuvm_context_t *context, size_t
     return TUUVM_NULL_TUPLE;
 }
 
+static tuuvm_tuple_t tuuvm_scanner_tokenAsCharacter(tuuvm_context_t *context, size_t stringSize, const uint8_t *string)
+{
+    TUUVM_ASSERT(stringSize >= 2);
+    if(stringSize == 2)
+    {
+        return tuuvm_tuple_char32_encode(context, 0);
+    }
+    else if(stringSize >= 4 && string[1] == '\\')
+    {
+        switch(string[2])
+        {
+        case 't': return tuuvm_tuple_char32_encode(context, '\t');
+        case 'r': return tuuvm_tuple_char32_encode(context, '\r');
+        case 'n': return tuuvm_tuple_char32_encode(context, '\n');
+        default: return tuuvm_tuple_char32_encode(context, string[2]);
+        }
+    }
+    else
+    {
+        return tuuvm_tuple_char32_encode(context, string[1]);
+    }
+}
+
+static size_t countSizeRequiredForString(size_t stringSize, const uint8_t *string)
+{
+    size_t result = 0;
+    for(size_t i = 0; i < stringSize; ++i)
+    {
+        uint8_t c = string[i];
+        if(c == '\\')
+            ++i;
+        ++result;
+    }
+
+    return result;
+}
+
+static tuuvm_tuple_t tuuvm_scanner_tokenAsString(tuuvm_context_t *context, size_t stringSize, const uint8_t *string)
+{
+    TUUVM_ASSERT(stringSize >= 2);
+
+    size_t requiredStringSize = countSizeRequiredForString(stringSize - 2, string + 1);
+    tuuvm_tuple_t allocatedString = tuuvm_string_createEmptyWithSize(context, requiredStringSize);
+    uint8_t *destination = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(allocatedString)->bytes;
+    for(size_t i = 1; i < stringSize - 1; ++i)
+    {
+        uint8_t c = string[i];
+        if(c == '\\')
+        {
+            ++i;
+            c = string[i];
+            switch(c)
+            {
+            case 't':
+                *destination++ = '\t';
+                break;
+            case 'r':
+                *destination++ = '\r';
+                break;
+            case 'n':
+                *destination++ = '\n';
+                break;
+            default:
+                break;
+            }
+        }
+        else
+        {
+            *destination++ = c;
+        }
+    }
+
+    return allocatedString;
+}
+
 static tuuvm_tuple_t tuuvm_scanner_incompleteMultilineCommentError(tuuvm_context_t *context, size_t stringSize, const uint8_t *string)
 {
     (void)stringSize;
@@ -49,6 +125,20 @@ static tuuvm_tuple_t tuuvm_scanner_unrecognizedTokenError(tuuvm_context_t *conte
     (void)stringSize;
     (void)string;
     return tuuvm_symbol_internWithCString(context, "Unrecognized token.");
+}
+
+static tuuvm_tuple_t tuuvm_scanner_incompleteCharacterError(tuuvm_context_t *context, size_t stringSize, const uint8_t *string)
+{
+    (void)stringSize;
+    (void)string;
+    return tuuvm_symbol_internWithCString(context, "Incomplete character.");
+}
+
+static tuuvm_tuple_t tuuvm_scanner_incompleteStringError(tuuvm_context_t *context, size_t stringSize, const uint8_t *string)
+{
+    (void)stringSize;
+    (void)string;
+    return tuuvm_symbol_internWithCString(context, "Incomplete string.");
 }
 
 static int tuuvm_scanner_lookAt(tuuvm_scannerState_t *state, size_t offset)
@@ -244,6 +334,70 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
         }
 
         tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_INTEGER, tuuvm_scanner_tokenAsInteger, outTokenList);
+        return true;
+    }
+
+    // Strings
+    if(c == '"')
+    {
+        ++state->position;
+        while((c = tuuvm_scanner_lookAt(state, 0)) != '"' && c >= 0)
+        {
+            if(c == '\\')
+            {
+                ++state->position;
+                if(tuuvm_scanner_lookAt(state, 0) < 0)
+                {
+                    tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_ERROR, tuuvm_scanner_incompleteStringError, outTokenList);
+                    return true;
+                }
+            }
+            else
+            {
+                ++state->position;
+            }
+        }
+
+        if(tuuvm_scanner_lookAt(state, 0) != '"')
+        {
+            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_ERROR, tuuvm_scanner_incompleteStringError, outTokenList);
+            return true;
+        }
+
+        ++state->position;
+        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_STRING, tuuvm_scanner_tokenAsString, outTokenList);
+        return true;
+    }
+
+    // Characters
+    if(c == '\'')
+    {
+        ++state->position;
+        while((c = tuuvm_scanner_lookAt(state, 0)) != '\'' && c >= 0)
+        {
+            if(c == '\\')
+            {
+                ++state->position;
+                if(tuuvm_scanner_lookAt(state, 0) < 0)
+                {
+                    tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_ERROR, tuuvm_scanner_incompleteCharacterError, outTokenList);
+                    return true;
+                }
+            }
+            else
+            {
+                ++state->position;
+            }
+        }
+
+        if(tuuvm_scanner_lookAt(state, 0) != '\'')
+        {
+            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_ERROR, tuuvm_scanner_incompleteCharacterError, outTokenList);
+            return true;
+        }
+
+        ++state->position;
+        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_CHARACTER, tuuvm_scanner_tokenAsCharacter, outTokenList);
         return true;
     }
 
