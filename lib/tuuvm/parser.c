@@ -100,8 +100,10 @@ static tuuvm_tuple_t tuuvm_parser_parsePrimaryExpression(tuuvm_context_t *contex
     case TUUVM_TOKEN_KIND_BAR:
         return tuuvm_parser_parseIdentifierReferenceReference(context, state);
 
+    case TUUVM_TOKEN_KIND_CHARACTER:
     case TUUVM_TOKEN_KIND_INTEGER:
     case TUUVM_TOKEN_KIND_FLOAT:
+    case TUUVM_TOKEN_KIND_STRING:
     case TUUVM_TOKEN_KIND_SYMBOL:
     case TUUVM_TOKEN_KIND_COLON:
     case TUUVM_TOKEN_KIND_COLON_COLON:
