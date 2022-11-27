@@ -62,4 +62,24 @@ TUUVM_API tuuvm_tuple_t tuuvm_string_primitive_hash(tuuvm_context_t *context, tu
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_string_primitive_equals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments);
 
+/**
+ * A default implementation of the toString function.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_defaultToString(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * A default implementation of the printString function.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_defaultPrintString(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Turns any tuple into a string representation.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_toString(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Turns any tuple into a string representation that can be used for source code input.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_printString(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
 #endif //TUUVM_STRING_H

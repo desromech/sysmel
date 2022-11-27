@@ -8,6 +8,7 @@
 
 extern void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context);
 extern void tuuvm_io_setupPrimitives(tuuvm_context_t *context);
+extern void tuuvm_string_setupPrimitives(tuuvm_context_t *context);
 
 TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicType(tuuvm_context_t *context, const char *name)
 {
@@ -157,6 +158,7 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
     tuuvm_context_createBasicTypes(context);
     tuuvm_astInterpreter_setupASTInterpreter(context);
     tuuvm_io_setupPrimitives(context);
+    tuuvm_string_setupPrimitives(context);
 
     return context;
 }

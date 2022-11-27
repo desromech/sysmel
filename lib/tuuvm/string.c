@@ -1,6 +1,8 @@
 #include "tuuvm/string.h"
 #include "tuuvm/context.h"
 #include "tuuvm/set.h"
+#include "tuuvm/type.h"
+#include "tuuvm/function.h"
 #include "internal/context.h"
 #include <string.h>
 
@@ -132,4 +134,63 @@ TUUVM_API tuuvm_tuple_t tuuvm_string_primitive_equals(tuuvm_context_t *context, 
     (void)closure;
     (void)argumentCount;
     return tuuvm_tuple_boolean_encode(tuuvm_string_equals(arguments[0], arguments[1]));
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_defaultToString(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_printString(context, tuple);
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_defaultPrintString(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_string_createWithCString(context, "TODO: defaultPrintString");
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_toString(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    tuuvm_tuple_t type = tuuvm_tuple_getType(context, tuple);
+    tuuvm_tuple_t toStringFunction = tuuvm_type_getToStringFunction(type);
+    if(toStringFunction == TUUVM_NULL_TUPLE)
+        return tuuvm_tuple_defaultToString(context, tuple);
+    return tuuvm_function_apply1(context, toStringFunction, tuple);
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_printString(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    tuuvm_tuple_t type = tuuvm_tuple_getType(context, tuple);
+    tuuvm_tuple_t printStringFunction = tuuvm_type_getPrintStringFunction(type);
+    if(printStringFunction == TUUVM_NULL_TUPLE)
+        return tuuvm_tuple_defaultPrintString(context, tuple);
+    return tuuvm_function_apply1(context, printStringFunction, tuple);
+}
+
+tuuvm_tuple_t tuuvm_string_primitive_toString(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+    return arguments[0];
+}
+
+tuuvm_tuple_t tuuvm_symbol_primitive_toString(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    tuuvm_tuple_t symbol = arguments[0];
+    return tuuvm_string_createWithString(context, tuuvm_tuple_getSizeInBytes(symbol), TUUVM_CAST_OOP_TO_OBJECT_TUPLE(symbol)->bytes);
+}
+
+void tuuvm_string_setupPrimitives(tuuvm_context_t *context)
+{
+    // String primitives
+    {
+        tuuvm_type_setToStringFunction(context->roots.stringType, tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_string_primitive_toString));
+    }
+
+    // Symbol primitives.
+    {
+        tuuvm_type_setToStringFunction(context->roots.symbolType, tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_symbol_primitive_toString));
+    }
 }
