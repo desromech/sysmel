@@ -135,7 +135,7 @@ typedef struct tuuvm_object_tuple_s
 /**
  * Is this a pointer tuple?
  */
-TUUVM_INLINE size_t tuuvm_tuple_isPointer(tuuvm_tuple_t tuple)
+TUUVM_INLINE bool tuuvm_tuple_isPointer(tuuvm_tuple_t tuple)
 {
     return (tuple & TUUVM_TUPLE_TAG_BIT_MASK) == TUUVM_TUPLE_TAG_POINTER;
 }
@@ -143,7 +143,7 @@ TUUVM_INLINE size_t tuuvm_tuple_isPointer(tuuvm_tuple_t tuple)
 /**
  * Is this non-null pointer tuple?
  */
-TUUVM_INLINE size_t tuuvm_tuple_isNonNullPointer(tuuvm_tuple_t tuple)
+TUUVM_INLINE bool tuuvm_tuple_isNonNullPointer(tuuvm_tuple_t tuple)
 {
     return tuple != 0 && (tuple & TUUVM_TUPLE_TAG_BIT_MASK) == TUUVM_TUPLE_TAG_POINTER;
 }
@@ -151,7 +151,7 @@ TUUVM_INLINE size_t tuuvm_tuple_isNonNullPointer(tuuvm_tuple_t tuple)
 /**
  * Is this an immediate tuple?
  */
-TUUVM_INLINE size_t tuuvm_tuple_isImmediate(tuuvm_tuple_t tuple)
+TUUVM_INLINE bool tuuvm_tuple_isImmediate(tuuvm_tuple_t tuple)
 {
     return (tuple & TUUVM_TUPLE_TAG_BIT_MASK) != TUUVM_TUPLE_TAG_POINTER;
 }
@@ -224,6 +224,55 @@ TUUVM_INLINE bool tuuvm_tuple_isImmutable(tuuvm_tuple_t tuple)
 {
     return !tuuvm_tuple_isNonNullPointer(tuple) || (TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & TUUVM_TUPLE_IMMUTABLE_BIT) != 0;
 }
+
+/**
+ * Decodes a small integer as an immediate tuple.
+ */
+TUUVM_INLINE tuuvm_stuple_t tuuvm_tuple_integer_decodeSmall(tuuvm_tuple_t tuple)
+{
+    return ((tuuvm_stuple_t)tuple) >> TUUVM_TUPLE_TAG_BIT_COUNT;
+}
+
+/**
+ * Encodes a small integer as an immediate tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_integer_encodeSmall(tuuvm_stuple_t value)
+{
+    return (((tuuvm_stuple_t)value) << TUUVM_TUPLE_TAG_BIT_COUNT) | TUUVM_TUPLE_TAG_INTEGER;
+}
+
+/**
+ * Encodes an int32 as an integer.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_integer_encodeBigInt32(tuuvm_context_t *context, int32_t value);
+
+/**
+ * Encodes an int64 as an integer.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_integer_encodeBigInt64(tuuvm_context_t *context, int64_t value);
+
+/*
+ * Encodes an integer as a tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_integer_encodeInt32(tuuvm_context_t *context, int32_t value)
+{
+    if(sizeof(int32_t) < sizeof(tuuvm_stuple_t) || (TUUVM_IMMEDIATE_INT_MIN <= value && value <= TUUVM_IMMEDIATE_INT_MAX))
+        return tuuvm_tuple_integer_encodeSmall((tuuvm_stuple_t)value);
+    else
+        return tuuvm_tuple_integer_encodeBigInt32(context, value);
+}
+
+/*
+ * Encodes an integer as a tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_integer_encodeInt64(tuuvm_context_t *context, int64_t value)
+{
+    if(sizeof(int64_t) < sizeof(tuuvm_stuple_t) || (TUUVM_IMMEDIATE_INT_MIN <= value && value <= TUUVM_IMMEDIATE_INT_MAX))
+        return tuuvm_tuple_integer_encodeSmall((tuuvm_stuple_t)value);
+    else
+        return tuuvm_tuple_integer_encodeBigInt64(context, value);
+}
+
 
 /**
  * Encodes a Char8 as an immediate tuple.

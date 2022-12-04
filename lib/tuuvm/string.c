@@ -1,8 +1,9 @@
 #include "tuuvm/string.h"
 #include "tuuvm/context.h"
+#include "tuuvm/errors.h"
+#include "tuuvm/function.h"
 #include "tuuvm/set.h"
 #include "tuuvm/type.h"
-#include "tuuvm/function.h"
 #include "internal/context.h"
 #include <string.h>
 
@@ -35,6 +36,16 @@ TUUVM_API tuuvm_tuple_t tuuvm_string_createWithString(tuuvm_context_t *context, 
     if(!result) return 0;
 
     memcpy(result->bytes, string, stringSize);
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_string_createWithReversedString(tuuvm_context_t *context, size_t stringSize, const char *string)
+{
+    tuuvm_object_tuple_t *result = tuuvm_context_allocateByteTuple(context, context->roots.stringType, stringSize);
+    if(!result) return 0;
+
+    for(size_t i = 0; i < stringSize; ++i)
+        result->bytes[i] = string[stringSize - i - 1];
     return (tuuvm_tuple_t)result;
 }
 

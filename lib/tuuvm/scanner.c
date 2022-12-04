@@ -1,6 +1,7 @@
 #include "tuuvm/scanner.h"
 #include "tuuvm/arrayList.h"
 #include "tuuvm/assert.h"
+#include "tuuvm/integer.h"
 #include "tuuvm/sourceCode.h"
 #include "tuuvm/sourcePosition.h"
 #include "tuuvm/string.h"
@@ -28,8 +29,7 @@ static tuuvm_tuple_t tuuvm_scanner_tokenAsSymbolWithoutPrefix(tuuvm_context_t *c
 
 static tuuvm_tuple_t tuuvm_scanner_tokenAsInteger(tuuvm_context_t *context, size_t stringSize, const uint8_t *string)
 {
-    // TODO: Implement this part properly.
-    return TUUVM_NULL_TUPLE;
+    return tuuvm_integer_parseString(context, stringSize, string);
 }
 
 static tuuvm_tuple_t tuuvm_scanner_tokenAsFloat(tuuvm_context_t *context, size_t stringSize, const uint8_t *string)
