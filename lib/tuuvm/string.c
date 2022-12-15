@@ -193,6 +193,26 @@ tuuvm_tuple_t tuuvm_symbol_primitive_toString(tuuvm_context_t *context, tuuvm_tu
     return tuuvm_string_createWithString(context, tuuvm_tuple_getSizeInBytes(symbol), TUUVM_CAST_OOP_TO_OBJECT_TUPLE(symbol)->bytes);
 }
 
+tuuvm_tuple_t tuuvm_tuple_primitive_printString(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    tuuvm_tuple_t tuple = arguments[0];
+    return tuuvm_tuple_printString(context, tuple);
+}
+
+tuuvm_tuple_t tuuvm_tuple_primitive_toString(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    tuuvm_tuple_t tuple = arguments[0];
+    return tuuvm_tuple_toString(context, tuple);
+}
+
 void tuuvm_string_setupPrimitives(tuuvm_context_t *context)
 {
     // String primitives
@@ -204,4 +224,7 @@ void tuuvm_string_setupPrimitives(tuuvm_context_t *context)
     {
         tuuvm_type_setToStringFunction(context->roots.symbolType, tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_symbol_primitive_toString));
     }
+
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "printString"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_printString));
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "toString"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_toString));
 }

@@ -289,6 +289,16 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
         while(tuuvm_scanner_isIdentifierMiddle(tuuvm_scanner_lookAt(state, 0)))
             ++state->position;
 
+        // Chop the scope resolutions.
+        while(':' == tuuvm_scanner_lookAt(state, 0) &&
+            ':' == tuuvm_scanner_lookAt(state, 1) &&
+            tuuvm_scanner_isIdentifierStart(tuuvm_scanner_lookAt(state, 2)))
+        {
+            state->position += 3;
+            while(tuuvm_scanner_isIdentifierMiddle(tuuvm_scanner_lookAt(state, 0)))
+                ++state->position;
+        }
+
         if(':' == tuuvm_scanner_lookAt(state, 0))
         {
             ++state->position;
@@ -411,6 +421,16 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
             state->position += 2;
             while(tuuvm_scanner_isIdentifierMiddle(tuuvm_scanner_lookAt(state, 0)))
                 ++state->position;
+
+            // Chop the scope resolutions.
+            while(':' == tuuvm_scanner_lookAt(state, 0) &&
+                ':' == tuuvm_scanner_lookAt(state, 1) &&
+                tuuvm_scanner_isIdentifierStart(tuuvm_scanner_lookAt(state, 2)))
+            {
+                state->position += 3;
+                while(tuuvm_scanner_isIdentifierMiddle(tuuvm_scanner_lookAt(state, 0)))
+                    ++state->position;
+            }
 
             // Accept keyword symbols.
             if(':' == tuuvm_scanner_lookAt(state, 0))

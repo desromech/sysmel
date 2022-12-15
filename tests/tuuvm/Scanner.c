@@ -32,6 +32,22 @@ TEST_SUITE(Scanner)
         TEST_ASSERT_EQUALS(tuuvm_symbol_internWithCString(tuuvm_test_context, "helloWorld1234"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 0)));
     }
 
+    TEST_CASE_WITH_FIXTURE(ScopedIdentifier, TuuvmCore)
+    {
+        tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "Scope::helloWorld1234", "test");
+        TEST_ASSERT_EQUALS(1, tuuvm_arraySlice_getSize(tokenList));
+        TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_IDENTIFIER, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 0)));
+        TEST_ASSERT_EQUALS(tuuvm_symbol_internWithCString(tuuvm_test_context, "Scope::helloWorld1234"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 0)));
+    }
+
+    TEST_CASE_WITH_FIXTURE(ScopedIdentifier2, TuuvmCore)
+    {
+        tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "Scope::SubScope::helloWorld1234", "test");
+        TEST_ASSERT_EQUALS(1, tuuvm_arraySlice_getSize(tokenList));
+        TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_IDENTIFIER, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 0)));
+        TEST_ASSERT_EQUALS(tuuvm_symbol_internWithCString(tuuvm_test_context, "Scope::SubScope::helloWorld1234"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 0)));
+    }
+
     TEST_CASE_WITH_FIXTURE(Keyword, TuuvmCore)
     {
         tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "test:", "test");
@@ -40,12 +56,28 @@ TEST_SUITE(Scanner)
         TEST_ASSERT_EQUALS(tuuvm_symbol_internWithCString(tuuvm_test_context, "test:"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 0)));
     }
 
+    TEST_CASE_WITH_FIXTURE(ScopedKeyword, TuuvmCore)
+    {
+        tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "Scope::test:", "test");
+        TEST_ASSERT_EQUALS(1, tuuvm_arraySlice_getSize(tokenList));
+        TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_KEYWORD, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 0)));
+        TEST_ASSERT_EQUALS(tuuvm_symbol_internWithCString(tuuvm_test_context, "Scope::test:"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 0)));
+    }
+
     TEST_CASE_WITH_FIXTURE(MultiKeyword, TuuvmCore)
     {
         tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "test:second:", "test");
         TEST_ASSERT_EQUALS(1, tuuvm_arraySlice_getSize(tokenList));
         TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_MULTI_KEYWORD, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 0)));
         TEST_ASSERT_EQUALS(tuuvm_symbol_internWithCString(tuuvm_test_context, "test:second:"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 0)));
+    }
+
+    TEST_CASE_WITH_FIXTURE(ScopedMultiKeyword, TuuvmCore)
+    {
+        tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "Scope::test:second:", "test");
+        TEST_ASSERT_EQUALS(1, tuuvm_arraySlice_getSize(tokenList));
+        TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_MULTI_KEYWORD, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 0)));
+        TEST_ASSERT_EQUALS(tuuvm_symbol_internWithCString(tuuvm_test_context, "Scope::test:second:"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 0)));
     }
 
     TEST_CASE_WITH_FIXTURE(IdentifierSymbol, TuuvmCore)

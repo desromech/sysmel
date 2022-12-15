@@ -59,14 +59,14 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "true"), TUUVM_TRUE_TUPLE);
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "void"), TUUVM_VOID_TUPLE);
 
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "IntrinsicsBuiltInEnvironment"), context->roots.intrinsicsBuiltInEnvironment);
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "InternentSymbolsSet"), context->roots.internedSymbolSet);
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "BootstrapEnv::IntrinsicsBuiltInEnvironment"), context->roots.intrinsicsBuiltInEnvironment);
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "BootstrapEnv::InternedSymbolSet"), context->roots.internedSymbolSet);
 
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Tuple:identityHash:"), context->roots.identityHashFunction);
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Tuple:identityEquals:"), context->roots.identityEqualsFunction);
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Tuple::identityHash"), context->roots.identityHashFunction);
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Tuple::identityEquals:"), context->roots.identityEqualsFunction);
 
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "String:hash:"), context->roots.stringHashFunction);
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "String:equals:"), context->roots.stringEqualsFunction);
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "String::hash"), context->roots.stringHashFunction);
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "String::equals:"), context->roots.stringEqualsFunction);
 
     // Set the name of the root basic type.
     tuuvm_context_setIntrinsicTypeName(context, context->roots.typeType, "Type");
