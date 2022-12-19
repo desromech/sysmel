@@ -23,6 +23,16 @@ TUUVM_API tuuvm_tuple_t tuuvm_string_createWithReversedString(tuuvm_context_t *c
 TUUVM_API tuuvm_tuple_t tuuvm_string_createEmptyWithSize(tuuvm_context_t *context, size_t stringSize);
 
 /**
+ * Creates a string by prepending the specified prefix.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_string_createWithPrefix(tuuvm_context_t *context, const char *prefix, tuuvm_tuple_t string);
+
+/**
+ * Creates a string by appending the specified suffix.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_string_createWithSuffix(tuuvm_context_t *context, tuuvm_tuple_t string, const char *suffix);
+
+/**
  * Creates a tuuvm string
  */
 TUUVM_API tuuvm_tuple_t tuuvm_string_createWithCString(tuuvm_context_t *context, const char *cstring);

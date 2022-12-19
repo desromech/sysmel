@@ -7,9 +7,12 @@
 #include <stdlib.h>
 
 extern void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context);
+extern void tuuvm_boolean_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_integer_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_io_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_string_setupPrimitives(tuuvm_context_t *context);
+extern void tuuvm_tuple_setupPrimitives(tuuvm_context_t *context);
+extern void tuuvm_type_setupPrimitives(tuuvm_context_t *context);
 
 TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicType(tuuvm_context_t *context, const char *name)
 {
@@ -161,6 +164,8 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
     tuuvm_integer_setupPrimitives(context);
     tuuvm_io_setupPrimitives(context);
     tuuvm_string_setupPrimitives(context);
+    tuuvm_tuple_setupPrimitives(context);
+    tuuvm_type_setupPrimitives(context);
 
     return context;
 }

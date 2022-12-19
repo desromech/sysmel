@@ -77,3 +77,7 @@ TUUVM_API void tuuvm_tuple_bytesToCStringFree(char *cstring)
 {
     free(cstring);
 }
+
+void tuuvm_tuple_setupPrimitives(tuuvm_context_t *context)
+{
+}

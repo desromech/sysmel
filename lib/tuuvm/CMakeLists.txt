@@ -4,6 +4,7 @@ set(tuuvm_sources
     arraySlice.c
     assert.c
     ast.c
+    boolean.c
     context.c
     dictionary.c
     environment.c

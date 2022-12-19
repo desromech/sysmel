@@ -29,7 +29,7 @@ static tuuvm_tuple_t tuuvm_scanner_tokenAsSymbolWithoutPrefix(tuuvm_context_t *c
 
 static tuuvm_tuple_t tuuvm_scanner_tokenAsInteger(tuuvm_context_t *context, size_t stringSize, const uint8_t *string)
 {
-    return tuuvm_integer_parseString(context, stringSize, string);
+    return tuuvm_integer_parseString(context, stringSize, (const char*)string);
 }
 
 static tuuvm_tuple_t tuuvm_scanner_tokenAsFloat(tuuvm_context_t *context, size_t stringSize, const uint8_t *string)

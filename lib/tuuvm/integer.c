@@ -146,6 +146,59 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_remainder(tuuvm_context_t *context, tuuvm_
     return TUUVM_NULL_TUPLE;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_integer_compare(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
+{
+    if(tuuvm_tuple_isImmediate(left) && tuuvm_tuple_isImmediate(right))
+    {
+        tuuvm_stuple_t leftValue = tuuvm_tuple_integer_decodeSmall(left);
+        tuuvm_stuple_t rightValue = tuuvm_tuple_integer_decodeSmall(right);
+        if(leftValue < rightValue)
+            return tuuvm_tuple_integer_encodeSmall(-1);
+        else if(leftValue > rightValue)
+            return tuuvm_tuple_integer_encodeSmall(1);
+        else
+            return tuuvm_tuple_integer_encodeSmall(0);
+    }
+
+    return TUUVM_NULL_TUPLE;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_integer_equals(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
+{
+    tuuvm_stuple_t comparisonResult = tuuvm_tuple_integer_decodeSmall(tuuvm_integer_compare(context, left, right));
+    return tuuvm_tuple_boolean_encode(comparisonResult == 0);
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_integer_notEquals(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
+{
+    tuuvm_stuple_t comparisonResult = tuuvm_tuple_integer_decodeSmall(tuuvm_integer_compare(context, left, right));
+    return tuuvm_tuple_boolean_encode(comparisonResult != 0);
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_integer_lessThan(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
+{
+    tuuvm_stuple_t comparisonResult = tuuvm_tuple_integer_decodeSmall(tuuvm_integer_compare(context, left, right));
+    return tuuvm_tuple_boolean_encode(comparisonResult < 0);
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_integer_lessEquals(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
+{
+    tuuvm_stuple_t comparisonResult = tuuvm_tuple_integer_decodeSmall(tuuvm_integer_compare(context, left, right));
+    return tuuvm_tuple_boolean_encode(comparisonResult <= 0);
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_integer_greaterThan(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
+{
+    tuuvm_stuple_t comparisonResult = tuuvm_tuple_integer_decodeSmall(tuuvm_integer_compare(context, left, right));
+    return tuuvm_tuple_boolean_encode(comparisonResult > 0);
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_integer_greaterEquals(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
+{
+    tuuvm_stuple_t comparisonResult = tuuvm_tuple_integer_decodeSmall(tuuvm_integer_compare(context, left, right));
+    return tuuvm_tuple_boolean_encode(comparisonResult >= 0);
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_integer_printString(tuuvm_context_t *context, tuuvm_tuple_t integer)
 {
     // Decode the small integer.
@@ -242,6 +295,69 @@ tuuvm_tuple_t tuuvm_integer_primitive_remainder(tuuvm_context_t *context, tuuvm_
     return tuuvm_integer_remainder(context, arguments[0], arguments[1]);
 }
 
+tuuvm_tuple_t tuuvm_integer_primitive_compare(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    return tuuvm_integer_compare(context, arguments[0], arguments[1]);
+}
+
+tuuvm_tuple_t tuuvm_integer_primitive_equals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    return tuuvm_integer_equals(context, arguments[0], arguments[1]);
+}
+
+tuuvm_tuple_t tuuvm_integer_primitive_notEquals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    return tuuvm_integer_notEquals(context, arguments[0], arguments[1]);
+}
+
+tuuvm_tuple_t tuuvm_integer_primitive_lessThan(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    return tuuvm_integer_lessThan(context, arguments[0], arguments[1]);
+}
+
+tuuvm_tuple_t tuuvm_integer_primitive_lessEquals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    return tuuvm_integer_lessEquals(context, arguments[0], arguments[1]);
+}
+
+tuuvm_tuple_t tuuvm_integer_primitive_greaterThan(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    return tuuvm_integer_greaterThan(context, arguments[0], arguments[1]);
+}
+
+tuuvm_tuple_t tuuvm_integer_primitive_greaterEquals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    return tuuvm_integer_greaterEquals(context, arguments[0], arguments[1]);
+}
+
 void tuuvm_integer_setupPrimitives(tuuvm_context_t *context)
 {
     tuuvm_type_setPrintStringFunction(context->roots.integerType, tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_printString));
@@ -252,4 +368,13 @@ void tuuvm_integer_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::multiply:"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_multiply));
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::divide:"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_divide));
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::remainder:"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_remainder));
+
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::compare:"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_compare));
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::equals:"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_equals));
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::notEquals:"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_notEquals));
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::lessThan:"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_lessThan));
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::lessEquals:"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_lessEquals));
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::greaterThan:"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_greaterThan));
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::greaterEquals:"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_greaterEquals));
+
 }
