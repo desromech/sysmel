@@ -1,4 +1,7 @@
 #include "tuuvm/tuple.h"
+#include "tuuvm/errors.h"
+#include "tuuvm/function.h"
+#include "tuuvm/string.h"
 #include "internal/context.h"
 #include <stdlib.h>
 #include <string.h>
@@ -78,6 +81,16 @@ TUUVM_API void tuuvm_tuple_bytesToCStringFree(char *cstring)
     free(cstring);
 }
 
+static tuuvm_tuple_t tuuvm_tuple_primitive_getType(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_getType(context, arguments[0]);
+}
+
 void tuuvm_tuple_setupPrimitives(tuuvm_context_t *context)
 {
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Tuple::getType"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_getType));
 }
