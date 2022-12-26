@@ -22,6 +22,8 @@ static tuuvm_tuple_t readWholeFileNamed(tuuvm_tuple_t inputFileNameTuple)
 {
     char *inputFileName = tuuvm_tuple_bytesToCString(inputFileNameTuple);
     FILE *inputFile = fopen(inputFileName, "rb");
+    if(!inputFile)
+        return TUUVM_NULL_TUPLE;
     tuuvm_tuple_bytesToCStringFree(inputFileName);
 
     fseek(inputFile, 0, SEEK_END);

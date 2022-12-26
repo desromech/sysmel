@@ -25,7 +25,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_arrayList_create(tuuvm_context_t *context);
 TUUVM_API void tuuvm_arrayList_add(tuuvm_context_t *context, tuuvm_tuple_t arrayList, tuuvm_tuple_t element);
 
 /**
- * Converts the array listo into an array slice.
+ * Converts the array list into an array slice.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_arrayList_asArraySlice(tuuvm_context_t *context, tuuvm_tuple_t arrayList);
 

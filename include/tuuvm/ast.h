@@ -14,6 +14,14 @@ typedef struct tuuvm_astNode_s
     tuuvm_tuple_t analyzedType; // Placeholder for typechecker. Unused by base interpreter.
 } tuuvm_astNode_t;
 
+typedef struct tuuvm_astDoWhileContinueWithNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t bodyExpression;
+    tuuvm_tuple_t conditionExpression;
+    tuuvm_tuple_t continueExpression;
+} tuuvm_astDoWhileContinueWithNode_t;
+
 typedef struct tuuvm_astErrorNode_s
 {
     tuuvm_astNode_t super;
@@ -53,6 +61,14 @@ typedef struct tuuvm_astIdentifierReferenceNode_s
     tuuvm_astNode_t super;
     tuuvm_tuple_t value;
 } tuuvm_astIdentifierReferenceNode_t;
+
+typedef struct tuuvm_astIfNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t conditionExpression;
+    tuuvm_tuple_t trueExpression;
+    tuuvm_tuple_t falseExpression;
+} tuuvm_astIfNode_t;
 
 typedef struct tuuvm_astSequenceNode_s
 {
@@ -97,6 +113,19 @@ typedef struct tuuvm_astSpliceNode_s
     tuuvm_tuple_t expression;
 } tuuvm_astSpliceNode_t;
 
+typedef struct tuuvm_astWhileContinueWithNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t conditionExpression;
+    tuuvm_tuple_t bodyExpression;
+    tuuvm_tuple_t continueExpression;
+} tuuvm_astWhileContinueWithNode_t;
+
+/**
+ * Is this a do while continue with node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isDoWhileContinueWithNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
 /**
  * Is this an error node?
  */ 
@@ -111,6 +140,11 @@ TUUVM_API bool tuuvm_astNode_isFunctionApplicationNode(tuuvm_context_t *context,
  * Is this an identifier reference node?
  */ 
 TUUVM_API bool tuuvm_astNode_isIdentifierReferenceNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this an if node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isIfNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
 
 /**
  * Is this a lambda node?
@@ -168,9 +202,34 @@ TUUVM_API bool tuuvm_astNode_isSpliceNode(tuuvm_context_t *context, tuuvm_tuple_
 TUUVM_API bool tuuvm_astNode_isMacroExpression(tuuvm_context_t *context, tuuvm_tuple_t tuple);
 
 /**
+ * Is this an while continue with node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isWhileContinueWithNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
  * Gets the source position from the ast node.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astNode_getSourcePosition(tuuvm_tuple_t node);
+
+/**
+ * Creates a while node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t bodyExpression, tuuvm_tuple_t conditionExpression, tuuvm_tuple_t continueExpression);
+
+/**
+ * Gets the condition expression from a while node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_getConditionExpression(tuuvm_tuple_t node);
+
+/**
+ * Gets the body expression from a while node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_getBodyExpression(tuuvm_tuple_t node);
+
+/**
+ * Gets the continue expression from a while node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_getContinueExpression(tuuvm_tuple_t node);
 
 /**
  * Creates an error node
@@ -196,6 +255,26 @@ TUUVM_API tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_create(tuuvm_context_t 
  * Gets the value from an identifier reference node.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_getValue(tuuvm_tuple_t node);
+
+/**
+ * Creates an if node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astIfNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t conditionExpression, tuuvm_tuple_t trueExpression, tuuvm_tuple_t falseExpression);
+
+/**
+ * Gets the condition expression from an if node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astIfNode_getConditionExpression(tuuvm_tuple_t node);
+
+/**
+ * Gets the true expression from an if node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astIfNode_getTrueExpression(tuuvm_tuple_t node);
+
+/**
+ * Gets the false expression from an if node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astIfNode_getFalseExpression(tuuvm_tuple_t node);
 
 /**
  * Creates a lambda node.
@@ -301,5 +380,25 @@ TUUVM_API tuuvm_tuple_t tuuvm_astQuasiUnquoteNode_create(tuuvm_context_t *contex
  * Creates a splice node
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astSpliceNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t expression);
+
+/**
+ * Creates a while node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astWhileContinueWithNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t conditionExpression, tuuvm_tuple_t bodyExpression, tuuvm_tuple_t continueExpression);
+
+/**
+ * Gets the condition expression from a while node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astWhileContinueWithNode_getConditionExpression(tuuvm_tuple_t node);
+
+/**
+ * Gets the body expression from a while node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astWhileContinueWithNode_getBodyExpression(tuuvm_tuple_t node);
+
+/**
+ * Gets the continue expression from a while node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astWhileContinueWithNode_getContinueExpression(tuuvm_tuple_t node);
 
 #endif //TUUVM_AST_H

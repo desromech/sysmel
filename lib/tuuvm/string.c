@@ -74,7 +74,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_string_createWithSuffix(tuuvm_context_t *context, 
         return string;
 
     size_t stringSize = tuuvm_tuple_getSizeInBytes(string);
-    tuuvm_tuple_t result = tuuvm_string_createEmptyWithSize(context, stringSize + suffix);
+    tuuvm_tuple_t result = tuuvm_string_createEmptyWithSize(context, stringSize + suffixLen);
     uint8_t *resultData = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(result)->bytes;
     memcpy(resultData, TUUVM_CAST_OOP_TO_OBJECT_TUPLE(string)->bytes, stringSize);
     memcpy(resultData + stringSize, suffix, suffixLen);

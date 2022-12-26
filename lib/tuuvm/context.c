@@ -115,15 +115,18 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.tokenType = tuuvm_context_createIntrinsicType(context, "Token");
 
     context->roots.astNodeType = tuuvm_context_createIntrinsicType(context, "ASTNode");
+    context->roots.astDoWhileContinueWithNodeType = tuuvm_context_createIntrinsicType(context, "ASTDoWhileContinueWithNode");
     context->roots.astErrorNodeType = tuuvm_context_createIntrinsicType(context, "ASTErrorNode");
     context->roots.astFunctionApplicationNodeType = tuuvm_context_createIntrinsicType(context, "ASTFunctionApplicationNode");
     context->roots.astLambdaNodeType = tuuvm_context_createIntrinsicType(context, "ASTLambdaNode");
     context->roots.astLiteralNodeType = tuuvm_context_createIntrinsicType(context, "ASTLiteralNode");
     context->roots.astLocalDefinitionNodeType = tuuvm_context_createIntrinsicType(context, "ASTLocalDefinitionNode");
     context->roots.astIdentifierReferenceNodeType = tuuvm_context_createIntrinsicType(context, "ASTIdentifierReferenceNode");
+    context->roots.astIfNodeType = tuuvm_context_createIntrinsicType(context, "ASTIfNode");
     context->roots.astSequenceNodeType = tuuvm_context_createIntrinsicType(context, "ASTSequenceNode");
     context->roots.astUnexpandedApplicationNodeType = tuuvm_context_createIntrinsicType(context, "ASTUnexpandedApplicationNode");
     context->roots.astUnexpandedSExpressionNodeType = tuuvm_context_createIntrinsicType(context, "ASTUnexpandedSExpressionNode");
+    context->roots.astWhileContinueWithNodeType = tuuvm_context_createIntrinsicType(context, "ASTWhileContinueWithNode");
 
     context->roots.astQuoteNodeType = tuuvm_context_createIntrinsicType(context, "ASTQuoteNode");
     context->roots.astQuasiQuoteNodeType = tuuvm_context_createIntrinsicType(context, "ASTQuasiQuoteNode");

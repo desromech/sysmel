@@ -4,6 +4,11 @@
 #include "tuuvm/function.h"
 #include "internal/context.h"
 
+TUUVM_API bool tuuvm_astNode_isDoWhileContinueWithNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_getType(context, tuple) == context->roots.astDoWhileContinueWithNodeType;
+}
+
 TUUVM_API bool tuuvm_astNode_isErrorNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
     return tuuvm_tuple_getType(context, tuple) == context->roots.astErrorNodeType;
@@ -17,6 +22,11 @@ TUUVM_API bool tuuvm_astNode_isFunctionApplicationNode(tuuvm_context_t *context,
 TUUVM_API bool tuuvm_astNode_isIdentifierReferenceNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
     return tuuvm_tuple_getType(context, tuple) == context->roots.astIdentifierReferenceNodeType;
+}
+
+TUUVM_API bool tuuvm_astNode_isIfNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_getType(context, tuple) == context->roots.astIfNodeType;
 }
 
 TUUVM_API bool tuuvm_astNode_isLambdaNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
@@ -77,10 +87,43 @@ TUUVM_API bool tuuvm_astNode_isUnexpandedSExpressionNode(tuuvm_context_t *contex
     return tuuvm_tuple_getType(context, tuple) == context->roots.astUnexpandedSExpressionNodeType;
 }
 
+TUUVM_API bool tuuvm_astNode_isWhileContinueWithNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_getType(context, tuple) == context->roots.astWhileContinueWithNodeType;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_astNode_getSourcePosition(tuuvm_tuple_t node)
 {
     if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
     return ((tuuvm_astNode_t*)node)->sourcePosition;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t bodyExpression, tuuvm_tuple_t conditionExpression, tuuvm_tuple_t continueExpression)
+{
+    tuuvm_astDoWhileContinueWithNode_t *result = (tuuvm_astDoWhileContinueWithNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astDoWhileContinueWithNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astDoWhileContinueWithNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->bodyExpression = bodyExpression;
+    result->conditionExpression = conditionExpression;
+    result->continueExpression = continueExpression;
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_getConditionExpression(tuuvm_tuple_t node)
+{
+    if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_astDoWhileContinueWithNode_t*)node)->conditionExpression;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_getBodyExpression(tuuvm_tuple_t node)
+{
+    if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_astDoWhileContinueWithNode_t*)node)->bodyExpression;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_getContinueExpression(tuuvm_tuple_t node)
+{
+    if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_astDoWhileContinueWithNode_t*)node)->continueExpression;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_astErrorNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t errorMessage)
@@ -115,8 +158,36 @@ TUUVM_API tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_create(tuuvm_context_t 
 
 TUUVM_API tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_getValue(tuuvm_tuple_t node)
 {
-    if(!tuuvm_tuple_isNonNullPointer(node)) return 0;
+    if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
     return ((tuuvm_astIdentifierReferenceNode_t*)node)->value;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astIfNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t conditionExpression, tuuvm_tuple_t trueExpression, tuuvm_tuple_t falseExpression)
+{
+    tuuvm_astIfNode_t *result = (tuuvm_astIfNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astIfNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astIfNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->conditionExpression = conditionExpression;
+    result->trueExpression = trueExpression;
+    result->falseExpression = falseExpression;
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astIfNode_getConditionExpression(tuuvm_tuple_t node)
+{
+    if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_astIfNode_t*)node)->conditionExpression;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astIfNode_getTrueExpression(tuuvm_tuple_t node)
+{
+    if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_astIfNode_t*)node)->trueExpression;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astIfNode_getFalseExpression(tuuvm_tuple_t node)
+{
+    if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_astIfNode_t*)node)->falseExpression;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_astLambdaNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t arguments, tuuvm_tuple_t body)
@@ -267,4 +338,32 @@ TUUVM_API tuuvm_tuple_t tuuvm_astSpliceNode_create(tuuvm_context_t *context, tuu
     result->super.sourcePosition = sourcePosition;
     result->expression = expression;
     return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astWhileContinueWithNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t conditionExpression, tuuvm_tuple_t bodyExpression, tuuvm_tuple_t continueExpression)
+{
+    tuuvm_astWhileContinueWithNode_t *result = (tuuvm_astWhileContinueWithNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astWhileContinueWithNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astWhileContinueWithNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->conditionExpression = conditionExpression;
+    result->bodyExpression = bodyExpression;
+    result->continueExpression = continueExpression;
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astWhileContinueWithNode_getConditionExpression(tuuvm_tuple_t node)
+{
+    if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_astWhileContinueWithNode_t*)node)->conditionExpression;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astWhileContinueWithNode_getBodyExpression(tuuvm_tuple_t node)
+{
+    if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_astWhileContinueWithNode_t*)node)->bodyExpression;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astWhileContinueWithNode_getContinueExpression(tuuvm_tuple_t node)
+{
+    if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_astWhileContinueWithNode_t*)node)->continueExpression;
 }

@@ -30,6 +30,16 @@ TUUVM_API tuuvm_tuple_t tuuvm_array_create(tuuvm_context_t *context, tuuvm_tuple
 TUUVM_API tuuvm_tuple_t tuuvm_array_at(tuuvm_tuple_t array, size_t index);
 
 /**
+ * Sets an element in an array.
+ */
+TUUVM_API void tuuvm_array_atPut(tuuvm_tuple_t array, size_t index, tuuvm_tuple_t value);
+
+/**
+ * Converts the array into an array slice.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_array_asArraySlice(tuuvm_context_t *context, tuuvm_tuple_t array);
+
+/**
  * Creates a byte array with the specified size.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_byteArray_create(tuuvm_context_t *context, tuuvm_tuple_t size);

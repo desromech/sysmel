@@ -251,6 +251,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_integer_encodeBigInt32(tuuvm_context_t *cont
  */
 TUUVM_API tuuvm_tuple_t tuuvm_tuple_integer_encodeBigInt64(tuuvm_context_t *context, int64_t value);
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtype-limits"
+#endif
+
 /*
  * Encodes an integer as a tuple.
  */
@@ -261,6 +266,10 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_integer_encodeInt32(tuuvm_context_t *cont
     else
         return tuuvm_tuple_integer_encodeBigInt32(context, value);
 }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 /*
  * Encodes an integer as a tuple.
