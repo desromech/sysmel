@@ -1,5 +1,8 @@
 #include "tuuvm/environment.h"
 #include "tuuvm/dictionary.h"
+#include "tuuvm/errors.h"
+#include "tuuvm/function.h"
+#include "tuuvm/string.h"
 #include "internal/context.h"
 
 TUUVM_API tuuvm_tuple_t tuuvm_environment_create(tuuvm_context_t *context, tuuvm_tuple_t parent)
@@ -40,4 +43,19 @@ TUUVM_API bool tuuvm_environment_lookSymbolRecursively(tuuvm_context_t *context,
         return true;
 
     return tuuvm_environment_lookSymbolRecursively(context, environmentObject->parent, symbol, outBinding);
+}
+
+static tuuvm_tuple_t tuuvm_environment_primitive_setSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+
+    tuuvm_environment_setSymbolBinding(context, arguments[0], arguments[1], arguments[2]);
+    return TUUVM_VOID_TUPLE;
+}
+
+void tuuvm_environment_setupPrimitives(tuuvm_context_t *context)
+{
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Environment::setSymbol:binding:"), tuuvm_function_createPrimitive(context, 3, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_environment_primitive_setSymbolBinding));
 }

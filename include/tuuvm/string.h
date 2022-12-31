@@ -38,6 +38,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_string_createWithSuffix(tuuvm_context_t *context, 
 TUUVM_API tuuvm_tuple_t tuuvm_string_createWithCString(tuuvm_context_t *context, const char *cstring);
 
 /**
+ * Creates a tuuvm by concatenating two of them.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_string_concat(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right);
+
+/**
  * Gets or create a tuuvm symbol from a string.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_symbol_internWithString(tuuvm_context_t *context, size_t stringSize, const char *string);

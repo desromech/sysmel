@@ -86,6 +86,24 @@ TUUVM_API tuuvm_tuple_t tuuvm_string_createWithCString(tuuvm_context_t *context,
     return tuuvm_string_createWithString(context, strlen(cstring), cstring);
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_string_concat(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
+{
+    size_t leftSize = tuuvm_tuple_getSizeInBytes(left);
+    size_t rightSize = tuuvm_tuple_getSizeInBytes(right);
+
+    if(leftSize == 0)
+        return right;
+    if(rightSize == 0)
+        return left;
+
+    size_t resultSize = leftSize + rightSize;
+    tuuvm_tuple_t result = tuuvm_string_createEmptyWithSize(context, resultSize);
+    uint8_t *resultData = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(result)->bytes;
+    memcpy(resultData, TUUVM_CAST_OOP_TO_OBJECT_TUPLE(left)->bytes, leftSize);
+    memcpy(resultData + leftSize, TUUVM_CAST_OOP_TO_OBJECT_TUPLE(right)->bytes, rightSize);
+    return result;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_symbol_internWithString(tuuvm_context_t *context, size_t stringSize, const char *string)
 {
     {
@@ -256,6 +274,24 @@ tuuvm_tuple_t tuuvm_tuple_primitive_toString(tuuvm_context_t *context, tuuvm_tup
     return tuuvm_tuple_toString(context, tuple);
 }
 
+static tuuvm_tuple_t tuuvm_string_primitive_concat(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    return tuuvm_string_concat(context, arguments[0], arguments[1]);
+}
+
+static tuuvm_tuple_t tuuvm_symbol_primitive_intern(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_symbol_internFromTuple(context, arguments[0]);
+}
+
 void tuuvm_string_setupPrimitives(tuuvm_context_t *context)
 {
     // String primitives
@@ -270,4 +306,6 @@ void tuuvm_string_setupPrimitives(tuuvm_context_t *context)
 
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "printString"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_printString));
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "toString"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_toString));
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "String::concat:"), tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_string_primitive_concat));
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Symbol::intern"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_symbol_primitive_intern));
 }

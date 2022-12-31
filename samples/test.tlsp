@@ -1,0 +1,75 @@
+## Test script
+
+(print "Hello World\n")
+(printLine "Hello World")
+(printLine #testSymbol)
+
+(printLine (toString "Hello World"))
+
+(printLine (if true (begin 1 2) 42))
+(printLine (if false 1 (begin 42 43)))
+
+(define (lookupSelector type selector)
+    type)
+
+(define (send receiver selector arguments)
+    (define receiverType (RawTuple::type receiver))
+    (lookupSelector receiverType selector))
+
+(define (until:do: stop block)
+    (define i 0)
+    (whileContinueWith (Integer::lessThan: i stop)
+        (block i)
+        (define i (Integer::add: i 1))))
+
+(define (printArrayElements array)
+    (define arraySize (RawTuple::size array))
+    (until:do: arraySize (lambda (i)
+        (printLine (RawTuple::slotAt: array i)))))
+
+(define (makeTypeAccessors type)
+    (define (Type::name type)
+        (RawTuple::slotAt: type 0))
+
+    (define (Type::supertype type)
+        (RawTuple::slotAt: type 1))
+
+    (define (Type::slotNames type)
+        (RawTuple::slotAt: type 2))
+
+    (define (Type::totalSlotCount type)
+        (RawTuple::slotAt: type 4))
+
+    (define typeName (Type::name Type))
+    (define slotNames (Type::slotNames Type))
+    (define slotCount (RawTuple::size slotNames))
+    (define supertype (Type::supertype type))
+    (define supertypeSlotCount (if (RawTuple::identityEquals: supertype nil)
+        0
+        (Type::totalSlotCount supertype)))
+    (until:do: slotCount (lambda (localSlotIndex)
+        (define slotIndex (Integer::add: supertypeSlotCount localSlotIndex))
+        (define slotName (RawTuple::slotAt: slotNames localSlotIndex))
+        (define getterName (Symbol::intern (String::concat: typeName (String::concat: "::" (toString slotName)))))
+        (define setterName (Symbol::intern (String::concat: typeName (String::concat: "::" (String::concat: (toString slotName) ":")))))
+        (Environment::setSymbol:binding: BootstrapEnv::IntrinsicsBuiltInEnvironment getterName (lambda (self) (RawTuple::slotAt: self slotIndex)))
+        (Environment::setSymbol:binding: BootstrapEnv::IntrinsicsBuiltInEnvironment setterName (lambda (self value) (RawTuple::slotAt:put self slotIndex value)))
+        )))
+(makeTypeAccessors Type)
+
+(printLine BootstrapEnv::IntrinsicsBuiltInEnvironment)
+
+(printLine (Type::name Type))
+(printLine (Type::supertype Type))
+(printLine (Type::slotNames Type))
+
+(printLine (send 1 #add: 1))
+
+(printLine (RawTuple::slotAt: -1 0))
+(printLine (RawTuple::slotAt: -2 0))
+
+(printLine (RawTuple::slotAt: "Hello World\n" 0))
+(printLine (RawTuple::slotAt: "Hello World\n" 1))
+
+(printLine (RawTuple::new 10))
+(printLine (RawTuple::byteNew 10))

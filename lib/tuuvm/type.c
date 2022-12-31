@@ -1,6 +1,4 @@
 #include "tuuvm/type.h"
-#include "tuuvm/errors.h"
-#include "tuuvm/function.h"
 #include "tuuvm/string.h"
 #include "tuuvm/type.h"
 #include "internal/context.h"
@@ -19,7 +17,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createWithName(tuuvm_context_t *context, tuuv
     tuuvm_type_setName(result, name);
     return result;
 }
-
+/*
 static tuuvm_tuple_t tuuvm_type_primitive_create(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
@@ -55,6 +53,7 @@ static tuuvm_tuple_t tuuvm_type_primitive_setToStringFunction(tuuvm_context_t *c
 
     return TUUVM_VOID_TUPLE;
 }
+
 void tuuvm_type_setupPrimitives(tuuvm_context_t *context)
 {
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Type::create"), tuuvm_function_createPrimitive(context, 0, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_type_primitive_create));
@@ -62,3 +61,4 @@ void tuuvm_type_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Type::setPrintStringFunction:"), tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_type_primitive_setPrintStringFunction));
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Type::setToStringFunction:"), tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_type_primitive_setToStringFunction));
 }
+*/
