@@ -79,6 +79,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t astSpliceNodeType;
 
     tuuvm_tuple_t intrinsicsBuiltInEnvironment;
+    tuuvm_tuple_t intrinsicTypes;
 } tuuvm_context_roots_t;
 
 struct tuuvm_context_s

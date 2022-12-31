@@ -65,9 +65,6 @@ TUUVM_API size_t tuuvm_arrayList_getCapacity(tuuvm_tuple_t arrayList)
     return tuuvm_tuple_getSizeInSlots(((tuuvm_arrayList_t*)arrayList)->storage);
 }
 
-/**
- * Gets the array list element at the specified index.
- */
 TUUVM_API tuuvm_tuple_t tuuvm_arrayList_at(tuuvm_tuple_t arrayList, size_t index)
 {
     if(!tuuvm_tuple_isNonNullPointer(arrayList)) return TUUVM_NULL_TUPLE;

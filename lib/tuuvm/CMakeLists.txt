@@ -16,6 +16,7 @@ set(tuuvm_sources
     io.c
     macro.c
     parser.c
+    primitiveIntegers.c
     scanner.c
     set.c
     sourceCode.c

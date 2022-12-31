@@ -1,6 +1,7 @@
 #include "internal/context.h"
 #include "tuuvm/type.h"
 #include "tuuvm/array.h"
+#include "tuuvm/arrayList.h"
 #include "tuuvm/environment.h"
 #include "tuuvm/string.h"
 #include "tuuvm/set.h"
@@ -13,6 +14,7 @@ extern void tuuvm_boolean_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_environment_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_integer_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_io_setupPrimitives(tuuvm_context_t *context);
+extern void tuuvm_primitiveInteger_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_string_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_tuple_setupPrimitives(tuuvm_context_t *context);
 
@@ -22,6 +24,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicType(tuuvm_context_t *conte
     tuuvm_tuple_t type = tuuvm_type_createWithName(context, nameSymbol);
     tuuvm_type_setSupertype(type, supertype);
     tuuvm_environment_setSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, nameSymbol, type);
+    tuuvm_arrayList_add(context, context->roots.intrinsicTypes, type);
 
     // First pass: count the arguments.
     size_t slotNameCount = 0;
@@ -55,6 +58,7 @@ static void tuuvm_context_setIntrinsicTypeMetadata(tuuvm_context_t *context, tuu
     tuuvm_type_setName(type, nameSymbol);
     tuuvm_type_setSupertype(type, supertype);
     tuuvm_environment_setSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, nameSymbol, type);
+    tuuvm_arrayList_add(context, context->roots.intrinsicTypes, type);
 
     // First pass: count the arguments.
     size_t slotNameCount = 0;
@@ -106,7 +110,11 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 
     // Create the intrinsic built-in environment
     context->roots.environmentType = tuuvm_type_createAnonymous(context);
+    context->roots.arrayType = tuuvm_type_createAnonymous(context);
+    context->roots.arrayListType = tuuvm_type_createAnonymous(context);
+
     context->roots.intrinsicsBuiltInEnvironment = tuuvm_environment_create(context, TUUVM_NULL_TUPLE);
+    context->roots.intrinsicTypes = tuuvm_arrayList_create(context);
 
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "nil"), TUUVM_NULL_TUPLE);
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "false"), TUUVM_FALSE_TUPLE);
@@ -114,6 +122,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "void"), TUUVM_VOID_TUPLE);
 
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "BootstrapEnv::IntrinsicsBuiltInEnvironment"), context->roots.intrinsicsBuiltInEnvironment);
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "BootstrapEnv::IntrinsicTypes"), context->roots.intrinsicTypes);
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "BootstrapEnv::InternedSymbolSet"), context->roots.internedSymbolSet);
 
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "RawTuple::identityHash"), context->roots.identityHashFunction);
@@ -123,22 +132,22 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "String::equals:"), context->roots.stringEqualsFunction);
 
     // Set the name of the root basic type.
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.environmentType, "Environment", TUUVM_NULL_TUPLE, "parent", "symbolTable", NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.typeType, "Type", TUUVM_NULL_TUPLE,
         "name", "supertype", "slotNames", "sumTypeAlternatives", "totalSlotCount", "flags",
         "equalsFunction", "hashFunction", "toStringFunction", "printStringFunction",
         "astNodeAnalysisFunction", "astNodeEvaluationFunction", "astNodeAnalysisAndEvaluationFunction",
         NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.environmentType, "Environment", TUUVM_NULL_TUPLE, "parent", "symbolTable", NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.primitiveFunctionType, "PrimitiveFunction", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolType, "Symbol", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.setType, "Set", TUUVM_NULL_TUPLE,
         "size", "storage", "equalsFunction", "hashFunction",
         NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.arrayType, "Array", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.arrayListType, "ArrayList", TUUVM_NULL_TUPLE, "size", "storage", NULL);
 
     // Create other root basic types.
-    context->roots.arrayType = tuuvm_context_createIntrinsicType(context, "Array", TUUVM_NULL_TUPLE, NULL);
     context->roots.arraySliceType = tuuvm_context_createIntrinsicType(context, "ArraySlice", TUUVM_NULL_TUPLE, "elements", "offset", "size", NULL);
-    context->roots.arrayListType = tuuvm_context_createIntrinsicType(context, "ArrayList", TUUVM_NULL_TUPLE, "size", "storage", NULL);
     context->roots.closureASTFunctionType = tuuvm_context_createIntrinsicType(context, "ClosureASTFunction", TUUVM_NULL_TUPLE, "sourcePosition", "flags", "closureEnvironment", "argumentSymbols", "body", NULL);
     context->roots.dictionaryType = tuuvm_context_createIntrinsicType(context, "Dictionary", TUUVM_NULL_TUPLE,
         "size", "storage", "equalsFunction", "hashFunction",
@@ -233,6 +242,7 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
     tuuvm_environment_setupPrimitives(context);
     tuuvm_integer_setupPrimitives(context);
     tuuvm_io_setupPrimitives(context);
+    tuuvm_primitiveInteger_setupPrimitives(context);
     tuuvm_string_setupPrimitives(context);
     tuuvm_tuple_setupPrimitives(context);
 

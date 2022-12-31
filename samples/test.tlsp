@@ -1,4 +1,52 @@
-## Test script
+## Some utility functions.
+(define (until:do: stop block)
+    (define i 0)
+    (whileContinueWith (Integer::lessThan: i stop)
+        (block i)
+        (define i (Integer::add: i 1))))
+
+(define (exportInstrinsicBuiltInBinding symbol binding)
+    (Environment::setSymbol:binding: BootstrapEnv::IntrinsicsBuiltInEnvironment symbol binding))
+
+## Bootstrap environment reflection core.
+(define (makeTypeAccessors type)
+    (define typeName (RawTuple::slotAt: type 0))
+
+    (define (exportAndBindInstanceMethod selector method)
+        (define exportedName (Symbol::intern (String::concat: typeName (String::concat: "::" (toString selector)))))
+        (exportInstrinsicBuiltInBinding exportedName method))
+
+    (define slotNames (RawTuple::slotAt: type 2))
+    (define slotCount (RawTuple::size slotNames))
+    (define supertype (RawTuple::slotAt: type 1))
+    (define supertypeSlotCount (if (RawTuple::identityEquals: supertype nil)
+        0
+        (RawTuple::slotAt: type 4)))
+    (until:do: slotCount (lambda (localSlotIndex)
+        (define slotIndex (Integer::add: supertypeSlotCount localSlotIndex))
+        (define slotName (RawTuple::slotAt: slotNames localSlotIndex))
+
+        ## Getter
+        (exportAndBindInstanceMethod slotName (lambda (self)
+            (RawTuple::slotAt: self slotIndex)))
+
+        ## Setter
+        (exportAndBindInstanceMethod (Symbol::intern (String::concat: (toString slotName) ":"))
+            (lambda (self)
+                (RawTuple::slotAt: self slotIndex)))
+        )))
+
+(define intrinsicTypeCount (RawTuple::slotAt: BootstrapEnv::IntrinsicTypes 0))
+(define intrinsicTypes (RawTuple::slotAt: BootstrapEnv::IntrinsicTypes 1))
+(until:do: intrinsicTypeCount (lambda (i)
+    (define intrinsicType (RawTuple::slotAt: intrinsicTypes i))
+    (makeTypeAccessors intrinsicType)
+    ))
+
+## Testing code goes here.
+
+(printLine BootstrapEnv::IntrinsicsBuiltInEnvironment)
+(printLine BootstrapEnv::IntrinsicTypes)
 
 (print "Hello World\n")
 (printLine "Hello World")
@@ -15,49 +63,6 @@
 (define (send receiver selector arguments)
     (define receiverType (RawTuple::type receiver))
     (lookupSelector receiverType selector))
-
-(define (until:do: stop block)
-    (define i 0)
-    (whileContinueWith (Integer::lessThan: i stop)
-        (block i)
-        (define i (Integer::add: i 1))))
-
-(define (printArrayElements array)
-    (define arraySize (RawTuple::size array))
-    (until:do: arraySize (lambda (i)
-        (printLine (RawTuple::slotAt: array i)))))
-
-(define (makeTypeAccessors type)
-    (define (Type::name type)
-        (RawTuple::slotAt: type 0))
-
-    (define (Type::supertype type)
-        (RawTuple::slotAt: type 1))
-
-    (define (Type::slotNames type)
-        (RawTuple::slotAt: type 2))
-
-    (define (Type::totalSlotCount type)
-        (RawTuple::slotAt: type 4))
-
-    (define typeName (Type::name Type))
-    (define slotNames (Type::slotNames Type))
-    (define slotCount (RawTuple::size slotNames))
-    (define supertype (Type::supertype type))
-    (define supertypeSlotCount (if (RawTuple::identityEquals: supertype nil)
-        0
-        (Type::totalSlotCount supertype)))
-    (until:do: slotCount (lambda (localSlotIndex)
-        (define slotIndex (Integer::add: supertypeSlotCount localSlotIndex))
-        (define slotName (RawTuple::slotAt: slotNames localSlotIndex))
-        (define getterName (Symbol::intern (String::concat: typeName (String::concat: "::" (toString slotName)))))
-        (define setterName (Symbol::intern (String::concat: typeName (String::concat: "::" (String::concat: (toString slotName) ":")))))
-        (Environment::setSymbol:binding: BootstrapEnv::IntrinsicsBuiltInEnvironment getterName (lambda (self) (RawTuple::slotAt: self slotIndex)))
-        (Environment::setSymbol:binding: BootstrapEnv::IntrinsicsBuiltInEnvironment setterName (lambda (self value) (RawTuple::slotAt:put self slotIndex value)))
-        )))
-(makeTypeAccessors Type)
-
-(printLine BootstrapEnv::IntrinsicsBuiltInEnvironment)
 
 (printLine (Type::name Type))
 (printLine (Type::supertype Type))
