@@ -1,4 +1,5 @@
 #include "tuuvm/tuple.h"
+#include "tuuvm/context.h"
 #include "tuuvm/errors.h"
 #include "tuuvm/function.h"
 #include "tuuvm/string.h"
@@ -90,7 +91,115 @@ static tuuvm_tuple_t tuuvm_tuple_primitive_getType(tuuvm_context_t *context, tuu
     return tuuvm_tuple_getType(context, arguments[0]);
 }
 
+static tuuvm_tuple_t tuuvm_tuple_primitive_setType(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    if(tuuvm_tuple_isNonNullPointer(arguments[0]))
+        tuuvm_tuple_setType((tuuvm_object_tuple_t*)arguments[0], arguments[1]);
+    return TUUVM_VOID_TUPLE;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_slotAt(tuuvm_context_t *context, tuuvm_tuple_t tuple, size_t slotIndex)
+{
+    (void)context;
+    if(!tuuvm_tuple_isNonNullPointer(tuple))
+    {
+        if(slotIndex < sizeof(tuuvm_tuple_t))
+        {
+            tuuvm_tuple_t tag = tuple & TUUVM_TUPLE_TAG_BIT_MASK;
+            if(TUUVM_TUPLE_TAG_SIGNED_START <= tag && tag <= TUUVM_TUPLE_TAG_SIGNED_END)
+            {
+                tuuvm_tuple_t byteValue = ( ((tuuvm_stuple_t)tuple) >> (TUUVM_TUPLE_TAG_BIT_COUNT + slotIndex*8)) & 0xFF;
+                return tuuvm_tuple_uint8_encode(byteValue);
+            }
+            else
+            {
+                tuuvm_tuple_t byteValue = (tuple >> (TUUVM_TUPLE_TAG_BIT_COUNT + slotIndex*8)) & 0xFF;
+                return tuuvm_tuple_uint8_encode(byteValue);
+            }
+        }
+
+        return TUUVM_NULL_TUPLE;
+    }
+
+    if(tuuvm_tuple_isBytes(tuple))
+    {
+        if(slotIndex < tuuvm_tuple_getSizeInBytes(tuple))
+            return tuuvm_tuple_uint8_encode(TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->bytes[slotIndex]);
+    }
+    else
+    {
+        if(slotIndex < tuuvm_tuple_getSizeInSlots(tuple))
+            return TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->pointers[slotIndex];
+    }
+
+    return TUUVM_NULL_TUPLE;
+}
+
+static tuuvm_tuple_t tuuvm_tuple_primitive_slotAt(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    return tuuvm_tuple_slotAt(context, arguments[0], tuuvm_tuple_anySize_decode(arguments[1]));
+}
+
+TUUVM_API void tuuvm_tuple_slotAtPut(tuuvm_context_t *context, tuuvm_tuple_t tuple, size_t slotIndex, tuuvm_tuple_t value)
+{
+    (void)context;
+    if(!tuuvm_tuple_isNonNullPointer(tuple))
+        return;
+
+    if(tuuvm_tuple_isBytes(tuple))
+    {
+        if(slotIndex < tuuvm_tuple_getSizeInBytes(tuple))
+            TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->bytes[slotIndex] = tuuvm_tuple_anySize_decode(value) & 0xFF;
+    }
+    else
+    {
+        if(slotIndex < tuuvm_tuple_getSizeInSlots(tuple))
+            TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->pointers[slotIndex] = value;
+    }
+}
+
+static tuuvm_tuple_t tuuvm_tuple_primitive_slotAtPut(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+
+    tuuvm_tuple_slotAtPut(context, arguments[0], tuuvm_tuple_anySize_decode(arguments[1]), arguments[2]);
+    return TUUVM_VOID_TUPLE;
+}
+
+static tuuvm_tuple_t tuuvm_tuple_primitive_new(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return (tuuvm_tuple_t)tuuvm_context_allocatePointerTuple(context, TUUVM_NULL_TUPLE, tuuvm_tuple_anySize_decode(arguments[0]));
+}
+
+static tuuvm_tuple_t tuuvm_tuple_primitive_byteNew(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return (tuuvm_tuple_t)tuuvm_context_allocateByteTuple(context, TUUVM_NULL_TUPLE, tuuvm_tuple_anySize_decode(arguments[0]));
+}
+
 void tuuvm_tuple_setupPrimitives(tuuvm_context_t *context)
 {
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Tuple::getType"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_getType));
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "RawTuple::type"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_getType));
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "RawTuple::type:"), tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_setType));
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "RawTuple::slotAt:"), tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_slotAt));
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "RawTuple::slotAt:put:"), tuuvm_function_createPrimitive(context, 3, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_slotAtPut));
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "RawTuple::new:"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_new));
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "RawTuple::byteNew:"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_byteNew));
 }

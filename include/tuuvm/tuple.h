@@ -58,25 +58,29 @@ typedef enum tuuvm_tuple_tag_e
     TUUVM_TUPLE_TAG_NIL = 0,
 
     TUUVM_TUPLE_TAG_INTEGER = 1,
-    TUUVM_TUPLE_TAG_CHAR8 = 2,
-    TUUVM_TUPLE_TAG_UINT8 = 3,
-    TUUVM_TUPLE_TAG_INT8 = 4,
+    TUUVM_TUPLE_TAG_INT8 = 2,
+    TUUVM_TUPLE_TAG_INT16 = 3,
+    TUUVM_TUPLE_TAG_INT32 = 4,
+    TUUVM_TUPLE_TAG_INT64 = 5,
 
-    TUUVM_TUPLE_TAG_CHAR16 = 5,
-    TUUVM_TUPLE_TAG_UINT16 = 6,
-    TUUVM_TUPLE_TAG_INT16 = 7,
+    TUUVM_TUPLE_TAG_CHAR8 = 6,
+    TUUVM_TUPLE_TAG_UINT8 = 7,
 
-    TUUVM_TUPLE_TAG_CHAR32 = 8,
-    TUUVM_TUPLE_TAG_UINT32 = 9,
-    TUUVM_TUPLE_TAG_INT32 = 10,
+    TUUVM_TUPLE_TAG_CHAR16 = 8,
+    TUUVM_TUPLE_TAG_UINT16 = 9,
 
-    TUUVM_TUPLE_TAG_UINT64 = 11,
-    TUUVM_TUPLE_TAG_INT64 = 12,
+    TUUVM_TUPLE_TAG_CHAR32 = 10,
+    TUUVM_TUPLE_TAG_UINT32 = 11,
+
+    TUUVM_TUPLE_TAG_UINT64 = 12,
 
     TUUVM_TUPLE_TAG_FLOAT = 13,
     TUUVM_TUPLE_TAG_DOUBLE = 14,
 
     TUUVM_TUPLE_TAG_TRIVIAL = 15,
+
+    TUUVM_TUPLE_TAG_SIGNED_START = TUUVM_TUPLE_TAG_INTEGER,
+    TUUVM_TUPLE_TAG_SIGNED_END = TUUVM_TUPLE_TAG_INT64,
 
     TUUVM_TUPLE_TAG_COUNT = 16
 } tuuvm_tuple_tag_t;
@@ -653,6 +657,16 @@ TUUVM_INLINE bool tuuvm_tuple_identityEquals(tuuvm_tuple_t a, tuuvm_tuple_t b)
 }
 
 /**
+ * Decodes any size valuable tuple.
+ */
+TUUVM_INLINE size_t tuuvm_tuple_anySize_decode(tuuvm_tuple_t tuple)
+{
+    if(tuuvm_tuple_isImmediate(tuple))
+        return (size_t)(tuple>>TUUVM_TUPLE_TAG_BIT_COUNT);
+    return 0;
+}
+
+/**
  * The primitive identity hash function.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_tuple_primitive_identityHash(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments);
@@ -671,5 +685,15 @@ TUUVM_API char *tuuvm_tuple_bytesToCString(tuuvm_tuple_t tuple);
  * Frees a C string that was allocated for converting a tuple into a C string.
  */
 TUUVM_API void tuuvm_tuple_bytesToCStringFree(char *cstring);
+
+/**
+ * Gets the value of a slot in a tuple
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_slotAt(tuuvm_context_t *context, tuuvm_tuple_t tuple, size_t slotIndex);
+
+/**
+ * Sets the value in a slot of a tuple
+ */
+TUUVM_API void tuuvm_tuple_slotAtPut(tuuvm_context_t *context, tuuvm_tuple_t tuple, size_t slotIndex, tuuvm_tuple_t value);
 
 #endif //TUUVM_TUPLE_H

@@ -13,6 +13,9 @@ typedef struct tuuvm_type_tuple_s
     tuuvm_tuple_t name;
     tuuvm_tuple_t supertype;
     tuuvm_tuple_t slotNames;
+    tuuvm_tuple_t sumTypeAlternatives;
+    tuuvm_tuple_t totalSlotCount;
+    tuuvm_tuple_t flags;
 
     tuuvm_tuple_t equalsFunction;
     tuuvm_tuple_t hashFunction;
@@ -51,6 +54,78 @@ TUUVM_INLINE void tuuvm_type_setName(tuuvm_tuple_t type, tuuvm_tuple_t name)
 {
     if(!tuuvm_tuple_isNonNullPointer(type)) return;
     ((tuuvm_type_tuple_t*)type)->name = name;
+}
+
+/**
+ * Gets the supertype
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getSupertype(tuuvm_tuple_t type)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_type_tuple_t*)type)->supertype;
+}
+
+/**
+ * Sets the supertype
+ */
+TUUVM_INLINE void tuuvm_type_setSupertype(tuuvm_tuple_t type, tuuvm_tuple_t supertype)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return;
+    ((tuuvm_type_tuple_t*)type)->supertype = supertype;
+}
+
+/**
+ * Gets the slot names
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getSlotNames(tuuvm_tuple_t type)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_type_tuple_t*)type)->slotNames;
+}
+
+/**
+ * Sets the slot names
+ */
+TUUVM_INLINE void tuuvm_type_setSlotNames(tuuvm_tuple_t type, tuuvm_tuple_t slotNames)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return;
+    ((tuuvm_type_tuple_t*)type)->slotNames = slotNames;
+}
+
+/**
+ * Gets the total slot count.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getTotalSlotCount(tuuvm_tuple_t type)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_type_tuple_t*)type)->totalSlotCount;
+}
+
+/**
+ * Sets the total slot count
+ */
+TUUVM_INLINE void tuuvm_type_setTotalSlotCount(tuuvm_tuple_t type, tuuvm_tuple_t totalSlotCount)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return;
+    ((tuuvm_type_tuple_t*)type)->totalSlotCount = totalSlotCount;
+}
+
+/**
+ * Gets the type flags.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getFlags(tuuvm_tuple_t type)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_type_tuple_t*)type)->flags;
+}
+
+/**
+ * Sets the type flags.
+ */
+TUUVM_INLINE void tuuvm_type_setFlags(tuuvm_tuple_t type, tuuvm_tuple_t flags)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return;
+    ((tuuvm_type_tuple_t*)type)->flags = flags;
 }
 
 /**
