@@ -207,7 +207,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_greaterEquals)(tuuvm_c
     return tuuvm_tuple_boolean_encode(left >= right);
 }
 
-void PRIMITIVE_INTEGER_FUNCTION(setupPrimitives)(tuuvm_context_t *context)
+static void PRIMITIVE_INTEGER_FUNCTION(setupPrimitives)(tuuvm_context_t *context)
 {
     tuuvm_type_setPrintStringFunction(context->roots.INTEGER_TYPE_ROOT_NAME, tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, PRIMITIVE_INTEGER_FUNCTION(primitive_printString)));
 

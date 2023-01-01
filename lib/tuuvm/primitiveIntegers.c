@@ -157,5 +157,18 @@ static tuuvm_tuple_t tuuvm_primitiveInteger_unsigned_printString(tuuvm_context_t
 
 void tuuvm_primitiveInteger_setupPrimitives(tuuvm_context_t *context)
 {
+    tuuvm_char8_setupPrimitives(context);
     tuuvm_uint8_setupPrimitives(context);
+    tuuvm_int8_setupPrimitives(context);
+
+    tuuvm_char16_setupPrimitives(context);
+    tuuvm_uint16_setupPrimitives(context);
+    tuuvm_int16_setupPrimitives(context);
+
+    tuuvm_char32_setupPrimitives(context);
+    tuuvm_uint32_setupPrimitives(context);
+    tuuvm_int32_setupPrimitives(context);
+
+    tuuvm_uint64_setupPrimitives(context);
+    tuuvm_int64_setupPrimitives(context);
 }
