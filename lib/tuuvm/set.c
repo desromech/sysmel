@@ -1,5 +1,6 @@
 #include "tuuvm/array.h"
 #include "tuuvm/set.h"
+#include "tuuvm/errors.h"
 #include "tuuvm/function.h"
 #include "tuuvm/assert.h"
 #include "internal/context.h"
@@ -153,7 +154,7 @@ TUUVM_API void tuuvm_set_insert(tuuvm_context_t *context, tuuvm_tuple_t set, tuu
         tuuvm_set_increaseCapacity(context, set);
         elementIndex = tuuvm_set_scanFor(context, set, element);
         if(elementIndex < 0)
-            abort();
+            tuuvm_error("Set out of memory.");
     }
 
     tuuvm_set_t *setObject = (tuuvm_set_t*)set;

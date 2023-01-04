@@ -32,8 +32,8 @@
 
         ## Setter
         (exportAndBindInstanceMethod (Symbol::intern (String::concat: (toString slotName) ":"))
-            (lambda (self)
-                (RawTuple::slotAt: self slotIndex)))
+            (lambda (self value)
+                (RawTuple::slotAt:put: self slotIndex value)))
         )))
 
 (define intrinsicTypeCount (RawTuple::slotAt: BootstrapEnv::IntrinsicTypes 0))
@@ -41,6 +41,15 @@
 (until:do: intrinsicTypeCount (lambda (i)
     (define intrinsicType (RawTuple::slotAt: intrinsicTypes i))
     (makeTypeAccessors intrinsicType)
+    ))
+
+## Some printing methods to facilitate debugging.
+(Type::printStringFunction: SourcePosition (lambda (sourcePosition)
+    (define sourceName (SourceCode::name (SourcePosition::sourceCode sourcePosition)))
+    (define startIndex (SourcePosition::startIndex sourcePosition))
+    (define endIndex (SourcePosition::endIndex sourcePosition))
+    (String::concat: (String::concat: (String::concat: sourceName ":") (toString startIndex))
+        (String::concat: "-" (toString endIndex)))
     ))
 
 ## Testing code goes here.
@@ -80,3 +89,5 @@
 (printLine (RawTuple::byteNew 10))
 
 (printLine (UInt32::fromInteger 42))
+
+(error "Test error")

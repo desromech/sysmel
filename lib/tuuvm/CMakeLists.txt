@@ -21,6 +21,7 @@ set(tuuvm_sources
     set.c
     sourceCode.c
     sourcePosition.c
+    stackFrame.c
     string.c
     token.c
     tuple.c

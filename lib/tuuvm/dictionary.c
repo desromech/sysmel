@@ -1,5 +1,6 @@
 #include "tuuvm/array.h"
 #include "tuuvm/dictionary.h"
+#include "tuuvm/errors.h"
 #include "tuuvm/function.h"
 #include "tuuvm/assert.h"
 #include "internal/context.h"
@@ -118,7 +119,7 @@ TUUVM_API void tuuvm_dictionary_atPut(tuuvm_context_t *context, tuuvm_tuple_t di
         tuuvm_dictionary_increaseCapacity(context, dictionary);
         elementIndex = tuuvm_dictionary_scanFor(context, dictionary, key);
         if(elementIndex < 0)
-            abort();
+           tuuvm_error("Dictionary out of memory.");
     }
 
     tuuvm_dictionary_t *dictionaryObject = (tuuvm_dictionary_t*)dictionary;

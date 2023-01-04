@@ -11,6 +11,7 @@
 #include "tuuvm/parser.h"
 #include "tuuvm/string.h"
 #include "tuuvm/sourceCode.h"
+#include "tuuvm/stackFrame.h"
 #include "tuuvm/type.h"
 #include "internal/context.h"
 #include <stdio.h>
@@ -108,13 +109,23 @@ static tuuvm_tuple_t tuuvm_astSequenceNode_primitiveEvaluate(tuuvm_context_t *co
 
     tuuvm_tuple_t result = TUUVM_VOID_TUPLE;
 
-    tuuvm_tuple_t expressions = ((tuuvm_astSequenceNode_t*)node)->expressions;
+    tuuvm_astSequenceNode_t *sequenceNode = (tuuvm_astSequenceNode_t*)node;
+
+    tuuvm_stackFrameSourcePositionRecord_t sourcePositionRecord = {
+        .type = TUUVM_STACK_FRAME_RECORD_TYPE_SOURCE_POSITION,
+        .sourcePosition = sequenceNode->super.sourcePosition,
+    };
+    tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&sourcePositionRecord);    
+
+    tuuvm_tuple_t expressions = sequenceNode->expressions;
     size_t expressionCount = tuuvm_arraySlice_getSize(expressions);
     for(size_t i = 0; i < expressionCount; ++i)
     {
         tuuvm_tuple_t expression = tuuvm_arraySlice_at(expressions, i);
         result = tuuvm_interpreter_evaluateASTWithEnvironment(context, expression, environment);
     }
+
+    tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&sourcePositionRecord);    
 
     return result;
 }
@@ -364,6 +375,12 @@ static tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_primitiveEvaluate(tuuvm_co
 
     if(tuuvm_environment_lookSymbolRecursively(context, environment, referenceNode->value, &binding))
         return binding;
+
+    tuuvm_stackFrameSourcePositionRecord_t sourcePositionRecord = {
+        .type = TUUVM_STACK_FRAME_RECORD_TYPE_SOURCE_POSITION,
+        .sourcePosition = referenceNode->super.sourcePosition,
+    };
+    tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&sourcePositionRecord);
 
     tuuvm_error("Failed to find symbol binding");
     return TUUVM_NULL_TUPLE;
@@ -648,6 +665,13 @@ static tuuvm_tuple_t tuuvm_astFunctionApplicationNode_primitiveEvaluate(tuuvm_co
     tuuvm_tuple_t environment = arguments[1];
 
     tuuvm_astFunctionApplicationNode_t *applicationNode = (tuuvm_astFunctionApplicationNode_t*)node;
+
+    tuuvm_stackFrameSourcePositionRecord_t sourcePositionRecord = {
+        .type = TUUVM_STACK_FRAME_RECORD_TYPE_SOURCE_POSITION,
+        .sourcePosition = applicationNode->super.sourcePosition,
+    };
+    tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&sourcePositionRecord);
+
     tuuvm_tuple_t function = tuuvm_interpreter_evaluateASTWithEnvironment(context, applicationNode->functionExpression, environment);
 
     TUUVM_ASSERT(!tuuvm_function_isVariadic(context, function));
@@ -662,7 +686,9 @@ static tuuvm_tuple_t tuuvm_astFunctionApplicationNode_primitiveEvaluate(tuuvm_co
         applicationArguments[i] = tuuvm_interpreter_evaluateASTWithEnvironment(context, argumentNode, environment);
     }
 
-    return tuuvm_function_apply(context, function, applicationArgumentCount, applicationArguments);
+    tuuvm_tuple_t result = tuuvm_function_apply(context, function, applicationArgumentCount, applicationArguments);
+    tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&sourcePositionRecord);
+    return result;
 }
 
 static tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_primitiveMacro(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -792,6 +818,12 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_
 {
     tuuvm_closureASTFunction_t *closureASTFunction = (tuuvm_closureASTFunction_t*)function;
 
+    tuuvm_stackFrameFunctionActivationRecord_t functionActivationRecord = {
+        .type = TUUVM_STACK_FRAME_RECORD_TYPE_FUNCTION_ACTIVATION,
+        .function = function,
+    };
+    tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&functionActivationRecord);  
+
     size_t expectedArgumentCount = tuuvm_arraySlice_getSize(closureASTFunction->argumentSymbols);
     if(argumentCount != expectedArgumentCount)
         tuuvm_error_argumentCountMismatch(expectedArgumentCount, argumentCount);
@@ -800,7 +832,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_
     for(size_t i = 0; i < argumentCount; ++i)
         tuuvm_environment_setSymbolBinding(context, applicationEnvironment, tuuvm_arraySlice_at(closureASTFunction->argumentSymbols, i), arguments[i]);
 
-    return tuuvm_interpreter_evaluateASTWithEnvironment(context, closureASTFunction->body, applicationEnvironment);
+    tuuvm_tuple_t result = tuuvm_interpreter_evaluateASTWithEnvironment(context, closureASTFunction->body, applicationEnvironment);
+    tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&functionActivationRecord);  
+    return result;
 }
 
 void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context)

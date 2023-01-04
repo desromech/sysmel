@@ -4,6 +4,7 @@
 #include <tuuvm/context.h>
 #include <tuuvm/environment.h>
 #include <tuuvm/interpreter.h>
+#include <tuuvm/stackFrame.h>
 #include <tuuvm/string.h>
 
 static tuuvm_context_t *context;
@@ -48,15 +49,8 @@ static void processFileNamed(tuuvm_tuple_t inputFileNameTuple)
     tuuvm_interpreter_analyzeAndEvaluateStringWithEnvironment(context, tuuvm_environment_createDefaultForEvaluation(context), sourceString, inputFileNameTuple);
 }
 
-int main(int argc, const char *argv[])
+int doMain(int argc, const char *argv[])
 {
-    context = tuuvm_context_create();
-    if(!context)
-    {
-        fprintf(stderr, "Failed to create tuuvm context.\n");
-        return 1;
-    }
-
     // Parse the command line.
     tuuvm_tuple_t filesToProcess = tuuvm_arrayList_create(context);
     tuuvm_tuple_t remainingArgs = tuuvm_arrayList_create(context);
@@ -100,7 +94,39 @@ int main(int argc, const char *argv[])
         processFileNamed(inputFileName);
     }
 
+    return 0;
+}
+
+int main(int argc, const char *argv[])
+{
+    context = tuuvm_context_create();
+    if(!context)
+    {
+        fprintf(stderr, "Failed to create tuuvm context.\n");
+        return 1;
+    }
+
+    tuuvm_stackFrameLandingPadRecord_t topLevelFrame = {
+        .type = TUUVM_STACK_FRAME_RECORD_TYPE_LANDING_PAD,
+        .keepStackTrace = true
+    };
+
+    tuuvm_stackFrame_enterContext(context, (tuuvm_stackFrameRecord_t*)&topLevelFrame);
+    int exitCode = 0;
+    if(!setjmp(topLevelFrame.jmpbuffer))
+    {
+        doMain(argc, argv);
+    }
+    else
+    {
+        tuuvm_tuple_t errorString = tuuvm_tuple_toString(context, topLevelFrame.exception);
+        fprintf(stderr, "Unhandled exception: " TUUVM_STRING_PRINTF_FORMAT "\n", TUUVM_STRING_PRINTF_ARG(errorString));
+        tuuvm_stackFrame_printStackTrace(context, topLevelFrame.stackTrace);
+        exitCode = 1;
+    }
+
+    tuuvm_stackFrame_leaveContext();
     tuuvm_context_destroy(context);
     
-    return 0;
+    return exitCode;
 }

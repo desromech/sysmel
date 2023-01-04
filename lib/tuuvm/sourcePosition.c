@@ -3,7 +3,7 @@
 
 TUUVM_API tuuvm_tuple_t tuuvm_sourcePosition_create(tuuvm_context_t *context, tuuvm_tuple_t sourceCode, tuuvm_tuple_t startIndex, tuuvm_tuple_t endIndex)
 {
-    tuuvm_sourcePosition_t *result = (tuuvm_sourcePosition_t*)tuuvm_context_allocatePointerTuple(context, context->roots.sourceCodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_sourcePosition_t));
+    tuuvm_sourcePosition_t *result = (tuuvm_sourcePosition_t*)tuuvm_context_allocatePointerTuple(context, context->roots.sourcePositionType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_sourcePosition_t));
     result->sourceCode = sourceCode;
     result->startIndex = startIndex;
     result->endIndex = endIndex;

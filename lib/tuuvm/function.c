@@ -1,5 +1,6 @@
 #include "tuuvm/function.h"
 #include "tuuvm/arraySlice.h"
+#include "tuuvm/errors.h"
 #include "tuuvm/interpreter.h"
 #include "internal/context.h"
 #include <stdlib.h>
@@ -72,5 +73,5 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
         return tuuvm_interpreter_applyClosureASTFunction(context, function, argumentCount, arguments);
     }
 
-    abort();
+    tuuvm_error("Cannot apply non-functional object.");
 }
