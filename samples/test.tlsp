@@ -1,9 +1,9 @@
 ## Some utility functions.
 (define (until:do: stop block)
     (define i 0)
-    (whileContinueWith (Integer::lessThan: i stop)
+    (whileContinueWith (Integer::< i stop)
         (block i)
-        (define i (Integer::add: i 1))))
+        (define i (Integer::+ i 1))))
 
 (define (exportInstrinsicBuiltInBinding symbol binding)
     (Environment::setSymbol:binding: BootstrapEnv::IntrinsicsBuiltInEnvironment symbol binding))
@@ -19,11 +19,11 @@
     (define slotNames (RawTuple::slotAt: type 2))
     (define slotCount (RawTuple::size slotNames))
     (define supertype (RawTuple::slotAt: type 1))
-    (define supertypeSlotCount (if (RawTuple::identityEquals: supertype nil)
+    (define supertypeSlotCount (if (== supertype nil)
         0
         (RawTuple::slotAt: type 4)))
     (until:do: slotCount (lambda (localSlotIndex)
-        (define slotIndex (Integer::add: supertypeSlotCount localSlotIndex))
+        (define slotIndex (Integer::+ supertypeSlotCount localSlotIndex))
         (define slotName (RawTuple::slotAt: slotNames localSlotIndex))
 
         ## Getter
@@ -78,3 +78,5 @@
 
 (printLine (RawTuple::new 10))
 (printLine (RawTuple::byteNew 10))
+
+(printLine (UInt32::fromInteger 42))

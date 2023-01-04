@@ -126,7 +126,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "BootstrapEnv::InternedSymbolSet"), context->roots.internedSymbolSet);
 
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "RawTuple::identityHash"), context->roots.identityHashFunction);
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "RawTuple::identityEquals:"), context->roots.identityEqualsFunction);
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "=="), context->roots.identityEqualsFunction);
 
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "String::hash"), context->roots.stringHashFunction);
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "String::equals:"), context->roots.stringEqualsFunction);

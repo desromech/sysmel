@@ -246,6 +246,16 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_integer_encodeSmall(tuuvm_stuple_t value)
 }
 
 /**
+ * Decodes an integer as an int64
+ */
+TUUVM_API int64_t tuuvm_tuple_integer_decodeInt64(tuuvm_tuple_t value);
+
+/**
+ * Decodes an integer as an int64
+ */
+TUUVM_API uint64_t tuuvm_tuple_integer_decodeUInt64(tuuvm_tuple_t value);
+
+/**
  * Encodes an int32 as an integer.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_tuple_integer_encodeBigInt32(tuuvm_context_t *context, int32_t value);
@@ -254,6 +264,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_integer_encodeBigInt32(tuuvm_context_t *cont
  * Encodes an int64 as an integer.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_tuple_integer_encodeBigInt64(tuuvm_context_t *context, int64_t value);
+
+/**
+ * Encodes an uint64 as an integer.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_integer_encodeBigUInt64(tuuvm_context_t *context, uint64_t value);
 
 #ifdef __GNUC__
 #pragma GCC diagnostic push
@@ -286,6 +301,16 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_integer_encodeInt64(tuuvm_context_t *cont
         return tuuvm_tuple_integer_encodeBigInt64(context, value);
 }
 
+/*
+ * Encodes an integer as a tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_integer_encodeUInt64(tuuvm_context_t *context, uint64_t value)
+{
+    if(sizeof(uint64_t) < sizeof(tuuvm_stuple_t) || value <= TUUVM_IMMEDIATE_INT_MAX)
+        return tuuvm_tuple_integer_encodeSmall((tuuvm_stuple_t)value);
+    else
+        return tuuvm_tuple_integer_encodeBigUInt64(context, value);
+}
 
 /**
  * Encodes a Char8 as an immediate tuple.

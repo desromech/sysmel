@@ -17,6 +17,33 @@ typedef struct tuuvm_scannerState_s
 
 typedef tuuvm_tuple_t (*tuuvm_scanner_tokenConversionFunction_t)(tuuvm_context_t *context, size_t stringSize, const uint8_t *string);
 
+static inline bool tuuvm_scanner_isOperatorCharacter(int c)
+{
+    switch(c)
+    {
+    case '+':
+    case '-':
+    case '/':
+    case '\\':
+    case '*':
+    case '~':
+    case '<':
+    case '>':
+    case '=':
+    case '@':
+    case ',':
+    case '%':
+    case '|':
+    case '&':
+    case '?':
+    case '!':
+    case '^':
+        return true;
+    default:
+        return false;
+    }
+}
+
 static tuuvm_tuple_t tuuvm_scanner_tokenAsSymbol(tuuvm_context_t *context, size_t stringSize, const uint8_t *string)
 {
     return tuuvm_symbol_internWithString(context, stringSize, (const char*)string);
@@ -299,6 +326,18 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
                 ++state->position;
         }
 
+        // Operator with scope.
+        if(':' == tuuvm_scanner_lookAt(state, 0) &&
+            ':' == tuuvm_scanner_lookAt(state, 1) &&
+            tuuvm_scanner_isOperatorCharacter(tuuvm_scanner_lookAt(state, 2)))
+        {
+            state->position += 3;
+            while(tuuvm_scanner_isOperatorCharacter(tuuvm_scanner_lookAt(state, 0)))
+                ++state->position;
+            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_OPERATOR, tuuvm_scanner_tokenAsSymbol, outTokenList);
+            return true;
+        }
+
         if(':' == tuuvm_scanner_lookAt(state, 0))
         {
             ++state->position;
@@ -444,6 +483,16 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
             return true;
         }
 
+        // Operators
+        if(tuuvm_scanner_isOperatorCharacter(c1))
+        {
+            state->position += 2;
+            while(tuuvm_scanner_isOperatorCharacter(tuuvm_scanner_lookAt(state, 0)))
+                ++state->position;
+            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_SYMBOL, tuuvm_scanner_tokenAsSymbolWithoutPrefix, outTokenList);
+            return true;
+        }
+
         switch(c1)
         {
         case '[':
@@ -549,6 +598,14 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
         }
         break;
     default:
+        // Binary operators
+        if(tuuvm_scanner_isOperatorCharacter(tuuvm_scanner_lookAt(state, 0)))
+        {
+            while(tuuvm_scanner_isOperatorCharacter(tuuvm_scanner_lookAt(state, 0)))
+                ++state->position;
+            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_OPERATOR, tuuvm_scanner_tokenAsSymbol, outTokenList);
+            return true;
+        }
         break;
     }
 

@@ -48,6 +48,30 @@ TEST_SUITE(Scanner)
         TEST_ASSERT_EQUALS(tuuvm_symbol_internWithCString(tuuvm_test_context, "Scope::SubScope::helloWorld1234"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 0)));
     }
 
+    TEST_CASE_WITH_FIXTURE(Operator, TuuvmCore)
+    {
+        tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "+", "test");
+        TEST_ASSERT_EQUALS(1, tuuvm_arraySlice_getSize(tokenList));
+        TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_OPERATOR, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 0)));
+        TEST_ASSERT_EQUALS(tuuvm_symbol_internWithCString(tuuvm_test_context, "+"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 0)));
+    }
+
+    TEST_CASE_WITH_FIXTURE(ScopedOperator, TuuvmCore)
+    {
+        tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "Scope::+", "test");
+        TEST_ASSERT_EQUALS(1, tuuvm_arraySlice_getSize(tokenList));
+        TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_OPERATOR, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 0)));
+        TEST_ASSERT_EQUALS(tuuvm_symbol_internWithCString(tuuvm_test_context, "Scope::+"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 0)));
+    }
+
+    TEST_CASE_WITH_FIXTURE(ScopedOperator2, TuuvmCore)
+    {
+        tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "Scope::SubScope::+", "test");
+        TEST_ASSERT_EQUALS(1, tuuvm_arraySlice_getSize(tokenList));
+        TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_OPERATOR, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 0)));
+        TEST_ASSERT_EQUALS(tuuvm_symbol_internWithCString(tuuvm_test_context, "Scope::SubScope::+"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 0)));
+    }
+
     TEST_CASE_WITH_FIXTURE(Keyword, TuuvmCore)
     {
         tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "test:", "test");
@@ -86,6 +110,14 @@ TEST_SUITE(Scanner)
         TEST_ASSERT_EQUALS(1, tuuvm_arraySlice_getSize(tokenList));
         TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_SYMBOL, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 0)));
         TEST_ASSERT_EQUALS(tuuvm_symbol_internWithCString(tuuvm_test_context, "helloWorld1234"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 0)));
+    }
+
+    TEST_CASE_WITH_FIXTURE(OperatorSymbol, TuuvmCore)
+    {
+        tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "#+", "test");
+        TEST_ASSERT_EQUALS(1, tuuvm_arraySlice_getSize(tokenList));
+        TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_SYMBOL, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 0)));
+        TEST_ASSERT_EQUALS(tuuvm_symbol_internWithCString(tuuvm_test_context, "+"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 0)));
     }
 
     TEST_CASE_WITH_FIXTURE(Integer, TuuvmCore)
