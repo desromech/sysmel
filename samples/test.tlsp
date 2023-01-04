@@ -48,8 +48,17 @@
     (define sourceName (SourceCode::name (SourcePosition::sourceCode sourcePosition)))
     (define startIndex (SourcePosition::startIndex sourcePosition))
     (define endIndex (SourcePosition::endIndex sourcePosition))
-    (String::concat: (String::concat: (String::concat: sourceName ":") (toString startIndex))
-        (String::concat: "-" (toString endIndex)))
+
+    (define startLine (SourcePosition::startLine sourcePosition))
+    (define startColumn (SourcePosition::startColumn sourcePosition))
+    (define startString (String::concat: (String::concat: (toString startLine) ".") (toString startColumn)))
+
+    (define endLine (SourcePosition::endLine sourcePosition))
+    (define endColumn (SourcePosition::endColumn sourcePosition))
+    (define endString (String::concat: (String::concat: (toString endLine) ".") (toString endColumn)))
+
+    (String::concat: (String::concat: (String::concat: sourceName ":") startString)
+        (String::concat: "-" endString))
     ))
 
 ## Testing code goes here.

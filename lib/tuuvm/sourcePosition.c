@@ -1,4 +1,5 @@
 #include "tuuvm/sourcePosition.h"
+#include "tuuvm/sourceCode.h"
 #include "internal/context.h"
 
 TUUVM_API tuuvm_tuple_t tuuvm_sourcePosition_create(tuuvm_context_t *context, tuuvm_tuple_t sourceCode, tuuvm_tuple_t startIndex, tuuvm_tuple_t endIndex)
@@ -7,7 +8,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_sourcePosition_create(tuuvm_context_t *context, tu
     result->sourceCode = sourceCode;
     result->startIndex = startIndex;
     result->endIndex = endIndex;
-    // TODO: Compute the corresponding lines and columns.
+
+    tuuvm_sourceCode_computeLineAndColumnForIndex(context, sourceCode, startIndex, &result->startLine, &result->startColumn);
+    tuuvm_sourceCode_computeLineAndColumnForIndex(context, sourceCode, endIndex, &result->endLine, &result->endColumn);
     return (tuuvm_tuple_t)result;
 }
 

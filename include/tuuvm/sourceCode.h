@@ -12,6 +12,7 @@ typedef struct tuuvm_sourceCode_s
     tuuvm_tuple_header_t header;
     tuuvm_tuple_t text;
     tuuvm_tuple_t name;
+    tuuvm_tuple_t lineStartIndexTable;
 } tuuvm_sourceCode_t;
 
 /**

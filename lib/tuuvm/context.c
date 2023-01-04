@@ -179,7 +179,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.floatType = tuuvm_context_createIntrinsicType(context, "Float", TUUVM_NULL_TUPLE, NULL);
     context->roots.doubleType = tuuvm_context_createIntrinsicType(context, "Double", TUUVM_NULL_TUPLE, NULL);
 
-    context->roots.sourceCodeType = tuuvm_context_createIntrinsicType(context, "SourceCode", TUUVM_NULL_TUPLE, "text", "name", NULL);
+    context->roots.sourceCodeType = tuuvm_context_createIntrinsicType(context, "SourceCode", TUUVM_NULL_TUPLE, "text", "name", "lineStartIndexTable", NULL);
     context->roots.sourcePositionType = tuuvm_context_createIntrinsicType(context, "SourcePosition", TUUVM_NULL_TUPLE,
         "sourceCode",
         "startIndex", "startLine", "startColumn",
