@@ -12,6 +12,13 @@
 (define (makeTypeAccessors type)
     (define typeName (RawTuple::slotAt: type 0))
 
+    (define (validMethodDictionary)
+        (define existingMethodDictionary (RawTuple::slotAt: type 0))
+        (if (== existingMethodDictionary nil)
+            (begin
+                nil)
+            existingMethodDictionary))
+
     (define (exportAndBindInstanceMethod selector method)
         (define exportedName (Symbol::intern (String::concat: typeName (String::concat: "::" (toString selector)))))
         (exportInstrinsicBuiltInBinding exportedName method))

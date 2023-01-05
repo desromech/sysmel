@@ -33,10 +33,10 @@ TEST_SUITE(Interpreter)
 
     TEST_CASE_WITH_FIXTURE(FunctionApplication, TuuvmCore)
     {
-        TEST_ASSERT_EQUALS(tuuvm_tuple_identityHash(TUUVM_NULL_TUPLE), tuuvm_tuple_size_decode(testAnalyzeAndEvaluate("(RawTuple::identityHash nil)")));
-        TEST_ASSERT_EQUALS(tuuvm_tuple_identityHash(TUUVM_FALSE_TUPLE), tuuvm_tuple_size_decode(testAnalyzeAndEvaluate("(RawTuple::identityHash false)")));
-        TEST_ASSERT_EQUALS(tuuvm_tuple_identityHash(TUUVM_TRUE_TUPLE), tuuvm_tuple_size_decode(testAnalyzeAndEvaluate("(RawTuple::identityHash true)")));
-        TEST_ASSERT_EQUALS(tuuvm_tuple_identityHash(TUUVM_VOID_TUPLE), tuuvm_tuple_size_decode(testAnalyzeAndEvaluate("(RawTuple::identityHash void)")));
+        TEST_ASSERT_EQUALS(tuuvm_tuple_identityHash(TUUVM_NULL_TUPLE), tuuvm_tuple_size_decode(testAnalyzeAndEvaluate("(identityHash nil)")));
+        TEST_ASSERT_EQUALS(tuuvm_tuple_identityHash(TUUVM_FALSE_TUPLE), tuuvm_tuple_size_decode(testAnalyzeAndEvaluate("(identityHash false)")));
+        TEST_ASSERT_EQUALS(tuuvm_tuple_identityHash(TUUVM_TRUE_TUPLE), tuuvm_tuple_size_decode(testAnalyzeAndEvaluate("(identityHash true)")));
+        TEST_ASSERT_EQUALS(tuuvm_tuple_identityHash(TUUVM_VOID_TUPLE), tuuvm_tuple_size_decode(testAnalyzeAndEvaluate("(identityHash void)")));
     }
 
     TEST_CASE_WITH_FIXTURE(NullaryLambdaApplication, TuuvmCore)

@@ -125,7 +125,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "BootstrapEnv::IntrinsicTypes"), context->roots.intrinsicTypes);
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "BootstrapEnv::InternedSymbolSet"), context->roots.internedSymbolSet);
 
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "RawTuple::identityHash"), context->roots.identityHashFunction);
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "identityHash"), context->roots.identityHashFunction);
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "=="), context->roots.identityEqualsFunction);
 
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "String::hash"), context->roots.stringHashFunction);
@@ -134,6 +134,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     // Set the name of the root basic type.
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.typeType, "Type", TUUVM_NULL_TUPLE,
         "name", "supertype", "slotNames", "sumTypeAlternatives", "totalSlotCount", "flags",
+        "macroMethodDictionary", "methodDictionary", "fallbackMethodDictionary",
         "equalsFunction", "hashFunction", "toStringFunction", "printStringFunction",
         "astNodeAnalysisFunction", "astNodeEvaluationFunction", "astNodeAnalysisAndEvaluationFunction",
         NULL);
