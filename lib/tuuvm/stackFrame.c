@@ -98,8 +98,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_stackFrame_buildStackTraceUpTo(tuuvm_stackFrameRec
         {
             if(currentSourcePosition)
             {
-                currentSourcePosition = TUUVM_NULL_TUPLE;
                 tuuvm_arrayList_add(context, arrayList, currentSourcePosition);
+                currentSourcePosition = TUUVM_NULL_TUPLE;
             }
             //currentFunction = ((tuuvm_stackFrameFunctionActivationRecord_t*)stackFrameRecord)->function;
         }

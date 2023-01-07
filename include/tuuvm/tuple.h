@@ -674,11 +674,19 @@ TUUVM_INLINE size_t tuuvm_tuple_identityHash(tuuvm_tuple_t tuple)
 }
 
 /**
- * Computes or retrieves the identity hash 
+ * Compares two tuples for identity equality.
  */
 TUUVM_INLINE bool tuuvm_tuple_identityEquals(tuuvm_tuple_t a, tuuvm_tuple_t b)
 {
     return a == b;
+}
+
+/**
+ * Compares two tuples for identity inequality.
+ */
+TUUVM_INLINE bool tuuvm_tuple_identityNotEquals(tuuvm_tuple_t a, tuuvm_tuple_t b)
+{
+    return a != b;
 }
 
 /**
@@ -697,9 +705,14 @@ TUUVM_INLINE size_t tuuvm_tuple_anySize_decode(tuuvm_tuple_t tuple)
 TUUVM_API tuuvm_tuple_t tuuvm_tuple_primitive_identityHash(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments);
 
 /**
- * The primitive string equals function.
+ * The primitive identity equals function.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_tuple_primitive_identityEquals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments);;
+
+/**
+ * The primitive identity not-equals function.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_primitive_identityNotEquals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments);;
 
 /**
  * Makes a C string with the specified bytes tuple.

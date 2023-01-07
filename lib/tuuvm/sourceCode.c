@@ -74,3 +74,13 @@ TUUVM_API void tuuvm_sourceCode_computeLineAndColumnForIndex(tuuvm_context_t *co
     *outLine = tuuvm_tuple_size_encode(context, line);
     *outColumn = tuuvm_tuple_size_encode(context, column);
 }
+
+TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_getText(tuuvm_tuple_t sourceCode)
+{
+    return ((tuuvm_sourceCode_t*)sourceCode)->text;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_getName(tuuvm_tuple_t sourceCode)
+{
+    return ((tuuvm_sourceCode_t*)sourceCode)->name;
+}

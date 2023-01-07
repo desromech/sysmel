@@ -1,8 +1,9 @@
 #include "tuuvm/array.h"
+#include "tuuvm/assert.h"
 #include "tuuvm/dictionary.h"
 #include "tuuvm/errors.h"
 #include "tuuvm/function.h"
-#include "tuuvm/assert.h"
+#include "tuuvm/string.h"
 #include "internal/context.h"
 #include <stdlib.h>
 
@@ -141,4 +142,41 @@ TUUVM_API void tuuvm_dictionary_atPut(tuuvm_context_t *context, tuuvm_tuple_t di
             tuuvm_dictionary_increaseCapacity(context, dictionary);
     }
 
+}
+
+static tuuvm_tuple_t tuuvm_methodDictionary_primitive_new(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    (void)arguments;
+    if(argumentCount != 0) tuuvm_error_argumentCountMismatch(0, argumentCount);
+
+    return tuuvm_identityDictionary_create(context);
+}
+
+static tuuvm_tuple_t tuuvm_methodDictionary_primitive_atOrNil(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t found = TUUVM_NULL_TUPLE;
+    if(!tuuvm_dictionary_find(context, arguments[0], arguments[1], &found))
+        found = TUUVM_NULL_TUPLE;
+
+    return found;
+}
+
+static tuuvm_tuple_t tuuvm_methodDictionary_primitive_atPut(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+
+    tuuvm_dictionary_atPut(context, arguments[0], arguments[1], arguments[2]);
+    return TUUVM_VOID_TUPLE;
+}
+
+void tuuvm_dictionary_setupPrimitives(tuuvm_context_t *context)
+{
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "IdentityDictionary::new"), tuuvm_function_createPrimitive(context, 0, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_methodDictionary_primitive_new));
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Dictionary::atOrNil:"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_methodDictionary_primitive_atOrNil));
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Dictionary::at:put:"), tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_methodDictionary_primitive_atPut));
 }

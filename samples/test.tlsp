@@ -1,26 +1,33 @@
 ## Some utility functions.
+
+## until:do:
 (define (until:do: stop block)
     (define i 0)
     (whileContinueWith (Integer::< i stop)
         (block i)
         (define i (Integer::+ i 1))))
 
+## exportInstrinsicBuiltInBinding
 (define (exportInstrinsicBuiltInBinding symbol binding)
     (Environment::setSymbol:binding: BootstrapEnv::IntrinsicsBuiltInEnvironment symbol binding))
+
+## Type::validMethodDictionary
+(define (Type::validMethodDictionary type)
+    (define existingMethodDictionary (RawTuple::slotAt: type 7))
+    (if (== existingMethodDictionary nil)
+        (begin
+            (define newMethodDictionary (IdentityDictionary::new))
+            (RawTuple::slotAt:put: type 7 newMethodDictionary)
+            newMethodDictionary)
+        existingMethodDictionary))
 
 ## Bootstrap environment reflection core.
 (define (makeTypeAccessors type)
     (define typeName (RawTuple::slotAt: type 0))
 
-    (define (validMethodDictionary)
-        (define existingMethodDictionary (RawTuple::slotAt: type 0))
-        (if (== existingMethodDictionary nil)
-            (begin
-                nil)
-            existingMethodDictionary))
-
     (define (exportAndBindInstanceMethod selector method)
         (define exportedName (Symbol::intern (String::concat: typeName (String::concat: "::" (toString selector)))))
+        (Dictionary::at:put: (Type::validMethodDictionary type) selector method)
         (exportInstrinsicBuiltInBinding exportedName method))
 
     (define slotNames (RawTuple::slotAt: type 2))
@@ -68,6 +75,53 @@
         (String::concat: "-" endString))
     ))
 
+## lookupSelector
+(define (lookupSelector type selector)
+    (if (== type nil)
+        nil
+        (begin
+            (define foundMethod (Dictionary::atOrNil: (Type::methodDictionary type) selector))
+            (if (~~ foundMethod nil)
+                foundMethod
+                (lookupSelector (Type::supertype type) selector)))))
+
+## send
+(define (send receiver selector arguments)
+    (define receiverType (RawTuple::type receiver))
+    (define method (lookupSelector receiverType selector))
+    (if (== method nil)
+        (error "Message not understood")
+        (method receiver arguments))) ## TODO: Use apply here
+
+## Type::withSelector:addMethod:
+(define (Type::withSelector:addMethod: type selector method)
+    (Dictionary::at:put: (Type::validMethodDictionary type) selector method))
+
+(exportInstrinsicBuiltInBinding #send send)
+(exportInstrinsicBuiltInBinding #Type::withSelector:addMethod: Type::withSelector:addMethod:)
+(exportInstrinsicBuiltInBinding #Type::validMethodDictionary Type::validMethodDictionary)
+
+
+## Register the Type methods.
+(Type::withSelector:addMethod: Type #Type::withSelector:addMethod: Type::withSelector:addMethod:)
+(Type::withSelector:addMethod: Type #Type::validMethodDictionary Type::validMethodDictionary)
+
+## Register the Integer methods.
+(Type::withSelector:addMethod: Integer #+ Integer::+)
+(Type::withSelector:addMethod: Integer #- Integer::-)
+##(Type::withSelector:addMethod: Integer #"*" Integer::*)
+(Type::withSelector:addMethod: Integer #/ Integer::/)
+(Type::withSelector:addMethod: Integer #% Integer::%)
+
+(Type::withSelector:addMethod: Integer #<=> Integer::<=>)
+(Type::withSelector:addMethod: Integer #= Integer::=)
+(Type::withSelector:addMethod: Integer #~= Integer::~=)
+
+(Type::withSelector:addMethod: Integer #< Integer::<)
+(Type::withSelector:addMethod: Integer #<= Integer::<=)
+(Type::withSelector:addMethod: Integer #> Integer::>)
+(Type::withSelector:addMethod: Integer #>= Integer::>=)
+
 ## Testing code goes here.
 
 (printLine BootstrapEnv::IntrinsicsBuiltInEnvironment)
@@ -79,23 +133,18 @@
 
 (printLine (toString "Hello World"))
 
+#*
 (printLine (if true (begin 1 2) 42))
 (printLine (if false 1 (begin 42 43)))
-
-(define (lookupSelector type selector)
-    type)
-
-(define (send receiver selector arguments)
-    (define receiverType (RawTuple::type receiver))
-    (lookupSelector receiverType selector))
 
 (printLine (Type::name Type))
 (printLine (Type::supertype Type))
 (printLine (Type::slotNames Type))
+*#
 
-(printLine (send 1 #add: 1))
+(printLine (send 1 #+ 1))
 
-(printLine (RawTuple::slotAt: -1 0))
+#*(printLine (RawTuple::slotAt: -1 0))
 (printLine (RawTuple::slotAt: -2 0))
 
 (printLine (RawTuple::slotAt: "Hello World\n" 0))
@@ -105,5 +154,5 @@
 (printLine (RawTuple::byteNew 10))
 
 (printLine (UInt32::fromInteger 42))
-
+*#
 (error "Test error")

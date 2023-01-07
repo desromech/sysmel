@@ -26,27 +26,34 @@ static tuuvm_tuple_t tuuvm_parser_lookAt(tuuvm_parser_state_t *state, size_t off
 static int tuuvm_parser_lookKindAt(tuuvm_parser_state_t *state, size_t offset)
 {
     tuuvm_tuple_t token = tuuvm_parser_lookAt(state, offset);
-    return token == TUUVM_NULL_TUPLE ? -1 : tuuvm_token_getKind(token);
+    return token == TUUVM_NULL_TUPLE ? (-1) : (int)tuuvm_token_getKind(token);
 }
 
 static tuuvm_tuple_t tuuvm_parser_makeSourcePositionForNodeRange(tuuvm_context_t *context, tuuvm_tuple_t firstNode, tuuvm_tuple_t lastNode)
 {
-    return TUUVM_NULL_TUPLE;
+    return tuuvm_sourcePosition_createWithUnion(context, tuuvm_astNode_getSourcePosition(firstNode), tuuvm_astNode_getSourcePosition(lastNode));
 }
 
 static tuuvm_tuple_t tuuvm_parser_makeSourcePositionForTokenRange(tuuvm_context_t *context, tuuvm_tuple_t tokenSequence, size_t startIndex, size_t endIndex)
 {
-    return TUUVM_NULL_TUPLE;
+    if(startIndex == endIndex)
+        return tuuvm_token_getSourcePosition(tuuvm_arraySlice_at(tokenSequence, startIndex));
+
+    tuuvm_tuple_t firstToken = tuuvm_arraySlice_at(tokenSequence, startIndex);
+    tuuvm_tuple_t lastToken = tuuvm_arraySlice_at(tokenSequence, endIndex - 1);
+    return tuuvm_sourcePosition_createWithUnion(context, tuuvm_token_getSourcePosition(firstToken), tuuvm_token_getSourcePosition(lastToken));
 }
 
 static tuuvm_tuple_t tuuvm_parser_makeSourcePositionForSourceCode(tuuvm_context_t *context, tuuvm_tuple_t sourceCode)
 {
-    return TUUVM_NULL_TUPLE;
+    size_t sourceCodeTextSize = tuuvm_tuple_getSizeInBytes(tuuvm_sourceCode_getText(sourceCode));
+    return tuuvm_sourcePosition_createWithIndices(context, sourceCode, 0, sourceCodeTextSize);
 }
 
 static tuuvm_tuple_t tuuvm_parser_makeSourcePositionForEndOfSourceCode(tuuvm_context_t *context, tuuvm_tuple_t sourceCode)
 {
-    return TUUVM_NULL_TUPLE;
+    size_t sourceCodeTextSize = tuuvm_tuple_getSizeInBytes(tuuvm_sourceCode_getText(sourceCode));
+    return tuuvm_sourcePosition_createWithIndices(context, sourceCode, sourceCodeTextSize, sourceCodeTextSize);
 }
 
 static tuuvm_tuple_t tuuvm_parser_makeSourcePositionForParserState(tuuvm_context_t *context, tuuvm_parser_state_t *state)
@@ -117,7 +124,7 @@ static tuuvm_tuple_t tuuvm_parser_parsePrimaryExpression(tuuvm_context_t *contex
 static tuuvm_tuple_t tuuvm_parser_parseUnexpandedSExpression(tuuvm_context_t *context, tuuvm_parser_state_t *state, tuuvm_tokenKind_t openingToken, tuuvm_tokenKind_t closingToken)
 {
     // Left opening parenthesis.
-    if(tuuvm_parser_lookKindAt(state, 0) != openingToken)
+    if(tuuvm_parser_lookKindAt(state, 0) != (int)openingToken)
         return tuuvm_astErrorNode_createWithCString(context, tuuvm_parser_makeSourcePositionForParserState(context, state), "Expected an opening parentheses.");
     
     size_t startPosition = state->tokenPosition;

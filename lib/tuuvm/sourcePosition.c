@@ -18,3 +18,10 @@ TUUVM_API tuuvm_tuple_t tuuvm_sourcePosition_createWithIndices(tuuvm_context_t *
 {
     return tuuvm_sourcePosition_create(context, sourceCode, tuuvm_tuple_size_encode(context, startIndex), tuuvm_tuple_size_encode(context, endIndex));
 }
+
+TUUVM_API tuuvm_tuple_t tuuvm_sourcePosition_createWithUnion(tuuvm_context_t *context, tuuvm_tuple_t startSourcePosition, tuuvm_tuple_t endSourcePosition)
+{
+    tuuvm_sourcePosition_t *start = (tuuvm_sourcePosition_t*)startSourcePosition;
+    tuuvm_sourcePosition_t *end = (tuuvm_sourcePosition_t*)endSourcePosition;
+    return tuuvm_sourcePosition_create(context, start->sourceCode, start->startIndex, end->endIndex);
+}

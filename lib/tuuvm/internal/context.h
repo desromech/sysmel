@@ -13,6 +13,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t internedSymbolSet;
 
     tuuvm_tuple_t identityEqualsFunction;
+    tuuvm_tuple_t identityNotEqualsFunction;
     tuuvm_tuple_t identityHashFunction;
     tuuvm_tuple_t stringEqualsFunction;
     tuuvm_tuple_t stringHashFunction;

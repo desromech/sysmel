@@ -74,4 +74,5 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
     }
 
     tuuvm_error("Cannot apply non-functional object.");
+    return TUUVM_VOID_TUPLE;
 }

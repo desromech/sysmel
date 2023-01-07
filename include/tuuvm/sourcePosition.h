@@ -22,13 +22,19 @@ typedef struct tuuvm_sourcePosition_s
 } tuuvm_sourcePosition_t;
 
 /**
- * Creates a source code with the given text and name.
+ * Creates a source position with the given source code and range.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_sourcePosition_create(tuuvm_context_t *context, tuuvm_tuple_t sourceCode, tuuvm_tuple_t startIndex, tuuvm_tuple_t endIndex);
 
 /**
- * Creates a source code with the given text and name.
+ * Creates a source position with the given source code and range specified as size_t.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_sourcePosition_createWithIndices(tuuvm_context_t *context, tuuvm_tuple_t sourceCode, size_t startIndex, size_t endIndex);
+
+/**
+ * Creates a source position with the union of the given source positions.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_sourcePosition_createWithUnion(tuuvm_context_t *context, tuuvm_tuple_t startSourcePosition, tuuvm_tuple_t endSourcePosition);
+
 
 #endif //TUUVM_SOURCE_POSITION_H

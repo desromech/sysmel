@@ -252,7 +252,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_printString(tuuvm_context_t *context, tuuv
     return tuuvm_string_createWithCString(context, "TODO: tuuvm_integer_printString for large integer.");
 }
 
-tuuvm_tuple_t tuuvm_integer_primitive_printString(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_integer_primitive_printString(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -260,7 +260,7 @@ tuuvm_tuple_t tuuvm_integer_primitive_printString(tuuvm_context_t *context, tuuv
     return tuuvm_integer_printString(context, arguments[0]);
 }
 
-tuuvm_tuple_t tuuvm_integer_primitive_add(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_integer_primitive_add(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -269,7 +269,7 @@ tuuvm_tuple_t tuuvm_integer_primitive_add(tuuvm_context_t *context, tuuvm_tuple_
     return tuuvm_integer_add(context, arguments[0], arguments[1]);
 }
 
-tuuvm_tuple_t tuuvm_integer_primitive_subtract(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_integer_primitive_subtract(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -278,7 +278,7 @@ tuuvm_tuple_t tuuvm_integer_primitive_subtract(tuuvm_context_t *context, tuuvm_t
     return tuuvm_integer_subtract(context, arguments[0], arguments[1]);
 }
 
-tuuvm_tuple_t tuuvm_integer_primitive_negate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_integer_primitive_negate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -287,7 +287,7 @@ tuuvm_tuple_t tuuvm_integer_primitive_negate(tuuvm_context_t *context, tuuvm_tup
     return tuuvm_integer_negate(context, arguments[0]);
 }
 
-tuuvm_tuple_t tuuvm_integer_primitive_multiply(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_integer_primitive_multiply(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -296,7 +296,7 @@ tuuvm_tuple_t tuuvm_integer_primitive_multiply(tuuvm_context_t *context, tuuvm_t
     return tuuvm_integer_multiply(context, arguments[0], arguments[1]);
 }
 
-tuuvm_tuple_t tuuvm_integer_primitive_divide(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_integer_primitive_divide(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -305,7 +305,7 @@ tuuvm_tuple_t tuuvm_integer_primitive_divide(tuuvm_context_t *context, tuuvm_tup
     return tuuvm_integer_divide(context, arguments[0], arguments[1]);
 }
 
-tuuvm_tuple_t tuuvm_integer_primitive_remainder(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_integer_primitive_remainder(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -314,7 +314,7 @@ tuuvm_tuple_t tuuvm_integer_primitive_remainder(tuuvm_context_t *context, tuuvm_
     return tuuvm_integer_remainder(context, arguments[0], arguments[1]);
 }
 
-tuuvm_tuple_t tuuvm_integer_primitive_compare(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_integer_primitive_compare(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -323,7 +323,7 @@ tuuvm_tuple_t tuuvm_integer_primitive_compare(tuuvm_context_t *context, tuuvm_tu
     return tuuvm_integer_compare(context, arguments[0], arguments[1]);
 }
 
-tuuvm_tuple_t tuuvm_integer_primitive_equals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_integer_primitive_equals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -332,7 +332,7 @@ tuuvm_tuple_t tuuvm_integer_primitive_equals(tuuvm_context_t *context, tuuvm_tup
     return tuuvm_integer_equals(context, arguments[0], arguments[1]);
 }
 
-tuuvm_tuple_t tuuvm_integer_primitive_notEquals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_integer_primitive_notEquals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -341,7 +341,7 @@ tuuvm_tuple_t tuuvm_integer_primitive_notEquals(tuuvm_context_t *context, tuuvm_
     return tuuvm_integer_notEquals(context, arguments[0], arguments[1]);
 }
 
-tuuvm_tuple_t tuuvm_integer_primitive_lessThan(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_integer_primitive_lessThan(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -350,7 +350,7 @@ tuuvm_tuple_t tuuvm_integer_primitive_lessThan(tuuvm_context_t *context, tuuvm_t
     return tuuvm_integer_lessThan(context, arguments[0], arguments[1]);
 }
 
-tuuvm_tuple_t tuuvm_integer_primitive_lessEquals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_integer_primitive_lessEquals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -359,7 +359,7 @@ tuuvm_tuple_t tuuvm_integer_primitive_lessEquals(tuuvm_context_t *context, tuuvm
     return tuuvm_integer_lessEquals(context, arguments[0], arguments[1]);
 }
 
-tuuvm_tuple_t tuuvm_integer_primitive_greaterThan(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_integer_primitive_greaterThan(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -368,7 +368,7 @@ tuuvm_tuple_t tuuvm_integer_primitive_greaterThan(tuuvm_context_t *context, tuuv
     return tuuvm_integer_greaterThan(context, arguments[0], arguments[1]);
 }
 
-tuuvm_tuple_t tuuvm_integer_primitive_greaterEquals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_integer_primitive_greaterEquals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -388,7 +388,7 @@ void tuuvm_integer_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::/"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_divide));
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::%"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_remainder));
 
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::compare:"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_compare));
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::<=>"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_compare));
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::="), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_equals));
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::~="), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_notEquals));
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::<"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_lessThan));

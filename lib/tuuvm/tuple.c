@@ -67,6 +67,14 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_primitive_identityEquals(tuuvm_context_t *co
     return tuuvm_tuple_boolean_encode(tuuvm_tuple_identityEquals(arguments[0], arguments[1]));
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_primitive_identityNotEquals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    (void)argumentCount;
+    return tuuvm_tuple_boolean_encode(tuuvm_tuple_identityNotEquals(arguments[0], arguments[1]));
+}
+
 TUUVM_API char *tuuvm_tuple_bytesToCString(tuuvm_tuple_t tuple)
 {
     size_t stringSize = tuuvm_tuple_getSizeInBytes(tuple);

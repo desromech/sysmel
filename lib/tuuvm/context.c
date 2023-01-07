@@ -11,6 +11,8 @@
 
 extern void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context);
 extern void tuuvm_boolean_setupPrimitives(tuuvm_context_t *context);
+extern void tuuvm_dictionary_setupPrimitives(tuuvm_context_t *context);
+extern void tuuvm_errors_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_environment_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_integer_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_io_setupPrimitives(tuuvm_context_t *context);
@@ -100,6 +102,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 
     // Create the basic hash functions.
     context->roots.identityEqualsFunction = tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_identityEquals);
+    context->roots.identityNotEqualsFunction = tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_identityNotEquals);
     context->roots.identityHashFunction = tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_identityHash);
     context->roots.stringEqualsFunction = tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_string_primitive_equals);
     context->roots.stringHashFunction = tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_string_primitive_hash);
@@ -127,6 +130,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "identityHash"), context->roots.identityHashFunction);
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "=="), context->roots.identityEqualsFunction);
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "~~"), context->roots.identityNotEqualsFunction);
 
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "String::hash"), context->roots.stringHashFunction);
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "String::equals:"), context->roots.stringEqualsFunction);
@@ -240,6 +244,9 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
     context->identityHashSeed = 1;
     tuuvm_context_createBasicTypes(context);
     tuuvm_astInterpreter_setupASTInterpreter(context);
+    tuuvm_boolean_setupPrimitives(context);
+    tuuvm_dictionary_setupPrimitives(context);
+    tuuvm_errors_setupPrimitives(context);
     tuuvm_environment_setupPrimitives(context);
     tuuvm_integer_setupPrimitives(context);
     tuuvm_io_setupPrimitives(context);

@@ -30,4 +30,14 @@ TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_createWithCStrings(tuuvm_context_t *con
  */
 TUUVM_API void tuuvm_sourceCode_computeLineAndColumnForIndex(tuuvm_context_t *context, tuuvm_tuple_t sourceCode, tuuvm_tuple_t index, tuuvm_tuple_t *outLine, tuuvm_tuple_t *outColumn);
 
+/**
+ * Gets the source code text.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_getText(tuuvm_tuple_t sourceCode);
+
+/**
+ * Gets the source code name.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_getName(tuuvm_tuple_t sourceCode);
+
 #endif //TUUVM_SOURCE_CODE_H
