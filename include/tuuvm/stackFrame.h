@@ -59,6 +59,15 @@ typedef struct tuuvm_stackFrameCleanupRecord_s
     jmp_buf jmpbuffer;
 } tuuvm_stackFrameCleanupRecord_t;
 
+#define TUUVM_STACKFRAME_PUSH_GC_ROOTS(recordName, gcStackFrameRoots) \
+    tuuvm_stackFrameGCRootsRecord_t recordName = { \
+        NULL, TUUVM_STACK_FRAME_RECORD_TYPE_GC_ROOTS, sizeof(gcStackFrameRoots) / sizeof(tuuvm_tuple_t), (tuuvm_tuple_t*)(&gcStackFrameRoots) \
+    }; \
+    tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&recordName)
+
+#define TUUVM_STACKFRAME_POP_GC_ROOTS(recordName) \
+    tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&recordName)
+
 TUUVM_API void tuuvm_stackFrame_enterContext(tuuvm_context_t *context, tuuvm_stackFrameRecord_t *topLevelStackRecord);
 TUUVM_API void tuuvm_stackFrame_leaveContext();
 TUUVM_API tuuvm_context_t *tuuvm_stackFrame_getActiveContext();

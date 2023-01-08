@@ -2,6 +2,7 @@
 #include "tuuvm/arraySlice.h"
 #include "tuuvm/errors.h"
 #include "tuuvm/interpreter.h"
+#include "tuuvm/stackFrame.h"
 #include "internal/context.h"
 #include <stdlib.h>
 
@@ -62,15 +63,26 @@ TUUVM_API size_t tuuvm_function_getFlags(tuuvm_context_t *context, tuuvm_tuple_t
 
 TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
+    tuuvm_stackFrameGCRootsRecord_t argumentsRecord = {
+        .type = TUUVM_STACK_FRAME_RECORD_TYPE_GC_ROOTS,
+        .rootCount = argumentCount,
+        .roots = arguments
+    };
+    tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
+
     tuuvm_tuple_t functionType = tuuvm_tuple_getType(context, function);
     if(functionType == context->roots.primitiveFunctionType)
     {
         tuuvm_primitiveFunction_t *primitiveFunction = (tuuvm_primitiveFunction_t*)function;
-        return primitiveFunction->entryPoint(context, function, argumentCount, arguments);
+        tuuvm_tuple_t result = primitiveFunction->entryPoint(context, function, argumentCount, arguments);
+        tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
+        return result;
     }
     else if(functionType == context->roots.closureASTFunctionType)
     {
-        return tuuvm_interpreter_applyClosureASTFunction(context, function, argumentCount, arguments);
+        tuuvm_tuple_t result = tuuvm_interpreter_applyClosureASTFunction(context, function, argumentCount, arguments);
+        tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
+        return result;
     }
 
     tuuvm_error("Cannot apply non-functional object.");

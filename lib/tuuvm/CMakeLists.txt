@@ -10,6 +10,7 @@ set(tuuvm_sources
     environment.c
     errors.c
     function.c
+    gc.c
     heap.c
     integer.c
     interpreter.c
