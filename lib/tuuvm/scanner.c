@@ -1,6 +1,7 @@
 #include "tuuvm/scanner.h"
 #include "tuuvm/arrayList.h"
 #include "tuuvm/assert.h"
+#include "tuuvm/gc.h"
 #include "tuuvm/integer.h"
 #include "tuuvm/sourceCode.h"
 #include "tuuvm/sourcePosition.h"
@@ -616,6 +617,8 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
 
 TUUVM_API tuuvm_tuple_t tuuvm_scanner_scan(tuuvm_context_t *context, tuuvm_tuple_t sourceCode)
 {
+    tuuvm_gc_lock(context);
+
     tuuvm_tuple_t tokenList = tuuvm_arrayList_create(context);
 
     if(tuuvm_tuple_isNonNullPointer(sourceCode))
@@ -638,7 +641,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_scanner_scan(tuuvm_context_t *context, tuuvm_tuple
         }
     }
 
-    return tuuvm_arrayList_asArraySlice(context, tokenList);
+    tuuvm_tuple_t result = tuuvm_arrayList_asArraySlice(context, tokenList);
+    tuuvm_gc_unlock(context);
+    return result;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_scanner_scanCString(tuuvm_context_t *context, const char *sourceCodeText, const char *sourceCodeName)

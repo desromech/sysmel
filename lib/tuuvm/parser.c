@@ -2,6 +2,7 @@
 #include "tuuvm/ast.h"
 #include "tuuvm/arrayList.h"
 #include "tuuvm/arraySlice.h"
+#include "tuuvm/gc.h"
 #include "tuuvm/token.h"
 #include "tuuvm/scanner.h"
 #include "tuuvm/sourceCode.h"
@@ -220,6 +221,7 @@ static tuuvm_tuple_t tuuvm_parser_parseExpression(tuuvm_context_t *context, tuuv
 
 TUUVM_API tuuvm_tuple_t tuuvm_parser_parseTokens(tuuvm_context_t *context, tuuvm_tuple_t sourceCode, tuuvm_tuple_t tokenSequence)
 {
+    tuuvm_gc_lock(context);
     tuuvm_parser_state_t parserState = {
         .sourceCode = sourceCode,
         .tokenSequence = tokenSequence,
@@ -246,7 +248,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_parser_parseTokens(tuuvm_context_t *context, tuuvm
         ? tuuvm_parser_makeSourcePositionForNodeRange(context, tuuvm_arraySlice_at(expressionsArraySlice, 0), tuuvm_arraySlice_at(expressionsArraySlice, expressionsCount - 1))
         : tuuvm_parser_makeSourcePositionForSourceCode(context, sourceCode);
 
-    return tuuvm_astSequenceNode_create(context, sourcePosition, expressionsArraySlice);
+    tuuvm_tuple_t result = tuuvm_astSequenceNode_create(context, sourcePosition, expressionsArraySlice);
+    tuuvm_gc_unlock(context);
+    return result;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_parser_parseSourceCode(tuuvm_context_t *context, tuuvm_tuple_t sourceCode)

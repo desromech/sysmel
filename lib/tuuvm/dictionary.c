@@ -3,7 +3,6 @@
 #include "tuuvm/dictionary.h"
 #include "tuuvm/errors.h"
 #include "tuuvm/function.h"
-#include "tuuvm/string.h"
 #include "internal/context.h"
 #include <stdlib.h>
 
@@ -176,7 +175,7 @@ static tuuvm_tuple_t tuuvm_methodDictionary_primitive_atPut(tuuvm_context_t *con
 
 void tuuvm_dictionary_setupPrimitives(tuuvm_context_t *context)
 {
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "IdentityDictionary::new"), tuuvm_function_createPrimitive(context, 0, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_methodDictionary_primitive_new));
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Dictionary::atOrNil:"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_methodDictionary_primitive_atOrNil));
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Dictionary::at:put:"), tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_methodDictionary_primitive_atPut));
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "IdentityDictionary::new", 0, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_methodDictionary_primitive_new);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Dictionary::atOrNil:", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_methodDictionary_primitive_atOrNil);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Dictionary::at:put:", 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_methodDictionary_primitive_atPut);
 }

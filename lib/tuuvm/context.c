@@ -3,6 +3,8 @@
 #include "tuuvm/array.h"
 #include "tuuvm/arrayList.h"
 #include "tuuvm/environment.h"
+#include "tuuvm/gc.h"
+#include "tuuvm/stackFrame.h"
 #include "tuuvm/string.h"
 #include "tuuvm/set.h"
 #include "tuuvm/function.h"
@@ -89,6 +91,20 @@ static void tuuvm_context_setIntrinsicTypeMetadata(tuuvm_context_t *context, tuu
 TUUVM_API void tuuvm_context_setIntrinsicSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t symbol, tuuvm_tuple_t binding)
 {
     tuuvm_environment_setSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, symbol, binding);
+}
+
+TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(tuuvm_context_t *context, const char *symbolString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
+{
+    struct {
+        tuuvm_tuple_t symbol;
+        tuuvm_tuple_t primitiveFunction;
+    } gcFrame = {};
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    gcFrame.symbol = tuuvm_symbol_internWithCString(context, symbolString);
+    gcFrame.primitiveFunction = tuuvm_function_createPrimitive(context, argumentCount, flags, userdata, entryPoint);
+    tuuvm_context_setIntrinsicSymbolBinding(context, gcFrame.symbol, gcFrame.primitiveFunction);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
 }
 
 static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
@@ -242,6 +258,8 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
 {
     tuuvm_context_t *context = (tuuvm_context_t*)calloc(1, sizeof(tuuvm_context_t));
     context->identityHashSeed = 1;
+    tuuvm_gc_lock(context);
+
     tuuvm_context_createBasicTypes(context);
     tuuvm_astInterpreter_setupASTInterpreter(context);
     tuuvm_boolean_setupPrimitives(context);
@@ -253,6 +271,8 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
     tuuvm_primitiveInteger_setupPrimitives(context);
     tuuvm_string_setupPrimitives(context);
     tuuvm_tuple_setupPrimitives(context);
+    
+    tuuvm_gc_unlock(context);
 
     return context;
 }

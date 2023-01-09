@@ -381,19 +381,19 @@ void tuuvm_integer_setupPrimitives(tuuvm_context_t *context)
 {
     tuuvm_type_setPrintStringFunction(context->roots.integerType, tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_printString));
     
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::+"), tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_add));
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::-"), tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_subtract));
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::negated"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_negate));
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::*"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_multiply));
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::/"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_divide));
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::%"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_remainder));
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Integer::+", 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_add);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Integer::-", 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_subtract);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Integer::negated", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_negate);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Integer::*", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_multiply);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Integer::/", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_divide);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Integer::%", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_remainder);
 
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::<=>"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_compare));
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::="), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_equals));
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::~="), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_notEquals));
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::<"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_lessThan));
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::<="), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_lessEquals));
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::>"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_greaterThan));
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Integer::>="), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_greaterEquals));
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Integer::<=>", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_compare);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Integer::=", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_equals);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Integer::~=", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_notEquals);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Integer::<", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_lessThan);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Integer::<=", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_lessEquals);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Integer::>", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_greaterThan);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Integer::>=", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_greaterEquals);
 
 }

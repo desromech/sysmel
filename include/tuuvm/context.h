@@ -10,6 +10,9 @@
 typedef struct tuuvm_context_s tuuvm_context_t;
 typedef struct tuuvm_heap_s tuuvm_heap_t;
 
+typedef tuuvm_tuple_t (*tuuvm_functionEntryPoint_t)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments);
+
+
 /**
  * Creates a new context.
  */
@@ -49,5 +52,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicType(tuuvm_context_t *conte
  * Sets an intrinsic symbol binding.
  */
 TUUVM_API void tuuvm_context_setIntrinsicSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t symbol, tuuvm_tuple_t binding);
+
+/**
+ * Sets an intrinsic symbol binding with primitive function.
+ */
+TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(tuuvm_context_t *context, const char *symbolString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint);
+
 
 #endif //TUUVM_CONTEXT_H

@@ -304,8 +304,8 @@ void tuuvm_string_setupPrimitives(tuuvm_context_t *context)
         tuuvm_type_setToStringFunction(context->roots.symbolType, tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_symbol_primitive_toString));
     }
 
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "printString"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_printString));
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "toString"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_toString));
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "String::concat:"), tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_string_primitive_concat));
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Symbol::intern"), tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_symbol_primitive_intern));
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "printString", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_printString);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "toString", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_toString);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "String::concat:", 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_string_primitive_concat);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Symbol::intern", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_symbol_primitive_intern);
 }
