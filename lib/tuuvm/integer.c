@@ -25,7 +25,22 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_integer_encodeBigInt64(tuuvm_context_t *cont
 
 TUUVM_API tuuvm_tuple_t tuuvm_tuple_integer_encodeBigUInt64(tuuvm_context_t *context, uint64_t value)
 {
-    return TUUVM_NULL_TUPLE;
+    if(value <= TUUVM_IMMEDIATE_INT_MAX)
+        return tuuvm_tuple_integer_encodeSmall(value);
+
+    if(value <= UINT32_MAX)
+    {
+        tuuvm_integer_t *result = (tuuvm_integer_t*)tuuvm_context_allocateByteTuple(context, context->roots.positiveIntegerType, 4);
+        result->words[0] = (uint32_t)value;
+        return (tuuvm_tuple_t)result;
+    }
+    else
+    {
+        tuuvm_integer_t *result = (tuuvm_integer_t*)tuuvm_context_allocateByteTuple(context, context->roots.positiveIntegerType, 8);
+        result->words[0] = (uint32_t)value;
+        result->words[1] = (uint32_t)(value >> 32);
+        return (tuuvm_tuple_t)result;
+    }
 }
 
 int64_t tuuvm_tuple_integer_decodeInt64(tuuvm_tuple_t value)

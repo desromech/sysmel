@@ -7,6 +7,12 @@
 
 typedef struct tuuvm_context_s tuuvm_context_t;
 
+typedef struct tuuvm_integer_s
+{
+    tuuvm_tuple_header_t header;
+    uint32_t words[];
+} tuuvm_integer_t;
+
 /**
  * Parses an integer from a string.
  */ 
