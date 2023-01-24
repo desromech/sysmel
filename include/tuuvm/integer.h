@@ -54,6 +54,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_divide(tuuvm_context_t *context, tuuvm_tup
 TUUVM_API tuuvm_tuple_t tuuvm_integer_remainder(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right);
 
 /**
+ * Factorial of an integer. Used for testing purposes.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_integer_factorial(tuuvm_context_t *context, tuuvm_tuple_t integer);
+
+/**
  * Comparison of two integers.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_integer_compare(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right);
