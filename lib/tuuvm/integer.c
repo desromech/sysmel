@@ -60,6 +60,120 @@ static int tuuvm_integer_compareMagnitudes(size_t leftWordCount, uint32_t *leftW
     return 0;
 }
 
+static uint32_t tuuvm_integer_sumInto(size_t leftWordCount, uint32_t *leftWords, size_t rightWordCount, uint32_t *rightWords, size_t resultWordCount, uint32_t *resultWords)
+{
+    uint32_t carry = 0;
+    
+    size_t wordsToSum = leftWordCount > rightWordCount ? leftWordCount : rightWordCount;
+    for(size_t i = 0; i < wordsToSum; ++i)
+    {
+        uint32_t leftWord = i < leftWordCount ? leftWords[i] : 0;
+        uint32_t rightWord = i < rightWordCount ? rightWords[i] : 0;
+
+        uint64_t sum = (uint64_t)leftWord + (uint64_t)rightWord + (uint64_t)carry;
+        uint32_t sumWord = (uint32_t)sum;
+        if(i < resultWordCount)
+            resultWords[i] = sumWord;
+
+        carry = (uint32_t)(sum >> 32);
+    }
+
+    for(size_t i = wordsToSum; i < resultWordCount; ++i)
+    {
+        if(i < resultWordCount)
+            resultWords[i] = carry;
+        carry = 0;
+    }
+
+    return carry;
+}
+
+static void tuuvm_integer_multiplyByWordInto(size_t leftWordCount, uint32_t *leftWords, uint32_t word, size_t resultWordCount, uint32_t *resultWords)
+{
+    uint32_t carry = 0;
+    for(size_t i = 0; i < leftWordCount && i < resultWordCount; ++i)
+    {
+        uint64_t multiplication = (uint64_t)leftWords[i]*(uint64_t)word + carry;
+        resultWords[i] = (uint32_t)multiplication;
+        carry = (uint32_t)(multiplication >> 32);
+    }
+}
+
+static void tuuvm_integer_multiplyInto(size_t leftWordCount, uint32_t *leftWords, size_t rightWordCount, uint32_t *rightWords, size_t resultWordCount, uint32_t *resultWords)
+{
+    for(size_t i = 0; i < rightWordCount && i < resultWordCount; ++i)
+        tuuvm_integer_multiplyByWordInto(leftWordCount, leftWords, rightWords[i], resultWordCount - i, resultWords + i);
+}
+
+static int32_t tuuvm_integer_subtractFromInto(size_t leftWordCount, uint32_t *leftWords, size_t rightWordCount, uint32_t *rightWords, size_t resultWordCount, uint32_t *resultWords)
+{
+    int32_t borrow = 0;
+    
+    size_t wordsToSum = leftWordCount > rightWordCount ? leftWordCount : rightWordCount;
+    for(size_t i = 0; i < wordsToSum; ++i)
+    {
+        uint32_t leftWord = i < leftWordCount ? leftWords[i] : 0;
+        uint32_t rightWord = i < rightWordCount ? rightWords[i] : 0;
+
+        int64_t subtraction = (int64_t)leftWord - (int64_t)rightWord + (int64_t)borrow;
+        uint32_t subtractionWord = (uint32_t)subtraction;
+        if(i < resultWordCount)
+            resultWords[i] = subtractionWord;
+
+        borrow = (int32_t)(subtraction >> 32);
+    }
+
+    for(size_t i = wordsToSum; i < resultWordCount; ++i)
+    {
+        if(i < resultWordCount)
+            resultWords[i] = 0;
+    }
+
+    return borrow;
+}
+
+static tuuvm_tuple_t tuuvm_integer_normalize(tuuvm_context_t *context, tuuvm_integer_t *integer)
+{
+    // Counte the required number of normalized words.
+    size_t wordCount = tuuvm_tuple_getSizeInBytes((tuuvm_tuple_t)integer) / 4;
+    size_t normalizedWordCount = wordCount;
+    while(normalizedWordCount > 0 && integer->words[normalizedWordCount - 1])
+        --normalizedWordCount;
+
+    // Trivial cases.
+    if(normalizedWordCount == wordCount)
+    {
+        return (tuuvm_tuple_t)integer;
+    }
+    else if(normalizedWordCount == 0)
+    {
+        return tuuvm_tuple_integer_encodeSmall(0);
+    }
+    
+    // Attempt to fit in an immediate, if possible.
+    tuuvm_tuple_t largeIntegerType = tuuvm_tuple_getType(context, (tuuvm_tuple_t)integer);
+    bool isNegative = largeIntegerType == context->roots.negativeIntegerType;
+    if(normalizedWordCount <= 2)
+    {
+        uint64_t valueUInt64 = (uint64_t)integer->words[0] | ((uint64_t)integer->words[1] << 32);
+        if(isNegative)
+        {
+            if(valueUInt64 <= (uint64_t)-TUUVM_IMMEDIATE_INT_MIN)
+                return tuuvm_tuple_integer_encodeSmall(-(int64_t)valueUInt64);
+        }
+        else
+        {
+            if(valueUInt64 <= TUUVM_IMMEDIATE_INT_MAX)
+                return tuuvm_tuple_integer_encodeSmall((int64_t)valueUInt64);
+        }
+    }
+
+    // Make a newer smaller large integer.
+    tuuvm_integer_t *normalizedResult = (tuuvm_integer_t*)tuuvm_context_allocateByteTuple(context, largeIntegerType, normalizedWordCount*4);
+    memcpy(normalizedResult->words, integer->words, 4*normalizedWordCount);
+    return (tuuvm_tuple_t)normalizedWordCount;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_tuple_integer_encodeBigInt32(tuuvm_context_t *context, int32_t value)
 {
 #ifdef __GNUC__
@@ -192,8 +306,47 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_add(tuuvm_context_t *context, tuuvm_tuple_
         return tuuvm_tuple_integer_encodeInt64(context, leftValue + rightValue);
     }
 
-    // TODO: Implement the large integer addition.
-    return TUUVM_NULL_TUPLE;
+    tuuvm_decoded_integer_t decodedLeftInteger = {};
+    tuuvm_decoded_integer_t decodedRightInteger = {};
+    tuuvm_integer_decodeLargeOrImmediate(context, &decodedLeftInteger, left);
+    tuuvm_integer_decodeLargeOrImmediate(context, &decodedRightInteger, right);
+
+    if(decodedLeftInteger.isNegative == decodedRightInteger.isNegative)
+    {
+        // Same sign, sum
+        uint32_t carry = tuuvm_integer_sumInto(decodedLeftInteger.wordCount, decodedLeftInteger.words, decodedRightInteger.wordCount, decodedRightInteger.words, 0, NULL);
+        size_t resultWordCount = (decodedLeftInteger.wordCount > decodedRightInteger.wordCount) ? decodedLeftInteger.wordCount : decodedRightInteger.wordCount;
+        if(carry != 0)
+            ++resultWordCount;
+
+        tuuvm_integer_t *result = (tuuvm_integer_t*)tuuvm_context_allocateByteTuple(context, decodedLeftInteger.isNegative ? context->roots.negativeIntegerType : context->roots.positiveIntegerType, resultWordCount*4);
+        tuuvm_integer_sumInto(decodedLeftInteger.wordCount, decodedLeftInteger.words, decodedRightInteger.wordCount, decodedRightInteger.words, resultWordCount, result->words);
+        return (tuuvm_tuple_t)result;
+    }
+    else
+    {
+        // Different sign, subtract.
+        int magnitudeComparison = tuuvm_integer_compareMagnitudes(decodedLeftInteger.wordCount, decodedLeftInteger.words, decodedRightInteger.wordCount, decodedRightInteger.words);
+        if(magnitudeComparison == 0)
+            return tuuvm_tuple_integer_encodeSmall(0);
+
+        if(magnitudeComparison > 0)
+        {
+            size_t resultWordCount = decodedLeftInteger.wordCount;
+            bool resultIsNegative = decodedLeftInteger.isNegative;
+            tuuvm_integer_t *result = (tuuvm_integer_t*)tuuvm_context_allocateByteTuple(context, resultIsNegative ? context->roots.negativeIntegerType : context->roots.positiveIntegerType, resultWordCount*4);
+            tuuvm_integer_subtractFromInto(decodedLeftInteger.wordCount, decodedLeftInteger.words, decodedRightInteger.wordCount, decodedRightInteger.words, resultWordCount, result->words);
+            return tuuvm_integer_normalize(context, result);
+        }
+        else
+        {
+            size_t resultWordCount = decodedRightInteger.wordCount;
+            bool resultIsNegative = decodedRightInteger.isNegative;
+            tuuvm_integer_t *result = (tuuvm_integer_t*)tuuvm_context_allocateByteTuple(context, resultIsNegative ? context->roots.negativeIntegerType : context->roots.positiveIntegerType, resultWordCount*4);
+            tuuvm_integer_subtractFromInto(decodedRightInteger.wordCount, decodedRightInteger.words, decodedLeftInteger.wordCount, decodedLeftInteger.words, resultWordCount, result->words);
+            return tuuvm_integer_normalize(context, result);
+        }
+    }
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_integer_subtract(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
@@ -205,8 +358,47 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_subtract(tuuvm_context_t *context, tuuvm_t
         return tuuvm_tuple_integer_encodeInt64(context, leftValue - rightValue);
     }
 
-    // TODO: Implement the large integer subtraction.
-    return TUUVM_NULL_TUPLE;
+    tuuvm_decoded_integer_t decodedLeftInteger = {};
+    tuuvm_decoded_integer_t decodedRightInteger = {};
+    tuuvm_integer_decodeLargeOrImmediate(context, &decodedLeftInteger, left);
+    tuuvm_integer_decodeLargeOrImmediate(context, &decodedRightInteger, right);
+
+    if(decodedLeftInteger.isNegative == decodedRightInteger.isNegative)
+    {
+        // Same sign, subtract.
+        int magnitudeComparison = tuuvm_integer_compareMagnitudes(decodedLeftInteger.wordCount, decodedLeftInteger.words, decodedRightInteger.wordCount, decodedRightInteger.words);
+        if(magnitudeComparison == 0)
+            return tuuvm_tuple_integer_encodeSmall(0);
+
+        if(magnitudeComparison > 0)
+        {
+            size_t resultWordCount = decodedLeftInteger.wordCount;
+            bool resultIsNegative = decodedLeftInteger.isNegative;
+            tuuvm_integer_t *result = (tuuvm_integer_t*)tuuvm_context_allocateByteTuple(context, resultIsNegative ? context->roots.negativeIntegerType : context->roots.positiveIntegerType, resultWordCount*4);
+            tuuvm_integer_subtractFromInto(decodedLeftInteger.wordCount, decodedLeftInteger.words, decodedRightInteger.wordCount, decodedRightInteger.words, resultWordCount, result->words);
+            return tuuvm_integer_normalize(context, result);
+        }
+        else
+        {
+            size_t resultWordCount = decodedRightInteger.wordCount;
+            bool resultIsNegative = decodedRightInteger.isNegative;
+            tuuvm_integer_t *result = (tuuvm_integer_t*)tuuvm_context_allocateByteTuple(context, resultIsNegative ? context->roots.negativeIntegerType : context->roots.positiveIntegerType, resultWordCount*4);
+            tuuvm_integer_subtractFromInto(decodedRightInteger.wordCount, decodedRightInteger.words, decodedLeftInteger.wordCount, decodedLeftInteger.words, resultWordCount, result->words);
+            return tuuvm_integer_normalize(context, result);
+        }
+    }
+    else
+    {
+        // Differing sign, sum
+        uint32_t carry = tuuvm_integer_sumInto(decodedLeftInteger.wordCount, decodedLeftInteger.words, decodedRightInteger.wordCount, decodedRightInteger.words, 0, NULL);
+        size_t resultWordCount = (decodedLeftInteger.wordCount > decodedRightInteger.wordCount) ? decodedLeftInteger.wordCount : decodedRightInteger.wordCount;
+        if(carry != 0)
+            ++resultWordCount;
+
+        tuuvm_integer_t *result = (tuuvm_integer_t*)tuuvm_context_allocateByteTuple(context, decodedLeftInteger.isNegative ? context->roots.negativeIntegerType : context->roots.positiveIntegerType, resultWordCount*4);
+        tuuvm_integer_sumInto(decodedLeftInteger.wordCount, decodedLeftInteger.words, decodedRightInteger.wordCount, decodedRightInteger.words, resultWordCount, result->words);
+        return (tuuvm_tuple_t)result;
+    }
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_integer_negate(tuuvm_context_t *context, tuuvm_tuple_t integer)
@@ -217,8 +409,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_negate(tuuvm_context_t *context, tuuvm_tup
         return tuuvm_tuple_integer_encodeInt64(context, -integerValue);
     }
 
-    // TODO: Implement the large integer negation.
-    return TUUVM_NULL_TUPLE;
+    // Shallow copy and swap the integer type.
+    tuuvm_tuple_t negatedInteger = tuuvm_context_shallowCopy(context, integer);
+    tuuvm_tuple_t integerType = tuuvm_tuple_getType(context, negatedInteger);
+    tuuvm_tuple_setType(TUUVM_CAST_OOP_TO_OBJECT_TUPLE(negatedInteger), integerType == context->roots.positiveIntegerType ? context->roots.negativeIntegerType : context->roots.positiveIntegerType);
+    return tuuvm_integer_normalize(context, (tuuvm_integer_t*)negatedInteger);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_integer_multiply(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
@@ -228,12 +423,21 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_multiply(tuuvm_context_t *context, tuuvm_t
         tuuvm_stuple_t leftValue = tuuvm_tuple_integer_decodeSmall(left);
         tuuvm_stuple_t rightValue = tuuvm_tuple_integer_decodeSmall(right);
 
-        // TODO: Implement integer overflow checking.
-        return tuuvm_tuple_integer_encodeInt64(context, leftValue * rightValue);
+        tuuvm_stuple_t result = leftValue * rightValue;
+        if(leftValue == 0 || rightValue == 0 || leftValue == result / rightValue)
+            return tuuvm_tuple_integer_encodeInt64(context, leftValue * rightValue);
     }
 
-    // TODO: Implement the large integer multiplication.
-    return TUUVM_NULL_TUPLE;
+    tuuvm_decoded_integer_t decodedLeftInteger = {};
+    tuuvm_decoded_integer_t decodedRightInteger = {};
+    tuuvm_integer_decodeLargeOrImmediate(context, &decodedLeftInteger, left);
+    tuuvm_integer_decodeLargeOrImmediate(context, &decodedRightInteger, right);
+
+    bool resultIsNegative = decodedLeftInteger.isNegative != decodedRightInteger.isNegative;
+    size_t resultWordCount = decodedLeftInteger.wordCount + decodedRightInteger.wordCount;
+    tuuvm_integer_t *result = (tuuvm_integer_t*)tuuvm_context_allocateByteTuple(context, resultIsNegative ? context->roots.negativeIntegerType : context->roots.positiveIntegerType, resultWordCount*4);
+    tuuvm_integer_multiplyInto(decodedLeftInteger.wordCount, decodedLeftInteger.words, decodedRightInteger.wordCount, decodedRightInteger.words, resultWordCount, result->words);
+    return tuuvm_integer_normalize(context, result);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_integer_divide(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
