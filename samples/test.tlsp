@@ -155,4 +155,6 @@
 
 (printLine (UInt32::fromInteger 42))
 *#
+(printLine (Integer::factorial 20))
+
 (error "Test error")

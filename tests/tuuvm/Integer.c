@@ -1,7 +1,10 @@
 #include "TestMacros.h"
 #include "tuuvm/integer.h"
+#include "tuuvm/string.h"
 
-#define TEST_ASSERT_INTEGER_EQUALS(expected, gotten) TEST_ASSERT_DESCRIPTION(tuuvm_integer_equals(tuuvm_test_context, (expected), (gotten) == TUUVM_TRUE_TUPLE), "Obtained value is not equal to " #expected)
+#define TEST_ASSERT_INTEGER_EQUALS(expected, gotten) TEST_ASSERT_DESCRIPTION(tuuvm_integer_equals(tuuvm_test_context, (expected), (gotten)) == TUUVM_TRUE_TUPLE, "Obtained value is not equal to " #expected)
+#define TEST_ASSERT_INTEGER_TOSTRING_EQUALS(expected, gotten) TEST_ASSERT_DESCRIPTION(tuuvm_string_equals(tuuvm_string_createWithCString(tuuvm_test_context, (expected)), tuuvm_tuple_toString(tuuvm_test_context, (gotten))), "Obtained value is not equal to " #expected)
+
 
 #define INTEGER(string) tuuvm_integer_parseCString(tuuvm_test_context, string)
 
@@ -104,7 +107,7 @@ TEST_SUITE(Integer)
         TEST_ASSERT_INTEGER_EQUALS(INTEGER("1"), tuuvm_integer_divide(tuuvm_test_context, INTEGER("-1"), INTEGER("-1")));
         TEST_ASSERT_INTEGER_EQUALS(INTEGER("-1"), tuuvm_integer_divide(tuuvm_test_context, INTEGER("-1"), INTEGER("1")));
         TEST_ASSERT_INTEGER_EQUALS(INTEGER("-1"), tuuvm_integer_divide(tuuvm_test_context, INTEGER("1"), INTEGER("-1")));
-        TEST_ASSERT_INTEGER_EQUALS(INTEGER("2"), tuuvm_integer_divide(tuuvm_test_context, INTEGER("2"), INTEGER("-1")));
+        TEST_ASSERT_INTEGER_EQUALS(INTEGER("-2"), tuuvm_integer_divide(tuuvm_test_context, INTEGER("2"), INTEGER("-1")));
 
         // Simple divisions
         TEST_ASSERT_INTEGER_EQUALS(INTEGER("3"), tuuvm_integer_divide(tuuvm_test_context, INTEGER("6"), INTEGER("2")));
@@ -114,7 +117,6 @@ TEST_SUITE(Integer)
 
     TEST_CASE_WITH_FIXTURE(Factorial, TuuvmCore)
     {
-        // Neutral element
         TEST_ASSERT_INTEGER_EQUALS(INTEGER("1"), tuuvm_integer_factorial(tuuvm_test_context, INTEGER("0")));
         TEST_ASSERT_INTEGER_EQUALS(INTEGER("1"), tuuvm_integer_factorial(tuuvm_test_context, INTEGER("1")));
         TEST_ASSERT_INTEGER_EQUALS(INTEGER("2"), tuuvm_integer_factorial(tuuvm_test_context, INTEGER("2")));
@@ -132,6 +134,24 @@ TEST_SUITE(Integer)
         TEST_ASSERT_INTEGER_EQUALS(INTEGER("815915283247897734345611269596115894272000000000"), tuuvm_integer_factorial(tuuvm_test_context, INTEGER("40")));
         TEST_ASSERT_INTEGER_EQUALS(INTEGER("30414093201713378043612608166064768844377641568960512000000000000"), tuuvm_integer_factorial(tuuvm_test_context, INTEGER("50")));
         TEST_ASSERT_INTEGER_EQUALS(INTEGER("93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000"), tuuvm_integer_factorial(tuuvm_test_context, INTEGER("100")));
+
+        TEST_ASSERT_INTEGER_TOSTRING_EQUALS("1", tuuvm_integer_factorial(tuuvm_test_context, INTEGER("0")));
+        TEST_ASSERT_INTEGER_TOSTRING_EQUALS("1", tuuvm_integer_factorial(tuuvm_test_context, INTEGER("1")));
+        TEST_ASSERT_INTEGER_TOSTRING_EQUALS("2", tuuvm_integer_factorial(tuuvm_test_context, INTEGER("2")));
+        TEST_ASSERT_INTEGER_TOSTRING_EQUALS("6", tuuvm_integer_factorial(tuuvm_test_context, INTEGER("3")));
+        TEST_ASSERT_INTEGER_TOSTRING_EQUALS("24", tuuvm_integer_factorial(tuuvm_test_context, INTEGER("4")));
+        TEST_ASSERT_INTEGER_TOSTRING_EQUALS("120", tuuvm_integer_factorial(tuuvm_test_context, INTEGER("5")));
+        TEST_ASSERT_INTEGER_TOSTRING_EQUALS("720", tuuvm_integer_factorial(tuuvm_test_context, INTEGER("6")));
+        TEST_ASSERT_INTEGER_TOSTRING_EQUALS("5040", tuuvm_integer_factorial(tuuvm_test_context, INTEGER("7")));
+        TEST_ASSERT_INTEGER_TOSTRING_EQUALS("40320", tuuvm_integer_factorial(tuuvm_test_context, INTEGER("8")));
+        TEST_ASSERT_INTEGER_TOSTRING_EQUALS("362880", tuuvm_integer_factorial(tuuvm_test_context, INTEGER("9")));
+        TEST_ASSERT_INTEGER_TOSTRING_EQUALS("3628800", tuuvm_integer_factorial(tuuvm_test_context, INTEGER("10")));
+
+        TEST_ASSERT_INTEGER_TOSTRING_EQUALS("2432902008176640000", tuuvm_integer_factorial(tuuvm_test_context, INTEGER("20")));
+        TEST_ASSERT_INTEGER_TOSTRING_EQUALS("265252859812191058636308480000000", tuuvm_integer_factorial(tuuvm_test_context, INTEGER("30")));
+        TEST_ASSERT_INTEGER_TOSTRING_EQUALS("815915283247897734345611269596115894272000000000", tuuvm_integer_factorial(tuuvm_test_context, INTEGER("40")));
+        TEST_ASSERT_INTEGER_TOSTRING_EQUALS("30414093201713378043612608166064768844377641568960512000000000000", tuuvm_integer_factorial(tuuvm_test_context, INTEGER("50")));
+        TEST_ASSERT_INTEGER_TOSTRING_EQUALS("93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000", tuuvm_integer_factorial(tuuvm_test_context, INTEGER("100")));
     }
 
 }

@@ -174,7 +174,9 @@ TUUVM_API bool tuuvm_string_equals(tuuvm_tuple_t a, tuuvm_tuple_t b)
     if(firstSize != secondSize)
         return false;
 
-    return memcmp(TUUVM_CAST_OOP_TO_OBJECT_TUPLE(a)->bytes, TUUVM_CAST_OOP_TO_OBJECT_TUPLE(b)->bytes, firstSize) == 0;
+    uint8_t *firstBytes = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(a)->bytes;
+    uint8_t *secondBytes = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(b)->bytes;
+    return memcmp(firstBytes, secondBytes, firstSize) == 0;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_string_primitive_hash(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
