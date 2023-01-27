@@ -112,7 +112,17 @@ static tuuvm_heap_chunk_t *tuuvm_heap_findOrAllocateChunkWithRequiredCapacity(tu
         heap->firstChunk = heap->lastChunk = newChunk;
     }
 
+    heap->totalSize += newChunk->size;
+    heap->totalCapacity += newChunk->capacity;
+    heap->shouldAttemptToCollect = true; // For each new chunk set the GC flag.
+
     return newChunk;
+}
+
+static void tuuvm_heap_checkForGCThreshold(tuuvm_heap_t *heap)
+{
+    // Monitor for 80% of heap comsumption.
+    heap->shouldAttemptToCollect = heap->shouldAttemptToCollect || heap->totalSize > heap->totalCapacity * 4 / 5;
 }
 
 static tuuvm_object_tuple_t *tuuvm_heap_allocateTupleWithRawSize(tuuvm_heap_t *heap, size_t allocationSize, size_t allocationAlignment)
@@ -122,10 +132,15 @@ static tuuvm_object_tuple_t *tuuvm_heap_allocateTupleWithRawSize(tuuvm_heap_t *h
         return 0;
 
     size_t allocationOffset = uintptrAlignedTo(allocationChunk->size, allocationAlignment);
-    allocationChunk->size = (uint32_t)(allocationOffset + allocationSize);
+    size_t newChunkSize = allocationOffset + allocationSize;
+    size_t chunkSizeDelta = newChunkSize - allocationChunk->size;
+    allocationChunk->size = (uint32_t)newChunkSize;
+    heap->totalSize += chunkSizeDelta;
     TUUVM_ASSERT(allocationChunk->size <= allocationChunk->capacity);
     tuuvm_object_tuple_t *result = (tuuvm_object_tuple_t*)((uintptr_t)allocationChunk + allocationOffset);
     memset(result, 0, allocationSize);
+
+    tuuvm_heap_checkForGCThreshold(heap);
     return result;
 }
 
@@ -278,8 +293,18 @@ static void tuuvm_heap_chunk_compact(uint32_t blackColor, tuuvm_heap_chunk_t *ch
 
 void tuuvm_heap_compact(tuuvm_heap_t *heap)
 {
+    heap->totalSize = 0;
+    heap->totalCapacity = 0;
+
     for(tuuvm_heap_chunk_t *chunk = heap->firstChunk; chunk; chunk = chunk->nextChunk)
+    {
         tuuvm_heap_chunk_compact(heap->gcBlackColor, chunk);
+
+        heap->totalSize += chunk->size;
+        heap->totalCapacity += chunk->capacity;
+    }
+    
+    heap->shouldAttemptToCollect = false;
 }
 
 void tuuvm_heap_swapGCColors(tuuvm_heap_t *heap)

@@ -18,6 +18,9 @@ struct tuuvm_heap_s
     tuuvm_heap_chunk_t *lastChunk;
     bool shouldAttemptToCollect;
 
+    size_t totalSize;
+    size_t totalCapacity;
+
     uint32_t gcWhiteColor;
     uint32_t gcGrayColor;
     uint32_t gcBlackColor;

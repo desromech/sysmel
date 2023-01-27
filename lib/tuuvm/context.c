@@ -276,7 +276,6 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
     tuuvm_tuple_setupPrimitives(context);
     
     tuuvm_gc_unlock(context);
-    tuuvm_gc_collect(context); // Force a garbage collection after context creation.
 
     return context;
 }

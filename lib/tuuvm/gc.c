@@ -78,8 +78,6 @@ TUUVM_API void tuuvm_gc_safepoint(tuuvm_context_t *context)
 
     // Phase 5: Swap the GC colors.
     tuuvm_heap_swapGCColors(&context->heap);
-
-    context->heap.shouldAttemptToCollect = false;
 }
 
 TUUVM_API void tuuvm_gc_lock(tuuvm_context_t *context)
