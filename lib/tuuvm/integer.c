@@ -88,12 +88,16 @@ static uint32_t tuuvm_integer_sumInto(size_t leftWordCount, uint32_t *leftWords,
     return carry;
 }
 
-static void tuuvm_integer_multiplyByWordInto(size_t leftWordCount, uint32_t *leftWords, uint32_t word, size_t resultWordCount, uint32_t *resultWords)
+static void tuuvm_integer_multiplyByWordAddingInto(size_t leftWordCount, uint32_t *leftWords, uint32_t word, size_t resultWordCount, uint32_t *resultWords)
 {
     uint32_t carry = 0;
-    for(size_t i = 0; i < leftWordCount && i < resultWordCount; ++i)
+    size_t wordCount = leftWordCount > resultWordCount ? leftWordCount : resultWordCount;
+    for(size_t i = 0; i < wordCount; ++i)
     {
-        uint64_t multiplication = (uint64_t)leftWords[i]*(uint64_t)word + carry;
+        uint32_t leftWord = i < leftWordCount ? leftWords[i] : 0;
+        uint32_t resultWord = i < resultWordCount ? resultWords[i] : 0;
+
+        uint64_t multiplication = (uint64_t)leftWord*(uint64_t)word + (uint64_t)resultWord + (uint64_t)carry;
         resultWords[i] = (uint32_t)multiplication;
         carry = (uint32_t)(multiplication >> 32);
     }
@@ -101,8 +105,11 @@ static void tuuvm_integer_multiplyByWordInto(size_t leftWordCount, uint32_t *lef
 
 static void tuuvm_integer_multiplyInto(size_t leftWordCount, uint32_t *leftWords, size_t rightWordCount, uint32_t *rightWords, size_t resultWordCount, uint32_t *resultWords)
 {
+    for(size_t i = 0; i < resultWordCount; ++i)
+        resultWords[i] = 0;
+
     for(size_t i = 0; i < rightWordCount && i < resultWordCount; ++i)
-        tuuvm_integer_multiplyByWordInto(leftWordCount, leftWords, rightWords[i], resultWordCount - i, resultWords + i);
+        tuuvm_integer_multiplyByWordAddingInto(leftWordCount, leftWords, rightWords[i], resultWordCount - i, resultWords + i);
 }
 
 static int32_t tuuvm_integer_subtractFromInto(size_t leftWordCount, uint32_t *leftWords, size_t rightWordCount, uint32_t *rightWords, size_t resultWordCount, uint32_t *resultWords)
@@ -434,7 +441,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_multiply(tuuvm_context_t *context, tuuvm_t
     tuuvm_integer_decodeLargeOrImmediate(context, &decodedRightInteger, right);
 
     bool resultIsNegative = decodedLeftInteger.isNegative != decodedRightInteger.isNegative;
-    size_t resultWordCount = decodedLeftInteger.wordCount + decodedRightInteger.wordCount;
+    size_t resultWordCount = decodedLeftInteger.wordCount + decodedRightInteger.wordCount + 1;
     tuuvm_integer_t *result = (tuuvm_integer_t*)tuuvm_context_allocateByteTuple(context, resultIsNegative ? context->roots.negativeIntegerType : context->roots.positiveIntegerType, resultWordCount*4);
     tuuvm_integer_multiplyInto(decodedLeftInteger.wordCount, decodedLeftInteger.words, decodedRightInteger.wordCount, decodedRightInteger.words, resultWordCount, result->words);
     return tuuvm_integer_normalize(context, result);
@@ -578,6 +585,60 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_printString(tuuvm_context_t *context, tuuv
     }
 
     return tuuvm_string_createWithCString(context, "TODO: tuuvm_integer_printString for large integer.");
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_integer_toHexString(tuuvm_context_t *context, tuuvm_tuple_t integer)
+{
+    tuuvm_decoded_integer_t decodedInteger = {};
+    tuuvm_integer_decodeLargeOrImmediate(context, &decodedInteger, integer);
+    
+    // Count the required nibbles.
+    size_t nibbleCount = 1; // We require at least one nibble.
+    for(size_t i = 0; i < decodedInteger.wordCount; ++i)
+    {
+        uint32_t word = decodedInteger.words[i];
+        for(uint32_t j = 0; j < 8; ++j)
+        {
+            size_t nibbleIndex = i*8 + j;
+            if(((word >> (j*4)) & 0xF) != 0)
+                nibbleCount = nibbleIndex + 1;
+        }
+    }
+
+    // Compute the character count.
+    size_t characterCount = nibbleCount + (decodedInteger.isNegative ? 1 : 0);
+    
+    tuuvm_tuple_t resultString = tuuvm_string_createEmptyWithSize(context, characterCount);
+    uint8_t *resultBytes = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(resultString)->bytes;
+    if(decodedInteger.isNegative)
+    {
+        resultBytes[0] = '-';
+        ++resultBytes;
+        --characterCount;
+    }
+
+    // Emit the hex characters
+    for(size_t i = 0; i < decodedInteger.wordCount; ++i)
+    {
+        uint32_t word = decodedInteger.words[i];
+        for(uint32_t j = 0; j < 8; ++j)
+        {
+            size_t nibbleIndex = i*8 + j;
+            if(nibbleIndex >= nibbleCount)
+                break;
+
+            uint32_t nibble = (word >> (j*4)) & 0xF;
+            uint8_t nibbleCharacter = 0;
+            if(nibble < 10)
+                nibbleCharacter = '0' + nibble;
+            else
+                nibbleCharacter = 'A' + nibble - 10;
+
+            resultBytes[nibbleCount - nibbleIndex - 1] = nibbleCharacter;
+        }
+    }
+
+    return resultString;
 }
 
 static tuuvm_tuple_t tuuvm_integer_primitive_printString(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)

@@ -98,4 +98,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_greaterEquals(tuuvm_context_t *context, tu
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_integer_printString(tuuvm_context_t *context, tuuvm_tuple_t integer);
 
+/**
+ * Converts an integer into an hex string.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_integer_toHexString(tuuvm_context_t *context, tuuvm_tuple_t integer);
+
 #endif //TUUVM_INTERPRETER_H
