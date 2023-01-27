@@ -38,6 +38,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t trueType;
     tuuvm_tuple_t typeType;
     tuuvm_tuple_t nilType;
+    tuuvm_tuple_t valueBoxType;
     tuuvm_tuple_t voidType;
 
     tuuvm_tuple_t char8Type;

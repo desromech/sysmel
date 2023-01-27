@@ -2,10 +2,13 @@
 
 ## until:do:
 (define (until:do: stop block)
-    (define i 0)
-    (whileContinueWith (Integer::< i stop)
-        (block i)
-        (define i (Integer::+ i 1))))
+    (define ibox (RawTuple::new 1))
+    (define (i) (RawTuple::slotAt: ibox 0))
+    (define (i: v) (RawTuple::slotAt:put: ibox 0 v))
+    (i: 0)
+    (whileContinueWith (Integer::< (i) stop)
+        (block (i))
+        (i: (Integer::+ (i) 1))))
 
 ## exportInstrinsicBuiltInBinding
 (define (exportInstrinsicBuiltInBinding symbol binding)
