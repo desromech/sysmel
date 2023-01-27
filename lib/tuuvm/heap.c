@@ -124,7 +124,9 @@ static tuuvm_object_tuple_t *tuuvm_heap_allocateTupleWithRawSize(tuuvm_heap_t *h
     size_t allocationOffset = uintptrAlignedTo(allocationChunk->size, allocationAlignment);
     allocationChunk->size = (uint32_t)(allocationOffset + allocationSize);
     TUUVM_ASSERT(allocationChunk->size <= allocationChunk->capacity);
-    return (tuuvm_object_tuple_t*)((uintptr_t)allocationChunk + allocationOffset);
+    tuuvm_object_tuple_t *result = (tuuvm_object_tuple_t*)((uintptr_t)allocationChunk + allocationOffset);
+    memset(result, 0, allocationSize);
+    return result;
 }
 
 TUUVM_API tuuvm_object_tuple_t *tuuvm_heap_allocateByteTuple(tuuvm_heap_t *heap, size_t byteSize)
@@ -133,7 +135,7 @@ TUUVM_API tuuvm_object_tuple_t *tuuvm_heap_allocateByteTuple(tuuvm_heap_t *heap,
     tuuvm_object_tuple_t *result = tuuvm_heap_allocateTupleWithRawSize(heap, allocationSize, 16);
     if(!result) return 0;
 
-    result->header.typePointerAndFlags = TUUVM_TUPLE_BYTES_BIT;
+    result->header.typePointerAndFlags = TUUVM_TUPLE_BYTES_BIT | heap->gcWhiteColor;
     result->header.objectSize = byteSize;
     return result;
 }
@@ -145,6 +147,7 @@ TUUVM_API tuuvm_object_tuple_t *tuuvm_heap_allocatePointerTuple(tuuvm_heap_t *he
     tuuvm_object_tuple_t *result = tuuvm_heap_allocateTupleWithRawSize(heap, allocationSize, 16);
     if(!result) return 0;
 
+    result->header.typePointerAndFlags = heap->gcWhiteColor;
     result->header.objectSize = objectSize;
     return result;
 }
@@ -158,7 +161,15 @@ TUUVM_API tuuvm_object_tuple_t *tuuvm_heap_shallowCopyTuple(tuuvm_heap_t *heap, 
     if(!result) return 0;
 
     memcpy(result, tupleToCopy, allocationSize);
+    tuuvm_tuple_setGCColor((tuuvm_tuple_t)result, heap->gcWhiteColor);
     return result;
+}
+
+void tuuvm_heap_initialize(tuuvm_heap_t *heap)
+{
+    heap->gcWhiteColor = 0;
+    heap->gcGrayColor = 1;
+    heap->gcBlackColor = 2;
 }
 
 void tuuvm_heap_destroy(tuuvm_heap_t *heap)
@@ -170,4 +181,110 @@ void tuuvm_heap_destroy(tuuvm_heap_t *heap)
         position = position->nextChunk;
         tuuvm_heap_freeSystemMemory(chunkToFree, chunkToFree->capacity);
     }
+}
+
+static void tuuvm_heap_chunk_computeCompactionForwardingPointers(uint32_t blackColor, tuuvm_heap_chunk_t *chunk)
+{
+    uintptr_t offset = sizeof(tuuvm_heap_chunk_t);
+    uintptr_t newSize = offset;
+    uintptr_t chunkAddress = (uintptr_t)chunk;
+    while(offset < chunk->size)
+    {
+        offset = uintptrAlignedTo(offset, 16);
+        if(offset >= chunk->size)
+            break;
+
+        tuuvm_object_tuple_t *object = (tuuvm_object_tuple_t*)(chunkAddress + offset);
+        size_t objectSize = sizeof(tuuvm_object_tuple_t) + object->header.objectSize;
+        offset += objectSize;
+        if((object->header.typePointerAndFlags & TUUVM_TUPLE_GC_COLOR_MASK) == blackColor)
+        {
+            newSize = uintptrAlignedTo(newSize, 16);
+            object->header.forwardingPointer = chunkAddress + newSize;
+            newSize += objectSize;
+        }
+    }
+}
+
+void tuuvm_heap_computeCompactionForwardingPointers(tuuvm_heap_t *heap)
+{
+    for(tuuvm_heap_chunk_t *chunk = heap->firstChunk; chunk; chunk = chunk->nextChunk)
+        tuuvm_heap_chunk_computeCompactionForwardingPointers(heap->gcBlackColor, chunk);
+}
+
+static void tuuvm_heap_chunk_applyForwardingPointers(uint32_t blackColor, tuuvm_heap_chunk_t *chunk)
+{
+    uintptr_t offset = sizeof(tuuvm_heap_chunk_t);
+    uintptr_t chunkAddress = (uintptr_t)chunk;
+    while(offset < chunk->size)
+    {
+        offset = uintptrAlignedTo(offset, 16);
+        if(offset >= chunk->size)
+            break;
+
+        tuuvm_object_tuple_t *object = (tuuvm_object_tuple_t*)(chunkAddress + offset);
+        size_t objectSize = sizeof(tuuvm_object_tuple_t) + object->header.objectSize;
+        offset += objectSize;
+        if((object->header.typePointerAndFlags & TUUVM_TUPLE_GC_COLOR_MASK) == blackColor &&
+            (object->header.typePointerAndFlags & TUUVM_TUPLE_BYTES_BIT) == 0)
+        {
+            size_t slotCount = object->header.objectSize / sizeof(tuuvm_tuple_t);
+            tuuvm_tuple_t *slots = object->pointers;
+
+            for(size_t i = 0; i < slotCount; ++i)
+            {
+                if(tuuvm_tuple_isNonNullPointer(slots[i]))
+                    slots[i] = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(slots[i])->header.forwardingPointer;
+            }
+        }
+    }
+}
+
+void tuuvm_heap_applyForwardingPointers(tuuvm_heap_t *heap)
+{
+    for(tuuvm_heap_chunk_t *chunk = heap->firstChunk; chunk; chunk = chunk->nextChunk)
+        tuuvm_heap_chunk_applyForwardingPointers(heap->gcBlackColor, chunk);
+}
+
+static void tuuvm_heap_chunk_compact(uint32_t blackColor, tuuvm_heap_chunk_t *chunk)
+{
+    uintptr_t offset = sizeof(tuuvm_heap_chunk_t);
+    uintptr_t newSize = offset;
+    uintptr_t chunkAddress = (uintptr_t)chunk;
+    while(offset < chunk->size)
+    {
+        offset = uintptrAlignedTo(offset, 16);
+        if(offset >= chunk->size)
+            break;
+
+        tuuvm_object_tuple_t *object = (tuuvm_object_tuple_t*)(chunkAddress + offset);
+        size_t objectSize = sizeof(tuuvm_object_tuple_t) + object->header.objectSize;
+        offset += objectSize;
+        if((object->header.typePointerAndFlags & TUUVM_TUPLE_GC_COLOR_MASK) == blackColor)
+        {
+            newSize = uintptrAlignedTo(newSize, 16);
+            tuuvm_object_tuple_t *targetObject = (tuuvm_object_tuple_t*)(chunkAddress + newSize);
+            TUUVM_ASSERT(object->header.forwardingPointer == (tuuvm_tuple_t)targetObject);
+            if(targetObject != object)
+                memmove(targetObject, object, objectSize);
+            newSize += objectSize;
+        }
+    }
+
+    TUUVM_ASSERT(newSize < chunk->capacity);
+    TUUVM_ASSERT(newSize <= chunk->size);
+    chunk->size = newSize;
+}
+
+void tuuvm_heap_compact(tuuvm_heap_t *heap)
+{
+    for(tuuvm_heap_chunk_t *chunk = heap->firstChunk; chunk; chunk = chunk->nextChunk)
+        tuuvm_heap_chunk_compact(heap->gcBlackColor, chunk);
+}
+
+void tuuvm_heap_swapGCColors(tuuvm_heap_t *heap)
+{
+    uint32_t temp = heap->gcBlackColor;
+    heap->gcBlackColor = heap->gcWhiteColor;
+    heap->gcWhiteColor = temp;
 }

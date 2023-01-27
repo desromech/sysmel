@@ -4,6 +4,8 @@
 #include "tuple.h"
 #include <setjmp.h>
 
+typedef void (tuuvm_GCRootIterationFunction_t) (void *userdata, tuuvm_tuple_t *root);
+
 typedef enum tuuvm_stackFrameRecordType_e
 {
     TUUVM_STACK_FRAME_RECORD_TYPE_GC_ROOTS = 0,
@@ -32,6 +34,7 @@ typedef struct tuuvm_stackFrameFunctionActivationRecord_s
     tuuvm_stackFrameRecord_t *previous;
     tuuvm_stackFrameRecordType_t type;
     tuuvm_tuple_t function;
+    tuuvm_tuple_t applicationEnvironment;
 } tuuvm_stackFrameFunctionActivationRecord_t;
 
 typedef struct tuuvm_stackFrameSourcePositionRecord_s
@@ -68,6 +71,15 @@ typedef struct tuuvm_stackFrameCleanupRecord_s
 #define TUUVM_STACKFRAME_POP_GC_ROOTS(recordName) \
     tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&recordName)
 
+#define TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(recordName, sourcePosition) \
+    tuuvm_stackFrameSourcePositionRecord_t recordName = { \
+        NULL, TUUVM_STACK_FRAME_RECORD_TYPE_SOURCE_POSITION, sourcePosition \
+    }; \
+    tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&recordName)
+
+#define TUUVM_STACKFRAME_POP_SOURCE_POSITION(recordName) \
+    tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&recordName)
+
 TUUVM_API void tuuvm_stackFrame_enterContext(tuuvm_context_t *context, tuuvm_stackFrameRecord_t *topLevelStackRecord);
 TUUVM_API void tuuvm_stackFrame_leaveContext();
 TUUVM_API tuuvm_context_t *tuuvm_stackFrame_getActiveContext();
@@ -75,6 +87,9 @@ TUUVM_API tuuvm_stackFrameRecord_t *tuuvm_stackFrame_getActiveRecord();
 
 TUUVM_API void tuuvm_stackFrame_pushRecord(tuuvm_stackFrameRecord_t *record);
 TUUVM_API void tuuvm_stackFrame_popRecord(tuuvm_stackFrameRecord_t *record);
+
+TUUVM_API void tuuvm_stackFrame_iterateGCRootsInRecordWith(tuuvm_stackFrameRecord_t *record, void *userdata, tuuvm_GCRootIterationFunction_t iterationFunction);
+TUUVM_API void tuuvm_stackFrame_iterateGCRootsInStackWith(tuuvm_stackFrameRecord_t *stackBottomRecord, void *userdata, tuuvm_GCRootIterationFunction_t iterationFunction);
 
 TUUVM_API void tuuvm_stackFrame_raiseException(tuuvm_tuple_t exception);
 

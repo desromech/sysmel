@@ -31,7 +31,7 @@ typedef intptr_t tuuvm_stuple_t;
 #define TUUVM_TUPLE_TYPE_POINTER_MASK ((uintptr_t)-16)
 #define TUUVM_TUPLE_FLAGS_MASK ((uintptr_t)15)
 
-#define TUUVM_TUPLE_GC_COLOR_MASK ((uintptr_t)-4)
+#define TUUVM_TUPLE_GC_COLOR_MASK ((uintptr_t)3)
 #define TUUVM_TUPLE_BYTES_BIT ((uintptr_t)4)
 #define TUUVM_TUPLE_IMMUTABLE_BIT ((uintptr_t)8)
 
@@ -227,6 +227,24 @@ TUUVM_INLINE bool tuuvm_tuple_isBytes(tuuvm_tuple_t tuple)
 TUUVM_INLINE bool tuuvm_tuple_isImmutable(tuuvm_tuple_t tuple)
 {
     return !tuuvm_tuple_isNonNullPointer(tuple) || (TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & TUUVM_TUPLE_IMMUTABLE_BIT) != 0;
+}
+
+/**
+ * Gets the GC color?
+ */
+TUUVM_INLINE uint32_t tuuvm_tuple_getGCColor(tuuvm_tuple_t tuple)
+{
+    return (uint32_t)(TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & TUUVM_TUPLE_GC_COLOR_MASK);
+}
+
+/**
+ * Gets the GC color?
+ */
+TUUVM_INLINE void tuuvm_tuple_setGCColor(tuuvm_tuple_t tuple, uint32_t newColor)
+{
+    tuuvm_object_tuple_t *objectTuple = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple);
+    objectTuple->header.typePointerAndFlags &= ~TUUVM_TUPLE_GC_COLOR_MASK;
+    objectTuple->header.typePointerAndFlags |= newColor;
 }
 
 /**

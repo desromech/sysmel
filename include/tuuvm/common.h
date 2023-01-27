@@ -32,4 +32,12 @@
 #   define TUUVM_API TUUVM_EXTERN_C TUUVM_IMPORT
 #endif
 
+#if defined(_WIN32)
+#define TUUVM_THREAD_LOCAL __declspec(thread)
+#elif defined(__GNUC__)
+#define TUUVM_THREAD_LOCAL __thread
+#else
+#error Add support for thread local storage.
+#endif
+
 #endif //TUUVM_COMMON_H

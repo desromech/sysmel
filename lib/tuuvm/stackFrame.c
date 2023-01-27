@@ -5,10 +5,9 @@
 #include "tuuvm/string.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <threads.h>
 
-thread_local tuuvm_context_t *tuuvm_stackFrame_activeContext;
-thread_local tuuvm_stackFrameRecord_t *tuuvm_stackFrame_activeRecord;
+TUUVM_THREAD_LOCAL tuuvm_context_t *tuuvm_stackFrame_activeContext;
+TUUVM_THREAD_LOCAL tuuvm_stackFrameRecord_t *tuuvm_stackFrame_activeRecord;
 
 TUUVM_API void tuuvm_stackFrame_enterContext(tuuvm_context_t *context, tuuvm_stackFrameRecord_t *topLevelStackRecord)
 {
@@ -41,6 +40,54 @@ TUUVM_API void tuuvm_stackFrame_pushRecord(tuuvm_stackFrameRecord_t *record)
 TUUVM_API void tuuvm_stackFrame_popRecord(tuuvm_stackFrameRecord_t *record)
 {
     tuuvm_stackFrame_activeRecord = record->previous;
+}
+
+TUUVM_API void tuuvm_stackFrame_iterateGCRootsInRecordWith(tuuvm_stackFrameRecord_t *record, void *userdata, tuuvm_GCRootIterationFunction_t iterationFunction)
+{
+    switch(record->type)
+    {
+    case TUUVM_STACK_FRAME_RECORD_TYPE_GC_ROOTS:
+        {
+            tuuvm_stackFrameGCRootsRecord_t *rootRecord = (tuuvm_stackFrameGCRootsRecord_t*)record;
+            for(size_t i = 0; i < rootRecord->rootCount; ++i)
+                iterationFunction(userdata, &rootRecord->roots[i]);
+        }
+        break;
+    case TUUVM_STACK_FRAME_RECORD_TYPE_FUNCTION_ACTIVATION:
+        {
+            tuuvm_stackFrameFunctionActivationRecord_t *functionRecord = (tuuvm_stackFrameFunctionActivationRecord_t*)record;
+            iterationFunction(userdata, &functionRecord->function);
+            iterationFunction(userdata, &functionRecord->applicationEnvironment);
+        }   
+        break;
+    case TUUVM_STACK_FRAME_RECORD_TYPE_SOURCE_POSITION:
+        {
+            tuuvm_stackFrameSourcePositionRecord_t *sourcePositionRecord = (tuuvm_stackFrameSourcePositionRecord_t*)record;
+            iterationFunction(userdata, &sourcePositionRecord->sourcePosition);
+        }   
+        break;
+    case TUUVM_STACK_FRAME_RECORD_TYPE_LANDING_PAD:
+        {
+            tuuvm_stackFrameLandingPadRecord_t *landingPadRecord = (tuuvm_stackFrameLandingPadRecord_t*)record;
+            iterationFunction(userdata, &landingPadRecord->exceptionFilter);
+            iterationFunction(userdata, &landingPadRecord->stackTrace);
+            iterationFunction(userdata, &landingPadRecord->exception);
+        }   
+        break;
+    case TUUVM_STACK_FRAME_RECORD_TYPE_CLEANUP:
+        // Nothing is required here yet
+        break;
+    default:
+        // Should not reach here.
+        abort();
+        break;
+    }
+}
+
+TUUVM_API void tuuvm_stackFrame_iterateGCRootsInStackWith(tuuvm_stackFrameRecord_t *stackBottomRecord, void *userdata, tuuvm_GCRootIterationFunction_t iterationFunction)
+{
+    for(tuuvm_stackFrameRecord_t *record = stackBottomRecord; record; record = record->previous)
+        tuuvm_stackFrame_iterateGCRootsInRecordWith(record, userdata, iterationFunction);
 }
 
 TUUVM_API void tuuvm_stackFrame_raiseException(tuuvm_tuple_t exception)

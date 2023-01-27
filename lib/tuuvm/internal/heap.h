@@ -16,8 +16,19 @@ struct tuuvm_heap_s
 {
     tuuvm_heap_chunk_t *firstChunk;
     tuuvm_heap_chunk_t *lastChunk;
+    bool shouldAttemptToCollect;
+
+    uint32_t gcWhiteColor;
+    uint32_t gcGrayColor;
+    uint32_t gcBlackColor;
 };
 
+void tuuvm_heap_initialize(tuuvm_heap_t *heap);
 void tuuvm_heap_destroy(tuuvm_heap_t *heap);
+
+void tuuvm_heap_computeCompactionForwardingPointers(tuuvm_heap_t *heap);
+void tuuvm_heap_applyForwardingPointers(tuuvm_heap_t *heap);
+void tuuvm_heap_compact(tuuvm_heap_t *heap);
+void tuuvm_heap_swapGCColors(tuuvm_heap_t *heap);
 
 #endif //TUUVM_INTERNAL_HEAP_H

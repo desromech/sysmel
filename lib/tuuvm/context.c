@@ -260,6 +260,7 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
 {
     tuuvm_context_t *context = (tuuvm_context_t*)calloc(1, sizeof(tuuvm_context_t));
     context->identityHashSeed = 1;
+    tuuvm_heap_initialize(&context->heap);
     tuuvm_gc_lock(context);
 
     tuuvm_context_createBasicTypes(context);
@@ -275,6 +276,7 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
     tuuvm_tuple_setupPrimitives(context);
     
     tuuvm_gc_unlock(context);
+    tuuvm_gc_collect(context); // Force a garbage collection after context creation.
 
     return context;
 }
