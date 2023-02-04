@@ -31,6 +31,20 @@ TUUVM_API void tuuvm_environment_setSymbolBinding(tuuvm_context_t *context, tuuv
     tuuvm_dictionary_atPut(context, environmentObject->symbolTable, symbol, binding);
 }
 
+TUUVM_API void tuuvm_environment_setNewSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t symbol, tuuvm_tuple_t binding)
+{
+    if(!tuuvm_tuple_isNonNullPointer(environment))
+        return;
+
+    tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
+    tuuvm_tuple_t existentBinding = TUUVM_NULL_TUPLE;
+
+    if(tuuvm_dictionary_find(context, environmentObject->symbolTable, symbol, &existentBinding))
+        tuuvm_error("Overriding existent symbol binding.");
+
+    tuuvm_dictionary_atPut(context, environmentObject->symbolTable, symbol, binding);
+}
+
 TUUVM_API bool tuuvm_environment_lookSymbolRecursively(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t symbol, tuuvm_tuple_t *outBinding)
 {
     *outBinding = TUUVM_NULL_TUPLE;
@@ -42,6 +56,16 @@ TUUVM_API bool tuuvm_environment_lookSymbolRecursively(tuuvm_context_t *context,
         return true;
 
     return tuuvm_environment_lookSymbolRecursively(context, environmentObject->parent, symbol, outBinding);
+}
+
+static tuuvm_tuple_t tuuvm_environment_primitive_setNewSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+
+    tuuvm_environment_setNewSymbolBinding(context, arguments[0], arguments[1], arguments[2]);
+    return TUUVM_VOID_TUPLE;
 }
 
 static tuuvm_tuple_t tuuvm_environment_primitive_setSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -56,5 +80,6 @@ static tuuvm_tuple_t tuuvm_environment_primitive_setSymbolBinding(tuuvm_context_
 
 void tuuvm_environment_setupPrimitives(tuuvm_context_t *context)
 {
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Environment::setNewSymbol:binding:", 3, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_environment_primitive_setNewSymbolBinding);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Environment::setSymbol:binding:", 3, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_environment_primitive_setSymbolBinding);
 }

@@ -27,7 +27,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicType(tuuvm_context_t *conte
     tuuvm_tuple_t nameSymbol = tuuvm_symbol_internWithCString(context, name);
     tuuvm_tuple_t type = tuuvm_type_createWithName(context, nameSymbol);
     tuuvm_type_setSupertype(type, supertype);
-    tuuvm_environment_setSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, nameSymbol, type);
+    tuuvm_environment_setNewSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, nameSymbol, type);
     tuuvm_arrayList_add(context, context->roots.intrinsicTypes, type);
 
     // First pass: count the arguments.
@@ -61,7 +61,7 @@ static void tuuvm_context_setIntrinsicTypeMetadata(tuuvm_context_t *context, tuu
     tuuvm_tuple_t nameSymbol = tuuvm_symbol_internWithCString(context, name);
     tuuvm_type_setName(type, nameSymbol);
     tuuvm_type_setSupertype(type, supertype);
-    tuuvm_environment_setSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, nameSymbol, type);
+    tuuvm_environment_setNewSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, nameSymbol, type);
     tuuvm_arrayList_add(context, context->roots.intrinsicTypes, type);
 
     // First pass: count the arguments.
@@ -90,7 +90,7 @@ static void tuuvm_context_setIntrinsicTypeMetadata(tuuvm_context_t *context, tuu
 
 TUUVM_API void tuuvm_context_setIntrinsicSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t symbol, tuuvm_tuple_t binding)
 {
-    tuuvm_environment_setSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, symbol, binding);
+    tuuvm_environment_setNewSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, symbol, binding);
 }
 
 TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(tuuvm_context_t *context, const char *symbolString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
