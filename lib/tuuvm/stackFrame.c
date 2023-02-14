@@ -173,11 +173,22 @@ TUUVM_API void tuuvm_stackFrame_printStackTrace(tuuvm_context_t *context, tuuvm_
 
 static void tuuvm_stackFrame_dumpStackGCRoots_iteration(void *userdata, tuuvm_tuple_t *root)
 {
-    (void)userdata;
-    printf("%p\n", root);
+    fprintf((FILE*)userdata, "%p\n", root);
 }
 
-TUUVM_API void tuuvm_stackFrame_dumpStackGCRoots()
+TUUVM_API void tuuvm_stackFrame_dumpStackGCRootsToFile(FILE *file)
 {
-    tuuvm_stackFrame_iterateGCRootsInStackWith(tuuvm_stackFrame_getActiveRecord(), NULL,  tuuvm_stackFrame_dumpStackGCRoots_iteration);
+    tuuvm_stackFrame_iterateGCRootsInStackWith(tuuvm_stackFrame_getActiveRecord(), file,  tuuvm_stackFrame_dumpStackGCRoots_iteration);
+}
+
+TUUVM_API void tuuvm_stackFrame_dumpStackGCRootsToFileNamed(const char *filename)
+{
+    FILE *file = fopen(filename, "wb");
+    tuuvm_stackFrame_iterateGCRootsInStackWith(tuuvm_stackFrame_getActiveRecord(), file,  tuuvm_stackFrame_dumpStackGCRoots_iteration);
+    fclose(file);
+}
+
+TUUVM_API void tuuvm_stackFrame_dumpStackGCRoots(void)
+{
+    tuuvm_stackFrame_dumpStackGCRootsToFile(stdout);
 }
