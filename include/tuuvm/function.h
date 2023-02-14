@@ -37,6 +37,19 @@ typedef struct tuuvm_closureASTFunction_s
 
 #define TUUVM_MAX_FUNCTION_ARGUMENTS 16
 
+typedef struct tuuvm_functionCallFrameStack_s
+{
+    bool isVariadic;
+    size_t expectedArgumentCount;
+    size_t variadicArgumentIndex;
+    size_t argumentIndex;
+
+    struct {
+        tuuvm_tuple_t function;
+        tuuvm_tuple_t applicationArguments[TUUVM_MAX_FUNCTION_ARGUMENTS];
+    } gcRoots;
+} tuuvm_functionCallFrameStack_t;
+
 /**
  * Creates a primitive function tuple.
  */
@@ -120,5 +133,20 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_function_apply4(tuuvm_context_t *context, tuuvm
     
     return tuuvm_function_apply(context, function, 4, arguments);
 }
+
+/**
+ * Begins constructing a function call frame stack.
+ */
+TUUVM_API void tuuvm_functionCallFrameStack_begin(tuuvm_context_t *context, tuuvm_functionCallFrameStack_t *callFrameStack, tuuvm_tuple_t function, size_t argumentCount);
+
+/**
+ * Pushes an argument into the function call frame stack.
+ */
+TUUVM_API void tuuvm_functionCallFrameStack_push(tuuvm_functionCallFrameStack_t *callFrameStack, tuuvm_tuple_t argument);
+
+/**
+ * Ends constructing a function call frame stack and dispatch the function call.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_functionCallFrameStack_finish(tuuvm_context_t *context, tuuvm_functionCallFrameStack_t *callFrameStack);
 
 #endif //TUUVM_FUNCTION_H

@@ -6,6 +6,7 @@
 #include "tuuvm/ast.h"
 #include "tuuvm/assert.h"
 #include "tuuvm/function.h"
+#include "tuuvm/gc.h"
 #include "tuuvm/errors.h"
 #include "tuuvm/macro.h"
 #include "tuuvm/parser.h"
@@ -15,6 +16,8 @@
 #include "tuuvm/type.h"
 #include "internal/context.h"
 #include <stdio.h>
+
+#define tuuvm_gc_safepoint(x) false
 
 TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t environment)
 {
@@ -583,47 +586,18 @@ static tuuvm_tuple_t tuuvm_astUnexpandedApplicationNode_expandNodeWithMacro(tuuv
 {
     tuuvm_astUnexpandedApplicationNode_t **unexpandedNode = (tuuvm_astUnexpandedApplicationNode_t**)node;
 
-    TUUVM_ASSERT(tuuvm_function_isMacro(context, *macro));
-    bool isVariadic = tuuvm_function_isVariadic(context, *macro);
-    size_t expectedArgumentCount = tuuvm_function_getArgumentCount(context, *macro);
     size_t applicationArgumentCount = tuuvm_arraySlice_getSize((*unexpandedNode)->arguments);
-    
-    struct {
-        tuuvm_tuple_t applicationArguments[TUUVM_MAX_FUNCTION_ARGUMENTS];
-    } gcFrame = {};
-    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    if(isVariadic)
-    {
-        TUUVM_ASSERT(expectedArgumentCount >= 2);
-        size_t directArgumentCount = expectedArgumentCount - /* Macro context */ 1 - /* Variadic argument */ 1;
-        if(applicationArgumentCount < directArgumentCount)
-            tuuvm_error("Macro application is missing required arguments.");
-        else if(directArgumentCount + 1> TUUVM_MAX_FUNCTION_ARGUMENTS)
-            tuuvm_error("Macro application direct arguments exceeds the max argument count.");
+    tuuvm_functionCallFrameStack_t callFrameStack = {};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(callFrameStackRecord, callFrameStack.gcRoots);
 
-        gcFrame.applicationArguments[0] = tuuvm_macroContext_create(context, *node, (*unexpandedNode)->super.sourcePosition);
-        for(size_t i = 0; i < directArgumentCount; ++i)
-            gcFrame.applicationArguments[i + 1] = tuuvm_arraySlice_at((*unexpandedNode)->arguments, i);
+    tuuvm_functionCallFrameStack_begin(context, &callFrameStack, *macro, 1 + applicationArgumentCount);
+    tuuvm_functionCallFrameStack_push(&callFrameStack, (*unexpandedNode)->super.sourcePosition);
+    for(size_t i = 0; i < applicationArgumentCount; ++i)
+        tuuvm_functionCallFrameStack_push(&callFrameStack, tuuvm_arraySlice_at((*unexpandedNode)->arguments, i));
 
-        gcFrame.applicationArguments[expectedArgumentCount - 1] = tuuvm_arraySlice_fromOffset(context, (*unexpandedNode)->arguments, directArgumentCount);
-    }
-    else
-    {
-        TUUVM_ASSERT(expectedArgumentCount >= 1);
-        size_t directArgumentCount = expectedArgumentCount - 1;
-        if(applicationArgumentCount != directArgumentCount)
-            tuuvm_error("Macro application exceeds the max argument count.");
-        else if(expectedArgumentCount > TUUVM_MAX_FUNCTION_ARGUMENTS)
-            tuuvm_error("Macro application exceeds the max argument count.");
-
-        gcFrame.applicationArguments[0] = tuuvm_macroContext_create(context, *node, (*unexpandedNode)->super.sourcePosition);
-        for(size_t i = 0; i < directArgumentCount; ++i)
-            gcFrame.applicationArguments[i + 1] = tuuvm_arraySlice_at((*unexpandedNode)->arguments, i);
-    }
-
-    tuuvm_tuple_t result = tuuvm_function_apply(context, *macro, expectedArgumentCount, gcFrame.applicationArguments);
-    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    tuuvm_tuple_t result = tuuvm_functionCallFrameStack_finish(context, &callFrameStack);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
     return result;
 }
 
@@ -679,7 +653,6 @@ static tuuvm_tuple_t tuuvm_astUnexpandedApplicationNode_primitiveAnalyzeAndEvalu
 
     struct {
         tuuvm_tuple_t functionOrMacro;
-        tuuvm_tuple_t applicationArguments[TUUVM_MAX_FUNCTION_ARGUMENTS];
     } gcFrame = {};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
@@ -693,19 +666,22 @@ static tuuvm_tuple_t tuuvm_astUnexpandedApplicationNode_primitiveAnalyzeAndEvalu
         return tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, expansionResult, *environment);
     }
 
-    TUUVM_ASSERT(!tuuvm_function_isVariadic(context, gcFrame.functionOrMacro));
+    tuuvm_functionCallFrameStack_t callFrameStack = {};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(callFrameStackRecord, callFrameStack.gcRoots);
+
     size_t applicationArgumentCount = tuuvm_arraySlice_getSize((*unexpandedNode)->arguments);
-    if(applicationArgumentCount > TUUVM_MAX_FUNCTION_ARGUMENTS)
-        tuuvm_error("Function applicatio exceeds the max argument count.");
+    tuuvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.functionOrMacro, applicationArgumentCount);
 
     for(size_t i = 0; i < applicationArgumentCount; ++i)
     {
         tuuvm_tuple_t argumentNode = tuuvm_arraySlice_at((*unexpandedNode)->arguments, i);
-        gcFrame.applicationArguments[i] = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, argumentNode, *environment);
+        tuuvm_functionCallFrameStack_push(&callFrameStack, tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, argumentNode, *environment));
     }
 
+    tuuvm_tuple_t result = tuuvm_functionCallFrameStack_finish(context, &callFrameStack);
+    //TUUVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-    return tuuvm_function_apply(context, gcFrame.functionOrMacro, applicationArgumentCount, gcFrame.applicationArguments);
+    return result;
 }
 
 static tuuvm_tuple_t tuuvm_astUnexpandedSExpressionNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -825,30 +801,23 @@ static tuuvm_tuple_t tuuvm_astFunctionApplicationNode_primitiveAnalyzeAndEvaluat
 
     tuuvm_astFunctionApplicationNode_t **applicationNode = (tuuvm_astFunctionApplicationNode_t**)node;
 
-    struct {
-        tuuvm_tuple_t function;
-        tuuvm_tuple_t applicationArguments[TUUVM_MAX_FUNCTION_ARGUMENTS];
-    } gcFrame = {};
-    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    tuuvm_functionCallFrameStack_t callFrameStack = {};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(callFrameStackRecord, callFrameStack.gcRoots);
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*applicationNode)->super.sourcePosition);
 
-    gcFrame.function = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*applicationNode)->functionExpression, *environment);
-
-    TUUVM_ASSERT(!tuuvm_function_isVariadic(context, gcFrame.function));
     size_t applicationArgumentCount = tuuvm_arraySlice_getSize((*applicationNode)->arguments);
-    if(applicationArgumentCount > TUUVM_MAX_FUNCTION_ARGUMENTS)
-        tuuvm_error("Function applicatio exceeds the max argument count.");
+    tuuvm_functionCallFrameStack_begin(context, &callFrameStack, tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*applicationNode)->functionExpression, *environment), applicationArgumentCount);
 
     for(size_t i = 0; i < applicationArgumentCount; ++i)
     {
         tuuvm_tuple_t argumentNode = tuuvm_arraySlice_at((*applicationNode)->arguments, i);
-        gcFrame.applicationArguments[i] = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, argumentNode, *environment);
+        tuuvm_functionCallFrameStack_push(&callFrameStack, tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, argumentNode, *environment));
     }
 
-
+    tuuvm_tuple_t result = tuuvm_functionCallFrameStack_finish(context, &callFrameStack);
     //TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
-    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-    return tuuvm_function_apply(context, gcFrame.function, applicationArgumentCount, gcFrame.applicationArguments);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
+    return result;
 }
 
 static tuuvm_tuple_t tuuvm_astFunctionApplicationNode_primitiveEvaluate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -862,29 +831,22 @@ static tuuvm_tuple_t tuuvm_astFunctionApplicationNode_primitiveEvaluate(tuuvm_co
 
     tuuvm_astFunctionApplicationNode_t **applicationNode = (tuuvm_astFunctionApplicationNode_t**)node;
 
-    struct {
-        tuuvm_tuple_t function;
-        tuuvm_tuple_t applicationArguments[TUUVM_MAX_FUNCTION_ARGUMENTS];
-    } gcFrame = {};
-    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    tuuvm_functionCallFrameStack_t callFrameStack = {};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(callFrameStackRecord, callFrameStack.gcRoots);
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*applicationNode)->super.sourcePosition);
 
-    gcFrame.function = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*applicationNode)->functionExpression, *environment);
-
-    TUUVM_ASSERT(!tuuvm_function_isVariadic(context, gcFrame.function));
     size_t applicationArgumentCount = tuuvm_arraySlice_getSize((*applicationNode)->arguments);
-    if(applicationArgumentCount > TUUVM_MAX_FUNCTION_ARGUMENTS)
-        tuuvm_error("Function applicatio exceeds the max argument count.");
+    tuuvm_functionCallFrameStack_begin(context, &callFrameStack, tuuvm_interpreter_evaluateASTWithEnvironment(context, (*applicationNode)->functionExpression, *environment), applicationArgumentCount);
 
     for(size_t i = 0; i < applicationArgumentCount; ++i)
     {
         tuuvm_tuple_t argumentNode = tuuvm_arraySlice_at((*applicationNode)->arguments, i);
-        gcFrame.applicationArguments[i] = tuuvm_interpreter_evaluateASTWithEnvironment(context, argumentNode, *environment);
+        tuuvm_functionCallFrameStack_push(&callFrameStack, tuuvm_interpreter_evaluateASTWithEnvironment(context, argumentNode, *environment));
     }
 
-    tuuvm_tuple_t result = tuuvm_function_apply(context, gcFrame.function, applicationArgumentCount, gcFrame.applicationArguments);
+    tuuvm_tuple_t result = tuuvm_functionCallFrameStack_finish(context, &callFrameStack);
     //TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
-    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
     return result;
 }
 
@@ -942,6 +904,7 @@ static tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_primitiveEvaluate(tuuvm_co
         shouldContinue = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*doWhileNode)->conditionExpression, *environment);
         if(shouldContinue)
             tuuvm_interpreter_evaluateASTWithEnvironment(context, (*doWhileNode)->continueExpression, *environment);
+        tuuvm_gc_safepoint(context);
     } while (shouldContinue);
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
 
@@ -1007,7 +970,7 @@ static tuuvm_tuple_t tuuvm_astWhileContinueWithNode_primitiveEvaluate(tuuvm_cont
     tuuvm_astWhileContinueWithNode_t **whileNode = (tuuvm_astWhileContinueWithNode_t**)node;
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*whileNode)->super.sourcePosition);
     for(; tuuvm_interpreter_evaluateASTWithEnvironment(context, (*whileNode)->conditionExpression, *environment) == TUUVM_TRUE_TUPLE;
-        tuuvm_interpreter_evaluateASTWithEnvironment(context, (*whileNode)->continueExpression, *environment))
+        tuuvm_interpreter_evaluateASTWithEnvironment(context, (*whileNode)->continueExpression, *environment), tuuvm_gc_safepoint(context))
     {
         tuuvm_interpreter_evaluateASTWithEnvironment(context, (*whileNode)->bodyExpression, *environment);
     }
@@ -1044,6 +1007,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_
     for(size_t i = 0; i < argumentCount; ++i)
         tuuvm_environment_setNewSymbolBinding(context, functionActivationRecord.applicationEnvironment, tuuvm_arraySlice_at((*closureASTFunction)->argumentSymbols, i), arguments[i]);
 
+    tuuvm_gc_safepoint(context);
     tuuvm_tuple_t result = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*closureASTFunction)->body, functionActivationRecord.applicationEnvironment);
     tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&functionActivationRecord);  
     return result;

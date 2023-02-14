@@ -88,3 +88,53 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
     tuuvm_error("Cannot apply non-functional object.");
     return TUUVM_VOID_TUPLE;
 }
+
+TUUVM_API void tuuvm_functionCallFrameStack_begin(tuuvm_context_t *context, tuuvm_functionCallFrameStack_t *callFrameStack, tuuvm_tuple_t function, size_t argumentCount)
+{
+    callFrameStack->gcRoots.function = function;
+    callFrameStack->isVariadic = tuuvm_function_isVariadic(context, callFrameStack->gcRoots.function);
+    callFrameStack->expectedArgumentCount = tuuvm_function_getArgumentCount(context, callFrameStack->gcRoots.function);
+    callFrameStack->argumentIndex = 0;
+    callFrameStack->variadicArgumentIndex = 0;
+
+    size_t requiredArgumentCount = callFrameStack->expectedArgumentCount;
+    if(callFrameStack->isVariadic)
+    {
+        if(requiredArgumentCount == 0)
+            tuuvm_error("Variadic functions require at least a single argument.");
+        callFrameStack->variadicArgumentIndex = requiredArgumentCount - 1;
+
+        --requiredArgumentCount;
+        if(argumentCount < requiredArgumentCount)
+            tuuvm_error("Missing required argument count.");
+
+        size_t variadicArgumentCount = argumentCount - requiredArgumentCount;
+        callFrameStack->gcRoots.applicationArguments[callFrameStack->variadicArgumentIndex] = tuuvm_arraySlice_createWithArrayOfSize(context, variadicArgumentCount);
+    }
+    else
+    {
+        if(argumentCount != requiredArgumentCount)
+            tuuvm_error("Function call does not receive the required number of arguments.");
+    }
+
+    if(argumentCount > TUUVM_MAX_FUNCTION_ARGUMENTS && !callFrameStack->isVariadic)
+        tuuvm_error("Function application direct arguments exceeds the max argument count.");
+    
+}
+
+TUUVM_API void tuuvm_functionCallFrameStack_push(tuuvm_functionCallFrameStack_t *callFrameStack, tuuvm_tuple_t argument)
+{
+    if(!callFrameStack->isVariadic || callFrameStack->argumentIndex < callFrameStack->variadicArgumentIndex)
+    {
+        callFrameStack->gcRoots.applicationArguments[callFrameStack->argumentIndex++] = argument;
+        return;
+    }
+
+    tuuvm_arraySlice_atPut(callFrameStack->gcRoots.applicationArguments[callFrameStack->variadicArgumentIndex], callFrameStack->argumentIndex - callFrameStack->variadicArgumentIndex, argument);
+    ++callFrameStack->argumentIndex;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_functionCallFrameStack_finish(tuuvm_context_t *context, tuuvm_functionCallFrameStack_t *callFrameStack)
+{
+    return tuuvm_function_apply(context, callFrameStack->gcRoots.function, callFrameStack->expectedArgumentCount, callFrameStack->gcRoots.applicationArguments);
+}
