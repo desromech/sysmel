@@ -51,6 +51,10 @@ TUUVM_API void tuuvm_gc_collect(tuuvm_context_t *context)
     tuuvm_gc_safepoint(context);
 }
 
+void tuuvm_gc_debugStackValidationHook(void)
+{
+}
+
 TUUVM_API void tuuvm_gc_safepoint(tuuvm_context_t *context)
 {
     if(tuuvm_gc_perThreadLockCount != 0)
@@ -61,6 +65,9 @@ TUUVM_API void tuuvm_gc_safepoint(tuuvm_context_t *context)
         return;
     
     // TODO: Add Support for multiple threads.
+
+    // Hook location for validating GC stack roots via GDB scripting.
+    tuuvm_gc_debugStackValidationHook();
 
     // LISP 2 moving collection algorithm.
     // Phase 1: marking phase

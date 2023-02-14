@@ -170,3 +170,14 @@ TUUVM_API void tuuvm_stackFrame_printStackTrace(tuuvm_context_t *context, tuuvm_
         fprintf(stderr, TUUVM_STRING_PRINTF_FORMAT "\n", TUUVM_STRING_PRINTF_ARG(stackTraceRecordString));
     }
 }
+
+static void tuuvm_stackFrame_dumpStackGCRoots_iteration(void *userdata, tuuvm_tuple_t *root)
+{
+    (void)userdata;
+    printf("%p\n", root);
+}
+
+TUUVM_API void tuuvm_stackFrame_dumpStackGCRoots()
+{
+    tuuvm_stackFrame_iterateGCRootsInStackWith(tuuvm_stackFrame_getActiveRecord(), NULL,  tuuvm_stackFrame_dumpStackGCRoots_iteration);
+}
