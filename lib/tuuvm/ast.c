@@ -162,6 +162,12 @@ TUUVM_API tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_getValue(tuuvm_tuple_t 
     return ((tuuvm_astIdentifierReferenceNode_t*)node)->value;
 }
 
+TUUVM_API bool tuuvm_astIdentifierReferenceNode_isEllipsis(tuuvm_tuple_t node)
+{
+    if(!tuuvm_tuple_isNonNullPointer(node)) return false;
+    return tuuvm_string_equalsCString(((tuuvm_astIdentifierReferenceNode_t*)node)->value, "...");
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_astIfNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t conditionExpression, tuuvm_tuple_t trueExpression, tuuvm_tuple_t falseExpression)
 {
     tuuvm_astIfNode_t *result = (tuuvm_astIfNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astIfNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astIfNode_t));

@@ -138,3 +138,43 @@ TUUVM_API tuuvm_tuple_t tuuvm_functionCallFrameStack_finish(tuuvm_context_t *con
 {
     return tuuvm_function_apply(context, callFrameStack->gcRoots.function, callFrameStack->expectedArgumentCount, callFrameStack->gcRoots.applicationArguments);
 }
+
+static tuuvm_tuple_t tuuvm_function_primitive_apply(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *function = &arguments[0];
+    tuuvm_tuple_t *argumentList = &arguments[1];
+
+    size_t variadicArgumentCount = tuuvm_arraySlice_getSize(*argumentList);
+    size_t argumentListSize = 0;
+    size_t callArgumentCount = 0;
+    if(variadicArgumentCount > 0)
+    {
+        argumentListSize = tuuvm_arraySlice_getSize(tuuvm_arraySlice_at(*argumentList, variadicArgumentCount - 1));
+        callArgumentCount = variadicArgumentCount - 1 + argumentListSize;
+    }
+
+    tuuvm_functionCallFrameStack_t callFrameStack = {};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(callFrameStackRecord, callFrameStack.gcRoots);
+
+    tuuvm_functionCallFrameStack_begin(context, &callFrameStack, *function, callArgumentCount);
+    if(variadicArgumentCount > 0)
+    {
+        for(size_t i = 0; i < variadicArgumentCount - 1; ++i)
+            tuuvm_functionCallFrameStack_push(&callFrameStack, tuuvm_arraySlice_at(*argumentList, i));
+        
+        tuuvm_tuple_t argumentArraySlice = tuuvm_arraySlice_at(*argumentList, variadicArgumentCount - 1);
+        for(size_t i = 0; i < argumentListSize; ++i)
+            tuuvm_functionCallFrameStack_push(&callFrameStack, tuuvm_arraySlice_at(argumentArraySlice, i));
+    }
+
+    TUUVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
+    return tuuvm_functionCallFrameStack_finish(context, &callFrameStack);
+}
+
+void tuuvm_function_setupPrimitives(tuuvm_context_t *context)
+{
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "apply", 2, TUUVM_FUNCTION_FLAGS_VARIADIC, NULL, tuuvm_function_primitive_apply);
+}

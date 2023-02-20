@@ -16,6 +16,7 @@ extern void tuuvm_boolean_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_dictionary_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_errors_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_environment_setupPrimitives(tuuvm_context_t *context);
+extern void tuuvm_function_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_integer_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_io_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_primitiveInteger_setupPrimitives(tuuvm_context_t *context);
@@ -270,6 +271,7 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
     tuuvm_dictionary_setupPrimitives(context);
     tuuvm_errors_setupPrimitives(context);
     tuuvm_environment_setupPrimitives(context);
+    tuuvm_function_setupPrimitives(context);
     tuuvm_integer_setupPrimitives(context);
     tuuvm_io_setupPrimitives(context);
     tuuvm_primitiveInteger_setupPrimitives(context);

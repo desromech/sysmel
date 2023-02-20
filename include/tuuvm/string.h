@@ -73,6 +73,11 @@ TUUVM_API size_t tuuvm_string_hash(tuuvm_tuple_t string);
 TUUVM_API bool tuuvm_string_equals(tuuvm_tuple_t a, tuuvm_tuple_t b);
 
 /**
+ * The equals comparison for a string with a c-string.
+ */
+TUUVM_API bool tuuvm_string_equalsCString(tuuvm_tuple_t string, const char *cstring);
+
+/**
  * The primitive string hash function.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_string_primitive_hash(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments);

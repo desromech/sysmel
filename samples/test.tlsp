@@ -89,12 +89,12 @@
                 (lookupSelector (Type::supertype type) selector)))))
 
 ## send
-(define (send receiver selector arguments)
+(define (send receiver selector arguments...)
     (define receiverType (RawTuple::type receiver))
     (define method (lookupSelector receiverType selector))
     (if (== method nil)
         (error "Message not understood")
-        (method receiver arguments))) ## TODO: Use apply here
+        (apply method receiver arguments)))
 
 ## Type::withSelector:addMethod:
 (define (Type::withSelector:addMethod: type selector method)

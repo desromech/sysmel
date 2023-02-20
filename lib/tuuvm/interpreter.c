@@ -193,7 +193,7 @@ static tuuvm_tuple_t tuuvm_astSequenceNode_primitiveAnalyzeAndEvaluate(tuuvm_con
     return result;
 }
 
-static tuuvm_tuple_t tuuvm_astLambdaNode_parseArgumentsNodes(tuuvm_context_t *context, tuuvm_tuple_t unsafeArgumentsNode)
+static tuuvm_tuple_t tuuvm_astLambdaNode_parseArgumentsNodes(tuuvm_context_t *context, tuuvm_tuple_t unsafeArgumentsNode, bool *hasVariadicArguments)
 {
     struct {
         tuuvm_tuple_t argumentsNode;
@@ -205,11 +205,23 @@ static tuuvm_tuple_t tuuvm_astLambdaNode_parseArgumentsNodes(tuuvm_context_t *co
     gcFrame.argumentsNode = unsafeArgumentsNode;
     gcFrame.argumentList = tuuvm_arrayList_create(context);
     size_t argumentNodeCount = tuuvm_arraySlice_getSize(gcFrame.argumentsNode);
+    *hasVariadicArguments = false;
     for(size_t i = 0; i < argumentNodeCount; ++i)
     {
         gcFrame.argumentNode = tuuvm_arraySlice_at(gcFrame.argumentsNode, i);
         if(!tuuvm_astNode_isIdentifierReferenceNode(context, gcFrame.argumentNode))
             tuuvm_error("Invalid argument definition node.");
+
+        if(tuuvm_astIdentifierReferenceNode_isEllipsis(gcFrame.argumentNode))
+        {
+            if(i + 1 != argumentNodeCount)
+                tuuvm_error("Ellipsis can only be present at the end.");
+            else if(i == 0)
+                tuuvm_error("Ellipsis cannot be the first argument.");
+
+            *hasVariadicArguments = true;
+            break;
+        }
 
         tuuvm_arrayList_add(context, gcFrame.argumentList, tuuvm_astIdentifierReferenceNode_getValue(gcFrame.argumentNode));
     }
@@ -240,11 +252,12 @@ static tuuvm_tuple_t tuuvm_astLambdaNode_primitiveMacro(tuuvm_context_t *context
     if(!tuuvm_astNode_isUnexpandedSExpressionNode(context, *argumentsSExpressionNode))
         tuuvm_error("Expected a S-Expression with the arguments node.");
 
+    bool hasVariadicArguments = false;
     gcFrame.argumentsNode = tuuvm_astUnexpandedSExpressionNode_getElements(*argumentsSExpressionNode);
     gcFrame.sourcePosition = tuuvm_macroContext_getSourcePosition(*macroContext);
-    gcFrame.argumentsArraySlice = tuuvm_astLambdaNode_parseArgumentsNodes(context, gcFrame.argumentsNode);
+    gcFrame.argumentsArraySlice = tuuvm_astLambdaNode_parseArgumentsNodes(context, gcFrame.argumentsNode, &hasVariadicArguments);
     gcFrame.bodySequence = tuuvm_astSequenceNode_create(context, gcFrame.sourcePosition, *bodyNodes);
-    tuuvm_tuple_t result = tuuvm_astLambdaNode_create(context, gcFrame.sourcePosition, tuuvm_tuple_size_encode(context, TUUVM_FUNCTION_FLAGS_NONE), gcFrame.argumentsArraySlice, gcFrame.bodySequence);
+    tuuvm_tuple_t result = tuuvm_astLambdaNode_create(context, gcFrame.sourcePosition, tuuvm_tuple_size_encode(context, hasVariadicArguments ? TUUVM_FUNCTION_FLAGS_VARIADIC :TUUVM_FUNCTION_FLAGS_NONE), gcFrame.argumentsArraySlice, gcFrame.bodySequence);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return result;
 }
@@ -374,10 +387,11 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveMacro(tuuvm_context_t
         if(!tuuvm_astNode_isIdentifierReferenceNode(context, gcFrame.nameNode))
             tuuvm_error("Expected an identifier reference node for the name.");
 
+        bool hasVariadicArguments = false;
         gcFrame.argumentsNode = tuuvm_arraySlice_fromOffset(context, gcFrame.lambdaSignatureElements, 1);
-        gcFrame.arguments = tuuvm_astLambdaNode_parseArgumentsNodes(context, gcFrame.argumentsNode);
+        gcFrame.arguments = tuuvm_astLambdaNode_parseArgumentsNodes(context, gcFrame.argumentsNode, &hasVariadicArguments);
         gcFrame.bodySequence = tuuvm_astSequenceNode_create(context, gcFrame.sourcePosition, *valueOrBodyNodes);
-        gcFrame.valueNode = tuuvm_astLambdaNode_create(context, gcFrame.sourcePosition, tuuvm_tuple_size_encode(context, TUUVM_FUNCTION_FLAGS_NONE), gcFrame.arguments, gcFrame.bodySequence);
+        gcFrame.valueNode = tuuvm_astLambdaNode_create(context, gcFrame.sourcePosition, tuuvm_tuple_size_encode(context, hasVariadicArguments ? TUUVM_FUNCTION_FLAGS_VARIADIC : TUUVM_FUNCTION_FLAGS_NONE), gcFrame.arguments, gcFrame.bodySequence);
     }
     else
     {

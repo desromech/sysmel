@@ -106,6 +106,9 @@ static tuuvm_tuple_t tuuvm_parser_parsePrimaryExpression(tuuvm_context_t *contex
     case TUUVM_TOKEN_KIND_MULTI_KEYWORD:
     case TUUVM_TOKEN_KIND_OPERATOR:
     case TUUVM_TOKEN_KIND_BAR:
+    case TUUVM_TOKEN_KIND_COLON:
+    case TUUVM_TOKEN_KIND_COLON_COLON:
+    case TUUVM_TOKEN_KIND_ELLIPSIS:
         return tuuvm_parser_parseIdentifierReferenceReference(context, state);
 
     case TUUVM_TOKEN_KIND_CHARACTER:
@@ -113,8 +116,6 @@ static tuuvm_tuple_t tuuvm_parser_parsePrimaryExpression(tuuvm_context_t *contex
     case TUUVM_TOKEN_KIND_FLOAT:
     case TUUVM_TOKEN_KIND_STRING:
     case TUUVM_TOKEN_KIND_SYMBOL:
-    case TUUVM_TOKEN_KIND_COLON:
-    case TUUVM_TOKEN_KIND_COLON_COLON:
         return tuuvm_parser_parseLiteralTokenValue(context, state);
 
     default:

@@ -257,6 +257,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_create(tuuvm_context_t 
 TUUVM_API tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_getValue(tuuvm_tuple_t node);
 
 /**
+ * Is this an ellipsis identifier?
+ */ 
+TUUVM_API bool tuuvm_astIdentifierReferenceNode_isEllipsis(tuuvm_tuple_t node);
+
+/**
  * Creates an if node.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astIfNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t conditionExpression, tuuvm_tuple_t trueExpression, tuuvm_tuple_t falseExpression);

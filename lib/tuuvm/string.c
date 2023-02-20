@@ -179,6 +179,20 @@ TUUVM_API bool tuuvm_string_equals(tuuvm_tuple_t a, tuuvm_tuple_t b)
     return memcmp(firstBytes, secondBytes, firstSize) == 0;
 }
 
+TUUVM_API bool tuuvm_string_equalsCString(tuuvm_tuple_t string, const char *cstring)
+{
+    if(!tuuvm_tuple_isNonNullPointer(string))
+        return false;
+
+    size_t firstSize = tuuvm_tuple_getSizeInBytes(string);
+    size_t secondSize = strlen(cstring);
+    if(firstSize != secondSize)
+        return false;
+
+    uint8_t *firstBytes = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(string)->bytes;
+    return memcmp(firstBytes, cstring, firstSize) == 0;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_string_primitive_hash(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
