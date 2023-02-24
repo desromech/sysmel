@@ -112,7 +112,7 @@
 ## Register the Integer methods.
 (Type::withSelector:addMethod: Integer #+ Integer::+)
 (Type::withSelector:addMethod: Integer #- Integer::-)
-##(Type::withSelector:addMethod: Integer #"*" Integer::*)
+(Type::withSelector:addMethod: Integer #"*" Integer::*)
 (Type::withSelector:addMethod: Integer #/ Integer::/)
 (Type::withSelector:addMethod: Integer #% Integer::%)
 
