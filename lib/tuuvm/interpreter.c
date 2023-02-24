@@ -409,6 +409,58 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveMacro(tuuvm_context_t
     return result;
 }
 
+static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveDefineMacro(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+
+    tuuvm_tuple_t *macroContext = &arguments[0];
+    tuuvm_tuple_t *nameOrLambdaSignature = &arguments[1];
+    tuuvm_tuple_t *valueOrBodyNodes = &arguments[2];
+
+    struct {
+        tuuvm_tuple_t nameNode;
+        tuuvm_tuple_t valueNode;
+        tuuvm_tuple_t sourcePosition;
+        tuuvm_tuple_t lambdaSignatureElements;
+        tuuvm_tuple_t argumentsNode;
+        tuuvm_tuple_t arguments;
+        tuuvm_tuple_t bodySequence;
+        tuuvm_tuple_t nameExpression;
+    } gcFrame = {};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    gcFrame.sourcePosition = tuuvm_macroContext_getSourcePosition(*macroContext);
+
+    if(tuuvm_astNode_isUnexpandedSExpressionNode(context, *nameOrLambdaSignature))
+    {
+        gcFrame.lambdaSignatureElements = tuuvm_astUnexpandedSExpressionNode_getElements(*nameOrLambdaSignature);
+        if(tuuvm_arraySlice_getSize(gcFrame.lambdaSignatureElements) < 1)
+            tuuvm_error("Expected function definition requires a name.");
+
+        gcFrame.nameNode = tuuvm_arraySlice_at(gcFrame.lambdaSignatureElements, 0);
+        if(!tuuvm_astNode_isIdentifierReferenceNode(context, gcFrame.nameNode))
+            tuuvm_error("Expected an identifier reference node for the name.");
+
+        bool hasVariadicArguments = false;
+        gcFrame.argumentsNode = tuuvm_arraySlice_fromOffset(context, gcFrame.lambdaSignatureElements, 1);
+        gcFrame.arguments = tuuvm_astLambdaNode_parseArgumentsNodes(context, gcFrame.argumentsNode, &hasVariadicArguments);
+        gcFrame.bodySequence = tuuvm_astSequenceNode_create(context, gcFrame.sourcePosition, *valueOrBodyNodes);
+        gcFrame.valueNode = tuuvm_astLambdaNode_create(context, gcFrame.sourcePosition,
+            tuuvm_tuple_size_encode(context, (hasVariadicArguments ? TUUVM_FUNCTION_FLAGS_VARIADIC : TUUVM_FUNCTION_FLAGS_NONE) | TUUVM_FUNCTION_FLAGS_MACRO), gcFrame.arguments, gcFrame.bodySequence);
+    }
+    else
+    {
+        tuuvm_error("Invalid usage of (define)");
+    }
+
+    gcFrame.nameExpression = tuuvm_astLiteralNode_create(context, tuuvm_astNode_getSourcePosition(gcFrame.nameNode), tuuvm_astIdentifierReferenceNode_getValue(gcFrame.nameNode));
+    tuuvm_tuple_t result = tuuvm_astLocalDefinitionNode_create(context, gcFrame.sourcePosition, gcFrame.nameExpression, gcFrame.valueNode);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return result;
+}
+
 static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
@@ -1066,6 +1118,7 @@ void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context)
     tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context->roots.astLambdaNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLambdaNode_primitiveAnalyzeAndEvaluate));
 
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "define", 3, TUUVM_FUNCTION_FLAGS_MACRO | TUUVM_FUNCTION_FLAGS_VARIADIC, NULL, tuuvm_astLocalDefinitionNode_primitiveMacro);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "defineMacro", 3, TUUVM_FUNCTION_FLAGS_MACRO | TUUVM_FUNCTION_FLAGS_VARIADIC, NULL, tuuvm_astLocalDefinitionNode_primitiveDefineMacro);
     tuuvm_type_setAstNodeAnalysisFunction(context->roots.astLocalDefinitionNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLocalDefinitionNode_primitiveAnalyze));
     tuuvm_type_setAstNodeEvaluationFunction(context->roots.astLocalDefinitionNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLocalDefinitionNode_primitiveEvaluate));
     tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context->roots.astLocalDefinitionNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLocalDefinitionNode_primitiveAnalyzeAndEvaluate));
