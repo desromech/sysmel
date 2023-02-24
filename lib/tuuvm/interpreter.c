@@ -17,7 +17,7 @@
 #include "internal/context.h"
 #include <stdio.h>
 
-#define tuuvm_gc_safepoint(x) false
+//#define tuuvm_gc_safepoint(x) false
 
 TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t environment)
 {
@@ -51,43 +51,48 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeAndEvaluateSourceCodeWithEnviro
     struct {
         tuuvm_tuple_t environment;
         tuuvm_tuple_t sourceCode;
+        tuuvm_tuple_t ast;
+        tuuvm_tuple_t result;
     } gcFrame = {
         .environment = environment,
         .sourceCode = sourceCode
     };
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
-    tuuvm_tuple_t result = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, tuuvm_parser_parseSourceCode(context, gcFrame.sourceCode), gcFrame.environment);
+    gcFrame.ast = tuuvm_parser_parseSourceCode(context, gcFrame.sourceCode);
+    gcFrame.result = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, gcFrame.ast, gcFrame.environment);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-    return result;
+    return gcFrame.result;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeAndEvaluateCStringWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t environment, const char *sourceCodeText, const char *sourceCodeName)
 {
     struct {
         tuuvm_tuple_t environment;
+        tuuvm_tuple_t result;
     } gcFrame = {
         .environment = environment,
     };
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
-    tuuvm_tuple_t result = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, tuuvm_parser_parseCString(context, sourceCodeText, sourceCodeName), environment);
+    gcFrame.result = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, tuuvm_parser_parseCString(context, sourceCodeText, sourceCodeName), environment);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-    return result;
+    return gcFrame.result;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeAndEvaluateStringWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t sourceCodeText, tuuvm_tuple_t sourceCodeName)
 {
     struct {
         tuuvm_tuple_t environment;
+        tuuvm_tuple_t result;
     } gcFrame = {
         .environment = environment,
     };
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
-    tuuvm_tuple_t result = tuuvm_interpreter_analyzeAndEvaluateSourceCodeWithEnvironment(context, environment, tuuvm_sourceCode_create(context, sourceCodeText, sourceCodeName));
+    gcFrame.result = tuuvm_interpreter_analyzeAndEvaluateSourceCodeWithEnvironment(context, gcFrame.environment, tuuvm_sourceCode_create(context, sourceCodeText, sourceCodeName));
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-    return result;
+    return gcFrame.result;
 }
 
 static tuuvm_tuple_t tuuvm_astSequenceNode_primitiveMacro(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -509,6 +514,8 @@ static tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_primitiveEvaluate(tuuvm_co
         return binding;
 
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*referenceNode)->super.sourcePosition);
+
+    fprintf(stderr, "Failed to find symbol binding for: " TUUVM_STRING_PRINTF_FORMAT "\n", TUUVM_STRING_PRINTF_ARG((*referenceNode)->value));
 
     tuuvm_error("Failed to find symbol binding");
     return TUUVM_NULL_TUPLE;

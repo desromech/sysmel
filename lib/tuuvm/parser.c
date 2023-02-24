@@ -222,6 +222,13 @@ static tuuvm_tuple_t tuuvm_parser_parseExpression(tuuvm_context_t *context, tuuv
 
 TUUVM_API tuuvm_tuple_t tuuvm_parser_parseTokens(tuuvm_context_t *context, tuuvm_tuple_t sourceCode, tuuvm_tuple_t tokenSequence)
 {
+    struct {
+        tuuvm_tuple_t result;
+    } gcFrame = {};
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    tuuvm_gc_lock(context);
     tuuvm_gc_lock(context);
     tuuvm_parser_state_t parserState = {
         .sourceCode = sourceCode,
@@ -249,15 +256,26 @@ TUUVM_API tuuvm_tuple_t tuuvm_parser_parseTokens(tuuvm_context_t *context, tuuvm
         ? tuuvm_parser_makeSourcePositionForNodeRange(context, tuuvm_arraySlice_at(expressionsArraySlice, 0), tuuvm_arraySlice_at(expressionsArraySlice, expressionsCount - 1))
         : tuuvm_parser_makeSourcePositionForSourceCode(context, sourceCode);
 
-    tuuvm_tuple_t result = tuuvm_astSequenceNode_create(context, sourcePosition, expressionsArraySlice);
+    gcFrame.result = tuuvm_astSequenceNode_create(context, sourcePosition, expressionsArraySlice);
     tuuvm_gc_unlock(context);
-    return result;
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_parser_parseSourceCode(tuuvm_context_t *context, tuuvm_tuple_t sourceCode)
 {
-    tuuvm_tuple_t tokenSequence = tuuvm_scanner_scan(context, sourceCode);
-    return tuuvm_parser_parseTokens(context, sourceCode, tokenSequence);
+    struct {
+        tuuvm_tuple_t sourceCode;
+        tuuvm_tuple_t tokenSequence;
+        tuuvm_tuple_t result;
+    } gcFrame = {};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    gcFrame.sourceCode = sourceCode;
+    gcFrame.tokenSequence = tuuvm_scanner_scan(context, gcFrame.sourceCode);
+    gcFrame.result = tuuvm_parser_parseTokens(context, gcFrame.sourceCode, gcFrame.tokenSequence);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_parser_parseCString(tuuvm_context_t *context, const char *sourceCodeText, const char *sourceCodeName)

@@ -123,6 +123,7 @@ static void tuuvm_heap_checkForGCThreshold(tuuvm_heap_t *heap)
 {
     // Monitor for 80% of heap comsumption.
     heap->shouldAttemptToCollect = heap->shouldAttemptToCollect || heap->totalSize > heap->totalCapacity * 4 / 5;
+    //heap->shouldAttemptToCollect = true;
 }
 
 static tuuvm_object_tuple_t *tuuvm_heap_allocateTupleWithRawSize(tuuvm_heap_t *heap, size_t allocationSize, size_t allocationAlignment)
@@ -286,7 +287,7 @@ static void tuuvm_heap_chunk_compact(uint32_t blackColor, tuuvm_heap_chunk_t *ch
         }
     }
 
-    TUUVM_ASSERT(newSize < chunk->capacity);
+    TUUVM_ASSERT(newSize <= chunk->capacity);
     TUUVM_ASSERT(newSize <= chunk->size);
     chunk->size = newSize;
 }

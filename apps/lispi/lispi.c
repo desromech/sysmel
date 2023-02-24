@@ -19,9 +19,9 @@ static void printVersion()
     printf("tuuvm-lispi version 0.1\n");
 }
 
-static tuuvm_tuple_t readWholeFileNamed(tuuvm_tuple_t inputFileNameTuple)
+static tuuvm_tuple_t readWholeFileNamed(tuuvm_tuple_t *inputFileNameTuple)
 {
-    char *inputFileName = tuuvm_tuple_bytesToCString(inputFileNameTuple);
+    char *inputFileName = tuuvm_tuple_bytesToCString(*inputFileNameTuple);
     FILE *inputFile = fopen(inputFileName, "rb");
     if(!inputFile)
         return TUUVM_NULL_TUPLE;
@@ -43,24 +43,37 @@ static tuuvm_tuple_t readWholeFileNamed(tuuvm_tuple_t inputFileNameTuple)
     return sourceString;
 }
 
-static void processFileNamed(tuuvm_tuple_t inputFileNameTuple)
+static void processFileNamed(tuuvm_tuple_t *inputFileNameTuple)
 {
-    tuuvm_tuple_t sourceString = readWholeFileNamed(inputFileNameTuple);
-    tuuvm_interpreter_analyzeAndEvaluateStringWithEnvironment(context, tuuvm_environment_createDefaultForEvaluation(context), sourceString, inputFileNameTuple);
+    struct {
+        tuuvm_tuple_t sourceString;
+    } gcFrame = {};
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    gcFrame.sourceString = readWholeFileNamed(inputFileNameTuple);
+    tuuvm_interpreter_analyzeAndEvaluateStringWithEnvironment(context, tuuvm_environment_createDefaultForEvaluation(context), gcFrame.sourceString, *inputFileNameTuple);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
 }
 
 int doMain(int argc, const char *argv[])
 {
+    struct {
+        tuuvm_tuple_t filesToProcess;
+        tuuvm_tuple_t remainingArgs;
+        tuuvm_tuple_t inputFileName;
+    } gcFrame = {};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
     // Parse the command line.
-    tuuvm_tuple_t filesToProcess = tuuvm_arrayList_create(context);
-    tuuvm_tuple_t remainingArgs = tuuvm_arrayList_create(context);
+    gcFrame.filesToProcess = tuuvm_arrayList_create(context);
+    gcFrame.remainingArgs = tuuvm_arrayList_create(context);
     bool isParsingRemainingArgs = false;
     for(int i = 1; i < argc; ++i)
     {
         const char *arg = argv[i];
         if(isParsingRemainingArgs)
         {
-            tuuvm_arrayList_add(context, remainingArgs, tuuvm_string_createWithCString(context, arg));
+            tuuvm_arrayList_add(context, gcFrame.remainingArgs, tuuvm_string_createWithCString(context, arg));
             continue;
         }
         
@@ -83,17 +96,18 @@ int doMain(int argc, const char *argv[])
         }
         else
         {
-            tuuvm_arrayList_add(context, filesToProcess, tuuvm_string_createWithCString(context, arg));
+            tuuvm_arrayList_add(context, gcFrame.filesToProcess, tuuvm_string_createWithCString(context, arg));
         }
     }
 
-    size_t inputFileSize = tuuvm_arrayList_getSize(filesToProcess);
+    size_t inputFileSize = tuuvm_arrayList_getSize(gcFrame.filesToProcess);
     for(size_t i = 0; i < inputFileSize; ++i)
     {
-        tuuvm_tuple_t inputFileName = tuuvm_arrayList_at(filesToProcess, i);
-        processFileNamed(inputFileName);
+        gcFrame.inputFileName = tuuvm_arrayList_at(gcFrame.filesToProcess, i);
+        processFileNamed(&gcFrame.inputFileName);
     }
 
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return 0;
 }
 

@@ -617,9 +617,16 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
 
 TUUVM_API tuuvm_tuple_t tuuvm_scanner_scan(tuuvm_context_t *context, tuuvm_tuple_t sourceCode)
 {
+    struct {
+        tuuvm_tuple_t tokenList;
+        tuuvm_tuple_t result;
+    } gcFrame = {};
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
     tuuvm_gc_lock(context);
 
-    tuuvm_tuple_t tokenList = tuuvm_arrayList_create(context);
+    gcFrame.tokenList = tuuvm_arrayList_create(context);
 
     if(tuuvm_tuple_isNonNullPointer(sourceCode))
     {
@@ -635,15 +642,16 @@ TUUVM_API tuuvm_tuple_t tuuvm_scanner_scan(tuuvm_context_t *context, tuuvm_tuple
 
             while(scannerState.position < scannerState.size)
             {
-                if(!tuuvm_scanner_scanNextTokenInto(context, &scannerState, tokenList))
+                if(!tuuvm_scanner_scanNextTokenInto(context, &scannerState, gcFrame.tokenList))
                     break;
             }
         }
     }
 
-    tuuvm_tuple_t result = tuuvm_arrayList_asArraySlice(context, tokenList);
+    gcFrame.result = tuuvm_arrayList_asArraySlice(context, gcFrame.tokenList);
     tuuvm_gc_unlock(context);
-    return result;
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_scanner_scanCString(tuuvm_context_t *context, const char *sourceCodeText, const char *sourceCodeName)

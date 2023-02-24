@@ -55,20 +55,8 @@ void tuuvm_gc_debugStackValidationHook(void)
 {
 }
 
-TUUVM_API void tuuvm_gc_safepoint(tuuvm_context_t *context)
+static void tuuvm_gc_performCycle(tuuvm_context_t *context)
 {
-    if(tuuvm_gc_perThreadLockCount != 0)
-        return;
-
-    // Check the attempt collection flag on the heap.
-    if(!context->heap.shouldAttemptToCollect)
-        return;
-    
-    // TODO: Add Support for multiple threads.
-
-    // Hook location for validating GC stack roots via GDB scripting.
-    tuuvm_gc_debugStackValidationHook();
-
     // LISP 2 moving collection algorithm.
     // Phase 1: marking phase
     tuuvm_gc_iterateRoots(context, context, tuuvm_gc_markPointer);
@@ -85,6 +73,22 @@ TUUVM_API void tuuvm_gc_safepoint(tuuvm_context_t *context)
 
     // Phase 5: Swap the GC colors.
     tuuvm_heap_swapGCColors(&context->heap);
+}
+
+TUUVM_API void tuuvm_gc_safepoint(tuuvm_context_t *context)
+{
+    if(tuuvm_gc_perThreadLockCount != 0)
+        return;
+
+    // Check the attempt collection flag on the heap.
+    if(!context->heap.shouldAttemptToCollect)
+        return;
+
+    // TODO: Add Support for multiple threads.
+
+    // Hook location for validating GC stack roots via GDB scripting.
+    tuuvm_gc_debugStackValidationHook();
+    tuuvm_gc_performCycle(context);
 }
 
 TUUVM_API void tuuvm_gc_lock(tuuvm_context_t *context)
