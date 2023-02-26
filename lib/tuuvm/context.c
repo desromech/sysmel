@@ -216,14 +216,22 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         NULL);
 
     context->roots.astNodeType = tuuvm_context_createIntrinsicType(context, "ASTNode", TUUVM_NULL_TUPLE, "sourcePosition", "analyzedType", NULL);
+    context->roots.astBinaryExpressionSequenceNodeType = tuuvm_context_createIntrinsicType(context, "ASTBinaryExpressionSequenceNode", context->roots.astBinaryExpressionSequenceNodeType, "operands", "operations", NULL);
     context->roots.astDoWhileContinueWithNodeType = tuuvm_context_createIntrinsicType(context, "ASTDoWhileContinueWithNode", context->roots.astNodeType, "bodyExpression", "conditionExpression", "continueExpression", NULL);
     context->roots.astErrorNodeType = tuuvm_context_createIntrinsicType(context, "ASTErrorNode", context->roots.astNodeType, "errorMessage", NULL);
     context->roots.astFunctionApplicationNodeType = tuuvm_context_createIntrinsicType(context, "ASTFunctionApplicationNode", context->roots.astNodeType, "functionExpression", "arguments", NULL);
     context->roots.astLambdaNodeType = tuuvm_context_createIntrinsicType(context, "ASTLambdaNode", context->roots.astNodeType, "flags", "arguments", "body", NULL);
+    context->roots.astLexicalBlockNodeType = tuuvm_context_createIntrinsicType(context, "ASTLexicalBlockNode", context->roots.astNodeType, "body", NULL);
     context->roots.astLiteralNodeType = tuuvm_context_createIntrinsicType(context, "ASTLiteralNode", context->roots.astNodeType, "value", NULL);
     context->roots.astLocalDefinitionNodeType = tuuvm_context_createIntrinsicType(context, "ASTLocalDefinitionNode", context->roots.astNodeType, "nameExpression", "valueExpression", NULL);
     context->roots.astIdentifierReferenceNodeType = tuuvm_context_createIntrinsicType(context, "ASTIdentifierReferenceNode", context->roots.astNodeType, "value", NULL);
     context->roots.astIfNodeType = tuuvm_context_createIntrinsicType(context, "ASTIfNode", context->roots.astNodeType, "conditionExpression", "trueExpression", "falseExpression", NULL);
+
+    context->roots.astMakeAssociationNodeType = tuuvm_context_createIntrinsicType(context, "ASTMakeAssociationNode", context->roots.astNodeType, "key", "value",NULL);
+    context->roots.astMakeByteArrayNodeType = tuuvm_context_createIntrinsicType(context, "ASTMakeByteArrayNode", context->roots.astNodeType, "elements", NULL);
+    context->roots.astMakeDictionaryNodeType = tuuvm_context_createIntrinsicType(context, "ASTMakeDictionaryNode", context->roots.astNodeType, "elements", NULL);
+    context->roots.astMakeTupleNodeType = tuuvm_context_createIntrinsicType(context, "ASTMakeTupleNode", context->roots.astNodeType, "elements", NULL);
+
     context->roots.astMessageSendNodeType = tuuvm_context_createIntrinsicType(context, "ASTMessageSendNode", context->roots.astNodeType, "receiver", "selector", "arguments", NULL);
     context->roots.astMessageChainNodeType = tuuvm_context_createIntrinsicType(context, "ASTMessageChainNode", context->roots.astNodeType, "receiver", "messages", NULL);
     context->roots.astMessageChainMessageNodeType = tuuvm_context_createIntrinsicType(context, "ASTMessageChainMessage", context->roots.astNodeType, "selector", "arguments", NULL);

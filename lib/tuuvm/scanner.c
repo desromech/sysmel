@@ -615,6 +615,11 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
         tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_SEMICOLON, tuuvm_scanner_tokenAsSymbol, outTokenList);
         return true;
 
+    case ',':
+        ++state->position;
+        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_COMMA, tuuvm_scanner_tokenAsSymbol, outTokenList);
+        return true;
+
     case '.':
         ++state->position;
         if('.' == tuuvm_scanner_lookAt(state, 0) && '.' == tuuvm_scanner_lookAt(state, 1))
@@ -632,6 +637,12 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
         {
             ++state->position;
             tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_COLON_COLON, tuuvm_scanner_tokenAsSymbol, outTokenList);
+            return true;
+        }
+        else if('=' == tuuvm_scanner_lookAt(state, 0))
+        {
+            ++state->position;
+            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_ASSIGNMENT, tuuvm_scanner_tokenAsSymbol, outTokenList);
             return true;
         }
 

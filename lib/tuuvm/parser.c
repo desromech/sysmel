@@ -109,6 +109,9 @@ static tuuvm_tuple_t tuuvm_parser_parsePrimaryExpression(tuuvm_context_t *contex
     case TUUVM_TOKEN_KIND_COLON:
     case TUUVM_TOKEN_KIND_COLON_COLON:
     case TUUVM_TOKEN_KIND_ELLIPSIS:
+    case TUUVM_TOKEN_KIND_COMMA:
+    case TUUVM_TOKEN_KIND_SEMICOLON:
+    case TUUVM_TOKEN_KIND_ASSIGNMENT:
         return tuuvm_parser_parseIdentifierReferenceReference(context, state);
 
     case TUUVM_TOKEN_KIND_CHARACTER:
@@ -228,7 +231,6 @@ TUUVM_API tuuvm_tuple_t tuuvm_parser_parseTokens(tuuvm_context_t *context, tuuvm
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    tuuvm_gc_lock(context);
     tuuvm_gc_lock(context);
     tuuvm_parser_state_t parserState = {
         .sourceCode = sourceCode,

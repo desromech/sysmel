@@ -14,6 +14,13 @@ typedef struct tuuvm_astNode_s
     tuuvm_tuple_t analyzedType; // Placeholder for typechecker. Unused by base interpreter.
 } tuuvm_astNode_t;
 
+typedef struct tuuvm_astBinaryExpressionSequenceNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t operands;
+    tuuvm_tuple_t operators;
+} tuuvm_astBinaryExpressionSequenceNode_t;
+
 typedef struct tuuvm_astDoWhileContinueWithNode_s
 {
     tuuvm_astNode_t super;
@@ -43,6 +50,12 @@ typedef struct tuuvm_astLambdaNode_s
     tuuvm_tuple_t body;
 } tuuvm_astLambdaNode_t;
 
+typedef struct tuuvm_astLexicalBlockNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t body;
+} tuuvm_astLexicalBlockNode_t;
+
 typedef struct tuuvm_astLiteralNode_s
 {
     tuuvm_astNode_t super;
@@ -69,6 +82,31 @@ typedef struct tuuvm_astIfNode_s
     tuuvm_tuple_t trueExpression;
     tuuvm_tuple_t falseExpression;
 } tuuvm_astIfNode_t;
+
+typedef struct tuuvm_astMakeAssociationNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t key;
+    tuuvm_tuple_t value;
+} tuuvm_astMakeAssociationNode_t;
+
+typedef struct tuuvm_astMakeByteArrayNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t elements;
+} tuuvm_astMakeByteArrayNode_t;
+
+typedef struct tuuvm_astMakeDictionaryNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t elements;
+} tuuvm_astMakeDictionaryNode_t;
+
+typedef struct tuuvm_astMakeTupleNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t elements;
+} tuuvm_astMakeTupleNode_t;
 
 typedef struct tuuvm_astMessageSendNode_s
 {
@@ -144,6 +182,11 @@ typedef struct tuuvm_astWhileContinueWithNode_s
 } tuuvm_astWhileContinueWithNode_t;
 
 /**
+ * Is this a binary expression sequence node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isBinaryExpressionSequenceNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
  * Is this a do while continue with node?
  */ 
 TUUVM_API bool tuuvm_astNode_isDoWhileContinueWithNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
@@ -174,6 +217,11 @@ TUUVM_API bool tuuvm_astNode_isIfNode(tuuvm_context_t *context, tuuvm_tuple_t tu
 TUUVM_API bool tuuvm_astNode_isLambdaNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
 
 /**
+ * Is this a lexical block node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isLexicalBlockNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
  * Is this a literal node?
  */ 
 TUUVM_API bool tuuvm_astNode_isLiteralNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
@@ -182,6 +230,26 @@ TUUVM_API bool tuuvm_astNode_isLiteralNode(tuuvm_context_t *context, tuuvm_tuple
  * Is this a local definition node?
  */ 
 TUUVM_API bool tuuvm_astNode_isLocalDefinitionNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this a make association node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isMakeAssociationNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this a make byte array node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isMakeByteArrayNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this a make dictionary node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isMakeDictionaryNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this a make tuple node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isMakeTupleNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
 
 /**
  * Is this a message send node?
@@ -249,7 +317,12 @@ TUUVM_API bool tuuvm_astNode_isWhileContinueWithNode(tuuvm_context_t *context, t
 TUUVM_API tuuvm_tuple_t tuuvm_astNode_getSourcePosition(tuuvm_tuple_t node);
 
 /**
- * Creates a while node.
+ * Creates a binary expression sequence node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astBinaryExpressionSequenceNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t operands, tuuvm_tuple_t operators);
+
+/**
+ * Creates a do while node.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t bodyExpression, tuuvm_tuple_t conditionExpression, tuuvm_tuple_t continueExpression);
 
@@ -339,6 +412,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_astLambdaNode_getArguments(tuuvm_tuple_t node);
 TUUVM_API tuuvm_tuple_t tuuvm_astLambdaNode_getBody(tuuvm_tuple_t node);
 
 /**
+ * Creates a lexical block node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astLexicalBlockNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t body);
+
+/**
  * Creates a literal node.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astLiteralNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t value);
@@ -362,6 +440,26 @@ TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_getNameExpression(tuuvm_tup
  * Gets the value from a local definition node.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_getValueExpression(tuuvm_tuple_t node);
+
+/**
+ * Creates a make association node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astMakeAssociationNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t key, tuuvm_tuple_t value);
+
+/**
+ * Creates a make byte array node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astMakeByteArrayNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t elements);
+
+/**
+ * Creates a make dictionary node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astMakeDictionaryNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t elements);
+
+/**
+ * Creates a make tuple node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astMakeTupleNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t elements);
 
 /**
  * Creates a message send node.

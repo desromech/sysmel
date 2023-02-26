@@ -4,6 +4,11 @@
 #include "tuuvm/function.h"
 #include "internal/context.h"
 
+TUUVM_API bool tuuvm_astNode_isBinaryExpressionSequenceNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astBinaryExpressionSequenceNodeType);
+}
+
 TUUVM_API bool tuuvm_astNode_isDoWhileContinueWithNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
     return tuuvm_tuple_isKindOf(context, tuple, context->roots.astDoWhileContinueWithNodeType);
@@ -34,6 +39,11 @@ TUUVM_API bool tuuvm_astNode_isLambdaNode(tuuvm_context_t *context, tuuvm_tuple_
     return tuuvm_tuple_isKindOf(context, tuple, context->roots.astLambdaNodeType);
 }
 
+TUUVM_API bool tuuvm_astNode_isLexicalBlockNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astLexicalBlockNodeType);
+}
+
 TUUVM_API bool tuuvm_astNode_isLiteralNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
     return tuuvm_tuple_isKindOf(context, tuple, context->roots.astLiteralNodeType);
@@ -42,6 +52,26 @@ TUUVM_API bool tuuvm_astNode_isLiteralNode(tuuvm_context_t *context, tuuvm_tuple
 TUUVM_API bool tuuvm_astNode_isLocalDefinitionNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
     return tuuvm_tuple_isKindOf(context, tuple, context->roots.astLocalDefinitionNodeType);
+}
+
+TUUVM_API bool tuuvm_astNode_isMakeAssociationNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astMakeAssociationNodeType);
+}
+
+TUUVM_API bool tuuvm_astNode_isMakeByteArrayNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astMakeByteArrayNodeType);
+}
+
+TUUVM_API bool tuuvm_astNode_isMakeDictionaryNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astMakeDictionaryNodeType);
+}
+
+TUUVM_API bool tuuvm_astNode_isMakeTupleNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astMakeTupleNodeType);
 }
 
 TUUVM_API bool tuuvm_astNode_isMessageSendNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
@@ -111,6 +141,15 @@ TUUVM_API tuuvm_tuple_t tuuvm_astNode_getSourcePosition(tuuvm_tuple_t node)
 {
     if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
     return ((tuuvm_astNode_t*)node)->sourcePosition;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astBinaryExpressionSequenceNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t operands, tuuvm_tuple_t operators)
+{
+    tuuvm_astBinaryExpressionSequenceNode_t *result = (tuuvm_astBinaryExpressionSequenceNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astBinaryExpressionSequenceNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astBinaryExpressionSequenceNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->operands = operands;
+    result->operators = operators;
+    return (tuuvm_tuple_t)result;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t bodyExpression, tuuvm_tuple_t conditionExpression, tuuvm_tuple_t continueExpression)
@@ -239,6 +278,14 @@ TUUVM_API tuuvm_tuple_t tuuvm_astLambdaNode_getBody(tuuvm_tuple_t node)
     return ((tuuvm_astLambdaNode_t*)node)->body;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_astLexicalBlockNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t body)
+{
+    tuuvm_astLexicalBlockNode_t *result = (tuuvm_astLexicalBlockNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astLiteralNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astLexicalBlockNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->body = body;
+    return (tuuvm_tuple_t)result;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_astLiteralNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t value)
 {
     tuuvm_astLiteralNode_t *result = (tuuvm_astLiteralNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astLiteralNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astLiteralNode_t));
@@ -272,6 +319,40 @@ TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_getValueExpression(tuuvm_tu
 {
     if(!tuuvm_tuple_isNonNullPointer(node)) return 0;
     return ((tuuvm_astLocalDefinitionNode_t*)node)->valueExpression;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astMakeAssociationNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t key, tuuvm_tuple_t value)
+{
+    tuuvm_astMakeAssociationNode_t *result = (tuuvm_astMakeAssociationNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astMakeDictionaryNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astMakeAssociationNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->key = key;
+    result->value = value;
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astMakeByteArrayNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t elements)
+{
+    tuuvm_astMakeByteArrayNode_t *result = (tuuvm_astMakeByteArrayNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astMakeDictionaryNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astMakeByteArrayNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->elements = elements;
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astMakeDictionaryNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t elements)
+{
+    tuuvm_astMakeDictionaryNode_t *result = (tuuvm_astMakeDictionaryNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astMakeDictionaryNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astMakeDictionaryNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->elements = elements;
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astMakeTupleNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t elements)
+{
+    tuuvm_astMakeTupleNode_t *result = (tuuvm_astMakeTupleNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astMakeTupleNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astMakeTupleNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->elements = elements;
+    return (tuuvm_tuple_t)result;
+
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_astMessageSendNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t receiver, tuuvm_tuple_t selector, tuuvm_tuple_t arguments)

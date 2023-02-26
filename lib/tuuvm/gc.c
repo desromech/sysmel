@@ -36,7 +36,8 @@ static void tuuvm_gc_markPointer(void *userdata, tuuvm_tuple_t *pointerAddress)
 
 static void tuuvm_gc_applyForwardingPointer(void *userdata, tuuvm_tuple_t *pointerAddress)
 {
-    tuuvm_context_t *context = (tuuvm_context_t*)userdata;
+    (void)userdata;
+    //tuuvm_context_t *context = (tuuvm_context_t*)userdata;
 
     tuuvm_tuple_t pointer = *pointerAddress;
     if(!tuuvm_tuple_isNonNullPointer(pointer))

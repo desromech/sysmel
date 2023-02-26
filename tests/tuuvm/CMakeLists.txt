@@ -6,6 +6,7 @@ set(TUUVM_TESTS_SOURCES
     Main.c
     String.c
     Scanner.c
+    SysmelParser.c
     Parser.c
 )
 

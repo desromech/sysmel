@@ -65,14 +65,20 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t tokenType;
 
     tuuvm_tuple_t astNodeType;
+    tuuvm_tuple_t astBinaryExpressionSequenceNodeType;
     tuuvm_tuple_t astDoWhileContinueWithNodeType;
     tuuvm_tuple_t astErrorNodeType;
     tuuvm_tuple_t astFunctionApplicationNodeType;
     tuuvm_tuple_t astLambdaNodeType;
+    tuuvm_tuple_t astLexicalBlockNodeType;
     tuuvm_tuple_t astLiteralNodeType;
     tuuvm_tuple_t astLocalDefinitionNodeType;
     tuuvm_tuple_t astIdentifierReferenceNodeType;
     tuuvm_tuple_t astIfNodeType;
+    tuuvm_tuple_t astMakeAssociationNodeType;
+    tuuvm_tuple_t astMakeByteArrayNodeType;
+    tuuvm_tuple_t astMakeDictionaryNodeType;
+    tuuvm_tuple_t astMakeTupleNodeType;
     tuuvm_tuple_t astMessageSendNodeType;
     tuuvm_tuple_t astMessageChainNodeType;
     tuuvm_tuple_t astMessageChainMessageNodeType;
