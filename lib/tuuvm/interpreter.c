@@ -39,11 +39,28 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_evaluateASTWithEnvironment(tuuvm_conte
 
 TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t environment)
 {
-    tuuvm_tuple_t function = tuuvm_type_getAstNodeAnalysisAndEvaluationFunction(tuuvm_tuple_getType(context, astNode));
-    if(!function)
-        return tuuvm_interpreter_evaluateASTWithEnvironment(context, tuuvm_interpreter_analyzeASTWithEnvironment(context, astNode, environment), environment);
+    struct {
+        tuuvm_tuple_t environment;
+        tuuvm_tuple_t astNode;
+        tuuvm_tuple_t analyzedAstNode;
+        tuuvm_tuple_t function;
+        tuuvm_tuple_t result;
+    } gcFrame = {
+        .environment = environment,
+        .astNode = astNode,
+    };
 
-    return tuuvm_function_apply2(context, function, astNode, environment);
+    gcFrame.function = tuuvm_type_getAstNodeAnalysisAndEvaluationFunction(tuuvm_tuple_getType(context, gcFrame.astNode));
+    if(!gcFrame.function)
+    {
+        TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+        gcFrame.analyzedAstNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.astNode, gcFrame.environment);
+        gcFrame.result = tuuvm_interpreter_evaluateASTWithEnvironment(context, gcFrame.analyzedAstNode, gcFrame.environment);
+        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return gcFrame.result;
+    }
+
+    return tuuvm_function_apply2(context, gcFrame.function, gcFrame.astNode, gcFrame.environment);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeAndEvaluateSourceCodeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t sourceCode)
@@ -69,13 +86,15 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeAndEvaluateCStringWithEnvironme
 {
     struct {
         tuuvm_tuple_t environment;
+        tuuvm_tuple_t astNode;
         tuuvm_tuple_t result;
     } gcFrame = {
         .environment = environment,
     };
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
-    gcFrame.result = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, tuuvm_parser_parseCString(context, sourceCodeText, sourceCodeName), environment);
+    gcFrame.astNode = tuuvm_parser_parseCString(context, sourceCodeText, sourceCodeName);
+    gcFrame.result = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, gcFrame.astNode, gcFrame.environment);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
 }
