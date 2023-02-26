@@ -182,6 +182,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.negativeIntegerType = tuuvm_context_createIntrinsicType(context, "NegativeInteger", context->roots.integerType, NULL);
     context->roots.nilType = tuuvm_context_createIntrinsicType(context, "Nil", TUUVM_NULL_TUPLE, NULL);
     context->roots.stringType = tuuvm_context_createIntrinsicType(context, "String", TUUVM_NULL_TUPLE, NULL);
+    context->roots.stringBuilderType = tuuvm_context_createIntrinsicType(context, "StringBuilder", TUUVM_NULL_TUPLE, "size", "storage", NULL);
     context->roots.trueType = tuuvm_context_createIntrinsicType(context, "True", TUUVM_NULL_TUPLE, NULL);
     context->roots.valueBoxType = tuuvm_context_createIntrinsicType(context, "ValueBox", TUUVM_NULL_TUPLE, "value", NULL);
     context->roots.voidType = tuuvm_context_createIntrinsicType(context, "Void", TUUVM_NULL_TUPLE, NULL);

@@ -34,6 +34,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t primitiveFunctionType;
     tuuvm_tuple_t setType;
     tuuvm_tuple_t stringType;
+    tuuvm_tuple_t stringBuilderType;
     tuuvm_tuple_t symbolType;
     tuuvm_tuple_t trueType;
     tuuvm_tuple_t typeType;
