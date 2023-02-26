@@ -752,4 +752,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_slotAt(tuuvm_context_t *context, tuuvm_tuple
  */
 TUUVM_API void tuuvm_tuple_slotAtPut(tuuvm_context_t *context, tuuvm_tuple_t tuple, size_t slotIndex, tuuvm_tuple_t value);
 
+/**
+ * Is this tuple a kind of the specified type?
+ */
+TUUVM_API bool tuuvm_tuple_isKindOf(tuuvm_context_t *context, tuuvm_tuple_t tuple, tuuvm_tuple_t type);
+
 #endif //TUUVM_TUPLE_H

@@ -70,6 +70,28 @@ typedef struct tuuvm_astIfNode_s
     tuuvm_tuple_t falseExpression;
 } tuuvm_astIfNode_t;
 
+typedef struct tuuvm_astMessageSendNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t receiver;
+    tuuvm_tuple_t selector;
+    tuuvm_tuple_t arguments;
+} tuuvm_astMessageSendNode_t;
+
+typedef struct tuuvm_astMessageChainNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t receiver;
+    tuuvm_tuple_t messages;
+} tuuvm_astMessageChainNode_t;
+
+typedef struct tuuvm_astMessageChainMessageNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t selector;
+    tuuvm_tuple_t arguments;
+} tuuvm_astMessageChainMessageNode_t;
+
 typedef struct tuuvm_astSequenceNode_s
 {
     tuuvm_astNode_t super;
@@ -160,6 +182,21 @@ TUUVM_API bool tuuvm_astNode_isLiteralNode(tuuvm_context_t *context, tuuvm_tuple
  * Is this a local definition node?
  */ 
 TUUVM_API bool tuuvm_astNode_isLocalDefinitionNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this a message send node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isMessageSendNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this a message chain node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isMessageChainNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this a message chain message node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isMessageChainMessageNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
 
 /**
  * Is this a sequence node?
@@ -325,6 +362,21 @@ TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_getNameExpression(tuuvm_tup
  * Gets the value from a local definition node.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_getValueExpression(tuuvm_tuple_t node);
+
+/**
+ * Creates a message send node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astMessageSendNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t receiver, tuuvm_tuple_t selector, tuuvm_tuple_t arguments);
+
+/**
+ * Creates a message chain node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astMessageChainNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t receiver, tuuvm_tuple_t messages);
+
+/**
+ * Creates a message chain node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astMessageChainMessageNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t selector, tuuvm_tuple_t arguments);
 
 /**
  * Creates a sequence node.

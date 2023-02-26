@@ -73,6 +73,9 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t astLocalDefinitionNodeType;
     tuuvm_tuple_t astIdentifierReferenceNodeType;
     tuuvm_tuple_t astIfNodeType;
+    tuuvm_tuple_t astMessageSendNodeType;
+    tuuvm_tuple_t astMessageChainNodeType;
+    tuuvm_tuple_t astMessageChainMessageNodeType;
     tuuvm_tuple_t astSequenceNodeType;
     tuuvm_tuple_t astUnexpandedApplicationNodeType;
     tuuvm_tuple_t astUnexpandedSExpressionNodeType;

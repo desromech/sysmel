@@ -1,4 +1,5 @@
 #include "tuuvm/tuple.h"
+#include "tuuvm/type.h"
 #include "tuuvm/context.h"
 #include "tuuvm/errors.h"
 #include "tuuvm/function.h"
@@ -172,6 +173,13 @@ TUUVM_API void tuuvm_tuple_slotAtPut(tuuvm_context_t *context, tuuvm_tuple_t tup
         if(slotIndex < tuuvm_tuple_getSizeInSlots(tuple))
             TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->pointers[slotIndex] = value;
     }
+}
+
+bool tuuvm_tuple_isKindOf(tuuvm_context_t *context, tuuvm_tuple_t tuple, tuuvm_tuple_t type)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return false;
+    if(tuuvm_tuple_getType(context, tuple) == type) return true;
+    return tuuvm_tuple_isKindOf(context, tuple, tuuvm_type_getSupertype(type));
 }
 
 static tuuvm_tuple_t tuuvm_tuple_primitive_slotAtPut(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)

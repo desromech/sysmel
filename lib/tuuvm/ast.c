@@ -6,67 +6,82 @@
 
 TUUVM_API bool tuuvm_astNode_isDoWhileContinueWithNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
-    return tuuvm_tuple_getType(context, tuple) == context->roots.astDoWhileContinueWithNodeType;
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astDoWhileContinueWithNodeType);
 }
 
 TUUVM_API bool tuuvm_astNode_isErrorNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
-    return tuuvm_tuple_getType(context, tuple) == context->roots.astErrorNodeType;
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astErrorNodeType);
 }
 
 TUUVM_API bool tuuvm_astNode_isFunctionApplicationNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
-    return tuuvm_tuple_getType(context, tuple) == context->roots.astFunctionApplicationNodeType;
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astFunctionApplicationNodeType);
 }
 
 TUUVM_API bool tuuvm_astNode_isIdentifierReferenceNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
-    return tuuvm_tuple_getType(context, tuple) == context->roots.astIdentifierReferenceNodeType;
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astIdentifierReferenceNodeType);
 }
 
 TUUVM_API bool tuuvm_astNode_isIfNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
-    return tuuvm_tuple_getType(context, tuple) == context->roots.astIfNodeType;
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astIfNodeType);
 }
 
 TUUVM_API bool tuuvm_astNode_isLambdaNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
-    return tuuvm_tuple_getType(context, tuple) == context->roots.astLambdaNodeType;
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astLambdaNodeType);
 }
 
 TUUVM_API bool tuuvm_astNode_isLiteralNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
-    return tuuvm_tuple_getType(context, tuple) == context->roots.astLiteralNodeType;
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astLiteralNodeType);
 }
 
 TUUVM_API bool tuuvm_astNode_isLocalDefinitionNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
-    return tuuvm_tuple_getType(context, tuple) == context->roots.astLocalDefinitionNodeType;
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astLocalDefinitionNodeType);
+}
+
+TUUVM_API bool tuuvm_astNode_isMessageSendNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astMessageSendNodeType);
+}
+
+TUUVM_API bool tuuvm_astNode_isMessageChainNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astMessageChainNodeType);
+}
+
+TUUVM_API bool tuuvm_astNode_isMessageChainMessageNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astMessageChainMessageNodeType);
 }
 
 TUUVM_API bool tuuvm_astNode_isSequenceNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
-    return tuuvm_tuple_getType(context, tuple) == context->roots.astSequenceNodeType;
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astSequenceNodeType);
 }
 
 TUUVM_API bool tuuvm_astNode_isQuoteNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
-    return tuuvm_tuple_getType(context, tuple) == context->roots.astQuoteNodeType;
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astQuoteNodeType);
 }
 
 TUUVM_API bool tuuvm_astNode_isQuasiQuoteNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
-    return tuuvm_tuple_getType(context, tuple) == context->roots.astQuasiQuoteNodeType;
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astQuasiQuoteNodeType);
 }
 
 TUUVM_API bool tuuvm_astNode_isQuasiUnquoteNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
-    return tuuvm_tuple_getType(context, tuple) == context->roots.astQuasiUnquoteNodeType;
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astQuasiUnquoteNodeType);
 }
 
 TUUVM_API bool tuuvm_astNode_isSpliceNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
-    return tuuvm_tuple_getType(context, tuple) == context->roots.astSpliceNodeType;
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astSpliceNodeType);
 }
 
 TUUVM_API bool tuuvm_astNode_isMacroExpression(tuuvm_context_t *context, tuuvm_tuple_t tuple)
@@ -79,17 +94,17 @@ TUUVM_API bool tuuvm_astNode_isMacroExpression(tuuvm_context_t *context, tuuvm_t
 
 TUUVM_API bool tuuvm_astNode_isUnexpandedApplicationNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
-    return tuuvm_tuple_getType(context, tuple) == context->roots.astUnexpandedApplicationNodeType;
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astUnexpandedApplicationNodeType);
 }
 
 TUUVM_API bool tuuvm_astNode_isUnexpandedSExpressionNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
-    return tuuvm_tuple_getType(context, tuple) == context->roots.astUnexpandedSExpressionNodeType;
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astUnexpandedSExpressionNodeType);
 }
 
 TUUVM_API bool tuuvm_astNode_isWhileContinueWithNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
-    return tuuvm_tuple_getType(context, tuple) == context->roots.astWhileContinueWithNodeType;
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astWhileContinueWithNodeType);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_astNode_getSourcePosition(tuuvm_tuple_t node)
@@ -257,6 +272,34 @@ TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_getValueExpression(tuuvm_tu
 {
     if(!tuuvm_tuple_isNonNullPointer(node)) return 0;
     return ((tuuvm_astLocalDefinitionNode_t*)node)->valueExpression;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astMessageSendNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t receiver, tuuvm_tuple_t selector, tuuvm_tuple_t arguments)
+{
+    tuuvm_astMessageSendNode_t *result = (tuuvm_astMessageSendNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astMessageSendNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astMessageSendNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->receiver = receiver;
+    result->selector = selector;
+    result->arguments = arguments;
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astMessageChainNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t receiver, tuuvm_tuple_t messages)
+{
+    tuuvm_astMessageChainNode_t *result = (tuuvm_astMessageChainNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astMessageChainNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astMessageChainNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->receiver = receiver;
+    result->messages = messages;
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astMessageChainMessageNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t selector, tuuvm_tuple_t arguments)
+{
+    tuuvm_astMessageChainMessageNode_t *result = (tuuvm_astMessageChainMessageNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astMessageChainMessageNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astMessageChainMessageNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->selector = selector;
+    result->arguments = arguments;
+    return (tuuvm_tuple_t)result;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_astSequenceNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t expressions)

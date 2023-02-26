@@ -224,6 +224,9 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.astLocalDefinitionNodeType = tuuvm_context_createIntrinsicType(context, "ASTLocalDefinitionNode", context->roots.astNodeType, "nameExpression", "valueExpression", NULL);
     context->roots.astIdentifierReferenceNodeType = tuuvm_context_createIntrinsicType(context, "ASTIdentifierReferenceNode", context->roots.astNodeType, "value", NULL);
     context->roots.astIfNodeType = tuuvm_context_createIntrinsicType(context, "ASTIfNode", context->roots.astNodeType, "conditionExpression", "trueExpression", "falseExpression", NULL);
+    context->roots.astMessageSendNodeType = tuuvm_context_createIntrinsicType(context, "ASTMessageSendNode", context->roots.astNodeType, "receiver", "selector", "arguments", NULL);
+    context->roots.astMessageChainNodeType = tuuvm_context_createIntrinsicType(context, "ASTMessageChainNode", context->roots.astNodeType, "receiver", "messages", NULL);
+    context->roots.astMessageChainMessageNodeType = tuuvm_context_createIntrinsicType(context, "ASTMessageChainMessage", context->roots.astNodeType, "selector", "arguments", NULL);
     context->roots.astSequenceNodeType = tuuvm_context_createIntrinsicType(context, "ASTSequenceNode", context->roots.astNodeType, "expressions", NULL);
     context->roots.astUnexpandedApplicationNodeType = tuuvm_context_createIntrinsicType(context, "ASTUnexpandedApplicationNode", context->roots.astNodeType, "functionOrMacroExpression", "arguments", NULL);
     context->roots.astUnexpandedSExpressionNodeType = tuuvm_context_createIntrinsicType(context, "ASTUnexpandedSExpressionNode", context->roots.astNodeType, "elements", NULL);
