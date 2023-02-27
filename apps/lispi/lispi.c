@@ -43,6 +43,13 @@ static tuuvm_tuple_t readWholeFileNamed(tuuvm_tuple_t *inputFileNameTuple)
     return sourceString;
 }
 
+static tuuvm_tuple_t languageForFileName(tuuvm_tuple_t *inputFileNameTuple)
+{
+    if(tuuvm_string_endsWithCString(*inputFileNameTuple, ".sysmel"))
+        return tuuvm_symbol_internWithCString(context, "sysmel");
+    return tuuvm_symbol_internWithCString(context, "tlisp");
+}
+
 static void processFileNamed(tuuvm_tuple_t *inputFileNameTuple)
 {
     struct {
@@ -51,7 +58,7 @@ static void processFileNamed(tuuvm_tuple_t *inputFileNameTuple)
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     gcFrame.sourceString = readWholeFileNamed(inputFileNameTuple);
-    tuuvm_interpreter_analyzeAndEvaluateStringWithEnvironment(context, tuuvm_environment_createDefaultForEvaluation(context), gcFrame.sourceString, *inputFileNameTuple);
+    tuuvm_interpreter_analyzeAndEvaluateStringWithEnvironment(context, tuuvm_environment_createDefaultForEvaluation(context), gcFrame.sourceString, *inputFileNameTuple, languageForFileName(inputFileNameTuple));
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
 }
 

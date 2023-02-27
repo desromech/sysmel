@@ -314,6 +314,8 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parsePrimaryTerm(tuuvm_context_t *contex
     case -1: return TUUVM_NULL_TUPLE;
     case TUUVM_TOKEN_KIND_IDENTIFIER:
     case TUUVM_TOKEN_KIND_ELLIPSIS:
+    case TUUVM_TOKEN_KIND_OPERATOR:
+    case TUUVM_TOKEN_KIND_MULTI_KEYWORD:
         return tuuvm_sysmelParser_parseIdentifierReferenceReference(context, state);
 
     case TUUVM_TOKEN_KIND_CHARACTER:
@@ -654,6 +656,6 @@ TUUVM_API tuuvm_tuple_t tuuvm_sysmelParser_parseSourceCode(tuuvm_context_t *cont
 
 TUUVM_API tuuvm_tuple_t tuuvm_sysmelParser_parseCString(tuuvm_context_t *context, const char *sourceCodeText, const char *sourceCodeName)
 {
-    tuuvm_tuple_t sourceCode = tuuvm_sourceCode_createWithCStrings(context, sourceCodeText, sourceCodeName);
+    tuuvm_tuple_t sourceCode = tuuvm_sourceCode_createWithCStrings(context, sourceCodeText, sourceCodeName, "sysmel");
     return tuuvm_sysmelParser_parseSourceCode(context, sourceCode);
 }

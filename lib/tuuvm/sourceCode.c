@@ -4,17 +4,18 @@
 #include "tuuvm/arraySlice.h"
 #include "internal/context.h"
 
-TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_create(tuuvm_context_t *context, tuuvm_tuple_t text, tuuvm_tuple_t name)
+TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_create(tuuvm_context_t *context, tuuvm_tuple_t text, tuuvm_tuple_t name, tuuvm_tuple_t language)
 {
     tuuvm_sourceCode_t *result = (tuuvm_sourceCode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.sourceCodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_sourceCode_t));
     result->text = text;
     result->name = name;
+    result->language = language;
     return (tuuvm_tuple_t)result;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_createWithCStrings(tuuvm_context_t *context, const char *text, const char *name)
+TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_createWithCStrings(tuuvm_context_t *context, const char *text, const char *name, const char *language)
 {
-    return tuuvm_sourceCode_create(context, tuuvm_string_createWithCString(context, text), tuuvm_string_createWithCString(context, name));
+    return tuuvm_sourceCode_create(context, tuuvm_string_createWithCString(context, text), tuuvm_string_createWithCString(context, name), tuuvm_symbol_internWithCString(context, language));
 }
 
 static tuuvm_tuple_t tuuvm_sourceCode_ensureLineStartIndexTableIsBuilt(tuuvm_context_t *context, tuuvm_tuple_t sourceCode)
@@ -83,4 +84,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_getText(tuuvm_tuple_t sourceCode)
 TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_getName(tuuvm_tuple_t sourceCode)
 {
     return ((tuuvm_sourceCode_t*)sourceCode)->name;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_getLanguage(tuuvm_tuple_t sourceCode)
+{
+    return ((tuuvm_sourceCode_t*)sourceCode)->language;
 }

@@ -8,7 +8,14 @@ static tuuvm_tuple_t testAnalyzeAndEvaluate(const char *sourceCode)
 {
     return tuuvm_interpreter_analyzeAndEvaluateCStringWithEnvironment(tuuvm_test_context,
         tuuvm_environment_createDefaultForEvaluation(tuuvm_test_context),
-        sourceCode, "test");
+        sourceCode, "test", "tlisp");
+}
+
+static tuuvm_tuple_t testAnalyzeAndEvaluateSysmel(const char *sourceCode)
+{
+    return tuuvm_interpreter_analyzeAndEvaluateCStringWithEnvironment(tuuvm_test_context,
+        tuuvm_environment_createDefaultForEvaluation(tuuvm_test_context),
+        sourceCode, "test", "sysmel");
 }
 
 TEST_SUITE(Interpreter)
