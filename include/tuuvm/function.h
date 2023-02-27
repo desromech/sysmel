@@ -16,25 +16,19 @@ typedef enum tuuvm_functionFlags_e
     TUUVM_FUNCTION_FLAGS_VARIADIC = 1<<1,
 } tuuvm_functionFlags_t;
 
-typedef struct tuuvm_primitiveFunction_s
+typedef struct tuuvm_function_s
 {
     tuuvm_tuple_header_t header;
-    size_t argumentCount;
-    size_t flags;
-    void *userdata;
-    tuuvm_functionEntryPoint_t entryPoint;
-} tuuvm_primitiveFunction_t;
-
-typedef struct tuuvm_closureASTFunction_s
-{
-    tuuvm_tuple_header_t header;
-    tuuvm_tuple_t sourcePosition;
     tuuvm_tuple_t flags;
+    tuuvm_tuple_t argumentCount;
+    tuuvm_tuple_t sourcePosition;
     tuuvm_tuple_t closureEnvironment;
     tuuvm_tuple_t argumentNodes;
     tuuvm_tuple_t resultTypeNode;
     tuuvm_tuple_t body;
-} tuuvm_closureASTFunction_t;
+    tuuvm_tuple_t nativeUserdata;
+    tuuvm_tuple_t nativeEntryPoint;
+} tuuvm_function_t;
 
 #define TUUVM_MAX_FUNCTION_ARGUMENTS 16
 
@@ -59,7 +53,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context,
 /**
  * Creates a function that uses a closure and an AST for its definition.
  */
-TUUVM_API tuuvm_tuple_t tuuvm_function_createClosureAST(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t closureEnvironment, tuuvm_tuple_t argumentNodes, tuuvm_tuple_t resultTypeNode, tuuvm_tuple_t body);
+TUUVM_API tuuvm_tuple_t tuuvm_function_createClosureAST(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t argumentCount, tuuvm_tuple_t closureEnvironment, tuuvm_tuple_t argumentNodes, tuuvm_tuple_t resultTypeNode, tuuvm_tuple_t body);
 
 /**
  * Gets the function argument count.

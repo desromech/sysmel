@@ -265,11 +265,12 @@ TUUVM_API tuuvm_tuple_t tuuvm_astIfNode_getFalseExpression(tuuvm_tuple_t node)
     return ((tuuvm_astIfNode_t*)node)->falseExpression;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_astLambdaNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t arguments, tuuvm_tuple_t resultType, tuuvm_tuple_t body)
+TUUVM_API tuuvm_tuple_t tuuvm_astLambdaNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t argumentCount, tuuvm_tuple_t arguments, tuuvm_tuple_t resultType, tuuvm_tuple_t body)
 {
     tuuvm_astLambdaNode_t *result = (tuuvm_astLambdaNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astLambdaNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astLambdaNode_t));
     result->super.sourcePosition = sourcePosition;
     result->flags = flags;
+    result->argumentCount = argumentCount;
     result->arguments = arguments;
     result->resultType = resultType;
     result->body = body;

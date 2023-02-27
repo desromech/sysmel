@@ -8,19 +8,20 @@
 
 TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
 {
-    tuuvm_primitiveFunction_t *result = (tuuvm_primitiveFunction_t*)tuuvm_context_allocateByteTuple(context, context->roots.primitiveFunctionType, TUUVM_BYTE_SIZE_FOR_STRUCTURE_TYPE(tuuvm_primitiveFunction_t));
-    result->argumentCount = argumentCount;
-    result->flags = flags;
-    result->userdata = userdata;
-    result->entryPoint = entryPoint;
+    tuuvm_function_t *result = (tuuvm_function_t*)tuuvm_context_allocatePointerTuple(context, context->roots.functionType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_function_t));
+    result->argumentCount = tuuvm_tuple_size_encode(context, argumentCount);
+    result->flags = tuuvm_tuple_size_encode(context, flags);
+    result->nativeUserdata = tuuvm_tuple_size_encode(context, (size_t)userdata);
+    result->nativeEntryPoint = tuuvm_tuple_size_encode(context, (size_t)entryPoint);
     return (tuuvm_tuple_t)result;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_function_createClosureAST(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t closureEnvironment, tuuvm_tuple_t argumentNodes, tuuvm_tuple_t resultTypeNode, tuuvm_tuple_t body)
+TUUVM_API tuuvm_tuple_t tuuvm_function_createClosureAST(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t argumentCount, tuuvm_tuple_t closureEnvironment, tuuvm_tuple_t argumentNodes, tuuvm_tuple_t resultTypeNode, tuuvm_tuple_t body)
 {
-    tuuvm_closureASTFunction_t *result = (tuuvm_closureASTFunction_t*)tuuvm_context_allocatePointerTuple(context, context->roots.closureASTFunctionType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_closureASTFunction_t));
+    tuuvm_function_t *result = (tuuvm_function_t*)tuuvm_context_allocatePointerTuple(context, context->roots.functionType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_function_t));
     result->sourcePosition = sourcePosition;
     result->flags = flags;
+    result->argumentCount = argumentCount; 
     result->closureEnvironment = closureEnvironment;
     result->argumentNodes = argumentNodes;
     result->resultTypeNode = resultTypeNode;
@@ -30,16 +31,10 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_createClosureAST(tuuvm_context_t *context
 
 TUUVM_API size_t tuuvm_function_getArgumentCount(tuuvm_context_t *context, tuuvm_tuple_t function)
 {
-    tuuvm_tuple_t functionType = tuuvm_tuple_getType(context, function);
-    if(functionType == context->roots.primitiveFunctionType)
+    if(tuuvm_tuple_isKindOf(context, function, context->roots.functionType))
     {
-        tuuvm_primitiveFunction_t *primitiveFunction = (tuuvm_primitiveFunction_t*)function;
-        return primitiveFunction->argumentCount;
-    }
-    else if(functionType == context->roots.closureASTFunctionType)
-    {
-        tuuvm_closureASTFunction_t *closureASTFunction = (tuuvm_closureASTFunction_t*)function;
-        return tuuvm_arraySlice_getSize(closureASTFunction->argumentNodes);
+        tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
+        return tuuvm_tuple_size_decode(functionObject->argumentCount);
     }
 
     return 0;
@@ -47,16 +42,10 @@ TUUVM_API size_t tuuvm_function_getArgumentCount(tuuvm_context_t *context, tuuvm
 
 TUUVM_API size_t tuuvm_function_getFlags(tuuvm_context_t *context, tuuvm_tuple_t function)
 {
-    tuuvm_tuple_t functionType = tuuvm_tuple_getType(context, function);
-    if(functionType == context->roots.primitiveFunctionType)
+    if(tuuvm_tuple_isKindOf(context, function, context->roots.functionType))
     {
-        tuuvm_primitiveFunction_t *primitiveFunction = (tuuvm_primitiveFunction_t*)function;
-        return primitiveFunction->flags;
-    }
-    else if(functionType == context->roots.closureASTFunctionType)
-    {
-        tuuvm_closureASTFunction_t *closureASTFunction = (tuuvm_closureASTFunction_t*)function;
-        return tuuvm_tuple_size_decode(closureASTFunction->flags);
+        tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
+        return tuuvm_tuple_size_decode(functionObject->flags);
     }
 
     return 0;
@@ -71,19 +60,22 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
     };
     tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
 
-    tuuvm_tuple_t functionType = tuuvm_tuple_getType(context, function);
-    if(functionType == context->roots.primitiveFunctionType)
+    if(tuuvm_tuple_isKindOf(context, function, context->roots.functionType))
     {
-        tuuvm_primitiveFunction_t *primitiveFunction = (tuuvm_primitiveFunction_t*)function;
-        tuuvm_tuple_t result = primitiveFunction->entryPoint(context, function, argumentCount, arguments);
-        tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
-        return result;
-    }
-    else if(functionType == context->roots.closureASTFunctionType)
-    {
-        tuuvm_tuple_t result = tuuvm_interpreter_applyClosureASTFunction(context, function, argumentCount, arguments);
-        tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
-        return result;
+        tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
+        tuuvm_functionEntryPoint_t nativeEntryPoint = (tuuvm_functionEntryPoint_t)tuuvm_tuple_size_decode(functionObject->nativeEntryPoint);
+        if(nativeEntryPoint)
+        {
+            tuuvm_tuple_t result = nativeEntryPoint(context, function, argumentCount, arguments);
+            tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
+            return result;            
+        }
+        else if(functionObject->body)
+        {
+            tuuvm_tuple_t result = tuuvm_interpreter_applyClosureASTFunction(context, function, argumentCount, arguments);
+            tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
+            return result;
+        }
     }
 
     tuuvm_error("Cannot apply non-functional object.");

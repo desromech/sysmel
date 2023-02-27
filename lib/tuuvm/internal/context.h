@@ -34,7 +34,6 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t arrayListType;
     tuuvm_tuple_t booleanType;
     tuuvm_tuple_t byteArrayType;
-    tuuvm_tuple_t closureASTFunctionType;
     tuuvm_tuple_t dictionaryType;
     tuuvm_tuple_t environmentType;
     tuuvm_tuple_t falseType;
@@ -43,7 +42,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t positiveIntegerType;
     tuuvm_tuple_t negativeIntegerType;
     tuuvm_tuple_t macroContextType;
-    tuuvm_tuple_t primitiveFunctionType;
+    tuuvm_tuple_t functionType;
     tuuvm_tuple_t setType;
     tuuvm_tuple_t stringType;
     tuuvm_tuple_t stringBuilderType;

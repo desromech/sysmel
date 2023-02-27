@@ -483,7 +483,7 @@ TUUVM_INLINE uint32_t tuuvm_tuple_uint32_decodeSmall(tuuvm_tuple_t tuple)
  */
 TUUVM_INLINE uint32_t tuuvm_tuple_uint32_decode(tuuvm_tuple_t tuple)
 {
-    if(tuuvm_tuple_isImmediate(tuple))
+    if(tuuvm_tuple_isImmediate(tuple) || !tuple)
         return tuuvm_tuple_uint32_decodeSmall(tuple);
     return *((uint32_t*)TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->bytes);
 }
@@ -587,7 +587,7 @@ TUUVM_INLINE uint64_t tuuvm_tuple_uint64_decodeSmall(tuuvm_tuple_t tuple)
  */
 TUUVM_INLINE uint64_t tuuvm_tuple_uint64_decode(tuuvm_tuple_t tuple)
 {
-    if(tuuvm_tuple_isImmediate(tuple))
+    if(tuuvm_tuple_isImmediate(tuple) || !tuple)
         return tuuvm_tuple_uint64_decodeSmall(tuple);
     return *((uint64_t*)TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->bytes);
 }

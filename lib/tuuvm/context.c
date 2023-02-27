@@ -137,7 +137,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)context->roots.typeType, context->roots.typeType);
 
     // Create the symbol and set type.
-    context->roots.primitiveFunctionType = tuuvm_type_createAnonymous(context);
+    context->roots.functionType = tuuvm_type_createAnonymous(context);
 
     // Create the basic hash functions.
     context->roots.identityEqualsFunction = tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_identityEquals);
@@ -198,7 +198,11 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "macroMethodDictionary", "methodDictionary", "fallbackMethodDictionary",
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.environmentType, "Environment", TUUVM_NULL_TUPLE, "parent", "symbolTable", NULL);
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.primitiveFunctionType, "PrimitiveFunction", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.functionType, "Function", TUUVM_NULL_TUPLE,
+        "flags", "argumentCount",
+        "sourcePosition", "closureEnvironment", "argumentNodes" "resultTypeNode", "body",
+        "nativeUserdata", "nativeEntryPoint",
+        NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolType, "Symbol", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.setType, "Set", TUUVM_NULL_TUPLE,
         "size", "storage", "equalsFunction", "hashFunction",
@@ -209,7 +213,6 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     // Create other root basic types.
     context->roots.arraySliceType = tuuvm_context_createIntrinsicType(context, "ArraySlice", TUUVM_NULL_TUPLE, "elements", "offset", "size", NULL);
     context->roots.booleanType = tuuvm_context_createIntrinsicType(context, "Boolean", TUUVM_NULL_TUPLE, NULL);
-    context->roots.closureASTFunctionType = tuuvm_context_createIntrinsicType(context, "ClosureASTFunction", TUUVM_NULL_TUPLE, "sourcePosition", "flags", "closureEnvironment", "argumentNodes", "resultTypeNode", "body", NULL);
     context->roots.dictionaryType = tuuvm_context_createIntrinsicType(context, "Dictionary", TUUVM_NULL_TUPLE,
         "size", "storage", "equalsFunction", "hashFunction",
         NULL);
@@ -260,7 +263,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.astDoWhileContinueWithNodeType = tuuvm_context_createIntrinsicType(context, "ASTDoWhileContinueWithNode", context->roots.astNodeType, "bodyExpression", "conditionExpression", "continueExpression", NULL);
     context->roots.astErrorNodeType = tuuvm_context_createIntrinsicType(context, "ASTErrorNode", context->roots.astNodeType, "errorMessage", NULL);
     context->roots.astFunctionApplicationNodeType = tuuvm_context_createIntrinsicType(context, "ASTFunctionApplicationNode", context->roots.astNodeType, "functionExpression", "arguments", NULL);
-    context->roots.astLambdaNodeType = tuuvm_context_createIntrinsicType(context, "ASTLambdaNode", context->roots.astNodeType, "flags", "arguments", "resultType", "body", NULL);
+    context->roots.astLambdaNodeType = tuuvm_context_createIntrinsicType(context, "ASTLambdaNode", context->roots.astNodeType, "flags", "argumentCount", "arguments", "resultType", "body", NULL);
     context->roots.astLexicalBlockNodeType = tuuvm_context_createIntrinsicType(context, "ASTLexicalBlockNode", context->roots.astNodeType, "body", NULL);
     context->roots.astLiteralNodeType = tuuvm_context_createIntrinsicType(context, "ASTLiteralNode", context->roots.astNodeType, "value", NULL);
     context->roots.astLocalDefinitionNodeType = tuuvm_context_createIntrinsicType(context, "ASTLocalDefinitionNode", context->roots.astNodeType, "nameExpression", "valueExpression", NULL);

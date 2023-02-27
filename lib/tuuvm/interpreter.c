@@ -304,7 +304,10 @@ static tuuvm_tuple_t tuuvm_astLambdaNode_primitiveMacro(tuuvm_context_t *context
     gcFrame.sourcePosition = tuuvm_macroContext_getSourcePosition(*macroContext);
     gcFrame.argumentsArraySlice = tuuvm_astLambdaNode_parseArgumentsNodes(context, gcFrame.argumentsNode, &hasVariadicArguments);
     gcFrame.bodySequence = tuuvm_astSequenceNode_create(context, gcFrame.sourcePosition, *bodyNodes);
-    tuuvm_tuple_t result = tuuvm_astLambdaNode_create(context, gcFrame.sourcePosition, tuuvm_tuple_size_encode(context, hasVariadicArguments ? TUUVM_FUNCTION_FLAGS_VARIADIC :TUUVM_FUNCTION_FLAGS_NONE), gcFrame.argumentsArraySlice, TUUVM_NULL_TUPLE, gcFrame.bodySequence);
+    tuuvm_tuple_t result = tuuvm_astLambdaNode_create(context, gcFrame.sourcePosition,
+        tuuvm_tuple_size_encode(context, hasVariadicArguments ? TUUVM_FUNCTION_FLAGS_VARIADIC :TUUVM_FUNCTION_FLAGS_NONE),
+        tuuvm_tuple_size_encode(context, tuuvm_arraySlice_getSize(gcFrame.argumentsArraySlice)),
+        gcFrame.argumentsArraySlice, TUUVM_NULL_TUPLE, gcFrame.bodySequence);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return result;
 }
@@ -343,7 +346,7 @@ static tuuvm_tuple_t tuuvm_astLambdaNode_primitiveEvaluate(tuuvm_context_t *cont
 
     tuuvm_astLambdaNode_t **lambdaNode = (tuuvm_astLambdaNode_t**)node;
 
-    return tuuvm_function_createClosureAST(context, (*lambdaNode)->super.sourcePosition, (*lambdaNode)->flags, *environment, (*lambdaNode)->arguments, (*lambdaNode)->resultType, (*lambdaNode)->body);
+    return tuuvm_function_createClosureAST(context, (*lambdaNode)->super.sourcePosition, (*lambdaNode)->flags, (*lambdaNode)->argumentCount, *environment, (*lambdaNode)->arguments, (*lambdaNode)->resultType, (*lambdaNode)->body);
 }
 
 static tuuvm_tuple_t tuuvm_astLambdaNode_primitiveAnalyzeAndEvaluate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -365,7 +368,7 @@ static tuuvm_tuple_t tuuvm_astLambdaNode_primitiveAnalyzeAndEvaluate(tuuvm_conte
     gcFrame.lambdaAnalysisEnvironment = tuuvm_environment_create(context, *environment);
     gcFrame.analyzedBody = tuuvm_interpreter_analyzeASTWithEnvironment(context, (*lambdaNode)->body, gcFrame.lambdaAnalysisEnvironment);
 
-    tuuvm_tuple_t result = tuuvm_function_createClosureAST(context, (*lambdaNode)->super.sourcePosition, (*lambdaNode)->flags, *environment, (*lambdaNode)->arguments, (*lambdaNode)->resultType, gcFrame.analyzedBody);
+    tuuvm_tuple_t result = tuuvm_function_createClosureAST(context, (*lambdaNode)->super.sourcePosition, (*lambdaNode)->flags, (*lambdaNode)->argumentCount, *environment, (*lambdaNode)->arguments, (*lambdaNode)->resultType, gcFrame.analyzedBody);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return result;
 }
@@ -452,7 +455,10 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveMacro(tuuvm_context_t
         gcFrame.argumentsNode = tuuvm_arraySlice_fromOffset(context, gcFrame.lambdaSignatureElements, 1);
         gcFrame.arguments = tuuvm_astLambdaNode_parseArgumentsNodes(context, gcFrame.argumentsNode, &hasVariadicArguments);
         gcFrame.bodySequence = tuuvm_astSequenceNode_create(context, gcFrame.sourcePosition, *valueOrBodyNodes);
-        gcFrame.valueNode = tuuvm_astLambdaNode_create(context, gcFrame.sourcePosition, tuuvm_tuple_size_encode(context, hasVariadicArguments ? TUUVM_FUNCTION_FLAGS_VARIADIC : TUUVM_FUNCTION_FLAGS_NONE), gcFrame.arguments, TUUVM_NULL_TUPLE, gcFrame.bodySequence);
+        gcFrame.valueNode = tuuvm_astLambdaNode_create(context, gcFrame.sourcePosition,
+            tuuvm_tuple_size_encode(context, hasVariadicArguments ? TUUVM_FUNCTION_FLAGS_VARIADIC : TUUVM_FUNCTION_FLAGS_NONE),
+            tuuvm_tuple_size_encode(context, tuuvm_arraySlice_getSize(gcFrame.arguments)),
+            gcFrame.arguments, TUUVM_NULL_TUPLE, gcFrame.bodySequence);
     }
     else
     {
@@ -504,7 +510,9 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveDefineMacro(tuuvm_con
         gcFrame.arguments = tuuvm_astLambdaNode_parseArgumentsNodes(context, gcFrame.argumentsNode, &hasVariadicArguments);
         gcFrame.bodySequence = tuuvm_astSequenceNode_create(context, gcFrame.sourcePosition, *valueOrBodyNodes);
         gcFrame.valueNode = tuuvm_astLambdaNode_create(context, gcFrame.sourcePosition,
-            tuuvm_tuple_size_encode(context, (hasVariadicArguments ? TUUVM_FUNCTION_FLAGS_VARIADIC : TUUVM_FUNCTION_FLAGS_NONE) | TUUVM_FUNCTION_FLAGS_MACRO), gcFrame.arguments, TUUVM_NULL_TUPLE, gcFrame.bodySequence);
+            tuuvm_tuple_size_encode(context, (hasVariadicArguments ? TUUVM_FUNCTION_FLAGS_VARIADIC : TUUVM_FUNCTION_FLAGS_NONE) | TUUVM_FUNCTION_FLAGS_MACRO),
+            tuuvm_tuple_size_encode(context, tuuvm_arraySlice_getSize(gcFrame.arguments)),
+            gcFrame.arguments, TUUVM_NULL_TUPLE, gcFrame.bodySequence);
     }
     else
     {
@@ -1390,7 +1398,7 @@ static void tuuvm_interpreter_evaluateArgumentNodeInEnvironment(tuuvm_context_t 
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
 }
 
-static tuuvm_tuple_t tuuvm_interpreter_evaluateResultTypeCoercionInEnvironment(tuuvm_context_t *context, tuuvm_closureASTFunction_t **closureASTFunction, tuuvm_tuple_t *environment, tuuvm_tuple_t result)
+static tuuvm_tuple_t tuuvm_interpreter_evaluateResultTypeCoercionInEnvironment(tuuvm_context_t *context, tuuvm_function_t **closureASTFunction, tuuvm_tuple_t *environment, tuuvm_tuple_t result)
 {
     if(!(*closureASTFunction)->resultTypeNode)
         return result;
@@ -1416,7 +1424,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_
         .function = function,
     };
     tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&functionActivationRecord);  
-    tuuvm_closureASTFunction_t **closureASTFunction = (tuuvm_closureASTFunction_t**)&functionActivationRecord.function;
+    tuuvm_function_t **closureASTFunction = (tuuvm_function_t**)&functionActivationRecord.function;
     
     size_t expectedArgumentCount = tuuvm_arraySlice_getSize((*closureASTFunction)->argumentNodes);
     if(argumentCount != expectedArgumentCount)
