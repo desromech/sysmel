@@ -4,7 +4,7 @@
 
 #define TEST_ASSERT_INTEGER_EQUALS(expected, gotten) TEST_ASSERT_DESCRIPTION(tuuvm_integer_equals(tuuvm_test_context, (expected), (gotten)) == TUUVM_TRUE_TUPLE, "Obtained value is not equal to " #expected)
 #define TEST_ASSERT_INTEGER_HEXSTRING_EQUALS(expected, gotten) TEST_ASSERT_DESCRIPTION(tuuvm_string_equals(tuuvm_string_createWithCString(tuuvm_test_context, (expected)), tuuvm_integer_toHexString(tuuvm_test_context, (gotten))), "Obtained value is not equal to " #expected)
-#define TEST_ASSERT_INTEGER_TOSTRING_EQUALS(expected, gotten) TEST_ASSERT_DESCRIPTION(tuuvm_string_equals(tuuvm_string_createWithCString(tuuvm_test_context, (expected)), tuuvm_tuple_toString(tuuvm_test_context, (gotten))), "Obtained value is not equal to " #expected)
+#define TEST_ASSERT_INTEGER_TOSTRING_EQUALS(expected, gotten) TEST_ASSERT_DESCRIPTION(tuuvm_string_equals(tuuvm_string_createWithCString(tuuvm_test_context, (expected)), tuuvm_tuple_asString(tuuvm_test_context, (gotten))), "Obtained value is not equal to " #expected)
 
 #define INTEGER(string) tuuvm_integer_parseCString(tuuvm_test_context, string)
 

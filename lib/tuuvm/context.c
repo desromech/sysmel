@@ -136,6 +136,15 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.intrinsicsBuiltInEnvironment = tuuvm_environment_create(context, TUUVM_NULL_TUPLE);
     context->roots.intrinsicTypes = tuuvm_arrayList_create(context);
 
+    context->roots.equalsSelector = tuuvm_symbol_internWithCString(context, "=");
+    context->roots.hashSelector = tuuvm_symbol_internWithCString(context, "hash");
+    context->roots.asStringSelector = tuuvm_symbol_internWithCString(context, "asString");
+    context->roots.printStringSelector = tuuvm_symbol_internWithCString(context, "printString");
+
+    context->roots.astNodeAnalysisSelector = tuuvm_symbol_internWithCString(context, "astAnalyzeWithEnvironment:");
+    context->roots.astNodeEvaluationSelector = tuuvm_symbol_internWithCString(context, "astEvaluateWithEnvironment:");
+    context->roots.astNodeAnalysisAndEvaluationSelector = tuuvm_symbol_internWithCString(context, "astAnalyzeAndEvaluateWithEnvironment:");
+
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "nil"), TUUVM_NULL_TUPLE);
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "false"), TUUVM_FALSE_TUPLE);
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "true"), TUUVM_TRUE_TUPLE);
@@ -156,8 +165,6 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.typeType, "Type", TUUVM_NULL_TUPLE,
         "name", "supertype", "slotNames", "sumTypeAlternatives", "totalSlotCount", "flags",
         "macroMethodDictionary", "methodDictionary", "fallbackMethodDictionary",
-        "equalsFunction", "hashFunction", "toStringFunction", "printStringFunction",
-        "astNodeAnalysisFunction", "astNodeEvaluationFunction", "astNodeAnalysisAndEvaluationFunction",
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.environmentType, "Environment", TUUVM_NULL_TUPLE, "parent", "symbolTable", NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.primitiveFunctionType, "PrimitiveFunction", TUUVM_NULL_TUPLE, NULL);

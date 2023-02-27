@@ -222,7 +222,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_string_primitive_equals(tuuvm_context_t *context, 
     return tuuvm_tuple_boolean_encode(tuuvm_string_equals(arguments[0], arguments[1]));
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_tuple_defaultToString(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_defaultAsString(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
     return tuuvm_tuple_printString(context, tuple);
 }
@@ -248,13 +248,13 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_defaultPrintString(tuuvm_context_t *context,
     return tuuvm_string_createWithCString(context, "TODO: defaultPrintString");
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_tuple_toString(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_asString(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
     tuuvm_tuple_t type = tuuvm_tuple_getType(context, tuple);
-    tuuvm_tuple_t toStringFunction = tuuvm_type_getToStringFunction(context, type);
-    if(toStringFunction == TUUVM_NULL_TUPLE)
-        return tuuvm_tuple_defaultToString(context, tuple);
-    return tuuvm_function_apply1(context, toStringFunction, tuple);
+    tuuvm_tuple_t asStringFunction = tuuvm_type_getAsStringFunction(context, type);
+    if(asStringFunction == TUUVM_NULL_TUPLE)
+        return tuuvm_tuple_defaultAsString(context, tuple);
+    return tuuvm_function_apply1(context, asStringFunction, tuple);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_tuple_printString(tuuvm_context_t *context, tuuvm_tuple_t tuple)
@@ -266,7 +266,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_printString(tuuvm_context_t *context, tuuvm_
     return tuuvm_function_apply1(context, printStringFunction, tuple);
 }
 
-tuuvm_tuple_t tuuvm_string_primitive_toString(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+tuuvm_tuple_t tuuvm_string_primitive_asString(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -274,7 +274,7 @@ tuuvm_tuple_t tuuvm_string_primitive_toString(tuuvm_context_t *context, tuuvm_tu
     return arguments[0];
 }
 
-tuuvm_tuple_t tuuvm_symbol_primitive_toString(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+tuuvm_tuple_t tuuvm_symbol_primitive_asString(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -294,14 +294,14 @@ tuuvm_tuple_t tuuvm_tuple_primitive_printString(tuuvm_context_t *context, tuuvm_
     return tuuvm_tuple_printString(context, tuple);
 }
 
-tuuvm_tuple_t tuuvm_tuple_primitive_toString(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+tuuvm_tuple_t tuuvm_tuple_primitive_asString(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
 
     tuuvm_tuple_t tuple = arguments[0];
-    return tuuvm_tuple_toString(context, tuple);
+    return tuuvm_tuple_asString(context, tuple);
 }
 
 static tuuvm_tuple_t tuuvm_string_primitive_concat(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -326,16 +326,16 @@ void tuuvm_string_setupPrimitives(tuuvm_context_t *context)
 {
     // String primitives
     {
-        tuuvm_type_setToStringFunction(context, context->roots.stringType, tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_string_primitive_toString));
+        tuuvm_type_setAsStringFunction(context, context->roots.stringType, tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_string_primitive_asString));
     }
 
     // Symbol primitives.
     {
-        tuuvm_type_setToStringFunction(context, context->roots.symbolType, tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_symbol_primitive_toString));
+        tuuvm_type_setAsStringFunction(context, context->roots.symbolType, tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_symbol_primitive_asString));
     }
 
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "printString", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_printString);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "toString", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_toString);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "asString", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_asString);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "String::concat:", 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_string_primitive_concat);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Symbol::intern", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_symbol_primitive_intern);
 }

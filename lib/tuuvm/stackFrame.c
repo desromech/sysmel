@@ -110,7 +110,7 @@ TUUVM_API void tuuvm_stackFrame_raiseException(tuuvm_tuple_t exception)
     // Did we find it?
     if(!stackFrameRecord)
     {
-        tuuvm_tuple_t errorString = tuuvm_tuple_toString(context, exception);
+        tuuvm_tuple_t errorString = tuuvm_tuple_asString(context, exception);
         fprintf(stderr, "Unhandled exception: " TUUVM_STRING_PRINTF_FORMAT "\n", TUUVM_STRING_PRINTF_ARG(errorString));
         tuuvm_stackFrame_printStackTrace(context, tuuvm_stackFrame_buildStackTraceUpTo(NULL));
         abort();
@@ -166,7 +166,7 @@ TUUVM_API void tuuvm_stackFrame_printStackTrace(tuuvm_context_t *context, tuuvm_
     for(size_t i = 0; i < stackTraceSize; ++i)
     {
         tuuvm_tuple_t stackTraceRecord = tuuvm_arraySlice_at(stackTrace, i);
-        tuuvm_tuple_t stackTraceRecordString = tuuvm_tuple_toString(context, stackTraceRecord);
+        tuuvm_tuple_t stackTraceRecordString = tuuvm_tuple_asString(context, stackTraceRecord);
         fprintf(stderr, TUUVM_STRING_PRINTF_FORMAT "\n", TUUVM_STRING_PRINTF_ARG(stackTraceRecordString));
     }
 }

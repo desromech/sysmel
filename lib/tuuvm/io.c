@@ -12,7 +12,7 @@ static tuuvm_tuple_t tuuvm_io_primitive_printLine(tuuvm_context_t *context, tuuv
     (void)closure;
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
 
-    tuuvm_tuple_t string = tuuvm_tuple_toString(context, arguments[0]);
+    tuuvm_tuple_t string = tuuvm_tuple_asString(context, arguments[0]);
     TUUVM_ASSERT(tuuvm_tuple_isBytes(string));
     fwrite(TUUVM_CAST_OOP_TO_OBJECT_TUPLE(string)->bytes, tuuvm_tuple_getSizeInBytes(string), 1, stdout);
     fwrite("\n", 1, 1, stdout);
@@ -26,7 +26,7 @@ static tuuvm_tuple_t tuuvm_io_primitive_print(tuuvm_context_t *context, tuuvm_tu
     (void)closure;
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
 
-    tuuvm_tuple_t string = tuuvm_tuple_toString(context, arguments[0]);
+    tuuvm_tuple_t string = tuuvm_tuple_asString(context, arguments[0]);
     TUUVM_ASSERT(tuuvm_tuple_isBytes(string));
     fwrite(TUUVM_CAST_OOP_TO_OBJECT_TUPLE(string)->bytes, tuuvm_tuple_getSizeInBytes(string), 1, stdout);
 

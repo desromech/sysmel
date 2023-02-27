@@ -20,16 +20,6 @@ typedef struct tuuvm_type_tuple_s
     tuuvm_tuple_t macroMethodDictionary;
     tuuvm_tuple_t methodDictionary;
     tuuvm_tuple_t fallbackMethodDictionary;
-
-    tuuvm_tuple_t equalsFunction;
-    tuuvm_tuple_t hashFunction;
-    tuuvm_tuple_t toStringFunction;
-    tuuvm_tuple_t printStringFunction;
-
-    tuuvm_tuple_t astNodeAnalysisFunction;
-    tuuvm_tuple_t astNodeEvaluationFunction;
-    tuuvm_tuple_t astNodeAnalysisAndEvaluationFunction;
-
 } tuuvm_type_tuple_t;
 
 /**
@@ -46,6 +36,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createWithName(tuuvm_context_t *context, tuuv
  * Performs the lookup of the given selector.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_type_lookupSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector);
+
+/**
+ * Sets the specified method with the given selector in the method dictionary.
+ */
+TUUVM_API void tuuvm_type_setMethodWithSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector, tuuvm_tuple_t method);
 
 /**
  * Gets the name of a type
@@ -177,14 +172,14 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_getHashFunction(tuuvm_context_t *context, tuu
 TUUVM_API void tuuvm_type_setHashFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t hashFunction);
 
 /**
- * Gets the toString function of a type.
+ * Gets the asString function of a type.
  */
-TUUVM_API tuuvm_tuple_t tuuvm_type_getToStringFunction(tuuvm_context_t *context, tuuvm_tuple_t type);
+TUUVM_API tuuvm_tuple_t tuuvm_type_getAsStringFunction(tuuvm_context_t *context, tuuvm_tuple_t type);
 
 /**
- * Sets the toString function of a type
+ * Sets the asString function of a type
  */
-TUUVM_API void tuuvm_type_setToStringFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t toStringFunction);
+TUUVM_API void tuuvm_type_setAsStringFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t asStringFunction);
 
 /**
  * Gets the printString function of a type.

@@ -18,6 +18,16 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t stringEqualsFunction;
     tuuvm_tuple_t stringHashFunction;
 
+    tuuvm_tuple_t equalsSelector;
+    tuuvm_tuple_t hashSelector;
+    tuuvm_tuple_t asStringSelector;
+    tuuvm_tuple_t printStringSelector;
+
+    tuuvm_tuple_t astNodeAnalysisSelector;
+    tuuvm_tuple_t astNodeEvaluationSelector;
+    tuuvm_tuple_t astNodeAnalysisAndEvaluationSelector;
+
+
     tuuvm_tuple_t arrayType;
     tuuvm_tuple_t arraySliceType;
     tuuvm_tuple_t arrayListType;

@@ -140,7 +140,7 @@ int main(int argc, const char *argv[])
     }
     else
     {
-        tuuvm_tuple_t errorString = tuuvm_tuple_toString(context, topLevelFrame.exception);
+        tuuvm_tuple_t errorString = tuuvm_tuple_asString(context, topLevelFrame.exception);
         fprintf(stderr, "Unhandled exception: " TUUVM_STRING_PRINTF_FORMAT "\n", TUUVM_STRING_PRINTF_ARG(errorString));
         tuuvm_stackFrame_printStackTrace(context, topLevelFrame.stackTrace);
         exitCode = 1;
