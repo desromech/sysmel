@@ -58,7 +58,7 @@ TUUVM_API bool tuuvm_environment_lookSymbolRecursively(tuuvm_context_t *context,
     return tuuvm_environment_lookSymbolRecursively(context, environmentObject->parent, symbol, outBinding);
 }
 
-static tuuvm_tuple_t tuuvm_environment_primitive_setNewSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_environment_primitive_setNewSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -68,7 +68,7 @@ static tuuvm_tuple_t tuuvm_environment_primitive_setNewSymbolBinding(tuuvm_conte
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_environment_primitive_setSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_environment_primitive_setSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;

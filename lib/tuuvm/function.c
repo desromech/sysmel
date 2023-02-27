@@ -53,6 +53,13 @@ TUUVM_API size_t tuuvm_function_getFlags(tuuvm_context_t *context, tuuvm_tuple_t
 
 TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
+    struct {
+        tuuvm_tuple_t function;
+    } gcFrame = {
+        .function = function
+    };
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
     tuuvm_stackFrameGCRootsRecord_t argumentsRecord = {
         .type = TUUVM_STACK_FRAME_RECORD_TYPE_GC_ROOTS,
         .rootCount = argumentCount,
@@ -66,14 +73,16 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
         tuuvm_functionEntryPoint_t nativeEntryPoint = (tuuvm_functionEntryPoint_t)tuuvm_tuple_size_decode(functionObject->nativeEntryPoint);
         if(nativeEntryPoint)
         {
-            tuuvm_tuple_t result = nativeEntryPoint(context, function, argumentCount, arguments);
+            tuuvm_tuple_t result = nativeEntryPoint(context, &gcFrame.function, argumentCount, arguments);
             tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
+            TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
             return result;            
         }
         else if(functionObject->body)
         {
-            tuuvm_tuple_t result = tuuvm_interpreter_applyClosureASTFunction(context, function, argumentCount, arguments);
+            tuuvm_tuple_t result = tuuvm_interpreter_applyClosureASTFunction(context, &gcFrame.function, argumentCount, arguments);
             tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
+            TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
             return result;
         }
     }
@@ -132,7 +141,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_functionCallFrameStack_finish(tuuvm_context_t *con
     return tuuvm_function_apply(context, callFrameStack->gcRoots.function, callFrameStack->expectedArgumentCount, callFrameStack->gcRoots.applicationArguments);
 }
 
-static tuuvm_tuple_t tuuvm_function_primitive_apply(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_function_primitive_apply(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);

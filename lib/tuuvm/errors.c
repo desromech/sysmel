@@ -36,7 +36,7 @@ TUUVM_API void tuuvm_error_argumentCountMismatch(size_t expected, size_t gotten)
     tuuvm_error("Argument count mismatch");
 }
 
-static tuuvm_tuple_t tuuvm_errors_primitive_error(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_errors_primitive_error(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;

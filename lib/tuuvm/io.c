@@ -6,7 +6,7 @@
 #include "tuuvm/assert.h"
 #include <stdio.h>
 
-static tuuvm_tuple_t tuuvm_io_primitive_printLine(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_io_primitive_printLine(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -20,7 +20,7 @@ static tuuvm_tuple_t tuuvm_io_primitive_printLine(tuuvm_context_t *context, tuuv
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_io_primitive_print(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_io_primitive_print(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
