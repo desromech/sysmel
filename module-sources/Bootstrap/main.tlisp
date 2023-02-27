@@ -38,7 +38,7 @@
     (define supertype (RawTuple::slotAt: type 1))
     (define supertypeSlotCount (if:then:else: (== supertype nil)
         0
-        (RawTuple::slotAt: type 4)))
+        (RawTuple::slotAt: supertype 4)))
     (until:do: slotCount (lambda (localSlotIndex)
         (define slotIndex (Integer::+ supertypeSlotCount localSlotIndex))
         (define slotName (RawTuple::slotAt: slotNames localSlotIndex))

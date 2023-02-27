@@ -62,7 +62,8 @@ static void tuuvm_context_setIntrinsicTypeMetadata(tuuvm_context_t *context, tuu
 {
     tuuvm_tuple_t nameSymbol = tuuvm_symbol_internWithCString(context, name);
     tuuvm_type_setName(type, nameSymbol);
-    tuuvm_type_setSupertype(type, supertype);
+    if(supertype)
+        tuuvm_type_setSupertype(type, supertype);
     tuuvm_environment_setNewSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, nameSymbol, type);
     tuuvm_arrayList_add(context, context->roots.intrinsicTypes, type);
 
@@ -84,10 +85,10 @@ static void tuuvm_context_setIntrinsicTypeMetadata(tuuvm_context_t *context, tuu
     tuuvm_type_setSlotNames(type, slotNames);
 
     // Set the total slot count.
-    size_t totalSlotCount = slotNameCount;
+    int64_t totalSlotCount = slotNameCount;
     if(tuuvm_tuple_isNonNullPointer(supertype))
-        totalSlotCount += tuuvm_tuple_size_decode(tuuvm_type_getTotalSlotCount(supertype));
-    tuuvm_type_setTotalSlotCount(type, tuuvm_tuple_size_encode(context, totalSlotCount));
+        totalSlotCount += tuuvm_tuple_integer_decodeInt64(tuuvm_type_getTotalSlotCount(supertype));
+    tuuvm_type_setTotalSlotCount(type, tuuvm_tuple_integer_encodeInt64(context, totalSlotCount));
 }
 
 TUUVM_API void tuuvm_context_setIntrinsicSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t symbol, tuuvm_tuple_t binding)
@@ -135,6 +136,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.anyValueType = tuuvm_type_createAnonymous(context);
     context->roots.typeType = tuuvm_type_createAnonymous(context);
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)context->roots.typeType, context->roots.typeType);
+    tuuvm_tuple_setType((tuuvm_object_tuple_t*)context->roots.anyValueType, context->roots.typeType);
 
     // Create the function type.
     context->roots.functionType = tuuvm_type_createAnonymous(context);
@@ -258,8 +260,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         NULL);
 
     context->roots.astNodeType = tuuvm_context_createIntrinsicType(context, "ASTNode", TUUVM_NULL_TUPLE, "sourcePosition", "analyzedType", NULL);
-    context->roots.astArgumentNodeType = tuuvm_context_createIntrinsicType(context, "ASTArgumentNodeType", context->roots.astArgumentNodeType, "isForAll", "name", "type", NULL);
-    context->roots.astBinaryExpressionSequenceNodeType = tuuvm_context_createIntrinsicType(context, "ASTBinaryExpressionSequenceNode", context->roots.astBinaryExpressionSequenceNodeType, "operands", "operations", NULL);
+    context->roots.astArgumentNodeType = tuuvm_context_createIntrinsicType(context, "ASTArgumentNodeType", context->roots.astNodeType, "isForAll", "name", "type", NULL);
+    context->roots.astBinaryExpressionSequenceNodeType = tuuvm_context_createIntrinsicType(context, "ASTBinaryExpressionSequenceNode", context->roots.astNodeType, "operands", "operations", NULL);
     context->roots.astDoWhileContinueWithNodeType = tuuvm_context_createIntrinsicType(context, "ASTDoWhileContinueWithNode", context->roots.astNodeType, "bodyExpression", "conditionExpression", "continueExpression", NULL);
     context->roots.astErrorNodeType = tuuvm_context_createIntrinsicType(context, "ASTErrorNode", context->roots.astNodeType, "errorMessage", NULL);
     context->roots.astFunctionApplicationNodeType = tuuvm_context_createIntrinsicType(context, "ASTFunctionApplicationNode", context->roots.astNodeType, "functionExpression", "arguments", NULL);

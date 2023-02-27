@@ -1,0 +1,32 @@
+printLine("Hello World from Sysmel in Tuuvm").
+printLine(Integer::+(42, 1)).
+
+printLine(42 identityHash).
+printLine(42 __type__).
+printLine({}).
+printLine({|}).
+printLine({:x | x }).
+printLine({:x :y | x + y}).
+printLine({:x :y :: Int32 | x + y}).
+
+printLine({:(Integer)x | x}(2)).
+printLine({:(Integer)x :: Integer | x}(2)).
+
+printLine(2 + 3).
+printLine({:(Integer)x :(Integer)y | x + y }(2, 3)).
+printLine({:(Integer)x :(Integer)y :: Integer | x + y }(2, 3)).
+
+let: #x with: 3.
+printLine(x).
+
+printLine(42 + 1).
+
+printLine(send(#+ , 42, 1)).
+
+printLine(42).
+printLine(42 printString).
+
+let: #square with: {:(Int32)x :: Int32 | x*x}.
+printLine(square).
+printLine(square sourcePosition).
+printLine(square body sourcePosition).
