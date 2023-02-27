@@ -280,7 +280,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_astLambdaNode_getBody(tuuvm_tuple_t node)
 
 TUUVM_API tuuvm_tuple_t tuuvm_astLexicalBlockNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t body)
 {
-    tuuvm_astLexicalBlockNode_t *result = (tuuvm_astLexicalBlockNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astLiteralNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astLexicalBlockNode_t));
+    tuuvm_astLexicalBlockNode_t *result = (tuuvm_astLexicalBlockNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astLexicalBlockNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astLexicalBlockNode_t));
     result->super.sourcePosition = sourcePosition;
     result->body = body;
     return (tuuvm_tuple_t)result;

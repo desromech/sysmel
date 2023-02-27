@@ -45,6 +45,11 @@ TUUVM_API void tuuvm_stringBuilder_addCString(tuuvm_context_t *context, tuuvm_tu
 TUUVM_API tuuvm_tuple_t tuuvm_stringBuilder_asString(tuuvm_context_t *context, tuuvm_tuple_t stringBuilder);
 
 /**
+ * Construct the final string as a symbol from the string builder.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_stringBuilder_asSymbol(tuuvm_context_t *context, tuuvm_tuple_t stringBuilder);
+
+/**
  * Gets the size of a string builder.
  */
 TUUVM_API size_t tuuvm_stringBuilder_getSize(tuuvm_tuple_t stringBuilder);

@@ -15,7 +15,7 @@ static void tuuvm_arrayList_increaseCapacityToAtLeast(tuuvm_context_t *context, 
 {
     tuuvm_stringBuilder_t *stringBuilderObject = (tuuvm_stringBuilder_t*)stringBuilder;
     size_t size = tuuvm_tuple_size_decode(stringBuilderObject->size);
-    size_t oldCapacity = tuuvm_tuple_getSizeInSlots(stringBuilderObject->storage);
+    size_t oldCapacity = tuuvm_tuple_getSizeInBytes(stringBuilderObject->storage);
     size_t newCapacity = oldCapacity * 2;
     if(newCapacity < 16)
         newCapacity = 16;
@@ -35,7 +35,7 @@ TUUVM_API void tuuvm_stringBuilder_add(tuuvm_context_t *context, tuuvm_tuple_t s
 
     tuuvm_stringBuilder_t *stringBuilderObject = (tuuvm_stringBuilder_t*)stringBuilder;
     size_t size = tuuvm_tuple_size_decode(stringBuilderObject->size);
-    size_t capacity = tuuvm_tuple_getSizeInSlots(stringBuilderObject->storage);
+    size_t capacity = tuuvm_tuple_getSizeInBytes(stringBuilderObject->storage);
     size_t requiredCapacity = size + 1;
     if(requiredCapacity > capacity)
         tuuvm_arrayList_increaseCapacityToAtLeast(context, stringBuilder, requiredCapacity);
@@ -53,13 +53,13 @@ TUUVM_API void tuuvm_stringBuilder_addStringWithSize(tuuvm_context_t *context, t
 
     tuuvm_stringBuilder_t *stringBuilderObject = (tuuvm_stringBuilder_t*)stringBuilder;
     size_t size = tuuvm_tuple_size_decode(stringBuilderObject->size);
-    size_t capacity = tuuvm_tuple_getSizeInSlots(stringBuilderObject->storage);
+    size_t capacity = tuuvm_tuple_getSizeInBytes(stringBuilderObject->storage);
     size_t requiredCapacity = size + stringSize;
     if(requiredCapacity > capacity)
         tuuvm_arrayList_increaseCapacityToAtLeast(context, stringBuilder, requiredCapacity);
 
     tuuvm_object_tuple_t *storage = (tuuvm_object_tuple_t*)stringBuilderObject->storage;
-    memcpy(storage->bytes, string, stringSize);
+    memcpy(storage->bytes + size, string, stringSize);
     stringBuilderObject->size = tuuvm_tuple_size_encode(context, size + stringSize);
 }
 
@@ -87,6 +87,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_stringBuilder_asString(tuuvm_context_t *context, t
     tuuvm_object_tuple_t *storage = (tuuvm_object_tuple_t*)stringBuilderObject->storage;
     memcpy(result->bytes, storage->bytes, size);
     return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_stringBuilder_asSymbol(tuuvm_context_t *context, tuuvm_tuple_t stringBuilder)
+{
+    return tuuvm_symbol_internFromTuple(context, tuuvm_stringBuilder_asString(context, stringBuilder));
 }
 
 TUUVM_API size_t tuuvm_stringBuilder_getSize(tuuvm_tuple_t stringBuilder)
