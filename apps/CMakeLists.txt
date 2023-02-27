@@ -1,1 +1,1 @@
-add_subdirectory(lispi)
+add_subdirectory(interpreter)
