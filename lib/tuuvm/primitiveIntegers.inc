@@ -239,7 +239,7 @@ static void PRIMITIVE_INTEGER_FUNCTION(setupPrimitives)(tuuvm_context_t *context
 {
     tuuvm_type_setPrintStringFunction(context, context->roots.INTEGER_TYPE_ROOT_NAME, tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, PRIMITIVE_INTEGER_FUNCTION(primitive_printString)));
 
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, INTEGER_TYPE_NAME "::fromInteger", context->roots.INTEGER_TYPE_ROOT_NAME, "fromInteger", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, PRIMITIVE_INTEGER_FUNCTION(primitive_fromInteger));
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, INTEGER_TYPE_NAME "::fromInteger", context->roots.integerType, INTEGER_TYPE_SHORT_SUFFIX_NAME, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, PRIMITIVE_INTEGER_FUNCTION(primitive_fromInteger));
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, INTEGER_TYPE_NAME "::toInteger", context->roots.INTEGER_TYPE_ROOT_NAME, "toInteger", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, PRIMITIVE_INTEGER_FUNCTION(primitive_toInteger));
 
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, INTEGER_TYPE_NAME "::negated", context->roots.INTEGER_TYPE_ROOT_NAME, "negated", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, PRIMITIVE_INTEGER_FUNCTION(primitive_negated));
@@ -272,3 +272,4 @@ static void PRIMITIVE_INTEGER_FUNCTION(setupPrimitives)(tuuvm_context_t *context
 #undef FUNCTION_PREFIX
 #undef INTEGER_TYPE_NAME
 #undef INTEGER_TYPE_ROOT_NAME
+#undef INTEGER_TYPE_SHORT_SUFFIX_NAME

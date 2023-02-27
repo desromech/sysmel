@@ -63,6 +63,7 @@ static tuuvm_tuple_t tuuvm_primitiveInteger_unsigned_printString(tuuvm_context_t
 #define FUNCTION_PREFIX tuuvm_char8
 #define INTEGER_TYPE_NAME "Char8"
 #define INTEGER_TYPE_ROOT_NAME char8Type
+#define INTEGER_TYPE_SHORT_SUFFIX_NAME "c8"
 #include "primitiveIntegers.inc"
 
 #define integer_t uint8_t
@@ -72,6 +73,7 @@ static tuuvm_tuple_t tuuvm_primitiveInteger_unsigned_printString(tuuvm_context_t
 #define FUNCTION_PREFIX tuuvm_uint8
 #define INTEGER_TYPE_NAME "UInt8"
 #define INTEGER_TYPE_ROOT_NAME uint8Type
+#define INTEGER_TYPE_SHORT_SUFFIX_NAME "u8"
 #include "primitiveIntegers.inc"
 
 #define integer_t int8_t
@@ -81,6 +83,7 @@ static tuuvm_tuple_t tuuvm_primitiveInteger_unsigned_printString(tuuvm_context_t
 #define FUNCTION_PREFIX tuuvm_int8
 #define INTEGER_TYPE_NAME "Int8"
 #define INTEGER_TYPE_ROOT_NAME int8Type
+#define INTEGER_TYPE_SHORT_SUFFIX_NAME "i8"
 #include "primitiveIntegers.inc"
 
 #define integer_t uint16_t
@@ -90,6 +93,7 @@ static tuuvm_tuple_t tuuvm_primitiveInteger_unsigned_printString(tuuvm_context_t
 #define FUNCTION_PREFIX tuuvm_char16
 #define INTEGER_TYPE_NAME "Char16"
 #define INTEGER_TYPE_ROOT_NAME char16Type
+#define INTEGER_TYPE_SHORT_SUFFIX_NAME "c16"
 #include "primitiveIntegers.inc"
 
 #define integer_t uint16_t
@@ -99,6 +103,7 @@ static tuuvm_tuple_t tuuvm_primitiveInteger_unsigned_printString(tuuvm_context_t
 #define FUNCTION_PREFIX tuuvm_uint16
 #define INTEGER_TYPE_NAME "UInt16"
 #define INTEGER_TYPE_ROOT_NAME uint16Type
+#define INTEGER_TYPE_SHORT_SUFFIX_NAME "u16"
 #include "primitiveIntegers.inc"
 
 #define integer_t int16_t
@@ -108,6 +113,7 @@ static tuuvm_tuple_t tuuvm_primitiveInteger_unsigned_printString(tuuvm_context_t
 #define FUNCTION_PREFIX tuuvm_int16
 #define INTEGER_TYPE_NAME "Int16"
 #define INTEGER_TYPE_ROOT_NAME int16Type
+#define INTEGER_TYPE_SHORT_SUFFIX_NAME "i16"
 #include "primitiveIntegers.inc"
 
 #define integer_t uint32_t
@@ -117,6 +123,7 @@ static tuuvm_tuple_t tuuvm_primitiveInteger_unsigned_printString(tuuvm_context_t
 #define FUNCTION_PREFIX tuuvm_char32
 #define INTEGER_TYPE_NAME "Char32"
 #define INTEGER_TYPE_ROOT_NAME char32Type
+#define INTEGER_TYPE_SHORT_SUFFIX_NAME "c32"
 #include "primitiveIntegers.inc"
 
 #define integer_t uint32_t
@@ -126,6 +133,7 @@ static tuuvm_tuple_t tuuvm_primitiveInteger_unsigned_printString(tuuvm_context_t
 #define FUNCTION_PREFIX tuuvm_uint32
 #define INTEGER_TYPE_NAME "UInt32"
 #define INTEGER_TYPE_ROOT_NAME uint32Type
+#define INTEGER_TYPE_SHORT_SUFFIX_NAME "u32"
 #include "primitiveIntegers.inc"
 
 #define integer_t int32_t
@@ -135,6 +143,7 @@ static tuuvm_tuple_t tuuvm_primitiveInteger_unsigned_printString(tuuvm_context_t
 #define FUNCTION_PREFIX tuuvm_int32
 #define INTEGER_TYPE_NAME "Int32"
 #define INTEGER_TYPE_ROOT_NAME int32Type
+#define INTEGER_TYPE_SHORT_SUFFIX_NAME "i32"
 #include "primitiveIntegers.inc"
 
 #define integer_t uint64_t
@@ -144,6 +153,7 @@ static tuuvm_tuple_t tuuvm_primitiveInteger_unsigned_printString(tuuvm_context_t
 #define FUNCTION_PREFIX tuuvm_uint64
 #define INTEGER_TYPE_NAME "UInt64"
 #define INTEGER_TYPE_ROOT_NAME uint64Type
+#define INTEGER_TYPE_SHORT_SUFFIX_NAME "u64"
 #include "primitiveIntegers.inc"
 
 #define integer_t int64_t
@@ -153,6 +163,7 @@ static tuuvm_tuple_t tuuvm_primitiveInteger_unsigned_printString(tuuvm_context_t
 #define FUNCTION_PREFIX tuuvm_int64
 #define INTEGER_TYPE_NAME "Int64"
 #define INTEGER_TYPE_ROOT_NAME int64Type
+#define INTEGER_TYPE_SHORT_SUFFIX_NAME "i64"
 #include "primitiveIntegers.inc"
 
 void tuuvm_primitiveInteger_setupPrimitives(tuuvm_context_t *context)
