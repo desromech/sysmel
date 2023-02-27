@@ -2,6 +2,7 @@
 #include "tuuvm/ast.h"
 #include "tuuvm/arrayList.h"
 #include "tuuvm/arraySlice.h"
+#include "tuuvm/function.h"
 #include "tuuvm/gc.h"
 #include "tuuvm/token.h"
 #include "tuuvm/scanner.h"
@@ -20,6 +21,7 @@ typedef struct tuuvm_sysmelParser_state_s
 
 static tuuvm_tuple_t tuuvm_sysmelParser_parseLiteralArrayExpression(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state);
 
+static tuuvm_tuple_t tuuvm_sysmelParser_parseUnaryExpression(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state);
 static tuuvm_tuple_t tuuvm_sysmelParser_parseCommaExpressionElement(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state);
 static tuuvm_tuple_t tuuvm_sysmelParser_parseExpression(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state);
 
@@ -190,6 +192,36 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseParenthesesExpression(tuuvm_context
     }
 }
 
+static tuuvm_tuple_t tuuvm_sysmelParser_parseBlockArgument(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state)
+{
+    if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_COLON)
+        return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a colon to delimit a block argument.");
+    
+    //size_t startPosition = state->tokenPosition;
+    ++state->tokenPosition;
+
+    tuuvm_tuple_t typeExpression = TUUVM_NULL_TUPLE;
+
+    if(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_LPARENT)
+    {
+        ++state->tokenPosition;
+        typeExpression = tuuvm_sysmelParser_parseExpression(context, state);
+
+        if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_RPARENT)
+            return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a right parentheses that specifies the type.");
+        ++state->tokenPosition;
+    }
+
+    // TODO: Use the type expression.
+
+    if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_IDENTIFIER)
+        return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected an identifier with the argument name.");
+
+    tuuvm_tuple_t argumentIdentifier = tuuvm_token_getValue(tuuvm_sysmelParser_lookAt(state, 0));
+    ++state->tokenPosition;
+    return argumentIdentifier;
+}
+
 static tuuvm_tuple_t tuuvm_sysmelParser_parseBlockExpression(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state)
 {
    if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_LCBRACKET)
@@ -198,6 +230,49 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseBlockExpression(tuuvm_context_t *co
     size_t startPosition = state->tokenPosition;
     ++state->tokenPosition;
 
+    tuuvm_tuple_t argumentList = TUUVM_NULL_TUPLE;
+    tuuvm_tuple_t resultTypeExpression = TUUVM_NULL_TUPLE;
+    bool hasArguments = false;
+    bool hasEllipsis = false;
+    bool hasResultType = false;
+    bool hasBlockBar = false;
+    while(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_COLON)
+    {
+        tuuvm_tuple_t argument = tuuvm_sysmelParser_parseBlockArgument(context, state);
+
+        if(!hasArguments)
+        {
+            argumentList = tuuvm_arrayList_create(context);
+            hasArguments = true;
+        }
+
+        tuuvm_arrayList_add(context, argumentList, argument);
+    }
+
+    if(hasArguments && tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_ELLIPSIS)
+    {
+        hasEllipsis = true;
+        ++state->tokenPosition;
+    }
+
+    if(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_COLON_COLON)
+    {
+        ++state->tokenPosition;
+        hasResultType = true;
+        resultTypeExpression = tuuvm_sysmelParser_parseUnaryExpression(context, state);
+    }
+
+    if(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_BAR)
+    {
+        hasBlockBar = true;
+        ++state->tokenPosition;
+    }
+
+    if((hasBlockBar || hasResultType) && !hasBlockBar)
+        return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a lambda block back.");
+
+    bool isLambda = hasBlockBar;
+
     tuuvm_tuple_t sequenceNode = tuuvm_sysmelParser_parseSequenceUntil(context, state, TUUVM_TOKEN_KIND_RCBRACKET);
 
     if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_RCBRACKET)
@@ -205,8 +280,20 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseBlockExpression(tuuvm_context_t *co
 
     ++state->tokenPosition;
     size_t endPosition = state->tokenPosition;
+    tuuvm_tuple_t sourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition);
 
-    return tuuvm_astLexicalBlockNode_create(context, tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition), sequenceNode);
+    if(isLambda)
+    {
+        if(!argumentList)
+            argumentList = tuuvm_arrayList_create(context);
+
+        tuuvm_tuple_t flags = tuuvm_tuple_size_encode(context, hasEllipsis ? TUUVM_FUNCTION_FLAGS_VARIADIC : TUUVM_FUNCTION_FLAGS_NONE);
+        return tuuvm_astLambdaNode_create(context, sourcePosition, flags, tuuvm_arrayList_asArraySlice(context, argumentList), sequenceNode);
+    }
+    else
+    {
+        return tuuvm_astLexicalBlockNode_create(context, sourcePosition, sequenceNode);
+    }
 }
 
 static tuuvm_tuple_t tuuvm_sysmelParser_parseLiteralArrayElement(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state)
@@ -484,17 +571,28 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseUnaryExpression(tuuvm_context_t *co
     return receiver;
 }
 
+static bool tuuvm_sysmelParser_isBinaryExpressionOperator(int tokenKind)
+{
+    switch(tokenKind)
+    {
+    case TUUVM_TOKEN_KIND_OPERATOR:
+    case TUUVM_TOKEN_KIND_BAR:
+        return true;
+    default:
+        return false;
+    }
+}
 static tuuvm_tuple_t tuuvm_sysmelParser_parseBinaryExpression(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state)
 {
     size_t startPosition = state->tokenPosition;
     tuuvm_tuple_t firstOperand = tuuvm_sysmelParser_parseUnaryExpression(context, state);
-    if(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_OPERATOR)
+    if(tuuvm_sysmelParser_isBinaryExpressionOperator(tuuvm_sysmelParser_lookKindAt(state, 0)))
     {
         tuuvm_tuple_t operands = tuuvm_arrayList_create(context);
         tuuvm_tuple_t operators = tuuvm_arrayList_create(context);
         tuuvm_arrayList_add(context, operands, firstOperand);
 
-        while(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_OPERATOR)
+        while(tuuvm_sysmelParser_isBinaryExpressionOperator(tuuvm_sysmelParser_lookKindAt(state, 0)))
         {
             tuuvm_tuple_t binaryOperator = tuuvm_sysmelParser_parseLiteralTokenValue(context, state);
             tuuvm_arrayList_add(context, operators, binaryOperator);
@@ -504,7 +602,18 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseBinaryExpression(tuuvm_context_t *c
         }
 
         size_t endPosition = state->tokenPosition;
-        return tuuvm_astBinaryExpressionSequenceNode_create(context, tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition), tuuvm_arrayList_asArraySlice(context, operands), tuuvm_arrayList_asArraySlice(context, operators));
+        tuuvm_tuple_t sourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition);
+
+        // Collapse single binary operation into a message send here.
+        if(tuuvm_arrayList_getSize(operators) == 1)
+        {
+            tuuvm_tuple_t receiver = tuuvm_arrayList_at(operands, 0);
+            tuuvm_tuple_t selector = tuuvm_arrayList_at(operators, 0);
+            tuuvm_tuple_t argument = tuuvm_arrayList_at(operands, 1);
+            return tuuvm_sysmelParser_makeBinaryMessageSend(context, sourcePosition, receiver, selector, argument);
+        }
+
+        return tuuvm_astBinaryExpressionSequenceNode_create(context, sourcePosition, tuuvm_arrayList_asArraySlice(context, operands), tuuvm_arrayList_asArraySlice(context, operators));
     }
     else
     {
@@ -560,6 +669,62 @@ static void tuuvm_sysmelParser_parseKeywordMessageParts(tuuvm_context_t *context
     *outArguments = tuuvm_arrayList_asArraySlice(context, argumentArrayList);
 }
 
+static tuuvm_tuple_t tuuvm_sysmelParser_parseMessageChainList(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state, size_t startPosition, tuuvm_tuple_t receiver, tuuvm_tuple_t firstChainedMessage)
+{
+    tuuvm_tuple_t chainedMessageList = tuuvm_arrayList_create(context);
+    tuuvm_arrayList_add(context, chainedMessageList, firstChainedMessage);
+
+    while(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_SEMICOLON)
+    {
+        ++state->tokenPosition;
+        switch(tuuvm_sysmelParser_lookKindAt(state, 0))
+        {
+        case TUUVM_TOKEN_KIND_KEYWORD:
+            {
+                size_t chainedStartPosition = state->tokenPosition;
+                tuuvm_tuple_t selector = TUUVM_NULL_TUPLE;
+                tuuvm_tuple_t arguments = TUUVM_NULL_TUPLE;
+
+                tuuvm_sysmelParser_parseKeywordMessageParts(context, state, &selector, &arguments);
+                tuuvm_tuple_t chainedSourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, chainedStartPosition, state->tokenPosition);
+                tuuvm_arrayList_add(context, chainedMessageList, tuuvm_astMessageChainMessageNode_create(context, chainedSourcePosition, selector, arguments));
+            }
+            break;
+        
+        case TUUVM_TOKEN_KIND_OPERATOR:
+        case TUUVM_TOKEN_KIND_BAR:
+            {
+                size_t chainedStartPosition = state->tokenPosition;
+                tuuvm_tuple_t selector = tuuvm_sysmelParser_parseLiteralTokenValue(context, state);
+                tuuvm_tuple_t argument = tuuvm_sysmelParser_parseBinaryExpression(context, state);
+                tuuvm_tuple_t chainedSourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, chainedStartPosition, state->tokenPosition);
+
+                tuuvm_tuple_t arguments = tuuvm_arraySlice_createWithArrayOfSize(context, 1);
+                tuuvm_arraySlice_atPut(arguments, 0, argument);
+                tuuvm_arrayList_add(context, chainedMessageList, tuuvm_astMessageChainMessageNode_create(context, chainedSourcePosition, selector, arguments));
+            }
+            break;
+        case TUUVM_TOKEN_KIND_IDENTIFIER:
+            {
+                size_t chainedStartPosition = state->tokenPosition;
+                tuuvm_tuple_t selector = tuuvm_sysmelParser_parseLiteralTokenValue(context, state);
+                tuuvm_tuple_t arguments = tuuvm_arraySlice_createWithArrayOfSize(context, 0);
+                tuuvm_tuple_t chainedSourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, chainedStartPosition, state->tokenPosition);
+                tuuvm_arrayList_add(context, chainedMessageList, tuuvm_astMessageChainMessageNode_create(context, chainedSourcePosition, selector, arguments));
+            }
+            break;
+        default:
+            tuuvm_arrayList_add(context, chainedMessageList, tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a chained message."));
+            ++state->tokenPosition;
+            break;
+        }
+    }
+
+    size_t endPosition = state->tokenPosition;
+    tuuvm_tuple_t sourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition);
+    return tuuvm_astMessageChainNode_create(context, sourcePosition, receiver, tuuvm_arrayList_asArraySlice(context, chainedMessageList));
+}
+
 static tuuvm_tuple_t tuuvm_sysmelParser_parseChainExpression(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state)
 {
     size_t startPosition = state->tokenPosition;
@@ -597,48 +762,9 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseChainExpression(tuuvm_context_t *co
 
         if(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_SEMICOLON)
         {
-            tuuvm_tuple_t chainedMessageList = tuuvm_arrayList_create(context);
             tuuvm_tuple_t chainedSourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, keywordStartPosition, state->tokenPosition);
-            tuuvm_arrayList_add(context, chainedMessageList, tuuvm_astMessageChainMessageNode_create(context, chainedSourcePosition, selector, arguments));
-
-            while(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_SEMICOLON)
-            {
-                ++state->tokenPosition;
-                switch(tuuvm_sysmelParser_lookKindAt(state, 0))
-                {
-                case TUUVM_TOKEN_KIND_KEYWORD:
-                    tuuvm_sysmelParser_parseKeywordMessageParts(context, state, &selector, &arguments);
-                    chainedSourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, keywordStartPosition, state->tokenPosition);
-                    tuuvm_arrayList_add(context, chainedMessageList, tuuvm_astMessageChainMessageNode_create(context, chainedSourcePosition, selector, arguments));
-                    break;
-                
-                case TUUVM_TOKEN_KIND_OPERATOR:
-                    {
-                        selector = tuuvm_sysmelParser_parseLiteralTokenValue(context, state);
-                        tuuvm_tuple_t argument = tuuvm_sysmelParser_parseBinaryExpression(context, state);
-                        chainedSourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, keywordStartPosition, state->tokenPosition);
-
-                        arguments = tuuvm_arraySlice_createWithArrayOfSize(context, 1);
-                        tuuvm_arraySlice_atPut(arguments, 0, argument);
-                        tuuvm_arrayList_add(context, chainedMessageList, tuuvm_astMessageChainMessageNode_create(context, chainedSourcePosition, selector, arguments));
-                    }
-                    break;
-                case TUUVM_TOKEN_KIND_IDENTIFIER:
-                    selector = tuuvm_sysmelParser_parseLiteralTokenValue(context, state);
-                    arguments = tuuvm_arraySlice_createWithArrayOfSize(context, 0);
-                    chainedSourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, keywordStartPosition, state->tokenPosition);
-                    tuuvm_arrayList_add(context, chainedMessageList, tuuvm_astMessageChainMessageNode_create(context, chainedSourcePosition, selector, arguments));
-                    break;
-                default:
-                    tuuvm_arrayList_add(context, chainedMessageList, tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a chained message."));
-                    ++state->tokenPosition;
-                    break;
-                }
-            }
-
-            size_t endPosition = state->tokenPosition;
-            tuuvm_tuple_t sourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition);
-            return tuuvm_astMessageChainNode_create(context, sourcePosition, receiver, tuuvm_arrayList_asArraySlice(context, chainedMessageList));
+            tuuvm_tuple_t firstChainedMessage = tuuvm_astMessageChainMessageNode_create(context, chainedSourcePosition, selector, arguments);
+            return tuuvm_sysmelParser_parseMessageChainList(context, state, startPosition, receiver, firstChainedMessage);
         }
         else
         {
@@ -646,6 +772,15 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseChainExpression(tuuvm_context_t *co
             tuuvm_tuple_t sourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition);
             return tuuvm_astMessageSendNode_create(context, sourcePosition, receiver, selector, arguments);
         }
+    }
+    else if(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_SEMICOLON)
+    {
+        if(!tuuvm_astNode_isMessageSendNode(context, receiver))
+            return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Message chain requires a starting message expression for its receiver.");
+
+        tuuvm_astMessageSendNode_t *receiverMessageSend = (tuuvm_astMessageSendNode_t *)receiver;
+        tuuvm_tuple_t firstChainedMessage = tuuvm_astMessageChainMessageNode_create(context, receiverMessageSend->super.sourcePosition, receiverMessageSend->selector, receiverMessageSend->arguments);
+        return tuuvm_sysmelParser_parseMessageChainList(context, state, startPosition, receiverMessageSend->receiver, firstChainedMessage);
     }
 
     return receiver;
@@ -655,7 +790,7 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseLowPrecedenceExpression(tuuvm_conte
 {
     size_t startPosition = state->tokenPosition;
     tuuvm_tuple_t lastExpression = tuuvm_sysmelParser_parseChainExpression(context, state);
-    while(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_COLON_COLON && tuuvm_sysmelParser_lookKindAt(state, 1) == TUUVM_TOKEN_KIND_OPERATOR)
+    while(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_COLON_COLON && tuuvm_sysmelParser_isBinaryExpressionOperator(tuuvm_sysmelParser_lookKindAt(state, 1)))
     {
         ++state->tokenPosition;
         tuuvm_tuple_t binaryOperator = tuuvm_sysmelParser_parseLiteralTokenValue(context, state);
