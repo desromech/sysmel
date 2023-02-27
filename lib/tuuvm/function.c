@@ -16,13 +16,14 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context,
     return (tuuvm_tuple_t)result;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_function_createClosureAST(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t closureEnvironment, tuuvm_tuple_t argumentSymbols, tuuvm_tuple_t body)
+TUUVM_API tuuvm_tuple_t tuuvm_function_createClosureAST(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t closureEnvironment, tuuvm_tuple_t argumentNodes, tuuvm_tuple_t resultTypeNode, tuuvm_tuple_t body)
 {
     tuuvm_closureASTFunction_t *result = (tuuvm_closureASTFunction_t*)tuuvm_context_allocatePointerTuple(context, context->roots.closureASTFunctionType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_closureASTFunction_t));
     result->sourcePosition = sourcePosition;
     result->flags = flags;
     result->closureEnvironment = closureEnvironment;
-    result->argumentSymbols = argumentSymbols;
+    result->argumentNodes = argumentNodes;
+    result->resultTypeNode = resultTypeNode;
     result->body = body;
     return (tuuvm_tuple_t)result;
 }
@@ -38,7 +39,7 @@ TUUVM_API size_t tuuvm_function_getArgumentCount(tuuvm_context_t *context, tuuvm
     else if(functionType == context->roots.closureASTFunctionType)
     {
         tuuvm_closureASTFunction_t *closureASTFunction = (tuuvm_closureASTFunction_t*)function;
-        return tuuvm_arraySlice_getSize(closureASTFunction->argumentSymbols);
+        return tuuvm_arraySlice_getSize(closureASTFunction->argumentNodes);
     }
 
     return 0;

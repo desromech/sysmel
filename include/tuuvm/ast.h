@@ -14,6 +14,14 @@ typedef struct tuuvm_astNode_s
     tuuvm_tuple_t analyzedType; // Placeholder for typechecker. Unused by base interpreter.
 } tuuvm_astNode_t;
 
+typedef struct tuuvm_astArgumentNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t isForAll;
+    tuuvm_tuple_t name;
+    tuuvm_tuple_t type;
+} tuuvm_astArgumentNode_t;
+
 typedef struct tuuvm_astBinaryExpressionSequenceNode_s
 {
     tuuvm_astNode_t super;
@@ -47,6 +55,7 @@ typedef struct tuuvm_astLambdaNode_s
     tuuvm_astNode_t super;
     tuuvm_tuple_t flags;
     tuuvm_tuple_t arguments;
+    tuuvm_tuple_t resultType;
     tuuvm_tuple_t body;
 } tuuvm_astLambdaNode_t;
 
@@ -180,6 +189,11 @@ typedef struct tuuvm_astWhileContinueWithNode_s
     tuuvm_tuple_t bodyExpression;
     tuuvm_tuple_t continueExpression;
 } tuuvm_astWhileContinueWithNode_t;
+
+/**
+ * Is this an argument node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isArgumentNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
 
 /**
  * Is this a binary expression sequence node?
@@ -317,6 +331,11 @@ TUUVM_API bool tuuvm_astNode_isWhileContinueWithNode(tuuvm_context_t *context, t
 TUUVM_API tuuvm_tuple_t tuuvm_astNode_getSourcePosition(tuuvm_tuple_t node);
 
 /**
+ * Creates an argument node
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astArgumentNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t isForAll, tuuvm_tuple_t name, tuuvm_tuple_t type);
+
+/**
  * Creates a binary expression sequence node.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astBinaryExpressionSequenceNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t operands, tuuvm_tuple_t operators);
@@ -394,7 +413,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_astIfNode_getFalseExpression(tuuvm_tuple_t node);
 /**
  * Creates a lambda node.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_astLambdaNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t arguments, tuuvm_tuple_t body);
+TUUVM_API tuuvm_tuple_t tuuvm_astLambdaNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t arguments, tuuvm_tuple_t resultType, tuuvm_tuple_t body);
 
 /**
  * Gets the flags from the lambda node.

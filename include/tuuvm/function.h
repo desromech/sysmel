@@ -31,7 +31,8 @@ typedef struct tuuvm_closureASTFunction_s
     tuuvm_tuple_t sourcePosition;
     tuuvm_tuple_t flags;
     tuuvm_tuple_t closureEnvironment;
-    tuuvm_tuple_t argumentSymbols;
+    tuuvm_tuple_t argumentNodes;
+    tuuvm_tuple_t resultTypeNode;
     tuuvm_tuple_t body;
 } tuuvm_closureASTFunction_t;
 
@@ -58,7 +59,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context,
 /**
  * Creates a function that uses a closure and an AST for its definition.
  */
-TUUVM_API tuuvm_tuple_t tuuvm_function_createClosureAST(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t closureEnvironment, tuuvm_tuple_t argumentSymbols, tuuvm_tuple_t body);
+TUUVM_API tuuvm_tuple_t tuuvm_function_createClosureAST(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t closureEnvironment, tuuvm_tuple_t argumentNodes, tuuvm_tuple_t resultTypeNode, tuuvm_tuple_t body);
 
 /**
  * Gets the function argument count.

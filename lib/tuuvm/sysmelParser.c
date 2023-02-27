@@ -197,9 +197,10 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseBlockArgument(tuuvm_context_t *cont
     if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_COLON)
         return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a colon to delimit a block argument.");
     
-    //size_t startPosition = state->tokenPosition;
+    size_t startPosition = state->tokenPosition;
     ++state->tokenPosition;
 
+    tuuvm_tuple_t isForAll = TUUVM_FALSE_TUPLE;
     tuuvm_tuple_t typeExpression = TUUVM_NULL_TUPLE;
 
     if(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_LPARENT)
@@ -212,14 +213,15 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseBlockArgument(tuuvm_context_t *cont
         ++state->tokenPosition;
     }
 
-    // TODO: Use the type expression.
-
     if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_IDENTIFIER)
         return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected an identifier with the argument name.");
 
-    tuuvm_tuple_t argumentIdentifier = tuuvm_token_getValue(tuuvm_sysmelParser_lookAt(state, 0));
-    ++state->tokenPosition;
-    return argumentIdentifier;
+    tuuvm_tuple_t nameExpression = tuuvm_sysmelParser_parseLiteralTokenValue(context, state);
+
+    size_t endPosition = state->tokenPosition;
+    tuuvm_tuple_t sourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition);
+
+    return tuuvm_astArgumentNode_create(context, sourcePosition, isForAll, nameExpression, typeExpression);
 }
 
 static tuuvm_tuple_t tuuvm_sysmelParser_parseBlockExpression(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state)
@@ -288,7 +290,7 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseBlockExpression(tuuvm_context_t *co
             argumentList = tuuvm_arrayList_create(context);
 
         tuuvm_tuple_t flags = tuuvm_tuple_size_encode(context, hasEllipsis ? TUUVM_FUNCTION_FLAGS_VARIADIC : TUUVM_FUNCTION_FLAGS_NONE);
-        return tuuvm_astLambdaNode_create(context, sourcePosition, flags, tuuvm_arrayList_asArraySlice(context, argumentList), sequenceNode);
+        return tuuvm_astLambdaNode_create(context, sourcePosition, flags, tuuvm_arrayList_asArraySlice(context, argumentList), resultTypeExpression, sequenceNode);
     }
     else
     {

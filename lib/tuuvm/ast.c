@@ -4,6 +4,11 @@
 #include "tuuvm/function.h"
 #include "internal/context.h"
 
+TUUVM_API bool tuuvm_astNode_isArgumentNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astArgumentNodeType);
+}
+
 TUUVM_API bool tuuvm_astNode_isBinaryExpressionSequenceNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
     return tuuvm_tuple_isKindOf(context, tuple, context->roots.astBinaryExpressionSequenceNodeType);
@@ -143,6 +148,16 @@ TUUVM_API tuuvm_tuple_t tuuvm_astNode_getSourcePosition(tuuvm_tuple_t node)
     return ((tuuvm_astNode_t*)node)->sourcePosition;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_astArgumentNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t isForAll, tuuvm_tuple_t name, tuuvm_tuple_t type)
+{
+    tuuvm_astArgumentNode_t *result = (tuuvm_astArgumentNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astArgumentNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astArgumentNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->isForAll = isForAll;
+    result->name = name;
+    result->type = type;
+    return (tuuvm_tuple_t)result;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_astBinaryExpressionSequenceNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t operands, tuuvm_tuple_t operators)
 {
     tuuvm_astBinaryExpressionSequenceNode_t *result = (tuuvm_astBinaryExpressionSequenceNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astBinaryExpressionSequenceNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astBinaryExpressionSequenceNode_t));
@@ -250,12 +265,13 @@ TUUVM_API tuuvm_tuple_t tuuvm_astIfNode_getFalseExpression(tuuvm_tuple_t node)
     return ((tuuvm_astIfNode_t*)node)->falseExpression;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_astLambdaNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t arguments, tuuvm_tuple_t body)
+TUUVM_API tuuvm_tuple_t tuuvm_astLambdaNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t arguments, tuuvm_tuple_t resultType, tuuvm_tuple_t body)
 {
     tuuvm_astLambdaNode_t *result = (tuuvm_astLambdaNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astLambdaNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astLambdaNode_t));
     result->super.sourcePosition = sourcePosition;
     result->flags = flags;
     result->arguments = arguments;
+    result->resultType = resultType;
     result->body = body;
     return (tuuvm_tuple_t)result;
 }

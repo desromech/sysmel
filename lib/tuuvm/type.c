@@ -1,5 +1,6 @@
 #include "tuuvm/type.h"
 #include "tuuvm/dictionary.h"
+#include "tuuvm/errors.h"
 #include "tuuvm/string.h"
 #include "tuuvm/type.h"
 #include "internal/context.h"
@@ -119,4 +120,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_getAstNodeAnalysisAndEvaluationFunction(tuuvm
 TUUVM_API void tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t astNodeAnalysisAndEvaluationFunction)
 {
     tuuvm_type_setMethodWithSelector(context, type, context->roots.astNodeAnalysisAndEvaluationSelector, astNodeAnalysisAndEvaluationFunction);
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValue(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t value)
+{
+    if(!tuuvm_tuple_isKindOf(context, value, type))
+        tuuvm_error("Cannot perform coercion of value into the required type.");
+    return value;
 }

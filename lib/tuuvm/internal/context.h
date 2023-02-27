@@ -77,6 +77,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t tokenType;
 
     tuuvm_tuple_t astNodeType;
+    tuuvm_tuple_t astArgumentNodeType;
     tuuvm_tuple_t astBinaryExpressionSequenceNodeType;
     tuuvm_tuple_t astDoWhileContinueWithNodeType;
     tuuvm_tuple_t astErrorNodeType;

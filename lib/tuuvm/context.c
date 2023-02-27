@@ -209,7 +209,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     // Create other root basic types.
     context->roots.arraySliceType = tuuvm_context_createIntrinsicType(context, "ArraySlice", TUUVM_NULL_TUPLE, "elements", "offset", "size", NULL);
     context->roots.booleanType = tuuvm_context_createIntrinsicType(context, "Boolean", TUUVM_NULL_TUPLE, NULL);
-    context->roots.closureASTFunctionType = tuuvm_context_createIntrinsicType(context, "ClosureASTFunction", TUUVM_NULL_TUPLE, "sourcePosition", "flags", "closureEnvironment", "argumentSymbols", "body", NULL);
+    context->roots.closureASTFunctionType = tuuvm_context_createIntrinsicType(context, "ClosureASTFunction", TUUVM_NULL_TUPLE, "sourcePosition", "flags", "closureEnvironment", "argumentNodes", "resultTypeNode", "body", NULL);
     context->roots.dictionaryType = tuuvm_context_createIntrinsicType(context, "Dictionary", TUUVM_NULL_TUPLE,
         "size", "storage", "equalsFunction", "hashFunction",
         NULL);
@@ -255,11 +255,12 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         NULL);
 
     context->roots.astNodeType = tuuvm_context_createIntrinsicType(context, "ASTNode", TUUVM_NULL_TUPLE, "sourcePosition", "analyzedType", NULL);
+    context->roots.astArgumentNodeType = tuuvm_context_createIntrinsicType(context, "ASTArgumentNodeType", context->roots.astArgumentNodeType, "isForAll", "name", "type", NULL);
     context->roots.astBinaryExpressionSequenceNodeType = tuuvm_context_createIntrinsicType(context, "ASTBinaryExpressionSequenceNode", context->roots.astBinaryExpressionSequenceNodeType, "operands", "operations", NULL);
     context->roots.astDoWhileContinueWithNodeType = tuuvm_context_createIntrinsicType(context, "ASTDoWhileContinueWithNode", context->roots.astNodeType, "bodyExpression", "conditionExpression", "continueExpression", NULL);
     context->roots.astErrorNodeType = tuuvm_context_createIntrinsicType(context, "ASTErrorNode", context->roots.astNodeType, "errorMessage", NULL);
     context->roots.astFunctionApplicationNodeType = tuuvm_context_createIntrinsicType(context, "ASTFunctionApplicationNode", context->roots.astNodeType, "functionExpression", "arguments", NULL);
-    context->roots.astLambdaNodeType = tuuvm_context_createIntrinsicType(context, "ASTLambdaNode", context->roots.astNodeType, "flags", "arguments", "body", NULL);
+    context->roots.astLambdaNodeType = tuuvm_context_createIntrinsicType(context, "ASTLambdaNode", context->roots.astNodeType, "flags", "arguments", "resultType", "body", NULL);
     context->roots.astLexicalBlockNodeType = tuuvm_context_createIntrinsicType(context, "ASTLexicalBlockNode", context->roots.astNodeType, "body", NULL);
     context->roots.astLiteralNodeType = tuuvm_context_createIntrinsicType(context, "ASTLiteralNode", context->roots.astNodeType, "value", NULL);
     context->roots.astLocalDefinitionNodeType = tuuvm_context_createIntrinsicType(context, "ASTLocalDefinitionNode", context->roots.astNodeType, "nameExpression", "valueExpression", NULL);

@@ -81,10 +81,8 @@
         (String::concat: "-" endString))
     ))
 
-
 (exportInstrinsicBuiltInBinding #Type::withSelector:addMethod: Type::withSelector:addMethod:)
 (exportInstrinsicBuiltInBinding #Type::validMethodDictionary Type::validMethodDictionary)
-
 
 ## Register the Type methods.
 (Type::withSelector:addMethod: Type #Type::withSelector:addMethod: Type::withSelector:addMethod:)
