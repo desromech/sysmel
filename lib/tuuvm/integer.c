@@ -778,9 +778,9 @@ static tuuvm_tuple_t tuuvm_integer_primitive_factorial(tuuvm_context_t *context,
 void tuuvm_integer_setupPrimitives(tuuvm_context_t *context)
 {
     tuuvm_tuple_t printString = tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_printString);
-    tuuvm_type_setPrintStringFunction(context->roots.integerType, printString);
-    tuuvm_type_setPrintStringFunction(context->roots.positiveIntegerType, printString);
-    tuuvm_type_setPrintStringFunction(context->roots.negativeIntegerType, printString);
+    tuuvm_type_setPrintStringFunction(context, context->roots.integerType, printString);
+    tuuvm_type_setPrintStringFunction(context, context->roots.positiveIntegerType, printString);
+    tuuvm_type_setPrintStringFunction(context, context->roots.negativeIntegerType, printString);
     
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Integer::+", 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_add);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Integer::-", 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_subtract);

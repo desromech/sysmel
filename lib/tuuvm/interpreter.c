@@ -23,7 +23,7 @@
 
 TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t environment)
 {
-    tuuvm_tuple_t function = tuuvm_type_getAstNodeAnalysisFunction(tuuvm_tuple_getType(context, astNode));
+    tuuvm_tuple_t function = tuuvm_type_getAstNodeAnalysisFunction(context, tuuvm_tuple_getType(context, astNode));
     if(!function)
         tuuvm_error("Cannot analyze non AST node tuple.");
 
@@ -32,7 +32,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithEnvironment(tuuvm_contex
 
 TUUVM_API tuuvm_tuple_t tuuvm_interpreter_evaluateASTWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t environment)
 {
-    tuuvm_tuple_t function = tuuvm_type_getAstNodeEvaluationFunction(tuuvm_tuple_getType(context, astNode));
+    tuuvm_tuple_t function = tuuvm_type_getAstNodeEvaluationFunction(context, tuuvm_tuple_getType(context, astNode));
     if(!function)
         tuuvm_error("Cannot evaluate non AST node tuple.");
 
@@ -52,7 +52,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(t
         .astNode = astNode,
     };
 
-    gcFrame.function = tuuvm_type_getAstNodeAnalysisAndEvaluationFunction(tuuvm_tuple_getType(context, gcFrame.astNode));
+    gcFrame.function = tuuvm_type_getAstNodeAnalysisAndEvaluationFunction(context, tuuvm_tuple_getType(context, gcFrame.astNode));
     if(!gcFrame.function)
     {
         TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
@@ -1117,53 +1117,53 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_
 void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context)
 {
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "begin", 2, TUUVM_FUNCTION_FLAGS_MACRO | TUUVM_FUNCTION_FLAGS_VARIADIC, NULL, tuuvm_astSequenceNode_primitiveMacro);
-    tuuvm_type_setAstNodeAnalysisFunction(context->roots.astSequenceNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astSequenceNode_primitiveAnalyze));
-    tuuvm_type_setAstNodeEvaluationFunction(context->roots.astSequenceNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astSequenceNode_primitiveEvaluate));
-    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context->roots.astSequenceNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astSequenceNode_primitiveAnalyzeAndEvaluate));
+    tuuvm_type_setAstNodeAnalysisFunction(context, context->roots.astSequenceNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astSequenceNode_primitiveAnalyze));
+    tuuvm_type_setAstNodeEvaluationFunction(context, context->roots.astSequenceNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astSequenceNode_primitiveEvaluate));
+    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context, context->roots.astSequenceNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astSequenceNode_primitiveAnalyzeAndEvaluate));
 
-    tuuvm_type_setAstNodeAnalysisFunction(context->roots.astLiteralNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLiteralNode_primitiveAnalyze));
-    tuuvm_type_setAstNodeEvaluationFunction(context->roots.astLiteralNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLiteralNode_primitiveEvaluate));
-    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context->roots.astLiteralNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLiteralNode_primitiveEvaluate));
+    tuuvm_type_setAstNodeAnalysisFunction(context, context->roots.astLiteralNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLiteralNode_primitiveAnalyze));
+    tuuvm_type_setAstNodeEvaluationFunction(context, context->roots.astLiteralNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLiteralNode_primitiveEvaluate));
+    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context, context->roots.astLiteralNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLiteralNode_primitiveEvaluate));
 
-    tuuvm_type_setAstNodeAnalysisFunction(context->roots.astIdentifierReferenceNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astIdentifierReferenceNode_primitiveAnalyze));
-    tuuvm_type_setAstNodeEvaluationFunction(context->roots.astIdentifierReferenceNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astIdentifierReferenceNode_primitiveEvaluate));
-    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context->roots.astIdentifierReferenceNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astIdentifierReferenceNode_primitiveEvaluate));
+    tuuvm_type_setAstNodeAnalysisFunction(context, context->roots.astIdentifierReferenceNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astIdentifierReferenceNode_primitiveAnalyze));
+    tuuvm_type_setAstNodeEvaluationFunction(context, context->roots.astIdentifierReferenceNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astIdentifierReferenceNode_primitiveEvaluate));
+    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context, context->roots.astIdentifierReferenceNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astIdentifierReferenceNode_primitiveEvaluate));
 
-    tuuvm_type_setAstNodeAnalysisFunction(context->roots.astUnexpandedApplicationNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astUnexpandedApplicationNode_primitiveAnalyze));
-    tuuvm_type_setAstNodeEvaluationFunction(context->roots.astUnexpandedApplicationNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astUnexpandedApplicationNode_primitiveAnalyzeAndEvaluate));
-    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context->roots.astUnexpandedApplicationNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astUnexpandedApplicationNode_primitiveAnalyzeAndEvaluate));
+    tuuvm_type_setAstNodeAnalysisFunction(context, context->roots.astUnexpandedApplicationNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astUnexpandedApplicationNode_primitiveAnalyze));
+    tuuvm_type_setAstNodeEvaluationFunction(context, context->roots.astUnexpandedApplicationNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astUnexpandedApplicationNode_primitiveAnalyzeAndEvaluate));
+    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context, context->roots.astUnexpandedApplicationNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astUnexpandedApplicationNode_primitiveAnalyzeAndEvaluate));
 
-    tuuvm_type_setAstNodeAnalysisFunction(context->roots.astUnexpandedSExpressionNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astUnexpandedSExpressionNode_primitiveAnalyze));
-    tuuvm_type_setAstNodeEvaluationFunction(context->roots.astUnexpandedSExpressionNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astUnexpandedSExpressionNode_primitiveAnalyzeAndEvaluate));
-    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context->roots.astUnexpandedSExpressionNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astUnexpandedSExpressionNode_primitiveAnalyzeAndEvaluate));
+    tuuvm_type_setAstNodeAnalysisFunction(context, context->roots.astUnexpandedSExpressionNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astUnexpandedSExpressionNode_primitiveAnalyze));
+    tuuvm_type_setAstNodeEvaluationFunction(context, context->roots.astUnexpandedSExpressionNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astUnexpandedSExpressionNode_primitiveAnalyzeAndEvaluate));
+    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context, context->roots.astUnexpandedSExpressionNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astUnexpandedSExpressionNode_primitiveAnalyzeAndEvaluate));
 
-    tuuvm_type_setAstNodeAnalysisFunction(context->roots.astFunctionApplicationNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astFunctionApplicationNode_primitiveAnalyze));
-    tuuvm_type_setAstNodeEvaluationFunction(context->roots.astFunctionApplicationNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astFunctionApplicationNode_primitiveAnalyzeAndEvaluate));
-    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context->roots.astFunctionApplicationNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astFunctionApplicationNode_primitiveEvaluate));
+    tuuvm_type_setAstNodeAnalysisFunction(context, context->roots.astFunctionApplicationNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astFunctionApplicationNode_primitiveAnalyze));
+    tuuvm_type_setAstNodeEvaluationFunction(context, context->roots.astFunctionApplicationNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astFunctionApplicationNode_primitiveAnalyzeAndEvaluate));
+    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context, context->roots.astFunctionApplicationNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astFunctionApplicationNode_primitiveEvaluate));
 
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "lambda", 3, TUUVM_FUNCTION_FLAGS_MACRO | TUUVM_FUNCTION_FLAGS_VARIADIC, NULL, tuuvm_astLambdaNode_primitiveMacro);
-    tuuvm_type_setAstNodeAnalysisFunction(context->roots.astLambdaNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLambdaNode_primitiveAnalyze));
-    tuuvm_type_setAstNodeEvaluationFunction(context->roots.astLambdaNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLambdaNode_primitiveEvaluate));
-    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context->roots.astLambdaNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLambdaNode_primitiveAnalyzeAndEvaluate));
+    tuuvm_type_setAstNodeAnalysisFunction(context, context->roots.astLambdaNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLambdaNode_primitiveAnalyze));
+    tuuvm_type_setAstNodeEvaluationFunction(context, context->roots.astLambdaNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLambdaNode_primitiveEvaluate));
+    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context, context->roots.astLambdaNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLambdaNode_primitiveAnalyzeAndEvaluate));
 
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "define", 3, TUUVM_FUNCTION_FLAGS_MACRO | TUUVM_FUNCTION_FLAGS_VARIADIC, NULL, tuuvm_astLocalDefinitionNode_primitiveMacro);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "defineMacro", 3, TUUVM_FUNCTION_FLAGS_MACRO | TUUVM_FUNCTION_FLAGS_VARIADIC, NULL, tuuvm_astLocalDefinitionNode_primitiveDefineMacro);
-    tuuvm_type_setAstNodeAnalysisFunction(context->roots.astLocalDefinitionNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLocalDefinitionNode_primitiveAnalyze));
-    tuuvm_type_setAstNodeEvaluationFunction(context->roots.astLocalDefinitionNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLocalDefinitionNode_primitiveEvaluate));
-    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context->roots.astLocalDefinitionNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLocalDefinitionNode_primitiveAnalyzeAndEvaluate));
+    tuuvm_type_setAstNodeAnalysisFunction(context, context->roots.astLocalDefinitionNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLocalDefinitionNode_primitiveAnalyze));
+    tuuvm_type_setAstNodeEvaluationFunction(context, context->roots.astLocalDefinitionNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLocalDefinitionNode_primitiveEvaluate));
+    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context, context->roots.astLocalDefinitionNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astLocalDefinitionNode_primitiveAnalyzeAndEvaluate));
 
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "if", 4, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astIfNode_primitiveMacro);
-    tuuvm_type_setAstNodeAnalysisFunction(context->roots.astIfNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astIfNode_primitiveAnalyze));
-    tuuvm_type_setAstNodeEvaluationFunction(context->roots.astIfNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astIfNode_primitiveEvaluate));
-    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context->roots.astIfNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astIfNode_primitiveAnalyzeAndEvaluate));
+    tuuvm_type_setAstNodeAnalysisFunction(context, context->roots.astIfNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astIfNode_primitiveAnalyze));
+    tuuvm_type_setAstNodeEvaluationFunction(context, context->roots.astIfNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astIfNode_primitiveEvaluate));
+    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context, context->roots.astIfNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astIfNode_primitiveAnalyzeAndEvaluate));
 
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "doWhileContinueWith", 4, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astDoWhileContinueWithNode_primitiveMacro);
-    tuuvm_type_setAstNodeAnalysisFunction(context->roots.astDoWhileContinueWithNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astDoWhileContinueWithNode_primitiveAnalyze));
-    tuuvm_type_setAstNodeEvaluationFunction(context->roots.astDoWhileContinueWithNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astDoWhileContinueWithNode_primitiveEvaluate));
-    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context->roots.astDoWhileContinueWithNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astDoWhileContinueWithNode_primitiveAnalyzeAndEvaluate));
+    tuuvm_type_setAstNodeAnalysisFunction(context, context->roots.astDoWhileContinueWithNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astDoWhileContinueWithNode_primitiveAnalyze));
+    tuuvm_type_setAstNodeEvaluationFunction(context, context->roots.astDoWhileContinueWithNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astDoWhileContinueWithNode_primitiveEvaluate));
+    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context, context->roots.astDoWhileContinueWithNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astDoWhileContinueWithNode_primitiveAnalyzeAndEvaluate));
 
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "whileContinueWith", 4, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astWhileContinueWithNode_primitiveMacro);
-    tuuvm_type_setAstNodeAnalysisFunction(context->roots.astWhileContinueWithNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astWhileContinueWithNode_primitiveAnalyze));
-    tuuvm_type_setAstNodeEvaluationFunction(context->roots.astWhileContinueWithNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astWhileContinueWithNode_primitiveEvaluate));
-    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context->roots.astWhileContinueWithNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astWhileContinueWithNode_primitiveAnalyzeAndEvaluate));
+    tuuvm_type_setAstNodeAnalysisFunction(context, context->roots.astWhileContinueWithNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astWhileContinueWithNode_primitiveAnalyze));
+    tuuvm_type_setAstNodeEvaluationFunction(context, context->roots.astWhileContinueWithNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astWhileContinueWithNode_primitiveEvaluate));
+    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context, context->roots.astWhileContinueWithNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_astWhileContinueWithNode_primitiveAnalyzeAndEvaluate));
 }

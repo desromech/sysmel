@@ -43,6 +43,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymous(tuuvm_context_t *context);
 TUUVM_API tuuvm_tuple_t tuuvm_type_createWithName(tuuvm_context_t *context, tuuvm_tuple_t name);
 
 /**
+ * Performs the lookup of the given selector.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_lookupSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector);
+
+/**
  * Gets the name of a type
  */
 TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getName(tuuvm_tuple_t type)
@@ -77,6 +82,7 @@ TUUVM_INLINE void tuuvm_type_setSupertype(tuuvm_tuple_t type, tuuvm_tuple_t supe
     if(!tuuvm_tuple_isNonNullPointer(type)) return;
     ((tuuvm_type_tuple_t*)type)->supertype = supertype;
 }
+
 
 /**
  * Gets the slot names
@@ -133,129 +139,91 @@ TUUVM_INLINE void tuuvm_type_setFlags(tuuvm_tuple_t type, tuuvm_tuple_t flags)
 }
 
 /**
- * Gets the equals function of a type
+ * Gets the method dictionary.
  */
-TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getEqualsFunction(tuuvm_tuple_t type)
+TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getMethodDictonary(tuuvm_tuple_t type)
 {
     if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
-    return ((tuuvm_type_tuple_t*)type)->equalsFunction;
+    return ((tuuvm_type_tuple_t*)type)->methodDictionary;
 }
+
+/**
+ * Sets the method dictionary.
+ */
+TUUVM_INLINE void tuuvm_type_setMethodDictionary(tuuvm_tuple_t type, tuuvm_tuple_t methodDictionary)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return;
+    ((tuuvm_type_tuple_t*)type)->methodDictionary = methodDictionary;
+}
+
+/**
+ * Gets the equals function of a type
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_getEqualsFunction(tuuvm_context_t *context, tuuvm_tuple_t type);
 
 /**
  * Sets the equals function of a type
  */
-TUUVM_INLINE void tuuvm_type_setEqualsFunction(tuuvm_tuple_t type, tuuvm_tuple_t equalsFunction)
-{
-    if(!tuuvm_tuple_isNonNullPointer(type)) return;
-    ((tuuvm_type_tuple_t*)type)->equalsFunction = equalsFunction;
-}
+TUUVM_API void tuuvm_type_setEqualsFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t equalsFunction);
 
 /**
  * Gets the hash function of a type
  */
-TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getHashFunction(tuuvm_tuple_t type)
-{
-    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
-    return ((tuuvm_type_tuple_t*)type)->hashFunction;
-}
+TUUVM_API tuuvm_tuple_t tuuvm_type_getHashFunction(tuuvm_context_t *context, tuuvm_tuple_t type);
 
 /**
  * Sets the hash function of a type
  */
-TUUVM_INLINE void tuuvm_type_setHashFunction(tuuvm_tuple_t type, tuuvm_tuple_t hashFunction)
-{
-    if(!tuuvm_tuple_isNonNullPointer(type)) return;
-    ((tuuvm_type_tuple_t*)type)->hashFunction = hashFunction;
-}
+TUUVM_API void tuuvm_type_setHashFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t hashFunction);
 
 /**
  * Gets the toString function of a type.
  */
-TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getToStringFunction(tuuvm_tuple_t type)
-{
-    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
-    return ((tuuvm_type_tuple_t*)type)->toStringFunction;
-}
+TUUVM_API tuuvm_tuple_t tuuvm_type_getToStringFunction(tuuvm_context_t *context, tuuvm_tuple_t type);
 
 /**
  * Sets the toString function of a type
  */
-TUUVM_INLINE void tuuvm_type_setToStringFunction(tuuvm_tuple_t type, tuuvm_tuple_t toStringFunction)
-{
-    if(!tuuvm_tuple_isNonNullPointer(type)) return;
-    ((tuuvm_type_tuple_t*)type)->toStringFunction = toStringFunction;
-}
+TUUVM_API void tuuvm_type_setToStringFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t toStringFunction);
 
 /**
  * Gets the printString function of a type.
  */
-TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getPrintStringFunction(tuuvm_tuple_t type)
-{
-    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
-    return ((tuuvm_type_tuple_t*)type)->printStringFunction;
-}
+TUUVM_API tuuvm_tuple_t tuuvm_type_getPrintStringFunction(tuuvm_context_t *context, tuuvm_tuple_t type);
 
 /**
  * Sets the printString function of a type
  */
-TUUVM_INLINE void tuuvm_type_setPrintStringFunction(tuuvm_tuple_t type, tuuvm_tuple_t printStringFunction)
-{
-    if(!tuuvm_tuple_isNonNullPointer(type)) return;
-    ((tuuvm_type_tuple_t*)type)->printStringFunction = printStringFunction;
-}
+TUUVM_API void tuuvm_type_setPrintStringFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t printStringFunction);
 
 /**
  * Gets the astNodeAnalysisFunction function of a type.
  */
-TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getAstNodeAnalysisFunction(tuuvm_tuple_t type)
-{
-    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
-    return ((tuuvm_type_tuple_t*)type)->astNodeAnalysisFunction;
-}
+TUUVM_API tuuvm_tuple_t tuuvm_type_getAstNodeAnalysisFunction(tuuvm_context_t *context, tuuvm_tuple_t type);
 
 /**
  * Sets the astNodeAnalysisFunction function of a type
  */
-TUUVM_INLINE void tuuvm_type_setAstNodeAnalysisFunction(tuuvm_tuple_t type, tuuvm_tuple_t astNodeAnalysisFunction)
-{
-    if(!tuuvm_tuple_isNonNullPointer(type)) return;
-    ((tuuvm_type_tuple_t*)type)->astNodeAnalysisFunction = astNodeAnalysisFunction;
-}
+TUUVM_API void tuuvm_type_setAstNodeAnalysisFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t astNodeAnalysisFunction);
 
 /**
  * Gets the astNodeEvaluationFunction function of a type.
  */
-TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getAstNodeEvaluationFunction(tuuvm_tuple_t type)
-{
-    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
-    return ((tuuvm_type_tuple_t*)type)->astNodeEvaluationFunction;
-}
+TUUVM_API tuuvm_tuple_t tuuvm_type_getAstNodeEvaluationFunction(tuuvm_context_t *context, tuuvm_tuple_t type);
 
 /**
  * Sets the astNodeEvaluationFunction function of a type
  */
-TUUVM_INLINE void tuuvm_type_setAstNodeEvaluationFunction(tuuvm_tuple_t type, tuuvm_tuple_t astNodeEvaluationFunction)
-{
-    if(!tuuvm_tuple_isNonNullPointer(type)) return;
-    ((tuuvm_type_tuple_t*)type)->astNodeEvaluationFunction = astNodeEvaluationFunction;
-}
+TUUVM_API void tuuvm_type_setAstNodeEvaluationFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t astNodeEvaluationFunction);
 
 /**
  * Gets the astNodeAnalysisAndEvaluationFunction function of a type.
  */
-TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getAstNodeAnalysisAndEvaluationFunction(tuuvm_tuple_t type)
-{
-    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
-    return ((tuuvm_type_tuple_t*)type)->astNodeAnalysisAndEvaluationFunction;
-}
+TUUVM_API tuuvm_tuple_t tuuvm_type_getAstNodeAnalysisAndEvaluationFunction(tuuvm_context_t *context, tuuvm_tuple_t type);
 
 /**
  * Sets the astNodeAnalysisAndEvaluationFunction function of a type
  */
-TUUVM_INLINE void tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(tuuvm_tuple_t type, tuuvm_tuple_t astNodeAnalysisAndEvaluationFunction)
-{
-    if(!tuuvm_tuple_isNonNullPointer(type)) return;
-    ((tuuvm_type_tuple_t*)type)->astNodeAnalysisAndEvaluationFunction = astNodeAnalysisAndEvaluationFunction;
-}
+TUUVM_API void tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t astNodeAnalysisAndEvaluationFunction);
 
 #endif //TUUVM_TYPE_H
