@@ -90,18 +90,3 @@
 (Type::withSelector:addMethod: Type #Type::withSelector:addMethod: Type::withSelector:addMethod:)
 (Type::withSelector:addMethod: Type #Type::validMethodDictionary Type::validMethodDictionary)
 
-## Register the Integer methods.
-(Type::withSelector:addMethod: Integer #+ Integer::+)
-(Type::withSelector:addMethod: Integer #- Integer::-)
-(Type::withSelector:addMethod: Integer #"*" Integer::*)
-(Type::withSelector:addMethod: Integer #/ Integer::/)
-(Type::withSelector:addMethod: Integer #% Integer::%)
-
-(Type::withSelector:addMethod: Integer #<=> Integer::<=>)
-(Type::withSelector:addMethod: Integer #= Integer::=)
-(Type::withSelector:addMethod: Integer #~= Integer::~=)
-
-(Type::withSelector:addMethod: Integer #< Integer::<)
-(Type::withSelector:addMethod: Integer #<= Integer::<=)
-(Type::withSelector:addMethod: Integer #> Integer::>)
-(Type::withSelector:addMethod: Integer #>= Integer::>=)

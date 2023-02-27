@@ -58,5 +58,10 @@ TUUVM_API void tuuvm_context_setIntrinsicSymbolBinding(tuuvm_context_t *context,
  */
 TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(tuuvm_context_t *context, const char *symbolString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint);
 
+/**
+ * Sets an intrinsic symbol binding with primitive function.
+ */
+TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(tuuvm_context_t *context, const char *symbolString, tuuvm_tuple_t ownerClass, const char *selectorString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint);
+
 
 #endif //TUUVM_CONTEXT_H

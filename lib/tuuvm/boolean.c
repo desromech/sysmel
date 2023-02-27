@@ -25,6 +25,6 @@ static tuuvm_tuple_t tuuvm_boolean_primitive_xor(tuuvm_context_t *context, tuuvm
 
 void tuuvm_boolean_setupPrimitives(tuuvm_context_t *context)
 {
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Boolean::not", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_boolean_primitive_not);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Boolean::xor:", 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_boolean_primitive_xor);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Boolean::not", context->roots.booleanType, "not", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_boolean_primitive_not);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Boolean::xor:", context->roots.booleanType, "xor:",2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_boolean_primitive_xor);
 }

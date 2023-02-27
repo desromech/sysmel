@@ -27,7 +27,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicType(tuuvm_context_t *conte
 {
     tuuvm_tuple_t nameSymbol = tuuvm_symbol_internWithCString(context, name);
     tuuvm_tuple_t type = tuuvm_type_createWithName(context, nameSymbol);
-    tuuvm_type_setSupertype(type, supertype);
+    if(supertype)
+        tuuvm_type_setSupertype(type, supertype);
     tuuvm_environment_setNewSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, nameSymbol, type);
     tuuvm_arrayList_add(context, context->roots.intrinsicTypes, type);
 
@@ -108,9 +109,30 @@ TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(tuuv
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
 }
 
+TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(tuuvm_context_t *context, const char *symbolString, tuuvm_tuple_t ownerClass, const char *selectorString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
+{
+    struct {
+        tuuvm_tuple_t symbol;
+        tuuvm_tuple_t selector;
+        tuuvm_tuple_t primitiveFunction;
+        tuuvm_tuple_t ownerClass;
+    } gcFrame = {
+        .ownerClass = ownerClass
+    };
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    gcFrame.symbol = tuuvm_symbol_internWithCString(context, symbolString);
+    gcFrame.selector = tuuvm_symbol_internWithCString(context, selectorString);
+    gcFrame.primitiveFunction = tuuvm_function_createPrimitive(context, argumentCount, flags, userdata, entryPoint);
+    tuuvm_context_setIntrinsicSymbolBinding(context, gcFrame.symbol, gcFrame.primitiveFunction);
+    tuuvm_type_setMethodWithSelector(context, gcFrame.ownerClass, gcFrame.selector, gcFrame.primitiveFunction);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+}
+
 static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 {
     // Make a circular base type.
+    context->roots.anyValueType = tuuvm_type_createAnonymous(context);
     context->roots.typeType = tuuvm_type_createAnonymous(context);
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)context->roots.typeType, context->roots.typeType);
 
@@ -161,7 +183,16 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "String::hash"), context->roots.stringHashFunction);
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "String::equals:"), context->roots.stringEqualsFunction);
 
+    // Some basic method
+    tuuvm_type_setHashFunction(context, context->roots.anyValueType, context->roots.identityHashFunction);
+    tuuvm_type_setEqualsFunction(context, context->roots.anyValueType, context->roots.identityEqualsFunction);
+    
+    tuuvm_type_setMethodWithSelector(context, context->roots.anyValueType, tuuvm_symbol_internWithCString(context, "identityHash"), context->roots.identityHashFunction);
+    tuuvm_type_setMethodWithSelector(context, context->roots.anyValueType, tuuvm_symbol_internWithCString(context, "=="), context->roots.identityEqualsFunction);
+    tuuvm_type_setMethodWithSelector(context, context->roots.anyValueType, tuuvm_symbol_internWithCString(context, "~~"), context->roots.identityNotEqualsFunction);
+
     // Set the name of the root basic type.
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.anyValueType, "AnyValue", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.typeType, "Type", TUUVM_NULL_TUPLE,
         "name", "supertype", "slotNames", "sumTypeAlternatives", "totalSlotCount", "flags",
         "macroMethodDictionary", "methodDictionary", "fallbackMethodDictionary",
@@ -177,11 +208,12 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 
     // Create other root basic types.
     context->roots.arraySliceType = tuuvm_context_createIntrinsicType(context, "ArraySlice", TUUVM_NULL_TUPLE, "elements", "offset", "size", NULL);
+    context->roots.booleanType = tuuvm_context_createIntrinsicType(context, "Boolean", TUUVM_NULL_TUPLE, NULL);
     context->roots.closureASTFunctionType = tuuvm_context_createIntrinsicType(context, "ClosureASTFunction", TUUVM_NULL_TUPLE, "sourcePosition", "flags", "closureEnvironment", "argumentSymbols", "body", NULL);
     context->roots.dictionaryType = tuuvm_context_createIntrinsicType(context, "Dictionary", TUUVM_NULL_TUPLE,
         "size", "storage", "equalsFunction", "hashFunction",
         NULL);
-    context->roots.falseType = tuuvm_context_createIntrinsicType(context, "False", TUUVM_NULL_TUPLE, NULL);
+    context->roots.falseType = tuuvm_context_createIntrinsicType(context, "False", context->roots.booleanType, NULL);
     context->roots.hashtableEmptyType = tuuvm_context_createIntrinsicType(context, "HashtableEmpty", TUUVM_NULL_TUPLE, NULL);
     context->roots.macroContextType = tuuvm_context_createIntrinsicType(context, "MacroContext", TUUVM_NULL_TUPLE, "sourceNode", "sourcePosition", NULL);
     context->roots.integerType = tuuvm_context_createIntrinsicType(context, "Integer", TUUVM_NULL_TUPLE, NULL);
@@ -190,7 +222,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.nilType = tuuvm_context_createIntrinsicType(context, "Nil", TUUVM_NULL_TUPLE, NULL);
     context->roots.stringType = tuuvm_context_createIntrinsicType(context, "String", TUUVM_NULL_TUPLE, NULL);
     context->roots.stringBuilderType = tuuvm_context_createIntrinsicType(context, "StringBuilder", TUUVM_NULL_TUPLE, "size", "storage", NULL);
-    context->roots.trueType = tuuvm_context_createIntrinsicType(context, "True", TUUVM_NULL_TUPLE, NULL);
+    context->roots.trueType = tuuvm_context_createIntrinsicType(context, "True", context->roots.booleanType, NULL);
     context->roots.valueBoxType = tuuvm_context_createIntrinsicType(context, "ValueBox", TUUVM_NULL_TUPLE, "value", NULL);
     context->roots.voidType = tuuvm_context_createIntrinsicType(context, "Void", TUUVM_NULL_TUPLE, NULL);
 

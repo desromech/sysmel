@@ -27,12 +27,14 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t astNodeEvaluationSelector;
     tuuvm_tuple_t astNodeAnalysisAndEvaluationSelector;
 
+    tuuvm_tuple_t anyValueType;
 
     tuuvm_tuple_t arrayType;
     tuuvm_tuple_t arraySliceType;
     tuuvm_tuple_t arrayListType;
-    tuuvm_tuple_t closureASTFunctionType;
+    tuuvm_tuple_t booleanType;
     tuuvm_tuple_t byteArrayType;
+    tuuvm_tuple_t closureASTFunctionType;
     tuuvm_tuple_t dictionaryType;
     tuuvm_tuple_t environmentType;
     tuuvm_tuple_t falseType;
