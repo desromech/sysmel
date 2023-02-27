@@ -64,7 +64,7 @@
 (define (Type::withSelector:addMethod: type selector method)
     (Dictionary::at:put: (Type::validMethodDictionary type) selector method))
 
-(Type::withSelector:addMethod: #printString SourcePosition (lambda (sourcePosition)
+(Type::withSelector:addMethod: SourcePosition #printString (lambda (sourcePosition)
     (define sourceName (SourceCode::name (SourcePosition::sourceCode sourcePosition)))
     (define startIndex (SourcePosition::startIndex sourcePosition))
     (define endIndex (SourcePosition::endIndex sourcePosition))

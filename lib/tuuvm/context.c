@@ -136,7 +136,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.typeType = tuuvm_type_createAnonymous(context);
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)context->roots.typeType, context->roots.typeType);
 
-    // Create the symbol and set type.
+    // Create the function type.
     context->roots.functionType = tuuvm_type_createAnonymous(context);
 
     // Create the basic hash functions.
@@ -200,7 +200,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.environmentType, "Environment", TUUVM_NULL_TUPLE, "parent", "symbolTable", NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.functionType, "Function", TUUVM_NULL_TUPLE,
         "flags", "argumentCount",
-        "sourcePosition", "closureEnvironment", "argumentNodes" "resultTypeNode", "body",
+        "sourcePosition", "closureEnvironment", "argumentNodes", "resultTypeNode", "body",
         "nativeUserdata", "nativeEntryPoint",
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolType, "Symbol", TUUVM_NULL_TUPLE, NULL);
