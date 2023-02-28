@@ -53,7 +53,7 @@ SequenceableCollection
     withSelector: #third addMethod: {:self | self at: 2 };
     withSelector: #fourth addMethod: {:self | self at: 3 };
 
-    withSelector: #printString addMethod: {:self |
+    withSelector: #printString addMethod: {:self :: String |
         let: #builder with: StringBuilder new.
         builder addAll: self class printString; addAll: "(".
         self doWithIndex: {:element :index :: Void |
@@ -95,6 +95,17 @@ ByteArray
     };
     withSelector: #size addMethod: {:self :: Integer |
         self __byteSize__
+    };
+    withSelector: #printString addMethod: {:self :: String |
+        let: #builder with: StringBuilder new.
+        builder addAll: "#[".
+        self doWithIndex: {:element :index :: Void |
+            if: index > 0 then: (builder addAll: ". ").
+            builder addAll: element printString.
+            void
+        }.
+
+        builder addAll: "]"; asString
     }.
 
 ArraySlice
