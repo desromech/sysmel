@@ -188,6 +188,13 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     // Create the function class.
     context->roots.functionType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
 
+
+    // Collection base hierarchy
+    context->roots.collectionType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.hashedCollectionType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.collectionType);
+    context->roots.sequenceableCollectionType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.collectionType);
+    context->roots.arrayedCollectionType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.sequenceableCollectionType);
+
     // Create the basic hash functions.
     context->roots.identityEqualsFunction = tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_identityEquals);
     context->roots.identityNotEqualsFunction = tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_identityNotEquals);
@@ -195,14 +202,14 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.stringEqualsFunction = tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_string_primitive_equals);
     context->roots.stringHashFunction = tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_string_primitive_hash);
 
-    context->roots.symbolType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
-    context->roots.setType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.symbolType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
+    context->roots.setType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.hashedCollectionType);
     context->roots.internedSymbolSet = tuuvm_set_create(context, context->roots.stringEqualsFunction, context->roots.stringHashFunction);
 
     // Create the intrinsic built-in environment
     context->roots.environmentType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
-    context->roots.arrayType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
-    context->roots.arrayListType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.arrayType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
+    context->roots.arrayListType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.sequenceableCollectionType);
 
     context->roots.intrinsicsBuiltInEnvironment = tuuvm_environment_create(context, TUUVM_NULL_TUPLE);
     context->roots.intrinsicTypes = tuuvm_arrayList_create(context);
@@ -260,13 +267,19 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.setType, "Set", TUUVM_NULL_TUPLE,
         "size", "storage", "equalsFunction", "hashFunction",
         NULL);
+
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.collectionType, "Collection", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.hashedCollectionType, "HashedCollection", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.sequenceableCollectionType, "SequenceableCollection", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.arrayedCollectionType, "ArrayedCollection", TUUVM_NULL_TUPLE, NULL);
+
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.arrayType, "Array", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.arrayListType, "ArrayList", TUUVM_NULL_TUPLE, "size", "storage", NULL);
 
     // Create other root basic types.
-    context->roots.arraySliceType = tuuvm_context_createIntrinsicClass(context, "ArraySlice", TUUVM_NULL_TUPLE, "elements", "offset", "size", NULL);
+    context->roots.arraySliceType = tuuvm_context_createIntrinsicClass(context, "ArraySlice", context->roots.sequenceableCollectionType, "elements", "offset", "size", NULL);
     context->roots.associationType = tuuvm_context_createIntrinsicClass(context, "Association", TUUVM_NULL_TUPLE, "key", "value", NULL);
-    context->roots.byteArrayType = tuuvm_context_createIntrinsicClass(context, "ByteArray", TUUVM_NULL_TUPLE, NULL);
+    context->roots.byteArrayType = tuuvm_context_createIntrinsicClass(context, "ByteArray", context->roots.arrayedCollectionType, NULL);
     context->roots.booleanType = tuuvm_context_createIntrinsicClass(context, "Boolean", TUUVM_NULL_TUPLE, NULL);
     context->roots.dictionaryType = tuuvm_context_createIntrinsicClass(context, "Dictionary", TUUVM_NULL_TUPLE,
         "size", "storage", "equalsFunction", "hashFunction",
@@ -278,7 +291,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.positiveIntegerType = tuuvm_context_createIntrinsicClass(context, "PositiveInteger", context->roots.integerType, NULL);
     context->roots.negativeIntegerType = tuuvm_context_createIntrinsicClass(context, "NegativeInteger", context->roots.integerType, NULL);
     context->roots.nilType = tuuvm_context_createIntrinsicClass(context, "Nil", TUUVM_NULL_TUPLE, NULL);
-    context->roots.stringType = tuuvm_context_createIntrinsicClass(context, "String", TUUVM_NULL_TUPLE, NULL);
+    context->roots.stringType = tuuvm_context_createIntrinsicClass(context, "String", context->roots.arrayedCollectionType, NULL);
     context->roots.stringBuilderType = tuuvm_context_createIntrinsicClass(context, "StringBuilder", TUUVM_NULL_TUPLE, "size", "storage", NULL);
     context->roots.trueType = tuuvm_context_createIntrinsicClass(context, "True", context->roots.booleanType, NULL);
     context->roots.valueBoxType = tuuvm_context_createIntrinsicClass(context, "ValueBox", TUUVM_NULL_TUPLE, "value", NULL);

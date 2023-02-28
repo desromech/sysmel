@@ -26,6 +26,31 @@ ValueBox
     withSelector: #_ addMethod: {:self | self value };
     withSelector: #_: addMethod: {:self :newValue | self value: newValue. newValue }.
 
+SequenceableCollection
+    withSelector: #do: addMethod: {:self :aBlock :: Void |
+        let: #index with: (ValueBox with: 0).
+        let: #size with: self size.
+
+        while: index _ < self size do: (
+            aBlock(self at: index _)
+        ) continueWith: (index _: index _ + 1).
+        void
+    };
+    withSelector: #doWithIndex: addMethod: {:self :aBlock :: Void |
+        let: #index with: (ValueBox with: 0).
+        let: #size with: self size.
+
+        while: index _ < self size do: {
+            let: #i with: index _.
+            aBlock(self at: i, i)
+         } continueWith: (index _: index _ + 1).
+        void
+    };
+    withSelector: #first addMethod: {:self | self at: 0 };
+    withSelector: #second addMethod: {:self | self at: 1 };
+    withSelector: #third addMethod: {:self | self at: 2 };
+    withSelector: #fourth addMethod: {:self | self at: 3 }.
+
 Array
     withSelector: #at: addMethod: {:self :(Integer)index |
         self __slotAt__: index
@@ -36,15 +61,6 @@ Array
     };
     withSelector: #size addMethod: {:self :: Integer |
         self __size__
-    };
-    withSelector: #do: addMethod: {:self :aBlock :: Void |
-        let: #index with: (ValueBox with: 0).
-        let: #size with: self size.
-
-        while: index _ < self size do: (
-            aBlock(self at: index _)
-        ) continueWith: (index _: index _ + 1).
-        void
     }.
 
 ArraySlice
@@ -63,11 +79,3 @@ ArraySlice
             void.
         }
     }.
-
-(Array, ArraySlice) do: {:CollectionType :: Void |
-    CollectionType
-        withSelector: #first addMethod: {:self | self at: 0 };
-        withSelector: #second addMethod: {:self | self at: 1 };
-        withSelector: #third addMethod: {:self | self at: 2 };
-        withSelector: #fourth addMethod: {:self | self at: 3 }
-}.

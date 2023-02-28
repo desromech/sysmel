@@ -32,14 +32,17 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t arrayType;
     tuuvm_tuple_t arraySliceType;
     tuuvm_tuple_t arrayListType;
+    tuuvm_tuple_t arrayedCollectionType;
     tuuvm_tuple_t associationType;
     tuuvm_tuple_t booleanType;
     tuuvm_tuple_t byteArrayType;
     tuuvm_tuple_t classType;
+    tuuvm_tuple_t collectionType;
     tuuvm_tuple_t dictionaryType;
     tuuvm_tuple_t environmentType;
     tuuvm_tuple_t falseType;
     tuuvm_tuple_t functionType;
+    tuuvm_tuple_t hashedCollectionType;
     tuuvm_tuple_t hashtableEmptyType;
     tuuvm_tuple_t integerType;
     tuuvm_tuple_t positiveIntegerType;
@@ -47,6 +50,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t macroContextType;
     tuuvm_tuple_t metaclassType;
     tuuvm_tuple_t objectType;
+    tuuvm_tuple_t sequenceableCollectionType;
     tuuvm_tuple_t setType;
     tuuvm_tuple_t stringType;
     tuuvm_tuple_t stringBuilderType;
