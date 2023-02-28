@@ -1,4 +1,5 @@
 AnyValue
+    withSelector: #initialize addMethod: {:self :: Void | void };
     withSelector: #yourself addMethod: {:self :: self __type__ | self }.
 
 Object
@@ -9,6 +10,9 @@ Type
         let: #result with: RawTuple::new(self totalSlotCount).
         (RawTuple::type:)(result, self).
         result
+    };
+    withSelector: #new addMethod: {:self :: self |
+        self basicNew initialize; yourself
     }.
 
 ValueBox class
