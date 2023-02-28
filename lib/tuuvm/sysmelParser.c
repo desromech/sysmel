@@ -879,8 +879,12 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseExpressionList(tuuvm_context_t *con
         tuuvm_arrayList_add(context, expressionArrayList, expression);
 
         // We need at least a single dot before the next expression.
-        while(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_DOT)
+        if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_DOT)
             break;
+
+        // Skip the extra dots.
+        while(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_DOT)
+            ++state->tokenPosition;
     }
 
     return tuuvm_arrayList_asArraySlice(context, expressionArrayList);
@@ -914,8 +918,12 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseExpressionListUntil(tuuvm_context_t
         tuuvm_arrayList_add(context, expressionArrayList, expression);
 
         // We need at least a single dot before the next expression.
-        while(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_DOT)
+        if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_DOT)
             break;
+
+        // Skip the extra dots.
+        while(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_DOT)
+            ++state->tokenPosition;
     }
 
     return tuuvm_arrayList_asArraySlice(context, expressionArrayList);

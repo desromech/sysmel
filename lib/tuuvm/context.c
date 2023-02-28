@@ -134,9 +134,16 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 {
     // Make a circular base type.
     context->roots.anyValueType = tuuvm_type_createAnonymous(context);
+    context->roots.objectType = tuuvm_type_createAnonymous(context);
     context->roots.typeType = tuuvm_type_createAnonymous(context);
+    context->roots.classType = tuuvm_type_createAnonymous(context);
+    context->roots.metaClassType = tuuvm_type_createAnonymous(context);
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)context->roots.typeType, context->roots.typeType);
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)context->roots.anyValueType, context->roots.typeType);
+    
+    tuuvm_type_setSupertype(context->roots.typeType, context->roots.objectType);
+    tuuvm_type_setSupertype(context->roots.classType, context->roots.typeType);
+    tuuvm_type_setSupertype(context->roots.metaClassType, context->roots.typeType);
 
     // Create the function type.
     context->roots.functionType = tuuvm_type_createAnonymous(context);

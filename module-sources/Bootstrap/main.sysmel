@@ -1,0 +1,29 @@
+Array
+    withSelector: #at: addMethod: {:self :(Integer)index |
+        self __slotAt__: index
+    };
+    withSelector: #at:put: addMethod: {:self :(Integer)index :value :: Void |
+        self __slotAt__: index put: value.
+        void
+    }.
+
+ArraySlice
+    withSelector: #at: addMethod: {:self :(Integer)index |
+        if: index < self size then: {
+            self elements at: index + self offset
+        } else: {
+            error("Index out of bounds.")
+        }
+    };
+    withSelector: #at:put: addMethod: {:self :(Integer)index :value :: Void |
+        if: index < self size then: {
+            self elements at: index + self offset put: value
+        } else: {
+            error("Index out of bounds.").
+            void.
+        }
+    };
+    withSelector: #first addMethod: {:self | self at: 0 };
+    withSelector: #second addMethod: {:self | self at: 1 };
+    withSelector: #third addMethod: {:self | self at: 2 };
+    withSelector: #fourth addMethod: {:self | self at: 3 }.

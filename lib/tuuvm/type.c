@@ -13,6 +13,52 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymous(tuuvm_context_t *context)
     return (tuuvm_tuple_t)result;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousClass(tuuvm_context_t *context, tuuvm_tuple_t supertype, tuuvm_tuple_t metaclass)
+{
+    tuuvm_class_t* result = (tuuvm_class_t*)tuuvm_context_allocatePointerTuple(context, metaclass, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_class_t));
+    result->super.supertype = supertype;
+    result->super.totalSlotCount = tuuvm_tuple_integer_encodeSmall(0);
+    if(supertype)
+        result->super.totalSlotCount = tuuvm_tuple_integer_encodeSmall(tuuvm_type_getTotalSlotCount(supertype));
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousMetaclass(tuuvm_context_t *context, tuuvm_tuple_t supertype)
+{
+    tuuvm_metaclass_t* result = (tuuvm_metaclass_t*)tuuvm_context_allocatePointerTuple(context, context->roots.metaClassType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_metaclass_t));
+    result->super.supertype = supertype;
+
+    size_t slotCount = TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_class_t);
+    if(supertype)
+    {
+        size_t superTypeSlotCount = tuuvm_tuple_integer_decodeSmall(tuuvm_type_getTotalSlotCount(supertype));
+        if(superTypeSlotCount > slotCount)
+            slotCount = superTypeSlotCount;
+    }
+    
+    result->super.totalSlotCount = tuuvm_tuple_integer_encodeSmall(slotCount);
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousClassAndMetaclass(tuuvm_context_t *context, tuuvm_tuple_t supertype)
+{
+    tuuvm_tuple_t metaclassSupertype = context->roots.classType;
+    tuuvm_tuple_t actualSuperType = supertype;
+    if(!supertype)
+        actualSuperType = context->roots.objectType;
+
+    if(tuuvm_tuple_isKindOf(context, actualSuperType, context->roots.classType))
+        metaclassSupertype = tuuvm_type_getSupertype(tuuvm_tuple_getType(context, actualSuperType));
+
+    tuuvm_tuple_t metaclass = tuuvm_type_createAnonymousMetaclass(context, metaclassSupertype);
+    tuuvm_tuple_t class = tuuvm_type_createAnonymousClass(context, actualSuperType, metaclass);
+
+    // Link together the class with its metaclass.
+    tuuvm_metaclass_t *metaclassObject = (tuuvm_metaclass_t*)metaclass;
+    metaclassObject->thisClass = class;
+    return metaclass;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_type_createWithName(tuuvm_context_t *context, tuuvm_tuple_t name)
 {
     tuuvm_tuple_t result = tuuvm_type_createAnonymous(context);
@@ -51,6 +97,14 @@ TUUVM_API void tuuvm_type_setMethodWithSelector(tuuvm_context_t *context, tuuvm_
     if(!typeObject->methodDictionary)
         typeObject->methodDictionary = tuuvm_identityDictionary_create(context);
     tuuvm_dictionary_atPut(context, typeObject->methodDictionary, selector, method);
+}
+
+TUUVM_API bool tuuvm_type_isSubtypeOf(tuuvm_tuple_t type, tuuvm_tuple_t supertype)
+{
+    if(!tuuvm_tuple_isNonNullPointer(supertype)) return false;
+    if(!tuuvm_tuple_isNonNullPointer(type)) return false;
+    if(type == supertype) return true;
+    return tuuvm_type_isSubtypeOf(tuuvm_type_getSupertype(type), supertype);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_type_getEqualsFunction(tuuvm_context_t *context, tuuvm_tuple_t type)

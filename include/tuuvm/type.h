@@ -22,10 +22,36 @@ typedef struct tuuvm_type_tuple_s
     tuuvm_tuple_t fallbackMethodDictionary;
 } tuuvm_type_tuple_t;
 
+typedef struct tuuvm_class_s
+{
+    tuuvm_type_tuple_t super;
+} tuuvm_class_t;
+
+typedef struct tuuvm_metaclass_s
+{
+    tuuvm_type_tuple_t super;
+    tuuvm_tuple_t thisClass;
+} tuuvm_metaclass_t;
+
 /**
  * Creates an anonymous type.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymous(tuuvm_context_t *context);
+
+/**
+ * Creates an anonymous class type.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousClass(tuuvm_context_t *context, tuuvm_tuple_t supertype, tuuvm_tuple_t metaclass);
+
+/**
+ * Creates an anonymous metaclass type.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousMetaclass(tuuvm_context_t *context, tuuvm_tuple_t supertype);
+
+/**
+ * Creates an anonymous class with respective metaclass.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousClassAndMetaclass(tuuvm_context_t *context, tuuvm_tuple_t supertype);
 
 /**
  * Creates a type with the specified name.
@@ -41,6 +67,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_lookupSelector(tuuvm_context_t *context, tuuv
  * Sets the specified method with the given selector in the method dictionary.
  */
 TUUVM_API void tuuvm_type_setMethodWithSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector, tuuvm_tuple_t method);
+
+/**
+ * Is this type a subtype of?
+ */
+TUUVM_API bool tuuvm_type_isSubtypeOf(tuuvm_tuple_t type, tuuvm_tuple_t supertype);
 
 /**
  * Gets the name of a type

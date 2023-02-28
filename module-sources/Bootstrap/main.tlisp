@@ -87,4 +87,3 @@
 ## Register the Type methods.
 (Type::withSelector:addMethod: Type #withSelector:addMethod: Type::withSelector:addMethod:)
 (Type::withSelector:addMethod: Type #validMethodDictionary Type::validMethodDictionary)
-
