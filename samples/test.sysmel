@@ -28,7 +28,7 @@ printLine(42 printString).
 
 let: #square with: {:(Int32)x :: Int32 | x*x}.
 printLine(square).
-printLine(square body expressions first).
+printLine(square body expressions).
 printLine(square sourcePosition).
 printLine(square body sourcePosition).
 

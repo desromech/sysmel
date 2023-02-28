@@ -27,6 +27,8 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t astNodeEvaluationSelector;
     tuuvm_tuple_t astNodeAnalysisAndEvaluationSelector;
 
+    tuuvm_tuple_t coerceValueSelector;
+
     tuuvm_tuple_t anyValueType;
 
     tuuvm_tuple_t arrayType;

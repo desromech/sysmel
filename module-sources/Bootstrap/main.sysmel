@@ -1,5 +1,6 @@
+
 AnyValue
-    withSelector: #initialize addMethod: {:self :: Void | void };
+    withSelector: #initialize addMethod: {:self :: Void | };
     withSelector: #yourself addMethod: {:self :: self __type__ | self }.
 
 Object
@@ -14,6 +15,9 @@ Type
     withSelector: #new addMethod: {:self :: self |
         self basicNew initialize; yourself
     }.
+
+Void
+    withSelector: #coerceValue: addMethod: {:self :value :: self | void }.
 
 ValueBox class
     withSelector: #with: addMethod: {:self :value |
@@ -33,8 +37,7 @@ SequenceableCollection
 
         while: index _ < self size do: (
             aBlock(self at: index _)
-        ) continueWith: (index _: index _ + 1).
-        void
+        ) continueWith: (index _: index _ + 1)
     };
     withSelector: #doWithIndex: addMethod: {:self :aBlock :: Void |
         let: #index with: (ValueBox with: 0).
@@ -43,8 +46,7 @@ SequenceableCollection
         while: index _ < self size do: {
             let: #i with: index _.
             aBlock(self at: i, i)
-         } continueWith: (index _: index _ + 1).
-        void
+        } continueWith: (index _: index _ + 1)
     };
     withSelector: #first addMethod: {:self | self at: 0 };
     withSelector: #second addMethod: {:self | self at: 1 };
@@ -65,14 +67,12 @@ SequenceableCollection
 
 ArrayList
     withSelector: #initialize addMethod: {:self :: Void |
-        self size: 0.
-        void
+        self size: 0
     }.
 
 StringBuilder
     withSelector: #initialize addMethod: {:self :: Void |
-        self size: 0.
-        void
+        self size: 0
     }.
 
 Array
@@ -80,8 +80,7 @@ Array
         self __slotAt__: index
     };
     withSelector: #at:put: addMethod: {:self :(Integer)index :value :: Void |
-        self __slotAt__: index put: value.
-        void
+        self __slotAt__: index put: value
     };
     withSelector: #size addMethod: {:self :: Integer |
         self __size__
@@ -92,8 +91,7 @@ ByteArray
         self __slotAt__: index
     };
     withSelector: #at:put: addMethod: {:self :(Integer)index :value :: Void |
-        self __slotAt__: index put: value.
-        void
+        self __slotAt__: index put: value
     };
     withSelector: #size addMethod: {:self :: Integer |
         self __byteSize__
@@ -111,7 +109,6 @@ ArraySlice
         if: index < self size then: {
             self elements at: index + self offset put: value
         } else: {
-            error("Index out of bounds.").
-            void.
+            error("Index out of bounds.")
         }
     }.

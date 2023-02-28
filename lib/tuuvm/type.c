@@ -2,6 +2,7 @@
 #include "tuuvm/dictionary.h"
 #include "tuuvm/assert.h"
 #include "tuuvm/errors.h"
+#include "tuuvm/function.h"
 #include "tuuvm/string.h"
 #include "tuuvm/type.h"
 #include "internal/context.h"
@@ -183,9 +184,25 @@ TUUVM_API void tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(tuuvm_context_
     tuuvm_type_setMethodWithSelector(context, type, context->roots.astNodeAnalysisAndEvaluationSelector, astNodeAnalysisAndEvaluationFunction);
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_type_getCoerceValueFunction(tuuvm_context_t *context, tuuvm_tuple_t type)
+{
+    return tuuvm_type_lookupSelector(context, type, context->roots.coerceValueSelector);
+}
+
+TUUVM_API void tuuvm_type_setCoerceValueFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t coerceValueFunction)
+{
+    tuuvm_type_setMethodWithSelector(context, type, context->roots.coerceValueSelector, coerceValueFunction);
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValue(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t value)
 {
-    if(!tuuvm_tuple_isKindOf(context, value, type))
-        tuuvm_error("Cannot perform coercion of value into the required type.");
-    return value;
+    if(tuuvm_tuple_isKindOf(context, value, type))
+        return value;
+
+    tuuvm_tuple_t function = tuuvm_type_getCoerceValueFunction(context, type);
+    if(function)
+        return tuuvm_function_apply2(context, function, type, value);
+    
+    tuuvm_error("Cannot perform coercion of value into the required type.");
+    return TUUVM_VOID_TUPLE;
 }

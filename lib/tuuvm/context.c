@@ -225,6 +225,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.astNodeEvaluationSelector = tuuvm_symbol_internWithCString(context, "astEvaluateWithEnvironment:");
     context->roots.astNodeAnalysisAndEvaluationSelector = tuuvm_symbol_internWithCString(context, "astAnalyzeAndEvaluateWithEnvironment:");
 
+    context->roots.coerceValueSelector = tuuvm_symbol_internWithCString(context, "coerceValue:");
+
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "nil"), TUUVM_NULL_TUPLE);
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "false"), TUUVM_FALSE_TUPLE);
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "true"), TUUVM_TRUE_TUPLE);
