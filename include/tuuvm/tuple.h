@@ -33,7 +33,7 @@ typedef intptr_t tuuvm_stuple_t;
 
 #define TUUVM_TUPLE_GC_COLOR_MASK ((uintptr_t)3)
 #define TUUVM_TUPLE_BYTES_BIT ((uintptr_t)4)
-#define TUUVM_TUPLE_IMMUTABLE_BIT ((uintptr_t)8)
+#define TUUVM_TUPLE_NEEDS_FINALIZATION ((uintptr_t)8)
 
 #define TUUVM_TUPLE_TAG_BIT_COUNT 4
 #define TUUVM_TUPLE_TAG_BIT_MASK 15
@@ -226,7 +226,7 @@ TUUVM_INLINE bool tuuvm_tuple_isBytes(tuuvm_tuple_t tuple)
  */
 TUUVM_INLINE bool tuuvm_tuple_isImmutable(tuuvm_tuple_t tuple)
 {
-    return !tuuvm_tuple_isNonNullPointer(tuple) || (TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & TUUVM_TUPLE_IMMUTABLE_BIT) != 0;
+    return !tuuvm_tuple_isNonNullPointer(tuple) || (TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & TUUVM_TUPLE_NEEDS_FINALIZATION) != 0;
 }
 
 /**
