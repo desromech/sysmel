@@ -37,3 +37,4 @@ printLine(#[1]).
 printLine(#[1 . 2 . 3]).
 printLine((Array, ArraySlice)).
 
+printLine(`'(42)).

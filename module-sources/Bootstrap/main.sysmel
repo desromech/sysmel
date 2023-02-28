@@ -1,6 +1,8 @@
 
 AnyValue
     withSelector: #initialize addMethod: {:self :: Void | };
+    withSelector: #postCopy addMethod: {:self :: Void | };
+    withSelector: #copy addMethod: {:self :: self __type__ | self shallowCopy postCopy; yourself };
     withSelector: #yourself addMethod: {:self :: self __type__ | self }.
 
 Object
@@ -123,3 +125,8 @@ ArraySlice
             error("Index out of bounds.")
         }
     }.
+
+ASTQuoteNode
+    withSelector: #astAnalyzeWithEnvironment: addMethod: {:self :environment | self};
+    withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:self :environment | self node};
+    withSelector: #astEvaluateWithEnvironment: addMethod: {:self :environment | self node}.
