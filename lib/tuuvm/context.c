@@ -221,6 +221,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 
     // Create other root basic types.
     context->roots.arraySliceType = tuuvm_context_createIntrinsicType(context, "ArraySlice", TUUVM_NULL_TUPLE, "elements", "offset", "size", NULL);
+    context->roots.associationType = tuuvm_context_createIntrinsicType(context, "Association", TUUVM_NULL_TUPLE, "key", "value", NULL);
+    context->roots.byteArrayType = tuuvm_context_createIntrinsicType(context, "ByteArray", TUUVM_NULL_TUPLE, NULL);
     context->roots.booleanType = tuuvm_context_createIntrinsicType(context, "Boolean", TUUVM_NULL_TUPLE, NULL);
     context->roots.dictionaryType = tuuvm_context_createIntrinsicType(context, "Dictionary", TUUVM_NULL_TUPLE,
         "size", "storage", "equalsFunction", "hashFunction",

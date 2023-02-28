@@ -32,6 +32,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t arrayType;
     tuuvm_tuple_t arraySliceType;
     tuuvm_tuple_t arrayListType;
+    tuuvm_tuple_t associationType;
     tuuvm_tuple_t booleanType;
     tuuvm_tuple_t byteArrayType;
     tuuvm_tuple_t classType;

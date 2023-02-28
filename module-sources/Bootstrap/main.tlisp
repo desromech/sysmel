@@ -6,7 +6,7 @@
     (define (i) (RawTuple::slotAt: ibox 0))
     (define (i: v) (RawTuple::slotAt:put: ibox 0 v))
     (i: 0)
-    (while:continueWith: (Integer::< (i) stop)
+    (while:do:continueWith: (Integer::< (i) stop)
         (block (i))
         (i: (Integer::+ (i) 1))))
 

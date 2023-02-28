@@ -369,7 +369,7 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseByteArrayExpression(tuuvm_context_t
     size_t startPosition = state->tokenPosition;
     ++state->tokenPosition;
 
-    tuuvm_tuple_t elements = tuuvm_sysmelParser_parseExpressionList(context, state);
+    tuuvm_tuple_t elements = tuuvm_sysmelParser_parseExpressionListUntil(context, state, TUUVM_TOKEN_KIND_RBRACKET);
 
     if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_RBRACKET)
         return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a right bracket.");

@@ -340,7 +340,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_getValueExpression(tuuvm_tu
 
 TUUVM_API tuuvm_tuple_t tuuvm_astMakeAssociationNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t key, tuuvm_tuple_t value)
 {
-    tuuvm_astMakeAssociationNode_t *result = (tuuvm_astMakeAssociationNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astMakeDictionaryNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astMakeAssociationNode_t));
+    tuuvm_astMakeAssociationNode_t *result = (tuuvm_astMakeAssociationNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astMakeAssociationNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astMakeAssociationNode_t));
     result->super.sourcePosition = sourcePosition;
     result->key = key;
     result->value = value;
@@ -349,7 +349,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_astMakeAssociationNode_create(tuuvm_context_t *con
 
 TUUVM_API tuuvm_tuple_t tuuvm_astMakeByteArrayNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t elements)
 {
-    tuuvm_astMakeByteArrayNode_t *result = (tuuvm_astMakeByteArrayNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astMakeDictionaryNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astMakeByteArrayNode_t));
+    tuuvm_astMakeByteArrayNode_t *result = (tuuvm_astMakeByteArrayNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astMakeByteArrayNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astMakeByteArrayNode_t));
     result->super.sourcePosition = sourcePosition;
     result->elements = elements;
     return (tuuvm_tuple_t)result;
