@@ -45,7 +45,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t positiveIntegerType;
     tuuvm_tuple_t negativeIntegerType;
     tuuvm_tuple_t macroContextType;
-    tuuvm_tuple_t metaClassType;
+    tuuvm_tuple_t metaclassType;
     tuuvm_tuple_t objectType;
     tuuvm_tuple_t setType;
     tuuvm_tuple_t stringType;

@@ -12,24 +12,26 @@ static void tuuvm_gc_markPointer(void *userdata, tuuvm_tuple_t *pointerAddress)
     if(!tuuvm_tuple_isNonNullPointer(pointer))
         return;
 
+
     bool isWhite = tuuvm_tuple_getGCColor(pointer) == context->heap.gcWhiteColor;
     if(!isWhite)
         return;
 
-    // In the case of byte tuples, change immediately onto black.
-    if(tuuvm_tuple_isBytes(pointer))
-    {
-        tuuvm_tuple_setGCColor(pointer, context->heap.gcBlackColor);
-        return;
-    }
-
     tuuvm_tuple_setGCColor(pointer, context->heap.gcGrayColor);
 
-    // TODO: Use a explicit stack here.
-    size_t slotCount = tuuvm_tuple_getSizeInSlots(pointer);
-    tuuvm_tuple_t *slots = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(pointer)->pointers;
-    for(size_t i = 0; i < slotCount; ++i)
-        tuuvm_gc_markPointer(userdata, &slots[i]);
+    // Mark the object type. We do not need to mark the immediate types since there are already present in the root object set.
+    tuuvm_tuple_t objectType = tuuvm_tuple_getType(context, pointer);
+    tuuvm_gc_markPointer(userdata, &objectType);
+
+    // Do not traverse the slot of byte objects
+    if(!tuuvm_tuple_isBytes(pointer))
+    {
+        // Mark the object slots
+        size_t slotCount = tuuvm_tuple_getSizeInSlots(pointer);
+        tuuvm_tuple_t *slots = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(pointer)->pointers;
+        for(size_t i = 0; i < slotCount; ++i)
+            tuuvm_gc_markPointer(userdata, &slots[i]);
+    }
 
     tuuvm_tuple_setGCColor(pointer, context->heap.gcBlackColor);
 }

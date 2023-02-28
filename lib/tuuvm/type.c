@@ -1,5 +1,6 @@
 #include "tuuvm/type.h"
 #include "tuuvm/dictionary.h"
+#include "tuuvm/assert.h"
 #include "tuuvm/errors.h"
 #include "tuuvm/string.h"
 #include "tuuvm/type.h"
@@ -15,7 +16,10 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymous(tuuvm_context_t *context)
 
 TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousClass(tuuvm_context_t *context, tuuvm_tuple_t supertype, tuuvm_tuple_t metaclass)
 {
-    tuuvm_class_t* result = (tuuvm_class_t*)tuuvm_context_allocatePointerTuple(context, metaclass, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_class_t));
+    size_t classSlotCount = tuuvm_tuple_integer_decodeSmall(tuuvm_type_getTotalSlotCount(metaclass));
+    TUUVM_ASSERT(classSlotCount >= TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_class_t));
+
+    tuuvm_class_t* result = (tuuvm_class_t*)tuuvm_context_allocatePointerTuple(context, metaclass, classSlotCount);
     result->super.supertype = supertype;
     result->super.totalSlotCount = tuuvm_tuple_integer_encodeSmall(0);
     if(supertype)
@@ -25,7 +29,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousClass(tuuvm_context_t *context
 
 TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousMetaclass(tuuvm_context_t *context, tuuvm_tuple_t supertype)
 {
-    tuuvm_metaclass_t* result = (tuuvm_metaclass_t*)tuuvm_context_allocatePointerTuple(context, context->roots.metaClassType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_metaclass_t));
+    tuuvm_metaclass_t* result = (tuuvm_metaclass_t*)tuuvm_context_allocatePointerTuple(context, context->roots.metaclassType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_metaclass_t));
     result->super.supertype = supertype;
 
     size_t slotCount = TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_class_t);
@@ -48,7 +52,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousClassAndMetaclass(tuuvm_contex
         actualSuperType = context->roots.objectType;
 
     if(tuuvm_tuple_isKindOf(context, actualSuperType, context->roots.classType))
-        metaclassSupertype = tuuvm_type_getSupertype(tuuvm_tuple_getType(context, actualSuperType));
+        metaclassSupertype = tuuvm_tuple_getType(context, actualSuperType);
+    else if(tuuvm_type_isSubtypeOf(actualSuperType, context->roots.typeType))
+        metaclassSupertype = tuuvm_tuple_getType(context, tuuvm_type_getSupertype(actualSuperType));
 
     tuuvm_tuple_t metaclass = tuuvm_type_createAnonymousMetaclass(context, metaclassSupertype);
     tuuvm_tuple_t class = tuuvm_type_createAnonymousClass(context, actualSuperType, metaclass);
@@ -56,7 +62,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousClassAndMetaclass(tuuvm_contex
     // Link together the class with its metaclass.
     tuuvm_metaclass_t *metaclassObject = (tuuvm_metaclass_t*)metaclass;
     metaclassObject->thisClass = class;
-    return metaclass;
+    return class;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_type_createWithName(tuuvm_context_t *context, tuuvm_tuple_t name)

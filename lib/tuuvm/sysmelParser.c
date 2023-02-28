@@ -175,6 +175,18 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseParenthesesExpression(tuuvm_context
     size_t startPosition = state->tokenPosition;
     ++state->tokenPosition;
 
+    // Delimited keyword.
+    if(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_KEYWORD &&
+        tuuvm_sysmelParser_lookKindAt(state, 1) == TUUVM_TOKEN_KIND_RPARENT)
+    {
+        tuuvm_tuple_t result = tuuvm_sysmelParser_parseIdentifierReferenceReference(context, state);
+        if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_RPARENT)
+            return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a right parenthesis.");
+        
+        ++state->tokenPosition;
+        return result;
+    }
+
     if(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_RPARENT)
     {
         ++state->tokenPosition;
@@ -848,7 +860,9 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseCommaExpression(tuuvm_context_t *co
         }
 
         size_t endPosition = state->tokenPosition;
-        return tuuvm_astMakeTupleNode_create(context, tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition), elements);
+        return tuuvm_astMakeTupleNode_create(context,
+            tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition),
+            tuuvm_arrayList_asArraySlice(context, elements));
     }
     else
     {

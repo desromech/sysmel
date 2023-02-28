@@ -1,3 +1,27 @@
+AnyValue
+    withSelector: #yourself addMethod: {:self :: self __type__ | self }.
+
+Object
+    withSelector: #class addMethod: {:self :: self __type__ __type__ | self __type__ }.
+
+Type
+    withSelector: #basicNew addMethod: {:self :: self |
+        let: #result with: RawTuple::new(self totalSlotCount).
+        (RawTuple::type:)(result, self).
+        result
+    }.
+
+ValueBox class
+    withSelector: #with: addMethod: {:self :value |
+        self basicNew
+            _: value;
+            yourself
+    }.
+
+ValueBox
+    withSelector: #_ addMethod: {:self | self value };
+    withSelector: #_: addMethod: {:self :newValue | self value: newValue. newValue }.
+
 Array
     withSelector: #at: addMethod: {:self :(Integer)index |
         self __slotAt__: index
@@ -5,6 +29,9 @@ Array
     withSelector: #at:put: addMethod: {:self :(Integer)index :value :: Void |
         self __slotAt__: index put: value.
         void
+    };
+    withSelector: #size addMethod: {:self :: Integer |
+        self __size__
     };
     withSelector: #do: addMethod: {:self :aBlock :: Void |
         let: #index with: (ValueBox with: 0).
@@ -31,13 +58,12 @@ ArraySlice
             error("Index out of bounds.").
             void.
         }
-    };
-    withSelector: #first addMethod: {:self | self at: 0 };
-    withSelector: #second addMethod: {:self | self at: 1 };
-    withSelector: #third addMethod: {:self | self at: 2 };
-    withSelector: #fourth addMethod: {:self | self at: 3 }.
+    }.
 
-#*(Array, ArraySlice) do: {:CollectionType :: Void |
-    void
+(Array, ArraySlice) do: {:CollectionType :: Void |
+    CollectionType
+        withSelector: #first addMethod: {:self | self at: 0 };
+        withSelector: #second addMethod: {:self | self at: 1 };
+        withSelector: #third addMethod: {:self | self at: 2 };
+        withSelector: #fourth addMethod: {:self | self at: 3 }
 }.
-*#

@@ -5,6 +5,7 @@
 #include "tuuvm/stackFrame.h"
 #include "internal/context.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
 {
@@ -67,6 +68,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
     };
     tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
 
+    tuuvm_tuple_t functionType = tuuvm_tuple_getType(context, function);
     if(tuuvm_tuple_isKindOf(context, function, context->roots.functionType))
     {
         tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
@@ -87,6 +89,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
         }
     }
 
+    printf("functionType %p expected type %p\n", (void*)functionType, (void*)context->roots.functionType);
     tuuvm_error("Cannot apply non-functional object.");
     return TUUVM_VOID_TUPLE;
 }

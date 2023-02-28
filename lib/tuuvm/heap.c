@@ -241,9 +241,16 @@ static void tuuvm_heap_chunk_applyForwardingPointers(uint32_t blackColor, tuuvm_
         tuuvm_object_tuple_t *object = (tuuvm_object_tuple_t*)(chunkAddress + offset);
         size_t objectSize = sizeof(tuuvm_object_tuple_t) + object->header.objectSize;
         offset += objectSize;
+
         if((object->header.typePointerAndFlags & TUUVM_TUPLE_GC_COLOR_MASK) == blackColor &&
             (object->header.typePointerAndFlags & TUUVM_TUPLE_BYTES_BIT) == 0)
         {
+            // Apply the forwarding to the type pointer.
+            tuuvm_tuple_t type = object->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_POINTER_MASK;
+            if(tuuvm_tuple_isNonNullPointer(type))
+                tuuvm_tuple_setType(object, TUUVM_CAST_OOP_TO_OBJECT_TUPLE(type)->header.forwardingPointer);
+
+            // Apply the forwarding to the slots.
             size_t slotCount = object->header.objectSize / sizeof(tuuvm_tuple_t);
             tuuvm_tuple_t *slots = object->pointers;
 

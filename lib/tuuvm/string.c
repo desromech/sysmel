@@ -233,7 +233,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_defaultPrintString(tuuvm_context_t *context,
     if(type != TUUVM_NULL_TUPLE)
     {
         // Is the tuple a type?
-        if(type == context->roots.typeType)
+        if(tuuvm_type_isSubtypeOf(type, context->roots.typeType))
         {
             tuuvm_tuple_t thisTypeName = tuuvm_type_getName(tuple);
             if(tuuvm_tuple_isNonNullPointer(thisTypeName))   
