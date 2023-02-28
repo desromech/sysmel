@@ -2,6 +2,7 @@
 #include "tuuvm/array.h"
 #include "tuuvm/arraySlice.h"
 #include "tuuvm/errors.h"
+#include "tuuvm/function.h"
 #include "internal/context.h"
 
 TUUVM_API tuuvm_tuple_t tuuvm_arrayList_create(tuuvm_context_t *context)
@@ -78,4 +79,19 @@ TUUVM_API tuuvm_tuple_t tuuvm_arrayList_at(tuuvm_tuple_t arrayList, size_t index
     }
 
     return ((tuuvm_array_t*)arrayListObject->storage)->elements[index];
+}
+
+static tuuvm_tuple_t tuuvm_arrayList_primitive_add(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_arrayList_add(context, arguments[0], arguments[1]);
+    return TUUVM_VOID_TUPLE;
+}
+
+void tuuvm_arrayList_setupPrimitives(tuuvm_context_t *context)
+{
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "ArrayList::add:", context->roots.arrayListType, "add:", 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_arrayList_primitive_add);
 }

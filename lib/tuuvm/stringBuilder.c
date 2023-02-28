@@ -1,5 +1,6 @@
 #include "tuuvm/stringBuilder.h"
 #include "tuuvm/errors.h"
+#include "tuuvm/function.h"
 #include "tuuvm/string.h"
 #include "internal/context.h"
 #include <string.h>
@@ -104,4 +105,30 @@ TUUVM_API size_t tuuvm_stringBuilder_getCapacity(tuuvm_tuple_t stringBuilder)
 {
     if(!tuuvm_tuple_isNonNullPointer(stringBuilder)) return 0;
     return tuuvm_tuple_getSizeInSlots(((tuuvm_stringBuilder_t*)stringBuilder)->storage);
+}
+
+static tuuvm_tuple_t tuuvm_stringBuilder_primitive_add(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_stringBuilder_add(context, arguments[0], arguments[1]);
+    return TUUVM_VOID_TUPLE;
+}
+
+static tuuvm_tuple_t tuuvm_stringBuilder_primitive_addAll(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_stringBuilder_addString(context, arguments[0], arguments[1]);
+    return TUUVM_VOID_TUPLE;
+}
+
+void tuuvm_stringBuilder_setupPrimitives(tuuvm_context_t *context)
+{
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "StringBuilder::add:", context->roots.stringBuilderType, "add:", 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_stringBuilder_primitive_add);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "StringBuilder::addAll:", context->roots.stringBuilderType, "addAll:", 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_stringBuilder_primitive_addAll);
 }

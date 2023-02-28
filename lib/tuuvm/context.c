@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+extern void tuuvm_arrayList_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context);
 extern void tuuvm_boolean_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_dictionary_setupPrimitives(tuuvm_context_t *context);
@@ -21,6 +22,7 @@ extern void tuuvm_integer_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_io_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_primitiveInteger_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_string_setupPrimitives(tuuvm_context_t *context);
+extern void tuuvm_stringBuilder_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_tuple_setupPrimitives(tuuvm_context_t *context);
 
 TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicClass(tuuvm_context_t *context, const char *name, tuuvm_tuple_t supertype, ...)
@@ -389,6 +391,8 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
     tuuvm_gc_lock(context);
 
     tuuvm_context_createBasicTypes(context);
+    
+    tuuvm_arrayList_setupPrimitives(context);
     tuuvm_astInterpreter_setupASTInterpreter(context);
     tuuvm_boolean_setupPrimitives(context);
     tuuvm_dictionary_setupPrimitives(context);
@@ -399,6 +403,7 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
     tuuvm_io_setupPrimitives(context);
     tuuvm_primitiveInteger_setupPrimitives(context);
     tuuvm_string_setupPrimitives(context);
+    tuuvm_stringBuilder_setupPrimitives(context);
     tuuvm_tuple_setupPrimitives(context);
     
     tuuvm_gc_unlock(context);
