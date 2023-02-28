@@ -794,7 +794,7 @@ void tuuvm_integer_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Integer::~=", context->roots.integerType, "~=", 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_notEquals);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Integer::<", context->roots.integerType, "<", 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_lessThan);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Integer::<=", context->roots.integerType, "<=", 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_lessEquals);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Integer::>", context->roots.integerType, ">=", 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_greaterThan);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Integer::>", context->roots.integerType, ">", 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_greaterThan);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Integer::>=", context->roots.integerType, ">=", 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_greaterEquals);
 
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Integer::factorial", context->roots.integerType, "factorial", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_integer_primitive_factorial);

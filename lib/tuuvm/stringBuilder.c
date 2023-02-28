@@ -127,8 +127,28 @@ static tuuvm_tuple_t tuuvm_stringBuilder_primitive_addAll(tuuvm_context_t *conte
     return TUUVM_VOID_TUPLE;
 }
 
+static tuuvm_tuple_t tuuvm_stringBuilder_primitive_asString(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_stringBuilder_asString(context, arguments[0]);
+}
+
+static tuuvm_tuple_t tuuvm_stringBuilder_primitive_asSymbol(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_stringBuilder_asSymbol(context, arguments[0]);
+}
+
 void tuuvm_stringBuilder_setupPrimitives(tuuvm_context_t *context)
 {
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "StringBuilder::add:", context->roots.stringBuilderType, "add:", 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_stringBuilder_primitive_add);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "StringBuilder::addAll:", context->roots.stringBuilderType, "addAll:", 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_stringBuilder_primitive_addAll);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "StringBuilder::asString", context->roots.stringBuilderType, "asString", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_stringBuilder_primitive_asString);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "StringBuilder::asSymbol", context->roots.stringBuilderType, "asSymbol", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_stringBuilder_primitive_asSymbol);
 }
