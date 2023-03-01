@@ -264,19 +264,34 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_integer_encodeSmall(tuuvm_stuple_t value)
 }
 
 /**
- * Decodes an integer as an int64
+ * Decodes an integer as an int32
  */
-TUUVM_API int64_t tuuvm_tuple_integer_decodeInt64(tuuvm_tuple_t value);
+TUUVM_API int32_t tuuvm_tuple_integer_decodeInt32(tuuvm_context_t *context, tuuvm_tuple_t value);
+
+/**
+ * Decodes an integer as an uint32
+ */
+TUUVM_API uint32_t tuuvm_tuple_integer_decodeUInt32(tuuvm_context_t *context, tuuvm_tuple_t value);
 
 /**
  * Decodes an integer as an int64
  */
-TUUVM_API uint64_t tuuvm_tuple_integer_decodeUInt64(tuuvm_tuple_t value);
+TUUVM_API int64_t tuuvm_tuple_integer_decodeInt64(tuuvm_context_t *context, tuuvm_tuple_t value);
+
+/**
+ * Decodes an integer as an uint64
+ */
+TUUVM_API uint64_t tuuvm_tuple_integer_decodeUInt64(tuuvm_context_t *context, tuuvm_tuple_t value);
 
 /**
  * Encodes an int32 as an integer.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_tuple_integer_encodeBigInt32(tuuvm_context_t *context, int32_t value);
+
+/**
+ * Encodes an uint32 as an integer.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_integer_encodeBigUInt32(tuuvm_context_t *context, uint32_t value);
 
 /**
  * Encodes an int64 as an integer.
@@ -292,6 +307,17 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_integer_encodeBigUInt64(tuuvm_context_t *con
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wtype-limits"
 #endif
+
+/*
+ * Encodes an integer as a tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_integer_encodeUInt32(tuuvm_context_t *context, uint32_t value)
+{
+    if(sizeof(uint32_t) < sizeof(tuuvm_stuple_t) || (value <= TUUVM_IMMEDIATE_INT_MAX))
+        return tuuvm_tuple_integer_encodeSmall((tuuvm_stuple_t)value);
+    else
+        return tuuvm_tuple_integer_encodeBigUInt32(context, value);
+}
 
 /*
  * Encodes an integer as a tuple.
@@ -328,6 +354,28 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_integer_encodeUInt64(tuuvm_context_t *con
         return tuuvm_tuple_integer_encodeSmall((tuuvm_stuple_t)value);
     else
         return tuuvm_tuple_integer_encodeBigUInt64(context, value);
+}
+
+/*
+ * Encodes an integer as a tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_integer_decodeSize(tuuvm_context_t *context, size_t value)
+{
+    if(sizeof(uint32_t) == sizeof(size_t))
+        return tuuvm_tuple_integer_decodeUInt32(context, value);
+    else
+        return tuuvm_tuple_integer_decodeUInt64(context, value);
+}
+
+/*
+ * Encodes an integer as a tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_integer_encodeSize(tuuvm_context_t *context, size_t value)
+{
+    if(sizeof(uint32_t) == sizeof(size_t))
+        return tuuvm_tuple_integer_encodeUInt32(context, value);
+    else
+        return tuuvm_tuple_integer_encodeUInt64(context, value);
 }
 
 /**
@@ -665,6 +713,50 @@ TUUVM_INLINE size_t tuuvm_tuple_size_decode(tuuvm_tuple_t tuple)
         return tuuvm_tuple_uint32_decode(tuple);
     else
         return tuuvm_tuple_uint64_decode(tuple);
+}
+
+/*
+ * Encodes an uintptr_t as a tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_uintptr_encode(tuuvm_context_t *context, uintptr_t value)
+{
+    if(sizeof(uintptr_t) == sizeof(uint32_t))
+        return tuuvm_tuple_uint32_encode(context, (uint32_t)value);
+    else
+        return tuuvm_tuple_uint64_encode(context, (uint64_t)value);
+}
+
+/*
+ * Decodes a intptr_t from tuple.
+ */
+TUUVM_INLINE uintptr_t tuuvm_tuple_uintptr_decode(tuuvm_tuple_t tuple)
+{
+    if(sizeof(uintptr_t) == sizeof(uint32_t))
+        return tuuvm_tuple_uint32_decode(tuple);
+    else
+        return tuuvm_tuple_uint64_decode(tuple);
+}
+
+/*
+ * Encodes an intptr_t as a tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_intptr_encode(tuuvm_context_t *context, intptr_t value)
+{
+    if(sizeof(intptr_t) == sizeof(int32_t))
+        return tuuvm_tuple_int32_encode(context, (int32_t)value);
+    else
+        return tuuvm_tuple_int64_encode(context, (int64_t)value);
+}
+
+/*
+ * Decodes a intptr_t from tuple.
+ */
+TUUVM_INLINE intptr_t tuuvm_tuple_intptr_decode(tuuvm_tuple_t tuple)
+{
+    if(sizeof(intptr_t) == sizeof(int32_t))
+        return tuuvm_tuple_int32_decode(tuple);
+    else
+        return tuuvm_tuple_int64_decode(tuple);
 }
 
 /**

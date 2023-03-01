@@ -53,8 +53,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicClass(tuuvm_context_t *cont
     // Set the total slot count.
     size_t totalSlotCount = slotNameCount;
     if(tuuvm_tuple_isNonNullPointer(supertype))
-        totalSlotCount += tuuvm_tuple_size_decode(tuuvm_type_getTotalSlotCount(supertype));
-    tuuvm_type_setTotalSlotCount(type, tuuvm_tuple_size_encode(context, totalSlotCount));
+        totalSlotCount += tuuvm_tuple_integer_decodeSize(context, tuuvm_type_getTotalSlotCount(supertype));
+    tuuvm_type_setTotalSlotCount(type, tuuvm_tuple_integer_encodeSize(context, totalSlotCount));
 
     return type;
 }
@@ -88,8 +88,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicType(tuuvm_context_t *conte
     // Set the total slot count.
     size_t totalSlotCount = slotNameCount;
     if(tuuvm_tuple_isNonNullPointer(supertype))
-        totalSlotCount += tuuvm_tuple_size_decode(tuuvm_type_getTotalSlotCount(supertype));
-    tuuvm_type_setTotalSlotCount(type, tuuvm_tuple_size_encode(context, totalSlotCount));
+        totalSlotCount += tuuvm_tuple_integer_decodeSize(context, tuuvm_type_getTotalSlotCount(supertype));
+    tuuvm_type_setTotalSlotCount(type, tuuvm_tuple_integer_encodeSize(context, totalSlotCount));
 
     return type;
 }
@@ -121,10 +121,10 @@ static void tuuvm_context_setIntrinsicTypeMetadata(tuuvm_context_t *context, tuu
     tuuvm_type_setSlotNames(type, slotNames);
 
     // Set the total slot count.
-    int64_t totalSlotCount = slotNameCount;
+    size_t totalSlotCount = slotNameCount;
     if(tuuvm_tuple_isNonNullPointer(supertype))
-        totalSlotCount += tuuvm_tuple_integer_decodeInt64(tuuvm_type_getTotalSlotCount(supertype));
-    tuuvm_type_setTotalSlotCount(type, tuuvm_tuple_integer_encodeInt64(context, totalSlotCount));
+        totalSlotCount += tuuvm_tuple_integer_decodeSize(context, tuuvm_type_getTotalSlotCount(supertype));
+    tuuvm_type_setTotalSlotCount(type, tuuvm_tuple_integer_encodeSize(context, totalSlotCount));
 }
 
 TUUVM_API void tuuvm_context_setIntrinsicSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t symbol, tuuvm_tuple_t binding)
@@ -318,6 +318,14 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 
     context->roots.floatType = tuuvm_context_createIntrinsicClass(context, "Float", TUUVM_NULL_TUPLE, NULL);
     context->roots.doubleType = tuuvm_context_createIntrinsicClass(context, "Double", TUUVM_NULL_TUPLE, NULL);
+
+    context->roots.sizeType = sizeof(size_t) == 4 ? context->roots.uint32Type : context->roots.uint64Type;
+    context->roots.uintptrType = sizeof(size_t) == 4 ? context->roots.uint32Type : context->roots.uint64Type;
+    context->roots.intptrType = sizeof(size_t) == 4 ? context->roots.int32Type : context->roots.int64Type;
+
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Size"), context->roots.sizeType);
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "UIntPointer"), context->roots.uintptrType);
+    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "IntPointer"), context->roots.intptrType);
 
     context->roots.sourceCodeType = tuuvm_context_createIntrinsicClass(context, "SourceCode", TUUVM_NULL_TUPLE, "text", "name", "language", "lineStartIndexTable", NULL);
     context->roots.sourcePositionType = tuuvm_context_createIntrinsicClass(context, "SourcePosition", TUUVM_NULL_TUPLE,

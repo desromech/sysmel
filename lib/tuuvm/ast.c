@@ -465,7 +465,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_astQuoteNode_create(tuuvm_context_t *context, tuuv
 
 TUUVM_API tuuvm_tuple_t tuuvm_astQuasiQuoteNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t node)
 {
-    tuuvm_astQuasiQuoteNode_t *result = (tuuvm_astQuasiQuoteNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astQuoteNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astQuasiQuoteNode_t));
+    tuuvm_astQuasiQuoteNode_t *result = (tuuvm_astQuasiQuoteNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astQuasiQuoteNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astQuasiQuoteNode_t));
     result->super.sourcePosition = sourcePosition;
     result->node = node;
     return (tuuvm_tuple_t)result;
@@ -473,7 +473,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_astQuasiQuoteNode_create(tuuvm_context_t *context,
 
 TUUVM_API tuuvm_tuple_t tuuvm_astQuasiUnquoteNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t expression)
 {
-    tuuvm_astQuasiUnquoteNode_t *result = (tuuvm_astQuasiUnquoteNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astQuoteNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astQuasiUnquoteNode_t));
+    tuuvm_astQuasiUnquoteNode_t *result = (tuuvm_astQuasiUnquoteNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astQuasiUnquoteNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astQuasiUnquoteNode_t));
     result->super.sourcePosition = sourcePosition;
     result->expression = expression;
     return (tuuvm_tuple_t)result;
@@ -481,7 +481,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_astQuasiUnquoteNode_create(tuuvm_context_t *contex
 
 TUUVM_API tuuvm_tuple_t tuuvm_astSpliceNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t expression)
 {
-    tuuvm_astSpliceNode_t *result = (tuuvm_astSpliceNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astQuoteNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astSpliceNode_t));
+    tuuvm_astSpliceNode_t *result = (tuuvm_astSpliceNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astSpliceNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astSpliceNode_t));
     result->super.sourcePosition = sourcePosition;
     result->expression = expression;
     return (tuuvm_tuple_t)result;

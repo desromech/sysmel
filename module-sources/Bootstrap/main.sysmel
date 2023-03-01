@@ -2,15 +2,24 @@
 AnyValue
     withSelector: #initialize addMethod: {:self :: Void | };
     withSelector: #postCopy addMethod: {:self :: Void | };
+    withSelector: #shallowCopy addMethod: {:self :: self __type__ | RawTuple::shallowCopy(self) };
     withSelector: #copy addMethod: {:self :: self __type__ | self shallowCopy postCopy; yourself };
     withSelector: #yourself addMethod: {:self :: self __type__ | self }.
 
 Object
-    withSelector: #class addMethod: {:self :: self __type__ __type__ | self __type__ }.
+    withSelector: #class addMethod: {:self :: self __type__ __type__ | self __type__ };
+    withSelector: #species addMethod: {:self :: Class | self class };
+    withSelector: #error: addMethod: {:self :(String)errorMessage :: Void | error(errorMessage) };
+    withSelector: #subclassResponsibility addMethod: {:self :: Void | self error: "Subclass responsibility." }.
 
 Type
     withSelector: #basicNew addMethod: {:self :: self |
         let: #result with: RawTuple::new(self totalSlotCount).
+        (RawTuple::type:)(result, self).
+        result
+    };
+    withSelector: #basicNew: addMethod: {:self :(Integer)variableSlotCount :: self |
+        let: #result with: RawTuple::new(self totalSlotCount + variableSlotCount).
         (RawTuple::type:)(result, self).
         result
     };
@@ -21,18 +30,31 @@ Type
 Void
     withSelector: #coerceValue: addMethod: {:self :value :: self | void }.
 
-ValueBox class
-    withSelector: #with: addMethod: {:self :value |
-        self basicNew
-            _: value;
-            yourself
+Class
+    withSelector: #withSelector:addClassMethod: addMethod: {:self :selector :method :: Void |
+        self class withSelector: selector addMethod: method
     }.
 
 ValueBox
+    withSelector: #with: addClassMethod: {:self :value |
+        self basicNew
+            _: value;
+            yourself
+    };
     withSelector: #_ addMethod: {:self | self value };
     withSelector: #_: addMethod: {:self :newValue | self value: newValue. newValue }.
 
 SequenceableCollection
+    withSelector: #collect: addMethod: {:self :aBlock :: Void |
+        let: #index with: (ValueBox with: 0).
+        let: #size with: self size.
+        let: #result with: (self species new: size).
+
+        while: index _ < self size do: {
+            let: #i with: index _.
+            result at: i put: aBlock(self at: i)
+        } continueWith: (index _: index _ + 1)
+    };
     withSelector: #do: addMethod: {:self :aBlock :: Void |
         let: #index with: (ValueBox with: 0).
         let: #size with: self size.
@@ -68,8 +90,29 @@ SequenceableCollection
     }.
 
 ArrayList
+    withSelector: #new: addClassMethod: {:self :(Integer)initialSize :: Void |
+        self basicNew initializeWithSize: initialSize; yourself
+    };
     withSelector: #initialize addMethod: {:self :: Void |
-        self size: 0
+        self size: 0sz
+    };
+    withSelector: #initializeWithSize: addMethod: {:self :(Integer)initialSize :: Void |
+        self size: initialSize sz.
+        self storage: (Array new: initialSize).
+    };
+    withSelector: #at: addMethod: {:self :(Integer)index |
+        if: index < self size then: {
+            self storage at: index + self offset
+        } else: {
+            error("Index out of bounds.")
+        }
+    };
+    withSelector: #at:put: addMethod: {:self :(Integer)index :value :: Void |
+        if: index < self size then: {
+            self storage at: index + self offset put: value
+        } else: {
+            error("Index out of bounds.")
+        }
     }.
 
 StringBuilder
@@ -111,6 +154,13 @@ ByteArray
     }.
 
 ArraySlice
+    withSelector: #new: addClassMethod: {:self :(Integer)size |
+        self basicNew
+            elements: (Array basicNew: size);
+            offset: 0 sz;
+            size: size sz;
+            yourself
+    };
     withSelector: #at: addMethod: {:self :(Integer)index |
         if: index < self size then: {
             self elements at: index + self offset
@@ -126,7 +176,57 @@ ArraySlice
         }
     }.
 
+ASTNode
+    withSelector: #astAnalyzeWithEnvironment: addMethod: {:self :environment | self subclassResponsibility };
+    withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:self :environment | self subclassResponsibility };
+    withSelector: #astEvaluateWithEnvironment: addMethod: {:self :environment | self subclassResponsibility };
+    withSelector: #transformWith: addMethod: {:self :aBlock :: Void | self subclassResponsibility };
+    withSelector: #transformedWith: addMethod: {:self :aBlock :: self class | self copy transformWith: aBlock; yourself }.
+
+ASTIdentifierReferenceNode
+    withSelector: #transformWith: addMethod: {:self :aBlock :: Void | }.
+
+ASTLiteralNode
+    withSelector: #transformWith: addMethod: {:self :aBlock :: Void | }.
+
 ASTQuoteNode
     withSelector: #astAnalyzeWithEnvironment: addMethod: {:self :environment | self};
     withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:self :environment | self node};
     withSelector: #astEvaluateWithEnvironment: addMethod: {:self :environment | self node}.
+
+ASTNode
+    withSelector: #analyzeQuasiQuoteWithEnvironment: addMethod: {:self :environment |
+        self transformedWith: {:child | child analyzeQuasiQuoteWithEnvironment: environment}
+    };
+    withSelector: #analyzeAndEvaluateQuasiQuoteWithEnvironment: addMethod: {:self :environment |
+        self transformedWith: {:child | child analyzeAndEvaluateQuasiQuoteWithEnvironment: environment}
+    };
+    withSelector: #evaluateQuasiQuoteWithEnvironment: addMethod: {:self :environment |
+        self transformedWith: {:child | child evaluateQuasiQuoteWithEnvironment: environment}
+    }.
+
+ASTQuasiQuoteNode
+    withSelector: #astAnalyzeWithEnvironment: addMethod: {:self :environment |
+        self copy
+            node: (self node analyzeQuasiQuoteWithEnvironment: environment);
+            yourself
+    };
+    withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:self :environment |
+        self node analyzeAndEvaluateQuasiQuoteWithEnvironment: environment
+    };
+    withSelector: #astEvaluateWithEnvironment: addMethod: {:self :environment |
+        self node evaluateQuasiQuoteWithEnvironment: environment
+    }.
+
+ASTQuasiUnquoteNode
+    withSelector: #analyzeQuasiQuoteWithEnvironment: addMethod: {:self :environment |
+        self copy
+            expression: (self expression astAnalyzeWithEnvironment: environment);
+            yourself
+    };
+    withSelector: #analyzeAndEvaluateQuasiQuoteWithEnvironment: addMethod: {:self :environment |
+        self expression astAnalyzeAndEvaluateWithEnvironment: environment
+    };
+    withSelector: #evaluateQuasiQuoteWithEnvironment: addMethod: {:self :environment |
+        self expression astEvaluateWithEnvironment: environment
+    }.

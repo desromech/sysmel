@@ -37,4 +37,6 @@ printLine(#[1]).
 printLine(#[1 . 2 . 3]).
 printLine((Array, ArraySlice)).
 
-printLine(`'(42)).
+printLine(`'42).
+printLine(``42).
+printLine(``(`,(ASTSequenceNode new))).

@@ -18,9 +18,9 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_fromInteger)(tuuvm_con
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
 
 #if IS_SIGNED
-    integer_t value = (integer_t)tuuvm_tuple_integer_decodeInt64(arguments[0]);
+    integer_t value = (integer_t)tuuvm_tuple_integer_decodeInt64(context, arguments[0]);
 #else 
-    integer_t value = (integer_t)tuuvm_tuple_integer_decodeUInt64(arguments[0]);
+    integer_t value = (integer_t)tuuvm_tuple_integer_decodeUInt64(context, arguments[0]);
 #endif
     return primitiveInteger_encode(value);
 }

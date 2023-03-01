@@ -78,6 +78,10 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t uint64Type;
     tuuvm_tuple_t int64Type;
 
+    tuuvm_tuple_t sizeType;
+    tuuvm_tuple_t uintptrType;
+    tuuvm_tuple_t intptrType;
+
     tuuvm_tuple_t floatType;
     tuuvm_tuple_t doubleType;
 

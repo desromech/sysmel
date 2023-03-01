@@ -202,6 +202,24 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_integer_encodeBigInt32(tuuvm_context_t *cont
     return (tuuvm_tuple_t)result;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_integer_encodeBigUInt32(tuuvm_context_t *context, uint32_t value)
+{
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtype-limits"
+#endif
+    if(value <= TUUVM_IMMEDIATE_INT_MAX)
+        return tuuvm_tuple_integer_encodeSmall(value);
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
+    tuuvm_integer_t *result = (tuuvm_integer_t*)tuuvm_context_allocateByteTuple(context, context->roots.positiveIntegerType, 4);
+    result->words[0] = (uint32_t)value;
+    return (tuuvm_tuple_t)result;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_tuple_integer_encodeBigInt64(tuuvm_context_t *context, int64_t value)
 {
     if(TUUVM_IMMEDIATE_INT_MIN <= value && value <= TUUVM_IMMEDIATE_INT_MAX)
@@ -244,18 +262,50 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_integer_encodeBigUInt64(tuuvm_context_t *con
     }
 }
 
-int64_t tuuvm_tuple_integer_decodeInt64(tuuvm_tuple_t value)
+int32_t tuuvm_tuple_integer_decodeInt32(tuuvm_context_t *context, tuuvm_tuple_t value)
 {
     if(tuuvm_tuple_isImmediate(value))
         return tuuvm_tuple_integer_decodeSmall(value);
-    return 0;
+
+    if(tuuvm_tuple_getSizeInBytes(value) < 4)
+        return 0;
+
+    tuuvm_integer_t *integer = (tuuvm_integer_t *)value;
+    int32_t decodedValue = integer->words[0];
+    if(tuuvm_tuple_getType(context, value) == context->roots.negativeIntegerType)
+        decodedValue = -decodedValue;
+    return decodedValue;
 }
 
-uint64_t tuuvm_tuple_integer_decodeUInt64(tuuvm_tuple_t value)
+uint32_t tuuvm_tuple_integer_decodeUInt32(tuuvm_context_t *context, tuuvm_tuple_t value)
+{
+    return (uint32_t)tuuvm_tuple_integer_decodeInt32(context, value);
+}
+
+int64_t tuuvm_tuple_integer_decodeInt64(tuuvm_context_t *context, tuuvm_tuple_t value)
 {
     if(tuuvm_tuple_isImmediate(value))
         return tuuvm_tuple_integer_decodeSmall(value);
-    return 0;
+
+    size_t byteSize = tuuvm_tuple_getSizeInBytes(value);
+    if(byteSize < 4)
+        return 0;
+
+    tuuvm_integer_t *integer = (tuuvm_integer_t *)value;
+    int64_t decodedValue = 0;
+    if(byteSize < 8)
+        decodedValue = (uint64_t)integer->words[0] | ((uint64_t)integer->words[1] << 32);
+    else
+        decodedValue = (uint64_t)integer->words[0];
+    
+    if(tuuvm_tuple_getType(context, value) == context->roots.negativeIntegerType)
+        decodedValue = -decodedValue;
+    return decodedValue;
+}
+
+uint64_t tuuvm_tuple_integer_decodeUInt64(tuuvm_context_t *context, tuuvm_tuple_t value)
+{
+    return (uint64_t)tuuvm_tuple_integer_decodeInt64(context, value);
 }
 
 /**
