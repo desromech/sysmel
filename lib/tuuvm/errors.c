@@ -48,5 +48,5 @@ static tuuvm_tuple_t tuuvm_errors_primitive_error(tuuvm_context_t *context, tuuv
 
 void tuuvm_errors_setupPrimitives(tuuvm_context_t *context)
 {
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "error", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_errors_primitive_error);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "error", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_errors_primitive_error);
 }

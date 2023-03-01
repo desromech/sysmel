@@ -35,6 +35,6 @@ static tuuvm_tuple_t tuuvm_io_primitive_print(tuuvm_context_t *context, tuuvm_tu
 
 void tuuvm_io_setupPrimitives(tuuvm_context_t *context)
 {
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "printLine", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_io_primitive_printLine);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "print", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_io_primitive_print);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "printLine", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_io_primitive_printLine);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "print", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_io_primitive_print);
 }

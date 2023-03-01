@@ -80,6 +80,6 @@ static tuuvm_tuple_t tuuvm_environment_primitive_setSymbolBinding(tuuvm_context_
 
 void tuuvm_environment_setupPrimitives(tuuvm_context_t *context)
 {
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Environment::setNewSymbol:binding:", 3, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_environment_primitive_setNewSymbolBinding);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Environment::setSymbol:binding:", 3, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_environment_primitive_setSymbolBinding);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Environment::setNewSymbol:binding:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_environment_primitive_setNewSymbolBinding);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "Environment::setSymbol:binding:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_environment_primitive_setSymbolBinding);
 }

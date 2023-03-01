@@ -237,13 +237,13 @@ static tuuvm_tuple_t tuuvm_tuple_primitive_shallowCopy(tuuvm_context_t *context,
 
 void tuuvm_tuple_setupPrimitives(tuuvm_context_t *context)
 {
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::type", context->roots.anyValueType, "__type__", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_getType);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::type:", context->roots.anyValueType, "__type__:", 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_setType);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::slotAt:", context->roots.anyValueType, "__slotAt__:", 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_slotAt);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::slotAt:put:", context->roots.anyValueType, "__slotAt__:put:", 3, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_slotAtPut);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "RawTuple::new", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_new);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "RawTuple::byteNew", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_byteNew);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::size", context->roots.anyValueType, "__size__", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_size);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::byteSize", context->roots.anyValueType, "__byteSize__", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_byteSize);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::shallowCopy", context->roots.anyValueType, "__shallowCopy__", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_shallowCopy);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::type", context->roots.anyValueType, "__type__", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_getType);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::type:", context->roots.anyValueType, "__type__:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_setType);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::slotAt:", context->roots.anyValueType, "__slotAt__:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_slotAt);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::slotAt:put:", context->roots.anyValueType, "__slotAt__:put:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_slotAtPut);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "RawTuple::new", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_new);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "RawTuple::byteNew", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_byteNew);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::size", context->roots.anyValueType, "__size__", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_size);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::byteSize", context->roots.anyValueType, "__byteSize__", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_byteSize);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::shallowCopy", context->roots.anyValueType, "__shallowCopy__", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_shallowCopy);
 }
