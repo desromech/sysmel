@@ -179,7 +179,45 @@ static tuuvm_tuple_t tuuvm_function_primitive_apply(tuuvm_context_t *context, tu
     return tuuvm_functionCallFrameStack_finish(context, &callFrameStack);
 }
 
+static tuuvm_tuple_t tuuvm_function_primitive_isCorePrimitive(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    tuuvm_tuple_t *function = &arguments[0];
+    if(!tuuvm_tuple_isKindOf(context, *function, context->roots.functionType))
+        return TUUVM_FALSE_TUPLE;
+    
+    tuuvm_function_t *functionObject = (tuuvm_function_t*)*function;
+    size_t flags = tuuvm_tuple_size_decode(functionObject->flags);
+    return tuuvm_tuple_boolean_encode((flags & TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE) != 0);
+}
+
+static tuuvm_tuple_t tuuvm_function_primitive_adoptDefinitionOf(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *function = &arguments[0];
+    tuuvm_tuple_t *definitionFunction = &arguments[0];
+    if(!tuuvm_tuple_isKindOf(context, *function, context->roots.functionType)) tuuvm_error("Expected a function.");
+    if(!tuuvm_tuple_isKindOf(context, *definitionFunction, context->roots.functionType)) tuuvm_error("Expected a function.");
+    
+    tuuvm_function_t *functionObject = (tuuvm_function_t*)*function;
+    tuuvm_function_t *definitionFunctionObject = (tuuvm_function_t*)*definitionFunction;
+
+    functionObject->sourcePosition = definitionFunctionObject->sourcePosition;
+    functionObject->closureEnvironment = definitionFunctionObject->closureEnvironment;
+    functionObject->argumentNodes = definitionFunctionObject->argumentNodes;
+    functionObject->resultTypeNode = definitionFunctionObject->resultTypeNode;
+    functionObject->body = definitionFunctionObject->body;
+
+    return TUUVM_VOID_TUPLE;
+}
+
 void tuuvm_function_setupPrimitives(tuuvm_context_t *context)
 {
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "apply", 2, TUUVM_FUNCTION_FLAGS_VARIADIC, NULL, tuuvm_function_primitive_apply);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "apply", context->roots.functionType, "applyWithArguments:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_VARIADIC, NULL, tuuvm_function_primitive_apply);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Function::adoptDefinitionOf:", context->roots.functionType, "adoptDefinitionOf:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_function_primitive_adoptDefinitionOf);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Function::isCorePrimitive", context->roots.functionType, "isCorePrimitive", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_function_primitive_isCorePrimitive);
 }

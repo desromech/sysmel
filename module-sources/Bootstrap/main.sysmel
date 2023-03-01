@@ -191,6 +191,7 @@ ASTNode
     withSelector: #astAnalyzeWithEnvironment: addMethod: {:self :environment | self subclassResponsibility };
     withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:self :environment | self subclassResponsibility };
     withSelector: #astEvaluateWithEnvironment: addMethod: {:self :environment | self subclassResponsibility };
+    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void | self subclassResponsibility };
     withSelector: #transformWith: addMethod: {:self :aBlock :: Void | self subclassResponsibility };
     withSelector: #transformedWith: addMethod: {:self :aBlock :: self class | self copy transformWith: aBlock; yourself }.
 
@@ -252,8 +253,10 @@ ASTLexicalBlockNode
     }.
 
 ASTLiteralNode
+    withSelector: #astAnalyzeWithEnvironment: addMethod: {:self :environment | self };
+    withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:self :environment | self value };
+    withSelector: #astEvaluateWithEnvironment: addMethod: {:self :environment | self value };
     withSelector: #transformWith: addMethod: {:self :aBlock :: Void | }.
-
 
 ASTLocalDefinitionNode
     withSelector: #transformWith: addMethod: {:self :aBlock :: Void |

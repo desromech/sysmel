@@ -687,7 +687,8 @@ static tuuvm_tuple_t tuuvm_astIfNode_primitiveAnalyze(tuuvm_context_t *context, 
 
     gcFrame.ifNode = (tuuvm_astIfNode_t*)tuuvm_context_shallowCopy(context, *node);
     gcFrame.ifNode->conditionExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.ifNode->conditionExpression, *environment);
-    gcFrame.ifNode->trueExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.ifNode->trueExpression, *environment);
+    if(gcFrame.ifNode->trueExpression)
+        gcFrame.ifNode->trueExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.ifNode->trueExpression, *environment);
     if(gcFrame.ifNode->falseExpression)
         gcFrame.ifNode->falseExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.ifNode->falseExpression, *environment);
     return (tuuvm_tuple_t)gcFrame.ifNode;
@@ -707,6 +708,8 @@ static tuuvm_tuple_t tuuvm_astIfNode_primitiveEvaluate(tuuvm_context_t *context,
     if(condition == TUUVM_TRUE_TUPLE)
     {
         TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+        if(!(*ifNode)->trueExpression)
+            return TUUVM_VOID_TUPLE;
         return tuuvm_interpreter_evaluateASTWithEnvironment(context, (*ifNode)->trueExpression, *environment);
     }
     else
@@ -732,6 +735,8 @@ static tuuvm_tuple_t tuuvm_astIfNode_primitiveAnalyzeAndEvaluate(tuuvm_context_t
     if(condition == TUUVM_TRUE_TUPLE)
     {
         TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+        if(!(*ifNode)->trueExpression)
+            return TUUVM_VOID_TUPLE;
         return tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*ifNode)->trueExpression, *environment);
     }
     else
