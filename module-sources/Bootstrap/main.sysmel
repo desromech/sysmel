@@ -1,10 +1,17 @@
+## ============================================================================
+## Bootstrap core runtime
+## ============================================================================
 
 AnyValue
     withSelector: #initialize addMethod: {:self :: Void | };
+    withSelector: #yourself addMethod: {:self :: self __type__ | self };
+
     withSelector: #postCopy addMethod: {:self :: Void | };
     withSelector: #shallowCopy addMethod: {:self :: self __type__ | RawTuple::shallowCopy(self) };
     withSelector: #copy addMethod: {:self :: self __type__ | self shallowCopy postCopy; yourself };
-    withSelector: #yourself addMethod: {:self :: self __type__ | self }.
+
+    withSelector: #isNil addMethod: {:self :: Boolean | self == nil };
+    withSelector: #isNotNil addMethod: {:self :: Boolean | self ~~ nil }.
 
 Object
     withSelector: #class addMethod: {:self :: self __type__ __type__ | self __type__ };
@@ -176,6 +183,10 @@ ArraySlice
         }
     }.
 
+## ============================================================================
+## Bootstrap AST methods
+## ============================================================================
+
 ASTNode
     withSelector: #astAnalyzeWithEnvironment: addMethod: {:self :environment | self subclassResponsibility };
     withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:self :environment | self subclassResponsibility };
@@ -230,3 +241,17 @@ ASTQuasiUnquoteNode
     withSelector: #evaluateQuasiQuoteWithEnvironment: addMethod: {:self :environment |
         self expression astEvaluateWithEnvironment: environment
     }.
+
+ASTSpliceNode
+    withSelector: #astAnalyzeWithEnvironment: addMethod: {:self :environment | self invalidLocationError };
+    withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:self :environment | self invalidLocationError };
+    withSelector: #astEvaluateWithEnvironment: addMethod: {:self :environment | self invalidLocationError };
+
+    withSelector: #analyzeQuasiQuoteWithEnvironment: addMethod: {:self :environment | self invalidLocationError };
+    withSelector: #analyzeAndEvaluateQuasiQuoteWithEnvironment: addMethod: {:self :environment | self invalidLocationError };
+    withSelector: #evaluateQuasiQuoteWithEnvironment: addMethod: {:self :environment | self invalidLocationError };
+
+    withSelector: #invalidLocationError addMethod: {:self :environment |
+        self error: "Invalid location for a splice expression."
+    }.
+
