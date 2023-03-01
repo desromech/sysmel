@@ -761,7 +761,8 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseChainExpression(tuuvm_context_t *co
 
             size_t endPosition = state->tokenPosition;
             tuuvm_tuple_t sourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition);
-            return tuuvm_astSequenceNode_create(context, sourcePosition, tuuvm_arrayList_asArraySlice(context, messages));
+            tuuvm_tuple_t pragmas = tuuvm_arraySlice_createWithArrayOfSize(context, 0);
+            return tuuvm_astSequenceNode_create(context, sourcePosition, pragmas, tuuvm_arrayList_asArraySlice(context, messages));
         }
         else
         {
@@ -911,7 +912,8 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseSequence(tuuvm_context_t *context, 
     size_t endPosition = state->tokenPosition;
 
     tuuvm_tuple_t sourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition);
-    return tuuvm_astSequenceNode_create(context, sourcePosition, expressionsArraySlice);
+    tuuvm_tuple_t pragmas = tuuvm_arraySlice_createWithArrayOfSize(context, 0);
+    return tuuvm_astSequenceNode_create(context, sourcePosition, pragmas, expressionsArraySlice);
 }
 
 static tuuvm_tuple_t tuuvm_sysmelParser_parseExpressionListUntil(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state, tuuvm_tokenKind_t delimiter)
@@ -950,7 +952,8 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseSequenceUntil(tuuvm_context_t *cont
     size_t endPosition = state->tokenPosition;
 
     tuuvm_tuple_t sourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition);
-    return tuuvm_astSequenceNode_create(context, sourcePosition, expressionsArraySlice);
+    tuuvm_tuple_t pragmas = tuuvm_arraySlice_createWithArrayOfSize(context, 0);
+    return tuuvm_astSequenceNode_create(context, sourcePosition, pragmas, expressionsArraySlice);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_sysmelParser_parseTokens(tuuvm_context_t *context, tuuvm_tuple_t sourceCode, tuuvm_tuple_t tokenSequence)

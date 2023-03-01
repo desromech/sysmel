@@ -143,6 +143,7 @@ typedef struct tuuvm_astMessageChainMessageNode_s
 typedef struct tuuvm_astSequenceNode_s
 {
     tuuvm_astNode_t super;
+    tuuvm_tuple_t pragmas;
     tuuvm_tuple_t expressions;
 } tuuvm_astSequenceNode_t;
 
@@ -499,7 +500,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_astMessageChainMessageNode_create(tuuvm_context_t 
 /**
  * Creates a sequence node.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_astSequenceNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t expressions);
+TUUVM_API tuuvm_tuple_t tuuvm_astSequenceNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t pragmas, tuuvm_tuple_t expressions);
 
 /**
  * Gets the number of expressions in the sequence node.

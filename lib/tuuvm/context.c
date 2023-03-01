@@ -338,7 +338,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         NULL);
 
     context->roots.astNodeType = tuuvm_context_createIntrinsicClass(context, "ASTNode", TUUVM_NULL_TUPLE, "sourcePosition", "analyzedType", NULL);
-    context->roots.astArgumentNodeType = tuuvm_context_createIntrinsicClass(context, "ASTArgumentNodeType", context->roots.astNodeType, "isForAll", "name", "type", NULL);
+    context->roots.astArgumentNodeType = tuuvm_context_createIntrinsicClass(context, "ASTArgumentNode", context->roots.astNodeType, "isForAll", "name", "type", NULL);
     context->roots.astBinaryExpressionSequenceNodeType = tuuvm_context_createIntrinsicClass(context, "ASTBinaryExpressionSequenceNode", context->roots.astNodeType, "operands", "operations", NULL);
     context->roots.astDoWhileContinueWithNodeType = tuuvm_context_createIntrinsicClass(context, "ASTDoWhileContinueWithNode", context->roots.astNodeType, "bodyExpression", "conditionExpression", "continueExpression", NULL);
     context->roots.astErrorNodeType = tuuvm_context_createIntrinsicClass(context, "ASTErrorNode", context->roots.astNodeType, "errorMessage", NULL);
@@ -357,8 +357,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 
     context->roots.astMessageSendNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMessageSendNode", context->roots.astNodeType, "receiver", "selector", "arguments", NULL);
     context->roots.astMessageChainNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMessageChainNode", context->roots.astNodeType, "receiver", "messages", NULL);
-    context->roots.astMessageChainMessageNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMessageChainMessage", context->roots.astNodeType, "selector", "arguments", NULL);
-    context->roots.astSequenceNodeType = tuuvm_context_createIntrinsicClass(context, "ASTSequenceNode", context->roots.astNodeType, "expressions", NULL);
+    context->roots.astMessageChainMessageNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMessageChainMessageNode", context->roots.astNodeType, "selector", "arguments", NULL);
+    context->roots.astSequenceNodeType = tuuvm_context_createIntrinsicClass(context, "ASTSequenceNode", context->roots.astNodeType, "pragmas", "expressions", NULL);
     context->roots.astUnexpandedApplicationNodeType = tuuvm_context_createIntrinsicClass(context, "ASTUnexpandedApplicationNode", context->roots.astNodeType, "functionOrMacroExpression", "arguments", NULL);
     context->roots.astUnexpandedSExpressionNodeType = tuuvm_context_createIntrinsicClass(context, "ASTUnexpandedSExpressionNode", context->roots.astNodeType, "elements", NULL);
     context->roots.astWhileContinueWithNodeType = tuuvm_context_createIntrinsicClass(context, "ASTWhileContinueWithNode", context->roots.astNodeType, "conditionExpression", "bodyExpression", "continueExpression", NULL);

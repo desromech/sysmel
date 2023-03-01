@@ -400,10 +400,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_astMessageChainMessageNode_create(tuuvm_context_t 
     return (tuuvm_tuple_t)result;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_astSequenceNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t expressions)
+TUUVM_API tuuvm_tuple_t tuuvm_astSequenceNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t pragmas, tuuvm_tuple_t expressions)
 {
     tuuvm_astSequenceNode_t *result = (tuuvm_astSequenceNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astSequenceNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astSequenceNode_t));
     result->super.sourcePosition = sourcePosition;
+    result->pragmas = pragmas;
     result->expressions = expressions;
     return (tuuvm_tuple_t)result;
 }

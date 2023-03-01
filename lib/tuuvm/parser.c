@@ -258,7 +258,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_parser_parseTokens(tuuvm_context_t *context, tuuvm
         ? tuuvm_parser_makeSourcePositionForNodeRange(context, tuuvm_arraySlice_at(expressionsArraySlice, 0), tuuvm_arraySlice_at(expressionsArraySlice, expressionsCount - 1))
         : tuuvm_parser_makeSourcePositionForSourceCode(context, sourceCode);
 
-    gcFrame.result = tuuvm_astSequenceNode_create(context, sourcePosition, expressionsArraySlice);
+    tuuvm_tuple_t pragmas = tuuvm_arraySlice_createWithArrayOfSize(context, 0);
+    gcFrame.result = tuuvm_astSequenceNode_create(context, sourcePosition, pragmas, expressionsArraySlice);
     tuuvm_gc_unlock(context);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
