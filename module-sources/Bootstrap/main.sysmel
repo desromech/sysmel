@@ -42,6 +42,45 @@ Class
         self class withSelector: selector addMethod: method
     }.
 
+Function
+    withSelector: #hasFlag: addMethod: {:self :(Size)flag :: Boolean |
+        (self flags & flag) ~= 0sz
+    };
+    withSelector: #addFlag: addMethod: {:self :(Size)flag :: Void |
+        self flags: self flags | flag
+    };
+
+    withSelector: #isMacro addMethod: {:self :: Boolean |
+        self hasFlag: (1sz << 0sz)
+    };
+    withSelector: #makeMacro addMethod: {:self :: self __type__ |
+        self addFlag: (1sz << 0sz).
+        self
+    };
+    
+    withSelector: #isVariadic addMethod: {:self :: Boolean |
+        self hasFlag: (1sz << 1sz)
+    };
+    withSelector: #isCorePrimitive addMethod: {:self :: Boolean |
+        self hasFlag: (1sz << 2sz)
+    };
+
+    withSelector: #isPure addMethod: {:self :: Boolean |
+        self hasFlag: (1sz << 3sz)
+    };
+    withSelector: #makePure addMethod: {:self :: self __type__ |
+        self addFlag: (1sz << 0sz).
+        self
+    };
+
+    withSelector: #isFinal addMethod: {:self :: Boolean |
+        self hasFlag: (1sz << 4sz)
+    };
+    withSelector: #makeFinal addMethod: {:self :: self __type__ |
+        self addFlag: (1sz << 0sz).
+        self
+    }.
+
 ValueBox
     withSelector: #with: addClassMethod: {:self :value |
         self basicNew

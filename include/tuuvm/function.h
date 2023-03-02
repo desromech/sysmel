@@ -15,6 +15,8 @@ typedef enum tuuvm_functionFlags_e
     TUUVM_FUNCTION_FLAGS_MACRO = 1<<0,
     TUUVM_FUNCTION_FLAGS_VARIADIC = 1<<1,
     TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE = 1<<2,
+    TUUVM_FUNCTION_FLAGS_PURE = 1<<3,
+    TUUVM_FUNCTION_FLAGS_FINAL = 1<<4,
 } tuuvm_functionFlags_t;
 
 typedef struct tuuvm_function_s
