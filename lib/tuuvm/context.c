@@ -202,6 +202,9 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)context->roots.typeType, context->roots.typeType);
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)context->roots.anyValueType, context->roots.typeType);
 
+    tuuvm_type_setFlags(context->roots.anyValueType, tuuvm_tuple_integer_encodeSmall(TUUVM_TYPE_FLAG_NULLABLE));
+    tuuvm_type_setFlags(context->roots.typeType, tuuvm_tuple_integer_encodeSmall(TUUVM_TYPE_FLAG_NULLABLE));
+
     context->roots.objectType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.anyValueType);
     tuuvm_type_setSupertype(context->roots.typeType, context->roots.objectType);
 
@@ -221,6 +224,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     // Create the function class.
     context->roots.functionType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
 
+    context->roots.environmentType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.astNodeType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
 
     // Collection base hierarchy
     context->roots.collectionType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
@@ -240,7 +245,6 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.internedSymbolSet = tuuvm_set_create(context, context->roots.stringEqualsFunction, context->roots.stringHashFunction);
 
     // Create the intrinsic built-in environment
-    context->roots.environmentType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.arrayType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
     context->roots.arrayListType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.sequenceableCollectionType);
 
@@ -282,97 +286,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_type_setMethodWithSelector(context, context->roots.anyValueType, tuuvm_symbol_internWithCString(context, "=="), context->roots.identityEqualsFunction);
     tuuvm_type_setMethodWithSelector(context, context->roots.anyValueType, tuuvm_symbol_internWithCString(context, "~~"), context->roots.identityNotEqualsFunction);
 
-    // Set the name of the root basic type.
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.anyValueType, "AnyValue", TUUVM_NULL_TUPLE, NULL);
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.objectType, "Object", TUUVM_NULL_TUPLE, NULL);
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.typeType, "Type", TUUVM_NULL_TUPLE,
-        "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "supertype", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "slots", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "sumTypeAlternatives", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "totalSlotCount", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        
-        "macroMethodDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "methodDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "fallbackMethodDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        NULL);
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.classType, "Class", TUUVM_NULL_TUPLE, NULL);
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.metaclassType, "Metaclass", TUUVM_NULL_TUPLE,
-        "thisClass", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        NULL);
-
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.environmentType, "Environment", TUUVM_NULL_TUPLE,
-        "parent", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "symbolTable", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        NULL);
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.functionType, "Function", TUUVM_NULL_TUPLE,
-        "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "argumentCount", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "closureEnvironment", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "argumentNodes", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "resultTypeNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "body", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "nativeUserdata", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "nativeEntryPoint", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        NULL);
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolType, "Symbol", TUUVM_NULL_TUPLE, NULL);
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.setType, "Set", TUUVM_NULL_TUPLE,
-        "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "equalsFunction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "hashFunction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        NULL);
-
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.collectionType, "Collection", TUUVM_NULL_TUPLE, NULL);
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.hashedCollectionType, "HashedCollection", TUUVM_NULL_TUPLE, NULL);
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.sequenceableCollectionType, "SequenceableCollection", TUUVM_NULL_TUPLE, NULL);
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.arrayedCollectionType, "ArrayedCollection", TUUVM_NULL_TUPLE, NULL);
-
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.arrayType, "Array", TUUVM_NULL_TUPLE, NULL);
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.arrayListType, "ArrayList", TUUVM_NULL_TUPLE,
-        "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        NULL);
-
-    // Create other root basic types.
-    context->roots.arraySliceType = tuuvm_context_createIntrinsicClass(context, "ArraySlice", context->roots.sequenceableCollectionType,
-        "elements", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "offset", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        NULL);
-    context->roots.associationType = tuuvm_context_createIntrinsicClass(context, "Association", TUUVM_NULL_TUPLE,
-        "key", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        NULL);
-    context->roots.byteArrayType = tuuvm_context_createIntrinsicClass(context, "ByteArray", context->roots.arrayedCollectionType, NULL);
-    context->roots.booleanType = tuuvm_context_createIntrinsicClass(context, "Boolean", TUUVM_NULL_TUPLE, NULL);
-    context->roots.dictionaryType = tuuvm_context_createIntrinsicClass(context, "Dictionary", TUUVM_NULL_TUPLE,
-        "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "equalsFunction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "hashFunction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        NULL);
-    context->roots.falseType = tuuvm_context_createIntrinsicClass(context, "False", context->roots.booleanType, NULL);
-    context->roots.hashtableEmptyType = tuuvm_context_createIntrinsicClass(context, "HashtableEmpty", TUUVM_NULL_TUPLE, NULL);
-    context->roots.macroContextType = tuuvm_context_createIntrinsicClass(context, "MacroContext", TUUVM_NULL_TUPLE,
-        "sourceNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        NULL);
-    context->roots.integerType = tuuvm_context_createIntrinsicClass(context, "Integer", TUUVM_NULL_TUPLE, NULL);
-    context->roots.positiveIntegerType = tuuvm_context_createIntrinsicClass(context, "PositiveInteger", context->roots.integerType, NULL);
-    context->roots.negativeIntegerType = tuuvm_context_createIntrinsicClass(context, "NegativeInteger", context->roots.integerType, NULL);
-    context->roots.nilType = tuuvm_context_createIntrinsicClass(context, "Nil", TUUVM_NULL_TUPLE, NULL);
-    context->roots.stringType = tuuvm_context_createIntrinsicClass(context, "String", context->roots.arrayedCollectionType, NULL);
-    context->roots.stringBuilderType = tuuvm_context_createIntrinsicClass(context, "StringBuilder", TUUVM_NULL_TUPLE,
-        "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        NULL);
-    context->roots.trueType = tuuvm_context_createIntrinsicClass(context, "True", context->roots.booleanType, NULL);
-    context->roots.valueBoxType = tuuvm_context_createIntrinsicClass(context, "ValueBox", TUUVM_NULL_TUPLE,
-        "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        NULL);
+    // Some basic types
     context->roots.voidType = tuuvm_context_createIntrinsicClass(context, "Void", TUUVM_NULL_TUPLE, NULL);
 
     context->roots.char8Type = tuuvm_context_createIntrinsicClass(context, "Char8", TUUVM_NULL_TUPLE, NULL);
@@ -397,141 +311,235 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.uintptrType = sizeof(size_t) == 4 ? context->roots.uint32Type : context->roots.uint64Type;
     context->roots.intptrType = sizeof(size_t) == 4 ? context->roots.int32Type : context->roots.int64Type;
 
+    context->roots.booleanType = tuuvm_context_createIntrinsicClass(context, "Boolean", TUUVM_NULL_TUPLE, NULL);
+    context->roots.trueType = tuuvm_context_createIntrinsicClass(context, "True", context->roots.booleanType, NULL);
+    context->roots.falseType = tuuvm_context_createIntrinsicClass(context, "False", context->roots.booleanType, NULL);
+    context->roots.integerType = tuuvm_context_createIntrinsicClass(context, "Integer", TUUVM_NULL_TUPLE, NULL);
+    context->roots.positiveIntegerType = tuuvm_context_createIntrinsicClass(context, "PositiveInteger", context->roots.integerType, NULL);
+    context->roots.negativeIntegerType = tuuvm_context_createIntrinsicClass(context, "NegativeInteger", context->roots.integerType, NULL);
+    context->roots.undefinedObjectType = tuuvm_context_createIntrinsicClass(context, "UndefinedObject", TUUVM_NULL_TUPLE, NULL);
+    context->roots.stringType = tuuvm_context_createIntrinsicClass(context, "String", context->roots.arrayedCollectionType, NULL);
+
+    // Set the name of the root basic type.
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.anyValueType, "AnyValue", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.objectType, "Object", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.typeType, "Type", TUUVM_NULL_TUPLE,
+        "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
+        "supertype", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
+        "slots", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "sumTypeAlternatives", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "totalSlotCount", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.integerType,
+        "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.integerType,
+        
+        "macroMethodDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "methodDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "fallbackMethodDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.classType, "Class", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.metaclassType, "Metaclass", TUUVM_NULL_TUPLE,
+        "thisClass", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        NULL);
+
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.environmentType, "Environment", TUUVM_NULL_TUPLE,
+        "parent", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
+        "symbolTable", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.functionType, "Function", TUUVM_NULL_TUPLE,
+        "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "argumentCount", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "closureEnvironment", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
+        "argumentNodes", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "resultTypeNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "body", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "nativeUserdata", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "nativeEntryPoint", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uintptrType,
+        NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolType, "Symbol", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.setType, "Set", TUUVM_NULL_TUPLE,
+        "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "equalsFunction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionType,
+        "hashFunction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        NULL);
+
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.collectionType, "Collection", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.hashedCollectionType, "HashedCollection", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.sequenceableCollectionType, "SequenceableCollection", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.arrayedCollectionType, "ArrayedCollection", TUUVM_NULL_TUPLE, NULL);
+
+    // 
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.arrayType, "Array", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.arrayListType, "ArrayList", TUUVM_NULL_TUPLE,
+        "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        NULL);
+
+    // Create other root basic types.
+    context->roots.arraySliceType = tuuvm_context_createIntrinsicClass(context, "ArraySlice", context->roots.sequenceableCollectionType,
+        "elements", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "offset", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        NULL);
+    context->roots.associationType = tuuvm_context_createIntrinsicClass(context, "Association", TUUVM_NULL_TUPLE,
+        "key", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        NULL);
+    context->roots.byteArrayType = tuuvm_context_createIntrinsicClass(context, "ByteArray", context->roots.arrayedCollectionType, NULL);
+    context->roots.dictionaryType = tuuvm_context_createIntrinsicClass(context, "Dictionary", TUUVM_NULL_TUPLE,
+        "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "equalsFunction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionType,
+        "hashFunction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionType,
+        NULL);
+    context->roots.hashtableEmptyType = tuuvm_context_createIntrinsicClass(context, "HashtableEmpty", TUUVM_NULL_TUPLE, NULL);
+    context->roots.macroContextType = tuuvm_context_createIntrinsicClass(context, "MacroContext", TUUVM_NULL_TUPLE,
+        "sourceNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        NULL);
+    context->roots.stringBuilderType = tuuvm_context_createIntrinsicClass(context, "StringBuilder", TUUVM_NULL_TUPLE,
+        "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,
+        NULL);
+    context->roots.valueBoxType = tuuvm_context_createIntrinsicClass(context, "ValueBox", TUUVM_NULL_TUPLE,
+        "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        NULL);
+
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Size"), context->roots.sizeType);
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "UIntPointer"), context->roots.uintptrType);
     tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "IntPointer"), context->roots.intptrType);
 
     context->roots.sourceCodeType = tuuvm_context_createIntrinsicClass(context, "SourceCode", TUUVM_NULL_TUPLE,
-        "text", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "language", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "text", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,
+        "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,
+        "language", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
         "lineStartIndexTable", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     context->roots.sourcePositionType = tuuvm_context_createIntrinsicClass(context, "SourcePosition", TUUVM_NULL_TUPLE,
-        "sourceCode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "startIndex", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "startLine", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "startColumn", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "endIndex", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "endLine", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "endColumn", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "sourceCode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sourceCodeType,
+        "startIndex", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "startLine", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "startColumn", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "endIndex", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "endLine", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "endColumn", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         NULL);
     context->roots.tokenType = tuuvm_context_createIntrinsicClass(context, "Token", TUUVM_NULL_TUPLE,
-        "kind", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "kind", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint8Type,
+        "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sourcePositionType,
         "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
 
-    context->roots.astNodeType = tuuvm_context_createIntrinsicClass(context, "ASTNode", TUUVM_NULL_TUPLE,
-        "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "analyzedType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.astNodeType, "ASTNode", TUUVM_NULL_TUPLE,
+        "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sourcePositionType,
+        "analyzedType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         NULL);
     context->roots.astArgumentNodeType = tuuvm_context_createIntrinsicClass(context, "ASTArgumentNode", context->roots.astNodeType,
-        "isForAll", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "type", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "isForAll", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "type", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     context->roots.astBinaryExpressionSequenceNodeType = tuuvm_context_createIntrinsicClass(context, "ASTBinaryExpressionSequenceNode", context->roots.astNodeType,
-        "operands", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "operations", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "operands", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
+        "operations", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
         NULL);
     context->roots.astDoWhileContinueWithNodeType = tuuvm_context_createIntrinsicClass(context, "ASTDoWhileContinueWithNode", context->roots.astNodeType,
-        "bodyExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "conditionExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "continueExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "bodyExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "conditionExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "continueExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     context->roots.astErrorNodeType = tuuvm_context_createIntrinsicClass(context, "ASTErrorNode", context->roots.astNodeType,
-        "errorMessage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "errorMessage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,
         NULL);
     context->roots.astFunctionApplicationNodeType = tuuvm_context_createIntrinsicClass(context, "ASTFunctionApplicationNode", context->roots.astNodeType,
-        "functionExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "functionExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
         NULL);
     context->roots.astLambdaNodeType = tuuvm_context_createIntrinsicClass(context, "ASTLambdaNode", context->roots.astNodeType,
         "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "argumentCount", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "resultType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "body", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
+        "resultType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "body", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     context->roots.astLexicalBlockNodeType = tuuvm_context_createIntrinsicClass(context, "ASTLexicalBlockNode", context->roots.astNodeType,
-        "body", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "body", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     context->roots.astLiteralNodeType = tuuvm_context_createIntrinsicClass(context, "ASTLiteralNode", context->roots.astNodeType,
         "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     context->roots.astLocalDefinitionNodeType = tuuvm_context_createIntrinsicClass(context, "ASTLocalDefinitionNode", context->roots.astNodeType,
-        "nameExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "valueExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "nameExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "valueExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     context->roots.astIdentifierReferenceNodeType = tuuvm_context_createIntrinsicClass(context, "ASTIdentifierReferenceNode", context->roots.astNodeType,
         "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     context->roots.astIfNodeType = tuuvm_context_createIntrinsicClass(context, "ASTIfNode", context->roots.astNodeType,
-        "conditionExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "trueExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "falseExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "conditionExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "trueExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "falseExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
 
     context->roots.astMakeAssociationNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMakeAssociationNode", context->roots.astNodeType,
-        "key", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "key", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     context->roots.astMakeByteArrayNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMakeByteArrayNode", context->roots.astNodeType,
-        "elements", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "elements", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
         NULL);
     context->roots.astMakeDictionaryNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMakeDictionaryNode", context->roots.astNodeType,
-        "elements", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "elements", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
         NULL);
     context->roots.astMakeTupleNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMakeTupleNode", context->roots.astNodeType,
-        "elements", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "elements", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
         NULL);
 
     context->roots.astMessageSendNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMessageSendNode", context->roots.astNodeType,
-        "receiver", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "selector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "receiver", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "selector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
         NULL);
     context->roots.astMessageChainNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMessageChainNode", context->roots.astNodeType,
-        "receiver", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "messages", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "receiver", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "messages", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
         NULL);
     context->roots.astMessageChainMessageNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMessageChainMessageNode", context->roots.astNodeType,
-        "selector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "selector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
         NULL);
     context->roots.astSequenceNodeType = tuuvm_context_createIntrinsicClass(context, "ASTSequenceNode", context->roots.astNodeType,
-        "pragmas", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "expressions", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "pragmas", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "expressions", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
         NULL);
     context->roots.astUnexpandedApplicationNodeType = tuuvm_context_createIntrinsicClass(context, "ASTUnexpandedApplicationNode", context->roots.astNodeType,
-        "functionOrMacroExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "functionOrMacroExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
         NULL);
     context->roots.astUnexpandedSExpressionNodeType = tuuvm_context_createIntrinsicClass(context, "ASTUnexpandedSExpressionNode", context->roots.astNodeType,
-        "elements", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "elements", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
         NULL);
     context->roots.astWhileContinueWithNodeType = tuuvm_context_createIntrinsicClass(context, "ASTWhileContinueWithNode", context->roots.astNodeType,
-        "conditionExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "bodyExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "continueExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "conditionExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "bodyExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "continueExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
 
     context->roots.astQuoteNodeType = tuuvm_context_createIntrinsicClass(context, "ASTQuoteNode", context->roots.astNodeType,
-        "node", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "node", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     context->roots.astQuasiQuoteNodeType = tuuvm_context_createIntrinsicClass(context, "ASTQuasiQuoteNode", context->roots.astNodeType,
-        "node", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "node", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     context->roots.astQuasiUnquoteNodeType = tuuvm_context_createIntrinsicClass(context, "ASTQuasiUnquoteNode", context->roots.astNodeType,
-        "expression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "expression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     context->roots.astSpliceNodeType = tuuvm_context_createIntrinsicClass(context, "ASTSpliceNode", context->roots.astNodeType,
-        "expression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "expression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
 
     // Fill the immediate type table.
-    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_NIL] = context->roots.nilType;
+    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_NIL] = context->roots.undefinedObjectType;
     context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_INTEGER] = context->roots.integerType;
     context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_CHAR8] = context->roots.char8Type;
     context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_UINT8] = context->roots.uint8Type;
@@ -546,7 +554,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_INT64] = context->roots.int64Type;
     context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_FLOAT32] = context->roots.float32Type;
     context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_FLOAT64] = context->roots.float64Type;
-    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_TRIVIAL] = context->roots.nilType;
+    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_TRIVIAL] = context->roots.undefinedObjectType;
 
     // Fill the immediate trivial type table.
     context->roots.immediateTrivialTypeTable[TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_FALSE] = context->roots.falseType;

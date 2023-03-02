@@ -22,6 +22,12 @@ typedef struct tuuvm_type_tuple_s
     tuuvm_tuple_t fallbackMethodDictionary;
 } tuuvm_type_tuple_t;
 
+typedef enum tuuvm_typeFlags_e
+{
+    TUUVM_TYPE_FLAG_NONE = 0,
+    TUUVM_TYPE_FLAG_NULLABLE = 1<<0,
+} tuuvm_typeFlags_t;
+
 typedef struct tuuvm_class_s
 {
     tuuvm_type_tuple_t super;

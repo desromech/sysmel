@@ -12,8 +12,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context,
     tuuvm_function_t *result = (tuuvm_function_t*)tuuvm_context_allocatePointerTuple(context, context->roots.functionType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_function_t));
     result->argumentCount = tuuvm_tuple_size_encode(context, argumentCount);
     result->flags = tuuvm_tuple_size_encode(context, flags);
-    result->nativeUserdata = tuuvm_tuple_size_encode(context, (size_t)userdata);
-    result->nativeEntryPoint = tuuvm_tuple_size_encode(context, (size_t)entryPoint);
+    result->nativeUserdata = tuuvm_tuple_uintptr_encode(context, (size_t)userdata);
+    result->nativeEntryPoint = tuuvm_tuple_uintptr_encode(context, (size_t)entryPoint);
     return (tuuvm_tuple_t)result;
 }
 
@@ -72,7 +72,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
     if(tuuvm_tuple_isKindOf(context, function, context->roots.functionType))
     {
         tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
-        tuuvm_functionEntryPoint_t nativeEntryPoint = (tuuvm_functionEntryPoint_t)tuuvm_tuple_size_decode(functionObject->nativeEntryPoint);
+        tuuvm_functionEntryPoint_t nativeEntryPoint = (tuuvm_functionEntryPoint_t)tuuvm_tuple_uintptr_decode(functionObject->nativeEntryPoint);
         if(nativeEntryPoint)
         {
             tuuvm_tuple_t result = nativeEntryPoint(context, &gcFrame.function, argumentCount, arguments);
