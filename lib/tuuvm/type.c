@@ -20,21 +20,21 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymous(tuuvm_context_t *context)
 {
     tuuvm_type_tuple_t* result = (tuuvm_type_tuple_t*)tuuvm_context_allocatePointerTuple(context, context->roots.typeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_type_tuple_t));
     result->supertype = context->roots.anyValueType;
-    result->totalSlotCount = tuuvm_tuple_integer_encodeSmall(0);
+    result->totalSlotCount = tuuvm_tuple_size_encode(context, 0);
     return (tuuvm_tuple_t)result;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousClass(tuuvm_context_t *context, tuuvm_tuple_t supertype, tuuvm_tuple_t metaclass)
 {
-    size_t classSlotCount = tuuvm_tuple_integer_decodeSmall(tuuvm_type_getTotalSlotCount(metaclass));
+    size_t classSlotCount = tuuvm_type_getTotalSlotCount(metaclass);
     TUUVM_ASSERT(classSlotCount >= TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_class_t));
 
     tuuvm_class_t* result = (tuuvm_class_t*)tuuvm_context_allocatePointerTuple(context, metaclass, classSlotCount);
     result->super.supertype = supertype;
-    result->super.totalSlotCount = tuuvm_tuple_integer_encodeSmall(0);
-    result->super.flags = tuuvm_tuple_integer_encodeSmall(TUUVM_TYPE_FLAG_NULLABLE);
+    result->super.totalSlotCount = tuuvm_tuple_size_encode(context, 0);
+    result->super.flags = tuuvm_tuple_size_encode(context, TUUVM_TYPE_FLAG_NULLABLE);
     if(supertype)
-        result->super.totalSlotCount = tuuvm_tuple_integer_encodeSmall(tuuvm_type_getTotalSlotCount(supertype));
+        result->super.totalSlotCount = tuuvm_tuple_size_encode(context, tuuvm_type_getTotalSlotCount(supertype));
     return (tuuvm_tuple_t)result;
 }
 
@@ -42,17 +42,17 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousMetaclass(tuuvm_context_t *con
 {
     tuuvm_metaclass_t* result = (tuuvm_metaclass_t*)tuuvm_context_allocatePointerTuple(context, context->roots.metaclassType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_metaclass_t));
     result->super.supertype = supertype;
-    result->super.flags = tuuvm_tuple_integer_encodeSmall(TUUVM_TYPE_FLAG_NULLABLE);
+    result->super.flags = tuuvm_tuple_size_encode(context, TUUVM_TYPE_FLAG_NULLABLE);
 
     size_t slotCount = TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_class_t);
     if(supertype)
     {
-        size_t superTypeSlotCount = tuuvm_tuple_integer_decodeSmall(tuuvm_type_getTotalSlotCount(supertype));
+        size_t superTypeSlotCount = tuuvm_type_getTotalSlotCount(supertype);
         if(superTypeSlotCount > slotCount)
             slotCount = superTypeSlotCount;
     }
     
-    result->super.totalSlotCount = tuuvm_tuple_integer_encodeSmall(slotCount);
+    result->super.totalSlotCount = tuuvm_tuple_size_encode(context, slotCount);
     return (tuuvm_tuple_t)result;
 }
 
@@ -82,6 +82,18 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createWithName(tuuvm_context_t *context, tuuv
     tuuvm_tuple_t result = tuuvm_type_createAnonymous(context);
     tuuvm_type_setName(result, name);
     return result;
+}
+
+TUUVM_API size_t tuuvm_type_getTotalSlotCount(tuuvm_tuple_t type)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+    return tuuvm_tuple_size_decode(((tuuvm_type_tuple_t*)type)->totalSlotCount);
+}
+
+TUUVM_API void tuuvm_type_setTotalSlotCount(tuuvm_context_t *context, tuuvm_tuple_t type, size_t totalSlotCount)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return;
+    ((tuuvm_type_tuple_t*)type)->totalSlotCount = tuuvm_tuple_size_encode(context, totalSlotCount);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_type_lookupMacroSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector)

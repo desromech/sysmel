@@ -63,8 +63,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicClass(tuuvm_context_t *cont
     // Set the total slot count.
     size_t totalSlotCount = slotNameCount;
     if(tuuvm_tuple_isNonNullPointer(supertype))
-        totalSlotCount += tuuvm_tuple_integer_decodeSize(context, tuuvm_type_getTotalSlotCount(supertype));
-    tuuvm_type_setTotalSlotCount(type, tuuvm_tuple_integer_encodeSize(context, totalSlotCount));
+        totalSlotCount += tuuvm_type_getTotalSlotCount(supertype);
+    tuuvm_type_setTotalSlotCount(context, type, totalSlotCount);
 
     return type;
 }
@@ -107,8 +107,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicType(tuuvm_context_t *conte
     // Set the total slot count.
     size_t totalSlotCount = slotNameCount;
     if(tuuvm_tuple_isNonNullPointer(supertype))
-        totalSlotCount += tuuvm_tuple_integer_decodeSize(context, tuuvm_type_getTotalSlotCount(supertype));
-    tuuvm_type_setTotalSlotCount(type, tuuvm_tuple_integer_encodeSize(context, totalSlotCount));
+        totalSlotCount += tuuvm_type_getTotalSlotCount(supertype);
+    tuuvm_type_setTotalSlotCount(context, type, totalSlotCount);
 
     return type;
 }
@@ -151,8 +151,8 @@ static void tuuvm_context_setIntrinsicTypeMetadata(tuuvm_context_t *context, tuu
     // Set the total slot count.
     size_t totalSlotCount = slotNameCount;
     if(tuuvm_tuple_isNonNullPointer(supertype))
-        totalSlotCount += tuuvm_tuple_integer_decodeSize(context, tuuvm_type_getTotalSlotCount(supertype));
-    tuuvm_type_setTotalSlotCount(type, tuuvm_tuple_integer_encodeSize(context, totalSlotCount));
+        totalSlotCount += tuuvm_type_getTotalSlotCount(supertype);
+    tuuvm_type_setTotalSlotCount(context, type, totalSlotCount);
 }
 
 TUUVM_API void tuuvm_context_setIntrinsicSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t symbol, tuuvm_tuple_t binding)
@@ -331,8 +331,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "supertype", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         "slots", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "sumTypeAlternatives", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "totalSlotCount", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.integerType,
-        "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.integerType,
+        "totalSlotCount", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         
         "macroMethodDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "methodDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,

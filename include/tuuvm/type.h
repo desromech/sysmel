@@ -165,20 +165,12 @@ TUUVM_INLINE void tuuvm_type_setSlots(tuuvm_tuple_t type, tuuvm_tuple_t slots)
 /**
  * Gets the total slot count.
  */
-TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getTotalSlotCount(tuuvm_tuple_t type)
-{
-    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
-    return ((tuuvm_type_tuple_t*)type)->totalSlotCount;
-}
+TUUVM_API size_t tuuvm_type_getTotalSlotCount(tuuvm_tuple_t type);
 
 /**
  * Sets the total slot count
  */
-TUUVM_INLINE void tuuvm_type_setTotalSlotCount(tuuvm_tuple_t type, tuuvm_tuple_t totalSlotCount)
-{
-    if(!tuuvm_tuple_isNonNullPointer(type)) return;
-    ((tuuvm_type_tuple_t*)type)->totalSlotCount = totalSlotCount;
-}
+TUUVM_API void tuuvm_type_setTotalSlotCount(tuuvm_context_t *context, tuuvm_tuple_t type, size_t totalSlotCount);
 
 /**
  * Gets the type flags.
