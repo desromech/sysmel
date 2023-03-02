@@ -2023,6 +2023,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_
     };
     tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&functionActivationRecord);  
     tuuvm_function_t **closureASTFunction = (tuuvm_function_t**)&functionActivationRecord.function;
+
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*closureASTFunction)->sourcePosition);
     
     size_t expectedArgumentCount = tuuvm_arraySlice_getSize((*closureASTFunction)->argumentNodes);
     if(argumentCount != expectedArgumentCount)
@@ -2035,6 +2037,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_
     tuuvm_gc_safepoint(context);
     tuuvm_tuple_t result = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*closureASTFunction)->body, functionActivationRecord.applicationEnvironment);
     result = tuuvm_interpreter_evaluateResultTypeCoercionInEnvironment(context, closureASTFunction, &functionActivationRecord.applicationEnvironment, result);
+    
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&functionActivationRecord);  
     return result;
 }

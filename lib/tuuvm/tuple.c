@@ -214,7 +214,7 @@ static tuuvm_tuple_t tuuvm_tuple_primitive_size(tuuvm_context_t *context, tuuvm_
     (void)closure;
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
 
-    return tuuvm_tuple_integer_encodeInt64(context, tuuvm_tuple_getSizeInSlots(arguments[0]));
+    return tuuvm_tuple_size_encode(context, tuuvm_tuple_getSizeInSlots(arguments[0]));
 }
 
 static tuuvm_tuple_t tuuvm_tuple_primitive_byteSize(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -223,7 +223,7 @@ static tuuvm_tuple_t tuuvm_tuple_primitive_byteSize(tuuvm_context_t *context, tu
     (void)closure;
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
 
-    return tuuvm_tuple_integer_encodeInt64(context, tuuvm_tuple_getSizeInBytes(arguments[0]));
+    return tuuvm_tuple_size_encode(context, tuuvm_tuple_getSizeInBytes(arguments[0]));
 }
 
 static tuuvm_tuple_t tuuvm_tuple_primitive_shallowCopy(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)

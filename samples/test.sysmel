@@ -53,3 +53,7 @@ Type
             `,extensionBlock
         }
     } makeMacro.
+
+Object extend: {
+    printLine(SelfType)
+}.

@@ -25,7 +25,7 @@ Type
         (RawTuple::type:)(result, self).
         result
     };
-    withSelector: #basicNew: addMethod: {:self :(Integer)variableSlotCount :: self |
+    withSelector: #basicNew: addMethod: {:self :(Size)variableSlotCount :: self |
         let: #result with: RawTuple::new(self totalSlotCount + variableSlotCount).
         (RawTuple::type:)(result, self).
         result
@@ -92,18 +92,20 @@ ValueBox
     withSelector: #":=" addMethod: {:self :newValue | self value: newValue. newValue }.
 
 SequenceableCollection
-    withSelector: #collect: addMethod: {:self :aBlock :: Void |
-        let: #index with: (ValueBox with: 0).
+    withSelector: #collect: addMethod: {:self :aBlock :: self species |
+        let: #index with: (ValueBox with: 0sz).
         let: #size with: self size.
         let: #result with: (self species new: size).
 
         while: index _ < self size do: {
             let: #i with: index _.
             result at: i put: aBlock(self at: i)
-        } continueWith: (index := index _ + 1)
+        } continueWith: (index := index _ + 1).
+
+        result
     };
     withSelector: #do: addMethod: {:self :aBlock :: Void |
-        let: #index with: (ValueBox with: 0).
+        let: #index with: (ValueBox with: 0sz).
         let: #size with: self size.
 
         while: index _ < self size do: (
@@ -111,7 +113,7 @@ SequenceableCollection
         ) continueWith: (index := index _ + 1)
     };
     withSelector: #doWithIndex: addMethod: {:self :aBlock :: Void |
-        let: #index with: (ValueBox with: 0).
+        let: #index with: (ValueBox with: 0sz).
         let: #size with: self size.
 
         while: index _ < self size do: {
@@ -119,10 +121,10 @@ SequenceableCollection
             aBlock(self at: i, i)
         } continueWith: (index := index _ + 1)
     };
-    withSelector: #first addMethod: {:self | self at: 0 };
-    withSelector: #second addMethod: {:self | self at: 1 };
-    withSelector: #third addMethod: {:self | self at: 2 };
-    withSelector: #fourth addMethod: {:self | self at: 3 };
+    withSelector: #first addMethod: {:self | self at: 0sz };
+    withSelector: #second addMethod: {:self | self at: 1sz };
+    withSelector: #third addMethod: {:self | self at: 2sz };
+    withSelector: #fourth addMethod: {:self | self at: 3sz };
 
     withSelector: #printString addMethod: {:self :: String |
         let: #builder with: StringBuilder new.
@@ -137,24 +139,24 @@ SequenceableCollection
     }.
 
 ArrayList
-    withSelector: #new: addClassMethod: {:self :(Integer)initialSize :: Void |
+    withSelector: #new: addClassMethod: {:self :(Size)initialSize :: Void |
         self basicNew initializeWithSize: initialSize; yourself
     };
     withSelector: #initialize addMethod: {:self :: Void |
         self size: 0sz
     };
-    withSelector: #initializeWithSize: addMethod: {:self :(Integer)initialSize :: Void |
+    withSelector: #initializeWithSize: addMethod: {:self :(Size)initialSize :: Void |
         self size: initialSize sz.
         self storage: (Array new: initialSize).
     };
-    withSelector: #at: addMethod: {:self :(Integer)index |
+    withSelector: #at: addMethod: {:self :(Size)index |
         if: index < self size then: {
-            self storage at: index + self offset
+            self storage at: index
         } else: {
             error("Index out of bounds.")
         }
     };
-    withSelector: #at:put: addMethod: {:self :(Integer)index :value :: Void |
+    withSelector: #at:put: addMethod: {:self :(Size)index :value :: Void |
         if: index < self size then: {
             self storage at: index + self offset put: value
         } else: {
@@ -168,31 +170,31 @@ StringBuilder
     }.
 
 Array
-    withSelector: #at: addMethod: {:self :(Integer)index |
+    withSelector: #at: addMethod: {:self :(Size)index |
         self __slotAt__: index
     };
-    withSelector: #at:put: addMethod: {:self :(Integer)index :value :: Void |
+    withSelector: #at:put: addMethod: {:self :(Size)index :value :: Void |
         self __slotAt__: index put: value
     };
-    withSelector: #size addMethod: {:self :: Integer |
+    withSelector: #size addMethod: {:self :: Size |
         self __size__
     }.
 
 ByteArray
-    withSelector: #at: addMethod: {:self :(Integer)index |
+    withSelector: #at: addMethod: {:self :(Size)index |
         self __slotAt__: index
     };
-    withSelector: #at:put: addMethod: {:self :(Integer)index :value :: Void |
+    withSelector: #at:put: addMethod: {:self :(Size)index :value :: Void |
         self __slotAt__: index put: value
     };
-    withSelector: #size addMethod: {:self :: Integer |
+    withSelector: #size addMethod: {:self :: Size |
         self __byteSize__
     };
     withSelector: #printString addMethod: {:self :: String |
         let: #builder with: StringBuilder new.
         builder addAll: "#[".
         self doWithIndex: {:element :index :: Void |
-            if: index > 0 then: (builder addAll: ". ").
+            if: index > 0sz then: (builder addAll: ". ").
             builder addAll: element printString.
             void
         }.
@@ -201,21 +203,21 @@ ByteArray
     }.
 
 ArraySlice
-    withSelector: #new: addClassMethod: {:self :(Integer)size |
+    withSelector: #new: addClassMethod: {:self :(Size)size |
         self basicNew
             elements: (Array basicNew: size);
             offset: 0 sz;
-            size: size sz;
+            size: size;
             yourself
     };
-    withSelector: #at: addMethod: {:self :(Integer)index |
+    withSelector: #at: addMethod: {:self :(Size)index |
         if: index < self size then: {
             self elements at: index + self offset
         } else: {
             error("Index out of bounds.")
         }
     };
-    withSelector: #at:put: addMethod: {:self :(Integer)index :value :: Void |
+    withSelector: #at:put: addMethod: {:self :(Size)index :value :: Void |
         if: index < self size then: {
             self elements at: index + self offset put: value
         } else: {
