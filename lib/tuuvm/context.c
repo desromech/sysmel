@@ -17,6 +17,7 @@ extern void tuuvm_boolean_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_dictionary_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_errors_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_environment_setupPrimitives(tuuvm_context_t *context);
+extern void tuuvm_float_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_function_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_integer_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_io_setupPrimitives(tuuvm_context_t *context);
@@ -316,8 +317,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.uint64Type = tuuvm_context_createIntrinsicClass(context, "UInt64", TUUVM_NULL_TUPLE, NULL);
     context->roots.int64Type = tuuvm_context_createIntrinsicClass(context, "Int64", TUUVM_NULL_TUPLE, NULL);
 
-    context->roots.floatType = tuuvm_context_createIntrinsicClass(context, "Float", TUUVM_NULL_TUPLE, NULL);
-    context->roots.doubleType = tuuvm_context_createIntrinsicClass(context, "Double", TUUVM_NULL_TUPLE, NULL);
+    context->roots.float32Type = tuuvm_context_createIntrinsicClass(context, "Float32", TUUVM_NULL_TUPLE, NULL);
+    context->roots.float64Type = tuuvm_context_createIntrinsicClass(context, "Float64", TUUVM_NULL_TUPLE, NULL);
 
     context->roots.sizeType = sizeof(size_t) == 4 ? context->roots.uint32Type : context->roots.uint64Type;
     context->roots.uintptrType = sizeof(size_t) == 4 ? context->roots.uint32Type : context->roots.uint64Type;
@@ -382,8 +383,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_INT32] = context->roots.int32Type;
     context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_UINT64] = context->roots.uint64Type;
     context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_INT64] = context->roots.int64Type;
-    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_FLOAT] = context->roots.floatType;
-    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_DOUBLE] = context->roots.doubleType;
+    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_FLOAT32] = context->roots.float32Type;
+    context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_FLOAT64] = context->roots.float64Type;
     context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_TRIVIAL] = context->roots.nilType;
 
     // Fill the immediate trivial type table.
@@ -408,6 +409,7 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
     tuuvm_dictionary_setupPrimitives(context);
     tuuvm_errors_setupPrimitives(context);
     tuuvm_environment_setupPrimitives(context);
+    tuuvm_float_setupPrimitives(context);
     tuuvm_function_setupPrimitives(context);
     tuuvm_integer_setupPrimitives(context);
     tuuvm_io_setupPrimitives(context);

@@ -82,8 +82,8 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t uintptrType;
     tuuvm_tuple_t intptrType;
 
-    tuuvm_tuple_t floatType;
-    tuuvm_tuple_t doubleType;
+    tuuvm_tuple_t float32Type;
+    tuuvm_tuple_t float64Type;
 
     tuuvm_tuple_t sourceCodeType;
     tuuvm_tuple_t sourcePositionType;

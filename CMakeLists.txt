@@ -24,6 +24,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${MainOutputDirectory} )
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${MainOutputDirectory} )
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${MainOutputDirectory} )
 
+set(TUUVM_DEP_LIBS)
+if(UNIX)
+    set(TUUVM_DEP_LIBS m)
+endif()
+
 add_subdirectory(lib)
 add_subdirectory(apps)
 add_subdirectory(tests)

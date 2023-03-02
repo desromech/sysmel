@@ -3,10 +3,13 @@
 #include "tuuvm/assert.h"
 #include "tuuvm/gc.h"
 #include "tuuvm/integer.h"
+#include "tuuvm/float.h"
 #include "tuuvm/sourceCode.h"
 #include "tuuvm/sourcePosition.h"
 #include "tuuvm/string.h"
 #include "tuuvm/token.h"
+#include <stdlib.h>
+#include <string.h>
 
 typedef struct tuuvm_scannerState_s
 {
@@ -62,8 +65,7 @@ static tuuvm_tuple_t tuuvm_scanner_tokenAsInteger(tuuvm_context_t *context, size
 
 static tuuvm_tuple_t tuuvm_scanner_tokenAsFloat(tuuvm_context_t *context, size_t stringSize, const uint8_t *string)
 {
-    // TODO: Implement this part properly.
-    return TUUVM_NULL_TUPLE;
+    return tuuvm_float64_parseString(context, stringSize, (const char*)string);
 }
 
 static tuuvm_tuple_t tuuvm_scanner_tokenAsCharacter(tuuvm_context_t *context, size_t stringSize, const uint8_t *string)
@@ -416,7 +418,18 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
                 while(tuuvm_scanner_isDigit(tuuvm_scanner_lookAt(state, 0)))
                     ++state->position;
 
-                tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_FLOAT, tuuvm_scanner_tokenAsSymbol, outTokenList);
+                // Exponent.
+                if(tuuvm_scanner_lookAt(state, 0) == 'e' || tuuvm_scanner_lookAt(state, 0) == 'E')
+                {
+                    ++state->position;
+                    if(tuuvm_scanner_lookAt(state, 0) == '+' || tuuvm_scanner_lookAt(state, 0) == '-')
+                        --state->position;
+
+                    while(tuuvm_scanner_isDigit(tuuvm_scanner_lookAt(state, 0)))
+                        ++state->position;
+                }
+
+                tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_FLOAT, tuuvm_scanner_tokenAsFloat, outTokenList);
                 return true;
             }
         }

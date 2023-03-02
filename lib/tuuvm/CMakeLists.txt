@@ -9,6 +9,7 @@ set(tuuvm_sources
     dictionary.c
     environment.c
     errors.c
+    float.c
     function.c
     gc.c
     heap.c
@@ -33,3 +34,4 @@ set(tuuvm_sources
 
 add_definitions(-DBUILD_TUUVM)
 add_library(tuuvm SHARED ${tuuvm_sources})
+target_link_libraries(tuuvm ${TUUVM_DEP_LIBS})

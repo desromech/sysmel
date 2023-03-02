@@ -40,3 +40,8 @@ printLine((Array, ArraySlice)).
 printLine(`'42).
 printLine(``42).
 printLine(``(`,(ASTSequenceNode new))).
+
+printLine(0.0).
+printLine(1.5 + 2.25).
+printLine(0.0f32).
+printLine(1.5f32 + 2.25f32).
