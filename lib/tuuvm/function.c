@@ -215,6 +215,11 @@ static tuuvm_tuple_t tuuvm_function_primitive_adoptDefinitionOf(tuuvm_context_t 
     return TUUVM_VOID_TUPLE;
 }
 
+bool tuuvm_function_shouldOptimizeLookup(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_tuple_t receiverType)
+{
+    return tuuvm_function_isMacro(context, function);
+}
+
 void tuuvm_function_setupPrimitives(tuuvm_context_t *context)
 {
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "apply", context->roots.functionType, "applyWithArguments:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_VARIADIC, NULL, tuuvm_function_primitive_apply);

@@ -145,4 +145,9 @@ TUUVM_API void tuuvm_functionCallFrameStack_push(tuuvm_functionCallFrameStack_t 
  */
 TUUVM_API tuuvm_tuple_t tuuvm_functionCallFrameStack_finish(tuuvm_context_t *context, tuuvm_functionCallFrameStack_t *callFrameStack);
 
+/**
+ * Does the function require an optimized lookup?
+ */
+TUUVM_API bool tuuvm_function_shouldOptimizeLookup(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_tuple_t receiverType);
+
 #endif //TUUVM_FUNCTION_H

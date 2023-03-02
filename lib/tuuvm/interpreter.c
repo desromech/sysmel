@@ -1617,7 +1617,7 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyze(tuuvm_context_t *
                     gcFrame.method = tuuvm_type_lookupFallbackSelector(context, gcFrame.receiverType, gcFrame.selector);
 
                 // Turn this node onto an unexpanded application.
-                if(gcFrame.method)
+                if(gcFrame.method && tuuvm_function_shouldOptimizeLookup(context, gcFrame.method, gcFrame.receiverType))
                 {
                     size_t applicationArgumentCount = tuuvm_arraySlice_getSize(gcFrame.sendNode->arguments);
                     gcFrame.newMethodNode = tuuvm_astLiteralNode_create(context, gcFrame.sendNode->super.sourcePosition, gcFrame.method);
