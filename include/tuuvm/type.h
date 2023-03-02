@@ -26,6 +26,7 @@ typedef enum tuuvm_typeFlags_e
 {
     TUUVM_TYPE_FLAG_NONE = 0,
     TUUVM_TYPE_FLAG_NULLABLE = 1<<0,
+    TUUVM_TYPE_FLAG_BYTES = 1<<1,
 } tuuvm_typeFlags_t;
 
 typedef struct tuuvm_class_s
@@ -175,20 +176,12 @@ TUUVM_API void tuuvm_type_setTotalSlotCount(tuuvm_context_t *context, tuuvm_tupl
 /**
  * Gets the type flags.
  */
-TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getFlags(tuuvm_tuple_t type)
-{
-    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
-    return ((tuuvm_type_tuple_t*)type)->flags;
-}
+TUUVM_API size_t tuuvm_type_getFlags(tuuvm_tuple_t type);
 
 /**
  * Sets the type flags.
  */
-TUUVM_INLINE void tuuvm_type_setFlags(tuuvm_tuple_t type, tuuvm_tuple_t flags)
-{
-    if(!tuuvm_tuple_isNonNullPointer(type)) return;
-    ((tuuvm_type_tuple_t*)type)->flags = flags;
-}
+TUUVM_API void tuuvm_type_setFlags(tuuvm_context_t *context, tuuvm_tuple_t type, size_t flags);
 
 /**
  * Gets the macro method dictionary.

@@ -202,8 +202,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)context->roots.typeType, context->roots.typeType);
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)context->roots.anyValueType, context->roots.typeType);
 
-    tuuvm_type_setFlags(context->roots.anyValueType, tuuvm_tuple_integer_encodeSmall(TUUVM_TYPE_FLAG_NULLABLE));
-    tuuvm_type_setFlags(context->roots.typeType, tuuvm_tuple_integer_encodeSmall(TUUVM_TYPE_FLAG_NULLABLE));
+    tuuvm_type_setFlags(context, context->roots.anyValueType, TUUVM_TYPE_FLAG_NULLABLE);
+    tuuvm_type_setFlags(context, context->roots.typeType, TUUVM_TYPE_FLAG_NULLABLE);
 
     context->roots.objectType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.anyValueType);
     tuuvm_type_setSupertype(context->roots.typeType, context->roots.objectType);
@@ -241,6 +241,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.stringHashFunction = tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_string_primitive_hash);
 
     context->roots.symbolType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
+    tuuvm_type_setFlags(context, context->roots.symbolType, TUUVM_TYPE_FLAG_NULLABLE | TUUVM_TYPE_FLAG_BYTES);
+
     context->roots.setType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.hashedCollectionType);
     context->roots.internedSymbolSet = tuuvm_set_create(context, context->roots.stringEqualsFunction, context->roots.stringHashFunction);
 
@@ -322,6 +324,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.negativeIntegerType = tuuvm_context_createIntrinsicClass(context, "NegativeInteger", context->roots.integerType, NULL);
     context->roots.undefinedObjectType = tuuvm_context_createIntrinsicClass(context, "UndefinedObject", TUUVM_NULL_TUPLE, NULL);
     context->roots.stringType = tuuvm_context_createIntrinsicClass(context, "String", context->roots.arrayedCollectionType, NULL);
+    tuuvm_type_setFlags(context, context->roots.stringType, TUUVM_TYPE_FLAG_NULLABLE | TUUVM_TYPE_FLAG_BYTES);
 
     // Set the name of the root basic type.
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.anyValueType, "AnyValue", TUUVM_NULL_TUPLE, NULL);
@@ -389,6 +392,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     context->roots.byteArrayType = tuuvm_context_createIntrinsicClass(context, "ByteArray", context->roots.arrayedCollectionType, NULL);
+    tuuvm_type_setFlags(context, context->roots.byteArrayType, TUUVM_TYPE_FLAG_NULLABLE | TUUVM_TYPE_FLAG_BYTES);
     context->roots.dictionaryType = tuuvm_context_createIntrinsicClass(context, "Dictionary", TUUVM_NULL_TUPLE,
         "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,

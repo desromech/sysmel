@@ -96,6 +96,18 @@ TUUVM_API void tuuvm_type_setTotalSlotCount(tuuvm_context_t *context, tuuvm_tupl
     ((tuuvm_type_tuple_t*)type)->totalSlotCount = tuuvm_tuple_size_encode(context, totalSlotCount);
 }
 
+TUUVM_API size_t tuuvm_type_getFlags(tuuvm_tuple_t type)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+    return tuuvm_tuple_size_decode(((tuuvm_type_tuple_t*)type)->flags);
+}
+
+TUUVM_API void tuuvm_type_setFlags(tuuvm_context_t *context, tuuvm_tuple_t type, size_t flags)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return;
+    ((tuuvm_type_tuple_t*)type)->flags = tuuvm_tuple_size_encode(context, flags);
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_type_lookupMacroSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector)
 {
     if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;

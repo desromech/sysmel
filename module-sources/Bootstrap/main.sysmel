@@ -20,15 +20,28 @@ Object
     withSelector: #subclassResponsibility addMethod: {:self :: Void | self error: "Subclass responsibility." }.
 
 Type
-    withSelector: #basicNew addMethod: {:self :: self |
-        let: #result with: RawTuple::new(self totalSlotCount).
+    withSelector: #hasBytesContent addMethod: {:self :: Boolean |
+        (self flags & 2sz) ~= 0sz
+    };
+    withSelector: #basicAllocate addMethod: {:self :: self |
+        let: #result with: (if: self hasBytesContent
+            then: RawTuple::byteNew(0sz)
+            else: RawTuple::new(self totalSlotCount)).
         (RawTuple::type:)(result, self).
         result
     };
-    withSelector: #basicNew: addMethod: {:self :(Size)variableSlotCount :: self |
-        let: #result with: RawTuple::new(self totalSlotCount + variableSlotCount).
+    withSelector: #basicAllocate: addMethod: {:self :(Size)variableSize :: self |
+        let: #result with: (if: self hasBytesContent
+            then: RawTuple::byteNew(variableSize)
+            else: RawTuple::new(self totalSlotCount + variableSize)).
         (RawTuple::type:)(result, self).
         result
+    };
+    withSelector: #basicNew addMethod: {:self :: self |
+        self basicAllocate
+    };
+    withSelector: #basicNew: addMethod: {:self :(Size)variableSlotCount :: self |
+        self basicAllocate: variableSlotCount
     };
     withSelector: #new addMethod: {:self :: self |
         self basicNew initialize; yourself
