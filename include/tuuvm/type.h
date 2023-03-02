@@ -12,7 +12,7 @@ typedef struct tuuvm_type_tuple_s
     tuuvm_tuple_header_t header;
     tuuvm_tuple_t name;
     tuuvm_tuple_t supertype;
-    tuuvm_tuple_t slotNames;
+    tuuvm_tuple_t slots;
     tuuvm_tuple_t sumTypeAlternatives;
     tuuvm_tuple_t totalSlotCount;
     tuuvm_tuple_t flags;
@@ -32,6 +32,25 @@ typedef struct tuuvm_metaclass_s
     tuuvm_type_tuple_t super;
     tuuvm_tuple_t thisClass;
 } tuuvm_metaclass_t;
+
+typedef struct tuuvm_typeSlot_s
+{
+    tuuvm_tuple_header_t header;
+    tuuvm_tuple_t name;
+    tuuvm_tuple_t flags;
+    tuuvm_tuple_t type;
+} tuuvm_typeSlot_t;
+
+typedef enum tuuvm_typeSlotFlags_e
+{
+    TUUVM_TYPE_SLOT_FLAG_NONE = 0,
+    TUUVM_TYPE_SLOT_FLAG_PUBLIC = 1<<0,
+} tuuvm_typeSlotFlags_t;
+
+/**
+ * Creates a type slot
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_typeSlot_create(tuuvm_context_t *context, tuuvm_tuple_t name, tuuvm_tuple_t flags, tuuvm_tuple_t type);
 
 /**
  * Creates an anonymous type.
@@ -113,19 +132,19 @@ TUUVM_INLINE void tuuvm_type_setSupertype(tuuvm_tuple_t type, tuuvm_tuple_t supe
 /**
  * Gets the slot names
  */
-TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getSlotNames(tuuvm_tuple_t type)
+TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getSlots(tuuvm_tuple_t type)
 {
     if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
-    return ((tuuvm_type_tuple_t*)type)->slotNames;
+    return ((tuuvm_type_tuple_t*)type)->slots;
 }
 
 /**
  * Sets the slot names
  */
-TUUVM_INLINE void tuuvm_type_setSlotNames(tuuvm_tuple_t type, tuuvm_tuple_t slotNames)
+TUUVM_INLINE void tuuvm_type_setSlots(tuuvm_tuple_t type, tuuvm_tuple_t slots)
 {
     if(!tuuvm_tuple_isNonNullPointer(type)) return;
-    ((tuuvm_type_tuple_t*)type)->slotNames = slotNames;
+    ((tuuvm_type_tuple_t*)type)->slots = slots;
 }
 
 /**

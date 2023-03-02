@@ -7,6 +7,15 @@
 #include "tuuvm/type.h"
 #include "internal/context.h"
 
+TUUVM_API tuuvm_tuple_t tuuvm_typeSlot_create(tuuvm_context_t *context, tuuvm_tuple_t name, tuuvm_tuple_t flags, tuuvm_tuple_t type)
+{
+    tuuvm_typeSlot_t* result = (tuuvm_typeSlot_t*)tuuvm_context_allocatePointerTuple(context, context->roots.typeSlotType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_typeSlot_t));
+    result->flags = flags;
+    result->name = name;
+    result->type = type;
+    return (tuuvm_tuple_t)result;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymous(tuuvm_context_t *context)
 {
     tuuvm_type_tuple_t* result = (tuuvm_type_tuple_t*)tuuvm_context_allocatePointerTuple(context, context->roots.typeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_type_tuple_t));

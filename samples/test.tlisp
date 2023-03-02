@@ -16,7 +16,7 @@
 
 (printLine (Type::name Type))
 (printLine (Type::supertype Type))
-(printLine (Type::slotNames Type))
+(printLine (Type::slots Type))
 *#
 
 (printLine (send #+ 1 1))

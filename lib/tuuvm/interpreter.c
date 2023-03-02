@@ -1873,7 +1873,8 @@ static void tuuvm_interpreter_evaluateArgumentNodeInEnvironment(tuuvm_context_t 
     if(gcFrame.argumentNode->type)
     {
         gcFrame.expectedType = tuuvm_interpreter_evaluateASTWithEnvironment(context, gcFrame.argumentNode->type, *activationEnvironment);
-        gcFrame.value = tuuvm_type_coerceValue(context, gcFrame.expectedType, gcFrame.value);
+        if(gcFrame.expectedType)
+            gcFrame.value = tuuvm_type_coerceValue(context, gcFrame.expectedType, gcFrame.value);
     }
 
     tuuvm_environment_setNewSymbolBinding(context, *activationEnvironment, gcFrame.name, gcFrame.value);
@@ -1896,7 +1897,8 @@ static tuuvm_tuple_t tuuvm_interpreter_evaluateResultTypeCoercionInEnvironment(t
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     gcFrame.resultType = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*closureASTFunction)->resultTypeNode, *environment);
-    gcFrame.result = tuuvm_type_coerceValue(context, gcFrame.resultType, gcFrame.result);
+    if(gcFrame.resultType)
+        gcFrame.result = tuuvm_type_coerceValue(context, gcFrame.resultType, gcFrame.result);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
 }
