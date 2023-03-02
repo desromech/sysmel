@@ -259,7 +259,9 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.astNodeAnalysisSelector = tuuvm_symbol_internWithCString(context, "astAnalyzeWithEnvironment:");
     context->roots.astNodeEvaluationSelector = tuuvm_symbol_internWithCString(context, "astEvaluateWithEnvironment:");
     context->roots.astNodeAnalysisAndEvaluationSelector = tuuvm_symbol_internWithCString(context, "astAnalyzeAndEvaluateWithEnvironment:");
+    
     context->roots.analyzeAndEvaluateMessageSendNodeForReceiverWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "analyzeAndEvaluateMessageSendNode:forReceiver:withEnvironment:");
+    context->roots.analyzeMessageSendNodeWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "analyzeMessageSendNode:withEnvironment:");
 
     context->roots.coerceValueSelector = tuuvm_symbol_internWithCString(context, "coerceValue:");
 

@@ -1574,13 +1574,32 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyze(tuuvm_context_t *
     struct {
         tuuvm_astMessageSendNode_t *sendNode;
         tuuvm_tuple_t analyzedArguments;
+        tuuvm_tuple_t receiverValue;
+        tuuvm_tuple_t receiverType;
+        tuuvm_tuple_t analysisFunction;
+        tuuvm_tuple_t result;
     } gcFrame = {};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     gcFrame.sendNode = (tuuvm_astMessageSendNode_t*)tuuvm_context_shallowCopy(context, *node);
     if(gcFrame.sendNode->receiver)
+    {
         gcFrame.sendNode->receiver = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.sendNode->receiver, *environment);
+        if(tuuvm_astNode_isLiteralNode(context, gcFrame.sendNode->receiver))
+        {
+            // If the receiver is a literal node, we can attempt to forward the message send node analysis.
+            gcFrame.receiverValue = tuuvm_astLiteralNode_getValue(gcFrame.sendNode->receiver);
+            gcFrame.receiverType = tuuvm_tuple_getType(context, gcFrame.receiverValue);
+            gcFrame.analysisFunction = tuuvm_type_getAnalyzeAndEvaluateMessageSendNodeForReceiverWithEnvironmentFunction(context, tuuvm_tuple_getType(context, gcFrame.receiverType));
 
+            if(gcFrame.analysisFunction)
+            {
+                gcFrame.result = tuuvm_function_apply4(context, gcFrame.analysisFunction, gcFrame.receiverType, *node, (tuuvm_tuple_t)gcFrame.sendNode, *environment);
+                TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+                return gcFrame.result;
+            }
+        }
+    }
     gcFrame.sendNode->selector = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.sendNode->selector, *environment);
 
     size_t applicationArgumentCount = tuuvm_arraySlice_getSize(gcFrame.sendNode->arguments);

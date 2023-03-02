@@ -26,7 +26,9 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t astNodeAnalysisSelector;
     tuuvm_tuple_t astNodeEvaluationSelector;
     tuuvm_tuple_t astNodeAnalysisAndEvaluationSelector;
+    
     tuuvm_tuple_t analyzeAndEvaluateMessageSendNodeForReceiverWithEnvironmentSelector;
+    tuuvm_tuple_t analyzeMessageSendNodeWithEnvironmentSelector;
 
     tuuvm_tuple_t coerceValueSelector;
 
