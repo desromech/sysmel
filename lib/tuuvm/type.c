@@ -84,10 +84,24 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createWithName(tuuvm_context_t *context, tuuv
     return result;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_type_lookupMacroSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+    tuuvm_tuple_t methodDictionary = tuuvm_type_getMacroMethodDictionary(type);
+    if(methodDictionary)
+    {
+        tuuvm_tuple_t found = TUUVM_NULL_TUPLE;
+        if(tuuvm_dictionary_find(context, methodDictionary, selector, &found))
+            return found;
+    }
+
+    return tuuvm_type_lookupMacroSelector(context, tuuvm_type_getSupertype(type), selector);
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_type_lookupSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector)
 {
     if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
-    tuuvm_tuple_t methodDictionary = tuuvm_type_getMethodDictonary(type);
+    tuuvm_tuple_t methodDictionary = tuuvm_type_getMethodDictionary(type);
     if(methodDictionary)
     {
         tuuvm_tuple_t found = TUUVM_NULL_TUPLE;
@@ -96,6 +110,20 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_lookupSelector(tuuvm_context_t *context, tuuv
     }
 
     return tuuvm_type_lookupSelector(context, tuuvm_type_getSupertype(type), selector);
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_type_lookupFallbackSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+    tuuvm_tuple_t methodDictionary = tuuvm_type_getFallbackMethodDictionary(type);
+    if(methodDictionary)
+    {
+        tuuvm_tuple_t found = TUUVM_NULL_TUPLE;
+        if(tuuvm_dictionary_find(context, methodDictionary, selector, &found))
+            return found;
+    }
+
+    return tuuvm_type_lookupFallbackSelector(context, tuuvm_type_getSupertype(type), selector);
 }
 
 static tuuvm_tuple_t tuuvm_type_lookupSelectorOrFallbackWith(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector, tuuvm_tuple_t fallbackMethod)
@@ -193,6 +221,16 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_getAstNodeAnalysisAndEvaluationFunction(tuuvm
 TUUVM_API void tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t astNodeAnalysisAndEvaluationFunction)
 {
     tuuvm_type_setMethodWithSelector(context, type, context->roots.astNodeAnalysisAndEvaluationSelector, astNodeAnalysisAndEvaluationFunction);
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_type_getAnalyzeAndEvaluateMessageSendNodeForReceiverWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type)
+{
+    return tuuvm_type_lookupSelector(context, type, context->roots.analyzeAndEvaluateMessageSendNodeForReceiverWithEnvironmentSelector);
+}
+
+TUUVM_API void tuuvm_type_setAnalyzeAndEvaluateMessageSendNodeForReceiverWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t function)
+{
+    tuuvm_type_setMethodWithSelector(context, type, context->roots.analyzeAndEvaluateMessageSendNodeForReceiverWithEnvironmentSelector, function);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_type_getCoerceValueFunction(tuuvm_context_t *context, tuuvm_tuple_t type)

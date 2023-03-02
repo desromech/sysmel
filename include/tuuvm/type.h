@@ -84,9 +84,19 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousClassAndMetaclass(tuuvm_contex
 TUUVM_API tuuvm_tuple_t tuuvm_type_createWithName(tuuvm_context_t *context, tuuvm_tuple_t name);
 
 /**
+ * Performs the lookup of the given macro selector.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_lookupMacroSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector);
+
+/**
  * Performs the lookup of the given selector.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_type_lookupSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector);
+
+/**
+ * Performs the lookup of the given macro fallback selector.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_lookupFallbackSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector);
 
 /**
  * Sets the specified method with the given selector in the method dictionary.
@@ -133,7 +143,6 @@ TUUVM_INLINE void tuuvm_type_setSupertype(tuuvm_tuple_t type, tuuvm_tuple_t supe
     if(!tuuvm_tuple_isNonNullPointer(type)) return;
     ((tuuvm_type_tuple_t*)type)->supertype = supertype;
 }
-
 
 /**
  * Gets the slot names
@@ -190,12 +199,30 @@ TUUVM_INLINE void tuuvm_type_setFlags(tuuvm_tuple_t type, tuuvm_tuple_t flags)
 }
 
 /**
+ * Gets the macro method dictionary.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getMacroMethodDictionary(tuuvm_tuple_t type)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_type_tuple_t*)type)->macroMethodDictionary;
+}
+
+/**
  * Gets the method dictionary.
  */
-TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getMethodDictonary(tuuvm_tuple_t type)
+TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getMethodDictionary(tuuvm_tuple_t type)
 {
     if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
     return ((tuuvm_type_tuple_t*)type)->methodDictionary;
+}
+
+/**
+ * Gets the macro fallback method dictionary.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getFallbackMethodDictionary(tuuvm_tuple_t type)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_type_tuple_t*)type)->fallbackMethodDictionary;
 }
 
 /**
@@ -276,6 +303,16 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_getAstNodeAnalysisAndEvaluationFunction(tuuvm
  * Sets the astNodeAnalysisAndEvaluationFunction function of a type
  */
 TUUVM_API void tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t astNodeAnalysisAndEvaluationFunction);
+
+/**
+ * Gets the analyzeAndEvaluateMessageSendNode with environment function function of a type.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_getAnalyzeAndEvaluateMessageSendNodeForReceiverWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type);
+
+/**
+ * Sets the analyzeAndEvaluateMessageSendNode with environment function function of a type.
+ */
+TUUVM_API void tuuvm_type_setAnalyzeAndEvaluateMessageSendNodeForReceiverWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t function);
 
 /**
  * Gets the coerceValueFunction function of a type.
