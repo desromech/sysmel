@@ -113,3 +113,6 @@
 ## Register the Type methods.
 (Type::withSelector:addMethod: Type #withSelector:addMethod: Type::withSelector:addMethod:)
 (Type::withSelector:addMethod: Type #validMethodDictionary Type::validMethodDictionary)
+
+(Type::withSelector:addMethod: Type #withSelector:addMacroMethod: Type::withSelector:addMacroMethod:)
+(Type::withSelector:addMethod: Type #validMacroMethodDictionary Type::validMacroMethodDictionary)

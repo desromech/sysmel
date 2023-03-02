@@ -45,3 +45,11 @@ printLine(0.0).
 printLine(1.5 + 2.25).
 printLine(0.0f32).
 printLine(1.5f32 + 2.25f32).
+
+Type
+    withSelector: #extend: addMacroMethod: {:macroContext :self :extensionBlock :: ASTNode |
+        ``{
+            let: #SelfType with: `,self.
+            `,extensionBlock
+        }
+    } makeMacro.
