@@ -217,6 +217,7 @@ static tuuvm_tuple_t tuuvm_function_primitive_adoptDefinitionOf(tuuvm_context_t 
 
 bool tuuvm_function_shouldOptimizeLookup(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_tuple_t receiverType)
 {
+    (void)receiverType;
     return (tuuvm_function_getFlags(context, function) & (TUUVM_FUNCTION_FLAGS_MACRO | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL))!= TUUVM_FUNCTION_FLAGS_NONE;
 }
 
