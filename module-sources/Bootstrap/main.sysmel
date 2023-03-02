@@ -238,6 +238,36 @@ ArraySlice
         }
     }.
 
+Class
+    withSelector: #subclassWithClassSlots:slots: addMethod: {:self :(Array)classSlots :(Array)instanceSlots :: self |
+        let: #metaclass with: Metaclass basicNew.
+        let: #metaclassSuper with: self class.
+        metaclass
+            flags: 1sz;
+            supertype: metaclassSuper;
+            slots: classSlots;
+            totalSlotCount: metaclassSuper totalSlotCount + classSlots size.
+        
+        let: #class with: metaclass basicNew.
+        class
+            flags: 1sz;
+            supertype: self;
+            slots: instanceSlots;
+            totalSlotCount: self totalSlotCount + instanceSlots size.
+        metaclass thisClass: class.
+        class
+    };
+    withSelector: #subclass:classSlots:slots: addMethod: {:self :(Symbol)name :(Array)classSlots :(Array)instanceSlots :: self |
+        let: #class with: (self subclassWithClassSlots: classSlots slots: instanceSlots).
+        class name: name.
+        class
+    };
+    withSelector: #subclass:slots: addMethod: {:self :(Symbol)name :(Array)instanceSlots :: self |
+        self subclass: name classSlots: () slots: instanceSlots
+    }.
+
+##printLine(Class subclass: #ClassBuilder slots: ()).
+
 ## ============================================================================
 ## Bootstrap AST methods
 ## ============================================================================

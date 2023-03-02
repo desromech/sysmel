@@ -62,8 +62,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicClass(tuuvm_context_t *cont
 
     // Set the total slot count.
     size_t totalSlotCount = slotNameCount;
-    if(tuuvm_tuple_isNonNullPointer(supertype))
-        totalSlotCount += tuuvm_type_getTotalSlotCount(supertype);
+    tuuvm_tuple_t actualSupertype = tuuvm_type_getSupertype(type);
+    if(tuuvm_tuple_isNonNullPointer(actualSupertype))
+        totalSlotCount += tuuvm_type_getTotalSlotCount(actualSupertype);
     tuuvm_type_setTotalSlotCount(context, type, totalSlotCount);
 
     return type;
@@ -106,8 +107,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicType(tuuvm_context_t *conte
 
     // Set the total slot count.
     size_t totalSlotCount = slotNameCount;
-    if(tuuvm_tuple_isNonNullPointer(supertype))
-        totalSlotCount += tuuvm_type_getTotalSlotCount(supertype);
+    tuuvm_tuple_t actualSupertype = tuuvm_type_getSupertype(type);
+    if(tuuvm_tuple_isNonNullPointer(actualSupertype))
+        totalSlotCount += tuuvm_type_getTotalSlotCount(actualSupertype);
     tuuvm_type_setTotalSlotCount(context, type, totalSlotCount);
 
     return type;
@@ -150,8 +152,9 @@ static void tuuvm_context_setIntrinsicTypeMetadata(tuuvm_context_t *context, tuu
 
     // Set the total slot count.
     size_t totalSlotCount = slotNameCount;
-    if(tuuvm_tuple_isNonNullPointer(supertype))
-        totalSlotCount += tuuvm_type_getTotalSlotCount(supertype);
+    tuuvm_tuple_t actualSupertype = tuuvm_type_getSupertype(type);
+    if(tuuvm_tuple_isNonNullPointer(actualSupertype))
+        totalSlotCount += tuuvm_type_getTotalSlotCount(actualSupertype);
     tuuvm_type_setTotalSlotCount(context, type, totalSlotCount);
 }
 
