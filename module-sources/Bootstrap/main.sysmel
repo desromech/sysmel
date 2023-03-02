@@ -45,7 +45,7 @@ Class
 ValueBox
     withSelector: #with: addClassMethod: {:self :value |
         self basicNew
-            _: value;
+            value: value;
             yourself
     };
     withSelector: #_ addMethod: {:self | self value };
