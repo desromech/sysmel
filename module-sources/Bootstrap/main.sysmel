@@ -238,6 +238,27 @@ ArraySlice
         }
     }.
 
+TypeSlot
+    withSelector: #named:type:flags: addClassMethod: {:self :name :(Type)type :(Size)flags :: self |
+        self new
+            name: name;
+            type: type;
+            flags: flags;
+            yourself
+    };
+    withSelector: #named:type: addClassMethod: {:self :name :(Type)type :: self |
+        self named: name type: type flags: 0sz
+    };
+    withSelector: #named: addClassMethod: {:self :name :(Type)type :: self |
+        self publicNamed: name type: nil
+    };
+    withSelector: #publicNamed:type: addClassMethod: {:self :name :(Type)type :: self |
+        self named: name type: type flags: 1sz
+    };
+    withSelector: #publicNamed: addClassMethod: {:self :name :(Type)type :: self |
+        self publicNamed: name type: nil
+    }.
+
 Class
     withSelector: #subclassWithClassSlots:slots: addMethod: {:self :(Array)classSlots :(Array)instanceSlots :: self |
         let: #metaclass with: Metaclass basicNew.
@@ -266,7 +287,11 @@ Class
         self subclass: name classSlots: () slots: instanceSlots
     }.
 
-##printLine(Class subclass: #ClassBuilder slots: ()).
+let: #ClassBuilder with: (Class subclass: #ClassBuilder slots: (
+    TypeSlot publicNamed: #fields type: ArrayList ,
+    TypeSlot publicNamed: #classFields type: ArrayList
+    )
+).
 
 ## ============================================================================
 ## Bootstrap AST methods

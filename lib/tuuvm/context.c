@@ -348,6 +348,11 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.metaclassType, "Metaclass", TUUVM_NULL_TUPLE,
         "thisClass", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.typeSlotType, "TypeSlot", TUUVM_NULL_TUPLE,
+        "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "type", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        NULL);
 
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.environmentType, "Environment", TUUVM_NULL_TUPLE,
         "parent", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
