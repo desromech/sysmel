@@ -94,6 +94,11 @@ TUUVM_API bool tuuvm_astNode_isMessageChainMessageNode(tuuvm_context_t *context,
     return tuuvm_tuple_isKindOf(context, tuple, context->roots.astMessageChainMessageNodeType);
 }
 
+TUUVM_API bool tuuvm_astNode_isPragmaNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astPragmaNodeType);
+}
+
 TUUVM_API bool tuuvm_astNode_isSequenceNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
     return tuuvm_tuple_isKindOf(context, tuple, context->roots.astSequenceNodeType);
@@ -394,6 +399,15 @@ TUUVM_API tuuvm_tuple_t tuuvm_astMessageChainNode_create(tuuvm_context_t *contex
 TUUVM_API tuuvm_tuple_t tuuvm_astMessageChainMessageNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t selector, tuuvm_tuple_t arguments)
 {
     tuuvm_astMessageChainMessageNode_t *result = (tuuvm_astMessageChainMessageNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astMessageChainMessageNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astMessageChainMessageNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->selector = selector;
+    result->arguments = arguments;
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astPragmaNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t selector, tuuvm_tuple_t arguments)
+{
+    tuuvm_astPragmaNode_t *result = (tuuvm_astPragmaNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astPragmaNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astPragmaNode_t));
     result->super.sourcePosition = sourcePosition;
     result->selector = selector;
     result->arguments = arguments;

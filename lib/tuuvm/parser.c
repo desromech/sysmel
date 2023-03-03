@@ -105,6 +105,9 @@ static tuuvm_tuple_t tuuvm_parser_parsePrimaryExpression(tuuvm_context_t *contex
     case TUUVM_TOKEN_KIND_KEYWORD:
     case TUUVM_TOKEN_KIND_MULTI_KEYWORD:
     case TUUVM_TOKEN_KIND_OPERATOR:
+    case TUUVM_TOKEN_KIND_STAR:
+    case TUUVM_TOKEN_KIND_LESS_THAN:
+    case TUUVM_TOKEN_KIND_GREATER_THAN:
     case TUUVM_TOKEN_KIND_BAR:
     case TUUVM_TOKEN_KIND_COLON:
     case TUUVM_TOKEN_KIND_COLON_COLON:

@@ -523,6 +523,10 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "selector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
         NULL);
+    context->roots.astPragmaNodeType = tuuvm_context_createIntrinsicClass(context, "ASTPragmaNode", context->roots.astNodeType,
+        "selector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
+        NULL);
     context->roots.astSequenceNodeType = tuuvm_context_createIntrinsicClass(context, "ASTSequenceNode", context->roots.astNodeType,
         "pragmas", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "expressions", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,

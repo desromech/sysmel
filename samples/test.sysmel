@@ -138,7 +138,9 @@ let: #MethodMetaBuilder with: (MacroMetaBuilder subclass: #MethodMetaBuilder slo
 )).
 
 ASTNode
-    withSelector: #parseAsArgumentNode addMethod: {:self :: ASTArgumentNode | self error: self asString -- " is not a valid argument expression."}.
+    withSelector: #parseAsArgumentNode addMethod: {:self :: ASTArgumentNode |
+        self error: self asString -- " is not a valid argument expression."
+    }.
 
 ASTArgumentNode
     withSelector: #parseAsArgumentNode addMethod: {:self :: ASTArgumentNode | self }.
@@ -182,6 +184,11 @@ MethodMetaBuilder
             }
         }.
     };
+    withSelector: #":=" addMethod: {:self :(ASTNode)bodyNode :: ASTNode |
+        <metaBuilder>
+        self body: bodyNode.
+        self continueExpanding
+    };
     withSelector: #finishExpansionWithEnvironment: addMethod: {:self :environment :: ASTNode |
         let: #selfArgument with: (ASTArgumentNode new
             sourcePosition: self sourcePosition;
@@ -217,9 +224,10 @@ Object extend: {
         printLine(self, " testMethod").
     }.
 
-    method testMethodWithArgument: arg := {
-        printLine("testMethodWithArgument: ", arg).
+    method testMethodWithArgument: arg ::=> Void := {
+        printLine(self, " testMethodWithArgument: ", arg).
     }.
+
 }.
 
 Object new testMethod.

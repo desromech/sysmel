@@ -112,6 +112,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t astMessageSendNodeType;
     tuuvm_tuple_t astMessageChainNodeType;
     tuuvm_tuple_t astMessageChainMessageNodeType;
+    tuuvm_tuple_t astPragmaNodeType;
     tuuvm_tuple_t astSequenceNodeType;
     tuuvm_tuple_t astUnexpandedApplicationNodeType;
     tuuvm_tuple_t astUnexpandedSExpressionNodeType;

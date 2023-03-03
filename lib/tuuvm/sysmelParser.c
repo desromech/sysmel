@@ -213,6 +213,12 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseBlockArgument(tuuvm_context_t *cont
     ++state->tokenPosition;
 
     tuuvm_tuple_t isForAll = TUUVM_FALSE_TUPLE;
+    if(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_STAR)
+    {
+        isForAll = TUUVM_TRUE_TUPLE;
+        ++state->tokenPosition;
+    }
+
     tuuvm_tuple_t typeExpression = TUUVM_NULL_TUPLE;
 
     if(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_LPARENT)
@@ -323,6 +329,9 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseLiteralArrayElement(tuuvm_context_t
     case TUUVM_TOKEN_KIND_MULTI_KEYWORD:
     case TUUVM_TOKEN_KIND_KEYWORD:
     case TUUVM_TOKEN_KIND_OPERATOR:
+    case TUUVM_TOKEN_KIND_STAR:
+    case TUUVM_TOKEN_KIND_LESS_THAN:
+    case TUUVM_TOKEN_KIND_GREATER_THAN:
     case TUUVM_TOKEN_KIND_COLON:
     case TUUVM_TOKEN_KIND_COLON_COLON:
     case TUUVM_TOKEN_KIND_BAR:
@@ -425,6 +434,10 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parsePrimaryTerm(tuuvm_context_t *contex
     case TUUVM_TOKEN_KIND_IDENTIFIER:
     case TUUVM_TOKEN_KIND_ELLIPSIS:
     case TUUVM_TOKEN_KIND_OPERATOR:
+    case TUUVM_TOKEN_KIND_BAR:
+    case TUUVM_TOKEN_KIND_STAR:
+    case TUUVM_TOKEN_KIND_LESS_THAN:
+    case TUUVM_TOKEN_KIND_GREATER_THAN:
     case TUUVM_TOKEN_KIND_MULTI_KEYWORD:
         return tuuvm_sysmelParser_parseIdentifierReferenceReference(context, state);
 
@@ -593,6 +606,9 @@ static bool tuuvm_sysmelParser_isBinaryExpressionOperator(int tokenKind)
     switch(tokenKind)
     {
     case TUUVM_TOKEN_KIND_OPERATOR:
+    case TUUVM_TOKEN_KIND_STAR:
+    case TUUVM_TOKEN_KIND_LESS_THAN:
+    case TUUVM_TOKEN_KIND_GREATER_THAN:
     case TUUVM_TOKEN_KIND_BAR:
         return true;
     default:
@@ -710,6 +726,9 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseMessageChainList(tuuvm_context_t *c
         
         case TUUVM_TOKEN_KIND_OPERATOR:
         case TUUVM_TOKEN_KIND_BAR:
+        case TUUVM_TOKEN_KIND_STAR:
+        case TUUVM_TOKEN_KIND_LESS_THAN:
+        case TUUVM_TOKEN_KIND_GREATER_THAN:
             {
                 size_t chainedStartPosition = state->tokenPosition;
                 tuuvm_tuple_t selector = tuuvm_sysmelParser_parseLiteralTokenValue(context, state);
@@ -911,14 +930,77 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseExpressionList(tuuvm_context_t *con
     return tuuvm_arrayList_asArraySlice(context, expressionArrayList);
 }
 
+static tuuvm_tuple_t tuuvm_sysmelParser_parsePragma(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state)
+{
+    size_t startPosition = state->tokenPosition;
+    if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_LESS_THAN)
+        return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a subscript left bracket.");
+    ++state->tokenPosition;
+
+    tuuvm_tuple_t selector = TUUVM_NULL_TUPLE;
+    tuuvm_tuple_t arguments = TUUVM_NULL_TUPLE;
+
+    switch(tuuvm_sysmelParser_lookKindAt(state, 0))
+    {
+    case TUUVM_TOKEN_KIND_IDENTIFIER:
+        selector = tuuvm_sysmelParser_parseLiteralTokenValue(context, state);
+        arguments = tuuvm_arraySlice_createWithArrayOfSize(context, 0);
+        break;
+    case TUUVM_TOKEN_KIND_KEYWORD:
+        {
+            size_t keywordStartPosition = state->tokenPosition;
+            size_t keywordEndPosition = keywordStartPosition;
+            tuuvm_tuple_t selectorBuilder = tuuvm_stringBuilder_create(context);
+            tuuvm_tuple_t argumentArrayList = tuuvm_arrayList_create(context);
+            while(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_KEYWORD)
+            {
+                tuuvm_stringBuilder_addString(context, selectorBuilder, tuuvm_token_getValue(tuuvm_sysmelParser_lookAt(state, 0)));
+                ++state->tokenPosition;
+
+                tuuvm_tuple_t argument = tuuvm_sysmelParser_parseBinaryExpression(context, state);
+                tuuvm_arrayList_add(context, argumentArrayList, argument);
+            }
+
+            tuuvm_tuple_t selectorSourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, keywordStartPosition, keywordEndPosition);
+            selector = tuuvm_astLiteralNode_create(context, selectorSourcePosition, tuuvm_stringBuilder_asSymbol(context, selectorBuilder));
+            arguments = tuuvm_arrayList_asArraySlice(context, argumentArrayList);
+        }
+        break;
+    default:
+        return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a valid pragma content.");
+    }
+
+    if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_GREATER_THAN)
+        return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a subscript right bracket.");
+    ++state->tokenPosition;
+
+    tuuvm_tuple_t sourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, state->tokenPosition);
+    return tuuvm_astPragmaNode_create(context, sourcePosition, selector, arguments);
+}
+
+static tuuvm_tuple_t tuuvm_sysmelParser_parsePragmaList(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state)
+{
+    if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_LESS_THAN)
+        return tuuvm_arraySlice_createWithArrayOfSize(context, 0);
+
+    tuuvm_tuple_t list = tuuvm_arrayList_create(context);
+    while(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_LESS_THAN)
+    {
+        tuuvm_tuple_t pragma = tuuvm_sysmelParser_parsePragma(context, state);
+        tuuvm_arrayList_add(context, list, pragma);
+    }
+
+    return tuuvm_arrayList_asArraySlice(context, list);
+}
+
 static tuuvm_tuple_t tuuvm_sysmelParser_parseSequence(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state)
 {
     size_t startPosition = state->tokenPosition;
+    tuuvm_tuple_t pragmas = tuuvm_sysmelParser_parsePragmaList(context, state);
     tuuvm_tuple_t expressionsArraySlice = tuuvm_sysmelParser_parseExpressionList(context, state);
     size_t endPosition = state->tokenPosition;
 
     tuuvm_tuple_t sourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition);
-    tuuvm_tuple_t pragmas = tuuvm_arraySlice_createWithArrayOfSize(context, 0);
     return tuuvm_astSequenceNode_create(context, sourcePosition, pragmas, expressionsArraySlice);
 }
 
@@ -954,11 +1036,11 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseExpressionListUntil(tuuvm_context_t
 static tuuvm_tuple_t tuuvm_sysmelParser_parseSequenceUntil(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state, tuuvm_tokenKind_t delimiter)
 {
     size_t startPosition = state->tokenPosition;
+    tuuvm_tuple_t pragmas = tuuvm_sysmelParser_parsePragmaList(context, state);
     tuuvm_tuple_t expressionsArraySlice = tuuvm_sysmelParser_parseExpressionListUntil(context, state, delimiter);
     size_t endPosition = state->tokenPosition;
 
     tuuvm_tuple_t sourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition);
-    tuuvm_tuple_t pragmas = tuuvm_arraySlice_createWithArrayOfSize(context, 0);
     return tuuvm_astSequenceNode_create(context, sourcePosition, pragmas, expressionsArraySlice);
 }
 

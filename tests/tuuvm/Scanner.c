@@ -160,8 +160,8 @@ TEST_SUITE(Scanner)
 
     TEST_CASE_WITH_FIXTURE(Delimiters, TuuvmCore)
     {
-        tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "() [] {} : :: `' `` `, `@ | .. ... ;", "test", "tlisp");
-        TEST_ASSERT_EQUALS(17, tuuvm_arraySlice_getSize(tokenList));
+        tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "() [] {} : :: `' `` `, `@ | .. ... ; * < >", "test", "tlisp");
+        TEST_ASSERT_EQUALS(20, tuuvm_arraySlice_getSize(tokenList));
         
         TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_LPARENT, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 0)));
         TEST_ASSERT_EQUALS(tuuvm_symbol_internWithCString(tuuvm_test_context, "("), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 0)));
@@ -213,5 +213,14 @@ TEST_SUITE(Scanner)
 
         TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_SEMICOLON, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 16)));
         TEST_ASSERT_EQUALS(tuuvm_symbol_internWithCString(tuuvm_test_context, ";"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 16)));
+ 
+        TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_STAR, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 17)));
+        TEST_ASSERT_EQUALS(tuuvm_symbol_internWithCString(tuuvm_test_context, "*"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 17)));
+
+        TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_LESS_THAN, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 18)));
+        TEST_ASSERT_EQUALS(tuuvm_symbol_internWithCString(tuuvm_test_context, "<"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 18)));
+
+        TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_GREATER_THAN, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 19)));
+        TEST_ASSERT_EQUALS(tuuvm_symbol_internWithCString(tuuvm_test_context, ">"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 19)));
     }
 }

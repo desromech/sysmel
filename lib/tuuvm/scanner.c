@@ -698,6 +698,26 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
         {
             while(tuuvm_scanner_isOperatorCharacter(tuuvm_scanner_lookAt(state, 0)))
                 ++state->position;
+            size_t operatorSize = state->position - tokenStartState.position;
+            if(operatorSize == 1)
+            {
+                if(c == '<')
+                {
+                    tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_LESS_THAN, tuuvm_scanner_tokenAsSymbol, outTokenList);
+                    return true;                    
+                }
+                else if(c == '>')
+                {
+                    tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_GREATER_THAN, tuuvm_scanner_tokenAsSymbol, outTokenList);
+                    return true;                    
+                }
+                else if(c == '*')
+                {
+                    tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_STAR, tuuvm_scanner_tokenAsSymbol, outTokenList);
+                    return true;                    
+                }
+            }
+            
             tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_OPERATOR, tuuvm_scanner_tokenAsSymbol, outTokenList);
             return true;
         }
