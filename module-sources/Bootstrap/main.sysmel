@@ -105,6 +105,11 @@ ValueBox
     withSelector: #":=" addMethod: {:self :newValue | self value: newValue. newValue }.
 
 SequenceableCollection
+    withSelector: #with: addClassMethod: {:self :value :: self |
+        (self new: 1sz)
+            at: 0sz put: value;
+            yourself
+    };
     withSelector: #collect: addMethod: {:self :aBlock :: self species |
         let: #index with: (ValueBox with: 0sz).
         let: #size with: self size.
@@ -134,6 +139,21 @@ SequenceableCollection
             aBlock(self at: i, i)
         } continueWith: (index := index _ + 1)
     };
+    withSelector: #-- addMethod: {:self :other :: self species |
+        let: #size with: self size.
+        let: #otherSize with: other size.
+        let: #result with: (self species new: size + otherSize ).
+        
+        self doWithIndex: {:element :(Size)index :: Void |
+            result at: index put: element
+        }.
+
+        other doWithIndex: {:element :(Size)index :: Void |
+            result at: size + index put: element
+        }.
+
+        result
+    };
     withSelector: #first addMethod: {:self | self at: 0sz };
     withSelector: #second addMethod: {:self | self at: 1sz };
     withSelector: #third addMethod: {:self | self at: 2sz };
@@ -152,7 +172,7 @@ SequenceableCollection
     }.
 
 ArrayList
-    withSelector: #new: addClassMethod: {:self :(Size)initialSize :: Void |
+    withSelector: #new: addClassMethod: {:self :(Size)initialSize :: self |
         self basicNew initializeWithSize: initialSize; yourself
     };
     withSelector: #initialize addMethod: {:self :: Void |
@@ -183,6 +203,9 @@ StringBuilder
     }.
 
 Array
+    withSelector: #new: addClassMethod: {:self :(Size)initialSize :: self |
+        self basicNew: initialSize
+    };
     withSelector: #at: addMethod: {:self :(Size)index |
         self __slotAt__: index
     };
@@ -191,6 +214,13 @@ Array
     };
     withSelector: #size addMethod: {:self :: Size |
         self __size__
+    };
+    withSelector: #asArraySlice addMethod: {:self :: ArraySlice |
+        ArraySlice basicNew
+            elements: self;
+            offset: 0sz;
+            size: self size;
+            yourself
     }.
 
 ByteArray
@@ -216,10 +246,10 @@ ByteArray
     }.
 
 ArraySlice
-    withSelector: #new: addClassMethod: {:self :(Size)size |
+    withSelector: #new: addClassMethod: {:self :(Size)size :: self |
         self basicNew
             elements: (Array basicNew: size);
-            offset: 0 sz;
+            offset: 0sz;
             size: size;
             yourself
     };
@@ -257,41 +287,68 @@ TypeSlot
     };
     withSelector: #publicNamed: addClassMethod: {:self :name :(Type)type :: self |
         self publicNamed: name type: nil
+    };
+
+    withSelector: #isPublic addMethod: {:self :: Boolean |
+        (self flags & 1sz) ~= 0sz
+    };
+    withSelector: #generateAccessorsOn:withIndex: addMethod: {:self :(Type)type :(Size)slotIndex :: Void |
+        if: self isPublic then: {
+            let: #slotType with: self type.
+            let: #getterName with: self name.
+            let: #setterName with: (self name asString -- ":") asSymbol.
+
+            ## Getter.
+            type withSelector: getterName addMethod: {:(type)self :: slotType | (RawTuple::slotAt:)(self, slotIndex) }.
+
+            ## Setter
+            type withSelector: setterName addMethod: {:(type)self :(slotType)value :: Void | RawTuple::slotAt:put:(self, slotIndex, value) }.
+        }
+    }.
+
+Type
+    withSelector: #supertypeSlotCount addMethod: {:self :: Size |
+        if: self supertype == nil
+            then: 0sz
+            else: self supertype totalSlotCount.
+    };
+    withSelector: #generatePublicAccessors addMethod: {:self :: Void |
+        let: #baseSlotIndex with: self supertypeSlotCount.
+        self slots doWithIndex: {:slot :index :: Void |
+            let: #slotIndex with: baseSlotIndex + index.
+            slot generateAccessorsOn: self withIndex: index
+        }.
     }.
 
 Class
-    withSelector: #subclassWithClassSlots:slots: addMethod: {:self :(Array)classSlots :(Array)instanceSlots :: self |
+    withSelector: #subclassWithClassSlots:slots: addMethod: {:self :(Array)classSlots :(Array)instanceSlots :: Class |
         let: #metaclass with: Metaclass basicNew.
         let: #metaclassSuper with: self class.
         metaclass
             flags: 1sz;
             supertype: metaclassSuper;
             slots: classSlots;
-            totalSlotCount: metaclassSuper totalSlotCount + classSlots size.
+            totalSlotCount: metaclassSuper totalSlotCount + classSlots size;
+            generatePublicAccessors.
         
         let: #class with: metaclass basicNew.
         class
             flags: 1sz;
             supertype: self;
             slots: instanceSlots;
-            totalSlotCount: self totalSlotCount + instanceSlots size.
+            totalSlotCount: self totalSlotCount + instanceSlots size;
+            generatePublicAccessors.
         metaclass thisClass: class.
         class
     };
-    withSelector: #subclass:classSlots:slots: addMethod: {:self :(Symbol)name :(Array)classSlots :(Array)instanceSlots :: self |
+    withSelector: #subclass:classSlots:slots: addMethod: {:self :(Symbol)name :(Array)classSlots :(Array)instanceSlots :: Class |
         let: #class with: (self subclassWithClassSlots: classSlots slots: instanceSlots).
         class name: name.
         class
     };
-    withSelector: #subclass:slots: addMethod: {:self :(Symbol)name :(Array)instanceSlots :: self |
+    withSelector: #subclass:slots: addMethod: {:self :(Symbol)name :(Array)instanceSlots :: Class |
         self subclass: name classSlots: () slots: instanceSlots
     }.
-
-let: #ClassBuilder with: (Class subclass: #ClassBuilder slots: (
-    TypeSlot publicNamed: #fields type: ArrayList ,
-    TypeSlot publicNamed: #classFields type: ArrayList
-    )
-).
 
 ## ============================================================================
 ## Bootstrap AST methods
@@ -301,9 +358,13 @@ ASTNode
     withSelector: #astAnalyzeWithEnvironment: addMethod: {:self :environment | self subclassResponsibility };
     withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:self :environment | self subclassResponsibility };
     withSelector: #astEvaluateWithEnvironment: addMethod: {:self :environment | self subclassResponsibility };
+
     withSelector: #childrenDo: addMethod: {:self :aBlock :: Void | self subclassResponsibility };
+
     withSelector: #transformWith: addMethod: {:self :aBlock :: Void | self subclassResponsibility };
-    withSelector: #transformedWith: addMethod: {:self :aBlock :: self class | self copy transformWith: aBlock; yourself }.
+    withSelector: #transformedWith: addMethod: {:self :aBlock :: self class | self copy transformWith: aBlock; yourself };
+    
+    withSelector: #isLiteralNode addMethod: {:self :: Boolean | false }.
 
 ASTArgumentNode
     withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
@@ -375,6 +436,7 @@ ASTLiteralNode
     withSelector: #astAnalyzeWithEnvironment: addMethod: {:self :environment | self };
     withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:self :environment | self value };
     withSelector: #astEvaluateWithEnvironment: addMethod: {:self :environment | self value };
+    withSelector: #isLiteralNode addMethod: {:self :: Boolean | true };
     withSelector: #childrenDo: addMethod: {:self :aBlock :: Void | };
     withSelector: #transformWith: addMethod: {:self :aBlock :: Void | }.
 

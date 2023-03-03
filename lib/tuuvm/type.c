@@ -279,6 +279,9 @@ TUUVM_API void tuuvm_type_setCoerceValueFunction(tuuvm_context_t *context, tuuvm
 
 TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValue(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t value)
 {
+    if(!type) return value;
+    if(!value && tuuvm_type_isNullable(type)) return value;
+
     if(tuuvm_tuple_isKindOf(context, value, type))
         return value;
 

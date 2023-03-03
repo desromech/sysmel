@@ -338,6 +338,15 @@ TUUVM_API tuuvm_tuple_t tuuvm_astNode_getSourcePosition(tuuvm_tuple_t node);
 TUUVM_API tuuvm_tuple_t tuuvm_astArgumentNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t isForAll, tuuvm_tuple_t name, tuuvm_tuple_t type);
 
 /**
+ * Is this a for all argument? 
+ */
+TUUVM_INLINE bool tuuvm_astArgumentNode_isForAll(tuuvm_tuple_t argumentNode)
+{
+    if(!tuuvm_tuple_isNonNullPointer(argumentNode)) return false;
+    return tuuvm_tuple_boolean_decode(((tuuvm_astArgumentNode_t*)argumentNode)->isForAll);
+}
+
+/**
  * Creates a binary expression sequence node.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astBinaryExpressionSequenceNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t operands, tuuvm_tuple_t operators);

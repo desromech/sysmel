@@ -184,6 +184,14 @@ TUUVM_API size_t tuuvm_type_getFlags(tuuvm_tuple_t type);
 TUUVM_API void tuuvm_type_setFlags(tuuvm_context_t *context, tuuvm_tuple_t type, size_t flags);
 
 /**
+ * Gets the type flags.
+ */
+TUUVM_INLINE bool tuuvm_type_isNullable(tuuvm_tuple_t type)
+{
+    return (tuuvm_type_getFlags(type) & TUUVM_TYPE_FLAG_NULLABLE) != 0;
+}
+
+/**
  * Gets the macro method dictionary.
  */
 TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getMacroMethodDictionary(tuuvm_tuple_t type)

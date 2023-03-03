@@ -856,7 +856,13 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseCommaExpression(tuuvm_context_t *co
         while(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_COMMA)
         {
             ++state->tokenPosition;
+            tuuvm_sysmelParser_state_t savedState = *state;
             tuuvm_tuple_t nextElement = tuuvm_sysmelParser_parseCommaExpressionElement(context, state);
+            if(!nextElement || tuuvm_astNode_isErrorNode(context, nextElement))
+            {
+                *state = savedState;
+                break;
+            }
             tuuvm_arrayList_add(context, elements, nextElement);
         }
 

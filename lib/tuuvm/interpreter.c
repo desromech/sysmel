@@ -314,6 +314,30 @@ static tuuvm_tuple_t tuuvm_astLambdaNode_primitiveMacro(tuuvm_context_t *context
     return result;
 }
 
+
+static tuuvm_tuple_t tuuvm_astArgumentNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *node = &arguments[0];
+    tuuvm_tuple_t *environment = &arguments[1];
+
+    struct {
+        tuuvm_astArgumentNode_t *argumentNode;
+    } gcFrame = {};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    gcFrame.argumentNode = (tuuvm_astArgumentNode_t*)tuuvm_context_shallowCopy(context, *node);
+    if(gcFrame.argumentNode->name)
+        gcFrame.argumentNode->name = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.argumentNode->name, *environment);
+    if(gcFrame.argumentNode->type)
+        gcFrame.argumentNode->type = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.argumentNode->type, *environment);
+
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return (tuuvm_tuple_t)gcFrame.argumentNode;
+}
+
 static tuuvm_tuple_t tuuvm_astLambdaNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
@@ -325,14 +349,31 @@ static tuuvm_tuple_t tuuvm_astLambdaNode_primitiveAnalyze(tuuvm_context_t *conte
     struct {
         tuuvm_astLambdaNode_t *lambdaNode;
         tuuvm_tuple_t lambdaAnalysisEnvironment;
-        tuuvm_tuple_t argumentsArraySlice;
-        tuuvm_tuple_t bodySequence;
+        tuuvm_tuple_t argumentNode;
+        tuuvm_tuple_t argumentsNode;
     } gcFrame = {};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     gcFrame.lambdaNode = (tuuvm_astLambdaNode_t*)tuuvm_context_shallowCopy(context, *node);
-
     gcFrame.lambdaAnalysisEnvironment = tuuvm_environment_create(context, *environment);
+
+    size_t lambdaArgumentCount = 0;
+    size_t argumentNodeCount = tuuvm_arraySlice_getSize(gcFrame.lambdaNode->arguments);
+    gcFrame.argumentsNode = tuuvm_arraySlice_createWithArrayOfSize(context, argumentNodeCount);
+    for(size_t i = 0; i < argumentNodeCount; ++i)
+    {
+        gcFrame.argumentNode = tuuvm_arraySlice_at(gcFrame.lambdaNode->arguments, i);
+        gcFrame.argumentNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.argumentNode, *environment);
+
+        if(!tuuvm_astArgumentNode_isForAll(gcFrame.argumentNode))
+            ++lambdaArgumentCount;
+
+        tuuvm_arraySlice_atPut(gcFrame.argumentsNode, i, gcFrame.argumentNode);
+    }
+
+    gcFrame.lambdaNode->argumentCount = tuuvm_tuple_size_encode(context,  lambdaArgumentCount);
+    gcFrame.lambdaNode->arguments = gcFrame.argumentsNode;
+    
     gcFrame.lambdaNode->body = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.lambdaNode->body, gcFrame.lambdaAnalysisEnvironment);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return (tuuvm_tuple_t)gcFrame.lambdaNode;
@@ -361,16 +402,35 @@ static tuuvm_tuple_t tuuvm_astLambdaNode_primitiveAnalyzeAndEvaluate(tuuvm_conte
 
     struct {
         tuuvm_tuple_t lambdaAnalysisEnvironment;
+        tuuvm_tuple_t analyzedArgumentCount;
+        tuuvm_tuple_t analyzedArguments;
         tuuvm_tuple_t analyzedBody;
+        tuuvm_tuple_t argumentNode;
     } gcFrame = {};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     tuuvm_astLambdaNode_t **lambdaNode = (tuuvm_astLambdaNode_t**)node;
 
     gcFrame.lambdaAnalysisEnvironment = tuuvm_environment_create(context, *environment);
+
+    size_t lambdaArgumentCount = 0;
+    size_t argumentNodeCount = tuuvm_arraySlice_getSize((*lambdaNode)->arguments);
+    gcFrame.analyzedArguments = tuuvm_arraySlice_createWithArrayOfSize(context, argumentNodeCount);
+    for(size_t i = 0; i < argumentNodeCount; ++i)
+    {
+        gcFrame.argumentNode = tuuvm_arraySlice_at((*lambdaNode)->arguments, i);
+        gcFrame.argumentNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.argumentNode, *environment);
+
+        if(!tuuvm_astArgumentNode_isForAll(gcFrame.argumentNode))
+            ++lambdaArgumentCount;
+
+        tuuvm_arraySlice_atPut(gcFrame.analyzedArguments, i, gcFrame.argumentNode);
+    }
+
+    gcFrame.analyzedArgumentCount = tuuvm_tuple_size_encode(context, lambdaArgumentCount);
     gcFrame.analyzedBody = tuuvm_interpreter_analyzeASTWithEnvironment(context, (*lambdaNode)->body, gcFrame.lambdaAnalysisEnvironment);
 
-    tuuvm_tuple_t result = tuuvm_function_createClosureAST(context, (*lambdaNode)->super.sourcePosition, (*lambdaNode)->flags, (*lambdaNode)->argumentCount, *environment, (*lambdaNode)->arguments, (*lambdaNode)->resultType, gcFrame.analyzedBody);
+    tuuvm_tuple_t result = tuuvm_function_createClosureAST(context, (*lambdaNode)->super.sourcePosition, (*lambdaNode)->flags, gcFrame.analyzedArgumentCount, *environment, gcFrame.analyzedArguments, (*lambdaNode)->resultType, gcFrame.analyzedBody);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return result;
 }
@@ -2046,6 +2106,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_
 void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context)
 {
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "begin", 2, TUUVM_FUNCTION_FLAGS_MACRO | TUUVM_FUNCTION_FLAGS_VARIADIC, NULL, tuuvm_astSequenceNode_primitiveMacro);
+
+    tuuvm_type_setAstNodeAnalysisFunction(context, context->roots.astArgumentNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_astArgumentNode_primitiveAnalyze));
+
     tuuvm_type_setAstNodeAnalysisFunction(context, context->roots.astSequenceNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_astSequenceNode_primitiveAnalyze));
     tuuvm_type_setAstNodeEvaluationFunction(context, context->roots.astSequenceNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_astSequenceNode_primitiveEvaluate));
     tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context, context->roots.astSequenceNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_astSequenceNode_primitiveAnalyzeAndEvaluate));
@@ -2067,8 +2130,8 @@ void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context)
     tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context, context->roots.astUnexpandedSExpressionNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_astUnexpandedSExpressionNode_primitiveAnalyzeAndEvaluate));
 
     tuuvm_type_setAstNodeAnalysisFunction(context, context->roots.astFunctionApplicationNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_astFunctionApplicationNode_primitiveAnalyze));
-    tuuvm_type_setAstNodeEvaluationFunction(context, context->roots.astFunctionApplicationNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_astFunctionApplicationNode_primitiveAnalyzeAndEvaluate));
-    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context, context->roots.astFunctionApplicationNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_astFunctionApplicationNode_primitiveEvaluate));
+    tuuvm_type_setAstNodeEvaluationFunction(context, context->roots.astFunctionApplicationNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_astFunctionApplicationNode_primitiveEvaluate));
+    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context, context->roots.astFunctionApplicationNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_astFunctionApplicationNode_primitiveAnalyzeAndEvaluate));
 
     tuuvm_type_setAstNodeAnalysisFunction(context, context->roots.astLexicalBlockNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_astLexicalBlockNode_primitiveAnalyze));
     tuuvm_type_setAstNodeEvaluationFunction(context, context->roots.astLexicalBlockNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_astLexicalBlockNode_primitiveEvaluate));
