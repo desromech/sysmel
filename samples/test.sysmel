@@ -229,12 +229,19 @@ Type
     withSelector: #extend: addMacroMethod: {:macroContext :self :extensionBlock :: ASTNode |
         ``{
             let: #SelfType with: `,self.
+            let: #__Meta__ with: SelfType __type__.
             let: #__OwnerProgramEntity__ with: SelfType.
             `,extensionBlock
         }
     } makeMacro.
 
 Object extend: {
+    __Meta__ extend: {
+        method testClassMethod := {
+            printLine(self, " testClassMethod")
+        }.
+    }.
+
     method testMethod => Void := {
         printLine(self, " testMethod").
     }.
@@ -242,9 +249,9 @@ Object extend: {
     method testMethodWithArgument: arg ::=> Void := {
         printLine(self, " testMethodWithArgument: ", arg).
     }.
-
 }.
 
+Object testClassMethod.
 Object new testMethod.
 Object new testMethodWithArgument: 42.
 printLine(Object lookupSelector: #testMethod, " ", (Object lookupSelector: #testMethod) hasPragmaNamed: #testPragma).
