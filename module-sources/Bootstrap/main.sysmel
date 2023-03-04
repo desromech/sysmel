@@ -11,7 +11,10 @@ AnyValue
     withSelector: #copy addMethod: {:self :: self __type__ | self shallowCopy postCopy; yourself };
 
     withSelector: #isNil addMethod: {:self :: Boolean | self == nil };
-    withSelector: #isNotNil addMethod: {:self :: Boolean | self ~~ nil }.
+    withSelector: #isNotNil addMethod: {:self :: Boolean | self ~~ nil };
+
+    withSelector: #= addMethod: {:self :other :: Boolean | self == other };
+    withSelector: #~= addMethod: {:self :other :: Boolean | self ~~ other }.
 
 Object
     withSelector: #class addMethod: {:self :: self __type__ __type__ | self __type__ };
@@ -45,10 +48,34 @@ Type
     };
     withSelector: #new addMethod: {:self :: self |
         self basicNew initialize; yourself
+    };
+    withSelector: #lookupSelector: addMethod: {:self :selector |
+        let: #methodDictionary with: self methodDictionary.
+        let: #method with: (if: methodDictionary ~~ nil
+            then: (methodDictionary atOrNil: selector)
+            else: nil).
+        if: method ~~ nil
+        then: method
+        else: {
+            let: #supertype with: self supertype.
+            if: supertype ~~ nil
+                then: (supertype lookupSelector: selector)
+                else: (nil)
+        }
     }.
 
 Void
-    withSelector: #coerceValue: addMethod: {:self :value :: self | void }.
+    withSelector: #coerceValue: addMethod: {:self :value :: self | void };
+    withSelector: #printString addMethod: {:self :: String | "void" }.
+
+UndefinedObject
+    withSelector: #printString addMethod: {:self :: String | "nil" }.
+
+False
+    withSelector: #printString addMethod: {:self :: String | "false" }.
+
+True
+    withSelector: #printString addMethod: {:self :: String | "true" }.
 
 Class
     withSelector: #withSelector:addClassMethod: addMethod: {:self :selector :method :: Void |
@@ -92,6 +119,10 @@ Function
     withSelector: #makeFinal addMethod: {:self :: self __type__ |
         self addFlag: (1sz << 0sz).
         self
+    };
+    withSelector: #hasPragmaNamed: addMethod: {:self :selector :: Boolean |
+        let: #body with: self body.
+        if: body ~~ nil then: (body hasPragmaNamed: selector) else: false
     }.
 
 ValueBox
@@ -109,6 +140,26 @@ SequenceableCollection
         (self new: 1sz)
             at: 0sz put: value;
             yourself
+    };
+    withSelector: #anySatisfy: addMethod: {:self :aBlock :: Boolean |
+        let: #index with: (ValueBox with: 0sz).
+        let: #size with: self size.
+        let: #hasFoundIt with: (ValueBox with: false).
+
+        while: (if: hasFoundIt _ then: false else: index _ < self size) do: (
+            hasFoundIt := aBlock(self at: index _)
+        ) continueWith: (index := index _ + 1).
+        hasFoundIt _
+    };
+    withSelector: #allSatisfy: addMethod: {:self :aBlock :: Boolean |
+        let: #index with: (ValueBox with: 0sz).
+        let: #size with: self size.
+        let: #everythingIsFine with: (ValueBox with: true).
+
+        while: (if: everythingIsFine _ then: index _ < self size else: false) do: (
+            everythingIsFine := aBlock(self at: index _)
+        ) continueWith: (index := index _ + 1).
+        everythingIsFine _
     };
     withSelector: #collect: addMethod: {:self :aBlock :: self species |
         let: #index with: (ValueBox with: 0sz).
@@ -316,7 +367,7 @@ Type
         let: #baseSlotIndex with: self supertypeSlotCount.
         self slots doWithIndex: {:slot :index :: Void |
             let: #slotIndex with: baseSlotIndex + index.
-            slot generateAccessorsOn: self withIndex: index
+            slot generateAccessorsOn: self withIndex: slotIndex
         }.
     }.
 
@@ -364,6 +415,9 @@ ASTNode
     withSelector: #transformWith: addMethod: {:self :aBlock :: Void | self subclassResponsibility };
     withSelector: #transformedWith: addMethod: {:self :aBlock :: self class | self copy transformWith: aBlock; yourself };
     
+    withSelector: #hasPragmaNamed: addMethod: {:self :selector :: Boolean | false };
+    withSelector: #hasLiteralValueEqualTo: addMethod: {:self :expectedValue :: Boolean | false };
+
     withSelector: #isLiteralNode addMethod: {:self :: Boolean | false }.
 
 ASTArgumentNode
@@ -425,6 +479,9 @@ ASTLambdaNode
     }.
 
 ASTLexicalBlockNode
+    withSelector: #hasPragmaNamed: addMethod: {:self :selector :: Boolean |
+        self body hasPragmaNamed: selector
+    };
     withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
         if: (self body isNotNil) then: aBlock(self body).
     };
@@ -437,6 +494,8 @@ ASTLiteralNode
     withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:self :environment | self value };
     withSelector: #astEvaluateWithEnvironment: addMethod: {:self :environment | self value };
     withSelector: #isLiteralNode addMethod: {:self :: Boolean | true };
+    withSelector: #hasLiteralValueEqualTo: addMethod: {:self :expectedValue :: Boolean | self value = expectedValue };
+
     withSelector: #childrenDo: addMethod: {:self :aBlock :: Void | };
     withSelector: #transformWith: addMethod: {:self :aBlock :: Void | }.
 
@@ -532,7 +591,26 @@ ASTMessageChainMessageNode
         self arguments: (self arguments collect: aBlock)
     }.
 
+ASTPragmaNode
+    withSelector: #hasPragmaNamed: addMethod: {:self :expectedSelector :: Boolean |
+        let: #selector with: self selector.
+        if: selector isNotNil
+            then: (selector hasLiteralValueEqualTo: expectedSelector)
+            else: false
+    };
+    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+        if: (self selector isNotNil) then: aBlock(self selector).
+        self arguments do: aBlock
+    };
+    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+        if: (self selector isNotNil) then: (self bodyselector: aBlock(self body)).
+        self arguments: (self arguments collect: aBlock)
+    }.
+
 ASTSequenceNode
+    withSelector: #hasPragmaNamed: addMethod: {:self :selector :: Boolean |
+        self pragmas anySatisfy: {:pragma :: Boolean | pragma hasPragmaNamed: selector}
+    };
     withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
         self pragmas do: aBlock.
         self expressions do: aBlock.

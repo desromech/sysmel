@@ -108,7 +108,11 @@ MetaBuilderFactory
         metaBuilderInstance analyzeMessageSendNode: messageWithMetaBuilderInstance withEnvironment: environment
     }.
 
-let: #MacroMetaBuilder with: (MetaBuilder subclass: #MacroMetaBuilder slots: ()).
+let: #MacroMetaBuilder with: (MetaBuilder subclass: #MacroMetaBuilder slots: (
+    TypeSlot publicNamed: #environment type: Environment ,
+    TypeSlot publicNamed: #sourcePosition type: SourcePosition ,
+    TypeSlot publicNamed: #continueExpansion type: ASTNode
+)).
 
 MacroMetaBuilder
     withSelector: #analyzeAndEvaluateMessageSendNode:withEnvironment: addMethod: {:self :messageSendNode :environment |
@@ -118,19 +122,42 @@ MacroMetaBuilder
         (self expandMessageSendNode: messageSendNode withEnvironment: environment) astAnalyzeWithEnvironment: environment
     };
     withSelector: #expandMessageSendNode:withEnvironment: addMethod: {:self :messageSendNode :environment :: ASTNode |
-        self subclassResponsibility
+        self
+            environment: environment;
+            sourcePosition: messageSendNode sourcePosition;
+            continueExpansion: messageSendNode receiver;
+            expandMessageSendNode: messageSendNode
+    };
+    withSelector: #expandMessageSendNode: addMethod: {:self :messageSendNode :: ASTNode |
+        self expandMessageSendNodeWithMetaBuilderMethod: messageSendNode
+    };
+    withSelector: #expandMessageSendNodeWithMetaBuilderMethod: addMethod: {:self :messageSendNode :: ASTNode |
+        let: #metaBuilderMethod with: (
+            if: messageSendNode selector isLiteralNode
+                then: (self class lookupSelector: messageSendNode selector value)
+                else: (nil)
+        ).
+
+        if: (if: metaBuilderMethod isNotNil then: (metaBuilderMethod hasPragmaNamed: #metaBuilder) else: false)
+            then: apply(metaBuilderMethod, self, messageSendNode arguments)
+            else: self finishExpansion
     };
     withSelector: #finishExpansionWithMessageSendNode:environment: addMethod: {:self :messageSendNode :environment :: ASTNode |
         messageSendNode copy
             receiver: (self finishExpansionWithEnvironment: environment);
             yourself
     };
+    withSelector: #finishExpansionWithMessageSendNode: addMethod: {:self :messageSendNode :: ASTNode |
+        self finishExpansionWithMessageSendNode: messageSendNode environment: self environment
+    };
     withSelector: #finishExpansionWithEnvironment: addMethod: {:self :environment :: ASTNode |
         self subclassResponsibility
+    };
+    withSelector: #finishExpansion addMethod: {:self :: ASTNode |
+        self finishExpansionWithEnvironment: self environment
     }.
 
 let: #MethodMetaBuilder with: (MacroMetaBuilder subclass: #MethodMetaBuilder slots: (
-    TypeSlot publicNamed: #sourcePosition type: SourcePosition ,
     TypeSlot publicNamed: #selector type: ASTNode ,
     TypeSlot publicNamed: #resultType type: ASTNode ,
     TypeSlot publicNamed: #body type: ASTNode ,
@@ -158,36 +185,24 @@ ASTIdentifierReferenceNode
     }.
 
 MethodMetaBuilder
-    withSelector: #expandMessageSendNode:withEnvironment: addMethod: {:self :messageSendNode :environment :: ASTNode |
-        self sourcePosition: messageSendNode sourcePosition.
-
+    withSelector: #expandMessageSendNode: addMethod: {:self :messageSendNode :: ASTNode |
         if: self selector == nil then: {
             self selector: messageSendNode selector.
             self arguments: (messageSendNode arguments collect: {:each | each parseAsArgumentNode}).
-            messageSendNode receiver
+            self continueExpansion
         } else: {
-            if: messageSendNode selector isLiteralNode then: {
-                let: #selectorValue with: messageSendNode selector value.
-                if: selectorValue == #":=" then: {
-                    self body: messageSendNode arguments first.
-                    self finishExpansionWithEnvironment: environment
-                } else: {
-                    if: selectorValue == #=> then: {
-                        self resultType: messageSendNode arguments first.
-                        messageSendNode receiver
-                    } else: {
-                        self finishExpansionWithMessageSendNode: messageSendNode environment: environment
-                    }
-                }.
-            } else: {
-                self finishExpansionWithMessageSendNode: messageSendNode environment: environment
-            }
+            self expandMessageSendNodeWithMetaBuilderMethod: messageSendNode
         }.
     };
     withSelector: #":=" addMethod: {:self :(ASTNode)bodyNode :: ASTNode |
         <metaBuilder>
         self body: bodyNode.
-        self continueExpanding
+        self finishExpansion
+    };
+    withSelector: #=> addMethod: {:self :(ASTNode)resultType :: ASTNode |
+        <metaBuilder>
+        self resultType: resultType.
+        self continueExpansion
     };
     withSelector: #finishExpansionWithEnvironment: addMethod: {:self :environment :: ASTNode |
         let: #selfArgument with: (ASTArgumentNode new
@@ -232,3 +247,4 @@ Object extend: {
 
 Object new testMethod.
 Object new testMethodWithArgument: 42.
+printLine(Object lookupSelector: #testMethod, " ", (Object lookupSelector: #testMethod) hasPragmaNamed: #testPragma).

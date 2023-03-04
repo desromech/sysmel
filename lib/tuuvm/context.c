@@ -246,7 +246,9 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.symbolType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
     tuuvm_type_setFlags(context, context->roots.symbolType, TUUVM_TYPE_FLAG_NULLABLE | TUUVM_TYPE_FLAG_BYTES);
 
+    context->roots.dictionaryType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.hashedCollectionType);
     context->roots.setType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.hashedCollectionType);
+
     context->roots.internedSymbolSet = tuuvm_set_create(context, context->roots.stringEqualsFunction, context->roots.stringHashFunction);
 
     // Create the intrinsic built-in environment
@@ -401,7 +403,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         NULL);
     context->roots.byteArrayType = tuuvm_context_createIntrinsicClass(context, "ByteArray", context->roots.arrayedCollectionType, NULL);
     tuuvm_type_setFlags(context, context->roots.byteArrayType, TUUVM_TYPE_FLAG_NULLABLE | TUUVM_TYPE_FLAG_BYTES);
-    context->roots.dictionaryType = tuuvm_context_createIntrinsicClass(context, "Dictionary", TUUVM_NULL_TUPLE,
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.dictionaryType, "Dictionary", context->roots.hashedCollectionType,
         "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "equalsFunction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionType,
