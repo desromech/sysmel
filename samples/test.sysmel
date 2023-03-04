@@ -224,9 +224,7 @@ MethodMetaBuilder
     }.
 
 let: #method with: (MetaBuilderFactory for: MethodMetaBuilder).
-
-Type
-    withSelector: #extend: addMacroMethod: {:macroContext :self :extensionBlock :: ASTNode |
+let: #typeExtendMacro with: {:macroContext :self :extensionBlock :: ASTNode |
         ``{
             let: #SelfType with: `,self.
             let: #__Meta__ with: SelfType __type__.
@@ -235,8 +233,12 @@ Type
         }
     } makeMacro.
 
+Type
+    withSelector: #extend: addMacroMethod: typeExtendMacro;
+    withSelector: #definition: addMacroMethod: typeExtendMacro.
+
 Object extend: {
-    __Meta__ extend: {
+    __Meta__ definition: {
         method testClassMethod := {
             printLine(self, " testClassMethod")
         }.
