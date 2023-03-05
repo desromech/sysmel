@@ -401,6 +401,11 @@ Class
         self subclass: name classSlots: () slots: instanceSlots
     }.
 
+Environment
+    withSelector: #setSymbol:value: addMethod: {:self :selector :value :: Void | self setSymbol: selector binding: value };
+    withSelector: #setPublicSymbol:value: addMethod: {:self :selector :value :: Void | self setSymbol: selector binding: value };
+    withSelector: #withSelector:addMethod: addMethod: {:self :selector :method :: Void | self setSymbol: selector binding: binding }.
+
 ## ============================================================================
 ## Bootstrap AST methods
 ## ============================================================================
@@ -728,3 +733,208 @@ ASTWhileContinueWithNode
         if: (self bodyExpression isNotNil) then: (self bodyExpression: aBlock(self bodyExpression)).
         if: (self continueExpression isNotNil) then: (self continueExpression: aBlock(self continueExpression)).
     }.
+
+## ============================================================================
+## Bootstrap Meta builder
+## ============================================================================
+BootstrapEnv::IntrinsicsBuiltInEnvironment
+    setSymbol: #__OwnerProgramEntity__ value: BootstrapEnv::IntrinsicsBuiltInEnvironment;
+    setSymbol: #public:with: value: {:macroContext :(ASTNode)symbol :(ASTNode)value :: ASTNode |
+        ``(__OwnerProgramEntity__ setPublicSymbol: `,symbol value: `,value)
+    } makeMacro.
+
+Class
+    withSelector: #publicSubclass:classSlots:slots: addMacroMethod: {:macroContext :(ASTNode)self :(ASTNode)name :(ASTNode)classSlots :(ASTNode)instanceSlots :: ASTNode |
+        ``(public: `,name with: (`,self subclass: `,name classSlots: `,classSlots slots: `,instanceSlots))
+    } makeMacro;
+    withSelector: #publicSubclass:slots: addMacroMethod: {:macroContext :(ASTNode)self :(ASTNode)name :(ASTNode)instanceSlots :: ASTNode |
+        ``(public: `,name with: (`,self subclass: `,name slots: `,instanceSlots))
+    } makeMacro.
+
+Object publicSubclass: #MetaBuilder slots: ().
+
+MetaBuilder
+    withSelector: #analyzeAndEvaluateMessageSendNode:forReceiver:withEnvironment: addClassMethod: {:self :messageSendNode :receiver :environment |
+        let: #selfReceiver with: (ASTLiteralNode new
+            sourcePosition: messageSendNode receiver sourcePosition;
+            value: receiver;
+            yourself). 
+        let: #messageWithSelfReceiver with: (messageSendNode copy
+            receiver: selfReceiver;
+            yourself).
+
+        receiver analyzeAndEvaluateMessageSendNode: messageWithSelfReceiver withEnvironment: environment
+    };
+    withSelector: #analyzeMessageSendNode:withEnvironment: addClassMethod: {:self :messageSendNode :environment |
+        messageSendNode receiver value analyzeMessageSendNode: messageSendNode withEnvironment: environment
+    };
+    withSelector: #analyzeAndEvaluateMessageSendNode:withEnvironment: addMethod: {:self :messageSendNode :environment |
+        self subclassResponsibility
+    };
+    withSelector: #analyzeMessageSendNode:withEnvironment: addMethod: {:self :messageSendNode :environment |
+        self subclassResponsibility
+    }.
+
+MetaBuilder publicSubclass: #MetaBuilderFactory slots: (
+    TypeSlot publicNamed: #metaBuilderClass type: Class,
+).
+
+MetaBuilderFactory
+    withSelector: #for: addClassMethod: {:self :metaBuilderClass :: self |
+        self new
+            metaBuilderClass: metaBuilderClass;
+            yourself
+    };
+    withSelector: #analyzeAndEvaluateMessageSendNode:withEnvironment: addMethod: {:self :messageSendNode :environment |
+        let: #metaBuilderInstance with: self metaBuilderClass new.
+        let: #metaBuilderInstanceNode with: (ASTLiteralNode new
+            sourcePosition: messageSendNode receiver sourcePosition;
+            value: metaBuilderInstance;
+            yourself).
+        let: #messageWithMetaBuilderInstance with: (messageSendNode copy
+            receiver: metaBuilderInstanceNode;
+            yourself).
+        metaBuilderInstance analyzeAndEvaluateMessageSendNode: messageWithMetaBuilderInstance withEnvironment: environment
+    };
+    withSelector: #analyzeMessageSendNode:withEnvironment: addMethod: {:self :messageSendNode :environment |
+        let: #metaBuilderInstance with: self metaBuilderClass new.
+        let: #metaBuilderInstanceNode with: (ASTLiteralNode new
+            sourcePosition: messageSendNode receiver sourcePosition;
+            value: metaBuilderInstance;
+            yourself).
+        let: #messageWithMetaBuilderInstance with: (messageSendNode copy
+            receiver: metaBuilderInstanceNode;
+            yourself).
+        metaBuilderInstance analyzeMessageSendNode: messageWithMetaBuilderInstance withEnvironment: environment
+    }.
+
+MetaBuilder publicSubclass: #MacroMetaBuilder slots: (
+    TypeSlot publicNamed: #environment type: Environment ,
+    TypeSlot publicNamed: #sourcePosition type: SourcePosition ,
+    TypeSlot publicNamed: #continueExpansion type: ASTNode
+).
+
+MacroMetaBuilder
+    withSelector: #analyzeAndEvaluateMessageSendNode:withEnvironment: addMethod: {:self :messageSendNode :environment |
+        (self expandMessageSendNode: messageSendNode withEnvironment: environment) astAnalyzeAndEvaluateWithEnvironment: environment
+    };
+    withSelector: #analyzeMessageSendNode:withEnvironment: addMethod: {:self :messageSendNode :environment |
+        (self expandMessageSendNode: messageSendNode withEnvironment: environment) astAnalyzeWithEnvironment: environment
+    };
+    withSelector: #expandMessageSendNode:withEnvironment: addMethod: {:self :messageSendNode :environment :: ASTNode |
+        self
+            environment: environment;
+            sourcePosition: messageSendNode sourcePosition;
+            continueExpansion: messageSendNode receiver;
+            expandMessageSendNode: messageSendNode
+    };
+    withSelector: #expandMessageSendNode: addMethod: {:self :messageSendNode :: ASTNode |
+        self expandMessageSendNodeWithMetaBuilderMethod: messageSendNode
+    };
+    withSelector: #expandMessageSendNodeWithMetaBuilderMethod: addMethod: {:self :messageSendNode :: ASTNode |
+        let: #metaBuilderMethod with: (
+            if: messageSendNode selector isLiteralNode
+                then: (self class lookupSelector: messageSendNode selector value)
+                else: (nil)
+        ).
+
+        if: (if: metaBuilderMethod isNotNil then: (metaBuilderMethod hasPragmaNamed: #metaBuilder) else: false)
+            then: apply(metaBuilderMethod, self, messageSendNode arguments)
+            else: self finishExpansion
+    };
+    withSelector: #finishExpansionWithMessageSendNode:environment: addMethod: {:self :messageSendNode :environment :: ASTNode |
+        messageSendNode copy
+            receiver: (self finishExpansionWithEnvironment: environment);
+            yourself
+    };
+    withSelector: #finishExpansionWithMessageSendNode: addMethod: {:self :messageSendNode :: ASTNode |
+        self finishExpansionWithMessageSendNode: messageSendNode environment: self environment
+    };
+    withSelector: #finishExpansionWithEnvironment: addMethod: {:self :environment :: ASTNode |
+        self subclassResponsibility
+    };
+    withSelector: #finishExpansion addMethod: {:self :: ASTNode |
+        self finishExpansionWithEnvironment: self environment
+    }.
+
+MacroMetaBuilder publicSubclass: #MethodMetaBuilder slots: (
+    TypeSlot publicNamed: #selector type: ASTNode ,
+    TypeSlot publicNamed: #resultType type: ASTNode ,
+    TypeSlot publicNamed: #body type: ASTNode ,
+    TypeSlot publicNamed: #arguments type: ArraySlice
+).
+
+ASTNode
+    withSelector: #parseAsArgumentNode addMethod: {:self :: ASTArgumentNode |
+        self error: self asString -- " is not a valid argument expression."
+    }.
+
+ASTArgumentNode
+    withSelector: #parseAsArgumentNode addMethod: {:self :: ASTArgumentNode | self }.
+
+ASTIdentifierReferenceNode
+    withSelector: #parseAsArgumentNode addMethod: {:self :: ASTArgumentNode |
+        ASTArgumentNode new
+            sourcePosition: self sourcePosition;
+            isForAll: false;
+            name: (ASTLiteralNode new
+                sourcePosition: self sourcePosition;
+                value: self value;
+                yourself);
+            yourself
+    }.
+
+MethodMetaBuilder
+    withSelector: #expandMessageSendNode: addMethod: {:self :messageSendNode :: ASTNode |
+        if: self selector == nil then: {
+            self selector: messageSendNode selector.
+            self arguments: (messageSendNode arguments collect: {:each | each parseAsArgumentNode}).
+            self continueExpansion
+        } else: {
+            self expandMessageSendNodeWithMetaBuilderMethod: messageSendNode
+        }.
+    };
+    withSelector: #":=" addMethod: {:self :(ASTNode)bodyNode :: ASTNode |
+        <metaBuilder>
+        self body: bodyNode.
+        self finishExpansion
+    };
+    withSelector: #=> addMethod: {:self :(ASTNode)resultType :: ASTNode |
+        <metaBuilder>
+        self resultType: resultType.
+        self continueExpansion
+    };
+    withSelector: #finishExpansionWithEnvironment: addMethod: {:self :environment :: ASTNode |
+        let: #selfArgument with: (ASTArgumentNode new
+            sourcePosition: self sourcePosition;
+            isForAll: false;
+            name: `'#self;
+            type: `'SelfType;
+            yourself).
+        let: #arguments with: ((Array with: selfArgument) -- self arguments) asArraySlice.
+        let: #methodNode with: (ASTLambdaNode new
+            sourcePosition: self sourcePosition;
+            arguments: arguments;
+            body: self body;
+            resultType: self resultType;
+            yourself
+        ).
+        
+        ``(__OwnerProgramEntity__ withSelector: `,(self selector) addMethod: `,methodNode)
+    }.
+
+public: #method with: (MetaBuilderFactory for: MethodMetaBuilder).
+
+{
+    let: #typeExtendMacro with: {:macroContext :self :extensionBlock :: ASTNode |
+            ``{
+                let: #SelfType with: `,self.
+                let: #__Meta__ with: SelfType __type__.
+                let: #__OwnerProgramEntity__ with: SelfType.
+                `,extensionBlock
+            }
+        } makeMacro.
+    Type
+        withSelector: #extend: addMacroMethod: typeExtendMacro;
+        withSelector: #definition: addMacroMethod: typeExtendMacro.
+}.
