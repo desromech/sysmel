@@ -487,6 +487,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         NULL);
     context->roots.astLocalDefinitionNodeType = tuuvm_context_createIntrinsicClass(context, "ASTLocalDefinitionNode", context->roots.astNodeType,
         "nameExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "typeExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "valueExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     context->roots.astIdentifierReferenceNodeType = tuuvm_context_createIntrinsicClass(context, "ASTIdentifierReferenceNode", context->roots.astNodeType,

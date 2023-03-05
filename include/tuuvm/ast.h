@@ -76,6 +76,7 @@ typedef struct tuuvm_astLocalDefinitionNode_s
 {
     tuuvm_astNode_t super;
     tuuvm_tuple_t nameExpression;
+    tuuvm_tuple_t typeExpression;
     tuuvm_tuple_t valueExpression;
 } tuuvm_astLocalDefinitionNode_t;
 
@@ -471,12 +472,17 @@ TUUVM_API tuuvm_tuple_t tuuvm_astLiteralNode_getValue(tuuvm_tuple_t node);
 /**
  * Creates a local definition node.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t nameExpression, tuuvm_tuple_t valueExpression);
+TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t nameExpression, tuuvm_tuple_t typeExpression, tuuvm_tuple_t valueExpression);
 
 /**
  * Gets the value from a local definition node.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_getNameExpression(tuuvm_tuple_t node);
+
+/**
+ * Gets the type from a local definition node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_getTypeExpression(tuuvm_tuple_t node);
 
 /**
  * Gets the value from a local definition node.

@@ -2,6 +2,15 @@
 ## Bootstrap core runtime
 ## ============================================================================
 
+Function
+    withSelector: #addFlag: addMethod: {:self :(Size)flag :: Void |
+        self flags: self flags | flag
+    };
+    withSelector: #makeMacro addMethod: {:self :: self __type__ |
+        self addFlag: (1sz << 0sz).
+        self
+    }.
+
 AnyValue
     withSelector: #initialize addMethod: {:self :: Void | };
     withSelector: #yourself addMethod: {:self :: self __type__ | self };
@@ -14,7 +23,61 @@ AnyValue
     withSelector: #isNotNil addMethod: {:self :: Boolean | self ~~ nil };
 
     withSelector: #= addMethod: {:self :other :: Boolean | self == other };
-    withSelector: #~= addMethod: {:self :other :: Boolean | self ~~ other }.
+    withSelector: #~= addMethod: {:self :other :: Boolean | self ~~ other };
+
+    withSelector: #&& addMacroMethod: {:macroContext :self :other :: ASTIfNode |
+        ASTIfNode new
+            sourcePosition: macroContext sourcePosition;
+            conditionExpression: self;
+            trueExpression: other;
+            falseExpression: (ASTLiteralNode new
+                sourcePosition: macroContext sourcePosition;
+                value: false;
+                yourself);
+            yourself
+    } makeMacro;
+    withSelector: #|| addMacroMethod: {:macroContext :self :other :: ASTIfNode |
+        ASTIfNode new
+            sourcePosition: macroContext sourcePosition;
+            conditionExpression: self;
+            trueExpression: (ASTLiteralNode new
+                sourcePosition: macroContext sourcePosition;
+                value: true;
+                yourself);
+            falseExpression: other;
+            yourself
+    } makeMacro;
+
+    withSelector: #ifTrue: addMacroMethod: {:macroContext :self :trueExpression :: ASTIfNode |
+        ASTIfNode new
+            sourcePosition: macroContext sourcePosition;
+            conditionExpression: self;
+            trueExpression: trueExpression;
+            yourself
+    } makeMacro;
+    withSelector: #ifFalse: addMacroMethod: {:macroContext :self :falseExpression :: ASTIfNode |
+        ASTIfNode new
+            sourcePosition: macroContext sourcePosition;
+            conditionExpression: self;
+            falseExpression: falseExpression;
+            yourself
+    } makeMacro;
+    withSelector: #ifTrue:ifFalse: addMacroMethod: {:macroContext :self :trueExpression :falseExpression :: ASTIfNode |
+        ASTIfNode new
+            sourcePosition: macroContext sourcePosition;
+            conditionExpression: self;
+            trueExpression: trueExpression;
+            falseExpression: falseExpression;
+            yourself
+    } makeMacro;
+    withSelector: #ifFalse:ifTrue: addMacroMethod: {:macroContext :self :falseExpression :trueExpression :: ASTIfNode |
+        ASTIfNode new
+            sourcePosition: macroContext sourcePosition;
+            conditionExpression: self;
+            trueExpression: trueExpression;
+            falseExpression: falseExpression;
+            yourself
+    } makeMacro.
 
 Object
     withSelector: #class addMethod: {:self :: self __type__ __type__ | self __type__ };
@@ -86,16 +149,9 @@ Function
     withSelector: #hasFlag: addMethod: {:self :(Size)flag :: Boolean |
         (self flags & flag) ~= 0sz
     };
-    withSelector: #addFlag: addMethod: {:self :(Size)flag :: Void |
-        self flags: self flags | flag
-    };
 
     withSelector: #isMacro addMethod: {:self :: Boolean |
         self hasFlag: (1sz << 0sz)
-    };
-    withSelector: #makeMacro addMethod: {:self :: self __type__ |
-        self addFlag: (1sz << 0sz).
-        self
     };
     
     withSelector: #isVariadic addMethod: {:self :: Boolean |
@@ -122,7 +178,7 @@ Function
     };
     withSelector: #hasPragmaNamed: addMethod: {:self :selector :: Boolean |
         let: #body with: self body.
-        if: body ~~ nil then: (body hasPragmaNamed: selector) else: false
+        (body ~~ nil) && (body hasPragmaNamed: selector)
     }.
 
 ValueBox
@@ -134,6 +190,14 @@ ValueBox
     withSelector: #_ addMethod: {:self | self value };
     withSelector: #_: addMethod: {:self :newValue | self value: newValue. newValue };
     withSelector: #":=" addMethod: {:self :newValue | self value: newValue. newValue }.
+
+Collection
+    withSelector: #isEmpty addMethod: {:self :: Boolean |
+        self size = 0sz
+    };
+    withSelector: #isNotEmpty addMethod: {:self :: Boolean |
+        self size ~= 0sz
+    }.
 
 SequenceableCollection
     withSelector: #with: addClassMethod: {:self :value :: self |
@@ -838,7 +902,7 @@ MacroMetaBuilder
                 else: (nil)
         ).
 
-        if: (if: metaBuilderMethod isNotNil then: (metaBuilderMethod hasPragmaNamed: #metaBuilder) else: false)
+        if: metaBuilderMethod isNotNil && (metaBuilderMethod hasPragmaNamed: #metaBuilder)
             then: apply(metaBuilderMethod, self, messageSendNode arguments)
             else: self finishExpansion
     };
@@ -856,6 +920,69 @@ MacroMetaBuilder
     withSelector: #finishExpansion addMethod: {:self :: ASTNode |
         self finishExpansionWithEnvironment: self environment
     }.
+
+MacroMetaBuilder publicSubclass: #NamedMetaBuilder slots: (
+    TypeSlot publicNamed: #name type: ASTNode ,
+).
+
+NamedMetaBuilder
+    withSelector: #expandMessageSendNode: addMethod: {:self :messageSendNode :: ASTNode |
+        if: (self name == nil) && messageSendNode arguments isEmpty then: {
+            self name: messageSendNode selector.
+            self continueExpansion
+        } else: {
+            self expandMessageSendNodeWithMetaBuilderMethod: messageSendNode
+        }.
+    }.
+
+NamedMetaBuilder
+    withSelector: #expandMessageSendNode: addMethod: {:self :messageSendNode :: ASTNode |
+        if: (self name == nil) && messageSendNode arguments isEmpty then: {
+            self name: messageSendNode selector.
+            self continueExpansion
+        } else: {
+            self expandMessageSendNodeWithMetaBuilderMethod: messageSendNode
+        }.
+    }.
+
+NamedMetaBuilder publicSubclass: #VariableMetaBuilder slots: (
+    TypeSlot publicNamed: #typeExpression type: ASTNode ,
+    TypeSlot publicNamed: #initialValue type: ASTNode ,
+).
+
+VariableMetaBuilder
+    withSelector: #type: addMethod: {:self :(ASTNode)typeExpression :: ASTNode |
+        <metaBuilder>
+        self typeExpression: typeExpression.
+        self continueExpansion
+    };
+    withSelector: #=> addMethod: {:self :(ASTNode)typeExpression :: ASTNode |
+        <metaBuilder>
+        self typeExpression: typeExpression.
+        self continueExpansion
+    };
+    withSelector: #":=" addMethod: {:self :(ASTNode)initialValue :: ASTNode |
+        <metaBuilder>
+        self initialValue: initialValue.
+        self finishExpansion
+    }.
+
+VariableMetaBuilder publicSubclass: #LetMetaBuilder slots: (
+    TypeSlot publicNamed: #typeExpression type: ASTNode ,
+    TypeSlot publicNamed: #initialValue type: ASTNode ,
+).
+
+LetMetaBuilder
+    withSelector: #finishExpansionWithEnvironment: addMethod: {:self :environment :: ASTNode |
+        ASTLocalDefinitionNode new
+            sourcePosition: self sourcePosition;
+            nameExpression: self name;
+            typeExpression: self typeExpression;
+            valueExpression: self initialValue;
+            yourself
+    }.
+
+public: #let with: (MetaBuilderFactory for: LetMetaBuilder).
 
 MacroMetaBuilder publicSubclass: #MethodMetaBuilder slots: (
     TypeSlot publicNamed: #selector type: ASTNode ,

@@ -54,7 +54,8 @@ Object extend: {
     }.
 
     method testMethod => Void := {
-        printLine(self, " testMethod").
+        let localVar := 42.
+        printLine(self, " testMethod ", localVar).
     }.
 
     method testMethodWithArgument: arg ::=> Void := {
@@ -66,3 +67,6 @@ Object testClassMethod.
 Object new testMethod.
 Object new testMethodWithArgument: 42.
 printLine(Object lookupSelector: #testMethod, " ", (Object lookupSelector: #testMethod) hasPragmaNamed: #testPragma).
+
+let testValue := 42.
+printLine(testValue).
