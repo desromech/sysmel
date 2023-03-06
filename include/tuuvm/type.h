@@ -318,6 +318,46 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_getAnalyzeMessageSendNodeWithEnvironmentFunct
 TUUVM_API void tuuvm_type_setAnalyzeMessageSendNodeWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t function);
 
 /**
+ * Gets the analyzeAndEvaluateMessageChainNode with environment function function of a type.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_getAnalyzeAndEvaluateMessageChainNodeForReceiverWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type);
+
+/**
+ * Sets the analyzeAndEvaluateMessageChainNode with environment function function of a type.
+ */
+TUUVM_API void tuuvm_type_setAnalyzeAndEvaluateMessageChainNodeForReceiverWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t function);
+
+/**
+ * Gets the analyzeMessageChainNode with environment function function of a type.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_getAnalyzeMessageChainNodeWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type);
+
+/**
+ * Sets the analyzeMessageChainNode with environment function function of a type.
+ */
+TUUVM_API void tuuvm_type_setAnalyzeMessageChainNodeWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t function);
+
+/**
+ * Gets the analyzeAndEvaluateMessageChainNode with environment function function of a type.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_getAnalyzeAndEvaluateConcreteSequenceElementWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type);
+
+/**
+ * Sets the analyzeAndEvaluateMessageChainNode with environment function function of a type.
+ */
+TUUVM_API void tuuvm_type_setAnalyzeAndEvaluateConcreteSequenceElementWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t function);
+
+/**
+ * Gets the analyzeMessageChainNode with environment function function of a type.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_getAnalyzeConcreteSequenceElementWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type);
+
+/**
+ * Sets the analyzeMessageChainNode with environment function function of a type.
+ */
+TUUVM_API void tuuvm_type_setAnalyzeConcreteSequenceElementWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t function);
+
+/**
  * Gets the coerceValueFunction function of a type.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_type_getCoerceValueFunction(tuuvm_context_t *context, tuuvm_tuple_t type);
