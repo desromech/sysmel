@@ -58,6 +58,7 @@ TUUVM_API void tuuvm_stackFrame_iterateGCRootsInRecordWith(tuuvm_stackFrameRecor
             tuuvm_stackFrameFunctionActivationRecord_t *functionRecord = (tuuvm_stackFrameFunctionActivationRecord_t*)record;
             iterationFunction(userdata, &functionRecord->function);
             iterationFunction(userdata, &functionRecord->applicationEnvironment);
+            iterationFunction(userdata, &functionRecord->result);
         }   
         break;
     case TUUVM_STACK_FRAME_RECORD_TYPE_SOURCE_POSITION:

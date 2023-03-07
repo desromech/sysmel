@@ -2,9 +2,7 @@ GCROOT_TYPES = [
     'tuuvm_tuple_t', 'tuuvm_stuple_t'
 ]
 FUNCTION_BLACKLIST = [
-    'tuuvm_function_apply',
-    'tuuvm_interpreter_applyClosureASTFunction',
-    'tuuvm_interpreter_evaluateASTWithEnvironment',
+    #'tuuvm_interpreter_applyClosureASTFunction',
 ]
 
 class StackRootVariable:

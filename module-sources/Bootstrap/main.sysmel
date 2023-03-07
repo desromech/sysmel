@@ -839,6 +839,15 @@ MetaBuilder
         self subclassResponsibility
     }.
 
+printLine("Install MetaBuilder").
+#*MetaBuilder
+    withSelector: #myAnalyzeAndEvaluateConcreteSequenceElement:withEnvironment: addClassMethod: {:self :metaBuilderInstance :environment |
+        metaBuilderInstance
+    };
+    withSelector: #myAnalyzeConcreteSequenceElement:withEnvironment: addClassMethod: {:self :metaBuilderLiteralNode :environment |
+        metaBuilderLiteralNode
+    }.
+*#
 MetaBuilder publicSubclass: #MetaBuilderFactory slots: (
     TypeSlot publicNamed: #metaBuilderClass type: Class,
 ).

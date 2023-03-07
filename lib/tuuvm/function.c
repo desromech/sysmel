@@ -56,6 +56,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
 {
     struct {
         tuuvm_tuple_t function;
+        tuuvm_tuple_t functionType;
+        tuuvm_tuple_t result;
     } gcFrame = {
         .function = function
     };
@@ -68,28 +70,28 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
     };
     tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
 
-    tuuvm_tuple_t functionType = tuuvm_tuple_getType(context, function);
+    gcFrame.functionType = tuuvm_tuple_getType(context, function);
     if(tuuvm_tuple_isKindOf(context, function, context->roots.functionType))
     {
         tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
         tuuvm_functionEntryPoint_t nativeEntryPoint = (tuuvm_functionEntryPoint_t)tuuvm_tuple_uintptr_decode(functionObject->nativeEntryPoint);
         if(nativeEntryPoint)
         {
-            tuuvm_tuple_t result = nativeEntryPoint(context, &gcFrame.function, argumentCount, arguments);
+            gcFrame.result = nativeEntryPoint(context, &gcFrame.function, argumentCount, arguments);
             tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
             TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-            return result;            
+            return gcFrame.result;            
         }
         else if(functionObject->body)
         {
-            tuuvm_tuple_t result = tuuvm_interpreter_applyClosureASTFunction(context, &gcFrame.function, argumentCount, arguments);
+            gcFrame.result = tuuvm_interpreter_applyClosureASTFunction(context, &gcFrame.function, argumentCount, arguments);
             tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
             TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-            return result;
+            return gcFrame.result;
         }
     }
 
-    printf("functionType %p expected type %p\n", (void*)functionType, (void*)context->roots.functionType);
+    printf("functionType %p expected type %p\n", (void*)gcFrame.functionType, (void*)context->roots.functionType);
     tuuvm_error("Cannot apply non-functional object.");
     return TUUVM_VOID_TUPLE;
 }
