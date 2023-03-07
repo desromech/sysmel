@@ -952,7 +952,6 @@ NamedMetaBuilder
     withSelector: #expandMessageSendNode: addMethod: {:self :messageSendNode :: ASTNode |
         if: (self name == nil) && messageSendNode arguments isEmpty then: {
             self name: messageSendNode selector.
-            ##printLine("NamedMetaBuilder >> #expandMessageSendNode: ", self name value).
             self continueExpansion
         } else: {
             self expandMessageSendNodeWithMetaBuilderMethod: messageSendNode
