@@ -1434,6 +1434,7 @@ static tuuvm_tuple_t tuuvm_astMakeTupleNode_primitiveAnalyzeAndEvaluate(tuuvm_co
 
     struct {
         tuuvm_tuple_t result;
+        tuuvm_tuple_t expression;
         tuuvm_tuple_t element;
     } gcFrame = {};
 
@@ -1444,8 +1445,8 @@ static tuuvm_tuple_t tuuvm_astMakeTupleNode_primitiveAnalyzeAndEvaluate(tuuvm_co
     gcFrame.result = tuuvm_array_create(context, expressionCount);
     for(size_t i = 0; i < expressionCount; ++i)
     {
-        tuuvm_tuple_t expression = tuuvm_arraySlice_at((*tupleNode)->elements, i);
-        gcFrame.element = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, expression, *environment);
+        gcFrame.expression = tuuvm_arraySlice_at((*tupleNode)->elements, i);
+        gcFrame.element = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, gcFrame.expression, *environment);
         tuuvm_array_atPut(gcFrame.result, i, gcFrame.element);
     }
 
@@ -2247,6 +2248,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_
     }
     
     functionActivationRecord.result = tuuvm_interpreter_evaluateResultTypeCoercionInEnvironment(context, closureASTFunction, &functionActivationRecord.applicationEnvironment, functionActivationRecord.result);
+    tuuvm_gc_safepoint(context);
     
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&functionActivationRecord);  

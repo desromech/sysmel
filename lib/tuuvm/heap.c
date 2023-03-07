@@ -1,6 +1,7 @@
 #include "internal/heap.h"
 #include "tuuvm/assert.h"
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 #define TUUVM_HEAP_MIN_CHUNK_SIZE (1<<20)
@@ -242,8 +243,7 @@ static void tuuvm_heap_chunk_applyForwardingPointers(uint32_t blackColor, tuuvm_
         size_t objectSize = sizeof(tuuvm_object_tuple_t) + object->header.objectSize;
         offset += objectSize;
 
-        if((object->header.typePointerAndFlags & TUUVM_TUPLE_GC_COLOR_MASK) == blackColor &&
-            (object->header.typePointerAndFlags & TUUVM_TUPLE_BYTES_BIT) == 0)
+        if((object->header.typePointerAndFlags & TUUVM_TUPLE_GC_COLOR_MASK) == blackColor)
         {
             // Apply the forwarding to the type pointer.
             tuuvm_tuple_t type = object->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_POINTER_MASK;
@@ -251,13 +251,16 @@ static void tuuvm_heap_chunk_applyForwardingPointers(uint32_t blackColor, tuuvm_
                 tuuvm_tuple_setType(object, TUUVM_CAST_OOP_TO_OBJECT_TUPLE(type)->header.forwardingPointer);
 
             // Apply the forwarding to the slots.
-            size_t slotCount = object->header.objectSize / sizeof(tuuvm_tuple_t);
-            tuuvm_tuple_t *slots = object->pointers;
-
-            for(size_t i = 0; i < slotCount; ++i)
+            if((object->header.typePointerAndFlags & TUUVM_TUPLE_BYTES_BIT) == 0)
             {
-                if(tuuvm_tuple_isNonNullPointer(slots[i]))
-                    slots[i] = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(slots[i])->header.forwardingPointer;
+                size_t slotCount = object->header.objectSize / sizeof(tuuvm_tuple_t);
+                tuuvm_tuple_t *slots = object->pointers;
+
+                for(size_t i = 0; i < slotCount; ++i)
+                {
+                    if(tuuvm_tuple_isNonNullPointer(slots[i]))
+                        slots[i] = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(slots[i])->header.forwardingPointer;
+                }
             }
         }
     }

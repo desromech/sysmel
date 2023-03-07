@@ -172,6 +172,13 @@ TUUVM_API void tuuvm_stackFrame_printStackTrace(tuuvm_context_t *context, tuuvm_
     }
 }
 
+TUUVM_API void tuuvm_stackFrame_printStackTraceHere()
+{
+    tuuvm_context_t *context = tuuvm_stackFrame_getActiveContext();
+    tuuvm_tuple_t stackTrace = tuuvm_stackFrame_buildStackTraceUpTo(NULL);
+    tuuvm_stackFrame_printStackTrace(context, stackTrace);
+}
+
 static void tuuvm_stackFrame_dumpStackGCRoots_iteration(void *userdata, tuuvm_tuple_t *root)
 {
     fprintf((FILE*)userdata, "%p\n", root);
