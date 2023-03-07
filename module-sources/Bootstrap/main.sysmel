@@ -904,6 +904,17 @@ MacroMetaBuilder
             continueExpansion: messageSendNode receiver;
             expandMessageSendNode: messageSendNode
     };
+    withSelector: #analyzeAndEvaluateConcreteSequenceElementWithEnvironment: addMethod: {:self :environment |
+        (self
+            environment: environment;
+            finishExpansion) astAnalyzeAndEvaluateWithEnvironment: environment
+    };
+    withSelector: #analyzeConcreteSequenceElement:withEnvironment: addMethod: {:self :metaBuilderLiteralNode :environment |
+        self
+            environment: environment;
+            sourcePosition: metaBuilderLiteralNode sourcePosition;
+            finishExpansion
+    };
     withSelector: #expandMessageSendNode: addMethod: {:self :messageSendNode :: ASTNode |
         self expandMessageSendNodeWithMetaBuilderMethod: messageSendNode
     };

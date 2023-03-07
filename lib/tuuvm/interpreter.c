@@ -169,6 +169,7 @@ static tuuvm_tuple_t tuuvm_astSequenceNode_primitiveAnalyze(tuuvm_context_t *con
 
         tuuvm_tuple_t elementValue;
         tuuvm_tuple_t elementType;
+        tuuvm_tuple_t elementMetaType;
         tuuvm_tuple_t concretizeFunction;
     } gcFrame = {};
 
@@ -194,7 +195,8 @@ static tuuvm_tuple_t tuuvm_astSequenceNode_primitiveAnalyze(tuuvm_context_t *con
         {
             gcFrame.elementValue = tuuvm_astLiteralNode_getValue(gcFrame.analyzedExpression);
             gcFrame.elementType = tuuvm_tuple_getType(context, gcFrame.elementValue);
-            gcFrame.concretizeFunction = tuuvm_type_getAnalyzeConcreteSequenceElementWithEnvironmentFunction(context, gcFrame.elementType);
+            gcFrame.elementMetaType = tuuvm_tuple_getType(context, gcFrame.elementType);
+            gcFrame.concretizeFunction = tuuvm_type_getAnalyzeConcreteSequenceElementWithEnvironmentFunction(context, gcFrame.elementMetaType);
             if(gcFrame.concretizeFunction)
                 gcFrame.analyzedExpression = tuuvm_function_apply3(context, gcFrame.concretizeFunction, gcFrame.elementType, gcFrame.analyzedExpression, *environment);
         }
@@ -674,8 +676,12 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveAnalyze(tuuvm_context
         gcFrame.localDefinitionNode->typeExpression = gcFrame.analyzedTypeExpression;
     }
 
-    gcFrame.analyzedValueExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.localDefinitionNode->valueExpression, *environment);
-    gcFrame.localDefinitionNode->valueExpression = gcFrame.analyzedValueExpression;
+    if(gcFrame.localDefinitionNode->valueExpression)
+    {
+        gcFrame.analyzedValueExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.localDefinitionNode->valueExpression, *environment);
+        gcFrame.localDefinitionNode->valueExpression = gcFrame.analyzedValueExpression;
+    }
+
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return (tuuvm_tuple_t)gcFrame.localDefinitionNode;
 }
@@ -692,7 +698,9 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveEvaluate(tuuvm_contex
         tuuvm_tuple_t name;
         tuuvm_tuple_t type;
         tuuvm_tuple_t value;
-    } gcFrame = {};
+    } gcFrame = {
+        .value = TUUVM_NULL_TUPLE
+    };
 
     tuuvm_astLocalDefinitionNode_t **localDefinitionNode = (tuuvm_astLocalDefinitionNode_t**)node;
 
@@ -702,7 +710,8 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveEvaluate(tuuvm_contex
     gcFrame.name = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*localDefinitionNode)->nameExpression, *environment);
     if((*localDefinitionNode)->typeExpression)
         gcFrame.type = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*localDefinitionNode)->typeExpression, *environment);
-    gcFrame.value = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*localDefinitionNode)->valueExpression, *environment);
+    if((*localDefinitionNode)->valueExpression)
+        gcFrame.value = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*localDefinitionNode)->valueExpression, *environment);
     if(gcFrame.type)
         gcFrame.value = tuuvm_type_coerceValue(context, gcFrame.type, gcFrame.value);
     tuuvm_environment_setNewSymbolBinding(context, *environment, gcFrame.name, gcFrame.value);
@@ -723,7 +732,9 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveAnalyzeAndEvaluate(tu
         tuuvm_tuple_t name;
         tuuvm_tuple_t type;
         tuuvm_tuple_t value;
-    } gcFrame = {};
+    } gcFrame = {
+        .value = TUUVM_NULL_TUPLE
+    };
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     tuuvm_astLocalDefinitionNode_t **localDefinitionNode = (tuuvm_astLocalDefinitionNode_t**)node;
@@ -732,7 +743,8 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveAnalyzeAndEvaluate(tu
     gcFrame.name = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*localDefinitionNode)->nameExpression, *environment);
     if((*localDefinitionNode)->typeExpression)
         gcFrame.type = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*localDefinitionNode)->typeExpression, *environment);
-    gcFrame.value = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*localDefinitionNode)->valueExpression, *environment);
+    if((*localDefinitionNode)->valueExpression)
+        gcFrame.value = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*localDefinitionNode)->valueExpression, *environment);
     if(gcFrame.type)
         gcFrame.value = tuuvm_type_coerceValue(context, gcFrame.type, gcFrame.value);
     tuuvm_environment_setNewSymbolBinding(context, *environment, gcFrame.name, gcFrame.value);
