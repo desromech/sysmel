@@ -20,6 +20,7 @@ struct tuuvm_heap_s
 
     size_t totalSize;
     size_t totalCapacity;
+    size_t nextGCSizeThreshold;
 
     uint32_t gcWhiteColor;
     uint32_t gcGrayColor;

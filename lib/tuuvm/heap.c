@@ -122,9 +122,13 @@ static tuuvm_heap_chunk_t *tuuvm_heap_findOrAllocateChunkWithRequiredCapacity(tu
 
 static void tuuvm_heap_checkForGCThreshold(tuuvm_heap_t *heap)
 {
-    // Monitor for 80% of heap comsumption.
-    heap->shouldAttemptToCollect = heap->shouldAttemptToCollect || heap->totalSize > heap->totalCapacity * 4 / 5;
-    //heap->shouldAttemptToCollect = true;
+    if(heap->shouldAttemptToCollect)
+        return;
+
+    // Monitor for GC collection threshold.
+    heap->shouldAttemptToCollect = heap->totalSize > heap->nextGCSizeThreshold;
+    //if(heap->shouldAttemptToCollect)
+    //    printf("heap->shouldAttemptToCollect %zu > %zu | %zu\n", heap->totalSize, heap->nextGCSizeThreshold, heap->totalCapacity);
 }
 
 static tuuvm_object_tuple_t *tuuvm_heap_allocateTupleWithRawSize(tuuvm_heap_t *heap, size_t allocationSize, size_t allocationAlignment)
@@ -316,6 +320,21 @@ void tuuvm_heap_compact(tuuvm_heap_t *heap)
     }
     
     heap->shouldAttemptToCollect = false;
+
+    const size_t ChunkThreshold = TUUVM_HEAP_MIN_CHUNK_SIZE * 5 / 100;
+    const size_t NextChunkAllocateThreshold = TUUVM_HEAP_MIN_CHUNK_SIZE * 50 / 100;
+    if(heap->totalCapacity == 0)
+    {
+        heap->nextGCSizeThreshold = TUUVM_HEAP_MIN_CHUNK_SIZE - ChunkThreshold;
+    }
+    else
+    {
+        size_t capacityDelta = heap->totalCapacity - heap->totalSize;
+        if(capacityDelta < NextChunkAllocateThreshold)
+            heap->nextGCSizeThreshold = heap->totalCapacity + TUUVM_HEAP_MIN_CHUNK_SIZE - ChunkThreshold;
+        else
+            heap->nextGCSizeThreshold = heap->totalCapacity - ChunkThreshold;
+    }
 }
 
 void tuuvm_heap_swapGCColors(tuuvm_heap_t *heap)
