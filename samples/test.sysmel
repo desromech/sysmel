@@ -46,19 +46,22 @@ printLine(1.5 + 2.25).
 printLine(0.0f32).
 printLine(1.5f32 + 2.25f32).
 
+let testValue := 42.
+printLine(testValue).
+
 Object extend: {
     __Meta__ definition: {
-        method testClassMethod := {
+        public method testClassMethod := {
             printLine(self, " testClassMethod")
         }.
     }.
 
-    method testMethod => Void := {
+    public method testMethod => Void := {
         let localVar := 42.
         printLine(self, " testMethod ", localVar).
     }.
 
-    method testMethodWithArgument: arg ::=> Void := {
+    public method testMethodWithArgument: arg ::=> Void := {
         printLine(self, " testMethodWithArgument: ", arg).
     }.
 }.
@@ -68,14 +71,15 @@ Object new testMethod.
 Object new testMethodWithArgument: 42.
 printLine(Object lookupSelector: #testMethod, " ", (Object lookupSelector: #testMethod) hasPragmaNamed: #testPragma).
 
-let testValue := 42.
-printLine(testValue).
-
-class TestClass superclass: Object; definition: {
-    method myTestMethod => Int32 := {
+public class TestClass superclass: Object; definition: {
+    public field testField.
+    public method myTestMethod => Int32 := {
         42i32
     }.
 
+    public pure method square: x
+        := x.
 }.
 printLine(TestClass).
 printLine(TestClass new myTestMethod).
+printLine(TestClass new square: 3).

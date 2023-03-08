@@ -405,6 +405,9 @@ TypeSlot
     withSelector: #named:type: addClassMethod: {:self :name :(Type)type :: self |
         self named: name type: type flags: 0sz
     };
+    withSelector: #named:flags: addClassMethod: {:self :name :(Size)flags :: self |
+        self named: name type: nil flags: flags
+    };
     withSelector: #named: addClassMethod: {:self :name :(Type)type :: self |
         self publicNamed: name type: nil
     };
@@ -433,13 +436,11 @@ TypeSlot
     }.
 
 Type
-    withSelector: #supertypeSlotCount addMethod: {:self :: Size |
-        if: self supertype == nil
-            then: 0sz
-            else: self supertype totalSlotCount.
+    withSelector: #addTypeSlot: addMethod: {:self :extraSlot :: Void |
+        printLine("TODO: addTypeSlot ", extraSlot)
     };
     withSelector: #generatePublicAccessors addMethod: {:self :: Void |
-        let: #baseSlotIndex with: self supertypeSlotCount.
+        let: #baseSlotIndex with: self validSupertypeTotalSlotCount.
         self slots doWithIndex: {:slot :index :: Void |
             let: #slotIndex with: baseSlotIndex + index.
             slot generateAccessorsOn: self withIndex: slotIndex
@@ -1067,6 +1068,12 @@ MacroMetaBuilder
     };
     withSelector: #finishExpansion addMethod: {:self :: ASTNode |
         self finishExpansionWithEnvironment: self environment
+    };
+    withSelector: #delegateToMetaBuilder: addMethod: {:self :metaBuilder :: ASTNode |
+        ASTLiteralNode new
+            sourcePosition: self sourcePosition;
+            value: metaBuilder;
+            yourself
     }.
 
 MacroMetaBuilder publicSubclass: #NamedMetaBuilder slots: (
@@ -1084,12 +1091,16 @@ NamedMetaBuilder
     }.
 
 NamedMetaBuilder publicSubclass: #TypeMetaBuilder slots: (
+    TypeSlot publicNamed: #isPublic type: Boolean ,
     TypeSlot publicNamed: #metaSlotsExpression type: ASTNode ,
     TypeSlot publicNamed: #supertypeExpression type: ASTNode ,
     TypeSlot publicNamed: #definitionExpression type: ASTNode ,
 ).
 
 TypeMetaBuilder
+    withSelector: #initialize addMethod: {:self :: Void |
+        self isPublic: false
+    };
     withSelector: #metaSlots: addMethod: {:self :(ASTNode)metaSlotsExpression :: ASTNode |
         <metaBuilder>
         self metaSlotsExpression: metaSlotsExpression.
@@ -1141,7 +1152,10 @@ ClassMetaBuilder
 
         let: #classValueExpression with: (name
             ifNil: makeClassExpression
-            ifNotNil: ``(public: `,name with: (`,makeClassExpression name: `,name; yourself))
+            ifNotNil: (if: self isPublic
+                then: ``(public: `,name with: (`,makeClassExpression name: `,name; yourself))
+                else: ``(let: `,name with: `,makeClassExpression) 
+            )
         ).
 
         let: #definitionExpression with: self definitionExpression.
@@ -1191,7 +1205,39 @@ LetMetaBuilder
 
 public: #let with: (MetaBuilderFactory for: LetMetaBuilder).
 
+VariableMetaBuilder publicSubclass: #FieldMetaBuilder slots: (
+    TypeSlot publicNamed: #fieldFlags type: Size ,
+    TypeSlot publicNamed: #bitsExpression type: ASTNode
+).
+
+FieldMetaBuilder
+    withSelector: #initialize addMethod: {:self :: Void |
+        self fieldFlags: 0sz
+    };
+    withSelector: #addFieldFlags: addMethod: {:self :(Size)flags :: Void |
+        self fieldFlags: self fieldFlags | flags
+    };
+    withSelector: #bits: addMethod: {:self :(ASTNode)bitsExpression :: Void |
+        <metaBuilder>
+        self bitsExpression: bitsExpression.
+        self continueExpansion
+    };
+    withSelector: #finishExpansionWithEnvironment: addMethod: {:self :environment :: ASTNode |
+        let: #typeExpression with: self typeExpression.
+        let: #flagsExpression with: (ASTLiteralNode new
+            sourcePosition: self sourcePosition;
+            value: self fieldFlags;
+            yourself).
+
+        typeExpression
+            ifNil: ``(__OwnerProgramEntity__ addTypeSlot: (TypeSlot named: `,(self name) flags: `,flagsExpression))
+            ifNotNil: ``(__OwnerProgramEntity__ addTypeSlot: (TypeSlot named: `,(self name) type: typeExpression flags: `,flagsExpression))
+    }.
+
 MacroMetaBuilder publicSubclass: #MethodMetaBuilder slots: (
+    TypeSlot publicNamed: #methodFlags type: Size ,
+    TypeSlot publicNamed: #isMacro type: Boolean ,
+    TypeSlot publicNamed: #isFallbackMethod type: Boolean ,
     TypeSlot publicNamed: #selector type: ASTNode ,
     TypeSlot publicNamed: #resultType type: ASTNode ,
     TypeSlot publicNamed: #body type: ASTNode ,
@@ -1219,6 +1265,11 @@ ASTIdentifierReferenceNode
     }.
 
 MethodMetaBuilder
+    withSelector: #initialize addMethod: {:self :: Void |
+        self methodFlags: 0sz.
+        self isMacro: false.
+        self isFallbackMethod: false.
+    };
     withSelector: #expandMessageSendNode: addMethod: {:self :messageSendNode :: ASTNode |
         if: self selector == nil then: {
             self selector: messageSendNode selector.
@@ -1227,6 +1278,9 @@ MethodMetaBuilder
         } else: {
             self expandMessageSendNodeWithMetaBuilderMethod: messageSendNode
         }.
+    };
+    withSelector: #addMethodFlags: addMethod: {:self :(Size)flags :: Void |
+        self methodFlags: self methodFlags | flags
     };
     withSelector: #":=" addMethod: {:self :(ASTNode)bodyNode :: ASTNode |
         <metaBuilder>
@@ -1238,7 +1292,34 @@ MethodMetaBuilder
         self resultType: resultType.
         self continueExpansion
     };
-    withSelector: #finishExpansionWithEnvironment: addMethod: {:self :environment :: ASTNode |
+    withSelector: #finishMacroMethod addMethod: {:self :: ASTNode |
+        let: #macroContextArgument with: (ASTArgumentNode new
+            sourcePosition: self sourcePosition;
+            isForAll: false;
+            name: `'#__macroContext__;
+            type: `'MacroContext;
+            yourself).
+        let: #selfArgument with: (ASTArgumentNode new
+            sourcePosition: self sourcePosition;
+            isForAll: false;
+            name: `'#self;
+            type: `'SelfType;
+            yourself).
+        let: #arguments with: ((Array with: macroContextArgument with: selfArgument) -- self arguments) asArraySlice.
+        let: #methodNode with: (ASTLambdaNode new
+            sourcePosition: self sourcePosition;
+            flags: self methodFlags;
+            arguments: arguments;
+            body: self body;
+            resultType: self resultType;
+            yourself
+        ).
+        
+        if: self isFallbackMethod
+        then: ``(__OwnerProgramEntity__ withSelector: `,(self selector) addFallbackMethod: `,methodNode)
+        else: ``(__OwnerProgramEntity__ withSelector: `,(self selector) addMacroMethod: `,methodNode)
+    };
+    withSelector: #finishMethodExpansion addMethod: {:self :: ASTNode |
         let: #selfArgument with: (ASTArgumentNode new
             sourcePosition: self sourcePosition;
             isForAll: false;
@@ -1248,6 +1329,7 @@ MethodMetaBuilder
         let: #arguments with: ((Array with: selfArgument) -- self arguments) asArraySlice.
         let: #methodNode with: (ASTLambdaNode new
             sourcePosition: self sourcePosition;
+            flags: self methodFlags;
             arguments: arguments;
             body: self body;
             resultType: self resultType;
@@ -1255,9 +1337,133 @@ MethodMetaBuilder
         ).
         
         ``(__OwnerProgramEntity__ withSelector: `,(self selector) addMethod: `,methodNode)
+    };
+    withSelector: #finishExpansionWithEnvironment: addMethod: {:self :environment :: ASTNode |
+        if: self isMacro
+        then: self finishMacroMethodExpansion
+        else: self finishMethodExpansion
     }.
 
-public: #method with: (MetaBuilderFactory for: MethodMetaBuilder).
+MacroMetaBuilder publicSubclass: #MacroMethodMetaBuilder slots: (
+    TypeSlot publicNamed: #methodFlags type: Size ,
+    TypeSlot publicNamed: #isFallbackMethod type: Boolean ,
+).
+
+MacroMethodMetaBuilder
+    withSelector: #initialize addMethod: {:self :: Void |
+        self methodFlags: 1sz.
+        self isFallbackMethod: false.
+    };
+    withSelector: #addMethodFlags: addMethod: {:self :(Size)flags :: Void |
+        self methodFlags: self methodFlags | flags
+    };
+    withSelector: #fallback addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self isFallbackMethod: true.
+        self continueExpansion
+    };
+    withSelector: #method addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self delegateToMetaBuilder: (MethodMetaBuilder new
+            methodFlags: self methodFlags;
+            isMacro: true;
+            isFallbackMethod: self isFallbackMethod;
+            yourself)
+    }.
+
+MacroMetaBuilder publicSubclass: #FlagMetaBuilder slots: (
+    TypeSlot publicNamed: #methodFlags type: Size ,
+    TypeSlot publicNamed: #fieldFlags type: Size ,
+    TypeSlot publicNamed: #isPublic type: Boolean ,
+).
+
+FlagMetaBuilder
+    withSelector: #initialize addMethod: {:self :: Void |
+        self methodFlags: 0sz.
+        self fieldFlags: 0sz.
+        self isPublic: false.
+    };
+    withSelector: #expandMessageSendNode: addMethod: {:self :messageSendNode :: ASTNode |
+        let: #selector with: messageSendNode selector.
+        if: (selector isLiteralNode && selector value) == #class then: {
+            self delegateToMetaBuilder: (ClassMetaBuilder new
+                isPublic: self isPublic;
+                yourself)
+        } else: {
+            self expandMessageSendNodeWithMetaBuilderMethod: messageSendNode
+        }.
+    };
+    withSelector: #addMethodFlags: addMethod: {:self :(Size)flags :: Void |
+        self methodFlags: self methodFlags | flags
+    };
+    withSelector: #pure addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self addMethodFlags: 1sz<<3sz.
+        self continueExpansion
+    };
+    withSelector: #final addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self addMethodFlags: 1sz<<4sz.
+        self continueExpansion
+    };
+    withSelector: #virtual addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self addMethodFlags: 1sz<<5sz.
+        self continueExpansion
+    };
+    withSelector: #abstract addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self addMethodFlags: 1sz<<6sz.
+        self continueExpansion
+    };
+    withSelector: #override addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self addMethodFlags: 1sz<<7sz.
+        self continueExpansion
+    };
+    withSelector: #static addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self addMethodFlags: 1sz<<8sz.
+        self continueExpansion
+    };
+    withSelector: #method addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self delegateToMetaBuilder: (MethodMetaBuilder new
+            addMethodFlags: self methodFlags;
+            yourself)
+    };
+    withSelector: #macro addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self delegateToMetaBuilder: (MacroMethodMetaBuilder new
+            addMethodFlags: self methodFlags;
+            yourself)
+    };
+    withSelector: #field addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self delegateToMetaBuilder: (FieldMetaBuilder new
+            addFieldFlags: self fieldFlags;
+            yourself)
+    }.
+
+FlagMetaBuilder publicSubclass: #PublicMetaBuilder slots: (
+).
+
+PublicMetaBuilder
+    withSelector: #initialize addMethod: {:self :: Void |
+        self methodFlags: 0sz.
+        self fieldFlags: 1sz.
+        self isPublic: true.
+    }.
+
+FlagMetaBuilder publicSubclass: #ProtectedMetaBuilder slots: (
+).
+
+FlagMetaBuilder publicSubclass: #PrivateMetaBuilder slots: (
+).
+
+public: #public with: (MetaBuilderFactory for: PublicMetaBuilder).
+public: #protected with: (MetaBuilderFactory for: ProtectedMetaBuilder).
+public: #private with: (MetaBuilderFactory for: PrivateMetaBuilder).
 
 {
     let: #typeExtendMacro with: {:macroContext :self :extensionBlock :: ASTNode |
