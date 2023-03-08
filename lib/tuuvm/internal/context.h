@@ -31,8 +31,8 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t analyzeMessageSendNodeWithEnvironmentSelector;
     tuuvm_tuple_t analyzeAndEvaluateMessageChainNodeForReceiverWithEnvironmentSelector;
     tuuvm_tuple_t analyzeMessageChainNodeWithEnvironmentSelector;
-    tuuvm_tuple_t analyzeAndEvaluateConcreteSequenceElementWithEnvironmentSelector;
-    tuuvm_tuple_t analyzeConcreteSequenceElementWithEnvironmentSelector;
+    tuuvm_tuple_t analyzeAndEvaluateConcreteMetaValueWithEnvironmentSelector;
+    tuuvm_tuple_t analyzeConcreteMetaValueWithEnvironmentSelector;
 
     tuuvm_tuple_t coerceValueSelector;
 

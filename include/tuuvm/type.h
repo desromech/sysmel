@@ -340,22 +340,22 @@ TUUVM_API void tuuvm_type_setAnalyzeMessageChainNodeWithEnvironmentFunction(tuuv
 /**
  * Gets the analyzeAndEvaluateMessageChainNode with environment function function of a type.
  */
-TUUVM_API tuuvm_tuple_t tuuvm_type_getAnalyzeAndEvaluateConcreteSequenceElementWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type);
+TUUVM_API tuuvm_tuple_t tuuvm_type_getAnalyzeAndEvaluateConcreteMetaValueWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type);
 
 /**
  * Sets the analyzeAndEvaluateMessageChainNode with environment function function of a type.
  */
-TUUVM_API void tuuvm_type_setAnalyzeAndEvaluateConcreteSequenceElementWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t function);
+TUUVM_API void tuuvm_type_setAnalyzeAndEvaluateConcreteMetaValueWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t function);
 
 /**
  * Gets the analyzeMessageChainNode with environment function function of a type.
  */
-TUUVM_API tuuvm_tuple_t tuuvm_type_getAnalyzeConcreteSequenceElementWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type);
+TUUVM_API tuuvm_tuple_t tuuvm_type_getAnalyzeConcreteMetaValueWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type);
 
 /**
  * Sets the analyzeMessageChainNode with environment function function of a type.
  */
-TUUVM_API void tuuvm_type_setAnalyzeConcreteSequenceElementWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t function);
+TUUVM_API void tuuvm_type_setAnalyzeConcreteMetaValueWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t function);
 
 /**
  * Gets the coerceValueFunction function of a type.

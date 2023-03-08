@@ -196,7 +196,7 @@ static tuuvm_tuple_t tuuvm_astSequenceNode_primitiveAnalyze(tuuvm_context_t *con
             gcFrame.elementValue = tuuvm_astLiteralNode_getValue(gcFrame.analyzedExpression);
             gcFrame.elementType = tuuvm_tuple_getType(context, gcFrame.elementValue);
             gcFrame.elementMetaType = tuuvm_tuple_getType(context, gcFrame.elementType);
-            gcFrame.concretizeFunction = tuuvm_type_getAnalyzeConcreteSequenceElementWithEnvironmentFunction(context, gcFrame.elementMetaType);
+            gcFrame.concretizeFunction = tuuvm_type_getAnalyzeConcreteMetaValueWithEnvironmentFunction(context, gcFrame.elementMetaType);
             if(gcFrame.concretizeFunction)
                 gcFrame.analyzedExpression = tuuvm_function_apply3(context, gcFrame.concretizeFunction, gcFrame.elementType, gcFrame.analyzedExpression, *environment);
         }
@@ -268,7 +268,7 @@ static tuuvm_tuple_t tuuvm_astSequenceNode_primitiveAnalyzeAndEvaluate(tuuvm_con
         gcFrame.result = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, gcFrame.expression, *environment);
         
         gcFrame.elementType = tuuvm_tuple_getType(context, gcFrame.result);
-        gcFrame.concretizeFunction = tuuvm_type_getAnalyzeAndEvaluateConcreteSequenceElementWithEnvironmentFunction(context, gcFrame.elementType);
+        gcFrame.concretizeFunction = tuuvm_type_getAnalyzeAndEvaluateConcreteMetaValueWithEnvironmentFunction(context, gcFrame.elementType);
         if(gcFrame.concretizeFunction)
             gcFrame.result = tuuvm_function_apply3(context, gcFrame.concretizeFunction, gcFrame.elementType, gcFrame.result, *environment);
     }

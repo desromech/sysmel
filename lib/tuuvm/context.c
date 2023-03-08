@@ -271,8 +271,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.analyzeMessageSendNodeWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "analyzeMessageSendNode:withEnvironment:");
     context->roots.analyzeAndEvaluateMessageChainNodeForReceiverWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "analyzeAndEvaluateMessageChainNode:forReceiver:withEnvironment:");
     context->roots.analyzeMessageChainNodeWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "analyzeMessageChainNode:withEnvironment:");
-    context->roots.analyzeAndEvaluateConcreteSequenceElementWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "analyzeAndEvaluateConcreteSequenceElement:withEnvironment:");
-    context->roots.analyzeConcreteSequenceElementWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "analyzeConcreteSequenceElement:withEnvironment:");
+    context->roots.analyzeAndEvaluateConcreteMetaValueWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "analyzeAndEvaluateConcreteMetaValue:withEnvironment:");
+    context->roots.analyzeConcreteMetaValueWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "analyzeConcreteMetaValue:withEnvironment:");
 
     context->roots.coerceValueSelector = tuuvm_symbol_internWithCString(context, "coerceValue:");
 

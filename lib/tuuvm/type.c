@@ -287,24 +287,24 @@ TUUVM_API void tuuvm_type_setAnalyzeMessageChainNodeWithEnvironmentFunction(tuuv
     tuuvm_type_setMethodWithSelector(context, type, context->roots.analyzeMessageChainNodeWithEnvironmentSelector, function);
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_type_getAnalyzeAndEvaluateConcreteSequenceElementWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type)
+TUUVM_API tuuvm_tuple_t tuuvm_type_getAnalyzeAndEvaluateConcreteMetaValueWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type)
 {
-    return tuuvm_type_lookupSelector(context, type, context->roots.analyzeAndEvaluateConcreteSequenceElementWithEnvironmentSelector);
+    return tuuvm_type_lookupSelector(context, type, context->roots.analyzeAndEvaluateConcreteMetaValueWithEnvironmentSelector);
 }
 
-TUUVM_API void tuuvm_type_setAnalyzeAndEvaluateConcreteSequenceElementWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t function)
+TUUVM_API void tuuvm_type_setAnalyzeAndEvaluateConcreteMetaValueWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t function)
 {
-    tuuvm_type_setMethodWithSelector(context, type, context->roots.analyzeAndEvaluateConcreteSequenceElementWithEnvironmentSelector, function);
+    tuuvm_type_setMethodWithSelector(context, type, context->roots.analyzeAndEvaluateConcreteMetaValueWithEnvironmentSelector, function);
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_type_getAnalyzeConcreteSequenceElementWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type)
+TUUVM_API tuuvm_tuple_t tuuvm_type_getAnalyzeConcreteMetaValueWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type)
 {
-    return tuuvm_type_lookupSelector(context, type, context->roots.analyzeConcreteSequenceElementWithEnvironmentSelector);
+    return tuuvm_type_lookupSelector(context, type, context->roots.analyzeConcreteMetaValueWithEnvironmentSelector);
 }
 
-TUUVM_API void tuuvm_type_setAnalyzeConcreteSequenceElementWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t function)
+TUUVM_API void tuuvm_type_setAnalyzeConcreteMetaValueWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t function)
 {
-    tuuvm_type_setMethodWithSelector(context, type, context->roots.analyzeConcreteSequenceElementWithEnvironmentSelector, function);
+    tuuvm_type_setMethodWithSelector(context, type, context->roots.analyzeConcreteMetaValueWithEnvironmentSelector, function);
 }
 TUUVM_API tuuvm_tuple_t tuuvm_type_getCoerceValueFunction(tuuvm_context_t *context, tuuvm_tuple_t type)
 {
