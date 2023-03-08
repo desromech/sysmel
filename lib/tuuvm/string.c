@@ -117,7 +117,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_symbol_internWithString(tuuvm_context_t *context, 
             return existent;
     }
 
-    tuuvm_object_tuple_t *result = tuuvm_context_allocateByteTuple(context, context->roots.symbolType, stringSize);
+    tuuvm_object_tuple_t *result = tuuvm_context_allocateByteTuple(context, context->roots.stringSymbolType, stringSize);
     if(!result) return 0;
 
     // In the case of symbols, make the identity hash match with the string hash.
@@ -349,9 +349,9 @@ void tuuvm_string_setupPrimitives(tuuvm_context_t *context)
         tuuvm_type_setAsStringFunction(context, context->roots.stringType, tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_string_primitive_asString));
     }
 
-    // Symbol primitives.
+    // StringSymbol primitives.
     {
-        tuuvm_type_setAsStringFunction(context, context->roots.symbolType, tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_symbol_primitive_asString));
+        tuuvm_type_setAsStringFunction(context, context->roots.stringSymbolType, tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_symbol_primitive_asString));
     }
 
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "printString", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_printString);
@@ -359,5 +359,5 @@ void tuuvm_string_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::printString", context->roots.anyValueType, "printString", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_defaultPrintString);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::asString", context->roots.anyValueType, "asString", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_defaultAsString);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "String::concat:", context->roots.stringType, "--", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_string_primitive_concat);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Symbol::intern", context->roots.stringType, "asSymbol", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_symbol_primitive_intern);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "StringSymbol::intern", context->roots.stringType, "asSymbol", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_symbol_primitive_intern);
 }

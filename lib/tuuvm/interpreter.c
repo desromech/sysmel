@@ -254,6 +254,7 @@ static tuuvm_tuple_t tuuvm_astSequenceNode_primitiveAnalyzeAndEvaluate(tuuvm_con
         tuuvm_tuple_t result;
         tuuvm_tuple_t expression;
         tuuvm_tuple_t elementType;
+        tuuvm_tuple_t elementMetaType;
         tuuvm_tuple_t concretizeFunction;
     } gcFrame = {
         .result = TUUVM_VOID_TUPLE
@@ -268,7 +269,8 @@ static tuuvm_tuple_t tuuvm_astSequenceNode_primitiveAnalyzeAndEvaluate(tuuvm_con
         gcFrame.result = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, gcFrame.expression, *environment);
         
         gcFrame.elementType = tuuvm_tuple_getType(context, gcFrame.result);
-        gcFrame.concretizeFunction = tuuvm_type_getAnalyzeAndEvaluateConcreteMetaValueWithEnvironmentFunction(context, gcFrame.elementType);
+        gcFrame.elementMetaType = tuuvm_tuple_getType(context, gcFrame.elementType);
+        gcFrame.concretizeFunction = tuuvm_type_getAnalyzeAndEvaluateConcreteMetaValueWithEnvironmentFunction(context, gcFrame.elementMetaType);
         if(gcFrame.concretizeFunction)
             gcFrame.result = tuuvm_function_apply3(context, gcFrame.concretizeFunction, gcFrame.elementType, gcFrame.result, *environment);
     }

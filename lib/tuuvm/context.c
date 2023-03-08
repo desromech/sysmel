@@ -244,7 +244,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.stringHashFunction = tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_string_primitive_hash);
 
     context->roots.symbolType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
-    tuuvm_type_setFlags(context, context->roots.symbolType, TUUVM_TYPE_FLAG_NULLABLE | TUUVM_TYPE_FLAG_BYTES);
+    context->roots.stringSymbolType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolType);
+    tuuvm_type_setFlags(context, context->roots.stringSymbolType, TUUVM_TYPE_FLAG_NULLABLE | TUUVM_TYPE_FLAG_BYTES);
 
     context->roots.dictionaryType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.hashedCollectionType);
     context->roots.setType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.hashedCollectionType);
@@ -339,7 +340,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.anyValueType, "AnyValue", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.objectType, "Object", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.typeType, "Type", TUUVM_NULL_TUPLE,
-        "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
+        "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringSymbolType,
         "supertype", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         "slots", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "sumTypeAlternatives", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
@@ -376,6 +377,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "nativeEntryPoint", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uintptrType,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolType, "Symbol", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.stringSymbolType, "StringSymbol", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.setType, "Set", TUUVM_NULL_TUPLE,
         "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
@@ -413,6 +415,10 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "equalsFunction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionType,
         "hashFunction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionType,
         NULL);
+    context->roots.generatedSymbolType = tuuvm_context_createIntrinsicClass(context, "GeneratedSymbol", TUUVM_NULL_TUPLE,
+        "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
+        "context", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        NULL);
     context->roots.hashtableEmptyType = tuuvm_context_createIntrinsicClass(context, "HashtableEmpty", TUUVM_NULL_TUPLE, NULL);
     context->roots.macroContextType = tuuvm_context_createIntrinsicClass(context, "MacroContext", TUUVM_NULL_TUPLE,
         "sourceNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
@@ -433,7 +439,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.sourceCodeType = tuuvm_context_createIntrinsicClass(context, "SourceCode", TUUVM_NULL_TUPLE,
         "text", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,
         "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,
-        "language", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
+        "language", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringSymbolType,
         "lineStartIndexTable", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     context->roots.sourcePositionType = tuuvm_context_createIntrinsicClass(context, "SourcePosition", TUUVM_NULL_TUPLE,

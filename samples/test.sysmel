@@ -70,3 +70,12 @@ printLine(Object lookupSelector: #testMethod, " ", (Object lookupSelector: #test
 
 let testValue := 42.
 printLine(testValue).
+
+class TestClass superclass: Object; definition: {
+    method myTestMethod => Int32 := {
+        42i32
+    }.
+
+}.
+printLine(TestClass).
+printLine(TestClass new myTestMethod).

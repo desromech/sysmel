@@ -545,7 +545,7 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
             return true;
         }
 
-        // Symbol string
+        // StringSymbol string
         if(c1 == '"')
         {
             state->position += 2;

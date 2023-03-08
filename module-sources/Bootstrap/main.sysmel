@@ -89,17 +89,28 @@ Type
     withSelector: #hasBytesContent addMethod: {:self :: Boolean |
         (self flags & 2sz) ~= 0sz
     };
+    withSelector: #validSupertypeTotalSlotCount addMethod: {:self :: Size |
+        let: #supertype with: self supertype.
+        if: supertype == nil then: 0sz else: supertype validTotalSlotCount.
+    };
+    withSelector: #validTotalSlotCount addMethod: {:self :: Size |
+        let: #totalSlotCount with: self totalSlotCount.
+        if: totalSlotCount == nil then: {
+            self totalSlotCount: self validSupertypeTotalSlotCount + self slots size.
+            self totalSlotCount
+        } else: totalSlotCount
+    };
     withSelector: #basicAllocate addMethod: {:self :: self |
         let: #result with: (if: self hasBytesContent
             then: RawTuple::byteNew(0sz)
-            else: RawTuple::new(self totalSlotCount)).
+            else: RawTuple::new(self validTotalSlotCount)).
         (RawTuple::type:)(result, self).
         result
     };
     withSelector: #basicAllocate: addMethod: {:self :(Size)variableSize :: self |
         let: #result with: (if: self hasBytesContent
             then: RawTuple::byteNew(variableSize)
-            else: RawTuple::new(self totalSlotCount + variableSize)).
+            else: RawTuple::new(self validTotalSlotCount + variableSize)).
         (RawTuple::type:)(result, self).
         result
     };
@@ -436,38 +447,44 @@ Type
     }.
 
 Class
-    withSelector: #subclassWithClassSlots:slots: addMethod: {:self :(Array)classSlots :(Array)instanceSlots :: Class |
+    withSelector: #subclassWithClassSlots: addMethod: {:self :(Array)classSlots  :: Class |
         let: #metaclass with: Metaclass basicNew.
         let: #metaclassSuper with: self class.
         metaclass
             flags: 1sz;
             supertype: metaclassSuper;
             slots: classSlots;
-            totalSlotCount: metaclassSuper totalSlotCount + classSlots size;
+            totalSlotCount: metaclassSuper validTotalSlotCount + classSlots size;
             generatePublicAccessors.
         
         let: #class with: metaclass basicNew.
         class
             flags: 1sz;
             supertype: self;
-            slots: instanceSlots;
-            totalSlotCount: self totalSlotCount + instanceSlots size;
-            generatePublicAccessors.
+            slots: ();
+            totalSlotCount: self validTotalSlotCount.
         metaclass thisClass: class.
         class
     };
-    withSelector: #subclass:classSlots:slots: addMethod: {:self :(Symbol)name :(Array)classSlots :(Array)instanceSlots :: Class |
+    withSelector: #subclassWithClassSlots:slots: addMethod: {:self :(Array)classSlots :(Array)instanceSlots :: Class |
+        (self subclassWithClassSlots: classSlots)
+            slots: instanceSlots;
+            totalSlotCount: self validTotalSlotCount + instanceSlots size;
+            generatePublicAccessors;
+            yourself
+    };
+    withSelector: #subclass:classSlots:slots: addMethod: {:self :(StringSymbol)name :(Array)classSlots :(Array)instanceSlots :: Class |
         let: #class with: (self subclassWithClassSlots: classSlots slots: instanceSlots).
         class name: name.
         class
     };
-    withSelector: #subclass:slots: addMethod: {:self :(Symbol)name :(Array)instanceSlots :: Class |
+    withSelector: #subclass:slots: addMethod: {:self :(StringSymbol)name :(Array)instanceSlots :: Class |
         self subclass: name classSlots: () slots: instanceSlots
     }.
 
 Environment
-    withSelector: #setSymbol:value: addMethod: {:self :selector :value :: Void | self setSymbol: selector binding: value };
-    withSelector: #setPublicSymbol:value: addMethod: {:self :selector :value :: Void | self setSymbol: selector binding: value };
+    withSelector: #setSymbol:value: addMethod: {:self :selector :value :: value __type__ | self setSymbol: selector binding: value. value };
+    withSelector: #setPublicSymbol:value: addMethod: {:self :selector :value :: value __type__ | self setSymbol: selector binding: value. value };
     withSelector: #withSelector:addMethod: addMethod: {:self :selector :method :: Void | self setSymbol: selector binding: binding }.
 
 ## ============================================================================
@@ -580,7 +597,13 @@ ASTLocalDefinitionNode
 
 ASTIdentifierReferenceNode
     withSelector: #childrenDo: addMethod: {:self :aBlock :: Void | };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void | }.
+    withSelector: #transformWith: addMethod: {:self :aBlock :: Void | };
+    withSelector: #asLiteralNode addMethod: {:self :: ASTLiteralNode |
+        ASTLiteralNode new
+            sourcePosition: self sourcePosition;
+            value: self value;
+            yourself
+    }.
 
 ASTIfNode
     withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
@@ -651,6 +674,14 @@ ASTMessageChainNode
     }.
 
 ASTMessageChainMessageNode
+    withSelector: #asMessageSendNodeWithReceiver: addMethod: {:self :receiver :: ASTMessageSendNode |
+        ASTMessageSendNode new
+            sourcePosition: self sourcePosition;
+            receiver: receiver;
+            selector: self selector;
+            arguments: self arguments;
+            yourself
+    };
     withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
         if: (self selector isNotNil) then: aBlock(self selector).
         self arguments do: aBlock
@@ -799,6 +830,72 @@ ASTWhileContinueWithNode
     }.
 
 ## ============================================================================
+## Bootstrap Additional Macros
+## ============================================================================
+
+MacroContext
+    withSelector: #gensym: addMethod: {:self :value |
+        GeneratedSymbol new
+            value: value;
+            context: self sourcePosition;
+            yourself
+    };
+    withSelector: #gensymIdentifier: addMethod: {:self :value |
+        ASTIdentifierReferenceNode new
+            sourcePosition: self sourcePosition;
+            value: (self gensym: value);
+            yourself
+    }.
+
+ASTNode
+    withSelector: #cullExpressionWith:at: addMethod: {:self :argument :sourcePosition :: ASTNode |
+        self
+    }.
+
+ASTLambdaNode
+    withSelector: #cullExpressionWith:at: addMethod: {:self :argument :sourcePosition :: ASTNode |
+        ASTUnexpandedApplicationNode new
+            sourcePosition: sourcePosition;
+            functionOrMacroExpression: self;
+            arguments: (ArraySlice with: argument);
+            yourself
+    }.
+
+AnyValue
+    withSelector: #ifNil: addMacroMethod: {:macroContext :self :nilExpression :: ASTNode |
+        let: #receiver with: (macroContext gensymIdentifier: #ifNilReceiver).
+        
+        ``{
+            let: `,(receiver asLiteralNode) with: `,self.
+            if: `,receiver == nil then: `,nilExpression else: `,receiver
+        }
+    } makeMacro;
+    withSelector: #ifNotNil: addMacroMethod: {:macroContext :self :notNilExpression :: ASTNode |
+        let: #receiver with: (macroContext gensymIdentifier: #ifNotNilReceiver).
+        
+        ``{
+            let: `,(receiver asLiteralNode) with: `,self.
+            if: `,receiver ~~ nil then: `,(notNilExpression cullExpressionWith: receiver at: macroContext sourcePosition) else: nil
+        }
+    } makeMacro;
+    withSelector: #ifNil:ifNotNil: addMacroMethod: {:macroContext :self :nilExpression :notNilExpression :: ASTNode |
+        let: #receiver with: (macroContext gensymIdentifier: #ifNilIfNotNilReceiver).
+        
+        ``{
+            let: `,(receiver asLiteralNode) with: `,self.
+            if: `,receiver == nil then: `,nilExpression else: `,(notNilExpression cullExpressionWith: receiver at: macroContext sourcePosition)
+        }
+    } makeMacro;
+    withSelector: #ifNotNil:ifNil: addMacroMethod: {:macroContext :self :notNilExpression :nilExpression :: ASTNode |
+        let: #receiver with: (macroContext gensymIdentifier: #ifNotNilIfNilReceiver).
+        
+        ``{
+            let: `,(receiver asLiteralNode) with: `,self.
+            if: `,receiver ~~ nil then: `,(notNilExpression cullExpressionWith: receiver at: macroContext sourcePosition) else: `,nilExpression
+        }
+    } makeMacro.
+
+## ============================================================================
 ## Bootstrap Meta builder
 ## ============================================================================
 BootstrapEnv::IntrinsicsBuiltInEnvironment
@@ -831,6 +928,34 @@ MetaBuilder
     };
     withSelector: #analyzeMessageSendNode:withEnvironment: addClassMethod: {:self :messageSendNode :environment |
         messageSendNode receiver value analyzeMessageSendNode: messageSendNode withEnvironment: environment
+    };
+    withSelector: #analyzeAndEvaluateMessageChainNode:forReceiver:withEnvironment: addClassMethod: {:self :messageChainNode :receiver :environment |
+        let: #selfReceiver with: (ASTLiteralNode new
+            sourcePosition: messageChainNode receiver sourcePosition;
+            value: receiver;
+            yourself). 
+        
+        let: #result with: (ValueBox with: selfReceiver).
+
+        messageChainNode messages do: {:messageChainMessageNode :: Void |
+            result := receiver analyzeAndEvaluateMessageSendNode: (messageChainMessageNode asMessageSendNodeWithReceiver: selfReceiver) withEnvironment: environment
+        }.
+
+        result _
+    };
+    withSelector: #analyzeMessageChainNode:withEnvironment: addClassMethod: {:self :messageChainNode :environment |
+        let: #selfReceiver with: (ASTLiteralNode new
+            sourcePosition: messageChainNode receiver sourcePosition;
+            value: receiver;
+            yourself). 
+        
+        let: #result with: (ValueBox with: selfReceiver).
+
+        messageChainNode messages do: {:messageChainMessageNode :: Void |
+            result := receiver analyzeMessageSendNode: (messageChainMessageNode asMessageSendNodeWithReceiver: selfReceiver) withEnvironment: environment
+        }.
+
+        result _
     };
     withSelector: #analyzeAndEvaluateConcreteMetaValue:withEnvironment: addClassMethod: {:self :metaBuilderInstance :environment |
         metaBuilderInstance analyzeAndEvaluateConcreteMetaValueWithEnvironment: environment
@@ -957,6 +1082,75 @@ NamedMetaBuilder
             self expandMessageSendNodeWithMetaBuilderMethod: messageSendNode
         }.
     }.
+
+NamedMetaBuilder publicSubclass: #TypeMetaBuilder slots: (
+    TypeSlot publicNamed: #metaSlotsExpression type: ASTNode ,
+    TypeSlot publicNamed: #supertypeExpression type: ASTNode ,
+    TypeSlot publicNamed: #definitionExpression type: ASTNode ,
+).
+
+TypeMetaBuilder
+    withSelector: #metaSlots: addMethod: {:self :(ASTNode)metaSlotsExpression :: ASTNode |
+        <metaBuilder>
+        self metaSlotsExpression: metaSlotsExpression.
+        self continueExpansion
+    };
+    withSelector: #supertype: addMethod: {:self :(ASTNode)supertypeExpression :: ASTNode |
+        <metaBuilder>
+        self supertypeExpression: supertypeExpression.
+        self continueExpansion
+    };
+    withSelector: #definition: addMethod: {:self :(ASTNode)definitionExpression :: ASTNode |
+        <metaBuilder>
+        self definitionExpression: definitionExpression.
+        self finishExpansion
+    };
+    withSelector: #":=" addMethod: {:self :(ASTNode)definitionExpression :: ASTNode |
+        <metaBuilder>
+        self definitionExpression: definitionExpression.
+        self finishExpansion
+    };
+    
+    withSelector: #validMetaSlotsExpression addMethod: {:self :: ASTNode |
+        self metaSlotsExpression ifNil: `'()
+    }.
+
+TypeMetaBuilder publicSubclass: #ClassMetaBuilder slots: (
+).
+
+ClassMetaBuilder
+    withSelector: #classSlots: addMethod: {:self :(ASTNode)classSlots :: ASTNode |
+        <metaBuilder>
+        self metaSlotsExpression: metaSlotsExpression.
+        self continueExpansion
+    };
+    withSelector: #superclass: addMethod: {:self :(ASTNode)superclassExpression :: ASTNode |
+        <metaBuilder>
+        self supertypeExpression: superclassExpression.
+        self continueExpansion
+    };
+    withSelector: #validSuperclassExpression addMethod: {:self :: ASTNode |
+        self supertypeExpression ifNil: `'Object
+    };
+    withSelector: #finishExpansionWithEnvironment: addMethod: {:self :environment :: ASTNode |
+        let: #makeClassExpression with: ``(
+            `,(self validSuperclassExpression) subclassWithClassSlots: `,(self validMetaSlotsExpression)
+        ).
+
+        let: #name with: self name.
+
+        let: #classValueExpression with: (name
+            ifNil: makeClassExpression
+            ifNotNil: ``(public: `,name with: (`,makeClassExpression name: `,name; yourself))
+        ).
+
+        let: #definitionExpression with: self definitionExpression.
+        definitionExpression
+        ifNil: classValueExpression
+        ifNotNil: ``(`,classValueExpression definition: `,definitionExpression)
+    }.
+
+public: #class with: (MetaBuilderFactory for: ClassMetaBuilder).
 
 NamedMetaBuilder publicSubclass: #VariableMetaBuilder slots: (
     TypeSlot publicNamed: #typeExpression type: ASTNode ,

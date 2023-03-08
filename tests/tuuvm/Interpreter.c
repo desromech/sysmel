@@ -25,7 +25,7 @@ TEST_SUITE(Interpreter)
         TEST_ASSERT_EQUALS(TUUVM_VOID_TUPLE, testAnalyzeAndEvaluate(""));
     }
 
-    TEST_CASE_WITH_FIXTURE(Symbol, TuuvmCore)
+    TEST_CASE_WITH_FIXTURE(StringSymbol, TuuvmCore)
     {
         tuuvm_gc_lock(tuuvm_test_context);
         TEST_ASSERT_EQUALS(tuuvm_symbol_internWithCString(tuuvm_test_context, "first"), testAnalyzeAndEvaluate("#first"));

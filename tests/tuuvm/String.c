@@ -19,7 +19,7 @@ TEST_SUITE(String)
 }
 
 
-TEST_SUITE(Symbol)
+TEST_SUITE(StringSymbol)
 {
     TEST_CASE_WITH_FIXTURE(InternWithString, TuuvmCore)
     {

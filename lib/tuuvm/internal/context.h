@@ -51,6 +51,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t environmentType;
     tuuvm_tuple_t falseType;
     tuuvm_tuple_t functionType;
+    tuuvm_tuple_t generatedSymbolType;
     tuuvm_tuple_t hashedCollectionType;
     tuuvm_tuple_t hashtableEmptyType;
     tuuvm_tuple_t integerType;
@@ -63,6 +64,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t setType;
     tuuvm_tuple_t stringType;
     tuuvm_tuple_t stringBuilderType;
+    tuuvm_tuple_t stringSymbolType;
     tuuvm_tuple_t symbolType;
     tuuvm_tuple_t trueType;
     tuuvm_tuple_t typeType;
