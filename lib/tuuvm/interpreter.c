@@ -378,14 +378,22 @@ static tuuvm_tuple_t tuuvm_astArgumentNode_primitiveAnalyze(tuuvm_context_t *con
         tuuvm_astArgumentNode_t *argumentNode;
         tuuvm_tuple_t analyzedName;
         tuuvm_tuple_t analyzedType;
+        tuuvm_tuple_t evaluatedName;
+        tuuvm_tuple_t argumentBinding;
+
     } gcFrame = {};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
-
     gcFrame.argumentNode = (tuuvm_astArgumentNode_t*)tuuvm_context_shallowCopy(context, *node);
+
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.argumentNode->super.sourcePosition);
+
     if(gcFrame.argumentNode->name)
     {
         gcFrame.analyzedName = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.argumentNode->name, *environment);
         gcFrame.argumentNode->name = gcFrame.analyzedName;
+
+        if(tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedName))
+            gcFrame.evaluatedName = tuuvm_interpreter_evaluateASTWithEnvironment(context, gcFrame.analyzedName, *environment);
     }
     if(gcFrame.argumentNode->type)
     {
@@ -393,6 +401,13 @@ static tuuvm_tuple_t tuuvm_astArgumentNode_primitiveAnalyze(tuuvm_context_t *con
         gcFrame.argumentNode->type = gcFrame.analyzedType;
     }
 
+    if(gcFrame.evaluatedName)
+    {
+        gcFrame.argumentBinding = tuuvm_symbolArgumentBinding_create(context, gcFrame.argumentNode->super.sourcePosition, gcFrame.evaluatedName);
+        tuuvm_environment_setNewSymbolBinding(context, *environment, gcFrame.evaluatedName, gcFrame.argumentBinding);
+    }
+
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return (tuuvm_tuple_t)gcFrame.argumentNode;
 }
@@ -423,7 +438,7 @@ static tuuvm_tuple_t tuuvm_astLambdaNode_primitiveAnalyze(tuuvm_context_t *conte
     for(size_t i = 0; i < argumentNodeCount; ++i)
     {
         gcFrame.argumentNode = tuuvm_arraySlice_at(gcFrame.lambdaNode->arguments, i);
-        gcFrame.argumentNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.argumentNode, *environment);
+        gcFrame.argumentNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.argumentNode, gcFrame.lambdaAnalysisEnvironment);
 
         if(!tuuvm_astArgumentNode_isForAll(gcFrame.argumentNode))
             ++lambdaArgumentCount;
@@ -481,7 +496,7 @@ static tuuvm_tuple_t tuuvm_astLambdaNode_primitiveAnalyzeAndEvaluate(tuuvm_conte
     for(size_t i = 0; i < argumentNodeCount; ++i)
     {
         gcFrame.argumentNode = tuuvm_arraySlice_at((*lambdaNode)->arguments, i);
-        gcFrame.argumentNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.argumentNode, *environment);
+        gcFrame.argumentNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.argumentNode, gcFrame.lambdaAnalysisEnvironment);
 
         if(!tuuvm_astArgumentNode_isForAll(gcFrame.argumentNode))
             ++lambdaArgumentCount;
@@ -716,7 +731,7 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveEvaluate(tuuvm_contex
         gcFrame.value = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*localDefinitionNode)->valueExpression, *environment);
     if(gcFrame.type)
         gcFrame.value = tuuvm_type_coerceValue(context, gcFrame.type, gcFrame.value);
-    tuuvm_environment_setNewSymbolBinding(context, *environment, gcFrame.name, gcFrame.value);
+    tuuvm_environment_setNewSymbolBindingWithValue(context, *environment, gcFrame.name, gcFrame.value);
     //TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.value;
@@ -749,7 +764,7 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveAnalyzeAndEvaluate(tu
         gcFrame.value = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*localDefinitionNode)->valueExpression, *environment);
     if(gcFrame.type)
         gcFrame.value = tuuvm_type_coerceValue(context, gcFrame.type, gcFrame.value);
-    tuuvm_environment_setNewSymbolBinding(context, *environment, gcFrame.name, gcFrame.value);
+    tuuvm_environment_setNewSymbolBindingWithValue(context, *environment, gcFrame.name, gcFrame.value);
     //TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.value;
@@ -769,7 +784,10 @@ static tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_primitiveAnalyze(tuuvm_con
 
     // Attempt to replace the symbol with its binding, if it exists.
     if(tuuvm_environment_lookSymbolRecursively(context, *environment, (*referenceNode)->value, &binding))
-        return tuuvm_astLiteralNode_create(context, (*referenceNode)->super.sourcePosition, binding);
+    {
+        if(tuuvm_symbolBinding_isValue(context, binding))
+            return tuuvm_astLiteralNode_create(context, (*referenceNode)->super.sourcePosition, tuuvm_symbolValueBinding_getValue(binding));
+    }
 
     return *node;
 }
@@ -786,7 +804,10 @@ static tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_primitiveEvaluate(tuuvm_co
     tuuvm_tuple_t binding;
 
     if(tuuvm_environment_lookSymbolRecursively(context, *environment, (*referenceNode)->value, &binding))
-        return binding;
+    {
+        if(tuuvm_symbolBinding_isValue(context, binding))
+            return tuuvm_symbolValueBinding_getValue(binding);
+    }
 
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*referenceNode)->super.sourcePosition);
 
@@ -1596,6 +1617,7 @@ static tuuvm_tuple_t tuuvm_astMessageChainMessageNode_analyzeAndEvaluate(tuuvm_c
     struct {
         tuuvm_astMessageChainMessageNode_t *node;
         tuuvm_tuple_t selector;
+        tuuvm_tuple_t methodBinding;
         tuuvm_tuple_t method;
         tuuvm_tuple_t result;
         tuuvm_tuple_t argumentNode;
@@ -1616,8 +1638,10 @@ static tuuvm_tuple_t tuuvm_astMessageChainMessageNode_analyzeAndEvaluate(tuuvm_c
     }
     else
     {
-        if(!tuuvm_environment_lookSymbolRecursively(context, *environment, gcFrame.selector, &gcFrame.method))
+        if(!tuuvm_environment_lookSymbolRecursively(context, *environment, gcFrame.selector, &gcFrame.methodBinding)
+            || !tuuvm_symbolBinding_isValue(context, gcFrame.methodBinding))
             tuuvm_error("Failed to find symbol for message send without receiver.");
+        gcFrame.method = tuuvm_symbolValueBinding_getValue(gcFrame.methodBinding);
     }
 
 
@@ -1698,6 +1722,7 @@ static tuuvm_tuple_t tuuvm_astMessageChainMessageNode_evaluate(tuuvm_context_t *
     struct {
         tuuvm_astMessageChainMessageNode_t *node;
         tuuvm_tuple_t selector;
+        tuuvm_tuple_t methodBinding;
         tuuvm_tuple_t method;
         tuuvm_tuple_t argumentNode;
         tuuvm_tuple_t argument;
@@ -1718,8 +1743,10 @@ static tuuvm_tuple_t tuuvm_astMessageChainMessageNode_evaluate(tuuvm_context_t *
     }
     else
     {
-        if(!tuuvm_environment_lookSymbolRecursively(context, *environment, gcFrame.selector, &gcFrame.method))
+        if(!tuuvm_environment_lookSymbolRecursively(context, *environment, gcFrame.selector, &gcFrame.methodBinding)
+            || !tuuvm_symbolBinding_isValue(context, gcFrame.methodBinding))
             tuuvm_error("Failed to find symbol for message send without receiver.");
+        gcFrame.method = tuuvm_symbolValueBinding_getValue(gcFrame.methodBinding);
     }
 
 
@@ -1927,6 +1954,7 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyzeAndEvaluate(tuuvm_
         tuuvm_tuple_t receiverType;
         tuuvm_tuple_t selector;
         tuuvm_tuple_t method;
+        tuuvm_tuple_t methodBinding;
 
         tuuvm_tuple_t analysisAndEvaluationFunction;
         tuuvm_tuple_t expansionResult;
@@ -1972,8 +2000,10 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyzeAndEvaluate(tuuvm_
     else
     {
         gcFrame.selector = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*sendNode)->selector, *environment);
-        if(!tuuvm_environment_lookSymbolRecursively(context, *environment, gcFrame.selector, &gcFrame.method))
+        if(!tuuvm_environment_lookSymbolRecursively(context, *environment, gcFrame.selector, &gcFrame.methodBinding)
+            || !tuuvm_symbolBinding_isValue(context, gcFrame.methodBinding))
             tuuvm_error("Failed to find symbol for message send without receiver.");
+        gcFrame.method = tuuvm_symbolValueBinding_getValue(gcFrame.methodBinding);
     }
 
     bool isMacro = tuuvm_function_isMacro(context, gcFrame.method);
@@ -2044,6 +2074,7 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveEvaluate(tuuvm_context_t 
         tuuvm_tuple_t receiver;
         tuuvm_tuple_t selector;
         tuuvm_tuple_t method;
+        tuuvm_tuple_t methodBinding;
         tuuvm_tuple_t argumentNode;
         tuuvm_tuple_t argument;
         tuuvm_tuple_t result;
@@ -2072,8 +2103,10 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveEvaluate(tuuvm_context_t 
     else
     {
         gcFrame.selector = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*sendNode)->selector, *environment);
-        if(!tuuvm_environment_lookSymbolRecursively(context, *environment, gcFrame.selector, &gcFrame.method))
+        if(!tuuvm_environment_lookSymbolRecursively(context, *environment, gcFrame.selector, &gcFrame.methodBinding)
+            || !tuuvm_symbolBinding_isValue(context, gcFrame.methodBinding))
             tuuvm_error("Failed to find symbol for message send without receiver.");
+        gcFrame.method = tuuvm_symbolValueBinding_getValue(gcFrame.methodBinding);
     }
 
 
@@ -2282,7 +2315,7 @@ static void tuuvm_interpreter_evaluateArgumentNodeInEnvironment(tuuvm_context_t 
             gcFrame.value = tuuvm_type_coerceValue(context, gcFrame.expectedType, gcFrame.value);
     }
 
-    tuuvm_environment_setNewSymbolBinding(context, *activationEnvironment, gcFrame.name, gcFrame.value);
+    tuuvm_environment_setNewSymbolBindingWithValue(context, *activationEnvironment, gcFrame.name, gcFrame.value);
 
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);

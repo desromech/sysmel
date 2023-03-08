@@ -78,8 +78,8 @@ public class TestClass superclass: Object; definition: {
     }.
 
     public pure method square: x
-        := x.
+        := x*x.
 }.
 printLine(TestClass).
 printLine(TestClass new myTestMethod).
-printLine(TestClass new square: 3).
+printLine(2, " ", TestClass new square: 2).

@@ -484,9 +484,9 @@ Class
     }.
 
 Environment
-    withSelector: #setSymbol:value: addMethod: {:self :selector :value :: value __type__ | self setSymbol: selector binding: value. value };
-    withSelector: #setPublicSymbol:value: addMethod: {:self :selector :value :: value __type__ | self setSymbol: selector binding: value. value };
-    withSelector: #withSelector:addMethod: addMethod: {:self :selector :method :: Void | self setSymbol: selector binding: binding }.
+    withSelector: #setSymbol:value: addMethod: {:self :selector :value :: value __type__ | self setSymbol: selector bindingWithValue: value. value };
+    withSelector: #setPublicSymbol:value: addMethod: {:self :selector :value :: value __type__ | self setSymbol: selector bindingWithValue: value. value };
+    withSelector: #withSelector:addMethod: addMethod: {:self :selector :method :: Void | self setSymbol: selector bindingWithValue: method }.
 
 ## ============================================================================
 ## Bootstrap AST methods

@@ -31,7 +31,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicClass(tuuvm_context_t *cont
     tuuvm_tuple_t nameSymbol = tuuvm_symbol_internWithCString(context, name);
     tuuvm_tuple_t type = tuuvm_type_createAnonymousClassAndMetaclass(context, supertype);
     tuuvm_type_setName(type, nameSymbol);
-    tuuvm_environment_setNewSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, nameSymbol, type);
+    tuuvm_environment_setNewSymbolBindingWithValue(context, context->roots.intrinsicsBuiltInEnvironment, nameSymbol, type);
     tuuvm_arrayList_add(context, context->roots.intrinsicTypes, type);
 
     // First pass: count the arguments.
@@ -76,7 +76,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicType(tuuvm_context_t *conte
     tuuvm_tuple_t type = tuuvm_type_createWithName(context, nameSymbol);
     if(supertype)
         tuuvm_type_setSupertype(type, supertype);
-    tuuvm_environment_setNewSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, nameSymbol, type);
+    tuuvm_environment_setNewSymbolBindingWithValue(context, context->roots.intrinsicsBuiltInEnvironment, nameSymbol, type);
     tuuvm_arrayList_add(context, context->roots.intrinsicTypes, type);
 
     // First pass: count the arguments.
@@ -121,7 +121,7 @@ static void tuuvm_context_setIntrinsicTypeMetadata(tuuvm_context_t *context, tuu
     tuuvm_type_setName(type, nameSymbol);
     if(supertype)
         tuuvm_type_setSupertype(type, supertype);
-    tuuvm_environment_setNewSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, nameSymbol, type);
+    tuuvm_environment_setNewSymbolBindingWithValue(context, context->roots.intrinsicsBuiltInEnvironment, nameSymbol, type);
     tuuvm_arrayList_add(context, context->roots.intrinsicTypes, type);
 
     // First pass: count the arguments.
@@ -160,7 +160,7 @@ static void tuuvm_context_setIntrinsicTypeMetadata(tuuvm_context_t *context, tuu
 
 TUUVM_API void tuuvm_context_setIntrinsicSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t symbol, tuuvm_tuple_t binding)
 {
-    tuuvm_environment_setNewSymbolBinding(context, context->roots.intrinsicsBuiltInEnvironment, symbol, binding);
+    tuuvm_environment_setNewSymbolBindingWithValue(context, context->roots.intrinsicsBuiltInEnvironment, symbol, binding);
 }
 
 TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(tuuvm_context_t *context, const char *symbolString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
@@ -227,6 +227,9 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     // Create the function class.
     context->roots.functionType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
 
+    context->roots.symbolBindingType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.symbolArgumentBindingType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolBindingType);
+    context->roots.symbolValueBindingType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolBindingType);
     context->roots.environmentType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.astNodeType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
 
@@ -365,6 +368,15 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "parent", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
         "symbolTable", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolBindingType, "SymbolBinding", TUUVM_NULL_TUPLE,
+        "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolArgumentBindingType, "SymbolArgumentBinding", TUUVM_NULL_TUPLE,
+        NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolValueBindingType, "SymbolValueBinding", TUUVM_NULL_TUPLE,
+        "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.functionType, "Function", TUUVM_NULL_TUPLE,
         "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "argumentCount", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
@@ -502,6 +514,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         NULL);
     context->roots.astIdentifierReferenceNodeType = tuuvm_context_createIntrinsicClass(context, "ASTIdentifierReferenceNode", context->roots.astNodeType,
         "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "binding", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     context->roots.astIfNodeType = tuuvm_context_createIntrinsicClass(context, "ASTIfNode", context->roots.astNodeType,
         "conditionExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,

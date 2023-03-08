@@ -84,6 +84,7 @@ typedef struct tuuvm_astIdentifierReferenceNode_s
 {
     tuuvm_astNode_t super;
     tuuvm_tuple_t value;
+    tuuvm_tuple_t binding;
 } tuuvm_astIdentifierReferenceNode_t;
 
 typedef struct tuuvm_astIfNode_s
