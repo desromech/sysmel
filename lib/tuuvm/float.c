@@ -437,6 +437,47 @@ static tuuvm_tuple_t tuuvm_float64_primitive_greaterEquals(tuuvm_context_t *cont
     return tuuvm_tuple_boolean_encode(left >= right);
 }
 
+void tuuvm_float_registerPrimitives(void)
+{
+    // Float32
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_printString);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_fromFloat64);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_add);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_subtract);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_negate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_sqrt);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_multiply);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_divide);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_compare);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_equals);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_notEquals);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_lessThan);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_lessEquals);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_greaterThan);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_greaterEquals);
+
+    // Float64
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_fromFloat32);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_printString);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_add);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_subtract);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_negate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_sqrt);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_multiply);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_divide);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_compare);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_equals);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_notEquals);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_lessThan);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_lessEquals);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_greaterThan);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_greaterEquals);
+}
+
 void tuuvm_float_setupPrimitives(tuuvm_context_t *context)
 {
     // Float32

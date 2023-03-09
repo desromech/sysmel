@@ -7,13 +7,63 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define PRIMITIVE_TABLE_CAPACITY 1024
+
+static bool tuuvm_primitiveTableIsComputed = false;
+static size_t tuuvm_primitiveTableSize = 0;
+static tuuvm_functionEntryPoint_t tuuvm_primitiveTable[PRIMITIVE_TABLE_CAPACITY];
+extern void tuuvm_context_registerPrimitives(void);
+
+void tuuvm_primitiveTable_registerFunction(tuuvm_functionEntryPoint_t primitiveEntryPoint)
+{
+    for(size_t i = 0; i < tuuvm_primitiveTableSize; ++i)
+    {
+        if(tuuvm_primitiveTable[i] == primitiveEntryPoint)
+            return;
+    }
+
+    tuuvm_primitiveTable[tuuvm_primitiveTableSize++] = primitiveEntryPoint;
+}
+
+static void tuuvm_primitiveTable_ensureIsComputed(void)
+{
+    if(tuuvm_primitiveTableIsComputed)
+        return;
+
+    tuuvm_primitiveTableIsComputed = true;
+    tuuvm_context_registerPrimitives();
+}
+
+static bool tuuvm_primitiveTable_findEntryFor(tuuvm_functionEntryPoint_t primitiveEntryPoint, size_t *outEntryIndex)
+{
+    tuuvm_primitiveTable_ensureIsComputed();
+    
+    for(size_t i = 0; i < tuuvm_primitiveTableSize; ++i)
+    {
+        if(tuuvm_primitiveTable[i] == primitiveEntryPoint)
+        {
+            *outEntryIndex = i;
+            return true;
+        }
+    }
+    return false;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
 {
     tuuvm_function_t *result = (tuuvm_function_t*)tuuvm_context_allocatePointerTuple(context, context->roots.functionType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_function_t));
     result->argumentCount = tuuvm_tuple_size_encode(context, argumentCount);
     result->flags = tuuvm_tuple_size_encode(context, flags);
-    result->nativeUserdata = tuuvm_tuple_uintptr_encode(context, (size_t)userdata);
-    result->nativeEntryPoint = tuuvm_tuple_uintptr_encode(context, (size_t)entryPoint);
+    size_t primitiveEntryIndex = 0;
+    if(!userdata && tuuvm_primitiveTable_findEntryFor(entryPoint, &primitiveEntryIndex))
+    {
+        result->primitiveTableIndex = tuuvm_tuple_uintptr_encode(context, primitiveEntryIndex);
+    }
+    else
+    {
+        result->nativeUserdata = tuuvm_tuple_uintptr_encode(context, (size_t)userdata);
+        result->nativeEntryPoint = tuuvm_tuple_uintptr_encode(context, (size_t)entryPoint);
+    }
     return (tuuvm_tuple_t)result;
 }
 
@@ -74,7 +124,19 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
     if(tuuvm_tuple_isKindOf(context, function, context->roots.functionType))
     {
         tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
-        tuuvm_functionEntryPoint_t nativeEntryPoint = (tuuvm_functionEntryPoint_t)tuuvm_tuple_uintptr_decode(functionObject->nativeEntryPoint);
+        tuuvm_functionEntryPoint_t nativeEntryPoint = NULL;
+        
+        // Find the entry point in the primitive table.
+        if(functionObject->primitiveTableIndex)
+        {
+            tuuvm_primitiveTable_ensureIsComputed();
+            size_t primitiveNumber = tuuvm_tuple_size_decode(functionObject->primitiveTableIndex);
+            if(primitiveNumber < tuuvm_primitiveTableSize)
+                nativeEntryPoint = tuuvm_primitiveTable[primitiveNumber];
+        }
+
+        if(!nativeEntryPoint)
+            nativeEntryPoint = (tuuvm_functionEntryPoint_t)tuuvm_tuple_uintptr_decode(functionObject->nativeEntryPoint);
         if(nativeEntryPoint)
         {
             gcFrame.result = nativeEntryPoint(context, &gcFrame.function, argumentCount, arguments);
@@ -221,6 +283,13 @@ bool tuuvm_function_shouldOptimizeLookup(tuuvm_context_t *context, tuuvm_tuple_t
 {
     (void)receiverType;
     return (tuuvm_function_getFlags(context, function) & (TUUVM_FUNCTION_FLAGS_MACRO | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL))!= TUUVM_FUNCTION_FLAGS_NONE;
+}
+
+void tuuvm_function_registerPrimitives(void)
+{
+    tuuvm_primitiveTable_registerFunction(tuuvm_function_primitive_apply);
+    tuuvm_primitiveTable_registerFunction(tuuvm_function_primitive_adoptDefinitionOf);
+    tuuvm_primitiveTable_registerFunction(tuuvm_function_primitive_isCorePrimitive);
 }
 
 void tuuvm_function_setupPrimitives(tuuvm_context_t *context)

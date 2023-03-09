@@ -46,6 +46,11 @@ static tuuvm_tuple_t tuuvm_errors_primitive_error(tuuvm_context_t *context, tuuv
     return TUUVM_VOID_TUPLE;
 }
 
+void tuuvm_errors_registerPrimitives(void)
+{
+    tuuvm_primitiveTable_registerFunction(tuuvm_errors_primitive_error);
+}
+
 void tuuvm_errors_setupPrimitives(tuuvm_context_t *context)
 {
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "error", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_errors_primitive_error);

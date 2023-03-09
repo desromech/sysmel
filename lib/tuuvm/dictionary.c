@@ -173,6 +173,13 @@ static tuuvm_tuple_t tuuvm_dictionary_primitive_atPut(tuuvm_context_t *context, 
     return TUUVM_VOID_TUPLE;
 }
 
+void tuuvm_dictionary_registerPrimitives(void)
+{
+    tuuvm_primitiveTable_registerFunction(tuuvm_methodDictionary_primitive_new);
+    tuuvm_primitiveTable_registerFunction(tuuvm_dictionary_primitive_atOrNil);
+    tuuvm_primitiveTable_registerFunction(tuuvm_dictionary_primitive_atPut);
+}
+
 void tuuvm_dictionary_setupPrimitives(tuuvm_context_t *context)
 {
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "IdentityDictionary::new", 0, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_methodDictionary_primitive_new);

@@ -235,6 +235,19 @@ static tuuvm_tuple_t tuuvm_tuple_primitive_shallowCopy(tuuvm_context_t *context,
     return tuuvm_context_shallowCopy(context, arguments[0]);
 }
 
+void tuuvm_tuple_registerPrimitives(void)
+{
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_getType);
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_setType);
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_slotAt);
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_slotAtPut);
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_new);
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_byteNew);
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_size);
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_byteSize);
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_shallowCopy);
+}
+
 void tuuvm_tuple_setupPrimitives(tuuvm_context_t *context)
 {
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::type", context->roots.anyValueType, "__type__", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_getType);

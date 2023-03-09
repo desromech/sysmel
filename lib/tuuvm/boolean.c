@@ -23,6 +23,12 @@ static tuuvm_tuple_t tuuvm_boolean_primitive_xor(tuuvm_context_t *context, tuuvm
     return tuuvm_tuple_boolean_encode(tuuvm_tuple_boolean_decode(arguments[0]) ^ tuuvm_tuple_boolean_decode(arguments[1]));
 }
 
+void tuuvm_boolean_registerPrimitives(void)
+{
+    tuuvm_primitiveTable_registerFunction(tuuvm_boolean_primitive_not);
+    tuuvm_primitiveTable_registerFunction(tuuvm_boolean_primitive_xor);
+}
+
 void tuuvm_boolean_setupPrimitives(tuuvm_context_t *context)
 {
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Boolean::not", context->roots.booleanType, "not", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_boolean_primitive_not);

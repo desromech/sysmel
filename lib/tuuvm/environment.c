@@ -243,6 +243,14 @@ static tuuvm_tuple_t tuuvm_environment_primitive_setSymbolBindingWithValue(tuuvm
     return TUUVM_VOID_TUPLE;
 }
 
+void tuuvm_environment_registerPrimitives(void)
+{
+    tuuvm_primitiveTable_registerFunction(tuuvm_environment_primitive_setNewSymbolBinding);
+    tuuvm_primitiveTable_registerFunction(tuuvm_environment_primitive_setSymbolBinding);
+    tuuvm_primitiveTable_registerFunction(tuuvm_environment_primitive_setNewSymbolBindingWithValue);
+    tuuvm_primitiveTable_registerFunction(tuuvm_environment_primitive_setSymbolBindingWithValue);
+}
+
 void tuuvm_environment_setupPrimitives(tuuvm_context_t *context)
 {
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Environment::setNewSymbol:binding:", context->roots.environmentType, "setNewSymbol:binding:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_environment_primitive_setNewSymbolBinding);

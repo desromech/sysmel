@@ -13,6 +13,22 @@
 #include <stdio.h>
 #include <string.h>
 
+extern void tuuvm_arrayList_registerPrimitives(void);
+extern void tuuvm_astInterpreter_registerPrimitives(void);
+extern void tuuvm_boolean_registerPrimitives(void);
+extern void tuuvm_dictionary_registerPrimitives(void);
+extern void tuuvm_errors_registerPrimitives(void);
+extern void tuuvm_environment_registerPrimitives(void);
+extern void tuuvm_filesystem_registerPrimitives(void);
+extern void tuuvm_float_registerPrimitives(void);
+extern void tuuvm_function_registerPrimitives(void);
+extern void tuuvm_integer_registerPrimitives(void);
+extern void tuuvm_io_registerPrimitives(void);
+extern void tuuvm_primitiveInteger_registerPrimitives(void);
+extern void tuuvm_string_registerPrimitives(void);
+extern void tuuvm_stringBuilder_registerPrimitives(void);
+extern void tuuvm_tuple_registerPrimitives(void);
+
 extern void tuuvm_arrayList_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context);
 extern void tuuvm_boolean_setupPrimitives(tuuvm_context_t *context);
@@ -28,6 +44,31 @@ extern void tuuvm_primitiveInteger_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_string_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_stringBuilder_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_tuple_setupPrimitives(tuuvm_context_t *context);
+
+void tuuvm_context_registerPrimitives(void)
+{
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_identityEquals);
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_identityNotEquals);
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_identityHash);
+    tuuvm_primitiveTable_registerFunction(tuuvm_string_primitive_equals);
+    tuuvm_primitiveTable_registerFunction(tuuvm_string_primitive_hash);
+
+    tuuvm_arrayList_registerPrimitives();
+    tuuvm_astInterpreter_registerPrimitives();
+    tuuvm_boolean_registerPrimitives();
+    tuuvm_dictionary_registerPrimitives();
+    tuuvm_errors_registerPrimitives();
+    tuuvm_environment_registerPrimitives();
+    tuuvm_filesystem_registerPrimitives();
+    tuuvm_float_registerPrimitives();
+    tuuvm_function_registerPrimitives();
+    tuuvm_integer_registerPrimitives();
+    tuuvm_io_registerPrimitives();
+    tuuvm_primitiveInteger_registerPrimitives();
+    tuuvm_string_registerPrimitives();
+    tuuvm_stringBuilder_registerPrimitives();
+    tuuvm_tuple_registerPrimitives();
+}
 
 TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicClass(tuuvm_context_t *context, const char *name, tuuvm_tuple_t supertype, ...)
 {
@@ -394,6 +435,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "argumentNodes", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "resultTypeNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "body", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "primitiveTableIndex", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "nativeUserdata", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "nativeEntryPoint", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uintptrType,
         NULL);

@@ -196,6 +196,28 @@ static tuuvm_tuple_t tuuvm_primitiveInteger_unsigned_printString(tuuvm_context_t
 #define INTEGER_TYPE_SHORT_SUFFIX_NAME "iptr"
 #include "primitiveIntegers.inc"
 
+void tuuvm_primitiveInteger_registerPrimitives(void)
+{
+    tuuvm_char8_registerPrimitives();
+    tuuvm_uint8_registerPrimitives();
+    tuuvm_int8_registerPrimitives();
+
+    tuuvm_char16_registerPrimitives();
+    tuuvm_uint16_registerPrimitives();
+    tuuvm_int16_registerPrimitives();
+
+    tuuvm_char32_registerPrimitives();
+    tuuvm_uint32_registerPrimitives();
+    tuuvm_int32_registerPrimitives();
+
+    tuuvm_uint64_registerPrimitives();
+    tuuvm_int64_registerPrimitives();
+
+    tuuvm_size_registerPrimitives();
+    tuuvm_uintptr_registerPrimitives();
+    tuuvm_intptr_registerPrimitives();
+}
+
 void tuuvm_primitiveInteger_setupPrimitives(tuuvm_context_t *context)
 {
     tuuvm_char8_setupPrimitives(context);

@@ -254,6 +254,19 @@ static tuuvm_tuple_t tuuvm_filesystem_primitive_joinPath(tuuvm_context_t *contex
     return tuuvm_filesystem_joinPath(context, arguments[0], arguments[1]);
 }
 
+void tuuvm_filesystem_registerPrimitives(void)
+{
+    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_getWorkingDirectory);
+    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_setWorkingDirectory);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_absolute);
+    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_isAbsolute);
+    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_dirname);
+    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_basename);
+    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_extension);
+    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_joinPath);
+}
+
 void tuuvm_filesystem_setupPrimitives(tuuvm_context_t *context)
 {
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "FileSystem::workingDirectory", 0, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_filesystem_primitive_getWorkingDirectory);

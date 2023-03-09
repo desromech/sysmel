@@ -342,6 +342,19 @@ static tuuvm_tuple_t tuuvm_symbol_primitive_intern(tuuvm_context_t *context, tuu
     return tuuvm_symbol_internFromTuple(context, arguments[0]);
 }
 
+void tuuvm_string_registerPrimitives(void)
+{
+    tuuvm_primitiveTable_registerFunction(tuuvm_string_primitive_asString);
+    tuuvm_primitiveTable_registerFunction(tuuvm_symbol_primitive_asString);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_printString);
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_asString);
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_defaultPrintString);
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_defaultAsString);
+    tuuvm_primitiveTable_registerFunction(tuuvm_string_primitive_concat);
+    tuuvm_primitiveTable_registerFunction(tuuvm_symbol_primitive_intern);
+}
+
 void tuuvm_string_setupPrimitives(tuuvm_context_t *context)
 {
     // String primitives

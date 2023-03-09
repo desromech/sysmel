@@ -235,6 +235,36 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_greaterEquals)(tuuvm_c
     return tuuvm_tuple_boolean_encode(left >= right);
 }
 
+static void PRIMITIVE_INTEGER_FUNCTION(registerPrimitives)(void)
+{
+    tuuvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_printString));
+
+    tuuvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_fromInteger));
+    tuuvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_toInteger));
+
+    tuuvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_negated));
+    tuuvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_bitInvert));
+
+    tuuvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_add));
+    tuuvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_subtract));
+    tuuvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_multiply));
+    tuuvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_divide));
+    tuuvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_remainder));
+
+    tuuvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_bitAnd));
+    tuuvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_bitOr));
+    tuuvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_bitXor));
+    tuuvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_shiftLeft));
+    tuuvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_shiftRight));
+
+    tuuvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_equals));
+    tuuvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_notEquals));
+    tuuvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_lessThan));
+    tuuvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_lessEquals));
+    tuuvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_greaterThan));
+    tuuvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_greaterEquals));
+}
+
 static void PRIMITIVE_INTEGER_FUNCTION(setupPrimitives)(tuuvm_context_t *context)
 {
     tuuvm_type_setPrintStringFunction(context, context->roots.INTEGER_TYPE_ROOT_NAME, tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, PRIMITIVE_INTEGER_FUNCTION(primitive_printString)));

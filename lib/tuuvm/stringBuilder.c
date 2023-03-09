@@ -145,6 +145,14 @@ static tuuvm_tuple_t tuuvm_stringBuilder_primitive_asSymbol(tuuvm_context_t *con
     return tuuvm_stringBuilder_asSymbol(context, arguments[0]);
 }
 
+void tuuvm_stringBuilder_registerPrimitives(void)
+{
+    tuuvm_primitiveTable_registerFunction(tuuvm_stringBuilder_primitive_add);
+    tuuvm_primitiveTable_registerFunction(tuuvm_stringBuilder_primitive_addAll);
+    tuuvm_primitiveTable_registerFunction(tuuvm_stringBuilder_primitive_asString);
+    tuuvm_primitiveTable_registerFunction(tuuvm_stringBuilder_primitive_asSymbol);
+}
+
 void tuuvm_stringBuilder_setupPrimitives(tuuvm_context_t *context)
 {
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "StringBuilder::add:", context->roots.stringBuilderType, "add:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_stringBuilder_primitive_add);

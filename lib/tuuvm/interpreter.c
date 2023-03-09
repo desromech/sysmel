@@ -2895,6 +2895,106 @@ static tuuvm_tuple_t tuuvm_interpreter_primitive_loadSourceNamedMacro(tuuvm_cont
     return loadSourceCall;
 }
 
+void tuuvm_astInterpreter_registerPrimitives(void)
+{
+    tuuvm_primitiveTable_registerFunction(tuuvm_interpreter_primitive_loadSourceNamedWithSolvedPath);
+    tuuvm_primitiveTable_registerFunction(tuuvm_interpreter_primitive_loadSourceNamedMacro);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astSequenceNode_primitiveMacro);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astArgumentNode_primitiveAnalyze);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astSequenceNode_primitiveAnalyze);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astSequenceNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astSequenceNode_primitiveAnalyzeAndEvaluate);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLiteralNode_primitiveAnalyze);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLiteralNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLiteralNode_primitiveEvaluate);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astIdentifierReferenceNode_primitiveAnalyze);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astIdentifierReferenceNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astIdentifierReferenceNode_primitiveEvaluate);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astUnexpandedApplicationNode_primitiveAnalyze);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astUnexpandedApplicationNode_primitiveAnalyzeAndEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astUnexpandedApplicationNode_primitiveAnalyzeAndEvaluate);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astUnexpandedSExpressionNode_primitiveAnalyze);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astUnexpandedSExpressionNode_primitiveAnalyzeAndEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astUnexpandedSExpressionNode_primitiveAnalyzeAndEvaluate);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astFunctionApplicationNode_primitiveAnalyze);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astFunctionApplicationNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astFunctionApplicationNode_primitiveAnalyzeAndEvaluate);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLexicalBlockNode_primitiveAnalyze);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLexicalBlockNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLexicalBlockNode_primitiveAnalyzeAndEvaluate);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeByteArrayNode_primitiveAnalyze);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeByteArrayNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeByteArrayNode_primitiveAnalyzeAndEvaluate);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeTupleNode_primitiveAnalyze);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeTupleNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeTupleNode_primitiveAnalyzeAndEvaluate);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageChainMessageNode_primitiveAnalyze);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageChainNode_primitiveAnalyze);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageChainNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageChainNode_primitiveAnalyzeAndEvaluate);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageSendNode_primitiveMacro);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageSendNode_primitiveAnalyze);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageSendNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageSendNode_primitiveAnalyzeAndEvaluate);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLambdaNode_primitiveMacro);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLambdaNode_primitiveAnalyze);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLambdaNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLambdaNode_primitiveAnalyzeAndEvaluate);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveMacro);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveDefineMacro);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_letWithPrimitiveMacro);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveAnalyze);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveAnalyzeAndEvaluate);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveMacro);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveMacroIfThen);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveAnalyze);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveAnalyzeAndEvaluate);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveMacro);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveAnalyze);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveAnalyzeAndEvaluate);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astWhileContinueWithNode_primitiveMacro);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astWhileContinueWithNode_primitiveAnalyze);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astWhileContinueWithNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astWhileContinueWithNode_primitiveAnalyzeAndEvaluate);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astBreakNode_primitiveMacro);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astBreakNode_primitiveAnalyze);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astBreakNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astBreakNode_primitiveEvaluate);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astContinueNode_primitiveMacro);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astContinueNode_primitiveAnalyze);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astContinueNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astContinueNode_primitiveEvaluate);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astReturnNode_primitiveMacro);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astReturnNode_primitiveAnalyze);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astReturnNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astReturnNode_primitiveAnalyzeAndEvaluate);
+}
+
 void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context)
 {
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "loadSourceNamedWithSolvedPath:", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_interpreter_primitive_loadSourceNamedWithSolvedPath);

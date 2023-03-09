@@ -825,6 +825,28 @@ static tuuvm_tuple_t tuuvm_integer_primitive_factorial(tuuvm_context_t *context,
     return tuuvm_integer_factorial(context, arguments[0]);
 }
 
+void tuuvm_integer_registerPrimitives(void)
+{
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_printString);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_add);
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_subtract);
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_negate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_multiply);
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_divide);
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_remainder);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_compare);
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_equals);
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_notEquals);
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_lessThan);
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_lessEquals);
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_greaterThan);
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_greaterEquals);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_factorial);
+}
+
 void tuuvm_integer_setupPrimitives(tuuvm_context_t *context)
 {
     tuuvm_tuple_t printString = tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_integer_primitive_printString);
@@ -848,5 +870,4 @@ void tuuvm_integer_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Integer::>=", context->roots.integerType, ">=", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_integer_primitive_greaterEquals);
 
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Integer::factorial", context->roots.integerType, "factorial", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_integer_primitive_factorial);
-
 }

@@ -91,6 +91,11 @@ static tuuvm_tuple_t tuuvm_arrayList_primitive_add(tuuvm_context_t *context, tuu
     return TUUVM_VOID_TUPLE;
 }
 
+void tuuvm_arrayList_registerPrimitives(void)
+{
+    tuuvm_primitiveTable_registerFunction(tuuvm_arrayList_primitive_add);
+}
+
 void tuuvm_arrayList_setupPrimitives(tuuvm_context_t *context)
 {
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "ArrayList::add:", context->roots.arrayListType, "add:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_arrayList_primitive_add);

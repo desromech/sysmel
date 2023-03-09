@@ -137,6 +137,16 @@ static tuuvm_tuple_t tuuvm_io_primitive_saveWholeFileNamed(tuuvm_context_t *cont
     return tuuvm_tuple_boolean_encode(tuuvm_io_saveWholeFileNamed(arguments[0], arguments[1]));
 }
 
+void tuuvm_io_registerPrimitives(void)
+{
+    tuuvm_primitiveTable_registerFunction(tuuvm_io_primitive_printLine);
+    tuuvm_primitiveTable_registerFunction(tuuvm_io_primitive_print);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_io_primitive_readWholeFileNamedAsString);
+    tuuvm_primitiveTable_registerFunction(tuuvm_io_primitive_readWholeFileNamedAsByteArray);
+    tuuvm_primitiveTable_registerFunction(tuuvm_io_primitive_saveWholeFileNamed);
+}
+
 void tuuvm_io_setupPrimitives(tuuvm_context_t *context)
 {
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "printLine", 1, TUUVM_FUNCTION_FLAGS_VARIADIC | TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_io_primitive_printLine);
