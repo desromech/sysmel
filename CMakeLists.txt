@@ -29,6 +29,8 @@ if(UNIX)
     set(TUUVM_DEP_LIBS m)
 endif()
 
+add_definitions(-DBUILD_TUUVM_STATIC)
+
 add_subdirectory(lib)
 add_subdirectory(apps)
 add_subdirectory(tests)

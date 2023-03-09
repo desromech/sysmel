@@ -34,5 +34,5 @@ set(tuuvm_sources
 )
 
 add_definitions(-DBUILD_TUUVM)
-add_library(tuuvm SHARED ${tuuvm_sources})
+add_library(tuuvm STATIC ${tuuvm_sources})
 target_link_libraries(tuuvm ${TUUVM_DEP_LIBS})

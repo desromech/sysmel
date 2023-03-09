@@ -13,16 +13,21 @@
 #endif
 
 // Export and import symbols
-#ifdef _WIN32
-#   define TUUVM_EXPORT __declspec(dllexport)
-#   define TUUVM_IMPORT __declspec(dllimport)
+#ifdef BUILD_TUUVM_STATIC
+#define TUUVM_EXPORT
+#define TUUVM_IMPORT
 #else
-#   if __GNUC__ >= 4
-#       define TUUVM_EXPORT __attribute__ ((visibility ("default")))
-#       define TUUVM_IMPORT __attribute__ ((visibility ("default")))
+#   ifdef _WIN32
+#       define TUUVM_EXPORT __declspec(dllexport)
+#       define TUUVM_IMPORT __declspec(dllimport)
 #   else
-#       define TUUVM_EXPORT
-#       define TUUVM_IMPORT
+#       if __GNUC__ >= 4
+#           define TUUVM_EXPORT __attribute__ ((visibility ("default")))
+#           define TUUVM_IMPORT __attribute__ ((visibility ("default")))
+#       else
+#           define TUUVM_EXPORT
+#           define TUUVM_IMPORT
+#       endif
 #   endif
 #endif
 

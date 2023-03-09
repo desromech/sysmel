@@ -44,8 +44,10 @@ TUUVM_API void tuuvm_filesystem_setWorkingDirectory(tuuvm_tuple_t path)
 #error TODO: Implement this
 #else
     char *pathCString = tuuvm_tuple_bytesToCString(path);
-    chdir(pathCString);
+    int result = chdir(pathCString);
     free(pathCString);
+    if(result)
+        tuuvm_error("Failed to set working directory.");
 #endif
 }
 
