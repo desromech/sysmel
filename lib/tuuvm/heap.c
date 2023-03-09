@@ -343,3 +343,39 @@ void tuuvm_heap_swapGCColors(tuuvm_heap_t *heap)
     heap->gcBlackColor = heap->gcWhiteColor;
     heap->gcWhiteColor = temp;
 }
+
+typedef struct tuuvm_heap_relocationRecord_s
+{
+    uintptr_t sourceStartAddress;
+    uintptr_t sourceEndAddress;
+    uintptr_t destinationAddress;
+} tuuvm_heap_relocationRecord_t;
+
+typedef struct tuuvm_heap_chunkRecord_s
+{
+    uintptr_t address;
+    uint32_t capacity;
+    uint32_t size;
+} tuuvm_heap_chunkRecord_t;
+
+void tuuvm_heap_dumpToFile(tuuvm_heap_t *heap, FILE *file)
+{
+    uint32_t chunkCount = 0;
+    for(tuuvm_heap_chunk_t *chunk = heap->firstChunk; chunk; chunk = chunk->nextChunk)
+        ++chunkCount;
+
+    uint32_t destIndex = 0;
+    tuuvm_heap_chunkRecord_t *chunkRecords = calloc(sizeof(tuuvm_heap_chunkRecord_t), chunkCount);
+    for(tuuvm_heap_chunk_t *chunk = heap->firstChunk; chunk; chunk = chunk->nextChunk)
+    {
+        tuuvm_heap_chunkRecord_t *record = chunkRecords + destIndex++;
+        record->address = (uintptr_t)chunk;
+        record->capacity = chunk->capacity;
+        record->size = chunk->size;
+    }
+
+    fwrite(&chunkCount, 4, 1, file);
+    fwrite(&chunkRecords, sizeof(tuuvm_heap_chunkRecord_t), chunkCount, file);
+    for(tuuvm_heap_chunk_t *chunk = heap->firstChunk; chunk; chunk = chunk->nextChunk)
+        fwrite(chunk, chunk->size, 1, file);
+}

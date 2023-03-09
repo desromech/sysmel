@@ -11,6 +11,8 @@
 
 static tuuvm_context_t *context;
 
+const char *destinationImageFilename;
+
 static void printHelp()
 {
     printf("tuuvm-lispi <inputfile> <inputfile> -- args\n");
@@ -21,7 +23,7 @@ static void printVersion()
     printf("tuuvm-lispi version 0.1\n");
 }
 
-int doMain(int argc, const char *argv[])
+int doMain(int startArgumentIndex, int argc, const char *argv[])
 {
     struct {
         tuuvm_tuple_t filesToProcess;
@@ -34,7 +36,7 @@ int doMain(int argc, const char *argv[])
     gcFrame.filesToProcess = tuuvm_arrayList_create(context);
     gcFrame.remainingArgs = tuuvm_arrayList_create(context);
     bool isParsingRemainingArgs = false;
-    for(int i = 1; i < argc; ++i)
+    for(int i = startArgumentIndex; i < argc; ++i)
     {
         const char *arg = argv[i];
         if(isParsingRemainingArgs)
@@ -54,6 +56,11 @@ int doMain(int argc, const char *argv[])
             {
                 printVersion();
                 return 0;
+            }
+            else if(!strcmp(arg, "-save-image"))
+            {
+                arg = argv[++i];
+                destinationImageFilename = arg;
             }
             else if(!strcmp(arg, "--"))
             {
@@ -81,7 +88,18 @@ int doMain(int argc, const char *argv[])
 
 int main(int argc, const char *argv[])
 {
-    context = tuuvm_context_create();
+    // Allow creating the context by loading it from an image.
+    int startArgumentIndex = 1;
+    if(argc >= 3 && !strcmp(argv[1], "-load-image"))
+    {
+        context = tuuvm_context_loadImageFromFileNamed(argv[2]);
+        startArgumentIndex = 3;
+    }
+    else
+    {
+        context = tuuvm_context_create();
+    }
+
     if(!context)
     {
         fprintf(stderr, "Failed to create tuuvm context.\n");
@@ -97,7 +115,7 @@ int main(int argc, const char *argv[])
     int exitCode = 0;
     if(!setjmp(topLevelFrame.jmpbuffer))
     {
-        doMain(argc, argv);
+        doMain(startArgumentIndex, argc, argv);
     }
     else
     {
@@ -108,6 +126,10 @@ int main(int argc, const char *argv[])
     }
 
     tuuvm_stackFrame_leaveContext();
+
+    // Allow saving the context as an image.
+    if(destinationImageFilename)
+        tuuvm_context_saveImageToFileNamed(context, destinationImageFilename);
     tuuvm_context_destroy(context);
     
     return exitCode;

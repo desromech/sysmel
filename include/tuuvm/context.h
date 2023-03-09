@@ -19,6 +19,17 @@ typedef tuuvm_tuple_t (*tuuvm_functionEntryPoint_t)(tuuvm_context_t *context, tu
 TUUVM_API tuuvm_context_t *tuuvm_context_create(void);
 
 /**
+ * Creates a context by loading it from an image.
+ */
+TUUVM_API tuuvm_context_t *tuuvm_context_loadImageFromFileNamed(const char *filename);
+
+/**
+ * Saves a context into an image.
+ */
+TUUVM_API void tuuvm_context_saveImageToFileNamed(tuuvm_context_t *context, const char *filename);
+
+
+/**
  * Creates a new context.
  */
 TUUVM_API void tuuvm_context_destroy(tuuvm_context_t *context);

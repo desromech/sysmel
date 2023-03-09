@@ -4,6 +4,7 @@
 #pragma once
 
 #include "tuuvm/heap.h"
+#include <stdio.h>
 
 typedef struct tuuvm_heap_chunk_s
 {
@@ -34,5 +35,7 @@ void tuuvm_heap_computeCompactionForwardingPointers(tuuvm_heap_t *heap);
 void tuuvm_heap_applyForwardingPointers(tuuvm_heap_t *heap);
 void tuuvm_heap_compact(tuuvm_heap_t *heap);
 void tuuvm_heap_swapGCColors(tuuvm_heap_t *heap);
+
+void tuuvm_heap_dumpToFile(tuuvm_heap_t *heap, FILE *file);
 
 #endif //TUUVM_INTERNAL_HEAP_H
