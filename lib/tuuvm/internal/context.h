@@ -68,6 +68,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t symbolType;
     tuuvm_tuple_t symbolBindingType;
     tuuvm_tuple_t symbolArgumentBindingType;
+    tuuvm_tuple_t symbolLocalBindingType;
     tuuvm_tuple_t symbolValueBindingType;
     tuuvm_tuple_t trueType;
     tuuvm_tuple_t typeType;

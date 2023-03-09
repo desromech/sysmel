@@ -20,6 +20,7 @@ typedef struct tuuvm_astArgumentNode_s
     tuuvm_tuple_t isForAll;
     tuuvm_tuple_t name;
     tuuvm_tuple_t type;
+    tuuvm_tuple_t binding;
 } tuuvm_astArgumentNode_t;
 
 typedef struct tuuvm_astBinaryExpressionSequenceNode_s
@@ -78,6 +79,7 @@ typedef struct tuuvm_astLocalDefinitionNode_s
     tuuvm_tuple_t nameExpression;
     tuuvm_tuple_t typeExpression;
     tuuvm_tuple_t valueExpression;
+    tuuvm_tuple_t binding;
 } tuuvm_astLocalDefinitionNode_t;
 
 typedef struct tuuvm_astIdentifierReferenceNode_s

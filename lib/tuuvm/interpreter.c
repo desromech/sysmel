@@ -404,6 +404,7 @@ static tuuvm_tuple_t tuuvm_astArgumentNode_primitiveAnalyze(tuuvm_context_t *con
     if(gcFrame.evaluatedName)
     {
         gcFrame.argumentBinding = tuuvm_symbolArgumentBinding_create(context, gcFrame.argumentNode->super.sourcePosition, gcFrame.evaluatedName);
+        gcFrame.argumentNode->binding = gcFrame.argumentBinding;
         tuuvm_environment_setNewSymbolBinding(context, *environment, gcFrame.evaluatedName, gcFrame.argumentBinding);
     }
 
@@ -679,6 +680,11 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveAnalyze(tuuvm_context
         tuuvm_tuple_t analyzedNameExpression;
         tuuvm_tuple_t analyzedTypeExpression;
         tuuvm_tuple_t analyzedValueExpression;
+        
+        tuuvm_tuple_t localBinding;
+        tuuvm_tuple_t name;
+        tuuvm_tuple_t type;
+        tuuvm_tuple_t value;
     } gcFrame = {};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
@@ -697,6 +703,30 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveAnalyze(tuuvm_context
     {
         gcFrame.analyzedValueExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.localDefinitionNode->valueExpression, *environment);
         gcFrame.localDefinitionNode->valueExpression = gcFrame.analyzedValueExpression;
+    }
+
+    if(tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedNameExpression))
+    {
+        gcFrame.name = tuuvm_astLiteralNode_getValue(gcFrame.analyzedNameExpression);
+
+        if((!gcFrame.analyzedTypeExpression || tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedTypeExpression)) && 
+            (!gcFrame.analyzedValueExpression || tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedValueExpression)))
+        {
+            if(gcFrame.analyzedTypeExpression)
+                gcFrame.type = tuuvm_astLiteralNode_getValue(gcFrame.analyzedTypeExpression);
+
+            if(gcFrame.analyzedValueExpression)
+                gcFrame.value = tuuvm_astLiteralNode_getValue(gcFrame.analyzedValueExpression);
+            gcFrame.value = tuuvm_type_coerceValue(context, gcFrame.type, gcFrame.value);
+            gcFrame.localBinding = tuuvm_symbolValueBinding_create(context, gcFrame.localDefinitionNode->super.sourcePosition, gcFrame.name, gcFrame.value);
+        }
+        else
+        {
+            gcFrame.localBinding = tuuvm_symbolLocalBinding_create(context, gcFrame.localDefinitionNode->super.sourcePosition, gcFrame.name);
+        }
+        
+        gcFrame.localDefinitionNode->binding = gcFrame.localBinding;
+        tuuvm_environment_setNewSymbolBinding(context, *environment, gcFrame.name, gcFrame.localBinding);
     }
 
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -731,7 +761,7 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveEvaluate(tuuvm_contex
         gcFrame.value = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*localDefinitionNode)->valueExpression, *environment);
     if(gcFrame.type)
         gcFrame.value = tuuvm_type_coerceValue(context, gcFrame.type, gcFrame.value);
-    tuuvm_environment_setNewSymbolBindingWithValue(context, *environment, gcFrame.name, gcFrame.value);
+    tuuvm_environment_setNewSymbolBindingWithValueAtSourcePosition(context, *environment, gcFrame.name, gcFrame.value, (*localDefinitionNode)->super.sourcePosition);
     //TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.value;
@@ -764,7 +794,7 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveAnalyzeAndEvaluate(tu
         gcFrame.value = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*localDefinitionNode)->valueExpression, *environment);
     if(gcFrame.type)
         gcFrame.value = tuuvm_type_coerceValue(context, gcFrame.type, gcFrame.value);
-    tuuvm_environment_setNewSymbolBindingWithValue(context, *environment, gcFrame.name, gcFrame.value);
+    tuuvm_environment_setNewSymbolBindingWithValueAtSourcePosition(context, *environment, gcFrame.name, gcFrame.value, (*localDefinitionNode)->super.sourcePosition);
     //TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.value;
@@ -2315,7 +2345,7 @@ static void tuuvm_interpreter_evaluateArgumentNodeInEnvironment(tuuvm_context_t 
             gcFrame.value = tuuvm_type_coerceValue(context, gcFrame.expectedType, gcFrame.value);
     }
 
-    tuuvm_environment_setNewSymbolBindingWithValue(context, *activationEnvironment, gcFrame.name, gcFrame.value);
+    tuuvm_environment_setNewSymbolBindingWithValueAtSourcePosition(context, *activationEnvironment, gcFrame.name, gcFrame.value, gcFrame.argumentNode->super.sourcePosition);
 
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);

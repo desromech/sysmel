@@ -26,6 +26,11 @@ typedef struct tuuvm_symbolArgumentBinding_s
     tuuvm_symbolBinding_t super;
 } tuuvm_symbolArgumentBinding_t;
 
+typedef struct tuuvm_symbolLocalBinding_s
+{
+    tuuvm_symbolBinding_t super;
+} tuuvm_symbolLocalBinding_t;
+
 typedef struct tuuvm_symbolValueBinding_s
 {
     tuuvm_symbolBinding_t super;
@@ -41,6 +46,11 @@ TUUVM_API bool tuuvm_symbolBinding_isValue(tuuvm_context_t *context, tuuvm_tuple
  * Creates a symbol argument binding.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_symbolArgumentBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name);
+
+/**
+ * Creates a symbol local binding.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_symbolLocalBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name);
 
 /**
  * Creates a symbol value binding.
@@ -84,6 +94,11 @@ TUUVM_API void tuuvm_environment_setSymbolBinding(tuuvm_context_t *context, tuuv
  * Sets a new symbol binding with value the environment.
  */ 
 TUUVM_API void tuuvm_environment_setNewSymbolBindingWithValue(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t symbol, tuuvm_tuple_t value);
+
+/**
+ * Sets a new symbol binding with value in the environment.
+ */ 
+TUUVM_API void tuuvm_environment_setNewSymbolBindingWithValueAtSourcePosition(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t symbol, tuuvm_tuple_t value, tuuvm_tuple_t sourcePosition);
 
 /**
  * Sets a symbol binding with value in the environment.

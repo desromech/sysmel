@@ -17,6 +17,14 @@ TUUVM_API tuuvm_tuple_t tuuvm_symbolArgumentBinding_create(tuuvm_context_t *cont
     return (tuuvm_tuple_t)result;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_symbolLocalBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name)
+{
+    tuuvm_symbolLocalBinding_t *result = (tuuvm_symbolLocalBinding_t*)tuuvm_context_allocatePointerTuple(context, context->roots.symbolLocalBindingType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_symbolLocalBinding_t));
+    result->super.sourcePosition = sourcePosition;
+    result->super.name = name;
+    return (tuuvm_tuple_t)result;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_symbolValueBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t value)
 {
     tuuvm_symbolValueBinding_t *result = (tuuvm_symbolValueBinding_t*)tuuvm_context_allocatePointerTuple(context, context->roots.symbolValueBindingType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_symbolValueBinding_t));
@@ -77,7 +85,7 @@ TUUVM_API void tuuvm_environment_setSymbolBindingWithValue(tuuvm_context_t *cont
     tuuvm_dictionary_atPut(context, environmentObject->symbolTable, symbol, binding);
 }
 
-TUUVM_API void tuuvm_environment_setNewSymbolBindingWithValue(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t symbol, tuuvm_tuple_t value)
+TUUVM_API void tuuvm_environment_setNewSymbolBindingWithValueAtSourcePosition(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t symbol, tuuvm_tuple_t value, tuuvm_tuple_t sourcePosition)
 {
     if(!tuuvm_tuple_isNonNullPointer(environment))
         return;
@@ -88,8 +96,13 @@ TUUVM_API void tuuvm_environment_setNewSymbolBindingWithValue(tuuvm_context_t *c
     if(tuuvm_dictionary_find(context, environmentObject->symbolTable, symbol, &existentBinding))
         tuuvm_error("Overriding existent symbol binding.");
 
-    tuuvm_tuple_t binding = tuuvm_symbolValueBinding_create(context, TUUVM_NULL_TUPLE, symbol, value);
+    tuuvm_tuple_t binding = tuuvm_symbolValueBinding_create(context, sourcePosition, symbol, value);
     tuuvm_dictionary_atPut(context, environmentObject->symbolTable, symbol, binding);
+}
+
+TUUVM_API void tuuvm_environment_setNewSymbolBindingWithValue(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t symbol, tuuvm_tuple_t value)
+{
+   tuuvm_environment_setNewSymbolBindingWithValueAtSourcePosition(context, environment, symbol, value, TUUVM_NULL_TUPLE);
 }
 
 TUUVM_API bool tuuvm_environment_lookSymbolRecursively(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t symbol, tuuvm_tuple_t *outBinding)
