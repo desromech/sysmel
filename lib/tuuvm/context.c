@@ -391,7 +391,6 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringSymbolType,
         "supertype", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         "slots", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
-        "sumTypeAlternatives", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "totalSlotCount", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         

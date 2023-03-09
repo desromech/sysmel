@@ -1,5 +1,18 @@
 ## Some utility functions.
 
+(define Type::nameSlotIndex 0)
+(define Type::supertypeSlotIndex 1)
+(define Type::slotsSlotIndex 2)
+(define Type::totalSlotCountSlotIndex 3)
+(define Type::flagsSlotIndex 4)
+(define Type::macroMethodDictionarySlotIndex 5)
+(define Type::methodDictionarySlotIndex 6)
+(define Type::fallbackMethodDictionarySlotIndex 7)
+
+(define TypeSlot::nameSlotIndex 0)
+(define TypeSlot::flagsSlotIndex 1)
+(define TypeSlot::typeSlotIndex 2)
+
 ## until:do:
 (define (until:do: stop block)
     (define ibox (RawTuple::new 1))
@@ -16,35 +29,35 @@
 
 ## Type::validMethodDictionary
 (define (Type::validMethodDictionary type)
-    (define existingMethodDictionary (RawTuple::slotAt: type 7))
+    (define existingMethodDictionary (RawTuple::slotAt: type Type::methodDictionarySlotIndex))
     (if:then:else: (== existingMethodDictionary nil)
         (begin
             (define newMethodDictionary (IdentityDictionary::new))
-            (RawTuple::slotAt:put: type 7 newMethodDictionary)
+            (RawTuple::slotAt:put: type Type::methodDictionarySlotIndex newMethodDictionary)
             newMethodDictionary)
         existingMethodDictionary))
 
 ## Bootstrap environment reflection core.
 (define (makeTypeAccessors type)
-    (define typeName (RawTuple::slotAt: type 0))
+    (define typeName (RawTuple::slotAt: type Type::nameSlotIndex))
 
     (define (exportAndBindInstanceMethod selector method)
         (define exportedName (StringSymbol::intern (String::concat: typeName (String::concat: "::" (asString selector)))))
         (Dictionary::at:put: (Type::validMethodDictionary type) selector method)
         (exportInstrinsicBuiltInBinding exportedName method))
 
-    (define slots (RawTuple::slotAt: type 2))
+    (define slots (RawTuple::slotAt: type Type::slotsSlotIndex))
     (define slotCount (RawTuple::size slots))
-    (define supertype (RawTuple::slotAt: type 1))
+    (define supertype (RawTuple::slotAt: type Type::supertypeSlotIndex))
     (define supertypeSlotCount (if:then:else: (== supertype nil)
         0
-        (RawTuple::slotAt: supertype 4)))
+        (RawTuple::slotAt: supertype Type::totalSlotCountSlotIndex)))
     (until:do: slotCount (lambda (localSlotIndex)
         (define slotIndex (Size::+ supertypeSlotCount localSlotIndex))
         (define slot (RawTuple::slotAt: slots localSlotIndex))
-        (define slotName (RawTuple::slotAt: slot 0))
-        (define slotFlags (RawTuple::slotAt: slot 1))
-        (define slotType (RawTuple::slotAt: slot 2))
+        (define slotName (RawTuple::slotAt: slot TypeSlot::nameSlotIndex))
+        (define slotFlags (RawTuple::slotAt: slot TypeSlot::flagsSlotIndex))
+        (define slotType (RawTuple::slotAt: slot TypeSlot::typeSlotIndex))
 
         ## Getter
         (exportAndBindInstanceMethod slotName (lambda (self)
