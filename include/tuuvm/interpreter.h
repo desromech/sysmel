@@ -42,4 +42,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeAndEvaluateStringWithEnvironmen
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_t *context, tuuvm_tuple_t *function, size_t argumentCount, tuuvm_tuple_t *arguments);
 
+/**
+ * Loads the specified file with the given name.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_interpreter_loadSourceNamedWithSolvedPath(tuuvm_context_t *context, tuuvm_tuple_t filename);
+
 #endif //TUUVM_INTERPRETER_H

@@ -18,11 +18,40 @@
 #else
 #include <limits.h>
 #include <stdlib.h>
+#include <unistd.h>
 #endif
+
+TUUVM_API tuuvm_tuple_t tuuvm_filesystem_getWorkingDirectory(tuuvm_context_t *context)
+{
+#ifdef _WIN32
+#error TODO: Implement this
+#else
+    char *buffer = malloc(PATH_MAX);
+    char *result = getcwd(buffer, PATH_MAX);
+    tuuvm_tuple_t resultTuple;
+    if(result)
+        resultTuple = tuuvm_string_createWithCString(context, result);
+    else
+        resultTuple = tuuvm_string_createEmptyWithSize(context, 0);
+    free(buffer);
+    return resultTuple;
+#endif
+}
+
+TUUVM_API void tuuvm_filesystem_setWorkingDirectory(tuuvm_tuple_t path)
+{
+#ifdef _WIN32
+#error TODO: Implement this
+#else
+    char *pathCString = tuuvm_tuple_bytesToCString(path);
+    chdir(pathCString);
+    free(pathCString);
+#endif
+}
 
 TUUVM_API tuuvm_tuple_t tuuvm_filesystem_absolute(tuuvm_context_t *context, tuuvm_tuple_t path)
 {
-    if(!tuuvm_tuple_isBytes(path))
+    if(!tuuvm_tuple_isBytes(path) || tuuvm_filesystem_isAbsolute(path))
         return path;
 
 #ifdef _WIN32
@@ -30,9 +59,12 @@ TUUVM_API tuuvm_tuple_t tuuvm_filesystem_absolute(tuuvm_context_t *context, tuuv
 #else
     char *pathCString = tuuvm_tuple_bytesToCString(path);
     char *absolutePath = realpath(pathCString, NULL);
+    free(pathCString);
+    if(!absolutePath)
+        return tuuvm_filesystem_joinPath(context, tuuvm_filesystem_getWorkingDirectory(context), path);
+
     tuuvm_tuple_t result = tuuvm_string_createWithCString(context, absolutePath);
     free(absolutePath);
-    free(pathCString);
     return result;
 #endif
 }
@@ -152,6 +184,25 @@ TUUVM_API tuuvm_tuple_t tuuvm_filesystem_joinPath(tuuvm_context_t *context, tuuv
     return result;
 }
 
+static tuuvm_tuple_t tuuvm_filesystem_primitive_getWorkingDirectory(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    (void)arguments;
+    if(argumentCount != 0) tuuvm_error_argumentCountMismatch(0, argumentCount);
+
+    return tuuvm_filesystem_getWorkingDirectory(context);
+}
+
+static tuuvm_tuple_t tuuvm_filesystem_primitive_setWorkingDirectory(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    tuuvm_filesystem_setWorkingDirectory(arguments[0]);
+    return TUUVM_VOID_TUPLE;
+}
+
 static tuuvm_tuple_t tuuvm_filesystem_primitive_absolute(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
@@ -203,6 +254,9 @@ static tuuvm_tuple_t tuuvm_filesystem_primitive_joinPath(tuuvm_context_t *contex
 
 void tuuvm_filesystem_setupPrimitives(tuuvm_context_t *context)
 {
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "FileSystem::workingDirectory", 0, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_filesystem_primitive_getWorkingDirectory);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "FileSystem::workingDirectory:", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_filesystem_primitive_setWorkingDirectory);
+ 
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "FileSystem::absolute", context->roots.stringType, "FileSystem::absolute", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_filesystem_primitive_absolute);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "FileSystem::isAbsolute", context->roots.stringType, "FileSystem::isAbsolute", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_filesystem_primitive_isAbsolute);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "FileSystem::dirname", context->roots.stringType, "FileSystem::dirname", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_filesystem_primitive_dirname);

@@ -4,7 +4,6 @@
 #include <tuuvm/context.h>
 #include <tuuvm/environment.h>
 #include <tuuvm/filesystem.h>
-#include <tuuvm/io.h>
 #include <tuuvm/sourceCode.h>
 #include <tuuvm/interpreter.h>
 #include <tuuvm/stackFrame.h>
@@ -20,28 +19,6 @@ static void printHelp()
 static void printVersion()
 {
     printf("tuuvm-lispi version 0.1\n");
-}
-
-static void processFileNamed(tuuvm_tuple_t *inputFileNameTuple)
-{
-    struct {
-        tuuvm_tuple_t sourceString;
-        tuuvm_tuple_t sourceDirectory;
-        tuuvm_tuple_t sourceName;
-        tuuvm_tuple_t sourceLanguage;
-        tuuvm_tuple_t sourceCode;
-        tuuvm_tuple_t sourceEnvironment;
-    } gcFrame = {};
-
-    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
-    gcFrame.sourceString = tuuvm_io_readWholeFileNamedAsString(context, *inputFileNameTuple);
-    gcFrame.sourceDirectory = tuuvm_filesystem_dirname(context, *inputFileNameTuple);
-    gcFrame.sourceName = tuuvm_filesystem_basename(context, *inputFileNameTuple);
-    gcFrame.sourceLanguage = tuuvm_sourceCode_inferLanguageFromSourceName(context, gcFrame.sourceName);
-    gcFrame.sourceCode = tuuvm_sourceCode_create(context, gcFrame.sourceString, gcFrame.sourceDirectory, gcFrame.sourceName, gcFrame.sourceLanguage);
-    gcFrame.sourceEnvironment = tuuvm_environment_createDefaultForSourceCodeEvaluation(context, gcFrame.sourceCode);
-    tuuvm_interpreter_analyzeAndEvaluateSourceCodeWithEnvironment(context, gcFrame.sourceEnvironment, gcFrame.sourceCode);
-    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
 }
 
 int doMain(int argc, const char *argv[])
@@ -95,7 +72,7 @@ int doMain(int argc, const char *argv[])
     {
         gcFrame.inputFileName = tuuvm_arrayList_at(gcFrame.filesToProcess, i);
         gcFrame.inputFileName = tuuvm_filesystem_absolute(context, gcFrame.inputFileName);
-        processFileNamed(&gcFrame.inputFileName);
+        tuuvm_interpreter_loadSourceNamedWithSolvedPath(context, gcFrame.inputFileName);
     }
 
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);

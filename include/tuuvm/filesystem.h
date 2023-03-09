@@ -8,6 +8,16 @@
 typedef struct tuuvm_context_s tuuvm_context_t;
 
 /**
+ * Gets the current working directory.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_filesystem_getWorkingDirectory(tuuvm_context_t *context);
+
+/**
+ * Sets the current working directory.
+ */
+TUUVM_API void tuuvm_filesystem_setWorkingDirectory(tuuvm_tuple_t path);
+
+/**
  * Makes an absolute path.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_filesystem_absolute(tuuvm_context_t *context, tuuvm_tuple_t path);

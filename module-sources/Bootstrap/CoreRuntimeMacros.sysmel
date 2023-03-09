@@ -1,0 +1,33 @@
+AnyValue
+    withSelector: #ifNil: addMacroMethod: {:macroContext :self :nilExpression :: ASTNode |
+        let: #receiver with: (macroContext gensymIdentifier: #ifNilReceiver).
+        
+        ``{
+            let: `,(receiver asLiteralNode) with: `,self.
+            if: `,receiver == nil then: `,nilExpression else: `,receiver
+        }
+    } makeMacro;
+    withSelector: #ifNotNil: addMacroMethod: {:macroContext :self :notNilExpression :: ASTNode |
+        let: #receiver with: (macroContext gensymIdentifier: #ifNotNilReceiver).
+        
+        ``{
+            let: `,(receiver asLiteralNode) with: `,self.
+            if: `,receiver ~~ nil then: `,(notNilExpression cullExpressionWith: receiver at: macroContext sourcePosition) else: nil
+        }
+    } makeMacro;
+    withSelector: #ifNil:ifNotNil: addMacroMethod: {:macroContext :self :nilExpression :notNilExpression :: ASTNode |
+        let: #receiver with: (macroContext gensymIdentifier: #ifNilIfNotNilReceiver).
+        
+        ``{
+            let: `,(receiver asLiteralNode) with: `,self.
+            if: `,receiver == nil then: `,nilExpression else: `,(notNilExpression cullExpressionWith: receiver at: macroContext sourcePosition)
+        }
+    } makeMacro;
+    withSelector: #ifNotNil:ifNil: addMacroMethod: {:macroContext :self :notNilExpression :nilExpression :: ASTNode |
+        let: #receiver with: (macroContext gensymIdentifier: #ifNotNilIfNilReceiver).
+        
+        ``{
+            let: `,(receiver asLiteralNode) with: `,self.
+            if: `,receiver ~~ nil then: `,(notNilExpression cullExpressionWith: receiver at: macroContext sourcePosition) else: `,nilExpression
+        }
+    } makeMacro.

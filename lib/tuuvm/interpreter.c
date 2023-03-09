@@ -8,6 +8,8 @@
 #include "tuuvm/function.h"
 #include "tuuvm/gc.h"
 #include "tuuvm/errors.h"
+#include "tuuvm/filesystem.h"
+#include "tuuvm/io.h"
 #include "tuuvm/macro.h"
 #include "tuuvm/parser.h"
 #include "tuuvm/string.h"
@@ -2551,8 +2553,73 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_
     return functionActivationRecord.result;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_interpreter_loadSourceNamedWithSolvedPath(tuuvm_context_t *context, tuuvm_tuple_t filename)
+{
+    struct {
+        tuuvm_tuple_t filename;
+        tuuvm_tuple_t sourceString;
+        tuuvm_tuple_t sourceDirectory;
+        tuuvm_tuple_t sourceName;
+        tuuvm_tuple_t sourceLanguage;
+        tuuvm_tuple_t sourceCode;
+        tuuvm_tuple_t sourceEnvironment;
+        tuuvm_tuple_t result;
+    } gcFrame = {
+        .filename = filename,
+    };
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    gcFrame.sourceString = tuuvm_io_readWholeFileNamedAsString(context, gcFrame.filename);
+    gcFrame.sourceDirectory = tuuvm_filesystem_dirname(context, gcFrame.filename);
+    gcFrame.sourceName = tuuvm_filesystem_basename(context, gcFrame.filename);
+    gcFrame.sourceLanguage = tuuvm_sourceCode_inferLanguageFromSourceName(context, gcFrame.sourceName);
+    gcFrame.sourceCode = tuuvm_sourceCode_create(context, gcFrame.sourceString, gcFrame.sourceDirectory, gcFrame.sourceName, gcFrame.sourceLanguage);
+    gcFrame.sourceEnvironment = tuuvm_environment_createDefaultForSourceCodeEvaluation(context, gcFrame.sourceCode);
+    gcFrame.result = tuuvm_interpreter_analyzeAndEvaluateSourceCodeWithEnvironment(context, gcFrame.sourceEnvironment, gcFrame.sourceCode);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
+}
+
+static tuuvm_tuple_t tuuvm_interpreter_primitive_loadSourceNamedWithSolvedPath(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_interpreter_loadSourceNamedWithSolvedPath(context, arguments[0]);
+}
+
+static tuuvm_tuple_t tuuvm_interpreter_primitive_loadSourceNamedMacro(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *macroContext = &arguments[0];
+    tuuvm_tuple_t *sourceName = &arguments[1];
+
+    tuuvm_tuple_t sourcePosition = tuuvm_macroContext_getSourcePosition(*macroContext);
+
+    tuuvm_tuple_t sourceDirectory = tuuvm_astIdentifierReferenceNode_create(context, sourcePosition, tuuvm_symbol_internWithCString(context, "__SourceDirectory__"));
+    tuuvm_tuple_t solveNameArguments = tuuvm_arraySlice_createWithArrayOfSize(context, 2);
+    tuuvm_arraySlice_atPut(solveNameArguments, 0, sourceDirectory);
+    tuuvm_arraySlice_atPut(solveNameArguments, 1, *sourceName);
+
+    tuuvm_tuple_t solveNameFunction = tuuvm_astIdentifierReferenceNode_create(context, sourcePosition, tuuvm_symbol_internWithCString(context, "FileSystem::joinPath:"));
+    tuuvm_tuple_t solveNameCall = tuuvm_astUnexpandedApplicationNode_create(context, sourcePosition, solveNameFunction, solveNameArguments);
+
+    tuuvm_tuple_t loadSourceArguments = tuuvm_arraySlice_createWithArrayOfSize(context, 1);
+    tuuvm_arraySlice_atPut(loadSourceArguments, 0, solveNameCall);
+
+    tuuvm_tuple_t loadSourceNamedWithSolvedPath = tuuvm_astIdentifierReferenceNode_create(context, sourcePosition, tuuvm_symbol_internWithCString(context, "loadSourceNamedWithSolvedPath:"));
+    tuuvm_tuple_t loadSourceCall = tuuvm_astUnexpandedApplicationNode_create(context, sourcePosition, loadSourceNamedWithSolvedPath, loadSourceArguments);
+    return loadSourceCall;
+}
+
 void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context)
 {
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "loadSourceNamedWithSolvedPath:", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_interpreter_primitive_loadSourceNamedWithSolvedPath);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "loadSourceNamed:", 2, TUUVM_FUNCTION_FLAGS_MACRO | TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_interpreter_primitive_loadSourceNamedMacro);
+
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "begin", 2, TUUVM_FUNCTION_FLAGS_MACRO | TUUVM_FUNCTION_FLAGS_VARIADIC, NULL, tuuvm_astSequenceNode_primitiveMacro);
 
     tuuvm_type_setAstNodeAnalysisFunction(context, context->roots.astArgumentNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_astArgumentNode_primitiveAnalyze));
