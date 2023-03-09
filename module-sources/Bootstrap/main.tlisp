@@ -1,5 +1,4 @@
-## Some utility functions.
-
+## Type layout descriptions. This must match the definition in the tuuvm/type.h
 (define Type::nameSlotIndex 0)
 (define Type::supertypeSlotIndex 1)
 (define Type::slotsSlotIndex 2)
@@ -12,6 +11,8 @@
 (define TypeSlot::nameSlotIndex 0)
 (define TypeSlot::flagsSlotIndex 1)
 (define TypeSlot::typeSlotIndex 2)
+
+## Some utility functions.
 
 ## until:do:
 (define (until:do: stop block)
