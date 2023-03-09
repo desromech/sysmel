@@ -4,6 +4,7 @@
 #include <tuuvm/context.h>
 #include <tuuvm/environment.h>
 #include <tuuvm/filesystem.h>
+#include <tuuvm/io.h>
 #include <tuuvm/sourceCode.h>
 #include <tuuvm/interpreter.h>
 #include <tuuvm/stackFrame.h>
@@ -21,30 +22,6 @@ static void printVersion()
     printf("tuuvm-lispi version 0.1\n");
 }
 
-static tuuvm_tuple_t readWholeFileNamed(tuuvm_tuple_t *inputFileNameTuple)
-{
-    char *inputFileName = tuuvm_tuple_bytesToCString(*inputFileNameTuple);
-    FILE *inputFile = fopen(inputFileName, "rb");
-    if(!inputFile)
-        return TUUVM_NULL_TUPLE;
-    tuuvm_tuple_bytesToCStringFree(inputFileName);
-
-    fseek(inputFile, 0, SEEK_END);
-    size_t fileSize = ftell(inputFile);
-    fseek(inputFile, 0, SEEK_SET);
-
-    tuuvm_tuple_t sourceString = tuuvm_string_createEmptyWithSize(context, fileSize);
-    if(sourceString)
-    {
-        if(fread(TUUVM_CAST_OOP_TO_OBJECT_TUPLE(sourceString)->bytes, fileSize, 1, inputFile) != 1)
-            return TUUVM_NULL_TUPLE;
-    }
-
-    fclose(inputFile);
-
-    return sourceString;
-}
-
 static void processFileNamed(tuuvm_tuple_t *inputFileNameTuple)
 {
     struct {
@@ -57,7 +34,7 @@ static void processFileNamed(tuuvm_tuple_t *inputFileNameTuple)
     } gcFrame = {};
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
-    gcFrame.sourceString = readWholeFileNamed(inputFileNameTuple);
+    gcFrame.sourceString = tuuvm_io_readWholeFileNamedAsString(context, *inputFileNameTuple);
     gcFrame.sourceDirectory = tuuvm_filesystem_dirname(context, *inputFileNameTuple);
     gcFrame.sourceName = tuuvm_filesystem_basename(context, *inputFileNameTuple);
     gcFrame.sourceLanguage = tuuvm_sourceCode_inferLanguageFromSourceName(context, gcFrame.sourceName);
