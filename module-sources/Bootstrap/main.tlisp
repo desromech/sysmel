@@ -12,6 +12,10 @@
 (define TypeSlot::flagsSlotIndex 1)
 (define TypeSlot::typeSlotIndex 2)
 
+(define Function::flagsSlotIndex 0)
+(define Function::getterFlags (Size::fromInteger 24)) ## Pure and Final
+(define Function::setterFlags (Size::fromInteger 16)) ## Final
+
 ## Some utility functions.
 
 ## until:do:
@@ -38,6 +42,16 @@
             newMethodDictionary)
         existingMethodDictionary))
 
+## Setup a getter method.
+(define (setupGetter getter)
+    (RawTuple::slotAt:put: getter Function::flagsSlotIndex Function::getterFlags)
+    (Function::recompileAndOptimize getter))
+
+## Setup a setter method.
+(define (setupSetter setter)
+    (RawTuple::slotAt:put: setter Function::flagsSlotIndex Function::setterFlags)
+    (Function::recompileAndOptimize setter))
+
 ## Bootstrap environment reflection core.
 (define (makeTypeAccessors type)
     (define typeName (RawTuple::slotAt: type Type::nameSlotIndex))
@@ -61,14 +75,15 @@
         (define slotType (RawTuple::slotAt: slot TypeSlot::typeSlotIndex))
 
         ## Getter
-        (exportAndBindInstanceMethod slotName (lambda (self)
-            (RawTuple::slotAt: self slotIndex)))
+        (exportAndBindInstanceMethod slotName
+            (setupGetter (lambda (self)
+                (RawTuple::slotAt: self slotIndex))))
 
         ## Setter
         (exportAndBindInstanceMethod (StringSymbol::intern (String::concat: (asString slotName) ":"))
-            (lambda (self value)
+            (setupSetter (lambda (self value)
                 (RawTuple::slotAt:put: self slotIndex value)))
-        )))
+        ))))
 
 (define intrinsicTypeCount (RawTuple::slotAt: BootstrapEnv::IntrinsicTypes 0))
 (define intrinsicTypes (RawTuple::slotAt: BootstrapEnv::IntrinsicTypes 1))

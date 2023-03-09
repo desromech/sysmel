@@ -424,10 +424,15 @@ TypeSlot
             let: #setterName with: (self name asString -- ":") asSymbol.
 
             ## Getter.
-            type withSelector: getterName addMethod: {:(type)self :: slotType | (RawTuple::slotAt:)(self, slotIndex) }.
+            type withSelector: getterName addMethod: ({:(type)self :: slotType | (RawTuple::slotAt:)(self, slotIndex) }
+                makePure;
+                makeFinal; 
+                recompileAndOptimize).
 
             ## Setter
-            type withSelector: setterName addMethod: {:(type)self :(slotType)value :: Void | RawTuple::slotAt:put:(self, slotIndex, value) }.
+            type withSelector: setterName addMethod: ({:(type)self :(slotType)value :: Void | RawTuple::slotAt:put:(self, slotIndex, value) }
+                makeFinal; 
+                recompileAndOptimize).
         }
     }.
 

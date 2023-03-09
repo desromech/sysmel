@@ -13,6 +13,7 @@ static bool tuuvm_primitiveTableIsComputed = false;
 static size_t tuuvm_primitiveTableSize = 0;
 static tuuvm_functionEntryPoint_t tuuvm_primitiveTable[PRIMITIVE_TABLE_CAPACITY];
 extern void tuuvm_context_registerPrimitives(void);
+extern tuuvm_tuple_t tuuvm_interpreter_recompileAndOptimizeFunction(tuuvm_context_t *context, tuuvm_function_t **functionObject);
 
 void tuuvm_primitiveTable_registerFunction(tuuvm_functionEntryPoint_t primitiveEntryPoint)
 {
@@ -279,6 +280,21 @@ static tuuvm_tuple_t tuuvm_function_primitive_adoptDefinitionOf(tuuvm_context_t 
     return TUUVM_VOID_TUPLE;
 }
 
+static tuuvm_tuple_t tuuvm_function_primitive_recompileAndOptimize(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *function = &arguments[0];
+    if(!tuuvm_tuple_isKindOf(context, *function, context->roots.functionType)) tuuvm_error("Expected a function.");
+    
+    tuuvm_function_t **functionObject = (tuuvm_function_t**)function;
+    if((*functionObject)->body && (*functionObject)->closureEnvironment)
+        return tuuvm_interpreter_recompileAndOptimizeFunction(context, functionObject);
+    
+    return *function;
+}
+
 bool tuuvm_function_shouldOptimizeLookup(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_tuple_t receiverType)
 {
     (void)receiverType;
@@ -290,6 +306,7 @@ void tuuvm_function_registerPrimitives(void)
     tuuvm_primitiveTable_registerFunction(tuuvm_function_primitive_apply);
     tuuvm_primitiveTable_registerFunction(tuuvm_function_primitive_adoptDefinitionOf);
     tuuvm_primitiveTable_registerFunction(tuuvm_function_primitive_isCorePrimitive);
+    tuuvm_primitiveTable_registerFunction(tuuvm_function_primitive_recompileAndOptimize);
 }
 
 void tuuvm_function_setupPrimitives(tuuvm_context_t *context)
@@ -297,4 +314,5 @@ void tuuvm_function_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "apply", context->roots.functionType, "applyWithArguments:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_VARIADIC, NULL, tuuvm_function_primitive_apply);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Function::adoptDefinitionOf:", context->roots.functionType, "adoptDefinitionOf:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_function_primitive_adoptDefinitionOf);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Function::isCorePrimitive", context->roots.functionType, "isCorePrimitive", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_function_primitive_isCorePrimitive);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Function::recompileAndOptimize", context->roots.functionType, "recompileAndOptimize", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_function_primitive_recompileAndOptimize);
 }

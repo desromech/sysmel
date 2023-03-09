@@ -422,6 +422,40 @@ static tuuvm_tuple_t tuuvm_astArgumentNode_primitiveAnalyze(tuuvm_context_t *con
     return (tuuvm_tuple_t)gcFrame.argumentNode;
 }
 
+tuuvm_tuple_t tuuvm_interpreter_recompileAndOptimizeFunction(tuuvm_context_t *context, tuuvm_function_t **functionObject)
+{
+    struct {
+        tuuvm_function_t *optimizedFunction;
+        tuuvm_tuple_t lambdaAnalysisEnvironment;
+        tuuvm_tuple_t argumentNode;
+        tuuvm_tuple_t argumentNodes;
+        tuuvm_tuple_t analyzedBody;
+    } gcFrame = {};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    gcFrame.optimizedFunction = (tuuvm_function_t*)tuuvm_context_shallowCopy(context, (tuuvm_tuple_t)*functionObject);
+    gcFrame.lambdaAnalysisEnvironment = tuuvm_environment_create(context, gcFrame.optimizedFunction->closureEnvironment);
+
+    size_t argumentNodeCount = tuuvm_arraySlice_getSize(gcFrame.optimizedFunction->argumentNodes);
+    gcFrame.argumentNodes = tuuvm_arraySlice_createWithArrayOfSize(context, argumentNodeCount);
+    for(size_t i = 0; i < argumentNodeCount; ++i)
+    {
+        gcFrame.argumentNode = tuuvm_arraySlice_at(gcFrame.optimizedFunction->argumentNodes, i);
+        gcFrame.argumentNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.argumentNode, gcFrame.lambdaAnalysisEnvironment);
+
+        tuuvm_arraySlice_atPut(gcFrame.argumentNodes, i, gcFrame.argumentNode);
+    }
+
+    gcFrame.optimizedFunction->argumentNodes = gcFrame.argumentNodes;
+    
+    gcFrame.analyzedBody = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.optimizedFunction->body, gcFrame.lambdaAnalysisEnvironment);
+    gcFrame.optimizedFunction->body = gcFrame.analyzedBody;
+
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+
+    return (tuuvm_tuple_t)gcFrame.optimizedFunction;
+}
+
 static tuuvm_tuple_t tuuvm_astLambdaNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
