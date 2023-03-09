@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 
 extern void tuuvm_arrayList_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context);
@@ -667,8 +668,24 @@ TUUVM_API void tuuvm_context_destroy(tuuvm_context_t *context)
 
 TUUVM_API tuuvm_context_t *tuuvm_context_loadImageFromFileNamed(const char *filename)
 {
-    (void)filename;
-    abort();
+    FILE *inputFile = fopen(filename, "rb");
+    if(!inputFile)
+        return NULL;
+
+    char magic[4] = {};
+    fread(magic, 4, 1, inputFile);
+    if(memcmp(magic, "TVIM", 4))
+    {
+        fclose(inputFile);
+        return NULL;
+    }
+
+    tuuvm_context_t *context = (tuuvm_context_t*)calloc(1, sizeof(tuuvm_context_t));
+    fread(&context->identityHashSeed, sizeof(context->identityHashSeed), 1, inputFile);
+    fread(&context->roots, sizeof(context->roots), 1, inputFile);
+    tuuvm_heap_loadFromFile(&context->heap, inputFile, sizeof(context->roots) / sizeof(tuuvm_tuple_t), (tuuvm_tuple_t*)&context->roots);
+    fclose(inputFile);
+    return context;
 }
 
 TUUVM_API void tuuvm_context_saveImageToFileNamed(tuuvm_context_t *context, const char *filename)

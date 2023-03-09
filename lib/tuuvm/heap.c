@@ -61,22 +61,8 @@ static uintptr_t uintptrAlignedTo(uintptr_t pointer, size_t alignment)
     return (pointer + alignment - 1) & (~(alignment - 1));
 }
 
-static tuuvm_heap_chunk_t *tuuvm_heap_findOrAllocateChunkWithRequiredCapacity(tuuvm_heap_t *heap, size_t requiredCapacity, size_t requiredAlignment)
+static tuuvm_heap_chunk_t *tuuvm_heap_allocateChunkWithRequiredChunkCapacity(tuuvm_heap_t *heap, size_t chunkCapacity)
 {
-    // Find a chunk that can accomodate the allocation.
-    for(tuuvm_heap_chunk_t *currentChunk = heap->firstChunk; currentChunk; currentChunk = currentChunk->nextChunk)
-    {
-        size_t remainingCapacity = uintptrAlignedTo(currentChunk->size, requiredAlignment) + requiredCapacity;
-        if(remainingCapacity <= currentChunk->capacity)
-            return currentChunk;
-    }
-
-    // Compute the chunk allocation size.
-    size_t chunkCapacity = TUUVM_HEAP_MIN_CHUNK_SIZE;
-    size_t requiredChunkCapacity = requiredCapacity + sizeof(tuuvm_heap_chunk_t);
-    if(requiredChunkCapacity > chunkCapacity)
-        chunkCapacity = requiredChunkCapacity;
-
     chunkCapacity = uintptrAlignedTo(chunkCapacity, tuuvm_heap_getSystemAllocationAlignment());
 
     // Allocate the chunk.
@@ -118,6 +104,25 @@ static tuuvm_heap_chunk_t *tuuvm_heap_findOrAllocateChunkWithRequiredCapacity(tu
     heap->shouldAttemptToCollect = true; // For each new chunk set the GC flag.
 
     return newChunk;
+}
+
+static tuuvm_heap_chunk_t *tuuvm_heap_findOrAllocateChunkWithRequiredCapacity(tuuvm_heap_t *heap, size_t requiredCapacity, size_t requiredAlignment)
+{
+    // Find a chunk that can accomodate the allocation.
+    for(tuuvm_heap_chunk_t *currentChunk = heap->firstChunk; currentChunk; currentChunk = currentChunk->nextChunk)
+    {
+        size_t remainingCapacity = uintptrAlignedTo(currentChunk->size, requiredAlignment) + requiredCapacity;
+        if(remainingCapacity <= currentChunk->capacity)
+            return currentChunk;
+    }
+
+    // Compute the chunk allocation size.
+    size_t chunkCapacity = TUUVM_HEAP_MIN_CHUNK_SIZE;
+    size_t requiredChunkCapacity = requiredCapacity + sizeof(tuuvm_heap_chunk_t);
+    if(requiredChunkCapacity > chunkCapacity)
+        chunkCapacity = requiredChunkCapacity;
+
+    return tuuvm_heap_allocateChunkWithRequiredChunkCapacity(heap, chunkCapacity);
 }
 
 static void tuuvm_heap_checkForGCThreshold(tuuvm_heap_t *heap)
@@ -337,26 +342,73 @@ void tuuvm_heap_compact(tuuvm_heap_t *heap)
     }
 }
 
+static inline tuuvm_heap_relocationRecord_t *tuuvm_heap_relocationTable_findRecord(tuuvm_heap_relocationTable_t *relocationTable, uintptr_t address)
+{
+    size_t count = relocationTable->entryCount;
+    for(size_t i = 0; i < count; ++i)
+    {
+        tuuvm_heap_relocationRecord_t *record = relocationTable->entries + i;
+        if(record->sourceStartAddress <= address && address < record->sourceEndAddress)
+            return record;
+    }
+
+    return NULL;
+}
+
+static inline tuuvm_tuple_t tuuvm_heap_relocatePointerWithTable(tuuvm_heap_relocationTable_t *relocationTable, tuuvm_tuple_t pointer)
+{
+    if(!tuuvm_tuple_isNonNullPointer(pointer))
+        return pointer;
+    
+    tuuvm_heap_relocationRecord_t *record = tuuvm_heap_relocationTable_findRecord(relocationTable, pointer);
+    return pointer - record->sourceStartAddress + record->destinationAddress;
+}
+
+static void tuuvm_heap_chunk_relocateWithTable(uint32_t whiteColor, tuuvm_heap_chunk_t *chunk, tuuvm_heap_relocationTable_t *relocationTable)
+{
+    uintptr_t offset = sizeof(tuuvm_heap_chunk_t);
+    uintptr_t chunkAddress = (uintptr_t)chunk;
+    while(offset < chunk->size)
+    {
+        offset = uintptrAlignedTo(offset, 16);
+        if(offset >= chunk->size)
+            break;
+
+        tuuvm_object_tuple_t *object = (tuuvm_object_tuple_t*)(chunkAddress + offset);
+        size_t objectSize = sizeof(tuuvm_object_tuple_t) + object->header.objectSize;
+        offset += objectSize;
+
+        // Relocate type pointer.
+        tuuvm_tuple_setType(object, tuuvm_heap_relocatePointerWithTable(relocationTable, object->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_POINTER_MASK));
+
+        // Relocate the slots.
+        if((object->header.typePointerAndFlags & TUUVM_TUPLE_BYTES_BIT) == 0)
+        {
+            size_t slotCount = object->header.objectSize / sizeof(tuuvm_tuple_t);
+            tuuvm_tuple_t *slots = object->pointers;
+
+            for(size_t i = 0; i < slotCount; ++i)
+                slots[i] = tuuvm_heap_relocatePointerWithTable(relocationTable, slots[i]);
+        }
+
+        // Reset the GC color.
+        object->header.forwardingPointer = TUUVM_NULL_TUPLE;
+        tuuvm_tuple_setGCColor((tuuvm_tuple_t)object, whiteColor);
+    }
+}
+
+void tuuvm_heap_relocateWithTable(tuuvm_heap_t *heap, tuuvm_heap_relocationTable_t *relocationTable)
+{
+    for(tuuvm_heap_chunk_t *chunk = heap->firstChunk; chunk; chunk = chunk->nextChunk)
+        tuuvm_heap_chunk_relocateWithTable(heap->gcWhiteColor, chunk, relocationTable);
+}
+
 void tuuvm_heap_swapGCColors(tuuvm_heap_t *heap)
 {
     uint32_t temp = heap->gcBlackColor;
     heap->gcBlackColor = heap->gcWhiteColor;
     heap->gcWhiteColor = temp;
 }
-
-typedef struct tuuvm_heap_relocationRecord_s
-{
-    uintptr_t sourceStartAddress;
-    uintptr_t sourceEndAddress;
-    uintptr_t destinationAddress;
-} tuuvm_heap_relocationRecord_t;
-
-typedef struct tuuvm_heap_chunkRecord_s
-{
-    uintptr_t address;
-    uint32_t capacity;
-    uint32_t size;
-} tuuvm_heap_chunkRecord_t;
 
 void tuuvm_heap_dumpToFile(tuuvm_heap_t *heap, FILE *file)
 {
@@ -365,7 +417,7 @@ void tuuvm_heap_dumpToFile(tuuvm_heap_t *heap, FILE *file)
         ++chunkCount;
 
     uint32_t destIndex = 0;
-    tuuvm_heap_chunkRecord_t *chunkRecords = calloc(sizeof(tuuvm_heap_chunkRecord_t), chunkCount);
+    tuuvm_heap_chunkRecord_t *chunkRecords = (tuuvm_heap_chunkRecord_t*)calloc(sizeof(tuuvm_heap_chunkRecord_t), chunkCount);
     for(tuuvm_heap_chunk_t *chunk = heap->firstChunk; chunk; chunk = chunk->nextChunk)
     {
         tuuvm_heap_chunkRecord_t *record = chunkRecords + destIndex++;
@@ -375,7 +427,52 @@ void tuuvm_heap_dumpToFile(tuuvm_heap_t *heap, FILE *file)
     }
 
     fwrite(&chunkCount, 4, 1, file);
-    fwrite(&chunkRecords, sizeof(tuuvm_heap_chunkRecord_t), chunkCount, file);
+    fwrite(chunkRecords, sizeof(tuuvm_heap_chunkRecord_t), chunkCount, file);
     for(tuuvm_heap_chunk_t *chunk = heap->firstChunk; chunk; chunk = chunk->nextChunk)
         fwrite(chunk, chunk->size, 1, file);
+
+    free(chunkRecords);
+}
+
+void tuuvm_heap_loadFromFile(tuuvm_heap_t *heap, FILE *file, size_t numberOfRootsToRelocate, tuuvm_tuple_t *rootsToRelocate)
+{
+    tuuvm_heap_initialize(heap);
+
+    uint32_t chunkCount = 0;
+    fread(&chunkCount, 4, 1, file);
+
+    tuuvm_heap_chunkRecord_t *chunkRecords = (tuuvm_heap_chunkRecord_t*)calloc(sizeof(tuuvm_heap_chunkRecord_t), chunkCount);
+    fread(chunkRecords, sizeof(tuuvm_heap_chunkRecord_t), chunkCount, file);
+
+    tuuvm_heap_relocationTable_t relocationTable = {
+        .entryCount = chunkCount,
+        .entries = (tuuvm_heap_relocationRecord_t*)calloc(sizeof(tuuvm_heap_relocationRecord_t), chunkCount),
+    };
+
+    // Load the chunks.
+    for(uint32_t i = 0; i < chunkCount; ++i)
+    {
+        tuuvm_heap_chunkRecord_t *record = chunkRecords + i;
+        tuuvm_heap_chunk_t *allocatedChunk = tuuvm_heap_allocateChunkWithRequiredChunkCapacity(heap, record->capacity);
+        tuuvm_heap_chunk_t allocatedChunkHeader = *allocatedChunk;
+
+        fread(allocatedChunk, record->size, 1, file);
+        allocatedChunk->capacity = allocatedChunkHeader.capacity;
+        allocatedChunk->nextChunk = allocatedChunkHeader.nextChunk;
+
+        tuuvm_heap_relocationRecord_t *relocationRecord = relocationTable.entries + i;
+        relocationRecord->sourceStartAddress = record->address;
+        relocationRecord->sourceEndAddress = relocationRecord->sourceStartAddress + record->size;
+        relocationRecord->destinationAddress = (uintptr_t)allocatedChunk;
+    }
+
+    free(chunkRecords);
+
+    // Relocate the roots.
+    for(size_t i = 0; i < numberOfRootsToRelocate; ++i)
+        rootsToRelocate[i] = tuuvm_heap_relocatePointerWithTable(&relocationTable, rootsToRelocate[i]);
+
+    // Relocate the objects.
+    tuuvm_heap_relocateWithTable(heap, &relocationTable);
+    free(relocationTable.entries);
 }
