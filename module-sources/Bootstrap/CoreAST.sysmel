@@ -335,35 +335,3 @@ ASTWhileContinueWithNode
         if: (self bodyExpression isNotNil) then: (self bodyExpression: aBlock(self bodyExpression)).
         if: (self continueExpression isNotNil) then: (self continueExpression: aBlock(self continueExpression)).
     }.
-
-## ============================================================================
-## Bootstrap Additional Macros
-## ============================================================================
-
-MacroContext
-    withSelector: #gensym: addMethod: {:self :value |
-        GeneratedSymbol new
-            value: value;
-            context: self sourcePosition;
-            yourself
-    };
-    withSelector: #gensymIdentifier: addMethod: {:self :value |
-        ASTIdentifierReferenceNode new
-            sourcePosition: self sourcePosition;
-            value: (self gensym: value);
-            yourself
-    }.
-
-ASTNode
-    withSelector: #cullExpressionWith:at: addMethod: {:self :argument :sourcePosition :: ASTNode |
-        self
-    }.
-
-ASTLambdaNode
-    withSelector: #cullExpressionWith:at: addMethod: {:self :argument :sourcePosition :: ASTNode |
-        ASTUnexpandedApplicationNode new
-            sourcePosition: sourcePosition;
-            functionOrMacroExpression: self;
-            arguments: (ArraySlice with: argument);
-            yourself
-    }.
