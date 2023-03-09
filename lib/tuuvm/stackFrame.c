@@ -1,6 +1,9 @@
 #include "tuuvm/stackFrame.h"
 #include "tuuvm/arrayList.h"
 #include "tuuvm/arraySlice.h"
+#include "tuuvm/errors.h"
+#include "tuuvm/environment.h"
+#include "tuuvm/function.h"
 #include "tuuvm/tuple.h"
 #include "tuuvm/string.h"
 #include <stdio.h>
@@ -8,6 +11,7 @@
 
 TUUVM_THREAD_LOCAL tuuvm_context_t *tuuvm_stackFrame_activeContext;
 TUUVM_THREAD_LOCAL tuuvm_stackFrameRecord_t *tuuvm_stackFrame_activeRecord;
+static void tuuvm_stackFrame_prepareUnwindingUntil(tuuvm_stackFrameRecord_t *targetRecord);
 
 TUUVM_API void tuuvm_stackFrame_enterContext(tuuvm_context_t *context, tuuvm_stackFrameRecord_t *topLevelStackRecord)
 {
@@ -61,6 +65,18 @@ TUUVM_API void tuuvm_stackFrame_iterateGCRootsInRecordWith(tuuvm_stackFrameRecor
             iterationFunction(userdata, &functionRecord->result);
         }   
         break;
+    case TUUVM_STACK_FRAME_RECORD_TYPE_BREAK_TARGET:
+        {
+            tuuvm_stackFrameBreakTargetRecord_t *breakRecord = (tuuvm_stackFrameBreakTargetRecord_t*)record;
+            iterationFunction(userdata, &breakRecord->environment);
+        }   
+        break;
+    case TUUVM_STACK_FRAME_RECORD_TYPE_CONTINUE_TARGET:
+        {
+            tuuvm_stackFrameContinueTargetRecord_t *continueRecord = (tuuvm_stackFrameContinueTargetRecord_t*)record;
+            iterationFunction(userdata, &continueRecord->environment);
+        }   
+        break;
     case TUUVM_STACK_FRAME_RECORD_TYPE_SOURCE_POSITION:
         {
             tuuvm_stackFrameSourcePositionRecord_t *sourcePositionRecord = (tuuvm_stackFrameSourcePositionRecord_t*)record;
@@ -76,7 +92,10 @@ TUUVM_API void tuuvm_stackFrame_iterateGCRootsInRecordWith(tuuvm_stackFrameRecor
         }   
         break;
     case TUUVM_STACK_FRAME_RECORD_TYPE_CLEANUP:
-        // Nothing is required here yet
+        {
+            tuuvm_stackFrameCleanupRecord_t *cleanupRecord = (tuuvm_stackFrameCleanupRecord_t*)record;
+            iterationFunction(userdata, &cleanupRecord->action);
+        }   
         break;
     default:
         // Should not reach here.
@@ -123,8 +142,109 @@ TUUVM_API void tuuvm_stackFrame_raiseException(tuuvm_tuple_t exception)
     if(landingPadRecord->keepStackTrace)
         landingPadRecord->stackTrace = tuuvm_stackFrame_buildStackTraceUpTo((tuuvm_stackFrameRecord_t*)landingPadRecord);
 
+    tuuvm_stackFrame_prepareUnwindingUntil((tuuvm_stackFrameRecord_t*)landingPadRecord);
     tuuvm_stackFrame_activeRecord = (tuuvm_stackFrameRecord_t*)landingPadRecord;
     longjmp(landingPadRecord->jmpbuffer, 1);
+}
+
+TUUVM_API bool tuuvm_stackFrame_isValidRecordInThisContext(tuuvm_stackFrameRecord_t *targetRecord)
+{
+    for(tuuvm_stackFrameRecord_t *position = tuuvm_stackFrame_activeRecord; position; position = position->previous)
+    {
+        if(position == targetRecord)
+            return true;
+    }
+
+    return false;
+}
+
+static void tuuvm_stackFrame_prepareUnwinding(tuuvm_stackFrameRecord_t *targetRecord)
+{
+    tuuvm_stackFrame_activeRecord = targetRecord;
+
+    switch(targetRecord->type)
+    {
+    case TUUVM_STACK_FRAME_RECORD_TYPE_FUNCTION_ACTIVATION:
+        {
+            tuuvm_stackFrameFunctionActivationRecord_t *activationRecord = (tuuvm_stackFrameFunctionActivationRecord_t*)targetRecord;
+            if(activationRecord->applicationEnvironment)
+                tuuvm_environment_clearUnwindingRecords(activationRecord->applicationEnvironment);
+        }
+        break;
+    case TUUVM_STACK_FRAME_RECORD_TYPE_BREAK_TARGET:
+        {
+            tuuvm_stackFrameBreakTargetRecord_t *breakRecord = (tuuvm_stackFrameBreakTargetRecord_t*)targetRecord;
+            if(breakRecord->environment)
+                tuuvm_environment_clearUnwindingRecords(breakRecord->environment);
+        }
+        break;
+    case TUUVM_STACK_FRAME_RECORD_TYPE_CONTINUE_TARGET:
+        {
+            tuuvm_stackFrameContinueTargetRecord_t *continueRecord = (tuuvm_stackFrameContinueTargetRecord_t*)targetRecord;
+            if(continueRecord->environment)
+                tuuvm_environment_clearUnwindingRecords(continueRecord->environment);
+        }
+        break;
+    case TUUVM_STACK_FRAME_RECORD_TYPE_CLEANUP:
+        {
+            tuuvm_stackFrameCleanupRecord_t *cleanupRecord = (tuuvm_stackFrameCleanupRecord_t*)targetRecord;
+            if(cleanupRecord->action)
+            {
+                tuuvm_stackFrame_activeRecord = targetRecord->previous;
+                tuuvm_function_apply0(tuuvm_stackFrame_activeContext, cleanupRecord->action);
+            }
+        }
+        break;
+    default:
+        // Nothing special is required here.
+    }
+}
+
+static void tuuvm_stackFrame_prepareUnwindingUntil(tuuvm_stackFrameRecord_t *targetRecord)
+{
+    for(tuuvm_stackFrameRecord_t *position = tuuvm_stackFrame_activeRecord; position; position = position->previous)
+    {
+        tuuvm_stackFrame_prepareUnwinding(targetRecord);
+        if(position == targetRecord)
+            return;
+    }
+}
+
+TUUVM_API void tuuvm_stackFrame_returnValueInto(tuuvm_tuple_t value, tuuvm_stackFrameRecord_t *targetRecord)
+{
+    if(!tuuvm_stackFrame_isValidRecordInThisContext(targetRecord)
+        || targetRecord->type != TUUVM_STACK_FRAME_RECORD_TYPE_FUNCTION_ACTIVATION)
+        tuuvm_error("Cannot unwind for return into invalid target.");
+
+    tuuvm_stackFrame_prepareUnwindingUntil(targetRecord);
+    tuuvm_stackFrameFunctionActivationRecord_t *activationRecord = (tuuvm_stackFrameFunctionActivationRecord_t*)targetRecord;
+    activationRecord->result = value;
+    tuuvm_stackFrame_activeRecord = targetRecord;
+    longjmp(activationRecord->jmpbuffer, 1);
+}
+
+TUUVM_API void tuuvm_stackFrame_breakInto(tuuvm_stackFrameRecord_t *targetRecord)
+{
+    if(!tuuvm_stackFrame_isValidRecordInThisContext(targetRecord)
+        || targetRecord->type != TUUVM_STACK_FRAME_RECORD_TYPE_BREAK_TARGET)
+        tuuvm_error("Cannot unwind for break into invalid target.");
+
+    tuuvm_stackFrame_prepareUnwindingUntil(targetRecord);
+    tuuvm_stackFrameBreakTargetRecord_t *breakRecord = (tuuvm_stackFrameBreakTargetRecord_t*)targetRecord;
+    tuuvm_stackFrame_activeRecord = targetRecord;
+    longjmp(breakRecord->jmpbuffer, 1);
+}
+
+TUUVM_API void tuuvm_stackFrame_continueInto(tuuvm_stackFrameRecord_t *targetRecord)
+{
+    if(!tuuvm_stackFrame_isValidRecordInThisContext(targetRecord)
+        || targetRecord->type != TUUVM_STACK_FRAME_RECORD_TYPE_CONTINUE_TARGET)
+        tuuvm_error("Cannot unwind for continue into invalid target.");
+
+    tuuvm_stackFrame_prepareUnwindingUntil(targetRecord);
+    tuuvm_stackFrameContinueTargetRecord_t *continueRecord = (tuuvm_stackFrameContinueTargetRecord_t*)targetRecord;
+    tuuvm_stackFrame_activeRecord = targetRecord;
+    longjmp(continueRecord->jmpbuffer, 1);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_stackFrame_buildStackTraceUpTo(tuuvm_stackFrameRecord_t *targetRecord)

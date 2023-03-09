@@ -79,11 +79,15 @@ public class TestClass superclass: Object; definition: {
 
     public pure method square: x
         := x*x.
+
+    public method returnTest := {
+        return: 5.
+        3
+    }.
 }.
+
+
 printLine(TestClass).
 printLine(TestClass new myTestMethod).
 printLine(2, " ", TestClass new square: 2).
-
-printLine("__SourceDirectory__: ", __SourceDirectory__).
-printLine("__SourceName__: ", __SourceName__).
-printLine("__SourceLanguage__: ", __SourceLanguage__).
+printLine(TestClass new returnTest).

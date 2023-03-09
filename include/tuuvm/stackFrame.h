@@ -10,6 +10,8 @@ typedef enum tuuvm_stackFrameRecordType_e
 {
     TUUVM_STACK_FRAME_RECORD_TYPE_GC_ROOTS = 0,
     TUUVM_STACK_FRAME_RECORD_TYPE_FUNCTION_ACTIVATION,
+    TUUVM_STACK_FRAME_RECORD_TYPE_BREAK_TARGET,
+    TUUVM_STACK_FRAME_RECORD_TYPE_CONTINUE_TARGET,
     TUUVM_STACK_FRAME_RECORD_TYPE_SOURCE_POSITION,
     TUUVM_STACK_FRAME_RECORD_TYPE_LANDING_PAD,
     TUUVM_STACK_FRAME_RECORD_TYPE_CLEANUP,
@@ -39,6 +41,22 @@ typedef struct tuuvm_stackFrameFunctionActivationRecord_s
     jmp_buf jmpbuffer;
 } tuuvm_stackFrameFunctionActivationRecord_t;
 
+typedef struct tuuvm_stackFrameBreakTargetRecord_s
+{
+    tuuvm_stackFrameRecord_t *previous;
+    tuuvm_stackFrameRecordType_t type;
+    tuuvm_tuple_t environment;
+    jmp_buf jmpbuffer;
+} tuuvm_stackFrameBreakTargetRecord_t;
+
+typedef struct tuuvm_stackFrameContinueTargetRecord_s
+{
+    tuuvm_stackFrameRecord_t *previous;
+    tuuvm_stackFrameRecordType_t type;
+    tuuvm_tuple_t environment;
+    jmp_buf jmpbuffer;
+} tuuvm_stackFrameContinueTargetRecord_t;
+
 typedef struct tuuvm_stackFrameSourcePositionRecord_s
 {
     tuuvm_stackFrameRecord_t *previous;
@@ -61,7 +79,7 @@ typedef struct tuuvm_stackFrameCleanupRecord_s
 {
     tuuvm_stackFrameRecord_t *previous;
     tuuvm_stackFrameRecordType_t type;
-    jmp_buf jmpbuffer;
+    tuuvm_tuple_t action;
 } tuuvm_stackFrameCleanupRecord_t;
 
 #define TUUVM_STACKFRAME_PUSH_GC_ROOTS(recordName, gcStackFrameRoots) \
@@ -94,6 +112,11 @@ TUUVM_API void tuuvm_stackFrame_iterateGCRootsInRecordWith(tuuvm_stackFrameRecor
 TUUVM_API void tuuvm_stackFrame_iterateGCRootsInStackWith(tuuvm_stackFrameRecord_t *stackBottomRecord, void *userdata, tuuvm_GCRootIterationFunction_t iterationFunction);
 
 TUUVM_API void tuuvm_stackFrame_raiseException(tuuvm_tuple_t exception);
+
+TUUVM_API bool tuuvm_stackFrame_isValidRecordInThisContext(tuuvm_stackFrameRecord_t *targetRecord);
+TUUVM_API void tuuvm_stackFrame_returnValueInto(tuuvm_tuple_t value, tuuvm_stackFrameRecord_t *targetRecord);
+TUUVM_API void tuuvm_stackFrame_breakInto(tuuvm_stackFrameRecord_t *targetRecord);
+TUUVM_API void tuuvm_stackFrame_continueInto(tuuvm_stackFrameRecord_t *targetRecord);
 
 TUUVM_API tuuvm_tuple_t tuuvm_stackFrame_buildStackTraceUpTo(tuuvm_stackFrameRecord_t *targetRecord);
 TUUVM_API void tuuvm_stackFrame_printStackTrace(tuuvm_context_t *context, tuuvm_tuple_t stackTrace);

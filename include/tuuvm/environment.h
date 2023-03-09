@@ -12,6 +12,9 @@ typedef struct tuuvm_environment_s
     tuuvm_tuple_header_t header;
     tuuvm_tuple_t parent;
     tuuvm_tuple_t symbolTable;
+    tuuvm_tuple_t returnTarget;
+    tuuvm_tuple_t breakTarget;
+    tuuvm_tuple_t continueTarget;
 } tuuvm_environment_t;
 
 typedef struct tuuvm_symbolBinding_s
@@ -114,5 +117,41 @@ TUUVM_API void tuuvm_environment_setSymbolBindingWithValue(tuuvm_context_t *cont
  * Looks a symbol recursively on an environment.
  */ 
 TUUVM_API bool tuuvm_environment_lookSymbolRecursively(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t symbol, tuuvm_tuple_t *outBinding);
+
+/**
+ * Looks for the return target on an environment.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_environment_lookReturnTargetRecursively(tuuvm_context_t *context, tuuvm_tuple_t environment);
+
+/**
+ * Looks for the break target on an environment.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_environment_lookBreakTargetRecursively(tuuvm_context_t *context, tuuvm_tuple_t environment);
+
+/**
+ * Looks for the continue target on an environment.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_environment_lookContinueTargetRecursively(tuuvm_context_t *context, tuuvm_tuple_t environment);
+
+/**
+ * Sets the break target.
+ */ 
+TUUVM_API void tuuvm_environment_setBreakTarget(tuuvm_tuple_t environment, tuuvm_tuple_t breakTarget);
+
+/**
+ * Sets the continue target.
+ */ 
+TUUVM_API void tuuvm_environment_setContinueTarget(tuuvm_tuple_t environment, tuuvm_tuple_t continueTarget);
+
+/**
+ * Sets the return target.
+ */ 
+TUUVM_API void tuuvm_environment_setReturnTarget(tuuvm_tuple_t environment, tuuvm_tuple_t returnTarget);
+
+/**
+ * Clears the unwinding record fields in the environment
+ */ 
+
+TUUVM_API void tuuvm_environment_clearUnwindingRecords(tuuvm_tuple_t environment);
 
 #endif //TUUVM_ENVIRONMENT_H

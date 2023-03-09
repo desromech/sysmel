@@ -30,6 +30,16 @@ typedef struct tuuvm_astBinaryExpressionSequenceNode_s
     tuuvm_tuple_t operators;
 } tuuvm_astBinaryExpressionSequenceNode_t;
 
+typedef struct tuuvm_astBreakNode_s
+{
+    tuuvm_astNode_t super;
+} tuuvm_astBreakNode_t;
+
+typedef struct tuuvm_astContinueNode_s
+{
+    tuuvm_astNode_t super;
+} tuuvm_astContinueNode_t;
+
 typedef struct tuuvm_astDoWhileContinueWithNode_s
 {
     tuuvm_astNode_t super;
@@ -151,6 +161,12 @@ typedef struct tuuvm_astPragmaNode_s
     tuuvm_tuple_t arguments;
 } tuuvm_astPragmaNode_t;
 
+typedef struct tuuvm_astReturnNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t expression;
+} tuuvm_astReturnNode_t;
+
 typedef struct tuuvm_astSequenceNode_s
 {
     tuuvm_astNode_t super;
@@ -212,6 +228,16 @@ TUUVM_API bool tuuvm_astNode_isArgumentNode(tuuvm_context_t *context, tuuvm_tupl
  * Is this a binary expression sequence node?
  */ 
 TUUVM_API bool tuuvm_astNode_isBinaryExpressionSequenceNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this a break node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isBreakNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this a continue node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isContinueNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
 
 /**
  * Is this a do while continue with node?
@@ -299,6 +325,11 @@ TUUVM_API bool tuuvm_astNode_isMessageChainMessageNode(tuuvm_context_t *context,
 TUUVM_API bool tuuvm_astNode_isPragmaNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
 
 /**
+ * Is this a return node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isReturnNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
  * Is this a sequence node?
  */ 
 TUUVM_API bool tuuvm_astNode_isSequenceNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
@@ -366,6 +397,16 @@ TUUVM_INLINE bool tuuvm_astArgumentNode_isForAll(tuuvm_tuple_t argumentNode)
  * Creates a binary expression sequence node.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astBinaryExpressionSequenceNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t operands, tuuvm_tuple_t operators);
+
+/**
+ * Creates a break node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astBreakNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition);
+
+/**
+ * Creates a continue node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astContinueNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition);
 
 /**
  * Creates a do while node.
@@ -531,6 +572,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_astMessageChainMessageNode_create(tuuvm_context_t 
  * Creates a pragma node.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astPragmaNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t selector, tuuvm_tuple_t arguments);
+
+/**
+ * Creates a return node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astReturnNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t expression);
 
 /**
  * Creates a sequence node.

@@ -369,6 +369,9 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.environmentType, "Environment", TUUVM_NULL_TUPLE,
         "parent", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
         "symbolTable", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "returnTarget", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "breakTarget", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "continueTarget", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolBindingType, "SymbolBinding", TUUVM_NULL_TUPLE,
         "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
@@ -488,6 +491,10 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "operands", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
         "operations", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
         NULL);
+    context->roots.astBreakNodeType = tuuvm_context_createIntrinsicClass(context, "ASTBreakNode", context->roots.astNodeType,
+        NULL);
+    context->roots.astContinueNodeType = tuuvm_context_createIntrinsicClass(context, "ASTContinueNode", context->roots.astNodeType,
+        NULL);
     context->roots.astDoWhileContinueWithNodeType = tuuvm_context_createIntrinsicClass(context, "ASTDoWhileContinueWithNode", context->roots.astNodeType,
         "bodyExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "conditionExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
@@ -559,6 +566,9 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.astPragmaNodeType = tuuvm_context_createIntrinsicClass(context, "ASTPragmaNode", context->roots.astNodeType,
         "selector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
+        NULL);
+    context->roots.astReturnNodeType = tuuvm_context_createIntrinsicClass(context, "ASTReturnNode", context->roots.astNodeType,
+        "expression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     context->roots.astSequenceNodeType = tuuvm_context_createIntrinsicClass(context, "ASTSequenceNode", context->roots.astNodeType,
         "pragmas", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,

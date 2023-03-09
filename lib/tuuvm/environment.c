@@ -129,6 +129,80 @@ TUUVM_API bool tuuvm_environment_lookSymbolRecursively(tuuvm_context_t *context,
     return tuuvm_environment_lookSymbolRecursively(context, environmentObject->parent, symbol, outBinding);
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_environment_lookReturnTargetRecursively(tuuvm_context_t *context, tuuvm_tuple_t environment)
+{
+    if(!tuuvm_tuple_isNonNullPointer(environment))
+        return TUUVM_NULL_TUPLE;
+
+    tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
+    if(environmentObject->returnTarget)
+        return environmentObject->returnTarget;
+
+    return tuuvm_environment_lookReturnTargetRecursively(context, environmentObject->parent);
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_environment_lookBreakTargetRecursively(tuuvm_context_t *context, tuuvm_tuple_t environment)
+{
+    if(!tuuvm_tuple_isNonNullPointer(environment))
+        return TUUVM_NULL_TUPLE;
+
+    tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
+    if(environmentObject->breakTarget)
+        return environmentObject->breakTarget;
+
+    return tuuvm_environment_lookReturnTargetRecursively(context, environmentObject->parent);
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_environment_lookContinueTargetRecursively(tuuvm_context_t *context, tuuvm_tuple_t environment)
+{
+    if(!tuuvm_tuple_isNonNullPointer(environment))
+        return TUUVM_NULL_TUPLE;
+
+    tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
+    if(environmentObject->continueTarget)
+        return environmentObject->continueTarget;
+
+    return tuuvm_environment_lookReturnTargetRecursively(context, environmentObject->parent);
+}
+
+TUUVM_API void tuuvm_environment_setBreakTarget(tuuvm_tuple_t environment, tuuvm_tuple_t breakTarget)
+{
+    if(!tuuvm_tuple_isNonNullPointer(environment))
+        return;
+
+    tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
+    environmentObject->breakTarget = breakTarget;
+}
+
+TUUVM_API void tuuvm_environment_setContinueTarget(tuuvm_tuple_t environment, tuuvm_tuple_t continueTarget)
+{
+    if(!tuuvm_tuple_isNonNullPointer(environment))
+        return;
+
+    tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
+    environmentObject->continueTarget = continueTarget;
+}
+
+TUUVM_API void tuuvm_environment_setReturnTarget(tuuvm_tuple_t environment, tuuvm_tuple_t returnTarget)
+{
+    if(!tuuvm_tuple_isNonNullPointer(environment))
+        return;
+
+    tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
+    environmentObject->returnTarget = returnTarget;
+}
+
+TUUVM_API void tuuvm_environment_clearUnwindingRecords(tuuvm_tuple_t environment)
+{
+    if(!tuuvm_tuple_isNonNullPointer(environment))
+        return;
+
+    tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
+    environmentObject->breakTarget = TUUVM_NULL_TUPLE;
+    environmentObject->continueTarget = TUUVM_NULL_TUPLE;
+    environmentObject->returnTarget = TUUVM_NULL_TUPLE;
+}
+
 static tuuvm_tuple_t tuuvm_environment_primitive_setNewSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;

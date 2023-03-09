@@ -106,6 +106,8 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t astNodeType;
     tuuvm_tuple_t astArgumentNodeType;
     tuuvm_tuple_t astBinaryExpressionSequenceNodeType;
+    tuuvm_tuple_t astBreakNodeType;
+    tuuvm_tuple_t astContinueNodeType;
     tuuvm_tuple_t astDoWhileContinueWithNodeType;
     tuuvm_tuple_t astErrorNodeType;
     tuuvm_tuple_t astFunctionApplicationNodeType;
@@ -123,6 +125,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t astMessageChainNodeType;
     tuuvm_tuple_t astMessageChainMessageNodeType;
     tuuvm_tuple_t astPragmaNodeType;
+    tuuvm_tuple_t astReturnNodeType;
     tuuvm_tuple_t astSequenceNodeType;
     tuuvm_tuple_t astUnexpandedApplicationNodeType;
     tuuvm_tuple_t astUnexpandedSExpressionNodeType;
