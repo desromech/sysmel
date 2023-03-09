@@ -119,7 +119,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeAndEvaluateCStringWithEnvironme
     return gcFrame.result;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeAndEvaluateStringWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t sourceCodeText, tuuvm_tuple_t sourceCodeName, tuuvm_tuple_t sourceCodeLanguage)
+TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeAndEvaluateStringWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t sourceCodeText, tuuvm_tuple_t sourceCodeDirectory, tuuvm_tuple_t sourceCodeName, tuuvm_tuple_t sourceCodeLanguage)
 {
     struct {
         tuuvm_tuple_t environment;
@@ -130,7 +130,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeAndEvaluateStringWithEnvironmen
     };
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
-    gcFrame.astNode = tuuvm_sourceCode_create(context, sourceCodeText, sourceCodeName, sourceCodeLanguage);
+    gcFrame.astNode = tuuvm_sourceCode_create(context, sourceCodeText, sourceCodeDirectory, sourceCodeName, sourceCodeLanguage);
     gcFrame.result = tuuvm_interpreter_analyzeAndEvaluateSourceCodeWithEnvironment(context, gcFrame.environment, gcFrame.astNode);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;

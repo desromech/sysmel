@@ -88,7 +88,10 @@
     (Dictionary::at:put: methodDict selector method))
 
 (Type::withSelector:addMethod: SourcePosition #printString (lambda (sourcePosition)
+    (define sourceDirectory (SourceCode::directory (SourcePosition::sourceCode sourcePosition)))
     (define sourceName (SourceCode::name (SourcePosition::sourceCode sourcePosition)))
+    (define sourcePath (FileSystem::joinPath: sourceDirectory sourceName))
+
     (define startIndex (SourcePosition::startIndex sourcePosition))
     (define endIndex (SourcePosition::endIndex sourcePosition))
 
@@ -100,7 +103,7 @@
     (define endColumn (SourcePosition::endColumn sourcePosition))
     (define endString (String::concat: (String::concat: (asString endLine) ".") (asString endColumn)))
 
-    (String::concat: (String::concat: (String::concat: sourceName ":") startString)
+    (String::concat: (String::concat: (String::concat: sourcePath ":") startString)
         (String::concat: "-" endString))
     ))
 

@@ -4,18 +4,26 @@
 #include "tuuvm/arraySlice.h"
 #include "internal/context.h"
 
-TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_create(tuuvm_context_t *context, tuuvm_tuple_t text, tuuvm_tuple_t name, tuuvm_tuple_t language)
+TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_create(tuuvm_context_t *context, tuuvm_tuple_t text, tuuvm_tuple_t directory, tuuvm_tuple_t name, tuuvm_tuple_t language)
 {
     tuuvm_sourceCode_t *result = (tuuvm_sourceCode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.sourceCodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_sourceCode_t));
     result->text = text;
+    result->directory = directory;
     result->name = name;
     result->language = language;
     return (tuuvm_tuple_t)result;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_createWithCStrings(tuuvm_context_t *context, const char *text, const char *name, const char *language)
+TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_createWithCStrings(tuuvm_context_t *context, const char *text, const char *directory, const char *name, const char *language)
 {
-    return tuuvm_sourceCode_create(context, tuuvm_string_createWithCString(context, text), tuuvm_string_createWithCString(context, name), tuuvm_symbol_internWithCString(context, language));
+    return tuuvm_sourceCode_create(context, tuuvm_string_createWithCString(context, text), tuuvm_string_createWithCString(context, directory), tuuvm_string_createWithCString(context, name), tuuvm_symbol_internWithCString(context, language));
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_inferLanguageFromSourceName(tuuvm_context_t *context, tuuvm_tuple_t sourceName)
+{
+    if(tuuvm_string_endsWithCString(sourceName, ".sysmel"))
+        return tuuvm_symbol_internWithCString(context, "sysmel");
+    return tuuvm_symbol_internWithCString(context, "tlisp");
 }
 
 static tuuvm_tuple_t tuuvm_sourceCode_ensureLineStartIndexTableIsBuilt(tuuvm_context_t *context, tuuvm_tuple_t sourceCode)
@@ -79,6 +87,11 @@ TUUVM_API void tuuvm_sourceCode_computeLineAndColumnForIndex(tuuvm_context_t *co
 TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_getText(tuuvm_tuple_t sourceCode)
 {
     return ((tuuvm_sourceCode_t*)sourceCode)->text;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_getDirectory(tuuvm_tuple_t sourceCode)
+{
+    return ((tuuvm_sourceCode_t*)sourceCode)->directory;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_getName(tuuvm_tuple_t sourceCode)

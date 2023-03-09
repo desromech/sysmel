@@ -770,5 +770,5 @@ TUUVM_API tuuvm_tuple_t tuuvm_scanner_scan(tuuvm_context_t *context, tuuvm_tuple
 
 TUUVM_API tuuvm_tuple_t tuuvm_scanner_scanCString(tuuvm_context_t *context, const char *sourceCodeText, const char *sourceCodeName, const char *languageName)
 {
-    return tuuvm_scanner_scan(context, tuuvm_sourceCode_createWithCStrings(context, sourceCodeText, sourceCodeName, languageName));
+    return tuuvm_scanner_scan(context, tuuvm_sourceCode_createWithCStrings(context, sourceCodeText, "", sourceCodeName, languageName));
 }

@@ -11,6 +11,7 @@ typedef struct tuuvm_sourceCode_s
 {
     tuuvm_tuple_header_t header;
     tuuvm_tuple_t text;
+    tuuvm_tuple_t directory;
     tuuvm_tuple_t name;
     tuuvm_tuple_t language;
     tuuvm_tuple_t lineStartIndexTable;
@@ -19,12 +20,17 @@ typedef struct tuuvm_sourceCode_s
 /**
  * Creates a source code with the given text and name.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_create(tuuvm_context_t *context, tuuvm_tuple_t text, tuuvm_tuple_t name, tuuvm_tuple_t language);
+TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_create(tuuvm_context_t *context, tuuvm_tuple_t text, tuuvm_tuple_t directory, tuuvm_tuple_t name, tuuvm_tuple_t language);
 
 /**
  * Creates a source code with the given text and name, provided as C strings.
  */
-TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_createWithCStrings(tuuvm_context_t *context, const char *text, const char *name, const char *language);
+TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_createWithCStrings(tuuvm_context_t *context, const char *text, const char *directory, const char *name, const char *language);
+
+/**
+ * Infers a language from a specific source name.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_inferLanguageFromSourceName(tuuvm_context_t *context, tuuvm_tuple_t sourceName);
 
 /**
  * Gets the corresponding line and column for the specified index.
@@ -35,6 +41,11 @@ TUUVM_API void tuuvm_sourceCode_computeLineAndColumnForIndex(tuuvm_context_t *co
  * Gets the source code text.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_getText(tuuvm_tuple_t sourceCode);
+
+/**
+ * Gets the source code directory.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_getDirectory(tuuvm_tuple_t sourceCode);
 
 /**
  * Gets the source code name.

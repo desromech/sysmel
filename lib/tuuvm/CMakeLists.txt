@@ -9,6 +9,7 @@ set(tuuvm_sources
     dictionary.c
     environment.c
     errors.c
+    filesystem.c
     float.c
     function.c
     gc.c

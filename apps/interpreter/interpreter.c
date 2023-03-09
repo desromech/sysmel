@@ -3,6 +3,8 @@
 #include <tuuvm/arrayList.h>
 #include <tuuvm/context.h>
 #include <tuuvm/environment.h>
+#include <tuuvm/filesystem.h>
+#include <tuuvm/sourceCode.h>
 #include <tuuvm/interpreter.h>
 #include <tuuvm/stackFrame.h>
 #include <tuuvm/string.h>
@@ -43,22 +45,25 @@ static tuuvm_tuple_t readWholeFileNamed(tuuvm_tuple_t *inputFileNameTuple)
     return sourceString;
 }
 
-static tuuvm_tuple_t languageForFileName(tuuvm_tuple_t *inputFileNameTuple)
-{
-    if(tuuvm_string_endsWithCString(*inputFileNameTuple, ".sysmel"))
-        return tuuvm_symbol_internWithCString(context, "sysmel");
-    return tuuvm_symbol_internWithCString(context, "tlisp");
-}
-
 static void processFileNamed(tuuvm_tuple_t *inputFileNameTuple)
 {
     struct {
         tuuvm_tuple_t sourceString;
+        tuuvm_tuple_t sourceDirectory;
+        tuuvm_tuple_t sourceName;
+        tuuvm_tuple_t sourceLanguage;
+        tuuvm_tuple_t sourceCode;
+        tuuvm_tuple_t sourceEnvironment;
     } gcFrame = {};
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     gcFrame.sourceString = readWholeFileNamed(inputFileNameTuple);
-    tuuvm_interpreter_analyzeAndEvaluateStringWithEnvironment(context, tuuvm_environment_createDefaultForEvaluation(context), gcFrame.sourceString, *inputFileNameTuple, languageForFileName(inputFileNameTuple));
+    gcFrame.sourceDirectory = tuuvm_filesystem_dirname(context, *inputFileNameTuple);
+    gcFrame.sourceName = tuuvm_filesystem_basename(context, *inputFileNameTuple);
+    gcFrame.sourceLanguage = tuuvm_sourceCode_inferLanguageFromSourceName(context, gcFrame.sourceName);
+    gcFrame.sourceCode = tuuvm_sourceCode_create(context, gcFrame.sourceString, gcFrame.sourceDirectory, gcFrame.sourceName, gcFrame.sourceLanguage);
+    gcFrame.sourceEnvironment = tuuvm_environment_createDefaultForSourceCodeEvaluation(context, gcFrame.sourceCode);
+    tuuvm_interpreter_analyzeAndEvaluateSourceCodeWithEnvironment(context, gcFrame.sourceEnvironment, gcFrame.sourceCode);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
 }
 
@@ -103,7 +108,8 @@ int doMain(int argc, const char *argv[])
         }
         else
         {
-            tuuvm_arrayList_add(context, gcFrame.filesToProcess, tuuvm_string_createWithCString(context, arg));
+            gcFrame.inputFileName = tuuvm_string_createWithCString(context, arg);
+            tuuvm_arrayList_add(context, gcFrame.filesToProcess, gcFrame.inputFileName);
         }
     }
 
@@ -111,6 +117,7 @@ int doMain(int argc, const char *argv[])
     for(size_t i = 0; i < inputFileSize; ++i)
     {
         gcFrame.inputFileName = tuuvm_arrayList_at(gcFrame.filesToProcess, i);
+        gcFrame.inputFileName = tuuvm_filesystem_absolute(context, gcFrame.inputFileName);
         processFileNamed(&gcFrame.inputFileName);
     }
 

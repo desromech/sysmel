@@ -17,6 +17,7 @@ extern void tuuvm_boolean_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_dictionary_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_errors_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_environment_setupPrimitives(tuuvm_context_t *context);
+extern void tuuvm_filesystem_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_float_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_function_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_integer_setupPrimitives(tuuvm_context_t *context);
@@ -453,6 +454,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 
     context->roots.sourceCodeType = tuuvm_context_createIntrinsicClass(context, "SourceCode", TUUVM_NULL_TUPLE,
         "text", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,
+        "directory", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,
         "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,
         "language", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringSymbolType,
         "lineStartIndexTable", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
@@ -628,6 +630,7 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
     tuuvm_dictionary_setupPrimitives(context);
     tuuvm_errors_setupPrimitives(context);
     tuuvm_environment_setupPrimitives(context);
+    tuuvm_filesystem_setupPrimitives(context);
     tuuvm_float_setupPrimitives(context);
     tuuvm_function_setupPrimitives(context);
     tuuvm_integer_setupPrimitives(context);

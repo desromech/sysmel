@@ -1,6 +1,8 @@
 #include "tuuvm/environment.h"
 #include "tuuvm/dictionary.h"
 #include "tuuvm/errors.h"
+#include "tuuvm/sourceCode.h"
+#include "tuuvm/string.h"
 #include "tuuvm/function.h"
 #include "internal/context.h"
 
@@ -50,6 +52,15 @@ TUUVM_API tuuvm_tuple_t tuuvm_environment_getIntrinsicsBuiltInEnvironment(tuuvm_
 TUUVM_API tuuvm_tuple_t tuuvm_environment_createDefaultForEvaluation(tuuvm_context_t *context)
 {
     return tuuvm_environment_create(context, tuuvm_environment_getIntrinsicsBuiltInEnvironment(context));
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_environment_createDefaultForSourceCodeEvaluation(tuuvm_context_t *context, tuuvm_tuple_t sourceCode)
+{
+    tuuvm_tuple_t environment = tuuvm_environment_createDefaultForEvaluation(context);
+    tuuvm_environment_setNewSymbolBindingWithValue(context, environment, tuuvm_symbol_internWithCString(context, "__SourceDirectory__"), tuuvm_sourceCode_getDirectory(sourceCode));
+    tuuvm_environment_setNewSymbolBindingWithValue(context, environment, tuuvm_symbol_internWithCString(context, "__SourceName__"), tuuvm_sourceCode_getName(sourceCode));
+    tuuvm_environment_setNewSymbolBindingWithValue(context, environment, tuuvm_symbol_internWithCString(context, "__SourceLanguage__"), tuuvm_sourceCode_getLanguage(sourceCode));
+    return environment;
 }
 
 TUUVM_API void tuuvm_environment_setSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t symbol, tuuvm_tuple_t binding)
