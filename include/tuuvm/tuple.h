@@ -45,6 +45,7 @@ typedef intptr_t tuuvm_stuple_t;
 
 #define TUUVM_TUPLE_BIT_COUNT ((sizeof(tuuvm_tuple_t)*8))
 #define TUUVM_IMMEDIATE_BIT_COUNT (TUUVM_TUPLE_BIT_COUNT - TUUVM_TUPLE_TAG_BIT_COUNT)
+#define TUUVM_TUPLE_IMMEDIATE_BIT_MASK (((tuuvm_tuple_t)1 << TUUVM_IMMEDIATE_BIT_COUNT) - 1)
 
 #define TUUVM_IMMEDIATE_UINT_MIN ((tuuvm_tuple_t)0)
 #define TUUVM_IMMEDIATE_UINT_MAX ( ((tuuvm_tuple_t)1 << TUUVM_IMMEDIATE_BIT_COUNT) - 1 )

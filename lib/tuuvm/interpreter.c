@@ -428,7 +428,7 @@ static tuuvm_tuple_t tuuvm_astErrorNode_primitiveEvaluate(tuuvm_context_t *conte
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
 
     tuuvm_tuple_t *node = &arguments[0];
-    tuuvm_tuple_t *environment = &arguments[1];
+    //tuuvm_tuple_t *environment = &arguments[1];
 
     tuuvm_astErrorNode_t **errorNode = (tuuvm_astErrorNode_t**)node;
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*errorNode)->super.sourcePosition);

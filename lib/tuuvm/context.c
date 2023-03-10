@@ -751,7 +751,8 @@ tuuvm_heap_t *tuuvm_context_getHeap(tuuvm_context_t *context)
 
 static size_t tuuvm_context_generateIdentityHash(tuuvm_context_t *context)
 {
-    return context->identityHashSeed = tuuvm_hashMultiply(context->identityHashSeed) + 12345;
+    context->identityHashSeed = tuuvm_hashMultiply(context->identityHashSeed) + 12345;
+    return context->identityHashSeed & TUUVM_TUPLE_IMMEDIATE_BIT_MASK;
 }
 
 tuuvm_object_tuple_t *tuuvm_context_allocateByteTuple(tuuvm_context_t *context, tuuvm_tuple_t type, size_t byteSize)
