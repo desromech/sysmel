@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#define TUUVM_HEAP_FAST_GROWTH_THRESHOLD (32<<20)
 #define TUUVM_HEAP_MIN_CHUNK_SIZE (1<<20)
 
 #ifdef _WIN32
@@ -101,7 +102,6 @@ static tuuvm_heap_chunk_t *tuuvm_heap_allocateChunkWithRequiredChunkCapacity(tuu
 
     heap->totalSize += newChunk->size;
     heap->totalCapacity += newChunk->capacity;
-    heap->shouldAttemptToCollect = true; // For each new chunk set the GC flag.
 
     return newChunk;
 }
@@ -340,6 +340,9 @@ void tuuvm_heap_compact(tuuvm_heap_t *heap)
         else
             heap->nextGCSizeThreshold = heap->totalCapacity - ChunkThreshold;
     }
+
+    if(heap->nextGCSizeThreshold < TUUVM_HEAP_FAST_GROWTH_THRESHOLD - ChunkThreshold)
+        heap->nextGCSizeThreshold = TUUVM_HEAP_FAST_GROWTH_THRESHOLD - ChunkThreshold;
 }
 
 static inline tuuvm_heap_relocationRecord_t *tuuvm_heap_relocationTable_findRecord(tuuvm_heap_relocationTable_t *relocationTable, uintptr_t address)
@@ -429,7 +432,7 @@ void tuuvm_heap_dumpToFile(tuuvm_heap_t *heap, FILE *file)
     fwrite(&chunkCount, 4, 1, file);
     fwrite(chunkRecords, sizeof(tuuvm_heap_chunkRecord_t), chunkCount, file);
     for(tuuvm_heap_chunk_t *chunk = heap->firstChunk; chunk; chunk = chunk->nextChunk)
-        fwrite(chunk, chunk->size, 1, file);
+        fwrite(&chunk[1], chunk->size - sizeof(tuuvm_heap_chunk_t), 1, file);
 
     free(chunkRecords);
 }
@@ -454,11 +457,9 @@ void tuuvm_heap_loadFromFile(tuuvm_heap_t *heap, FILE *file, size_t numberOfRoot
     {
         tuuvm_heap_chunkRecord_t *record = chunkRecords + i;
         tuuvm_heap_chunk_t *allocatedChunk = tuuvm_heap_allocateChunkWithRequiredChunkCapacity(heap, record->capacity);
-        tuuvm_heap_chunk_t allocatedChunkHeader = *allocatedChunk;
 
-        fread(allocatedChunk, record->size, 1, file);
-        allocatedChunk->capacity = allocatedChunkHeader.capacity;
-        allocatedChunk->nextChunk = allocatedChunkHeader.nextChunk;
+        fread(&allocatedChunk[1], record->size - sizeof(tuuvm_heap_chunk_t), 1, file);
+        allocatedChunk->size = record->size;
 
         tuuvm_heap_relocationRecord_t *relocationRecord = relocationTable.entries + i;
         relocationRecord->sourceStartAddress = record->address;
