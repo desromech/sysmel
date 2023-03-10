@@ -395,8 +395,8 @@ void tuuvm_string_setupPrimitives(tuuvm_context_t *context)
 
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "printString", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_printString);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "asString", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_asString);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::printString", context->roots.anyValueType, "printString", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_defaultPrintString);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::asString", context->roots.anyValueType, "asString", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_defaultAsString);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::printString", context->roots.anyValueType, "printString", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_defaultPrintString);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::asString", context->roots.anyValueType, "asString", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_tuple_primitive_defaultAsString);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "String::concat:", context->roots.stringType, "--", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_string_primitive_concat);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "String::withoutSuffix:", context->roots.stringType, "withoutSuffix:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_string_primitive_withoutSuffix);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "StringSymbol::intern", context->roots.stringType, "asSymbol", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_symbol_primitive_intern);

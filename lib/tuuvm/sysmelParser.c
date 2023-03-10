@@ -9,7 +9,7 @@
 #include "tuuvm/sourceCode.h"
 #include "tuuvm/sourcePosition.h"
 #include "tuuvm/string.h"
-#include "tuuvm/stringBuilder.h"
+#include "tuuvm/stringStream.h"
 
 typedef struct tuuvm_sysmelParser_state_s
 {
@@ -661,11 +661,11 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseMessageWithoutReceiver(tuuvm_contex
     
     size_t startPosition = state->tokenPosition;
     size_t keywordEndPosition = state->tokenPosition;
-    tuuvm_tuple_t selectorBuilder = tuuvm_stringBuilder_create(context);
+    tuuvm_tuple_t selectorBuilder = tuuvm_stringStream_create(context);
     tuuvm_tuple_t argumentArrayList = tuuvm_arrayList_create(context);
     while(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_KEYWORD)
     {
-        tuuvm_stringBuilder_addString(context, selectorBuilder, tuuvm_token_getValue(tuuvm_sysmelParser_lookAt(state, 0)));
+        tuuvm_stringStream_nextPutString(context, selectorBuilder, tuuvm_token_getValue(tuuvm_sysmelParser_lookAt(state, 0)));
         ++state->tokenPosition;
         keywordEndPosition = state->tokenPosition;
 
@@ -674,7 +674,7 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseMessageWithoutReceiver(tuuvm_contex
     }
 
     tuuvm_tuple_t keywordSourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, keywordEndPosition);
-    tuuvm_tuple_t functionExpression = tuuvm_astIdentifierReferenceNode_create(context, keywordSourcePosition, tuuvm_stringBuilder_asSymbol(context, selectorBuilder));
+    tuuvm_tuple_t functionExpression = tuuvm_astIdentifierReferenceNode_create(context, keywordSourcePosition, tuuvm_stringStream_asSymbol(context, selectorBuilder));
 
     size_t endPosition = state->tokenPosition;
     tuuvm_tuple_t sourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition);
@@ -685,11 +685,11 @@ static void tuuvm_sysmelParser_parseKeywordMessageParts(tuuvm_context_t *context
 {
     size_t keywordStartPosition = state->tokenPosition;
     size_t keywordEndPosition = state->tokenPosition;
-    tuuvm_tuple_t selectorBuilder = tuuvm_stringBuilder_create(context);
+    tuuvm_tuple_t selectorBuilder = tuuvm_stringStream_create(context);
     tuuvm_tuple_t argumentArrayList = tuuvm_arrayList_create(context);
     while(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_KEYWORD)
     {
-        tuuvm_stringBuilder_addString(context, selectorBuilder, tuuvm_token_getValue(tuuvm_sysmelParser_lookAt(state, 0)));
+        tuuvm_stringStream_nextPutString(context, selectorBuilder, tuuvm_token_getValue(tuuvm_sysmelParser_lookAt(state, 0)));
         ++state->tokenPosition;
         keywordEndPosition = state->tokenPosition;
 
@@ -698,7 +698,7 @@ static void tuuvm_sysmelParser_parseKeywordMessageParts(tuuvm_context_t *context
     }
 
     tuuvm_tuple_t keywordSourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, keywordStartPosition, keywordEndPosition);
-    *outSelector = tuuvm_astLiteralNode_create(context, keywordSourcePosition, tuuvm_stringBuilder_asSymbol(context, selectorBuilder));
+    *outSelector = tuuvm_astLiteralNode_create(context, keywordSourcePosition, tuuvm_stringStream_asSymbol(context, selectorBuilder));
     *outArguments = tuuvm_arrayList_asArraySlice(context, argumentArrayList);
 }
 
@@ -950,11 +950,11 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parsePragma(tuuvm_context_t *context, tu
         {
             size_t keywordStartPosition = state->tokenPosition;
             size_t keywordEndPosition = keywordStartPosition;
-            tuuvm_tuple_t selectorBuilder = tuuvm_stringBuilder_create(context);
+            tuuvm_tuple_t selectorBuilder = tuuvm_stringStream_create(context);
             tuuvm_tuple_t argumentArrayList = tuuvm_arrayList_create(context);
             while(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_KEYWORD)
             {
-                tuuvm_stringBuilder_addString(context, selectorBuilder, tuuvm_token_getValue(tuuvm_sysmelParser_lookAt(state, 0)));
+                tuuvm_stringStream_nextPutString(context, selectorBuilder, tuuvm_token_getValue(tuuvm_sysmelParser_lookAt(state, 0)));
                 ++state->tokenPosition;
 
                 tuuvm_tuple_t argument = tuuvm_sysmelParser_parseBinaryExpression(context, state);
@@ -962,7 +962,7 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parsePragma(tuuvm_context_t *context, tu
             }
 
             tuuvm_tuple_t selectorSourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, keywordStartPosition, keywordEndPosition);
-            selector = tuuvm_astLiteralNode_create(context, selectorSourcePosition, tuuvm_stringBuilder_asSymbol(context, selectorBuilder));
+            selector = tuuvm_astLiteralNode_create(context, selectorSourcePosition, tuuvm_stringStream_asSymbol(context, selectorBuilder));
             arguments = tuuvm_arrayList_asArraySlice(context, argumentArrayList);
         }
         break;

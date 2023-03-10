@@ -26,7 +26,7 @@ extern void tuuvm_integer_registerPrimitives(void);
 extern void tuuvm_io_registerPrimitives(void);
 extern void tuuvm_primitiveInteger_registerPrimitives(void);
 extern void tuuvm_string_registerPrimitives(void);
-extern void tuuvm_stringBuilder_registerPrimitives(void);
+extern void tuuvm_stringStream_registerPrimitives(void);
 extern void tuuvm_tuple_registerPrimitives(void);
 extern void tuuvm_type_registerPrimitives(void);
 
@@ -43,7 +43,7 @@ extern void tuuvm_integer_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_io_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_primitiveInteger_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_string_setupPrimitives(tuuvm_context_t *context);
-extern void tuuvm_stringBuilder_setupPrimitives(tuuvm_context_t *context);
+extern void tuuvm_stringStream_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_tuple_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_type_setupPrimitives(tuuvm_context_t *context);
 
@@ -68,7 +68,7 @@ void tuuvm_context_registerPrimitives(void)
     tuuvm_io_registerPrimitives();
     tuuvm_primitiveInteger_registerPrimitives();
     tuuvm_string_registerPrimitives();
-    tuuvm_stringBuilder_registerPrimitives();
+    tuuvm_stringStream_registerPrimitives();
     tuuvm_tuple_registerPrimitives();
     tuuvm_type_registerPrimitives();
 }
@@ -498,7 +498,9 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "sourceNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
-    context->roots.stringBuilderType = tuuvm_context_createIntrinsicClass(context, "StringBuilder", TUUVM_NULL_TUPLE,
+    context->roots.streamType = tuuvm_context_createIntrinsicClass(context, "Stream", TUUVM_NULL_TUPLE,
+        NULL);
+    context->roots.stringStreamType = tuuvm_context_createIntrinsicClass(context, "StringStream", context->roots.streamType,
         "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,
         NULL);
@@ -702,7 +704,7 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
     tuuvm_io_setupPrimitives(context);
     tuuvm_primitiveInteger_setupPrimitives(context);
     tuuvm_string_setupPrimitives(context);
-    tuuvm_stringBuilder_setupPrimitives(context);
+    tuuvm_stringStream_setupPrimitives(context);
     tuuvm_tuple_setupPrimitives(context);
     tuuvm_type_setupPrimitives(context);
     

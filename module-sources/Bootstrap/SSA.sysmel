@@ -30,6 +30,9 @@ public class SSALiteralConstant superclass: SSAConstant; definition: {
     public field value.
 
     public method isLiteralConstant => Boolean := true.
+
+    public method printOn: (stream: Stream) ::=> Void
+        := stream nextPutAll: "Literal("; print: self value; nextPutAll: " => "; print: self type; nextPut: ')'.
 }.
 
 SSAFunction definition: {
@@ -40,10 +43,42 @@ SSAFunction definition: {
 
     public method isFunction => Boolean := true.
 
-    public method addBasicBlock: (basicBlock: SSABasicBlock) before: (insertionPoint: SSABasicBlock) ::=> Void := {
+    public method addBasicBlock: (basicBlock: SSABasicBlock) before: (position: SSABasicBlock) ::=> Void := {
+        let before := position ifNotNil: position previousBlock ifNil: self lastBasicBlock.
+        let after := position.
+
+        before ifNotNil: {
+            before nextBlock: basicBlock.
+            basicBlock previousBlock: before.
+        } ifNil: {
+            self firstBasicBlock: basicBlock
+        }.
+
+        after ifNotNil: {
+            after previousBlock: basicBlock.
+            basicBlock nextBlock: after
+        } ifNil: {
+            self lastBasicBlock: basicBlock
+        }.
     }.
 
-    public method addBasicBlock: (basicBlock: SSABasicBlock) after: (insertionPoint: SSABasicBlock) ::=> Void := {
+    public method addBasicBlock: (basicBlock: SSABasicBlock) after: (position: SSABasicBlock) ::=> Void := {
+        let before := position .
+        let after := position ifNotNil: position nextBlock ifNil: self firstBasicBlock.
+
+        before ifNotNil: {
+            before nextBlock: basicBlock.
+            basicBlock previousBlock: before.
+        } ifNil: {
+            self firstBasicBlock: basicBlock
+        }.
+
+        after ifNotNil: {
+            after previousBlock: basicBlock.
+            basicBlock nextBlock: after
+        } ifNil: {
+            self lastBasicBlock: basicBlock
+        }.
     }.
 
     public method addBasicBlock: (basicBlock: SSABasicBlock) ::=> Void
@@ -56,15 +91,61 @@ SSAFunction definition: {
         let position := ValueBox with: self firstBasicBlock.
         while: position _ isNotNil do: (
             aBlock(position _)
-        ) continueWith: (position := position _ nextBasicBlock)
+        ) continueWith: (position := position _ nextBlock)
+    }.
+
+    public method localValuesDo: aBlock ::=> Void := {
+        self arguments do: aBlock.
+        self basicBlocksDo: {:basicBlock :: Void |
+            aBlock(basicBlock).
+            basicBlock instructionsDo: aBlock
+        }.
+    }.
+
+    public method enumerateLocalValueIndices => Void := {
+        let index := ValueBox with: 0sz.
+        self localValuesDo: {:localValue :: Void |
+            localValue localValueIndex: index _.
+            index := index _ + 1sz
+        }
+    }.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        self enumerateLocalValueIndices.
+        self printOn: stream.
+        
+        stream nextPut: '('.
+        self arguments doWithIndex: {:(SSAFunctionArgument)argument :(Size)index :: Void |
+            index > 0sz ifTrue: (stream nextPutAll: ", ").
+            stream print: argument
+        }.
+        stream nextPut: ')'.
+
+        stream nextPutAll: " := {"; nl.
+        self basicBlocksDo: {:(SSABasicBlock)basicBlock :: Void |
+            basicBlock fullPrintOn: stream
+        }.
+        stream nextPutAll: "}"; nl.
     }.
 }.
 
 SSAFunctionLocalValue definition: {
+    public field name.
+    public field localValueIndex => Size.
+
     public method isFunctionLocalValue => Boolean := true.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream nextPut: '$'; print: self localValueIndex.
+
+        self name ifNotNil: {:name |
+            stream nextPut: ':'; nextPutAll: self name.
+        }.
+    }.
 }.
 
 SSABasicBlock definition: {
+
     public field previousBlock => SSABasicBlock.
     public field nextBlock => SSABasicBlock.
 
@@ -73,18 +154,48 @@ SSABasicBlock definition: {
 
     public method isBasicBlock => Boolean := true.
 
-    public method addInstruction: (instruction: SSAInstruction) before: (insertionPoint: SSAInstruction) ::=> Void := {
+    public method addInstruction: (instruction: SSAInstruction) before: (position: SSAInstruction) ::=> Void := {
+        let before := position ifNotNil: position previousInstruction ifNil: self lastInstruction.
+        let after := position.
 
+        before ifNotNil: {
+            before nextInstruction: instruction.
+            instruction previousInstruction: before.
+        } ifNil: {
+            self firstInstruction: instruction
+        }.
+
+        after ifNotNil: {
+            after previousInstruction: instruction.
+            instruction nextInstruction: after
+        } ifNil: {
+            self lastInstruction: instruction
+        }.
     }.
 
-    public method addInstruction: (instruction: SSAInstruction) after: (insertionPoint: SSAInstruction) ::=> Void := {
+    public method addInstruction: (instruction: SSAInstruction) after: (position: SSAInstruction) ::=> Void := {
+        let before := position .
+        let after := position ifNotNil: position nextInstruction ifNil: self firstInstruction.
 
+        before ifNotNil: {
+            before nextInstruction: instruction.
+            instruction previousInstruction: before.
+        } ifNil: {
+            self firstInstruction: instruction
+        }.
+
+        after ifNotNil: {
+            after previousInstruction: instruction.
+            instruction nextInstruction: after
+        } ifNil: {
+            self lastInstruction: instruction
+        }.
     }.
 
     public method addInstruction: (instruction: SSAInstruction) ::=> Void
         := self addInstruction: instruction before: nil.
 
-    public method addInstruction: (instruction: SSAInstruction) ::=> Void
+    public method addFirstInstruction: (instruction: SSAInstruction) ::=> Void
         := self addInstruction: instruction after: nil.
 
     public method instructionsDo: aBlock ::=> Void := {
@@ -92,6 +203,16 @@ SSABasicBlock definition: {
         while: position _ isNotNil do: (
             aBlock(position _)
         ) continueWith: (position := position _ nextInstruction)
+    }.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        self printOn: stream.
+        stream nextPutAll: ":"; nl.
+        self instructionsDo: {:(SSAInstruction)instruction :: Void |
+            stream nextPutAll: "    ".
+            instruction fullPrintOn: stream.
+            stream nl.
+        }.
     }.
 }.
 
@@ -110,7 +231,17 @@ public class SSABranchInstruction superclass: SSAInstruction; definition: {
 
 public class SSACallInstruction superclass: SSAInstruction; definition: {
     public field calledFunction => SSAValue.
-    public field arguments.
+    public field arguments => Array.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: "call "; print: self calledFunction.
+        self arguments doWithIndex: {:(SSAValue)argument :(Size)index :: Void |
+            index = 0sz
+                ifTrue: (stream nextPut: ' ')
+                ifFalse: (stream nextPutAll: ", ").
+            stream print: argument
+        }
+    }.
 }.
 
 public class SSAConditionalBranchInstruction superclass: SSAInstruction; definition: {
@@ -119,20 +250,53 @@ public class SSAConditionalBranchInstruction superclass: SSAInstruction; definit
     public field falseDestination => SSABasicBlock.
 
     public method isTerminatorInstruction => Boolean := true.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void
+        := stream nextPutAll: "branch: "; print: self condition;
+            nextPut: ' '; print: self trueDestination;
+            nextPut: ' '; print: self falseDestination.
 }.
 
 public class SSAUnreachableInstruction superclass: SSAInstruction; definition: {
     public method isUnreachableInstruction => Boolean := true.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void
+        := stream nextPutAll: "unreachable".
+}.
+
+public class SSAReturnInstruction superclass: SSAInstruction; definition: {
+    public field value => SSAValue.
+
+    public method isTerminatorInstruction => Boolean := true.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void
+        := stream nextPutAll: "return: "; print: self value.
 }.
 
 public class SSASendInstruction superclass: SSAInstruction; definition: {
-    public field receiver.
-    public field selector.
-    public field arguments.
+    public field receiver => SSAValue.
+    public field selector => SSAValue.
+    public field arguments => Array.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream
+            nextPutAll: "call "; print: self calledFunction;
+            nextPutAll: ", "; print: self receiver;
+            nextPutAll: ", "; print: self selector.
+
+        self arguments doWithIndex: {:(SSAValue)argument :(Size)index :: Void |
+            index = 0sz
+                ifTrue: (stream nextPut: ' ')
+                ifFalse: (stream nextPutAll: ", ").
+            stream print: argument
+        }
+    }.
 }.
 
 SSAInstructionBuilder definition: {
     public field sourcePosition => SourcePosition.
+    public field environment => Environment.
+
     public field function => SSAFunction.
     public field basicBlock => SSABasicBlock.
 
@@ -140,13 +304,106 @@ SSAInstructionBuilder definition: {
         public method for: (function: SSAFunction)
             := self new function: function; yourself.
     }.
+
+    public method newBasicBlockNamed: name ::=> SSABasicBlock := {
+        let newBasicBlock := SSABasicBlock new
+            name: name;
+            yourself.
+        self function addBasicBlock: newBasicBlock.
+        newBasicBlock
+    }.
+
+    public method beginBasicBlockNamed: name ::=> SSABasicBlock := {
+        let newBasicBlock := self newBasicBlockNamed: name.
+        self basicBlock: newBasicBlock.
+        newBasicBlock
+    }.
+
+    public method addInstruction: (instruction: SSAInstruction) ::=> instruction __type__ := {
+        instruction
+            sourcePosition: self sourcePosition;
+            environment: self environment.
+        self basicBlock addInstruction: instruction.
+        instruction
+    }.
+
+    public method literal: value type: type ::=> SSALiteralConstant
+        := SSALiteralConstant new
+            sourcePosition: self sourcePosition;
+            environment: self environment;
+            value: value;
+            type: type;
+            yourself.
+
+    public method literal: value ::=> SSALiteralConstant
+        := self literal: value type: value __type__.
+
+    public method return: value ::=> SSAReturnInstruction
+        := self addInstruction: (SSAReturnInstruction new
+            value: value;
+            yourself).
+
+    public method returnVoid ::=> SSAReturnInstruction
+        := self return: (self literal: void).
+
+    public method lastInstruction => SSAInstruction
+        := self basicBlock ifNotNil: {:basicBlock :: SSAInstruction | basicBlock lastInstruction }.
+
+    public method isLastTerminator => Boolean
+        := self lastInstruction
+            ifNil: false
+            ifNotNil: {:instruction :: Boolean | instruction isTerminatorInstruction }.
+}.
+
+public class SSAFunctionCompilationContext superclass: Object; definition: {
+    public field function => Function.
+    public field ssaFunction => SSAFunction.
+    public field builder => SSAInstructionBuilder.
+
+    public method compileFunction: (function: Function) ::=> SSAFunction := {
+        let ssaFunction := SSAFunction new.
+        ssaFunction arguments: ().
+        self ssaFunction: ssaFunction.
+
+        function body ifNotNil: {:bodyNode |
+            self builder: (SSAInstructionBuilder new
+                sourcePosition: bodyNode sourcePosition;
+                function: ssaFunction;
+                beginBasicBlockNamed: #entry;
+                yourself).
+            
+            let resultValue := bodyNode generateSSAValueWith: self.
+            self builder isLastTerminator ifFalse: (self builder return: resultValue).
+        }.
+
+        ssaFunction
+    }.
+}.
+
+ASTNode extend: {
+    public method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := self subclassResponsibility.
+}.
+
+ASTLiteralNode extend: {
+    public method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context builder literal: self value type: self analyzedType.
+}.
+
+ASTSequenceNode extend: {
+    public method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let result := ValueBox with: (context builder literal: void).
+        self expressions do: {:(ASTNode)expression :: Void |
+            result := expression generateSSAValueWith: context
+        }.
+
+        result _
+    }
 }.
 
 Function extend: {
     public method asSSAFunction => SSAFunction := {
-        let ssaFunction := SSAFunction new.
-        ssaFunction arguments: ().
-
-        ssaFunction
+        SSAFunctionCompilationContext new
+            compileFunction: self
     }.
 }

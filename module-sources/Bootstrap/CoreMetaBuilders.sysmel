@@ -355,7 +355,7 @@ ASTIdentifierReferenceNode
     withSelector: #parseKeywordAsLiteralWithoutColon addMethod: {:self :: ASTLiteralNode |
         ASTLiteralNode new
             sourcePosition: self sourcePosition;
-            value: (self value asString withoutSuffix: ':') asSymbol;
+            value: (self value asString withoutSuffix: ":") asSymbol;
             yourself
     };
     withSelector: #parseAsArgumentNode addMethod: {:self :: ASTArgumentNode |

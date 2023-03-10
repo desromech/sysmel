@@ -123,9 +123,6 @@
     (define sourceName (SourceCode::name (SourcePosition::sourceCode sourcePosition)))
     (define sourcePath (FileSystem::joinPath: sourceDirectory sourceName))
 
-    (define startIndex (SourcePosition::startIndex sourcePosition))
-    (define endIndex (SourcePosition::endIndex sourcePosition))
-
     (define startLine (SourcePosition::startLine sourcePosition))
     (define startColumn (SourcePosition::startColumn sourcePosition))
     (define startString (String::concat: (String::concat: (asString startLine) ".") (asString startColumn)))

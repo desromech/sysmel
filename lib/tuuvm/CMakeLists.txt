@@ -27,7 +27,7 @@ set(tuuvm_sources
     sourcePosition.c
     stackFrame.c
     string.c
-    stringBuilder.c
+    stringStream.c
     sysmelParser.c
     token.c
     tuple.c

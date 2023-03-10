@@ -79,7 +79,7 @@ Object
     withSelector: #class addMethod: {:self :: self __type__ __type__ | self __type__ };
     withSelector: #species addMethod: {:self :: Class | self class };
     withSelector: #error: addMethod: {:self :(String)errorMessage :: Void | error(errorMessage) };
-    withSelector: #subclassResponsibility addMethod: {:self :: Void | self error: "Subclass responsibility." }.
+    withSelector: #subclassResponsibility addMethod: {:self :: Void | self error: self __type__ printString -- " Subclass responsibility." }.
 
 Type
     withSelector: #hasBytesContent addMethod: {:self :: Boolean |
@@ -160,18 +160,56 @@ Type
         }
     }.
 
+Stream
+    withSelector: #print: addMethod: {:self :value :: Void | 
+        value printOn: self
+    };
+    withSelector: #nl addMethod: {:self :: Void | 
+        self nextPut: '\n'
+    }.
+
+AnyValue
+    withSelector: #printString addMethod: {:self :: String | 
+        let: #stream with: StringStream new.
+        self printOn: stream.
+        stream asString.
+    };
+    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void |
+        stream nextPutAll: "a " ; print: self __type__
+    };
+    withSelector: #fullPrintString addMethod: {:self :: String | 
+        let: #stream with: StringStream new.
+        self fullPrintOn: stream.
+        stream asString.
+    };
+    withSelector: #fullPrintOn: addMethod: {:self :(Stream)stream :: Void |
+        self printOn: stream
+    }.
+
+Type
+    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void |
+        let: #name with: self name.
+        if: name ~~ nil
+            then: (stream nextPutAll: name)
+            else: (stream nextPutAll: "a Type")
+    }.
+
 Void
     withSelector: #coerceValue: addMethod: {:self :value :: self | void };
-    withSelector: #printString addMethod: {:self :: String | "void" }.
+    withSelector: #printString addMethod: {:self :: String | "void" };
+    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void | stream nextPutAll: "void" }.
 
 UndefinedObject
-    withSelector: #printString addMethod: {:self :: String | "nil" }.
+    withSelector: #printString addMethod: {:self :: String | "nil" };
+    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void | stream nextPutAll: "nil" }.
 
 False
-    withSelector: #printString addMethod: {:self :: String | "false" }.
+    withSelector: #printString addMethod: {:self :: String | "false" };
+    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void | stream nextPutAll: "false" }.
 
 True
-    withSelector: #printString addMethod: {:self :: String | "true" }.
+    withSelector: #printString addMethod: {:self :: String | "true" };
+    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void | stream nextPutAll: "true" }.
 
 Class
     withSelector: #withSelector:addClassMethod: addMethod: {:self :selector :method :: Void |
@@ -307,16 +345,23 @@ SequenceableCollection
     withSelector: #third addMethod: {:self | self at: 2sz };
     withSelector: #fourth addMethod: {:self | self at: 3sz };
 
-    withSelector: #printString addMethod: {:self :: String |
-        let: #builder with: StringBuilder new.
-        builder addAll: self class printString; addAll: "(".
+    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void |
+        stream print: self class; nextPutAll: "(".
         self doWithIndex: {:element :index :: Void |
-            if: index > 0 then: (builder addAll: ", ").
-            builder addAll: element printString.
+            if: index > 0 then: (stream nextPutAll: ", ").
+            stream print: element.
             void
         }.
 
-        builder addAll: ")"; asString
+        stream nextPutAll: ")"
+    };
+    withSelector: #asArray addMethod: {:self :: Array |
+        let: #array with: (Array new: self size).
+        self doWithIndex: {:element :(Size)index :: Void |
+            array at: index put: element
+        }.
+
+        array
     }.
 
 ArrayList
@@ -345,7 +390,7 @@ ArrayList
         }
     }.
 
-StringBuilder
+StringStream
     withSelector: #initialize addMethod: {:self :: Void |
         self size: 0
     }.
@@ -363,6 +408,7 @@ Array
     withSelector: #size addMethod: {:self :: Size |
         self __size__
     };
+    withSelector: #asArray addMethod: {:self :: Array | self };
     withSelector: #asArraySlice addMethod: {:self :: ArraySlice |
         ArraySlice basicNew
             elements: self;
@@ -381,16 +427,15 @@ ByteArray
     withSelector: #size addMethod: {:self :: Size |
         self __byteSize__
     };
-    withSelector: #printString addMethod: {:self :: String |
-        let: #builder with: StringBuilder new.
-        builder addAll: "#[".
+    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void |
+        stream nextPutAll: "#[".
         self doWithIndex: {:element :index :: Void |
-            if: index > 0sz then: (builder addAll: ". ").
-            builder addAll: element printString.
+            if: index > 0sz then: (stream nextPutAll: ". ").
+            stream print: element.
             void
         }.
 
-        builder addAll: "]"; asString
+        stream nextPutAll: "]"
     }.
 
 ArraySlice
@@ -469,6 +514,45 @@ Type
             let: #slotIndex with: baseSlotIndex + index.
             slot generateAccessorsOn: self withIndex: slotIndex
         }.
+    }.
+
+Metaclass
+    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void |
+        let: #thisClass with: self thisClass.
+        if: thisClass ~~ nil
+        then: (stream print: thisClass; nextPutAll: " class");
+        else: (stream nextPutAll: "a "; print: self __type__)
+    }.
+
+## Primitive values print string.
+(
+    UInt8,Int8,Char8,
+    UInt16,Int16,Char16,
+    UInt32,Int32,Char32,
+    UInt64,Int64,
+    Float32,Float64,
+    Integer
+) do: {:SelfType :: Void |
+    SelfType
+        withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void |
+        stream nextPutAll: self printString
+    }.
+}.
+
+SourcePosition
+    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void |
+        let: #sourceCode with: self sourceCode.
+
+        stream
+            nextPutAll: (sourceCode directory FileSystem::joinPath: sourceCode name);
+            nextPut: ':';
+            print: self startLine;
+            nextPut: '.';
+            print: self startColumn;
+            nextPut: '-';
+            print: self endLine;
+            nextPut: '.';
+            print: self endColumn
     }.
 
 Class
