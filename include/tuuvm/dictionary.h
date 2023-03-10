@@ -16,6 +16,9 @@ typedef struct tuuvm_dictionary_s
     tuuvm_tuple_t hashFunction;
 } tuuvm_dictionary_t;
 
+typedef tuuvm_dictionary_t tuuvm_identityDictionary_t;
+typedef tuuvm_dictionary_t tuuvm_methodDictionary_t;
+
 typedef size_t (*tuuvm_dictionary_explicitHashFunction_t)(void *element);
 typedef bool (*tuuvm_dictionary_explicitEqualsFunction_t)(void *element, tuuvm_tuple_t dictionaryElement);
 
@@ -30,7 +33,12 @@ TUUVM_API tuuvm_tuple_t tuuvm_dictionary_create(tuuvm_context_t *context, tuuvm_
 TUUVM_API tuuvm_tuple_t tuuvm_identityDictionary_create(tuuvm_context_t *context);
 
 /**
- * Inserts an element in the dictionary.
+ * Creates a method dictionary data structure.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_methodDictionary_create(tuuvm_context_t *context);
+
+/**
+ * Finds an element in the dictionary.
  */ 
 TUUVM_API bool tuuvm_dictionary_find(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t *outValue);
 
@@ -38,5 +46,15 @@ TUUVM_API bool tuuvm_dictionary_find(tuuvm_context_t *context, tuuvm_tuple_t dic
  * Inserts an element in the dictionary.
  */ 
 TUUVM_API void tuuvm_dictionary_atPut(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t value);
+
+/**
+ * Finds an element in the method dictionary.
+ */ 
+TUUVM_API bool tuuvm_methodDictionary_find(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t *outValue);
+
+/**
+ * Inserts an element in the method dictionary.
+ */ 
+TUUVM_API void tuuvm_methodDictionary_atPut(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t value);
 
 #endif //TUUVM_DICTIONARY_H

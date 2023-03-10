@@ -115,7 +115,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_lookupMacroSelector(tuuvm_context_t *context,
     if(methodDictionary)
     {
         tuuvm_tuple_t found = TUUVM_NULL_TUPLE;
-        if(tuuvm_dictionary_find(context, methodDictionary, selector, &found))
+        if(tuuvm_methodDictionary_find(context, methodDictionary, selector, &found))
             return found;
     }
 
@@ -129,7 +129,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_lookupSelector(tuuvm_context_t *context, tuuv
     if(methodDictionary)
     {
         tuuvm_tuple_t found = TUUVM_NULL_TUPLE;
-        if(tuuvm_dictionary_find(context, methodDictionary, selector, &found))
+        if(tuuvm_methodDictionary_find(context, methodDictionary, selector, &found))
             return found;
     }
 
@@ -143,7 +143,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_lookupFallbackSelector(tuuvm_context_t *conte
     if(methodDictionary)
     {
         tuuvm_tuple_t found = TUUVM_NULL_TUPLE;
-        if(tuuvm_dictionary_find(context, methodDictionary, selector, &found))
+        if(tuuvm_methodDictionary_find(context, methodDictionary, selector, &found))
             return found;
     }
 
@@ -165,8 +165,8 @@ TUUVM_API void tuuvm_type_setMethodWithSelector(tuuvm_context_t *context, tuuvm_
 
     tuuvm_type_tuple_t* typeObject = (tuuvm_type_tuple_t*)type;
     if(!typeObject->methodDictionary)
-        typeObject->methodDictionary = tuuvm_identityDictionary_create(context);
-    tuuvm_dictionary_atPut(context, typeObject->methodDictionary, selector, method);
+        typeObject->methodDictionary = tuuvm_methodDictionary_create(context);
+    tuuvm_methodDictionary_atPut(context, typeObject->methodDictionary, selector, method);
 }
 
 TUUVM_API bool tuuvm_type_isSubtypeOf(tuuvm_tuple_t type, tuuvm_tuple_t supertype)

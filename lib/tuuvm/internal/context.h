@@ -54,11 +54,13 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t generatedSymbolType;
     tuuvm_tuple_t hashedCollectionType;
     tuuvm_tuple_t hashtableEmptyType;
+    tuuvm_tuple_t identityDictionaryType;
     tuuvm_tuple_t integerType;
     tuuvm_tuple_t positiveIntegerType;
     tuuvm_tuple_t negativeIntegerType;
     tuuvm_tuple_t macroContextType;
     tuuvm_tuple_t metaclassType;
+    tuuvm_tuple_t methodDictionaryType;
     tuuvm_tuple_t objectType;
     tuuvm_tuple_t sequenceableCollectionType;
     tuuvm_tuple_t setType;

@@ -296,6 +296,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_type_setFlags(context, context->roots.stringSymbolType, TUUVM_TYPE_FLAG_NULLABLE | TUUVM_TYPE_FLAG_BYTES);
 
     context->roots.dictionaryType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.hashedCollectionType);
+    context->roots.identityDictionaryType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.dictionaryType);
+    context->roots.methodDictionaryType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.methodDictionaryType);
     context->roots.setType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.hashedCollectionType);
 
     context->roots.internedSymbolSet = tuuvm_set_create(context, context->roots.stringEqualsFunction, context->roots.stringHashFunction);
@@ -473,11 +475,15 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         NULL);
     context->roots.byteArrayType = tuuvm_context_createIntrinsicClass(context, "ByteArray", context->roots.arrayedCollectionType, NULL);
     tuuvm_type_setFlags(context, context->roots.byteArrayType, TUUVM_TYPE_FLAG_NULLABLE | TUUVM_TYPE_FLAG_BYTES);
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.dictionaryType, "Dictionary", context->roots.hashedCollectionType,
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.dictionaryType, "Dictionary", TUUVM_NULL_TUPLE,
         "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "equalsFunction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionType,
         "hashFunction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionType,
+        NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.identityDictionaryType, "IdentityDictionary", TUUVM_NULL_TUPLE,
+        NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.methodDictionaryType, "MethodDictionary", TUUVM_NULL_TUPLE,
         NULL);
     context->roots.generatedSymbolType = tuuvm_context_createIntrinsicClass(context, "GeneratedSymbol", TUUVM_NULL_TUPLE,
         "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
@@ -752,7 +758,7 @@ tuuvm_heap_t *tuuvm_context_getHeap(tuuvm_context_t *context)
 static size_t tuuvm_context_generateIdentityHash(tuuvm_context_t *context)
 {
     context->identityHashSeed = tuuvm_hashMultiply(context->identityHashSeed) + 12345;
-    return context->identityHashSeed & TUUVM_TUPLE_IMMEDIATE_BIT_MASK;
+    return context->identityHashSeed & TUUVM_TUPLE_IMMEDIATE_VALUE_BIT_MASK;
 }
 
 tuuvm_object_tuple_t *tuuvm_context_allocateByteTuple(tuuvm_context_t *context, tuuvm_tuple_t type, size_t byteSize)

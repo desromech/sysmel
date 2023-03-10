@@ -45,7 +45,7 @@ typedef intptr_t tuuvm_stuple_t;
 
 #define TUUVM_TUPLE_BIT_COUNT ((sizeof(tuuvm_tuple_t)*8))
 #define TUUVM_IMMEDIATE_BIT_COUNT (TUUVM_TUPLE_BIT_COUNT - TUUVM_TUPLE_TAG_BIT_COUNT)
-#define TUUVM_TUPLE_IMMEDIATE_BIT_MASK (((tuuvm_tuple_t)1 << TUUVM_IMMEDIATE_BIT_COUNT) - 1)
+#define TUUVM_TUPLE_IMMEDIATE_VALUE_BIT_MASK (((tuuvm_tuple_t)1 << TUUVM_IMMEDIATE_BIT_COUNT) - 1)
 
 #define TUUVM_IMMEDIATE_UINT_MIN ((tuuvm_tuple_t)0)
 #define TUUVM_IMMEDIATE_UINT_MAX ( ((tuuvm_tuple_t)1 << TUUVM_IMMEDIATE_BIT_COUNT) - 1 )
@@ -804,7 +804,7 @@ TUUVM_INLINE bool tuuvm_tuple_boolean_decode(tuuvm_tuple_t value)
  */
 TUUVM_INLINE size_t tuuvm_tuple_identityHash(tuuvm_tuple_t tuple)
 {
-    return tuuvm_tuple_isNonNullPointer(tuple) ? TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHash : tuuvm_hashMultiply(tuple);
+    return (tuuvm_tuple_isNonNullPointer(tuple) ? TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHash : tuuvm_hashMultiply(tuple)) & TUUVM_TUPLE_IMMEDIATE_VALUE_BIT_MASK;
 }
 
 /**

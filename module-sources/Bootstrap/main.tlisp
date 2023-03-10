@@ -37,7 +37,7 @@
     (define existingMethodDictionary (RawTuple::slotAt: type Type::methodDictionarySlotIndex))
     (if:then:else: (== existingMethodDictionary nil)
         (begin
-            (define newMethodDictionary (IdentityDictionary::new))
+            (define newMethodDictionary (MethodDictionary::new))
             (RawTuple::slotAt:put: type Type::methodDictionarySlotIndex newMethodDictionary)
             newMethodDictionary)
         existingMethodDictionary))
@@ -106,7 +106,7 @@
     (define existingMethodDictionary (Type::macroMethodDictionary type))
     (if:then:else: (== existingMethodDictionary nil)
         (begin
-            (define newMethodDictionary (IdentityDictionary::new))
+            (define newMethodDictionary (MethodDictionary::new))
             (Type::macroMethodDictionary: type newMethodDictionary)
             newMethodDictionary)
         existingMethodDictionary))
