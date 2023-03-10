@@ -99,7 +99,8 @@
     (define isCorePrimitive (Function::isCorePrimitive existentMethod))
     (if:then:else: isCorePrimitive
         (Function::adoptDefinitionOf: existentMethod method)
-        (MethodDictionary::at:put: methodDict selector method)))
+        (MethodDictionary::at:put: methodDict selector method))
+    (Type::flushLookupSelector: type selector))
 
 ## Type::validMacroMethodDictionary
 (define (Type::validMacroMethodDictionary type)
@@ -114,7 +115,8 @@
 ## Type::withSelector:addMacroMethod:
 (define (Type::withSelector:addMacroMethod: type selector method)
     (define methodDict (Type::validMacroMethodDictionary type))
-    (MethodDictionary::at:put: methodDict selector method))
+    (MethodDictionary::at:put: methodDict selector method)
+    (Type::flushMacroLookupSelector: type selector))
 
 (Type::withSelector:addMethod: SourcePosition #printString (lambda (sourcePosition)
     (define sourceDirectory (SourceCode::directory (SourcePosition::sourceCode sourcePosition)))

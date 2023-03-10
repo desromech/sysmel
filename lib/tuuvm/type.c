@@ -6,6 +6,7 @@
 #include "tuuvm/string.h"
 #include "tuuvm/type.h"
 #include "internal/context.h"
+#include <string.h>
 
 TUUVM_API tuuvm_tuple_t tuuvm_typeSlot_create(tuuvm_context_t *context, tuuvm_tuple_t name, tuuvm_tuple_t flags, tuuvm_tuple_t type)
 {
@@ -122,7 +123,12 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_lookupMacroSelector(tuuvm_context_t *context,
     return tuuvm_type_lookupMacroSelector(context, tuuvm_type_getSupertype(type), selector);
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_type_lookupSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector)
+static inline size_t computeLookupCacheEntryIndexFor(tuuvm_tuple_t type, tuuvm_tuple_t selector)
+{
+    return (tuuvm_hashMultiply(tuuvm_tuple_identityHash(type)) + tuuvm_tuple_identityHash(selector)) % GLOBAL_LOOKUP_CACHE_ENTRY_COUNT;
+}
+
+static tuuvm_tuple_t tuuvm_type_lookupSelectorRecursively(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector)
 {
     if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
     tuuvm_tuple_t methodDictionary = tuuvm_type_getMethodDictionary(type);
@@ -133,7 +139,31 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_lookupSelector(tuuvm_context_t *context, tuuv
             return found;
     }
 
-    return tuuvm_type_lookupSelector(context, tuuvm_type_getSupertype(type), selector);
+    return tuuvm_type_lookupSelectorRecursively(context, tuuvm_type_getSupertype(type), selector);
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_type_lookupSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+
+    // FIXME: Make this cache atomic and thread safe.
+    size_t cacheEntryIndex = computeLookupCacheEntryIndexFor(type, selector);
+    tuuvm_globalLookupCacheEntry_t *cacheEntry = context->roots.globalMethodLookupCache + cacheEntryIndex;
+    if(cacheEntry->type != type || cacheEntry->selector != selector)
+    {
+        tuuvm_tuple_t method = tuuvm_type_lookupSelectorRecursively(context, type, selector);
+        if(method)
+        {
+            cacheEntry->type = type;
+            cacheEntry->selector = selector;
+            cacheEntry->method = method;
+        }
+        return method;
+    }
+    else
+    {
+        return cacheEntry->method;
+    }
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_type_lookupFallbackSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector)
@@ -330,4 +360,53 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValue(tuuvm_context_t *context, tuuvm_t
     
     tuuvm_error("Cannot perform coercion of value into the required type.");
     return TUUVM_VOID_TUPLE;
+}
+
+static tuuvm_tuple_t tuuvm_type_primitive_flushLookupSelector(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *type = &arguments[0];
+    tuuvm_tuple_t *selector = &arguments[1];
+
+    size_t cacheEntryIndex = computeLookupCacheEntryIndexFor(*type, *selector);
+    tuuvm_globalLookupCacheEntry_t *cacheEntry = context->roots.globalMethodLookupCache + cacheEntryIndex;
+    memset(cacheEntry, 0, sizeof(tuuvm_globalLookupCacheEntry_t));
+
+    return TUUVM_VOID_TUPLE;
+}
+
+static tuuvm_tuple_t tuuvm_type_primitive_flushMacroLookupSelector(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    (void)arguments;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    return TUUVM_VOID_TUPLE;
+}
+
+static tuuvm_tuple_t tuuvm_type_primitive_flushFallbackLookupSelector(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    (void)arguments;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    return TUUVM_VOID_TUPLE;
+}
+
+void tuuvm_type_registerPrimitives(void)
+{
+    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_flushLookupSelector);
+    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_flushMacroLookupSelector);
+    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_flushFallbackLookupSelector);
+}
+
+void tuuvm_type_setupPrimitives(tuuvm_context_t *context)
+{
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Type::flushLookupSelector:", context->roots.typeType, "flushLookupSelector:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_flushLookupSelector);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Type::flushMacroLookupSelector:", context->roots.typeType, "flushMacroLookupSelector:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_flushMacroLookupSelector);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Type::flushFallbackLookupSelector:", context->roots.typeType, "flushFallbackLookupSelector:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_flushFallbackLookupSelector);
 }

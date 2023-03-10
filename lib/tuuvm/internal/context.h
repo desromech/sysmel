@@ -6,6 +6,15 @@
 #include "tuuvm/context.h"
 #include "heap.h"
 
+#define GLOBAL_LOOKUP_CACHE_ENTRY_COUNT 1024
+
+typedef struct tuuvm_globalLookupCacheEntry_s
+{
+    tuuvm_tuple_t type;
+    tuuvm_tuple_t selector;
+    tuuvm_tuple_t method;
+}tuuvm_globalLookupCacheEntry_t;
+
 typedef struct tuuvm_context_roots_s
 {
     tuuvm_tuple_t immediateTypeTable[TUUVM_TUPLE_TAG_COUNT];
@@ -141,6 +150,8 @@ typedef struct tuuvm_context_roots_s
 
     tuuvm_tuple_t intrinsicsBuiltInEnvironment;
     tuuvm_tuple_t intrinsicTypes;
+
+    tuuvm_globalLookupCacheEntry_t globalMethodLookupCache[GLOBAL_LOOKUP_CACHE_ENTRY_COUNT];
 } tuuvm_context_roots_t;
 
 struct tuuvm_context_s

@@ -23,6 +23,15 @@
 
 //#define tuuvm_gc_safepoint(x) false
 
+// This is on a performance critical path, so define it here to allow inlining by the compiler.
+static inline bool tuuvm_symbolBinding_isValueQuick(tuuvm_context_t *context, tuuvm_tuple_t binding)
+{
+    if(!tuuvm_tuple_isNonNullPointer(binding)) return false;
+
+    tuuvm_tuple_t type = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(binding)->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_POINTER_MASK;
+    return type == context->roots.symbolValueBindingType;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t environment)
 {
     struct {
@@ -882,7 +891,7 @@ static tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_primitiveAnalyze(tuuvm_con
     // Attempt to replace the symbol with its binding, if it exists.
     if(tuuvm_environment_lookSymbolRecursively(context, *environment, (*referenceNode)->value, &binding))
     {
-        if(tuuvm_symbolBinding_isValue(context, binding))
+        if(tuuvm_symbolBinding_isValueQuick(context, binding))
             return tuuvm_astLiteralNode_create(context, (*referenceNode)->super.sourcePosition, tuuvm_symbolValueBinding_getValue(binding));
     }
 
@@ -902,7 +911,7 @@ static tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_primitiveEvaluate(tuuvm_co
 
     if(tuuvm_environment_lookSymbolRecursively(context, *environment, (*referenceNode)->value, &binding))
     {
-        if(tuuvm_symbolBinding_isValue(context, binding))
+        if(tuuvm_symbolBinding_isValueQuick(context, binding))
             return tuuvm_symbolValueBinding_getValue(binding);
     }
 
@@ -1808,7 +1817,7 @@ static tuuvm_tuple_t tuuvm_astMessageChainMessageNode_analyzeAndEvaluate(tuuvm_c
     else
     {
         if(!tuuvm_environment_lookSymbolRecursively(context, *environment, gcFrame.selector, &gcFrame.methodBinding)
-            || !tuuvm_symbolBinding_isValue(context, gcFrame.methodBinding))
+            || !tuuvm_symbolBinding_isValueQuick(context, gcFrame.methodBinding))
             tuuvm_error("Failed to find symbol for message send without receiver.");
         gcFrame.method = tuuvm_symbolValueBinding_getValue(gcFrame.methodBinding);
     }
@@ -1913,7 +1922,7 @@ static tuuvm_tuple_t tuuvm_astMessageChainMessageNode_evaluate(tuuvm_context_t *
     else
     {
         if(!tuuvm_environment_lookSymbolRecursively(context, *environment, gcFrame.selector, &gcFrame.methodBinding)
-            || !tuuvm_symbolBinding_isValue(context, gcFrame.methodBinding))
+            || !tuuvm_symbolBinding_isValueQuick(context, gcFrame.methodBinding))
             tuuvm_error("Failed to find symbol for message send without receiver.");
         gcFrame.method = tuuvm_symbolValueBinding_getValue(gcFrame.methodBinding);
     }
@@ -2174,7 +2183,7 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyzeAndEvaluate(tuuvm_
     {
         gcFrame.selector = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*sendNode)->selector, *environment);
         if(!tuuvm_environment_lookSymbolRecursively(context, *environment, gcFrame.selector, &gcFrame.methodBinding)
-            || !tuuvm_symbolBinding_isValue(context, gcFrame.methodBinding))
+            || !tuuvm_symbolBinding_isValueQuick(context, gcFrame.methodBinding))
             tuuvm_error("Failed to find symbol for message send without receiver.");
         gcFrame.method = tuuvm_symbolValueBinding_getValue(gcFrame.methodBinding);
     }
@@ -2277,7 +2286,7 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveEvaluate(tuuvm_context_t 
     {
         gcFrame.selector = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*sendNode)->selector, *environment);
         if(!tuuvm_environment_lookSymbolRecursively(context, *environment, gcFrame.selector, &gcFrame.methodBinding)
-            || !tuuvm_symbolBinding_isValue(context, gcFrame.methodBinding))
+            || !tuuvm_symbolBinding_isValueQuick(context, gcFrame.methodBinding))
             tuuvm_error("Failed to find symbol for message send without receiver.");
         gcFrame.method = tuuvm_symbolValueBinding_getValue(gcFrame.methodBinding);
     }
