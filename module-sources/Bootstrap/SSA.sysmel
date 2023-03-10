@@ -1,0 +1,152 @@
+public class SSAValue superclass: Object.
+public class SSAConstant superclass: SSAValue.
+public class SSAFunction superclass: SSAConstant.
+public class SSAFunctionLocalValue superclass: SSAValue.
+public class SSAFunctionArgument superclass: SSAFunctionLocalValue.
+public class SSABasicBlock superclass: SSAFunctionLocalValue.
+public class SSAInstruction superclass: SSAFunctionLocalValue.
+public class SSAInstructionBuilder superclass: Object.
+
+SSAValue definition: {
+    public field type => Type.
+    public field sourcePosition => SourcePosition.
+    public field environment => Environment.
+
+    public method isConstant => Boolean := false.
+    public method isLiteralConstant => Boolean := false.
+    public method isFunction => Boolean := false.
+    public method isFunctionLocalValue => Boolean := false.
+    public method isBasicBlock => Boolean := false.
+    
+    public method isInstruction => Boolean := false.
+    public method isTerminatorInstruction => Boolean := false.
+}.
+
+SSAConstant definition: {
+    public method isConstant => Boolean := true.
+}.
+
+public class SSALiteralConstant superclass: SSAConstant; definition: {
+    public field value.
+
+    public method isLiteralConstant => Boolean := true.
+}.
+
+SSAFunction definition: {
+    public field arguments => Array.
+
+    public field firstBasicBlock => SSABasicBlock.
+    public field lastBasicBlock => SSABasicBlock.
+
+    public method isFunction => Boolean := true.
+
+    public method addBasicBlock: (basicBlock: SSABasicBlock) before: (insertionPoint: SSABasicBlock) ::=> Void := {
+    }.
+
+    public method addBasicBlock: (basicBlock: SSABasicBlock) after: (insertionPoint: SSABasicBlock) ::=> Void := {
+    }.
+
+    public method addBasicBlock: (basicBlock: SSABasicBlock) ::=> Void
+        := self addBasicBlock: basicBlock before: nil.
+
+    public method addFirstBasicBlock: (basicBlock: SSABasicBlock) ::=> Void
+        := self addBasicBlock: basicBlock after: nil.
+
+    public method basicBlocksDo: aBlock ::=> Void := {
+        let position := ValueBox with: self firstBasicBlock.
+        while: position _ isNotNil do: (
+            aBlock(position _)
+        ) continueWith: (position := position _ nextBasicBlock)
+    }.
+}.
+
+SSAFunctionLocalValue definition: {
+    public method isFunctionLocalValue => Boolean := true.
+}.
+
+SSABasicBlock definition: {
+    public field previousBlock => SSABasicBlock.
+    public field nextBlock => SSABasicBlock.
+
+    public field firstInstruction => SSAInstruction.
+    public field lastInstruction => SSAInstruction.
+
+    public method isBasicBlock => Boolean := true.
+
+    public method addInstruction: (instruction: SSAInstruction) before: (insertionPoint: SSAInstruction) ::=> Void := {
+
+    }.
+
+    public method addInstruction: (instruction: SSAInstruction) after: (insertionPoint: SSAInstruction) ::=> Void := {
+
+    }.
+
+    public method addInstruction: (instruction: SSAInstruction) ::=> Void
+        := self addInstruction: instruction before: nil.
+
+    public method addInstruction: (instruction: SSAInstruction) ::=> Void
+        := self addInstruction: instruction after: nil.
+
+    public method instructionsDo: aBlock ::=> Void := {
+        let position := ValueBox with: self firstInstruction.
+        while: position _ isNotNil do: (
+            aBlock(position _)
+        ) continueWith: (position := position _ nextInstruction)
+    }.
+}.
+
+SSAInstruction definition: {
+    public method isInstruction => Boolean := true.
+    
+    public field previousInstruction => SSAInstruction.
+    public field nextInstruction => SSAInstruction.
+}.
+
+public class SSABranchInstruction superclass: SSAInstruction; definition: {
+    public field destination => SSABasicBlock.
+
+    public method isTerminatorInstruction => Boolean := true.
+}.
+
+public class SSACallInstruction superclass: SSAInstruction; definition: {
+    public field calledFunction => SSAValue.
+    public field arguments.
+}.
+
+public class SSAConditionalBranchInstruction superclass: SSAInstruction; definition: {
+    public field condition => SSAValue.
+    public field trueDestination => SSABasicBlock.
+    public field falseDestination => SSABasicBlock.
+
+    public method isTerminatorInstruction => Boolean := true.
+}.
+
+public class SSAUnreachableInstruction superclass: SSAInstruction; definition: {
+    public method isUnreachableInstruction => Boolean := true.
+}.
+
+public class SSASendInstruction superclass: SSAInstruction; definition: {
+    public field receiver.
+    public field selector.
+    public field arguments.
+}.
+
+SSAInstructionBuilder definition: {
+    public field sourcePosition => SourcePosition.
+    public field function => SSAFunction.
+    public field basicBlock => SSABasicBlock.
+
+    __Meta__ definition: {
+        public method for: (function: SSAFunction)
+            := self new function: function; yourself.
+    }.
+}.
+
+Function extend: {
+    public method asSSAFunction => SSAFunction := {
+        let ssaFunction := SSAFunction new.
+        ssaFunction arguments: ().
+
+        ssaFunction
+    }.
+}
