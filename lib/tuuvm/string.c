@@ -333,6 +333,31 @@ static tuuvm_tuple_t tuuvm_string_primitive_concat(tuuvm_context_t *context, tuu
     return tuuvm_string_concat(context, arguments[0], arguments[1]);
 }
 
+static tuuvm_tuple_t tuuvm_string_primitive_withoutSuffix(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t string = arguments[0];
+    tuuvm_tuple_t suffix = arguments[1];
+
+    size_t suffixLen = tuuvm_tuple_getSizeInBytes(suffix);
+    if(suffixLen == 0)
+        return string;
+
+    size_t stringSize = tuuvm_tuple_getSizeInBytes(string);
+    if(stringSize < suffixLen)
+        return string;
+    
+    uint8_t *suffixData = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(suffix)->bytes;
+    uint8_t *stringData = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(string)->bytes;
+    if(memcmp(stringData + stringSize - suffixLen, suffixData, suffixLen))
+        return string;
+
+    return tuuvm_string_createWithString(context, stringSize - suffixLen, stringData);
+}
+
 static tuuvm_tuple_t tuuvm_symbol_primitive_intern(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
@@ -352,6 +377,7 @@ void tuuvm_string_registerPrimitives(void)
     tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_defaultPrintString);
     tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_defaultAsString);
     tuuvm_primitiveTable_registerFunction(tuuvm_string_primitive_concat);
+    tuuvm_primitiveTable_registerFunction(tuuvm_string_primitive_withoutSuffix);
     tuuvm_primitiveTable_registerFunction(tuuvm_symbol_primitive_intern);
 }
 
@@ -372,5 +398,6 @@ void tuuvm_string_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::printString", context->roots.anyValueType, "printString", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_defaultPrintString);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "RawTuple::asString", context->roots.anyValueType, "asString", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_defaultAsString);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "String::concat:", context->roots.stringType, "--", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_string_primitive_concat);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "String::withoutSuffix:", context->roots.stringType, "withoutSuffix:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_string_primitive_withoutSuffix);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "StringSymbol::intern", context->roots.stringType, "asSymbol", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_symbol_primitive_intern);
 }

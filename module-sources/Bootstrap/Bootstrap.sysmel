@@ -2,3 +2,5 @@ loadSourceNamed: "CoreRuntime.sysmel".
 loadSourceNamed: "CoreAST.sysmel".
 loadSourceNamed: "CoreRuntimeMacros.sysmel".
 loadSourceNamed: "CoreMetaBuilders.sysmel".
+
+loadSourceNamed: "SSA.sysmel".

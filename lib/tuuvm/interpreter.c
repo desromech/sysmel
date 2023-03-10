@@ -2267,7 +2267,7 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveEvaluate(tuuvm_context_t 
         gcFrame.method = tuuvm_type_lookupSelector(context, gcFrame.receiverType, gcFrame.selector);
         if(!gcFrame.method)
         {
-            gcFrame.receiverString = tuuvm_tuple_printString(context, gcFrame.receiver);
+            gcFrame.receiverString = tuuvm_tuple_printString(context, gcFrame.receiverType);
             fprintf(stderr, TUUVM_STRING_PRINTF_FORMAT " doesNotUnderstand " TUUVM_STRING_PRINTF_FORMAT "\n", TUUVM_STRING_PRINTF_ARG(gcFrame.receiverString), TUUVM_STRING_PRINTF_ARG(gcFrame.selector));
             tuuvm_error("TODO: fallback to doesNotUnderstand:");
         }

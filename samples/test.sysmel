@@ -1,3 +1,8 @@
+let: #square with: {:(Int32)x :: Int32 | x*x }.
+printLine(square).
+printLine(square asSSAFunction).
+
+#*
 printLine("Hello World from Sysmel in Tuuvm").
 printLine(Integer::+(42, 1)).
 
@@ -95,3 +100,4 @@ printLine(TestClass new testField).
 printLine(TestClass new testField: 42; testField).
 
 printLine((TestClass >> #myTestMethod) body value).
+*#

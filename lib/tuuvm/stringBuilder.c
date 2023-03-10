@@ -69,7 +69,7 @@ TUUVM_API void tuuvm_stringBuilder_addString(tuuvm_context_t *context, tuuvm_tup
     if(!tuuvm_tuple_isNonNullPointer(string))
         return;
 
-    return tuuvm_stringBuilder_addStringWithSize(context, stringBuilder, tuuvm_tuple_getSizeInBytes(string), (const char*)TUUVM_CAST_OOP_TO_OBJECT_TUPLE(string)->bytes);
+    tuuvm_stringBuilder_addStringWithSize(context, stringBuilder, tuuvm_tuple_getSizeInBytes(string), (const char*)TUUVM_CAST_OOP_TO_OBJECT_TUPLE(string)->bytes);
 }
 
 TUUVM_API void tuuvm_stringBuilder_addCString(tuuvm_context_t *context, tuuvm_tuple_t stringBuilder, const char *cstring)
@@ -113,7 +113,7 @@ static tuuvm_tuple_t tuuvm_stringBuilder_primitive_add(tuuvm_context_t *context,
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
 
-    tuuvm_stringBuilder_add(context, arguments[0], arguments[1]);
+    tuuvm_stringBuilder_add(context, arguments[0], tuuvm_tuple_char8_decode(arguments[1]));
     return TUUVM_VOID_TUPLE;
 }
 

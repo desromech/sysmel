@@ -4,6 +4,7 @@ project(Tuuvm C)
 
 if(MSVC)
     set(CMAKE_C_FLAGS "/std:c11 ${CMAKE_C_FLAGS}")
+    #SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} /STACK:0x2000000")
 else()
     set(CMAKE_C_FLAGS "-Wall -Wextra ${CMAKE_C_FLAGS}")
 endif()

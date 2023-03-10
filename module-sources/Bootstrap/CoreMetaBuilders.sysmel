@@ -330,7 +330,7 @@ FieldMetaBuilder
 
         typeExpression
             ifNil: ``(__OwnerProgramEntity__ addTypeSlot: (TypeSlot named: `,(self name) flags: `,flagsExpression))
-            ifNotNil: ``(__OwnerProgramEntity__ addTypeSlot: (TypeSlot named: `,(self name) type: typeExpression flags: `,flagsExpression))
+            ifNotNil: ``(__OwnerProgramEntity__ addTypeSlot: (TypeSlot named: `,(self name) type: `,typeExpression flags: `,flagsExpression))
     }.
 
 MacroMetaBuilder publicSubclass: #MethodMetaBuilder slots: (
@@ -352,6 +352,12 @@ ASTArgumentNode
     withSelector: #parseAsArgumentNode addMethod: {:self :: ASTArgumentNode | self }.
 
 ASTIdentifierReferenceNode
+    withSelector: #parseKeywordAsLiteralWithoutColon addMethod: {:self :: ASTLiteralNode |
+        ASTLiteralNode new
+            sourcePosition: self sourcePosition;
+            value: (self value asString withoutSuffix: ':') asSymbol;
+            yourself
+    };
     withSelector: #parseAsArgumentNode addMethod: {:self :: ASTArgumentNode |
         ASTArgumentNode new
             sourcePosition: self sourcePosition;
@@ -360,6 +366,19 @@ ASTIdentifierReferenceNode
                 sourcePosition: self sourcePosition;
                 value: self value;
                 yourself);
+            yourself
+    }.
+
+ASTUnexpandedApplicationNode
+    withSelector: #parseAsArgumentNode addMethod: {:self :: ASTArgumentNode |
+        if: self arguments size ~= 1 then: self asString -- " is not a valid argument expression.".
+        let: #name with: self functionOrMacroExpression parseKeywordAsLiteralWithoutColon.
+        let: #type with: self arguments first.
+        ASTArgumentNode new
+            sourcePosition: self sourcePosition;
+            isForAll: false;
+            name: name;
+            type: type;
             yourself
     }.
 

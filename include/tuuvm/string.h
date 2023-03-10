@@ -33,6 +33,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_string_createWithPrefix(tuuvm_context_t *context, 
 TUUVM_API tuuvm_tuple_t tuuvm_string_createWithSuffix(tuuvm_context_t *context, tuuvm_tuple_t string, const char *suffix);
 
 /**
+ * Creates a string by removing the specified suffix.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_string_createWithoutSuffix(tuuvm_context_t *context, tuuvm_tuple_t string, const char *suffix);
+
+/**
  * Creates a tuuvm string
  */
 TUUVM_API tuuvm_tuple_t tuuvm_string_createWithCString(tuuvm_context_t *context, const char *cstring);
