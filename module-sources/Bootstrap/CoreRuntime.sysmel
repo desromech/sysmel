@@ -520,7 +520,7 @@ Metaclass
     withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void |
         let: #thisClass with: self thisClass.
         if: thisClass ~~ nil
-        then: (stream print: thisClass; nextPutAll: " class");
+        then: (stream print: thisClass; nextPutAll: " class")
         else: (stream nextPutAll: "a "; print: self __type__)
     }.
 

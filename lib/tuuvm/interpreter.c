@@ -916,6 +916,11 @@ static tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_primitiveAnalyze(tuuvm_con
         if(tuuvm_symbolBinding_isValueQuick(context, binding))
             return tuuvm_astLiteralNode_create(context, (*referenceNode)->super.sourcePosition, tuuvm_symbolValueBinding_getValue(binding));
     }
+    else
+    {
+        fprintf(stderr, "Failed to find symbol binding for: " TUUVM_STRING_PRINTF_FORMAT "\n", TUUVM_STRING_PRINTF_ARG((*referenceNode)->value));
+        tuuvm_error("Failed to find symbol binding");
+    }
 
     return *node;
 }
@@ -940,7 +945,6 @@ static tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_primitiveEvaluate(tuuvm_co
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*referenceNode)->super.sourcePosition);
 
     fprintf(stderr, "Failed to find symbol binding for: " TUUVM_STRING_PRINTF_FORMAT "\n", TUUVM_STRING_PRINTF_ARG((*referenceNode)->value));
-
     tuuvm_error("Failed to find symbol binding");
     return TUUVM_NULL_TUPLE;
 }

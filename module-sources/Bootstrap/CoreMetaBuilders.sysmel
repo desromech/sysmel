@@ -44,10 +44,8 @@ MetaBuilder
         result _
     };
     withSelector: #analyzeMessageChainNode:withEnvironment: addClassMethod: {:self :messageChainNode :environment |
-        let: #selfReceiver with: (ASTLiteralNode new
-            sourcePosition: messageChainNode receiver sourcePosition;
-            value: receiver;
-            yourself). 
+        let: #selfReceiver with: messageChainNode receiver. 
+        let: #receiver with: selfReceiver value.
         
         let: #result with: (ValueBox with: selfReceiver).
 
@@ -229,9 +227,9 @@ TypeMetaBuilder publicSubclass: #ClassMetaBuilder slots: (
 ).
 
 ClassMetaBuilder
-    withSelector: #classSlots: addMethod: {:self :(ASTNode)classSlots :: ASTNode |
+    withSelector: #classSlots: addMethod: {:self :(ASTNode)classSlotsExpression :: ASTNode |
         <metaBuilder>
-        self metaSlotsExpression: metaSlotsExpression.
+        self metaSlotsExpression: classSlotsExpression.
         self continueExpansion
     };
     withSelector: #superclass: addMethod: {:self :(ASTNode)superclassExpression :: ASTNode |
