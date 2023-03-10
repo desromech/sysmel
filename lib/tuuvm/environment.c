@@ -1,4 +1,5 @@
 #include "tuuvm/environment.h"
+#include "tuuvm/association.h"
 #include "tuuvm/dictionary.h"
 #include "tuuvm/errors.h"
 #include "tuuvm/sourceCode.h"
@@ -63,27 +64,28 @@ TUUVM_API tuuvm_tuple_t tuuvm_environment_createDefaultForSourceCodeEvaluation(t
     return environment;
 }
 
-TUUVM_API void tuuvm_environment_setSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t symbol, tuuvm_tuple_t binding)
+TUUVM_API void tuuvm_environment_setBinding(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t binding)
 {
     if(!tuuvm_tuple_isNonNullPointer(environment))
         return;
 
     tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
-    tuuvm_identityDictionary_atPut(context, environmentObject->symbolTable, symbol, binding);
+    tuuvm_identityDictionary_addAssociation(context, environmentObject->symbolTable, binding);
 }
 
-TUUVM_API void tuuvm_environment_setNewSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t symbol, tuuvm_tuple_t binding)
+TUUVM_API void tuuvm_environment_setNewBinding(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t binding)
 {
     if(!tuuvm_tuple_isNonNullPointer(environment))
         return;
 
     tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
     tuuvm_tuple_t existentBinding = TUUVM_NULL_TUPLE;
+    tuuvm_tuple_t symbol = tuuvm_association_getKey(binding);
 
-    if(tuuvm_identityDictionary_find(environmentObject->symbolTable, symbol, &existentBinding))
+    if(tuuvm_identityDictionary_findAssociation(environmentObject->symbolTable, symbol, &existentBinding))
         tuuvm_error("Overriding existent symbol binding.");
 
-    tuuvm_identityDictionary_atPut(context, environmentObject->symbolTable, symbol, binding);
+    tuuvm_identityDictionary_addAssociation(context, environmentObject->symbolTable, binding);
 }
 
 TUUVM_API void tuuvm_environment_setSymbolBindingWithValue(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t symbol, tuuvm_tuple_t value)
@@ -93,7 +95,7 @@ TUUVM_API void tuuvm_environment_setSymbolBindingWithValue(tuuvm_context_t *cont
 
     tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
     tuuvm_tuple_t binding = tuuvm_symbolValueBinding_create(context, TUUVM_NULL_TUPLE, symbol, value);
-    tuuvm_identityDictionary_atPut(context, environmentObject->symbolTable, symbol, binding);
+    tuuvm_identityDictionary_addAssociation(context, environmentObject->symbolTable, binding);
 }
 
 TUUVM_API void tuuvm_environment_setNewSymbolBindingWithValueAtSourcePosition(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t symbol, tuuvm_tuple_t value, tuuvm_tuple_t sourcePosition)
@@ -101,14 +103,9 @@ TUUVM_API void tuuvm_environment_setNewSymbolBindingWithValueAtSourcePosition(tu
     if(!tuuvm_tuple_isNonNullPointer(environment))
         return;
 
-    tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
-    tuuvm_tuple_t existentBinding = TUUVM_NULL_TUPLE;
-
-    if(tuuvm_identityDictionary_find(environmentObject->symbolTable, symbol, &existentBinding))
-        tuuvm_error("Overriding existent symbol binding.");
 
     tuuvm_tuple_t binding = tuuvm_symbolValueBinding_create(context, sourcePosition, symbol, value);
-    tuuvm_identityDictionary_atPut(context, environmentObject->symbolTable, symbol, binding);
+    tuuvm_environment_setNewBinding(context, environment, binding);
 }
 
 TUUVM_API void tuuvm_environment_setNewSymbolBindingWithValue(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t symbol, tuuvm_tuple_t value)
@@ -123,7 +120,7 @@ TUUVM_API bool tuuvm_environment_lookSymbolRecursively(tuuvm_context_t *context,
         return false;
 
     tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
-    if(tuuvm_identityDictionary_find(environmentObject->symbolTable, symbol, outBinding))
+    if(tuuvm_identityDictionary_findAssociation(environmentObject->symbolTable, symbol, outBinding))
         return true;
 
     return tuuvm_environment_lookSymbolRecursively(context, environmentObject->parent, symbol, outBinding);
@@ -203,23 +200,23 @@ TUUVM_API void tuuvm_environment_clearUnwindingRecords(tuuvm_tuple_t environment
     environmentObject->returnTarget = TUUVM_NULL_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_environment_primitive_setNewSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_environment_primitive_setNewBinding(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
-    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
 
-    tuuvm_environment_setNewSymbolBinding(context, arguments[0], arguments[1], arguments[2]);
+    tuuvm_environment_setNewBinding(context, arguments[0], arguments[1]);
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_environment_primitive_setSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_environment_primitive_setBinding(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
-    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
 
-    tuuvm_environment_setSymbolBinding(context, arguments[0], arguments[1], arguments[2]);
+    tuuvm_environment_setBinding(context, arguments[0], arguments[1]);
     return TUUVM_VOID_TUPLE;
 }
 
@@ -245,16 +242,16 @@ static tuuvm_tuple_t tuuvm_environment_primitive_setSymbolBindingWithValue(tuuvm
 
 void tuuvm_environment_registerPrimitives(void)
 {
-    tuuvm_primitiveTable_registerFunction(tuuvm_environment_primitive_setNewSymbolBinding);
-    tuuvm_primitiveTable_registerFunction(tuuvm_environment_primitive_setSymbolBinding);
+    tuuvm_primitiveTable_registerFunction(tuuvm_environment_primitive_setNewBinding);
+    tuuvm_primitiveTable_registerFunction(tuuvm_environment_primitive_setBinding);
     tuuvm_primitiveTable_registerFunction(tuuvm_environment_primitive_setNewSymbolBindingWithValue);
     tuuvm_primitiveTable_registerFunction(tuuvm_environment_primitive_setSymbolBindingWithValue);
 }
 
 void tuuvm_environment_setupPrimitives(tuuvm_context_t *context)
 {
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Environment::setNewSymbol:binding:", context->roots.environmentType, "setNewSymbol:binding:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_environment_primitive_setNewSymbolBinding);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Environment::setSymbol:binding:", context->roots.environmentType, "setSymbol:binding:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_environment_primitive_setSymbolBinding);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Environment::setNewBinding:", context->roots.environmentType, "setBinding:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_environment_primitive_setNewBinding);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Environment::setBinding:", context->roots.environmentType, "setBinding:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_environment_primitive_setBinding);
     
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Environment::setNewSymbol:bindingWithValue:", context->roots.environmentType, "setNewSymbol:bindingWithValue:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_environment_primitive_setNewSymbolBindingWithValue);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Environment::setSymbol:bindingWithValue:", context->roots.environmentType, "setSymbol:bindingWithValue:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_environment_primitive_setSymbolBindingWithValue);

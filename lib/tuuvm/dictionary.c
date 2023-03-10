@@ -50,6 +50,25 @@ static intptr_t tuuvm_identityDictionary_scanFor(tuuvm_tuple_t dictionary, tuuvm
     return -1;
 }
 
+TUUVM_API bool tuuvm_identityDictionary_findAssociation(tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t *outAssociation)
+{
+    *outAssociation = TUUVM_NULL_TUPLE;
+    if(!tuuvm_tuple_isNonNullPointer(dictionary))
+        return false;
+
+    intptr_t elementIndex = tuuvm_identityDictionary_scanFor(dictionary, key);
+    if(elementIndex < 0)
+        return false;
+
+    tuuvm_dictionary_t *dictionaryObject = (tuuvm_dictionary_t*)dictionary;
+    tuuvm_array_t *storage = (tuuvm_array_t*)dictionaryObject->storage;
+    if(!storage->elements[elementIndex])
+        return false;
+
+    *outAssociation = storage->elements[elementIndex];
+    return true;
+}
+
 TUUVM_API bool tuuvm_identityDictionary_find(tuuvm_tuple_t dictionary, tuuvm_tuple_t element, tuuvm_tuple_t *outValue)
 {
     *outValue = TUUVM_NULL_TUPLE;
@@ -99,6 +118,41 @@ static void tuuvm_identityDictionary_increaseCapacity(tuuvm_context_t *context, 
         tuuvm_tuple_t association = oldStorage->elements[i];
         if(association)
             tuuvm_identityDictionary_insertNoCheck(dictionary, association);
+    }
+}
+
+TUUVM_API void tuuvm_identityDictionary_addAssociation(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t association)
+{
+    if(!tuuvm_tuple_isNonNullPointer(dictionary))
+        return;
+
+    tuuvm_tuple_t key = tuuvm_association_getKey(association);
+    intptr_t elementIndex = tuuvm_identityDictionary_scanFor(dictionary, key);
+    if(elementIndex < 0)
+    {
+        tuuvm_identityDictionary_increaseCapacity(context, dictionary);
+        elementIndex = tuuvm_identityDictionary_scanFor(dictionary, key);
+        if(elementIndex < 0)
+           tuuvm_error("Dictionary out of memory.");
+    }
+
+    tuuvm_dictionary_t *dictionaryObject = (tuuvm_dictionary_t*)dictionary;
+    tuuvm_array_t *storage = (tuuvm_array_t*)dictionaryObject->storage;
+    if(storage->elements[elementIndex])
+    {
+        storage->elements[elementIndex] = association;
+    }
+    else
+    {
+        storage->elements[elementIndex] = association;
+        size_t capacity = tuuvm_tuple_getSizeInSlots(dictionaryObject->storage);
+        size_t newSize = tuuvm_tuple_size_decode(dictionaryObject->size) + 1;
+        dictionaryObject->size = tuuvm_tuple_size_encode(context, newSize);
+        size_t capacityThreshold = capacity * 4 / 5;
+
+        // Make sure the maximum occupancy rate is not greater than 80%.
+        if(newSize >= capacityThreshold)
+            tuuvm_identityDictionary_increaseCapacity(context, dictionary);
     }
 }
 

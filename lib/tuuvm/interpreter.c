@@ -414,7 +414,7 @@ static tuuvm_tuple_t tuuvm_astArgumentNode_primitiveAnalyze(tuuvm_context_t *con
     {
         gcFrame.argumentBinding = tuuvm_symbolArgumentBinding_create(context, gcFrame.argumentNode->super.sourcePosition, gcFrame.evaluatedName);
         gcFrame.argumentNode->binding = gcFrame.argumentBinding;
-        tuuvm_environment_setNewSymbolBinding(context, *environment, gcFrame.evaluatedName, gcFrame.argumentBinding);
+        tuuvm_environment_setNewBinding(context, *environment, gcFrame.argumentBinding);
     }
 
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
@@ -792,7 +792,7 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveAnalyze(tuuvm_context
         }
         
         gcFrame.localDefinitionNode->binding = gcFrame.localBinding;
-        tuuvm_environment_setNewSymbolBinding(context, *environment, gcFrame.name, gcFrame.localBinding);
+        tuuvm_environment_setNewBinding(context, *environment, gcFrame.localBinding);
     }
 
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);

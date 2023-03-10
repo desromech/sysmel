@@ -31,6 +31,16 @@ TUUVM_API tuuvm_tuple_t tuuvm_identityDictionary_create(tuuvm_context_t *context
 TUUVM_API tuuvm_tuple_t tuuvm_methodDictionary_create(tuuvm_context_t *context);
 
 /**
+ * Finds an association in the dictionary.
+ */ 
+TUUVM_API bool tuuvm_identityDictionary_findAssociation(tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t *outAssociation);
+
+/**
+ * Adds an association to the dictionary.
+ */ 
+TUUVM_API void tuuvm_identityDictionary_addAssociation(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t association);
+
+/**
  * Finds an element in the dictionary.
  */ 
 TUUVM_API bool tuuvm_identityDictionary_find(tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t *outValue);
