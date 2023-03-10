@@ -54,6 +54,18 @@ TUUVM_API tuuvm_tuple_t tuuvm_arrayList_asArraySlice(tuuvm_context_t *context, t
     return tuuvm_arraySlice_create(context, arrayListObject->storage, tuuvm_tuple_size_encode(context, 0), arrayListObject->size);
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_arrayList_asArray(tuuvm_context_t *context, tuuvm_tuple_t arrayList)
+{
+    if(!tuuvm_tuple_isNonNullPointer(arrayList))
+        return TUUVM_NULL_TUPLE;
+
+    tuuvm_arrayList_t *arrayListObject = (tuuvm_arrayList_t*)arrayList;
+    if(!arrayListObject->storage)
+        return tuuvm_array_create(context, 0);
+
+    return tuuvm_array_getFirstElements(context, arrayListObject->storage, tuuvm_tuple_size_decode(arrayListObject->size));
+}
+
 TUUVM_API size_t tuuvm_arrayList_getSize(tuuvm_tuple_t arrayList)
 {
     if(!tuuvm_tuple_isNonNullPointer(arrayList)) return 0;
@@ -91,12 +103,23 @@ static tuuvm_tuple_t tuuvm_arrayList_primitive_add(tuuvm_context_t *context, tuu
     return TUUVM_VOID_TUPLE;
 }
 
+static tuuvm_tuple_t tuuvm_arrayList_primitive_asArray(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_arrayList_asArray(context, arguments[0]);
+}
+
 void tuuvm_arrayList_registerPrimitives(void)
 {
     tuuvm_primitiveTable_registerFunction(tuuvm_arrayList_primitive_add);
+    tuuvm_primitiveTable_registerFunction(tuuvm_arrayList_primitive_asArray);
 }
 
 void tuuvm_arrayList_setupPrimitives(tuuvm_context_t *context)
 {
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "ArrayList::add:", context->roots.arrayListType, "add:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_arrayList_primitive_add);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "ArrayList::asArray", context->roots.arrayListType, "asArray", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_arrayList_primitive_asArray);
 }

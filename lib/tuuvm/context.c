@@ -397,6 +397,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "macroMethodDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "methodDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "fallbackMethodDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+
+        "pendingSlots", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.classType, "Class", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.metaclassType, "Metaclass", TUUVM_NULL_TUPLE,

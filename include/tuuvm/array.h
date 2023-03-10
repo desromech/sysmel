@@ -40,6 +40,11 @@ TUUVM_API void tuuvm_array_atPut(tuuvm_tuple_t array, size_t index, tuuvm_tuple_
 TUUVM_API tuuvm_tuple_t tuuvm_array_asArraySlice(tuuvm_context_t *context, tuuvm_tuple_t array);
 
 /**
+ * Gets an array with the first elements
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_array_getFirstElements(tuuvm_context_t *context, tuuvm_tuple_t array, size_t size);
+
+/**
  * Creates a byte array with the specified size.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_byteArray_create(tuuvm_context_t *context, tuuvm_tuple_t size);

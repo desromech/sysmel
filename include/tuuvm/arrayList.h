@@ -30,6 +30,11 @@ TUUVM_API void tuuvm_arrayList_add(tuuvm_context_t *context, tuuvm_tuple_t array
 TUUVM_API tuuvm_tuple_t tuuvm_arrayList_asArraySlice(tuuvm_context_t *context, tuuvm_tuple_t arrayList);
 
 /**
+ * Converts the array list into an array.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_arrayList_asArray(tuuvm_context_t *context, tuuvm_tuple_t arrayList);
+
+/**
  * Gets the size of an array list.
  */
 TUUVM_API size_t tuuvm_arrayList_getSize(tuuvm_tuple_t arrayList);

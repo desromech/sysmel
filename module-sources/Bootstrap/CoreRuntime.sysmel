@@ -85,6 +85,29 @@ Type
     withSelector: #hasBytesContent addMethod: {:self :: Boolean |
         (self flags & 2sz) ~= 0sz
     };
+    withSelector: #addTypeSlot: addMethod: {:self :extraSlot :: Void |
+        if: self totalSlotCount ~~ nil then: (self error: "Cannot add type slot when the total slot count has already been computed").
+        if: self pendingSlots == nil then: (self pendingSlots: ArrayList new).
+        self pendingSlots add: extraSlot
+    };
+    withSelector: #validSlots addMethod: {:self |
+        let: #pendingSlots with: self pendingSlots.
+        if: pendingSlots ~~ nil then: {
+
+            let: #pendingSlotsArray with: pendingSlots asArray.
+            let: #baseIndex with: self validSupertypeTotalSlotCount + self slots size.
+
+            pendingSlotsArray doWithIndex: {:pendingSlot :pendingSlotIndex :: Void |
+                let: #slotIndex with: baseIndex + pendingSlotIndex.
+                pendingSlot generateAccessorsOn: self withIndex: slotIndex
+            }.
+
+            self slots: self slots -- pendingSlotsArray.
+            self pendingSlots: nil
+        }.
+        
+        self slots
+    };
     withSelector: #validSupertypeTotalSlotCount addMethod: {:self :: Size |
         let: #supertype with: self supertype.
         if: supertype == nil then: 0sz else: supertype validTotalSlotCount.
@@ -92,7 +115,7 @@ Type
     withSelector: #validTotalSlotCount addMethod: {:self :: Size |
         let: #totalSlotCount with: self totalSlotCount.
         if: totalSlotCount == nil then: {
-            self totalSlotCount: self validSupertypeTotalSlotCount + self slots size.
+            self totalSlotCount: self validSupertypeTotalSlotCount + self validSlots size.
             self totalSlotCount
         } else: totalSlotCount
     };
@@ -172,7 +195,7 @@ Function
         self hasFlag: (1sz << 3sz)
     };
     withSelector: #makePure addMethod: {:self :: self __type__ |
-        self addFlag: (1sz << 0sz).
+        self addFlag: (1sz << 3sz).
         self
     };
 
@@ -180,7 +203,7 @@ Function
         self hasFlag: (1sz << 4sz)
     };
     withSelector: #makeFinal addMethod: {:self :: self __type__ |
-        self addFlag: (1sz << 0sz).
+        self addFlag: (1sz << 4sz).
         self
     };
     withSelector: #hasPragmaNamed: addMethod: {:self :selector :: Boolean |
@@ -437,9 +460,6 @@ TypeSlot
     }.
 
 Type
-    withSelector: #addTypeSlot: addMethod: {:self :extraSlot :: Void |
-        printLine("TODO: addTypeSlot ", extraSlot)
-    };
     withSelector: #generatePublicAccessors addMethod: {:self :: Void |
         let: #baseSlotIndex with: self validSupertypeTotalSlotCount.
         self slots doWithIndex: {:slot :index :: Void |
@@ -464,7 +484,7 @@ Class
             flags: 1sz;
             supertype: self;
             slots: ();
-            totalSlotCount: self validTotalSlotCount.
+            totalSlotCount: nil.
         metaclass thisClass: class.
         class
     };

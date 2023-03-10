@@ -33,6 +33,22 @@ TUUVM_API tuuvm_tuple_t tuuvm_array_asArraySlice(tuuvm_context_t *context, tuuvm
     return tuuvm_arraySlice_createWithOffsetAndSize(context, array, 0, tuuvm_tuple_getSizeInSlots(array));
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_array_getFirstElements(tuuvm_context_t *context, tuuvm_tuple_t array, size_t size)
+{
+    if(!tuuvm_tuple_isNonNullPointer(array)) return TUUVM_NULL_TUPLE;
+
+    size_t resultSize = tuuvm_tuple_getSizeInSlots(array);
+    if(size < resultSize)
+        resultSize = size;
+
+    tuuvm_array_t *source = (tuuvm_array_t*)array;
+    tuuvm_array_t *result = (tuuvm_array_t*)tuuvm_array_create(context, resultSize);
+    for(size_t i = 0; i < resultSize; ++i)
+        result->elements[i] = source->elements[i];
+
+    return (tuuvm_tuple_t)result;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_arrayOrByteArray_at(tuuvm_tuple_t array, size_t index)
 {
     if(!tuuvm_tuple_isNonNullPointer(array)) return TUUVM_NULL_TUPLE;

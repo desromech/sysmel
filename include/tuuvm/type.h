@@ -19,6 +19,8 @@ typedef struct tuuvm_type_tuple_s
     tuuvm_tuple_t macroMethodDictionary;
     tuuvm_tuple_t methodDictionary;
     tuuvm_tuple_t fallbackMethodDictionary;
+
+    tuuvm_tuple_t pendingSlots;
 } tuuvm_type_tuple_t;
 
 typedef enum tuuvm_typeFlags_e

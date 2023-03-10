@@ -91,3 +91,6 @@ printLine(TestClass).
 printLine(TestClass new myTestMethod).
 printLine(2, " ", TestClass new square: 2).
 printLine(TestClass new returnTest).
+printLine(TestClass validTotalSlotCount).
+printLine(TestClass new testField).
+printLine(TestClass new testField: 42; testField).
