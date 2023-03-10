@@ -91,6 +91,14 @@ TUUVM_INLINE bool tuuvm_function_isVariadic(tuuvm_context_t *context, tuuvm_tupl
 }
 
 /**
+ * Is this a pure function?
+ */
+TUUVM_INLINE bool tuuvm_function_isPure(tuuvm_context_t *context, tuuvm_tuple_t function)
+{
+    return (tuuvm_function_getFlags(context, function) & TUUVM_FUNCTION_FLAGS_PURE) != 0;
+}
+
+/**
  * Applies a function tuple with the given parameters
  */
 TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments);

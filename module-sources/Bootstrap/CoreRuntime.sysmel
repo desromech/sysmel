@@ -142,11 +142,14 @@ Type
     withSelector: #new addMethod: {:self :: self |
         self basicNew initialize; yourself
     };
-    withSelector: #lookupSelector: addMethod: {:self :selector |
+    withSelector: #>> addMethod: {:self :selector |
         let: #methodDictionary with: self methodDictionary.
-        let: #method with: (if: methodDictionary ~~ nil
+        if: methodDictionary ~~ nil
             then: (methodDictionary atOrNil: selector)
-            else: nil).
+            else: nil
+    };
+    withSelector: #lookupSelector: addMethod: {:self :selector |
+        let: #method with: self >> selector.
         if: method ~~ nil
         then: method
         else: {

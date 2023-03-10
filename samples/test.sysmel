@@ -73,9 +73,8 @@ printLine(Object lookupSelector: #testMethod, " ", (Object lookupSelector: #test
 
 public class TestClass superclass: Object; definition: {
     public field testField.
-    public method myTestMethod => Int32 := {
-        42i32
-    }.
+    public method myTestMethod => Int32
+        := 42i32.
 
     public pure method square: x
         := x*x.
@@ -94,3 +93,5 @@ printLine(TestClass new returnTest).
 printLine(TestClass validTotalSlotCount).
 printLine(TestClass new testField).
 printLine(TestClass new testField: 42; testField).
+
+printLine((TestClass >> #myTestMethod) body value).

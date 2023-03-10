@@ -1255,7 +1255,13 @@ static tuuvm_tuple_t tuuvm_astFunctionApplicationNode_primitiveAnalyze(tuuvm_con
     struct {
         tuuvm_astFunctionApplicationNode_t *applicationNode;
         tuuvm_tuple_t analyzedFunctionExpression;
+        tuuvm_tuple_t argumentNode;
+        tuuvm_tuple_t analyzedArgument;
         tuuvm_tuple_t analyzedArguments;
+        
+        tuuvm_tuple_t literalFunction;
+        tuuvm_tuple_t pureCallResult;
+        tuuvm_tuple_t argumentValue;
     } gcFrame = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
@@ -1266,15 +1272,47 @@ static tuuvm_tuple_t tuuvm_astFunctionApplicationNode_primitiveAnalyze(tuuvm_con
     gcFrame.analyzedFunctionExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.applicationNode->functionExpression, *environment);
     gcFrame.applicationNode->functionExpression = gcFrame.analyzedFunctionExpression;
 
+    bool canOptimizeCall = false;
+    if(tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedFunctionExpression))
+    {
+        gcFrame.literalFunction = tuuvm_astLiteralNode_getValue(gcFrame.analyzedFunctionExpression);
+        canOptimizeCall = tuuvm_function_isPure(context, gcFrame.literalFunction);
+    }
+
     size_t applicationArgumentCount = tuuvm_arraySlice_getSize(gcFrame.applicationNode->arguments);
     gcFrame.analyzedArguments = tuuvm_array_create(context, applicationArgumentCount);
     for(size_t i = 0; i < applicationArgumentCount; ++i)
     {
-        tuuvm_tuple_t argumentNode = tuuvm_arraySlice_at(gcFrame.applicationNode->arguments, i);
-        tuuvm_array_atPut(gcFrame.analyzedArguments, i, tuuvm_interpreter_analyzeASTWithEnvironment(context, argumentNode, *environment));
+        gcFrame.argumentNode = tuuvm_arraySlice_at(gcFrame.applicationNode->arguments, i);
+        gcFrame.analyzedArgument = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.argumentNode, *environment);
+        canOptimizeCall = canOptimizeCall && tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedArgument);
+        tuuvm_array_atPut(gcFrame.analyzedArguments, i, gcFrame.analyzedArgument);
     }
 
     gcFrame.applicationNode->arguments = tuuvm_array_asArraySlice(context, gcFrame.analyzedArguments);
+
+    if(canOptimizeCall)
+    {
+        tuuvm_functionCallFrameStack_t callFrameStack = {0};
+        TUUVM_STACKFRAME_PUSH_GC_ROOTS(callFrameStackRecord, callFrameStack.gcRoots);
+
+        tuuvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.literalFunction, applicationArgumentCount);
+
+        for(size_t i = 0; i < applicationArgumentCount; ++i)
+        {
+            gcFrame.analyzedArgument = tuuvm_array_at(gcFrame.analyzedArguments, i);
+            gcFrame.argumentValue = tuuvm_astLiteralNode_getValue(gcFrame.analyzedArgument);
+            tuuvm_functionCallFrameStack_push(&callFrameStack, gcFrame.argumentValue);
+        }
+
+        TUUVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
+        gcFrame.pureCallResult = tuuvm_functionCallFrameStack_finish(context, &callFrameStack);
+
+        TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return tuuvm_astLiteralNode_create(context, gcFrame.applicationNode->super.sourcePosition, gcFrame.pureCallResult);
+    }
+
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return (tuuvm_tuple_t)gcFrame.applicationNode;
