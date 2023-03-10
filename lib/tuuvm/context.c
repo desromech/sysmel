@@ -212,7 +212,7 @@ TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(tuuv
     struct {
         tuuvm_tuple_t symbol;
         tuuvm_tuple_t primitiveFunction;
-    } gcFrame = {};
+    } gcFrame = {0};
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     gcFrame.symbol = tuuvm_symbol_internWithCString(context, symbolString);
@@ -713,7 +713,7 @@ TUUVM_API tuuvm_context_t *tuuvm_context_loadImageFromFileNamed(const char *file
     if(!inputFile)
         return NULL;
 
-    char magic[4] = {};
+    char magic[4] = {0};
     fread(magic, 4, 1, inputFile);
     if(memcmp(magic, "TVIM", 4))
     {

@@ -226,7 +226,7 @@ static tuuvm_tuple_t tuuvm_function_primitive_apply(tuuvm_context_t *context, tu
         callArgumentCount = variadicArgumentCount - 1 + argumentListSize;
     }
 
-    tuuvm_functionCallFrameStack_t callFrameStack = {};
+    tuuvm_functionCallFrameStack_t callFrameStack = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(callFrameStackRecord, callFrameStack.gcRoots);
 
     tuuvm_functionCallFrameStack_begin(context, &callFrameStack, *function, callArgumentCount);

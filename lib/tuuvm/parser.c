@@ -230,7 +230,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_parser_parseTokens(tuuvm_context_t *context, tuuvm
 {
     struct {
         tuuvm_tuple_t result;
-    } gcFrame = {};
+    } gcFrame = {0};
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
@@ -274,7 +274,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_parser_parseSourceCode(tuuvm_context_t *context, t
         tuuvm_tuple_t sourceCode;
         tuuvm_tuple_t tokenSequence;
         tuuvm_tuple_t result;
-    } gcFrame = {};
+    } gcFrame = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     gcFrame.sourceCode = sourceCode;

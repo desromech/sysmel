@@ -363,8 +363,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_add(tuuvm_context_t *context, tuuvm_tuple_
         return tuuvm_tuple_integer_encodeInt64(context, leftValue + rightValue);
     }
 
-    tuuvm_decoded_integer_t decodedLeftInteger = {};
-    tuuvm_decoded_integer_t decodedRightInteger = {};
+    tuuvm_decoded_integer_t decodedLeftInteger = {0};
+    tuuvm_decoded_integer_t decodedRightInteger = {0};
     tuuvm_integer_decodeLargeOrImmediate(context, &decodedLeftInteger, left);
     tuuvm_integer_decodeLargeOrImmediate(context, &decodedRightInteger, right);
 
@@ -415,8 +415,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_subtract(tuuvm_context_t *context, tuuvm_t
         return tuuvm_tuple_integer_encodeInt64(context, leftValue - rightValue);
     }
 
-    tuuvm_decoded_integer_t decodedLeftInteger = {};
-    tuuvm_decoded_integer_t decodedRightInteger = {};
+    tuuvm_decoded_integer_t decodedLeftInteger = {0};
+    tuuvm_decoded_integer_t decodedRightInteger = {0};
     tuuvm_integer_decodeLargeOrImmediate(context, &decodedLeftInteger, left);
     tuuvm_integer_decodeLargeOrImmediate(context, &decodedRightInteger, right);
 
@@ -485,8 +485,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_multiply(tuuvm_context_t *context, tuuvm_t
             return tuuvm_tuple_integer_encodeInt64(context, leftValue * rightValue);
     }
 
-    tuuvm_decoded_integer_t decodedLeftInteger = {};
-    tuuvm_decoded_integer_t decodedRightInteger = {};
+    tuuvm_decoded_integer_t decodedLeftInteger = {0};
+    tuuvm_decoded_integer_t decodedRightInteger = {0};
     tuuvm_integer_decodeLargeOrImmediate(context, &decodedLeftInteger, left);
     tuuvm_integer_decodeLargeOrImmediate(context, &decodedRightInteger, right);
 
@@ -535,8 +535,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_compare(tuuvm_context_t *context, tuuvm_tu
             return tuuvm_tuple_integer_encodeSmall(0);
     }
 
-    tuuvm_decoded_integer_t decodedLeftInteger = {};
-    tuuvm_decoded_integer_t decodedRightInteger = {};
+    tuuvm_decoded_integer_t decodedLeftInteger = {0};
+    tuuvm_decoded_integer_t decodedRightInteger = {0};
     tuuvm_integer_decodeLargeOrImmediate(context, &decodedLeftInteger, left);
     tuuvm_integer_decodeLargeOrImmediate(context, &decodedRightInteger, right);
 
@@ -639,7 +639,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_printString(tuuvm_context_t *context, tuuv
 
 TUUVM_API tuuvm_tuple_t tuuvm_integer_toHexString(tuuvm_context_t *context, tuuvm_tuple_t integer)
 {
-    tuuvm_decoded_integer_t decodedInteger = {};
+    tuuvm_decoded_integer_t decodedInteger = {0};
     tuuvm_integer_decodeLargeOrImmediate(context, &decodedInteger, integer);
     
     // Count the required nibbles.

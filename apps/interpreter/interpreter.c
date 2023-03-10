@@ -29,7 +29,7 @@ int doMain(int startArgumentIndex, int argc, const char *argv[])
         tuuvm_tuple_t filesToProcess;
         tuuvm_tuple_t remainingArgs;
         tuuvm_tuple_t inputFileName;
-    } gcFrame = {};
+    } gcFrame = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     // Parse the command line.

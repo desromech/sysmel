@@ -18,7 +18,7 @@ TUUVM_API float tuuvm_tuple_float32_decode(tuuvm_tuple_t tuple)
     }
     else
     {
-        uint32_t floatBits = tuple >> TUUVM_TUPLE_TAG_BIT_COUNT;
+        uint32_t floatBits = (uint32_t)(tuple >> TUUVM_TUPLE_TAG_BIT_COUNT);
         float result = 0;
         memcpy(&result, &floatBits, 4);
         return result;
@@ -101,7 +101,7 @@ static tuuvm_tuple_t tuuvm_float32_primitive_printString(tuuvm_context_t *contex
     (void)closure;
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
 
-    char buffer[32] = {};
+    char buffer[32] = {0};
     tuuvm_float32_t value = tuuvm_tuple_float32_decode(arguments[0]);
 
     int stringSize = snprintf(buffer, sizeof(buffer), "%g", value);
@@ -117,7 +117,7 @@ static tuuvm_tuple_t tuuvm_float32_primitive_fromFloat64(tuuvm_context_t *contex
     (void)closure;
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
 
-    return tuuvm_tuple_float32_encode(context, tuuvm_tuple_float64_decode(arguments[0]));
+    return tuuvm_tuple_float32_encode(context, (float)tuuvm_tuple_float64_decode(arguments[0]));
 }
 
 static tuuvm_tuple_t tuuvm_float32_primitive_add(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -272,7 +272,7 @@ static tuuvm_tuple_t tuuvm_float64_primitive_printString(tuuvm_context_t *contex
     (void)closure;
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
 
-    char buffer[32] = {};
+    char buffer[32] = {0};
     tuuvm_float64_t value = tuuvm_tuple_float64_decode(arguments[0]);
 
     int stringSize = snprintf(buffer, sizeof(buffer), "%g", value);

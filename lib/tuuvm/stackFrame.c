@@ -197,6 +197,7 @@ static void tuuvm_stackFrame_prepareUnwinding(tuuvm_stackFrameRecord_t *targetRe
         break;
     default:
         // Nothing special is required here.
+        break;
     }
 }
 

@@ -2,6 +2,7 @@
 #define _DEFAULT_SOURCE // for realpath
 #endif
 
+#include "tuuvm/assert.h"
 #include "tuuvm/filesystem.h"
 #include "tuuvm/context.h"
 #include "tuuvm/errors.h"
@@ -9,6 +10,7 @@
 #include "tuuvm/string.h"
 #include "internal/context.h"
 #include <string.h>
+#include <stdlib.h>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -24,7 +26,19 @@
 TUUVM_API tuuvm_tuple_t tuuvm_filesystem_getWorkingDirectory(tuuvm_context_t *context)
 {
 #ifdef _WIN32
-#error TODO: Implement this
+    DWORD requiredBufferSize = GetCurrentDirectoryW(0, NULL);
+    wchar_t *buffer = (wchar_t *)malloc(requiredBufferSize*2);
+    GetCurrentDirectoryW(requiredBufferSize, buffer);
+
+    int resultStringBufferSize = WideCharToMultiByte(CP_UTF8, 0, buffer, -1, NULL, 0, NULL, NULL);
+    TUUVM_ASSERT(resultStringBufferSize > 0);
+    int resultStringSize = resultStringBufferSize - 1;
+
+    tuuvm_tuple_t result = tuuvm_string_createEmptyWithSize(context, resultStringSize);
+    WideCharToMultiByte(CP_UTF8, 0, buffer, -1, TUUVM_CAST_OOP_TO_OBJECT_TUPLE(result)->bytes, resultStringSize, NULL, NULL);
+    free(buffer);
+
+    return result;
 #else
     char *buffer = malloc(PATH_MAX);
     char *result = getcwd(buffer, PATH_MAX);
@@ -41,7 +55,15 @@ TUUVM_API tuuvm_tuple_t tuuvm_filesystem_getWorkingDirectory(tuuvm_context_t *co
 TUUVM_API void tuuvm_filesystem_setWorkingDirectory(tuuvm_tuple_t path)
 {
 #ifdef _WIN32
-#error TODO: Implement this
+    char *pathCString = tuuvm_tuple_bytesToCString(path);
+    int pathWStringSize = MultiByteToWideChar(CP_UTF8, 0, pathCString, -1, NULL, 0);
+    wchar_t *pathWString = (wchar_t *)malloc(pathWStringSize*2);
+    MultiByteToWideChar(CP_UTF8, 0, pathCString, -1, pathWString, pathWStringSize);
+    BOOL result = SetCurrentDirectoryW(pathWString);
+    free(pathWString);
+    free(pathCString);
+    if(!result)
+        tuuvm_error("Failed to set working directory.");
 #else
     char *pathCString = tuuvm_tuple_bytesToCString(path);
     int result = chdir(pathCString);

@@ -734,7 +734,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_scanner_scan(tuuvm_context_t *context, tuuvm_tuple
     struct {
         tuuvm_tuple_t tokenList;
         tuuvm_tuple_t result;
-    } gcFrame = {};
+    } gcFrame = {0};
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
