@@ -20,8 +20,8 @@ typedef struct tuuvm_environment_s
 typedef struct tuuvm_symbolBinding_s
 {
     tuuvm_tuple_header_t header;
-    tuuvm_tuple_t sourcePosition;
     tuuvm_tuple_t name;
+    tuuvm_tuple_t sourcePosition;
 } tuuvm_symbolBinding_t;
 
 typedef struct tuuvm_symbolArgumentBinding_s

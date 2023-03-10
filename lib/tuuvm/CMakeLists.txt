@@ -3,6 +3,7 @@ set(tuuvm_sources
     arrayList.c
     arraySlice.c
     assert.c
+    association.c
     ast.c
     boolean.c
     context.c

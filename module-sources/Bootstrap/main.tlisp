@@ -58,7 +58,7 @@
 
     (define (exportAndBindInstanceMethod selector method)
         (define exportedName (StringSymbol::intern (String::concat: typeName (String::concat: "::" (asString selector)))))
-        (Dictionary::at:put: (Type::validMethodDictionary type) selector method)
+        (MethodDictionary::at:put: (Type::validMethodDictionary type) selector method)
         (exportInstrinsicBuiltInBinding exportedName method))
 
     (define slots (RawTuple::slotAt: type Type::slotsSlotIndex))
@@ -95,11 +95,11 @@
 ## Type::withSelector:addMethod:
 (define (Type::withSelector:addMethod: type selector method)
     (define methodDict (Type::validMethodDictionary type))
-    (define existentMethod (Dictionary::atOrNil: methodDict selector))
+    (define existentMethod (MethodDictionary::atOrNil: methodDict selector))
     (define isCorePrimitive (Function::isCorePrimitive existentMethod))
     (if:then:else: isCorePrimitive
         (Function::adoptDefinitionOf: existentMethod method)
-        (Dictionary::at:put: methodDict selector method)))
+        (MethodDictionary::at:put: methodDict selector method)))
 
 ## Type::validMacroMethodDictionary
 (define (Type::validMacroMethodDictionary type)
@@ -114,7 +114,7 @@
 ## Type::withSelector:addMacroMethod:
 (define (Type::withSelector:addMacroMethod: type selector method)
     (define methodDict (Type::validMacroMethodDictionary type))
-    (Dictionary::at:put: methodDict selector method))
+    (MethodDictionary::at:put: methodDict selector method))
 
 (Type::withSelector:addMethod: SourcePosition #printString (lambda (sourcePosition)
     (define sourceDirectory (SourceCode::directory (SourcePosition::sourceCode sourcePosition)))

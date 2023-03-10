@@ -421,8 +421,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "continueTarget", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolBindingType, "SymbolBinding", TUUVM_NULL_TUPLE,
-        "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolArgumentBindingType, "SymbolArgumentBinding", TUUVM_NULL_TUPLE,
         NULL);

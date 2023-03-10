@@ -1,5 +1,6 @@
 #include "tuuvm/array.h"
 #include "tuuvm/assert.h"
+#include "tuuvm/association.h"
 #include "tuuvm/dictionary.h"
 #include "tuuvm/errors.h"
 #include "tuuvm/function.h"
@@ -26,7 +27,7 @@ static intptr_t tuuvm_identityDictionary_scanFor(tuuvm_tuple_t dictionary, tuuvm
         return -1;
 
     tuuvm_dictionary_t *dictionaryObject = (tuuvm_dictionary_t*)dictionary;
-    size_t capacity = tuuvm_tuple_getSizeInSlots(dictionaryObject->storage) / 2;
+    size_t capacity = tuuvm_tuple_getSizeInSlots(dictionaryObject->storage);
     if(capacity == 0)
         return -1;
 
@@ -34,15 +35,15 @@ static intptr_t tuuvm_identityDictionary_scanFor(tuuvm_tuple_t dictionary, tuuvm
     size_t hashIndex = tuuvm_tuple_identityHash(element) % capacity;
     for(size_t i = hashIndex; i < capacity; ++i)
     {
-        tuuvm_tuple_t dictionaryKey = storage->elements[i*2];
-        if(dictionaryKey == TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE || tuuvm_tuple_identityEquals(element, dictionaryKey))
+        tuuvm_tuple_t association = storage->elements[i];
+        if(!association || tuuvm_tuple_identityEquals(element, tuuvm_association_getKey(association)))
             return (intptr_t)i;
     }
 
     for(size_t i = 0; i < hashIndex; ++i)
     {
-        tuuvm_tuple_t dictionaryKey = storage->elements[i*2];
-        if(dictionaryKey == TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE || tuuvm_tuple_identityEquals(element, dictionaryKey))
+        tuuvm_tuple_t association = storage->elements[i];
+        if(!association || tuuvm_tuple_identityEquals(element, tuuvm_association_getKey(association)))
             return (intptr_t)i;
     }
 
@@ -61,62 +62,55 @@ TUUVM_API bool tuuvm_identityDictionary_find(tuuvm_tuple_t dictionary, tuuvm_tup
 
     tuuvm_dictionary_t *dictionaryObject = (tuuvm_dictionary_t*)dictionary;
     tuuvm_array_t *storage = (tuuvm_array_t*)dictionaryObject->storage;
-    if(storage->elements[elementIndex*2] == TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE)
+    if(!storage->elements[elementIndex])
         return false;
 
-    *outValue = storage->elements[elementIndex*2 + 1];
+    *outValue = tuuvm_association_getValue(storage->elements[elementIndex]);
     return true;
 }
 
-static void tuuvm_dictionary_insertNoCheck(tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t value)
+static void tuuvm_identityDictionary_insertNoCheck(tuuvm_tuple_t dictionary, tuuvm_tuple_t association)
 {
-    intptr_t elementIndex = tuuvm_identityDictionary_scanFor(dictionary, key);
+    intptr_t elementIndex = tuuvm_identityDictionary_scanFor(dictionary, tuuvm_association_getKey(association));
     TUUVM_ASSERT(elementIndex >= 0);
 
     tuuvm_dictionary_t *dictionaryObject = (tuuvm_dictionary_t*)dictionary;
     tuuvm_array_t *storage = (tuuvm_array_t*)dictionaryObject->storage;
-    storage->elements[elementIndex*2] = key;
-    storage->elements[elementIndex*2 + 1] = value;
+    storage->elements[elementIndex] = association;
 }
 
-static void tuuvm_dictionary_increaseCapacity(tuuvm_context_t *context, tuuvm_tuple_t dictionary)
+static void tuuvm_identityDictionary_increaseCapacity(tuuvm_context_t *context, tuuvm_tuple_t dictionary)
 {
     tuuvm_dictionary_t *dictionaryObject = (tuuvm_dictionary_t*)dictionary;
     tuuvm_array_t *oldStorage = (tuuvm_array_t*)dictionaryObject->storage;
 
-    size_t oldCapacity = tuuvm_tuple_getSizeInSlots(dictionaryObject->storage) / 2;
+    size_t oldCapacity = tuuvm_tuple_getSizeInSlots(dictionaryObject->storage);
     size_t newCapacity = oldCapacity * 2;
     if(newCapacity < 8)
         newCapacity = 8;
 
     // Make the new storage.
-    tuuvm_array_t *newStorage = (tuuvm_array_t*)tuuvm_array_create(context, newCapacity*2);
+    tuuvm_array_t *newStorage = (tuuvm_array_t*)tuuvm_array_create(context, newCapacity);
     dictionaryObject->storage = (tuuvm_tuple_t)newStorage;
-    for(size_t i = 0; i < newCapacity; ++i)
-        newStorage->elements[i*2] = TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE;
 
     // Reinsert the old elements.
     for(size_t i = 0; i < oldCapacity; ++i)
     {
-        tuuvm_tuple_t key = oldStorage->elements[i*2];
-        tuuvm_tuple_t value = oldStorage->elements[i*2 + 1];
-        if(key != TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE)
-            tuuvm_dictionary_insertNoCheck(dictionary, key, value);
+        tuuvm_tuple_t association = oldStorage->elements[i];
+        if(association)
+            tuuvm_identityDictionary_insertNoCheck(dictionary, association);
     }
 }
 
 TUUVM_API void tuuvm_identityDictionary_atPut(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t value)
 {
-    if(key == TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE)
-        return;
-
     if(!tuuvm_tuple_isNonNullPointer(dictionary))
         return;
 
     intptr_t elementIndex = tuuvm_identityDictionary_scanFor(dictionary, key);
     if(elementIndex < 0)
     {
-        tuuvm_dictionary_increaseCapacity(context, dictionary);
+        tuuvm_identityDictionary_increaseCapacity(context, dictionary);
         elementIndex = tuuvm_identityDictionary_scanFor(dictionary, key);
         if(elementIndex < 0)
            tuuvm_error("Dictionary out of memory.");
@@ -124,21 +118,21 @@ TUUVM_API void tuuvm_identityDictionary_atPut(tuuvm_context_t *context, tuuvm_tu
 
     tuuvm_dictionary_t *dictionaryObject = (tuuvm_dictionary_t*)dictionary;
     tuuvm_array_t *storage = (tuuvm_array_t*)dictionaryObject->storage;
-    bool isNewElement = storage->elements[elementIndex*2] == TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE;
-    storage->elements[elementIndex*2] = key;
-    storage->elements[elementIndex*2 + 1] = value;
-
-    // Count the newly inserted element.
-    if(isNewElement)
+    if(storage->elements[elementIndex])
     {
-        size_t capacity = tuuvm_tuple_getSizeInSlots(dictionaryObject->storage) / 2;
+        tuuvm_association_setValue(storage->elements[elementIndex], value);
+    }
+    else
+    {
+        storage->elements[elementIndex] = tuuvm_association_create(context, key, value);
+        size_t capacity = tuuvm_tuple_getSizeInSlots(dictionaryObject->storage);
         size_t newSize = tuuvm_tuple_size_decode(dictionaryObject->size) + 1;
         dictionaryObject->size = tuuvm_tuple_size_encode(context, newSize);
-        size_t capacityThreshold = capacity * 3 / 4;
+        size_t capacityThreshold = capacity * 4 / 5;
 
         // Make sure the maximum occupancy rate is not greater than 80%.
         if(newSize >= capacityThreshold)
-            tuuvm_dictionary_increaseCapacity(context, dictionary);
+            tuuvm_identityDictionary_increaseCapacity(context, dictionary);
     }
 }
 
@@ -333,6 +327,6 @@ void tuuvm_dictionary_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "MethodDictionary::atOrNil:", context->roots.methodDictionaryType, "atOrNil:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_methodDictionary_primitive_atOrNil);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "MethodDictionary::at:put:", context->roots.methodDictionaryType, "at:put:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_methodDictionary_primitive_atPut);
 
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Dictionary::atOrNil:", context->roots.dictionaryType, "atOrNil:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_identityDictionary_primitive_atOrNil);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Dictionary::at:put:", context->roots.dictionaryType, "at:put:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_identityDictionary_primitive_atPut);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "IdentityDictionary::atOrNil:", context->roots.identityDictionaryType, "atOrNil:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_identityDictionary_primitive_atOrNil);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "IdentityDictionary::at:put:", context->roots.identityDictionaryType, "at:put:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_identityDictionary_primitive_atPut);
 }
