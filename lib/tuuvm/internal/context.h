@@ -55,6 +55,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t hashedCollectionType;
     tuuvm_tuple_t hashtableEmptyType;
     tuuvm_tuple_t identityDictionaryType;
+    tuuvm_tuple_t identitySetType;
     tuuvm_tuple_t integerType;
     tuuvm_tuple_t positiveIntegerType;
     tuuvm_tuple_t negativeIntegerType;

@@ -6,21 +6,10 @@
 #include "internal/context.h"
 #include <stdlib.h>
 
-TUUVM_API tuuvm_tuple_t tuuvm_dictionary_create(tuuvm_context_t *context, tuuvm_tuple_t equalsFunction, tuuvm_tuple_t hashFunction)
-{
-    tuuvm_dictionary_t *result = (tuuvm_dictionary_t*)tuuvm_context_allocatePointerTuple(context, context->roots.dictionaryType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_dictionary_t));
-    result->size = tuuvm_tuple_size_encode(context, 0);
-    result->equalsFunction = equalsFunction;
-    result->hashFunction = hashFunction;
-    return (tuuvm_tuple_t)result;
-}
-
 TUUVM_API tuuvm_tuple_t tuuvm_identityDictionary_create(tuuvm_context_t *context)
 {
     tuuvm_identityDictionary_t *result = (tuuvm_identityDictionary_t*)tuuvm_context_allocatePointerTuple(context, context->roots.identityDictionaryType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_identityDictionary_t));
     result->size = tuuvm_tuple_size_encode(context, 0);
-    result->equalsFunction = context->roots.identityEqualsFunction;
-    result->hashFunction = context->roots.identityHashFunction;
     return (tuuvm_tuple_t)result;
 }
 
@@ -28,12 +17,10 @@ TUUVM_API tuuvm_tuple_t tuuvm_methodDictionary_create(tuuvm_context_t *context)
 {
     tuuvm_methodDictionary_t *result = (tuuvm_methodDictionary_t*)tuuvm_context_allocatePointerTuple(context, context->roots.methodDictionaryType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_methodDictionary_t));
     result->size = tuuvm_tuple_size_encode(context, 0);
-    result->equalsFunction = context->roots.identityEqualsFunction;
-    result->hashFunction = context->roots.identityHashFunction;
     return (tuuvm_tuple_t)result;
 }
 
-static intptr_t tuuvm_dictionary_scanFor(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t element)
+static intptr_t tuuvm_identityDictionary_scanFor(tuuvm_tuple_t dictionary, tuuvm_tuple_t element)
 {
     if(!tuuvm_tuple_isNonNullPointer(dictionary))
         return -1;
@@ -44,31 +31,31 @@ static intptr_t tuuvm_dictionary_scanFor(tuuvm_context_t *context, tuuvm_tuple_t
         return -1;
 
     tuuvm_array_t *storage = (tuuvm_array_t*)dictionaryObject->storage;
-    size_t hashIndex = tuuvm_tuple_size_decode(tuuvm_function_apply1(context, dictionaryObject->hashFunction, element)) % capacity;
+    size_t hashIndex = tuuvm_tuple_identityHash(element) % capacity;
     for(size_t i = hashIndex; i < capacity; ++i)
     {
         tuuvm_tuple_t dictionaryKey = storage->elements[i*2];
-        if(dictionaryKey == TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE || tuuvm_tuple_boolean_decode(tuuvm_function_apply2(context, dictionaryObject->equalsFunction, element, dictionaryKey)))
+        if(dictionaryKey == TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE || tuuvm_tuple_identityEquals(element, dictionaryKey))
             return (intptr_t)i;
     }
 
     for(size_t i = 0; i < hashIndex; ++i)
     {
         tuuvm_tuple_t dictionaryKey = storage->elements[i*2];
-        if(dictionaryKey == TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE || tuuvm_tuple_boolean_decode(tuuvm_function_apply2(context, dictionaryObject->equalsFunction, element, dictionaryKey)))
+        if(dictionaryKey == TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE || tuuvm_tuple_identityEquals(element, dictionaryKey))
             return (intptr_t)i;
     }
 
     return -1;
 }
 
-TUUVM_API bool tuuvm_dictionary_find(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t element, tuuvm_tuple_t *outValue)
+TUUVM_API bool tuuvm_identityDictionary_find(tuuvm_tuple_t dictionary, tuuvm_tuple_t element, tuuvm_tuple_t *outValue)
 {
     *outValue = TUUVM_NULL_TUPLE;
     if(!tuuvm_tuple_isNonNullPointer(dictionary))
         return false;
 
-    intptr_t elementIndex = tuuvm_dictionary_scanFor(context, dictionary, element);
+    intptr_t elementIndex = tuuvm_identityDictionary_scanFor(dictionary, element);
     if(elementIndex < 0)
         return false;
 
@@ -81,9 +68,9 @@ TUUVM_API bool tuuvm_dictionary_find(tuuvm_context_t *context, tuuvm_tuple_t dic
     return true;
 }
 
-static void tuuvm_dictionary_insertNoCheck(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t value)
+static void tuuvm_dictionary_insertNoCheck(tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t value)
 {
-    intptr_t elementIndex = tuuvm_dictionary_scanFor(context, dictionary, key);
+    intptr_t elementIndex = tuuvm_identityDictionary_scanFor(dictionary, key);
     TUUVM_ASSERT(elementIndex >= 0);
 
     tuuvm_dictionary_t *dictionaryObject = (tuuvm_dictionary_t*)dictionary;
@@ -114,11 +101,11 @@ static void tuuvm_dictionary_increaseCapacity(tuuvm_context_t *context, tuuvm_tu
         tuuvm_tuple_t key = oldStorage->elements[i*2];
         tuuvm_tuple_t value = oldStorage->elements[i*2 + 1];
         if(key != TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE)
-            tuuvm_dictionary_insertNoCheck(context, dictionary, key, value);
+            tuuvm_dictionary_insertNoCheck(dictionary, key, value);
     }
 }
 
-TUUVM_API void tuuvm_dictionary_atPut(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t value)
+TUUVM_API void tuuvm_identityDictionary_atPut(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t value)
 {
     if(key == TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE)
         return;
@@ -126,11 +113,11 @@ TUUVM_API void tuuvm_dictionary_atPut(tuuvm_context_t *context, tuuvm_tuple_t di
     if(!tuuvm_tuple_isNonNullPointer(dictionary))
         return;
 
-    intptr_t elementIndex = tuuvm_dictionary_scanFor(context, dictionary, key);
+    intptr_t elementIndex = tuuvm_identityDictionary_scanFor(dictionary, key);
     if(elementIndex < 0)
     {
         tuuvm_dictionary_increaseCapacity(context, dictionary);
-        elementIndex = tuuvm_dictionary_scanFor(context, dictionary, key);
+        elementIndex = tuuvm_identityDictionary_scanFor(dictionary, key);
         if(elementIndex < 0)
            tuuvm_error("Dictionary out of memory.");
     }
@@ -155,7 +142,7 @@ TUUVM_API void tuuvm_dictionary_atPut(tuuvm_context_t *context, tuuvm_tuple_t di
     }
 }
 
-static intptr_t tuuvm_methodDictionary_scanFor(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t element)
+static intptr_t tuuvm_methodDictionary_scanFor(tuuvm_tuple_t dictionary, tuuvm_tuple_t element)
 {
     if(!tuuvm_tuple_isNonNullPointer(dictionary))
         return -1;
@@ -170,27 +157,27 @@ static intptr_t tuuvm_methodDictionary_scanFor(tuuvm_context_t *context, tuuvm_t
     for(size_t i = hashIndex; i < capacity; ++i)
     {
         tuuvm_tuple_t dictionaryKey = storage->elements[i*2];
-        if(dictionaryKey == TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE || element == dictionaryKey)
+        if(dictionaryKey == TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE || tuuvm_tuple_identityEquals(element, dictionaryKey))
             return (intptr_t)i;
     }
 
     for(size_t i = 0; i < hashIndex; ++i)
     {
         tuuvm_tuple_t dictionaryKey = storage->elements[i*2];
-        if(dictionaryKey == TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE || element == dictionaryKey)
+        if(dictionaryKey == TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE || tuuvm_tuple_identityEquals(element, dictionaryKey))
             return (intptr_t)i;
     }
 
     return -1;
 }
 
-TUUVM_API bool tuuvm_methodDictionary_find(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t element, tuuvm_tuple_t *outValue)
+TUUVM_API bool tuuvm_methodDictionary_find(tuuvm_tuple_t dictionary, tuuvm_tuple_t element, tuuvm_tuple_t *outValue)
 {
     *outValue = TUUVM_NULL_TUPLE;
     if(!tuuvm_tuple_isNonNullPointer(dictionary))
         return false;
 
-    intptr_t elementIndex = tuuvm_methodDictionary_scanFor(context, dictionary, element);
+    intptr_t elementIndex = tuuvm_methodDictionary_scanFor(dictionary, element);
     if(elementIndex < 0)
         return false;
 
@@ -203,9 +190,9 @@ TUUVM_API bool tuuvm_methodDictionary_find(tuuvm_context_t *context, tuuvm_tuple
     return true;
 }
 
-static void tuuvm_methodDictionary_insertNoCheck(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t value)
+static void tuuvm_methodDictionary_insertNoCheck(tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t value)
 {
-    intptr_t elementIndex = tuuvm_methodDictionary_scanFor(context, dictionary, key);
+    intptr_t elementIndex = tuuvm_methodDictionary_scanFor(dictionary, key);
     TUUVM_ASSERT(elementIndex >= 0);
 
     tuuvm_dictionary_t *dictionaryObject = (tuuvm_dictionary_t*)dictionary;
@@ -236,7 +223,7 @@ static void tuuvm_methodDictionary_increaseCapacity(tuuvm_context_t *context, tu
         tuuvm_tuple_t key = oldStorage->elements[i*2];
         tuuvm_tuple_t value = oldStorage->elements[i*2 + 1];
         if(key != TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE)
-            tuuvm_methodDictionary_insertNoCheck(context, dictionary, key, value);
+            tuuvm_methodDictionary_insertNoCheck(dictionary, key, value);
     }
 }
 
@@ -248,11 +235,11 @@ TUUVM_API void tuuvm_methodDictionary_atPut(tuuvm_context_t *context, tuuvm_tupl
     if(!tuuvm_tuple_isNonNullPointer(dictionary))
         return;
 
-    intptr_t elementIndex = tuuvm_methodDictionary_scanFor(context, dictionary, key);
+    intptr_t elementIndex = tuuvm_methodDictionary_scanFor(dictionary, key);
     if(elementIndex < 0)
     {
         tuuvm_methodDictionary_increaseCapacity(context, dictionary);
-        elementIndex = tuuvm_methodDictionary_scanFor(context, dictionary, key);
+        elementIndex = tuuvm_methodDictionary_scanFor(dictionary, key);
         if(elementIndex < 0)
            tuuvm_error("Dictionary out of memory.");
     }
@@ -277,24 +264,25 @@ TUUVM_API void tuuvm_methodDictionary_atPut(tuuvm_context_t *context, tuuvm_tupl
     }
 }
 
-static tuuvm_tuple_t tuuvm_dictionary_primitive_atOrNil(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_identityDictionary_primitive_atOrNil(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
+    (void)context;
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
 
     tuuvm_tuple_t found = TUUVM_NULL_TUPLE;
-    if(!tuuvm_dictionary_find(context, arguments[0], arguments[1], &found))
+    if(!tuuvm_identityDictionary_find(arguments[0], arguments[1], &found))
         found = TUUVM_NULL_TUPLE;
 
     return found;
 }
 
-static tuuvm_tuple_t tuuvm_dictionary_primitive_atPut(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_identityDictionary_primitive_atPut(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
 
-    tuuvm_dictionary_atPut(context, arguments[0], arguments[1], arguments[2]);
+    tuuvm_identityDictionary_atPut(context, arguments[0], arguments[1], arguments[2]);
     return TUUVM_VOID_TUPLE;
 }
 
@@ -309,11 +297,12 @@ static tuuvm_tuple_t tuuvm_methodDictionary_primitive_new(tuuvm_context_t *conte
 
 static tuuvm_tuple_t tuuvm_methodDictionary_primitive_atOrNil(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
+    (void)context;
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
 
     tuuvm_tuple_t found = TUUVM_NULL_TUPLE;
-    if(!tuuvm_methodDictionary_find(context, arguments[0], arguments[1], &found))
+    if(!tuuvm_methodDictionary_find(arguments[0], arguments[1], &found))
         found = TUUVM_NULL_TUPLE;
 
     return found;
@@ -330,8 +319,8 @@ static tuuvm_tuple_t tuuvm_methodDictionary_primitive_atPut(tuuvm_context_t *con
 
 void tuuvm_dictionary_registerPrimitives(void)
 {
-    tuuvm_primitiveTable_registerFunction(tuuvm_dictionary_primitive_atOrNil);
-    tuuvm_primitiveTable_registerFunction(tuuvm_dictionary_primitive_atPut);
+    tuuvm_primitiveTable_registerFunction(tuuvm_identityDictionary_primitive_atOrNil);
+    tuuvm_primitiveTable_registerFunction(tuuvm_identityDictionary_primitive_atPut);
 
     tuuvm_primitiveTable_registerFunction(tuuvm_methodDictionary_primitive_new);
     tuuvm_primitiveTable_registerFunction(tuuvm_methodDictionary_primitive_atOrNil);
@@ -344,6 +333,6 @@ void tuuvm_dictionary_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "MethodDictionary::atOrNil:", context->roots.methodDictionaryType, "atOrNil:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_methodDictionary_primitive_atOrNil);
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "MethodDictionary::at:put:", context->roots.methodDictionaryType, "at:put:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_methodDictionary_primitive_atPut);
 
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Dictionary::atOrNil:", context->roots.dictionaryType, "atOrNil:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_dictionary_primitive_atOrNil);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Dictionary::at:put:", context->roots.dictionaryType, "at:put:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_dictionary_primitive_atPut);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Dictionary::atOrNil:", context->roots.dictionaryType, "atOrNil:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_identityDictionary_primitive_atOrNil);
+    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Dictionary::at:put:", context->roots.dictionaryType, "at:put:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_identityDictionary_primitive_atPut);
 }

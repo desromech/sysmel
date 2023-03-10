@@ -113,7 +113,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_symbol_internWithString(tuuvm_context_t *context, 
         };
 
         tuuvm_tuple_t existent;
-        if(tuuvm_set_findWithExplicitHash(context->roots.internedSymbolSet, &stringSlice, tuuvm_stringSlice_hashFunction, tuuvm_stringSlice_equalsFunction, &existent))
+        if(tuuvm_identitySet_findWithExplicitHash(context->roots.internedSymbolSet, &stringSlice, tuuvm_stringSlice_hashFunction, tuuvm_stringSlice_equalsFunction, &existent))
             return existent;
     }
 
@@ -124,7 +124,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_symbol_internWithString(tuuvm_context_t *context, 
     result->header.identityHash = tuuvm_string_computeHashWithBytes(stringSize, (const uint8_t*)string);
 
     memcpy(result->bytes, string, stringSize);
-    tuuvm_set_insert(context, context->roots.internedSymbolSet, (tuuvm_tuple_t)result);
+    tuuvm_identitySet_insert(context, context->roots.internedSymbolSet, (tuuvm_tuple_t)result);
     return (tuuvm_tuple_t)result;
 }
 
@@ -355,7 +355,7 @@ static tuuvm_tuple_t tuuvm_string_primitive_withoutSuffix(tuuvm_context_t *conte
     if(memcmp(stringData + stringSize - suffixLen, suffixData, suffixLen))
         return string;
 
-    return tuuvm_string_createWithString(context, stringSize - suffixLen, stringData);
+    return tuuvm_string_createWithString(context, stringSize - suffixLen, (const char*)(stringData));
 }
 
 static tuuvm_tuple_t tuuvm_symbol_primitive_intern(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)

@@ -297,10 +297,11 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 
     context->roots.dictionaryType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.hashedCollectionType);
     context->roots.identityDictionaryType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.dictionaryType);
-    context->roots.methodDictionaryType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.methodDictionaryType);
+    context->roots.methodDictionaryType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.hashedCollectionType);
     context->roots.setType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.hashedCollectionType);
+    context->roots.identitySetType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.setType);
 
-    context->roots.internedSymbolSet = tuuvm_set_create(context, context->roots.stringEqualsFunction, context->roots.stringHashFunction);
+    context->roots.internedSymbolSet = tuuvm_identitySet_create(context);
 
     // Create the intrinsic built-in environment
     context->roots.arrayType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
@@ -447,8 +448,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.setType, "Set", TUUVM_NULL_TUPLE,
         "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
-        "equalsFunction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionType,
-        "hashFunction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.identitySetType, "IdentitySet", TUUVM_NULL_TUPLE,
         NULL);
 
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.collectionType, "Collection", TUUVM_NULL_TUPLE, NULL);
@@ -478,12 +479,12 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.dictionaryType, "Dictionary", TUUVM_NULL_TUPLE,
         "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
-        "equalsFunction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionType,
-        "hashFunction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionType,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.identityDictionaryType, "IdentityDictionary", TUUVM_NULL_TUPLE,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.methodDictionaryType, "MethodDictionary", TUUVM_NULL_TUPLE,
+        "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     context->roots.generatedSymbolType = tuuvm_context_createIntrinsicClass(context, "GeneratedSymbol", TUUVM_NULL_TUPLE,
         "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,

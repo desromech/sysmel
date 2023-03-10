@@ -153,7 +153,7 @@ TUUVM_INLINE bool tuuvm_tuple_isPointer(tuuvm_tuple_t tuple)
  */
 TUUVM_INLINE bool tuuvm_tuple_isNonNullPointer(tuuvm_tuple_t tuple)
 {
-    return tuple != 0 && (tuple & TUUVM_TUPLE_TAG_BIT_MASK) == TUUVM_TUPLE_TAG_POINTER;
+    return (tuple != 0) & ((tuple & TUUVM_TUPLE_TAG_BIT_MASK) == TUUVM_TUPLE_TAG_POINTER);
 }
 
 /**
