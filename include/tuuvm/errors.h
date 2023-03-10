@@ -5,6 +5,11 @@
 
 #include "common.h"
 #include <stddef.h>
+#include <stdint.h>
+
+typedef uintptr_t tuuvm_tuple_t;
+
+TUUVM_API void tuuvm_errorWithMessageTuple(tuuvm_tuple_t message);
 
 TUUVM_API void tuuvm_error(const char *message);
 TUUVM_API void tuuvm_error_assertionFailure(const char *message);

@@ -265,7 +265,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_integer_encodeBigUInt64(tuuvm_context_t *con
 int32_t tuuvm_tuple_integer_decodeInt32(tuuvm_context_t *context, tuuvm_tuple_t value)
 {
     if(tuuvm_tuple_isImmediate(value))
-        return tuuvm_tuple_integer_decodeSmall(value);
+        return (int32_t)tuuvm_tuple_integer_decodeSmall(value);
 
     if(tuuvm_tuple_getSizeInBytes(value) < 4)
         return 0;

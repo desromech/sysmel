@@ -43,7 +43,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_float32_encode(tuuvm_context_t *context, flo
 
 TUUVM_API tuuvm_tuple_t tuuvm_float32_parseCString(tuuvm_context_t *context, const char *cstring)
 {
-    return tuuvm_tuple_float32_encode(context, atof(cstring));
+    return tuuvm_tuple_float32_encode(context, (float)atof(cstring));
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_float32_parseString(tuuvm_context_t *context, size_t stringSize, const char *string)

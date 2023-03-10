@@ -422,6 +422,21 @@ static tuuvm_tuple_t tuuvm_astArgumentNode_primitiveAnalyze(tuuvm_context_t *con
     return (tuuvm_tuple_t)gcFrame.argumentNode;
 }
 
+static tuuvm_tuple_t tuuvm_astErrorNode_primitiveEvaluate(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *node = &arguments[0];
+    tuuvm_tuple_t *environment = &arguments[1];
+
+    tuuvm_astErrorNode_t **errorNode = (tuuvm_astErrorNode_t**)node;
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*errorNode)->super.sourcePosition);
+
+    tuuvm_errorWithMessageTuple((*errorNode)->errorMessage);
+    return TUUVM_NULL_TUPLE;
+}
+
 tuuvm_tuple_t tuuvm_interpreter_recompileAndOptimizeFunction(tuuvm_context_t *context, tuuvm_function_t **functionObject)
 {
     struct {
@@ -2938,6 +2953,8 @@ void tuuvm_astInterpreter_registerPrimitives(void)
 
     tuuvm_primitiveTable_registerFunction(tuuvm_astArgumentNode_primitiveAnalyze);
 
+    tuuvm_primitiveTable_registerFunction(tuuvm_astErrorNode_primitiveEvaluate);
+
     tuuvm_primitiveTable_registerFunction(tuuvm_astSequenceNode_primitiveAnalyze);
     tuuvm_primitiveTable_registerFunction(tuuvm_astSequenceNode_primitiveEvaluate);
     tuuvm_primitiveTable_registerFunction(tuuvm_astSequenceNode_primitiveAnalyzeAndEvaluate);
@@ -3037,6 +3054,10 @@ void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "begin", 2, TUUVM_FUNCTION_FLAGS_MACRO | TUUVM_FUNCTION_FLAGS_VARIADIC, NULL, tuuvm_astSequenceNode_primitiveMacro);
 
     tuuvm_type_setAstNodeAnalysisFunction(context, context->roots.astArgumentNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_astArgumentNode_primitiveAnalyze));
+
+    tuuvm_type_setAstNodeAnalysisFunction(context, context->roots.astErrorNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_astErrorNode_primitiveEvaluate));
+    tuuvm_type_setAstNodeEvaluationFunction(context, context->roots.astErrorNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_astErrorNode_primitiveEvaluate));
+    tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(context, context->roots.astErrorNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_astErrorNode_primitiveEvaluate));
 
     tuuvm_type_setAstNodeAnalysisFunction(context, context->roots.astSequenceNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_astSequenceNode_primitiveAnalyze));
     tuuvm_type_setAstNodeEvaluationFunction(context, context->roots.astSequenceNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_astSequenceNode_primitiveEvaluate));

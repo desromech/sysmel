@@ -308,7 +308,7 @@ static void tuuvm_heap_chunk_compact(uint32_t blackColor, tuuvm_heap_chunk_t *ch
 
     TUUVM_ASSERT(newSize <= chunk->capacity);
     TUUVM_ASSERT(newSize <= chunk->size);
-    chunk->size = newSize;
+    chunk->size = (uint32_t)newSize;
 }
 
 void tuuvm_heap_compact(tuuvm_heap_t *heap)

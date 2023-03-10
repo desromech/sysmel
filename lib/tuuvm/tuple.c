@@ -122,12 +122,12 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_slotAt(tuuvm_context_t *context, tuuvm_tuple
             if(TUUVM_TUPLE_TAG_SIGNED_START <= tag && tag <= TUUVM_TUPLE_TAG_SIGNED_END)
             {
                 tuuvm_tuple_t byteValue = ( ((tuuvm_stuple_t)tuple) >> (TUUVM_TUPLE_TAG_BIT_COUNT + slotIndex*8)) & 0xFF;
-                return tuuvm_tuple_uint8_encode(byteValue);
+                return tuuvm_tuple_uint8_encode((uint8_t)byteValue);
             }
             else
             {
                 tuuvm_tuple_t byteValue = (tuple >> (TUUVM_TUPLE_TAG_BIT_COUNT + slotIndex*8)) & 0xFF;
-                return tuuvm_tuple_uint8_encode(byteValue);
+                return tuuvm_tuple_uint8_encode((uint8_t)byteValue);
             }
         }
 

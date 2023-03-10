@@ -6,6 +6,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+TUUVM_API void tuuvm_errorWithMessageTuple(tuuvm_tuple_t message)
+{
+    tuuvm_stackFrame_raiseException(message);
+}
+
 TUUVM_API void tuuvm_error(const char *message)
 {
     tuuvm_context_t *activeContext = tuuvm_stackFrame_getActiveContext();
