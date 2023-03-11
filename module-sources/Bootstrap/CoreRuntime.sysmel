@@ -5,21 +5,29 @@ Function
     withSelector: #makeMacro addMethod: {:self :: self __type__ |
         self addFlag: (1sz << 0sz).
         self
+    };
+    withSelector: #makePure addMethod: {:self :: self __type__ |
+        self addFlag: (1sz << 3sz).
+        self
+    };
+    withSelector: #makeFinal addMethod: {:self :: self __type__ |
+        self addFlag: (1sz << 4sz).
+        self
     }.
 
 AnyValue
     withSelector: #initialize addMethod: {:self :: Void | };
-    withSelector: #yourself addMethod: {:self :: self __type__ | self };
+    withSelector: #yourself addMethod: {:self :: self __type__ | self } makePure makeFinal;
 
     withSelector: #postCopy addMethod: {:self :: Void | };
-    withSelector: #shallowCopy addMethod: {:self :: self __type__ | RawTuple::shallowCopy(self) };
+    withSelector: #shallowCopy addMethod: {:self :: self __type__ | RawTuple::shallowCopy(self) } makeFinal;
     withSelector: #copy addMethod: {:self :: self __type__ | self shallowCopy postCopy; yourself };
 
-    withSelector: #isNil addMethod: {:self :: Boolean | self == nil };
-    withSelector: #isNotNil addMethod: {:self :: Boolean | self ~~ nil };
+    withSelector: #isNil addMethod: {:self :: Boolean | self == nil } makePure makeFinal;
+    withSelector: #isNotNil addMethod: {:self :: Boolean | self ~~ nil } makePure makeFinal;
 
-    withSelector: #= addMethod: {:self :other :: Boolean | self == other };
-    withSelector: #~= addMethod: {:self :other :: Boolean | self ~~ other };
+    withSelector: #= addMethod: {:self :other :: Boolean | self == other } makePure;
+    withSelector: #~= addMethod: {:self :other :: Boolean | self ~~ other } makePure;
 
     withSelector: #&& addMacroMethod: {:macroContext :self :other :: ASTIfNode |
         ASTIfNode new
@@ -76,7 +84,7 @@ AnyValue
     } makeMacro.
 
 Object
-    withSelector: #class addMethod: {:self :: self __type__ __type__ | self __type__ };
+    withSelector: #class addMethod: {:self :: self __type__ __type__ | self __type__ } makePure makeFinal;
     withSelector: #species addMethod: {:self :: Class | self class };
     withSelector: #error: addMethod: {:self :(String)errorMessage :: Void | error(errorMessage) };
     withSelector: #assert: addMethod: {:self :(Boolean)condition :: Void |
@@ -252,18 +260,10 @@ Function
     withSelector: #isPure addMethod: {:self :: Boolean |
         self hasFlag: (1sz << 3sz)
     };
-    withSelector: #makePure addMethod: {:self :: self __type__ |
-        self addFlag: (1sz << 3sz).
-        self
-    };
-
     withSelector: #isFinal addMethod: {:self :: Boolean |
         self hasFlag: (1sz << 4sz)
     };
-    withSelector: #makeFinal addMethod: {:self :: self __type__ |
-        self addFlag: (1sz << 4sz).
-        self
-    };
+
     withSelector: #hasPragmaNamed: addMethod: {:self :selector :: Boolean |
         let: #body with: self body.
         (body ~~ nil) && (body hasPragmaNamed: selector)
