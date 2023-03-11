@@ -1,111 +1,111 @@
 ASTNode
-    withSelector: #astAnalyzeWithEnvironment: addMethod: {:self :environment | self subclassResponsibility };
-    withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:self :environment | self subclassResponsibility };
-    withSelector: #astEvaluateWithEnvironment: addMethod: {:self :environment | self subclassResponsibility };
+    withSelector: #astAnalyzeWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment | self subclassResponsibility };
+    withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment | self subclassResponsibility };
+    withSelector: #astEvaluateWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment | self subclassResponsibility };
 
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void | self subclassResponsibility };
+    withSelector: #childrenDo: addMethod: {:(ASTNode)self :aBlock :: Void | self subclassResponsibility };
 
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void | self subclassResponsibility };
-    withSelector: #transformedWith: addMethod: {:self :aBlock :: self class | self copy transformWith: aBlock; yourself };
+    withSelector: #transformWith: addMethod: {:(ASTNode)self :aBlock :: Void | self subclassResponsibility };
+    withSelector: #transformedWith: addMethod: {:(ASTNode)self :aBlock :: self class | self copy transformWith: aBlock; yourself };
     
-    withSelector: #hasPragmaNamed: addMethod: {:self :selector :: Boolean | false };
-    withSelector: #hasLiteralValueEqualTo: addMethod: {:self :expectedValue :: Boolean | false };
+    withSelector: #hasPragmaNamed: addMethod: {:(ASTNode)self :selector :: Boolean | false };
+    withSelector: #hasLiteralValueEqualTo: addMethod: {:(ASTNode)self :expectedValue :: Boolean | false };
 
-    withSelector: #isLiteralNode addMethod: {:self :: Boolean | false }.
+    withSelector: #isLiteralNode addMethod: {:(ASTNode)self :: Boolean | false }.
 
 ASTArgumentNode
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTArgumentNode)self :aBlock :: Void |
         if: (self name isNotNil) then: aBlock(self name).
         if: (self type isNotNil) then: aBlock(self type).
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTArgumentNode)self :aBlock :: Void |
         if: (self name isNotNil) then: (self name: aBlock(self name)).
         if: (self type isNotNil) then: (self type: aBlock(self type)).
     }.
 
 ASTBinaryExpressionSequenceNode
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTBinaryExpressionSequenceNode)self :aBlock :: Void |
         self operands do: aBlock.
         self operators do: aBlock.
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTBinaryExpressionSequenceNode)self :aBlock :: Void |
         self operands: (self operands collect: aBlock).
         self operators: (self operators collect: aBlock).
     }.
 
 ASTDoWhileContinueWithNode
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTDoWhileContinueWithNode)self :aBlock :: Void |
         if: (self bodyExpression isNotNil) then: aBlock(self bodyExpression).
         if: (self conditionExpression isNotNil) then: aBlock(self conditionExpression).
         if: (self continueExpression isNotNil) then: aBlock(self continueExpression).
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTDoWhileContinueWithNode)self :aBlock :: Void |
         if: (self bodyExpression isNotNil) then: (self bodyExpression: aBlock(self bodyExpression)).
         if: (self conditionExpression isNotNil) then: (self conditionExpression: aBlock(self conditionExpression)).
         if: (self continueExpression isNotNil) then: (self continueExpression: aBlock(self continueExpression)).
     }.
 
 ASTErrorNode
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTErrorNode)self :aBlock :: Void |
     }.
 
 ASTFunctionApplicationNode
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTFunctionApplicationNode)self :aBlock :: Void |
         if: (self functionExpression isNotNil) then: aBlock(self functionExpression).
         self arguments do: aBlock.
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTFunctionApplicationNode)self :aBlock :: Void |
         if: (self functionExpression isNotNil) then: (self functionExpression: aBlock(self functionExpression)).
         self arguments: (self arguments collect: aBlock).
     }.
 
 ASTLambdaNode
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTLambdaNode)self :aBlock :: Void |
         self arguments do: aBlock.
         if: (self resultType isNotNil) then: aBlock(self resultType).
         if: (self body isNotNil) then: aBlock(self body).
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTLambdaNode)self :aBlock :: Void |
         self arguments: (self arguments collect: aBlock).
         if: (self resultType isNotNil) then: (self resultType: aBlock(self resultType)).
         if: (self body isNotNil) then: (self body: aBlock(self body)).
     }.
 
 ASTLexicalBlockNode
-    withSelector: #hasPragmaNamed: addMethod: {:self :selector :: Boolean |
+    withSelector: #hasPragmaNamed: addMethod: {:(ASTLexicalBlockNode)self :selector :: Boolean |
         self body hasPragmaNamed: selector
     };
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTLexicalBlockNode)self :aBlock :: Void |
         if: (self body isNotNil) then: aBlock(self body).
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTLexicalBlockNode)self :aBlock :: Void |
         if: (self body isNotNil) then: (self body: aBlock(self body)).
     }.
 
 ASTLiteralNode
-    withSelector: #astAnalyzeWithEnvironment: addMethod: {:self :environment | self };
-    withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:self :environment | self value };
-    withSelector: #astEvaluateWithEnvironment: addMethod: {:self :environment | self value };
-    withSelector: #isLiteralNode addMethod: {:self :: Boolean | true };
-    withSelector: #hasLiteralValueEqualTo: addMethod: {:self :expectedValue :: Boolean | self value = expectedValue };
+    withSelector: #astAnalyzeWithEnvironment: addMethod: {:(ASTLiteralNode)self :(Environment)environment | self };
+    withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:(ASTLiteralNode)self :(Environment)environment | self value };
+    withSelector: #astEvaluateWithEnvironment: addMethod: {:(ASTLiteralNode)self :(Environment)environment | self value };
+    withSelector: #isLiteralNode addMethod: {:(ASTLiteralNode)self :: Boolean | true };
+    withSelector: #hasLiteralValueEqualTo: addMethod: {:(ASTLiteralNode)self :expectedValue :: Boolean | self value = expectedValue };
 
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void | };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void | }.
+    withSelector: #childrenDo: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | };
+    withSelector: #transformWith: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | }.
 
 ASTLocalDefinitionNode
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTLocalDefinitionNode)self :aBlock :: Void |
         if: (self nameExpression isNotNil) then: aBlock(self nameExpression).
         if: (self valueExpression isNotNil) then: aBlock(self valueExpression).
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTLocalDefinitionNode)self :aBlock :: Void |
         if: (self nameExpression isNotNil) then: (self nameExpression: aBlock(self nameExpression)).
         if: (self valueExpression isNotNil) then: (self valueExpression: aBlock(self valueExpression)).
     }.
 
 ASTIdentifierReferenceNode
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void | };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void | };
-    withSelector: #asLiteralNode addMethod: {:self :: ASTLiteralNode |
+    withSelector: #childrenDo: addMethod: {:(ASTIdentifierReferenceNode)self :aBlock :: Void | };
+    withSelector: #transformWith: addMethod: {:(ASTIdentifierReferenceNode)self :aBlock :: Void | };
+    withSelector: #asLiteralNode addMethod: {:(ASTIdentifierReferenceNode)self :: ASTLiteralNode |
         ASTLiteralNode new
             sourcePosition: self sourcePosition;
             value: self value;
@@ -113,75 +113,75 @@ ASTIdentifierReferenceNode
     }.
 
 ASTIfNode
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTIfNode)self :aBlock :: Void |
         if: (self conditionExpression isNotNil) then: aBlock(self conditionExpression).
         if: (self trueExpression isNotNil) then: aBlock(self trueExpression).
         if: (self falseExpression isNotNil) then: aBlock(self falseExpression).
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTIfNode)self :aBlock :: Void |
         if: (self conditionExpression isNotNil) then: (self conditionExpression: aBlock(self conditionExpression)).
         if: (self trueExpression isNotNil) then: (self trueExpression: aBlock(self trueExpression)).
         if: (self falseExpression isNotNil) then: (self falseExpression: aBlock(self falseExpression)).
     }.
 
 ASTMakeAssociationNode
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTMakeAssociationNode)self :aBlock :: Void |
         if: (self key isNotNil) then: aBlock(self key).
         if: (self value isNotNil) then: aBlock(self value).
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTMakeAssociationNode)self :aBlock :: Void |
         if: (self key isNotNil) then: (self key: aBlock(self key)).
         if: (self value isNotNil) then: (self value: aBlock(self value)).
     }.
 
 ASTMakeByteArrayNode
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTMakeByteArrayNode)self :aBlock :: Void |
         self elements do: aBlock
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTMakeByteArrayNode)self :aBlock :: Void |
         self elements: (self elements collect: aBlock)
     }.
 
 ASTMakeDictionaryNode
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTMakeDictionaryNode)self :aBlock :: Void |
         self elements do: aBlock
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTMakeDictionaryNode)self :aBlock :: Void |
         self elements: (self elements collect: aBlock)
     }.
 
 ASTMakeTupleNode
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTMakeTupleNode)self :aBlock :: Void |
         self elements do: aBlock
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTMakeTupleNode)self :aBlock :: Void |
         self elements: (self elements collect: aBlock)
     }.
 
 ASTMessageSendNode
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTMessageSendNode)self :aBlock :: Void |
         if: (self receiver isNotNil) then: aBlock(self receiver).
         if: (self selector isNotNil) then: aBlock(self selector).
         self arguments do: aBlock
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTMessageSendNode)self :aBlock :: Void |
         if: (self receiver isNotNil) then: (self receiver: aBlock(self receiver)).
         if: (self selector isNotNil) then: (self selector: aBlock(self selector)).
         self arguments: (self arguments collect: aBlock)
     }.
 
 ASTMessageChainNode
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTMessageChainNode)self :aBlock :: Void |
         if: (self receiver isNotNil) then: aBlock(self receiver).
         self messages do: aBlock
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTMessageChainNode)self :aBlock :: Void |
         if: (self receiver isNotNil) then: (self receiver: aBlock(self receiver)).
         self messages: (self messages collect: aBlock)
     }.
 
 ASTMessageChainMessageNode
-    withSelector: #asMessageSendNodeWithReceiver: addMethod: {:self :receiver :: ASTMessageSendNode |
+    withSelector: #asMessageSendNodeWithReceiver: addMethod: {:(ASTMessageChainMessageNode)self :(ASTNode)receiver :: ASTMessageSendNode |
         ASTMessageSendNode new
             sourcePosition: self sourcePosition;
             receiver: receiver;
@@ -189,148 +189,148 @@ ASTMessageChainMessageNode
             arguments: self arguments;
             yourself
     };
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTMessageChainMessageNode)self :aBlock :: Void |
         if: (self selector isNotNil) then: aBlock(self selector).
         self arguments do: aBlock
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTMessageChainMessageNode)self :aBlock :: Void |
         if: (self selector isNotNil) then: (self selector: aBlock(self selector)).
         self arguments: (self arguments collect: aBlock)
     }.
 
 ASTPragmaNode
-    withSelector: #hasPragmaNamed: addMethod: {:self :expectedSelector :: Boolean |
+    withSelector: #hasPragmaNamed: addMethod: {:(ASTPragmaNode)self :expectedSelector :: Boolean |
         let: #selector with: self selector.
         if: selector isNotNil
             then: (selector hasLiteralValueEqualTo: expectedSelector)
             else: false
     };
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTPragmaNode)self :aBlock :: Void |
         if: (self selector isNotNil) then: aBlock(self selector).
         self arguments do: aBlock
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTPragmaNode)self :aBlock :: Void |
         if: (self selector isNotNil) then: (self bodyselector: aBlock(self body)).
         self arguments: (self arguments collect: aBlock)
     }.
 
 ASTSequenceNode
-    withSelector: #hasPragmaNamed: addMethod: {:self :selector :: Boolean |
+    withSelector: #hasPragmaNamed: addMethod: {:(ASTSequenceNode)self :selector :: Boolean |
         self pragmas anySatisfy: {:pragma :: Boolean | pragma hasPragmaNamed: selector}
     };
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTSequenceNode)self :aBlock :: Void |
         self pragmas do: aBlock.
         self expressions do: aBlock.
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTSequenceNode)self :aBlock :: Void |
         self pragmas: (self pragmas collect: aBlock).
         self expressions: (self expressions collect: aBlock)
     }.
 
 ASTUnexpandedApplicationNode
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTUnexpandedApplicationNode)self :aBlock :: Void |
         if: (self functionOrMacroExpression isNotNil) then: aBlock(self functionOrMacroExpression).
         self arguments do: aBlock
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTUnexpandedApplicationNode)self :aBlock :: Void |
         if: (self functionOrMacroExpression isNotNil) then: (self functionOrMacroExpression: aBlock(self functionOrMacroExpression)).
         self arguments: (self arguments collect: aBlock)
     }.
 
 ASTUnexpandedSExpressionNode
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTUnexpandedSExpressionNode)self :aBlock :: Void |
         self elements do: aBlock
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTUnexpandedSExpressionNode)self :aBlock :: Void |
         self elements: (self elements collect: aBlock)
     }.
 
 ASTNode
-    withSelector: #analyzeQuasiQuoteWithEnvironment: addMethod: {:self :environment |
+    withSelector: #analyzeQuasiQuoteWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment |
         self transformedWith: {:child | child analyzeQuasiQuoteWithEnvironment: environment}
     };
-    withSelector: #analyzeAndEvaluateQuasiQuoteWithEnvironment: addMethod: {:self :environment |
+    withSelector: #analyzeAndEvaluateQuasiQuoteWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment |
         self transformedWith: {:child | child analyzeAndEvaluateQuasiQuoteWithEnvironment: environment}
     };
-    withSelector: #evaluateQuasiQuoteWithEnvironment: addMethod: {:self :environment |
+    withSelector: #evaluateQuasiQuoteWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment |
         self transformedWith: {:child | child evaluateQuasiQuoteWithEnvironment: environment}
     }.
 
 ASTQuasiQuoteNode
-    withSelector: #astAnalyzeWithEnvironment: addMethod: {:self :environment |
+    withSelector: #astAnalyzeWithEnvironment: addMethod: {:(ASTQuasiQuoteNode)self :(Environment)environment |
         self copy
             node: (self node analyzeQuasiQuoteWithEnvironment: environment);
             yourself
     };
-    withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:self :environment |
+    withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:(ASTQuasiQuoteNode)self :(Environment)environment |
         self node analyzeAndEvaluateQuasiQuoteWithEnvironment: environment
     };
-    withSelector: #astEvaluateWithEnvironment: addMethod: {:self :environment |
+    withSelector: #astEvaluateWithEnvironment: addMethod: {:(ASTQuasiQuoteNode)self :(Environment)environment |
         self node evaluateQuasiQuoteWithEnvironment: environment
     };
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTQuasiQuoteNode)self :aBlock :: Void |
         if: (self node isNotNil) then: aBlock(self node)
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTQuasiQuoteNode)self :aBlock :: Void |
         if: (self node isNotNil) then: (self node: aBlock(self node))
     }.
 
 ASTQuasiUnquoteNode
-    withSelector: #analyzeQuasiQuoteWithEnvironment: addMethod: {:self :environment |
+    withSelector: #analyzeQuasiQuoteWithEnvironment: addMethod: {:(ASTQuasiUnquoteNode)self :(Environment)environment |
         self copy
             expression: (self expression astAnalyzeWithEnvironment: environment);
             yourself
     };
-    withSelector: #analyzeAndEvaluateQuasiQuoteWithEnvironment: addMethod: {:self :environment |
+    withSelector: #analyzeAndEvaluateQuasiQuoteWithEnvironment: addMethod: {:(ASTQuasiUnquoteNode)self :(Environment)environment |
         self expression astAnalyzeAndEvaluateWithEnvironment: environment
     };
-    withSelector: #evaluateQuasiQuoteWithEnvironment: addMethod: {:self :environment |
+    withSelector: #evaluateQuasiQuoteWithEnvironment: addMethod: {:(ASTQuasiUnquoteNode)self :(Environment)environment |
         self expression astEvaluateWithEnvironment: environment
     };
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTQuasiUnquoteNode)self :aBlock :: Void |
         if: (self expression) then: aBlock(self node)
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTQuasiUnquoteNode)self :aBlock :: Void |
         if: (self expression) then: (self node: aBlock(self node))
     }.
 
 ASTQuoteNode
-    withSelector: #astAnalyzeWithEnvironment: addMethod: {:self :environment | self};
-    withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:self :environment | self node};
-    withSelector: #astEvaluateWithEnvironment: addMethod: {:self :environment | self node};
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #astAnalyzeWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment | self};
+    withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment | self node};
+    withSelector: #astEvaluateWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment | self node};
+    withSelector: #childrenDo: addMethod: {:(ASTQuoteNode)self :aBlock :: Void |
         if: (self node) then: aBlock(self node)
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTQuoteNode)self :aBlock :: Void |
         if: (self node) then: (self node: aBlock(self node))
     }.
 
 ASTSpliceNode
-    withSelector: #astAnalyzeWithEnvironment: addMethod: {:self :environment | self invalidLocationError };
-    withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:self :environment | self invalidLocationError };
-    withSelector: #astEvaluateWithEnvironment: addMethod: {:self :environment | self invalidLocationError };
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #astAnalyzeWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError };
+    withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError };
+    withSelector: #astEvaluateWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError };
+    withSelector: #childrenDo: addMethod: {:(ASTSpliceNode)self :aBlock :: Void |
         if: (self expression) then: aBlock(self node)
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTSpliceNode)self :aBlock :: Void |
         if: (self expression) then: (self node: aBlock(self node))
     };
 
-    withSelector: #analyzeQuasiQuoteWithEnvironment: addMethod: {:self :environment | self invalidLocationError };
-    withSelector: #analyzeAndEvaluateQuasiQuoteWithEnvironment: addMethod: {:self :environment | self invalidLocationError };
-    withSelector: #evaluateQuasiQuoteWithEnvironment: addMethod: {:self :environment | self invalidLocationError };
+    withSelector: #analyzeQuasiQuoteWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError };
+    withSelector: #analyzeAndEvaluateQuasiQuoteWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError };
+    withSelector: #evaluateQuasiQuoteWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError };
 
-    withSelector: #invalidLocationError addMethod: {:self :environment |
+    withSelector: #invalidLocationError addMethod: {:(ASTSpliceNode)self :(Environment)environment |
         self error: "Invalid location for a splice expression."
     }.
 
 ASTWhileContinueWithNode
-    withSelector: #childrenDo: addMethod: {:self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTWhileContinueWithNode)self :aBlock :: Void |
         if: (self conditionExpression isNotNil) then: aBlock(self conditionExpression).
         if: (self bodyExpression isNotNil) then: aBlock(self bodyExpression).
         if: (self continueExpression isNotNil) then: aBlock(self bodyExpression).
     };
-    withSelector: #transformWith: addMethod: {:self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTWhileContinueWithNode)self :aBlock :: Void |
         if: (self conditionExpression isNotNil) then: (self conditionExpression: aBlock(self conditionExpression)).
         if: (self bodyExpression isNotNil) then: (self bodyExpression: aBlock(self bodyExpression)).
         if: (self continueExpression isNotNil) then: (self continueExpression: aBlock(self continueExpression)).

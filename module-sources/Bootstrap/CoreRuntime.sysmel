@@ -1,35 +1,51 @@
 Function
-    withSelector: #addFlag: addMethod: {:self :(Size)flag :: Void |
+    withSelector: #addFlags: addMethod: {:(Function)self :(Size)flag :: Void |
         self flags: self flags | flag
     };
-    withSelector: #makeMacro addMethod: {:self :: self __type__ |
-        self addFlag: (1sz << 0sz).
+    withSelector: #makeMacro addMethod: {:(Function)self :: Function |
+        self addFlags: (1sz << 0sz).
         self
     };
-    withSelector: #makePure addMethod: {:self :: self __type__ |
-        self addFlag: (1sz << 3sz).
+    withSelector: #makePure addMethod: {:(Function)self :: Function |
+        self addFlags: (1sz << 3sz).
         self
     };
-    withSelector: #makeFinal addMethod: {:self :: self __type__ |
-        self addFlag: (1sz << 4sz).
+    withSelector: #makeFinal addMethod: {:(Function)self :: Function |
+        self addFlags: (1sz << 4sz).
+        self
+    };
+    withSelector: #makeVirtual addMethod: {:(Function)self :: Function |
+        self addFlags: (1sz << 5sz).
+        self
+    };
+    withSelector: #makeAbstract addMethod: {:(Function)self :: Function |
+        self addFlags: (1sz << 6sz).
+        self
+    };
+    withSelector: #makeOverride addMethod: {:(Function)self :: Function |
+        self addFlags: (1sz << 7sz).
+        self
+    };
+    withSelector: #makeStatic addMethod: {:(Function)self :: Function |
+        self addFlags: (1sz << 8sz).
         self
     }.
 
 AnyValue
-    withSelector: #initialize addMethod: {:self :: Void | };
-    withSelector: #yourself addMethod: {:self :: self __type__ | self } makePure makeFinal;
+    withSelector: #initialize addMethod: {:(AnyValue)self :: Void | };
+    withSelector: #yourself addMethod: {:(AnyValue)self :: self __type__ | self } makePure makeFinal;
 
-    withSelector: #postCopy addMethod: {:self :: Void | };
-    withSelector: #shallowCopy addMethod: {:self :: self __type__ | RawTuple::shallowCopy(self) } makeFinal;
-    withSelector: #copy addMethod: {:self :: self __type__ | self shallowCopy postCopy; yourself };
+    withSelector: #postCopy addMethod: {:(AnyValue)self :: Void | };
+    withSelector: #shallowCopy addMethod: {:(AnyValue)self :: self __type__ | RawTuple::shallowCopy(self) } makeFinal;
+    withSelector: #copy addMethod: {:(AnyValue)self :: self __type__ | self shallowCopy postCopy; yourself };
 
-    withSelector: #isNil addMethod: {:self :: Boolean | self == nil } makePure makeFinal;
-    withSelector: #isNotNil addMethod: {:self :: Boolean | self ~~ nil } makePure makeFinal;
+    withSelector: #isNil addMethod: {:(AnyValue)self :: Boolean | self == nil } makePure makeFinal;
+    withSelector: #isNotNil addMethod: {:(AnyValue)self :: Boolean | self ~~ nil } makePure makeFinal;
 
-    withSelector: #= addMethod: {:self :other :: Boolean | self == other } makePure;
-    withSelector: #~= addMethod: {:self :other :: Boolean | self ~~ other } makePure;
+    withSelector: #= addMethod: {:(AnyValue)self :other :: Boolean | self == other } makePure;
+    withSelector: #~= addMethod: {:(AnyValue)self :other :: Boolean | self ~~ other } makePure;
 
-    withSelector: #&& addMacroMethod: {:macroContext :self :other :: ASTIfNode |
+    withSelector: #&& addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)other :: ASTIfNode |
         ASTIfNode new
             sourcePosition: macroContext sourcePosition;
             conditionExpression: self;
@@ -40,7 +56,7 @@ AnyValue
                 yourself);
             yourself
     } makeMacro;
-    withSelector: #|| addMacroMethod: {:macroContext :self :other :: ASTIfNode |
+    withSelector: #|| addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)other :: ASTIfNode |
         ASTIfNode new
             sourcePosition: macroContext sourcePosition;
             conditionExpression: self;
@@ -52,21 +68,21 @@ AnyValue
             yourself
     } makeMacro;
 
-    withSelector: #ifTrue: addMacroMethod: {:macroContext :self :trueExpression :: ASTIfNode |
+    withSelector: #ifTrue: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)trueExpression :: ASTIfNode |
         ASTIfNode new
             sourcePosition: macroContext sourcePosition;
             conditionExpression: self;
             trueExpression: trueExpression;
             yourself
     } makeMacro;
-    withSelector: #ifFalse: addMacroMethod: {:macroContext :self :falseExpression :: ASTIfNode |
+    withSelector: #ifFalse: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)falseExpression :: ASTIfNode |
         ASTIfNode new
             sourcePosition: macroContext sourcePosition;
             conditionExpression: self;
             falseExpression: falseExpression;
             yourself
     } makeMacro;
-    withSelector: #ifTrue:ifFalse: addMacroMethod: {:macroContext :self :trueExpression :falseExpression :: ASTIfNode |
+    withSelector: #ifTrue:ifFalse: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)trueExpression :(ASTNode)falseExpression :: ASTIfNode |
         ASTIfNode new
             sourcePosition: macroContext sourcePosition;
             conditionExpression: self;
@@ -74,7 +90,7 @@ AnyValue
             falseExpression: falseExpression;
             yourself
     } makeMacro;
-    withSelector: #ifFalse:ifTrue: addMacroMethod: {:macroContext :self :falseExpression :trueExpression :: ASTIfNode |
+    withSelector: #ifFalse:ifTrue: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)falseExpression :(ASTNode)trueExpression :: ASTIfNode |
         ASTIfNode new
             sourcePosition: macroContext sourcePosition;
             conditionExpression: self;
@@ -84,24 +100,47 @@ AnyValue
     } makeMacro.
 
 Object
-    withSelector: #class addMethod: {:self :: self __type__ __type__ | self __type__ } makePure makeFinal;
-    withSelector: #species addMethod: {:self :: Class | self class };
-    withSelector: #error: addMethod: {:self :(String)errorMessage :: Void | error(errorMessage) };
-    withSelector: #assert: addMethod: {:self :(Boolean)condition :: Void |
+    withSelector: #class addMethod: {:(Object)self :: self __type__ __type__ | self __type__ } makePure makeFinal;
+    withSelector: #species addMethod: {:(Object)self :: Class | self class };
+    withSelector: #error: addMethod: {:(Object)self :(String)errorMessage :: Void | error(errorMessage) };
+    withSelector: #assert: addMethod: {:(Object)self :(Boolean)condition :: Void |
         if: condition then: void else: error("Assertion failure.")
     };
-    withSelector: #subclassResponsibility addMethod: {:self :: Void | self error: self __type__ printString -- " Subclass responsibility." }.
+    withSelector: #subclassResponsibility addMethod: {:(Object)self :: Void | self error: self __type__ printString -- " Subclass responsibility." }.
 
 Type
-    withSelector: #hasBytesContent addMethod: {:self :: Boolean |
+    withSelector: #addFlags: addMethod: {:(Type)self :(Size)flag :: Void |
+        self flags: self flags | flag
+    };
+    withSelector: #makeNullable addMethod: {:(Type)self :: Type |
+        self addFlags: (1sz << 0sz).
+        self
+    };
+    withSelector: #makeBytes addMethod: {:(Type)self :: Type |
+        self addFlags: (1sz << 1sz).
+        self
+    };
+    withSelector: #makeImmediate addMethod: {:(Type)self :: Type |
+        self addFlags: (1sz << 2sz).
+        self
+    };
+    withSelector: #makeFinal addMethod: {:(Type)self :: Type |
+        self addFlags: (1sz << 3sz).
+        self
+    };
+    withSelector: #makeAbstract addMethod: {:(Type)self :: Type |
+        self addFlags: (1sz << 4sz).
+        self
+    };
+    withSelector: #hasBytesContent addMethod: {:(Type)self :: Boolean |
         (self flags & 2sz) ~= 0sz
     };
-    withSelector: #addTypeSlot: addMethod: {:self :extraSlot :: Void |
+    withSelector: #addTypeSlot: addMethod: {:(Type)self :(TypeSlot)extraSlot :: Void |
         if: self totalSlotCount ~~ nil then: (self error: "Cannot add type slot when the total slot count has already been computed").
         if: self pendingSlots == nil then: (self pendingSlots: ArrayList new).
         self pendingSlots add: extraSlot
     };
-    withSelector: #validSlots addMethod: {:self |
+    withSelector: #validSlots addMethod: {:(Type)self |
         let: #pendingSlots with: self pendingSlots.
         if: pendingSlots ~~ nil then: {
 
@@ -119,47 +158,47 @@ Type
         
         self slots
     };
-    withSelector: #validSupertypeTotalSlotCount addMethod: {:self :: Size |
+    withSelector: #validSupertypeTotalSlotCount addMethod: {:(Type)self :: Size |
         let: #supertype with: self supertype.
         if: supertype == nil then: 0sz else: supertype validTotalSlotCount.
     };
-    withSelector: #validTotalSlotCount addMethod: {:self :: Size |
+    withSelector: #validTotalSlotCount addMethod: {:(Type)self :: Size |
         let: #totalSlotCount with: self totalSlotCount.
         if: totalSlotCount == nil then: {
             self totalSlotCount: self validSupertypeTotalSlotCount + self validSlots size.
             self totalSlotCount
         } else: totalSlotCount
     };
-    withSelector: #basicAllocate addMethod: {:self :: self |
+    withSelector: #basicAllocate addMethod: {:(Type)self :: self |
         let: #result with: (if: self hasBytesContent
             then: RawTuple::byteNew(0sz)
             else: RawTuple::new(self validTotalSlotCount)).
         (RawTuple::type:)(result, self).
         result
     };
-    withSelector: #basicAllocate: addMethod: {:self :(Size)variableSize :: self |
+    withSelector: #basicAllocate: addMethod: {:(Type)self :(Size)variableSize :: self |
         let: #result with: (if: self hasBytesContent
             then: RawTuple::byteNew(variableSize)
             else: RawTuple::new(self validTotalSlotCount + variableSize)).
         (RawTuple::type:)(result, self).
         result
     };
-    withSelector: #basicNew addMethod: {:self :: self |
+    withSelector: #basicNew addMethod: {:(Type)self :: self |
         self basicAllocate
     };
-    withSelector: #basicNew: addMethod: {:self :(Size)variableSlotCount :: self |
+    withSelector: #basicNew: addMethod: {:(Type)self :(Size)variableSlotCount :: self |
         self basicAllocate: variableSlotCount
     };
-    withSelector: #new addMethod: {:self :: self |
+    withSelector: #new addMethod: {:(Type)self :: self |
         self basicNew initialize; yourself
     };
-    withSelector: #>> addMethod: {:self :selector |
+    withSelector: #>> addMethod: {:(Type)self :selector |
         let: #methodDictionary with: self methodDictionary.
         if: methodDictionary ~~ nil
             then: (methodDictionary atOrNil: selector)
             else: nil
     };
-    withSelector: #lookupSelector: addMethod: {:self :selector |
+    withSelector: #lookupSelector: addMethod: {:(Type)self :selector |
         let: #method with: self >> selector.
         if: method ~~ nil
         then: method
@@ -172,58 +211,71 @@ Type
     }.
 
 Stream
-    withSelector: #print: addMethod: {:self :value :: Void | 
+    withSelector: #print: addMethod: {:(Stream)self :value :: Void | 
         value printOn: self
     };
-    withSelector: #nl addMethod: {:self :: Void | 
+    withSelector: #cr addMethod: {:(Stream)self :: Void | 
+        self nextPut: '\r'
+    };
+    withSelector: #lf addMethod: {:(Stream)self :: Void | 
         self nextPut: '\n'
+    };
+    withSelector: #nl addMethod: {:(Stream)self :: Void | 
+        self nextPut: '\n'
+    };
+    withSelector: #tab addMethod: {:(Stream)self :: Void | 
+        self nextPut: '\t'
+    };
+    withSelector: #space addMethod: {:(Stream)self :: Void | 
+        self nextPut: ' '
     }.
 
 AnyValue
-    withSelector: #printString addMethod: {:self :: String | 
+    withSelector: #printString addMethod: {:(AnyValue)self :: String | 
         let: #stream with: StringStream new.
         self printOn: stream.
         stream asString.
     };
-    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void |
+    withSelector: #printOn: addMethod: {:(AnyValue)self :(Stream)stream :: Void |
         stream nextPutAll: "a " ; print: self __type__
     };
-    withSelector: #fullPrintString addMethod: {:self :: String | 
+    withSelector: #fullPrintString addMethod: {:(AnyValue)self :: String | 
         let: #stream with: StringStream new.
         self fullPrintOn: stream.
         stream asString.
     };
-    withSelector: #fullPrintOn: addMethod: {:self :(Stream)stream :: Void |
+    withSelector: #fullPrintOn: addMethod: {:(AnyValue)self :(Stream)stream :: Void |
         self printOn: stream
     }.
 
 Type
-    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void |
+    withSelector: #printOn: addMethod: {:(Type)self :(Stream)stream :: Void |
         let: #name with: self name.
         if: name ~~ nil
             then: (stream nextPutAll: name)
             else: (stream nextPutAll: "a Type")
     }.
 
+Void class
+    withSelector: #coerceValue: addMethod: {:(Void class)self :value :: Void | void }.
 Void
-    withSelector: #coerceValue: addMethod: {:self :value :: self | void };
-    withSelector: #printString addMethod: {:self :: String | "void" };
-    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void | stream nextPutAll: "void" }.
+    withSelector: #printString addMethod: {:(Void)self :: String | "void" };
+    withSelector: #printOn: addMethod: {:(Void)self :(Stream)stream :: Void | stream nextPutAll: "void" }.
 
 UndefinedObject
-    withSelector: #printString addMethod: {:self :: String | "nil" };
-    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void | stream nextPutAll: "nil" }.
+    withSelector: #printString addMethod: {:(UndefinedObject)self :: String | "nil" };
+    withSelector: #printOn: addMethod: {:(UndefinedObject)self :(Stream)stream :: Void | stream nextPutAll: "nil" }.
 
 False
-    withSelector: #printString addMethod: {:self :: String | "false" };
-    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void | stream nextPutAll: "false" }.
+    withSelector: #printString addMethod: {:(False)self :: String | "false" };
+    withSelector: #printOn: addMethod: {:(False)self :(Stream)stream :: Void | stream nextPutAll: "false" }.
 
 True
-    withSelector: #printString addMethod: {:self :: String | "true" };
-    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void | stream nextPutAll: "true" }.
+    withSelector: #printString addMethod: {:(True)self :: String | "true" };
+    withSelector: #printOn: addMethod: {:(True)self :(Stream)stream :: Void | stream nextPutAll: "true" }.
 
 String
-    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void |
+    withSelector: #printOn: addMethod: {:(String)self :(Stream)stream :: Void |
         ## TODO: Implement this part properly.
         stream nextPut: '"'
         stream nextPutAll: self
@@ -231,45 +283,57 @@ String
     }.
 
 StringSymbol
-    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void |
+    withSelector: #printOn: addMethod: {:(StringSymbol)self :(Stream)stream :: Void |
         ## TODO: Implement this part properly.
         stream nextPut: '#'; nextPutAll: self
     }.
 
 Class
-    withSelector: #withSelector:addClassMethod: addMethod: {:self :selector :method :: Void |
+    withSelector: #withSelector:addClassMethod: addMethod: {:(Class)self :selector :method :: Void |
         self class withSelector: selector addMethod: method
     }.
 
 Function
-    withSelector: #hasFlag: addMethod: {:self :(Size)flag :: Boolean |
+    withSelector: #hasFlag: addMethod: {:(Function)self :(Size)flag :: Boolean |
         (self flags & flag) ~= 0sz
     };
 
-    withSelector: #isMacro addMethod: {:self :: Boolean |
+    withSelector: #isMacro addMethod: {:(Function)self :: Boolean |
         self hasFlag: (1sz << 0sz)
     };
     
-    withSelector: #isVariadic addMethod: {:self :: Boolean |
+    withSelector: #isVariadic addMethod: {:(Function)self :: Boolean |
         self hasFlag: (1sz << 1sz)
     };
-    withSelector: #isCorePrimitive addMethod: {:self :: Boolean |
+    withSelector: #isCorePrimitive addMethod: {:(Function)self :: Boolean |
         self hasFlag: (1sz << 2sz)
     };
 
-    withSelector: #isPure addMethod: {:self :: Boolean |
+    withSelector: #isPure addMethod: {:(Function)self :: Boolean |
         self hasFlag: (1sz << 3sz)
     };
-    withSelector: #isFinal addMethod: {:self :: Boolean |
+    withSelector: #isFinal addMethod: {:(Function)self :: Boolean |
         self hasFlag: (1sz << 4sz)
     };
+    withSelector: #isVirtual addMethod: {:(Function)self :: Boolean |
+        self hasFlag: (1sz << 5sz)
+    };
+    withSelector: #isAbstract addMethod: {:(Function)self :: Boolean |
+        self hasFlag: (1sz << 6sz)
+    };
+    withSelector: #isOverride addMethod: {:(Function)self :: Boolean |
+        self hasFlag: (1sz << 7sz)
+    };
+    withSelector: #isStatic addMethod: {:(Function)self :: Boolean |
+        self hasFlag: (1sz << 8sz)
+    };
 
-    withSelector: #hasPragmaNamed: addMethod: {:self :selector :: Boolean |
+    withSelector: #hasPragmaNamed: addMethod: {:(Function)self :selector :: Boolean |
         let: #body with: self body.
         (body ~~ nil) && (body hasPragmaNamed: selector)
     };
     
-    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void |
+    withSelector: #printOn: addMethod: {:(Function)self :(Stream)stream :: Void |
         let: #name with: self name.
         let: #sourcePosition with: self sourcePosition.
 
@@ -291,30 +355,33 @@ Function
     }.
 
 ValueBox
-    withSelector: #with: addClassMethod: {:self :value |
+    withSelector: #with: addClassMethod: {:(ValueBox class)self :value |
         self basicNew
             value: value;
             yourself
     };
-    withSelector: #_ addMethod: {:self | self value };
-    withSelector: #_: addMethod: {:self :newValue | self value: newValue. newValue };
-    withSelector: #":=" addMethod: {:self :newValue | self value: newValue. newValue }.
+    withSelector: #_ addMethod: {:(ValueBox)self | self value };
+    withSelector: #_: addMethod: {:(ValueBox)self :newValue | self value: newValue. newValue };
+    withSelector: #":=" addMethod: {:(ValueBox)self :newValue | self value: newValue. newValue }.
 
 Collection
-    withSelector: #isEmpty addMethod: {:self :: Boolean |
+    withSelector: #isEmpty addMethod: {:(Collection)self :: Boolean |
         self size = 0sz
     };
-    withSelector: #isNotEmpty addMethod: {:self :: Boolean |
+    withSelector: #isNotEmpty addMethod: {:(Collection)self :: Boolean |
         self size ~= 0sz
-    }.
+    };
+    withSelector: #size addMethod: {:(Collection)self :: Size |
+        self subclassResponsibility
+    } makeAbstract.
 
 SequenceableCollection
-    withSelector: #with: addClassMethod: {:self :value :: self |
+    withSelector: #with: addClassMethod: {:(SequenceableCollection class)self :value :: self |
         (self new: 1sz)
             at: 0sz put: value;
             yourself
     };
-    withSelector: #anySatisfy: addMethod: {:self :aBlock :: Boolean |
+    withSelector: #anySatisfy: addMethod: {:(SequenceableCollection)self :aBlock :: Boolean |
         let: #index with: (ValueBox with: 0sz).
         let: #size with: self size.
         let: #hasFoundIt with: (ValueBox with: false).
@@ -323,8 +390,8 @@ SequenceableCollection
             hasFoundIt := aBlock(self at: index _)
         ) continueWith: (index := index _ + 1).
         hasFoundIt _
-    };
-    withSelector: #allSatisfy: addMethod: {:self :aBlock :: Boolean |
+    } makeFinal;
+    withSelector: #allSatisfy: addMethod: {:(SequenceableCollection)self :aBlock :: Boolean |
         let: #index with: (ValueBox with: 0sz).
         let: #size with: self size.
         let: #everythingIsFine with: (ValueBox with: true).
@@ -333,8 +400,8 @@ SequenceableCollection
             everythingIsFine := aBlock(self at: index _)
         ) continueWith: (index := index _ + 1).
         everythingIsFine _
-    };
-    withSelector: #collect: addMethod: {:self :aBlock :: self species |
+    } makeFinal;
+    withSelector: #collect: addMethod: {:(SequenceableCollection)self :aBlock :: self species |
         let: #index with: (ValueBox with: 0sz).
         let: #size with: self size.
         let: #result with: (self species new: size).
@@ -345,8 +412,8 @@ SequenceableCollection
         } continueWith: (index := index _ + 1).
 
         result
-    };
-    withSelector: #do: addMethod: {:self :aBlock :: Void |
+    } makeFinal;
+    withSelector: #do: addMethod: {:(SequenceableCollection)self :aBlock :: Void |
         let: #index with: (ValueBox with: 0sz).
         let: #size with: self size.
 
@@ -354,7 +421,7 @@ SequenceableCollection
             aBlock(self at: index _)
         ) continueWith: (index := index _ + 1)
     };
-    withSelector: #doWithIndex: addMethod: {:self :aBlock :: Void |
+    withSelector: #doWithIndex: addMethod: {:(SequenceableCollection)self :aBlock :: Void |
         let: #index with: (ValueBox with: 0sz).
         let: #size with: self size.
 
@@ -363,7 +430,7 @@ SequenceableCollection
             aBlock(self at: i, i)
         } continueWith: (index := index _ + 1)
     };
-    withSelector: #-- addMethod: {:self :other :: self species |
+    withSelector: #-- addMethod: {:(SequenceableCollection)self :(SequenceableCollection)other :: self species |
         let: #size with: self size.
         let: #otherSize with: other size.
         let: #result with: (self species new: size + otherSize ).
@@ -378,12 +445,12 @@ SequenceableCollection
 
         result
     };
-    withSelector: #first addMethod: {:self | self at: 0sz };
-    withSelector: #second addMethod: {:self | self at: 1sz };
-    withSelector: #third addMethod: {:self | self at: 2sz };
-    withSelector: #fourth addMethod: {:self | self at: 3sz };
+    withSelector: #first addMethod: {:(SequenceableCollection)self | self at: 0sz } makeFinal;
+    withSelector: #second addMethod: {:(SequenceableCollection)self | self at: 1sz } makeFinal;
+    withSelector: #third addMethod: {:(SequenceableCollection)self | self at: 2sz } makeFinal;
+    withSelector: #fourth addMethod: {:(SequenceableCollection)self | self at: 3sz } makeFinal;
 
-    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void |
+    withSelector: #printOn: addMethod: {:(SequenceableCollection)self :(Stream)stream :: Void |
         stream print: self class; nextPutAll: "(".
         self doWithIndex: {:element :index :: Void |
             if: index > 0 then: (stream nextPutAll: ", ").
@@ -393,7 +460,7 @@ SequenceableCollection
 
         stream nextPutAll: ")"
     };
-    withSelector: #asArray addMethod: {:self :: Array |
+    withSelector: #asArray addMethod: {:(SequenceableCollection)self :: Array |
         let: #array with: (Array new: self size).
         self doWithIndex: {:element :(Size)index :: Void |
             array at: index put: element
@@ -403,24 +470,24 @@ SequenceableCollection
     }.
 
 ArrayList
-    withSelector: #new: addClassMethod: {:self :(Size)initialSize :: self |
+    withSelector: #new: addClassMethod: {:(ArrayList class)self :(Size)initialSize :: self |
         self basicNew initializeWithSize: initialSize; yourself
-    };
-    withSelector: #initialize addMethod: {:self :: Void |
+    } makeFinal;
+    withSelector: #initialize addMethod: {:(ArrayList)self :: Void |
         self size: 0sz
     };
-    withSelector: #initializeWithSize: addMethod: {:self :(Size)initialSize :: Void |
+    withSelector: #initializeWithSize: addMethod: {:(ArrayList)self :(Size)initialSize :: Void |
         self size: initialSize sz.
         self storage: (Array new: initialSize).
     };
-    withSelector: #at: addMethod: {:self :(Size)index |
+    withSelector: #at: addMethod: {:(ArrayList)self :(Size)index |
         if: index < self size then: {
             self storage at: index
         } else: {
             error("Index out of bounds.")
         }
     };
-    withSelector: #at:put: addMethod: {:self :(Size)index :value :: Void |
+    withSelector: #at:put: addMethod: {:(ArrayList)self :(Size)index :value :: Void |
         if: index < self size then: {
             self storage at: index + self offset put: value
         } else: {
@@ -429,25 +496,25 @@ ArrayList
     }.
 
 StringStream
-    withSelector: #initialize addMethod: {:self :: Void |
+    withSelector: #initialize addMethod: {:(StringStream)self :: Void |
         self size: 0
     }.
 
 Array
-    withSelector: #new: addClassMethod: {:self :(Size)initialSize :: self |
+    withSelector: #new: addClassMethod: {:(Array class)self :(Size)initialSize :: self |
         self basicNew: initialSize
-    };
-    withSelector: #at: addMethod: {:self :(Size)index |
+    } makeFinal;
+    withSelector: #at: addMethod: {:(Array)self :(Size)index |
         self __slotAt__: index
     };
-    withSelector: #at:put: addMethod: {:self :(Size)index :value :: Void |
+    withSelector: #at:put: addMethod: {:(Array)self :(Size)index :value :: Void |
         self __slotAt__: index put: value
     };
-    withSelector: #size addMethod: {:self :: Size |
+    withSelector: #size addMethod: {:(Array)self :: Size |
         self __size__
     };
-    withSelector: #asArray addMethod: {:self :: Array | self };
-    withSelector: #asArraySlice addMethod: {:self :: ArraySlice |
+    withSelector: #asArray addMethod: {:(Array)self :: Array | self };
+    withSelector: #asArraySlice addMethod: {:(Array)self :: ArraySlice |
         ArraySlice basicNew
             elements: self;
             offset: 0sz;
@@ -456,16 +523,16 @@ Array
     }.
 
 ByteArray
-    withSelector: #at: addMethod: {:self :(Size)index |
+    withSelector: #at: addMethod: {:(ByteArray)self :(Size)index |
         self __slotAt__: index
     };
-    withSelector: #at:put: addMethod: {:self :(Size)index :value :: Void |
+    withSelector: #at:put: addMethod: {:(ByteArray)self :(Size)index :value :: Void |
         self __slotAt__: index put: value
     };
-    withSelector: #size addMethod: {:self :: Size |
+    withSelector: #size addMethod: {:(ByteArray)self :: Size |
         self __byteSize__
     };
-    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void |
+    withSelector: #printOn: addMethod: {:(ByteArray)self :(Stream)stream :: Void |
         stream nextPutAll: "#[".
         self doWithIndex: {:element :index :: Void |
             if: index > 0sz then: (stream nextPutAll: ". ").
@@ -477,21 +544,21 @@ ByteArray
     }.
 
 ArraySlice
-    withSelector: #new: addClassMethod: {:self :(Size)size :: self |
+    withSelector: #new: addClassMethod: {:(ArraySlice class)self :(Size)size :: self |
         self basicNew
             elements: (Array basicNew: size);
             offset: 0sz;
             size: size;
             yourself
     };
-    withSelector: #at: addMethod: {:self :(Size)index |
+    withSelector: #at: addMethod: {:(ArraySlice)self :(Size)index |
         if: index < self size then: {
             self elements at: index + self offset
         } else: {
             error("Index out of bounds.")
         }
     };
-    withSelector: #at:put: addMethod: {:self :(Size)index :value :: Void |
+    withSelector: #at:put: addMethod: {:(ArraySlice)self :(Size)index :value :: Void |
         if: index < self size then: {
             self elements at: index + self offset put: value
         } else: {
@@ -500,33 +567,36 @@ ArraySlice
     }.
 
 TypeSlot
-    withSelector: #named:type:flags: addClassMethod: {:self :name :(Type)type :(Size)flags :: self |
+    withSelector: #named:type:flags: addClassMethod: {:(TypeSlot class)self :name :(Type)type :(Size)flags :: self |
         self new
             name: name;
             type: type;
             flags: flags;
             yourself
     };
-    withSelector: #named:type: addClassMethod: {:self :name :(Type)type :: self |
+    withSelector: #named:type: addClassMethod: {:(TypeSlot class)self :name :(Type)type :: self |
         self named: name type: type flags: 0sz
     };
-    withSelector: #named:flags: addClassMethod: {:self :name :(Size)flags :: self |
+    withSelector: #named:flags: addClassMethod: {:(TypeSlot class)self :name :(Size)flags :: self |
         self named: name type: nil flags: flags
     };
-    withSelector: #named: addClassMethod: {:self :name :(Type)type :: self |
+    withSelector: #named: addClassMethod: {:(TypeSlot class)self :name :(Type)type :: self |
         self publicNamed: name type: nil
     };
-    withSelector: #publicNamed:type: addClassMethod: {:self :name :(Type)type :: self |
+    withSelector: #publicNamed:type: addClassMethod: {:(TypeSlot class)self :name :(Type)type :: self |
         self named: name type: type flags: 1sz
     };
-    withSelector: #publicNamed: addClassMethod: {:self :name :(Type)type :: self |
+    withSelector: #publicNamed: addClassMethod: {:(TypeSlot class)self :name :(Type)type :: self |
         self publicNamed: name type: nil
     };
 
-    withSelector: #isPublic addMethod: {:self :: Boolean |
+    withSelector: #isPublic addMethod: {:(TypeSlot)self :: Boolean |
         (self flags & 1sz) ~= 0sz
     };
-    withSelector: #generateAccessorsOn:withIndex: addMethod: {:self :(Type)type :(Size)slotIndex :: Void |
+    withSelector: #isReadonly addMethod: {:(TypeSlot)self :: Boolean |
+        (self flags & 2sz) ~= 0sz
+    };
+    withSelector: #generateAccessorsOn:withIndex: addMethod: {:(TypeSlot)self :(Type)type :(Size)slotIndex :: Void |
         if: self isPublic then: {
             let: #slotType with: self type.
             let: #getterName with: self name.
@@ -539,14 +609,16 @@ TypeSlot
                 recompileAndOptimize).
 
             ## Setter
-            type withSelector: setterName addMethod: ({:(type)self :(slotType)value :: Void | RawTuple::slotAt:put:(self, slotIndex, value) }
-                makeFinal; 
-                recompileAndOptimize).
+            if: self isReadonly not then: {
+                type withSelector: setterName addMethod: ({:(type)self :(slotType)value :: Void | RawTuple::slotAt:put:(self, slotIndex, value) }
+                    makeFinal; 
+                    recompileAndOptimize).
+            }
         }
     }.
 
 Type
-    withSelector: #generatePublicAccessors addMethod: {:self :: Void |
+    withSelector: #generatePublicAccessors addMethod: {:(Type)self :: Void |
         let: #baseSlotIndex with: self validSupertypeTotalSlotCount.
         self slots doWithIndex: {:slot :index :: Void |
             let: #slotIndex with: baseSlotIndex + index.
@@ -555,7 +627,7 @@ Type
     }.
 
 Metaclass
-    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void |
+    withSelector: #printOn: addMethod: {:(Type)self :(Stream)stream :: Void |
         let: #thisClass with: self thisClass.
         if: thisClass ~~ nil
         then: (stream print: thisClass; nextPutAll: " class")
@@ -572,13 +644,14 @@ Metaclass
     Integer
 ) do: {:SelfType :: Void |
     SelfType
-        withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void |
-        stream nextPutAll: self printString
-    }.
+        withSelector: #printOn: addMethod: {:(SelfType)self :(Stream)stream :: Void |
+            stream nextPutAll: self printString
+        } recompileAndOptimize;
+            makeFinal.
 }.
 
 SourcePosition
-    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void |
+    withSelector: #printOn: addMethod: {:(SourcePosition)self :(Stream)stream :: Void |
         let: #sourceCode with: self sourceCode.
 
         stream
@@ -594,7 +667,7 @@ SourcePosition
     }.
 
 Class
-    withSelector: #subclassWithClassSlots: addMethod: {:self :(Array)classSlots  :: Class |
+    withSelector: #subclassWithClassSlots: addMethod: {:(Class)self :(Array)classSlots  :: Class |
         let: #metaclass with: Metaclass basicNew.
         let: #metaclassSuper with: self class.
         metaclass
@@ -613,23 +686,23 @@ Class
         metaclass thisClass: class.
         class
     };
-    withSelector: #subclassWithClassSlots:slots: addMethod: {:self :(Array)classSlots :(Array)instanceSlots :: Class |
+    withSelector: #subclassWithClassSlots:slots: addMethod: {:(Class)self :(Array)classSlots :(Array)instanceSlots :: Class |
         (self subclassWithClassSlots: classSlots)
             slots: instanceSlots;
             totalSlotCount: self validTotalSlotCount + instanceSlots size;
             generatePublicAccessors;
             yourself
     };
-    withSelector: #subclass:classSlots:slots: addMethod: {:self :(StringSymbol)name :(Array)classSlots :(Array)instanceSlots :: Class |
+    withSelector: #subclass:classSlots:slots: addMethod: {:(Class)self :(StringSymbol)name :(Array)classSlots :(Array)instanceSlots :: Class |
         let: #class with: (self subclassWithClassSlots: classSlots slots: instanceSlots).
         class name: name.
         class
     };
-    withSelector: #subclass:slots: addMethod: {:self :(StringSymbol)name :(Array)instanceSlots :: Class |
+    withSelector: #subclass:slots: addMethod: {:(Class)self :(StringSymbol)name :(Array)instanceSlots :: Class |
         self subclass: name classSlots: () slots: instanceSlots
     }.
 
 Environment
-    withSelector: #setSymbol:value: addMethod: {:self :selector :value :: value __type__ | self setSymbol: selector bindingWithValue: value. value };
-    withSelector: #setPublicSymbol:value: addMethod: {:self :selector :value :: value __type__ | self setSymbol: selector bindingWithValue: value. value };
-    withSelector: #withSelector:addMethod: addMethod: {:self :selector :method :: Void | self setSymbol: selector bindingWithValue: method }.
+    withSelector: #setSymbol:value: addMethod: {:(Environment)self :(Symbol)selector :value :: value __type__ | self setSymbol: selector bindingWithValue: value. value };
+    withSelector: #setPublicSymbol:value: addMethod: {:(Environment)self :(Symbol)selector :value :: value __type__ | self setSymbol: selector bindingWithValue: value. value };
+    withSelector: #withSelector:addMethod: addMethod: {:(Environment)self :(Symbol)selector :method :: Void | self setSymbol: selector bindingWithValue: method }.

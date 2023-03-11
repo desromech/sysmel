@@ -58,6 +58,7 @@ typedef enum tuuvm_typeSlotFlags_e
 {
     TUUVM_TYPE_SLOT_FLAG_NONE = 0,
     TUUVM_TYPE_SLOT_FLAG_PUBLIC = 1<<0,
+    TUUVM_TYPE_SLOT_FLAG_READONLY = 1<<1,
 } tuuvm_typeSlotFlags_t;
 
 /**

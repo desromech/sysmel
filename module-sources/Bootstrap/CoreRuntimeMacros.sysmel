@@ -1,11 +1,11 @@
 MacroContext
-    withSelector: #gensym: addMethod: {:self :value |
+    withSelector: #gensym: addMethod: {:(MacroContext)self :value |
         GeneratedSymbol new
             value: value;
             context: self sourcePosition;
             yourself
     };
-    withSelector: #gensymIdentifier: addMethod: {:self :value |
+    withSelector: #gensymIdentifier: addMethod: {:(MacroContext)self :value |
         ASTIdentifierReferenceNode new
             sourcePosition: self sourcePosition;
             value: (self gensym: value);
@@ -13,12 +13,12 @@ MacroContext
     }.
 
 ASTNode
-    withSelector: #cullExpressionWith:at: addMethod: {:self :argument :sourcePosition :: ASTNode |
+    withSelector: #cullExpressionWith:at: addMethod: {:(ASTNode)self :(ASTNode)argument :(SourcePosition)sourcePosition :: ASTNode |
         self
     }.
 
 ASTLambdaNode
-    withSelector: #cullExpressionWith:at: addMethod: {:self :argument :sourcePosition :: ASTNode |
+    withSelector: #cullExpressionWith:at: addMethod: {:(ASTNode)self :(ASTNode)argument :(SourcePosition)sourcePosition :: ASTNode |
         ASTUnexpandedApplicationNode new
             sourcePosition: sourcePosition;
             functionOrMacroExpression: self;
@@ -27,7 +27,7 @@ ASTLambdaNode
     }.
     
 AnyValue
-    withSelector: #ifNil: addMacroMethod: {:macroContext :self :nilExpression :: ASTNode |
+    withSelector: #ifNil: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)nilExpression :: ASTNode |
         let: #receiver with: (macroContext gensymIdentifier: #ifNilReceiver).
         
         ``{
@@ -35,7 +35,7 @@ AnyValue
             if: `,receiver == nil then: `,nilExpression else: `,receiver
         }
     } makeMacro;
-    withSelector: #ifNotNil: addMacroMethod: {:macroContext :self :notNilExpression :: ASTNode |
+    withSelector: #ifNotNil: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)notNilExpression :: ASTNode |
         let: #receiver with: (macroContext gensymIdentifier: #ifNotNilReceiver).
         
         ``{
@@ -43,7 +43,7 @@ AnyValue
             if: `,receiver ~~ nil then: `,(notNilExpression cullExpressionWith: receiver at: macroContext sourcePosition) else: nil
         }
     } makeMacro;
-    withSelector: #ifNil:ifNotNil: addMacroMethod: {:macroContext :self :nilExpression :notNilExpression :: ASTNode |
+    withSelector: #ifNil:ifNotNil: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)nilExpression :(ASTNode)notNilExpression :: ASTNode |
         let: #receiver with: (macroContext gensymIdentifier: #ifNilIfNotNilReceiver).
         
         ``{
@@ -51,7 +51,7 @@ AnyValue
             if: `,receiver == nil then: `,nilExpression else: `,(notNilExpression cullExpressionWith: receiver at: macroContext sourcePosition)
         }
     } makeMacro;
-    withSelector: #ifNotNil:ifNil: addMacroMethod: {:macroContext :self :notNilExpression :nilExpression :: ASTNode |
+    withSelector: #ifNotNil:ifNil: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)notNilExpression :(ASTNode)nilExpression :: ASTNode |
         let: #receiver with: (macroContext gensymIdentifier: #ifNotNilIfNilReceiver).
         
         ``{

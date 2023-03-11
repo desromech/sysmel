@@ -364,7 +364,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValue(tuuvm_context_t *context, tuuvm_t
     if(tuuvm_tuple_isKindOf(context, value, type))
         return value;
 
-    tuuvm_tuple_t function = tuuvm_type_getCoerceValueFunction(context, type);
+    tuuvm_tuple_t function = tuuvm_type_getCoerceValueFunction(context, tuuvm_tuple_getType(context, type));
     if(function)
         return tuuvm_function_apply2(context, function, type, value);
     

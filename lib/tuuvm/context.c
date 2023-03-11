@@ -496,6 +496,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
+    tuuvm_type_setFlags(context, context->roots.arrayType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_FINAL);
+    tuuvm_type_setFlags(context, context->roots.arrayListType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_FINAL);
 
     // Create other root basic types.
     context->roots.arraySliceType = tuuvm_context_createIntrinsicClass(context, "ArraySlice", context->roots.sequenceableCollectionType,
@@ -503,12 +505,14 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "offset", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         NULL);
+    tuuvm_type_setFlags(context, context->roots.arraySliceType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_FINAL);
     context->roots.associationType = tuuvm_context_createIntrinsicClass(context, "Association", TUUVM_NULL_TUPLE,
         "key", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
+    tuuvm_type_setFlags(context, context->roots.associationType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_FINAL);
     context->roots.byteArrayType = tuuvm_context_createIntrinsicClass(context, "ByteArray", context->roots.arrayedCollectionType, NULL);
-    tuuvm_type_setFlags(context, context->roots.byteArrayType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_BYTES);
+    tuuvm_type_setFlags(context, context->roots.byteArrayType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_BYTES | TUUVM_TYPE_FLAGS_FINAL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.dictionaryType, "Dictionary", TUUVM_NULL_TUPLE,
         "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
