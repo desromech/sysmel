@@ -149,10 +149,10 @@ void tuuvm_io_registerPrimitives(void)
 
 void tuuvm_io_setupPrimitives(tuuvm_context_t *context)
 {
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "printLine", 1, TUUVM_FUNCTION_FLAGS_VARIADIC | TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_io_primitive_printLine);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "print", 1, TUUVM_FUNCTION_FLAGS_VARIADIC | TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_io_primitive_print);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "printLine", 1, TUUVM_FUNCTION_FLAGS_VARIADIC | TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_io_primitive_printLine);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "print", 1, TUUVM_FUNCTION_FLAGS_VARIADIC | TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_io_primitive_print);
 
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "IO::readWholeFileNamedAsString", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_io_primitive_readWholeFileNamedAsString);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "IO::readWholeFileNamedAsByteArray", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_io_primitive_readWholeFileNamedAsByteArray);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(context, "IO::saveWholeFileNamed", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_io_primitive_saveWholeFileNamed);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "IO::readWholeFileNamedAsString", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_io_primitive_readWholeFileNamedAsString);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "IO::readWholeFileNamedAsByteArray", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_io_primitive_readWholeFileNamedAsByteArray);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "IO::saveWholeFileNamed", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_io_primitive_saveWholeFileNamed);
 }

@@ -267,6 +267,27 @@ Function
     withSelector: #hasPragmaNamed: addMethod: {:self :selector :: Boolean |
         let: #body with: self body.
         (body ~~ nil) && (body hasPragmaNamed: selector)
+    };
+    
+    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void |
+        let: #name with: self name.
+        let: #sourcePosition with: self sourcePosition.
+
+        stream nextPutAll: "Function(".
+
+        if: name ~~ nil then: {
+            let: #owner with: self owner.
+            if: owner ~~ nil then: (stream print: owner; nextPutAll: " >> ").
+            
+            stream print: name.
+            if: sourcePosition ~~ nil then: (stream space).
+
+        }.
+        if: sourcePosition ~~ nil then: {
+            stream nextPutAll: "at "; print: sourcePosition
+        }.
+
+        stream nextPut: ')'
     }.
 
 ValueBox

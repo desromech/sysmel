@@ -62,17 +62,17 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicType(tuuvm_context_t *conte
 /**
  * Sets an intrinsic symbol binding.
  */
-TUUVM_API void tuuvm_context_setIntrinsicSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t symbol, tuuvm_tuple_t binding);
+TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingValue(tuuvm_context_t *context, tuuvm_tuple_t symbol, tuuvm_tuple_t binding);
 
 /**
  * Sets an intrinsic symbol binding with primitive function.
  */
-TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(tuuvm_context_t *context, const char *symbolString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint);
+TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(tuuvm_context_t *context, const char *symbolString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint);
 
 /**
  * Sets an intrinsic symbol binding with primitive function.
  */
-TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(tuuvm_context_t *context, const char *symbolString, tuuvm_tuple_t ownerClass, const char *selectorString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint);
+TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(tuuvm_context_t *context, const char *symbolString, tuuvm_tuple_t ownerClass, const char *selectorString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint);
 
 /**
  * Registers a function in the global primitive table.

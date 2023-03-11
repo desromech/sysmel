@@ -205,12 +205,19 @@ static void tuuvm_context_setIntrinsicTypeMetadata(tuuvm_context_t *context, tuu
     tuuvm_type_setTotalSlotCount(context, type, totalSlotCount);
 }
 
-TUUVM_API void tuuvm_context_setIntrinsicSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t symbol, tuuvm_tuple_t binding)
+TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingValue(tuuvm_context_t *context, tuuvm_tuple_t symbol, tuuvm_tuple_t value)
 {
-    tuuvm_environment_setNewSymbolBindingWithValue(context, context->roots.intrinsicsBuiltInEnvironment, symbol, binding);
+    tuuvm_environment_setNewSymbolBindingWithValue(context, context->roots.intrinsicsBuiltInEnvironment, symbol, value);
+
+    if(tuuvm_tuple_isKindOf(context, value, context->roots.functionType))
+    {
+        tuuvm_function_t *functionObject = (tuuvm_function_t*)value;
+        if(!functionObject->owner && !functionObject->name)
+            functionObject->name = symbol;
+    }
 }
 
-TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(tuuvm_context_t *context, const char *symbolString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
+TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(tuuvm_context_t *context, const char *symbolString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
 {
     struct {
         tuuvm_tuple_t symbol;
@@ -220,11 +227,11 @@ TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveFunction(tuuv
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     gcFrame.symbol = tuuvm_symbol_internWithCString(context, symbolString);
     gcFrame.primitiveFunction = tuuvm_function_createPrimitive(context, argumentCount, flags, userdata, entryPoint);
-    tuuvm_context_setIntrinsicSymbolBinding(context, gcFrame.symbol, gcFrame.primitiveFunction);
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, gcFrame.symbol, gcFrame.primitiveFunction);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
 }
 
-TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(tuuvm_context_t *context, const char *symbolString, tuuvm_tuple_t ownerClass, const char *selectorString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
+TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(tuuvm_context_t *context, const char *symbolString, tuuvm_tuple_t ownerClass, const char *selectorString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
 {
     struct {
         tuuvm_tuple_t symbol;
@@ -239,8 +246,8 @@ TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(tuuvm_
     gcFrame.symbol = tuuvm_symbol_internWithCString(context, symbolString);
     gcFrame.selector = tuuvm_symbol_internWithCString(context, selectorString);
     gcFrame.primitiveFunction = tuuvm_function_createPrimitive(context, argumentCount, flags, userdata, entryPoint);
-    tuuvm_context_setIntrinsicSymbolBinding(context, gcFrame.symbol, gcFrame.primitiveFunction);
     tuuvm_type_setMethodWithSelector(context, gcFrame.ownerClass, gcFrame.selector, gcFrame.primitiveFunction);
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, gcFrame.symbol, gcFrame.primitiveFunction);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
 }
 
@@ -331,21 +338,21 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 
     context->roots.coerceValueSelector = tuuvm_symbol_internWithCString(context, "coerceValue:");
 
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "nil"), TUUVM_NULL_TUPLE);
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "false"), TUUVM_FALSE_TUPLE);
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "true"), TUUVM_TRUE_TUPLE);
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "void"), TUUVM_VOID_TUPLE);
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "nil"), TUUVM_NULL_TUPLE);
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "false"), TUUVM_FALSE_TUPLE);
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "true"), TUUVM_TRUE_TUPLE);
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "void"), TUUVM_VOID_TUPLE);
 
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "BootstrapEnv::IntrinsicsBuiltInEnvironment"), context->roots.intrinsicsBuiltInEnvironment);
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "BootstrapEnv::IntrinsicTypes"), context->roots.intrinsicTypes);
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "BootstrapEnv::InternedSymbolSet"), context->roots.internedSymbolSet);
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "BootstrapEnv::IntrinsicsBuiltInEnvironment"), context->roots.intrinsicsBuiltInEnvironment);
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "BootstrapEnv::IntrinsicTypes"), context->roots.intrinsicTypes);
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "BootstrapEnv::InternedSymbolSet"), context->roots.internedSymbolSet);
 
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "identityHash"), context->roots.identityHashFunction);
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "=="), context->roots.identityEqualsFunction);
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "~~"), context->roots.identityNotEqualsFunction);
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "identityHash"), context->roots.identityHashFunction);
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "=="), context->roots.identityEqualsFunction);
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "~~"), context->roots.identityNotEqualsFunction);
 
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "String::hash"), context->roots.stringHashFunction);
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "String::equals:"), context->roots.stringEqualsFunction);
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "String::hash"), context->roots.stringHashFunction);
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "String::equals:"), context->roots.stringEqualsFunction);
 
     // Some basic method
     tuuvm_type_setHashFunction(context, context->roots.anyValueType, context->roots.identityHashFunction);
@@ -412,7 +419,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.anyValueType, "AnyValue", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.objectType, "Object", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.typeType, "Type", TUUVM_NULL_TUPLE,
-        "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringSymbolType,
+        "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
+        "owner", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "supertype", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         "slots", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "totalSlotCount", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
@@ -454,6 +462,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.functionType, "Function", TUUVM_NULL_TUPLE,
+        "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "owner", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "argumentCount", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
@@ -527,9 +537,9 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
 
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "Size"), context->roots.sizeType);
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "UIntPointer"), context->roots.uintptrType);
-    tuuvm_context_setIntrinsicSymbolBinding(context, tuuvm_symbol_internWithCString(context, "IntPointer"), context->roots.intptrType);
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "Size"), context->roots.sizeType);
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "UIntPointer"), context->roots.uintptrType);
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "IntPointer"), context->roots.intptrType);
 
     context->roots.sourceCodeType = tuuvm_context_createIntrinsicClass(context, "SourceCode", TUUVM_NULL_TUPLE,
         "text", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,

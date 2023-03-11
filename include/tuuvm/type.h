@@ -11,6 +11,7 @@ typedef struct tuuvm_type_tuple_s
 {
     tuuvm_tuple_header_t header;
     tuuvm_tuple_t name;
+    tuuvm_tuple_t owner;
     tuuvm_tuple_t supertype;
     tuuvm_tuple_t slots;
     tuuvm_tuple_t totalSlotCount;

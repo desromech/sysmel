@@ -27,6 +27,8 @@ typedef enum tuuvm_functionFlags_e
 typedef struct tuuvm_function_s
 {
     tuuvm_tuple_header_t header;
+    tuuvm_tuple_t name;
+    tuuvm_tuple_t owner;
     tuuvm_tuple_t flags;
     tuuvm_tuple_t argumentCount;
     tuuvm_tuple_t sourcePosition;

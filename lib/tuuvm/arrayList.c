@@ -120,6 +120,6 @@ void tuuvm_arrayList_registerPrimitives(void)
 
 void tuuvm_arrayList_setupPrimitives(tuuvm_context_t *context)
 {
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "ArrayList::add:", context->roots.arrayListType, "add:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_arrayList_primitive_add);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "ArrayList::asArray", context->roots.arrayListType, "asArray", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_arrayList_primitive_asArray);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ArrayList::add:", context->roots.arrayListType, "add:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_arrayList_primitive_add);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ArrayList::asArray", context->roots.arrayListType, "asArray", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_arrayList_primitive_asArray);
 }

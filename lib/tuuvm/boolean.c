@@ -31,6 +31,6 @@ void tuuvm_boolean_registerPrimitives(void)
 
 void tuuvm_boolean_setupPrimitives(tuuvm_context_t *context)
 {
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Boolean::not", context->roots.booleanType, "not", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_boolean_primitive_not);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Boolean::xor:", context->roots.booleanType, "xor:",2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_boolean_primitive_xor);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Boolean::not", context->roots.booleanType, "not", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_boolean_primitive_not);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Boolean::xor:", context->roots.booleanType, "xor:",2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_boolean_primitive_xor);
 }

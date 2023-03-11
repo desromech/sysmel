@@ -36,6 +36,7 @@ public class SSALiteralConstant superclass: SSAConstant; definition: {
 }.
 
 SSAFunction definition: {
+    public field name.
     public field arguments => Array.
 
     public field firstBasicBlock => SSABasicBlock.
@@ -107,6 +108,15 @@ SSAFunction definition: {
         self localValuesDo: {:localValue :: Void |
             localValue localValueIndex: index _.
             index := index _ + 1sz
+        }
+    }.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream nextPut: '@'.
+        self name ifNil: {
+            stream print: self sourcePosition.
+        } ifNotNil: {:name :: Void |
+            stream print: self name
         }
     }.
 
@@ -240,10 +250,8 @@ public class SSACallInstruction superclass: SSAInstruction; definition: {
         stream
             print: self; nextPutAll: " := ";
             nextPutAll: "call "; print: self calledFunction.
-        self arguments doWithIndex: {:(SSAValue)argument :(Size)index :: Void |
-            index = 0sz
-                ifTrue: (stream nextPut: ' ')
-                ifFalse: (stream nextPutAll: ", ").
+        self arguments do: {:(SSAValue)argument :: Void |
+            stream nextPutAll: ", ".
             stream print: argument
         }
     }.
@@ -422,6 +430,7 @@ public class SSAFunctionCompilationContext superclass: Object; definition: {
         self ssaFunction: ssaFunction.
 
         ssaFunction
+            name: function name;
             sourcePosition: function sourcePosition.
 
         ssaFunction arguments: (function argumentNodes collect: {:(ASTArgumentNode)argumentNode :: SSAFunctionArgument |

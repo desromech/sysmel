@@ -197,6 +197,16 @@ TUUVM_API void tuuvm_type_setMethodWithSelector(tuuvm_context_t *context, tuuvm_
     if(!typeObject->methodDictionary)
         typeObject->methodDictionary = tuuvm_methodDictionary_create(context);
     tuuvm_methodDictionary_atPut(context, typeObject->methodDictionary, selector, method);
+
+    if(tuuvm_tuple_isKindOf(context, method, context->roots.functionType))
+    {
+        tuuvm_function_t *functionObject = (tuuvm_function_t*)method;
+        if(!functionObject->owner && !functionObject->name)
+        {
+            functionObject->owner = type;
+            functionObject->name = selector;
+        }
+    }
 }
 
 TUUVM_API bool tuuvm_type_isSubtypeOf(tuuvm_tuple_t type, tuuvm_tuple_t supertype)
@@ -406,7 +416,7 @@ void tuuvm_type_registerPrimitives(void)
 
 void tuuvm_type_setupPrimitives(tuuvm_context_t *context)
 {
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Type::flushLookupSelector:", context->roots.typeType, "flushLookupSelector:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_flushLookupSelector);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Type::flushMacroLookupSelector:", context->roots.typeType, "flushMacroLookupSelector:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_flushMacroLookupSelector);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "Type::flushFallbackLookupSelector:", context->roots.typeType, "flushFallbackLookupSelector:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_flushFallbackLookupSelector);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Type::flushLookupSelector:", context->roots.typeType, "flushLookupSelector:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_flushLookupSelector);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Type::flushMacroLookupSelector:", context->roots.typeType, "flushMacroLookupSelector:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_flushMacroLookupSelector);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Type::flushFallbackLookupSelector:", context->roots.typeType, "flushFallbackLookupSelector:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_flushFallbackLookupSelector);
 }

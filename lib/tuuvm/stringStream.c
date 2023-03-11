@@ -155,8 +155,8 @@ void tuuvm_stringStream_registerPrimitives(void)
 
 void tuuvm_stringStream_setupPrimitives(tuuvm_context_t *context)
 {
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "StringStream::nextPut:", context->roots.stringStreamType, "nextPut:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_stringStream_primitive_nextPut);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "StringStream::nextPutAll:", context->roots.stringStreamType, "nextPutAll:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_stringStream_primitive_nextPutAll);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "StringStream::asString", context->roots.stringStreamType, "asString", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_stringStream_primitive_asString);
-    tuuvm_context_setIntrinsicSymbolBindingWithPrimitiveMethod(context, "StringStream::asSymbol", context->roots.stringStreamType, "asSymbol", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_stringStream_primitive_asSymbol);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "StringStream::nextPut:", context->roots.stringStreamType, "nextPut:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_stringStream_primitive_nextPut);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "StringStream::nextPutAll:", context->roots.stringStreamType, "nextPutAll:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_stringStream_primitive_nextPutAll);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "StringStream::asString", context->roots.stringStreamType, "asString", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_stringStream_primitive_asString);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "StringStream::asSymbol", context->roots.stringStreamType, "asSymbol", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_stringStream_primitive_asSymbol);
 }
