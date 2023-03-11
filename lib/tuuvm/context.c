@@ -472,6 +472,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "resultTypeNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "body", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "primitiveTableIndex", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "primitiveName", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
         "nativeUserdata", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "nativeEntryPoint", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uintptrType,
         NULL);

@@ -37,6 +37,7 @@ typedef struct tuuvm_function_s
     tuuvm_tuple_t resultTypeNode;
     tuuvm_tuple_t body;
     tuuvm_tuple_t primitiveTableIndex;
+    tuuvm_tuple_t primitiveName;
     tuuvm_tuple_t nativeUserdata;
     tuuvm_tuple_t nativeEntryPoint;
 } tuuvm_function_t;
