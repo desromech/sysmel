@@ -22,6 +22,7 @@ typedef struct tuuvm_symbolBinding_s
     tuuvm_tuple_header_t header;
     tuuvm_tuple_t name;
     tuuvm_tuple_t sourcePosition;
+    tuuvm_tuple_t type;
 } tuuvm_symbolBinding_t;
 
 typedef struct tuuvm_symbolArgumentBinding_s
@@ -46,14 +47,23 @@ typedef struct tuuvm_symbolValueBinding_s
 TUUVM_API bool tuuvm_symbolBinding_isValue(tuuvm_context_t *context, tuuvm_tuple_t binding);
 
 /**
+ * Gets the value from the symbol value binding.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_symbolBinding_getType(tuuvm_tuple_t binding)
+{
+    if(!tuuvm_tuple_isNonNullPointer(binding)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_symbolBinding_t*)binding)->type;
+}
+
+/**
  * Creates a symbol argument binding.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_symbolArgumentBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name);
+TUUVM_API tuuvm_tuple_t tuuvm_symbolArgumentBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t type);
 
 /**
  * Creates a symbol local binding.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_symbolLocalBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name);
+TUUVM_API tuuvm_tuple_t tuuvm_symbolLocalBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t type);
 
 /**
  * Creates a symbol value binding.
@@ -65,6 +75,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_symbolValueBinding_create(tuuvm_context_t *context
  */
 TUUVM_INLINE tuuvm_tuple_t tuuvm_symbolValueBinding_getValue(tuuvm_tuple_t binding)
 {
+    if(!tuuvm_tuple_isNonNullPointer(binding)) return TUUVM_NULL_TUPLE;
     return ((tuuvm_symbolValueBinding_t*)binding)->value;
 }
 

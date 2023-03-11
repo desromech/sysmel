@@ -79,6 +79,9 @@ Object
     withSelector: #class addMethod: {:self :: self __type__ __type__ | self __type__ };
     withSelector: #species addMethod: {:self :: Class | self class };
     withSelector: #error: addMethod: {:self :(String)errorMessage :: Void | error(errorMessage) };
+    withSelector: #assert: addMethod: {:self :(Boolean)condition :: Void |
+        if: condition then: void else: error("Assertion failure.")
+    };
     withSelector: #subclassResponsibility addMethod: {:self :: Void | self error: self __type__ printString -- " Subclass responsibility." }.
 
 Type
@@ -210,6 +213,20 @@ False
 True
     withSelector: #printString addMethod: {:self :: String | "true" };
     withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void | stream nextPutAll: "true" }.
+
+String
+    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void |
+        ## TODO: Implement this part properly.
+        stream nextPut: '"'
+        stream nextPutAll: self
+        stream nextPut: '"'
+    }.
+
+StringSymbol
+    withSelector: #printOn: addMethod: {:self :(Stream)stream :: Void |
+        ## TODO: Implement this part properly.
+        stream nextPut: '#'; nextPutAll: self
+    }.
 
 Class
     withSelector: #withSelector:addClassMethod: addMethod: {:self :selector :method :: Void |

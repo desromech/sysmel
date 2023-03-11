@@ -100,8 +100,5 @@ let: #theAnswer with: {:: Int32 | 42i32 }.
 printLine(theAnswer, " ", theAnswer()).
 printLine(theAnswer asSSAFunction fullPrintString).
 
-#*
-let: #square with: {:(Int32)x :: Int32 | x*x }.
 printLine(square).
-printLine(square asSSAFunction).
-*#
+printLine(square asSSAFunction fullPrintString).

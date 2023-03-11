@@ -168,6 +168,12 @@ TUUVM_API tuuvm_tuple_t tuuvm_astNode_getSourcePosition(tuuvm_tuple_t node)
     return ((tuuvm_astNode_t*)node)->sourcePosition;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_astNode_getAnalyzedType(tuuvm_tuple_t node)
+{
+    if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_astNode_t*)node)->analyzedType;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_astArgumentNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t isForAll, tuuvm_tuple_t name, tuuvm_tuple_t type)
 {
     tuuvm_astArgumentNode_t *result = (tuuvm_astArgumentNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astArgumentNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astArgumentNode_t));
@@ -341,6 +347,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_astLiteralNode_create(tuuvm_context_t *context, tu
 {
     tuuvm_astLiteralNode_t *result = (tuuvm_astLiteralNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astLiteralNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astLiteralNode_t));
     result->super.sourcePosition = sourcePosition;
+    result->super.analyzedType = tuuvm_tuple_getType(context, value);
     result->value = value;
     return (tuuvm_tuple_t)result;
 }

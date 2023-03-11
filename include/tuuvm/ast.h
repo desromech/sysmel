@@ -380,6 +380,11 @@ TUUVM_API bool tuuvm_astNode_isWhileContinueWithNode(tuuvm_context_t *context, t
 TUUVM_API tuuvm_tuple_t tuuvm_astNode_getSourcePosition(tuuvm_tuple_t node);
 
 /**
+ * Gets the analyzed type from the ast node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astNode_getAnalyzedType(tuuvm_tuple_t node);
+
+/**
  * Creates an argument node
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astArgumentNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t isForAll, tuuvm_tuple_t name, tuuvm_tuple_t type);

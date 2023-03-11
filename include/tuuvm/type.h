@@ -25,9 +25,13 @@ typedef struct tuuvm_type_tuple_s
 
 typedef enum tuuvm_typeFlags_e
 {
-    TUUVM_TYPE_FLAG_NONE = 0,
-    TUUVM_TYPE_FLAG_NULLABLE = 1<<0,
-    TUUVM_TYPE_FLAG_BYTES = 1<<1,
+    TUUVM_TYPE_FLAGS_NONE = 0,
+    TUUVM_TYPE_FLAGS_NULLABLE = 1<<0,
+    TUUVM_TYPE_FLAGS_BYTES = 1<<1,
+    TUUVM_TYPE_FLAGS_IMMEDIATE = 1<<2,
+
+    TUUVM_TYPE_FLAGS_FINAL = 1<<3,
+    TUUVM_TYPE_FLAGS_ABSTRACT = 1<<4,
 } tuuvm_typeFlags_t;
 
 typedef struct tuuvm_class_s
@@ -189,7 +193,7 @@ TUUVM_API void tuuvm_type_setFlags(tuuvm_context_t *context, tuuvm_tuple_t type,
  */
 TUUVM_INLINE bool tuuvm_type_isNullable(tuuvm_tuple_t type)
 {
-    return (tuuvm_type_getFlags(type) & TUUVM_TYPE_FLAG_NULLABLE) != 0;
+    return (tuuvm_type_getFlags(type) & TUUVM_TYPE_FLAGS_NULLABLE) != 0;
 }
 
 /**

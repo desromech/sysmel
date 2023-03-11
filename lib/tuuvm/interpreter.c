@@ -187,6 +187,7 @@ static tuuvm_tuple_t tuuvm_astSequenceNode_primitiveAnalyze(tuuvm_context_t *con
         tuuvm_tuple_t elementValue;
         tuuvm_tuple_t elementType;
         tuuvm_tuple_t elementMetaType;
+        tuuvm_tuple_t resultType;
         tuuvm_tuple_t concretizeFunction;
     } gcFrame = {0};
 
@@ -232,10 +233,12 @@ static tuuvm_tuple_t tuuvm_astSequenceNode_primitiveAnalyze(tuuvm_context_t *con
                 gcFrame.analyzedExpression = tuuvm_function_apply3(context, gcFrame.concretizeFunction, gcFrame.elementType, gcFrame.analyzedExpression, *environment);
         }
 
+        gcFrame.resultType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedExpression);
         tuuvm_arraySlice_atPut(gcFrame.analyzedExpressions, i, gcFrame.analyzedExpression);
     }
 
     gcFrame.analyzedSequenceNode->expressions = gcFrame.analyzedExpressions;
+    gcFrame.analyzedSequenceNode->super.analyzedType = gcFrame.resultType;
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
 
@@ -419,6 +422,7 @@ static tuuvm_tuple_t tuuvm_astArgumentNode_primitiveAnalyze(tuuvm_context_t *con
         tuuvm_tuple_t analyzedName;
         tuuvm_tuple_t analyzedType;
         tuuvm_tuple_t evaluatedName;
+        tuuvm_tuple_t evaluatedType;
         tuuvm_tuple_t argumentBinding;
 
     } gcFrame = {0};
@@ -439,11 +443,13 @@ static tuuvm_tuple_t tuuvm_astArgumentNode_primitiveAnalyze(tuuvm_context_t *con
     {
         gcFrame.analyzedType = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.argumentNode->type, *environment);
         gcFrame.argumentNode->type = gcFrame.analyzedType;
+        if(tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedType))
+            gcFrame.evaluatedType = tuuvm_interpreter_evaluateASTWithEnvironment(context, gcFrame.analyzedType, *environment);
     }
 
     if(gcFrame.evaluatedName)
     {
-        gcFrame.argumentBinding = tuuvm_symbolArgumentBinding_create(context, gcFrame.argumentNode->super.sourcePosition, gcFrame.evaluatedName);
+        gcFrame.argumentBinding = tuuvm_symbolArgumentBinding_create(context, gcFrame.argumentNode->super.sourcePosition, gcFrame.evaluatedName, gcFrame.evaluatedType);
         gcFrame.argumentNode->binding = gcFrame.argumentBinding;
         tuuvm_environment_setNewBinding(context, *environment, gcFrame.argumentBinding);
     }
@@ -615,9 +621,13 @@ static tuuvm_tuple_t tuuvm_astLiteralNode_primitiveAnalyze(tuuvm_context_t *cont
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
 
-    tuuvm_tuple_t *node = &arguments[0];
+    tuuvm_astLiteralNode_t *literalNode = (tuuvm_astLiteralNode_t *)arguments[0];
+    if(literalNode->super.analyzedType)
+        return (tuuvm_tuple_t)literalNode;
 
-    return *node;
+    tuuvm_astLiteralNode_t *analyzedNode = (tuuvm_astLiteralNode_t*)tuuvm_context_shallowCopy(context, (tuuvm_tuple_t)literalNode);
+    analyzedNode->super.analyzedType = tuuvm_tuple_getType(context, analyzedNode->value);
+    return (tuuvm_tuple_t)analyzedNode;
 }
 
 static tuuvm_tuple_t tuuvm_astLiteralNode_primitiveEvaluate(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -794,6 +804,9 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveAnalyze(tuuvm_context
     {
         gcFrame.analyzedTypeExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.localDefinitionNode->typeExpression, *environment);
         gcFrame.localDefinitionNode->typeExpression = gcFrame.analyzedTypeExpression;
+
+        if(tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedTypeExpression))
+            gcFrame.type = tuuvm_astLiteralNode_getValue(gcFrame.analyzedTypeExpression);
     }
 
     if(gcFrame.localDefinitionNode->valueExpression)
@@ -809,9 +822,6 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveAnalyze(tuuvm_context
         if((!gcFrame.analyzedTypeExpression || tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedTypeExpression)) && 
             (!gcFrame.analyzedValueExpression || tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedValueExpression)))
         {
-            if(gcFrame.analyzedTypeExpression)
-                gcFrame.type = tuuvm_astLiteralNode_getValue(gcFrame.analyzedTypeExpression);
-
             if(gcFrame.analyzedValueExpression)
                 gcFrame.value = tuuvm_astLiteralNode_getValue(gcFrame.analyzedValueExpression);
             gcFrame.value = tuuvm_type_coerceValue(context, gcFrame.type, gcFrame.value);
@@ -819,7 +829,7 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveAnalyze(tuuvm_context
         }
         else
         {
-            gcFrame.localBinding = tuuvm_symbolLocalBinding_create(context, gcFrame.localDefinitionNode->super.sourcePosition, gcFrame.name);
+            gcFrame.localBinding = tuuvm_symbolLocalBinding_create(context, gcFrame.localDefinitionNode->super.sourcePosition, gcFrame.name, gcFrame.type);
         }
         
         gcFrame.localDefinitionNode->binding = gcFrame.localBinding;
@@ -922,7 +932,10 @@ static tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_primitiveAnalyze(tuuvm_con
         tuuvm_error("Failed to find symbol binding");
     }
 
-    return *node;
+    tuuvm_astIdentifierReferenceNode_t *analyzedNode = (tuuvm_astIdentifierReferenceNode_t*)tuuvm_context_shallowCopy(context, (tuuvm_tuple_t)*referenceNode);
+    analyzedNode->binding = binding;
+    analyzedNode->super.analyzedType = tuuvm_symbolBinding_getType(binding);
+    return (tuuvm_tuple_t)analyzedNode;
 }
 
 static tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_primitiveEvaluate(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -1482,6 +1495,7 @@ static tuuvm_tuple_t tuuvm_astLexicalBlockNode_primitiveAnalyze(tuuvm_context_t 
     gcFrame.childEnvironment = tuuvm_environment_create(context, *environment);
     gcFrame.analyzedBodyNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.lexicalBlockNode->body, gcFrame.childEnvironment);
     gcFrame.lexicalBlockNode->body = gcFrame.analyzedBodyNode;
+    gcFrame.lexicalBlockNode->super.analyzedType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedBodyNode);
     
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -1812,7 +1826,6 @@ static tuuvm_tuple_t tuuvm_astMessageChainNode_primitiveAnalyze(tuuvm_context_t 
         tuuvm_tuple_t analyzedChainedMessages;
         tuuvm_tuple_t chainedMessageNode;
 
-        tuuvm_tuple_t receiverValue;
         tuuvm_tuple_t receiverType;
         tuuvm_tuple_t receiverMetaType;
         tuuvm_tuple_t analysisFunction;
@@ -1826,9 +1839,9 @@ static tuuvm_tuple_t tuuvm_astMessageChainNode_primitiveAnalyze(tuuvm_context_t 
     {
         gcFrame.analyzedReceiver = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.chainNode->receiver, *environment);
         gcFrame.chainNode->receiver = gcFrame.analyzedReceiver;
-        if(tuuvm_astNode_isLiteralNode(context, gcFrame.chainNode->receiver))
+        gcFrame.receiverType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedReceiver);
+        if(gcFrame.receiverType)
         {
-            gcFrame.receiverType = tuuvm_tuple_getType(context, gcFrame.receiverValue);
             gcFrame.receiverMetaType = tuuvm_tuple_getType(context, gcFrame.receiverType);
             gcFrame.analysisFunction = tuuvm_type_getAnalyzeMessageChainNodeWithEnvironmentFunction(context, gcFrame.receiverMetaType);
             if(gcFrame.analysisFunction)
@@ -2085,7 +2098,6 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyze(tuuvm_context_t *
         tuuvm_tuple_t analyzedSelector;
         tuuvm_tuple_t analyzedArguments;
 
-        tuuvm_tuple_t receiverValue;
         tuuvm_tuple_t receiverType;
         tuuvm_tuple_t receiverMetaType;
         tuuvm_tuple_t selector;
@@ -2105,11 +2117,11 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyze(tuuvm_context_t *
     {
         gcFrame.analyzedReceiver = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.sendNode->receiver, *environment);
         gcFrame.sendNode->receiver = gcFrame.analyzedReceiver;
-        if(tuuvm_astNode_isLiteralNode(context, gcFrame.sendNode->receiver))
+        gcFrame.receiverType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedReceiver);
+
+        if(gcFrame.receiverType)
         {
             // If the receiver is a literal node, we can attempt to forward the message send node analysis.
-            gcFrame.receiverValue = tuuvm_astLiteralNode_getValue(gcFrame.sendNode->receiver);
-            gcFrame.receiverType = tuuvm_tuple_getType(context, gcFrame.receiverValue);
             gcFrame.receiverMetaType = tuuvm_tuple_getType(context, gcFrame.receiverType);
             gcFrame.analysisFunction = tuuvm_type_getAnalyzeMessageSendNodeWithEnvironmentFunction(context, gcFrame.receiverMetaType);
 

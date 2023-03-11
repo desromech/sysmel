@@ -141,6 +141,9 @@ SSAFunctionLocalValue definition: {
         self name ifNotNil: {:name |
             stream nextPut: ':'; nextPutAll: self name.
         }.
+        self type ifNotNil: {:type |
+            stream nextPutAll: " => "; print: self type.
+        }.
     }.
 }.
 
@@ -234,7 +237,9 @@ public class SSACallInstruction superclass: SSAInstruction; definition: {
     public field arguments => Array.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: "call "; print: self calledFunction.
+        stream
+            print: self; nextPutAll: " := ";
+            nextPutAll: "call "; print: self calledFunction.
         self arguments doWithIndex: {:(SSAValue)argument :(Size)index :: Void |
             index = 0sz
                 ifTrue: (stream nextPut: ' ')
@@ -257,11 +262,15 @@ public class SSAConditionalBranchInstruction superclass: SSAInstruction; definit
             nextPut: ' '; print: self falseDestination.
 }.
 
-public class SSAUnreachableInstruction superclass: SSAInstruction; definition: {
-    public method isUnreachableInstruction => Boolean := true.
+public class SSAPhiInstruction superclass: SSAInstruction; definition: {
+    public field incomingValues => Array.
+    public field incomingBlocks => Array.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void
-        := stream nextPutAll: "unreachable".
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream print: self; nextPutAll: " := ["
+
+        stream nextPutAll: "    ]"
+    }
 }.
 
 public class SSAReturnInstruction superclass: SSAInstruction; definition: {
@@ -280,8 +289,8 @@ public class SSASendInstruction superclass: SSAInstruction; definition: {
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream
-            nextPutAll: "call "; print: self calledFunction;
-            nextPutAll: ", "; print: self receiver;
+            print: self; nextPutAll: " := ";
+            nextPutAll: "send "; print: self receiver;
             nextPutAll: ", "; print: self selector.
 
         self arguments doWithIndex: {:(SSAValue)argument :(Size)index :: Void |
@@ -291,6 +300,13 @@ public class SSASendInstruction superclass: SSAInstruction; definition: {
             stream print: argument
         }
     }.
+}.
+
+public class SSAUnreachableInstruction superclass: SSAInstruction; definition: {
+    public method isUnreachableInstruction => Boolean := true.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void
+        := stream nextPutAll: "unreachable".
 }.
 
 SSAInstructionBuilder definition: {
@@ -327,6 +343,16 @@ SSAInstructionBuilder definition: {
         instruction
     }.
 
+    public method call: (calledFunction: SSAValue) arguments: (arguments: Array) resultType: (resultType: Type) ::=> SSACallInstruction
+        := self addInstruction: (SSACallInstruction new
+            calledFunction: calledFunction;
+            arguments: arguments;
+            type: resultType;
+            yourself).
+
+    public method call: (receiver: SSAValue) selector: (selector: SSAValue) arguments: (arguments: Array) ::=> SSASendInstruction
+        := self call: receiver selector: selector arguments: arguments resultType: nil.
+
     public method literal: value type: type ::=> SSALiteralConstant
         := SSALiteralConstant new
             sourcePosition: self sourcePosition;
@@ -338,13 +364,24 @@ SSAInstructionBuilder definition: {
     public method literal: value ::=> SSALiteralConstant
         := self literal: value type: value __type__.
 
-    public method return: value ::=> SSAReturnInstruction
+    public method return: (value: SSAValue) ::=> SSAReturnInstruction
         := self addInstruction: (SSAReturnInstruction new
             value: value;
             yourself).
 
     public method returnVoid ::=> SSAReturnInstruction
         := self return: (self literal: void).
+
+    public method send: (receiver: SSAValue) selector: (selector: SSAValue) arguments: (arguments: Array) resultType: (resultType: Type) ::=> SSASendInstruction
+        := self addInstruction: (SSASendInstruction new
+            receiver: receiver;
+            selector: selector;
+            arguments: arguments;
+            type: resultType;
+            yourself).
+
+    public method send: (receiver: SSAValue) selector: (selector: SSAValue) arguments: (arguments: Array) ::=> SSASendInstruction
+        := self send: receiver selector: selector arguments: arguments resultType: nil.
 
     public method lastInstruction => SSAInstruction
         := self basicBlock ifNotNil: {:basicBlock :: SSAInstruction | basicBlock lastInstruction }.
@@ -359,11 +396,37 @@ public class SSAFunctionCompilationContext superclass: Object; definition: {
     public field function => Function.
     public field ssaFunction => SSAFunction.
     public field builder => SSAInstructionBuilder.
+    public field bindingDictionary => IdentityDictionary.
+
+    public method initialize => Void := {
+        self bindingDictionary: IdentityDictionary new.
+    }.
+
+    public method generateArgumentForNode: (argumentNode: ASTArgumentNode) ::=> SSAFunctionArgument := {
+        let binding := argumentNode binding.
+        self assert: binding isNotNil.
+
+        let ssaArgument := SSAFunctionArgument new
+            name: binding name;
+            type: binding type;
+            yourself.
+
+        self bindingDictionary at: binding put: ssaArgument.
+
+        ssaArgument
+    }.
 
     public method compileFunction: (function: Function) ::=> SSAFunction := {
         let ssaFunction := SSAFunction new.
-        ssaFunction arguments: ().
+        self function: function.
         self ssaFunction: ssaFunction.
+
+        ssaFunction
+            sourcePosition: function sourcePosition.
+
+        ssaFunction arguments: (function argumentNodes collect: {:(ASTArgumentNode)argumentNode :: SSAFunctionArgument |
+            self generateArgumentForNode: argumentNode
+        }) asArray.
 
         function body ifNotNil: {:bodyNode |
             self builder: (SSAInstructionBuilder new
@@ -378,20 +441,56 @@ public class SSAFunctionCompilationContext superclass: Object; definition: {
 
         ssaFunction
     }.
+
+    public method getValueForLocalBinding: localBinding ::=> SSAValue
+        := self bindingDictionary at: localBinding
 }.
 
 ASTNode extend: {
     public method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := self doGenerateSSAValueWith: context.
+
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
         := self subclassResponsibility.
 }.
 
 ASTLiteralNode extend: {
-    public method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
         := context builder literal: self value type: self analyzedType.
 }.
 
+SymbolArgumentBinding extend: {
+    public method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context getValueForLocalBinding: self.
+}.
+
+SymbolLocalBinding extend: {
+    public method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context getValueForLocalBinding: self.
+}.
+
+ASTIdentifierReferenceNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := self binding generateSSAValueWith: context.
+}.
+
+ASTFunctionApplicationNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context builder call: (self functionExpression generateSSAValueWith: context)
+            arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
+            resultType: self analyzedType
+}.
+
+ASTMessageSendNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context builder send: (self receiver generateSSAValueWith: context)
+            selector: (self selector generateSSAValueWith: context)
+            arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
+            resultType: self analyzedType
+}.
+
 ASTSequenceNode extend: {
-    public method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
         let result := ValueBox with: (context builder literal: void).
         self expressions do: {:(ASTNode)expression :: Void |
             result := expression generateSSAValueWith: context

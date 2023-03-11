@@ -3,6 +3,7 @@
 #include "tuuvm/errors.h"
 #include "tuuvm/interpreter.h"
 #include "tuuvm/stackFrame.h"
+#include "tuuvm/type.h"
 #include "internal/context.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -298,7 +299,9 @@ static tuuvm_tuple_t tuuvm_function_primitive_recompileAndOptimize(tuuvm_context
 bool tuuvm_function_shouldOptimizeLookup(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_tuple_t receiverType)
 {
     (void)receiverType;
-    return (tuuvm_function_getFlags(context, function) & (TUUVM_FUNCTION_FLAGS_MACRO | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL))!= TUUVM_FUNCTION_FLAGS_NONE;
+    return
+        (tuuvm_type_getFlags(receiverType) & (TUUVM_TYPE_FLAGS_FINAL)) != TUUVM_TYPE_FLAGS_NONE ||
+        (tuuvm_function_getFlags(context, function) & (TUUVM_FUNCTION_FLAGS_MACRO | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL)) != TUUVM_FUNCTION_FLAGS_NONE;
 }
 
 void tuuvm_function_registerPrimitives(void)

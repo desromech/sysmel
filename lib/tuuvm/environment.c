@@ -12,27 +12,30 @@ TUUVM_API bool tuuvm_symbolBinding_isValue(tuuvm_context_t *context, tuuvm_tuple
     return tuuvm_tuple_isKindOf(context, binding, context->roots.symbolValueBindingType);
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_symbolArgumentBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name)
+TUUVM_API tuuvm_tuple_t tuuvm_symbolArgumentBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t type)
 {
     tuuvm_symbolArgumentBinding_t *result = (tuuvm_symbolArgumentBinding_t*)tuuvm_context_allocatePointerTuple(context, context->roots.symbolArgumentBindingType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_symbolArgumentBinding_t));
-    result->super.sourcePosition = sourcePosition;
     result->super.name = name;
+    result->super.sourcePosition = sourcePosition;
+    result->super.type = type;
     return (tuuvm_tuple_t)result;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_symbolLocalBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name)
+TUUVM_API tuuvm_tuple_t tuuvm_symbolLocalBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t type)
 {
     tuuvm_symbolLocalBinding_t *result = (tuuvm_symbolLocalBinding_t*)tuuvm_context_allocatePointerTuple(context, context->roots.symbolLocalBindingType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_symbolLocalBinding_t));
-    result->super.sourcePosition = sourcePosition;
     result->super.name = name;
+    result->super.sourcePosition = sourcePosition;
+    result->super.type = type;
     return (tuuvm_tuple_t)result;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_symbolValueBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t value)
 {
     tuuvm_symbolValueBinding_t *result = (tuuvm_symbolValueBinding_t*)tuuvm_context_allocatePointerTuple(context, context->roots.symbolValueBindingType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_symbolValueBinding_t));
-    result->super.sourcePosition = sourcePosition;
     result->super.name = name;
+    result->super.sourcePosition = sourcePosition;
+    result->super.type = tuuvm_tuple_getType(context, value);
     result->value = value;
     return (tuuvm_tuple_t)result;
 }
