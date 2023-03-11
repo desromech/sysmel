@@ -107,5 +107,35 @@ let: #min with: {:(Int32)x :(Int32)y :: Int32 |
     if: x < y then: x else: y
 }.
 
+let: #max with: {:(Int32)x :(Int32)y :: Int32 |
+    if: x < y then: {x} else: {y}
+}.
+
 printLine(min).
 printLine(min asSSAFunction fullPrintString).
+
+printLine(max).
+printLine(max asSSAFunction fullPrintString).
+
+let: #withLocal with: {:(Int32)x :: Int32 |
+    let y => Int32 := x.
+    y + 2i32
+}.
+
+printLine(withLocal).
+printLine(withLocal asSSAFunction fullPrintString).
+
+let: #withLocal2 with: {:(Int32)x :: Int32 |
+    let y := x.
+    y + 2i32
+}.
+printLine(withLocal2).
+printLine(withLocal2 asSSAFunction fullPrintString).
+
+
+let: #withReturn with: {:(Int32)x :: Int32 |
+    return: 2.
+    4
+}.
+printLine(withReturn).
+printLine(withReturn asSSAFunction fullPrintString).

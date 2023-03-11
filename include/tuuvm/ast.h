@@ -75,6 +75,7 @@ typedef struct tuuvm_astLexicalBlockNode_s
 {
     tuuvm_astNode_t super;
     tuuvm_tuple_t body;
+    tuuvm_tuple_t bodyEnvironment;
 } tuuvm_astLexicalBlockNode_t;
 
 typedef struct tuuvm_astLiteralNode_s

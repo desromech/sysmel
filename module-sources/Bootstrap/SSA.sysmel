@@ -10,7 +10,8 @@ public final class SSAInstructionBuilder superclass: Object.
 SSAValue definition: {
     public field type => Type.
     public field sourcePosition => SourcePosition.
-    public field environment => Environment.
+    public field sourceASTNode => ASTNode.
+    public field sourceEnvironment => Environment.
 
     public method isConstant => Boolean := false.
     public method isLiteralConstant => Boolean := false.
@@ -264,6 +265,15 @@ public final class SSACallInstruction superclass: SSAInstruction; definition: {
     }.
 }.
 
+public final class SSACoerceValueInstruction superclass: SSAInstruction; definition: {
+    public field value => SSAValue.
+    public field targetType => SSAValue.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void
+        := stream print: self; nextPutAll: " := coerceValue: "; print: self value;
+            nextPut: ' '; print: self targetType
+}.
+
 public final class SSAConditionalBranchInstruction superclass: SSAInstruction; definition: {
     public field condition => SSAValue.
     public field trueDestination => SSABasicBlock.
@@ -336,7 +346,8 @@ public final class SSAUnreachableInstruction superclass: SSAInstruction; definit
 
 SSAInstructionBuilder definition: {
     public field sourcePosition => SourcePosition.
-    public field environment => Environment.
+    public field sourceASTNode => ASTNode.
+    public field sourceEnvironment => Environment.
 
     public field function => SSAFunction.
     public field basicBlock => SSABasicBlock.
@@ -349,8 +360,9 @@ SSAInstructionBuilder definition: {
     public method newBasicBlockNamed: name ::=> SSABasicBlock := {
         let newBasicBlock := SSABasicBlock new
             name: name;
-            environment: self environment;
             sourcePosition: self sourcePosition;
+            sourceASTNode: self sourceASTNode;
+            sourceEnvironment: self sourceEnvironment;
             yourself.
         newBasicBlock
     }.
@@ -367,9 +379,34 @@ SSAInstructionBuilder definition: {
     public method addInstruction: (instruction: SSAInstruction) ::=> instruction __type__ := {
         instruction
             sourcePosition: self sourcePosition;
-            environment: self environment.
+            sourceASTNode: self sourceASTNode;
+            sourceEnvironment: self sourceEnvironment.
         self basicBlock addInstruction: instruction.
         instruction
+    }.
+
+    public method withSourcePosition: (sourcePosition: SourcePosition) do: aBlock := {
+        let oldPosition := self sourcePosition.
+        self sourcePosition: sourcePosition.
+        let result := aBlock().
+        self sourcePosition: oldPosition.
+        result
+    }.
+
+    public method withSourceASTNode: (sourceASTNode: ASTNode) do: aBlock := {
+        let oldSourceASTNode := self sourceASTNode.
+        self sourceASTNode: sourceASTNode.
+        let result := self withSourcePosition: sourceASTNode sourcePosition do: aBlock.
+        self sourceASTNode: oldSourceASTNode.
+        result
+    }.
+
+    public method withSourceEnvironment: (sourceEnvironment: Environment) do: aBlock := {
+        let oldSourceEnvironment := self sourceEnvironment.
+        self sourceEnvironment: sourceEnvironment.
+        let result := aBlock().
+        self sourceEnvironment: oldSourceEnvironment.
+        result
     }.
 
     public method branch: (destination: SSAValue) ::=> SSABranchInstruction
@@ -388,8 +425,20 @@ SSAInstructionBuilder definition: {
     public method call: (receiver: SSAValue) selector: (selector: SSAValue) arguments: (arguments: Array) ::=> SSASendInstruction
         := self call: receiver selector: selector arguments: arguments resultType: nil.
 
+    public method coerceValue: (value: SSAValue) into: (targetType: SSAValue) ::=> SSAValue := {
+        (targetType == nil) || (targetType isLiteralConstant && (value type == targetType value)) ifTrue: {
+            value
+        } ifFalse: {
+            self addInstruction: (SSACoerceValueInstruction new
+                value: value;
+                targetType: targetType;
+                type: (targetType isLiteralConstant ifTrue: targetType value ifFalse: nil);
+                yourself)
+        }.
+    }.
+
     public method conditionalBranch: (condition: SSAValue) trueDestination: (trueDestination: SSABasicBlock) falseDestination: (falseDestination: SSABasicBlock) ::=> SSAConditionalBranchInstruction
-        :=self addInstruction: (SSAConditionalBranchInstruction new
+        := self addInstruction: (SSAConditionalBranchInstruction new
             condition: condition;
             trueDestination: trueDestination;
             falseDestination: falseDestination;
@@ -399,7 +448,8 @@ SSAInstructionBuilder definition: {
     public method literal: value type: type ::=> SSALiteralConstant
         := SSALiteralConstant new
             sourcePosition: self sourcePosition;
-            environment: self environment;
+            sourceASTNode: self sourceASTNode;
+            sourceEnvironment: self sourceEnvironment;
             value: value;
             type: type;
             yourself.
@@ -466,6 +516,11 @@ public class SSAFunctionCompilationContext superclass: Object; definition: {
         ssaArgument
     }.
 
+    public method setValue: (value: SSAValue) forBinding: (binding: SymbolBinding) ::=> Void := {
+        self assert: binding isNotNil.
+        self bindingDictionary at: binding put: value
+    }.
+
     public method compileFunction: (function: Function) ::=> SSAFunction := {
         let ssaFunction := SSAFunction new.
         self function: function.
@@ -499,15 +554,48 @@ public class SSAFunctionCompilationContext superclass: Object; definition: {
 
 ASTNode extend: {
     public method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := self doGenerateSSAValueWith: context.
+        := context builder withSourceASTNode: self do: {:: SSAValue |
+            self doGenerateSSAValueWith: context
+    }.
 
     public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
         := self subclassResponsibility.
 }.
 
+ASTFunctionApplicationNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context builder call: (self functionExpression generateSSAValueWith: context)
+            arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
+            resultType: self analyzedType
+}.
+
+ASTLexicalBlockNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context builder withSourceEnvironment: self bodyEnvironment do: {:: SSAValue | self body generateSSAValueWith: context }.
+}.
+
 ASTLiteralNode extend: {
     public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
         := context builder literal: self value type: self analyzedType.
+}.
+
+ASTLocalDefinitionNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let typeExpression := self typeExpression.
+        let type := typeExpression
+            ifNotNil: (typeExpression generateSSAValueWith: context)
+            ifNil: nil.
+
+        let valueExpression := self valueExpression.
+        let value := valueExpression
+            ifNotNil: (valueExpression generateSSAValueWith: context)
+            ifNil: (context builder literal: nil).
+
+        let coercedValue := context builder coerceValue: value into: type.
+
+        context setValue: coercedValue forBinding: self binding.
+        coercedValue
+    }.
 }.
 
 SymbolArgumentBinding extend: {
@@ -529,6 +617,7 @@ ASTIfNode extend: {
     public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
         let builder := context builder.
 
+        ## Condition
         let condition := self conditionExpression
             ifNotNil: {:condition :: SSAValue | condition generateSSAValueWith: context}
             ifNil: (builder literal: false).
@@ -548,6 +637,7 @@ ASTIfNode extend: {
 
         builder conditionalBranch: condition trueDestination: trueDestination falseDestination: falseDestination.
 
+        ## True branch
         let trueResult := ValueBox with: nil.
         let trueResultBlock := ValueBox with: conditionBlock.
         let trueResultIsTerminator := ValueBox with: false.
@@ -566,6 +656,7 @@ ASTIfNode extend: {
             trueResult := builder literal: void
         }.
 
+        ## False branch
         let falseResult := ValueBox with: nil.
         let falseResultBlock := ValueBox with: conditionBlock.
         let falseResultIsTerminator := ValueBox with: false.
@@ -583,6 +674,7 @@ ASTIfNode extend: {
             falseResult := builder literal: void
         }.
 
+        ## Merge
         trueResultIsTerminator _ ifFalse: {
             builder beginBasicBlock: mergeBlock.
             trueResultIsTerminator _ ifTrue: (
@@ -603,13 +695,6 @@ ASTIfNode extend: {
     }
 }.
 
-ASTFunctionApplicationNode extend: {
-    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := context builder call: (self functionExpression generateSSAValueWith: context)
-            arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
-            resultType: self analyzedType
-}.
-
 ASTMessageSendNode extend: {
     public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
         := context builder send: (self receiver generateSSAValueWith: context)
@@ -622,11 +707,18 @@ ASTSequenceNode extend: {
     public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
         let result := ValueBox with: (context builder literal: void).
         self expressions do: {:(ASTNode)expression :: Void |
-            result := expression generateSSAValueWith: context
+            context builder isLastTerminator ifFalse: {
+                result := expression generateSSAValueWith: context
+            }
         }.
 
         result _
     }
+}.
+
+ASTReturnNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context builder return: (self expression generateSSAValueWith: context)
 }.
 
 Function extend: {

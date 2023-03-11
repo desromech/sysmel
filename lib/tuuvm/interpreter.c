@@ -813,7 +813,11 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveAnalyze(tuuvm_context
     {
         gcFrame.analyzedValueExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.localDefinitionNode->valueExpression, *environment);
         gcFrame.localDefinitionNode->valueExpression = gcFrame.analyzedValueExpression;
+        if(!gcFrame.type)
+            gcFrame.type = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedValueExpression);
     }
+
+    gcFrame.localDefinitionNode->super.analyzedType = gcFrame.type;
 
     if(tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedNameExpression))
     {
@@ -1507,6 +1511,7 @@ static tuuvm_tuple_t tuuvm_astLexicalBlockNode_primitiveAnalyze(tuuvm_context_t 
     gcFrame.childEnvironment = tuuvm_environment_create(context, *environment);
     gcFrame.analyzedBodyNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.lexicalBlockNode->body, gcFrame.childEnvironment);
     gcFrame.lexicalBlockNode->body = gcFrame.analyzedBodyNode;
+    gcFrame.lexicalBlockNode->bodyEnvironment = gcFrame.childEnvironment;
     gcFrame.lexicalBlockNode->super.analyzedType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedBodyNode);
     
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);

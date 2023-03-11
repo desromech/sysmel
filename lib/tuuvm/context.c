@@ -607,6 +607,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         NULL);
     context->roots.astLexicalBlockNodeType = tuuvm_context_createIntrinsicClass(context, "ASTLexicalBlockNode", context->roots.astNodeType,
         "body", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "bodyEnvironment", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
         NULL);
     context->roots.astLiteralNodeType = tuuvm_context_createIntrinsicClass(context, "ASTLiteralNode", context->roots.astNodeType,
         "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
