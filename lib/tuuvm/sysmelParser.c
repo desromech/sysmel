@@ -356,7 +356,7 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseLiteralArrayElement(tuuvm_context_t
 static tuuvm_tuple_t tuuvm_sysmelParser_parseLiteralArrayExpression(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state)
 {
     if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_LITERAL_ARRAY_START || tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_LPARENT)
-        return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a left curly bracket.");
+        return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a left literal array start.");
 
     size_t startPosition = state->tokenPosition;
     ++state->tokenPosition;

@@ -102,3 +102,10 @@ printLine(theAnswer asSSAFunction fullPrintString).
 
 printLine(square).
 printLine(square asSSAFunction fullPrintString).
+
+let: #min with: {:(Int32)x :(Int32)y :: Int32 |
+    if: x < y then: x else: y
+}.
+
+printLine(min).
+printLine(min asSSAFunction fullPrintString).

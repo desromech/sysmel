@@ -2,10 +2,10 @@ public class SSAValue superclass: Object.
 public class SSAConstant superclass: SSAValue.
 public class SSAFunction superclass: SSAConstant.
 public class SSAFunctionLocalValue superclass: SSAValue.
-public class SSAFunctionArgument superclass: SSAFunctionLocalValue.
+public final class SSAFunctionArgument superclass: SSAFunctionLocalValue.
 public class SSABasicBlock superclass: SSAFunctionLocalValue.
 public class SSAInstruction superclass: SSAFunctionLocalValue.
-public class SSAInstructionBuilder superclass: Object.
+public final class SSAInstructionBuilder superclass: Object.
 
 SSAValue definition: {
     public field type => Type.
@@ -143,6 +143,10 @@ SSAFunctionLocalValue definition: {
     public field name.
     public field localValueIndex => Size.
 
+    public method initialize => Void := {
+        self localValueIndex: 0sz
+    }.
+
     public method isFunctionLocalValue => Boolean := true.
 
     public method printOn: (stream: Stream) ::=> Void := {
@@ -236,13 +240,16 @@ SSAInstruction definition: {
     public field nextInstruction => SSAInstruction.
 }.
 
-public class SSABranchInstruction superclass: SSAInstruction; definition: {
+public final class SSABranchInstruction superclass: SSAInstruction; definition: {
     public field destination => SSABasicBlock.
 
     public method isTerminatorInstruction => Boolean := true.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void
+        := stream nextPutAll: "branch: "; print: self destination.
 }.
 
-public class SSACallInstruction superclass: SSAInstruction; definition: {
+public final class SSACallInstruction superclass: SSAInstruction; definition: {
     public field calledFunction => SSAValue.
     public field arguments => Array.
 
@@ -257,7 +264,7 @@ public class SSACallInstruction superclass: SSAInstruction; definition: {
     }.
 }.
 
-public class SSAConditionalBranchInstruction superclass: SSAInstruction; definition: {
+public final class SSAConditionalBranchInstruction superclass: SSAInstruction; definition: {
     public field condition => SSAValue.
     public field trueDestination => SSABasicBlock.
     public field falseDestination => SSABasicBlock.
@@ -265,23 +272,33 @@ public class SSAConditionalBranchInstruction superclass: SSAInstruction; definit
     public method isTerminatorInstruction => Boolean := true.
 
     public method fullPrintOn: (stream: Stream) ::=> Void
-        := stream nextPutAll: "branch: "; print: self condition;
+        := stream nextPutAll: "condBranch: "; print: self condition;
             nextPut: ' '; print: self trueDestination;
             nextPut: ' '; print: self falseDestination.
 }.
 
-public class SSAPhiInstruction superclass: SSAInstruction; definition: {
+public final class SSAPhiInstruction superclass: SSAInstruction; definition: {
     public field incomingValues => Array.
     public field incomingBlocks => Array.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream print: self; nextPutAll: " := ["
+        stream print: self; nextPutAll: " := phi ["; nl.
+        let incomingValues := self incomingValues.
+        self incomingBlocks doWithIndex: {:(SSABasicBlock)block :(Size)index :: Void |
+            let value := incomingValues at: index.
+            stream nextPutAll: "        "; print: value; nextPutAll: " from "; print: block; nl 
+        }.
 
         stream nextPutAll: "    ]"
-    }
+    }.
+
+    public method addValue: (value: SSAValue) incomingFrom: (block: SSABasicBlock) ::=> Void := {
+        self incomingValues: self incomingValues -- (Array with: value).
+        self incomingBlocks: self incomingBlocks -- (Array with: block).
+    }.
 }.
 
-public class SSAReturnInstruction superclass: SSAInstruction; definition: {
+public final class SSAReturnInstruction superclass: SSAInstruction; definition: {
     public field value => SSAValue.
 
     public method isTerminatorInstruction => Boolean := true.
@@ -290,7 +307,7 @@ public class SSAReturnInstruction superclass: SSAInstruction; definition: {
         := stream nextPutAll: "return: "; print: self value.
 }.
 
-public class SSASendInstruction superclass: SSAInstruction; definition: {
+public final class SSASendInstruction superclass: SSAInstruction; definition: {
     public field receiver => SSAValue.
     public field selector => SSAValue.
     public field arguments => Array.
@@ -310,7 +327,7 @@ public class SSASendInstruction superclass: SSAInstruction; definition: {
     }.
 }.
 
-public class SSAUnreachableInstruction superclass: SSAInstruction; definition: {
+public final class SSAUnreachableInstruction superclass: SSAInstruction; definition: {
     public method isUnreachableInstruction => Boolean := true.
 
     public method fullPrintOn: (stream: Stream) ::=> Void
@@ -332,16 +349,20 @@ SSAInstructionBuilder definition: {
     public method newBasicBlockNamed: name ::=> SSABasicBlock := {
         let newBasicBlock := SSABasicBlock new
             name: name;
+            environment: self environment;
+            sourcePosition: self sourcePosition;
             yourself.
+        newBasicBlock
+    }.
+
+    public method beginBasicBlock: (newBasicBlock: SSABasicBlock) ::=> SSABasicBlock := {
+        self basicBlock: newBasicBlock.
         self function addBasicBlock: newBasicBlock.
         newBasicBlock
     }.
 
-    public method beginBasicBlockNamed: name ::=> SSABasicBlock := {
-        let newBasicBlock := self newBasicBlockNamed: name.
-        self basicBlock: newBasicBlock.
-        newBasicBlock
-    }.
+    public method beginBasicBlockNamed: name ::=> SSABasicBlock
+        := self beginBasicBlock: (self newBasicBlockNamed: name).
 
     public method addInstruction: (instruction: SSAInstruction) ::=> instruction __type__ := {
         instruction
@@ -350,6 +371,12 @@ SSAInstructionBuilder definition: {
         self basicBlock addInstruction: instruction.
         instruction
     }.
+
+    public method branch: (destination: SSAValue) ::=> SSABranchInstruction
+        := self addInstruction: (SSABranchInstruction new
+            destination: destination;
+            type: Void;
+            yourself).
 
     public method call: (calledFunction: SSAValue) arguments: (arguments: Array) resultType: (resultType: Type) ::=> SSACallInstruction
         := self addInstruction: (SSACallInstruction new
@@ -361,6 +388,14 @@ SSAInstructionBuilder definition: {
     public method call: (receiver: SSAValue) selector: (selector: SSAValue) arguments: (arguments: Array) ::=> SSASendInstruction
         := self call: receiver selector: selector arguments: arguments resultType: nil.
 
+    public method conditionalBranch: (condition: SSAValue) trueDestination: (trueDestination: SSABasicBlock) falseDestination: (falseDestination: SSABasicBlock) ::=> SSAConditionalBranchInstruction
+        :=self addInstruction: (SSAConditionalBranchInstruction new
+            condition: condition;
+            trueDestination: trueDestination;
+            falseDestination: falseDestination;
+            type: Void;
+            yourself).
+
     public method literal: value type: type ::=> SSALiteralConstant
         := SSALiteralConstant new
             sourcePosition: self sourcePosition;
@@ -371,6 +406,13 @@ SSAInstructionBuilder definition: {
 
     public method literal: value ::=> SSALiteralConstant
         := self literal: value type: value __type__.
+
+    public method phi: (type: Type) ::=> SSAPhiInstruction
+        := self addInstruction: (SSAPhiInstruction new
+            incomingBlocks: ();
+            incomingValues: ();
+            type: type;
+            yourself).
 
     public method return: (value: SSAValue) ::=> SSAReturnInstruction
         := self addInstruction: (SSAReturnInstruction new
@@ -481,6 +523,84 @@ SymbolLocalBinding extend: {
 ASTIdentifierReferenceNode extend: {
     public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
         := self binding generateSSAValueWith: context.
+}.
+
+ASTIfNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let builder := context builder.
+
+        let condition := self conditionExpression
+            ifNotNil: {:condition :: SSAValue | condition generateSSAValueWith: context}
+            ifNil: (builder literal: false).
+        
+        let conditionBlock := builder basicBlock.
+        let mergeBlock := builder newBasicBlockNamed: #ifMerge.
+
+        let trueExpression := self trueExpression.
+        let trueDestination := trueExpression
+            ifNotNil: (builder newBasicBlockNamed: #ifTrue)
+            ifNil: mergeBlock.
+
+        let falseExpression := self falseExpression.
+        let falseDestination := falseExpression
+            ifNotNil: (builder newBasicBlockNamed: #ifFalse)
+            ifNil: mergeBlock.
+
+        builder conditionalBranch: condition trueDestination: trueDestination falseDestination: falseDestination.
+
+        let trueResult := ValueBox with: nil.
+        let trueResultBlock := ValueBox with: conditionBlock.
+        let trueResultIsTerminator := ValueBox with: false.
+
+        trueExpression ifNotNil: {
+            builder beginBasicBlock: trueDestination.
+            trueResult := trueExpression generateSSAValueWith: context.
+            trueResultBlock := builder basicBlock.
+
+            let isTerminator := builder isLastTerminator.
+            trueResultIsTerminator := isTerminator.
+            isTerminator
+                ifTrue: (trueResult := builder literal: void)
+                ifFalse: (builder branch: mergeBlock)
+        } ifNil: {
+            trueResult := builder literal: void
+        }.
+
+        let falseResult := ValueBox with: nil.
+        let falseResultBlock := ValueBox with: conditionBlock.
+        let falseResultIsTerminator := ValueBox with: false.
+        falseExpression ifNotNil: {
+            builder beginBasicBlock: falseDestination.
+            falseResult := falseExpression generateSSAValueWith: context.
+            falseResultBlock := builder basicBlock.
+
+            let isTerminator := builder isLastTerminator.
+            falseResultIsTerminator := isTerminator.
+            isTerminator
+                ifTrue: (falseResult := builder literal: void)
+                ifFalse: (builder branch: mergeBlock)
+        } ifNil: {
+            falseResult := builder literal: void
+        }.
+
+        trueResultIsTerminator _ ifFalse: {
+            builder beginBasicBlock: mergeBlock.
+            trueResultIsTerminator _ ifTrue: (
+                falseResult _
+            ) ifFalse: (
+                falseResultIsTerminator _ ifTrue: (
+                    trueResult _
+                ) ifFalse: (
+                    (builder phi: self analyzedType)
+                        addValue: trueResult _ incomingFrom: trueResultBlock _;
+                        addValue: falseResult _ incomingFrom: falseResultBlock _;
+                        yourself
+                )
+            ).
+        } ifTrue: {
+            builder literal: void
+        }.
+    }
 }.
 
 ASTFunctionApplicationNode extend: {

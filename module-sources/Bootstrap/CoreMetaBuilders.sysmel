@@ -521,14 +521,14 @@ FlagMetaBuilder
             self expandMessageSendNodeWithMetaBuilderMethod: messageSendNode
         }.
     };
-    withSelector: #addMethodFlags: addMethod: {:self :(Size)flags :: Void |
-        self typeFlags: self typeFlags | flags
-    };
     withSelector: #addFieldFlags: addMethod: {:self :(Size)flags :: Void |
+        self fieldFlags: self fieldFlags | flags
+    };
+    withSelector: #addMethodFlags: addMethod: {:self :(Size)flags :: Void |
         self methodFlags: self methodFlags | flags
     };
-    withSelector: #addMethodFlags: addMethod: {:self :(Size)flags :: Void |
-        self fieldFlags: self fieldFlags | flags
+    withSelector: #addTypeFlags: addMethod: {:self :(Size)flags :: Void |
+        self typeFlags: self typeFlags | flags
     };
     withSelector: #pure addMethod: {:self :: ASTNode |
         <metaBuilder>
