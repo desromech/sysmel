@@ -1005,7 +1005,9 @@ static tuuvm_tuple_t tuuvm_astIfNode_primitiveAnalyze(tuuvm_context_t *context, 
         tuuvm_astIfNode_t *ifNode;
         tuuvm_tuple_t analyzedCondition;
         tuuvm_tuple_t analyzedTrueExpression;
+        tuuvm_tuple_t analyzedTrueExpressionType;
         tuuvm_tuple_t analyzedFalseExpression;
+        tuuvm_tuple_t analyzedFalseExpressionType;
     } gcFrame = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
@@ -1023,6 +1025,16 @@ static tuuvm_tuple_t tuuvm_astIfNode_primitiveAnalyze(tuuvm_context_t *context, 
     {
         gcFrame.analyzedFalseExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.ifNode->falseExpression, *environment);
         gcFrame.ifNode->falseExpression = gcFrame.analyzedFalseExpression;
+    }
+
+    // Require the same, otherwise fallback to nil.
+    gcFrame.ifNode->super.analyzedType = TUUVM_NULL_TUPLE;
+    if(gcFrame.analyzedTrueExpression && gcFrame.analyzedFalseExpression)
+    {
+        gcFrame.analyzedTrueExpressionType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedTrueExpression);
+        gcFrame.analyzedFalseExpressionType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedFalseExpression);
+        if(gcFrame.analyzedTrueExpressionType == gcFrame.analyzedFalseExpressionType)
+            gcFrame.ifNode->super.analyzedType = gcFrame.analyzedTrueExpressionType;
     }
 
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
@@ -1577,7 +1589,7 @@ static tuuvm_tuple_t tuuvm_astMakeByteArrayNode_primitiveAnalyze(tuuvm_context_t
 
     gcFrame.expressions = (*tupleNode)->elements;
     size_t expressionCount = tuuvm_arraySlice_getSize(gcFrame.expressions);
-    if(expressionCount == 0)
+    if(expressionCount == 0 && (*tupleNode)->super.analyzedType)
     {
         TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
         TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -1594,6 +1606,7 @@ static tuuvm_tuple_t tuuvm_astMakeByteArrayNode_primitiveAnalyze(tuuvm_context_t
         tuuvm_arraySlice_atPut(gcFrame.analyzedExpressions, i, gcFrame.analyzedExpression);
     }
 
+    gcFrame.analyzedTupleNode->super.analyzedType = context->roots.byteArrayType;
     gcFrame.analyzedTupleNode->elements = gcFrame.analyzedExpressions;
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -1687,7 +1700,7 @@ static tuuvm_tuple_t tuuvm_astMakeTupleNode_primitiveAnalyze(tuuvm_context_t *co
 
     gcFrame.expressions = (*tupleNode)->elements;
     size_t expressionCount = tuuvm_arraySlice_getSize(gcFrame.expressions);
-    if(expressionCount == 0)
+    if(expressionCount == 0 && (*tupleNode)->super.analyzedType)
     {
         TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
         TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -1704,6 +1717,7 @@ static tuuvm_tuple_t tuuvm_astMakeTupleNode_primitiveAnalyze(tuuvm_context_t *co
         tuuvm_arraySlice_atPut(gcFrame.analyzedExpressions, i, gcFrame.analyzedExpression);
     }
 
+    gcFrame.analyzedTupleNode->super.analyzedType = context->roots.arrayType;
     gcFrame.analyzedTupleNode->elements = gcFrame.analyzedExpressions;
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -1824,6 +1838,7 @@ static tuuvm_tuple_t tuuvm_astMessageChainNode_primitiveAnalyze(tuuvm_context_t 
         tuuvm_astMessageChainNode_t *chainNode;
         tuuvm_tuple_t analyzedReceiver;
         tuuvm_tuple_t analyzedChainedMessages;
+        tuuvm_tuple_t analyzedChainedMessageNode;
         tuuvm_tuple_t chainedMessageNode;
 
         tuuvm_tuple_t receiverType;
@@ -1856,10 +1871,13 @@ static tuuvm_tuple_t tuuvm_astMessageChainNode_primitiveAnalyze(tuuvm_context_t 
 
     size_t chainedMessageCount = tuuvm_arraySlice_getSize(gcFrame.chainNode->messages);
     gcFrame.analyzedChainedMessages = tuuvm_array_create(context, chainedMessageCount);
+    gcFrame.chainNode->super.analyzedType = TUUVM_NULL_TUPLE;
     for(size_t i = 0; i < chainedMessageCount; ++i)
     {
         gcFrame.chainedMessageNode = tuuvm_arraySlice_at(gcFrame.chainNode->messages, i);
-        tuuvm_array_atPut(gcFrame.analyzedChainedMessages, i, tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.chainedMessageNode, *environment));
+        gcFrame.analyzedChainedMessageNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.chainedMessageNode, *environment);
+        gcFrame.chainNode->super.analyzedType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedChainedMessageNode);
+        tuuvm_array_atPut(gcFrame.analyzedChainedMessages, i, gcFrame.analyzedChainedMessageNode);
     }
 
     gcFrame.chainNode->messages = tuuvm_array_asArraySlice(context, gcFrame.analyzedChainedMessages);
@@ -2425,6 +2443,7 @@ static tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_primitiveAnalyze(tuuvm_con
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     gcFrame.doWhileNode = (tuuvm_astDoWhileContinueWithNode_t*)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.doWhileNode->super.analyzedType = context->roots.voidType;
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.doWhileNode->super.sourcePosition);
 
     if(gcFrame.doWhileNode->bodyExpression)
@@ -2548,6 +2567,7 @@ static tuuvm_tuple_t tuuvm_astWhileContinueWithNode_primitiveAnalyze(tuuvm_conte
     } gcFrame = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     gcFrame.whileNode = (tuuvm_astWhileContinueWithNode_t*)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.whileNode->super.analyzedType = context->roots.voidType;
 
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.whileNode->super.sourcePosition);
     
