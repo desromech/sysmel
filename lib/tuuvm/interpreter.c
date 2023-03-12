@@ -453,9 +453,8 @@ static tuuvm_tuple_t tuuvm_astArgumentNode_primitiveAnalyze(tuuvm_context_t *con
 
     if(gcFrame.evaluatedName)
     {
-        gcFrame.argumentBinding = tuuvm_symbolArgumentBinding_create(context, gcFrame.argumentNode->super.sourcePosition, gcFrame.evaluatedName, gcFrame.evaluatedType);
+        gcFrame.argumentBinding = tuuvm_analysisEnvironment_setNewSymbolArgumentBinding(context, *environment, gcFrame.argumentNode->super.sourcePosition, gcFrame.evaluatedName, gcFrame.evaluatedType);
         gcFrame.argumentNode->binding = gcFrame.argumentBinding;
-        tuuvm_environment_setNewBinding(context, *environment, gcFrame.argumentBinding);
     }
 
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
@@ -521,7 +520,7 @@ static void tuuvm_functionDefinition_analyze(tuuvm_context_t *context, tuuvm_fun
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*functionDefinition)->sourcePosition);
 
-    gcFrame.analysisEnvironment = tuuvm_environment_create(context, (*functionDefinition)->definitionEnvironment);
+    gcFrame.analysisEnvironment = tuuvm_functionAnalysisEnvironment_create(context, (*functionDefinition)->definitionEnvironment, (tuuvm_tuple_t)*functionDefinition);
     size_t argumentNodeCount = tuuvm_array_getSize((*functionDefinition)->definitionArgumentNodes);
     gcFrame.analyzedArgumentsNode = tuuvm_array_create(context, argumentNodeCount);
     for(size_t i = 0; i < argumentNodeCount; ++i)
@@ -880,15 +879,14 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveAnalyze(tuuvm_context
             if(gcFrame.analyzedValueExpression)
                 gcFrame.value = tuuvm_astLiteralNode_getValue(gcFrame.analyzedValueExpression);
             gcFrame.value = tuuvm_type_coerceValue(context, gcFrame.type, gcFrame.value);
-            gcFrame.localBinding = tuuvm_symbolValueBinding_create(context, gcFrame.localDefinitionNode->super.sourcePosition, gcFrame.name, gcFrame.value);
+            gcFrame.localBinding = tuuvm_analysisEnvironment_setNewValueBinding(context, *environment, gcFrame.localDefinitionNode->super.sourcePosition, gcFrame.name, gcFrame.value);
+            gcFrame.localDefinitionNode->binding = gcFrame.localBinding;
         }
         else
         {
-            gcFrame.localBinding = tuuvm_symbolLocalBinding_create(context, gcFrame.localDefinitionNode->super.sourcePosition, gcFrame.name, gcFrame.type);
+            gcFrame.localBinding = tuuvm_analysisEnvironment_setNewSymbolLocalBinding(context, *environment, gcFrame.localDefinitionNode->super.sourcePosition, gcFrame.name, gcFrame.type);
+            gcFrame.localDefinitionNode->binding = gcFrame.localBinding;
         }
-        
-        gcFrame.localDefinitionNode->binding = gcFrame.localBinding;
-        tuuvm_environment_setNewBinding(context, *environment, gcFrame.localBinding);
     }
 
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
@@ -1561,7 +1559,7 @@ static tuuvm_tuple_t tuuvm_astLexicalBlockNode_primitiveAnalyze(tuuvm_context_t 
 
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.lexicalBlockNode->super.sourcePosition);
 
-    gcFrame.childEnvironment = tuuvm_environment_create(context, *environment);
+    gcFrame.childEnvironment = tuuvm_localAnalysisEnvironment_create(context, *environment);
     gcFrame.analyzedBodyNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.lexicalBlockNode->body, gcFrame.childEnvironment);
     gcFrame.lexicalBlockNode->body = gcFrame.analyzedBodyNode;
     gcFrame.lexicalBlockNode->bodyEnvironment = gcFrame.childEnvironment;

@@ -1,5 +1,6 @@
 #include "tuuvm/environment.h"
 #include "tuuvm/association.h"
+#include "tuuvm/arrayList.h"
 #include "tuuvm/dictionary.h"
 #include "tuuvm/errors.h"
 #include "tuuvm/sourceCode.h"
@@ -46,6 +47,28 @@ TUUVM_API tuuvm_tuple_t tuuvm_environment_create(tuuvm_context_t *context, tuuvm
     tuuvm_environment_t *result = (tuuvm_environment_t*)tuuvm_context_allocatePointerTuple(context, context->roots.environmentType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_environment_t));
     result->parent = parent;
     result->symbolTable = tuuvm_identityDictionary_create(context);
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_functionAnalysisEnvironment_create(tuuvm_context_t *context, tuuvm_tuple_t parent, tuuvm_tuple_t functionDefinition)
+{
+    tuuvm_functionAnalysisEnvironment_t *result = (tuuvm_functionAnalysisEnvironment_t*)tuuvm_context_allocatePointerTuple(context, context->roots.functionAnalysisEnvironmentType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_functionAnalysisEnvironment_t));
+    result->super.parent = parent;
+    result->super.symbolTable = tuuvm_identityDictionary_create(context);
+    result->functionDefinition = functionDefinition;
+    result->captureBindingList = tuuvm_arrayList_create(context);
+    result->argumentBindingList = tuuvm_arrayList_create(context);
+    result->localBindingList = tuuvm_arrayList_create(context);
+    result->hasBreakTarget = TUUVM_FALSE_TUPLE;
+    result->hasContinueTarget = TUUVM_FALSE_TUPLE;
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_localAnalysisEnvironment_create(tuuvm_context_t *context, tuuvm_tuple_t parent)
+{
+    tuuvm_localAnalysisEnvironment_t *result = (tuuvm_localAnalysisEnvironment_t*)tuuvm_context_allocatePointerTuple(context, context->roots.localAnalysisEnvironmentType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_localAnalysisEnvironment_t));
+    result->super.parent = parent;
+    result->super.symbolTable = tuuvm_identityDictionary_create(context);
     return (tuuvm_tuple_t)result;
 }
 
@@ -202,6 +225,54 @@ TUUVM_API void tuuvm_environment_clearUnwindingRecords(tuuvm_tuple_t environment
     environmentObject->breakTarget = TUUVM_NULL_TUPLE;
     environmentObject->continueTarget = TUUVM_NULL_TUPLE;
     environmentObject->returnTarget = TUUVM_NULL_TUPLE;
+}
+
+TUUVM_API bool tuuvm_environment_isAnalysisEnvironment(tuuvm_context_t *context, tuuvm_tuple_t environment)
+{
+    return tuuvm_tuple_isKindOf(context, environment, context->roots.analysisEnvironmentType);
+}
+
+TUUVM_API bool tuuvm_environment_isFunctionAnalysisEnvironment(tuuvm_context_t *context, tuuvm_tuple_t environment)
+{
+    return tuuvm_tuple_isKindOf(context, environment, context->roots.functionAnalysisEnvironmentType);
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_environment_lookFunctionAnalysisEnvironmentRecursively(tuuvm_context_t *context, tuuvm_tuple_t environment)
+{
+    if(!environment) return TUUVM_NULL_TUPLE;
+    if(tuuvm_environment_isFunctionAnalysisEnvironment(context, environment)) return environment;
+    return tuuvm_environment_lookFunctionAnalysisEnvironmentRecursively(context, ((tuuvm_environment_t*)environment)->parent);
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_analysisEnvironment_setNewSymbolArgumentBinding(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t type)
+{
+    tuuvm_tuple_t functionAnalysisEnvironment = tuuvm_environment_lookFunctionAnalysisEnvironmentRecursively(context, environment);
+    if(!functionAnalysisEnvironment)
+        tuuvm_error("A function analysis environment is required here.");
+
+    tuuvm_tuple_t binding = tuuvm_symbolArgumentBinding_create(context, sourcePosition, name, type);
+    tuuvm_environment_setNewBinding(context, environment, binding);
+    tuuvm_arrayList_add(context, ((tuuvm_functionAnalysisEnvironment_t*)functionAnalysisEnvironment)->argumentBindingList, binding);
+    return binding;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_analysisEnvironment_setNewSymbolLocalBinding(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t type)
+{
+    tuuvm_tuple_t functionAnalysisEnvironment = tuuvm_environment_lookFunctionAnalysisEnvironmentRecursively(context, environment);
+    if(!functionAnalysisEnvironment)
+        tuuvm_error("A function analysis environment is required here.");
+
+    tuuvm_tuple_t binding = tuuvm_symbolLocalBinding_create(context, sourcePosition, name, type);
+    tuuvm_environment_setNewBinding(context, environment, binding);
+    tuuvm_arrayList_add(context, ((tuuvm_functionAnalysisEnvironment_t*)functionAnalysisEnvironment)->localBindingList, binding);
+    return binding;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_analysisEnvironment_setNewValueBinding(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t value)
+{
+    tuuvm_tuple_t binding = tuuvm_symbolValueBinding_create(context, sourcePosition, name, value);
+    tuuvm_environment_setNewBinding(context, environment, binding);
+    return binding;
 }
 
 static tuuvm_tuple_t tuuvm_environment_primitive_setNewBinding(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)

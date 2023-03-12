@@ -17,6 +17,24 @@ typedef struct tuuvm_environment_s
     tuuvm_tuple_t continueTarget;
 } tuuvm_environment_t;
 
+typedef tuuvm_environment_t tuuvm_analysisEnvironment_t;
+
+typedef struct tuuvm_analysisEnvironment_s
+{
+    tuuvm_environment_t super;
+    tuuvm_tuple_t functionDefinition;
+    tuuvm_tuple_t captureBindingList;
+    tuuvm_tuple_t argumentBindingList;
+    tuuvm_tuple_t localBindingList;
+    tuuvm_tuple_t hasBreakTarget;
+    tuuvm_tuple_t hasContinueTarget;
+} tuuvm_functionAnalysisEnvironment_t;
+
+typedef struct tuuvm_localAnalysisEnvironment_s
+{
+    tuuvm_environment_t super;
+} tuuvm_localAnalysisEnvironment_t;
+
 typedef struct tuuvm_symbolBinding_s
 {
     tuuvm_tuple_header_t header;
@@ -83,6 +101,16 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_symbolValueBinding_getValue(tuuvm_tuple_t bindi
  * Creates an environment.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_environment_create(tuuvm_context_t *context, tuuvm_tuple_t parent);
+
+/**
+ * Creates an environment used for function definition analysis.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_functionAnalysisEnvironment_create(tuuvm_context_t *context, tuuvm_tuple_t parent, tuuvm_tuple_t functionDefinition);
+
+/**
+ * Creates an environment used for lexical scope analysis.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_localAnalysisEnvironment_create(tuuvm_context_t *context, tuuvm_tuple_t parent);
 
 /**
  * Creates an environment.
@@ -164,5 +192,35 @@ TUUVM_API void tuuvm_environment_setReturnTarget(tuuvm_tuple_t environment, tuuv
  */ 
 
 TUUVM_API void tuuvm_environment_clearUnwindingRecords(tuuvm_tuple_t environment);
+
+/**
+ * Is this an analysis environment?
+ */
+TUUVM_API bool tuuvm_environment_isAnalysisEnvironment(tuuvm_context_t *context, tuuvm_tuple_t environment);
+
+/**
+ * Is this an analysis environment?
+ */
+TUUVM_API bool tuuvm_environment_isFunctionAnalysisEnvironment(tuuvm_context_t *context, tuuvm_tuple_t environment);
+
+/**
+ * Look recursively for the function analysis environment.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_environment_lookFunctionAnalysisEnvironmentRecursively(tuuvm_context_t *context, tuuvm_tuple_t environment);
+
+/**
+ * Makes a new argument binding in the analysis environment.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_analysisEnvironment_setNewSymbolArgumentBinding(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t type);
+
+/**
+ * Makes a new local binding in the analysis environment.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_analysisEnvironment_setNewSymbolLocalBinding(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t type);
+
+/**
+ * Makes a new value binding in the analysis environment.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_analysisEnvironment_setNewValueBinding(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t value);
 
 #endif //TUUVM_ENVIRONMENT_H

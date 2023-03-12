@@ -61,8 +61,10 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t classType;
     tuuvm_tuple_t collectionType;
     tuuvm_tuple_t dictionaryType;
+    tuuvm_tuple_t analysisEnvironmentType;
     tuuvm_tuple_t environmentType;
     tuuvm_tuple_t falseType;
+    tuuvm_tuple_t functionAnalysisEnvironmentType;
     tuuvm_tuple_t functionType;
     tuuvm_tuple_t functionDefinitionType;
     tuuvm_tuple_t generatedSymbolType;
@@ -71,6 +73,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t identityDictionaryType;
     tuuvm_tuple_t identitySetType;
     tuuvm_tuple_t integerType;
+    tuuvm_tuple_t localAnalysisEnvironmentType;
     tuuvm_tuple_t positiveIntegerType;
     tuuvm_tuple_t negativeIntegerType;
     tuuvm_tuple_t macroContextType;

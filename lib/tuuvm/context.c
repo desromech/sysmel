@@ -451,6 +451,18 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "breakTarget", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "continueTarget", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
+    context->roots.analysisEnvironmentType = tuuvm_context_createIntrinsicClass(context, "AnalysisEnvironment", context->roots.environmentType,
+        NULL);
+    context->roots.functionAnalysisEnvironmentType = tuuvm_context_createIntrinsicClass(context, "FunctionAnalysisEnvironment", context->roots.analysisEnvironmentType,
+        "functionDefinition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
+        "captureBindingList", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
+        "argumentBindingList", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
+        "localBindingList", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
+        "hasBreakTarget", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        "hasContinueTarget", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        NULL);
+    context->roots.localAnalysisEnvironmentType = tuuvm_context_createIntrinsicClass(context, "LocalAnalysisEnvironment", context->roots.analysisEnvironmentType,
+        NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolBindingType, "SymbolBinding", TUUVM_NULL_TUPLE,
         "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
