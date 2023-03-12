@@ -149,7 +149,7 @@ MacroMetaBuilder
         ).
 
         if: metaBuilderMethod isNotNil && (metaBuilderMethod hasPragmaNamed: #metaBuilder)
-            then: apply(metaBuilderMethod, self, messageSendNode arguments)
+            then: apply(metaBuilderMethod, self, messageSendNode arguments asArraySlice)
             else: self finishExpansion
     };
     withSelector: #finishExpansionWithMessageSendNode:environment: addMethod: {:self :(ASTMessageSendNode)messageSendNode :(Environment)environment :: ASTNode |
@@ -347,7 +347,7 @@ MacroMetaBuilder publicSubclass: #MethodMetaBuilder slots: (
     TypeSlot publicNamed: #selector type: ASTNode ,
     TypeSlot publicNamed: #resultType type: ASTNode ,
     TypeSlot publicNamed: #body type: ASTNode ,
-    TypeSlot publicNamed: #arguments type: ArraySlice
+    TypeSlot publicNamed: #arguments type: Array
 ).
 
 ASTNode
@@ -430,7 +430,7 @@ MethodMetaBuilder
             name: `'#self;
             type: `'SelfType;
             yourself).
-        let: #arguments with: ((Array with: macroContextArgument with: selfArgument) -- self arguments) asArraySlice.
+        let: #arguments with: (Array with: macroContextArgument with: selfArgument) -- self arguments.
         let: #methodNode with: (ASTLambdaNode new
             sourcePosition: self sourcePosition;
             flags: self methodFlags;
@@ -451,7 +451,7 @@ MethodMetaBuilder
             name: `'#self;
             type: `'SelfType;
             yourself).
-        let: #arguments with: ((Array with: selfArgument) -- self arguments) asArraySlice.
+        let: #arguments with: (Array with: selfArgument) -- self arguments.
         let: #methodNode with: (ASTLambdaNode new
             sourcePosition: self sourcePosition;
             flags: self methodFlags;

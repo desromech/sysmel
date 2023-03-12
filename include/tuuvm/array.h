@@ -35,6 +35,14 @@ TUUVM_API tuuvm_tuple_t tuuvm_array_at(tuuvm_tuple_t array, size_t index);
 TUUVM_API void tuuvm_array_atPut(tuuvm_tuple_t array, size_t index, tuuvm_tuple_t value);
 
 /**
+ * Gets the array size.
+ */
+TUUVM_INLINE size_t tuuvm_array_getSize(tuuvm_tuple_t array)
+{
+    return tuuvm_tuple_getSizeInSlots(array);
+}
+
+/**
  * Converts the array into an array slice.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_array_asArraySlice(tuuvm_context_t *context, tuuvm_tuple_t array);
@@ -63,5 +71,10 @@ TUUVM_API tuuvm_tuple_t tuuvm_arrayOrByteArray_at(tuuvm_tuple_t array, size_t in
  * Sets an element in an array or byte array.
  */
 TUUVM_API void tuuvm_arrayOrByteArray_atPut(tuuvm_tuple_t array, size_t index, tuuvm_tuple_t value);
+
+/**
+ * Makes an array slice ignore first N elements.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_array_fromOffset(tuuvm_context_t *context, tuuvm_tuple_t arraySlice, size_t fromOffset);
 
 #endif //TUUVM_ARRAY_H

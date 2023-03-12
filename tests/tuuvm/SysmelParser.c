@@ -1,6 +1,6 @@
 #include "TestMacros.h"
 #include "tuuvm/ast.h"
-#include "tuuvm/arraySlice.h"
+#include "tuuvm/array.h"
 #include "tuuvm/sysmelParser.h"
 #include "tuuvm/string.h"
 

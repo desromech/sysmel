@@ -5,11 +5,25 @@
 
 TUUVM_API tuuvm_tuple_t tuuvm_array_create(tuuvm_context_t *context, tuuvm_tuple_t slotCount)
 {
+    if(slotCount == 0)
+    {
+        if(!context->roots.emptyArrayConstant)
+            context->roots.emptyArrayConstant = (tuuvm_tuple_t)tuuvm_context_allocatePointerTuple(context, context->roots.arrayType, 0);
+        return context->roots.emptyArrayConstant;
+    }
+
     return (tuuvm_tuple_t)tuuvm_context_allocatePointerTuple(context, context->roots.arrayType, slotCount);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_byteArray_create(tuuvm_context_t *context, tuuvm_tuple_t size)
 {
+    if(size == 0)
+    {
+        if(!context->roots.emptyByteArrayConstant)
+            context->roots.emptyByteArrayConstant = (tuuvm_tuple_t)tuuvm_context_allocateByteTuple(context, context->roots.byteArrayType, 0);
+        return context->roots.emptyByteArrayConstant;
+    }
+
     return (tuuvm_tuple_t)tuuvm_context_allocateByteTuple(context, context->roots.byteArrayType, size);
 }
 
@@ -86,4 +100,22 @@ TUUVM_API void tuuvm_arrayOrByteArray_atPut(tuuvm_tuple_t array, size_t index, t
             tuuvm_error_indexOutOfBounds();
         TUUVM_CAST_OOP_TO_OBJECT_TUPLE(array)->pointers[index] = value;
     }
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_array_fromOffset(tuuvm_context_t *context, tuuvm_tuple_t array, size_t fromOffset)
+{
+    if(!tuuvm_tuple_isNonNullPointer(array)) return TUUVM_NULL_TUPLE;
+    
+    size_t size = tuuvm_tuple_getSizeInSlots(array);
+    if(fromOffset >= size)
+        return tuuvm_array_create(context, 0);
+
+    size_t resultSize = size - fromOffset;
+    tuuvm_tuple_t result = tuuvm_array_create(context, resultSize);
+    tuuvm_tuple_t *sourceElements = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(array)->pointers;
+    tuuvm_tuple_t *resultElements = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(result)->pointers;
+    for(size_t i = 0; i < resultSize; ++i)
+        resultElements[i] = sourceElements[fromOffset + i];
+
+    return result;
 }

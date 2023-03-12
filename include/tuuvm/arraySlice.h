@@ -55,4 +55,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_arraySlice_at(tuuvm_tuple_t arraySlice, size_t ind
  */
 TUUVM_API tuuvm_tuple_t tuuvm_arraySlice_fromOffset(tuuvm_context_t *context, tuuvm_tuple_t arraySlice, size_t fromOffset);
 
+/**
+ * Makes an array with the content of this slice
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_arraySlice_asArray(tuuvm_context_t *context, tuuvm_tuple_t arraySlice);
+
 #endif //TUUVM_ARRAY_SLICE_H

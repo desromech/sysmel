@@ -67,3 +67,18 @@ TUUVM_API tuuvm_tuple_t tuuvm_arraySlice_fromOffset(tuuvm_context_t *context, tu
         return tuuvm_arraySlice_createWithOffsetAndSize(context, TUUVM_NULL_TUPLE, 0, 0);
     return tuuvm_arraySlice_createWithOffsetAndSize(context, arraySliceObject->elements, offset + fromOffset, size - fromOffset);
 }
+
+TUUVM_API tuuvm_tuple_t tuuvm_arraySlice_asArray(tuuvm_context_t *context, tuuvm_tuple_t arraySlice)
+{
+   if(!tuuvm_tuple_isNonNullPointer(arraySlice)) return TUUVM_NULL_TUPLE;
+
+    tuuvm_arraySlice_t *arraySliceObject = (tuuvm_arraySlice_t*)arraySlice;
+    size_t offset = tuuvm_tuple_size_decode(arraySliceObject->offset);
+    size_t size = tuuvm_tuple_size_decode(arraySliceObject->size);
+
+    tuuvm_tuple_t result = tuuvm_array_create(context, size);
+    tuuvm_tuple_t *destination = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(result)->pointers;
+    for(size_t i = 0; i < size; ++i)
+        destination[i] = tuuvm_arrayOrByteArray_at(arraySliceObject->elements, offset + i);
+    return result;
+}

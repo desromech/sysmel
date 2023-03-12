@@ -1,5 +1,5 @@
 #include "tuuvm/ast.h"
-#include "tuuvm/arraySlice.h"
+#include "tuuvm/array.h"
 #include "tuuvm/string.h"
 #include "tuuvm/function.h"
 #include "internal/context.h"
@@ -477,13 +477,13 @@ TUUVM_API tuuvm_tuple_t tuuvm_astSequenceNode_create(tuuvm_context_t *context, t
 TUUVM_API size_t tuuvm_astSequenceNode_getExpressionCount(tuuvm_tuple_t sequenceNode)
 {
     if(!tuuvm_tuple_isNonNullPointer(sequenceNode)) return 0;
-    return tuuvm_arraySlice_getSize( ((tuuvm_astSequenceNode_t*)sequenceNode)->expressions );
+    return tuuvm_array_getSize( ((tuuvm_astSequenceNode_t*)sequenceNode)->expressions );
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_astSequenceNode_getExpressionAt(tuuvm_tuple_t sequenceNode, size_t index)
 {
     if(!tuuvm_tuple_isNonNullPointer(sequenceNode)) return TUUVM_NULL_TUPLE;
-    return tuuvm_arraySlice_at( ((tuuvm_astSequenceNode_t*)sequenceNode)->expressions, index);
+    return tuuvm_array_at( ((tuuvm_astSequenceNode_t*)sequenceNode)->expressions, index);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_astUnexpandedApplicationNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t functionOrMacroExpression, tuuvm_tuple_t arguments)

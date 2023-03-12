@@ -22,7 +22,7 @@ ASTLambdaNode
         ASTUnexpandedApplicationNode new
             sourcePosition: sourcePosition;
             functionOrMacroExpression: self;
-            arguments: (ArraySlice with: argument);
+            arguments: (Array with: argument);
             yourself
     }.
     

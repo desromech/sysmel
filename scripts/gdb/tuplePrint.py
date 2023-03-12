@@ -1,3 +1,14 @@
+ImmediateTypeName = [
+    'nil',
+    'integer',
+    'int8', 'int16', 'int32', 'int64',
+    'char8', 'uint8',
+    'char16', 'uint16',
+    'char32', 'uint32',
+    'uint64',
+    'float32', 'float64',
+    'trivial'
+]
 ImmediateValueTable = ["false", "true", "void", "HashtableEmptyElement"]
 
 class TuplePrinter(object):
@@ -17,10 +28,9 @@ class TuplePrinter(object):
             if pointerTag == 15:
                 if untaggedValue < len(ImmediateValueTable):
                     return ImmediateValueTable[untaggedValue]
-                return 'Immediate %d' % untaggedValue
             
             ## Integers
-            return str(untaggedValue)
+            return '%s %d' % (ImmediateTypeName[pointerTag], untaggedValue)
 
         return '0x%016x' % pointerValue
 

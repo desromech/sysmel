@@ -1,5 +1,6 @@
 #include "tuuvm/parser.h"
 #include "tuuvm/ast.h"
+#include "tuuvm/array.h"
 #include "tuuvm/arrayList.h"
 #include "tuuvm/arraySlice.h"
 #include "tuuvm/gc.h"
@@ -152,8 +153,8 @@ static tuuvm_tuple_t tuuvm_parser_parseUnexpandedSExpression(tuuvm_context_t *co
     size_t endPosition = state->tokenPosition;
 
     tuuvm_tuple_t sourcePosition = tuuvm_parser_makeSourcePositionForTokenRange(context, state->tokenSequence, startPosition, endPosition);
-    tuuvm_tuple_t elementsArraySlice = tuuvm_arrayList_asArraySlice(context, elementList);
-    return tuuvm_astUnexpandedSExpressionNode_create(context, sourcePosition, elementsArraySlice);
+    tuuvm_tuple_t elementsArray = tuuvm_arrayList_asArray(context, elementList);
+    return tuuvm_astUnexpandedSExpressionNode_create(context, sourcePosition, elementsArray);
 }
 
 static tuuvm_tuple_t tuuvm_parser_parseQuote(tuuvm_context_t *context, tuuvm_parser_state_t *state)
@@ -254,15 +255,15 @@ TUUVM_API tuuvm_tuple_t tuuvm_parser_parseTokens(tuuvm_context_t *context, tuuvm
         tuuvm_arrayList_add(context, expressionArrayList, expression);
     }
 
-    tuuvm_tuple_t expressionsArraySlice = tuuvm_arrayList_asArraySlice(context, expressionArrayList);
-    size_t expressionsCount = tuuvm_arraySlice_getSize(expressionsArraySlice);
+    tuuvm_tuple_t expressionsArray = tuuvm_arrayList_asArray(context, expressionArrayList);
+    size_t expressionsCount = tuuvm_array_getSize(expressionsArray);
 
     tuuvm_tuple_t sourcePosition = (expressionsCount > 0)
-        ? tuuvm_parser_makeSourcePositionForNodeRange(context, tuuvm_arraySlice_at(expressionsArraySlice, 0), tuuvm_arraySlice_at(expressionsArraySlice, expressionsCount - 1))
+        ? tuuvm_parser_makeSourcePositionForNodeRange(context, tuuvm_array_at(expressionsArray, 0), tuuvm_array_at(expressionsArray, expressionsCount - 1))
         : tuuvm_parser_makeSourcePositionForSourceCode(context, sourceCode);
 
-    tuuvm_tuple_t pragmas = tuuvm_arraySlice_createWithArrayOfSize(context, 0);
-    gcFrame.result = tuuvm_astSequenceNode_create(context, sourcePosition, pragmas, expressionsArraySlice);
+    tuuvm_tuple_t pragmas = tuuvm_array_create(context, 0);
+    gcFrame.result = tuuvm_astSequenceNode_create(context, sourcePosition, pragmas, expressionsArray);
     tuuvm_gc_unlock(context);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;

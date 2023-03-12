@@ -27,7 +27,8 @@
     (i: 0)
     (while:do:continueWith: (Integer::< (i) stop)
         (block (i))
-        (i: (Integer::+ (i) 1))))
+        (i: (Integer::+ (i) 1)))
+)
 
 ## exportInstrinsicBuiltInBinding
 (define (exportInstrinsicBuiltInBinding symbol binding)

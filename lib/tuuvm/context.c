@@ -481,12 +481,12 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
 
         "definitionEnvironment", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
-        "definitionArgumentNodes", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "definitionArgumentNodes", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "definitionResultTypeNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "definitionBodyNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
 
         "analysisEnvironment", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
-        "analyzedArgumentNodes", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "analyzedArgumentNodes", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "analyzedResultTypeNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "analyzedBodyNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
@@ -597,8 +597,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "binding", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     context->roots.astBinaryExpressionSequenceNodeType = tuuvm_context_createIntrinsicClass(context, "ASTBinaryExpressionSequenceNode", context->roots.astNodeType,
-        "operands", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
-        "operations", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
+        "operands", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "operations", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     context->roots.astBreakNodeType = tuuvm_context_createIntrinsicClass(context, "ASTBreakNode", context->roots.astNodeType,
         NULL);
@@ -614,11 +614,11 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         NULL);
     context->roots.astFunctionApplicationNodeType = tuuvm_context_createIntrinsicClass(context, "ASTFunctionApplicationNode", context->roots.astNodeType,
         "functionExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
-        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
+        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     context->roots.astLambdaNodeType = tuuvm_context_createIntrinsicClass(context, "ASTLambdaNode", context->roots.astNodeType,
         "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
+        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "resultType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "body", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "hasLazyAnalysis", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
@@ -652,45 +652,45 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     context->roots.astMakeByteArrayNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMakeByteArrayNode", context->roots.astNodeType,
-        "elements", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
+        "elements", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     context->roots.astMakeDictionaryNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMakeDictionaryNode", context->roots.astNodeType,
-        "elements", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
+        "elements", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     context->roots.astMakeTupleNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMakeTupleNode", context->roots.astNodeType,
-        "elements", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
+        "elements", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
 
     context->roots.astMessageSendNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMessageSendNode", context->roots.astNodeType,
         "receiver", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "selector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
-        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
+        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     context->roots.astMessageChainNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMessageChainNode", context->roots.astNodeType,
         "receiver", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
-        "messages", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
+        "messages", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     context->roots.astMessageChainMessageNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMessageChainMessageNode", context->roots.astNodeType,
         "selector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
-        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
+        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     context->roots.astPragmaNodeType = tuuvm_context_createIntrinsicClass(context, "ASTPragmaNode", context->roots.astNodeType,
         "selector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
-        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
+        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     context->roots.astReturnNodeType = tuuvm_context_createIntrinsicClass(context, "ASTReturnNode", context->roots.astNodeType,
         "expression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     context->roots.astSequenceNodeType = tuuvm_context_createIntrinsicClass(context, "ASTSequenceNode", context->roots.astNodeType,
         "pragmas", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
-        "expressions", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
+        "expressions", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     context->roots.astUnexpandedApplicationNodeType = tuuvm_context_createIntrinsicClass(context, "ASTUnexpandedApplicationNode", context->roots.astNodeType,
         "functionOrMacroExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
-        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
+        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     context->roots.astUnexpandedSExpressionNodeType = tuuvm_context_createIntrinsicClass(context, "ASTUnexpandedSExpressionNode", context->roots.astNodeType,
-        "elements", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
+        "elements", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     context->roots.astWhileContinueWithNodeType = tuuvm_context_createIntrinsicClass(context, "ASTWhileContinueWithNode", context->roots.astNodeType,
         "conditionExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,

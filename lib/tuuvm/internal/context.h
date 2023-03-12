@@ -44,6 +44,9 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t analyzeAndEvaluateConcreteMetaValueWithEnvironmentSelector;
     tuuvm_tuple_t analyzeConcreteMetaValueWithEnvironmentSelector;
 
+    tuuvm_tuple_t emptyArrayConstant;
+    tuuvm_tuple_t emptyByteArrayConstant;
+
     tuuvm_tuple_t coerceValueSelector;
 
     tuuvm_tuple_t anyValueType;

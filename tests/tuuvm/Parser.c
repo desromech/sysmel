@@ -1,6 +1,6 @@
 #include "TestMacros.h"
 #include "tuuvm/ast.h"
-#include "tuuvm/arraySlice.h"
+#include "tuuvm/array.h"
 #include "tuuvm/parser.h"
 #include "tuuvm/string.h"
 
@@ -69,7 +69,7 @@ TEST_SUITE(Parser)
         TEST_ASSERT(tuuvm_astNode_isUnexpandedSExpressionNode(tuuvm_test_context, node));
 
         tuuvm_tuple_t elements = tuuvm_astUnexpandedSExpressionNode_getElements(node);
-        TEST_ASSERT_EQUALS(0, tuuvm_arraySlice_getSize(elements));
+        TEST_ASSERT_EQUALS(0, tuuvm_array_getSize(elements));
     }
 
     TEST_CASE_WITH_FIXTURE(UnexpandedSExpression, TuuvmCore)
@@ -82,6 +82,6 @@ TEST_SUITE(Parser)
         TEST_ASSERT(tuuvm_astNode_isUnexpandedSExpressionNode(tuuvm_test_context, node));
 
         tuuvm_tuple_t elements = tuuvm_astUnexpandedSExpressionNode_getElements(node);
-        TEST_ASSERT_EQUALS(1, tuuvm_arraySlice_getSize(elements));
+        TEST_ASSERT_EQUALS(1, tuuvm_array_getSize(elements));
     }
 }
