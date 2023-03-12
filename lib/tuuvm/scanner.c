@@ -688,13 +688,16 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
         }
         break;
     case '|':
-        if(!tuuvm_scanner_isOperatorCharacter(tuuvm_scanner_lookAt(state, 1)))
+        ++state->position;
+        if(tuuvm_scanner_isOperatorCharacter(tuuvm_scanner_lookAt(state, 0)))
         {
-            ++state->position;
-            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_BAR, tuuvm_scanner_tokenAsSymbol, outTokenList);
+            while(tuuvm_scanner_isOperatorCharacter(tuuvm_scanner_lookAt(state, 0)))
+                ++state->position;
+            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_OPERATOR, tuuvm_scanner_tokenAsSymbol, outTokenList);
             return true;
         }
-        
+        tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_BAR, tuuvm_scanner_tokenAsSymbol, outTokenList);
+        return true;
     default:
         // Binary operators
         if(tuuvm_scanner_isOperatorCharacter(tuuvm_scanner_lookAt(state, 0)))
