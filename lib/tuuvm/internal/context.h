@@ -31,6 +31,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t hashSelector;
     tuuvm_tuple_t asStringSelector;
     tuuvm_tuple_t printStringSelector;
+    tuuvm_tuple_t doesNotUnderstandSelector;
 
     tuuvm_tuple_t astNodeAnalysisSelector;
     tuuvm_tuple_t astNodeEvaluationSelector;
@@ -70,6 +71,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t positiveIntegerType;
     tuuvm_tuple_t negativeIntegerType;
     tuuvm_tuple_t macroContextType;
+    tuuvm_tuple_t messageType;
     tuuvm_tuple_t metaclassType;
     tuuvm_tuple_t methodDictionaryType;
     tuuvm_tuple_t objectType;

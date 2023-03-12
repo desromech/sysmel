@@ -19,6 +19,7 @@ set(tuuvm_sources
     interpreter.c
     io.c
     macro.c
+    message.c
     parser.c
     primitiveIntegers.c
     scanner.c

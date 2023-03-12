@@ -325,6 +325,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.hashSelector = tuuvm_symbol_internWithCString(context, "hash");
     context->roots.asStringSelector = tuuvm_symbol_internWithCString(context, "asString");
     context->roots.printStringSelector = tuuvm_symbol_internWithCString(context, "printString");
+    context->roots.doesNotUnderstandSelector = tuuvm_symbol_internWithCString(context, "doesNotUnderstand:");
 
     context->roots.astNodeAnalysisSelector = tuuvm_symbol_internWithCString(context, "astAnalyzeWithEnvironment:");
     context->roots.astNodeEvaluationSelector = tuuvm_symbol_internWithCString(context, "astEvaluateWithEnvironment:");
@@ -544,6 +545,10 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.macroContextType = tuuvm_context_createIntrinsicClass(context, "MacroContext", TUUVM_NULL_TUPLE,
         "sourceNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        NULL);
+    context->roots.messageType = tuuvm_context_createIntrinsicClass(context, "Message", TUUVM_NULL_TUPLE,
+        "selector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     context->roots.streamType = tuuvm_context_createIntrinsicClass(context, "Stream", TUUVM_NULL_TUPLE,
         NULL);

@@ -39,6 +39,10 @@ AnyValue
     withSelector: #shallowCopy addMethod: {:(AnyValue)self :: self __type__ | RawTuple::shallowCopy(self) } makeFinal;
     withSelector: #copy addMethod: {:(AnyValue)self :: self __type__ | self shallowCopy postCopy; yourself };
 
+    withSelector: #doesNotUnderstand: addMethod: {:(AnyValue)self :(Message)message :: Void |
+        error("doesNotUnderstand: " -- message selector printString)
+    };
+
     withSelector: #isNil addMethod: {:(AnyValue)self :: Boolean | self == nil } makePure makeFinal;
     withSelector: #isNotNil addMethod: {:(AnyValue)self :: Boolean | self ~~ nil } makePure makeFinal;
 
@@ -102,11 +106,15 @@ AnyValue
 Object
     withSelector: #class addMethod: {:(Object)self :: self __type__ __type__ | self __type__ } makePure makeFinal;
     withSelector: #species addMethod: {:(Object)self :: Class | self class };
+
     withSelector: #error: addMethod: {:(Object)self :(String)errorMessage :: Void | error(errorMessage) };
     withSelector: #assert: addMethod: {:(Object)self :(Boolean)condition :: Void |
         if: condition then: void else: error("Assertion failure.")
     };
-    withSelector: #subclassResponsibility addMethod: {:(Object)self :: Void | self error: self __type__ printString -- " Subclass responsibility." }.
+    withSelector: #subclassResponsibility addMethod: {:(Object)self :: Void | self error: self __type__ printString -- " Subclass responsibility." };
+    withSelector: #doesNotUnderstand: addMethod: {:(AnyValue)self :(Message)message :: Void |
+        error((self printString -- " doesNotUnderstand: ") -- message selector printString)
+    }.
 
 Type
     withSelector: #addFlags: addMethod: {:(Type)self :(Size)flag :: Void |
