@@ -23,6 +23,8 @@
 
 //#define tuuvm_gc_safepoint(x) false
 
+static void tuuvm_functionDefinition_ensureAnalysis(tuuvm_context_t *context, tuuvm_functionDefinition_t **functionDefinition);
+
 // This is on a performance critical path, so define it here to allow inlining by the compiler.
 static inline bool tuuvm_symbolBinding_isValueQuick(tuuvm_context_t *context, tuuvm_tuple_t binding)
 {
@@ -475,39 +477,31 @@ static tuuvm_tuple_t tuuvm_astErrorNode_primitiveEvaluate(tuuvm_context_t *conte
 
 tuuvm_tuple_t tuuvm_interpreter_recompileAndOptimizeFunction(tuuvm_context_t *context, tuuvm_function_t **functionObject)
 {
-    // TODO: Implement this with the new definitions.
-    return (tuuvm_tuple_t)*functionObject;
-    /*struct {
-        tuuvm_function_t *optimizedFunction;
-        tuuvm_tuple_t lambdaAnalysisEnvironment;
-        tuuvm_tuple_t argumentNode;
-        tuuvm_tuple_t argumentNodes;
-        tuuvm_tuple_t analyzedBodyNode;
-    } gcFrame = {0};
+    struct {
+        tuuvm_functionDefinition_t *functionDefinition;
+        tuuvm_tuple_t optimizedFunction;
+        tuuvm_functionDefinition_t *optimizedFunctionDefinition;
+    } gcFrame = {
+        .functionDefinition = (tuuvm_functionDefinition_t *)(*functionObject)->definition,
+    };
+
+    // If the function is not yet optimized, just return it back.
+    if(!gcFrame.functionDefinition || !gcFrame.functionDefinition->analysisEnvironment)
+        return (tuuvm_tuple_t)*functionObject;
+
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    gcFrame.optimizedFunction = (tuuvm_function_t*)tuuvm_context_shallowCopy(context, (tuuvm_tuple_t)*functionObject);
-    gcFrame.lambdaAnalysisEnvironment = tuuvm_environment_create(context, gcFrame.optimizedFunction->closureEnvironment);
+    gcFrame.optimizedFunctionDefinition = (tuuvm_functionDefinition_t*)tuuvm_context_shallowCopy(context, (tuuvm_tuple_t)gcFrame.functionDefinition);
 
-    size_t argumentNodeCount = tuuvm_arraySlice_getSize(gcFrame.optimizedFunction->argumentNodes);
-    gcFrame.argumentNodes = tuuvm_arraySlice_createWithArrayOfSize(context, argumentNodeCount);
-    for(size_t i = 0; i < argumentNodeCount; ++i)
-    {
-        gcFrame.argumentNode = tuuvm_arraySlice_at(gcFrame.optimizedFunction->argumentNodes, i);
-        gcFrame.argumentNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.argumentNode, gcFrame.lambdaAnalysisEnvironment);
+    gcFrame.optimizedFunctionDefinition->analysisEnvironment = TUUVM_NULL_TUPLE;
+    gcFrame.optimizedFunctionDefinition->analyzedArgumentNodes = TUUVM_NULL_TUPLE;
+    gcFrame.optimizedFunctionDefinition->analyzedBodyNode = TUUVM_NULL_TUPLE;
+    gcFrame.optimizedFunctionDefinition->analyzedResultTypeNode = TUUVM_NULL_TUPLE;
 
-        tuuvm_arraySlice_atPut(gcFrame.argumentNodes, i, gcFrame.argumentNode);
-    }
-
-    gcFrame.optimizedFunction->argumentNodes = gcFrame.argumentNodes;
-    
-    gcFrame.analyzedBodyNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.optimizedFunction->body, gcFrame.lambdaAnalysisEnvironment);
-    gcFrame.optimizedFunction->body = gcFrame.analyzedBodyNode;
-
+    tuuvm_functionDefinition_ensureAnalysis(context, &gcFrame.optimizedFunctionDefinition);
+    gcFrame.optimizedFunction = tuuvm_function_createClosure(context, (tuuvm_tuple_t)gcFrame.optimizedFunctionDefinition, (*functionObject)->closureEnvironment);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-
-    return (tuuvm_tuple_t)gcFrame.optimizedFunction;
-    */
+    return gcFrame.optimizedFunction;
 }
 
 static void tuuvm_functionDefinition_analyze(tuuvm_context_t *context, tuuvm_functionDefinition_t **functionDefinition)
@@ -589,7 +583,7 @@ static tuuvm_tuple_t tuuvm_astLambdaNode_primitiveAnalyze(tuuvm_context_t *conte
             ++lambdaArgumentCount;
     }
 
-    gcFrame.argumentCount = tuuvm_tuple_size_encode(context,  lambdaArgumentCount);
+    gcFrame.argumentCount = tuuvm_tuple_size_encode(context, lambdaArgumentCount);
     gcFrame.functionDefinition = tuuvm_functionDefinition_create(context,
         gcFrame.lambdaNode->super.sourcePosition, gcFrame.lambdaNode->flags,
         gcFrame.argumentCount, *environment,
