@@ -36,6 +36,7 @@ typedef struct tuuvm_stackFrameFunctionActivationRecord_s
     tuuvm_stackFrameRecord_t *previous;
     tuuvm_stackFrameRecordType_t type;
     tuuvm_tuple_t function;
+    tuuvm_tuple_t functionDefinition;
     tuuvm_tuple_t applicationEnvironment;
     tuuvm_tuple_t result;
     jmp_buf jmpbuffer;

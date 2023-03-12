@@ -458,6 +458,7 @@ MethodMetaBuilder
             arguments: arguments;
             body: self body;
             resultType: self resultType;
+            hasLazyAnalysis: false;
             yourself
         ).
         

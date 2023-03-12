@@ -60,6 +60,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t environmentType;
     tuuvm_tuple_t falseType;
     tuuvm_tuple_t functionType;
+    tuuvm_tuple_t functionDefinitionType;
     tuuvm_tuple_t generatedSymbolType;
     tuuvm_tuple_t hashedCollectionType;
     tuuvm_tuple_t hashtableEmptyType;

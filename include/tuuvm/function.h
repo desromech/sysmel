@@ -31,16 +31,31 @@ typedef struct tuuvm_function_s
     tuuvm_tuple_t owner;
     tuuvm_tuple_t flags;
     tuuvm_tuple_t argumentCount;
-    tuuvm_tuple_t sourcePosition;
     tuuvm_tuple_t closureEnvironment;
-    tuuvm_tuple_t argumentNodes;
-    tuuvm_tuple_t resultTypeNode;
-    tuuvm_tuple_t body;
+    tuuvm_tuple_t definition;
     tuuvm_tuple_t primitiveTableIndex;
     tuuvm_tuple_t primitiveName;
     tuuvm_tuple_t nativeUserdata;
     tuuvm_tuple_t nativeEntryPoint;
 } tuuvm_function_t;
+
+typedef struct tuuvm_functionDefinition_s
+{
+    tuuvm_tuple_header_t header;
+    tuuvm_tuple_t flags;
+    tuuvm_tuple_t argumentCount;
+    tuuvm_tuple_t sourcePosition;
+
+    tuuvm_tuple_t definitionEnvironment;
+    tuuvm_tuple_t definitionArgumentNodes;
+    tuuvm_tuple_t definitionResultTypeNode;
+    tuuvm_tuple_t definitionBodyNode;
+
+    tuuvm_tuple_t analysisEnvironment;
+    tuuvm_tuple_t analyzedArgumentNodes;
+    tuuvm_tuple_t analyzedResultTypeNode;
+    tuuvm_tuple_t analyzedBodyNode;
+} tuuvm_functionDefinition_t;
 
 #define TUUVM_MAX_FUNCTION_ARGUMENTS 16
 
@@ -58,14 +73,19 @@ typedef struct tuuvm_functionCallFrameStack_s
 } tuuvm_functionCallFrameStack_t;
 
 /**
+ * Creates a function definition.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_functionDefinition_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t argumentCount, tuuvm_tuple_t definitionEnvironment, tuuvm_tuple_t argumentNodes, tuuvm_tuple_t resultTypeNode, tuuvm_tuple_t body);
+
+/**
  * Creates a primitive function tuple.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint);
 
 /**
- * Creates a function that uses a closure and an AST for its definition.
+ * Creates a closure by passing its definition and environment.
  */
-TUUVM_API tuuvm_tuple_t tuuvm_function_createClosureAST(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t argumentCount, tuuvm_tuple_t closureEnvironment, tuuvm_tuple_t argumentNodes, tuuvm_tuple_t resultTypeNode, tuuvm_tuple_t body);
+TUUVM_API tuuvm_tuple_t tuuvm_function_createClosure(tuuvm_context_t *context, tuuvm_tuple_t functionDefinition, tuuvm_tuple_t closureEnvironment);
 
 /**
  * Gets the function argument count.

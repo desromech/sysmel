@@ -796,7 +796,7 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_boolean_encode(bool value)
  */ 
 TUUVM_INLINE bool tuuvm_tuple_boolean_decode(tuuvm_tuple_t value)
 {
-    return value != TUUVM_FALSE_TUPLE;
+    return value == TUUVM_TRUE_TUPLE;
 }
 
 /**

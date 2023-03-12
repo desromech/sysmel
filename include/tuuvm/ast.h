@@ -65,10 +65,11 @@ typedef struct tuuvm_astLambdaNode_s
 {
     tuuvm_astNode_t super;
     tuuvm_tuple_t flags;
-    tuuvm_tuple_t argumentCount;
     tuuvm_tuple_t arguments;
     tuuvm_tuple_t resultType;
     tuuvm_tuple_t body;
+    tuuvm_tuple_t hasLazyAnalysis;
+    tuuvm_tuple_t functionDefinition;
 } tuuvm_astLambdaNode_t;
 
 typedef struct tuuvm_astLexicalBlockNode_s
@@ -487,7 +488,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_astIfNode_getFalseExpression(tuuvm_tuple_t node);
 /**
  * Creates a lambda node.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_astLambdaNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t argumentCount, tuuvm_tuple_t arguments, tuuvm_tuple_t resultType, tuuvm_tuple_t body);
+TUUVM_API tuuvm_tuple_t tuuvm_astLambdaNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t arguments, tuuvm_tuple_t resultType, tuuvm_tuple_t body);
 
 /**
  * Gets the flags from the lambda node.

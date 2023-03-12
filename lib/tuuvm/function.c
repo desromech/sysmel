@@ -51,6 +51,19 @@ static bool tuuvm_primitiveTable_findEntryFor(tuuvm_functionEntryPoint_t primiti
     return false;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_functionDefinition_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t argumentCount, tuuvm_tuple_t definitionEnvironment, tuuvm_tuple_t argumentNodes, tuuvm_tuple_t resultTypeNode, tuuvm_tuple_t body)
+{
+    tuuvm_functionDefinition_t *result = (tuuvm_functionDefinition_t*)tuuvm_context_allocatePointerTuple(context, context->roots.functionDefinitionType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_functionDefinition_t));
+    result->sourcePosition = sourcePosition;
+    result->flags = flags;
+    result->argumentCount = argumentCount; 
+    result->definitionEnvironment = definitionEnvironment;
+    result->definitionArgumentNodes = argumentNodes;
+    result->definitionResultTypeNode = resultTypeNode;
+    result->definitionBodyNode = body;
+    return (tuuvm_tuple_t)result;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
 {
     tuuvm_function_t *result = (tuuvm_function_t*)tuuvm_context_allocatePointerTuple(context, context->roots.functionType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_function_t));
@@ -69,16 +82,17 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context,
     return (tuuvm_tuple_t)result;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_function_createClosureAST(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t flags, tuuvm_tuple_t argumentCount, tuuvm_tuple_t closureEnvironment, tuuvm_tuple_t argumentNodes, tuuvm_tuple_t resultTypeNode, tuuvm_tuple_t body)
+TUUVM_API tuuvm_tuple_t tuuvm_function_createClosure(tuuvm_context_t *context, tuuvm_tuple_t functionDefinition, tuuvm_tuple_t closureEnvironment)
 {
+    if(!tuuvm_tuple_isKindOf(context, functionDefinition, context->roots.functionDefinitionType))
+        tuuvm_error("An actual function definition is required here.");
+
+    tuuvm_functionDefinition_t *functionDefinitionObject = (tuuvm_functionDefinition_t*)functionDefinition;
     tuuvm_function_t *result = (tuuvm_function_t*)tuuvm_context_allocatePointerTuple(context, context->roots.functionType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_function_t));
-    result->sourcePosition = sourcePosition;
-    result->flags = flags;
-    result->argumentCount = argumentCount; 
+    result->flags = functionDefinitionObject->flags;
+    result->argumentCount = functionDefinitionObject->argumentCount; 
     result->closureEnvironment = closureEnvironment;
-    result->argumentNodes = argumentNodes;
-    result->resultTypeNode = resultTypeNode;
-    result->body = body;
+    result->definition = functionDefinition;
     return (tuuvm_tuple_t)result;
 }
 
@@ -146,7 +160,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
             TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
             return gcFrame.result;            
         }
-        else if(functionObject->body)
+        else if(tuuvm_tuple_isKindOf(context, functionObject->definition, context->roots.functionDefinitionType))
         {
             gcFrame.result = tuuvm_interpreter_applyClosureASTFunction(context, &gcFrame.function, argumentCount, arguments);
             tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
@@ -272,12 +286,8 @@ static tuuvm_tuple_t tuuvm_function_primitive_adoptDefinitionOf(tuuvm_context_t 
     tuuvm_function_t *functionObject = (tuuvm_function_t*)*function;
     tuuvm_function_t *definitionFunctionObject = (tuuvm_function_t*)*definitionFunction;
 
-    functionObject->sourcePosition = definitionFunctionObject->sourcePosition;
+    functionObject->definition = definitionFunctionObject->definition;
     functionObject->closureEnvironment = definitionFunctionObject->closureEnvironment;
-    functionObject->argumentNodes = definitionFunctionObject->argumentNodes;
-    functionObject->resultTypeNode = definitionFunctionObject->resultTypeNode;
-    functionObject->body = definitionFunctionObject->body;
-
     return TUUVM_VOID_TUPLE;
 }
 
@@ -290,7 +300,7 @@ static tuuvm_tuple_t tuuvm_function_primitive_recompileAndOptimize(tuuvm_context
     if(!tuuvm_tuple_isKindOf(context, *function, context->roots.functionType)) tuuvm_error("Expected a function.");
     
     tuuvm_function_t **functionObject = (tuuvm_function_t**)function;
-    if((*functionObject)->body && (*functionObject)->closureEnvironment)
+    if((*functionObject)->definition && (*functionObject)->closureEnvironment)
         return tuuvm_interpreter_recompileAndOptimizeFunction(context, functionObject);
     
     return *function;

@@ -280,6 +280,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 
     // Create the function class.
     context->roots.functionType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.functionDefinitionType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
 
     context->roots.symbolBindingType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.symbolArgumentBindingType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolBindingType);
@@ -466,15 +467,27 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "owner", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "argumentCount", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "closureEnvironment", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
-        "argumentNodes", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "resultTypeNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
-        "body", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "definition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context, context->roots.functionDefinitionType,
         "primitiveTableIndex", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "primitiveName", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
         "nativeUserdata", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "nativeEntryPoint", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uintptrType,
+        NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.functionDefinitionType, "FunctionDefinition", TUUVM_NULL_TUPLE,
+        "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "argumentCount", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+
+        "definitionEnvironment", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
+        "definitionArgumentNodes", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "definitionResultTypeNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "definitionBodyNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+
+        "analysisEnvironment", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
+        "analyzedArgumentNodes", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "analyzedResultTypeNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "analyzedBodyNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolType, "Symbol", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.stringSymbolType, "StringSymbol", TUUVM_NULL_TUPLE, NULL);
@@ -600,10 +613,11 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         NULL);
     context->roots.astLambdaNodeType = tuuvm_context_createIntrinsicClass(context, "ASTLambdaNode", context->roots.astNodeType,
         "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "argumentCount", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arraySliceType,
         "resultType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "body", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "functionDefinition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
+        "hasLazyAnalysis", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         NULL);
     context->roots.astLexicalBlockNodeType = tuuvm_context_createIntrinsicClass(context, "ASTLexicalBlockNode", context->roots.astNodeType,
         "body", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,

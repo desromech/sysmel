@@ -293,6 +293,12 @@ Class
         self class withSelector: selector addMethod: method
     }.
 
+FunctionDefinition
+    withSelector: #hasPragmaNamed: addMethod: {:(FunctionDefinition)self :selector :: Boolean |
+        let: #definitionBodyNode with: self definitionBodyNode.
+        (definitionBodyNode ~~ nil) && (definitionBodyNode hasPragmaNamed: selector)
+    }.
+
 Function
     withSelector: #hasFlag: addMethod: {:(Function)self :(Size)flag :: Boolean |
         (self flags & flag) ~= 0sz
@@ -329,13 +335,14 @@ Function
     };
 
     withSelector: #hasPragmaNamed: addMethod: {:(Function)self :selector :: Boolean |
-        let: #body with: self body.
-        (body ~~ nil) && (body hasPragmaNamed: selector)
+        let: #definition with: self definition.
+        if: definition == nil then: false else: (definition hasPragmaNamed: selector)
     };
     
     withSelector: #printOn: addMethod: {:(Function)self :(Stream)stream :: Void |
         let: #name with: self name.
-        let: #sourcePosition with: self sourcePosition.
+        let: #definition with: self definition.
+        let: #sourcePosition with: (if: definition ~~ nil then: definition sourcePosition else: nil).
 
         stream nextPutAll: "Function(".
 

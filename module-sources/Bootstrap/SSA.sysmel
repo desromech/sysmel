@@ -493,10 +493,13 @@ SSAInstructionBuilder definition: {
 }.
 
 public class SSAFunctionCompilationContext superclass: Object; definition: {
-    public field function => Function.
+    public field functionDefinition => FunctionDefinition.
     public field ssaFunction => SSAFunction.
     public field builder => SSAInstructionBuilder.
     public field bindingDictionary => IdentityDictionary.
+
+    public field breakDestination => SSABasicBlock.
+    public field continueDestination => SSABasicBlock.
 
     public method initialize => Void := {
         self bindingDictionary: IdentityDictionary new.
@@ -521,20 +524,20 @@ public class SSAFunctionCompilationContext superclass: Object; definition: {
         self bindingDictionary at: binding put: value
     }.
 
-    public method compileFunction: (function: Function) ::=> SSAFunction := {
+    public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> SSAFunction := {
         let ssaFunction := SSAFunction new.
-        self function: function.
+        self functionDefinition: functionDefinition.
         self ssaFunction: ssaFunction.
 
         ssaFunction
-            name: function name;
-            sourcePosition: function sourcePosition.
+            ##name: functionDefinition name;
+            sourcePosition: functionDefinition sourcePosition.
 
-        ssaFunction arguments: (function argumentNodes collect: {:(ASTArgumentNode)argumentNode :: SSAFunctionArgument |
+        ssaFunction arguments: (functionDefinition analyzedArgumentNodes collect: {:(ASTArgumentNode)argumentNode :: SSAFunctionArgument |
             self generateArgumentForNode: argumentNode
         }) asArray.
 
-        function body ifNotNil: {:bodyNode |
+        functionDefinition analyzedBodyNode ifNotNil: {:bodyNode |
             self builder: (SSAInstructionBuilder new
                 sourcePosition: bodyNode sourcePosition;
                 function: ssaFunction;
@@ -560,6 +563,22 @@ ASTNode extend: {
 
     public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
         := self subclassResponsibility.
+}.
+
+ASTBreakNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        context breakDestination ifNil: (self error: 'Invalid break at ' context).
+        context builder branch: context breakDestination.
+        context builder literal: void
+    }.
+}.
+
+ASTContinueNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        context continueDestination ifNil: (self error: 'Invalid continue at ' context).
+        context builder branch: context continueDestination.
+        context builder literal: void
+    }.
 }.
 
 ASTFunctionApplicationNode extend: {
@@ -721,9 +740,9 @@ ASTReturnNode extend: {
         := context builder return: (self expression generateSSAValueWith: context)
 }.
 
-Function extend: {
+FunctionDefinition extend: {
     public method asSSAFunction => SSAFunction := {
         SSAFunctionCompilationContext new
-            compileFunction: self
+            compileFunctionDefinition: self
     }.
 }
