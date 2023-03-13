@@ -2770,7 +2770,7 @@ static tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_primitiveAnalyze(tuuvm_con
         gcFrame.doWhileNode->conditionExpression = gcFrame.analyzedConditionExpression;
     }
 
-    if(gcFrame.analyzedContinueExpression)
+    if(gcFrame.doWhileNode->continueExpression)
     {
         gcFrame.analyzedContinueExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.doWhileNode->continueExpression, *environment);
         gcFrame.doWhileNode->continueExpression = gcFrame.analyzedContinueExpression;
@@ -2797,7 +2797,7 @@ static tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_primitiveEvaluate(tuuvm_co
         if((*doWhileNode)->bodyExpression)
             tuuvm_interpreter_evaluateASTWithEnvironment(context, (*doWhileNode)->bodyExpression, *environment);
         if((*doWhileNode)->conditionExpression)
-            shouldContinue = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*doWhileNode)->conditionExpression, *environment);
+            shouldContinue = tuuvm_tuple_boolean_decode(tuuvm_interpreter_evaluateASTWithEnvironment(context, (*doWhileNode)->conditionExpression, *environment));
         else
             shouldContinue = true;
 
@@ -3631,7 +3631,7 @@ void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context)
         tuuvm_astIfNode_primitiveAnalyzeAndEvaluate
     );
 
-    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "do:while:do:continueWith:", 4, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astDoWhileContinueWithNode_primitiveMacro);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "do:while:continueWith:", 4, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astDoWhileContinueWithNode_primitiveMacro);
     tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astDoWhileContinueWithNodeType,
         tuuvm_astDoWhileContinueWithNode_primitiveAnalyze,
         tuuvm_astDoWhileContinueWithNode_primitiveEvaluate,

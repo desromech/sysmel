@@ -822,6 +822,60 @@ ASTIfNode extend: {
     }
 }.
 
+ASTDoWhileContinueWithNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let builder := context builder.
+
+        let conditionExpression := self conditionExpression.
+        let bodyExpression := self bodyExpression.
+        let continueExpression := self continueExpression.
+
+        let entryBlock := builder newBasicBlockNamed: #doWhileBody.
+        let conditionBlock := builder newBasicBlockNamed: #doWhileCondition.
+        let continueBlock := continueExpression
+            ifNil: (entryBlock)
+            ifNotNil: (builder newBasicBlockNamed: #doWhileContinue).
+        let mergeBlock := builder newBasicBlockNamed: #doWhileMerge.
+
+        builder
+            branch: entryBlock;
+            beginBasicBlock: entryBlock.
+
+        ## Emit the body.
+        bodyExpression ifNotNil: {
+            context withBreakDestination: mergeBlock continueDestination: continueBlock do: {:: Void |
+                bodyExpression generateSSAValueWith: context.
+                builder isLastTerminator ifFalse: {
+                    builder branch: conditionBlock
+                }.
+            }
+        }.
+
+        ## Emit the condition.
+        builder beginBasicBlock: conditionBlock.
+        conditionExpression ifNil: {
+            builder branch: continueBlock
+        } ifNotNil: {
+            let condition := conditionExpression generateSSAValueWith: context.
+            builder isLastTerminator ifFalse: {
+                builder conditionalBranch: condition trueDestination: continueBlock falseDestination: mergeBlock
+            }
+        }.
+
+        ## Emit the optional continue expression.
+        continueExpression ifNotNil: {
+            builder beginBasicBlock: continueBlock.
+            continueExpression generateSSAValueWith: context.
+            builder isLastTerminator ifFalse: {
+                builder branch: entryBlock
+            }.
+        }.
+
+        builder beginBasicBlock: mergeBlock.
+        builder literal: void
+    }
+}.
+
 ASTWhileContinueWithNode extend: {
     public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
         let builder := context builder.
@@ -874,6 +928,28 @@ ASTWhileContinueWithNode extend: {
         builder beginBasicBlock: mergeBlock.
         builder literal: void
     }
+}.
+
+ASTMessageChainMessageNode extend: {
+    public method generateSSAValueWith: (context: SSAFunctionCompilationContext) receiver: (receiver: SSAValue) ::=> SSAValue := {
+        context builder withSourceASTNode: self do: {:: SSAValue |
+            context builder send: receiver
+                selector: (self selector generateSSAValueWith: context)
+                arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
+                resultType: self analyzedType
+        }
+    }.
+}.
+
+ASTMessageChainNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let receiver := self receiver generateSSAValueWith: context.
+        let result := ValueBox with: receiver.
+        self messages do: {:(ASTMessageChainMessageNode)chainedMesage :: Void |
+            result := chainedMesage generateSSAValueWith: context receiver: receiver
+        }.
+        result _
+    }.
 }.
 
 ASTMessageSendNode extend: {

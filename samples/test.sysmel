@@ -149,3 +149,19 @@ printLine(makePlusN asSSAFunction fullPrintString).
 let: #sequenceableCollectionDo with: SequenceableCollection >> #do:.
 printLine(sequenceableCollectionDo).
 printLine(sequenceableCollectionDo asSSAFunction fullPrintString).
+
+let: #doWhile with: {:(Size)n :: Size |
+    let i := ValueBox with: 0sz.
+    let result := ValueBox with: 0sz.
+    do: {
+        result := result _ + (i _ * 2sz)
+    } while: (i _ < n) continueWith: (i := i _ + 1sz).
+    i _
+}.
+
+printLine(doWhile, " ", doWhile(5sz)).
+printLine(doWhile asSSAFunction fullPrintString).
+
+let: #valueBoxWith with: ValueBox class >> #with:.
+printLine(valueBoxWith, " ", doWhile(5sz)).
+printLine(valueBoxWith asSSAFunction fullPrintString).
