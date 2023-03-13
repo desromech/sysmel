@@ -139,3 +139,9 @@ let: #withReturn with: {:(Int32)x :: Int32 |
 }.
 printLine(withReturn).
 printLine(withReturn asSSAFunction fullPrintString).
+
+let: #makePlusN with: {:(Int32)n :: Function |
+    {:(Int32)x :: Int32 | x + n}
+}.
+printLine(makePlusN).
+printLine(makePlusN asSSAFunction fullPrintString).

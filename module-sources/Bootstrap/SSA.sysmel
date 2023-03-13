@@ -333,6 +333,18 @@ public final class SSAConditionalBranchInstruction superclass: SSAInstruction; d
             nextPut: ' '; print: self falseDestination.
 }.
 
+public final class SSAMakeClosureInstruction superclass: SSAInstruction; definition: {
+    public field functionDefinition => SSAValue.
+    public field captures => Array.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream print: self; nextPutAll: " := makeClosure "; print: self functionDefinition.
+        self captures do: {:(SSAValue)capture :: Void |
+            stream nextPutAll: ", "; print: capture
+        }
+    }.
+}.
+
 public final class SSAPhiInstruction superclass: SSAInstruction; definition: {
     public field incomingValues => Array.
     public field incomingBlocks => Array.
@@ -503,6 +515,13 @@ SSAInstructionBuilder definition: {
     public method literal: value ::=> SSALiteralConstant
         := self literal: value type: value __type__.
 
+    public method makeClosure: (functionDefinition: SSAValue) captures: (captures: Array) type: (type: Type) ::=> SSAMakeClosureInstruction
+        := self addInstruction: (SSAMakeClosureInstruction new
+            functionDefinition: functionDefinition;
+            captures: captures;
+            type: type;
+            yourself).
+
     public method phi: (type: Type) ::=> SSAPhiInstruction
         := self addInstruction: (SSAPhiInstruction new
             incomingBlocks: ();
@@ -610,8 +629,11 @@ public class SSAFunctionCompilationContext superclass: Object; definition: {
         ssaFunction
     }.
 
-    public method getValueForLocalBinding: localBinding ::=> SSAValue
-        := self bindingDictionary at: localBinding
+    public method getValueForLocalBinding: (localBinding: SymbolAnalysisBinding) ::=> SSAValue
+        := self bindingDictionary at: localBinding.
+
+    public method functionDefinitionValueFor: (functionDefinition: FunctionDefinition) ::=> SSAValue
+        := self builder literal: functionDefinition.
 }.
 
 ASTNode extend: {
@@ -655,6 +677,21 @@ ASTLexicalBlockNode extend: {
 ASTLiteralNode extend: {
     public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
         := context builder literal: self value type: self analyzedType.
+}.
+
+ASTLambdaNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let functionDefinition := self functionDefinition.
+        functionDefinition ensureAnalysis.
+
+        let functionDefinitionValue := context functionDefinitionValueFor: functionDefinition.
+
+        let captures := functionDefinition analyzedCaptures collect: {:(SymbolCaptureBinding)capture :: SSAValue |
+            context getValueForLocalBinding: capture sourceBinding
+        }.
+
+        context builder makeClosure: functionDefinitionValue captures: captures type: self analyzedType
+    }.
 }.
 
 ASTLocalDefinitionNode extend: {

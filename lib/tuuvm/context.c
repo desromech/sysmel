@@ -485,6 +485,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolArgumentBindingType, "SymbolArgumentBinding", TUUVM_NULL_TUPLE,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolCaptureBindingType, "SymbolCaptureBinding", TUUVM_NULL_TUPLE,
+        "sourceBinding", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolAnalysisBindingType,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolLocalBindingType, "SymbolLocalBinding", TUUVM_NULL_TUPLE,
         NULL);
