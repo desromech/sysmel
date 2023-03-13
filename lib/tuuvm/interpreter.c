@@ -472,11 +472,14 @@ static tuuvm_tuple_t tuuvm_astErrorNode_primitiveEvaluate(tuuvm_context_t *conte
 
 tuuvm_tuple_t tuuvm_interpreter_recompileAndOptimizeFunction(tuuvm_context_t *context, tuuvm_function_t **functionObject)
 {
-    return (tuuvm_tuple_t)*functionObject;
-/*    struct {
+    //return (tuuvm_tuple_t)*functionObject;
+    struct {
         tuuvm_functionDefinition_t *functionDefinition;
         tuuvm_tuple_t optimizedFunction;
+        tuuvm_tuple_t optimizedDefinitionEnvironment;
         tuuvm_functionDefinition_t *optimizedFunctionDefinition;
+        tuuvm_tuple_t captureValue;
+        tuuvm_tuple_t captureBinding;
     } gcFrame = {
         .functionDefinition = (tuuvm_functionDefinition_t *)(*functionObject)->definition,
     };
@@ -489,6 +492,18 @@ tuuvm_tuple_t tuuvm_interpreter_recompileAndOptimizeFunction(tuuvm_context_t *co
 
     gcFrame.optimizedFunctionDefinition = (tuuvm_functionDefinition_t*)tuuvm_context_shallowCopy(context, (tuuvm_tuple_t)gcFrame.functionDefinition);
 
+    // Construct the closure environment by reading the capture vector.
+    gcFrame.optimizedDefinitionEnvironment = tuuvm_environment_create(context, gcFrame.optimizedFunctionDefinition->definitionEnvironment);
+    gcFrame.optimizedFunctionDefinition->definitionEnvironment = gcFrame.optimizedDefinitionEnvironment;
+
+    size_t captureCount = tuuvm_array_getSize((*functionObject)->captureVector);
+    for(size_t i = 0; i < captureCount; ++i)
+    {
+        gcFrame.captureValue = tuuvm_array_at((*functionObject)->captureVector, i);
+        gcFrame.captureBinding = tuuvm_array_at(gcFrame.functionDefinition->analyzedCaptures, i);
+        tuuvm_environment_setNewSymbolBindingWithValue(context, gcFrame.optimizedDefinitionEnvironment, tuuvm_symbolBinding_getName(gcFrame.captureBinding), gcFrame.captureValue);
+    }
+
     gcFrame.optimizedFunctionDefinition->analysisEnvironment = TUUVM_NULL_TUPLE;
     gcFrame.optimizedFunctionDefinition->analyzedCaptures = TUUVM_NULL_TUPLE;
     gcFrame.optimizedFunctionDefinition->analyzedArguments = TUUVM_NULL_TUPLE;
@@ -499,10 +514,10 @@ tuuvm_tuple_t tuuvm_interpreter_recompileAndOptimizeFunction(tuuvm_context_t *co
     gcFrame.optimizedFunctionDefinition->analyzedResultTypeNode = TUUVM_NULL_TUPLE;
 
     tuuvm_functionDefinition_ensureAnalysis(context, &gcFrame.optimizedFunctionDefinition);
-    gcFrame.optimizedFunction = tuuvm_function_createClosure(context, (tuuvm_tuple_t)gcFrame.optimizedFunctionDefinition, (*functionObject)->closureEnvironment);
+    TUUVM_ASSERT(tuuvm_array_getSize(gcFrame.optimizedFunctionDefinition->analyzedCaptures) == 0);
+    gcFrame.optimizedFunction = tuuvm_function_createClosureWithCaptureVector(context, (tuuvm_tuple_t)gcFrame.optimizedFunctionDefinition, tuuvm_array_create(context, 0));
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.optimizedFunction;
-*/
 }
 
 static void tuuvm_functionDefinition_analyze(tuuvm_context_t *context, tuuvm_functionDefinition_t **functionDefinition)
