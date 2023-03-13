@@ -23,6 +23,7 @@ typedef struct tuuvm_analysisEnvironment_s
 {
     tuuvm_environment_t super;
     tuuvm_tuple_t functionDefinition;
+    tuuvm_tuple_t captureBindingTable;
     tuuvm_tuple_t captureBindingList;
     tuuvm_tuple_t argumentBindingList;
     tuuvm_tuple_t localBindingList;
@@ -53,6 +54,12 @@ typedef struct tuuvm_symbolLocalBinding_s
     tuuvm_symbolBinding_t super;
 } tuuvm_symbolLocalBinding_t;
 
+typedef struct tuuvm_symbolCaptureBinding_s
+{
+    tuuvm_symbolBinding_t super;
+    tuuvm_tuple_t capturedBinding;
+} tuuvm_symbolCaptureBinding_t;
+
 typedef struct tuuvm_symbolValueBinding_s
 {
     tuuvm_symbolBinding_t super;
@@ -63,6 +70,11 @@ typedef struct tuuvm_symbolValueBinding_s
  * Is the symbol binding a value?
  */
 TUUVM_API bool tuuvm_symbolBinding_isValue(tuuvm_context_t *context, tuuvm_tuple_t binding);
+
+/**
+ * Is the symbol binding an analysis specific binding?
+ */
+TUUVM_API bool tuuvm_symbolBinding_isAnalysisBinding(tuuvm_context_t *context, tuuvm_tuple_t binding);
 
 /**
  * Gets the value from the symbol value binding.
@@ -89,11 +101,16 @@ TUUVM_API tuuvm_tuple_t tuuvm_symbolLocalBinding_create(tuuvm_context_t *context
 TUUVM_API tuuvm_tuple_t tuuvm_symbolValueBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t value);
 
 /**
+ * Creates a symbol capture binding.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_symbolCaptureBinding_create(tuuvm_context_t *context, tuuvm_tuple_t capturedBinding);
+
+/**
  * Gets the value from the symbol value binding.
  */
 TUUVM_INLINE tuuvm_tuple_t tuuvm_symbolValueBinding_getValue(tuuvm_tuple_t binding)
 {
-    if(!tuuvm_tuple_isNonNullPointer(binding)) return TUUVM_NULL_TUPLE;
+    if(!tuuvm_tuple_isNonNullPointer(binding) || tuuvm_tuple_getSizeInSlots(binding) < TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_symbolValueBinding_t)) return TUUVM_NULL_TUPLE;
     return ((tuuvm_symbolValueBinding_t*)binding)->value;
 }
 
@@ -207,6 +224,11 @@ TUUVM_API bool tuuvm_environment_isFunctionAnalysisEnvironment(tuuvm_context_t *
  * Look recursively for the function analysis environment.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_environment_lookFunctionAnalysisEnvironmentRecursively(tuuvm_context_t *context, tuuvm_tuple_t environment);
+
+/**
+ * Looks a symbol recursively on an analysis environment.
+ */ 
+TUUVM_API bool tuuvm_analysisEnvironment_lookSymbolRecursively(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t symbol, tuuvm_tuple_t *outBinding);
 
 /**
  * Makes a new argument binding in the analysis environment.

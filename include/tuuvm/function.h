@@ -32,6 +32,7 @@ typedef struct tuuvm_function_s
     tuuvm_tuple_t flags;
     tuuvm_tuple_t argumentCount;
     tuuvm_tuple_t closureEnvironment;
+    tuuvm_tuple_t captureVector;
     tuuvm_tuple_t definition;
     tuuvm_tuple_t primitiveTableIndex;
     tuuvm_tuple_t primitiveName;
@@ -52,6 +53,7 @@ typedef struct tuuvm_functionDefinition_s
     tuuvm_tuple_t definitionBodyNode;
 
     tuuvm_tuple_t analysisEnvironment;
+    tuuvm_tuple_t analyzedCaptures;
     tuuvm_tuple_t analyzedArgumentNodes;
     tuuvm_tuple_t analyzedResultTypeNode;
     tuuvm_tuple_t analyzedBodyNode;

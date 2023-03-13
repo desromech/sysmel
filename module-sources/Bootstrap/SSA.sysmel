@@ -1,8 +1,10 @@
 public class SSAValue superclass: Object.
 public class SSAConstant superclass: SSAValue.
 public class SSAFunction superclass: SSAConstant.
+public class SSAFunctionDefinition superclass: SSAConstant.
 public class SSAFunctionLocalValue superclass: SSAValue.
 public final class SSAFunctionArgument superclass: SSAFunctionLocalValue.
+public final class SSAFunctionCapture superclass: SSAFunctionLocalValue.
 public class SSABasicBlock superclass: SSAFunctionLocalValue.
 public class SSAInstruction superclass: SSAFunctionLocalValue.
 public final class SSAInstructionBuilder superclass: Object.
@@ -38,7 +40,42 @@ public class SSALiteralConstant superclass: SSAConstant; definition: {
 
 SSAFunction definition: {
     public field name.
+    public field captures => Array.
+    public field definition => SSAValue.
+
+    public method initialize => Void := {
+        self captures: #().
+    }.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream nextPut: '@'.
+        self name ifNil: {
+            stream print: self sourcePosition.
+        } ifNotNil: {:name :: Void |
+            stream print: self name
+        }
+    }.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream print: self.
+        stream nextPutAll: " captures [".
+        self captures doWithIndex: {:(SSAValue)capture :(Size)index :: Void |
+            index > 0 ifTrue: (stream nextPutAll: ", ").
+            stream print: capture
+        }.
+
+        stream nextPut: ']'.
+        self definition ifNotNil: {:(SSAValue)definition :: Void |
+            stream nextPutAll: " definition ".
+            stream fullPrint: definition
+        }
+    }.
+}.
+
+SSAFunctionDefinition definition: {
+    public field name.
     public field arguments => Array.
+    public field captures => Array.
 
     public field firstBasicBlock => SSABasicBlock.
     public field lastBasicBlock => SSABasicBlock.
@@ -98,6 +135,7 @@ SSAFunction definition: {
 
     public method localValuesDo: aBlock ::=> Void := {
         self arguments do: aBlock.
+        self captures do: aBlock.
         self basicBlocksDo: {:basicBlock :: Void |
             aBlock(basicBlock).
             basicBlock instructionsDo: aBlock
@@ -113,12 +151,14 @@ SSAFunction definition: {
     }.
 
     public method printOn: (stream: Stream) ::=> Void := {
-        stream nextPut: '@'.
-        self name ifNil: {
-            stream print: self sourcePosition.
-        } ifNotNil: {:name :: Void |
+        stream nextPut: '%'.
+        self name ifNotNil: {:name :: Void |
             stream print: self name
-        }
+        }.
+
+        self sourcePosition ifNotNil: {:sourcePosition :: Void |
+            stream nextPutAll: "at "; print: sourcePosition
+        }.
     }.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
@@ -131,6 +171,12 @@ SSAFunction definition: {
             stream print: argument
         }.
         stream nextPut: ')'.
+        stream nextPut: '['.
+        self captures doWithIndex: {:(SSAFunctionCapture)capture :(Size)index :: Void |
+            index > 0sz ifTrue: (stream nextPutAll: ", ").
+            stream print: capture
+        }.
+        stream nextPut: ']'.
 
         stream nextPutAll: " := {"; nl.
         self basicBlocksDo: {:(SSABasicBlock)basicBlock :: Void |
@@ -349,11 +395,11 @@ SSAInstructionBuilder definition: {
     public field sourceASTNode => ASTNode.
     public field sourceEnvironment => Environment.
 
-    public field function => SSAFunction.
+    public field function => SSAFunctionDefinition.
     public field basicBlock => SSABasicBlock.
 
     __Meta__ definition: {
-        public method for: (function: SSAFunction)
+        public method for: (function: SSAFunctionDefinition)
             := self new function: function; yourself.
     }.
 
@@ -494,7 +540,7 @@ SSAInstructionBuilder definition: {
 
 public class SSAFunctionCompilationContext superclass: Object; definition: {
     public field functionDefinition => FunctionDefinition.
-    public field ssaFunction => SSAFunction.
+    public field ssaFunction => SSAFunctionDefinition.
     public field builder => SSAInstructionBuilder.
     public field bindingDictionary => IdentityDictionary.
 
@@ -519,23 +565,36 @@ public class SSAFunctionCompilationContext superclass: Object; definition: {
         ssaArgument
     }.
 
+    public method generateCaptureForBinding: (captureBinding: SymbolCaptureBinding) ::=> SSAFunctionCapture := {
+        let capture := SSAFunctionCapture new
+            name: captureBinding name;
+            type: captureBinding type;
+            yourself.
+
+        self bindingDictionary at: captureBinding put: capture.
+
+        capture
+    }.
+
     public method setValue: (value: SSAValue) forBinding: (binding: SymbolBinding) ::=> Void := {
         self assert: binding isNotNil.
         self bindingDictionary at: binding put: value
     }.
 
-    public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> SSAFunction := {
-        let ssaFunction := SSAFunction new.
+    public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> SSAFunctionDefinition := {
+        let ssaFunction := SSAFunctionDefinition new.
+        functionDefinition ensureAnalysis.
         self functionDefinition: functionDefinition.
         self ssaFunction: ssaFunction.
 
         ssaFunction
-            ##name: functionDefinition name;
-            sourcePosition: functionDefinition sourcePosition.
-
-        ssaFunction arguments: (functionDefinition analyzedArgumentNodes collect: {:(ASTArgumentNode)argumentNode :: SSAFunctionArgument |
-            self generateArgumentForNode: argumentNode
-        }) asArray.
+            sourcePosition: functionDefinition sourcePosition;
+            arguments: (functionDefinition analyzedArgumentNodes collect: {:(ASTArgumentNode)argumentNode :: SSAFunctionArgument |
+                self generateArgumentForNode: argumentNode
+            }) asArray;
+            captures: (functionDefinition analyzedCaptures collect: {:(SymbolCaptureBinding)captureBinding :: SSAFunctionCapture |
+                self generateCaptureForBinding: captureBinding
+            }) asArray.
 
         functionDefinition analyzedBodyNode ifNotNil: {:bodyNode |
             self builder: (SSAInstructionBuilder new
@@ -617,12 +676,7 @@ ASTLocalDefinitionNode extend: {
     }.
 }.
 
-SymbolArgumentBinding extend: {
-    public method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := context getValueForLocalBinding: self.
-}.
-
-SymbolLocalBinding extend: {
+SymbolAnalysisBinding extend: {
     public method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
         := context getValueForLocalBinding: self.
 }.
@@ -740,9 +794,18 @@ ASTReturnNode extend: {
         := context builder return: (self expression generateSSAValueWith: context)
 }.
 
-FunctionDefinition extend: {
+Function extend: {
     public method asSSAFunction => SSAFunction := {
+        SSAFunction new
+            name: self name;
+            definition: self definition asSSAFunctionDefinition;
+            yourself
+    }.
+}.
+
+FunctionDefinition extend: {
+    public method asSSAFunctionDefinition => SSAFunctionDefinition := {
         SSAFunctionCompilationContext new
             compileFunctionDefinition: self
     }.
-}
+}.

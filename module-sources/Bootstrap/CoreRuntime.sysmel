@@ -222,6 +222,9 @@ Stream
     withSelector: #print: addMethod: {:(Stream)self :value :: Void | 
         value printOn: self
     };
+    withSelector: #fullPrint: addMethod: {:(Stream)self :value :: Void | 
+        value fullPrintOn: self
+    };
     withSelector: #cr addMethod: {:(Stream)self :: Void | 
         self nextPut: '\r'
     };
@@ -285,9 +288,9 @@ True
 String
     withSelector: #printOn: addMethod: {:(String)self :(Stream)stream :: Void |
         ## TODO: Implement this part properly.
-        stream nextPut: '"'
-        stream nextPutAll: self
-        stream nextPut: '"'
+        stream nextPut: '"'.
+        stream nextPutAll: self.
+        stream nextPut: '"'.
     }.
 
 StringSymbol

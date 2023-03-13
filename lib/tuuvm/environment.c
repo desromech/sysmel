@@ -14,6 +14,11 @@ TUUVM_API bool tuuvm_symbolBinding_isValue(tuuvm_context_t *context, tuuvm_tuple
     return tuuvm_tuple_isKindOf(context, binding, context->roots.symbolValueBindingType);
 }
 
+TUUVM_API bool tuuvm_symbolBinding_isAnalysisBinding(tuuvm_context_t *context, tuuvm_tuple_t binding)
+{
+    return tuuvm_tuple_isKindOf(context, binding, context->roots.symbolAnalysisBindingType);
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_symbolArgumentBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t type)
 {
     tuuvm_symbolArgumentBinding_t *result = (tuuvm_symbolArgumentBinding_t*)tuuvm_context_allocatePointerTuple(context, context->roots.symbolArgumentBindingType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_symbolArgumentBinding_t));
@@ -42,6 +47,21 @@ TUUVM_API tuuvm_tuple_t tuuvm_symbolValueBinding_create(tuuvm_context_t *context
     return (tuuvm_tuple_t)result;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_symbolCaptureBinding_create(tuuvm_context_t *context, tuuvm_tuple_t capturedBinding)
+{
+    if(!tuuvm_tuple_isKindOf(context, capturedBinding, context->roots.symbolBindingType))
+        tuuvm_error("Expected a symbol binding");
+
+    tuuvm_symbolBinding_t *capturedBindingObject = (tuuvm_symbolBinding_t*)capturedBinding;
+
+    tuuvm_symbolCaptureBinding_t *result = (tuuvm_symbolCaptureBinding_t*)tuuvm_context_allocatePointerTuple(context, context->roots.symbolCaptureBindingType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_symbolCaptureBinding_t));
+    result->super.sourcePosition = capturedBindingObject->sourcePosition;
+    result->super.name = capturedBindingObject->name;
+    result->super.type = capturedBindingObject->type;
+    result->capturedBinding = capturedBinding;
+    return (tuuvm_tuple_t)result;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_environment_create(tuuvm_context_t *context, tuuvm_tuple_t parent)
 {
     tuuvm_environment_t *result = (tuuvm_environment_t*)tuuvm_context_allocatePointerTuple(context, context->roots.environmentType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_environment_t));
@@ -56,6 +76,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_functionAnalysisEnvironment_create(tuuvm_context_t
     result->super.parent = parent;
     result->super.symbolTable = tuuvm_identityDictionary_create(context);
     result->functionDefinition = functionDefinition;
+    result->captureBindingTable = tuuvm_identityDictionary_create(context);
     result->captureBindingList = tuuvm_arrayList_create(context);
     result->argumentBindingList = tuuvm_arrayList_create(context);
     result->localBindingList = tuuvm_arrayList_create(context);
@@ -242,6 +263,46 @@ TUUVM_API tuuvm_tuple_t tuuvm_environment_lookFunctionAnalysisEnvironmentRecursi
     if(!environment) return TUUVM_NULL_TUPLE;
     if(tuuvm_environment_isFunctionAnalysisEnvironment(context, environment)) return environment;
     return tuuvm_environment_lookFunctionAnalysisEnvironmentRecursively(context, ((tuuvm_environment_t*)environment)->parent);
+}
+
+TUUVM_API bool tuuvm_analysisEnvironment_lookSymbolRecursively(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t symbol, tuuvm_tuple_t *outBinding)
+{
+    *outBinding = TUUVM_NULL_TUPLE;
+    if(!tuuvm_tuple_isNonNullPointer(environment))
+        return false;
+
+    tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
+    if(tuuvm_identityDictionary_findAssociation(environmentObject->symbolTable, symbol, outBinding))
+        return true;
+
+    // If the symbol is not found on the local table, we might need to capture it.
+    if(tuuvm_environment_isFunctionAnalysisEnvironment(context, environment))
+    {
+        // Find a previously captured binding.
+        tuuvm_functionAnalysisEnvironment_t *functionAnalysisEnvironment = (tuuvm_functionAnalysisEnvironment_t*)environment;
+        if(tuuvm_identityDictionary_find(functionAnalysisEnvironment->captureBindingTable, symbol, outBinding))
+            return true;
+
+        tuuvm_tuple_t parentSymbol = TUUVM_NULL_TUPLE;
+        if(!tuuvm_analysisEnvironment_lookSymbolRecursively(context, environmentObject->parent, symbol, &parentSymbol))
+            return false;
+
+        // Should we capture the symbol?
+        if(tuuvm_symbolBinding_isAnalysisBinding(context, parentSymbol))
+        {
+            // Create the capture and store it.
+            tuuvm_tuple_t captureBinding = tuuvm_symbolCaptureBinding_create(context, parentSymbol);
+            tuuvm_identityDictionary_atPut(context, functionAnalysisEnvironment->captureBindingTable, symbol, captureBinding);
+            tuuvm_arrayList_add(context, functionAnalysisEnvironment->captureBindingList, captureBinding);
+            *outBinding = captureBinding;
+            return true;
+        }
+
+        *outBinding = parentSymbol;
+        return true;
+    }
+
+    return tuuvm_analysisEnvironment_lookSymbolRecursively(context, environmentObject->parent, symbol, outBinding);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_analysisEnvironment_setNewSymbolArgumentBinding(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t type)

@@ -98,10 +98,10 @@ printLine((TestClass >> #myTestMethod) definition analyzedBodyNode value).
 
 let: #theAnswer with: {:: Int32 | 42i32 }.
 printLine(theAnswer, " ", theAnswer()).
-printLine(theAnswer definition asSSAFunction fullPrintString).
+printLine(theAnswer asSSAFunction fullPrintString).
 
 printLine(square).
-printLine(square definition asSSAFunction fullPrintString).
+printLine(square asSSAFunction fullPrintString).
 
 let: #min with: {:(Int32)x :(Int32)y :: Int32 |
     if: x < y then: x else: y
@@ -112,10 +112,10 @@ let: #max with: {:(Int32)x :(Int32)y :: Int32 |
 }.
 
 printLine(min).
-printLine(min definition asSSAFunction fullPrintString).
+printLine(min asSSAFunction fullPrintString).
 
 printLine(max).
-printLine(max definition asSSAFunction fullPrintString).
+printLine(max asSSAFunction fullPrintString).
 
 let: #withLocal with: {:(Int32)x :: Int32 |
     let y => Int32 := x.
@@ -123,14 +123,14 @@ let: #withLocal with: {:(Int32)x :: Int32 |
 }.
 
 printLine(withLocal).
-printLine(withLocal definition asSSAFunction fullPrintString).
+printLine(withLocal asSSAFunction fullPrintString).
 
 let: #withLocal2 with: {:(Int32)x :: Int32 |
     let y := x.
     y + 2i32
 }.
 printLine(withLocal2).
-printLine(withLocal2 definition asSSAFunction fullPrintString).
+printLine(withLocal2 asSSAFunction fullPrintString).
 
 
 let: #withReturn with: {:(Int32)x :: Int32 |
@@ -138,4 +138,4 @@ let: #withReturn with: {:(Int32)x :: Int32 |
     4
 }.
 printLine(withReturn).
-printLine(withReturn definition asSSAFunction fullPrintString).
+printLine(withReturn asSSAFunction fullPrintString).
