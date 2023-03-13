@@ -33,7 +33,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousClass(tuuvm_context_t *context
     tuuvm_class_t* result = (tuuvm_class_t*)tuuvm_context_allocatePointerTuple(context, metaclass, classSlotCount);
     result->super.supertype = supertype;
     result->super.totalSlotCount = tuuvm_tuple_size_encode(context, 0);
-    result->super.flags = tuuvm_tuple_size_encode(context, TUUVM_TYPE_FLAGS_NULLABLE);
+    result->super.flags = tuuvm_tuple_size_encode(context, TUUVM_TYPE_FLAGS_CLASS_DEFAULT_FLAGS);
     if(supertype)
         result->super.totalSlotCount = tuuvm_tuple_size_encode(context, tuuvm_type_getTotalSlotCount(supertype));
     return (tuuvm_tuple_t)result;
@@ -43,7 +43,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousMetaclass(tuuvm_context_t *con
 {
     tuuvm_metaclass_t* result = (tuuvm_metaclass_t*)tuuvm_context_allocatePointerTuple(context, context->roots.metaclassType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_metaclass_t));
     result->super.supertype = supertype;
-    result->super.flags = tuuvm_tuple_size_encode(context, TUUVM_TYPE_FLAGS_NULLABLE);
+    result->super.flags = tuuvm_tuple_size_encode(context, TUUVM_TYPE_FLAGS_METATYPE_REQUIRED_FLAGS);
 
     size_t slotCount = TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_class_t);
     if(supertype)
@@ -107,6 +107,12 @@ TUUVM_API void tuuvm_type_setFlags(tuuvm_context_t *context, tuuvm_tuple_t type,
 {
     if(!tuuvm_tuple_isNonNullPointer(type)) return;
     ((tuuvm_type_tuple_t*)type)->flags = tuuvm_tuple_size_encode(context, flags);
+}
+
+TUUVM_API void tuuvm_typeAndMetatype_setFlags(tuuvm_context_t *context, tuuvm_tuple_t type, size_t flags, size_t metatypeFlags)
+{
+    tuuvm_type_setFlags(context, type, flags);
+    tuuvm_type_setFlags(context, tuuvm_tuple_getType(context, type), TUUVM_TYPE_FLAGS_METATYPE_REQUIRED_FLAGS | metatypeFlags);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_type_lookupMacroSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector)

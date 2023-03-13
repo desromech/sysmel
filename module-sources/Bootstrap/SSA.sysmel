@@ -557,7 +557,7 @@ SSAInstructionBuilder definition: {
             ifNotNil: {:instruction :: Boolean | instruction isTerminatorInstruction }.
 }.
 
-public class SSAFunctionCompilationContext superclass: Object; definition: {
+public final class SSAFunctionCompilationContext superclass: Object; definition: {
     public field functionDefinition => FunctionDefinition.
     public field ssaFunction => SSAFunctionDefinition.
     public field builder => SSAInstructionBuilder.
@@ -634,6 +634,23 @@ public class SSAFunctionCompilationContext superclass: Object; definition: {
 
     public method functionDefinitionValueFor: (functionDefinition: FunctionDefinition) ::=> SSAValue
         := self builder literal: functionDefinition.
+
+    public method withBreakDestination: (breakDestination: SSABasicBlock) continueDestination: (continueDestination: SSABasicBlock) do: aBlock := {
+        let oldBreakDestination := self breakDestination.
+        let oldContinueDestination := self continueDestination.
+
+        self
+            breakDestination: breakDestination;
+            continueDestination: continueDestination.
+        
+        let result := aBlock().
+
+        self
+            breakDestination: oldBreakDestination;
+            continueDestination: oldContinueDestination.
+
+        result
+    }.
 }.
 
 ASTNode extend: {
@@ -802,6 +819,60 @@ ASTIfNode extend: {
         } ifTrue: {
             builder literal: void
         }.
+    }
+}.
+
+ASTWhileContinueWithNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let builder := context builder.
+
+        let conditionExpression := self conditionExpression.
+        let bodyExpression := self bodyExpression.
+        let continueExpression := self continueExpression.
+
+        let entryBlock := builder newBasicBlockNamed: #whileEntry.
+        let bodyBlock := builder newBasicBlockNamed: #whileContinue.
+        let continueBlock := continueExpression
+            ifNil: (entryBlock)
+            ifNotNil: (builder newBasicBlockNamed: #whileContinue).
+        let mergeBlock := builder newBasicBlockNamed: #whileMerge.
+
+        builder
+            branch: entryBlock;
+            beginBasicBlock: entryBlock.
+
+        ## Emit the condition.
+        conditionExpression ifNil: {
+            builder branch: bodyBlock
+        } ifNotNil: {
+            let condition := conditionExpression generateSSAValueWith: context.
+            builder isLastTerminator ifFalse: {
+                builder conditionalBranch: condition trueDestination: bodyBlock falseDestination: mergeBlock
+            }
+        }.
+
+        ## Emit the body.
+        builder beginBasicBlock: bodyBlock.
+        bodyExpression ifNotNil: {
+            context withBreakDestination: mergeBlock continueDestination: continueBlock do: {:: Void |
+                bodyExpression generateSSAValueWith: context.
+                builder isLastTerminator ifFalse: {
+                    builder branch: continueBlock
+                }.
+            }
+        }.
+
+        ## Emit the optional continue expression.
+        continueExpression ifNotNil: {
+            builder beginBasicBlock: continueBlock.
+            continueExpression generateSSAValueWith: context.
+            builder isLastTerminator ifFalse: {
+                builder branch: entryBlock
+            }.
+        }.
+
+        builder beginBasicBlock: mergeBlock.
+        builder literal: void
     }
 }.
 

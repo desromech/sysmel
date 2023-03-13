@@ -33,6 +33,9 @@ typedef enum tuuvm_typeFlags_e
 
     TUUVM_TYPE_FLAGS_FINAL = 1<<3,
     TUUVM_TYPE_FLAGS_ABSTRACT = 1<<4,
+
+    TUUVM_TYPE_FLAGS_CLASS_DEFAULT_FLAGS = TUUVM_TYPE_FLAGS_NULLABLE,
+    TUUVM_TYPE_FLAGS_METATYPE_REQUIRED_FLAGS = TUUVM_TYPE_FLAGS_NULLABLE,
 } tuuvm_typeFlags_t;
 
 typedef struct tuuvm_class_s
@@ -189,6 +192,11 @@ TUUVM_API size_t tuuvm_type_getFlags(tuuvm_tuple_t type);
  * Sets the type flags.
  */
 TUUVM_API void tuuvm_type_setFlags(tuuvm_context_t *context, tuuvm_tuple_t type, size_t flags);
+
+/**
+ * Sets the type and meta type flags.
+ */
+TUUVM_API void tuuvm_typeAndMetatype_setFlags(tuuvm_context_t *context, tuuvm_tuple_t type, size_t flags, size_t metatypeFlags);
 
 /**
  * Gets the type flags.

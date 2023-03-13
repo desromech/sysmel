@@ -145,3 +145,7 @@ let: #makePlusN with: {:(Int32)n :: Function |
 }.
 printLine(makePlusN).
 printLine(makePlusN asSSAFunction fullPrintString).
+
+let: #sequenceableCollectionDo with: SequenceableCollection >> #do:.
+printLine(sequenceableCollectionDo).
+printLine(sequenceableCollectionDo asSSAFunction fullPrintString).
