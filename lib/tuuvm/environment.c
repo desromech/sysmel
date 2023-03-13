@@ -1,6 +1,8 @@
 #include "tuuvm/environment.h"
-#include "tuuvm/association.h"
+#include "tuuvm/array.h"
 #include "tuuvm/arrayList.h"
+#include "tuuvm/assert.h"
+#include "tuuvm/association.h"
 #include "tuuvm/dictionary.h"
 #include "tuuvm/errors.h"
 #include "tuuvm/sourceCode.h"
@@ -8,6 +10,15 @@
 #include "tuuvm/function.h"
 #include "tuuvm/type.h"
 #include "internal/context.h"
+#include <stdlib.h>
+
+static inline bool tuuvm_symbolBinding_isValueQuick(tuuvm_context_t *context, tuuvm_tuple_t binding)
+{
+    if(!tuuvm_tuple_isNonNullPointer(binding)) return false;
+
+    tuuvm_tuple_t type = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(binding)->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_POINTER_MASK;
+    return type == context->roots.symbolValueBindingType;
+}
 
 TUUVM_API bool tuuvm_symbolBinding_isValue(tuuvm_context_t *context, tuuvm_tuple_t binding)
 {
@@ -19,21 +30,42 @@ TUUVM_API bool tuuvm_symbolBinding_isAnalysisBinding(tuuvm_context_t *context, t
     return tuuvm_tuple_isKindOf(context, binding, context->roots.symbolAnalysisBindingType);
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_symbolArgumentBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t type)
+TUUVM_API tuuvm_tuple_t tuuvm_symbolArgumentBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t type, tuuvm_tuple_t ownerFunction, size_t vectorIndex)
 {
     tuuvm_symbolArgumentBinding_t *result = (tuuvm_symbolArgumentBinding_t*)tuuvm_context_allocatePointerTuple(context, context->roots.symbolArgumentBindingType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_symbolArgumentBinding_t));
-    result->super.name = name;
-    result->super.sourcePosition = sourcePosition;
-    result->super.type = type;
+    result->super.super.name = name;
+    result->super.super.sourcePosition = sourcePosition;
+    result->super.super.type = type;
+    result->super.ownerFunction = ownerFunction;
+    result->super.vectorIndex = tuuvm_tuple_size_encode(context, vectorIndex);
     return (tuuvm_tuple_t)result;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_symbolLocalBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t type)
+TUUVM_API tuuvm_tuple_t tuuvm_symbolLocalBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t type, tuuvm_tuple_t ownerFunction, size_t vectorIndex)
 {
     tuuvm_symbolLocalBinding_t *result = (tuuvm_symbolLocalBinding_t*)tuuvm_context_allocatePointerTuple(context, context->roots.symbolLocalBindingType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_symbolLocalBinding_t));
-    result->super.name = name;
-    result->super.sourcePosition = sourcePosition;
-    result->super.type = type;
+    result->super.super.name = name;
+    result->super.super.sourcePosition = sourcePosition;
+    result->super.super.type = type;
+    result->super.ownerFunction = ownerFunction;
+    result->super.vectorIndex = tuuvm_tuple_size_encode(context, vectorIndex);
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_symbolCaptureBinding_create(tuuvm_context_t *context, tuuvm_tuple_t capturedBinding, tuuvm_tuple_t ownerFunction, size_t vectorIndex)
+{
+    if(!tuuvm_tuple_isKindOf(context, capturedBinding, context->roots.symbolBindingType))
+        tuuvm_error("Expected a symbol binding");
+
+    tuuvm_symbolBinding_t *capturedBindingObject = (tuuvm_symbolBinding_t*)capturedBinding;
+
+    tuuvm_symbolCaptureBinding_t *result = (tuuvm_symbolCaptureBinding_t*)tuuvm_context_allocatePointerTuple(context, context->roots.symbolCaptureBindingType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_symbolCaptureBinding_t));
+    result->super.super.sourcePosition = capturedBindingObject->sourcePosition;
+    result->super.super.name = capturedBindingObject->name;
+    result->super.super.type = capturedBindingObject->type;
+    result->super.ownerFunction = ownerFunction;
+    result->super.vectorIndex = tuuvm_tuple_size_encode(context, vectorIndex);
+    result->capturedBinding = capturedBinding;
     return (tuuvm_tuple_t)result;
 }
 
@@ -47,26 +79,36 @@ TUUVM_API tuuvm_tuple_t tuuvm_symbolValueBinding_create(tuuvm_context_t *context
     return (tuuvm_tuple_t)result;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_symbolCaptureBinding_create(tuuvm_context_t *context, tuuvm_tuple_t capturedBinding)
-{
-    if(!tuuvm_tuple_isKindOf(context, capturedBinding, context->roots.symbolBindingType))
-        tuuvm_error("Expected a symbol binding");
-
-    tuuvm_symbolBinding_t *capturedBindingObject = (tuuvm_symbolBinding_t*)capturedBinding;
-
-    tuuvm_symbolCaptureBinding_t *result = (tuuvm_symbolCaptureBinding_t*)tuuvm_context_allocatePointerTuple(context, context->roots.symbolCaptureBindingType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_symbolCaptureBinding_t));
-    result->super.sourcePosition = capturedBindingObject->sourcePosition;
-    result->super.name = capturedBindingObject->name;
-    result->super.type = capturedBindingObject->type;
-    result->capturedBinding = capturedBinding;
-    return (tuuvm_tuple_t)result;
-}
-
 TUUVM_API tuuvm_tuple_t tuuvm_environment_create(tuuvm_context_t *context, tuuvm_tuple_t parent)
 {
     tuuvm_environment_t *result = (tuuvm_environment_t*)tuuvm_context_allocatePointerTuple(context, context->roots.environmentType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_environment_t));
     result->parent = parent;
-    result->symbolTable = tuuvm_identityDictionary_create(context);
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_functionActivationEnvironment_create(tuuvm_context_t *context, tuuvm_tuple_t parent, tuuvm_tuple_t function)
+{
+    if(!function || !tuuvm_tuple_isKindOf(context, function, context->roots.functionType))
+        tuuvm_error("Expected a function");
+
+    tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
+    if(!functionObject->definition || !tuuvm_tuple_isKindOf(context, functionObject->definition, context->roots.functionDefinitionType))
+        tuuvm_error("Expected a function with a definition.");
+
+    tuuvm_functionDefinition_t *functionDefinitionObject = (tuuvm_functionDefinition_t*)functionObject->definition;
+    if(!functionDefinitionObject->analysisEnvironment)
+        tuuvm_error("Expected a function with an analyzed definition.");
+
+    tuuvm_functionActivationEnvironment_t *result = (tuuvm_functionActivationEnvironment_t*)tuuvm_context_allocatePointerTuple(context, context->roots.functionActivationEnvironmentType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_functionActivationEnvironment_t));
+    result->super.parent = parent;
+    result->function = function;
+    result->functionDefinition = functionObject->definition;
+    result->captureVector = functionObject->captureVector;
+    
+    size_t argumentCount = tuuvm_array_getSize(functionDefinitionObject->analyzedArguments);
+    size_t localCount = tuuvm_array_getSize(functionDefinitionObject->analyzedLocals);
+    result->argumentVectorSize = tuuvm_tuple_size_encode(context, argumentCount);
+    result->valueVector = tuuvm_array_create(context, argumentCount + localCount);
     return (tuuvm_tuple_t)result;
 }
 
@@ -74,7 +116,6 @@ TUUVM_API tuuvm_tuple_t tuuvm_functionAnalysisEnvironment_create(tuuvm_context_t
 {
     tuuvm_functionAnalysisEnvironment_t *result = (tuuvm_functionAnalysisEnvironment_t*)tuuvm_context_allocatePointerTuple(context, context->roots.functionAnalysisEnvironmentType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_functionAnalysisEnvironment_t));
     result->super.parent = parent;
-    result->super.symbolTable = tuuvm_identityDictionary_create(context);
     result->functionDefinition = functionDefinition;
     result->captureBindingTable = tuuvm_identityDictionary_create(context);
     result->captureBindingList = tuuvm_arrayList_create(context);
@@ -118,6 +159,8 @@ TUUVM_API void tuuvm_environment_setBinding(tuuvm_context_t *context, tuuvm_tupl
         return;
 
     tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
+    if(!environmentObject->symbolTable)
+        environmentObject->symbolTable = tuuvm_identityDictionary_create(context);
     tuuvm_identityDictionary_addAssociation(context, environmentObject->symbolTable, binding);
 }
 
@@ -130,8 +173,11 @@ TUUVM_API void tuuvm_environment_setNewBinding(tuuvm_context_t *context, tuuvm_t
     tuuvm_tuple_t existentBinding = TUUVM_NULL_TUPLE;
     tuuvm_tuple_t symbol = tuuvm_association_getKey(binding);
 
-    if(tuuvm_identityDictionary_findAssociation(environmentObject->symbolTable, symbol, &existentBinding))
+    if(environmentObject->symbolTable && tuuvm_identityDictionary_findAssociation(environmentObject->symbolTable, symbol, &existentBinding))
         tuuvm_error("Overriding existent symbol binding.");
+
+    if(!environmentObject->symbolTable)
+        environmentObject->symbolTable = tuuvm_identityDictionary_create(context);
 
     tuuvm_identityDictionary_addAssociation(context, environmentObject->symbolTable, binding);
 }
@@ -168,10 +214,63 @@ TUUVM_API bool tuuvm_environment_lookSymbolRecursively(tuuvm_context_t *context,
         return false;
 
     tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
-    if(tuuvm_identityDictionary_findAssociation(environmentObject->symbolTable, symbol, outBinding))
+    if(environmentObject->symbolTable && tuuvm_identityDictionary_findAssociation(environmentObject->symbolTable, symbol, outBinding))
         return true;
 
     return tuuvm_environment_lookSymbolRecursively(context, environmentObject->parent, symbol, outBinding);
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_environment_evaluateSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t binding)
+{
+    if(tuuvm_tuple_getType(context, environment) == context->roots.functionActivationEnvironmentType)
+    {
+        tuuvm_functionActivationEnvironment_t *activationEnvironment = (tuuvm_functionActivationEnvironment_t*)environment;
+        tuuvm_symbolAnalysisBinding_t *analysisBinding = (tuuvm_symbolAnalysisBinding_t*)binding;
+        if(analysisBinding->ownerFunction == activationEnvironment->functionDefinition)
+        {
+            size_t vectorIndex = tuuvm_tuple_size_decode(analysisBinding->vectorIndex);
+            tuuvm_tuple_t bindingType = tuuvm_tuple_getType(context, binding);
+            if(bindingType == context->roots.symbolArgumentBindingType)
+                return tuuvm_array_at(activationEnvironment->valueVector, vectorIndex);
+            else if(bindingType == context->roots.symbolLocalBindingType)
+                return tuuvm_array_at(activationEnvironment->valueVector, tuuvm_tuple_size_decode(activationEnvironment->argumentVectorSize) + vectorIndex);
+            else if(bindingType == context->roots.symbolCaptureBindingType)
+                return tuuvm_array_at(activationEnvironment->captureVector, vectorIndex);
+            abort();
+        }
+    }
+
+    tuuvm_tuple_t foundBinding = TUUVM_NULL_TUPLE;
+    if(!tuuvm_environment_lookSymbolRecursively(context, environment, tuuvm_symbolBinding_getName(binding), &foundBinding))
+        tuuvm_error("Failed to evaluate analyzed symbol binding.");
+
+    if(!tuuvm_symbolBinding_isValueQuick(context, foundBinding))
+        tuuvm_error("A value binding in the evaluation context is required.");
+
+    return tuuvm_symbolValueBinding_getValue(foundBinding);
+}
+
+TUUVM_API void tuuvm_functionActivationEnvironment_setBindingActivationValue(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t binding, tuuvm_tuple_t value, tuuvm_tuple_t sourcePosition)
+{
+    (void)sourcePosition;
+    tuuvm_functionActivationEnvironment_t *activationEnvironment = (tuuvm_functionActivationEnvironment_t*)environment;
+    tuuvm_symbolAnalysisBinding_t *analysisBinding = (tuuvm_symbolAnalysisBinding_t*)binding;
+    if(analysisBinding->ownerFunction == activationEnvironment->functionDefinition)
+    {
+        size_t vectorIndex = tuuvm_tuple_size_decode(analysisBinding->vectorIndex);
+        tuuvm_tuple_t bindingType = tuuvm_tuple_getType(context, binding);
+        if(bindingType == context->roots.symbolLocalBindingType)
+        {
+            tuuvm_array_atPut(activationEnvironment->valueVector, tuuvm_tuple_size_decode(activationEnvironment->argumentVectorSize) + vectorIndex, value);
+            return;
+        }
+        else if(bindingType == context->roots.symbolArgumentBindingType)
+        {
+            tuuvm_array_atPut(activationEnvironment->valueVector, vectorIndex, value);
+            return;
+        }
+    }
+    abort();
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_environment_lookReturnTargetRecursively(tuuvm_context_t *context, tuuvm_tuple_t environment)
@@ -272,7 +371,7 @@ TUUVM_API bool tuuvm_analysisEnvironment_lookSymbolRecursively(tuuvm_context_t *
         return false;
 
     tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
-    if(tuuvm_identityDictionary_findAssociation(environmentObject->symbolTable, symbol, outBinding))
+    if(environmentObject->symbolTable && tuuvm_identityDictionary_findAssociation(environmentObject->symbolTable, symbol, outBinding))
         return true;
 
     // If the symbol is not found on the local table, we might need to capture it.
@@ -291,7 +390,7 @@ TUUVM_API bool tuuvm_analysisEnvironment_lookSymbolRecursively(tuuvm_context_t *
         if(tuuvm_symbolBinding_isAnalysisBinding(context, parentSymbol))
         {
             // Create the capture and store it.
-            tuuvm_tuple_t captureBinding = tuuvm_symbolCaptureBinding_create(context, parentSymbol);
+            tuuvm_tuple_t captureBinding = tuuvm_symbolCaptureBinding_create(context, parentSymbol, functionAnalysisEnvironment->functionDefinition, tuuvm_arrayList_getSize(functionAnalysisEnvironment->captureBindingList));
             tuuvm_identityDictionary_atPut(context, functionAnalysisEnvironment->captureBindingTable, symbol, captureBinding);
             tuuvm_arrayList_add(context, functionAnalysisEnvironment->captureBindingList, captureBinding);
             *outBinding = captureBinding;
@@ -311,9 +410,10 @@ TUUVM_API tuuvm_tuple_t tuuvm_analysisEnvironment_setNewSymbolArgumentBinding(tu
     if(!functionAnalysisEnvironment)
         tuuvm_error("A function analysis environment is required here.");
 
-    tuuvm_tuple_t binding = tuuvm_symbolArgumentBinding_create(context, sourcePosition, name, type);
+    tuuvm_functionAnalysisEnvironment_t *functionAnalysisEnvironmentObject = (tuuvm_functionAnalysisEnvironment_t*)functionAnalysisEnvironment;
+    tuuvm_tuple_t binding = tuuvm_symbolArgumentBinding_create(context, sourcePosition, name, type, functionAnalysisEnvironmentObject->functionDefinition, tuuvm_arrayList_getSize(functionAnalysisEnvironmentObject->argumentBindingList));
     tuuvm_environment_setNewBinding(context, environment, binding);
-    tuuvm_arrayList_add(context, ((tuuvm_functionAnalysisEnvironment_t*)functionAnalysisEnvironment)->argumentBindingList, binding);
+    tuuvm_arrayList_add(context, functionAnalysisEnvironmentObject->argumentBindingList, binding);
     return binding;
 }
 
@@ -323,9 +423,10 @@ TUUVM_API tuuvm_tuple_t tuuvm_analysisEnvironment_setNewSymbolLocalBinding(tuuvm
     if(!functionAnalysisEnvironment)
         tuuvm_error("A function analysis environment is required here.");
 
-    tuuvm_tuple_t binding = tuuvm_symbolLocalBinding_create(context, sourcePosition, name, type);
+    tuuvm_functionAnalysisEnvironment_t *functionAnalysisEnvironmentObject = (tuuvm_functionAnalysisEnvironment_t*)functionAnalysisEnvironment;
+    tuuvm_tuple_t binding = tuuvm_symbolLocalBinding_create(context, sourcePosition, name, type, functionAnalysisEnvironmentObject->functionDefinition, tuuvm_arrayList_getSize(functionAnalysisEnvironmentObject->localBindingList));
     tuuvm_environment_setNewBinding(context, environment, binding);
-    tuuvm_arrayList_add(context, ((tuuvm_functionAnalysisEnvironment_t*)functionAnalysisEnvironment)->localBindingList, binding);
+    tuuvm_arrayList_add(context, functionAnalysisEnvironmentObject->localBindingList, binding);
     return binding;
 }
 

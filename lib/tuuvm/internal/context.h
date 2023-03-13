@@ -64,6 +64,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t analysisEnvironmentType;
     tuuvm_tuple_t environmentType;
     tuuvm_tuple_t falseType;
+    tuuvm_tuple_t functionActivationEnvironmentType;
     tuuvm_tuple_t functionAnalysisEnvironmentType;
     tuuvm_tuple_t functionType;
     tuuvm_tuple_t functionDefinitionType;

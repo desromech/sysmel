@@ -82,7 +82,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context,
     return (tuuvm_tuple_t)result;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_function_createClosure(tuuvm_context_t *context, tuuvm_tuple_t functionDefinition, tuuvm_tuple_t closureEnvironment)
+TUUVM_API tuuvm_tuple_t tuuvm_function_createClosureWithCaptureVector(tuuvm_context_t *context, tuuvm_tuple_t functionDefinition, tuuvm_tuple_t captureVector)
 {
     if(!tuuvm_tuple_isKindOf(context, functionDefinition, context->roots.functionDefinitionType))
         tuuvm_error("An actual function definition is required here.");
@@ -91,7 +91,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_createClosure(tuuvm_context_t *context, t
     tuuvm_function_t *result = (tuuvm_function_t*)tuuvm_context_allocatePointerTuple(context, context->roots.functionType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_function_t));
     result->flags = functionDefinitionObject->flags;
     result->argumentCount = functionDefinitionObject->argumentCount; 
-    result->closureEnvironment = closureEnvironment;
+    result->captureVector = captureVector;
     result->definition = functionDefinition;
     return (tuuvm_tuple_t)result;
 }
@@ -287,7 +287,7 @@ static tuuvm_tuple_t tuuvm_function_primitive_adoptDefinitionOf(tuuvm_context_t 
     tuuvm_function_t *definitionFunctionObject = (tuuvm_function_t*)*definitionFunction;
 
     functionObject->definition = definitionFunctionObject->definition;
-    functionObject->closureEnvironment = definitionFunctionObject->closureEnvironment;
+    functionObject->captureVector = definitionFunctionObject->captureVector;
     return TUUVM_VOID_TUPLE;
 }
 
@@ -300,7 +300,7 @@ static tuuvm_tuple_t tuuvm_function_primitive_recompileAndOptimize(tuuvm_context
     if(!tuuvm_tuple_isKindOf(context, *function, context->roots.functionType)) tuuvm_error("Expected a function.");
     
     tuuvm_function_t **functionObject = (tuuvm_function_t**)function;
-    if((*functionObject)->definition && (*functionObject)->closureEnvironment)
+    if((*functionObject)->definition && tuuvm_arraySlice_getSize((*functionObject)->captureVector) > 0)
         return tuuvm_interpreter_recompileAndOptimizeFunction(context, functionObject);
     
     return *function;

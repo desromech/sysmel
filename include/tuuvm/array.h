@@ -27,12 +27,20 @@ TUUVM_API tuuvm_tuple_t tuuvm_array_create(tuuvm_context_t *context, tuuvm_tuple
 /**
  * Gets an element from an array.
  */
-TUUVM_API tuuvm_tuple_t tuuvm_array_at(tuuvm_tuple_t array, size_t index);
-
+TUUVM_INLINE tuuvm_tuple_t tuuvm_array_at(tuuvm_tuple_t array, size_t index)
+{
+    if(!tuuvm_tuple_isNonNullPointer(array)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_array_t*)array)->elements[index];
+}
 /**
  * Sets an element in an array.
  */
-TUUVM_API void tuuvm_array_atPut(tuuvm_tuple_t array, size_t index, tuuvm_tuple_t value);
+TUUVM_INLINE void tuuvm_array_atPut(tuuvm_tuple_t array, size_t index, tuuvm_tuple_t value)
+{
+    if(!tuuvm_tuple_isNonNullPointer(array)) return;
+    
+    ((tuuvm_array_t*)array)->elements[index] = value;
+}
 
 /**
  * Gets the array size.

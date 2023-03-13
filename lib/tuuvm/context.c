@@ -455,6 +455,13 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         NULL);
     context->roots.analysisEnvironmentType = tuuvm_context_createIntrinsicClass(context, "AnalysisEnvironment", context->roots.environmentType,
         NULL);
+    context->roots.functionActivationEnvironmentType = tuuvm_context_createIntrinsicClass(context, "FunctionActivationEnvironment", context->roots.environmentType,
+        "function", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionType,
+        "functionDefinition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
+        "argumentVectorSize", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "captureVector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "valueVector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        NULL);
     context->roots.functionAnalysisEnvironmentType = tuuvm_context_createIntrinsicClass(context, "FunctionAnalysisEnvironment", context->roots.analysisEnvironmentType,
         "functionDefinition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
         "captureBindingTable", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.identityDictionaryType,
@@ -472,6 +479,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "type", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolAnalysisBindingType, "SymbolAnalysisBinding", TUUVM_NULL_TUPLE,
+        "ownerFunction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
+        "vectorIndex", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolArgumentBindingType, "SymbolArgumentBinding", TUUVM_NULL_TUPLE,
         NULL);
@@ -487,7 +496,6 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "owner", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "argumentCount", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
-        "closureEnvironment", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
         "captureVector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "definition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
         "primitiveTableIndex", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
@@ -507,6 +515,9 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 
         "analysisEnvironment", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
         "analyzedCaptures", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "analyzedArguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "analyzedLocals", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+
         "analyzedArgumentNodes", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "analyzedResultTypeNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "analyzedBodyNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,

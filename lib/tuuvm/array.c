@@ -27,19 +27,6 @@ TUUVM_API tuuvm_tuple_t tuuvm_byteArray_create(tuuvm_context_t *context, tuuvm_t
     return (tuuvm_tuple_t)tuuvm_context_allocateByteTuple(context, context->roots.byteArrayType, size);
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_array_at(tuuvm_tuple_t array, size_t index)
-{
-    if(!tuuvm_tuple_isNonNullPointer(array)) return TUUVM_NULL_TUPLE;
-    return ((tuuvm_array_t*)array)->elements[index];
-}
-
-TUUVM_API void tuuvm_array_atPut(tuuvm_tuple_t array, size_t index, tuuvm_tuple_t value)
-{
-    if(!tuuvm_tuple_isNonNullPointer(array)) return;
-    
-    ((tuuvm_array_t*)array)->elements[index] = value;
-}
-
 TUUVM_API tuuvm_tuple_t tuuvm_array_asArraySlice(tuuvm_context_t *context, tuuvm_tuple_t array)
 {
     if(!tuuvm_tuple_isNonNullPointer(array)) return TUUVM_NULL_TUPLE;

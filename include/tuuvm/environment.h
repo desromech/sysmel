@@ -19,6 +19,16 @@ typedef struct tuuvm_environment_s
 
 typedef tuuvm_environment_t tuuvm_analysisEnvironment_t;
 
+typedef struct tuuvm_functionActivationEnvironment_s
+{
+    tuuvm_environment_t super;
+    tuuvm_tuple_t function;
+    tuuvm_tuple_t functionDefinition;
+    tuuvm_tuple_t argumentVectorSize;
+    tuuvm_tuple_t captureVector;
+    tuuvm_tuple_t valueVector;
+} tuuvm_functionActivationEnvironment_t;
+
 typedef struct tuuvm_analysisEnvironment_s
 {
     tuuvm_environment_t super;
@@ -44,19 +54,26 @@ typedef struct tuuvm_symbolBinding_s
     tuuvm_tuple_t type;
 } tuuvm_symbolBinding_t;
 
-typedef struct tuuvm_symbolArgumentBinding_s
+typedef struct tuuvm_symbolAnalysisBinding_s
 {
     tuuvm_symbolBinding_t super;
+    tuuvm_tuple_t ownerFunction;
+    tuuvm_tuple_t vectorIndex;
+} tuuvm_symbolAnalysisBinding_t;
+
+typedef struct tuuvm_symbolArgumentBinding_s
+{
+    tuuvm_symbolAnalysisBinding_t super;
 } tuuvm_symbolArgumentBinding_t;
 
 typedef struct tuuvm_symbolLocalBinding_s
 {
-    tuuvm_symbolBinding_t super;
+    tuuvm_symbolAnalysisBinding_t super;
 } tuuvm_symbolLocalBinding_t;
 
 typedef struct tuuvm_symbolCaptureBinding_s
 {
-    tuuvm_symbolBinding_t super;
+    tuuvm_symbolAnalysisBinding_t super;
     tuuvm_tuple_t capturedBinding;
 } tuuvm_symbolCaptureBinding_t;
 
@@ -77,6 +94,15 @@ TUUVM_API bool tuuvm_symbolBinding_isValue(tuuvm_context_t *context, tuuvm_tuple
 TUUVM_API bool tuuvm_symbolBinding_isAnalysisBinding(tuuvm_context_t *context, tuuvm_tuple_t binding);
 
 /**
+ * Gets the name from the symbol value binding.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_symbolBinding_getName(tuuvm_tuple_t binding)
+{
+    if(!tuuvm_tuple_isNonNullPointer(binding)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_symbolBinding_t*)binding)->name;
+}
+
+/**
  * Gets the value from the symbol value binding.
  */
 TUUVM_INLINE tuuvm_tuple_t tuuvm_symbolBinding_getType(tuuvm_tuple_t binding)
@@ -88,22 +114,31 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_symbolBinding_getType(tuuvm_tuple_t binding)
 /**
  * Creates a symbol argument binding.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_symbolArgumentBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t type);
+TUUVM_API tuuvm_tuple_t tuuvm_symbolArgumentBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t type, tuuvm_tuple_t ownerFunction, size_t vectorIndex);
 
 /**
  * Creates a symbol local binding.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_symbolLocalBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t type);
+TUUVM_API tuuvm_tuple_t tuuvm_symbolLocalBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t type, tuuvm_tuple_t ownerFunction, size_t vectorIndex);
+
+/**
+ * Creates a symbol capture binding.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_symbolCaptureBinding_create(tuuvm_context_t *context, tuuvm_tuple_t capturedBinding, tuuvm_tuple_t ownerFunction, size_t vectorIndex);
+
+/**
+ * Gets the value from the symbol value binding.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_symbolCaptureBinding_getSourceBinding(tuuvm_tuple_t binding)
+{
+    if(!tuuvm_tuple_isNonNullPointer(binding)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_symbolCaptureBinding_t*)binding)->capturedBinding;
+}
 
 /**
  * Creates a symbol value binding.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_symbolValueBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t value);
-
-/**
- * Creates a symbol capture binding.
- */ 
-TUUVM_API tuuvm_tuple_t tuuvm_symbolCaptureBinding_create(tuuvm_context_t *context, tuuvm_tuple_t capturedBinding);
 
 /**
  * Gets the value from the symbol value binding.
@@ -118,6 +153,11 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_symbolValueBinding_getValue(tuuvm_tuple_t bindi
  * Creates an environment.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_environment_create(tuuvm_context_t *context, tuuvm_tuple_t parent);
+
+/**
+ * Creates an environment used for function definition analysis.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_functionActivationEnvironment_create(tuuvm_context_t *context, tuuvm_tuple_t parent, tuuvm_tuple_t function);
 
 /**
  * Creates an environment used for function definition analysis.
@@ -173,6 +213,16 @@ TUUVM_API void tuuvm_environment_setSymbolBindingWithValue(tuuvm_context_t *cont
  * Looks a symbol recursively on an environment.
  */ 
 TUUVM_API bool tuuvm_environment_lookSymbolRecursively(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t symbol, tuuvm_tuple_t *outBinding);
+
+/**
+ * Evaluates the given symbol binding in this environment.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_environment_evaluateSymbolBinding(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t binding);
+
+/**
+ * Sets the activation value for the given binding in this environment.
+ */ 
+TUUVM_API void tuuvm_functionActivationEnvironment_setBindingActivationValue(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t binding, tuuvm_tuple_t value, tuuvm_tuple_t sourcePosition);
 
 /**
  * Looks for the return target on an environment.

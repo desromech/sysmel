@@ -31,7 +31,6 @@ typedef struct tuuvm_function_s
     tuuvm_tuple_t owner;
     tuuvm_tuple_t flags;
     tuuvm_tuple_t argumentCount;
-    tuuvm_tuple_t closureEnvironment;
     tuuvm_tuple_t captureVector;
     tuuvm_tuple_t definition;
     tuuvm_tuple_t primitiveTableIndex;
@@ -54,6 +53,9 @@ typedef struct tuuvm_functionDefinition_s
 
     tuuvm_tuple_t analysisEnvironment;
     tuuvm_tuple_t analyzedCaptures;
+    tuuvm_tuple_t analyzedArguments;
+    tuuvm_tuple_t analyzedLocals;
+
     tuuvm_tuple_t analyzedArgumentNodes;
     tuuvm_tuple_t analyzedResultTypeNode;
     tuuvm_tuple_t analyzedBodyNode;
@@ -87,7 +89,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context,
 /**
  * Creates a closure by passing its definition and environment.
  */
-TUUVM_API tuuvm_tuple_t tuuvm_function_createClosure(tuuvm_context_t *context, tuuvm_tuple_t functionDefinition, tuuvm_tuple_t closureEnvironment);
+TUUVM_API tuuvm_tuple_t tuuvm_function_createClosureWithCaptureVector(tuuvm_context_t *context, tuuvm_tuple_t functionDefinition, tuuvm_tuple_t captureVector);
 
 /**
  * Gets the function argument count.
