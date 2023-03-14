@@ -24,6 +24,7 @@ typedef struct tuuvm_functionActivationEnvironment_s
     tuuvm_environment_t super;
     tuuvm_tuple_t function;
     tuuvm_tuple_t functionDefinition;
+    tuuvm_tuple_t dependentFunctionType;
     tuuvm_tuple_t argumentVectorSize;
     tuuvm_tuple_t captureVector;
     tuuvm_tuple_t valueVector;
@@ -180,9 +181,14 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_symbolValueBinding_getValue(tuuvm_tuple_t bindi
 TUUVM_API tuuvm_tuple_t tuuvm_environment_create(tuuvm_context_t *context, tuuvm_tuple_t parent);
 
 /**
- * Creates an environment used for function definition analysis.
+ * Creates an environment used for function action.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_functionActivationEnvironment_create(tuuvm_context_t *context, tuuvm_tuple_t parent, tuuvm_tuple_t function);
+
+/**
+ * Creates an environment used for dependent function type activation and evaluation.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_functionActivationEnvironment_createForDependentFunctionType(tuuvm_context_t *context, tuuvm_tuple_t parent, tuuvm_tuple_t dependentFunctionType);
 
 /**
  * Creates an environment used for function definition analysis.

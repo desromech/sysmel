@@ -48,6 +48,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t emptyByteArrayConstant;
 
     tuuvm_tuple_t coerceValueSelector;
+    tuuvm_tuple_t typeCheckFunctionApplicationWithEnvironmentSelector;
 
     tuuvm_tuple_t anyValueType;
 
@@ -68,6 +69,9 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t functionAnalysisEnvironmentType;
     tuuvm_tuple_t functionType;
     tuuvm_tuple_t functionDefinitionType;
+    tuuvm_tuple_t dependentFunctionTypeType;
+    tuuvm_tuple_t simpleFunctionTypeType;
+    tuuvm_tuple_t functionTypeType;
     tuuvm_tuple_t generatedSymbolType;
     tuuvm_tuple_t hashedCollectionType;
     tuuvm_tuple_t hashtableEmptyType;

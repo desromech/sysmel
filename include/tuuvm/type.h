@@ -57,6 +57,34 @@ typedef struct tuuvm_typeSlot_s
     tuuvm_tuple_t type;
 } tuuvm_typeSlot_t;
 
+typedef struct tuuvm_functionType_s
+{
+    tuuvm_type_tuple_t super;
+} tuuvm_functionType_t;
+
+typedef struct tuuvm_simpleFunctionType_s
+{
+    tuuvm_type_tuple_t super;
+    tuuvm_tuple_t argumentTypes;
+    tuuvm_tuple_t isVariadic;
+    tuuvm_tuple_t resultType;
+} tuuvm_simpleFunctionType_t;
+
+typedef struct tuuvm_dependentFunctionType_s
+{
+    tuuvm_type_tuple_t super;
+    tuuvm_tuple_t sourcePosition;
+
+    tuuvm_tuple_t argumentNodes;
+    tuuvm_tuple_t isVariadic;
+    tuuvm_tuple_t resultTypeNode;
+
+    tuuvm_tuple_t environment;
+    tuuvm_tuple_t captureBindings;
+    tuuvm_tuple_t argumentBindings;
+    tuuvm_tuple_t localBindings;
+} tuuvm_dependentFunctionType_t;
+
 typedef enum tuuvm_typeSlotFlags_e
 {
     TUUVM_TYPE_SLOT_FLAG_NONE = 0,
@@ -93,6 +121,22 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousClassAndMetaclass(tuuvm_contex
  * Creates a type with the specified name.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_type_createWithName(tuuvm_context_t *context, tuuvm_tuple_t name);
+
+/**
+ * Creates a dependent function type.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_createDependentFunctionType(tuuvm_context_t *context, tuuvm_tuple_t argumentNodes, bool isVariadic, tuuvm_tuple_t resultTypeNode,
+    tuuvm_tuple_t environment, tuuvm_tuple_t captureBindings, tuuvm_tuple_t argumentBindings, tuuvm_tuple_t localBindings);
+
+/**
+ * Creates a simple function type.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_createSimpleFunctionType(tuuvm_context_t *context, tuuvm_tuple_t argumentTypes, bool isVariadic, tuuvm_tuple_t resultType);
+
+/**
+ * Canonicalizes a function type
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_canonicalizeFunctionType(tuuvm_context_t *context, tuuvm_tuple_t functionType);
 
 /**
  * Performs the lookup of the given macro selector.
@@ -383,9 +427,23 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_getCoerceValueFunction(tuuvm_context_t *conte
 TUUVM_API void tuuvm_type_setCoerceValueFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t coerceValueFunction);
 
 /**
+ * Gets the typeCheckFunction function of a type.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_getTypeCheckFunctionApplicationWithEnvironmentNode(tuuvm_context_t *context, tuuvm_tuple_t type);
+
+/**
+ * Sets the typeCheckFunctionApplication function of a type
+ */
+TUUVM_API void tuuvm_type_setTypeCheckFunctionApplicationWithEnvironmentNode(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t coerceValueFunction);
+
+/**
  * Coerces a value into the specified type. Error if the coercion is not possible.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValue(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t value);
 
+/**
+ * Performs type checking on a function application node.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_typeCheckFunctionApplicationNode(tuuvm_context_t *context, tuuvm_tuple_t functionType, tuuvm_tuple_t functionApplicationNode, tuuvm_tuple_t environment);
 
 #endif //TUUVM_TYPE_H

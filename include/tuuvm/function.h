@@ -50,6 +50,8 @@ typedef struct tuuvm_functionDefinition_s
     tuuvm_tuple_t definitionArgumentNodes;
     tuuvm_tuple_t definitionResultTypeNode;
     tuuvm_tuple_t definitionBodyNode;
+    
+    tuuvm_tuple_t analyzedType;
 
     tuuvm_tuple_t analysisEnvironment;
     tuuvm_tuple_t analyzedCaptures;

@@ -373,7 +373,7 @@ Function
     }.
 
 ValueBox
-    withSelector: #with: addClassMethod: {:(ValueBox class)self :value |
+    withSelector: #with: addClassMethod: {:(ValueBox class)self :value :: self |
         self basicNew
             value: value;
             yourself
@@ -650,6 +650,26 @@ Metaclass
         if: thisClass ~~ nil
         then: (stream print: thisClass; nextPutAll: " class")
         else: (stream nextPutAll: "a "; print: self __type__)
+    }.
+
+DependentFunctionType
+    withSelector: #printOn: addMethod: {:(Type)self :(Stream)stream :: Void |
+        stream nextPutAll: "DependentFunctionType at "; print: self sourcePosition
+    }.
+
+SimpleFunctionType
+    withSelector: #printOn: addMethod: {:(Type)self :(Stream)stream :: Void |
+        stream nextPut: '('.
+        self argumentTypes doWithIndex: {:(Type)argumentType :(Size)index :: Void |
+            index > 0 ifTrue: (stream nextPutAll: ", ").
+            stream print: argumentType
+        }.
+        self isVariadic ifTrue: {
+            self argumentTypes isNotEmpty
+                ifTrue: (stream nextPutAll: ", ...")
+                ifFalse: (stream nextPutAll: "...")
+        }.
+        stream nextPutAll: ") ==> "; print: self resultType.
     }.
 
 ## Primitive values print string.

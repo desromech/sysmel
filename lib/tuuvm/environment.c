@@ -127,6 +127,25 @@ TUUVM_API tuuvm_tuple_t tuuvm_functionActivationEnvironment_create(tuuvm_context
     return (tuuvm_tuple_t)result;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_functionActivationEnvironment_createForDependentFunctionType(tuuvm_context_t *context, tuuvm_tuple_t parent, tuuvm_tuple_t dependentFunctionType)
+{
+    if(!dependentFunctionType || !tuuvm_tuple_isKindOf(context, dependentFunctionType, context->roots.dependentFunctionTypeType))
+        tuuvm_error("Expected a dependent function type");
+
+    tuuvm_dependentFunctionType_t *dependentFunctionTypeObject = (tuuvm_dependentFunctionType_t*)dependentFunctionType;
+ 
+    tuuvm_functionActivationEnvironment_t *result = (tuuvm_functionActivationEnvironment_t*)tuuvm_context_allocatePointerTuple(context, context->roots.functionActivationEnvironmentType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_functionActivationEnvironment_t));
+    result->super.parent = parent;
+    result->dependentFunctionType = dependentFunctionType;
+    result->captureVector = tuuvm_array_create(context, 0);
+    
+    size_t argumentCount = tuuvm_array_getSize(dependentFunctionTypeObject->argumentBindings);
+    size_t localCount = tuuvm_array_getSize(dependentFunctionTypeObject->localBindings);
+    result->argumentVectorSize = tuuvm_tuple_size_encode(context, argumentCount);
+    result->valueVector = tuuvm_array_create(context, argumentCount + localCount);
+    return (tuuvm_tuple_t)result;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_functionAnalysisEnvironment_create(tuuvm_context_t *context, tuuvm_tuple_t parent, tuuvm_tuple_t functionDefinition)
 {
     tuuvm_functionAnalysisEnvironment_t *result = (tuuvm_functionAnalysisEnvironment_t*)tuuvm_context_allocatePointerTuple(context, context->roots.functionAnalysisEnvironmentType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_functionAnalysisEnvironment_t));
@@ -241,7 +260,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_environment_evaluateSymbolBinding(tuuvm_context_t 
     {
         tuuvm_functionActivationEnvironment_t *activationEnvironment = (tuuvm_functionActivationEnvironment_t*)environment;
         tuuvm_symbolAnalysisBinding_t *analysisBinding = (tuuvm_symbolAnalysisBinding_t*)binding;
-        if(analysisBinding->ownerFunction == activationEnvironment->functionDefinition)
+        if(analysisBinding->ownerFunction == activationEnvironment->functionDefinition || activationEnvironment->dependentFunctionType)
         {
             size_t vectorIndex = tuuvm_tuple_size_decode(analysisBinding->vectorIndex);
             tuuvm_tuple_t bindingType = tuuvm_tuple_getType(context, binding);
@@ -270,7 +289,7 @@ TUUVM_API void tuuvm_functionActivationEnvironment_setBindingActivationValue(tuu
     (void)sourcePosition;
     tuuvm_functionActivationEnvironment_t *activationEnvironment = (tuuvm_functionActivationEnvironment_t*)environment;
     tuuvm_symbolAnalysisBinding_t *analysisBinding = (tuuvm_symbolAnalysisBinding_t*)binding;
-    if(analysisBinding->ownerFunction == activationEnvironment->functionDefinition)
+    if(analysisBinding->ownerFunction == activationEnvironment->functionDefinition || activationEnvironment->dependentFunctionType)
     {
         size_t vectorIndex = tuuvm_tuple_size_decode(analysisBinding->vectorIndex);
         tuuvm_tuple_t bindingType = tuuvm_tuple_getType(context, binding);

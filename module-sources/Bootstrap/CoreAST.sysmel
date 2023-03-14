@@ -83,7 +83,6 @@ ASTLexicalBlockNode
     }.
 
 ASTLiteralNode
-    withSelector: #astAnalyzeWithEnvironment: addMethod: {:(ASTLiteralNode)self :(Environment)environment | self };
     withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:(ASTLiteralNode)self :(Environment)environment | self value };
     withSelector: #astEvaluateWithEnvironment: addMethod: {:(ASTLiteralNode)self :(Environment)environment | self value };
     withSelector: #isLiteralNode addMethod: {:(ASTLiteralNode)self :: Boolean | true };

@@ -85,6 +85,32 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createWithName(tuuvm_context_t *context, tuuv
     return result;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_type_createSimpleFunctionType(tuuvm_context_t *context, tuuvm_tuple_t argumentTypes, bool isVariadic, tuuvm_tuple_t resultType)
+{
+    tuuvm_simpleFunctionType_t* result = (tuuvm_simpleFunctionType_t*)tuuvm_context_allocatePointerTuple(context, context->roots.simpleFunctionTypeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_simpleFunctionType_t));
+    result->super.supertype = context->roots.functionType;
+    result->argumentTypes = argumentTypes;
+    result->isVariadic = tuuvm_tuple_boolean_encode(isVariadic);
+    result->resultType = resultType;
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_type_createDependentFunctionType(tuuvm_context_t *context, tuuvm_tuple_t argumentNodes, bool isVariadic, tuuvm_tuple_t resultTypeNode,
+    tuuvm_tuple_t environment, tuuvm_tuple_t captureBindings, tuuvm_tuple_t argumentBindings, tuuvm_tuple_t localBindings)
+{
+    tuuvm_dependentFunctionType_t* result = (tuuvm_dependentFunctionType_t*)tuuvm_context_allocatePointerTuple(context, context->roots.dependentFunctionTypeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_dependentFunctionType_t));
+    result->super.supertype = context->roots.functionType;
+    result->argumentNodes = argumentNodes;
+    result->isVariadic = tuuvm_tuple_boolean_encode(isVariadic);
+    result->resultTypeNode = resultTypeNode;
+
+    result->environment = environment;
+    result->captureBindings = captureBindings;
+    result->argumentBindings = argumentBindings;
+    result->localBindings = localBindings;
+    return (tuuvm_tuple_t)result;
+}
+
 TUUVM_API size_t tuuvm_type_getTotalSlotCount(tuuvm_tuple_t type)
 {
     if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
@@ -362,6 +388,16 @@ TUUVM_API void tuuvm_type_setCoerceValueFunction(tuuvm_context_t *context, tuuvm
     tuuvm_type_setMethodWithSelector(context, type, context->roots.coerceValueSelector, coerceValueFunction);
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_type_getTypeCheckFunctionApplicationWithEnvironmentNode(tuuvm_context_t *context, tuuvm_tuple_t type)
+{
+    return tuuvm_type_lookupSelector(context, type, context->roots.typeCheckFunctionApplicationWithEnvironmentSelector);
+}
+
+TUUVM_API void tuuvm_type_setTypeCheckFunctionApplicationWithEnvironmentNode(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t typeCheckFunction)
+{
+    tuuvm_type_setMethodWithSelector(context, type, context->roots.typeCheckFunctionApplicationWithEnvironmentSelector, typeCheckFunction);
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValue(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t value)
 {
     if(!type) return value;
@@ -373,9 +409,26 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValue(tuuvm_context_t *context, tuuvm_t
     tuuvm_tuple_t function = tuuvm_type_getCoerceValueFunction(context, tuuvm_tuple_getType(context, type));
     if(function)
         return tuuvm_function_apply2(context, function, type, value);
+
+    // TODO: Add a check for the dependent value dummy bit here
+    tuuvm_tuple_t valueType = tuuvm_tuple_getType(context, value);
+    if(!valueType && tuuvm_tuple_getSizeInSlots(value) == 0)
+        return (tuuvm_tuple_t)tuuvm_context_allocatePointerTuple(context, type, 0);
     
     tuuvm_error("Cannot perform coercion of value into the required type.");
     return TUUVM_VOID_TUPLE;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_type_typeCheckFunctionApplicationNode(tuuvm_context_t *context, tuuvm_tuple_t functionType, tuuvm_tuple_t functionApplicationNode, tuuvm_tuple_t environment)
+{
+    if(!functionType)
+        return functionApplicationNode;
+
+    tuuvm_tuple_t function = tuuvm_type_getTypeCheckFunctionApplicationWithEnvironmentNode(context, tuuvm_tuple_getType(context, functionType));
+    if(function)
+        return tuuvm_function_apply3(context, function, functionType, functionApplicationNode, environment);
+
+    return functionApplicationNode;
 }
 
 static tuuvm_tuple_t tuuvm_type_primitive_flushLookupSelector(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)

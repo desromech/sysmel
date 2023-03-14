@@ -282,6 +282,11 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.functionType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.functionDefinitionType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
 
+    // Create the function type classes.
+    context->roots.functionTypeType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.typeType);
+    context->roots.dependentFunctionTypeType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.functionTypeType);
+    context->roots.simpleFunctionTypeType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.functionTypeType);
+
     context->roots.symbolBindingType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.symbolAnalysisBindingType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolBindingType);
     context->roots.symbolArgumentBindingType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolAnalysisBindingType);
@@ -342,6 +347,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.analyzeConcreteMetaValueWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "analyzeConcreteMetaValue:withEnvironment:");
 
     context->roots.coerceValueSelector = tuuvm_symbol_internWithCString(context, "coerceValue:");
+    context->roots.typeCheckFunctionApplicationWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "typeCheckFunctionApplication:withEnvironment:");
 
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "nil"), TUUVM_NULL_TUPLE);
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "false"), TUUVM_FALSE_TUPLE);
@@ -459,6 +465,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.functionActivationEnvironmentType = tuuvm_context_createIntrinsicClass(context, "FunctionActivationEnvironment", context->roots.environmentType,
         "function", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionType,
         "functionDefinition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
+        "dependentFunctionType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
         "argumentVectorSize", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "captureVector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "valueVector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
@@ -518,6 +525,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "definitionResultTypeNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "definitionBodyNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
 
+        "analyzedType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionTypeType,
+
         "analysisEnvironment", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
         "analyzedCaptures", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "analyzedArguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
@@ -527,6 +536,25 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "analyzedResultTypeNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "analyzedBodyNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.functionTypeType, "FunctionType", TUUVM_NULL_TUPLE,
+        NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.dependentFunctionTypeType, "DependentFunctionType", TUUVM_NULL_TUPLE,
+        "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "argumentNodes", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "isVariadic", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        "resultTypeNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+
+        "environment", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
+        "captureBindings", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "argumentBindings", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "localBindings", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.simpleFunctionTypeType, "SimpleFunctionType", TUUVM_NULL_TUPLE,
+        "argumentTypes", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "isVariadic", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        "resultType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
+        NULL);
+
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolType, "Symbol", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.stringSymbolType, "StringSymbol", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.setType, "Set", TUUVM_NULL_TUPLE,

@@ -1,5 +1,6 @@
 #include "tuuvm/function.h"
 #include "tuuvm/arraySlice.h"
+#include "tuuvm/assert.h"
 #include "tuuvm/errors.h"
 #include "tuuvm/interpreter.h"
 #include "tuuvm/stackFrame.h"
@@ -88,7 +89,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_createClosureWithCaptureVector(tuuvm_cont
         tuuvm_error("An actual function definition is required here.");
 
     tuuvm_functionDefinition_t *functionDefinitionObject = (tuuvm_functionDefinition_t*)functionDefinition;
-    tuuvm_function_t *result = (tuuvm_function_t*)tuuvm_context_allocatePointerTuple(context, context->roots.functionType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_function_t));
+    TUUVM_ASSERT(functionDefinitionObject->analyzedType);
+
+    tuuvm_function_t *result = (tuuvm_function_t*)tuuvm_context_allocatePointerTuple(context, functionDefinitionObject->analyzedType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_function_t));
     result->flags = functionDefinitionObject->flags;
     result->argumentCount = functionDefinitionObject->argumentCount; 
     result->captureVector = captureVector;
@@ -288,6 +291,7 @@ static tuuvm_tuple_t tuuvm_function_primitive_adoptDefinitionOf(tuuvm_context_t 
 
     functionObject->definition = definitionFunctionObject->definition;
     functionObject->captureVector = definitionFunctionObject->captureVector;
+    tuuvm_tuple_setType((tuuvm_object_tuple_t*)functionObject, tuuvm_tuple_getType(context, (tuuvm_tuple_t)definitionFunctionObject));
     return TUUVM_VOID_TUPLE;
 }
 

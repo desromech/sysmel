@@ -520,6 +520,52 @@ tuuvm_tuple_t tuuvm_interpreter_recompileAndOptimizeFunction(tuuvm_context_t *co
     return gcFrame.optimizedFunction;
 }
 
+static bool canCanonicalizeArgumentNodeType(tuuvm_context_t *context, tuuvm_tuple_t node)
+{
+    TUUVM_ASSERT(tuuvm_astNode_isArgumentNode(context, node));
+    
+    tuuvm_astArgumentNode_t *argumentNode = (tuuvm_astArgumentNode_t*)node;
+    return !tuuvm_tuple_boolean_decode(argumentNode->isForAll)
+        && (!argumentNode->type || tuuvm_astNode_isLiteralNode(context, argumentNode->type));
+
+}
+TUUVM_API tuuvm_tuple_t tuuvm_type_canonicalizeFunctionType(tuuvm_context_t *context, tuuvm_tuple_t functionType)
+{
+    if(!tuuvm_tuple_isKindOf(context, functionType, context->roots.dependentFunctionTypeType))
+        return functionType;
+
+    tuuvm_dependentFunctionType_t *dependentFunctionType = (tuuvm_dependentFunctionType_t*)functionType;
+    
+    // Only accept literal values for argument types.
+    size_t argumentCount = tuuvm_array_getSize(dependentFunctionType->argumentNodes);
+    for(size_t i = 0; i < argumentCount; ++i)
+    {
+        if(!canCanonicalizeArgumentNodeType(context, tuuvm_array_at(dependentFunctionType->argumentNodes, i)))
+            return functionType;
+    }
+
+    // Check the result type.
+    if(dependentFunctionType->resultTypeNode && !tuuvm_astNode_isLiteralNode(context, dependentFunctionType->resultTypeNode))
+        return functionType;
+
+    tuuvm_tuple_t argumentTypes = tuuvm_array_create(context, argumentCount);
+    for(size_t i = 0; i < argumentCount; ++i)
+    {
+        tuuvm_astArgumentNode_t *argumentNode = (tuuvm_astArgumentNode_t*)tuuvm_array_at(dependentFunctionType->argumentNodes, i);
+        tuuvm_tuple_t argumentType = TUUVM_NULL_TUPLE;
+        if(argumentNode->type)
+            argumentType = tuuvm_astLiteralNode_getValue(argumentNode->type);
+        tuuvm_array_atPut(argumentTypes, i, argumentType);
+    }
+
+    tuuvm_tuple_t resultType = TUUVM_NULL_TUPLE;
+    if(dependentFunctionType->resultTypeNode)
+        resultType = tuuvm_astLiteralNode_getValue(dependentFunctionType->resultTypeNode);
+
+    bool isVariadic = tuuvm_tuple_boolean_decode(dependentFunctionType->isVariadic);
+    return tuuvm_type_createSimpleFunctionType(context, argumentTypes, isVariadic, resultType);
+}
+
 static void tuuvm_functionDefinition_analyze(tuuvm_context_t *context, tuuvm_functionDefinition_t **functionDefinition)
 {
     struct {
@@ -529,6 +575,7 @@ static void tuuvm_functionDefinition_analyze(tuuvm_context_t *context, tuuvm_fun
         tuuvm_tuple_t analyzedArgumentsNode;
         tuuvm_tuple_t analyzedBodyNode;
         tuuvm_tuple_t analyzedResultTypeNode;
+        tuuvm_tuple_t analyzedType;
     } gcFrame = {0};
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
@@ -548,8 +595,18 @@ static void tuuvm_functionDefinition_analyze(tuuvm_context_t *context, tuuvm_fun
     if((*functionDefinition)->definitionResultTypeNode)
         gcFrame.analyzedResultTypeNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, (*functionDefinition)->definitionResultTypeNode, gcFrame.analysisEnvironment);
 
+    bool isVariadic = (tuuvm_tuple_size_decode((*functionDefinition)->flags) & TUUVM_FUNCTION_FLAGS_VARIADIC) != 0;
+    gcFrame.analyzedType = tuuvm_type_createDependentFunctionType(context, gcFrame.analyzedArgumentsNode, isVariadic, gcFrame.analyzedResultTypeNode,
+        gcFrame.analysisEnvironment,
+        tuuvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->captureBindingList),
+        tuuvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->argumentBindingList),
+        tuuvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->localBindingList)
+    );
+    gcFrame.analyzedType = tuuvm_type_canonicalizeFunctionType(context, gcFrame.analyzedType);
+
     gcFrame.analyzedBodyNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, (*functionDefinition)->definitionBodyNode, gcFrame.analysisEnvironment);
 
+    (*functionDefinition)->analyzedType = gcFrame.analyzedType;
     (*functionDefinition)->analysisEnvironment = gcFrame.analysisEnvironment;
     (*functionDefinition)->analyzedCaptures = tuuvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->captureBindingList);
     (*functionDefinition)->analyzedArguments = tuuvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->argumentBindingList);
@@ -1589,6 +1646,7 @@ static tuuvm_tuple_t tuuvm_astFunctionApplicationNode_primitiveAnalyze(tuuvm_con
         tuuvm_tuple_t literalFunction;
         tuuvm_tuple_t pureCallResult;
         tuuvm_tuple_t argumentValue;
+        tuuvm_tuple_t functionType;
     } gcFrame = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
@@ -1640,9 +1698,13 @@ static tuuvm_tuple_t tuuvm_astFunctionApplicationNode_primitiveAnalyze(tuuvm_con
         return tuuvm_astLiteralNode_create(context, gcFrame.applicationNode->super.sourcePosition, gcFrame.pureCallResult);
     }
 
+    // Perform type checking.
+    gcFrame.functionType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedFunctionExpression);
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-    return (tuuvm_tuple_t)gcFrame.applicationNode;
+
+    // Basic type checking.
+    return tuuvm_type_typeCheckFunctionApplicationNode(context, gcFrame.functionType, (tuuvm_tuple_t)gcFrame.applicationNode, *environment);
 }
 
 static tuuvm_tuple_t tuuvm_astFunctionApplicationNode_primitiveAnalyzeAndEvaluate(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -3521,6 +3583,136 @@ static tuuvm_tuple_t tuuvm_interpreter_evaluateResultTypeCoercionInEnvironment(t
     return gcFrame.result;
 }
 
+static tuuvm_tuple_t tuuvm_simpleFunctionType_primitiveTypeCheckFunctionApplicationNode(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+
+    // Fixme: Implement this in a much more proper way.
+    tuuvm_simpleFunctionType_t **simpleFunctionType = (tuuvm_simpleFunctionType_t**)&arguments[0];
+    tuuvm_astFunctionApplicationNode_t **functionApplicationNode = (tuuvm_astFunctionApplicationNode_t**)&arguments[1];
+
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*functionApplicationNode)->super.sourcePosition);
+
+    bool isVariadic = tuuvm_tuple_boolean_decode((*simpleFunctionType)->isVariadic);
+    size_t typeArgumentCount = tuuvm_array_getSize((*simpleFunctionType)->argumentTypes);
+    size_t applicationArgumentCount = tuuvm_array_getSize((*functionApplicationNode)->arguments);
+
+    if(isVariadic && applicationArgumentCount < typeArgumentCount)
+        tuuvm_error("Missing required arguments.");
+    else if(!isVariadic && applicationArgumentCount != typeArgumentCount)
+        tuuvm_error("Expected number of arguments is mismatching.");
+
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+
+    if(!(*simpleFunctionType)->resultType || 
+        (*functionApplicationNode)->super.analyzedType == (*simpleFunctionType)->resultType)
+        return (tuuvm_tuple_t)*functionApplicationNode;
+
+    tuuvm_astFunctionApplicationNode_t *typeCheckedNode = (tuuvm_astFunctionApplicationNode_t *)tuuvm_context_shallowCopy(context, (tuuvm_tuple_t)*functionApplicationNode);
+    typeCheckedNode->super.analyzedType = (*simpleFunctionType)->resultType;
+    return (tuuvm_tuple_t)typeCheckedNode;
+}
+
+static tuuvm_tuple_t tuuvm_dependentFunctionType_getOrCreateApplicationValueForNode(tuuvm_context_t *context, tuuvm_tuple_t node)
+{
+    // Unwrap the literal values.
+    if(tuuvm_astNode_isLiteralNode(context, node))
+        return tuuvm_astLiteralNode_getValue(node);
+
+    // Get the analyzed type of the node.
+    // FIXME: Delegate this onto the analyzed type.
+    tuuvm_tuple_t analyzedType = tuuvm_astNode_getAnalyzedType(node);
+    if(tuuvm_tuple_isKindOf(context, analyzedType, context->roots.metaclassType))
+    {
+        tuuvm_metaclass_t *metaclass = (tuuvm_metaclass_t*)analyzedType;
+        if(metaclass->thisClass)
+            return metaclass->thisClass;
+    }
+
+    // Construct a dummy value that has the same type
+    // FIXME: Mark the value as dummy with a special bit.
+    return (tuuvm_tuple_t)tuuvm_context_allocatePointerTuple(context, analyzedType, 0);
+}
+
+static tuuvm_tuple_t tuuvm_dependentFunctionType_primitiveTypeCheckFunctionApplicationNode(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+
+    tuuvm_dependentFunctionType_t **dependentFunctionType = (tuuvm_dependentFunctionType_t **)&arguments[0];
+    tuuvm_tuple_t *node = &arguments[1];
+    //tuuvm_tuple_t *environment = &arguments[2];
+
+    struct {
+        tuuvm_astFunctionApplicationNode_t *functionApplicationNode;
+
+        tuuvm_tuple_t applicationEnvironment;
+        tuuvm_tuple_t argumentNode;
+
+        tuuvm_tuple_t applicationArgumentNode;
+        tuuvm_tuple_t applicationArgumentValue;
+        tuuvm_tuple_t resultType;
+
+    } gcFrame = {
+        .functionApplicationNode = (tuuvm_astFunctionApplicationNode_t*)*node,
+    };
+
+    tuuvm_stackFrameFunctionActivationRecord_t functionActivationRecord = {
+        .type = TUUVM_STACK_FRAME_RECORD_TYPE_FUNCTION_ACTIVATION,
+    };
+    tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&functionActivationRecord); 
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.functionApplicationNode->super.sourcePosition);
+
+    gcFrame.applicationEnvironment = tuuvm_functionActivationEnvironment_createForDependentFunctionType(context, TUUVM_NULL_TUPLE, (tuuvm_tuple_t)*dependentFunctionType);
+
+    size_t argumentNodeCount = tuuvm_array_getSize((*dependentFunctionType)->argumentNodes);
+    bool isVariadic = tuuvm_tuple_boolean_decode((*dependentFunctionType)->isVariadic);
+    if(isVariadic && argumentNodeCount == 0)
+        tuuvm_error("Variadic functions at least one extra argument node.");
+    
+    size_t directEvaluationArgumentNodeCount = isVariadic ? argumentNodeCount - 1 : argumentNodeCount;
+
+    size_t applicationArgumentCount = tuuvm_array_getSize(gcFrame.functionApplicationNode->arguments);
+    size_t sourceArgumentIndex = 0;
+    for(size_t i = 0; i < directEvaluationArgumentNodeCount; ++i)
+    {
+        gcFrame.argumentNode = tuuvm_array_at((*dependentFunctionType)->argumentNodes, i);
+        if(tuuvm_astArgumentNode_isForAll(argumentNodeCount))
+        {
+            tuuvm_error("TODO: Support forall argument types");
+        }
+        else
+        {
+            if(sourceArgumentIndex >= applicationArgumentCount)
+                tuuvm_error("Function application is missing required arguments.");
+
+            gcFrame.applicationArgumentNode = tuuvm_array_at(gcFrame.functionApplicationNode->arguments, sourceArgumentIndex);
+            gcFrame.applicationArgumentValue = tuuvm_dependentFunctionType_getOrCreateApplicationValueForNode(context, gcFrame.applicationArgumentNode);
+            tuuvm_interpreter_evaluateArgumentNodeInEnvironment(context, i, gcFrame.argumentNode, &gcFrame.applicationEnvironment, &gcFrame.applicationArgumentValue);
+            ++sourceArgumentIndex;
+        }
+    }
+
+    if(!isVariadic && sourceArgumentIndex != applicationArgumentCount)
+        tuuvm_error("Function application is not receiving the expected number of arguments.");
+
+    if((*dependentFunctionType)->resultTypeNode)
+        gcFrame.resultType = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*dependentFunctionType)->resultTypeNode, gcFrame.applicationEnvironment);
+
+    if(gcFrame.resultType && gcFrame.functionApplicationNode->super.analyzedType != gcFrame.resultType)
+    {
+        gcFrame.functionApplicationNode = (tuuvm_astFunctionApplicationNode_t*)tuuvm_context_shallowCopy(context, (tuuvm_tuple_t)gcFrame.functionApplicationNode);
+        gcFrame.functionApplicationNode->super.analyzedType = gcFrame.resultType;
+    }
+
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&functionActivationRecord);  
+    return (tuuvm_tuple_t)gcFrame.functionApplicationNode;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_t *context, tuuvm_tuple_t *function, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     tuuvm_stackFrameFunctionActivationRecord_t functionActivationRecord = {
@@ -3731,12 +3923,15 @@ void tuuvm_astInterpreter_registerPrimitives(void)
     tuuvm_primitiveTable_registerFunction(tuuvm_astReturnNode_primitiveAnalyzeAndEvaluate);
 
     tuuvm_primitiveTable_registerFunction(tuuvm_functionDefinition_primitiveEnsureAnalysis);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_simpleFunctionType_primitiveTypeCheckFunctionApplicationNode);
+    tuuvm_primitiveTable_registerFunction(tuuvm_dependentFunctionType_primitiveTypeCheckFunctionApplicationNode);
 }
 
 static void tuuvm_astInterpreter_setupNodeInterpretationFunctions(tuuvm_context_t *context, tuuvm_tuple_t astNodeType, tuuvm_functionEntryPoint_t analysisFunction, tuuvm_functionEntryPoint_t evaluationFunction, tuuvm_functionEntryPoint_t analysisAndEvaluationFunction)
 {
     if(analysisFunction)
-        tuuvm_type_setAstNodeAnalysisFunction(context, astNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, analysisFunction));
+        tuuvm_type_setAstNodeAnalysisFunction(context, astNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_NONE, NULL, analysisFunction));
     if(evaluationFunction)
         tuuvm_type_setAstNodeEvaluationFunction(context, astNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, evaluationFunction));
     if(analysisAndEvaluationFunction)
@@ -3752,8 +3947,14 @@ void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context)
 
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "FunctionDefinition::ensureAnalysis", context->roots.functionDefinitionType, "ensureAnalysis", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_functionDefinition_primitiveEnsureAnalysis);
 
-    // FIXME: Collapse these into more convenient and shorter calls.
-    tuuvm_type_setAstNodeAnalysisFunction(context, context->roots.astArgumentNodeType, tuuvm_function_createPrimitive(context, 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_astArgumentNode_primitiveAnalyze));
+    tuuvm_type_setTypeCheckFunctionApplicationWithEnvironmentNode(context, context->roots.simpleFunctionTypeType, tuuvm_function_createPrimitive(context, 3, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_simpleFunctionType_primitiveTypeCheckFunctionApplicationNode));
+    tuuvm_type_setTypeCheckFunctionApplicationWithEnvironmentNode(context, context->roots.dependentFunctionTypeType, tuuvm_function_createPrimitive(context, 3, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_dependentFunctionType_primitiveTypeCheckFunctionApplicationNode));
+
+    tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astArgumentNodeType,
+        tuuvm_astArgumentNode_primitiveAnalyze,
+        NULL,
+        NULL
+    );
 
     tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astErrorNodeType,
         tuuvm_astErrorNode_primitiveEvaluate,
