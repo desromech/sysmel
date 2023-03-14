@@ -2,7 +2,7 @@ MacroContext
     withSelector: #gensym: addMethod: {:(MacroContext)self :value |
         GeneratedSymbol new
             value: value;
-            context: self sourcePosition;
+            sourcePosition: self sourcePosition;
             yourself
     };
     withSelector: #gensymIdentifier: addMethod: {:(MacroContext)self :value |

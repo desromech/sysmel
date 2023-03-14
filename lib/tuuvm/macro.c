@@ -2,6 +2,14 @@
 #include "internal/context.h"
 #include <stdlib.h>
 
+TUUVM_API tuuvm_tuple_t tuuvm_generatedSymbol_create(tuuvm_context_t *context, tuuvm_tuple_t value, tuuvm_tuple_t sourcePosition)
+{
+    tuuvm_generatedSymbol_t *result = (tuuvm_generatedSymbol_t*)tuuvm_context_allocatePointerTuple(context, context->roots.generatedSymbolType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_generatedSymbol_t));
+    result->value = value;
+    result->sourcePosition = sourcePosition;
+    return (tuuvm_tuple_t)result;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_macroContext_create(tuuvm_context_t *context, tuuvm_tuple_t sourceNode, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t environment)
 {
     tuuvm_macroContext_t *result = (tuuvm_macroContext_t*)tuuvm_context_allocatePointerTuple(context, context->roots.macroContextType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_macroContext_t));

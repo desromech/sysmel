@@ -576,7 +576,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         NULL);
     context->roots.generatedSymbolType = tuuvm_context_createIntrinsicClass(context, "GeneratedSymbol", TUUVM_NULL_TUPLE,
         "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
-        "context", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     context->roots.hashtableEmptyType = tuuvm_context_createIntrinsicClass(context, "HashtableEmpty", TUUVM_NULL_TUPLE, NULL);
     context->roots.macroContextType = tuuvm_context_createIntrinsicClass(context, "MacroContext", TUUVM_NULL_TUPLE,

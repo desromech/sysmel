@@ -2007,6 +2007,7 @@ static tuuvm_tuple_t tuuvm_astMakeTupleNode_primitiveAnalyzeAndEvaluate(tuuvm_co
     return gcFrame.result;
 }
 
+/*
 static tuuvm_tuple_t tuuvm_astMessageChainMessageNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
@@ -2042,6 +2043,18 @@ static tuuvm_tuple_t tuuvm_astMessageChainMessageNode_primitiveAnalyze(tuuvm_con
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return (tuuvm_tuple_t)gcFrame.sendNode;
 }
+*/
+
+static tuuvm_tuple_t tuuvm_astMessageChainMessageNode_expandToMessageWithReceiver(tuuvm_context_t *context, tuuvm_tuple_t chainMessageNode, tuuvm_tuple_t receiver, tuuvm_tuple_t receiverLookupType)
+{
+    if(!tuuvm_astNode_isMessageChainMessageNode(context, chainMessageNode))
+        tuuvm_error("Expected a message chain message node.");
+
+    tuuvm_astMessageChainMessageNode_t *chainMessageNodeObject = (tuuvm_astMessageChainMessageNode_t*)chainMessageNode;
+    tuuvm_astMessageSendNode_t *messageSendNode = (tuuvm_astMessageSendNode_t*)tuuvm_astMessageSendNode_create(context, chainMessageNodeObject->super.sourcePosition, receiver, chainMessageNodeObject->selector, chainMessageNodeObject->arguments);
+    messageSendNode->receiverLookupType = receiverLookupType;
+    return (tuuvm_tuple_t)messageSendNode;
+}
 
 static tuuvm_tuple_t tuuvm_astMessageChainNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
@@ -2055,23 +2068,48 @@ static tuuvm_tuple_t tuuvm_astMessageChainNode_primitiveAnalyze(tuuvm_context_t 
     struct {
         tuuvm_astMessageChainNode_t *chainNode;
         tuuvm_tuple_t analyzedReceiver;
-        tuuvm_tuple_t analyzedChainedMessages;
-        tuuvm_tuple_t analyzedChainedMessageNode;
+        tuuvm_tuple_t analyzedReceiverTypeExpression;
+        tuuvm_tuple_t expandedChainedMessages;
+        tuuvm_tuple_t expandedChainedMessageNode;
         tuuvm_tuple_t chainedMessageNode;
 
         tuuvm_tuple_t receiverType;
         tuuvm_tuple_t receiverMetaType;
         tuuvm_tuple_t analysisFunction;
+
+        tuuvm_tuple_t receiverSourcePosition;
+        tuuvm_tuple_t expansionReceiverSymbol;
+        tuuvm_tuple_t expansionReceiverExpression;
+        tuuvm_tuple_t expansionReceiverIdentifier;
+        tuuvm_tuple_t expansionMessageSequence;
+        tuuvm_tuple_t expansionLocalAndMessageSequenceArray;
+
+        tuuvm_tuple_t analyzedExpandedChainedMessages;
+        tuuvm_tuple_t analyzedExpansion;
     } gcFrame = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     
     gcFrame.chainNode = (tuuvm_astMessageChainNode_t*)tuuvm_context_shallowCopy(context, *node);
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.chainNode->super.sourcePosition);
 
+    size_t chainedMessageCount = tuuvm_array_getSize(gcFrame.chainNode->messages);
+
     if(gcFrame.chainNode->receiver)
     {
         gcFrame.analyzedReceiver = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.chainNode->receiver, *environment);
         gcFrame.chainNode->receiver = gcFrame.analyzedReceiver;
+
+        // Inline the object with lookup starting from node.
+        if(tuuvm_astNode_isObjectWithLookupStartingFromNode(context, gcFrame.analyzedReceiver))
+        {
+            tuuvm_astObjectWithLookupStartingFromNode_t *objectLookup = (tuuvm_astObjectWithLookupStartingFromNode_t*)gcFrame.analyzedReceiver;
+            gcFrame.analyzedReceiver = objectLookup->objectExpression;
+            gcFrame.chainNode->receiver = gcFrame.analyzedReceiver;
+            
+            gcFrame.analyzedReceiverTypeExpression = objectLookup->typeExpression;
+            gcFrame.chainNode->receiverLookupType = gcFrame.analyzedReceiverTypeExpression;
+        }
+
         gcFrame.receiverType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedReceiver);
         if(gcFrame.receiverType)
         {
@@ -2083,25 +2121,71 @@ static tuuvm_tuple_t tuuvm_astMessageChainNode_primitiveAnalyze(tuuvm_context_t 
                 TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
                 return tuuvm_function_apply3(context, gcFrame.analysisFunction, gcFrame.receiverType, (tuuvm_tuple_t)gcFrame.chainNode, *environment);
             }
+        }
 
+        // Simple cases.
+        if(chainedMessageCount == 0)
+        {
+            TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+            TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+            return gcFrame.analyzedReceiver;
+        }
+        else if(chainedMessageCount == 1)
+        {
+            gcFrame.chainedMessageNode = tuuvm_array_at(gcFrame.chainNode->messages, 0);
+            gcFrame.expansionMessageSequence = tuuvm_astMessageChainMessageNode_expandToMessageWithReceiver(context, gcFrame.chainedMessageNode, gcFrame.analyzedReceiver, gcFrame.analyzedReceiverTypeExpression);
+            TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+            TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+            return tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.analyzedReceiver, *environment);
+        }
+
+        // Do we need to define a variable for the receiver?
+        if(tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedReceiver))
+        {
+            gcFrame.expansionReceiverExpression = gcFrame.analyzedReceiver;
+            gcFrame.expansionReceiverIdentifier = gcFrame.analyzedReceiver;
+        }
+        else
+        {
+            gcFrame.receiverSourcePosition = tuuvm_astNode_getSourcePosition(gcFrame.analyzedReceiver);
+            gcFrame.expansionReceiverSymbol = tuuvm_generatedSymbol_create(context, tuuvm_symbol_internWithCString(context, "<messageChainReceiver>"), gcFrame.receiverSourcePosition);
+
+            gcFrame.expansionReceiverExpression = tuuvm_astLocalDefinitionNode_create(context, gcFrame.receiverSourcePosition, tuuvm_astLiteralNode_create(context, gcFrame.receiverSourcePosition, gcFrame.expansionReceiverSymbol), TUUVM_NULL_TUPLE, gcFrame.analyzedReceiver);
+            tuuvm_astLocalDefinitionNode_t *receiverLocalDefinition = (tuuvm_astLocalDefinitionNode_t *)gcFrame.expansionReceiverExpression;
+            receiverLocalDefinition->super.analyzedType = gcFrame.receiverType;
+            receiverLocalDefinition->binding = tuuvm_analysisEnvironment_setNewSymbolLocalBinding(context, *environment, gcFrame.receiverSourcePosition, gcFrame.expansionReceiverSymbol, gcFrame.receiverType);
+
+            gcFrame.expansionReceiverIdentifier = tuuvm_astIdentifierReferenceNode_create(context, gcFrame.receiverSourcePosition, gcFrame.expansionReceiverSymbol);
         }
     }
 
-    size_t chainedMessageCount = tuuvm_array_getSize(gcFrame.chainNode->messages);
-    gcFrame.analyzedChainedMessages = tuuvm_array_create(context, chainedMessageCount);
+    // Message sequence.
+    gcFrame.expandedChainedMessages = tuuvm_array_create(context, chainedMessageCount);
     gcFrame.chainNode->super.analyzedType = TUUVM_NULL_TUPLE;
     for(size_t i = 0; i < chainedMessageCount; ++i)
     {
         gcFrame.chainedMessageNode = tuuvm_array_at(gcFrame.chainNode->messages, i);
-        gcFrame.analyzedChainedMessageNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.chainedMessageNode, *environment);
-        gcFrame.chainNode->super.analyzedType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedChainedMessageNode);
-        tuuvm_array_atPut(gcFrame.analyzedChainedMessages, i, gcFrame.analyzedChainedMessageNode);
+        gcFrame.expandedChainedMessageNode = tuuvm_astMessageChainMessageNode_expandToMessageWithReceiver(context, gcFrame.chainedMessageNode, gcFrame.expansionReceiverIdentifier, gcFrame.analyzedReceiverTypeExpression);
+        tuuvm_array_atPut(gcFrame.expandedChainedMessages, i, gcFrame.expandedChainedMessageNode);
     }
+    gcFrame.expansionMessageSequence = tuuvm_astSequenceNode_create(context, gcFrame.chainNode->super.sourcePosition, tuuvm_array_create(context, 0), gcFrame.expandedChainedMessages);
+    gcFrame.analyzedExpandedChainedMessages = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.expansionMessageSequence, *environment);
 
-    gcFrame.chainNode->messages = gcFrame.analyzedChainedMessages;
+    // Local definition and message sequence.
+    gcFrame.analyzedExpansion = gcFrame.analyzedExpandedChainedMessages;
+    if(gcFrame.expansionReceiverExpression != gcFrame.expansionReceiverIdentifier)
+    {
+        gcFrame.expansionLocalAndMessageSequenceArray = tuuvm_array_create(context, 2);
+        tuuvm_array_atPut(gcFrame.expansionLocalAndMessageSequenceArray, 0, gcFrame.expansionReceiverExpression);
+        tuuvm_array_atPut(gcFrame.expansionLocalAndMessageSequenceArray, 1, gcFrame.analyzedExpandedChainedMessages);
+
+        gcFrame.analyzedExpansion = tuuvm_astSequenceNode_create(context, gcFrame.chainNode->super.sourcePosition, tuuvm_array_create(context, 0), gcFrame.expansionLocalAndMessageSequenceArray);
+        ((tuuvm_astNode_t*)gcFrame.analyzedExpansion)->analyzedType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedExpandedChainedMessages);
+    }
+    
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-    return (tuuvm_tuple_t)gcFrame.chainNode;
+    return gcFrame.analyzedExpansion;
 }
 
 static tuuvm_tuple_t tuuvm_astMessageChainMessageNode_analyzeAndEvaluate(tuuvm_context_t *context, tuuvm_tuple_t chainedMessage, bool hasReceiver, tuuvm_tuple_t *receiver, tuuvm_tuple_t *environment)
@@ -2400,7 +2484,6 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyze(tuuvm_context_t *
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.sendNode->super.sourcePosition);
 
     bool isDoesNotUnderstand = false;
-    bool hasExplicitLookupType = false;
     if(gcFrame.sendNode->receiver)
     {
         gcFrame.analyzedReceiver = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.sendNode->receiver, *environment);
@@ -2416,7 +2499,11 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyze(tuuvm_context_t *
             
             gcFrame.analyzedReceiverTypeExpression = objectLookup->typeExpression;
             gcFrame.sendNode->receiverLookupType = gcFrame.analyzedReceiverTypeExpression;
-            hasExplicitLookupType = true;
+        }
+        else if(gcFrame.sendNode->receiverLookupType)
+        {
+            gcFrame.analyzedReceiverTypeExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.sendNode->receiverLookupType, *environment);
+            gcFrame.sendNode->receiverLookupType = gcFrame.analyzedReceiverTypeExpression;
         }
 
         if(gcFrame.receiverType)
@@ -2491,6 +2578,7 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyze(tuuvm_context_t *
     }
 
     // Turn this node onto an unexpanded application.
+    bool hasExplicitLookupType = gcFrame.sendNode->receiverLookupType != TUUVM_NULL_TUPLE;
     if(gcFrame.method && (hasExplicitLookupType || tuuvm_function_shouldOptimizeLookup(context, gcFrame.method, gcFrame.receiverType)))
     {
         size_t applicationArgumentCount = tuuvm_array_getSize(gcFrame.sendNode->arguments);
@@ -3585,8 +3673,6 @@ void tuuvm_astInterpreter_registerPrimitives(void)
     tuuvm_primitiveTable_registerFunction(tuuvm_astMakeTupleNode_primitiveEvaluate);
     tuuvm_primitiveTable_registerFunction(tuuvm_astMakeTupleNode_primitiveAnalyzeAndEvaluate);
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageChainMessageNode_primitiveAnalyze);
-
     tuuvm_primitiveTable_registerFunction(tuuvm_astMessageChainNode_primitiveAnalyze);
     tuuvm_primitiveTable_registerFunction(tuuvm_astMessageChainNode_primitiveEvaluate);
     tuuvm_primitiveTable_registerFunction(tuuvm_astMessageChainNode_primitiveAnalyzeAndEvaluate);
@@ -3723,11 +3809,6 @@ void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context)
         tuuvm_astMakeTupleNode_primitiveAnalyze,
         tuuvm_astMakeTupleNode_primitiveEvaluate,
         tuuvm_astMakeTupleNode_primitiveAnalyzeAndEvaluate
-    );
-    tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astMessageChainMessageNodeType,
-        tuuvm_astMessageChainMessageNode_primitiveAnalyze,
-        NULL,
-        NULL
     );
     tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astMessageChainNodeType,
         tuuvm_astMessageChainNode_primitiveAnalyze,

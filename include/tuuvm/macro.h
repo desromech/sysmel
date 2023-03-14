@@ -7,6 +7,13 @@
 
 typedef struct tuuvm_context_s tuuvm_context_t;
 
+typedef struct tuuvm_generatedSymbol_s
+{
+    tuuvm_tuple_header_t header;
+    tuuvm_tuple_t value;
+    tuuvm_tuple_t sourcePosition;
+} tuuvm_generatedSymbol_t;
+
 typedef struct tuuvm_macroContext_s
 {
     tuuvm_tuple_header_t header;
@@ -14,6 +21,11 @@ typedef struct tuuvm_macroContext_s
     tuuvm_tuple_t sourcePosition;
     tuuvm_tuple_t environment;
 } tuuvm_macroContext_t;
+
+/**
+ * Creates a generated symbol.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_generatedSymbol_create(tuuvm_context_t *context, tuuvm_tuple_t value, tuuvm_tuple_t sourcePosition);
 
 /**
  * Creates a macro context.
