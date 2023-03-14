@@ -31,12 +31,21 @@ typedef uintptr_t tuuvm_tuple_t;
  */
 typedef intptr_t tuuvm_stuple_t;
 
-#define TUUVM_TUPLE_TYPE_POINTER_MASK ((uintptr_t)-16)
-#define TUUVM_TUPLE_FLAGS_MASK ((uintptr_t)15)
+// Identity hash and flags
+#define TUUVM_TUPLE_IDENTITY_HASH_MASK ((uintptr_t)-16)
+#define TUUVM_TUPLE_IDENTITY_HASH_FLAGS_MASK ((uintptr_t)15)
 
-#define TUUVM_TUPLE_GC_COLOR_MASK ((uintptr_t)3)
-#define TUUVM_TUPLE_BYTES_BIT ((uintptr_t)4)
-#define TUUVM_TUPLE_NEEDS_FINALIZATION ((uintptr_t)8)
+#define TUUVM_TUPLE_IDENTITY_HASH_IMMUTABLE_BIT ((uintptr_t)1)
+#define TUUVM_TUPLE_IDENTITY_HASH_NEEDS_FINALIZATION_BIT ((uintptr_t)2)
+#define TUUVM_TUPLE_IDENTITY_HASH_DUMMY_VALUE_BIT ((uintptr_t)4)
+
+// Type pointer and flags
+#define TUUVM_TUPLE_TYPE_POINTER_MASK ((uintptr_t)-16)
+#define TUUVM_TUPLE_TYPE_FLAGS_MASK ((uintptr_t)15)
+
+#define TUUVM_TUPLE_TYPE_GC_COLOR_MASK ((uintptr_t)3)
+#define TUUVM_TUPLE_TYPE_BYTES_BIT ((uintptr_t)4)
+#define TUUVM_TUPLE_TYPE_WEAK_OBJECT_BIT ((uintptr_t)8)
 
 #define TUUVM_TUPLE_TAG_BIT_COUNT 4
 #define TUUVM_TUPLE_TAG_BIT_MASK 15
@@ -98,6 +107,7 @@ typedef enum tuuvm_tuple_immediate_trivial_index_e
     TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_TRUE,
     TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_VOID,
     TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_HASHTABLE_EMPTY_ELEMENT,
+    TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_TOMBSTONE,
 
     TUUVM_TUPLE_IMMEDIATE_TRIVIAL_COUNT,
 } tuuvm_tuple_immediate_trivial_index_e;
@@ -109,9 +119,9 @@ typedef enum tuuvm_tuple_immediate_trivial_index_e
 typedef struct tuuvm_tuple_header_s
 {
     tuuvm_tuple_t forwardingPointer; // Used by the moving GC
-    size_t identityHash;
+    uintptr_t identityHashAndFlags;
     uintptr_t typePointerAndFlags;
-    size_t objectSize;
+    uintptr_t objectSize;
 } tuuvm_tuple_header_t;
 
 /**
@@ -133,6 +143,7 @@ typedef struct tuuvm_object_tuple_s
 #define TUUVM_TRUE_TUPLE TUUVM_TUPLE_MAKE_IMMEDIATE_TRIVIAL_WITH_INDEX(TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_TRUE)
 #define TUUVM_VOID_TUPLE TUUVM_TUPLE_MAKE_IMMEDIATE_TRIVIAL_WITH_INDEX(TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_VOID)
 #define TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE TUUVM_TUPLE_MAKE_IMMEDIATE_TRIVIAL_WITH_INDEX(TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_HASHTABLE_EMPTY_ELEMENT)
+#define TUUVM_TOMBSTONE_TUPLE TUUVM_TUPLE_MAKE_IMMEDIATE_TRIVIAL_WITH_INDEX(TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_TOMBSTONE)
 
 #define TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(structureType) ((sizeof(structureType) - sizeof(tuuvm_tuple_header_t)) / sizeof(tuuvm_tuple_t))
 #define TUUVM_BYTE_SIZE_FOR_STRUCTURE_TYPE(structureType) (sizeof(structureType) - sizeof(tuuvm_tuple_header_t))
@@ -195,7 +206,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_getImmediateTrivialTypeWithIndex(tuuvm_conte
  */
 TUUVM_INLINE void tuuvm_tuple_setType(tuuvm_object_tuple_t *objectTuple, tuuvm_tuple_t newType)
 {
-    objectTuple->header.typePointerAndFlags = (objectTuple->header.typePointerAndFlags & TUUVM_TUPLE_FLAGS_MASK) | newType;
+    objectTuple->header.typePointerAndFlags = (objectTuple->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_FLAGS_MASK) | newType;
 }
 
 /**
@@ -222,15 +233,23 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_getType(tuuvm_context_t *context, tuuvm_t
  */
 TUUVM_INLINE bool tuuvm_tuple_isBytes(tuuvm_tuple_t tuple)
 {
-    return tuuvm_tuple_isNonNullPointer(tuple) && (TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & TUUVM_TUPLE_BYTES_BIT) != 0;
+    return tuuvm_tuple_isNonNullPointer(tuple) && (TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_BYTES_BIT) != 0;
 }
 
 /**
- * Is this an immutable tuple?
+ * Is this a weak object tuple?
  */
-TUUVM_INLINE bool tuuvm_tuple_isImmutable(tuuvm_tuple_t tuple)
+TUUVM_INLINE bool tuuvm_tuple_isWeakObject(tuuvm_tuple_t tuple)
 {
-    return !tuuvm_tuple_isNonNullPointer(tuple) || (TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & TUUVM_TUPLE_NEEDS_FINALIZATION) != 0;
+    return !tuuvm_tuple_isNonNullPointer(tuple) || (TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_WEAK_OBJECT_BIT) != 0;
+}
+
+/**
+ * Is this a weak or bytes object tuple?
+ */
+TUUVM_INLINE bool tuuvm_tuple_isWeakOrBytesObject(tuuvm_tuple_t tuple)
+{
+    return !tuuvm_tuple_isNonNullPointer(tuple) || (TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & (TUUVM_TUPLE_TYPE_BYTES_BIT | TUUVM_TUPLE_TYPE_WEAK_OBJECT_BIT)) != 0;
 }
 
 /**
@@ -238,7 +257,60 @@ TUUVM_INLINE bool tuuvm_tuple_isImmutable(tuuvm_tuple_t tuple)
  */
 TUUVM_INLINE uint32_t tuuvm_tuple_getGCColor(tuuvm_tuple_t tuple)
 {
-    return (uint32_t)(TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & TUUVM_TUPLE_GC_COLOR_MASK);
+    return (uint32_t)(TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_GC_COLOR_MASK);
+}
+
+/**
+ * Is this an immutable tuple?
+ */
+TUUVM_INLINE bool tuuvm_tuple_isImmutable(tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_isImmediate(tuple) || !tuple ||
+        ((TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags & TUUVM_TUPLE_IDENTITY_HASH_IMMUTABLE_BIT) != 0);
+}
+
+/**
+ * Marks an immutable value.
+ */
+TUUVM_INLINE void tuuvm_tuple_markImmutable(tuuvm_tuple_t tuple)
+{
+    if(!tuuvm_tuple_isNonNullPointer(tuple))
+        TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags |= TUUVM_TUPLE_IDENTITY_HASH_IMMUTABLE_BIT;
+}
+
+/**
+ * Is this an object that needs finalization?
+ */
+TUUVM_INLINE bool tuuvm_tuple_isObjectThatNeedsFinalization(tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_isNonNullPointer(tuple) && (TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags & TUUVM_TUPLE_IDENTITY_HASH_NEEDS_FINALIZATION_BIT) != 0;
+}
+
+/**
+ * Marks an object finalization.
+ */
+TUUVM_INLINE void tuuvm_tuple_markObjectThatNeedsFinalization(tuuvm_tuple_t tuple)
+{
+    if(tuuvm_tuple_isNonNullPointer(tuple))
+        TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags |= TUUVM_TUPLE_IDENTITY_HASH_NEEDS_FINALIZATION_BIT;
+}
+
+
+/**
+ * Is this a dummy value object?
+ */
+TUUVM_INLINE bool tuuvm_tuple_isDummyValue(tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_isNonNullPointer(tuple) && (TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags & TUUVM_TUPLE_IDENTITY_HASH_DUMMY_VALUE_BIT) != 0;
+}
+
+/**
+ * Marks a dummy value object.
+ */
+TUUVM_INLINE void tuuvm_tuple_markDummyValue(tuuvm_tuple_t tuple)
+{
+    if(tuuvm_tuple_isNonNullPointer(tuple))
+        TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags |= TUUVM_TUPLE_IDENTITY_HASH_DUMMY_VALUE_BIT;
 }
 
 /**
@@ -247,7 +319,7 @@ TUUVM_INLINE uint32_t tuuvm_tuple_getGCColor(tuuvm_tuple_t tuple)
 TUUVM_INLINE void tuuvm_tuple_setGCColor(tuuvm_tuple_t tuple, uint32_t newColor)
 {
     tuuvm_object_tuple_t *objectTuple = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple);
-    objectTuple->header.typePointerAndFlags &= ~TUUVM_TUPLE_GC_COLOR_MASK;
+    objectTuple->header.typePointerAndFlags &= ~TUUVM_TUPLE_TYPE_GC_COLOR_MASK;
     objectTuple->header.typePointerAndFlags |= newColor;
 }
 
@@ -804,7 +876,15 @@ TUUVM_INLINE bool tuuvm_tuple_boolean_decode(tuuvm_tuple_t value)
  */
 TUUVM_INLINE size_t tuuvm_tuple_identityHash(tuuvm_tuple_t tuple)
 {
-    return (tuuvm_tuple_isNonNullPointer(tuple) ? TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHash : tuuvm_hashMultiply(tuple)) & TUUVM_TUPLE_IMMEDIATE_VALUE_BIT_MASK;
+    return tuuvm_tuple_isNonNullPointer(tuple) ? (TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags >> TUUVM_TUPLE_TAG_BIT_COUNT) : tuuvm_hashMultiply(tuple);
+}
+
+/**
+ * Sets the identity hash.
+ */
+TUUVM_INLINE void tuuvm_tuple_setIdentityHash(tuuvm_object_tuple_t *objectTuple, size_t newIdentityHash)
+{
+    objectTuple->header.identityHashAndFlags = (objectTuple->header.identityHashAndFlags & TUUVM_TUPLE_TAG_BIT_MASK) | (newIdentityHash << TUUVM_TUPLE_TAG_BIT_COUNT);
 }
 
 /**

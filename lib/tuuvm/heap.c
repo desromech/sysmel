@@ -161,7 +161,7 @@ TUUVM_API tuuvm_object_tuple_t *tuuvm_heap_allocateByteTuple(tuuvm_heap_t *heap,
     tuuvm_object_tuple_t *result = tuuvm_heap_allocateTupleWithRawSize(heap, allocationSize, 16);
     if(!result) return 0;
 
-    result->header.typePointerAndFlags = TUUVM_TUPLE_BYTES_BIT | heap->gcWhiteColor;
+    result->header.typePointerAndFlags = TUUVM_TUPLE_TYPE_BYTES_BIT | heap->gcWhiteColor;
     result->header.objectSize = byteSize;
     return result;
 }
@@ -223,11 +223,16 @@ static void tuuvm_heap_chunk_computeCompactionForwardingPointers(uint32_t blackC
         tuuvm_object_tuple_t *object = (tuuvm_object_tuple_t*)(chunkAddress + offset);
         size_t objectSize = sizeof(tuuvm_object_tuple_t) + object->header.objectSize;
         offset += objectSize;
-        if((object->header.typePointerAndFlags & TUUVM_TUPLE_GC_COLOR_MASK) == blackColor)
+        if((object->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_GC_COLOR_MASK) == blackColor)
         {
             newSize = uintptrAlignedTo(newSize, 16);
             object->header.forwardingPointer = chunkAddress + newSize;
             newSize += objectSize;
+        }
+        else
+        {
+            // Replace with tombstone.
+            object->header.forwardingPointer = TUUVM_TOMBSTONE_TUPLE;
         }
     }
 }
@@ -252,7 +257,7 @@ static void tuuvm_heap_chunk_applyForwardingPointers(uint32_t blackColor, tuuvm_
         size_t objectSize = sizeof(tuuvm_object_tuple_t) + object->header.objectSize;
         offset += objectSize;
 
-        if((object->header.typePointerAndFlags & TUUVM_TUPLE_GC_COLOR_MASK) == blackColor)
+        if((object->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_GC_COLOR_MASK) == blackColor)
         {
             // Apply the forwarding to the type pointer.
             tuuvm_tuple_t type = object->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_POINTER_MASK;
@@ -260,7 +265,7 @@ static void tuuvm_heap_chunk_applyForwardingPointers(uint32_t blackColor, tuuvm_
                 tuuvm_tuple_setType(object, TUUVM_CAST_OOP_TO_OBJECT_TUPLE(type)->header.forwardingPointer);
 
             // Apply the forwarding to the slots.
-            if((object->header.typePointerAndFlags & TUUVM_TUPLE_BYTES_BIT) == 0)
+            if((object->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_BYTES_BIT) == 0)
             {
                 size_t slotCount = object->header.objectSize / sizeof(tuuvm_tuple_t);
                 tuuvm_tuple_t *slots = object->pointers;
@@ -295,7 +300,7 @@ static void tuuvm_heap_chunk_compact(uint32_t blackColor, tuuvm_heap_chunk_t *ch
         tuuvm_object_tuple_t *object = (tuuvm_object_tuple_t*)(chunkAddress + offset);
         size_t objectSize = sizeof(tuuvm_object_tuple_t) + object->header.objectSize;
         offset += objectSize;
-        if((object->header.typePointerAndFlags & TUUVM_TUPLE_GC_COLOR_MASK) == blackColor)
+        if((object->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_GC_COLOR_MASK) == blackColor)
         {
             newSize = uintptrAlignedTo(newSize, 16);
             tuuvm_object_tuple_t *targetObject = (tuuvm_object_tuple_t*)(chunkAddress + newSize);
@@ -385,7 +390,7 @@ static void tuuvm_heap_chunk_relocateWithTable(uint32_t whiteColor, tuuvm_heap_c
         tuuvm_tuple_setType(object, tuuvm_heap_relocatePointerWithTable(relocationTable, object->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_POINTER_MASK));
 
         // Relocate the slots.
-        if((object->header.typePointerAndFlags & TUUVM_TUPLE_BYTES_BIT) == 0)
+        if((object->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_BYTES_BIT) == 0)
         {
             size_t slotCount = object->header.objectSize / sizeof(tuuvm_tuple_t);
             tuuvm_tuple_t *slots = object->pointers;

@@ -106,6 +106,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t undefinedObjectType;
     tuuvm_tuple_t valueBoxType;
     tuuvm_tuple_t voidType;
+    tuuvm_tuple_t tombstoneType;
 
     tuuvm_tuple_t char8Type;
     tuuvm_tuple_t uint8Type;

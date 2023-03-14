@@ -121,7 +121,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_symbol_internWithString(tuuvm_context_t *context, 
     if(!result) return 0;
 
     // In the case of symbols, make the identity hash match with the string hash.
-    result->header.identityHash = tuuvm_string_computeHashWithBytes(stringSize, (const uint8_t*)string);
+    tuuvm_tuple_setIdentityHash(result, tuuvm_string_computeHashWithBytes(stringSize, (const uint8_t*)string));
 
     memcpy(result->bytes, string, stringSize);
     tuuvm_identitySet_insert(context, context->roots.internedSymbolSet, (tuuvm_tuple_t)result);

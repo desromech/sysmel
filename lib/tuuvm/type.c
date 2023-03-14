@@ -410,11 +410,15 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValue(tuuvm_context_t *context, tuuvm_t
     if(function)
         return tuuvm_function_apply2(context, function, type, value);
 
-    // TODO: Add a check for the dependent value dummy bit here
     tuuvm_tuple_t valueType = tuuvm_tuple_getType(context, value);
-    if(!valueType && tuuvm_tuple_getSizeInSlots(value) == 0)
-        return (tuuvm_tuple_t)tuuvm_context_allocatePointerTuple(context, type, 0);
+    if(!valueType && tuuvm_tuple_isDummyValue(value))
+    {
+        tuuvm_tuple_t coercedDummyValue = (tuuvm_tuple_t)tuuvm_context_allocatePointerTuple(context, type, 0);
+        tuuvm_tuple_markDummyValue(coercedDummyValue);
+        return coercedDummyValue;
+    }
     
+    printf("Is dummy value %d\n", tuuvm_tuple_isDummyValue(value));
     tuuvm_error("Cannot perform coercion of value into the required type.");
     return TUUVM_VOID_TUPLE;
 }

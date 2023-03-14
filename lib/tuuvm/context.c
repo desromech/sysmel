@@ -353,6 +353,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "false"), TUUVM_FALSE_TUPLE);
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "true"), TUUVM_TRUE_TUPLE);
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "void"), TUUVM_VOID_TUPLE);
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "__hashtableEmptyElement__"), TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE);
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "__tombstone__"), TUUVM_TOMBSTONE_TUPLE);
 
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "BootstrapEnv::IntrinsicsBuiltInEnvironment"), context->roots.intrinsicsBuiltInEnvironment);
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "BootstrapEnv::IntrinsicTypes"), context->roots.intrinsicTypes);
@@ -423,6 +425,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.negativeIntegerType = tuuvm_context_createIntrinsicClass(context, "NegativeInteger", context->roots.integerType, NULL);
     context->roots.undefinedObjectType = tuuvm_context_createIntrinsicClass(context, "UndefinedObject", TUUVM_NULL_TUPLE, NULL);
     tuuvm_typeAndMetatype_setFlags(context, context->roots.undefinedObjectType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
+    context->roots.tombstoneType = tuuvm_context_createIntrinsicClass(context, "ObjectTombstone", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_typeAndMetatype_setFlags(context, context->roots.tombstoneType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
     context->roots.stringType = tuuvm_context_createIntrinsicClass(context, "String", context->roots.arrayedCollectionType, NULL);
     tuuvm_typeAndMetatype_setFlags(context, context->roots.stringType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_BYTES | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
 
@@ -607,6 +611,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     context->roots.hashtableEmptyType = tuuvm_context_createIntrinsicClass(context, "HashtableEmpty", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_typeAndMetatype_setFlags(context, context->roots.hashtableEmptyType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
+
     context->roots.macroContextType = tuuvm_context_createIntrinsicClass(context, "MacroContext", TUUVM_NULL_TUPLE,
         "sourceNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
@@ -807,6 +813,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.immediateTrivialTypeTable[TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_TRUE] = context->roots.trueType;
     context->roots.immediateTrivialTypeTable[TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_VOID] = context->roots.voidType;
     context->roots.immediateTrivialTypeTable[TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_HASHTABLE_EMPTY_ELEMENT] = context->roots.hashtableEmptyType;
+    context->roots.immediateTrivialTypeTable[TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_TOMBSTONE] = context->roots.tombstoneType;
 }
 
 TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
@@ -900,7 +907,7 @@ tuuvm_object_tuple_t *tuuvm_context_allocateByteTuple(tuuvm_context_t *context, 
     if(!context) return 0;
 
     tuuvm_object_tuple_t *result = tuuvm_heap_allocateByteTuple(&context->heap, byteSize);
-    result->header.identityHash = tuuvm_context_generateIdentityHash(context);
+    tuuvm_tuple_setIdentityHash(result, tuuvm_context_generateIdentityHash(context));
     if(result)
         tuuvm_tuple_setType(result, type);
     return result;
@@ -911,7 +918,7 @@ tuuvm_object_tuple_t *tuuvm_context_allocatePointerTuple(tuuvm_context_t *contex
     if(!context) return 0;
 
     tuuvm_object_tuple_t *result = tuuvm_heap_allocatePointerTuple(&context->heap, slotCount);
-    result->header.identityHash = tuuvm_context_generateIdentityHash(context);
+    tuuvm_tuple_setIdentityHash(result, tuuvm_context_generateIdentityHash(context));
     if(result)
         tuuvm_tuple_setType(result, type);
     return result;
@@ -923,6 +930,6 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_shallowCopy(tuuvm_context_t *context, tuuv
         return tuple;
 
     tuuvm_object_tuple_t *result = tuuvm_heap_shallowCopyTuple(&context->heap, (tuuvm_object_tuple_t*)tuple);
-    result->header.identityHash = tuuvm_context_generateIdentityHash(context);
+    tuuvm_tuple_setIdentityHash(result, tuuvm_context_generateIdentityHash(context));
     return (tuuvm_tuple_t)result;    
 }

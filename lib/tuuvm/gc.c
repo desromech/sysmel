@@ -23,8 +23,8 @@ static void tuuvm_gc_markPointer(void *userdata, tuuvm_tuple_t *pointerAddress)
     tuuvm_tuple_t objectType = tuuvm_tuple_getType(context, pointer);
     tuuvm_gc_markPointer(userdata, &objectType);
 
-    // Do not traverse the slot of byte objects
-    if(!tuuvm_tuple_isBytes(pointer))
+    // Do not traverse the slot of byte objects, and the slots of weak objects
+    if(!tuuvm_tuple_isWeakOrBytesObject(pointer))
     {
         // Mark the object slots
         size_t slotCount = tuuvm_tuple_getSizeInSlots(pointer);

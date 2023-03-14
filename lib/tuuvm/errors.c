@@ -1,3 +1,4 @@
+#include "tuuvm/errors.h"
 #include "tuuvm/assert.h"
 #include "tuuvm/context.h"
 #include "tuuvm/function.h"
@@ -22,6 +23,21 @@ TUUVM_API void tuuvm_error(const char *message)
 
     tuuvm_tuple_t errorString = tuuvm_string_createWithCString(activeContext, message);
     tuuvm_stackFrame_raiseException(errorString);
+}
+
+TUUVM_API void tuuvm_error_accessDummyValue()
+{
+    tuuvm_error("Cannot access slot of dummy value.");
+}
+
+TUUVM_API void tuuvm_error_modifyImmediateValue()
+{
+    tuuvm_error("Cannot modify slot of immediate value");
+}
+
+TUUVM_API void tuuvm_error_modifyImmutableTuple()
+{
+    tuuvm_error("Cannot modify slot of immutable tuple.");
 }
 
 TUUVM_API void tuuvm_error_assertionFailure(const char *message)

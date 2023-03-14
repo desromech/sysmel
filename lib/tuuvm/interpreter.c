@@ -3588,7 +3588,7 @@ static tuuvm_tuple_t tuuvm_simpleFunctionType_primitiveTypeCheckFunctionApplicat
     (void)closure;
     if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
 
-    // Fixme: Implement this in a much more proper way.
+    // FIXME: Implement this in a much more proper way.
     tuuvm_simpleFunctionType_t **simpleFunctionType = (tuuvm_simpleFunctionType_t**)&arguments[0];
     tuuvm_astFunctionApplicationNode_t **functionApplicationNode = (tuuvm_astFunctionApplicationNode_t**)&arguments[1];
 
@@ -3631,8 +3631,9 @@ static tuuvm_tuple_t tuuvm_dependentFunctionType_getOrCreateApplicationValueForN
     }
 
     // Construct a dummy value that has the same type
-    // FIXME: Mark the value as dummy with a special bit.
-    return (tuuvm_tuple_t)tuuvm_context_allocatePointerTuple(context, analyzedType, 0);
+    tuuvm_tuple_t dummyValue = (tuuvm_tuple_t)tuuvm_context_allocatePointerTuple(context, analyzedType, 0);
+    tuuvm_tuple_markDummyValue(dummyValue);
+    return dummyValue;
 }
 
 static tuuvm_tuple_t tuuvm_dependentFunctionType_primitiveTypeCheckFunctionApplicationNode(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)

@@ -114,6 +114,8 @@ static tuuvm_tuple_t tuuvm_tuple_primitive_setType(tuuvm_context_t *context, tuu
 TUUVM_API tuuvm_tuple_t tuuvm_tuple_slotAt(tuuvm_context_t *context, tuuvm_tuple_t tuple, size_t slotIndex)
 {
     (void)context;
+    if(tuuvm_tuple_isDummyValue(tuple)) tuuvm_error_accessDummyValue();
+
     if(!tuuvm_tuple_isNonNullPointer(tuple))
     {
         if(slotIndex < sizeof(tuuvm_tuple_t))
@@ -160,8 +162,9 @@ static tuuvm_tuple_t tuuvm_tuple_primitive_slotAt(tuuvm_context_t *context, tuuv
 TUUVM_API void tuuvm_tuple_slotAtPut(tuuvm_context_t *context, tuuvm_tuple_t tuple, size_t slotIndex, tuuvm_tuple_t value)
 {
     (void)context;
-    if(!tuuvm_tuple_isNonNullPointer(tuple))
-        return;
+    if(!tuuvm_tuple_isNonNullPointer(tuple)) tuuvm_error_modifyImmediateValue();
+    if(tuuvm_tuple_isDummyValue(tuple)) tuuvm_error_accessDummyValue();
+    if(tuuvm_tuple_isImmediate(tuple)) tuuvm_error_modifyImmutableTuple();
 
     if(tuuvm_tuple_isBytes(tuple))
     {
