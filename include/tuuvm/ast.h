@@ -92,6 +92,7 @@ typedef struct tuuvm_astLocalDefinitionNode_s
     tuuvm_tuple_t typeExpression;
     tuuvm_tuple_t valueExpression;
     tuuvm_tuple_t binding;
+    tuuvm_tuple_t isMacroSymbol;
 } tuuvm_astLocalDefinitionNode_t;
 
 typedef struct tuuvm_astIdentifierReferenceNode_s
@@ -138,6 +139,7 @@ typedef struct tuuvm_astMessageSendNode_s
 {
     tuuvm_astNode_t super;
     tuuvm_tuple_t receiver;
+    tuuvm_tuple_t receiverLookupType;
     tuuvm_tuple_t selector;
     tuuvm_tuple_t arguments;
 } tuuvm_astMessageSendNode_t;
@@ -146,6 +148,7 @@ typedef struct tuuvm_astMessageChainNode_s
 {
     tuuvm_astNode_t super;
     tuuvm_tuple_t receiver;
+    tuuvm_tuple_t receiverLookupType;
     tuuvm_tuple_t messages;
 } tuuvm_astMessageChainNode_t;
 
@@ -155,6 +158,13 @@ typedef struct tuuvm_astMessageChainMessageNode_s
     tuuvm_tuple_t selector;
     tuuvm_tuple_t arguments;
 } tuuvm_astMessageChainMessageNode_t;
+
+typedef struct tuuvm_astObjectWithLookupStartingFromNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t objectExpression;
+    tuuvm_tuple_t typeExpression;
+} tuuvm_astObjectWithLookupStartingFromNode_t;
 
 typedef struct tuuvm_astPragmaNode_s
 {
@@ -320,6 +330,11 @@ TUUVM_API bool tuuvm_astNode_isMessageChainNode(tuuvm_context_t *context, tuuvm_
  * Is this a message chain message node?
  */ 
 TUUVM_API bool tuuvm_astNode_isMessageChainMessageNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this an object with lookup starting from node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isObjectWithLookupStartingFromNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
 
 /**
  * Is this a pragma node?
@@ -526,6 +541,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_astLiteralNode_getValue(tuuvm_tuple_t node);
 TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t nameExpression, tuuvm_tuple_t typeExpression, tuuvm_tuple_t valueExpression);
 
 /**
+ * Creates a local definition node for a macro symbol.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_createMacro(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t nameExpression, tuuvm_tuple_t typeExpression, tuuvm_tuple_t valueExpression);
+
+/**
  * Gets the value from a local definition node.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_getNameExpression(tuuvm_tuple_t node);
@@ -574,6 +594,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_astMessageChainNode_create(tuuvm_context_t *contex
  * Creates a message chain node.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astMessageChainMessageNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t selector, tuuvm_tuple_t arguments);
+
+/**
+ * Creates an object with lookup starting from node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astObjectWithLookupStartingFrom_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t objectExpression, tuuvm_tuple_t typeExpression);
 
 /**
  * Creates a pragma node.

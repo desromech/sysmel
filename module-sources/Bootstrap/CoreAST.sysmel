@@ -161,11 +161,13 @@ ASTMakeTupleNode
 ASTMessageSendNode
     withSelector: #childrenDo: addMethod: {:(ASTMessageSendNode)self :aBlock :: Void |
         if: (self receiver isNotNil) then: aBlock(self receiver).
+        if: (self receiverLookupType isNotNil) then: aBlock(self receiverLookupType).
         if: (self selector isNotNil) then: aBlock(self selector).
         self arguments do: aBlock
     };
     withSelector: #transformWith: addMethod: {:(ASTMessageSendNode)self :aBlock :: Void |
         if: (self receiver isNotNil) then: (self receiver: aBlock(self receiver)).
+        if: (self receiverLookupType isNotNil) then: (self receiverLookupType: aBlock(self receiverLookupType)).
         if: (self selector isNotNil) then: (self selector: aBlock(self selector)).
         self arguments: (self arguments collect: aBlock)
     }.
@@ -173,10 +175,12 @@ ASTMessageSendNode
 ASTMessageChainNode
     withSelector: #childrenDo: addMethod: {:(ASTMessageChainNode)self :aBlock :: Void |
         if: (self receiver isNotNil) then: aBlock(self receiver).
+        if: (self receiverLookupType isNotNil) then: aBlock(self receiverLookupType).
         self messages do: aBlock
     };
     withSelector: #transformWith: addMethod: {:(ASTMessageChainNode)self :aBlock :: Void |
         if: (self receiver isNotNil) then: (self receiver: aBlock(self receiver)).
+        if: (self receiverLookupType isNotNil) then: (self receiverLookupType: aBlock(self receiverLookupType)).
         self messages: (self messages collect: aBlock)
     }.
 
@@ -196,6 +200,16 @@ ASTMessageChainMessageNode
     withSelector: #transformWith: addMethod: {:(ASTMessageChainMessageNode)self :aBlock :: Void |
         if: (self selector isNotNil) then: (self selector: aBlock(self selector)).
         self arguments: (self arguments collect: aBlock)
+    }.
+
+ASTObjectWithLookupStartingFromNode
+    withSelector: #childrenDo: addMethod: {:(ASTObjectWithLookupStartingFromNode)self :aBlock :: Void |
+        if: (self objectExpression isNotNil) then: aBlock(self objectExpression).
+        if: (self typeExpression isNotNil) then: aBlock(self typeExpression).
+    };
+    withSelector: #transformWith: addMethod: {:(ASTObjectWithLookupStartingFromNode)self :aBlock :: Void |
+        if: (self objectExpression isNotNil) then: (self objectExpression: aBlock(self objectExpression)).
+        if: (self typeExpression isNotNil) then: (self typeExpression: aBlock(self typeExpression)).
     }.
 
 ASTPragmaNode

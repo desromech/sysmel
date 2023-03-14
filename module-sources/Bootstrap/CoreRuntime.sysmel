@@ -406,7 +406,7 @@ SequenceableCollection
 
         while: (if: hasFoundIt _ then: false else: index _ < self size) do: (
             hasFoundIt := aBlock(self at: index _)
-        ) continueWith: (index := index _ + 1).
+        ) continueWith: (index := index _ + 1sz).
         hasFoundIt _
     } makeFinal;
     withSelector: #allSatisfy: addMethod: {:(SequenceableCollection)self :aBlock :: Boolean |
@@ -416,7 +416,7 @@ SequenceableCollection
 
         while: (if: everythingIsFine _ then: index _ < self size else: false) do: (
             everythingIsFine := aBlock(self at: index _)
-        ) continueWith: (index := index _ + 1).
+        ) continueWith: (index := index _ + 1sz).
         everythingIsFine _
     } makeFinal;
     withSelector: #collect: addMethod: {:(SequenceableCollection)self :aBlock :: self species |
@@ -427,7 +427,7 @@ SequenceableCollection
         while: index _ < self size do: {
             let: #i with: index _.
             result at: i put: aBlock(self at: i)
-        } continueWith: (index := index _ + 1).
+        } continueWith: (index := index _ + 1sz).
 
         result
     } makeFinal;
@@ -437,7 +437,7 @@ SequenceableCollection
 
         while: index _ < self size do: (
             aBlock(self at: index _)
-        ) continueWith: (index := index _ + 1)
+        ) continueWith: (index := index _ + 1sz)
     };
     withSelector: #doWithIndex: addMethod: {:(SequenceableCollection)self :aBlock :: Void |
         let: #index with: (ValueBox with: 0sz).
@@ -446,7 +446,7 @@ SequenceableCollection
         while: index _ < self size do: {
             let: #i with: index _.
             aBlock(self at: i, i)
-        } continueWith: (index := index _ + 1)
+        } continueWith: (index := index _ + 1sz)
     };
     withSelector: #-- addMethod: {:(SequenceableCollection)self :(SequenceableCollection)other :: self species |
         let: #size with: self size.

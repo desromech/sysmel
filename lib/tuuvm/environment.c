@@ -25,6 +25,11 @@ TUUVM_API bool tuuvm_symbolBinding_isValue(tuuvm_context_t *context, tuuvm_tuple
     return tuuvm_tuple_isKindOf(context, binding, context->roots.symbolValueBindingType);
 }
 
+TUUVM_API bool tuuvm_symbolBinding_isMacroValue(tuuvm_context_t *context, tuuvm_tuple_t binding)
+{
+    return tuuvm_tuple_isKindOf(context, binding, context->roots.symbolMacroValueBindingType);
+}
+
 TUUVM_API bool tuuvm_symbolBinding_isAnalysisBinding(tuuvm_context_t *context, tuuvm_tuple_t binding)
 {
     return tuuvm_tuple_isKindOf(context, binding, context->roots.symbolAnalysisBindingType);
@@ -66,6 +71,16 @@ TUUVM_API tuuvm_tuple_t tuuvm_symbolCaptureBinding_create(tuuvm_context_t *conte
     result->super.ownerFunction = ownerFunction;
     result->super.vectorIndex = tuuvm_tuple_size_encode(context, vectorIndex);
     result->capturedBinding = capturedBinding;
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_symbolMacroValueBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t expansion)
+{
+    tuuvm_symbolMacroValueBinding_t *result = (tuuvm_symbolMacroValueBinding_t*)tuuvm_context_allocatePointerTuple(context, context->roots.symbolMacroValueBindingType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_symbolMacroValueBinding_t));
+    result->super.name = name;
+    result->super.sourcePosition = sourcePosition;
+    result->super.type = tuuvm_tuple_getType(context, expansion);
+    result->expansion = expansion;
     return (tuuvm_tuple_t)result;
 }
 
@@ -427,6 +442,13 @@ TUUVM_API tuuvm_tuple_t tuuvm_analysisEnvironment_setNewSymbolLocalBinding(tuuvm
     tuuvm_tuple_t binding = tuuvm_symbolLocalBinding_create(context, sourcePosition, name, type, functionAnalysisEnvironmentObject->functionDefinition, tuuvm_arrayList_getSize(functionAnalysisEnvironmentObject->localBindingList));
     tuuvm_environment_setNewBinding(context, environment, binding);
     tuuvm_arrayList_add(context, functionAnalysisEnvironmentObject->localBindingList, binding);
+    return binding;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_environment_setNewMacroValueBinding(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t expansion)
+{
+    tuuvm_tuple_t binding = tuuvm_symbolMacroValueBinding_create(context, sourcePosition, name, expansion);
+    tuuvm_environment_setNewBinding(context, environment, binding);
     return binding;
 }
 

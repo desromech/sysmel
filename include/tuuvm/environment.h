@@ -77,6 +77,12 @@ typedef struct tuuvm_symbolCaptureBinding_s
     tuuvm_tuple_t capturedBinding;
 } tuuvm_symbolCaptureBinding_t;
 
+typedef struct tuuvm_symbolMacroValueBinding_s
+{
+    tuuvm_symbolBinding_t super;
+    tuuvm_tuple_t expansion;
+} tuuvm_symbolMacroValueBinding_t;
+
 typedef struct tuuvm_symbolValueBinding_s
 {
     tuuvm_symbolBinding_t super;
@@ -87,6 +93,11 @@ typedef struct tuuvm_symbolValueBinding_s
  * Is the symbol binding a value?
  */
 TUUVM_API bool tuuvm_symbolBinding_isValue(tuuvm_context_t *context, tuuvm_tuple_t binding);
+
+/**
+ * Is the symbol binding a value?
+ */
+TUUVM_API bool tuuvm_symbolBinding_isMacroValue(tuuvm_context_t *context, tuuvm_tuple_t binding);
 
 /**
  * Is the symbol binding an analysis specific binding?
@@ -133,6 +144,20 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_symbolCaptureBinding_getSourceBinding(tuuvm_tup
 {
     if(!tuuvm_tuple_isNonNullPointer(binding)) return TUUVM_NULL_TUPLE;
     return ((tuuvm_symbolCaptureBinding_t*)binding)->capturedBinding;
+}
+
+/**
+ * Creates a symbol macro value binding.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_symbolMacroValueBinding_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t expansion);
+
+/**
+ * Gets the expansion from the symbol macro value binding.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_symbolMacroValueBinding_getExpansion(tuuvm_tuple_t binding)
+{
+    if(!tuuvm_tuple_isNonNullPointer(binding) || tuuvm_tuple_getSizeInSlots(binding) < TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_symbolValueBinding_t)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_symbolMacroValueBinding_t*)binding)->expansion;
 }
 
 /**
@@ -289,6 +314,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_analysisEnvironment_setNewSymbolArgumentBinding(tu
  * Makes a new local binding in the analysis environment.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_analysisEnvironment_setNewSymbolLocalBinding(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t type);
+
+/**
+ * Makes a new macro value binding in the analysis environment.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_environment_setNewMacroValueBinding(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t expansion);
 
 /**
  * Makes a new value binding in the analysis environment.

@@ -44,6 +44,7 @@ SSAFunction definition: {
     public field definition => SSAValue.
 
     public method initialize => Void := {
+        super initialize.
         self captures: #().
     }.
 
@@ -191,6 +192,7 @@ SSAFunctionLocalValue definition: {
     public field localValueIndex => Size.
 
     public method initialize => Void := {
+        super initialize.
         self localValueIndex: 0sz
     }.
 
@@ -567,6 +569,7 @@ public final class SSAFunctionCompilationContext superclass: Object; definition:
     public field continueDestination => SSABasicBlock.
 
     public method initialize => Void := {
+        super initialize.
         self bindingDictionary: IdentityDictionary new.
     }.
 

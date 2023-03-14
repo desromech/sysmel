@@ -104,6 +104,11 @@ TUUVM_API bool tuuvm_astNode_isMessageChainMessageNode(tuuvm_context_t *context,
     return tuuvm_tuple_isKindOf(context, tuple, context->roots.astMessageChainMessageNodeType);
 }
 
+TUUVM_API bool tuuvm_astNode_isObjectWithLookupStartingFromNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astObjectWithLookupStartingFromNodeType);
+}
+
 TUUVM_API bool tuuvm_astNode_isPragmaNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
     return tuuvm_tuple_isKindOf(context, tuple, context->roots.astPragmaNodeType);
@@ -365,6 +370,18 @@ TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_create(tuuvm_context_t *con
     result->nameExpression = nameExpression;
     result->typeExpression = typeExpression;
     result->valueExpression = valueExpression;
+    result->isMacroSymbol = TUUVM_FALSE_TUPLE;
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_createMacro(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t nameExpression, tuuvm_tuple_t typeExpression, tuuvm_tuple_t valueExpression)
+{
+    tuuvm_astLocalDefinitionNode_t *result = (tuuvm_astLocalDefinitionNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astLocalDefinitionNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astLocalDefinitionNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->nameExpression = nameExpression;
+    result->typeExpression = typeExpression;
+    result->valueExpression = valueExpression;
+    result->isMacroSymbol = TUUVM_TRUE_TUPLE;
     return (tuuvm_tuple_t)result;
 }
 
@@ -445,6 +462,15 @@ TUUVM_API tuuvm_tuple_t tuuvm_astMessageChainMessageNode_create(tuuvm_context_t 
     result->super.sourcePosition = sourcePosition;
     result->selector = selector;
     result->arguments = arguments;
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astObjectWithLookupStartingFrom_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t objectExpression, tuuvm_tuple_t typeExpression)
+{
+    tuuvm_astObjectWithLookupStartingFromNode_t *result = (tuuvm_astObjectWithLookupStartingFromNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astObjectWithLookupStartingFromNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astObjectWithLookupStartingFromNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->objectExpression = objectExpression;
+    result->typeExpression = typeExpression;
     return (tuuvm_tuple_t)result;
 }
 

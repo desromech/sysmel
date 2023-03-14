@@ -287,6 +287,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.symbolArgumentBindingType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolAnalysisBindingType);
     context->roots.symbolCaptureBindingType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolAnalysisBindingType);
     context->roots.symbolLocalBindingType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolAnalysisBindingType);
+    context->roots.symbolMacroValueBindingType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolBindingType);
     context->roots.symbolValueBindingType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolBindingType);
     context->roots.environmentType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.astNodeType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
@@ -489,6 +490,9 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolLocalBindingType, "SymbolLocalBinding", TUUVM_NULL_TUPLE,
         NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolMacroValueBindingType, "SymbolMacroValueBinding", TUUVM_NULL_TUPLE,
+        "expansion", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolValueBindingType, "SymbolValueBinding", TUUVM_NULL_TUPLE,
         "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
@@ -670,6 +674,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "typeExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "valueExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "binding", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "isMacroSymbol", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         NULL);
     context->roots.astIdentifierReferenceNodeType = tuuvm_context_createIntrinsicClass(context, "ASTIdentifierReferenceNode", context->roots.astNodeType,
         "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
@@ -697,16 +702,22 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 
     context->roots.astMessageSendNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMessageSendNode", context->roots.astNodeType,
         "receiver", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "receiverLookupType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "selector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     context->roots.astMessageChainNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMessageChainNode", context->roots.astNodeType,
         "receiver", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "receiverLookupType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "messages", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     context->roots.astMessageChainMessageNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMessageChainMessageNode", context->roots.astNodeType,
         "selector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        NULL);
+    context->roots.astObjectWithLookupStartingFromNodeType = tuuvm_context_createIntrinsicClass(context, "ASTObjectWithLookupStartingFromNode", context->roots.astNodeType,
+        "objectExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "typeExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     context->roots.astPragmaNodeType = tuuvm_context_createIntrinsicClass(context, "ASTPragmaNode", context->roots.astNodeType,
         "selector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
