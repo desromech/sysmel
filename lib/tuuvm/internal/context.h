@@ -79,12 +79,14 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t identitySetType;
     tuuvm_tuple_t integerType;
     tuuvm_tuple_t localAnalysisEnvironmentType;
+    tuuvm_tuple_t programEntityType;
     tuuvm_tuple_t positiveIntegerType;
     tuuvm_tuple_t negativeIntegerType;
     tuuvm_tuple_t macroContextType;
     tuuvm_tuple_t messageType;
     tuuvm_tuple_t metaclassType;
     tuuvm_tuple_t methodDictionaryType;
+    tuuvm_tuple_t namespaceType;
     tuuvm_tuple_t objectType;
     tuuvm_tuple_t sequenceableCollectionType;
     tuuvm_tuple_t setType;
@@ -168,7 +170,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t astQuasiUnquoteNodeType;
     tuuvm_tuple_t astSpliceNodeType;
 
-    tuuvm_tuple_t intrinsicsBuiltInEnvironment;
+    tuuvm_tuple_t globalNamespace;
     tuuvm_tuple_t intrinsicTypes;
 
     tuuvm_globalLookupCacheEntry_t globalMethodLookupCache[GLOBAL_LOOKUP_CACHE_ENTRY_COUNT];

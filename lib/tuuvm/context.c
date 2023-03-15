@@ -78,7 +78,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicClass(tuuvm_context_t *cont
     tuuvm_tuple_t nameSymbol = tuuvm_symbol_internWithCString(context, name);
     tuuvm_tuple_t type = tuuvm_type_createAnonymousClassAndMetaclass(context, supertype);
     tuuvm_type_setName(type, nameSymbol);
-    tuuvm_environment_setNewSymbolBindingWithValue(context, context->roots.intrinsicsBuiltInEnvironment, nameSymbol, type);
+    tuuvm_environment_setNewSymbolBindingWithValue(context, context->roots.globalNamespace, nameSymbol, type);
     tuuvm_arrayList_add(context, context->roots.intrinsicTypes, type);
 
     // First pass: count the arguments.
@@ -123,7 +123,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicType(tuuvm_context_t *conte
     tuuvm_tuple_t type = tuuvm_type_createWithName(context, nameSymbol);
     if(supertype)
         tuuvm_type_setSupertype(type, supertype);
-    tuuvm_environment_setNewSymbolBindingWithValue(context, context->roots.intrinsicsBuiltInEnvironment, nameSymbol, type);
+    tuuvm_environment_setNewSymbolBindingWithValue(context, context->roots.globalNamespace, nameSymbol, type);
     tuuvm_arrayList_add(context, context->roots.intrinsicTypes, type);
 
     // First pass: count the arguments.
@@ -168,7 +168,7 @@ static void tuuvm_context_setIntrinsicTypeMetadata(tuuvm_context_t *context, tuu
     tuuvm_type_setName(type, nameSymbol);
     if(supertype)
         tuuvm_type_setSupertype(type, supertype);
-    tuuvm_environment_setNewSymbolBindingWithValue(context, context->roots.intrinsicsBuiltInEnvironment, nameSymbol, type);
+    tuuvm_environment_setNewSymbolBindingWithValue(context, context->roots.globalNamespace, nameSymbol, type);
     tuuvm_arrayList_add(context, context->roots.intrinsicTypes, type);
 
     // First pass: count the arguments.
@@ -207,7 +207,7 @@ static void tuuvm_context_setIntrinsicTypeMetadata(tuuvm_context_t *context, tuu
 
 TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingValue(tuuvm_context_t *context, tuuvm_tuple_t symbol, tuuvm_tuple_t value)
 {
-    tuuvm_environment_setNewSymbolBindingWithValue(context, context->roots.intrinsicsBuiltInEnvironment, symbol, value);
+    tuuvm_environment_setNewSymbolBindingWithValue(context, context->roots.globalNamespace, symbol, value);
 
     if(tuuvm_tuple_isKindOf(context, value, context->roots.functionType))
     {
@@ -263,13 +263,17 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_type_setFlags(context, context->roots.typeType, TUUVM_TYPE_FLAGS_NULLABLE);
 
     context->roots.objectType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.anyValueType);
-    tuuvm_type_setSupertype(context->roots.typeType, context->roots.objectType);
+    context->roots.programEntityType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    tuuvm_type_setSupertype(context->roots.typeType, context->roots.programEntityType);
+    tuuvm_type_setSupertype(tuuvm_tuple_getType(context, context->roots.programEntityType), tuuvm_tuple_getType(context, context->roots.objectType));
 
     context->roots.classType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.typeType);
     context->roots.metaclassType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.typeType);
 
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)tuuvm_tuple_getType(context, context->roots.objectType), context->roots.metaclassType);
     tuuvm_type_setSupertype(tuuvm_tuple_getType(context, context->roots.objectType), context->roots.classType);
+
+    tuuvm_tuple_setType((tuuvm_object_tuple_t*)tuuvm_tuple_getType(context, context->roots.programEntityType), context->roots.metaclassType);
 
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)tuuvm_tuple_getType(context, context->roots.classType), context->roots.metaclassType);
 
@@ -294,7 +298,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.symbolLocalBindingType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolAnalysisBindingType);
     context->roots.symbolMacroValueBindingType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolBindingType);
     context->roots.symbolValueBindingType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolBindingType);
-    context->roots.environmentType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.environmentType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.programEntityType);
+    context->roots.namespaceType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.environmentType);
     context->roots.astNodeType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
 
     // Collection base hierarchy
@@ -326,7 +331,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.arrayType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
     context->roots.arrayListType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.sequenceableCollectionType);
 
-    context->roots.intrinsicsBuiltInEnvironment = tuuvm_environment_create(context, TUUVM_NULL_TUPLE);
+    context->roots.globalNamespace = tuuvm_environment_create(context, TUUVM_NULL_TUPLE);
     context->roots.intrinsicTypes = tuuvm_arrayList_create(context);
 
     context->roots.equalsSelector = tuuvm_symbol_internWithCString(context, "=");
@@ -356,7 +361,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "__hashtableEmptyElement__"), TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE);
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "__tombstone__"), TUUVM_TOMBSTONE_TUPLE);
 
-    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "BootstrapEnv::IntrinsicsBuiltInEnvironment"), context->roots.intrinsicsBuiltInEnvironment);
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "__Global__"), context->roots.globalNamespace);
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "BootstrapEnv::IntrinsicTypes"), context->roots.intrinsicTypes);
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "BootstrapEnv::InternedSymbolSet"), context->roots.internedSymbolSet);
 
@@ -433,6 +438,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     // Set the name of the root basic type.
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.anyValueType, "AnyValue", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.objectType, "Object", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.programEntityType, "ProgramEntity", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.typeType, "Type", TUUVM_NULL_TUPLE,
         "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
         "owner", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
@@ -463,6 +469,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "returnTarget", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "breakTarget", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "continueTarget", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.namespaceType, "Namespace", TUUVM_NULL_TUPLE,
         NULL);
     context->roots.analysisEnvironmentType = tuuvm_context_createIntrinsicClass(context, "AnalysisEnvironment", context->roots.environmentType,
         NULL);

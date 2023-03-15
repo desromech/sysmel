@@ -17,6 +17,7 @@ typedef struct tuuvm_environment_s
     tuuvm_tuple_t continueTarget;
 } tuuvm_environment_t;
 
+typedef tuuvm_environment_t tuuvm_namespace_t;
 typedef tuuvm_environment_t tuuvm_analysisEnvironment_t;
 
 typedef struct tuuvm_functionActivationEnvironment_s
@@ -179,6 +180,11 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_symbolValueBinding_getValue(tuuvm_tuple_t bindi
  * Creates an environment.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_environment_create(tuuvm_context_t *context, tuuvm_tuple_t parent);
+
+/**
+ * Creates a namespace.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_namespace_create(tuuvm_context_t *context, tuuvm_tuple_t parent);
 
 /**
  * Creates an environment used for function action.

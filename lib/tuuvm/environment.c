@@ -101,6 +101,13 @@ TUUVM_API tuuvm_tuple_t tuuvm_environment_create(tuuvm_context_t *context, tuuvm
     return (tuuvm_tuple_t)result;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_namespace_create(tuuvm_context_t *context, tuuvm_tuple_t parent)
+{
+    tuuvm_namespace_t *result = (tuuvm_namespace_t*)tuuvm_context_allocatePointerTuple(context, context->roots.namespaceType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_namespace_t));
+    result->parent = parent;
+    return (tuuvm_tuple_t)result;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_functionActivationEnvironment_create(tuuvm_context_t *context, tuuvm_tuple_t parent, tuuvm_tuple_t function)
 {
     if(!function || !tuuvm_tuple_isKindOf(context, function, context->roots.functionType))
@@ -170,7 +177,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_localAnalysisEnvironment_create(tuuvm_context_t *c
 
 TUUVM_API tuuvm_tuple_t tuuvm_environment_getIntrinsicsBuiltInEnvironment(tuuvm_context_t *context)
 {
-    return context->roots.intrinsicsBuiltInEnvironment;
+    return context->roots.globalNamespace;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_environment_createDefaultForEvaluation(tuuvm_context_t *context)

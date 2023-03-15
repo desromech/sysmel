@@ -32,7 +32,7 @@
 
 ## exportInstrinsicBuiltInBinding
 (define (exportInstrinsicBuiltInBinding symbol binding)
-    (Environment::setSymbol:bindingWithValue: BootstrapEnv::IntrinsicsBuiltInEnvironment symbol binding))
+    (Environment::setSymbol:bindingWithValue: __Global__ symbol binding))
 
 ## Type::validMethodDictionary
 (define (Type::validMethodDictionary type)

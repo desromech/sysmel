@@ -1,6 +1,6 @@
 ## Testing code goes here.
 
-(printLine BootstrapEnv::IntrinsicsBuiltInEnvironment)
+(printLine __Global__)
 (printLine BootstrapEnv::IntrinsicTypes)
 
 (print "Hello World\n")
