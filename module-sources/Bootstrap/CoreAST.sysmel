@@ -1,7 +1,7 @@
 ASTNode
-    withSelector: #astAnalyzeWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment | self subclassResponsibility };
-    withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment | self subclassResponsibility };
-    withSelector: #astEvaluateWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment | self subclassResponsibility };
+    withSelector: #analyzeWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment | self subclassResponsibility };
+    withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment | self subclassResponsibility };
+    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment | self subclassResponsibility };
 
     withSelector: #childrenDo: addMethod: {:(ASTNode)self :aBlock :: Void | self subclassResponsibility };
 
@@ -83,8 +83,8 @@ ASTLexicalBlockNode
     }.
 
 ASTLiteralNode
-    withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:(ASTLiteralNode)self :(Environment)environment | self value };
-    withSelector: #astEvaluateWithEnvironment: addMethod: {:(ASTLiteralNode)self :(Environment)environment | self value };
+    withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTLiteralNode)self :(Environment)environment | self value };
+    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTLiteralNode)self :(Environment)environment | self value };
     withSelector: #isLiteralNode addMethod: {:(ASTLiteralNode)self :: Boolean | true };
     withSelector: #hasLiteralValueEqualTo: addMethod: {:(ASTLiteralNode)self :expectedValue :: Boolean | self value = expectedValue };
 
@@ -270,15 +270,15 @@ ASTNode
     }.
 
 ASTQuasiQuoteNode
-    withSelector: #astAnalyzeWithEnvironment: addMethod: {:(ASTQuasiQuoteNode)self :(Environment)environment |
+    withSelector: #analyzeWithEnvironment: addMethod: {:(ASTQuasiQuoteNode)self :(Environment)environment |
         self copy
             node: (self node analyzeQuasiQuoteWithEnvironment: environment);
             yourself
     };
-    withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:(ASTQuasiQuoteNode)self :(Environment)environment |
+    withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTQuasiQuoteNode)self :(Environment)environment |
         self node analyzeAndEvaluateQuasiQuoteWithEnvironment: environment
     };
-    withSelector: #astEvaluateWithEnvironment: addMethod: {:(ASTQuasiQuoteNode)self :(Environment)environment |
+    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTQuasiQuoteNode)self :(Environment)environment |
         self node evaluateQuasiQuoteWithEnvironment: environment
     };
     withSelector: #childrenDo: addMethod: {:(ASTQuasiQuoteNode)self :aBlock :: Void |
@@ -291,14 +291,14 @@ ASTQuasiQuoteNode
 ASTQuasiUnquoteNode
     withSelector: #analyzeQuasiQuoteWithEnvironment: addMethod: {:(ASTQuasiUnquoteNode)self :(Environment)environment |
         self copy
-            expression: (self expression astAnalyzeWithEnvironment: environment);
+            expression: (self expression analyzeWithEnvironment: environment);
             yourself
     };
     withSelector: #analyzeAndEvaluateQuasiQuoteWithEnvironment: addMethod: {:(ASTQuasiUnquoteNode)self :(Environment)environment |
-        self expression astAnalyzeAndEvaluateWithEnvironment: environment
+        self expression analyzeAndEvaluateWithEnvironment: environment
     };
     withSelector: #evaluateQuasiQuoteWithEnvironment: addMethod: {:(ASTQuasiUnquoteNode)self :(Environment)environment |
-        self expression astEvaluateWithEnvironment: environment
+        self expression evaluateWithEnvironment: environment
     };
     withSelector: #childrenDo: addMethod: {:(ASTQuasiUnquoteNode)self :aBlock :: Void |
         if: (self expression) then: aBlock(self node)
@@ -308,9 +308,9 @@ ASTQuasiUnquoteNode
     }.
 
 ASTQuoteNode
-    withSelector: #astAnalyzeWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment | self};
-    withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment | self node};
-    withSelector: #astEvaluateWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment | self node};
+    withSelector: #analyzeWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment | self};
+    withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment | self node};
+    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment | self node};
     withSelector: #childrenDo: addMethod: {:(ASTQuoteNode)self :aBlock :: Void |
         if: (self node) then: aBlock(self node)
     };
@@ -319,9 +319,9 @@ ASTQuoteNode
     }.
 
 ASTSpliceNode
-    withSelector: #astAnalyzeWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError };
-    withSelector: #astAnalyzeAndEvaluateWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError };
-    withSelector: #astEvaluateWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError };
+    withSelector: #analyzeWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError };
+    withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError };
+    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError };
     withSelector: #childrenDo: addMethod: {:(ASTSpliceNode)self :aBlock :: Void |
         if: (self expression) then: aBlock(self node)
     };

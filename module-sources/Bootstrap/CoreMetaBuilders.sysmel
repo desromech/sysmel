@@ -115,10 +115,10 @@ MetaBuilder publicSubclass: #MacroMetaBuilder slots: (
 
 MacroMetaBuilder
     withSelector: #analyzeAndEvaluateMessageSendNode:withEnvironment: addMethod: {:self :(ASTMessageSendNode)messageSendNode :(Environment)environment |
-        (self expandMessageSendNode: messageSendNode withEnvironment: environment) astAnalyzeAndEvaluateWithEnvironment: environment
+        (self expandMessageSendNode: messageSendNode withEnvironment: environment) analyzeAndEvaluateWithEnvironment: environment
     };
     withSelector: #analyzeMessageSendNode:withEnvironment: addMethod: {:self :(ASTMessageSendNode)messageSendNode :(Environment)environment |
-        (self expandMessageSendNode: messageSendNode withEnvironment: environment) astAnalyzeWithEnvironment: environment
+        (self expandMessageSendNode: messageSendNode withEnvironment: environment) analyzeWithEnvironment: environment
     };
     withSelector: #expandMessageSendNode:withEnvironment: addMethod: {:self :(ASTMessageSendNode)messageSendNode :(Environment)environment :: ASTNode |
         self
@@ -130,7 +130,7 @@ MacroMetaBuilder
     withSelector: #analyzeAndEvaluateConcreteMetaValueWithEnvironment: addMethod: {:self :(Environment)environment |
         (self
             environment: environment;
-            finishExpansion) astAnalyzeAndEvaluateWithEnvironment: environment
+            finishExpansion) analyzeAndEvaluateWithEnvironment: environment
     };
     withSelector: #analyzeConcreteMetaValue:withEnvironment: addMethod: {:self :metaBuilderLiteralNode :(Environment)environment |
         self
