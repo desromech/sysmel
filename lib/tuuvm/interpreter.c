@@ -3623,11 +3623,11 @@ static tuuvm_tuple_t tuuvm_dependentFunctionType_getOrCreateApplicationValueForN
     // Get the analyzed type of the node.
     // FIXME: Delegate this onto the analyzed type.
     tuuvm_tuple_t analyzedType = tuuvm_astNode_getAnalyzedType(node);
-    if(tuuvm_tuple_isKindOf(context, analyzedType, context->roots.metaclassType))
+    if(tuuvm_tuple_isKindOf(context, analyzedType, context->roots.metatypeType))
     {
-        tuuvm_metaclass_t *metaclass = (tuuvm_metaclass_t*)analyzedType;
-        if(metaclass->thisClass)
-            return metaclass->thisClass;
+        tuuvm_metatype_t *metatype = (tuuvm_metatype_t*)analyzedType;
+        if(metatype->thisType)
+            return metatype->thisType;
     }
 
     // Construct a dummy value that has the same type

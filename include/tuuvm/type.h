@@ -43,10 +43,15 @@ typedef struct tuuvm_class_s
     tuuvm_type_tuple_t super;
 } tuuvm_class_t;
 
-typedef struct tuuvm_metaclass_s
+typedef struct tuuvm_metatype_s
 {
     tuuvm_type_tuple_t super;
-    tuuvm_tuple_t thisClass;
+    tuuvm_tuple_t thisType;
+} tuuvm_metatype_t;
+
+typedef struct tuuvm_metaclass_s
+{
+    tuuvm_metatype_t super;
 } tuuvm_metaclass_t;
 
 typedef struct tuuvm_typeSlot_s

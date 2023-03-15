@@ -644,8 +644,18 @@ Type
         }.
     }.
 
+Metatype
+    withSelector: #printOn: addMethod: {:(Metaclass)self :(Stream)stream :: Void |
+        let: #thisType with: self thisType.
+        if: thisType ~~ nil
+        then: (stream print: thisType; nextPutAll: " __type__")
+        else: (stream nextPutAll: "a "; print: self __type__)
+    }.
+
 Metaclass
-    withSelector: #printOn: addMethod: {:(Type)self :(Stream)stream :: Void |
+    withSelector: #thisClass addMethod: {:(Metaclass)self :: Type | self thisType };
+    withSelector: #thisClass: addMethod: {:(Metaclass)self :(Type)thisClass :: Void | self thisType: thisClass };
+    withSelector: #printOn: addMethod: {:(Metaclass)self :(Stream)stream :: Void |
         let: #thisClass with: self thisClass.
         if: thisClass ~~ nil
         then: (stream print: thisClass; nextPutAll: " class")

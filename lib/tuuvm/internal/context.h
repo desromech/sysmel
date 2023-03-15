@@ -104,6 +104,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t symbolValueBindingType;
     tuuvm_tuple_t trueType;
     tuuvm_tuple_t typeType;
+    tuuvm_tuple_t metatypeType;
     tuuvm_tuple_t typeSlotType;
     tuuvm_tuple_t undefinedObjectType;
     tuuvm_tuple_t valueBoxType;

@@ -42,8 +42,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousClass(tuuvm_context_t *context
 TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousMetaclass(tuuvm_context_t *context, tuuvm_tuple_t supertype)
 {
     tuuvm_metaclass_t* result = (tuuvm_metaclass_t*)tuuvm_context_allocatePointerTuple(context, context->roots.metaclassType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_metaclass_t));
-    result->super.supertype = supertype;
-    result->super.flags = tuuvm_tuple_size_encode(context, TUUVM_TYPE_FLAGS_METATYPE_REQUIRED_FLAGS);
+    result->super.super.supertype = supertype;
+    result->super.super.flags = tuuvm_tuple_size_encode(context, TUUVM_TYPE_FLAGS_METATYPE_REQUIRED_FLAGS);
 
     size_t slotCount = TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_class_t);
     if(supertype)
@@ -53,7 +53,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousMetaclass(tuuvm_context_t *con
             slotCount = superTypeSlotCount;
     }
     
-    result->super.totalSlotCount = tuuvm_tuple_size_encode(context, slotCount);
+    result->super.super.totalSlotCount = tuuvm_tuple_size_encode(context, slotCount);
     return (tuuvm_tuple_t)result;
 }
 
@@ -74,7 +74,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousClassAndMetaclass(tuuvm_contex
 
     // Link together the class with its metaclass.
     tuuvm_metaclass_t *metaclassObject = (tuuvm_metaclass_t*)metaclass;
-    metaclassObject->thisClass = class;
+    metaclassObject->super.thisType = class;
     return class;
 }
 

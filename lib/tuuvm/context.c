@@ -267,13 +267,17 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_type_setSupertype(context->roots.typeType, context->roots.programEntityType);
     tuuvm_type_setSupertype(tuuvm_tuple_getType(context, context->roots.programEntityType), tuuvm_tuple_getType(context, context->roots.objectType));
 
+    context->roots.metatypeType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.typeType);
+
     context->roots.classType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.typeType);
-    context->roots.metaclassType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.typeType);
+    context->roots.metaclassType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.metatypeType);
 
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)tuuvm_tuple_getType(context, context->roots.objectType), context->roots.metaclassType);
     tuuvm_type_setSupertype(tuuvm_tuple_getType(context, context->roots.objectType), context->roots.classType);
 
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)tuuvm_tuple_getType(context, context->roots.programEntityType), context->roots.metaclassType);
+
+    tuuvm_tuple_setType((tuuvm_object_tuple_t*)tuuvm_tuple_getType(context, context->roots.metatypeType), context->roots.metaclassType);
 
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)tuuvm_tuple_getType(context, context->roots.classType), context->roots.metaclassType);
 
@@ -454,8 +458,10 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "pendingSlots", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.classType, "Class", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.metatypeType, "Metatype", TUUVM_NULL_TUPLE,
+        "thisType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.metaclassType, "Metaclass", TUUVM_NULL_TUPLE,
-        "thisClass", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.typeSlotType, "TypeSlot", TUUVM_NULL_TUPLE,
         "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
