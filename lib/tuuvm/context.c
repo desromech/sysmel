@@ -117,6 +117,19 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicClass(tuuvm_context_t *cont
     return type;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicPrimitiveValueType(tuuvm_context_t *context, const char *name, tuuvm_tuple_t supertype)
+{
+    tuuvm_tuple_t nameSymbol = tuuvm_symbol_internWithCString(context, name);
+    tuuvm_tuple_t type = tuuvm_type_createAnonymousPrimitiveValueTypeAndValueMetatype(context, supertype);
+    tuuvm_type_setName(type, nameSymbol);
+    tuuvm_environment_setNewSymbolBindingWithValue(context, context->roots.globalNamespace, nameSymbol, type);
+    tuuvm_arrayList_add(context, context->roots.intrinsicTypes, type);
+
+    tuuvm_type_setSlots(type, tuuvm_array_create(context, 0));
+    tuuvm_type_setTotalSlotCount(context, type, 0);
+    return type;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicType(tuuvm_context_t *context, const char *name, tuuvm_tuple_t supertype, ...)
 {
     tuuvm_tuple_t nameSymbol = tuuvm_symbol_internWithCString(context, name);
@@ -384,54 +397,60 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_type_setMethodWithSelector(context, context->roots.anyValueType, tuuvm_symbol_internWithCString(context, "=="), context->roots.identityEqualsFunction);
     tuuvm_type_setMethodWithSelector(context, context->roots.anyValueType, tuuvm_symbol_internWithCString(context, "~~"), context->roots.identityNotEqualsFunction);
 
+    // Create the value type classes.
+    context->roots.valueType = tuuvm_context_createIntrinsicClass(context, "ValueType", context->roots.typeType, TUUVM_NULL_TUPLE);
+    context->roots.valueMetatypeType = tuuvm_context_createIntrinsicClass(context, "ValueMetatype", context->roots.metatypeType, TUUVM_NULL_TUPLE);
+    context->roots.primitiveValueType = tuuvm_context_createIntrinsicClass(context, "PrimitiveValueType", context->roots.typeType, TUUVM_NULL_TUPLE);
+    
+    context->roots.pointerLikeType = tuuvm_context_createIntrinsicClass(context, "PointerLikeType", context->roots.valueType,
+        "baseType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
+        "addressSpace", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        TUUVM_NULL_TUPLE);
+    context->roots.pointerType = tuuvm_context_createIntrinsicClass(context, "PointerType", context->roots.pointerLikeType, TUUVM_NULL_TUPLE);
+    context->roots.referenceType = tuuvm_context_createIntrinsicClass(context, "ReferenceType", context->roots.pointerLikeType, TUUVM_NULL_TUPLE);
+
+    context->roots.structureType = tuuvm_context_createIntrinsicClass(context, "Structure", context->roots.valueType, TUUVM_NULL_TUPLE);
+
     // Some basic types
-    context->roots.voidType = tuuvm_context_createIntrinsicClass(context, "Void", TUUVM_NULL_TUPLE, NULL);
-    tuuvm_typeAndMetatype_setFlags(context, context->roots.voidType, TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
+    context->roots.voidType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "Void", context->roots.anyValueType);
 
-    context->roots.char8Type = tuuvm_context_createIntrinsicClass(context, "Char8", TUUVM_NULL_TUPLE, NULL);
-    context->roots.uint8Type = tuuvm_context_createIntrinsicClass(context, "UInt8", TUUVM_NULL_TUPLE, NULL);
-    context->roots.int8Type = tuuvm_context_createIntrinsicClass(context, "Int8", TUUVM_NULL_TUPLE, NULL);
-    tuuvm_typeAndMetatype_setFlags(context, context->roots.char8Type, TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
-    tuuvm_typeAndMetatype_setFlags(context, context->roots.uint8Type, TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
-    tuuvm_typeAndMetatype_setFlags(context, context->roots.int8Type, TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
+    context->roots.primitiveNumberType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "PrimitiveNumber", context->roots.anyValueType);
+    context->roots.primitiveIntegerType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "PrimitiveInteger", context->roots.primitiveNumberType);
+    context->roots.primitiveCharacterType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "PrimitiveCharacter", context->roots.primitiveIntegerType);
+    context->roots.primitiveUnsignedIntegerType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "PrimitiveUnsignedInteger", context->roots.primitiveIntegerType);
+    context->roots.primitiveSignedIntegerType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "PrimitiveSignedInteger", context->roots.primitiveIntegerType);
+    context->roots.primitiveFloatType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "PrimitiveFloat", context->roots.primitiveNumberType);
 
-    context->roots.char16Type = tuuvm_context_createIntrinsicClass(context, "Char16", TUUVM_NULL_TUPLE, NULL);
-    context->roots.uint16Type = tuuvm_context_createIntrinsicClass(context, "UInt16", TUUVM_NULL_TUPLE, NULL);
-    context->roots.int16Type = tuuvm_context_createIntrinsicClass(context, "Int16", TUUVM_NULL_TUPLE, NULL);
-    tuuvm_typeAndMetatype_setFlags(context, context->roots.char16Type, TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
-    tuuvm_typeAndMetatype_setFlags(context, context->roots.uint16Type, TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
-    tuuvm_typeAndMetatype_setFlags(context, context->roots.int16Type, TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
+    context->roots.char8Type = tuuvm_context_createIntrinsicPrimitiveValueType(context, "Char8", context->roots.primitiveCharacterType);
+    context->roots.uint8Type = tuuvm_context_createIntrinsicPrimitiveValueType(context, "UInt8", context->roots.primitiveUnsignedIntegerType);
+    context->roots.int8Type = tuuvm_context_createIntrinsicPrimitiveValueType(context, "Int8", context->roots.primitiveSignedIntegerType);
 
-    context->roots.char32Type = tuuvm_context_createIntrinsicClass(context, "Char32", TUUVM_NULL_TUPLE, NULL);
-    context->roots.uint32Type = tuuvm_context_createIntrinsicClass(context, "UInt32", TUUVM_NULL_TUPLE, NULL);
-    context->roots.int32Type = tuuvm_context_createIntrinsicClass(context, "Int32", TUUVM_NULL_TUPLE, NULL);
-    tuuvm_typeAndMetatype_setFlags(context, context->roots.char32Type, TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
-    tuuvm_typeAndMetatype_setFlags(context, context->roots.uint32Type, TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
-    tuuvm_typeAndMetatype_setFlags(context, context->roots.int32Type, TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
+    context->roots.char16Type = tuuvm_context_createIntrinsicPrimitiveValueType(context, "Char16", context->roots.primitiveCharacterType);
+    context->roots.uint16Type = tuuvm_context_createIntrinsicPrimitiveValueType(context, "UInt16", context->roots.primitiveUnsignedIntegerType);
+    context->roots.int16Type = tuuvm_context_createIntrinsicPrimitiveValueType(context, "Int16", context->roots.primitiveSignedIntegerType);
 
-    context->roots.uint64Type = tuuvm_context_createIntrinsicClass(context, "UInt64", TUUVM_NULL_TUPLE, NULL);
-    context->roots.int64Type = tuuvm_context_createIntrinsicClass(context, "Int64", TUUVM_NULL_TUPLE, NULL);
-    tuuvm_typeAndMetatype_setFlags(context, context->roots.uint64Type, TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
-    tuuvm_typeAndMetatype_setFlags(context, context->roots.int64Type, TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
+    context->roots.char32Type = tuuvm_context_createIntrinsicPrimitiveValueType(context, "Char32", context->roots.primitiveCharacterType);
+    context->roots.uint32Type = tuuvm_context_createIntrinsicPrimitiveValueType(context, "UInt32", context->roots.primitiveUnsignedIntegerType);
+    context->roots.int32Type = tuuvm_context_createIntrinsicPrimitiveValueType(context, "Int32", context->roots.primitiveSignedIntegerType);
 
-    context->roots.float32Type = tuuvm_context_createIntrinsicClass(context, "Float32", TUUVM_NULL_TUPLE, NULL);
-    context->roots.float64Type = tuuvm_context_createIntrinsicClass(context, "Float64", TUUVM_NULL_TUPLE, NULL);
-    tuuvm_typeAndMetatype_setFlags(context, context->roots.float32Type, TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
-    tuuvm_typeAndMetatype_setFlags(context, context->roots.float64Type, TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
+    context->roots.uint64Type = tuuvm_context_createIntrinsicPrimitiveValueType(context, "UInt64", context->roots.primitiveUnsignedIntegerType);
+    context->roots.int64Type = tuuvm_context_createIntrinsicPrimitiveValueType(context, "Int64", context->roots.primitiveSignedIntegerType);
 
+    context->roots.float32Type = tuuvm_context_createIntrinsicPrimitiveValueType(context, "Float32", context->roots.primitiveFloatType);
+    context->roots.float64Type = tuuvm_context_createIntrinsicPrimitiveValueType(context, "Float64", context->roots.primitiveFloatType);
+    
     context->roots.sizeType = sizeof(size_t) == 4 ? context->roots.uint32Type : context->roots.uint64Type;
     context->roots.uintptrType = sizeof(size_t) == 4 ? context->roots.uint32Type : context->roots.uint64Type;
     context->roots.intptrType = sizeof(size_t) == 4 ? context->roots.int32Type : context->roots.int64Type;
 
-    context->roots.booleanType = tuuvm_context_createIntrinsicClass(context, "Boolean", TUUVM_NULL_TUPLE, NULL);
-    tuuvm_type_setFlags(context, context->roots.booleanType, TUUVM_TYPE_FLAGS_IMMEDIATE);
-    context->roots.trueType = tuuvm_context_createIntrinsicClass(context, "True", context->roots.booleanType, NULL);
-    tuuvm_typeAndMetatype_setFlags(context, context->roots.trueType, TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
-    context->roots.falseType = tuuvm_context_createIntrinsicClass(context, "False", context->roots.booleanType, NULL);
-    tuuvm_typeAndMetatype_setFlags(context, context->roots.falseType, TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
+    context->roots.booleanType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "Boolean", context->roots.anyValueType);
+    context->roots.trueType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "True", context->roots.booleanType);
+    context->roots.falseType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "False", context->roots.booleanType);
+
     context->roots.integerType = tuuvm_context_createIntrinsicClass(context, "Integer", TUUVM_NULL_TUPLE, NULL);
     context->roots.positiveIntegerType = tuuvm_context_createIntrinsicClass(context, "PositiveInteger", context->roots.integerType, NULL);
     context->roots.negativeIntegerType = tuuvm_context_createIntrinsicClass(context, "NegativeInteger", context->roots.integerType, NULL);
+
     context->roots.undefinedObjectType = tuuvm_context_createIntrinsicClass(context, "UndefinedObject", TUUVM_NULL_TUPLE, NULL);
     tuuvm_typeAndMetatype_setFlags(context, context->roots.undefinedObjectType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
     context->roots.tombstoneType = tuuvm_context_createIntrinsicClass(context, "ObjectTombstone", TUUVM_NULL_TUPLE, NULL);

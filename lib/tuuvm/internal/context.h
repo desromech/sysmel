@@ -51,6 +51,8 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t typeCheckFunctionApplicationWithEnvironmentSelector;
 
     tuuvm_tuple_t anyValueType;
+    tuuvm_tuple_t anyReferenceType;
+    tuuvm_tuple_t anyPointerType;
 
     tuuvm_tuple_t arrayType;
     tuuvm_tuple_t arraySliceType;
@@ -79,21 +81,26 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t identitySetType;
     tuuvm_tuple_t integerType;
     tuuvm_tuple_t localAnalysisEnvironmentType;
-    tuuvm_tuple_t programEntityType;
-    tuuvm_tuple_t positiveIntegerType;
-    tuuvm_tuple_t negativeIntegerType;
     tuuvm_tuple_t macroContextType;
     tuuvm_tuple_t messageType;
     tuuvm_tuple_t metaclassType;
     tuuvm_tuple_t methodDictionaryType;
     tuuvm_tuple_t namespaceType;
+    tuuvm_tuple_t negativeIntegerType;
     tuuvm_tuple_t objectType;
+    tuuvm_tuple_t pointerLikeType;
+    tuuvm_tuple_t pointerType;
+    tuuvm_tuple_t positiveIntegerType;
+    tuuvm_tuple_t primitiveValueType;
+    tuuvm_tuple_t programEntityType;
+    tuuvm_tuple_t referenceType;
     tuuvm_tuple_t sequenceableCollectionType;
     tuuvm_tuple_t setType;
     tuuvm_tuple_t streamType;
     tuuvm_tuple_t stringType;
     tuuvm_tuple_t stringStreamType;
     tuuvm_tuple_t stringSymbolType;
+    tuuvm_tuple_t structureType;
     tuuvm_tuple_t symbolType;
     tuuvm_tuple_t symbolBindingType;
     tuuvm_tuple_t symbolAnalysisBindingType;
@@ -108,8 +115,17 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t typeSlotType;
     tuuvm_tuple_t undefinedObjectType;
     tuuvm_tuple_t valueBoxType;
+    tuuvm_tuple_t valueType;
+    tuuvm_tuple_t valueMetatypeType;
     tuuvm_tuple_t voidType;
     tuuvm_tuple_t tombstoneType;
+
+    tuuvm_tuple_t primitiveNumberType;
+    tuuvm_tuple_t primitiveIntegerType;
+    tuuvm_tuple_t primitiveCharacterType;
+    tuuvm_tuple_t primitiveUnsignedIntegerType;
+    tuuvm_tuple_t primitiveSignedIntegerType;
+    tuuvm_tuple_t primitiveFloatType;
 
     tuuvm_tuple_t char8Type;
     tuuvm_tuple_t uint8Type;

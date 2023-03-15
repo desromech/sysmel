@@ -78,6 +78,52 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousClassAndMetaclass(tuuvm_contex
     return class;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousPrimitiveValueType(tuuvm_context_t *context, tuuvm_tuple_t supertype, tuuvm_tuple_t metaclass)
+{
+    size_t typeSlotCount = tuuvm_type_getTotalSlotCount(metaclass);
+    TUUVM_ASSERT(typeSlotCount >= TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_primitiveValueType_t));
+
+    tuuvm_primitiveValueType_t* result = (tuuvm_primitiveValueType_t*)tuuvm_context_allocatePointerTuple(context, metaclass, typeSlotCount);
+    result->super.super.supertype = supertype;
+    result->super.super.totalSlotCount = tuuvm_tuple_size_encode(context, 0);
+    result->super.super.flags = tuuvm_tuple_size_encode(context, TUUVM_TYPE_FLAGS_PRIMITIVE_VALUE_TYPE_DEFAULT_FLAGS);
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousValueMetatype(tuuvm_context_t *context, tuuvm_tuple_t supertype, size_t minimumSlotCount)
+{
+    tuuvm_valueMetatype_t* result = (tuuvm_valueMetatype_t*)tuuvm_context_allocatePointerTuple(context, context->roots.valueMetatypeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_valueMetatype_t));
+    result->super.super.supertype = supertype;
+    result->super.super.flags = tuuvm_tuple_size_encode(context, TUUVM_TYPE_FLAGS_METATYPE_REQUIRED_FLAGS);
+
+    size_t slotCount = minimumSlotCount;
+    if(supertype)
+    {
+        size_t superTypeSlotCount = tuuvm_type_getTotalSlotCount(supertype);
+        if(superTypeSlotCount > slotCount)
+            slotCount = superTypeSlotCount;
+    }
+    
+    result->super.super.totalSlotCount = tuuvm_tuple_size_encode(context, slotCount);
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousPrimitiveValueTypeAndValueMetatype(tuuvm_context_t *context, tuuvm_tuple_t supertype)
+{
+    tuuvm_tuple_t metatypeSupertype = context->roots.primitiveValueType;
+    tuuvm_tuple_t actualSuperType = supertype;
+
+    tuuvm_tuple_t metatype = tuuvm_type_createAnonymousValueMetatype(context, metatypeSupertype, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_primitiveValueType_t));
+    tuuvm_tuple_t primitiveValueType = tuuvm_type_createAnonymousPrimitiveValueType(context, actualSuperType, metatype);
+
+    tuuvm_type_setFlags(context, metatype, TUUVM_TYPE_FLAGS_PRIMITIVE_VALUE_TYPE_METATYPE_FLAGS);
+
+    // Link together the type with its metatype.
+    tuuvm_metatype_t *metatypeObject = (tuuvm_metatype_t*)metatype;
+    metatypeObject->thisType = primitiveValueType;
+    return primitiveValueType;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_type_createWithName(tuuvm_context_t *context, tuuvm_tuple_t name)
 {
     tuuvm_tuple_t result = tuuvm_type_createAnonymous(context);

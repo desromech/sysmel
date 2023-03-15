@@ -36,12 +36,47 @@ typedef enum tuuvm_typeFlags_e
 
     TUUVM_TYPE_FLAGS_CLASS_DEFAULT_FLAGS = TUUVM_TYPE_FLAGS_NULLABLE,
     TUUVM_TYPE_FLAGS_METATYPE_REQUIRED_FLAGS = TUUVM_TYPE_FLAGS_NULLABLE,
+
+    TUUVM_TYPE_FLAGS_PRIMITIVE_VALUE_TYPE_DEFAULT_FLAGS = TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL,
+    TUUVM_TYPE_FLAGS_PRIMITIVE_VALUE_TYPE_METATYPE_FLAGS = TUUVM_TYPE_FLAGS_METATYPE_REQUIRED_FLAGS | TUUVM_TYPE_FLAGS_FINAL,
 } tuuvm_typeFlags_t;
 
 typedef struct tuuvm_class_s
 {
     tuuvm_type_tuple_t super;
 } tuuvm_class_t;
+
+typedef struct tuuvm_valueType_s
+{
+    tuuvm_type_tuple_t super;
+} tuuvm_valueType_t;
+
+typedef struct tuuvm_primitiveValueType_s
+{
+    tuuvm_valueType_t super;
+} tuuvm_primitiveValueType_t;
+
+typedef struct tuuvm_structureType_s
+{
+    tuuvm_valueType_t super;
+} tuuvm_structureType_t;
+
+typedef struct tuuvm_pointerLikeType_s
+{
+    tuuvm_valueType_t super;
+    tuuvm_tuple_t baseType;
+    tuuvm_tuple_t addressSpace;
+} tuuvm_pointerLikeType_t;
+
+typedef struct tuuvm_pointerType_s
+{
+    tuuvm_pointerLikeType_t super;
+} tuuvm_pointerType_t;
+
+typedef struct tuuvm_referenceType_s
+{
+    tuuvm_pointerLikeType_t super;
+} tuuvm_referenceType_t;
 
 typedef struct tuuvm_metatype_s
 {
@@ -53,6 +88,11 @@ typedef struct tuuvm_metaclass_s
 {
     tuuvm_metatype_t super;
 } tuuvm_metaclass_t;
+
+typedef struct tuuvm_valueMetatype_s
+{
+    tuuvm_metatype_t super;
+} tuuvm_valueMetatype_t;
 
 typedef struct tuuvm_typeSlot_s
 {
@@ -121,6 +161,16 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousMetaclass(tuuvm_context_t *con
  * Creates an anonymous class with respective metaclass.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousClassAndMetaclass(tuuvm_context_t *context, tuuvm_tuple_t supertype);
+
+/**
+ * Creates an anonymous metaclass type.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousValueMetatype(tuuvm_context_t *context, tuuvm_tuple_t supertype, size_t minimumSlotCount);
+
+/**
+ * Creates an anonymous primitive type with respective meta value type.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousPrimitiveValueTypeAndValueMetatype(tuuvm_context_t *context, tuuvm_tuple_t supertype);
 
 /**
  * Creates a type with the specified name.
