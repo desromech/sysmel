@@ -189,6 +189,21 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createDependentFunctionType(tuuvm_context_t *
 TUUVM_API tuuvm_tuple_t tuuvm_type_createSimpleFunctionType(tuuvm_context_t *context, tuuvm_tuple_t argumentTypes, bool isVariadic, tuuvm_tuple_t resultType);
 
 /**
+ * Creates a reference type.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_createReferenceType(tuuvm_context_t *context, tuuvm_tuple_t baseType, tuuvm_tuple_t addressSpace);
+
+/**
+ * Creates a function local reference type.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_createFunctionLocalReferenceType(tuuvm_context_t *context, tuuvm_tuple_t baseType);
+
+/**
+ * Creates a pointer type.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_createPointerType(tuuvm_context_t *context, tuuvm_tuple_t baseType, tuuvm_tuple_t addressSpace);
+
+/**
  * Canonicalizes a function type
  */
 TUUVM_API tuuvm_tuple_t tuuvm_type_canonicalizeFunctionType(tuuvm_context_t *context, tuuvm_tuple_t functionType);

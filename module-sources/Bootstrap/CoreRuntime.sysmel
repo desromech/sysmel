@@ -29,7 +29,17 @@ Function
     withSelector: #makeStatic addMethod: {:(Function)self :: Function |
         self addFlags: (1sz << 8sz).
         self
+    };
+
+    withSelector: #makeMemoized addMethod: {:(Function)self :: Function |
+        self addFlags: (1sz << 9sz).
+        self
+    };
+    withSelector: #makeTemplate addMethod: {:(Function)self :: Function |
+        self addFlags: (1sz << 10sz).
+        self
     }.
+
 
 AnyValue
     withSelector: #initialize addMethod: {:(AnyValue)self :: Void | };
@@ -391,7 +401,85 @@ Collection
     };
     withSelector: #size addMethod: {:(Collection)self :: Size |
         self subclassResponsibility
-    } makeAbstract.
+    } makeAbstract;
+
+    withSelector: #do: addMethod: {:(Collection)self :aBlock :: Void |
+        self subclassResponsibility
+    } makeAbstract;
+
+    withSelector: #doWithIndex: addMethod: {:(Collection)self :aBlock :: Void |
+        let: #index with: (ValueBox with: 0sz).
+        self do: {:element :: Void |
+            let: #i with: index _.
+            aBlock(element, i).
+            index := i + 1sz
+        }
+    };
+
+    withSelector: #printOn: addMethod: {:(Collection)self :(Stream)stream :: Void |
+        stream print: self class; nextPutAll: "(".
+        self doWithIndex: {:element :index :: Void |
+            if: index > 0 then: (stream nextPutAll: ", ").
+            stream print: element.
+            void
+        }.
+
+        stream nextPutAll: ")"
+    };
+    withSelector: #asArray addMethod: {:(SequenceableCollection)self :: Array |
+        let: #array with: (Array new: self size).
+        self doWithIndex: {:element :(Size)index :: Void |
+            array at: index put: element
+        }.
+
+        array
+    }.
+
+Association
+    withSelector: #printOn: addMethod: {:(Association)self :(Stream)stream :: Void |
+        stream print: self key; nextPutAll: " -> "; print: self value
+    }.
+
+WeakValueAssociation
+    withSelector: #value addMethod: {:(WeakValueAssociation)self |
+        (RawTuple::slotAt:)(self, 1sz)
+    } makePure; makeFinal;
+    withSelector: #value: addMethod: {:(WeakValueAssociation)self :newValue :: Void |
+        RawTuple::slotAt:put:(self, 1sz, newValue)
+    } makePure; makeFinal;
+    withSelector: #printOn: addMethod: {:(WeakValueAssociation)self :(Stream)stream :: Void |
+        stream print: self key; nextPutAll: " -> "; print: self value
+    }.
+
+Dictionary
+    withSelector: #do: addMethod: {:(Dictionary)self :aBlock :: Void |
+        let: #storage with: self storage.
+        if: storage ~~ nil then: {
+            storage do: {:element :: Void |
+                if: element ~~ nil then: aBlock(element).
+            }
+        }
+    }.
+
+Set
+    withSelector: #do: addMethod: {:(Set)self :aBlock :: Void |
+        let: #storage with: self storage.
+        if: storage ~~ nil then: {
+            storage do: {:element :: Void |
+                if: __hashtableEmptyElement__ ~~ element then: aBlock(element).
+            }
+        }
+    }.
+
+WeakSet
+    withSelector: #do: addMethod: {:(WeakSet)self :aBlock :: Void |
+        let: #storage with: self storage.
+        if: storage ~~ nil then: {
+            storage do: {:element :: Void |
+                if: (__hashtableEmptyElement__ ~~ element) && (__tombstone__ ~~ element) then: aBlock(element).
+            }
+        }
+    }.
 
 SequenceableCollection
     withSelector: #with: addClassMethod: {:(SequenceableCollection class)self :value :: self |
@@ -466,26 +554,7 @@ SequenceableCollection
     withSelector: #first addMethod: {:(SequenceableCollection)self | self at: 0sz } makeFinal;
     withSelector: #second addMethod: {:(SequenceableCollection)self | self at: 1sz } makeFinal;
     withSelector: #third addMethod: {:(SequenceableCollection)self | self at: 2sz } makeFinal;
-    withSelector: #fourth addMethod: {:(SequenceableCollection)self | self at: 3sz } makeFinal;
-
-    withSelector: #printOn: addMethod: {:(SequenceableCollection)self :(Stream)stream :: Void |
-        stream print: self class; nextPutAll: "(".
-        self doWithIndex: {:element :index :: Void |
-            if: index > 0 then: (stream nextPutAll: ", ").
-            stream print: element.
-            void
-        }.
-
-        stream nextPutAll: ")"
-    };
-    withSelector: #asArray addMethod: {:(SequenceableCollection)self :: Array |
-        let: #array with: (Array new: self size).
-        self doWithIndex: {:element :(Size)index :: Void |
-            array at: index put: element
-        }.
-
-        array
-    }.
+    withSelector: #fourth addMethod: {:(SequenceableCollection)self | self at: 3sz } makeFinal.
 
 ArrayList
     withSelector: #new: addClassMethod: {:(ArrayList class)self :(Size)initialSize :: self |

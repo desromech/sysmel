@@ -44,6 +44,9 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t analyzeAndEvaluateConcreteMetaValueWithEnvironmentSelector;
     tuuvm_tuple_t analyzeConcreteMetaValueWithEnvironmentSelector;
 
+    tuuvm_tuple_t genericAddressSpaceName;
+    tuuvm_tuple_t functionLocalAddressSpaceName;
+
     tuuvm_tuple_t emptyArrayConstant;
     tuuvm_tuple_t emptyByteArrayConstant;
 
@@ -109,6 +112,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t symbolLocalBindingType;
     tuuvm_tuple_t symbolMacroValueBindingType;
     tuuvm_tuple_t symbolValueBindingType;
+    tuuvm_tuple_t tombstoneType;
     tuuvm_tuple_t trueType;
     tuuvm_tuple_t typeType;
     tuuvm_tuple_t metatypeType;
@@ -118,7 +122,11 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t valueType;
     tuuvm_tuple_t valueMetatypeType;
     tuuvm_tuple_t voidType;
-    tuuvm_tuple_t tombstoneType;
+    tuuvm_tuple_t weakSetType;
+    tuuvm_tuple_t weakIdentitySetType;
+    tuuvm_tuple_t weakKeyDictionaryType;
+    tuuvm_tuple_t weakValueAssociationType;
+    tuuvm_tuple_t weakValueDictionaryType;
 
     tuuvm_tuple_t primitiveNumberType;
     tuuvm_tuple_t primitiveIntegerType;

@@ -143,8 +143,8 @@ TUUVM_API size_t tuuvm_string_computeHashWithBytes(size_t size, const uint8_t *b
 {
     size_t result = tuuvm_hashMultiply(1);
     for(size_t i = 0; i < size; ++i)
-        result = tuuvm_hashMultiply(result) + bytes[i];
-    return result & TUUVM_TUPLE_IMMEDIATE_VALUE_BIT_MASK;
+        result = tuuvm_hashConcatenate(result, bytes[i]);
+    return result;
 }
 
 static size_t tuuvm_stringSlice_hashFunction(void *element)

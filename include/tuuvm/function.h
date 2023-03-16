@@ -22,6 +22,9 @@ typedef enum tuuvm_functionFlags_e
     TUUVM_FUNCTION_FLAGS_ABSTRACT = 1<<6,
     TUUVM_FUNCTION_FLAGS_OVERRIDE = 1<<7,
     TUUVM_FUNCTION_FLAGS_STATIC = 1<<8,
+
+    TUUVM_FUNCTION_FLAGS_MEMOIZED = 1<<9,
+    TUUVM_FUNCTION_FLAGS_TEMPLATE = 1<<10,
 } tuuvm_functionFlags_t;
 
 typedef struct tuuvm_function_s
@@ -37,6 +40,7 @@ typedef struct tuuvm_function_s
     tuuvm_tuple_t primitiveName;
     tuuvm_tuple_t nativeUserdata;
     tuuvm_tuple_t nativeEntryPoint;
+    tuuvm_tuple_t memoizationTable;
 } tuuvm_function_t;
 
 typedef struct tuuvm_functionDefinition_s
@@ -125,6 +129,14 @@ TUUVM_INLINE bool tuuvm_function_isVariadic(tuuvm_context_t *context, tuuvm_tupl
 TUUVM_INLINE bool tuuvm_function_isPure(tuuvm_context_t *context, tuuvm_tuple_t function)
 {
     return (tuuvm_function_getFlags(context, function) & TUUVM_FUNCTION_FLAGS_PURE) != 0;
+}
+
+/**
+ * Is this a memoized function?
+ */
+TUUVM_INLINE bool tuuvm_function_isMemoized(tuuvm_context_t *context, tuuvm_tuple_t function)
+{
+    return (tuuvm_function_getFlags(context, function) & TUUVM_FUNCTION_FLAGS_MEMOIZED) != 0;
 }
 
 /**

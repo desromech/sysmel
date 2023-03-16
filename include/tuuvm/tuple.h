@@ -245,6 +245,15 @@ TUUVM_INLINE bool tuuvm_tuple_isWeakObject(tuuvm_tuple_t tuple)
 }
 
 /**
+ * Marks a weak object.
+ */
+TUUVM_INLINE void tuuvm_tuple_markWeakObject(tuuvm_tuple_t tuple)
+{
+    if(tuuvm_tuple_isNonNullPointer(tuple))
+        TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags |= TUUVM_TUPLE_TYPE_WEAK_OBJECT_BIT;
+}
+
+/**
  * Is this a weak or bytes object tuple?
  */
 TUUVM_INLINE bool tuuvm_tuple_isWeakOrBytesObject(tuuvm_tuple_t tuple)
@@ -912,6 +921,16 @@ TUUVM_INLINE size_t tuuvm_tuple_anySize_decode(tuuvm_tuple_t tuple)
         return (size_t)(tuple>>TUUVM_TUPLE_TAG_BIT_COUNT);
     return 0;
 }
+
+/**
+ * Computes the hash of a tuple
+ */
+TUUVM_API size_t tuuvm_tuple_hash(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Compares two tuples by equality.
+ */
+TUUVM_API bool tuuvm_tuple_equals(tuuvm_context_t *context, tuuvm_tuple_t a, tuuvm_tuple_t b);
 
 /**
  * The primitive identity hash function.

@@ -165,3 +165,8 @@ printLine(doWhile asSSAFunction fullPrintString).
 let: #valueBoxWith with: ValueBox class >> #with:.
 printLine(valueBoxWith, " ", doWhile(5sz)).
 printLine(valueBoxWith asSSAFunction fullPrintString).
+
+let: #memoized with: {:(Int32)x :(Int32)y :: Int32 | x + y } makeMemoized.
+printLine(memoized memoizationTable).
+printLine(memoized(1i32, 2i32), " ", memoized(3i32, 1i32), " ", memoized(3i32, 1i32)).
+printLine(memoized memoizationTable).

@@ -1,6 +1,8 @@
 #include "tuuvm/function.h"
+#include "tuuvm/array.h"
 #include "tuuvm/arraySlice.h"
 #include "tuuvm/assert.h"
+#include "tuuvm/dictionary.h"
 #include "tuuvm/errors.h"
 #include "tuuvm/interpreter.h"
 #include "tuuvm/stackFrame.h"
@@ -126,6 +128,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
     struct {
         tuuvm_tuple_t function;
         tuuvm_tuple_t functionType;
+        tuuvm_tuple_t memoizationKey;
         tuuvm_tuple_t result;
     } gcFrame = {
         .function = function
@@ -142,30 +145,68 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
     gcFrame.functionType = tuuvm_tuple_getType(context, function);
     if(tuuvm_tuple_isKindOf(context, function, context->roots.functionType))
     {
-        tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
+        tuuvm_function_t **functionObject = (tuuvm_function_t**)&gcFrame.function;
         tuuvm_functionEntryPoint_t nativeEntryPoint = NULL;
+
+        // Is this a memoized function?
+        bool isMemoized = tuuvm_function_isMemoized(context, gcFrame.function);
+        if(isMemoized)
+        {
+            // Make the memoization lookup key.
+            if(argumentCount > 1)
+            {
+                gcFrame.memoizationKey = tuuvm_array_create(context, argumentCount);
+                for(size_t i = 0; i < argumentCount; ++i)
+                    tuuvm_array_atPut(gcFrame.memoizationKey, i , arguments[i]);
+            }
+            else if(argumentCount == 1)
+            {
+                gcFrame.memoizationKey = arguments[0];
+            }
+
+            // Find the result in the memoization table
+            if((*functionObject)->memoizationTable)
+            {
+                if(tuuvm_weakValueDictionary_find(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, &gcFrame.result))
+                {
+                    tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
+                    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+                    return gcFrame.result;
+                }
+            }
+            else
+            {
+                (*functionObject)->memoizationTable = tuuvm_weakValueDictionary_create(context);
+            }
+        }
         
         // Find the entry point in the primitive table.
-        if(functionObject->primitiveTableIndex)
+        if((*functionObject)->primitiveTableIndex)
         {
             tuuvm_primitiveTable_ensureIsComputed();
-            size_t primitiveNumber = tuuvm_tuple_size_decode(functionObject->primitiveTableIndex);
+            size_t primitiveNumber = tuuvm_tuple_size_decode((*functionObject)->primitiveTableIndex);
             if(primitiveNumber < tuuvm_primitiveTableSize)
                 nativeEntryPoint = tuuvm_primitiveTable[primitiveNumber];
         }
 
         if(!nativeEntryPoint)
-            nativeEntryPoint = (tuuvm_functionEntryPoint_t)tuuvm_tuple_uintptr_decode(functionObject->nativeEntryPoint);
+            nativeEntryPoint = (tuuvm_functionEntryPoint_t)tuuvm_tuple_uintptr_decode((*functionObject)->nativeEntryPoint);
         if(nativeEntryPoint)
         {
             gcFrame.result = nativeEntryPoint(context, &gcFrame.function, argumentCount, arguments);
+            if(isMemoized)
+                tuuvm_weakValueDictionary_atPut(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, gcFrame.result);
+
             tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
             TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
             return gcFrame.result;            
         }
-        else if(tuuvm_tuple_isKindOf(context, functionObject->definition, context->roots.functionDefinitionType))
+        else if(tuuvm_tuple_isKindOf(context, (*functionObject)->definition, context->roots.functionDefinitionType))
         {
             gcFrame.result = tuuvm_interpreter_applyClosureASTFunction(context, &gcFrame.function, argumentCount, arguments);
+            if(isMemoized)
+                tuuvm_weakValueDictionary_atPut(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, gcFrame.result);
+
             tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
             TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
             return gcFrame.result;

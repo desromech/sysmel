@@ -141,6 +141,27 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createSimpleFunctionType(tuuvm_context_t *con
     return (tuuvm_tuple_t)result;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_type_createReferenceType(tuuvm_context_t *context, tuuvm_tuple_t baseType, tuuvm_tuple_t addressSpace)
+{
+    tuuvm_referenceType_t* result = (tuuvm_referenceType_t*)tuuvm_context_allocatePointerTuple(context, context->roots.referenceType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_referenceType_t));
+    result->super.baseType = baseType;
+    result->super.addressSpace = addressSpace;
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_type_createFunctionLocalReferenceType(tuuvm_context_t *context, tuuvm_tuple_t baseType)
+{
+    return tuuvm_type_createReferenceType(context, baseType, TUUVM_NULL_TUPLE);
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_type_createPointerType(tuuvm_context_t *context, tuuvm_tuple_t baseType, tuuvm_tuple_t addressSpace)
+{
+    tuuvm_pointerType_t* result = (tuuvm_pointerType_t*)tuuvm_context_allocatePointerTuple(context, context->roots.pointerType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_pointerType_t));
+    result->super.baseType = baseType;
+    result->super.addressSpace = addressSpace;
+    return (tuuvm_tuple_t)result;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_type_createDependentFunctionType(tuuvm_context_t *context, tuuvm_tuple_t argumentNodes, bool isVariadic, tuuvm_tuple_t resultTypeNode,
     tuuvm_tuple_t environment, tuuvm_tuple_t captureBindings, tuuvm_tuple_t argumentBindings, tuuvm_tuple_t localBindings)
 {
@@ -203,7 +224,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_lookupMacroSelector(tuuvm_context_t *context,
 
 static inline size_t computeLookupCacheEntryIndexFor(tuuvm_tuple_t type, tuuvm_tuple_t selector)
 {
-    return (tuuvm_hashMultiply(tuuvm_tuple_identityHash(type)) + tuuvm_tuple_identityHash(selector)) % GLOBAL_LOOKUP_CACHE_ENTRY_COUNT;
+    return tuuvm_hashConcatenate(tuuvm_tuple_identityHash(type), tuuvm_tuple_identityHash(selector)) % GLOBAL_LOOKUP_CACHE_ENTRY_COUNT;
 }
 
 static tuuvm_tuple_t tuuvm_type_lookupSelectorRecursively(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector)
@@ -464,7 +485,6 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValue(tuuvm_context_t *context, tuuvm_t
         return coercedDummyValue;
     }
     
-    printf("Is dummy value %d\n", tuuvm_tuple_isDummyValue(value));
     tuuvm_error("Cannot perform coercion of value into the required type.");
     return TUUVM_VOID_TUPLE;
 }

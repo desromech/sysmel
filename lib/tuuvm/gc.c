@@ -1,4 +1,5 @@
 #include "tuuvm/gc.h"
+#include "tuuvm/type.h"
 #include "internal/context.h"
 #include <stdio.h>
 
@@ -24,10 +25,20 @@ static void tuuvm_gc_markPointer(void *userdata, tuuvm_tuple_t *pointerAddress)
     tuuvm_gc_markPointer(userdata, &objectType);
 
     // Do not traverse the slot of byte objects, and the slots of weak objects
-    if(!tuuvm_tuple_isWeakOrBytesObject(pointer))
+    if(!tuuvm_tuple_isBytes(pointer))
     {
-        // Mark the object slots
+        // By default mark all of the slots.
         size_t slotCount = tuuvm_tuple_getSizeInSlots(pointer);
+
+        // Keep the declared slots as strong.
+        if(tuuvm_tuple_isWeakObject(pointer))
+        {
+            slotCount = 0;
+            if(tuuvm_tuple_isNonNullPointer(objectType))
+                slotCount = tuuvm_type_getTotalSlotCount(objectType);
+        }
+
+        // Mark the object slots
         tuuvm_tuple_t *slots = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(pointer)->pointers;
         for(size_t i = 0; i < slotCount; ++i)
             tuuvm_gc_markPointer(userdata, &slots[i]);

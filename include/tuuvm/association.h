@@ -14,10 +14,17 @@ typedef struct tuuvm_association_s
     tuuvm_tuple_t value;
 } tuuvm_association_t;
 
+typedef tuuvm_association_t tuuvm_weakValueAssociation_t;
+
 /**
  * Creates an association.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_association_create(tuuvm_context_t *context, tuuvm_tuple_t key, tuuvm_tuple_t value);
+
+/**
+ * Create a weak value association.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_weakValueAssociation_create(tuuvm_context_t *context, tuuvm_tuple_t key, tuuvm_tuple_t value);
 
 /**
  * Gets the key from the association.

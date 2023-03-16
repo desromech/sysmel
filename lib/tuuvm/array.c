@@ -1,5 +1,6 @@
 #include "tuuvm/array.h"
 #include "tuuvm/arraySlice.h"
+#include "tuuvm/function.h"
 #include "tuuvm/errors.h"
 #include "internal/context.h"
 
@@ -105,4 +106,58 @@ TUUVM_API tuuvm_tuple_t tuuvm_array_fromOffset(tuuvm_context_t *context, tuuvm_t
         resultElements[i] = sourceElements[fromOffset + i];
 
     return result;
+}
+
+static tuuvm_tuple_t tuuvm_array_primitive_equals(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+    
+    tuuvm_array_t **left = (tuuvm_array_t **)&arguments[0];
+    tuuvm_array_t **right = (tuuvm_array_t **)&arguments[1];
+    if(*left == *right)
+        return TUUVM_TRUE_TUPLE;
+    if(tuuvm_tuple_getType(context, (tuuvm_tuple_t)*left) != tuuvm_tuple_getType(context, (tuuvm_tuple_t)*right))
+        return TUUVM_FALSE_TUPLE;
+
+    size_t leftSize = tuuvm_array_getSize((tuuvm_tuple_t)*left);
+    size_t rightSize = tuuvm_array_getSize((tuuvm_tuple_t)*right);
+    if(leftSize != rightSize) return TUUVM_FALSE_TUPLE;
+
+    for(size_t i = 0; i < leftSize; ++i)
+    {
+        if(!tuuvm_tuple_equals(context, (*left)->elements[i], (*right)->elements[i]))
+            return TUUVM_FALSE_TUPLE;
+    }
+
+    return TUUVM_TRUE_TUPLE;
+}
+
+static tuuvm_tuple_t tuuvm_array_primitive_hash(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    tuuvm_array_t **array = (tuuvm_array_t **)&arguments[0];
+    size_t size = tuuvm_array_getSize((tuuvm_tuple_t)*array);
+
+    size_t result = tuuvm_tuple_identityHash(tuuvm_tuple_getType(context, (tuuvm_tuple_t)*array));
+    for(size_t i = 0; i < size; ++i)
+        result = tuuvm_hashConcatenate(result, tuuvm_tuple_hash(context, (*array)->elements[i]));
+
+    return tuuvm_tuple_size_encode(context, result);
+}
+
+void tuuvm_array_registerPrimitives(void)
+{
+    tuuvm_primitiveTable_registerFunction(tuuvm_array_primitive_equals);
+    tuuvm_primitiveTable_registerFunction(tuuvm_array_primitive_hash);
+}
+
+void tuuvm_array_setupPrimitives(tuuvm_context_t *context)
+{
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Array::=", context->roots.arrayType, "=", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_array_primitive_equals);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Array::hash", context->roots.arrayType, "hash", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_array_primitive_hash);
 }

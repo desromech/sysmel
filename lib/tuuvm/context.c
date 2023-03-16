@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 
+extern void tuuvm_array_registerPrimitives(void);
 extern void tuuvm_arrayList_registerPrimitives(void);
 extern void tuuvm_astInterpreter_registerPrimitives(void);
 extern void tuuvm_boolean_registerPrimitives(void);
@@ -30,6 +31,7 @@ extern void tuuvm_stringStream_registerPrimitives(void);
 extern void tuuvm_tuple_registerPrimitives(void);
 extern void tuuvm_type_registerPrimitives(void);
 
+extern void tuuvm_array_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_arrayList_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context);
 extern void tuuvm_boolean_setupPrimitives(tuuvm_context_t *context);
@@ -55,6 +57,7 @@ void tuuvm_context_registerPrimitives(void)
     tuuvm_primitiveTable_registerFunction(tuuvm_string_primitive_equals);
     tuuvm_primitiveTable_registerFunction(tuuvm_string_primitive_hash);
 
+    tuuvm_array_registerPrimitives();
     tuuvm_arrayList_registerPrimitives();
     tuuvm_astInterpreter_registerPrimitives();
     tuuvm_boolean_registerPrimitives();
@@ -337,10 +340,15 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_type_setFlags(context, context->roots.stringSymbolType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_BYTES);
 
     context->roots.dictionaryType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.hashedCollectionType);
+    context->roots.weakKeyDictionaryType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.dictionaryType);
+    context->roots.weakValueDictionaryType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.dictionaryType);
     context->roots.identityDictionaryType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.dictionaryType);
     context->roots.methodDictionaryType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.hashedCollectionType);
+
     context->roots.setType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.hashedCollectionType);
     context->roots.identitySetType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.setType);
+    context->roots.weakSetType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.weakSetType);
+    context->roots.weakIdentitySetType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.weakIdentitySetType);
 
     context->roots.internedSymbolSet = tuuvm_identitySet_create(context);
 
@@ -551,6 +559,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "primitiveName", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
         "nativeUserdata", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "nativeEntryPoint", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uintptrType,
+        "memoizationTable", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.weakValueDictionaryType,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.functionDefinitionType, "FunctionDefinition", TUUVM_NULL_TUPLE,
         "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
@@ -600,6 +609,10 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.identitySetType, "IdentitySet", TUUVM_NULL_TUPLE,
         NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.weakSetType, "WeakSet", TUUVM_NULL_TUPLE,
+        NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.weakIdentitySetType, "WeakIdentitySet", TUUVM_NULL_TUPLE,
+        NULL);
 
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.collectionType, "Collection", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.hashedCollectionType, "HashedCollection", TUUVM_NULL_TUPLE, NULL);
@@ -626,6 +639,10 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "key", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
+    context->roots.weakValueAssociationType = tuuvm_context_createIntrinsicClass(context, "WeakValueAssociation", TUUVM_NULL_TUPLE,
+        "key", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        //"value", TUUVM_TYPE_SLOT_FLAG_PUBLIC | TUUVM_TYPE_SLOT_FLAG_WEAK, TUUVM_NULL_TUPLE,
+        NULL);
     tuuvm_typeAndMetatype_setFlags(context, context->roots.associationType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
     context->roots.byteArrayType = tuuvm_context_createIntrinsicClass(context, "ByteArray", context->roots.arrayedCollectionType, NULL);
     tuuvm_typeAndMetatype_setFlags(context, context->roots.byteArrayType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_BYTES | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
@@ -634,6 +651,10 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.identityDictionaryType, "IdentityDictionary", TUUVM_NULL_TUPLE,
+        NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.weakKeyDictionaryType, "WeakKeyDictionary", TUUVM_NULL_TUPLE,
+        NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.weakValueDictionaryType, "WeakValueDictionary", TUUVM_NULL_TUPLE,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.methodDictionaryType, "MethodDictionary", TUUVM_NULL_TUPLE,
         "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
@@ -858,6 +879,7 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
 
     tuuvm_context_createBasicTypes(context);
     
+    tuuvm_array_setupPrimitives(context);
     tuuvm_arrayList_setupPrimitives(context);
     tuuvm_astInterpreter_setupASTInterpreter(context);
     tuuvm_boolean_setupPrimitives(context);
@@ -932,7 +954,7 @@ tuuvm_heap_t *tuuvm_context_getHeap(tuuvm_context_t *context)
 static size_t tuuvm_context_generateIdentityHash(tuuvm_context_t *context)
 {
     context->identityHashSeed = tuuvm_hashMultiply(context->identityHashSeed) + 12345;
-    return context->identityHashSeed & TUUVM_TUPLE_IMMEDIATE_VALUE_BIT_MASK;
+    return context->identityHashSeed & TUUVM_HASH_BIT_MASK;
 }
 
 tuuvm_object_tuple_t *tuuvm_context_allocateByteTuple(tuuvm_context_t *context, tuuvm_tuple_t type, size_t byteSize)
