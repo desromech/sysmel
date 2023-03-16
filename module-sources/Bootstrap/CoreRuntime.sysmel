@@ -40,6 +40,14 @@ Function
         self
     }.
 
+ValueBox
+    withSelector: #loadAtOffset:withType: addMethod: {:(ValueBox)self :(IntPointer)offset :(Type)valueType :: valueType |
+        (RawTuple::slotAt:)(self, 0sz)
+    } makeFinal;
+    withSelector: #store:atOffset:withType: addMethod: {:(ValueBox)self :value :(IntPointer)offset :(Type)valueType :: Void |
+        RawTuple::slotAt:put:(self, 0sz, value).
+        void
+    } makeFinal.
 
 AnyValue
     withSelector: #initialize addMethod: {:(AnyValue)self :: Void | };
@@ -57,61 +65,8 @@ AnyValue
     withSelector: #isNotNil addMethod: {:(AnyValue)self :: Boolean | self ~~ nil } makePure makeFinal;
 
     withSelector: #= addMethod: {:(AnyValue)self :other :: Boolean | self == other } makePure;
-    withSelector: #~= addMethod: {:(AnyValue)self :other :: Boolean | self ~~ other } makePure;
+    withSelector: #~= addMethod: {:(AnyValue)self :other :: Boolean | self ~~ other } makePure.
 
-    withSelector: #&& addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)other :: ASTIfNode |
-        ASTIfNode new
-            sourcePosition: macroContext sourcePosition;
-            conditionExpression: self;
-            trueExpression: other;
-            falseExpression: (ASTLiteralNode new
-                sourcePosition: macroContext sourcePosition;
-                value: false;
-                yourself);
-            yourself
-    } makeMacro;
-    withSelector: #|| addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)other :: ASTIfNode |
-        ASTIfNode new
-            sourcePosition: macroContext sourcePosition;
-            conditionExpression: self;
-            trueExpression: (ASTLiteralNode new
-                sourcePosition: macroContext sourcePosition;
-                value: true;
-                yourself);
-            falseExpression: other;
-            yourself
-    } makeMacro;
-
-    withSelector: #ifTrue: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)trueExpression :: ASTIfNode |
-        ASTIfNode new
-            sourcePosition: macroContext sourcePosition;
-            conditionExpression: self;
-            trueExpression: trueExpression;
-            yourself
-    } makeMacro;
-    withSelector: #ifFalse: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)falseExpression :: ASTIfNode |
-        ASTIfNode new
-            sourcePosition: macroContext sourcePosition;
-            conditionExpression: self;
-            falseExpression: falseExpression;
-            yourself
-    } makeMacro;
-    withSelector: #ifTrue:ifFalse: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)trueExpression :(ASTNode)falseExpression :: ASTIfNode |
-        ASTIfNode new
-            sourcePosition: macroContext sourcePosition;
-            conditionExpression: self;
-            trueExpression: trueExpression;
-            falseExpression: falseExpression;
-            yourself
-    } makeMacro;
-    withSelector: #ifFalse:ifTrue: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)falseExpression :(ASTNode)trueExpression :: ASTIfNode |
-        ASTIfNode new
-            sourcePosition: macroContext sourcePosition;
-            conditionExpression: self;
-            trueExpression: trueExpression;
-            falseExpression: falseExpression;
-            yourself
-    } makeMacro.
 
 Object
     withSelector: #class addMethod: {:(Object)self :: self __type__ __type__ | self __type__ } makePure makeFinal;
@@ -227,6 +182,75 @@ Type
                 else: (nil)
         }
     }.
+
+AnyValue
+    withSelector: #&& addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)other :: ASTIfNode |
+        ASTIfNode new
+            sourcePosition: macroContext sourcePosition;
+            conditionExpression: self;
+            trueExpression: other;
+            falseExpression: (ASTLiteralNode new
+                sourcePosition: macroContext sourcePosition;
+                value: false;
+                yourself);
+            yourself
+    } makeMacro;
+    withSelector: #|| addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)other :: ASTIfNode |
+        ASTIfNode new
+            sourcePosition: macroContext sourcePosition;
+            conditionExpression: self;
+            trueExpression: (ASTLiteralNode new
+                sourcePosition: macroContext sourcePosition;
+                value: true;
+                yourself);
+            falseExpression: other;
+            yourself
+    } makeMacro;
+
+    withSelector: #ifTrue: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)trueExpression :: ASTIfNode |
+        ASTIfNode new
+            sourcePosition: macroContext sourcePosition;
+            conditionExpression: self;
+            trueExpression: trueExpression;
+            yourself
+    } makeMacro;
+    withSelector: #ifFalse: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)falseExpression :: ASTIfNode |
+        ASTIfNode new
+            sourcePosition: macroContext sourcePosition;
+            conditionExpression: self;
+            falseExpression: falseExpression;
+            yourself
+    } makeMacro;
+    withSelector: #ifTrue:ifFalse: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)trueExpression :(ASTNode)falseExpression :: ASTIfNode |
+        ASTIfNode new
+            sourcePosition: macroContext sourcePosition;
+            conditionExpression: self;
+            trueExpression: trueExpression;
+            falseExpression: falseExpression;
+            yourself
+    } makeMacro;
+    withSelector: #ifFalse:ifTrue: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)falseExpression :(ASTNode)trueExpression :: ASTIfNode |
+        ASTIfNode new
+            sourcePosition: macroContext sourcePosition;
+            conditionExpression: self;
+            trueExpression: trueExpression;
+            falseExpression: falseExpression;
+            yourself
+    } makeMacro.
+
+AnyReference
+    withSelector: #doesNotUnderstand: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTMessageSendNode)messageSend :: ASTNode |
+        messageSend copy
+            receiver: (ASTFunctionApplicationNode new
+                sourcePosition: self sourcePosition;
+                functionExpression: (ASTLiteralNode new
+                    sourcePosition: self sourcePosition;
+                    value: self analyzedType loadValueFunction;
+                    yourself);
+                arguments: (self,);
+                yourself);
+            yourself
+    } makeMacro.
 
 Stream
     withSelector: #print: addMethod: {:(Stream)self :value :: Void | 
@@ -408,11 +432,10 @@ Collection
     } makeAbstract;
 
     withSelector: #doWithIndex: addMethod: {:(Collection)self :aBlock :: Void |
-        let: #index with: (ValueBox with: 0sz).
+        let: #i mutableWith: 0sz.
         self do: {:element :: Void |
-            let: #i with: index _.
             aBlock(element, i).
-            index := i + 1sz
+            i := 1sz + i
         }
     };
 
@@ -714,7 +737,7 @@ Type
     }.
 
 Metatype
-    withSelector: #printOn: addMethod: {:(Metaclass)self :(Stream)stream :: Void |
+    withSelector: #printOn: addMethod: {:(Metatype)self :(Stream)stream :: Void |
         let: #thisType with: self thisType.
         if: thisType ~~ nil
         then: (stream print: thisType; nextPutAll: " __type__")
@@ -729,6 +752,40 @@ Metaclass
         if: thisClass ~~ nil
         then: (stream print: thisClass; nextPutAll: " class")
         else: (stream nextPutAll: "a "; print: self __type__)
+    }.
+
+Type
+    withSelector: #refFor: addMethod: {:(Type)self :addressSpace :: ReferenceType |
+        ReferenceTypeTemplate(self, addressSpace)
+    } makePure;
+    withSelector: #ref addMethod: {:(Type)self :: ReferenceType |
+        self refFor: nil
+    } makePure;
+    withSelector: #pointerFor: addMethod: {:(Type)self :addressSpace :: ReferenceType |
+        PointerTypeTemplate(self, addressSpace)
+    } makePure;
+    withSelector: #pointer addMethod: {:(Type)self :addressSpace :: ReferenceType |
+        self pointerFor: nil
+    } makePure.
+
+ReferenceType
+    withSelector: #printOn: addMethod: {:(Type)self :(Stream)stream :: Void |
+        stream print: self baseType.
+        if: self addressSpace == nil then: {
+            stream nextPutAll: " ref"
+        } else: {
+            stream nextPutAll: " refFor: "; print: self addressSpace
+        }.
+    }.
+
+PointerType
+    withSelector: #printOn: addMethod: {:(Type)self :(Stream)stream :: Void |
+        stream print: self baseType.
+        if: self addressSpace == nil then: {
+            stream nextPutAll: " pointer"
+        } else: {
+            stream nextPutAll: " pointerFor: "; print: self addressSpace
+        }.
     }.
 
 DependentFunctionType

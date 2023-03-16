@@ -123,15 +123,35 @@ TUUVM_API size_t tuuvm_function_getFlags(tuuvm_context_t *context, tuuvm_tuple_t
     return 0;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments)
+TUUVM_API void tuuvm_function_setFlags(tuuvm_context_t *context, tuuvm_tuple_t function, size_t flags)
 {
+    if(!tuuvm_tuple_isKindOf(context, function, context->roots.functionType))
+        tuuvm_error("Expected a function.");
+
+    tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
+    functionObject->flags = tuuvm_tuple_size_encode(context, flags);
+}
+
+TUUVM_API void tuuvm_function_addFlags(tuuvm_context_t *context, tuuvm_tuple_t function, size_t flags)
+{
+    if(!tuuvm_tuple_isKindOf(context, function, context->roots.functionType))
+        tuuvm_error("Expected a function.");
+
+    tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
+    functionObject->flags = tuuvm_tuple_size_encode(context, tuuvm_tuple_size_decode(functionObject->flags) | flags);
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tuple_t function_, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags)
+{
+    if(!function_) tuuvm_error("Cannot apply nil as a function.");
+
     struct {
         tuuvm_tuple_t function;
         tuuvm_tuple_t functionType;
         tuuvm_tuple_t memoizationKey;
         tuuvm_tuple_t result;
     } gcFrame = {
-        .function = function
+        .function = function_
     };
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
@@ -142,11 +162,30 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
     };
     tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
 
-    gcFrame.functionType = tuuvm_tuple_getType(context, function);
-    if(tuuvm_tuple_isKindOf(context, function, context->roots.functionType))
+    gcFrame.functionType = tuuvm_tuple_getType(context, gcFrame.function);
+    if(tuuvm_tuple_isKindOf(context, gcFrame.function, context->roots.functionType))
     {
+        bool noTypecheck = applicationFlags & TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK;
+        bool passThroughReferences = applicationFlags & TUUVM_FUNCTION_APPLICATION_FLAGS_PASS_THROUGH_REFERENCES;
+
         tuuvm_function_t **functionObject = (tuuvm_function_t**)&gcFrame.function;
         tuuvm_functionEntryPoint_t nativeEntryPoint = NULL;
+
+        bool shouldTypecheckSimpleFunction = !noTypecheck && tuuvm_tuple_isKindOf(context, gcFrame.functionType, context->roots.simpleFunctionTypeType);
+        bool shouldLoadReferences = !noTypecheck && !shouldTypecheckSimpleFunction && !passThroughReferences && !tuuvm_tuple_isKindOf(context, gcFrame.functionType, context->roots.dependentFunctionTypeType);
+        if(shouldTypecheckSimpleFunction)
+        {
+            tuuvm_simpleFunctionType_t **simpleFunctionType = (tuuvm_simpleFunctionType_t**)&gcFrame.functionType;
+            size_t expectedArgumentCount = tuuvm_array_getSize((*simpleFunctionType)->argumentTypes);
+            for(size_t i = 0; i < expectedArgumentCount; ++i)
+                arguments[i] = tuuvm_type_coerceValue(context, tuuvm_array_at((*simpleFunctionType)->argumentTypes, i), arguments[i]);
+        }
+        else if(shouldLoadReferences)
+        {
+            bool allowReferenceInReceiver = (tuuvm_function_getFlags(context, gcFrame.function) & TUUVM_FUNCTION_FLAGS_ALLOW_REFERENCE_IN_RECEIVER) != 0;
+            for(size_t i = allowReferenceInReceiver ? 1 : 0; i < argumentCount; ++i)
+                arguments[i] = tuuvm_type_coerceValue(context, TUUVM_NULL_TUPLE, arguments[i]);
+        }
 
         // Is this a memoized function?
         bool isMemoized = tuuvm_function_isMemoized(context, gcFrame.function);
@@ -194,6 +233,12 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
         if(nativeEntryPoint)
         {
             gcFrame.result = nativeEntryPoint(context, &gcFrame.function, argumentCount, arguments);
+            if(shouldTypecheckSimpleFunction)
+            {
+                tuuvm_simpleFunctionType_t **simpleFunctionType = (tuuvm_simpleFunctionType_t**)&gcFrame.functionType;
+                gcFrame.result = tuuvm_type_coerceValue(context, (*simpleFunctionType)->resultType, gcFrame.result);
+            }
+
             if(isMemoized)
                 tuuvm_weakValueDictionary_atPut(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, gcFrame.result);
 
@@ -213,9 +258,28 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
         }
     }
 
-    printf("functionType %p expected type %p\n", (void*)gcFrame.functionType, (void*)context->roots.functionType);
-    tuuvm_error("Cannot apply non-functional object.");
-    return TUUVM_VOID_TUPLE;
+    // Send the #() and #(): messages to the functional object.
+    if(argumentCount == 0)
+    {
+        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return tuuvm_tuple_send0(context, context->roots.applyWithoutArgumentsSelector, gcFrame.function);
+    }
+    else
+    {
+        tuuvm_tuple_t argumentsArray = tuuvm_array_create(context, argumentCount);
+        for(size_t i = 0; i < argumentCount; ++i)
+            tuuvm_array_atPut(argumentsArray, i, arguments[i]);
+
+        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return tuuvm_tuple_send1(context, context->roots.applyWithArgumentsSelector, gcFrame.function, argumentsArray);
+    }
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_send(tuuvm_context_t *context, tuuvm_tuple_t selector, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags)
+{
+    TUUVM_ASSERT(argumentCount > 0); // We need a receiver for performing the lookup.
+    tuuvm_tuple_t method = tuuvm_type_lookupSelector(context, tuuvm_tuple_getType(context, arguments[0]), selector);
+    return tuuvm_function_apply(context, method, argumentCount, arguments, applicationFlags);
 }
 
 TUUVM_API void tuuvm_functionCallFrameStack_begin(tuuvm_context_t *context, tuuvm_functionCallFrameStack_t *callFrameStack, tuuvm_tuple_t function, size_t argumentCount)
@@ -263,9 +327,9 @@ TUUVM_API void tuuvm_functionCallFrameStack_push(tuuvm_functionCallFrameStack_t 
     ++callFrameStack->argumentIndex;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_functionCallFrameStack_finish(tuuvm_context_t *context, tuuvm_functionCallFrameStack_t *callFrameStack)
+TUUVM_API tuuvm_tuple_t tuuvm_functionCallFrameStack_finish(tuuvm_context_t *context, tuuvm_functionCallFrameStack_t *callFrameStack, uint32_t applicationFlags)
 {
-    return tuuvm_function_apply(context, callFrameStack->gcRoots.function, callFrameStack->expectedArgumentCount, callFrameStack->gcRoots.applicationArguments);
+    return tuuvm_function_apply(context, callFrameStack->gcRoots.function, callFrameStack->expectedArgumentCount, callFrameStack->gcRoots.applicationArguments, applicationFlags);
 }
 
 static tuuvm_tuple_t tuuvm_function_primitive_apply(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -300,7 +364,7 @@ static tuuvm_tuple_t tuuvm_function_primitive_apply(tuuvm_context_t *context, tu
     }
 
     TUUVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
-    return tuuvm_functionCallFrameStack_finish(context, &callFrameStack);
+    return tuuvm_functionCallFrameStack_finish(context, &callFrameStack, false);
 }
 
 static tuuvm_tuple_t tuuvm_function_primitive_isCorePrimitive(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -323,16 +387,16 @@ static tuuvm_tuple_t tuuvm_function_primitive_adoptDefinitionOf(tuuvm_context_t 
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
 
     tuuvm_tuple_t *function = &arguments[0];
-    tuuvm_tuple_t *definitionFunction = &arguments[0];
+    tuuvm_tuple_t *definitionFunction = &arguments[1];
     if(!tuuvm_tuple_isKindOf(context, *function, context->roots.functionType)) tuuvm_error("Expected a function.");
     if(!tuuvm_tuple_isKindOf(context, *definitionFunction, context->roots.functionType)) tuuvm_error("Expected a function.");
     
-    tuuvm_function_t *functionObject = (tuuvm_function_t*)*function;
-    tuuvm_function_t *definitionFunctionObject = (tuuvm_function_t*)*definitionFunction;
+    tuuvm_function_t **functionObject = (tuuvm_function_t**)function;
+    tuuvm_function_t **definitionFunctionObject = (tuuvm_function_t**)definitionFunction;
 
-    functionObject->definition = definitionFunctionObject->definition;
-    functionObject->captureVector = definitionFunctionObject->captureVector;
-    tuuvm_tuple_setType((tuuvm_object_tuple_t*)functionObject, tuuvm_tuple_getType(context, (tuuvm_tuple_t)definitionFunctionObject));
+    (*functionObject)->definition = (*definitionFunctionObject)->definition;
+    (*functionObject)->captureVector = (*definitionFunctionObject)->captureVector;
+    tuuvm_tuple_setType((tuuvm_object_tuple_t*)*functionObject, tuuvm_tuple_getType(context, (tuuvm_tuple_t)*definitionFunctionObject));
     return TUUVM_VOID_TUPLE;
 }
 

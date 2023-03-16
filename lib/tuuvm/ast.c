@@ -363,7 +363,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_astLiteralNode_getValue(tuuvm_tuple_t node)
     return ((tuuvm_astLiteralNode_t*)node)->value;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t nameExpression, tuuvm_tuple_t typeExpression, tuuvm_tuple_t valueExpression)
+TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t nameExpression, tuuvm_tuple_t typeExpression, tuuvm_tuple_t valueExpression, bool isMutable)
 {
     tuuvm_astLocalDefinitionNode_t *result = (tuuvm_astLocalDefinitionNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astLocalDefinitionNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astLocalDefinitionNode_t));
     result->super.sourcePosition = sourcePosition;
@@ -371,6 +371,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_create(tuuvm_context_t *con
     result->typeExpression = typeExpression;
     result->valueExpression = valueExpression;
     result->isMacroSymbol = TUUVM_FALSE_TUPLE;
+    result->isMutable = tuuvm_tuple_boolean_encode(isMutable);
     return (tuuvm_tuple_t)result;
 }
 
@@ -382,6 +383,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_createMacro(tuuvm_context_t
     result->typeExpression = typeExpression;
     result->valueExpression = valueExpression;
     result->isMacroSymbol = TUUVM_TRUE_TUPLE;
+    result->isMutable = TUUVM_FALSE_TUPLE;
     return (tuuvm_tuple_t)result;
 }
 

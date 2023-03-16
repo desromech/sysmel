@@ -34,8 +34,15 @@ typedef enum tuuvm_typeFlags_e
     TUUVM_TYPE_FLAGS_FINAL = 1<<3,
     TUUVM_TYPE_FLAGS_ABSTRACT = 1<<4,
 
+    TUUVM_TYPE_FLAGS_POINTER_VALUE = 1<<5,
+    TUUVM_TYPE_FLAGS_REFERENCE_VALUE = 1<<6,
+    TUUVM_TYPE_FLAGS_POINTER_LIKE_VALUE = TUUVM_TYPE_FLAGS_POINTER_VALUE | TUUVM_TYPE_FLAGS_REFERENCE_VALUE,
+
     TUUVM_TYPE_FLAGS_CLASS_DEFAULT_FLAGS = TUUVM_TYPE_FLAGS_NULLABLE,
     TUUVM_TYPE_FLAGS_METATYPE_REQUIRED_FLAGS = TUUVM_TYPE_FLAGS_NULLABLE,
+
+    TUUVM_TYPE_FLAGS_POINTER_TYPE_FLAGS = TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_POINTER_VALUE | TUUVM_TYPE_FLAGS_FINAL,
+    TUUVM_TYPE_FLAGS_REFERENCE_TYPE_FLAGS = TUUVM_TYPE_FLAGS_FINAL | TUUVM_TYPE_FLAGS_REFERENCE_VALUE,
 
     TUUVM_TYPE_FLAGS_PRIMITIVE_VALUE_TYPE_DEFAULT_FLAGS = TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL,
     TUUVM_TYPE_FLAGS_PRIMITIVE_VALUE_TYPE_METATYPE_FLAGS = TUUVM_TYPE_FLAGS_METATYPE_REQUIRED_FLAGS | TUUVM_TYPE_FLAGS_FINAL,
@@ -66,6 +73,8 @@ typedef struct tuuvm_pointerLikeType_s
     tuuvm_valueType_t super;
     tuuvm_tuple_t baseType;
     tuuvm_tuple_t addressSpace;
+    tuuvm_tuple_t loadValueFunction;
+    tuuvm_tuple_t storeValueFunction;
 } tuuvm_pointerLikeType_t;
 
 typedef struct tuuvm_pointerType_s
@@ -189,6 +198,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createDependentFunctionType(tuuvm_context_t *
 TUUVM_API tuuvm_tuple_t tuuvm_type_createSimpleFunctionType(tuuvm_context_t *context, tuuvm_tuple_t argumentTypes, bool isVariadic, tuuvm_tuple_t resultType);
 
 /**
+ * Creates a pointer type.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_createPointerType(tuuvm_context_t *context, tuuvm_tuple_t baseType, tuuvm_tuple_t addressSpace);
+
+/**
  * Creates a reference type.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_type_createReferenceType(tuuvm_context_t *context, tuuvm_tuple_t baseType, tuuvm_tuple_t addressSpace);
@@ -202,6 +216,21 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createFunctionLocalReferenceType(tuuvm_contex
  * Creates a pointer type.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_type_createPointerType(tuuvm_context_t *context, tuuvm_tuple_t baseType, tuuvm_tuple_t addressSpace);
+
+/**
+ * Creates a value box with the given value.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_valueBox_with(tuuvm_context_t *context, tuuvm_tuple_t boxedValue);
+
+/**
+ * Creates a reference with the specified storage
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_referenceType_withStorage(tuuvm_context_t *context, tuuvm_tuple_t referenceType, tuuvm_tuple_t storage);
+
+/**
+ * Creates a reference that boxes a value.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_referenceType_withBoxForValue(tuuvm_context_t *context, tuuvm_tuple_t referenceType, tuuvm_tuple_t boxedValue);
 
 /**
  * Canonicalizes a function type
@@ -313,11 +342,35 @@ TUUVM_API void tuuvm_type_setFlags(tuuvm_context_t *context, tuuvm_tuple_t type,
 TUUVM_API void tuuvm_typeAndMetatype_setFlags(tuuvm_context_t *context, tuuvm_tuple_t type, size_t flags, size_t metatypeFlags);
 
 /**
- * Gets the type flags.
+ * Is this a nullable type?
  */
 TUUVM_INLINE bool tuuvm_type_isNullable(tuuvm_tuple_t type)
 {
     return (tuuvm_type_getFlags(type) & TUUVM_TYPE_FLAGS_NULLABLE) != 0;
+}
+
+/**
+ * Is this a pointer like value?
+ */
+TUUVM_INLINE bool tuuvm_type_isPointerLikeType(tuuvm_tuple_t type)
+{
+    return (tuuvm_type_getFlags(type) & TUUVM_TYPE_FLAGS_POINTER_LIKE_VALUE) != 0;
+}
+
+/**
+ * Is this a pointer type?
+ */
+TUUVM_INLINE bool tuuvm_type_isPointerType(tuuvm_tuple_t type)
+{
+    return (tuuvm_type_getFlags(type) & TUUVM_TYPE_FLAGS_POINTER_VALUE) != 0;
+}
+
+/**
+ * Is this a reference type?
+ */
+TUUVM_INLINE bool tuuvm_type_isReferenceType(tuuvm_tuple_t type)
+{
+    return (tuuvm_type_getFlags(type) & TUUVM_TYPE_FLAGS_REFERENCE_VALUE) != 0;
 }
 
 /**
@@ -512,8 +565,18 @@ TUUVM_API void tuuvm_type_setTypeCheckFunctionApplicationWithEnvironmentNode(tuu
 TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValue(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t value);
 
 /**
+ * Coerces a value into the specified type. Passing references in case of no type to coerce-
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValuePassingReferences(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t value);
+
+/**
  * Performs type checking on a function application node.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_type_typeCheckFunctionApplicationNode(tuuvm_context_t *context, tuuvm_tuple_t functionType, tuuvm_tuple_t functionApplicationNode, tuuvm_tuple_t environment);
+
+/**
+ * Loads the value from a pointer like type instance.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_pointerLikeType_load(tuuvm_context_t *context, tuuvm_tuple_t pointerLikeValue);
 
 #endif //TUUVM_TYPE_H

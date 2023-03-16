@@ -233,7 +233,7 @@ TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingValue(tuuvm_context_t *con
     }
 }
 
-TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(tuuvm_context_t *context, const char *symbolString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
+TUUVM_API tuuvm_tuple_t tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(tuuvm_context_t *context, const char *symbolString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
 {
     struct {
         tuuvm_tuple_t symbol;
@@ -245,9 +245,10 @@ TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction
     gcFrame.primitiveFunction = tuuvm_function_createPrimitive(context, argumentCount, flags, userdata, entryPoint);
     tuuvm_context_setIntrinsicSymbolBindingValue(context, gcFrame.symbol, gcFrame.primitiveFunction);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.primitiveFunction;
 }
 
-TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(tuuvm_context_t *context, const char *symbolString, tuuvm_tuple_t ownerClass, const char *selectorString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
+TUUVM_API tuuvm_tuple_t tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(tuuvm_context_t *context, const char *symbolString, tuuvm_tuple_t ownerClass, const char *selectorString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
 {
     struct {
         tuuvm_tuple_t symbol;
@@ -259,12 +260,21 @@ TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(t
     };
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
-    gcFrame.symbol = tuuvm_symbol_internWithCString(context, symbolString);
-    gcFrame.selector = tuuvm_symbol_internWithCString(context, selectorString);
     gcFrame.primitiveFunction = tuuvm_function_createPrimitive(context, argumentCount, flags, userdata, entryPoint);
-    tuuvm_type_setMethodWithSelector(context, gcFrame.ownerClass, gcFrame.selector, gcFrame.primitiveFunction);
-    tuuvm_context_setIntrinsicSymbolBindingValue(context, gcFrame.symbol, gcFrame.primitiveFunction);
+    if(selectorString)
+    {
+        gcFrame.selector = tuuvm_symbol_internWithCString(context, selectorString);
+        tuuvm_type_setMethodWithSelector(context, gcFrame.ownerClass, gcFrame.selector, gcFrame.primitiveFunction);
+    }
+
+    if(symbolString)
+    {
+        gcFrame.symbol = tuuvm_symbol_internWithCString(context, symbolString);
+        tuuvm_context_setIntrinsicSymbolBindingValue(context, gcFrame.symbol, gcFrame.primitiveFunction);
+    }
+
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.primitiveFunction;
 }
 
 static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
@@ -365,6 +375,11 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.printStringSelector = tuuvm_symbol_internWithCString(context, "printString");
     context->roots.doesNotUnderstandSelector = tuuvm_symbol_internWithCString(context, "doesNotUnderstand:");
 
+    context->roots.loadAtOffsetWithTypeSelector = tuuvm_symbol_internWithCString(context, "loadAtOffset:withType:");
+    context->roots.storeAtOffsetWithTypeSelector = tuuvm_symbol_internWithCString(context, "store:atOffset:withType:");
+    context->roots.assignmentSelector = tuuvm_symbol_internWithCString(context, ":=");
+    context->roots.underscoreSelector = tuuvm_symbol_internWithCString(context, "_");
+
     context->roots.astNodeAnalysisSelector = tuuvm_symbol_internWithCString(context, "analyzeWithEnvironment:");
     context->roots.astNodeEvaluationSelector = tuuvm_symbol_internWithCString(context, "evaluateWithEnvironment:");
     context->roots.astNodeAnalysisAndEvaluationSelector = tuuvm_symbol_internWithCString(context, "analyzeAndEvaluateWithEnvironment:");
@@ -375,6 +390,9 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.analyzeMessageChainNodeWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "analyzeMessageChainNode:withEnvironment:");
     context->roots.analyzeAndEvaluateConcreteMetaValueWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "analyzeAndEvaluateConcreteMetaValue:withEnvironment:");
     context->roots.analyzeConcreteMetaValueWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "analyzeConcreteMetaValue:withEnvironment:");
+
+    context->roots.applyWithoutArgumentsSelector = tuuvm_symbol_internWithCString(context, "()");
+    context->roots.applyWithArgumentsSelector = tuuvm_symbol_internWithCString(context, "():");
 
     context->roots.coerceValueSelector = tuuvm_symbol_internWithCString(context, "coerceValue:");
     context->roots.typeCheckFunctionApplicationWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "typeCheckFunctionApplication:withEnvironment:");
@@ -405,19 +423,20 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_type_setMethodWithSelector(context, context->roots.anyValueType, tuuvm_symbol_internWithCString(context, "=="), context->roots.identityEqualsFunction);
     tuuvm_type_setMethodWithSelector(context, context->roots.anyValueType, tuuvm_symbol_internWithCString(context, "~~"), context->roots.identityNotEqualsFunction);
 
-    // Create the value type classes.
-    context->roots.valueType = tuuvm_context_createIntrinsicClass(context, "ValueType", context->roots.typeType, TUUVM_NULL_TUPLE);
-    context->roots.valueMetatypeType = tuuvm_context_createIntrinsicClass(context, "ValueMetatype", context->roots.metatypeType, TUUVM_NULL_TUPLE);
-    context->roots.primitiveValueType = tuuvm_context_createIntrinsicClass(context, "PrimitiveValueType", context->roots.typeType, TUUVM_NULL_TUPLE);
-    
-    context->roots.pointerLikeType = tuuvm_context_createIntrinsicClass(context, "PointerLikeType", context->roots.valueType,
-        "baseType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
-        "addressSpace", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        TUUVM_NULL_TUPLE);
-    context->roots.pointerType = tuuvm_context_createIntrinsicClass(context, "PointerType", context->roots.pointerLikeType, TUUVM_NULL_TUPLE);
-    context->roots.referenceType = tuuvm_context_createIntrinsicClass(context, "ReferenceType", context->roots.pointerLikeType, TUUVM_NULL_TUPLE);
 
-    context->roots.structureType = tuuvm_context_createIntrinsicClass(context, "Structure", context->roots.valueType, TUUVM_NULL_TUPLE);
+    // Create the value type classes.
+    context->roots.valueType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.typeType);
+    context->roots.valueMetatypeType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.metatypeType);
+    context->roots.primitiveValueType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.typeType);
+    
+    context->roots.anyPointerType = tuuvm_type_createAnonymous(context);
+    context->roots.anyReferenceType = tuuvm_type_createAnonymous(context);
+
+    context->roots.pointerLikeType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.valueType);
+    context->roots.pointerType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.pointerLikeType);
+    context->roots.referenceType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.pointerLikeType);
+
+    context->roots.structureType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.valueType);
 
     // Some basic types
     context->roots.voidType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "Void", context->roots.anyValueType);
@@ -495,6 +514,24 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "type", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
+
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.valueType, "ValueType", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.valueMetatypeType, "ValueMetatype", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.primitiveValueType, "PrimitiveValueType", TUUVM_NULL_TUPLE, NULL);
+    
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.anyPointerType, "AnyPointer", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.anyReferenceType, "AnyReference", TUUVM_NULL_TUPLE, NULL);
+
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.pointerLikeType, "PointerLikeType", TUUVM_NULL_TUPLE,
+        "baseType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
+        "addressSpace", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "loadValueFunction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionType,
+        "storeValueFunction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionType,
+        TUUVM_NULL_TUPLE);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.pointerType, "PointerType", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.referenceType, "ReferenceType", TUUVM_NULL_TUPLE, NULL);
+
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.structureType, "Structure", TUUVM_NULL_TUPLE, NULL);
 
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.environmentType, "Environment", TUUVM_NULL_TUPLE,
         "parent", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
@@ -744,11 +781,13 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         NULL);
     context->roots.astLambdaNodeType = tuuvm_context_createIntrinsicClass(context, "ASTLambdaNode", context->roots.astNodeType,
         "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "resultType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "body", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "hasLazyAnalysis", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "functionDefinition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
+        "binding", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     context->roots.astLexicalBlockNodeType = tuuvm_context_createIntrinsicClass(context, "ASTLexicalBlockNode", context->roots.astNodeType,
         "body", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
@@ -763,6 +802,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "valueExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "binding", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "isMacroSymbol", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        "isMutable", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         NULL);
     context->roots.astIdentifierReferenceNodeType = tuuvm_context_createIntrinsicClass(context, "ASTIdentifierReferenceNode", context->roots.astNodeType,
         "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,

@@ -289,6 +289,13 @@ SSAInstruction definition: {
     public field nextInstruction => SSAInstruction.
 }.
 
+public final class SSAAllocaInstruction superclass: SSAInstruction; definition: {
+    public field valueType => SSAValue.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void
+        := stream print: self; nextPutAll: " := alloca: "; print: self valueType.
+}.
+
 public final class SSABranchInstruction superclass: SSAInstruction; definition: {
     public field destination => SSABasicBlock.
 
@@ -402,6 +409,15 @@ public final class SSASendInstruction superclass: SSAInstruction; definition: {
     }.
 }.
 
+public final class SSAStoreInstruction superclass: SSAInstruction; definition: {
+    public field storage => SSAValue.
+    public field value => SSAValue.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: "store "; print: self value; nextPutAll: " in "; print: self storage
+    }.
+}.
+
 public final class SSAUnreachableInstruction superclass: SSAInstruction; definition: {
     public method isUnreachableInstruction => Boolean := true.
 
@@ -473,6 +489,12 @@ SSAInstructionBuilder definition: {
         self sourceEnvironment: oldSourceEnvironment.
         result
     }.
+
+    public method alloca: (valueType: SSAValue) type: (type: Type) ::=> SSAAllocaInstruction
+        := self addInstruction: (SSAAllocaInstruction new
+            valueType: valueType;
+            type: type;
+            yourself).
 
     public method branch: (destination: SSAValue) ::=> SSABranchInstruction
         := self addInstruction: (SSABranchInstruction new
@@ -558,6 +580,12 @@ SSAInstructionBuilder definition: {
 
     public method send: (receiver: SSAValue) selector: (selector: SSAValue) arguments: (arguments: Array) ::=> SSASendInstruction
         := self send: receiver receiverLookupType: nil selector: selector arguments: arguments resultType: nil.
+
+    public method store: (value: SSAValue) in: (storage: SSAValue) ::=> SSAStoreInstruction
+        := self addInstruction: (SSAStoreInstruction new
+            value: value;
+            storage: storage;
+            yourself).
 
     public method lastInstruction => SSAInstruction
         := self basicBlock ifNotNil: {:basicBlock :: SSAInstruction | basicBlock lastInstruction }.
@@ -725,6 +753,8 @@ ASTLambdaNode extend: {
 
 ASTLocalDefinitionNode extend: {
     public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let builder := context builder.
+
         let typeExpression := self typeExpression.
         let type := typeExpression
             ifNotNil: (typeExpression generateSSAValueWith: context)
@@ -733,12 +763,19 @@ ASTLocalDefinitionNode extend: {
         let valueExpression := self valueExpression.
         let value := valueExpression
             ifNotNil: (valueExpression generateSSAValueWith: context)
-            ifNil: (context builder literal: nil).
+            ifNil: (builder literal: nil).
 
-        let coercedValue := context builder coerceValue: value into: type.
+        let coercedValue := builder coerceValue: value into: type.
 
-        context setValue: coercedValue forBinding: self binding.
-        coercedValue
+        self isMutable ifTrue: {
+            let localVariable := builder alloca: type type: self analyzedType.
+            builder store: coercedValue in: localVariable.
+            context setValue: localVariable forBinding: self binding.
+            localVariable
+        } ifFalse: {
+            context setValue: coercedValue forBinding: self binding.
+            coercedValue
+        }
     }.
 }.
 

@@ -957,7 +957,7 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parsePragma(tuuvm_context_t *context, tu
                 tuuvm_stringStream_nextPutString(context, selectorBuilder, tuuvm_token_getValue(tuuvm_sysmelParser_lookAt(state, 0)));
                 ++state->tokenPosition;
 
-                tuuvm_tuple_t argument = tuuvm_sysmelParser_parseBinaryExpression(context, state);
+                tuuvm_tuple_t argument = tuuvm_sysmelParser_parseUnaryExpression(context, state);
                 tuuvm_arrayList_add(context, argumentArrayList, argument);
             }
 
@@ -971,7 +971,7 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parsePragma(tuuvm_context_t *context, tu
     }
 
     if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_GREATER_THAN)
-        return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a subscript right bracket.");
+        return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a pragma end.");
     ++state->tokenPosition;
 
     tuuvm_tuple_t sourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, state->tokenPosition);

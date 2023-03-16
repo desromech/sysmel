@@ -64,12 +64,14 @@ typedef struct tuuvm_astFunctionApplicationNode_s
 typedef struct tuuvm_astLambdaNode_s
 {
     tuuvm_astNode_t super;
+    tuuvm_tuple_t name;
     tuuvm_tuple_t flags;
     tuuvm_tuple_t arguments;
     tuuvm_tuple_t resultType;
     tuuvm_tuple_t body;
     tuuvm_tuple_t hasLazyAnalysis;
     tuuvm_tuple_t functionDefinition;
+    tuuvm_tuple_t binding;
 } tuuvm_astLambdaNode_t;
 
 typedef struct tuuvm_astLexicalBlockNode_s
@@ -93,6 +95,7 @@ typedef struct tuuvm_astLocalDefinitionNode_s
     tuuvm_tuple_t valueExpression;
     tuuvm_tuple_t binding;
     tuuvm_tuple_t isMacroSymbol;
+    tuuvm_tuple_t isMutable;
 } tuuvm_astLocalDefinitionNode_t;
 
 typedef struct tuuvm_astIdentifierReferenceNode_s
@@ -538,7 +541,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_astLiteralNode_getValue(tuuvm_tuple_t node);
 /**
  * Creates a local definition node.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t nameExpression, tuuvm_tuple_t typeExpression, tuuvm_tuple_t valueExpression);
+TUUVM_API tuuvm_tuple_t tuuvm_astLocalDefinitionNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t nameExpression, tuuvm_tuple_t typeExpression, tuuvm_tuple_t valueExpression, bool isMutable);
 
 /**
  * Creates a local definition node for a macro symbol.

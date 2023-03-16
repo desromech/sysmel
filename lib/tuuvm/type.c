@@ -3,6 +3,7 @@
 #include "tuuvm/assert.h"
 #include "tuuvm/errors.h"
 #include "tuuvm/function.h"
+#include "tuuvm/stackFrame.h"
 #include "tuuvm/string.h"
 #include "tuuvm/type.h"
 #include "internal/context.h"
@@ -131,22 +132,73 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createWithName(tuuvm_context_t *context, tuuv
     return result;
 }
 
+static tuuvm_tuple_t tuuvm_type_doCreateSimpleFunctionType(tuuvm_context_t *context, tuuvm_tuple_t argumentTypes, tuuvm_tuple_t isVariadic, tuuvm_tuple_t resultType)
+{
+    tuuvm_type_tuple_t *supertype = (tuuvm_type_tuple_t*)context->roots.functionType;
+    
+    tuuvm_simpleFunctionType_t* result = (tuuvm_simpleFunctionType_t*)tuuvm_context_allocatePointerTuple(context, context->roots.simpleFunctionTypeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_simpleFunctionType_t));
+    result->super.supertype = (tuuvm_tuple_t)supertype;
+    result->super.flags = supertype->flags;
+    result->super.totalSlotCount = supertype->totalSlotCount;
+    result->argumentTypes = argumentTypes;
+    result->isVariadic = isVariadic;
+    result->resultType = resultType;
+    return (tuuvm_tuple_t)result;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_type_createSimpleFunctionType(tuuvm_context_t *context, tuuvm_tuple_t argumentTypes, bool isVariadic, tuuvm_tuple_t resultType)
 {
-    tuuvm_simpleFunctionType_t* result = (tuuvm_simpleFunctionType_t*)tuuvm_context_allocatePointerTuple(context, context->roots.simpleFunctionTypeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_simpleFunctionType_t));
-    result->super.supertype = context->roots.functionType;
-    result->argumentTypes = argumentTypes;
-    result->isVariadic = tuuvm_tuple_boolean_encode(isVariadic);
-    result->resultType = resultType;
+    return tuuvm_function_apply3(context, context->roots.simpleFunctionTypeTemplate, argumentTypes, tuuvm_tuple_boolean_encode(isVariadic), resultType);
+}
+
+static tuuvm_tuple_t tuuvm_type_doCreatePointerType(tuuvm_context_t *context, tuuvm_tuple_t baseType, tuuvm_tuple_t addressSpace)
+{
+    tuuvm_pointerType_t* result = (tuuvm_pointerType_t*)tuuvm_context_allocatePointerTuple(context, context->roots.pointerType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_pointerType_t));
+    result->super.super.super.flags = tuuvm_tuple_size_encode(context, TUUVM_TYPE_FLAGS_POINTER_TYPE_FLAGS);
+    result->super.super.super.totalSlotCount = tuuvm_tuple_size_encode(context, 0);
+    result->super.super.super.supertype = context->roots.anyPointerType;
+    result->super.baseType = baseType;
+    result->super.addressSpace = addressSpace;
+
+    tuuvm_tuple_t assignmentMethod = context->roots.pointerLikeStorePrimitive;
+    tuuvm_type_setMethodWithSelector(context, (tuuvm_tuple_t)result, context->roots.assignmentSelector, assignmentMethod);
+    result->super.storeValueFunction = assignmentMethod;
+
+    tuuvm_tuple_t loadFunction = context->roots.pointerLikeLoadPrimitive;
+    tuuvm_type_setMethodWithSelector(context, (tuuvm_tuple_t)result, context->roots.underscoreSelector, assignmentMethod);
+    result->super.loadValueFunction = loadFunction;
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_type_createPointerType(tuuvm_context_t *context, tuuvm_tuple_t baseType, tuuvm_tuple_t addressSpace)
+{
+    return tuuvm_function_apply2(context, context->roots.pointerTypeTemplate, baseType, addressSpace);
+}
+
+static tuuvm_tuple_t tuuvm_type_doCreateReferenceType(tuuvm_context_t *context, tuuvm_tuple_t baseType, tuuvm_tuple_t addressSpace)
+{
+    tuuvm_referenceType_t* result = (tuuvm_referenceType_t*)tuuvm_context_allocatePointerTuple(context, context->roots.referenceType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_referenceType_t));
+    result->super.super.super.flags = tuuvm_tuple_size_encode(context, TUUVM_TYPE_FLAGS_REFERENCE_TYPE_FLAGS);
+    result->super.super.super.totalSlotCount = tuuvm_tuple_size_encode(context, 0);
+    result->super.super.super.supertype = context->roots.anyReferenceType;
+    result->super.baseType = baseType;
+    result->super.addressSpace = addressSpace;
+
+    tuuvm_tuple_t assignmentMethod = tuuvm_context_shallowCopy(context, context->roots.pointerLikeStorePrimitive);
+    tuuvm_function_addFlags(context, assignmentMethod, TUUVM_FUNCTION_FLAGS_ALLOW_REFERENCE_IN_RECEIVER);
+    tuuvm_type_setMethodWithSelector(context, (tuuvm_tuple_t)result, context->roots.assignmentSelector, assignmentMethod);
+    result->super.storeValueFunction = assignmentMethod;
+
+    tuuvm_tuple_t loadFunction = tuuvm_context_shallowCopy(context, context->roots.pointerLikeLoadPrimitive);
+    tuuvm_function_addFlags(context, loadFunction, TUUVM_FUNCTION_FLAGS_ALLOW_REFERENCE_IN_RECEIVER);
+    result->super.loadValueFunction = loadFunction;
+
     return (tuuvm_tuple_t)result;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_type_createReferenceType(tuuvm_context_t *context, tuuvm_tuple_t baseType, tuuvm_tuple_t addressSpace)
 {
-    tuuvm_referenceType_t* result = (tuuvm_referenceType_t*)tuuvm_context_allocatePointerTuple(context, context->roots.referenceType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_referenceType_t));
-    result->super.baseType = baseType;
-    result->super.addressSpace = addressSpace;
-    return (tuuvm_tuple_t)result;
+    return tuuvm_function_apply2(context, context->roots.referenceTypeTemplate, baseType, addressSpace);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_type_createFunctionLocalReferenceType(tuuvm_context_t *context, tuuvm_tuple_t baseType)
@@ -154,19 +206,37 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createFunctionLocalReferenceType(tuuvm_contex
     return tuuvm_type_createReferenceType(context, baseType, TUUVM_NULL_TUPLE);
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_type_createPointerType(tuuvm_context_t *context, tuuvm_tuple_t baseType, tuuvm_tuple_t addressSpace)
+TUUVM_API tuuvm_tuple_t tuuvm_valueBox_with(tuuvm_context_t *context, tuuvm_tuple_t boxedValue)
 {
-    tuuvm_pointerType_t* result = (tuuvm_pointerType_t*)tuuvm_context_allocatePointerTuple(context, context->roots.pointerType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_pointerType_t));
-    result->super.baseType = baseType;
-    result->super.addressSpace = addressSpace;
-    return (tuuvm_tuple_t)result;
+    tuuvm_object_tuple_t *box = tuuvm_context_allocatePointerTuple(context, context->roots.valueBoxType, 1);
+    box->pointers[0] = boxedValue;
+    return (tuuvm_tuple_t)box;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_referenceType_withStorage(tuuvm_context_t *context, tuuvm_tuple_t referenceType, tuuvm_tuple_t storage)
+{
+    if(!tuuvm_tuple_isKindOf(context, referenceType, context->roots.referenceType))
+        tuuvm_error("Expected a reference type");
+
+    tuuvm_object_tuple_t *reference = tuuvm_context_allocatePointerTuple(context, referenceType, 1);
+    reference->pointers[0] = storage;
+    return (tuuvm_tuple_t)reference;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_referenceType_withBoxForValue(tuuvm_context_t *context, tuuvm_tuple_t referenceType, tuuvm_tuple_t boxedValue)
+{
+    return tuuvm_referenceType_withStorage(context, referenceType, tuuvm_valueBox_with(context, boxedValue));
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_type_createDependentFunctionType(tuuvm_context_t *context, tuuvm_tuple_t argumentNodes, bool isVariadic, tuuvm_tuple_t resultTypeNode,
     tuuvm_tuple_t environment, tuuvm_tuple_t captureBindings, tuuvm_tuple_t argumentBindings, tuuvm_tuple_t localBindings)
 {
+    tuuvm_type_tuple_t *supertype = (tuuvm_type_tuple_t*)context->roots.functionType;
+
     tuuvm_dependentFunctionType_t* result = (tuuvm_dependentFunctionType_t*)tuuvm_context_allocatePointerTuple(context, context->roots.dependentFunctionTypeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_dependentFunctionType_t));
-    result->super.supertype = context->roots.functionType;
+    result->super.supertype = (tuuvm_tuple_t)supertype;
+    result->super.flags = supertype->flags;
+    result->super.totalSlotCount = supertype->totalSlotCount;
     result->argumentNodes = argumentNodes;
     result->isVariadic = tuuvm_tuple_boolean_encode(isVariadic);
     result->resultTypeNode = resultTypeNode;
@@ -465,23 +535,84 @@ TUUVM_API void tuuvm_type_setTypeCheckFunctionApplicationWithEnvironmentNode(tuu
     tuuvm_type_setMethodWithSelector(context, type, context->roots.typeCheckFunctionApplicationWithEnvironmentSelector, typeCheckFunction);
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValue(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t value)
+TUUVM_API tuuvm_tuple_t tuuvm_pointerLikeType_load(tuuvm_context_t *context, tuuvm_tuple_t pointerLikeValue)
 {
-    if(!type) return value;
-    if(!value && tuuvm_type_isNullable(type)) return value;
+    if(!pointerLikeValue)
+        tuuvm_error("Accessing null pointer-");
+    if(!tuuvm_type_isPointerLikeType(tuuvm_tuple_getType(context, pointerLikeValue)))
+        tuuvm_error("Expected a pointer like value.");
 
-    if(tuuvm_tuple_isKindOf(context, value, type))
-        return value;
+    size_t slotCount = tuuvm_tuple_getSizeInSlots(pointerLikeValue);
+    if(slotCount == 0)
+        tuuvm_error("Expected a pointer like value with at least single slot.");
 
-    tuuvm_tuple_t function = tuuvm_type_getCoerceValueFunction(context, tuuvm_tuple_getType(context, type));
-    if(function)
-        return tuuvm_function_apply2(context, function, type, value);
+    tuuvm_object_tuple_t *pointerObject = (tuuvm_object_tuple_t*)pointerLikeValue;
+    tuuvm_tuple_t storage = pointerObject->pointers[0];
+    intptr_t offset = tuuvm_tuple_intptr_encode(context, 0);
+    if(slotCount >= 2)
+        offset = tuuvm_tuple_intptr_decode(pointerObject->pointers[1]);
 
-    tuuvm_tuple_t valueType = tuuvm_tuple_getType(context, value);
-    if(!valueType && tuuvm_tuple_isDummyValue(value))
+    tuuvm_pointerLikeType_t *pointerLikeType = (tuuvm_pointerLikeType_t*)tuuvm_tuple_getType(context, pointerLikeValue);
+    return tuuvm_tuple_send2(context, context->roots.loadAtOffsetWithTypeSelector, storage, offset, pointerLikeType->baseType);
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValue(tuuvm_context_t *context, tuuvm_tuple_t type_, tuuvm_tuple_t value_)
+{
+    struct {
+        tuuvm_tuple_t type;
+        tuuvm_tuple_t value;
+        tuuvm_tuple_t valueType;
+        tuuvm_tuple_t function;
+    } gcFrame = {
+        .type = type_,
+        .value = value_
+    };
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    gcFrame.valueType = tuuvm_tuple_getType(context, gcFrame.value);
+    if(!gcFrame.type)
     {
-        tuuvm_tuple_t coercedDummyValue = (tuuvm_tuple_t)tuuvm_context_allocatePointerTuple(context, type, 0);
+        if(tuuvm_type_isReferenceType(gcFrame.valueType))
+        {
+            TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+            return tuuvm_pointerLikeType_load(context, gcFrame.value);
+        }
+        
+        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return gcFrame.value;
+    }
+
+    // Load references.
+    if(tuuvm_type_isReferenceType(gcFrame.valueType) && !tuuvm_type_isSubtypeOf(gcFrame.valueType, gcFrame.type))
+    {
+        gcFrame.value = tuuvm_pointerLikeType_load(context, gcFrame.value);
+        gcFrame.valueType = tuuvm_tuple_getType(context, gcFrame.value);
+    }
+
+    if(!gcFrame.value && tuuvm_type_isNullable(gcFrame.type))
+    {
+        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return gcFrame.value;
+    }
+
+    if(tuuvm_type_isSubtypeOf(gcFrame.valueType, gcFrame.type))
+    {
+        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return gcFrame.value;
+    }
+
+    tuuvm_tuple_t function = tuuvm_type_getCoerceValueFunction(context, tuuvm_tuple_getType(context, gcFrame.type));
+    if(function)
+    {
+        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return tuuvm_function_apply2(context, function, gcFrame.type, gcFrame.value);
+    }
+
+    if(!gcFrame.valueType && tuuvm_tuple_isDummyValue(gcFrame.value))
+    {
+        tuuvm_tuple_t coercedDummyValue = (tuuvm_tuple_t)tuuvm_context_allocatePointerTuple(context, gcFrame.type, 0);
         tuuvm_tuple_markDummyValue(coercedDummyValue);
+        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
         return coercedDummyValue;
     }
     
@@ -489,6 +620,12 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValue(tuuvm_context_t *context, tuuvm_t
     return TUUVM_VOID_TUPLE;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValuePassingReferences(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t value)
+{
+    if(type)
+        return value;
+    return tuuvm_type_coerceValue(context, type, value);
+}
 TUUVM_API tuuvm_tuple_t tuuvm_type_typeCheckFunctionApplicationNode(tuuvm_context_t *context, tuuvm_tuple_t functionType, tuuvm_tuple_t functionApplicationNode, tuuvm_tuple_t environment)
 {
     if(!functionType)
@@ -536,8 +673,105 @@ static tuuvm_tuple_t tuuvm_type_primitive_flushFallbackLookupSelector(tuuvm_cont
     return TUUVM_VOID_TUPLE;
 }
 
+static tuuvm_tuple_t tuuvm_type_primitive_coerceValue(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    (void)arguments;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    return tuuvm_type_coerceValue(context, arguments[1], arguments[0]);
+}
+
+static tuuvm_tuple_t tuuvm_type_primitive_createSimpleFunctionType(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    (void)arguments;
+    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+
+    return tuuvm_type_doCreateSimpleFunctionType(context, arguments[0], arguments[1], arguments[2]);
+}
+
+static tuuvm_tuple_t tuuvm_type_primitive_createPointerType(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    (void)arguments;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    return tuuvm_type_doCreatePointerType(context, arguments[0], arguments[1]);
+}
+
+static tuuvm_tuple_t tuuvm_type_primitive_createReferenceType(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    (void)arguments;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    return tuuvm_type_doCreateReferenceType(context, arguments[0], arguments[1]);
+}
+
+static tuuvm_tuple_t tuuvm_type_primitive_pointerLikeLoad(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    (void)arguments;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_pointerLikeType_load(context, arguments[0]);
+}
+
+static tuuvm_tuple_t tuuvm_type_primitive_pointerLikeStore(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    (void)arguments;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    tuuvm_tuple_t *pointerLikeValue = &arguments[0];
+    tuuvm_tuple_t *valueToStore = &arguments[1];
+    if(!pointerLikeValue) tuuvm_error("Accessing null pointer.");
+    if(!tuuvm_type_isPointerLikeType(tuuvm_tuple_getType(context, *pointerLikeValue)))
+        tuuvm_error("Expected a pointer like value.");
+
+    size_t slotCount = tuuvm_tuple_getSizeInSlots(*pointerLikeValue);
+    if(slotCount == 0) tuuvm_error("Expected a pointer like value with at least single slot.");
+
+    struct {
+        tuuvm_pointerLikeType_t *pointerLikeType;
+        tuuvm_tuple_t coercedValue;
+        tuuvm_tuple_t storage;
+        tuuvm_tuple_t offset;
+    } gcFrame = {0};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    gcFrame.pointerLikeType = (tuuvm_pointerLikeType_t*)tuuvm_tuple_getType(context, *pointerLikeValue);
+    gcFrame.coercedValue = tuuvm_type_coerceValue(context, gcFrame.pointerLikeType->baseType, *valueToStore);
+
+    tuuvm_object_tuple_t **pointerObject = (tuuvm_object_tuple_t**)pointerLikeValue;
+    gcFrame.storage = (*pointerObject)->pointers[0];
+    gcFrame.offset = tuuvm_tuple_intptr_encode(context, 0);
+    if(slotCount >= 2)
+        gcFrame.offset = (*pointerObject)->pointers[1];
+
+    tuuvm_tuple_send3(context, context->roots.storeAtOffsetWithTypeSelector, gcFrame.storage, *valueToStore, gcFrame.offset, gcFrame.pointerLikeType->baseType);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return *pointerLikeValue;
+}
+
 void tuuvm_type_registerPrimitives(void)
 {
+    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_createSimpleFunctionType);
+    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_createPointerType);
+    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_createReferenceType);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_pointerLikeLoad);
+    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_pointerLikeStore);
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_coerceValue);
+
     tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_flushLookupSelector);
     tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_flushMacroLookupSelector);
     tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_flushFallbackLookupSelector);
@@ -545,6 +779,14 @@ void tuuvm_type_registerPrimitives(void)
 
 void tuuvm_type_setupPrimitives(tuuvm_context_t *context)
 {
+    context->roots.simpleFunctionTypeTemplate = tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "SimpleFunctionTypeTemplate", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_MEMOIZED | TUUVM_FUNCTION_FLAGS_TEMPLATE, NULL, tuuvm_type_primitive_createSimpleFunctionType);
+    context->roots.pointerTypeTemplate = tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "PointerTypeTemplate", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_MEMOIZED | TUUVM_FUNCTION_FLAGS_TEMPLATE, NULL, tuuvm_type_primitive_createPointerType);
+    context->roots.referenceTypeTemplate = tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "ReferenceTypeTemplate", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_MEMOIZED | TUUVM_FUNCTION_FLAGS_TEMPLATE, NULL, tuuvm_type_primitive_createReferenceType);
+    context->roots.pointerLikeLoadPrimitive = tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "PointerLikeType::load", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_pointerLikeLoad);
+    context->roots.pointerLikeStorePrimitive = tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "PointerLikeType::store:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_pointerLikeStore);
+
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "Type::coerceValue:into:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_coerceValue);
+
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Type::flushLookupSelector:", context->roots.typeType, "flushLookupSelector:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_flushLookupSelector);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Type::flushMacroLookupSelector:", context->roots.typeType, "flushMacroLookupSelector:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_flushMacroLookupSelector);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Type::flushFallbackLookupSelector:", context->roots.typeType, "flushFallbackLookupSelector:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_flushFallbackLookupSelector);

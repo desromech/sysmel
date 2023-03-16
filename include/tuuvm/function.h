@@ -25,7 +25,16 @@ typedef enum tuuvm_functionFlags_e
 
     TUUVM_FUNCTION_FLAGS_MEMOIZED = 1<<9,
     TUUVM_FUNCTION_FLAGS_TEMPLATE = 1<<10,
+
+    TUUVM_FUNCTION_FLAGS_ALLOW_REFERENCE_IN_RECEIVER = 1<<11,
 } tuuvm_functionFlags_t;
+
+typedef enum tuuvm_functionApplicationFlags_e
+{
+    TUUVM_FUNCTION_APPLICATION_FLAGS_NONE = 0,
+    TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK = 1<<0,
+    TUUVM_FUNCTION_APPLICATION_FLAGS_PASS_THROUGH_REFERENCES = 1<<1,
+} tuuvm_functionApplicationFlags_t;
 
 typedef struct tuuvm_function_s
 {
@@ -108,6 +117,16 @@ TUUVM_API size_t tuuvm_function_getArgumentCount(tuuvm_context_t *context, tuuvm
 TUUVM_API size_t tuuvm_function_getFlags(tuuvm_context_t *context, tuuvm_tuple_t function);
 
 /**
+ * Sets the function flags.
+ */
+TUUVM_API void tuuvm_function_setFlags(tuuvm_context_t *context, tuuvm_tuple_t function, size_t flags);
+
+/**
+ * Add flags to the function.
+ */
+TUUVM_API void tuuvm_function_addFlags(tuuvm_context_t *context, tuuvm_tuple_t function, size_t flags);
+
+/**
  * Is this function a macro?
  */
 TUUVM_INLINE bool tuuvm_function_isMacro(tuuvm_context_t *context, tuuvm_tuple_t function)
@@ -142,16 +161,16 @@ TUUVM_INLINE bool tuuvm_function_isMemoized(tuuvm_context_t *context, tuuvm_tupl
 /**
  * Applies a function tuple with the given parameters
  */
-TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments);
+TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags);
 
 TUUVM_INLINE tuuvm_tuple_t tuuvm_function_apply0(tuuvm_context_t *context, tuuvm_tuple_t function)
 {
-    return tuuvm_function_apply(context, function, 0, 0);
+    return tuuvm_function_apply(context, function, 0, 0, 0);
 }
 
 TUUVM_INLINE tuuvm_tuple_t tuuvm_function_apply1(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_tuple_t argument)
 {
-    return tuuvm_function_apply(context, function, 1, &argument);
+    return tuuvm_function_apply(context, function, 1, &argument, 0);
 }
 
 TUUVM_INLINE tuuvm_tuple_t tuuvm_function_apply2(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_tuple_t argument0, tuuvm_tuple_t argument1)
@@ -161,7 +180,7 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_function_apply2(tuuvm_context_t *context, tuuvm
         argument1
     };
     
-    return tuuvm_function_apply(context, function, 2, arguments);
+    return tuuvm_function_apply(context, function, 2, arguments, 0);
 }
 
 TUUVM_INLINE tuuvm_tuple_t tuuvm_function_apply3(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_tuple_t argument0, tuuvm_tuple_t argument1, tuuvm_tuple_t argument2)
@@ -172,7 +191,7 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_function_apply3(tuuvm_context_t *context, tuuvm
         argument2,
     };
     
-    return tuuvm_function_apply(context, function, 3, arguments);
+    return tuuvm_function_apply(context, function, 3, arguments, 0);
 }
 
 TUUVM_INLINE tuuvm_tuple_t tuuvm_function_apply4(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_tuple_t argument0, tuuvm_tuple_t argument1, tuuvm_tuple_t argument2, tuuvm_tuple_t argument3)
@@ -184,7 +203,62 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_function_apply4(tuuvm_context_t *context, tuuvm
         argument3,
     };
     
-    return tuuvm_function_apply(context, function, 4, arguments);
+    return tuuvm_function_apply(context, function, 4, arguments, 0);
+}
+
+/**
+ * Sends a message with the given selector.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_send(tuuvm_context_t *context, tuuvm_tuple_t selector, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags);
+
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_send0(tuuvm_context_t *context, tuuvm_tuple_t selector, tuuvm_tuple_t receiver)
+{
+    return tuuvm_tuple_send(context, selector, 1, &receiver, 0);
+}
+
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_send1(tuuvm_context_t *context, tuuvm_tuple_t selector, tuuvm_tuple_t receiver, tuuvm_tuple_t argument)
+{
+    tuuvm_tuple_t arguments[] = {
+        receiver,
+        argument
+    };
+    return tuuvm_tuple_send(context, selector, 2, arguments, 0);
+}
+
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_send2(tuuvm_context_t *context, tuuvm_tuple_t selector, tuuvm_tuple_t receiver, tuuvm_tuple_t argument0, tuuvm_tuple_t argument1)
+{
+    tuuvm_tuple_t arguments[] = {
+        receiver,
+        argument0,
+        argument1
+    };
+    
+    return tuuvm_tuple_send(context, selector, 3, arguments, 0);
+}
+
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_send3(tuuvm_context_t *context, tuuvm_tuple_t selector, tuuvm_tuple_t receiver, tuuvm_tuple_t argument0, tuuvm_tuple_t argument1, tuuvm_tuple_t argument2)
+{
+    tuuvm_tuple_t arguments[] = {
+        receiver,
+        argument0,
+        argument1,
+        argument2,
+    };
+    
+    return tuuvm_tuple_send(context, selector, 4, arguments, 0);
+}
+
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_send4(tuuvm_context_t *context, tuuvm_tuple_t selector, tuuvm_tuple_t receiver, tuuvm_tuple_t argument0, tuuvm_tuple_t argument1, tuuvm_tuple_t argument2, tuuvm_tuple_t argument3)
+{
+    tuuvm_tuple_t arguments[] = {
+        receiver,
+        argument0,
+        argument1,
+        argument2,
+        argument3,
+    };
+    
+    return tuuvm_tuple_send(context, selector, 5, arguments, 0);
 }
 
 /**
@@ -200,7 +274,7 @@ TUUVM_API void tuuvm_functionCallFrameStack_push(tuuvm_functionCallFrameStack_t 
 /**
  * Ends constructing a function call frame stack and dispatch the function call.
  */
-TUUVM_API tuuvm_tuple_t tuuvm_functionCallFrameStack_finish(tuuvm_context_t *context, tuuvm_functionCallFrameStack_t *callFrameStack);
+TUUVM_API tuuvm_tuple_t tuuvm_functionCallFrameStack_finish(tuuvm_context_t *context, tuuvm_functionCallFrameStack_t *callFrameStack, uint32_t applicationFlags);
 
 /**
  * Does the function require an optimized lookup?

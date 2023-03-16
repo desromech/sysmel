@@ -33,10 +33,25 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t printStringSelector;
     tuuvm_tuple_t doesNotUnderstandSelector;
 
+    tuuvm_tuple_t loadAtOffsetWithTypeSelector;
+    tuuvm_tuple_t storeAtOffsetWithTypeSelector;
+
+    tuuvm_tuple_t assignmentSelector;
+    tuuvm_tuple_t underscoreSelector;
+
+    tuuvm_tuple_t pointerLikeLoadPrimitive;
+    tuuvm_tuple_t pointerLikeStorePrimitive;
+    tuuvm_tuple_t pointerTypeTemplate;
+    tuuvm_tuple_t referenceTypeTemplate;
+    tuuvm_tuple_t simpleFunctionTypeTemplate;
+
+    tuuvm_tuple_t applyWithoutArgumentsSelector;
+    tuuvm_tuple_t applyWithArgumentsSelector;
+
     tuuvm_tuple_t astNodeAnalysisSelector;
     tuuvm_tuple_t astNodeEvaluationSelector;
     tuuvm_tuple_t astNodeAnalysisAndEvaluationSelector;
-    
+
     tuuvm_tuple_t analyzeAndEvaluateMessageSendNodeForReceiverWithEnvironmentSelector;
     tuuvm_tuple_t analyzeMessageSendNodeWithEnvironmentSelector;
     tuuvm_tuple_t analyzeAndEvaluateMessageChainNodeForReceiverWithEnvironmentSelector;

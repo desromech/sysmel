@@ -170,3 +170,16 @@ let: #memoized with: {:(Int32)x :(Int32)y :: Int32 | x + y } makeMemoized.
 printLine(memoized memoizationTable).
 printLine(memoized(1i32, 2i32), " ", memoized(3i32, 1i32), " ", memoized(3i32, 1i32)).
 printLine(memoized memoizationTable).
+
+let: #functionWithMutableLocal with: {:(Int32)x :: Int32 |
+    let: #myVar mutableWith: 42i32.
+    myVar := 1i32 + myVar.
+    myVar + x.
+}.
+
+##printLine(SimpleFunctionTypeTemplate, SimpleFunctionTypeTemplate memoizationTable).
+##printLine(ReferenceTypeTemplate, ": ", ReferenceTypeTemplate memoizationTable).
+##printLine(PointerTypeTemplate, ": ", ReferenceTypeTemplate memoizationTable).
+
+printLine(functionWithMutableLocal asSSAFunction fullPrintString).
+printLine(functionWithMutableLocal(1i32)).
