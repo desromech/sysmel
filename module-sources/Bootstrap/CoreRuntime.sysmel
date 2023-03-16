@@ -511,53 +511,51 @@ SequenceableCollection
             yourself
     };
     withSelector: #anySatisfy: addMethod: {:(SequenceableCollection)self :aBlock :: Boolean |
-        let: #index with: (ValueBox with: 0sz).
+        let: #i mutableWith: 0sz.
         let: #size with: self size.
-        let: #hasFoundIt with: (ValueBox with: false).
+        let: #hasFoundIt type: Boolean mutableWith: false.
 
-        while: (if: hasFoundIt _ then: false else: index _ < self size) do: (
-            hasFoundIt := aBlock(self at: index _)
-        ) continueWith: (index := index _ + 1sz).
-        hasFoundIt _
+        while: (if: hasFoundIt then: false else: i < self size) do: (
+            hasFoundIt := aBlock(self at: i)
+        ) continueWith: (i := i + 1sz).
+        hasFoundIt
     } makeFinal;
     withSelector: #allSatisfy: addMethod: {:(SequenceableCollection)self :aBlock :: Boolean |
-        let: #index with: (ValueBox with: 0sz).
+        let: #i mutableWith: 0sz.
         let: #size with: self size.
-        let: #everythingIsFine with: (ValueBox with: true).
+        let: #everythingIsFine type: Boolean mutableWith: true.
 
-        while: (if: everythingIsFine _ then: index _ < self size else: false) do: (
-            everythingIsFine := aBlock(self at: index _)
-        ) continueWith: (index := index _ + 1sz).
-        everythingIsFine _
+        while: (if: everythingIsFine then: i < self size else: false) do: (
+            everythingIsFine := aBlock(self at: i)
+        ) continueWith: (i := i + 1sz).
+        everythingIsFine
     } makeFinal;
     withSelector: #collect: addMethod: {:(SequenceableCollection)self :aBlock :: self species |
-        let: #index with: (ValueBox with: 0sz).
+        let: #i mutableWith: 0sz.
         let: #size with: self size.
         let: #result with: (self species new: size).
 
-        while: index _ < self size do: {
-            let: #i with: index _.
+        while: i < self size do: {
             result at: i put: aBlock(self at: i)
-        } continueWith: (index := index _ + 1sz).
+        } continueWith: (i := i + 1sz).
 
         result
     } makeFinal;
     withSelector: #do: addMethod: {:(SequenceableCollection)self :aBlock :: Void |
-        let: #index with: (ValueBox with: 0sz).
+        let: #i mutableWith: 0sz.
         let: #size with: self size.
 
-        while: index _ < self size do: (
-            aBlock(self at: index _)
-        ) continueWith: (index := index _ + 1sz)
+        while: i < self size do: (
+            aBlock(self at: i)
+        ) continueWith: (i := i + 1sz)
     };
     withSelector: #doWithIndex: addMethod: {:(SequenceableCollection)self :aBlock :: Void |
-        let: #index with: (ValueBox with: 0sz).
+        let: #i mutableWith: 0sz.
         let: #size with: self size.
 
-        while: index _ < self size do: {
-            let: #i with: index _.
+        while: i < self size do: {
             aBlock(self at: i, i)
-        } continueWith: (index := index _ + 1sz)
+        } continueWith: (i := i + 1sz)
     };
     withSelector: #-- addMethod: {:(SequenceableCollection)self :(SequenceableCollection)other :: self species |
         let: #size with: self size.

@@ -35,25 +35,25 @@ MetaBuilder
             value: receiver;
             yourself). 
         
-        let: #result with: (ValueBox with: selfReceiver).
+        let: #result type: nil mutableWith: receiver.
 
         messageChainNode messages do: {:messageChainMessageNode :: Void |
             result := receiver analyzeAndEvaluateMessageSendNode: (messageChainMessageNode asMessageSendNodeWithReceiver: selfReceiver) withEnvironment: environment
         }.
 
-        result _
+        result
     };
     withSelector: #analyzeMessageChainNode:withEnvironment: addClassMethod: {:self :messageChainNode :(Environment)environment |
         let: #selfReceiver with: messageChainNode receiver. 
         let: #receiver with: selfReceiver value.
         
-        let: #result with: (ValueBox with: selfReceiver).
+        let: #result type: ASTNode mutableWith: selfReceiver.
 
         messageChainNode messages do: {:messageChainMessageNode :: Void |
             result := receiver analyzeMessageSendNode: (messageChainMessageNode asMessageSendNodeWithReceiver: selfReceiver) withEnvironment: environment
         }.
 
-        result _
+        result
     };
     withSelector: #analyzeAndEvaluateConcreteMetaValue:withEnvironment: addClassMethod: {:self :metaBuilderInstance :(Environment)environment |
         metaBuilderInstance analyzeAndEvaluateConcreteMetaValueWithEnvironment: environment
@@ -296,17 +296,28 @@ VariableMetaBuilder
     }.
 
 VariableMetaBuilder publicSubclass: #LetMetaBuilder slots: (
+    TypeSlot publicNamed: #isMutable type: Boolean ,
     TypeSlot publicNamed: #typeExpression type: ASTNode ,
     TypeSlot publicNamed: #initialValue type: ASTNode ,
 ).
 
 LetMetaBuilder
+    withSelector: #initialize addMethod: {:self :: Void |
+        (object: self withLookupStartingFrom: TypeMetaBuilder supertype) initialize.
+        self isMutable: false
+    };
+    withSelector: #mutable addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self isMutable: true.
+        self continueExpansion
+    };
     withSelector: #finishExpansionWithEnvironment: addMethod: {:self :(Environment)environment :: ASTNode |
         ASTLocalDefinitionNode new
             sourcePosition: self sourcePosition;
             nameExpression: self name;
             typeExpression: self typeExpression;
             valueExpression: self initialValue;
+            isMutable: self isMutable;
             yourself
     }.
 

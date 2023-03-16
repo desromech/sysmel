@@ -128,10 +128,10 @@ SSAFunctionDefinition definition: {
         := self addBasicBlock: basicBlock after: nil.
 
     public method basicBlocksDo: aBlock ::=> Void := {
-        let position := ValueBox with: self firstBasicBlock.
-        while: position _ isNotNil do: (
-            aBlock(position _)
-        ) continueWith: (position := position _ nextBlock)
+        let position mutable := self firstBasicBlock.
+        while: position isNotNil do: (
+            aBlock(position)
+        ) continueWith: (position := position nextBlock)
     }.
 
     public method localValuesDo: aBlock ::=> Void := {
@@ -144,10 +144,10 @@ SSAFunctionDefinition definition: {
     }.
 
     public method enumerateLocalValueIndices => Void := {
-        let index := ValueBox with: 0sz.
+        let index mutable := 0sz.
         self localValuesDo: {:localValue :: Void |
-            localValue localValueIndex: index _.
-            index := index _ + 1sz
+            localValue localValueIndex: index.
+            index := index + 1sz
         }
     }.
 
@@ -265,10 +265,10 @@ SSABasicBlock definition: {
         := self addInstruction: instruction after: nil.
 
     public method instructionsDo: aBlock ::=> Void := {
-        let position := ValueBox with: self firstInstruction.
-        while: position _ isNotNil do: (
-            aBlock(position _)
-        ) continueWith: (position := position _ nextInstruction)
+        let position mutable := self firstInstruction.
+        while: position isNotNil do: (
+            aBlock(position)
+        ) continueWith: (position := position nextInstruction)
     }.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
@@ -814,9 +814,9 @@ ASTIfNode extend: {
         builder conditionalBranch: condition trueDestination: trueDestination falseDestination: falseDestination.
 
         ## True branch
-        let trueResult := ValueBox with: nil.
-        let trueResultBlock := ValueBox with: conditionBlock.
-        let trueResultIsTerminator := ValueBox with: false.
+        let trueResult mutable => SSAValue := nil.
+        let trueResultBlock mutable := conditionBlock.
+        let trueResultIsTerminator mutable => Boolean := false.
 
         trueExpression ifNotNil: {
             builder beginBasicBlock: trueDestination.
@@ -833,9 +833,9 @@ ASTIfNode extend: {
         }.
 
         ## False branch
-        let falseResult := ValueBox with: nil.
-        let falseResultBlock := ValueBox with: conditionBlock.
-        let falseResultIsTerminator := ValueBox with: false.
+        let falseResult mutable => SSAValue := nil.
+        let falseResultBlock mutable := conditionBlock.
+        let falseResultIsTerminator mutable => Boolean := false.
         falseExpression ifNotNil: {
             builder beginBasicBlock: falseDestination.
             falseResult := falseExpression generateSSAValueWith: context.
@@ -851,17 +851,17 @@ ASTIfNode extend: {
         }.
 
         ## Merge
-        trueResultIsTerminator _ ifFalse: {
+        trueResultIsTerminator ifFalse: {
             builder beginBasicBlock: mergeBlock.
-            trueResultIsTerminator _ ifTrue: (
-                falseResult _
+            trueResultIsTerminator ifTrue: (
+                falseResult
             ) ifFalse: (
-                falseResultIsTerminator _ ifTrue: (
-                    trueResult _
+                falseResultIsTerminator ifTrue: (
+                    trueResult
                 ) ifFalse: (
                     (builder phi: self analyzedType)
-                        addValue: trueResult _ incomingFrom: trueResultBlock _;
-                        addValue: falseResult _ incomingFrom: falseResultBlock _;
+                        addValue: trueResult incomingFrom: trueResultBlock;
+                        addValue: falseResult incomingFrom: falseResultBlock;
                         yourself
                 )
             ).
@@ -990,14 +990,14 @@ ASTMessageSendNode extend: {
 
 ASTSequenceNode extend: {
     public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
-        let result := ValueBox with: (context builder literal: void).
+        let result mutable => SSAValue := context builder literal: void.
         self expressions do: {:(ASTNode)expression :: Void |
             context builder isLastTerminator ifFalse: {
                 result := expression generateSSAValueWith: context
             }
         }.
 
-        result _
+        result
     }
 }.
 

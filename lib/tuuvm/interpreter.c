@@ -828,6 +828,21 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_letWithPrimitiveMacro(tuuvm_co
     return tuuvm_astLocalDefinitionNode_create(context, sourcePosition, *name, TUUVM_NULL_TUPLE, *value, false);
 }
 
+static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_letTypeWithPrimitiveMacro(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 4) tuuvm_error_argumentCountMismatch(4, argumentCount);
+
+    tuuvm_tuple_t *macroContext = &arguments[0];
+    tuuvm_tuple_t *name = &arguments[1];
+    tuuvm_tuple_t *type = &arguments[2];
+    tuuvm_tuple_t *value = &arguments[3];
+
+    tuuvm_tuple_t sourcePosition = tuuvm_macroContext_getSourcePosition(*macroContext);
+    return tuuvm_astLocalDefinitionNode_create(context, sourcePosition, *name, *type, *value, false);
+}
+
 static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_letMutableWithPrimitiveMacro(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
@@ -840,6 +855,21 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_letMutableWithPrimitiveMacro(t
 
     tuuvm_tuple_t sourcePosition = tuuvm_macroContext_getSourcePosition(*macroContext);
     return tuuvm_astLocalDefinitionNode_create(context, sourcePosition, *name, TUUVM_NULL_TUPLE, *value, true);
+}
+
+static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_letTypeMutableWithPrimitiveMacro(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 4) tuuvm_error_argumentCountMismatch(4, argumentCount);
+
+    tuuvm_tuple_t *macroContext = &arguments[0];
+    tuuvm_tuple_t *name = &arguments[1];
+    tuuvm_tuple_t *type = &arguments[2];
+    tuuvm_tuple_t *value = &arguments[3];
+
+    tuuvm_tuple_t sourcePosition = tuuvm_macroContext_getSourcePosition(*macroContext);
+    return tuuvm_astLocalDefinitionNode_create(context, sourcePosition, *name, *type, *value, true);
 }
 
 static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_macroLetWithPrimitiveMacro(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -3878,7 +3908,9 @@ void tuuvm_astInterpreter_registerPrimitives(void)
     tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveMacro);
     tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveDefineMacro);
     tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_letWithPrimitiveMacro);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_letTypeWithPrimitiveMacro);
     tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_letMutableWithPrimitiveMacro);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_letTypeMutableWithPrimitiveMacro);
     tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_macroLetWithPrimitiveMacro);
     tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveAnalyze);
     tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveEvaluate);
@@ -4032,7 +4064,9 @@ void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "define", 3, TUUVM_FUNCTION_FLAGS_MACRO | TUUVM_FUNCTION_FLAGS_VARIADIC, NULL, tuuvm_astLocalDefinitionNode_primitiveMacro);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "defineMacro", 3, TUUVM_FUNCTION_FLAGS_MACRO | TUUVM_FUNCTION_FLAGS_VARIADIC, NULL, tuuvm_astLocalDefinitionNode_primitiveDefineMacro);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "let:with:", 3, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astLocalDefinitionNode_letWithPrimitiveMacro);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "let:type:with:", 4, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astLocalDefinitionNode_letTypeWithPrimitiveMacro);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "let:mutableWith:", 3, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astLocalDefinitionNode_letMutableWithPrimitiveMacro);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "let:type:mutableWith:", 4, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astLocalDefinitionNode_letTypeMutableWithPrimitiveMacro);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "macroLet:with:", 3, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astLocalDefinitionNode_macroLetWithPrimitiveMacro);
     tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astLocalDefinitionNodeType,
         tuuvm_astLocalDefinitionNode_primitiveAnalyze,

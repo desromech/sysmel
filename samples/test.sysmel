@@ -151,12 +151,12 @@ printLine(sequenceableCollectionDo).
 printLine(sequenceableCollectionDo asSSAFunction fullPrintString).
 
 let: #doWhile with: {:(Size)n :: Size |
-    let i := ValueBox with: 0sz.
-    let result := ValueBox with: 0sz.
+    let i mutable := 0sz.
+    let result mutable := 0sz.
     do: {
-        result := result _ + (i _ * 2sz)
-    } while: (i _ < n) continueWith: (i := i _ + 1sz).
-    i _
+        result := result + (i * 2sz)
+    } while: (i < n) continueWith: (i := i + 1sz).
+    i
 }.
 
 printLine(doWhile, " ", doWhile(5sz)).
