@@ -35,6 +35,11 @@ set(tuuvm_sources
     type.c
 )
 
+set(USE_UNITY_BUILD False)
+if(USE_UNITY_BUILD)
+    set(tuuvm_sources unityBuild.c)
+endif()
+
 add_definitions(-DBUILD_TUUVM)
 add_library(tuuvm STATIC ${tuuvm_sources})
 target_link_libraries(tuuvm ${TUUVM_DEP_LIBS})
