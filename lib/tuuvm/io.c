@@ -138,12 +138,12 @@ static tuuvm_tuple_t tuuvm_io_primitive_saveWholeFileNamed(tuuvm_context_t *cont
 
 void tuuvm_io_registerPrimitives(void)
 {
-    tuuvm_primitiveTable_registerFunction(tuuvm_io_primitive_printLine);
-    tuuvm_primitiveTable_registerFunction(tuuvm_io_primitive_print);
+    tuuvm_primitiveTable_registerFunction(tuuvm_io_primitive_printLine, "printLine");
+    tuuvm_primitiveTable_registerFunction(tuuvm_io_primitive_print, "printLine");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_io_primitive_readWholeFileNamedAsString);
-    tuuvm_primitiveTable_registerFunction(tuuvm_io_primitive_readWholeFileNamedAsByteArray);
-    tuuvm_primitiveTable_registerFunction(tuuvm_io_primitive_saveWholeFileNamed);
+    tuuvm_primitiveTable_registerFunction(tuuvm_io_primitive_readWholeFileNamedAsString, "IO::readWholeFileNamedAsString");
+    tuuvm_primitiveTable_registerFunction(tuuvm_io_primitive_readWholeFileNamedAsByteArray, "IO::readWholeFileNamedAsByteArray");
+    tuuvm_primitiveTable_registerFunction(tuuvm_io_primitive_saveWholeFileNamed, "IO::saveWholeFileNamed");
 }
 
 void tuuvm_io_setupPrimitives(tuuvm_context_t *context)

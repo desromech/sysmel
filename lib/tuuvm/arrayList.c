@@ -114,8 +114,8 @@ static tuuvm_tuple_t tuuvm_arrayList_primitive_asArray(tuuvm_context_t *context,
 
 void tuuvm_arrayList_registerPrimitives(void)
 {
-    tuuvm_primitiveTable_registerFunction(tuuvm_arrayList_primitive_add);
-    tuuvm_primitiveTable_registerFunction(tuuvm_arrayList_primitive_asArray);
+    tuuvm_primitiveTable_registerFunction(tuuvm_arrayList_primitive_add, "ArrayList::add");
+    tuuvm_primitiveTable_registerFunction(tuuvm_arrayList_primitive_asArray, "ArrayList::asArray");
 }
 
 void tuuvm_arrayList_setupPrimitives(tuuvm_context_t *context)

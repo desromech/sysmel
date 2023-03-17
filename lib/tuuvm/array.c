@@ -152,8 +152,8 @@ static tuuvm_tuple_t tuuvm_array_primitive_hash(tuuvm_context_t *context, tuuvm_
 
 void tuuvm_array_registerPrimitives(void)
 {
-    tuuvm_primitiveTable_registerFunction(tuuvm_array_primitive_equals);
-    tuuvm_primitiveTable_registerFunction(tuuvm_array_primitive_hash);
+    tuuvm_primitiveTable_registerFunction(tuuvm_array_primitive_equals, "Array::=");
+    tuuvm_primitiveTable_registerFunction(tuuvm_array_primitive_hash, "Array::hash");
 }
 
 void tuuvm_array_setupPrimitives(tuuvm_context_t *context)

@@ -575,14 +575,14 @@ static tuuvm_tuple_t tuuvm_methodDictionary_primitive_atPut(tuuvm_context_t *con
 
 void tuuvm_dictionary_registerPrimitives(void)
 {
-    tuuvm_primitiveTable_registerFunction(tuuvm_identityDictionary_primitive_atOrNil);
-    tuuvm_primitiveTable_registerFunction(tuuvm_identityDictionary_primitive_atPut);
-    tuuvm_primitiveTable_registerFunction(tuuvm_identityDictionary_primitive_at);
+    tuuvm_primitiveTable_registerFunction(tuuvm_identityDictionary_primitive_atOrNil, "IdentityDictionary::atOrNil:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_identityDictionary_primitive_atPut, "IdentityDictionary::at:put:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_identityDictionary_primitive_at, "IdentityDictionary::at:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_methodDictionary_primitive_new);
-    tuuvm_primitiveTable_registerFunction(tuuvm_methodDictionary_primitive_atOrNil);
-    tuuvm_primitiveTable_registerFunction(tuuvm_methodDictionary_primitive_at);
-    tuuvm_primitiveTable_registerFunction(tuuvm_methodDictionary_primitive_atPut);
+    tuuvm_primitiveTable_registerFunction(tuuvm_methodDictionary_primitive_new, "MethodDictionary::new");
+    tuuvm_primitiveTable_registerFunction(tuuvm_methodDictionary_primitive_atOrNil, "MethodDictionary::atOrNil:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_methodDictionary_primitive_at, "MethodDictionary::at:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_methodDictionary_primitive_atPut, "MethodDictionary::at:put:");
 }
 
 void tuuvm_dictionary_setupPrimitives(tuuvm_context_t *context)

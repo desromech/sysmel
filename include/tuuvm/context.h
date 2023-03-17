@@ -77,6 +77,6 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiv
 /**
  * Registers a function in the global primitive table.
  */
-TUUVM_API void tuuvm_primitiveTable_registerFunction(tuuvm_functionEntryPoint_t primitiveEntryPoint);
+TUUVM_API void tuuvm_primitiveTable_registerFunction(tuuvm_functionEntryPoint_t primitiveEntryPoint, const char *primitiveName);
 
 #endif //TUUVM_CONTEXT_H

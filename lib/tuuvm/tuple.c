@@ -267,15 +267,15 @@ static tuuvm_tuple_t tuuvm_tuple_primitive_shallowCopy(tuuvm_context_t *context,
 
 void tuuvm_tuple_registerPrimitives(void)
 {
-    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_getType);
-    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_setType);
-    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_slotAt);
-    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_slotAtPut);
-    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_new);
-    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_byteNew);
-    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_size);
-    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_byteSize);
-    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_shallowCopy);
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_getType, "RawTuple::type");
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_setType, "RawTuple::type:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_slotAt, "RawTuple::slotAt:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_slotAtPut, "RawTuple::slotAt:put:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_new, "RawTuple::new");
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_byteNew, "RawTuple::byteNew");
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_size, "RawTuple::size");
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_byteSize, "RawTuple::byteSize");
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_shallowCopy, "RawTuple::shallowCopy");
 }
 
 void tuuvm_tuple_setupPrimitives(tuuvm_context_t *context)

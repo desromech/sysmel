@@ -51,11 +51,11 @@ extern void tuuvm_type_setupPrimitives(tuuvm_context_t *context);
 
 void tuuvm_context_registerPrimitives(void)
 {
-    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_identityEquals);
-    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_identityNotEquals);
-    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_identityHash);
-    tuuvm_primitiveTable_registerFunction(tuuvm_string_primitive_equals);
-    tuuvm_primitiveTable_registerFunction(tuuvm_string_primitive_hash);
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_identityEquals, "==");
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_identityNotEquals, "~~");
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_identityHash, "identityHash");
+    tuuvm_primitiveTable_registerFunction(tuuvm_string_primitive_equals, "String::=");
+    tuuvm_primitiveTable_registerFunction(tuuvm_string_primitive_hash, "String::hash");
 
     tuuvm_array_registerPrimitives();
     tuuvm_arrayList_registerPrimitives();

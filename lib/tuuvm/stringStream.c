@@ -147,10 +147,10 @@ static tuuvm_tuple_t tuuvm_stringStream_primitive_asSymbol(tuuvm_context_t *cont
 
 void tuuvm_stringStream_registerPrimitives(void)
 {
-    tuuvm_primitiveTable_registerFunction(tuuvm_stringStream_primitive_nextPut);
-    tuuvm_primitiveTable_registerFunction(tuuvm_stringStream_primitive_nextPutAll);
-    tuuvm_primitiveTable_registerFunction(tuuvm_stringStream_primitive_asString);
-    tuuvm_primitiveTable_registerFunction(tuuvm_stringStream_primitive_asSymbol);
+    tuuvm_primitiveTable_registerFunction(tuuvm_stringStream_primitive_nextPut, "StringStream::nextPut:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_stringStream_primitive_nextPutAll, "StringStream::nextPutAll:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_stringStream_primitive_asString, "StringStream::asString");
+    tuuvm_primitiveTable_registerFunction(tuuvm_stringStream_primitive_asSymbol, "StringStream::asSymbol");
 }
 
 void tuuvm_stringStream_setupPrimitives(tuuvm_context_t *context)

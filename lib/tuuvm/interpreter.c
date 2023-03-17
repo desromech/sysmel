@@ -3843,118 +3843,113 @@ static tuuvm_tuple_t tuuvm_interpreter_primitive_loadSourceNamedMacro(tuuvm_cont
 
 void tuuvm_astInterpreter_registerPrimitives(void)
 {
-    tuuvm_primitiveTable_registerFunction(tuuvm_interpreter_primitive_loadSourceNamedWithSolvedPath);
-    tuuvm_primitiveTable_registerFunction(tuuvm_interpreter_primitive_loadSourceNamedMacro);
+    tuuvm_primitiveTable_registerFunction(tuuvm_interpreter_primitive_loadSourceNamedWithSolvedPath, "Interpreter::loadSourceNamedWithSolvedPath:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_interpreter_primitive_loadSourceNamedMacro, "Interpreter::loadSourceNamedMacro:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astSequenceNode_primitiveMacro);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astSequenceNode_primitiveMacro, "ASTSequenceNode::beginMacro");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astArgumentNode_primitiveAnalyze);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astArgumentNode_primitiveAnalyze, "ASTArgumentNode::analyzeWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astErrorNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astErrorNode_primitiveEvaluate, "ASTErrorNode::analyzeWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astPragmaNode_primitiveAnalyze);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astPragmaNode_primitiveAnalyze, "ASTPragmaNode::analyzeWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astSequenceNode_primitiveAnalyze);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astSequenceNode_primitiveEvaluate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astSequenceNode_primitiveAnalyzeAndEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astSequenceNode_primitiveAnalyze, "ASTSequenceNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astSequenceNode_primitiveEvaluate, "ASTSequenceNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astSequenceNode_primitiveAnalyzeAndEvaluate, "ASTSequenceNode::analyzeAndEvaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astLiteralNode_primitiveAnalyze);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astLiteralNode_primitiveEvaluate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astLiteralNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLiteralNode_primitiveAnalyze, "ASTLiteralNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLiteralNode_primitiveEvaluate, "ASTLiteralNode::evaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astIdentifierReferenceNode_primitiveAnalyze);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astIdentifierReferenceNode_primitiveEvaluate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astIdentifierReferenceNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astIdentifierReferenceNode_primitiveAnalyze, "ASTIdentifierReferenceNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astIdentifierReferenceNode_primitiveEvaluate, "ASTIdentifierReferenceNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astIdentifierReferenceNode_primitiveAnalyzeAndEvaluate, "ASTIdentifierReferenceNode::analyzeAndEvaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astUnexpandedApplicationNode_primitiveAnalyze);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astUnexpandedApplicationNode_primitiveAnalyzeAndEvaluate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astUnexpandedApplicationNode_primitiveAnalyzeAndEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astUnexpandedApplicationNode_primitiveAnalyze, "ASTUnexpandedApplicationNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astUnexpandedApplicationNode_primitiveAnalyzeAndEvaluate, "ASTUnexpandedApplicationNode::analyzeAndEvaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astUnexpandedSExpressionNode_primitiveAnalyze);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astUnexpandedSExpressionNode_primitiveAnalyzeAndEvaluate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astUnexpandedSExpressionNode_primitiveAnalyzeAndEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astUnexpandedSExpressionNode_primitiveAnalyze, "ASTUnexpandedSExpressionNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astUnexpandedSExpressionNode_primitiveAnalyzeAndEvaluate, "ASTUnexpandedSExpressionNode::analyzeAndEvaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astFunctionApplicationNode_primitiveAnalyze);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astFunctionApplicationNode_primitiveEvaluate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astFunctionApplicationNode_primitiveAnalyzeAndEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astFunctionApplicationNode_primitiveAnalyze, "ASTFunctionApplicationNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astFunctionApplicationNode_primitiveEvaluate, "ASTFunctionApplicationNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astFunctionApplicationNode_primitiveAnalyzeAndEvaluate, "ASTFunctionApplicationNode::analyzeAndEvaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astLexicalBlockNode_primitiveAnalyze);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astLexicalBlockNode_primitiveEvaluate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astLexicalBlockNode_primitiveAnalyzeAndEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLexicalBlockNode_primitiveAnalyze, "ASTLexicalBlockNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLexicalBlockNode_primitiveEvaluate, "ASTLexicalBlockNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLexicalBlockNode_primitiveAnalyzeAndEvaluate, "ASTLexicalBlockNode::analyzeAndEvaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeByteArrayNode_primitiveAnalyze);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeByteArrayNode_primitiveEvaluate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeByteArrayNode_primitiveAnalyzeAndEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeByteArrayNode_primitiveAnalyze, "ASTMakeByteArrayNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeByteArrayNode_primitiveEvaluate, "ASTMakeByteArrayNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeByteArrayNode_primitiveAnalyzeAndEvaluate, "ASTMakeByteArrayNode::analyzeAndEvaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeTupleNode_primitiveAnalyze);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeTupleNode_primitiveEvaluate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeTupleNode_primitiveAnalyzeAndEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeTupleNode_primitiveAnalyze, "ASTMakeTupleNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeTupleNode_primitiveEvaluate, "ASTMakeTupleNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeTupleNode_primitiveAnalyzeAndEvaluate, "ASTMakeTupleNode::analyzeAndEvaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageChainNode_primitiveAnalyze);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageChainNode_primitiveEvaluate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageChainNode_primitiveAnalyzeAndEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageChainNode_primitiveAnalyze, "ASTMessageChainNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageChainNode_primitiveEvaluate, "ASTMessageChainNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageChainNode_primitiveAnalyzeAndEvaluate, "ASTMessageChainNode::analyzeAndEvaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageSendNode_primitiveMacro);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageSendNode_primitiveAnalyze);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageSendNode_primitiveEvaluate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageSendNode_primitiveAnalyzeAndEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageSendNode_primitiveMacro, "ASTMessageSendNode::sendMacro");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageSendNode_primitiveAnalyze, "ASTMessageSendNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageSendNode_primitiveEvaluate, "ASTMessageSendNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMessageSendNode_primitiveAnalyzeAndEvaluate, "ASTMessageSendNode::analyzeAndEvaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astLambdaNode_primitiveMacro);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astLambdaNode_primitiveAnalyze);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astLambdaNode_primitiveEvaluate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astLambdaNode_primitiveAnalyzeAndEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLambdaNode_primitiveMacro, "ASTLambdaNode::lambdaMacro");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLambdaNode_primitiveAnalyze, "ASTLambdaNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLambdaNode_primitiveEvaluate, "ASTLambdaNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLambdaNode_primitiveAnalyzeAndEvaluate, "ASTLambdaNode::analyzeWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveMacro);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveDefineMacro);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_letWithPrimitiveMacro);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_letTypeWithPrimitiveMacro);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_letMutableWithPrimitiveMacro);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_letTypeMutableWithPrimitiveMacro);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_macroLetWithPrimitiveMacro);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveAnalyze);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveEvaluate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveAnalyzeAndEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveMacro, "ASTLocalDefinitionNode::macro:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveDefineMacro, "ASTLocalDefinitionNode::defineMacro");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_letWithPrimitiveMacro, "ASTLocalDefinitionNode::let:with:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_letTypeWithPrimitiveMacro, "ASTLocalDefinitionNode::let:type:with:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_letMutableWithPrimitiveMacro, "ASTLocalDefinitionNode::let:mutableWith:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_letTypeMutableWithPrimitiveMacro, "ASTLocalDefinitionNode::let:type:mutableWith:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_macroLetWithPrimitiveMacro, "ASTLocalDefinitionNode::macroLet:with:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveAnalyze, "ASTLocalDefinitionNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveEvaluate, "ASTLocalDefinitionNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveAnalyzeAndEvaluate, "ASTLocalDefinitionNode::analyzeAndEvaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astObjectWithLookupStartingFrom_primitiveMacro);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astObjectWithLookupStartingFrom_primitiveAnalyze);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astObjectWithLookupStartingFrom_primitiveEvaluate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astObjectWithLookupStartingFrom_primitiveAnalyzeAndEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astObjectWithLookupStartingFrom_primitiveMacro, "ASTObjectWithLookupStartingFrom::macro");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astObjectWithLookupStartingFrom_primitiveAnalyze, "ASTObjectWithLookupStartingFrom::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astObjectWithLookupStartingFrom_primitiveEvaluate, "ASTObjectWithLookupStartingFrom::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astObjectWithLookupStartingFrom_primitiveAnalyzeAndEvaluate, "ASTObjectWithLookupStartingFrom::analyzeAndEvaluateWithEnvironment:");
     
-    tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveMacro);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveMacroIfThen);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveAnalyze);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveEvaluate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveAnalyzeAndEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveMacro, "ASTIfNode::if:then:else:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveMacroIfThen, "ASTIfNode::if:then:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveAnalyze, "ASTObjectWithLookupStartingFrom::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveEvaluate, "ASTObjectWithLookupStartingFrom::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveAnalyzeAndEvaluate, "ASTObjectWithLookupStartingFrom::analyzeAndEvaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveMacro);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveAnalyze);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveEvaluate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveAnalyzeAndEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveMacro, "ASTDoWhileContinueWithNode::macro");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveAnalyze, "ASTDoWhileContinueWithNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveEvaluate, "ASTDoWhileContinueWithNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveAnalyzeAndEvaluate, "ASTDoWhileContinueWithNode::analyzeAndEvaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astWhileContinueWithNode_primitiveMacro);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astWhileContinueWithNode_primitiveAnalyze);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astWhileContinueWithNode_primitiveEvaluate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astWhileContinueWithNode_primitiveAnalyzeAndEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astWhileContinueWithNode_primitiveMacro, "ASTWhileContinueWithNode::while:do:continueWith:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astWhileContinueWithNode_primitiveAnalyze, "ASTWhileContinueWithNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astWhileContinueWithNode_primitiveEvaluate, "ASTWhileContinueWithNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astWhileContinueWithNode_primitiveAnalyzeAndEvaluate, "ASTWhileContinueWithNode::analyzeAndEvaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astBreakNode_primitiveMacro);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astBreakNode_primitiveAnalyze);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astBreakNode_primitiveEvaluate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astBreakNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astBreakNode_primitiveMacro, "ASTBreakNode::macro");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astBreakNode_primitiveAnalyze, "ASTBreakNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astBreakNode_primitiveEvaluate, "ASTBreakNode::evaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astContinueNode_primitiveMacro);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astContinueNode_primitiveAnalyze);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astContinueNode_primitiveEvaluate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astContinueNode_primitiveEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astContinueNode_primitiveMacro, "ASTContinueNode::macro");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astContinueNode_primitiveAnalyze, "ASTContinueNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astContinueNode_primitiveEvaluate, "ASTContinueNode::evaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astReturnNode_primitiveMacro);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astReturnNode_primitiveAnalyze);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astReturnNode_primitiveEvaluate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_astReturnNode_primitiveAnalyzeAndEvaluate);
+    tuuvm_primitiveTable_registerFunction(tuuvm_astReturnNode_primitiveMacro, "ASTReturnNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astReturnNode_primitiveAnalyze, "ASTReturnNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astReturnNode_primitiveEvaluate, "ASTReturnNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astReturnNode_primitiveAnalyzeAndEvaluate, "ASTReturnNode::analyzeAndEvaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_functionDefinition_primitiveEnsureAnalysis);
+    tuuvm_primitiveTable_registerFunction(tuuvm_functionDefinition_primitiveEnsureAnalysis, "FunctionDefinition::ensureAnalysis");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_simpleFunctionType_primitiveTypeCheckFunctionApplicationNode);
-    tuuvm_primitiveTable_registerFunction(tuuvm_dependentFunctionType_primitiveTypeCheckFunctionApplicationNode);
+    tuuvm_primitiveTable_registerFunction(tuuvm_simpleFunctionType_primitiveTypeCheckFunctionApplicationNode, "SimpleFunctionType::typeCheckFunctionApplication:withEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_dependentFunctionType_primitiveTypeCheckFunctionApplicationNode, "DependentFunctionType::typeCheckFunctionApplication:withEnvironment:");
 }
 
 static void tuuvm_astInterpreter_setupNodeInterpretationFunctions(tuuvm_context_t *context, tuuvm_tuple_t astNodeType, tuuvm_functionEntryPoint_t analysisFunction, tuuvm_functionEntryPoint_t evaluationFunction, tuuvm_functionEntryPoint_t analysisAndEvaluationFunction)

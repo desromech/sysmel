@@ -843,18 +843,18 @@ static tuuvm_tuple_t tuuvm_type_primitive_pointerLikeStore(tuuvm_context_t *cont
 
 void tuuvm_type_registerPrimitives(void)
 {
-    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_createSimpleFunctionType);
-    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_createPointerType);
-    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_createReferenceType);
+    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_createSimpleFunctionType, "SimpleFunctionTypeTemplate");
+    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_createPointerType, "PointerTypeTemplate");
+    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_createReferenceType, "ReferenceTypeTemplate");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_pointerLikeLoad);
-    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_pointerLikeStore);
+    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_pointerLikeLoad, "PointerLikeType::load");
+    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_pointerLikeStore, "PointerLikeType::store:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_coerceValue);
+    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_coerceValue, "Type::coerceValue:into:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_flushLookupSelector);
-    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_flushMacroLookupSelector);
-    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_flushFallbackLookupSelector);
+    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_flushLookupSelector, "Type::flushLookupSelector:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_flushMacroLookupSelector, "Type::flushMacroLookupSelector:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_flushFallbackLookupSelector, "Type::flushFallbackLookupSelector:");
 }
 
 void tuuvm_type_setupPrimitives(tuuvm_context_t *context)

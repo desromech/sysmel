@@ -369,16 +369,16 @@ static tuuvm_tuple_t tuuvm_symbol_primitive_intern(tuuvm_context_t *context, tuu
 
 void tuuvm_string_registerPrimitives(void)
 {
-    tuuvm_primitiveTable_registerFunction(tuuvm_string_primitive_asString);
-    tuuvm_primitiveTable_registerFunction(tuuvm_symbol_primitive_asString);
+    tuuvm_primitiveTable_registerFunction(tuuvm_string_primitive_asString, "String::asString");
+    tuuvm_primitiveTable_registerFunction(tuuvm_symbol_primitive_asString, "Symbol::asString");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_printString);
-    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_asString);
-    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_defaultPrintString);
-    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_defaultAsString);
-    tuuvm_primitiveTable_registerFunction(tuuvm_string_primitive_concat);
-    tuuvm_primitiveTable_registerFunction(tuuvm_string_primitive_withoutSuffix);
-    tuuvm_primitiveTable_registerFunction(tuuvm_symbol_primitive_intern);
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_printString, "RawTuple::printString");
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_asString, "RawTuple::asString");
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_defaultPrintString, "RawTuple::defaultPrintString");
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_defaultAsString, "RawTuple::defaultAsString");
+    tuuvm_primitiveTable_registerFunction(tuuvm_string_primitive_concat, "String::--");
+    tuuvm_primitiveTable_registerFunction(tuuvm_string_primitive_withoutSuffix, "String::withoutSuffix:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_symbol_primitive_intern, "String::intern");
 }
 
 void tuuvm_string_setupPrimitives(tuuvm_context_t *context)

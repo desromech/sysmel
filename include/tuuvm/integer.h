@@ -36,7 +36,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_subtract(tuuvm_context_t *context, tuuvm_t
 /**
  * Negates an integer.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_integer_negate(tuuvm_context_t *context, tuuvm_tuple_t integer);
+TUUVM_API tuuvm_tuple_t tuuvm_integer_negated(tuuvm_context_t *context, tuuvm_tuple_t integer);
 
 /**
  * Multiplies two integers.

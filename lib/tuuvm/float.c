@@ -142,7 +142,7 @@ static tuuvm_tuple_t tuuvm_float32_primitive_subtract(tuuvm_context_t *context, 
     return tuuvm_tuple_float32_encode(context, left - right);
 }
 
-static tuuvm_tuple_t tuuvm_float32_primitive_negate(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_float32_primitive_negated(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -313,7 +313,7 @@ static tuuvm_tuple_t tuuvm_float64_primitive_subtract(tuuvm_context_t *context, 
     return tuuvm_tuple_float64_encode(context, left - right);
 }
 
-static tuuvm_tuple_t tuuvm_float64_primitive_negate(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_float64_primitive_negated(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -440,42 +440,42 @@ static tuuvm_tuple_t tuuvm_float64_primitive_greaterEquals(tuuvm_context_t *cont
 void tuuvm_float_registerPrimitives(void)
 {
     // Float32
-    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_printString);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_fromFloat64);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_printString, "Float32::printString");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_fromFloat64, "Float32::fromFloat64");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_add);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_subtract);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_negate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_sqrt);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_multiply);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_divide);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_add, "Float32::+");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_subtract, "Float32::-");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_negated, "Float32::negated");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_sqrt, "Float32::sqrt");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_multiply, "Float32::*");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_divide, "Float32::/");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_compare);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_equals);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_notEquals);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_lessThan);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_lessEquals);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_greaterThan);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_greaterEquals);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_compare, "Float32::<=>");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_equals, "Float32::=");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_notEquals, "Float32::~=");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_lessThan, "Float32::<");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_lessEquals, "Float32::<=");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_greaterThan, "Float32::>");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_greaterEquals, "Float32::>=");
 
     // Float64
-    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_fromFloat32);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_printString, "Float64::printString");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_fromFloat32, "Float64::fromFloat32");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_printString);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_add);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_subtract);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_negate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_sqrt);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_multiply);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_divide);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_add, "Float64::+");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_subtract, "Float64::-");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_negated, "Float64::negated");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_sqrt, "Float64::sqrt");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_multiply, "Float64::*");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_divide, "Float64::/");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_compare);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_equals);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_notEquals);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_lessThan);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_lessEquals);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_greaterThan);
-    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_greaterEquals);
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_compare, "Float64::<=>");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_equals, "Float64::=");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_notEquals, "Float64::~=");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_lessThan, "Float64::<");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_lessEquals, "Float64::<=");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_greaterThan, "Float64::>");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_greaterEquals, "Float64::>=");
 }
 
 void tuuvm_float_setupPrimitives(tuuvm_context_t *context)
@@ -487,7 +487,7 @@ void tuuvm_float_setupPrimitives(tuuvm_context_t *context)
 
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::+", context->roots.float32Type, "+", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float32_primitive_add);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::-", context->roots.float32Type, "-", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float32_primitive_subtract);
-    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::negated", context->roots.float32Type, "negated", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float32_primitive_negate);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::negated", context->roots.float32Type, "negated", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float32_primitive_negated);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::sqrt", context->roots.float32Type, "sqrt", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float32_primitive_sqrt);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::*", context->roots.float32Type, "*", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float32_primitive_multiply);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::/", context->roots.float32Type, "/", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float32_primitive_divide);
@@ -506,7 +506,7 @@ void tuuvm_float_setupPrimitives(tuuvm_context_t *context)
     tuuvm_type_setPrintStringFunction(context, context->roots.float64Type, tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_printString));
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::+", context->roots.float64Type, "+", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_add);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::-", context->roots.float64Type, "-", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_subtract);
-    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::negated", context->roots.float64Type, "negated", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_negate);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::negated", context->roots.float64Type, "negated", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_negated);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::sqrt", context->roots.float64Type, "sqrt", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_sqrt);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::*", context->roots.float64Type, "*", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_multiply);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::/", context->roots.float64Type, "/", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_divide);

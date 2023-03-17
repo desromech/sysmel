@@ -69,7 +69,7 @@ static tuuvm_tuple_t tuuvm_errors_primitive_error(tuuvm_context_t *context, tuuv
 
 void tuuvm_errors_registerPrimitives(void)
 {
-    tuuvm_primitiveTable_registerFunction(tuuvm_errors_primitive_error);
+    tuuvm_primitiveTable_registerFunction(tuuvm_errors_primitive_error, "Error::signalWithMessage");
 }
 
 void tuuvm_errors_setupPrimitives(tuuvm_context_t *context)

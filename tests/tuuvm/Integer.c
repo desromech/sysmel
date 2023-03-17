@@ -13,13 +13,13 @@ TEST_SUITE(Integer)
     TEST_CASE_WITH_FIXTURE(Negation, TuuvmCore)
     {
         TEST_ASSERT_INTEGER_EQUALS(INTEGER("0"), INTEGER("-0"));
-        TEST_ASSERT_INTEGER_EQUALS(INTEGER("0"), tuuvm_integer_negate(tuuvm_test_context, INTEGER("0")));
+        TEST_ASSERT_INTEGER_EQUALS(INTEGER("0"), tuuvm_integer_negated(tuuvm_test_context, INTEGER("0")));
 
-        TEST_ASSERT_INTEGER_EQUALS(INTEGER("-1"), tuuvm_integer_negate(tuuvm_test_context, INTEGER("1")));
-        TEST_ASSERT_INTEGER_EQUALS(INTEGER("1"), tuuvm_integer_negate(tuuvm_test_context, INTEGER("-1")));
+        TEST_ASSERT_INTEGER_EQUALS(INTEGER("-1"), tuuvm_integer_negated(tuuvm_test_context, INTEGER("1")));
+        TEST_ASSERT_INTEGER_EQUALS(INTEGER("1"), tuuvm_integer_negated(tuuvm_test_context, INTEGER("-1")));
 
-        TEST_ASSERT_INTEGER_EQUALS(INTEGER("-2"), tuuvm_integer_negate(tuuvm_test_context, INTEGER("2")));
-        TEST_ASSERT_INTEGER_EQUALS(INTEGER("2"), tuuvm_integer_negate(tuuvm_test_context, INTEGER("-2")));
+        TEST_ASSERT_INTEGER_EQUALS(INTEGER("-2"), tuuvm_integer_negated(tuuvm_test_context, INTEGER("2")));
+        TEST_ASSERT_INTEGER_EQUALS(INTEGER("2"), tuuvm_integer_negated(tuuvm_test_context, INTEGER("-2")));
     }
 
     TEST_CASE_WITH_FIXTURE(Addition, TuuvmCore)

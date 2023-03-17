@@ -527,10 +527,10 @@ static tuuvm_tuple_t tuuvm_environment_primitive_setSymbolBindingWithValue(tuuvm
 
 void tuuvm_environment_registerPrimitives(void)
 {
-    tuuvm_primitiveTable_registerFunction(tuuvm_environment_primitive_setNewBinding);
-    tuuvm_primitiveTable_registerFunction(tuuvm_environment_primitive_setBinding);
-    tuuvm_primitiveTable_registerFunction(tuuvm_environment_primitive_setNewSymbolBindingWithValue);
-    tuuvm_primitiveTable_registerFunction(tuuvm_environment_primitive_setSymbolBindingWithValue);
+    tuuvm_primitiveTable_registerFunction(tuuvm_environment_primitive_setNewBinding, "Environment::setNewBinding:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_environment_primitive_setBinding, "Environment::setBinding:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_environment_primitive_setNewSymbolBindingWithValue, "Environment::setNewSymbol:bindingWithValue:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_environment_primitive_setSymbolBindingWithValue, "Environment::setSymbol:bindingWithValue:");
 }
 
 void tuuvm_environment_setupPrimitives(tuuvm_context_t *context)

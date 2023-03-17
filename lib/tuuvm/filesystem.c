@@ -278,15 +278,15 @@ static tuuvm_tuple_t tuuvm_filesystem_primitive_joinPath(tuuvm_context_t *contex
 
 void tuuvm_filesystem_registerPrimitives(void)
 {
-    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_getWorkingDirectory);
-    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_setWorkingDirectory);
+    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_getWorkingDirectory, "FileSystem::workingDirectory");
+    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_setWorkingDirectory, "FileSystem::workingDirectory:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_absolute);
-    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_isAbsolute);
-    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_dirname);
-    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_basename);
-    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_extension);
-    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_joinPath);
+    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_absolute, "FileSystem::absolute");
+    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_isAbsolute, "FileSystem::isAbsolute");
+    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_dirname, "FileSystem::dirname");
+    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_basename, "FileSystem::basename");
+    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_extension, "FileSystem::extension");
+    tuuvm_primitiveTable_registerFunction(tuuvm_filesystem_primitive_joinPath, "FileSystem::joinPath:");
 }
 
 void tuuvm_filesystem_setupPrimitives(tuuvm_context_t *context)

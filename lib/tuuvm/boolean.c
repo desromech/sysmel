@@ -25,8 +25,8 @@ static tuuvm_tuple_t tuuvm_boolean_primitive_xor(tuuvm_context_t *context, tuuvm
 
 void tuuvm_boolean_registerPrimitives(void)
 {
-    tuuvm_primitiveTable_registerFunction(tuuvm_boolean_primitive_not);
-    tuuvm_primitiveTable_registerFunction(tuuvm_boolean_primitive_xor);
+    tuuvm_primitiveTable_registerFunction(tuuvm_boolean_primitive_not, "Boolean::not");
+    tuuvm_primitiveTable_registerFunction(tuuvm_boolean_primitive_xor, "Boolean::xor");
 }
 
 void tuuvm_boolean_setupPrimitives(tuuvm_context_t *context)

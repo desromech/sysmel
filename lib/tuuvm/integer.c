@@ -344,7 +344,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_parseString(tuuvm_context_t *context, size
     }
 
     if(isNegative)
-        return tuuvm_integer_negate(context, result);
+        return tuuvm_integer_negated(context, result);
 
     return result;
 }
@@ -458,7 +458,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_subtract(tuuvm_context_t *context, tuuvm_t
     }
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_integer_negate(tuuvm_context_t *context, tuuvm_tuple_t integer)
+TUUVM_API tuuvm_tuple_t tuuvm_integer_negated(tuuvm_context_t *context, tuuvm_tuple_t integer)
 {
     if(tuuvm_tuple_isImmediate(integer))
     {
@@ -717,13 +717,13 @@ static tuuvm_tuple_t tuuvm_integer_primitive_subtract(tuuvm_context_t *context, 
     return tuuvm_integer_subtract(context, arguments[0], arguments[1]);
 }
 
-static tuuvm_tuple_t tuuvm_integer_primitive_negate(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_integer_primitive_negated(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
 
-    return tuuvm_integer_negate(context, arguments[0]);
+    return tuuvm_integer_negated(context, arguments[0]);
 }
 
 static tuuvm_tuple_t tuuvm_integer_primitive_multiply(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -827,24 +827,24 @@ static tuuvm_tuple_t tuuvm_integer_primitive_factorial(tuuvm_context_t *context,
 
 void tuuvm_integer_registerPrimitives(void)
 {
-    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_printString);
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_printString, "Integer::printString");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_add);
-    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_subtract);
-    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_negate);
-    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_multiply);
-    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_divide);
-    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_remainder);
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_add, "Integer::+");
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_subtract, "Integer::-");
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_negated, "Integer::negated");
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_multiply, "Integer::*");
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_divide, "Integer::/");
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_remainder, "Integer::%");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_compare);
-    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_equals);
-    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_notEquals);
-    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_lessThan);
-    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_lessEquals);
-    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_greaterThan);
-    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_greaterEquals);
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_compare, "Integer::<=>");
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_equals, "Integer::=");
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_notEquals, "Integer::~=");
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_lessThan, "Integer::<");
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_lessEquals, "Integer::<=");
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_greaterThan, "Integer::>");
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_greaterEquals, "Integer::>=");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_factorial);
+    tuuvm_primitiveTable_registerFunction(tuuvm_integer_primitive_factorial, "Integer::factorial");
 }
 
 void tuuvm_integer_setupPrimitives(tuuvm_context_t *context)
@@ -856,7 +856,7 @@ void tuuvm_integer_setupPrimitives(tuuvm_context_t *context)
     
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Integer::+", context->roots.integerType, "+", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_integer_primitive_add);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Integer::-", context->roots.integerType, "-", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_integer_primitive_subtract);
-    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Integer::negated", context->roots.integerType, "negated", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_integer_primitive_negate);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Integer::negated", context->roots.integerType, "negated", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_integer_primitive_negated);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Integer::*", context->roots.integerType, "*", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_integer_primitive_multiply);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Integer::/", context->roots.integerType, "/", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_integer_primitive_divide);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Integer::%", context->roots.integerType, "%", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_integer_primitive_remainder);
