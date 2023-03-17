@@ -492,7 +492,8 @@ tuuvm_tuple_t tuuvm_interpreter_recompileAndOptimizeFunction(tuuvm_context_t *co
     gcFrame.optimizedFunctionDefinition = (tuuvm_functionDefinition_t*)tuuvm_context_shallowCopy(context, (tuuvm_tuple_t)gcFrame.functionDefinition);
 
     // Construct the closure environment by reading the capture vector.
-    gcFrame.optimizedDefinitionEnvironment = tuuvm_environment_create(context, gcFrame.optimizedFunctionDefinition->definitionEnvironment);
+    gcFrame.optimizedDefinitionEnvironment = tuuvm_analysisAndEvaluationEnvironment_create(context, gcFrame.optimizedFunctionDefinition->definitionEnvironment);
+    tuuvm_analysisAndEvaluationEnvironment_clearAnalyzerToken(context, gcFrame.optimizedDefinitionEnvironment);
     gcFrame.optimizedFunctionDefinition->definitionEnvironment = gcFrame.optimizedDefinitionEnvironment;
 
     size_t captureCount = tuuvm_array_getSize((*functionObject)->captureVector);
@@ -1886,7 +1887,7 @@ static tuuvm_tuple_t tuuvm_astLexicalBlockNode_primitiveAnalyzeAndEvaluate(tuuvm
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*lexicalBlockNode)->super.sourcePosition);
     
-    gcFrame.childEnvironment = tuuvm_environment_create(context, *environment);
+    gcFrame.childEnvironment = tuuvm_analysisAndEvaluationEnvironment_create(context, *environment);
     gcFrame.result = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*lexicalBlockNode)->body, gcFrame.childEnvironment);
 
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
@@ -3234,7 +3235,7 @@ static tuuvm_tuple_t tuuvm_astWhileContinueWithNode_primitiveEvaluate(tuuvm_cont
         .environment = gcFrame.loopEnvironment
     };
     tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&breakTargetRecord);  
-    tuuvm_environment_setBreakTarget(gcFrame.loopEnvironment, tuuvm_tuple_uintptr_encode(context, (uintptr_t)&breakTargetRecord));
+    tuuvm_analysisAndEvaluationEnvironment_setBreakTarget(context, gcFrame.loopEnvironment, tuuvm_tuple_uintptr_encode(context, (uintptr_t)&breakTargetRecord));
 
     if(!setjmp(breakTargetRecord.jmpbuffer))
     {
@@ -3250,14 +3251,14 @@ static tuuvm_tuple_t tuuvm_astWhileContinueWithNode_primitiveEvaluate(tuuvm_cont
                     .environment = gcFrame.loopEnvironment
                 };
                 tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&continueTargetRecord);
-                tuuvm_environment_setContinueTarget(gcFrame.loopEnvironment, tuuvm_tuple_uintptr_encode(context, (uintptr_t)&breakTargetRecord));
+                tuuvm_analysisAndEvaluationEnvironment_setContinueTarget(context, gcFrame.loopEnvironment, tuuvm_tuple_uintptr_encode(context, (uintptr_t)&breakTargetRecord));
 
                 if(!setjmp(continueTargetRecord.jmpbuffer))
                 {
                     tuuvm_interpreter_evaluateASTWithEnvironment(context, (*whileNode)->bodyExpression, gcFrame.loopEnvironment);
                 }
 
-                tuuvm_environment_setContinueTarget(gcFrame.loopEnvironment, TUUVM_NULL_TUPLE);
+                tuuvm_analysisAndEvaluationEnvironment_setContinueTarget(context, gcFrame.loopEnvironment, TUUVM_NULL_TUPLE);
                 tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&continueTargetRecord);  
             }
 
@@ -3271,7 +3272,7 @@ static tuuvm_tuple_t tuuvm_astWhileContinueWithNode_primitiveEvaluate(tuuvm_cont
                 tuuvm_gc_safepoint(context);
         }
 
-        tuuvm_environment_setBreakTarget(gcFrame.loopEnvironment, TUUVM_NULL_TUPLE);
+        tuuvm_analysisAndEvaluationEnvironment_setBreakTarget(context, gcFrame.loopEnvironment, TUUVM_NULL_TUPLE);
     }
 
     tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&breakTargetRecord);  
@@ -3292,7 +3293,7 @@ static tuuvm_tuple_t tuuvm_astWhileContinueWithNode_primitiveAnalyzeAndEvaluate(
         tuuvm_tuple_t loopEnvironment;
     } gcFrame = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
-    gcFrame.loopEnvironment = tuuvm_environment_create(context, *environment);
+    gcFrame.loopEnvironment = tuuvm_analysisAndEvaluationEnvironment_create(context, *environment);
 
     tuuvm_astWhileContinueWithNode_t **whileNode = (tuuvm_astWhileContinueWithNode_t**)node;
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*whileNode)->super.sourcePosition);
@@ -3304,7 +3305,7 @@ static tuuvm_tuple_t tuuvm_astWhileContinueWithNode_primitiveAnalyzeAndEvaluate(
         .environment = gcFrame.loopEnvironment
     };
     tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&breakTargetRecord);  
-    tuuvm_environment_setBreakTarget(gcFrame.loopEnvironment, tuuvm_tuple_uintptr_encode(context, (uintptr_t)&breakTargetRecord));
+    tuuvm_analysisAndEvaluationEnvironment_setBreakTarget(context, gcFrame.loopEnvironment, tuuvm_tuple_uintptr_encode(context, (uintptr_t)&breakTargetRecord));
 
     if(!setjmp(breakTargetRecord.jmpbuffer))
     {
@@ -3320,14 +3321,14 @@ static tuuvm_tuple_t tuuvm_astWhileContinueWithNode_primitiveAnalyzeAndEvaluate(
                     .environment = gcFrame.loopEnvironment
                 };
                 tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&continueTargetRecord);
-                tuuvm_environment_setContinueTarget(gcFrame.loopEnvironment, tuuvm_tuple_uintptr_encode(context, (uintptr_t)&breakTargetRecord));
+                tuuvm_analysisAndEvaluationEnvironment_setContinueTarget(context, gcFrame.loopEnvironment, tuuvm_tuple_uintptr_encode(context, (uintptr_t)&breakTargetRecord));
 
                 if(!setjmp(continueTargetRecord.jmpbuffer))
                 {
                     tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*whileNode)->bodyExpression, gcFrame.loopEnvironment);
                 }
 
-                tuuvm_environment_setContinueTarget(gcFrame.loopEnvironment, TUUVM_NULL_TUPLE);
+                tuuvm_analysisAndEvaluationEnvironment_setContinueTarget(context, gcFrame.loopEnvironment, TUUVM_NULL_TUPLE);
                 tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&continueTargetRecord);  
             }
 
@@ -3341,7 +3342,7 @@ static tuuvm_tuple_t tuuvm_astWhileContinueWithNode_primitiveAnalyzeAndEvaluate(
                 tuuvm_gc_safepoint(context);
         }
 
-        tuuvm_environment_setBreakTarget(gcFrame.loopEnvironment, TUUVM_NULL_TUPLE);
+        tuuvm_analysisAndEvaluationEnvironment_setBreakTarget(context, gcFrame.loopEnvironment, TUUVM_NULL_TUPLE);
     }
 
     tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&breakTargetRecord);  
@@ -3758,7 +3759,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_
     if(argumentCount != expectedArgumentCount)
         tuuvm_error_argumentCountMismatch(expectedArgumentCount, argumentCount);
     functionActivationRecord.applicationEnvironment = tuuvm_functionActivationEnvironment_create(context, TUUVM_NULL_TUPLE, functionActivationRecord.function);
-    tuuvm_environment_setReturnTarget(functionActivationRecord.applicationEnvironment, tuuvm_tuple_uintptr_encode(context, (uintptr_t)&functionActivationRecord));
+    tuuvm_analysisAndEvaluationEnvironment_setReturnTarget(context, functionActivationRecord.applicationEnvironment, tuuvm_tuple_uintptr_encode(context, (uintptr_t)&functionActivationRecord));
 
     // FIXME: Add support for the forall arguments here.
     for(size_t i = 0; i < argumentCount; ++i)

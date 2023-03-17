@@ -82,6 +82,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t classType;
     tuuvm_tuple_t collectionType;
     tuuvm_tuple_t dictionaryType;
+    tuuvm_tuple_t analysisAndEvaluationEnvironmentType;
     tuuvm_tuple_t analysisEnvironmentType;
     tuuvm_tuple_t environmentType;
     tuuvm_tuple_t falseType;

@@ -12,17 +12,22 @@ typedef struct tuuvm_environment_s
     tuuvm_tuple_header_t header;
     tuuvm_tuple_t parent;
     tuuvm_tuple_t symbolTable;
-    tuuvm_tuple_t returnTarget;
-    tuuvm_tuple_t breakTarget;
-    tuuvm_tuple_t continueTarget;
 } tuuvm_environment_t;
 
 typedef tuuvm_environment_t tuuvm_namespace_t;
-typedef tuuvm_environment_t tuuvm_analysisEnvironment_t;
+
+typedef struct tuuvm_analysisAndEvaluationEnvironment_s
+{
+    tuuvm_environment_t super;
+    tuuvm_tuple_t analyzerToken;
+    tuuvm_tuple_t returnTarget;
+    tuuvm_tuple_t breakTarget;
+    tuuvm_tuple_t continueTarget;
+} tuuvm_analysisAndEvaluationEnvironment_t;
 
 typedef struct tuuvm_functionActivationEnvironment_s
 {
-    tuuvm_environment_t super;
+    tuuvm_analysisAndEvaluationEnvironment_t super;
     tuuvm_tuple_t function;
     tuuvm_tuple_t functionDefinition;
     tuuvm_tuple_t dependentFunctionType;
@@ -31,9 +36,9 @@ typedef struct tuuvm_functionActivationEnvironment_s
     tuuvm_tuple_t valueVector;
 } tuuvm_functionActivationEnvironment_t;
 
-typedef struct tuuvm_analysisEnvironment_s
+typedef struct tuuvm_functionAnalysisEnvironment_s
 {
-    tuuvm_environment_t super;
+    tuuvm_analysisAndEvaluationEnvironment_t super;
     tuuvm_tuple_t functionDefinition;
     tuuvm_tuple_t captureBindingTable;
     tuuvm_tuple_t captureBindingList;
@@ -45,7 +50,7 @@ typedef struct tuuvm_analysisEnvironment_s
 
 typedef struct tuuvm_localAnalysisEnvironment_s
 {
-    tuuvm_environment_t super;
+    tuuvm_analysisAndEvaluationEnvironment_t super;
 } tuuvm_localAnalysisEnvironment_t;
 
 typedef struct tuuvm_symbolBinding_s
@@ -90,6 +95,11 @@ typedef struct tuuvm_symbolValueBinding_s
     tuuvm_symbolBinding_t super;
     tuuvm_tuple_t value;
 } tuuvm_symbolValueBinding_t;
+
+/**
+ * Creates an analyzer token.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_analyzerToken_create(tuuvm_context_t *context);
 
 /**
  * Is the symbol binding a value?
@@ -180,6 +190,11 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_symbolValueBinding_getValue(tuuvm_tuple_t bindi
  * Creates an environment.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_environment_create(tuuvm_context_t *context, tuuvm_tuple_t parent);
+
+/**
+ * Creates an environment that is used for simultaneous analysis and evaluation.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_analysisAndEvaluationEnvironment_create(tuuvm_context_t *context, tuuvm_tuple_t parent);
 
 /**
  * Creates a namespace.
@@ -279,23 +294,38 @@ TUUVM_API tuuvm_tuple_t tuuvm_environment_lookContinueTargetRecursively(tuuvm_co
 /**
  * Sets the break target.
  */ 
-TUUVM_API void tuuvm_environment_setBreakTarget(tuuvm_tuple_t environment, tuuvm_tuple_t breakTarget);
+TUUVM_API void tuuvm_analysisAndEvaluationEnvironment_setBreakTarget(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t breakTarget);
 
 /**
  * Sets the continue target.
  */ 
-TUUVM_API void tuuvm_environment_setContinueTarget(tuuvm_tuple_t environment, tuuvm_tuple_t continueTarget);
+TUUVM_API void tuuvm_analysisAndEvaluationEnvironment_setContinueTarget(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t continueTarget);
 
 /**
  * Sets the return target.
  */ 
-TUUVM_API void tuuvm_environment_setReturnTarget(tuuvm_tuple_t environment, tuuvm_tuple_t returnTarget);
+TUUVM_API void tuuvm_analysisAndEvaluationEnvironment_setReturnTarget(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t returnTarget);
 
 /**
  * Clears the unwinding record fields in the environment
  */ 
 
-TUUVM_API void tuuvm_environment_clearUnwindingRecords(tuuvm_tuple_t environment);
+TUUVM_API void tuuvm_analysisAndEvaluationEnvironment_clearUnwindingRecords(tuuvm_context_t *context, tuuvm_tuple_t environment);
+
+/**
+ * Clears the analyzer token.
+ */ 
+TUUVM_API void tuuvm_analysisAndEvaluationEnvironment_clearAnalyzerToken(tuuvm_context_t *context, tuuvm_tuple_t environment);
+
+/**
+ * Ensures a valid analyzer token
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(tuuvm_context_t *context, tuuvm_tuple_t environment);
+
+/**
+ * Is this an analysis and evaluation environment?
+ */
+TUUVM_API bool tuuvm_environment_isAnalysisAndEvaluationEnvironment(tuuvm_context_t *context, tuuvm_tuple_t environment);
 
 /**
  * Is this an analysis environment?

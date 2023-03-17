@@ -20,6 +20,11 @@ static inline bool tuuvm_symbolBinding_isValueQuick(tuuvm_context_t *context, tu
     return type == context->roots.symbolValueBindingType;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_analyzerToken_create(tuuvm_context_t *context)
+{
+    return (tuuvm_tuple_t)tuuvm_context_allocatePointerTuple(context, context->roots.objectType, TUUVM_NULL_TUPLE);
+}
+
 TUUVM_API bool tuuvm_symbolBinding_isValue(tuuvm_context_t *context, tuuvm_tuple_t binding)
 {
     return tuuvm_tuple_isKindOf(context, binding, context->roots.symbolValueBindingType);
@@ -101,6 +106,17 @@ TUUVM_API tuuvm_tuple_t tuuvm_environment_create(tuuvm_context_t *context, tuuvm
     return (tuuvm_tuple_t)result;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_analysisAndEvaluationEnvironment_create(tuuvm_context_t *context, tuuvm_tuple_t parent)
+{
+    tuuvm_analysisAndEvaluationEnvironment_t *result = (tuuvm_analysisAndEvaluationEnvironment_t*)tuuvm_context_allocatePointerTuple(context, context->roots.analysisAndEvaluationEnvironmentType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_analysisAndEvaluationEnvironment_t));
+    result->super.parent = parent;
+
+    // Inherit the analyzer token, if possible.
+    if(parent && tuuvm_environment_isAnalysisAndEvaluationEnvironment(context, parent))
+        result->analyzerToken = ((tuuvm_analysisAndEvaluationEnvironment_t*)parent)->analyzerToken;
+    return (tuuvm_tuple_t)result;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_namespace_create(tuuvm_context_t *context, tuuvm_tuple_t parent)
 {
     tuuvm_namespace_t *result = (tuuvm_namespace_t*)tuuvm_context_allocatePointerTuple(context, context->roots.namespaceType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_namespace_t));
@@ -122,7 +138,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_functionActivationEnvironment_create(tuuvm_context
         tuuvm_error("Expected a function with an analyzed definition.");
 
     tuuvm_functionActivationEnvironment_t *result = (tuuvm_functionActivationEnvironment_t*)tuuvm_context_allocatePointerTuple(context, context->roots.functionActivationEnvironmentType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_functionActivationEnvironment_t));
-    result->super.parent = parent;
+    result->super.super.parent = parent;
     result->function = function;
     result->functionDefinition = functionObject->definition;
     result->captureVector = functionObject->captureVector;
@@ -142,7 +158,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_functionActivationEnvironment_createForDependentFu
     tuuvm_dependentFunctionType_t *dependentFunctionTypeObject = (tuuvm_dependentFunctionType_t*)dependentFunctionType;
  
     tuuvm_functionActivationEnvironment_t *result = (tuuvm_functionActivationEnvironment_t*)tuuvm_context_allocatePointerTuple(context, context->roots.functionActivationEnvironmentType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_functionActivationEnvironment_t));
-    result->super.parent = parent;
+    result->super.super.parent = parent;
     result->dependentFunctionType = dependentFunctionType;
     result->captureVector = tuuvm_array_create(context, 0);
     
@@ -156,7 +172,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_functionActivationEnvironment_createForDependentFu
 TUUVM_API tuuvm_tuple_t tuuvm_functionAnalysisEnvironment_create(tuuvm_context_t *context, tuuvm_tuple_t parent, tuuvm_tuple_t functionDefinition)
 {
     tuuvm_functionAnalysisEnvironment_t *result = (tuuvm_functionAnalysisEnvironment_t*)tuuvm_context_allocatePointerTuple(context, context->roots.functionAnalysisEnvironmentType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_functionAnalysisEnvironment_t));
-    result->super.parent = parent;
+    result->super.super.parent = parent;
     result->functionDefinition = functionDefinition;
     result->captureBindingTable = tuuvm_identityDictionary_create(context);
     result->captureBindingList = tuuvm_arrayList_create(context);
@@ -170,8 +186,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_functionAnalysisEnvironment_create(tuuvm_context_t
 TUUVM_API tuuvm_tuple_t tuuvm_localAnalysisEnvironment_create(tuuvm_context_t *context, tuuvm_tuple_t parent)
 {
     tuuvm_localAnalysisEnvironment_t *result = (tuuvm_localAnalysisEnvironment_t*)tuuvm_context_allocatePointerTuple(context, context->roots.localAnalysisEnvironmentType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_localAnalysisEnvironment_t));
-    result->super.parent = parent;
-    result->super.symbolTable = tuuvm_identityDictionary_create(context);
+    result->super.super.parent = parent;
+    result->super.super.symbolTable = tuuvm_identityDictionary_create(context);
     return (tuuvm_tuple_t)result;
 }
 
@@ -182,7 +198,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_environment_getIntrinsicsBuiltInEnvironment(tuuvm_
 
 TUUVM_API tuuvm_tuple_t tuuvm_environment_createDefaultForEvaluation(tuuvm_context_t *context)
 {
-    return tuuvm_environment_create(context, tuuvm_environment_getIntrinsicsBuiltInEnvironment(context));
+    return tuuvm_analysisAndEvaluationEnvironment_create(context, tuuvm_environment_getIntrinsicsBuiltInEnvironment(context));
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_environment_createDefaultForSourceCodeEvaluation(tuuvm_context_t *context, tuuvm_tuple_t sourceCode)
@@ -316,76 +332,101 @@ TUUVM_API void tuuvm_functionActivationEnvironment_setBindingActivationValue(tuu
 
 TUUVM_API tuuvm_tuple_t tuuvm_environment_lookReturnTargetRecursively(tuuvm_context_t *context, tuuvm_tuple_t environment)
 {
-    if(!tuuvm_tuple_isNonNullPointer(environment))
+    if(!tuuvm_environment_isAnalysisAndEvaluationEnvironment(context, environment))
         return TUUVM_NULL_TUPLE;
 
-    tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
+    tuuvm_analysisAndEvaluationEnvironment_t *environmentObject = (tuuvm_analysisAndEvaluationEnvironment_t*)environment;
     if(environmentObject->returnTarget)
         return environmentObject->returnTarget;
 
-    return tuuvm_environment_lookReturnTargetRecursively(context, environmentObject->parent);
+    return tuuvm_environment_lookReturnTargetRecursively(context, environmentObject->super.parent);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_environment_lookBreakTargetRecursively(tuuvm_context_t *context, tuuvm_tuple_t environment)
 {
-    if(!tuuvm_tuple_isNonNullPointer(environment))
+    if(!tuuvm_environment_isAnalysisAndEvaluationEnvironment(context, environment))
         return TUUVM_NULL_TUPLE;
 
-    tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
+    tuuvm_analysisAndEvaluationEnvironment_t *environmentObject = (tuuvm_analysisAndEvaluationEnvironment_t*)environment;
     if(environmentObject->breakTarget)
         return environmentObject->breakTarget;
 
-    return tuuvm_environment_lookReturnTargetRecursively(context, environmentObject->parent);
+    return tuuvm_environment_lookReturnTargetRecursively(context, environmentObject->super.parent);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_environment_lookContinueTargetRecursively(tuuvm_context_t *context, tuuvm_tuple_t environment)
 {
-    if(!tuuvm_tuple_isNonNullPointer(environment))
+    if(!tuuvm_environment_isAnalysisAndEvaluationEnvironment(context, environment))
         return TUUVM_NULL_TUPLE;
 
-    tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
+    tuuvm_analysisAndEvaluationEnvironment_t *environmentObject = (tuuvm_analysisAndEvaluationEnvironment_t*)environment;
     if(environmentObject->continueTarget)
         return environmentObject->continueTarget;
 
-    return tuuvm_environment_lookReturnTargetRecursively(context, environmentObject->parent);
+    return tuuvm_environment_lookReturnTargetRecursively(context, environmentObject->super.parent);
 }
 
-TUUVM_API void tuuvm_environment_setBreakTarget(tuuvm_tuple_t environment, tuuvm_tuple_t breakTarget)
+TUUVM_API void tuuvm_analysisAndEvaluationEnvironment_setBreakTarget(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t breakTarget)
 {
-    if(!tuuvm_tuple_isNonNullPointer(environment))
+    if(!tuuvm_environment_isAnalysisAndEvaluationEnvironment(context, environment))
         return;
 
-    tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
+    tuuvm_analysisAndEvaluationEnvironment_t *environmentObject = (tuuvm_analysisAndEvaluationEnvironment_t*)environment;
     environmentObject->breakTarget = breakTarget;
 }
 
-TUUVM_API void tuuvm_environment_setContinueTarget(tuuvm_tuple_t environment, tuuvm_tuple_t continueTarget)
+TUUVM_API void tuuvm_analysisAndEvaluationEnvironment_setContinueTarget(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t continueTarget)
 {
-    if(!tuuvm_tuple_isNonNullPointer(environment))
+    if(!tuuvm_environment_isAnalysisAndEvaluationEnvironment(context, environment))
         return;
 
-    tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
+    tuuvm_analysisAndEvaluationEnvironment_t *environmentObject = (tuuvm_analysisAndEvaluationEnvironment_t*)environment;
     environmentObject->continueTarget = continueTarget;
 }
 
-TUUVM_API void tuuvm_environment_setReturnTarget(tuuvm_tuple_t environment, tuuvm_tuple_t returnTarget)
+TUUVM_API void tuuvm_analysisAndEvaluationEnvironment_setReturnTarget(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t returnTarget)
 {
-    if(!tuuvm_tuple_isNonNullPointer(environment))
+    if(!tuuvm_environment_isAnalysisAndEvaluationEnvironment(context, environment))
         return;
 
-    tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
+    tuuvm_analysisAndEvaluationEnvironment_t *environmentObject = (tuuvm_analysisAndEvaluationEnvironment_t*)environment;
     environmentObject->returnTarget = returnTarget;
 }
 
-TUUVM_API void tuuvm_environment_clearUnwindingRecords(tuuvm_tuple_t environment)
+TUUVM_API void tuuvm_analysisAndEvaluationEnvironment_clearUnwindingRecords(tuuvm_context_t *context, tuuvm_tuple_t environment)
 {
-    if(!tuuvm_tuple_isNonNullPointer(environment))
+    if(!tuuvm_environment_isAnalysisAndEvaluationEnvironment(context, environment))
         return;
 
-    tuuvm_environment_t *environmentObject = (tuuvm_environment_t*)environment;
+    tuuvm_analysisAndEvaluationEnvironment_t *environmentObject = (tuuvm_analysisAndEvaluationEnvironment_t*)environment;
     environmentObject->breakTarget = TUUVM_NULL_TUPLE;
     environmentObject->continueTarget = TUUVM_NULL_TUPLE;
     environmentObject->returnTarget = TUUVM_NULL_TUPLE;
+}
+
+TUUVM_API void tuuvm_analysisAndEvaluationEnvironment_clearAnalyzerToken(tuuvm_context_t *context, tuuvm_tuple_t environment)
+{
+    if(!tuuvm_environment_isAnalysisAndEvaluationEnvironment(context, environment))
+        return;
+
+    tuuvm_analysisAndEvaluationEnvironment_t *environmentObject = (tuuvm_analysisAndEvaluationEnvironment_t*)environment;
+    environmentObject->analyzerToken = TUUVM_NULL_TUPLE;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(tuuvm_context_t *context, tuuvm_tuple_t environment)
+{
+    if(!tuuvm_environment_isAnalysisAndEvaluationEnvironment(context, environment))
+        tuuvm_error("Expected an analysis and evaluation environment.");
+
+    tuuvm_analysisAndEvaluationEnvironment_t *environmentObject = (tuuvm_analysisAndEvaluationEnvironment_t*)environment;
+    if(!environmentObject->analyzerToken)
+        environmentObject->analyzerToken = tuuvm_analyzerToken_create(context);
+    return environmentObject->analyzerToken;
+}
+
+TUUVM_API bool tuuvm_environment_isAnalysisAndEvaluationEnvironment(tuuvm_context_t *context, tuuvm_tuple_t environment)
+{
+    return tuuvm_tuple_isKindOf(context, environment, context->roots.analysisAndEvaluationEnvironmentType);
 }
 
 TUUVM_API bool tuuvm_environment_isAnalysisEnvironment(tuuvm_context_t *context, tuuvm_tuple_t environment)

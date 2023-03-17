@@ -100,7 +100,10 @@ ValueBox
 
 AnyValue
     withSelector: #initialize addMethod: {:(AnyValue)self :: Void | };
-    withSelector: #yourself addMethod: {:(AnyValue)self :: self __type__ | self } makePure makeFinal;
+    withSelector: #yourself addMethod: {:(AnyValue)self :: self __type__ |
+        <primitive: #yourself>
+        self
+    } makePure makeFinal;
 
     withSelector: #postCopy addMethod: {:(AnyValue)self :: Void | };
     withSelector: #shallowCopy addMethod: {:(AnyValue)self :: self __type__ | RawTuple::shallowCopy(self) } makeFinal;

@@ -536,15 +536,17 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.environmentType, "Environment", TUUVM_NULL_TUPLE,
         "parent", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
         "symbolTable", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.namespaceType, "Namespace", TUUVM_NULL_TUPLE,
+        NULL);
+    context->roots.analysisAndEvaluationEnvironmentType = tuuvm_context_createIntrinsicClass(context, "AnalysisAndEvaluationEnvironment", context->roots.environmentType,
         "returnTarget", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "breakTarget", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "continueTarget", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.namespaceType, "Namespace", TUUVM_NULL_TUPLE,
+    context->roots.analysisEnvironmentType = tuuvm_context_createIntrinsicClass(context, "AnalysisEnvironment", context->roots.analysisAndEvaluationEnvironmentType,
         NULL);
-    context->roots.analysisEnvironmentType = tuuvm_context_createIntrinsicClass(context, "AnalysisEnvironment", context->roots.environmentType,
-        NULL);
-    context->roots.functionActivationEnvironmentType = tuuvm_context_createIntrinsicClass(context, "FunctionActivationEnvironment", context->roots.environmentType,
+    context->roots.functionActivationEnvironmentType = tuuvm_context_createIntrinsicClass(context, "FunctionActivationEnvironment", context->roots.analysisAndEvaluationEnvironmentType,
         "function", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionType,
         "functionDefinition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
         "dependentFunctionType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,

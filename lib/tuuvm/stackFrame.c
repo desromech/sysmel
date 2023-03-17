@@ -161,6 +161,7 @@ TUUVM_API bool tuuvm_stackFrame_isValidRecordInThisContext(tuuvm_stackFrameRecor
 
 static void tuuvm_stackFrame_prepareUnwinding(tuuvm_stackFrameRecord_t *targetRecord)
 {
+    tuuvm_context_t *context = tuuvm_stackFrame_activeContext;
     tuuvm_stackFrame_activeRecord = targetRecord;
 
     switch(targetRecord->type)
@@ -169,21 +170,21 @@ static void tuuvm_stackFrame_prepareUnwinding(tuuvm_stackFrameRecord_t *targetRe
         {
             tuuvm_stackFrameFunctionActivationRecord_t *activationRecord = (tuuvm_stackFrameFunctionActivationRecord_t*)targetRecord;
             if(activationRecord->applicationEnvironment)
-                tuuvm_environment_clearUnwindingRecords(activationRecord->applicationEnvironment);
+                tuuvm_analysisAndEvaluationEnvironment_clearUnwindingRecords(context, activationRecord->applicationEnvironment);
         }
         break;
     case TUUVM_STACK_FRAME_RECORD_TYPE_BREAK_TARGET:
         {
             tuuvm_stackFrameBreakTargetRecord_t *breakRecord = (tuuvm_stackFrameBreakTargetRecord_t*)targetRecord;
             if(breakRecord->environment)
-                tuuvm_environment_clearUnwindingRecords(breakRecord->environment);
+                tuuvm_analysisAndEvaluationEnvironment_clearUnwindingRecords(context, breakRecord->environment);
         }
         break;
     case TUUVM_STACK_FRAME_RECORD_TYPE_CONTINUE_TARGET:
         {
             tuuvm_stackFrameContinueTargetRecord_t *continueRecord = (tuuvm_stackFrameContinueTargetRecord_t*)targetRecord;
             if(continueRecord->environment)
-                tuuvm_environment_clearUnwindingRecords(continueRecord->environment);
+                tuuvm_analysisAndEvaluationEnvironment_clearUnwindingRecords(context, continueRecord->environment);
         }
         break;
     case TUUVM_STACK_FRAME_RECORD_TYPE_CLEANUP:
