@@ -67,6 +67,7 @@ typedef struct tuuvm_astFunctionApplicationNode_s
     tuuvm_astNode_t super;
     tuuvm_tuple_t functionExpression;
     tuuvm_tuple_t arguments;
+    tuuvm_tuple_t applicationFlags;
 } tuuvm_astFunctionApplicationNode_t;
 
 typedef struct tuuvm_astLambdaNode_s

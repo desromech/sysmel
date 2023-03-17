@@ -726,7 +726,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValue(tuuvm_context_t *context, tuuvm_t
     if(gcFrame.function)
     {
         TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-        return tuuvm_function_apply2(context, gcFrame.function, gcFrame.type, gcFrame.value);
+        return tuuvm_function_applyNoCheck2(context, gcFrame.function, gcFrame.type, gcFrame.value);
     }
 
     if(!gcFrame.valueType && tuuvm_tuple_isDummyValue(gcFrame.value))

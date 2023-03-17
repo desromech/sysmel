@@ -391,7 +391,7 @@ static tuuvm_tuple_t tuuvm_function_primitive_apply(tuuvm_context_t *context, tu
     }
 
     TUUVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
-    return tuuvm_functionCallFrameStack_finish(context, &callFrameStack, false);
+    return tuuvm_functionCallFrameStack_finish(context, &callFrameStack, 0);
 }
 
 static tuuvm_tuple_t tuuvm_function_primitive_isCorePrimitive(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)

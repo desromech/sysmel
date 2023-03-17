@@ -193,7 +193,7 @@ static void tuuvm_stackFrame_prepareUnwinding(tuuvm_stackFrameRecord_t *targetRe
             if(cleanupRecord->action)
             {
                 tuuvm_stackFrame_activeRecord = targetRecord->previous;
-                tuuvm_function_apply0(tuuvm_stackFrame_activeContext, cleanupRecord->action);
+                tuuvm_function_applyNoCheck0(tuuvm_stackFrame_activeContext, cleanupRecord->action);
             }
         }
         break;

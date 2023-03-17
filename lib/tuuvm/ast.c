@@ -266,6 +266,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_astFunctionApplicationNode_create(tuuvm_context_t 
     result->super.sourcePosition = sourcePosition;
     result->functionExpression = functionExpression;
     result->arguments = arguments;
+    result->applicationFlags = tuuvm_tuple_size_encode(context, 0);
     return (tuuvm_tuple_t)result;
 }
 

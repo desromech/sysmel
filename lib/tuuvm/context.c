@@ -807,6 +807,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.astFunctionApplicationNodeType = tuuvm_context_createIntrinsicClass(context, "ASTFunctionApplicationNode", context->roots.astNodeType,
         "functionExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "applicationFlags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         NULL);
     context->roots.astLambdaNodeType = tuuvm_context_createIntrinsicClass(context, "ASTLambdaNode", context->roots.astNodeType,
         "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,

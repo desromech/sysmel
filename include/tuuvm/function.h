@@ -209,6 +209,48 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_function_apply4(tuuvm_context_t *context, tuuvm
     return tuuvm_function_apply(context, function, 4, arguments, 0);
 }
 
+TUUVM_INLINE tuuvm_tuple_t tuuvm_function_applyNoCheck0(tuuvm_context_t *context, tuuvm_tuple_t function)
+{
+    return tuuvm_function_apply(context, function, 0, 0, TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK);
+}
+
+TUUVM_INLINE tuuvm_tuple_t tuuvm_function_applyNoCheck1(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_tuple_t argument)
+{
+    return tuuvm_function_apply(context, function, 1, &argument, TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK);
+}
+
+TUUVM_INLINE tuuvm_tuple_t tuuvm_function_applyNoCheck2(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_tuple_t argument0, tuuvm_tuple_t argument1)
+{
+    tuuvm_tuple_t arguments[] = {
+        argument0,
+        argument1
+    };
+    
+    return tuuvm_function_apply(context, function, 2, arguments, TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK);
+}
+
+TUUVM_INLINE tuuvm_tuple_t tuuvm_function_applyNoCheck3(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_tuple_t argument0, tuuvm_tuple_t argument1, tuuvm_tuple_t argument2)
+{
+    tuuvm_tuple_t arguments[] = {
+        argument0,
+        argument1,
+        argument2,
+    };
+    
+    return tuuvm_function_apply(context, function, 3, arguments, TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK);
+}
+
+TUUVM_INLINE tuuvm_tuple_t tuuvm_function_applyNoCheck4(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_tuple_t argument0, tuuvm_tuple_t argument1, tuuvm_tuple_t argument2, tuuvm_tuple_t argument3)
+{
+    tuuvm_tuple_t arguments[] = {
+        argument0,
+        argument1,
+        argument2,
+        argument3,
+    };
+    
+    return tuuvm_function_apply(context, function, 4, arguments, TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK);
+}
 /**
  * Sends a message with the given selector.
  */
