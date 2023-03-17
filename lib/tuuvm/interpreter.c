@@ -229,7 +229,7 @@ static tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment
         if(isDecayedType)
             gcFrame.expectedType = tuuvm_type_decay(context, gcFrame.nodeType);
 
-        if(gcFrame.expectedType && !tuuvm_type_isSubtypeOf(gcFrame.nodeType, gcFrame.expectedType))
+        if(gcFrame.expectedType && !tuuvm_type_isDirectSubtypeOf(gcFrame.nodeType, gcFrame.expectedType))
             gcFrame.result = tuuvm_tuple_send2(context, context->roots.coerceASTNodeWithEnvironmentSelector, gcFrame.expectedType, gcFrame.result, gcFrame.environment);
     }
 

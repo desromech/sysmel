@@ -207,7 +207,7 @@ TUUVM_API void tuuvm_tuple_slotAtPut(tuuvm_context_t *context, tuuvm_tuple_t tup
 bool tuuvm_tuple_isKindOf(tuuvm_context_t *context, tuuvm_tuple_t tuple, tuuvm_tuple_t type)
 {
     tuuvm_tuple_t tupleType = tuuvm_tuple_getType(context, tuple);
-    return tupleType == type || tuuvm_type_isSubtypeOf(tuuvm_tuple_getType(context, tuple), type);
+    return tupleType == type || tuuvm_type_isDirectSubtypeOf(tuuvm_tuple_getType(context, tuple), type);
 }
 
 static tuuvm_tuple_t tuuvm_tuple_primitive_slotAtPut(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)

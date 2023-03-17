@@ -70,7 +70,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousClassAndMetaclass(tuuvm_contex
 
     if(tuuvm_tuple_isKindOf(context, actualSuperType, context->roots.classType))
         metaclassSupertype = tuuvm_tuple_getType(context, actualSuperType);
-    else if(tuuvm_type_isSubtypeOf(actualSuperType, context->roots.typeType))
+    else if(tuuvm_type_isDirectSubtypeOf(actualSuperType, context->roots.typeType))
         metaclassSupertype = tuuvm_tuple_getType(context, tuuvm_type_getSupertype(actualSuperType));
 
     tuuvm_tuple_t metaclass = tuuvm_type_createAnonymousMetaclass(context, metaclassSupertype);
@@ -499,14 +499,6 @@ TUUVM_API void tuuvm_type_setMethodWithSelector(tuuvm_context_t *context, tuuvm_
     }
 }
 
-TUUVM_API bool tuuvm_type_isSubtypeOf(tuuvm_tuple_t type, tuuvm_tuple_t supertype)
-{
-    if(!tuuvm_tuple_isNonNullPointer(supertype)) return false;
-    if(!tuuvm_tuple_isNonNullPointer(type)) return false;
-    if(type == supertype) return true;
-    return tuuvm_type_isSubtypeOf(tuuvm_type_getSupertype(type), supertype);
-}
-
 TUUVM_API tuuvm_tuple_t tuuvm_type_getEqualsFunction(tuuvm_context_t *context, tuuvm_tuple_t type)
 {
     return tuuvm_type_lookupSelectorOrFallbackWith(context, type, context->roots.equalsSelector, context->roots.identityEqualsFunction);
@@ -704,7 +696,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValue(tuuvm_context_t *context, tuuvm_t
     }
 
     // Load references.
-    if(tuuvm_type_isReferenceType(gcFrame.valueType) && !tuuvm_type_isSubtypeOf(gcFrame.valueType, gcFrame.type))
+    if(tuuvm_type_isReferenceType(gcFrame.valueType) && !tuuvm_type_isDirectSubtypeOf(gcFrame.valueType, gcFrame.type))
     {
         gcFrame.value = tuuvm_pointerLikeType_load(context, gcFrame.value);
         gcFrame.valueType = tuuvm_tuple_getType(context, gcFrame.value);
@@ -716,7 +708,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValue(tuuvm_context_t *context, tuuvm_t
         return gcFrame.value;
     }
 
-    if(tuuvm_type_isSubtypeOf(gcFrame.valueType, gcFrame.type))
+    if(tuuvm_type_isDirectSubtypeOf(gcFrame.valueType, gcFrame.type))
     {
         TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
         return gcFrame.value;

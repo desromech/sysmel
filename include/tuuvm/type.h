@@ -22,6 +22,7 @@ typedef struct tuuvm_type_tuple_s
     tuuvm_tuple_t fallbackMethodDictionary;
 
     tuuvm_tuple_t pendingSlots;
+    tuuvm_tuple_t subtypes;
 } tuuvm_type_tuple_t;
 
 typedef enum tuuvm_typeFlags_e
@@ -273,9 +274,28 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_lookupFallbackSelector(tuuvm_context_t *conte
 TUUVM_API void tuuvm_type_setMethodWithSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector, tuuvm_tuple_t method);
 
 /**
+ * Computes the valid type hierarchy depth
+ */
+TUUVM_API int tuuvm_type_validTypeHierarchyDepth(tuuvm_tuple_t type);
+
+/**
  * Is this type a subtype of?
  */
-TUUVM_API bool tuuvm_type_isSubtypeOf(tuuvm_tuple_t type, tuuvm_tuple_t supertype);
+TUUVM_INLINE bool tuuvm_type_isDirectSubtypeOf(tuuvm_tuple_t type, tuuvm_tuple_t supertype)
+{
+    if(!tuuvm_tuple_isNonNullPointer(supertype)) return false;
+    if(!tuuvm_tuple_isNonNullPointer(type)) return false;
+
+    while(type)
+    {
+        if(type == supertype)
+            return true;
+
+        type = ((tuuvm_type_tuple_t *)type)->supertype;
+    }
+
+    return false;
+}
 
 /**
  * Gets the name of a type
@@ -310,6 +330,7 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getSupertype(tuuvm_tuple_t type)
 TUUVM_INLINE void tuuvm_type_setSupertype(tuuvm_tuple_t type, tuuvm_tuple_t supertype)
 {
     if(!tuuvm_tuple_isNonNullPointer(type)) return;
+    
     ((tuuvm_type_tuple_t*)type)->supertype = supertype;
 }
 
