@@ -166,36 +166,6 @@ static tuuvm_tuple_t tuuvm_primitiveInteger_unsigned_printString(tuuvm_context_t
 #define INTEGER_TYPE_SHORT_SUFFIX_NAME "i64"
 #include "primitiveIntegers.inc"
 
-#define integer_t size_t
-#define primitiveInteger_decode tuuvm_tuple_size_decode
-#define primitiveInteger_encode(v) tuuvm_tuple_size_encode(context, v)
-#define IS_SIGNED true
-#define FUNCTION_PREFIX tuuvm_size
-#define INTEGER_TYPE_NAME "Size"
-#define INTEGER_TYPE_ROOT_NAME sizeType
-#define INTEGER_TYPE_SHORT_SUFFIX_NAME "sz"
-#include "primitiveIntegers.inc"
-
-#define integer_t uintptr_t
-#define primitiveInteger_decode tuuvm_tuple_uintptr_decode
-#define primitiveInteger_encode(v) tuuvm_tuple_uintptr_encode(context, v)
-#define IS_SIGNED true
-#define FUNCTION_PREFIX tuuvm_uintptr
-#define INTEGER_TYPE_NAME "UIntPtr"
-#define INTEGER_TYPE_ROOT_NAME uintptrType
-#define INTEGER_TYPE_SHORT_SUFFIX_NAME "uptr"
-#include "primitiveIntegers.inc"
-
-#define integer_t intptr_t
-#define primitiveInteger_decode tuuvm_tuple_intptr_decode
-#define primitiveInteger_encode(v) tuuvm_tuple_intptr_encode(context, v)
-#define IS_SIGNED true
-#define FUNCTION_PREFIX tuuvm_intptr
-#define INTEGER_TYPE_NAME "IntPtr"
-#define INTEGER_TYPE_ROOT_NAME intptrType
-#define INTEGER_TYPE_SHORT_SUFFIX_NAME "iptr"
-#include "primitiveIntegers.inc"
-
 void tuuvm_primitiveInteger_registerPrimitives(void)
 {
     tuuvm_char8_registerPrimitives();
@@ -212,10 +182,6 @@ void tuuvm_primitiveInteger_registerPrimitives(void)
 
     tuuvm_uint64_registerPrimitives();
     tuuvm_int64_registerPrimitives();
-
-    tuuvm_size_registerPrimitives();
-    tuuvm_uintptr_registerPrimitives();
-    tuuvm_intptr_registerPrimitives();
 }
 
 void tuuvm_primitiveInteger_setupPrimitives(tuuvm_context_t *context)
@@ -235,7 +201,18 @@ void tuuvm_primitiveInteger_setupPrimitives(tuuvm_context_t *context)
     tuuvm_uint64_setupPrimitives(context);
     tuuvm_int64_setupPrimitives(context);
 
-    tuuvm_size_setupPrimitives(context);
-    tuuvm_uintptr_setupPrimitives(context);
-    tuuvm_intptr_setupPrimitives(context);
+    if(sizeof(size_t) == 4)
+    {
+        tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Size::fromInteger", context->roots.integerType, "sz", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_uint32_primitive_fromInteger);
+        tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "UIntPointer::fromInteger", context->roots.integerType, "uptr", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_uint32_primitive_fromInteger);
+        tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IntPointer::fromInteger", context->roots.integerType, "iptr", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_int32_primitive_fromInteger);
+        tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "Size::+", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_uint32_primitive_add);
+    }
+    else
+    {
+        tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Size::fromInteger", context->roots.integerType, "sz", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_uint64_primitive_fromInteger);
+        tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "UIntPointer::fromInteger", context->roots.integerType, "uptr", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_uint64_primitive_fromInteger);
+        tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IntPointer::fromInteger", context->roots.integerType, "iptr", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_int64_primitive_fromInteger);
+        tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "Size::+", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_uint64_primitive_add);
+    }
 }

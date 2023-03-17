@@ -28,19 +28,19 @@ static void tuuvm_gc_markPointer(void *userdata, tuuvm_tuple_t *pointerAddress)
     if(!tuuvm_tuple_isBytes(pointer))
     {
         // By default mark all of the slots.
-        size_t slotCount = tuuvm_tuple_getSizeInSlots(pointer);
+        size_t strongSlotCount = tuuvm_tuple_getSizeInSlots(pointer);
 
         // Keep the declared slots as strong.
         if(tuuvm_tuple_isWeakObject(pointer))
         {
-            slotCount = 0;
+            strongSlotCount = 0;
             if(tuuvm_tuple_isNonNullPointer(objectType))
-                slotCount = tuuvm_type_getTotalSlotCount(objectType);
+                strongSlotCount = tuuvm_type_getTotalSlotCount(objectType);
         }
 
         // Mark the object slots
         tuuvm_tuple_t *slots = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(pointer)->pointers;
-        for(size_t i = 0; i < slotCount; ++i)
+        for(size_t i = 0; i < strongSlotCount; ++i)
             tuuvm_gc_markPointer(userdata, &slots[i]);
     }
 

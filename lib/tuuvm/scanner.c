@@ -35,7 +35,6 @@ static inline bool tuuvm_scanner_isOperatorCharacter(int c)
     case '>':
     case '=':
     case '@':
-    case ',':
     case '%':
     case '|':
     case '&':

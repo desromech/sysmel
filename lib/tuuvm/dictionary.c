@@ -8,18 +8,11 @@
 #include "internal/context.h"
 #include <stdlib.h>
 
-TUUVM_API tuuvm_tuple_t tuuvm_weakValueDictionary_create(tuuvm_context_t *context)
-{
-    tuuvm_weakValueDictionary_t *result = (tuuvm_weakValueDictionary_t*)tuuvm_context_allocatePointerTuple(context, context->roots.weakValueDictionaryType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_weakValueDictionary_t));
-    result->size = tuuvm_tuple_size_encode(context, 0);
-    return (tuuvm_tuple_t)result;
-}
-
-static intptr_t tuuvm_weakValueDictionary_scanFor(tuuvm_context_t *context, tuuvm_weakValueDictionary_t **dictionary, tuuvm_tuple_t *element)
+static intptr_t tuuvm_dictionary_scanFor(tuuvm_context_t *context, tuuvm_dictionary_t **dictionary, tuuvm_tuple_t *element)
 {
     struct {
         tuuvm_array_t *storage;
-        tuuvm_weakValueAssociation_t *association;
+        tuuvm_association_t *association;
     } gcFrame = {
     };
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
@@ -33,41 +26,51 @@ static intptr_t tuuvm_weakValueDictionary_scanFor(tuuvm_context_t *context, tuuv
 
     gcFrame.storage = (tuuvm_array_t*)(*dictionary)->storage;
     size_t hashIndex = tuuvm_tuple_hash(context, *element) % capacity;
-    intptr_t bestNewFound = -1;
     for(size_t i = hashIndex; i < capacity; ++i)
     {
-        gcFrame.association = (tuuvm_weakValueAssociation_t*)gcFrame.storage->elements[i];
+        gcFrame.association = (tuuvm_association_t*)gcFrame.storage->elements[i];
         if(!gcFrame.association ||
             tuuvm_tuple_equals(context, *element, gcFrame.association->key))
         {
             TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-            return (!gcFrame.association && bestNewFound >= 0) ? bestNewFound : (intptr_t)i;
+            return (intptr_t)i;
         }
-
-        if(bestNewFound < 0 && gcFrame.association && gcFrame.association->value == TUUVM_TOMBSTONE_TUPLE)
-            bestNewFound = (intptr_t)i;
     }
 
     for(size_t i = 0; i < hashIndex; ++i)
     {
-        gcFrame.association = (tuuvm_weakValueAssociation_t*)gcFrame.storage->elements[i];
+        gcFrame.association = (tuuvm_association_t*)gcFrame.storage->elements[i];
         if(!gcFrame.association ||
             tuuvm_tuple_equals(context, *element, gcFrame.association->key))
         {
             TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-            return (!gcFrame.association && bestNewFound >= 0) ? bestNewFound : (intptr_t)i;
+            return (intptr_t)i;
         }
-
-        if(bestNewFound < 0 && gcFrame.association && gcFrame.association->value == TUUVM_TOMBSTONE_TUPLE)
-            bestNewFound = (intptr_t)i;
     }
 
-    return bestNewFound;
+    return -1;
+}
+
+static void tuuvm_dictionary_insertNoCheck(tuuvm_context_t *context, tuuvm_dictionary_t **dictionary, tuuvm_weakValueAssociation_t **association, tuuvm_tuple_t *key)
+{
+    intptr_t elementIndex = tuuvm_dictionary_scanFor(context, dictionary, key);
+    TUUVM_ASSERT(elementIndex >= 0);
+
+    tuuvm_array_t *storage = (tuuvm_array_t*)(*dictionary)->storage;
+    storage->elements[elementIndex] = (tuuvm_tuple_t)*association;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_weakValueDictionary_create(tuuvm_context_t *context)
+{
+    tuuvm_weakValueDictionary_t *result = (tuuvm_weakValueDictionary_t*)tuuvm_context_allocatePointerTuple(context, context->roots.weakValueDictionaryType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_weakValueDictionary_t));
+    result->size = tuuvm_tuple_size_encode(context, 0);
+    return (tuuvm_tuple_t)result;
 }
 
 TUUVM_API bool tuuvm_weakValueDictionary_find(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t *outValue)
 {
-    if(!tuuvm_tuple_isNonNullPointer(dictionary)) return false;
+    if(!tuuvm_tuple_isNonNullPointer(dictionary))
+        return false;
 
     struct {
         tuuvm_weakValueDictionary_t *dictionary;
@@ -79,7 +82,7 @@ TUUVM_API bool tuuvm_weakValueDictionary_find(tuuvm_context_t *context, tuuvm_tu
     };
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    intptr_t elementIndex = tuuvm_weakValueDictionary_scanFor(context, &gcFrame.dictionary, &gcFrame.key);
+    intptr_t elementIndex = tuuvm_dictionary_scanFor(context, &gcFrame.dictionary, &gcFrame.key);
     if(elementIndex < 0)
     {
         TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -100,15 +103,6 @@ TUUVM_API bool tuuvm_weakValueDictionary_find(tuuvm_context_t *context, tuuvm_tu
     return true;
 }
 
-static void tuuvm_weakValueDictionary_insertNoCheck(tuuvm_context_t *context, tuuvm_weakValueDictionary_t **dictionary, tuuvm_weakValueAssociation_t **association, tuuvm_tuple_t *key)
-{
-    intptr_t elementIndex = tuuvm_weakValueDictionary_scanFor(context, dictionary, key);
-    TUUVM_ASSERT(elementIndex >= 0);
-
-    tuuvm_array_t *storage = (tuuvm_array_t*)(*dictionary)->storage;
-    storage->elements[elementIndex] = (tuuvm_tuple_t)*association;
-}
-
 static void tuuvm_weakValueDictionary_increaseCapacity(tuuvm_context_t *context, tuuvm_weakValueDictionary_t **dictionary)
 {
     struct {
@@ -123,6 +117,7 @@ static void tuuvm_weakValueDictionary_increaseCapacity(tuuvm_context_t *context,
 
     size_t oldCapacity = tuuvm_tuple_getSizeInSlots((tuuvm_tuple_t)gcFrame.oldStorage);
     size_t newCapacity = oldCapacity * 2;
+    size_t newSize = 0;
     if(newCapacity < 8)
         newCapacity = 8;
 
@@ -137,9 +132,13 @@ static void tuuvm_weakValueDictionary_increaseCapacity(tuuvm_context_t *context,
         if(gcFrame.association && gcFrame.association->value != TUUVM_TOMBSTONE_TUPLE)
         {
             gcFrame.key = gcFrame.association->key;
-            tuuvm_weakValueDictionary_insertNoCheck(context, dictionary, &gcFrame.association, &gcFrame.key);
+            tuuvm_dictionary_insertNoCheck(context, dictionary, &gcFrame.association, &gcFrame.key);
+            ++newSize;
         }
     }
+
+    // We need to recompute the size due to deleted weak objects.
+    (*dictionary)->size = tuuvm_tuple_size_encode(context, newSize);
 }
 
 TUUVM_API void tuuvm_weakValueDictionary_atPut(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t value)
@@ -158,11 +157,11 @@ TUUVM_API void tuuvm_weakValueDictionary_atPut(tuuvm_context_t *context, tuuvm_t
     };
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    intptr_t elementIndex = tuuvm_weakValueDictionary_scanFor(context, &gcFrame.dictionary, &gcFrame.key);
+    intptr_t elementIndex = tuuvm_dictionary_scanFor(context, &gcFrame.dictionary, &gcFrame.key);
     if(elementIndex < 0)
     {
         tuuvm_weakValueDictionary_increaseCapacity(context, &gcFrame.dictionary);
-        elementIndex = tuuvm_weakValueDictionary_scanFor(context, &gcFrame.dictionary, &gcFrame.key);
+        elementIndex = tuuvm_dictionary_scanFor(context, &gcFrame.dictionary, &gcFrame.key);
         if(elementIndex < 0)
            tuuvm_error("Dictionary out of memory.");
     }

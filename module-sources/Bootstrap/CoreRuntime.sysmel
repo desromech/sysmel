@@ -1,3 +1,52 @@
+## We use these for the different implementations of Size
+{
+    let: #binaryFunctionType with: SimpleFunctionTypeTemplate((UInt32, UInt32), false, UInt32).
+    let: #equalityComparisonFunctionType with: SimpleFunctionTypeTemplate((UInt32, nil), false, Boolean).
+    let: #comparisonFunctionType with: SimpleFunctionTypeTemplate((UInt32, UInt32), false, Boolean).
+
+    UInt32::+ __type__: binaryFunctionType.
+    UInt32::- __type__: binaryFunctionType.
+    UInt32::* __type__: binaryFunctionType.
+    UInt32::/ __type__: binaryFunctionType.
+    UInt32::% __type__: binaryFunctionType.
+
+    UInt32::& __type__: binaryFunctionType.
+    UInt32::| __type__: binaryFunctionType.
+    UInt32::<< __type__: binaryFunctionType.
+    UInt32::>> __type__: binaryFunctionType.
+
+    UInt32::= __type__: equalityComparisonFunctionType.
+    UInt32::~= __type__: equalityComparisonFunctionType.
+    UInt32::< __type__: comparisonFunctionType.
+    UInt32::<= __type__: comparisonFunctionType.
+    UInt32::>= __type__: comparisonFunctionType.
+    UInt32::> __type__: comparisonFunctionType.
+}.
+
+{
+    let: #binaryFunctionType with: SimpleFunctionTypeTemplate((UInt64, UInt64), false, UInt64).
+    let: #equalityComparisonFunctionType with: SimpleFunctionTypeTemplate((UInt64, nil), false, Boolean).
+    let: #comparisonFunctionType with: SimpleFunctionTypeTemplate((UInt64, UInt64), false, Boolean).
+
+    UInt64::+ __type__: binaryFunctionType.
+    UInt64::- __type__: binaryFunctionType.
+    UInt64::* __type__: binaryFunctionType.
+    UInt64::/ __type__: binaryFunctionType.
+    UInt64::% __type__: binaryFunctionType.
+
+    UInt64::& __type__: binaryFunctionType.
+    UInt64::| __type__: binaryFunctionType.
+    UInt64::<< __type__: binaryFunctionType.
+    UInt64::>> __type__: binaryFunctionType.
+
+    UInt64::= __type__: equalityComparisonFunctionType.
+    UInt64::~= __type__: equalityComparisonFunctionType.
+    UInt64::< __type__: comparisonFunctionType.
+    UInt64::<= __type__: comparisonFunctionType.
+    UInt64::>= __type__: comparisonFunctionType.
+    UInt64::> __type__: comparisonFunctionType.
+}.
+
 Function
     withSelector: #addFlags: addMethod: {:(Function)self :(Size)flag :: Void |
         self flags: self flags | flag
@@ -451,8 +500,8 @@ Collection
 
     withSelector: #printOn: addMethod: {:(Collection)self :(Stream)stream :: Void |
         stream print: self class; nextPutAll: "(".
-        self doWithIndex: {:element :index :: Void |
-            if: index > 0 then: (stream nextPutAll: ", ").
+        self doWithIndex: {:element :(Size)index :: Void |
+            if: index > 0sz then: (stream nextPutAll: ", ").
             stream print: element.
             void
         }.
@@ -585,7 +634,16 @@ SequenceableCollection
     withSelector: #first addMethod: {:(SequenceableCollection)self | self at: 0sz } makeFinal;
     withSelector: #second addMethod: {:(SequenceableCollection)self | self at: 1sz } makeFinal;
     withSelector: #third addMethod: {:(SequenceableCollection)self | self at: 2sz } makeFinal;
-    withSelector: #fourth addMethod: {:(SequenceableCollection)self | self at: 3sz } makeFinal.
+    withSelector: #fourth addMethod: {:(SequenceableCollection)self | self at: 3sz } makeFinal;
+    
+    withSelector: #=> addMethod: {:(SequenceableCollection)self :(Type)resultType :: SimpleFunctionType |
+        SimpleFunctionTypeTemplate(self asArray, false, resultType)
+    } makePure makeFinal.
+
+Type
+    withSelector: #=> addMethod: {:(Type)self :(Type)resultType :: SimpleFunctionType |
+        SimpleFunctionTypeTemplate((self,), false, resultType)
+    } makePure makeFinal.
 
 ArrayList
     withSelector: #new: addClassMethod: {:(ArrayList class)self :(Size)initialSize :: self |
@@ -721,16 +779,15 @@ TypeSlot
             let: #setterName with: (self name asString -- ":") asSymbol.
 
             ## Getter.
-            type withSelector: getterName addMethod: ({:(type)self :: slotType | (RawTuple::slotAt:)(self, slotIndex) }
-                makePure;
-                makeFinal; 
-                recompileAndOptimize).
+            type withSelector: getterName addMethod: {:(type)self :: slotType |
+                (RawTuple::slotAt:)(self, slotIndex)
+            } makePure makeFinal recompileAndOptimize.
 
             ## Setter
             if: self isReadonly not then: {
-                type withSelector: setterName addMethod: ({:(type)self :(slotType)value :: Void | RawTuple::slotAt:put:(self, slotIndex, value) }
-                    makeFinal; 
-                    recompileAndOptimize).
+                type withSelector: setterName addMethod: {:(type)self :(slotType)value :: Void |
+                    RawTuple::slotAt:put:(self, slotIndex, value)
+                } makeFinal recompileAndOptimize.
             }
         }
     }.
@@ -805,7 +862,7 @@ SimpleFunctionType
     withSelector: #printOn: addMethod: {:(Type)self :(Stream)stream :: Void |
         stream nextPut: '('.
         self argumentTypes doWithIndex: {:(Type)argumentType :(Size)index :: Void |
-            index > 0 ifTrue: (stream nextPutAll: ", ").
+            index > 0sz ifTrue: (stream nextPutAll: ", ").
             stream print: argumentType
         }.
         self isVariadic ifTrue: {
@@ -813,10 +870,10 @@ SimpleFunctionType
                 ifTrue: (stream nextPutAll: ", ...")
                 ifFalse: (stream nextPutAll: "...")
         }.
-        stream nextPutAll: ") ==> "; print: self resultType.
+        stream nextPutAll: ") => "; print: self resultType.
     }.
 
-## Primitive values print string.
+## Primitive values printString and primitive function types
 (
     UInt8,Int8,Char8,
     UInt16,Int16,Char16,
@@ -825,12 +882,64 @@ SimpleFunctionType
     Float32,Float64,
     Integer
 ) do: {:SelfType :: Void |
+    let: #unaryFunctionType with: SelfType => SelfType.
+    let: #binaryFunctionType with: (SelfType, SelfType) => SelfType.
+    let: #equalityFunctionType with: (SelfType, nil) => Boolean.
+    let: #binaryComparisonFunctionType with: (SelfType, SelfType) => Boolean.
+
+    ## Unary selectors
+    #(
+        negated bitInvert
+    ) do: {:selector :: Void |
+        let: #method with: (SelfType >> selector).
+        if: method ~~ nil then: (method __type__: unaryFunctionType)
+    }.
+
+    ## Binary selectors.
+    #(
+        + - * / %
+        | & ^ << >>
+    ) do: {:selector :: Void |
+        let: #method with: (SelfType >> selector).
+        if: method ~~ nil then: (method __type__: binaryFunctionType)
+    }.
+
+    ## Equality
+    #(
+        = ~=
+    ) do: {:selector :: Void |
+        (SelfType >> selector) __type__: equalityFunctionType
+    }.
+
+    ## Comparisons
+    #(
+        < <= >= >
+    ) do: {:selector :: Void |
+        (SelfType >> selector) __type__: binaryComparisonFunctionType
+    }.
+
     SelfType
         withSelector: #printOn: addMethod: {:(SelfType)self :(Stream)stream :: Void |
             stream nextPutAll: self printString
-        } recompileAndOptimize;
-            makeFinal.
+        } makeFinal recompileAndOptimize
 }.
+
+(Integer >> #i8) __type__: (Integer => Int8).
+(Integer >> #u8) __type__: (Integer => UInt8).
+(Integer >> #c8) __type__: (Integer => Char8).
+(Integer >> #i16) __type__: (Integer => Int16).
+(Integer >> #u16) __type__: (Integer => UInt16).
+(Integer >> #c16) __type__: (Integer => Char16).
+(Integer >> #i32) __type__: (Integer => Int32).
+(Integer >> #u32) __type__: (Integer => UInt32).
+(Integer >> #c32) __type__: (Integer => Char32).
+(Integer >> #i64) __type__: (Integer => Int64).
+(Integer >> #u64) __type__: (Integer => UInt64).
+##(Integer >> #f32) __type__: (Integer => Float32).
+##(Integer >> #f64) __type__: (Integer => Float64).
+
+(Float32 >> #sqrt) __type__: (Float32 => Float32).
+(Float64 >> #sqrt) __type__: (Float32 => Float32).
 
 SourcePosition
     withSelector: #printOn: addMethod: {:(SourcePosition)self :(Stream)stream :: Void |

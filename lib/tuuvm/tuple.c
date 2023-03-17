@@ -131,9 +131,9 @@ static tuuvm_tuple_t tuuvm_tuple_primitive_setType(tuuvm_context_t *context, tuu
     (void)context;
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
-
-    if(tuuvm_tuple_isNonNullPointer(arguments[0]))
-        tuuvm_tuple_setType((tuuvm_object_tuple_t*)arguments[0], arguments[1]);
+    if(!tuuvm_tuple_isNonNullPointer(arguments[0])) tuuvm_error("Cannot set the type of an immediate value.");
+    
+    tuuvm_tuple_setType((tuuvm_object_tuple_t*)arguments[0], arguments[1]);
     return TUUVM_VOID_TUPLE;
 }
 

@@ -681,11 +681,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValue(tuuvm_context_t *context, tuuvm_t
         return gcFrame.value;
     }
 
-    tuuvm_tuple_t function = tuuvm_type_getCoerceValueFunction(context, tuuvm_tuple_getType(context, gcFrame.type));
-    if(function)
+    gcFrame.function = tuuvm_type_getCoerceValueFunction(context, tuuvm_tuple_getType(context, gcFrame.type));
+    if(gcFrame.function)
     {
         TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-        return tuuvm_function_apply2(context, function, gcFrame.type, gcFrame.value);
+        return tuuvm_function_apply2(context, gcFrame.function, gcFrame.type, gcFrame.value);
     }
 
     if(!gcFrame.valueType && tuuvm_tuple_isDummyValue(gcFrame.value))

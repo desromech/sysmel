@@ -241,7 +241,7 @@ TUUVM_INLINE bool tuuvm_tuple_isBytes(tuuvm_tuple_t tuple)
  */
 TUUVM_INLINE bool tuuvm_tuple_isWeakObject(tuuvm_tuple_t tuple)
 {
-    return !tuuvm_tuple_isNonNullPointer(tuple) || (TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_WEAK_OBJECT_BIT) != 0;
+    return tuuvm_tuple_isNonNullPointer(tuple) && (TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_WEAK_OBJECT_BIT) != 0;
 }
 
 /**
