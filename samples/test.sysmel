@@ -134,8 +134,8 @@ printLine(withLocal2 asSSAFunction fullPrintString).
 
 
 let: #withReturn with: {:(Int32)x :: Int32 |
-    return: 2.
-    4
+    return: 2i32.
+    4i32
 }.
 printLine(withReturn).
 printLine(withReturn asSSAFunction fullPrintString).

@@ -26,6 +26,12 @@
 
 static void tuuvm_functionDefinition_ensureAnalysis(tuuvm_context_t *context, tuuvm_functionDefinition_t **functionDefinition);
 
+static tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t environment);
+static tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithDirectTypeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t environment);
+static tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithCurrentExpectedTypeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t environment);
+static tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t expectedType, tuuvm_tuple_t environment);
+static tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithExpectedTypeExpressionWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t expectedTypeExpression, tuuvm_tuple_t environment);
+
 TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t environment)
 {
     struct {
@@ -141,6 +147,106 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeAndEvaluateStringWithEnvironmen
     return gcFrame.result;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeASTIfNeededWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode_, tuuvm_tuple_t environment_)
+{
+    struct {
+        tuuvm_tuple_t astNode;
+        tuuvm_tuple_t environment;
+        tuuvm_tuple_t analysisToken;
+        tuuvm_tuple_t result;
+    } gcFrame = {
+        .astNode = astNode_,
+        .environment = environment_,
+    };
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    gcFrame.analysisToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, gcFrame.environment);
+    if(tuuvm_astNode_getAnalyzerToken(gcFrame.astNode) == gcFrame.analysisToken)
+    {
+        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return gcFrame.astNode;
+    }
+
+    gcFrame.result = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.astNode, gcFrame.environment);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
+}
+
+static tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t environment)
+{
+    return tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, astNode, TUUVM_NULL_TUPLE, environment);
+}
+
+static tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithDirectTypeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t environment)
+{
+    return tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, astNode, context->roots.directTypeInferenceType, environment);
+}
+
+static tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithCurrentExpectedTypeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t environment)
+{
+    return tuuvm_interpreter_analyzeASTIfNeededWithEnvironment(context, astNode, environment);
+}
+
+static tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode_, tuuvm_tuple_t expectedType_, tuuvm_tuple_t environment_)
+{
+    struct {
+        tuuvm_tuple_t astNode;
+        tuuvm_tuple_t expectedType;
+        tuuvm_tuple_t environment;
+
+        tuuvm_tuple_t oldExpectedType;
+        tuuvm_tuple_t nodeType;
+        tuuvm_tuple_t result;
+
+        tuuvm_tuple_t coercionExpressionType;
+    } gcFrame = {
+        .astNode = astNode_,
+        .expectedType = expectedType_,
+        .environment = environment_
+    };
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    if(!gcFrame.expectedType)
+        gcFrame.expectedType = context->roots.decayedTypeInferenceType;
+
+    // Store the old expected type.
+    gcFrame.oldExpectedType = tuuvm_analysisAndEvaluationEnvironment_getExpectedType(context, gcFrame.environment);
+    tuuvm_analysisAndEvaluationEnvironment_setExpectedType(context, gcFrame.environment, gcFrame.expectedType);
+
+    // Analyze the target node itself.
+    gcFrame.result = tuuvm_interpreter_analyzeASTIfNeededWithEnvironment(context, gcFrame.astNode, gcFrame.environment);
+
+    // Restore the old expected type.
+    tuuvm_analysisAndEvaluationEnvironment_setExpectedType(context, gcFrame.environment, gcFrame.oldExpectedType);
+
+    // We do not need to perform type checking when just passing the type.
+    if(gcFrame.expectedType != context->roots.directTypeInferenceType)
+    {
+        gcFrame.nodeType = tuuvm_astNode_getAnalyzedType(gcFrame.result);
+        bool isDecayedType = gcFrame.expectedType == context->roots.decayedTypeInferenceType;
+        if(isDecayedType)
+            gcFrame.expectedType = tuuvm_type_decay(context, gcFrame.nodeType);
+
+        if(gcFrame.expectedType && !tuuvm_type_isSubtypeOf(gcFrame.nodeType, gcFrame.expectedType))
+            gcFrame.result = tuuvm_tuple_send2(context, context->roots.coerceASTNodeWithEnvironmentSelector, gcFrame.expectedType, gcFrame.result, gcFrame.environment);
+    }
+
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
+}
+
+static tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithExpectedTypeExpressionWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t expectedTypeExpression, tuuvm_tuple_t environment)
+{
+    // Attempt to delegate first.
+    if(!expectedTypeExpression)
+        return tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, astNode, TUUVM_NULL_TUPLE, environment);
+    else if(tuuvm_astNode_isLiteralNode(context, expectedTypeExpression))
+        return tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, astNode, tuuvm_astLiteralNode_getValue(expectedTypeExpression), environment);
+
+    return tuuvm_interpreter_analyzeASTWithDirectTypeWithEnvironment(context, astNode, environment);
+}
+
 static tuuvm_tuple_t tuuvm_astSequenceNode_primitiveMacro(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
@@ -200,12 +306,13 @@ static tuuvm_tuple_t tuuvm_astSequenceNode_primitiveAnalyze(tuuvm_context_t *con
     }
 
     gcFrame.analyzedSequenceNode = (tuuvm_astSequenceNode_t *)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.analyzedSequenceNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
 
     gcFrame.analyzedPragmas = tuuvm_array_create(context, pragmaCount);
     for(size_t i = 0; i < pragmaCount; ++i)
     {
         gcFrame.pragma = tuuvm_array_at(gcFrame.pragmas, i);
-        gcFrame.analyzedPragma = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.pragma, *environment);
+        gcFrame.analyzedPragma = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.pragma, context->roots.pragmaType, *environment);
         tuuvm_array_atPut(gcFrame.analyzedPragmas, i, gcFrame.analyzedPragma);
     }
 
@@ -215,8 +322,12 @@ static tuuvm_tuple_t tuuvm_astSequenceNode_primitiveAnalyze(tuuvm_context_t *con
     for(size_t i = 0; i < expressionCount; ++i)
     {
         gcFrame.expression = tuuvm_array_at(gcFrame.expressions, i);
-        gcFrame.analyzedExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.expression, *environment);
+        if(i + 1 < expressionCount)
+            gcFrame.analyzedExpression = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.expression, context->roots.voidType, *environment);
+        else
+            gcFrame.analyzedExpression = tuuvm_interpreter_analyzeASTWithCurrentExpectedTypeWithEnvironment(context, gcFrame.expression, *environment);
 
+        // FIXME: Move this metavalue decay onto the type checker.
         if(tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedExpression))
         {
             gcFrame.elementValue = tuuvm_astLiteralNode_getValue(gcFrame.analyzedExpression);
@@ -423,12 +534,13 @@ static tuuvm_tuple_t tuuvm_astArgumentNode_primitiveAnalyze(tuuvm_context_t *con
     } gcFrame = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     gcFrame.argumentNode = (tuuvm_astArgumentNode_t*)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.argumentNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
 
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.argumentNode->super.sourcePosition);
 
     if(gcFrame.argumentNode->name)
     {
-        gcFrame.analyzedName = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.argumentNode->name, *environment);
+        gcFrame.analyzedName = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.argumentNode->name, context->roots.symbolType, *environment);
         gcFrame.argumentNode->name = gcFrame.analyzedName;
 
         if(tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedName))
@@ -436,7 +548,7 @@ static tuuvm_tuple_t tuuvm_astArgumentNode_primitiveAnalyze(tuuvm_context_t *con
     }
     if(gcFrame.argumentNode->type)
     {
-        gcFrame.analyzedType = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.argumentNode->type, *environment);
+        gcFrame.analyzedType = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.argumentNode->type, context->roots.typeType, *environment);
         gcFrame.argumentNode->type = gcFrame.analyzedType;
         if(tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedType))
             gcFrame.evaluatedType = tuuvm_interpreter_evaluateASTWithEnvironment(context, gcFrame.analyzedType, *environment);
@@ -588,12 +700,12 @@ static void tuuvm_functionDefinition_analyze(tuuvm_context_t *context, tuuvm_fun
     for(size_t i = 0; i < argumentNodeCount; ++i)
     {
         gcFrame.analyzedArgumentNode = tuuvm_array_at((*functionDefinition)->definitionArgumentNodes, i);
-        gcFrame.analyzedArgumentNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.analyzedArgumentNode, gcFrame.analysisEnvironment);
+        gcFrame.analyzedArgumentNode = tuuvm_interpreter_analyzeASTIfNeededWithEnvironment(context, gcFrame.analyzedArgumentNode, gcFrame.analysisEnvironment);
         tuuvm_array_atPut(gcFrame.analyzedArgumentsNode, i, gcFrame.analyzedArgumentNode);
     }
 
     if((*functionDefinition)->definitionResultTypeNode)
-        gcFrame.analyzedResultTypeNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, (*functionDefinition)->definitionResultTypeNode, gcFrame.analysisEnvironment);
+        gcFrame.analyzedResultTypeNode = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, (*functionDefinition)->definitionResultTypeNode, context->roots.typeType, gcFrame.analysisEnvironment);
 
     bool isVariadic = (tuuvm_tuple_size_decode((*functionDefinition)->flags) & TUUVM_FUNCTION_FLAGS_VARIADIC) != 0;
     gcFrame.analyzedType = tuuvm_type_createDependentFunctionType(context, gcFrame.analyzedArgumentsNode, isVariadic, gcFrame.analyzedResultTypeNode,
@@ -604,7 +716,7 @@ static void tuuvm_functionDefinition_analyze(tuuvm_context_t *context, tuuvm_fun
     );
     gcFrame.analyzedType = tuuvm_type_canonicalizeFunctionType(context, gcFrame.analyzedType);
 
-    gcFrame.analyzedBodyNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, (*functionDefinition)->definitionBodyNode, gcFrame.analysisEnvironment);
+    gcFrame.analyzedBodyNode = tuuvm_interpreter_analyzeASTWithExpectedTypeExpressionWithEnvironment(context, (*functionDefinition)->definitionBodyNode, gcFrame.analyzedResultTypeNode, gcFrame.analysisEnvironment);
 
     (*functionDefinition)->analyzedType = gcFrame.analyzedType;
     (*functionDefinition)->analysisEnvironment = gcFrame.analysisEnvironment;
@@ -662,6 +774,7 @@ static tuuvm_tuple_t tuuvm_astLambdaNode_primitiveAnalyze(tuuvm_context_t *conte
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     gcFrame.lambdaNode = (tuuvm_astLambdaNode_t*)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.lambdaNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.lambdaNode->super.sourcePosition);
 
     // Count the actual argument count.
@@ -1034,7 +1147,7 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveAnalyze(tuuvm_context
 
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.localDefinitionNode->super.sourcePosition);
 
-    gcFrame.analyzedNameExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.localDefinitionNode->nameExpression, *environment);
+    gcFrame.analyzedNameExpression = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.localDefinitionNode->nameExpression, context->roots.symbolType, *environment);
     gcFrame.localDefinitionNode->nameExpression = gcFrame.analyzedNameExpression;
 
     if(tuuvm_tuple_boolean_decode(gcFrame.localDefinitionNode->isMacroSymbol))
@@ -1047,7 +1160,7 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveAnalyze(tuuvm_context
 
     if(gcFrame.localDefinitionNode->typeExpression)
     {
-        gcFrame.analyzedTypeExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.localDefinitionNode->typeExpression, *environment);
+        gcFrame.analyzedTypeExpression = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.localDefinitionNode->typeExpression, context->roots.typeType, *environment);
         gcFrame.localDefinitionNode->typeExpression = gcFrame.analyzedTypeExpression;
 
         if(tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedTypeExpression))
@@ -1056,9 +1169,9 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveAnalyze(tuuvm_context
 
     if(gcFrame.localDefinitionNode->valueExpression)
     {
-        gcFrame.analyzedValueExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.localDefinitionNode->valueExpression, *environment);
+        gcFrame.analyzedValueExpression = tuuvm_interpreter_analyzeASTWithExpectedTypeExpressionWithEnvironment(context, gcFrame.localDefinitionNode->valueExpression, gcFrame.analyzedTypeExpression, *environment);
         gcFrame.localDefinitionNode->valueExpression = gcFrame.analyzedValueExpression;
-        if(!gcFrame.type && !gcFrame.analyzedTypeExpression)
+        if(!gcFrame.type && !gcFrame.analyzedTypeExpression) // FIXME: Check the correctness of this condition.
             gcFrame.type = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedValueExpression);
     }
 
@@ -1087,6 +1200,7 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveAnalyze(tuuvm_context
     {
         if(gcFrame.analyzedValueExpression)
             gcFrame.value = tuuvm_astLiteralNode_getValue(gcFrame.analyzedValueExpression);
+        // FIXME: this coercion might be not required after moving this onto the type checker.
         gcFrame.value = tuuvm_type_coerceValue(context, gcFrame.type, gcFrame.value);
         gcFrame.analyzedValueExpression = tuuvm_astLiteralNode_create(context, gcFrame.localDefinitionNode->super.sourcePosition, gcFrame.value);
         gcFrame.localBinding = tuuvm_analysisEnvironment_setNewValueBinding(context, *environment, gcFrame.localDefinitionNode->super.sourcePosition, gcFrame.name, gcFrame.value);
@@ -1245,6 +1359,7 @@ static tuuvm_tuple_t tuuvm_astIdentifierReferenceNode_primitiveAnalyze(tuuvm_con
     gcFrame.analyzedNode = (tuuvm_astIdentifierReferenceNode_t*)tuuvm_context_shallowCopy(context, (tuuvm_tuple_t)*referenceNode);
     gcFrame.analyzedNode->binding = gcFrame.binding;
     gcFrame.analyzedNode->super.analyzedType = tuuvm_symbolBinding_getType(gcFrame.binding);
+    gcFrame.analyzedNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
 
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
@@ -1359,22 +1474,23 @@ static tuuvm_tuple_t tuuvm_astIfNode_primitiveAnalyze(tuuvm_context_t *context, 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     gcFrame.ifNode = (tuuvm_astIfNode_t*)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.ifNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.ifNode->super.sourcePosition);
 
-    gcFrame.analyzedCondition = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.ifNode->conditionExpression, *environment);
+    gcFrame.analyzedCondition = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.ifNode->conditionExpression, context->roots.booleanType, *environment);
     gcFrame.ifNode->conditionExpression = gcFrame.analyzedCondition;
     if(gcFrame.ifNode->trueExpression)
     {
-        gcFrame.analyzedTrueExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.ifNode->trueExpression, *environment);
+        gcFrame.analyzedTrueExpression = tuuvm_interpreter_analyzeASTWithCurrentExpectedTypeWithEnvironment(context, gcFrame.ifNode->trueExpression, *environment);
         gcFrame.ifNode->trueExpression = gcFrame.analyzedTrueExpression;
     }
     if(gcFrame.ifNode->falseExpression)
     {
-        gcFrame.analyzedFalseExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.ifNode->falseExpression, *environment);
+        gcFrame.analyzedFalseExpression = tuuvm_interpreter_analyzeASTWithCurrentExpectedTypeWithEnvironment(context, gcFrame.ifNode->falseExpression, *environment);
         gcFrame.ifNode->falseExpression = gcFrame.analyzedFalseExpression;
     }
 
-    // Require the same, otherwise fallback to nil.
+    // Require the same, otherwise fallback to void.
     gcFrame.ifNode->super.analyzedType = TUUVM_NULL_TUPLE;
     if(gcFrame.analyzedTrueExpression && gcFrame.analyzedFalseExpression)
     {
@@ -1500,7 +1616,7 @@ static tuuvm_tuple_t tuuvm_astUnexpandedApplicationNode_primitiveAnalyze(tuuvm_c
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*unexpandedNode)->super.sourcePosition);
 
-    gcFrame.functionOrMacroExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, (*unexpandedNode)->functionOrMacroExpression, *environment);
+    gcFrame.functionOrMacroExpression = tuuvm_interpreter_analyzeASTWithDirectTypeWithEnvironment(context, (*unexpandedNode)->functionOrMacroExpression, *environment);
 
     // Is this a macro?
     bool isMacro = tuuvm_astNode_isMacroExpression(context, gcFrame.functionOrMacroExpression);
@@ -1670,24 +1786,104 @@ static tuuvm_tuple_t tuuvm_astPragmaNode_primitiveAnalyze(tuuvm_context_t *conte
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     gcFrame.pragmaNode = (tuuvm_astPragmaNode_t*)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.pragmaNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
 
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.pragmaNode->super.sourcePosition);
 
-    gcFrame.analyzedSelector = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.pragmaNode->selector, *environment);
+    gcFrame.analyzedSelector = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.pragmaNode->selector, context->roots.symbolType, *environment);
 
     size_t pragmaArgumentCount = tuuvm_array_getSize(gcFrame.pragmaNode->arguments);
     gcFrame.analyzedArguments = tuuvm_array_create(context, pragmaArgumentCount);
     for(size_t i = 0; i < pragmaArgumentCount; ++i)
     {
         gcFrame.argumentNode = tuuvm_array_at(gcFrame.pragmaNode->arguments, i);
-        gcFrame.analyzedArgument = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.argumentNode, *environment);
+        gcFrame.analyzedArgument = tuuvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.argumentNode, *environment);
         tuuvm_array_atPut(gcFrame.analyzedArguments, i, gcFrame.analyzedArgument);
     }
 
     gcFrame.pragmaNode->arguments = gcFrame.analyzedArguments;
+    gcFrame.pragmaNode->super.analyzedType = context->roots.pragmaType;
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return (tuuvm_tuple_t)gcFrame.pragmaNode;
+}
+
+
+static tuuvm_tuple_t tuuvm_astFunctionApplicationNode_optimizePureApplication(tuuvm_context_t *context, tuuvm_astFunctionApplicationNode_t **applicationNode)
+{
+    struct {
+        tuuvm_tuple_t argumentNode;
+        
+        tuuvm_tuple_t literalFunction;
+        tuuvm_tuple_t pureCallResult;
+        tuuvm_tuple_t argumentValue;
+        tuuvm_tuple_t functionType;
+    } gcFrame = {0};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    bool canOptimizeCall = false;
+    if(tuuvm_astNode_isLiteralNode(context, (*applicationNode)->functionExpression))
+    {
+        gcFrame.literalFunction = tuuvm_astLiteralNode_getValue((*applicationNode)->functionExpression);
+        canOptimizeCall = tuuvm_function_isPure(context, gcFrame.literalFunction);
+    }
+
+    size_t applicationArgumentCount = tuuvm_array_getSize((*applicationNode)->arguments);
+    for(size_t i = 0; canOptimizeCall && i < applicationArgumentCount ; ++i)
+    {
+        gcFrame.argumentNode = tuuvm_array_at((*applicationNode)->arguments, i);
+        canOptimizeCall = canOptimizeCall && tuuvm_astNode_isLiteralNode(context, gcFrame.argumentNode);
+    }
+
+    if(!canOptimizeCall)
+    {
+        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return (tuuvm_tuple_t)*applicationNode;
+    }
+
+    // Optimize pure function call
+    tuuvm_functionCallFrameStack_t callFrameStack = {0};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(callFrameStackRecord, callFrameStack.gcRoots);
+
+    tuuvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.literalFunction, applicationArgumentCount);
+
+    for(size_t i = 0; i < applicationArgumentCount; ++i)
+    {
+        gcFrame.argumentNode = tuuvm_array_at((*applicationNode)->arguments, i);
+        gcFrame.argumentValue = tuuvm_astLiteralNode_getValue(gcFrame.argumentNode);
+        tuuvm_functionCallFrameStack_push(&callFrameStack, gcFrame.argumentValue);
+    }
+
+    TUUVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
+    gcFrame.pureCallResult = tuuvm_functionCallFrameStack_finish(context, &callFrameStack, false);
+
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return tuuvm_astLiteralNode_create(context, (*applicationNode)->super.sourcePosition, gcFrame.pureCallResult);
+}
+
+static tuuvm_tuple_t tuuvm_astFunctionApplicationNode_defaultTypeCheck(tuuvm_context_t *context, tuuvm_astFunctionApplicationNode_t **applicationNode, tuuvm_tuple_t *environment)
+{
+    struct {
+        tuuvm_tuple_t argumentNode;
+        tuuvm_tuple_t analyzedArgument;
+        tuuvm_tuple_t analyzedArguments;
+    } gcFrame = {0};
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    size_t applicationArgumentCount = tuuvm_array_getSize((*applicationNode)->arguments);
+    gcFrame.analyzedArguments = tuuvm_array_create(context, applicationArgumentCount);
+    for(size_t i = 0; i < applicationArgumentCount; ++i)
+    {
+        gcFrame.argumentNode = tuuvm_array_at((*applicationNode)->arguments, i);
+        gcFrame.analyzedArgument = tuuvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.argumentNode, *environment);
+        tuuvm_array_atPut(gcFrame.analyzedArguments, i, gcFrame.analyzedArgument);
+    }
+
+    (*applicationNode)->arguments = gcFrame.analyzedArguments;
+
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return tuuvm_astFunctionApplicationNode_optimizePureApplication(context, applicationNode);
 }
 
 static tuuvm_tuple_t tuuvm_astFunctionApplicationNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -1710,64 +1906,32 @@ static tuuvm_tuple_t tuuvm_astFunctionApplicationNode_primitiveAnalyze(tuuvm_con
         tuuvm_tuple_t pureCallResult;
         tuuvm_tuple_t argumentValue;
         tuuvm_tuple_t functionType;
+
+        tuuvm_tuple_t typeCheckFunction;
+
+        tuuvm_tuple_t result;
     } gcFrame = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     gcFrame.applicationNode = (tuuvm_astFunctionApplicationNode_t*)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.applicationNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
 
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.applicationNode->super.sourcePosition);
 
-    gcFrame.analyzedFunctionExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.applicationNode->functionExpression, *environment);
+    gcFrame.analyzedFunctionExpression = tuuvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.applicationNode->functionExpression, *environment);
     gcFrame.applicationNode->functionExpression = gcFrame.analyzedFunctionExpression;
-
-    bool canOptimizeCall = false;
-    if(tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedFunctionExpression))
-    {
-        gcFrame.literalFunction = tuuvm_astLiteralNode_getValue(gcFrame.analyzedFunctionExpression);
-        canOptimizeCall = tuuvm_function_isPure(context, gcFrame.literalFunction);
-    }
-
-    size_t applicationArgumentCount = tuuvm_array_getSize(gcFrame.applicationNode->arguments);
-    gcFrame.analyzedArguments = tuuvm_array_create(context, applicationArgumentCount);
-    for(size_t i = 0; i < applicationArgumentCount; ++i)
-    {
-        gcFrame.argumentNode = tuuvm_array_at(gcFrame.applicationNode->arguments, i);
-        gcFrame.analyzedArgument = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.argumentNode, *environment);
-        canOptimizeCall = canOptimizeCall && tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedArgument);
-        tuuvm_array_atPut(gcFrame.analyzedArguments, i, gcFrame.analyzedArgument);
-    }
-
-    gcFrame.applicationNode->arguments = gcFrame.analyzedArguments;
-
-    if(canOptimizeCall)
-    {
-        tuuvm_functionCallFrameStack_t callFrameStack = {0};
-        TUUVM_STACKFRAME_PUSH_GC_ROOTS(callFrameStackRecord, callFrameStack.gcRoots);
-
-        tuuvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.literalFunction, applicationArgumentCount);
-
-        for(size_t i = 0; i < applicationArgumentCount; ++i)
-        {
-            gcFrame.analyzedArgument = tuuvm_array_at(gcFrame.analyzedArguments, i);
-            gcFrame.argumentValue = tuuvm_astLiteralNode_getValue(gcFrame.analyzedArgument);
-            tuuvm_functionCallFrameStack_push(&callFrameStack, gcFrame.argumentValue);
-        }
-
-        TUUVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
-        gcFrame.pureCallResult = tuuvm_functionCallFrameStack_finish(context, &callFrameStack, false);
-
-        TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
-        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-        return tuuvm_astLiteralNode_create(context, gcFrame.applicationNode->super.sourcePosition, gcFrame.pureCallResult);
-    }
-
-    // Perform type checking.
     gcFrame.functionType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedFunctionExpression);
+
+    // Type check the function application.
+    gcFrame.typeCheckFunction = tuuvm_type_getTypeCheckFunctionApplicationWithEnvironmentNode(context, tuuvm_tuple_getType(context, gcFrame.functionType));
+    if(gcFrame.typeCheckFunction)
+        gcFrame.result = tuuvm_function_apply3(context, gcFrame.typeCheckFunction, gcFrame.functionType, (tuuvm_tuple_t)gcFrame.applicationNode, *environment);
+    else
+        gcFrame.result = tuuvm_astFunctionApplicationNode_defaultTypeCheck(context, &gcFrame.applicationNode, environment);
+
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-
-    // Basic type checking.
-    return tuuvm_type_typeCheckFunctionApplicationNode(context, gcFrame.functionType, (tuuvm_tuple_t)gcFrame.applicationNode, *environment);
+    return gcFrame.result;
 }
 
 static tuuvm_tuple_t tuuvm_astFunctionApplicationNode_primitiveAnalyzeAndEvaluate(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -1822,6 +1986,20 @@ static tuuvm_tuple_t tuuvm_astFunctionApplicationNode_primitiveEvaluate(tuuvm_co
     size_t applicationArgumentCount = tuuvm_array_getSize((*applicationNode)->arguments);
     gcFrame.function = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*applicationNode)->functionExpression, *environment);
 
+    // For performance reason handle this dummy case in a special way.
+    if(gcFrame.function && gcFrame.function == context->roots.anyValueToVoidPrimitive)
+    {
+        for(size_t i = 0; i < applicationArgumentCount; ++i)
+        {
+            gcFrame.argumentNode = tuuvm_array_at((*applicationNode)->arguments, i);
+            tuuvm_interpreter_evaluateASTWithEnvironment(context, gcFrame.argumentNode, *environment);
+        }
+
+        TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return TUUVM_VOID_TUPLE;
+    }
+
     tuuvm_functionCallFrameStack_t callFrameStack = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(callFrameStackRecord, callFrameStack.gcRoots);
     tuuvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.function, applicationArgumentCount);
@@ -1855,11 +2033,12 @@ static tuuvm_tuple_t tuuvm_astLexicalBlockNode_primitiveAnalyze(tuuvm_context_t 
     } gcFrame = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     gcFrame.lexicalBlockNode = (tuuvm_astLexicalBlockNode_t*)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.lexicalBlockNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
 
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.lexicalBlockNode->super.sourcePosition);
 
     gcFrame.childEnvironment = tuuvm_localAnalysisEnvironment_create(context, *environment);
-    gcFrame.analyzedBodyNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.lexicalBlockNode->body, gcFrame.childEnvironment);
+    gcFrame.analyzedBodyNode = tuuvm_interpreter_analyzeASTWithCurrentExpectedTypeWithEnvironment(context, gcFrame.lexicalBlockNode->body, gcFrame.childEnvironment);
     gcFrame.lexicalBlockNode->body = gcFrame.analyzedBodyNode;
     gcFrame.lexicalBlockNode->bodyEnvironment = gcFrame.childEnvironment;
     gcFrame.lexicalBlockNode->super.analyzedType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedBodyNode);
@@ -1940,12 +2119,13 @@ static tuuvm_tuple_t tuuvm_astMakeByteArrayNode_primitiveAnalyze(tuuvm_context_t
     }
 
     gcFrame.analyzedTupleNode = (tuuvm_astMakeByteArrayNode_t *)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.analyzedTupleNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
     
     gcFrame.analyzedExpressions = tuuvm_array_create(context, expressionCount);
     for(size_t i = 0; i < expressionCount; ++i)
     {
         gcFrame.expression = tuuvm_array_at(gcFrame.expressions, i);
-        gcFrame.analyzedExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.expression, *environment);
+        gcFrame.analyzedExpression = tuuvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.expression, *environment);
         tuuvm_array_atPut(gcFrame.analyzedExpressions, i, gcFrame.analyzedExpression);
     }
 
@@ -2051,12 +2231,13 @@ static tuuvm_tuple_t tuuvm_astMakeTupleNode_primitiveAnalyze(tuuvm_context_t *co
     }
 
     gcFrame.analyzedTupleNode = (tuuvm_astMakeTupleNode_t *)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.analyzedTupleNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
     
     gcFrame.analyzedExpressions = tuuvm_array_create(context, expressionCount);
     for(size_t i = 0; i < expressionCount; ++i)
     {
         gcFrame.expression = tuuvm_array_at(gcFrame.expressions, i);
-        gcFrame.analyzedExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.expression, *environment);
+        gcFrame.analyzedExpression = tuuvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.expression, *environment);
         tuuvm_array_atPut(gcFrame.analyzedExpressions, i, gcFrame.analyzedExpression);
     }
 
@@ -2177,13 +2358,14 @@ static tuuvm_tuple_t tuuvm_astMessageChainNode_primitiveAnalyze(tuuvm_context_t 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     
     gcFrame.chainNode = (tuuvm_astMessageChainNode_t*)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.chainNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.chainNode->super.sourcePosition);
 
     size_t chainedMessageCount = tuuvm_array_getSize(gcFrame.chainNode->messages);
 
     if(gcFrame.chainNode->receiver)
     {
-        gcFrame.analyzedReceiver = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.chainNode->receiver, *environment);
+        gcFrame.analyzedReceiver = tuuvm_interpreter_analyzeASTWithDirectTypeWithEnvironment(context, gcFrame.chainNode->receiver, *environment);
         gcFrame.chainNode->receiver = gcFrame.analyzedReceiver;
 
         // Inline the object with lookup starting from node.
@@ -2562,18 +2744,22 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyze(tuuvm_context_t *
         tuuvm_tuple_t newArgumentNodes;
         tuuvm_tuple_t unexpandedApplicationNode;
 
+        tuuvm_tuple_t argumentNode;
+        tuuvm_tuple_t analyzedArgumentNode;
+
         tuuvm_tuple_t macroContext;
         tuuvm_tuple_t expansionResult;
     } gcFrame = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     gcFrame.sendNode = (tuuvm_astMessageSendNode_t*)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.sendNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.sendNode->super.sourcePosition);
 
     bool isDoesNotUnderstand = false;
     if(gcFrame.sendNode->receiver)
     {
-        gcFrame.analyzedReceiver = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.sendNode->receiver, *environment);
+        gcFrame.analyzedReceiver = tuuvm_interpreter_analyzeASTWithDirectTypeWithEnvironment(context, gcFrame.sendNode->receiver, *environment);
         gcFrame.sendNode->receiver = gcFrame.analyzedReceiver;
         gcFrame.receiverType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedReceiver);
 
@@ -2685,8 +2871,9 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyze(tuuvm_context_t *
     gcFrame.analyzedArguments = tuuvm_array_create(context, applicationArgumentCount);
     for(size_t i = 0; i < applicationArgumentCount; ++i)
     {
-        tuuvm_tuple_t argumentNode = tuuvm_array_at(gcFrame.sendNode->arguments, i);
-        tuuvm_array_atPut(gcFrame.analyzedArguments, i, tuuvm_interpreter_analyzeASTWithEnvironment(context, argumentNode, *environment));
+        gcFrame.argumentNode = tuuvm_array_at(gcFrame.sendNode->arguments, i);
+        gcFrame.analyzedArgumentNode = tuuvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.argumentNode, *environment);
+        tuuvm_array_atPut(gcFrame.analyzedArguments, i, gcFrame.analyzedArgumentNode);
     }
 
     gcFrame.sendNode->arguments = gcFrame.analyzedArguments;
@@ -2989,13 +3176,14 @@ static tuuvm_tuple_t tuuvm_astObjectWithLookupStartingFrom_primitiveAnalyze(tuuv
     } gcFrame = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     gcFrame.objectWithLookupStartingFromNode = (tuuvm_astObjectWithLookupStartingFromNode_t*)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.objectWithLookupStartingFromNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
 
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.objectWithLookupStartingFromNode->super.sourcePosition);
 
-    gcFrame.analyzedObjectExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.objectWithLookupStartingFromNode->objectExpression, *environment);
+    gcFrame.analyzedObjectExpression = tuuvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.objectWithLookupStartingFromNode->objectExpression, *environment);
     gcFrame.objectWithLookupStartingFromNode->objectExpression = gcFrame.analyzedObjectExpression;
 
-    gcFrame.analyzedTypeExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.objectWithLookupStartingFromNode->typeExpression, *environment);
+    gcFrame.analyzedTypeExpression = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.objectWithLookupStartingFromNode->typeExpression, context->roots.typeType, *environment);
     gcFrame.objectWithLookupStartingFromNode->typeExpression = gcFrame.analyzedTypeExpression;
 
     gcFrame.objectWithLookupStartingFromNode->super.analyzedType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedObjectExpression);
@@ -3060,24 +3248,25 @@ static tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_primitiveAnalyze(tuuvm_con
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     gcFrame.doWhileNode = (tuuvm_astDoWhileContinueWithNode_t*)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.doWhileNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
     gcFrame.doWhileNode->super.analyzedType = context->roots.voidType;
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.doWhileNode->super.sourcePosition);
 
     if(gcFrame.doWhileNode->bodyExpression)
     {
-        gcFrame.analyzedBodyExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.doWhileNode->bodyExpression, *environment);
+        gcFrame.analyzedBodyExpression = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.doWhileNode->bodyExpression, context->roots.voidType, *environment);
         gcFrame.doWhileNode->bodyExpression = gcFrame.analyzedBodyExpression;
     }
 
     if(gcFrame.doWhileNode->conditionExpression)
     {
-        gcFrame.analyzedConditionExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.doWhileNode->conditionExpression, *environment);
+        gcFrame.analyzedConditionExpression = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.doWhileNode->conditionExpression, context->roots.booleanType, *environment);
         gcFrame.doWhileNode->conditionExpression = gcFrame.analyzedConditionExpression;
     }
 
     if(gcFrame.doWhileNode->continueExpression)
     {
-        gcFrame.analyzedContinueExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.doWhileNode->continueExpression, *environment);
+        gcFrame.analyzedContinueExpression = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.doWhileNode->continueExpression, context->roots.voidType, *environment);
         gcFrame.doWhileNode->continueExpression = gcFrame.analyzedContinueExpression;
     }
 
@@ -3184,25 +3373,26 @@ static tuuvm_tuple_t tuuvm_astWhileContinueWithNode_primitiveAnalyze(tuuvm_conte
     } gcFrame = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     gcFrame.whileNode = (tuuvm_astWhileContinueWithNode_t*)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.whileNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
     gcFrame.whileNode->super.analyzedType = context->roots.voidType;
 
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.whileNode->super.sourcePosition);
     
     if(gcFrame.whileNode->conditionExpression)
     {
-        gcFrame.analyzedConditionExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.whileNode->conditionExpression, *environment);
+        gcFrame.analyzedConditionExpression = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.whileNode->conditionExpression, context->roots.booleanType, *environment);
         gcFrame.whileNode->conditionExpression = gcFrame.analyzedConditionExpression;
     }
 
     if(gcFrame.whileNode->bodyExpression)
     {
-        gcFrame.analyzedBodyExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.whileNode->bodyExpression, *environment);
+        gcFrame.analyzedBodyExpression = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.whileNode->bodyExpression, context->roots.voidType, *environment);
         gcFrame.whileNode->bodyExpression = gcFrame.analyzedBodyExpression;
     }
 
     if(gcFrame.whileNode->continueExpression)
     {
-        gcFrame.analyzedContinueExpression = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.whileNode->continueExpression, *environment);
+        gcFrame.analyzedContinueExpression = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.whileNode->continueExpression, context->roots.voidType, *environment);
         gcFrame.whileNode->continueExpression = gcFrame.analyzedContinueExpression;
     }
     
@@ -3560,6 +3750,34 @@ static tuuvm_tuple_t tuuvm_astReturnNode_primitiveAnalyzeAndEvaluate(tuuvm_conte
     return TUUVM_NULL_TUPLE;
 }
 
+static tuuvm_tuple_t tuuvm_interpreter_evaluateArgumentNodeTypeInEnvironment(tuuvm_context_t *context, tuuvm_tuple_t argumentNode, tuuvm_tuple_t *activationEnvironment)
+{
+    struct {
+        tuuvm_astArgumentNode_t *argumentNode;
+        tuuvm_tuple_t expectedType;
+    } gcFrame = {
+        .argumentNode = (tuuvm_astArgumentNode_t*)argumentNode,
+    };
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.argumentNode->super.sourcePosition);
+
+    if(gcFrame.argumentNode->type)
+        gcFrame.expectedType = tuuvm_interpreter_evaluateASTWithEnvironment(context, gcFrame.argumentNode->type, *activationEnvironment);
+
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+
+    return gcFrame.expectedType;
+}
+
+static void tuuvm_interpreter_bindArgumentNodeValueInEnvironment(tuuvm_context_t *context, size_t argumentNodeIndex, tuuvm_tuple_t *activationEnvironment, tuuvm_tuple_t argumentValue)
+{
+    (void)context;
+    tuuvm_functionActivationEnvironment_t **activationEnvironmentObject = (tuuvm_functionActivationEnvironment_t **)activationEnvironment;
+    tuuvm_array_atPut((*activationEnvironmentObject)->valueVector, argumentNodeIndex, argumentValue);
+}
+
 static void tuuvm_interpreter_evaluateArgumentNodeInEnvironment(tuuvm_context_t *context, size_t argumentNodeIndex, tuuvm_tuple_t argumentNode, tuuvm_tuple_t *activationEnvironment, tuuvm_tuple_t *argumentValue)
 {
     struct {
@@ -3581,8 +3799,7 @@ static void tuuvm_interpreter_evaluateArgumentNodeInEnvironment(tuuvm_context_t 
             gcFrame.value = tuuvm_type_coerceValue(context, gcFrame.expectedType, gcFrame.value);
     }
 
-    tuuvm_functionActivationEnvironment_t **activationEnvironmentObject = (tuuvm_functionActivationEnvironment_t **)activationEnvironment;
-    tuuvm_array_atPut((*activationEnvironmentObject)->valueVector, argumentNodeIndex, gcFrame.value);
+    tuuvm_interpreter_bindArgumentNodeValueInEnvironment(context, argumentNodeIndex, activationEnvironment, gcFrame.value);
 
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -3613,30 +3830,45 @@ static tuuvm_tuple_t tuuvm_simpleFunctionType_primitiveTypeCheckFunctionApplicat
     (void)closure;
     if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
 
-    // FIXME: Implement this in a much more proper way.
     tuuvm_simpleFunctionType_t **simpleFunctionType = (tuuvm_simpleFunctionType_t**)&arguments[0];
     tuuvm_astFunctionApplicationNode_t **functionApplicationNode = (tuuvm_astFunctionApplicationNode_t**)&arguments[1];
+    tuuvm_tuple_t *environment = &arguments[2];
 
-    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*functionApplicationNode)->super.sourcePosition);
+    struct {
+        tuuvm_tuple_t argumentNode;
+        tuuvm_tuple_t analyzedArgument;
+        tuuvm_tuple_t analyzedArguments;
+        tuuvm_tuple_t expectedArgumentType;
+    } gcFrame = {0};
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     bool isVariadic = tuuvm_tuple_boolean_decode((*simpleFunctionType)->isVariadic);
     size_t typeArgumentCount = tuuvm_array_getSize((*simpleFunctionType)->argumentTypes);
     size_t applicationArgumentCount = tuuvm_array_getSize((*functionApplicationNode)->arguments);
+    if(isVariadic && typeArgumentCount == 0)
+        tuuvm_error("Variadic applications require at least a single argument.");
 
-    if(isVariadic && applicationArgumentCount < typeArgumentCount)
+    size_t directApplicationArgumentCount = isVariadic ? typeArgumentCount - 1 : typeArgumentCount;
+    if(isVariadic && applicationArgumentCount < directApplicationArgumentCount)
         tuuvm_error("Missing required arguments.");
     else if(!isVariadic && applicationArgumentCount != typeArgumentCount)
         tuuvm_error("Expected number of arguments is mismatching.");
 
-    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    gcFrame.analyzedArguments = tuuvm_array_create(context, applicationArgumentCount);
+    for(size_t i = 0; i < directApplicationArgumentCount; ++i)
+    {
+        gcFrame.expectedArgumentType = tuuvm_array_at((*simpleFunctionType)->argumentTypes, i);
+        gcFrame.argumentNode = tuuvm_array_at((*functionApplicationNode)->arguments, i);
+        gcFrame.analyzedArgument = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.argumentNode, gcFrame.expectedArgumentType, *environment);
+        tuuvm_array_atPut(gcFrame.analyzedArguments, i, gcFrame.analyzedArgument);
+    }
 
-    if(!(*simpleFunctionType)->resultType || 
-        (*functionApplicationNode)->super.analyzedType == (*simpleFunctionType)->resultType)
-        return (tuuvm_tuple_t)*functionApplicationNode;
+    (*functionApplicationNode)->arguments = gcFrame.analyzedArguments;
+    (*functionApplicationNode)->super.analyzedType = (*simpleFunctionType)->resultType;
 
-    tuuvm_astFunctionApplicationNode_t *typeCheckedNode = (tuuvm_astFunctionApplicationNode_t *)tuuvm_context_shallowCopy(context, (tuuvm_tuple_t)*functionApplicationNode);
-    typeCheckedNode->super.analyzedType = (*simpleFunctionType)->resultType;
-    return (tuuvm_tuple_t)typeCheckedNode;
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return tuuvm_astFunctionApplicationNode_optimizePureApplication(context, functionApplicationNode);
 }
 
 static tuuvm_tuple_t tuuvm_dependentFunctionType_getOrCreateApplicationValueForNode(tuuvm_context_t *context, tuuvm_tuple_t node)
@@ -3668,7 +3900,7 @@ static tuuvm_tuple_t tuuvm_dependentFunctionType_primitiveTypeCheckFunctionAppli
 
     tuuvm_dependentFunctionType_t **dependentFunctionType = (tuuvm_dependentFunctionType_t **)&arguments[0];
     tuuvm_tuple_t *node = &arguments[1];
-    //tuuvm_tuple_t *environment = &arguments[2];
+    tuuvm_tuple_t *environment = &arguments[2];
 
     struct {
         tuuvm_astFunctionApplicationNode_t *functionApplicationNode;
@@ -3680,6 +3912,9 @@ static tuuvm_tuple_t tuuvm_dependentFunctionType_primitiveTypeCheckFunctionAppli
         tuuvm_tuple_t applicationArgumentValue;
         tuuvm_tuple_t resultType;
 
+        tuuvm_tuple_t analyzedArgument;
+        tuuvm_tuple_t analyzedArguments;
+        tuuvm_tuple_t expectedArgumentType;
     } gcFrame = {
         .functionApplicationNode = (tuuvm_astFunctionApplicationNode_t*)*node,
     };
@@ -3702,6 +3937,8 @@ static tuuvm_tuple_t tuuvm_dependentFunctionType_primitiveTypeCheckFunctionAppli
 
     size_t applicationArgumentCount = tuuvm_array_getSize(gcFrame.functionApplicationNode->arguments);
     size_t sourceArgumentIndex = 0;
+
+    gcFrame.analyzedArguments = tuuvm_array_create(context, applicationArgumentCount);
     for(size_t i = 0; i < directEvaluationArgumentNodeCount; ++i)
     {
         gcFrame.argumentNode = tuuvm_array_at((*dependentFunctionType)->argumentNodes, i);
@@ -3715,8 +3952,11 @@ static tuuvm_tuple_t tuuvm_dependentFunctionType_primitiveTypeCheckFunctionAppli
                 tuuvm_error("Function application is missing required arguments.");
 
             gcFrame.applicationArgumentNode = tuuvm_array_at(gcFrame.functionApplicationNode->arguments, sourceArgumentIndex);
-            gcFrame.applicationArgumentValue = tuuvm_dependentFunctionType_getOrCreateApplicationValueForNode(context, gcFrame.applicationArgumentNode);
-            tuuvm_interpreter_evaluateArgumentNodeInEnvironment(context, i, gcFrame.argumentNode, &gcFrame.applicationEnvironment, &gcFrame.applicationArgumentValue);
+            gcFrame.expectedArgumentType = tuuvm_interpreter_evaluateArgumentNodeTypeInEnvironment(context, gcFrame.argumentNode, &gcFrame.applicationEnvironment);
+            gcFrame.analyzedArgument = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.applicationArgumentNode, gcFrame.expectedArgumentType, *environment);
+            tuuvm_array_atPut(gcFrame.analyzedArguments, sourceArgumentIndex, gcFrame.analyzedArgument);
+            gcFrame.applicationArgumentValue = tuuvm_dependentFunctionType_getOrCreateApplicationValueForNode(context, gcFrame.analyzedArgument);
+            tuuvm_interpreter_bindArgumentNodeValueInEnvironment(context, i, &gcFrame.applicationEnvironment, gcFrame.applicationArgumentValue);
             ++sourceArgumentIndex;
         }
     }
@@ -3724,19 +3964,23 @@ static tuuvm_tuple_t tuuvm_dependentFunctionType_primitiveTypeCheckFunctionAppli
     if(!isVariadic && sourceArgumentIndex != applicationArgumentCount)
         tuuvm_error("Function application is not receiving the expected number of arguments.");
 
+    for(size_t i = sourceArgumentIndex; i < applicationArgumentCount; ++i)
+    {
+        gcFrame.applicationArgumentNode = tuuvm_array_at(gcFrame.functionApplicationNode->arguments, i);
+        gcFrame.analyzedArgument = tuuvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.applicationArgumentNode, *environment);
+        tuuvm_array_atPut(gcFrame.analyzedArguments, i, gcFrame.analyzedArgument);
+    }
+
+    gcFrame.functionApplicationNode->arguments = gcFrame.analyzedArguments;
+
     if((*dependentFunctionType)->resultTypeNode)
         gcFrame.resultType = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*dependentFunctionType)->resultTypeNode, gcFrame.applicationEnvironment);
-
-    if(gcFrame.resultType && gcFrame.functionApplicationNode->super.analyzedType != gcFrame.resultType)
-    {
-        gcFrame.functionApplicationNode = (tuuvm_astFunctionApplicationNode_t*)tuuvm_context_shallowCopy(context, (tuuvm_tuple_t)gcFrame.functionApplicationNode);
-        gcFrame.functionApplicationNode->super.analyzedType = gcFrame.resultType;
-    }
+    gcFrame.functionApplicationNode->super.analyzedType = gcFrame.resultType;
 
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&functionActivationRecord);  
-    return (tuuvm_tuple_t)gcFrame.functionApplicationNode;
+    return tuuvm_astFunctionApplicationNode_optimizePureApplication(context, (tuuvm_astFunctionApplicationNode_t**)node);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_t *context, tuuvm_tuple_t *function, size_t argumentCount, tuuvm_tuple_t *arguments)

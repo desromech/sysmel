@@ -6,7 +6,7 @@
 #include "tuuvm/context.h"
 #include "heap.h"
 
-#define GLOBAL_LOOKUP_CACHE_ENTRY_COUNT 1024
+#define GLOBAL_LOOKUP_CACHE_ENTRY_COUNT 256
 
 typedef struct tuuvm_globalLookupCacheEntry_s
 {
@@ -44,6 +44,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t pointerTypeTemplate;
     tuuvm_tuple_t referenceTypeTemplate;
     tuuvm_tuple_t simpleFunctionTypeTemplate;
+    tuuvm_tuple_t anyValueToVoidPrimitive;
 
     tuuvm_tuple_t applyWithoutArgumentsSelector;
     tuuvm_tuple_t applyWithArgumentsSelector;
@@ -66,6 +67,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t emptyByteArrayConstant;
 
     tuuvm_tuple_t coerceValueSelector;
+    tuuvm_tuple_t coerceASTNodeWithEnvironmentSelector;
     tuuvm_tuple_t typeCheckFunctionApplicationWithEnvironmentSelector;
 
     tuuvm_tuple_t anyValueType;
@@ -110,6 +112,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t pointerLikeType;
     tuuvm_tuple_t pointerType;
     tuuvm_tuple_t positiveIntegerType;
+    tuuvm_tuple_t pragmaType;
     tuuvm_tuple_t primitiveValueType;
     tuuvm_tuple_t programEntityType;
     tuuvm_tuple_t referenceType;
@@ -143,6 +146,14 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t weakKeyDictionaryType;
     tuuvm_tuple_t weakValueAssociationType;
     tuuvm_tuple_t weakValueDictionaryType;
+
+    tuuvm_tuple_t controlFlowEscapeType;
+    tuuvm_tuple_t controlFlowBreakType;
+    tuuvm_tuple_t controlFlowContinueType;
+    tuuvm_tuple_t controlFlowReturnType;
+    tuuvm_tuple_t controlFlowNoReturnType;
+    tuuvm_tuple_t decayedTypeInferenceType;
+    tuuvm_tuple_t directTypeInferenceType;
 
     tuuvm_tuple_t primitiveNumberType;
     tuuvm_tuple_t primitiveIntegerType;

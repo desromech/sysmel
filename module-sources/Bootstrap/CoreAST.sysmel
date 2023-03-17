@@ -57,7 +57,13 @@ ASTFunctionApplicationNode
     withSelector: #transformWith: addMethod: {:(ASTFunctionApplicationNode)self :aBlock :: Void |
         if: (self functionExpression isNotNil) then: (self functionExpression: aBlock(self functionExpression)).
         self arguments: (self arguments collect: aBlock).
-    }.
+    };
+    withSelector: #printOn: addMethod: {:(ASTFunctionApplicationNode)self :(Stream)stream :: Void |
+        stream print: self class; 
+            nextPutAll: " analyzedType: "; print: self analyzedType;
+            nextPutAll: " functionExpression: ("; print: self functionExpression;
+            nextPutAll: ") arguments: "; print: self arguments
+    }..
 
 ASTLambdaNode
     withSelector: #childrenDo: addMethod: {:(ASTLambdaNode)self :aBlock :: Void |
@@ -89,7 +95,13 @@ ASTLiteralNode
     withSelector: #hasLiteralValueEqualTo: addMethod: {:(ASTLiteralNode)self :expectedValue :: Boolean | self value = expectedValue };
 
     withSelector: #childrenDo: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | };
-    withSelector: #transformWith: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | }.
+    withSelector: #transformWith: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | };
+
+    withSelector: #printOn: addMethod: {:(ASTLiteralNode)self :(Stream)stream :: Void |
+        stream print: self class; 
+            nextPutAll: " analyzedType: "; print: self analyzedType;
+            nextPutAll: " value: "; print: self value
+    }.
 
 ASTLocalDefinitionNode
     withSelector: #childrenDo: addMethod: {:(ASTLocalDefinitionNode)self :aBlock :: Void |
@@ -99,6 +111,12 @@ ASTLocalDefinitionNode
     withSelector: #transformWith: addMethod: {:(ASTLocalDefinitionNode)self :aBlock :: Void |
         if: (self nameExpression isNotNil) then: (self nameExpression: aBlock(self nameExpression)).
         if: (self valueExpression isNotNil) then: (self valueExpression: aBlock(self valueExpression)).
+    };
+    withSelector: #printOn: addMethod: {:(ASTLocalDefinitionNode)self :(Stream)stream :: Void |
+        stream print: self class; 
+            nextPutAll: " analyzedType: "; print: self analyzedType;
+            nextPutAll: " nameExpression: ("; print: self nameExpression;
+            nextPutAll: ") valueExpression: ("; print: self valueExpression; nextPut: ')'
     }.
 
 ASTIdentifierReferenceNode
@@ -109,6 +127,12 @@ ASTIdentifierReferenceNode
             sourcePosition: self sourcePosition;
             value: self value;
             yourself
+    };
+    withSelector: #printOn: addMethod: {:(ASTIdentifierReferenceNode)self :(Stream)stream :: Void |
+        stream print: self class; 
+            nextPutAll: " analyzedType: "; print: self analyzedType;
+            nextPutAll: " value: ("; print: self value;
+            nextPutAll: ") binding: ("; print: self binding; nextPut: ')'
     }.
 
 ASTIfNode
@@ -169,6 +193,13 @@ ASTMessageSendNode
         if: (self receiverLookupType isNotNil) then: (self receiverLookupType: aBlock(self receiverLookupType)).
         if: (self selector isNotNil) then: (self selector: aBlock(self selector)).
         self arguments: (self arguments collect: aBlock)
+    };
+    withSelector: #printOn: addMethod: {:(ASTMessageSendNode)self :(Stream)stream :: Void |
+        stream print: self class; 
+            nextPutAll: " analyzedType: "; print: self analyzedType;
+            nextPutAll: " receiver: ("; print: self receiver;
+            nextPutAll: ") selector: ("; print: self selector;
+            nextPutAll: ") arguments: "; print: self arguments
     }.
 
 ASTMessageChainNode
@@ -238,6 +269,12 @@ ASTSequenceNode
     withSelector: #transformWith: addMethod: {:(ASTSequenceNode)self :aBlock :: Void |
         self pragmas: (self pragmas collect: aBlock).
         self expressions: (self expressions collect: aBlock)
+    };
+    withSelector: #printOn: addMethod: {:(ASTSequenceNode)self :(Stream)stream :: Void |
+        stream print: self class; 
+            nextPutAll: " analyzedType: "; print: self analyzedType;
+            nextPutAll: " pragmas: "; print: self pragmas;
+            nextPutAll: " expressions: "; print: self expressions
     }.
 
 ASTUnexpandedApplicationNode

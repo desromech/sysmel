@@ -13,7 +13,7 @@ typedef struct tuuvm_message_s
 } tuuvm_message_t;
 
 /**
- * Creates a macro context.
+ * Creates a message.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_message_create(tuuvm_context_t *context, tuuvm_tuple_t selector, tuuvm_tuple_t arguments);
 

@@ -71,7 +71,7 @@ SSAFunction definition: {
         stream print: self.
         stream nextPutAll: " captures [".
         self captures doWithIndex: {:(SSAValue)capture :(Size)index :: Void |
-            index > 0 ifTrue: (stream nextPutAll: ", ").
+            index > 0sz ifTrue: (stream nextPutAll: ", ").
             stream print: capture
         }.
 
@@ -759,9 +759,14 @@ ASTFunctionApplicationNode extend: {
                 context builder store: value in: reference.
                 reference
             } ifFalse: {
-                context builder call: functionExpression
-                    arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
-                    resultType: self analyzedType
+                primitiveName == #Void::fromAnyValue ifTrue: {
+                    self arguments do: {:(ASTNode)each :: Void | each generateSSAValueWith: context }.
+                    context builder literal: void
+                } ifFalse: {
+                    context builder call: functionExpression
+                        arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
+                        resultType: self analyzedType
+                }
             }.
         }.
 

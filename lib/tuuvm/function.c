@@ -180,8 +180,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
     gcFrame.functionType = tuuvm_tuple_getType(context, gcFrame.function);
     if(tuuvm_tuple_isKindOf(context, gcFrame.function, context->roots.functionType))
     {
-        bool noTypecheck = applicationFlags & TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK;
-        bool passThroughReferences = applicationFlags & TUUVM_FUNCTION_APPLICATION_FLAGS_PASS_THROUGH_REFERENCES;
+        size_t functionFlags = tuuvm_function_getFlags(context, gcFrame.function);
+        bool noTypecheck = (applicationFlags & TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK) | (functionFlags & TUUVM_FUNCTION_FLAGS_NO_TYPECHECK_ARGUMENTS);
+        bool passThroughReferences = (applicationFlags & TUUVM_FUNCTION_APPLICATION_FLAGS_PASS_THROUGH_REFERENCES);
 
         tuuvm_function_t **functionObject = (tuuvm_function_t**)&gcFrame.function;
         tuuvm_functionEntryPoint_t nativeEntryPoint = NULL;
@@ -197,7 +198,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
         }
         else if(shouldLoadReferences)
         {
-            bool allowReferenceInReceiver = (tuuvm_function_getFlags(context, gcFrame.function) & TUUVM_FUNCTION_FLAGS_ALLOW_REFERENCE_IN_RECEIVER) != 0;
+            bool allowReferenceInReceiver = (functionFlags & TUUVM_FUNCTION_FLAGS_ALLOW_REFERENCE_IN_RECEIVER) != 0;
             for(size_t i = allowReferenceInReceiver ? 1 : 0; i < argumentCount; ++i)
                 arguments[i] = tuuvm_type_coerceValue(context, TUUVM_NULL_TUPLE, arguments[i]);
         }
@@ -293,8 +294,18 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
 TUUVM_API tuuvm_tuple_t tuuvm_tuple_send(tuuvm_context_t *context, tuuvm_tuple_t selector, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags)
 {
     TUUVM_ASSERT(argumentCount > 0); // We need a receiver for performing the lookup.
-    tuuvm_tuple_t method = tuuvm_type_lookupSelector(context, tuuvm_tuple_getType(context, arguments[0]), selector);
-    return tuuvm_function_apply(context, method, argumentCount, arguments, applicationFlags);
+    struct {
+        tuuvm_tuple_t method;
+        tuuvm_tuple_t receiverType;
+    } gcFrame = {
+    };
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    gcFrame.receiverType = tuuvm_tuple_getType(context, arguments[0]);
+    gcFrame.method = tuuvm_type_lookupSelector(context, gcFrame.receiverType, selector);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    
+    return tuuvm_function_apply(context, gcFrame.method, argumentCount, arguments, applicationFlags);
 }
 
 TUUVM_API void tuuvm_functionCallFrameStack_begin(tuuvm_context_t *context, tuuvm_functionCallFrameStack_t *callFrameStack, tuuvm_tuple_t function, size_t argumentCount)

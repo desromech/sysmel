@@ -21,6 +21,7 @@ set(tuuvm_sources
     macro.c
     message.c
     parser.c
+    pragma.c
     primitiveIntegers.c
     scanner.c
     set.c

@@ -1,5 +1,7 @@
 #ifndef _WIN32
+#ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE // for realpath
+#endif
 #endif
 
 #include "tuuvm/assert.h"

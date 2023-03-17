@@ -20,6 +20,7 @@ typedef struct tuuvm_analysisAndEvaluationEnvironment_s
 {
     tuuvm_environment_t super;
     tuuvm_tuple_t analyzerToken;
+    tuuvm_tuple_t expectedType;
     tuuvm_tuple_t returnTarget;
     tuuvm_tuple_t breakTarget;
     tuuvm_tuple_t continueTarget;
@@ -305,6 +306,16 @@ TUUVM_API void tuuvm_analysisAndEvaluationEnvironment_setContinueTarget(tuuvm_co
  * Sets the return target.
  */ 
 TUUVM_API void tuuvm_analysisAndEvaluationEnvironment_setReturnTarget(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t returnTarget);
+
+/**
+ * Gets the expected type.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_analysisAndEvaluationEnvironment_getExpectedType(tuuvm_context_t *context, tuuvm_tuple_t environment);
+
+/**
+ * Sets the expected type.
+ */ 
+TUUVM_API void tuuvm_analysisAndEvaluationEnvironment_setExpectedType(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t newExpectedType);
 
 /**
  * Clears the unwinding record fields in the environment

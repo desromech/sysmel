@@ -410,12 +410,39 @@ TUUVM_API bool tuuvm_astNode_isWhileContinueWithNode(tuuvm_context_t *context, t
 /**
  * Gets the source position from the ast node.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_astNode_getSourcePosition(tuuvm_tuple_t node);
+TUUVM_INLINE tuuvm_tuple_t tuuvm_astNode_getSourcePosition(tuuvm_tuple_t node)
+{
+    if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_astNode_t*)node)->sourcePosition;
+}
 
 /**
  * Gets the analyzed type from the ast node.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_astNode_getAnalyzedType(tuuvm_tuple_t node);
+TUUVM_INLINE tuuvm_tuple_t tuuvm_astNode_getAnalyzedType(tuuvm_tuple_t node)
+{
+    if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_astNode_t*)node)->analyzedType;
+}
+
+/**
+ * Gets the analyzer token from the ast node.
+ */ 
+TUUVM_INLINE tuuvm_tuple_t tuuvm_astNode_getAnalyzerToken(tuuvm_tuple_t node)
+{
+    if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_astNode_t*)node)->analyzerToken;
+}
+
+/**
+ * Sets the analyzer token in the ast node.
+ */ 
+TUUVM_INLINE tuuvm_tuple_t tuuvm_astNode_setAnalyzerToken(tuuvm_tuple_t node, tuuvm_tuple_t token)
+{
+    if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
+    ((tuuvm_astNode_t*)node)->analyzerToken = token;
+}
+
 
 /**
  * Creates an argument node

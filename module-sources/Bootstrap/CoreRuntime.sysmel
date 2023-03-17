@@ -134,32 +134,76 @@ Object
     }.
 
 Type
+    withSelector: #isSubtypeOf: addMethod: {:(Type)self :(Type)expectedParent :: Boolean |
+        if: self == expectedParent
+        then: true
+        else: {
+            let: #supertype with: self supertype.
+            if: supertype ~~ nil
+                then: (supertype isSubtypeOf: expectedParent )
+                else: false
+        }
+    } makePure;
+    withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(Type)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
+        if: (self isSubtypeOf: targetType)
+        then: astNode
+        else: error((("Cannot coerce node from type " -- self printString) -- " into type ") -- targetType printString)
+    };
+    withSelector: #coerceASTNode:withEnvironment: addMethod: {:(Type)self :(ASTNode)astNode :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
+        let: #sourceType with: astNode analyzedType.
+        if: (if: sourceType ~~ nil then: sourceType ~= self else: false)
+        then: (sourceType coerceASTNode: astNode into: self withEnvironment: environment)
+        else: astNode
+    };
+    withSelector: #isReferenceType addMethod: {:(Type)self :: Boolean | false } makePure;
+
     withSelector: #addFlags: addMethod: {:(Type)self :(Size)flag :: Void |
         self flags: self flags | flag
     };
+    withSelector: #hasFlag: addMethod: {:(Type)self :(Size)flag :: Boolean |
+        (self flags & flag) ~= 0sz
+    };
+
     withSelector: #makeNullable addMethod: {:(Type)self :: Type |
         self addFlags: (1sz << 0sz).
         self
     };
+    withSelector: #isNullable addMethod: {:(Type)self :: Boolean |
+        self hasFlag: (1sz << 0sz).
+    };
+
     withSelector: #makeBytes addMethod: {:(Type)self :: Type |
         self addFlags: (1sz << 1sz).
         self
     };
+    withSelector: #isBytes addMethod: {:(Type)self :: Boolean |
+        self hasFlag: (1sz << 1sz).
+    };
+
     withSelector: #makeImmediate addMethod: {:(Type)self :: Type |
         self addFlags: (1sz << 2sz).
         self
     };
+    withSelector: #isImmediate addMethod: {:(Type)self :: Boolean |
+        self hasFlag: (1sz << 2sz).
+    };
+
     withSelector: #makeFinal addMethod: {:(Type)self :: Type |
         self addFlags: (1sz << 3sz).
         self
     };
+    withSelector: #isImmediate addMethod: {:(Type)self :: Boolean |
+        self hasFlag: (1sz << 3sz).
+    };
+
     withSelector: #makeAbstract addMethod: {:(Type)self :: Type |
         self addFlags: (1sz << 4sz).
         self
     };
-    withSelector: #hasBytesContent addMethod: {:(Type)self :: Boolean |
-        (self flags & 2sz) ~= 0sz
+    withSelector: #isAbstract addMethod: {:(Type)self :: Boolean |
+        self hasFlag: (1sz << 4sz).
     };
+
     withSelector: #addTypeSlot: addMethod: {:(Type)self :(TypeSlot)extraSlot :: Void |
         if: self totalSlotCount ~~ nil then: (self error: "Cannot add type slot when the total slot count has already been computed").
         if: self pendingSlots == nil then: (self pendingSlots: ArrayList new).
@@ -195,14 +239,14 @@ Type
         } else: totalSlotCount
     };
     withSelector: #basicAllocate addMethod: {:(Type)self :: self |
-        let: #result with: (if: self hasBytesContent
+        let: #result with: (if: self isBytes
             then: RawTuple::byteNew(0sz)
             else: RawTuple::new(self validTotalSlotCount)).
         (RawTuple::type:)(result, self).
         result
     };
     withSelector: #basicAllocate: addMethod: {:(Type)self :(Size)variableSize :: self |
-        let: #result with: (if: self hasBytesContent
+        let: #result with: (if: self isBytes
             then: RawTuple::byteNew(variableSize)
             else: RawTuple::new(self validTotalSlotCount + variableSize)).
         (RawTuple::type:)(result, self).
@@ -233,17 +277,42 @@ Type
                 then: (supertype lookupSelector: selector)
                 else: (nil)
         }
-    };
-    withSelector: #isSubtypeOf: addMethod: {:(Type)self :(Type)expectedParent :: Boolean |
-        if: self == expectedParent
-        then: true
-        else: {
-            let: #supertype with: self supertype.
-            if: supertype ~~ nil
-                then: (supertype isSubtypeOf: expectedParent )
-                else: false
-        }
-    } makePure.
+    }.
+
+UndefinedObject class
+    withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(Type)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
+        if: targetType isNullable
+        then: astNode
+        else: error("Cannot coerce nil into non-nullable type " -- targetType printString)
+    }.
+
+ReferenceType
+    withSelector: #isReferenceType addMethod: {:(Type)self :: Boolean | true } makePure;
+    withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(Type)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
+
+        if: targetType isReferenceType then: {
+            error("TODO: Implement coercion between two reference types.")
+        } else: {
+            let: #sourcePosition with: astNode sourcePosition.
+            let: #analyzerToken with: environment analyzerToken.
+            let: #loadValueFunction with: self loadValueFunction.
+            let: #baseType with: self baseType.
+
+            targetType
+                coerceASTNode: (ASTFunctionApplicationNode new
+                    sourcePosition: astNode sourcePosition;
+                    functionExpression: (ASTLiteralNode new
+                        value: loadValueFunction;
+                        analyzedType: loadValueFunction __type__;
+                        analyzerToken: analyzerToken;
+                        yourself);
+                    arguments: (astNode,);
+                    analyzedType: self baseType;
+                    analyzerToken: analyzerToken;
+                    yourself)
+                withEnvironment: environment
+        }.
+    }.
 
 AnyValue
     withSelector: #&& addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)other :: ASTIfNode |
@@ -410,7 +479,6 @@ Function
     withSelector: #hasFlag: addMethod: {:(Function)self :(Size)flag :: Boolean |
         (self flags & flag) ~= 0sz
     };
-
     withSelector: #isMacro addMethod: {:(Function)self :: Boolean |
         self hasFlag: (1sz << 0sz)
     };
@@ -958,6 +1026,11 @@ SourcePosition
             print: self endLine;
             nextPut: '.';
             print: self endColumn
+    }.
+
+GeneratedSymbol
+    withSelector: #printOn: addMethod: {:(GeneratedSymbol)self :(Stream)stream :: Void |
+        stream print: self class; nextPutAll: " value: ("; print: self value; nextPut: ')'
     }.
 
 Class

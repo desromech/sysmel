@@ -1,3 +1,9 @@
+#ifndef _WIN32
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE // for realpath
+#endif
+#endif
+
 #include "array.c"
 #include "arrayList.c"
 #include "arraySlice.c"
@@ -20,6 +26,7 @@
 #include "macro.c"
 #include "message.c"
 #include "parser.c"
+#include "pragma.c"
 #include "primitiveIntegers.c"
 #include "scanner.c"
 #include "set.c"

@@ -393,6 +393,24 @@ TUUVM_API void tuuvm_analysisAndEvaluationEnvironment_setReturnTarget(tuuvm_cont
     environmentObject->returnTarget = returnTarget;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_analysisAndEvaluationEnvironment_getExpectedType(tuuvm_context_t *context, tuuvm_tuple_t environment)
+{
+    if(!tuuvm_environment_isAnalysisAndEvaluationEnvironment(context, environment))
+        return TUUVM_NULL_TUPLE;
+
+    tuuvm_analysisAndEvaluationEnvironment_t *environmentObject = (tuuvm_analysisAndEvaluationEnvironment_t*)environment;
+    return environmentObject->expectedType;
+}
+
+TUUVM_API void tuuvm_analysisAndEvaluationEnvironment_setExpectedType(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t newExpectedType)
+{
+    if(!tuuvm_environment_isAnalysisAndEvaluationEnvironment(context, environment))
+        return;
+
+    tuuvm_analysisAndEvaluationEnvironment_t *environmentObject = (tuuvm_analysisAndEvaluationEnvironment_t*)environment;
+    environmentObject->expectedType = newExpectedType;
+}
+
 TUUVM_API void tuuvm_analysisAndEvaluationEnvironment_clearUnwindingRecords(tuuvm_context_t *context, tuuvm_tuple_t environment)
 {
     if(!tuuvm_environment_isAnalysisAndEvaluationEnvironment(context, environment))

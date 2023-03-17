@@ -26,7 +26,8 @@ typedef enum tuuvm_functionFlags_e
     TUUVM_FUNCTION_FLAGS_MEMOIZED = 1<<9,
     TUUVM_FUNCTION_FLAGS_TEMPLATE = 1<<10,
 
-    TUUVM_FUNCTION_FLAGS_ALLOW_REFERENCE_IN_RECEIVER = 1<<11,
+    TUUVM_FUNCTION_FLAGS_NO_TYPECHECK_ARGUMENTS = 1<<11,
+    TUUVM_FUNCTION_FLAGS_ALLOW_REFERENCE_IN_RECEIVER = 1<<12,
 } tuuvm_functionFlags_t;
 
 typedef enum tuuvm_functionApplicationFlags_e

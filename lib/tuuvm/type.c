@@ -1,8 +1,10 @@
 #include "tuuvm/type.h"
 #include "tuuvm/array.h"
 #include "tuuvm/assert.h"
+#include "tuuvm/ast.h"
 #include "tuuvm/dictionary.h"
 #include "tuuvm/errors.h"
+#include "tuuvm/environment.h"
 #include "tuuvm/function.h"
 #include "tuuvm/stackFrame.h"
 #include "tuuvm/string.h"
@@ -152,13 +154,60 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createSimpleFunctionType(tuuvm_context_t *con
     return tuuvm_function_apply3(context, context->roots.simpleFunctionTypeTemplate, argumentTypes, tuuvm_tuple_boolean_encode(isVariadic), resultType);
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_type_createSimpleFunctionTypeWithArguments0(tuuvm_context_t *context, tuuvm_tuple_t resultType)
+{
+    struct {
+        tuuvm_tuple_t arguments;
+        tuuvm_tuple_t result;
+    } gcFrame = {};
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    gcFrame.arguments = tuuvm_array_create(context, 0);
+    gcFrame.result = tuuvm_type_createSimpleFunctionType(context, gcFrame.arguments, false, resultType);
+
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_type_createSimpleFunctionTypeWithArguments1(tuuvm_context_t *context, tuuvm_tuple_t argument, tuuvm_tuple_t resultType)
+{
+    struct {
+        tuuvm_tuple_t arguments;
+        tuuvm_tuple_t result;
+    } gcFrame = {};
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    gcFrame.arguments = tuuvm_array_create(context, 1);
+    tuuvm_array_atPut(gcFrame.arguments, 0, argument);
+
+    gcFrame.result = tuuvm_type_createSimpleFunctionType(context, gcFrame.arguments, false, resultType);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_type_createSimpleFunctionTypeWithArguments2(tuuvm_context_t *context, tuuvm_tuple_t argument0, tuuvm_tuple_t argument1, tuuvm_tuple_t resultType)
+{
+    struct {
+        tuuvm_tuple_t arguments;
+        tuuvm_tuple_t result;
+    } gcFrame = {};
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    gcFrame.arguments = tuuvm_array_create(context, 2);
+    tuuvm_array_atPut(gcFrame.arguments, 0, argument0);
+    tuuvm_array_atPut(gcFrame.arguments, 1, argument1);
+
+    gcFrame.result = tuuvm_type_createSimpleFunctionType(context, gcFrame.arguments, false, resultType);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
+}
+
 static tuuvm_tuple_t tuuvm_pointerLikeType_createPointerLikeLoadFunction(tuuvm_context_t *context, tuuvm_tuple_t pointerLikeType_, tuuvm_tuple_t baseType_, size_t extraFlags)
 {
     struct {
         tuuvm_tuple_t pointerLikeType;
         tuuvm_tuple_t baseType;
         tuuvm_tuple_t function;
-        tuuvm_tuple_t functionTypeArguments;
         tuuvm_tuple_t functionType;
     } gcFrame = {
         .pointerLikeType = pointerLikeType_,
@@ -169,10 +218,7 @@ static tuuvm_tuple_t tuuvm_pointerLikeType_createPointerLikeLoadFunction(tuuvm_c
     gcFrame.function = tuuvm_context_shallowCopy(context, context->roots.pointerLikeLoadPrimitive);
     tuuvm_function_addFlags(context, gcFrame.function, extraFlags);
 
-    gcFrame.functionTypeArguments = tuuvm_array_create(context, 1);
-    tuuvm_array_atPut(gcFrame.functionTypeArguments, 0, gcFrame.pointerLikeType);
-
-    gcFrame.functionType = tuuvm_type_createSimpleFunctionType(context, gcFrame.functionTypeArguments, false, gcFrame.baseType);
+    gcFrame.functionType = tuuvm_type_createSimpleFunctionTypeWithArguments1(context, gcFrame.pointerLikeType, gcFrame.baseType);
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)gcFrame.function, gcFrame.functionType);
 
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -185,7 +231,6 @@ static tuuvm_tuple_t tuuvm_pointerLikeType_createPointerLikeStoreFunction(tuuvm_
         tuuvm_tuple_t pointerLikeType;
         tuuvm_tuple_t baseType;
         tuuvm_tuple_t function;
-        tuuvm_tuple_t functionTypeArguments;
         tuuvm_tuple_t functionType;
     } gcFrame = {
         .pointerLikeType = pointerLikeType_,
@@ -196,11 +241,7 @@ static tuuvm_tuple_t tuuvm_pointerLikeType_createPointerLikeStoreFunction(tuuvm_
     gcFrame.function = tuuvm_context_shallowCopy(context, context->roots.pointerLikeStorePrimitive);
     tuuvm_function_addFlags(context, gcFrame.function, extraFlags);
 
-    gcFrame.functionTypeArguments = tuuvm_array_create(context, 2);
-    tuuvm_array_atPut(gcFrame.functionTypeArguments, 0, gcFrame.pointerLikeType);
-    tuuvm_array_atPut(gcFrame.functionTypeArguments, 1, gcFrame.baseType);
-
-    gcFrame.functionType = tuuvm_type_createSimpleFunctionType(context, gcFrame.functionTypeArguments, false, gcFrame.pointerLikeType);
+    gcFrame.functionType = tuuvm_type_createSimpleFunctionTypeWithArguments2(context, gcFrame.pointerLikeType, gcFrame.baseType, gcFrame.pointerLikeType);
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)gcFrame.function, gcFrame.functionType);
 
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -696,6 +737,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValue(tuuvm_context_t *context, tuuvm_t
         return coercedDummyValue;
     }
     
+    tuuvm_tuple_t typeString = tuuvm_tuple_printString(context, gcFrame.type);
+    fprintf(stderr, "Cannot perform coercion of value into the required type: " TUUVM_STRING_PRINTF_FORMAT "\n", TUUVM_STRING_PRINTF_ARG(typeString));
     tuuvm_error("Cannot perform coercion of value into the required type.");
     return TUUVM_VOID_TUPLE;
 }
@@ -706,16 +749,13 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValuePassingReferences(tuuvm_context_t 
         return value;
     return tuuvm_type_coerceValue(context, type, value);
 }
-TUUVM_API tuuvm_tuple_t tuuvm_type_typeCheckFunctionApplicationNode(tuuvm_context_t *context, tuuvm_tuple_t functionType, tuuvm_tuple_t functionApplicationNode, tuuvm_tuple_t environment)
+
+TUUVM_API tuuvm_tuple_t tuuvm_type_decay(tuuvm_context_t *context, tuuvm_tuple_t type)
 {
-    if(!functionType)
-        return functionApplicationNode;
+    if(tuuvm_tuple_isKindOf(context, type, context->roots.referenceType))
+        return ((tuuvm_referenceType_t*)type)->super.baseType;
 
-    tuuvm_tuple_t function = tuuvm_type_getTypeCheckFunctionApplicationWithEnvironmentNode(context, tuuvm_tuple_getType(context, functionType));
-    if(function)
-        return tuuvm_function_apply3(context, function, functionType, functionApplicationNode, environment);
-
-    return functionApplicationNode;
+    return type;
 }
 
 static tuuvm_tuple_t tuuvm_type_primitive_flushLookupSelector(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -723,12 +763,15 @@ static tuuvm_tuple_t tuuvm_type_primitive_flushLookupSelector(tuuvm_context_t *c
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
 
-    tuuvm_tuple_t *type = &arguments[0];
+    //tuuvm_tuple_t *type = &arguments[0];
     tuuvm_tuple_t *selector = &arguments[1];
 
-    size_t cacheEntryIndex = computeLookupCacheEntryIndexFor(*type, *selector);
-    tuuvm_globalLookupCacheEntry_t *cacheEntry = context->roots.globalMethodLookupCache + cacheEntryIndex;
-    memset(cacheEntry, 0, sizeof(tuuvm_globalLookupCacheEntry_t));
+    for(size_t i = 0; i < GLOBAL_LOOKUP_CACHE_ENTRY_COUNT; ++i)
+    {
+        tuuvm_globalLookupCacheEntry_t *cacheEntry = context->roots.globalMethodLookupCache + i;
+        if(cacheEntry->selector == *selector)
+            memset(cacheEntry, 0, sizeof(tuuvm_globalLookupCacheEntry_t));
+    }
 
     return TUUVM_VOID_TUPLE;
 }
@@ -841,6 +884,59 @@ static tuuvm_tuple_t tuuvm_type_primitive_pointerLikeStore(tuuvm_context_t *cont
     return *pointerLikeValue;
 }
 
+static tuuvm_tuple_t tuuvm_void_primitive_anyValueToVoid(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    (void)argumentCount;
+    (void)arguments;
+    return TUUVM_VOID_TUPLE;
+}
+
+static tuuvm_tuple_t tuuvm_type_primitive_coerceASTNodeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+
+    tuuvm_tuple_t *targetType = &arguments[0];
+    tuuvm_tuple_t *astNode = &arguments[1];
+    tuuvm_tuple_t *environment = &arguments[2];
+
+    (void)targetType;
+    (void)environment;
+
+    tuuvm_tuple_t sourceType = tuuvm_astNode_getAnalyzedType(*astNode);
+    if(sourceType)
+        tuuvm_error("Cannot perform the type coercion.");
+
+    return *astNode;
+}
+
+static tuuvm_tuple_t tuuvm_void_primitive_coerceASTNodeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+
+    tuuvm_tuple_t *targetType = &arguments[0];
+    tuuvm_tuple_t *astNode = &arguments[1];
+    tuuvm_tuple_t *environment = &arguments[2];
+
+    if(*targetType != context->roots.voidType) tuuvm_error("Invalid type conversion requested.");
+
+    tuuvm_tuple_t sourcePosition = tuuvm_astNode_getSourcePosition(*astNode);
+    tuuvm_tuple_t functionLiteral = tuuvm_astLiteralNode_create(context, sourcePosition, context->roots.anyValueToVoidPrimitive);
+
+    tuuvm_tuple_t applicationArguments = tuuvm_array_create(context, 1);
+    tuuvm_array_atPut(applicationArguments, 0, *astNode);        
+
+    tuuvm_astNode_t *functionApplication = (tuuvm_astNode_t*)tuuvm_astFunctionApplicationNode_create(context, sourcePosition, functionLiteral, applicationArguments);
+    functionApplication->analyzedType = *targetType;
+    functionApplication->analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
+    return (tuuvm_tuple_t)functionApplication;
+}
+
 void tuuvm_type_registerPrimitives(void)
 {
     tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_createSimpleFunctionType, "SimpleFunctionTypeTemplate");
@@ -849,8 +945,12 @@ void tuuvm_type_registerPrimitives(void)
 
     tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_pointerLikeLoad, "PointerLikeType::load");
     tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_pointerLikeStore, "PointerLikeType::store:");
+    
+    tuuvm_primitiveTable_registerFunction(tuuvm_void_primitive_anyValueToVoid, "Void::fromAnyValue");
+    tuuvm_primitiveTable_registerFunction(tuuvm_void_primitive_coerceASTNodeWithEnvironment, "Void::coerceASTNode:withEnvironment:");
 
     tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_coerceValue, "Type::coerceValue:into:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_coerceASTNodeWithEnvironment, "Type::coerceASTNode:withEnvironment:");
 
     tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_flushLookupSelector, "Type::flushLookupSelector:");
     tuuvm_primitiveTable_registerFunction(tuuvm_type_primitive_flushMacroLookupSelector, "Type::flushMacroLookupSelector:");
@@ -864,8 +964,12 @@ void tuuvm_type_setupPrimitives(tuuvm_context_t *context)
     context->roots.referenceTypeTemplate = tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "ReferenceTypeTemplate", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_MEMOIZED | TUUVM_FUNCTION_FLAGS_TEMPLATE, NULL, tuuvm_type_primitive_createReferenceType);
     context->roots.pointerLikeLoadPrimitive = tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "PointerLikeType::load", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_pointerLikeLoad);
     context->roots.pointerLikeStorePrimitive = tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "PointerLikeType::store:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_pointerLikeStore);
-
+    
+    context->roots.anyValueToVoidPrimitive = tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "Void::fromAnyValue", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_NO_TYPECHECK_ARGUMENTS, NULL, tuuvm_void_primitive_anyValueToVoid);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Void::coerceASTNode:withEnvironment:", tuuvm_tuple_getType(context, context->roots.voidType), "coerceASTNode:withEnvironment:", 3, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_void_primitive_coerceASTNodeWithEnvironment);
+    
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "Type::coerceValue:into:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_coerceValue);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Type::coerceASTNode:withEnvironment:", context->roots.typeType, "coerceASTNode:withEnvironment:", 3, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_type_primitive_coerceASTNodeWithEnvironment);
 
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Type::flushLookupSelector:", context->roots.typeType, "flushLookupSelector:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_flushLookupSelector);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Type::flushMacroLookupSelector:", context->roots.typeType, "flushMacroLookupSelector:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_flushMacroLookupSelector);

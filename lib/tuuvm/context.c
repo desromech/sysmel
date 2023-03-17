@@ -395,6 +395,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.applyWithArgumentsSelector = tuuvm_symbol_internWithCString(context, "():");
 
     context->roots.coerceValueSelector = tuuvm_symbol_internWithCString(context, "coerceValue:");
+    context->roots.coerceASTNodeWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "coerceASTNode:withEnvironment:");
     context->roots.typeCheckFunctionApplicationWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "typeCheckFunctionApplication:withEnvironment:");
 
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "nil"), TUUVM_NULL_TUPLE);
@@ -485,6 +486,16 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.stringType = tuuvm_context_createIntrinsicClass(context, "String", context->roots.arrayedCollectionType, NULL);
     tuuvm_typeAndMetatype_setFlags(context, context->roots.stringType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_BYTES | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
 
+    // Special types used during semantic analysis.
+    context->roots.controlFlowEscapeType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "ControlFlowEscapeType", context->roots.voidType);
+    context->roots.controlFlowBreakType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "ControlFlowBreakType", context->roots.controlFlowEscapeType);
+    context->roots.controlFlowContinueType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "ControlFlowContinueType", context->roots.controlFlowEscapeType);
+    context->roots.controlFlowReturnType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "ControlFlowReturnType", context->roots.controlFlowEscapeType);
+    context->roots.controlFlowNoReturnType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "ControlFlowNoReturnType", context->roots.controlFlowEscapeType);
+
+    context->roots.decayedTypeInferenceType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "DecayedTypeInferenceType", TUUVM_NULL_TUPLE);
+    context->roots.directTypeInferenceType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "DirectTypeInferenceType", TUUVM_NULL_TUPLE);
+
     // Set the name of the root basic type.
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.anyValueType, "AnyValue", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.objectType, "Object", TUUVM_NULL_TUPLE, NULL);
@@ -540,6 +551,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.namespaceType, "Namespace", TUUVM_NULL_TUPLE,
         NULL);
     context->roots.analysisAndEvaluationEnvironmentType = tuuvm_context_createIntrinsicClass(context, "AnalysisAndEvaluationEnvironment", context->roots.environmentType,
+        "analyzerToken", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.objectType,
+        "expectedType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         "returnTarget", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "breakTarget", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "continueTarget", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
@@ -699,7 +712,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
-    context->roots.generatedSymbolType = tuuvm_context_createIntrinsicClass(context, "GeneratedSymbol", TUUVM_NULL_TUPLE,
+    context->roots.generatedSymbolType = tuuvm_context_createIntrinsicClass(context, "GeneratedSymbol", context->roots.symbolType,
         "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
         "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
@@ -711,6 +724,10 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     context->roots.messageType = tuuvm_context_createIntrinsicClass(context, "Message", TUUVM_NULL_TUPLE,
+        "selector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        NULL);
+    context->roots.pragmaType = tuuvm_context_createIntrinsicClass(context, "Pragma", TUUVM_NULL_TUPLE,
         "selector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);

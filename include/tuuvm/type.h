@@ -198,6 +198,21 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createDependentFunctionType(tuuvm_context_t *
 TUUVM_API tuuvm_tuple_t tuuvm_type_createSimpleFunctionType(tuuvm_context_t *context, tuuvm_tuple_t argumentTypes, bool isVariadic, tuuvm_tuple_t resultType);
 
 /**
+ * Creates a simple function type with no arguments.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_createSimpleFunctionTypeWithArguments0(tuuvm_context_t *context, tuuvm_tuple_t resultType);
+
+/**
+ * Creates a simple function type with one arguments.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_createSimpleFunctionTypeWithArguments1(tuuvm_context_t *context, tuuvm_tuple_t argument, tuuvm_tuple_t resultType);
+
+/**
+ * Creates a simple function type with two arguments.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_createSimpleFunctionTypeWithArguments2(tuuvm_context_t *context, tuuvm_tuple_t argument0, tuuvm_tuple_t argument1, tuuvm_tuple_t resultType);
+
+/**
  * Creates a pointer type.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_type_createPointerType(tuuvm_context_t *context, tuuvm_tuple_t baseType, tuuvm_tuple_t addressSpace);
@@ -570,13 +585,13 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValue(tuuvm_context_t *context, tuuvm_t
 TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValuePassingReferences(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t value);
 
 /**
- * Performs type checking on a function application node.
- */
-TUUVM_API tuuvm_tuple_t tuuvm_type_typeCheckFunctionApplicationNode(tuuvm_context_t *context, tuuvm_tuple_t functionType, tuuvm_tuple_t functionApplicationNode, tuuvm_tuple_t environment);
-
-/**
  * Loads the value from a pointer like type instance.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_pointerLikeType_load(tuuvm_context_t *context, tuuvm_tuple_t pointerLikeValue);
+
+/**
+ * Gets a decayed version of the type.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_decay(tuuvm_context_t *context, tuuvm_tuple_t type);
 
 #endif //TUUVM_TYPE_H
