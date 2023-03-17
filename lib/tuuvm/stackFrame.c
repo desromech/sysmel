@@ -1,6 +1,6 @@
 #include "tuuvm/stackFrame.h"
+#include "tuuvm/array.h"
 #include "tuuvm/arrayList.h"
-#include "tuuvm/arraySlice.h"
 #include "tuuvm/errors.h"
 #include "tuuvm/environment.h"
 #include "tuuvm/function.h"
@@ -280,15 +280,15 @@ TUUVM_API tuuvm_tuple_t tuuvm_stackFrame_buildStackTraceUpTo(tuuvm_stackFrameRec
     if(currentSourcePosition)
         tuuvm_arrayList_add(context, arrayList, currentSourcePosition);
 
-    return tuuvm_arrayList_asArraySlice(context, arrayList);
+    return tuuvm_arrayList_asArray(context, arrayList);
 }
 
 TUUVM_API void tuuvm_stackFrame_printStackTrace(tuuvm_context_t *context, tuuvm_tuple_t stackTrace)
 {
-    size_t stackTraceSize = tuuvm_arraySlice_getSize(stackTrace);
+    size_t stackTraceSize = tuuvm_array_getSize(stackTrace);
     for(size_t i = 0; i < stackTraceSize; ++i)
     {
-        tuuvm_tuple_t stackTraceRecord = tuuvm_arraySlice_at(stackTrace, i);
+        tuuvm_tuple_t stackTraceRecord = tuuvm_array_at(stackTrace, i);
         tuuvm_tuple_t stackTraceRecordString = tuuvm_tuple_asString(context, stackTraceRecord);
         fprintf(stderr, TUUVM_STRING_PRINTF_FORMAT "\n", TUUVM_STRING_PRINTF_ARG(stackTraceRecordString));
     }

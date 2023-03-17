@@ -11,7 +11,8 @@ typedef struct tuuvm_astNode_s
 {
     tuuvm_tuple_header_t header;
     tuuvm_tuple_t sourcePosition;
-    tuuvm_tuple_t analyzedType; // Placeholder for typechecker. Unused by base interpreter.
+    tuuvm_tuple_t analyzerToken;
+    tuuvm_tuple_t analyzedType;
 } tuuvm_astNode_t;
 
 typedef struct tuuvm_astArgumentNode_s
@@ -34,6 +35,13 @@ typedef struct tuuvm_astBreakNode_s
 {
     tuuvm_astNode_t super;
 } tuuvm_astBreakNode_t;
+
+typedef struct tuuvm_astCoerceValueNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t typeExpression;
+    tuuvm_tuple_t valueExpression;
+} tuuvm_astCoerceValueNode_t;
 
 typedef struct tuuvm_astContinueNode_s
 {
@@ -252,6 +260,11 @@ TUUVM_API bool tuuvm_astNode_isBreakNode(tuuvm_context_t *context, tuuvm_tuple_t
 /**
  * Is this a continue node?
  */ 
+TUUVM_API bool tuuvm_astNode_isCoerceValueNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this a continue node?
+ */ 
 TUUVM_API bool tuuvm_astNode_isContinueNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
 
 /**
@@ -427,6 +440,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_astBinaryExpressionSequenceNode_create(tuuvm_conte
  * Creates a break node.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astBreakNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition);
+
+/**
+ * Creates a coerce value node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astCoerceValueNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t typeExpression, tuuvm_tuple_t valueExpression);
 
 /**
  * Creates a continue node.

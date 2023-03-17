@@ -751,6 +751,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.astNodeType, "ASTNode", TUUVM_NULL_TUPLE,
         "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sourcePositionType,
+        "analyzerToken", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "analyzedType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         NULL);
     context->roots.astArgumentNodeType = tuuvm_context_createIntrinsicClass(context, "ASTArgumentNode", context->roots.astNodeType,
@@ -764,6 +765,10 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "operations", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     context->roots.astBreakNodeType = tuuvm_context_createIntrinsicClass(context, "ASTBreakNode", context->roots.astNodeType,
+        NULL);
+    context->roots.astCoerceValueNodeType = tuuvm_context_createIntrinsicClass(context, "ASTCoerceValueNode", context->roots.astNodeType,
+        "typeExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "valueExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     context->roots.astContinueNodeType = tuuvm_context_createIntrinsicClass(context, "ASTContinueNode", context->roots.astNodeType,
         NULL);

@@ -180,6 +180,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t astArgumentNodeType;
     tuuvm_tuple_t astBinaryExpressionSequenceNodeType;
     tuuvm_tuple_t astBreakNodeType;
+    tuuvm_tuple_t astCoerceValueNodeType;
     tuuvm_tuple_t astContinueNodeType;
     tuuvm_tuple_t astDoWhileContinueWithNodeType;
     tuuvm_tuple_t astErrorNodeType;

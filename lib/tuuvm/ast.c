@@ -19,6 +19,11 @@ TUUVM_API bool tuuvm_astNode_isBreakNode(tuuvm_context_t *context, tuuvm_tuple_t
     return tuuvm_tuple_isKindOf(context, tuple, context->roots.astBreakNodeType);
 }
 
+TUUVM_API bool tuuvm_astNode_isCoerceValueNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astCoerceValueNodeType);
+}
+
 TUUVM_API bool tuuvm_astNode_isContinueNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
     return tuuvm_tuple_isKindOf(context, tuple, context->roots.astContinueNodeType);
@@ -202,6 +207,15 @@ TUUVM_API tuuvm_tuple_t tuuvm_astBreakNode_create(tuuvm_context_t *context, tuuv
 {
     tuuvm_astBreakNode_t *result = (tuuvm_astBreakNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astBreakNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astBreakNode_t));
     result->super.sourcePosition = sourcePosition;
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astCoerceValueNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t typeExpression, tuuvm_tuple_t valueExpression)
+{
+    tuuvm_astCoerceValueNode_t *result = (tuuvm_astCoerceValueNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astContinueNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astCoerceValueNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->typeExpression = typeExpression;
+    result->valueExpression = valueExpression;
     return (tuuvm_tuple_t)result;
 }
 

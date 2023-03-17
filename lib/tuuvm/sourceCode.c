@@ -1,7 +1,7 @@
 #include "tuuvm/sourceCode.h"
 #include "tuuvm/string.h"
+#include "tuuvm/array.h"
 #include "tuuvm/arrayList.h"
-#include "tuuvm/arraySlice.h"
 #include "internal/context.h"
 
 TUUVM_API tuuvm_tuple_t tuuvm_sourceCode_create(tuuvm_context_t *context, tuuvm_tuple_t text, tuuvm_tuple_t directory, tuuvm_tuple_t name, tuuvm_tuple_t language)
@@ -43,7 +43,7 @@ static tuuvm_tuple_t tuuvm_sourceCode_ensureLineStartIndexTableIsBuilt(tuuvm_con
             tuuvm_arrayList_add(context, arrayList, tuuvm_tuple_size_encode(context, i + 1));
     }
 
-    sourceCodeObject->lineStartIndexTable = tuuvm_arrayList_asArraySlice(context, arrayList);
+    sourceCodeObject->lineStartIndexTable = tuuvm_arrayList_asArray(context, arrayList);
     return sourceCodeObject->lineStartIndexTable;
 }
 
@@ -53,7 +53,7 @@ TUUVM_API void tuuvm_sourceCode_computeLineAndColumnForIndex(tuuvm_context_t *co
     tuuvm_tuple_t indexTable = tuuvm_sourceCode_ensureLineStartIndexTableIsBuilt(context, sourceCode);
 
     // Perform a binary search.
-    size_t indexTableSize = tuuvm_arraySlice_getSize(indexTable);
+    size_t indexTableSize = tuuvm_array_getSize(indexTable);
     size_t indexValue = tuuvm_tuple_size_decode(index);
 
     size_t left = 0;
@@ -63,7 +63,7 @@ TUUVM_API void tuuvm_sourceCode_computeLineAndColumnForIndex(tuuvm_context_t *co
     while(left < right)
     {
         size_t middle = left + (right - left) / 2;
-        size_t middleIndex = tuuvm_tuple_size_decode(tuuvm_arraySlice_at(indexTable, middle));
+        size_t middleIndex = tuuvm_tuple_size_decode(tuuvm_array_at(indexTable, middle));
         if(middleIndex <= indexValue)
         {
             bestSoFar = middle;

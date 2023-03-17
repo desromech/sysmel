@@ -1,6 +1,5 @@
 #include "tuuvm/function.h"
 #include "tuuvm/array.h"
-#include "tuuvm/arraySlice.h"
 #include "tuuvm/assert.h"
 #include "tuuvm/dictionary.h"
 #include "tuuvm/errors.h"
@@ -302,7 +301,7 @@ TUUVM_API void tuuvm_functionCallFrameStack_begin(tuuvm_context_t *context, tuuv
             tuuvm_error("Missing required argument count.");
 
         size_t variadicArgumentCount = argumentCount - requiredArgumentCount;
-        callFrameStack->gcRoots.applicationArguments[callFrameStack->variadicArgumentIndex] = tuuvm_arraySlice_createWithArrayOfSize(context, variadicArgumentCount);
+        callFrameStack->gcRoots.applicationArguments[callFrameStack->variadicArgumentIndex] = tuuvm_array_create(context, variadicArgumentCount);
     }
     else
     {
@@ -323,7 +322,7 @@ TUUVM_API void tuuvm_functionCallFrameStack_push(tuuvm_functionCallFrameStack_t 
         return;
     }
 
-    tuuvm_arraySlice_atPut(callFrameStack->gcRoots.applicationArguments[callFrameStack->variadicArgumentIndex], callFrameStack->argumentIndex - callFrameStack->variadicArgumentIndex, argument);
+    tuuvm_array_atPut(callFrameStack->gcRoots.applicationArguments[callFrameStack->variadicArgumentIndex], callFrameStack->argumentIndex - callFrameStack->variadicArgumentIndex, argument);
     ++callFrameStack->argumentIndex;
 }
 
@@ -340,12 +339,12 @@ static tuuvm_tuple_t tuuvm_function_primitive_apply(tuuvm_context_t *context, tu
     tuuvm_tuple_t *function = &arguments[0];
     tuuvm_tuple_t *argumentList = &arguments[1];
 
-    size_t variadicArgumentCount = tuuvm_arraySlice_getSize(*argumentList);
+    size_t variadicArgumentCount = tuuvm_array_getSize(*argumentList);
     size_t argumentListSize = 0;
     size_t callArgumentCount = 0;
     if(variadicArgumentCount > 0)
     {
-        argumentListSize = tuuvm_arraySlice_getSize(tuuvm_arraySlice_at(*argumentList, variadicArgumentCount - 1));
+        argumentListSize = tuuvm_array_getSize(tuuvm_array_at(*argumentList, variadicArgumentCount - 1));
         callArgumentCount = variadicArgumentCount - 1 + argumentListSize;
     }
 
@@ -356,11 +355,11 @@ static tuuvm_tuple_t tuuvm_function_primitive_apply(tuuvm_context_t *context, tu
     if(variadicArgumentCount > 0)
     {
         for(size_t i = 0; i < variadicArgumentCount - 1; ++i)
-            tuuvm_functionCallFrameStack_push(&callFrameStack, tuuvm_arraySlice_at(*argumentList, i));
+            tuuvm_functionCallFrameStack_push(&callFrameStack, tuuvm_array_at(*argumentList, i));
         
-        tuuvm_tuple_t argumentArraySlice = tuuvm_arraySlice_at(*argumentList, variadicArgumentCount - 1);
+        tuuvm_tuple_t argumentArraySlice = tuuvm_array_at(*argumentList, variadicArgumentCount - 1);
         for(size_t i = 0; i < argumentListSize; ++i)
-            tuuvm_functionCallFrameStack_push(&callFrameStack, tuuvm_arraySlice_at(argumentArraySlice, i));
+            tuuvm_functionCallFrameStack_push(&callFrameStack, tuuvm_array_at(argumentArraySlice, i));
     }
 
     TUUVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
@@ -409,7 +408,7 @@ static tuuvm_tuple_t tuuvm_function_primitive_recompileAndOptimize(tuuvm_context
     if(!tuuvm_tuple_isKindOf(context, *function, context->roots.functionType)) tuuvm_error("Expected a function.");
     
     tuuvm_function_t **functionObject = (tuuvm_function_t**)function;
-    if((*functionObject)->definition && tuuvm_arraySlice_getSize((*functionObject)->captureVector) > 0)
+    if((*functionObject)->definition && tuuvm_array_getSize((*functionObject)->captureVector) > 0)
         return tuuvm_interpreter_recompileAndOptimizeFunction(context, functionObject);
     
     return *function;

@@ -174,7 +174,8 @@ printLine(memoized memoizationTable).
 let: #functionWithMutableLocal with: {:(Int32)x :: Int32 |
     let: #myVar mutableWith: 42i32.
     myVar := 1i32 + myVar.
-    myVar + x.
+    myVar := myVar + x.
+    myVar
 }.
 
 ##printLine(SimpleFunctionTypeTemplate, SimpleFunctionTypeTemplate memoizationTable).

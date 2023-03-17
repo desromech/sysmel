@@ -149,7 +149,7 @@ MacroMetaBuilder
         ).
 
         if: metaBuilderMethod isNotNil && (metaBuilderMethod hasPragmaNamed: #metaBuilder)
-            then: apply(metaBuilderMethod, self, messageSendNode arguments asArraySlice)
+            then: apply(metaBuilderMethod, self, messageSendNode arguments)
             else: self finishExpansion
     };
     withSelector: #finishExpansionWithMessageSendNode:environment: addMethod: {:self :(ASTMessageSendNode)messageSendNode :(Environment)environment :: ASTNode |

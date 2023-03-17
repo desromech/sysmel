@@ -1,7 +1,6 @@
 #include "tuuvm/interpreter.h"
 #include "tuuvm/environment.h"
 #include "tuuvm/array.h"
-#include "tuuvm/arraySlice.h"
 #include "tuuvm/arrayList.h"
 #include "tuuvm/ast.h"
 #include "tuuvm/assert.h"
@@ -153,7 +152,7 @@ static tuuvm_tuple_t tuuvm_astSequenceNode_primitiveMacro(tuuvm_context_t *conte
 
     tuuvm_tuple_t sourcePosition = tuuvm_macroContext_getSourcePosition(*macroContext);
     tuuvm_tuple_t pragmas = tuuvm_array_create(context, 0);
-    return tuuvm_astSequenceNode_create(context, sourcePosition, pragmas, tuuvm_arraySlice_asArray(context, *bodyNodes));
+    return tuuvm_astSequenceNode_create(context, sourcePosition, pragmas, *bodyNodes);
 }
 
 static tuuvm_tuple_t tuuvm_astSequenceNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -396,7 +395,7 @@ static tuuvm_tuple_t tuuvm_astLambdaNode_primitiveMacro(tuuvm_context_t *context
     gcFrame.sourcePosition = tuuvm_macroContext_getSourcePosition(*macroContext);
     gcFrame.argumentsArraySlice = tuuvm_astLambdaNode_parseArgumentsNodes(context, gcFrame.argumentsNode, &hasVariadicArguments);
     gcFrame.pragmas = tuuvm_array_create(context, 0);
-    gcFrame.bodyNodes = tuuvm_arraySlice_asArray(context, *bodyNodes);
+    gcFrame.bodyNodes = *bodyNodes;
     gcFrame.bodySequence = tuuvm_astSequenceNode_create(context, gcFrame.sourcePosition, gcFrame.pragmas, gcFrame.bodyNodes);
     tuuvm_tuple_t result = tuuvm_astLambdaNode_create(context, gcFrame.sourcePosition,
         tuuvm_tuple_size_encode(context, hasVariadicArguments ? TUUVM_FUNCTION_FLAGS_VARIADIC : TUUVM_FUNCTION_FLAGS_NONE),
@@ -915,11 +914,11 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveMacro(tuuvm_context_t
 
     if(tuuvm_astNode_isIdentifierReferenceNode(context, *nameOrLambdaSignature))
     {
-        if(tuuvm_arraySlice_getSize(*valueOrBodyNodes) != 1)
+        if(tuuvm_array_getSize(*valueOrBodyNodes) != 1)
             tuuvm_error("Expected a single value for a local define.");
 
         gcFrame.nameNode = *nameOrLambdaSignature;
-        gcFrame.valueNode = tuuvm_arraySlice_at(*valueOrBodyNodes, 0);
+        gcFrame.valueNode = tuuvm_array_at(*valueOrBodyNodes, 0);
     }
     else if(tuuvm_astNode_isUnexpandedSExpressionNode(context, *nameOrLambdaSignature))
     {
@@ -935,7 +934,7 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveMacro(tuuvm_context_t
         gcFrame.argumentsNode = tuuvm_array_fromOffset(context, gcFrame.lambdaSignatureElements, 1);
         gcFrame.arguments = tuuvm_astLambdaNode_parseArgumentsNodes(context, gcFrame.argumentsNode, &hasVariadicArguments);
         gcFrame.pragmas = tuuvm_array_create(context, 0);
-        gcFrame.bodyNodes = tuuvm_arraySlice_asArray(context, *valueOrBodyNodes);
+        gcFrame.bodyNodes = *valueOrBodyNodes;
         gcFrame.bodySequence = tuuvm_astSequenceNode_create(context, gcFrame.sourcePosition, gcFrame.pragmas, gcFrame.bodyNodes);
         gcFrame.valueNode = tuuvm_astLambdaNode_create(context, gcFrame.sourcePosition,
             tuuvm_tuple_size_encode(context, hasVariadicArguments ? TUUVM_FUNCTION_FLAGS_VARIADIC : TUUVM_FUNCTION_FLAGS_NONE),
@@ -993,7 +992,7 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveDefineMacro(tuuvm_con
         gcFrame.argumentsNode = tuuvm_array_fromOffset(context, gcFrame.lambdaSignatureElements, 1);
         gcFrame.arguments = tuuvm_astLambdaNode_parseArgumentsNodes(context, gcFrame.argumentsNode, &hasVariadicArguments);
         gcFrame.pragmas = tuuvm_array_create(context, 0);
-        gcFrame.bodyNodes = tuuvm_arraySlice_asArray(context, *valueOrBodyNodes);
+        gcFrame.bodyNodes = *valueOrBodyNodes;
         gcFrame.bodySequence = tuuvm_astSequenceNode_create(context, gcFrame.sourcePosition, gcFrame.pragmas, gcFrame.bodyNodes);
         gcFrame.valueNode = tuuvm_astLambdaNode_create(context, gcFrame.sourcePosition,
             tuuvm_tuple_size_encode(context, (hasVariadicArguments ? TUUVM_FUNCTION_FLAGS_VARIADIC : TUUVM_FUNCTION_FLAGS_NONE) | TUUVM_FUNCTION_FLAGS_MACRO),
@@ -2533,7 +2532,7 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveMacro(tuuvm_context_t *co
     tuuvm_tuple_t *argumentNodes = &arguments[3];
 
     tuuvm_tuple_t sourcePosition = tuuvm_macroContext_getSourcePosition(*macroContext);
-    return tuuvm_astMessageSendNode_create(context, sourcePosition, *receiverNode, *selectorNode, tuuvm_arraySlice_asArray(context, *argumentNodes));
+    return tuuvm_astMessageSendNode_create(context, sourcePosition, *receiverNode, *selectorNode, *argumentNodes);
 }
 
 static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)

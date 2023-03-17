@@ -1,6 +1,5 @@
 #include "tuuvm/io.h"
 #include "tuuvm/array.h"
-#include "tuuvm/arraySlice.h"
 #include "tuuvm/context.h"
 #include "tuuvm/errors.h"
 #include "tuuvm/function.h"
@@ -81,10 +80,10 @@ static tuuvm_tuple_t tuuvm_io_primitive_printLine(tuuvm_context_t *context, tuuv
     (void)closure;
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
 
-    size_t parameterCount = tuuvm_arraySlice_getSize(arguments[0]);
+    size_t parameterCount = tuuvm_array_getSize(arguments[0]);
     for(size_t i = 0; i < parameterCount; ++i)
     {
-        tuuvm_tuple_t string = tuuvm_tuple_asString(context, tuuvm_arraySlice_at(arguments[0], i));
+        tuuvm_tuple_t string = tuuvm_tuple_asString(context, tuuvm_array_at(arguments[0], i));
         TUUVM_ASSERT(tuuvm_tuple_isBytes(string));
         fwrite(TUUVM_CAST_OOP_TO_OBJECT_TUPLE(string)->bytes, tuuvm_tuple_getSizeInBytes(string), 1, stdout);
 
@@ -100,10 +99,10 @@ static tuuvm_tuple_t tuuvm_io_primitive_print(tuuvm_context_t *context, tuuvm_tu
     (void)closure;
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
 
-    size_t parameterCount = tuuvm_arraySlice_getSize(arguments[0]);
+    size_t parameterCount = tuuvm_array_getSize(arguments[0]);
     for(size_t i = 0; i < parameterCount; ++i)
     {
-        tuuvm_tuple_t string = tuuvm_tuple_asString(context, tuuvm_arraySlice_at(arguments[0], i));
+        tuuvm_tuple_t string = tuuvm_tuple_asString(context, tuuvm_array_at(arguments[0], i));
         TUUVM_ASSERT(tuuvm_tuple_isBytes(string));
         fwrite(TUUVM_CAST_OOP_TO_OBJECT_TUPLE(string)->bytes, tuuvm_tuple_getSizeInBytes(string), 1, stdout);
 
