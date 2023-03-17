@@ -23,6 +23,8 @@ SSAValue definition: {
     
     public method isInstruction => Boolean := false.
     public method isTerminatorInstruction => Boolean := false.
+
+    public method primitiveName => Symbol := nil.
 }.
 
 SSAConstant definition: {
@@ -33,6 +35,14 @@ public class SSALiteralConstant superclass: SSAConstant; definition: {
     public field value.
 
     public method isLiteralConstant => Boolean := true.
+
+    public method primitiveName => Symbol := {
+        let value := self value.
+
+        if: (value __type__ isSubtypeOf: Function)
+        then: value primitiveName
+        else: nil
+    }.
 
     public method printOn: (stream: Stream) ::=> Void
         := stream nextPutAll: "Literal("; print: self value; nextPutAll: " => "; print: self type; nextPut: ')'.
@@ -342,6 +352,14 @@ public final class SSAConditionalBranchInstruction superclass: SSAInstruction; d
             nextPut: ' '; print: self falseDestination.
 }.
 
+public final class SSALoadInstruction superclass: SSAInstruction; definition: {
+    public field storage => SSAValue.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream print: self; nextPutAll: " := load "; print: self storage
+    }.
+}.
+
 public final class SSAMakeClosureInstruction superclass: SSAInstruction; definition: {
     public field functionDefinition => SSAValue.
     public field captures => Array.
@@ -532,7 +550,7 @@ SSAInstructionBuilder definition: {
             type: Void;
             yourself).
 
-    public method literal: value type: type ::=> SSALiteralConstant
+    public method literal: value type: (type: Type) ::=> SSALiteralConstant
         := SSALiteralConstant new
             sourcePosition: self sourcePosition;
             sourceASTNode: self sourceASTNode;
@@ -543,6 +561,12 @@ SSAInstructionBuilder definition: {
 
     public method literal: value ::=> SSALiteralConstant
         := self literal: value type: value __type__.
+
+    public method load: (storage: SSAValue) type: (type: Type) ::=> SSALoadInstruction
+        := self addInstruction: (SSALoadInstruction new
+            storage: storage;
+            type: type;
+            yourself).
 
     public method makeClosure: (functionDefinition: SSAValue) captures: (captures: Array) type: (type: Type) ::=> SSAMakeClosureInstruction
         := self addInstruction: (SSAMakeClosureInstruction new
@@ -720,10 +744,28 @@ ASTContinueNode extend: {
 }.
 
 ASTFunctionApplicationNode extend: {
-    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := context builder call: (self functionExpression generateSSAValueWith: context)
-            arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
-            resultType: self analyzedType
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let functionExpression := self functionExpression generateSSAValueWith: context.
+        let primitiveName := functionExpression primitiveName.
+
+        ## FIXME: Use a dictionary here.
+        primitiveName == #PointerLikeType::load ifTrue: {
+            let reference := self arguments first generateSSAValueWith: context.
+            context builder load: reference type: self analyzedType
+        } ifFalse: {
+            primitiveName == #PointerLikeType::store: ifTrue: {
+                let reference := self arguments first generateSSAValueWith: context.
+                let value := self arguments second generateSSAValueWith: context.
+                context builder store: value in: reference.
+                reference
+            } ifFalse: {
+                context builder call: functionExpression
+                    arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
+                    resultType: self analyzedType
+            }.
+        }.
+
+    }.
 }.
 
 ASTLexicalBlockNode extend: {

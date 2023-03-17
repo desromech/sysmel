@@ -181,7 +181,17 @@ Type
                 then: (supertype lookupSelector: selector)
                 else: (nil)
         }
-    }.
+    };
+    withSelector: #isSubtypeOf: addMethod: {:(Type)self :(Type)expectedParent :: Boolean |
+        if: self == expectedParent
+        then: true
+        else: {
+            let: #supertype with: self supertype.
+            if: supertype ~~ nil
+                then: (supertype isSubtypeOf: expectedParent )
+                else: false
+        }
+    } makePure.
 
 AnyValue
     withSelector: #&& addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)other :: ASTIfNode |
