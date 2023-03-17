@@ -113,6 +113,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_createClosureWithCaptureVector(tuuvm_cont
     result->argumentCount = functionDefinitionObject->argumentCount; 
     result->captureVector = captureVector;
     result->definition = functionDefinition;
+    result->primitiveName = functionDefinitionObject->analyzedPrimitiveName;
     return (tuuvm_tuple_t)result;
 }
 
@@ -422,6 +423,8 @@ static tuuvm_tuple_t tuuvm_function_primitive_adoptDefinitionOf(tuuvm_context_t 
 
     (*functionObject)->definition = (*definitionFunctionObject)->definition;
     (*functionObject)->captureVector = (*definitionFunctionObject)->captureVector;
+    if((*definitionFunctionObject)->primitiveName)
+        (*functionObject)->primitiveName = (*definitionFunctionObject)->primitiveName;
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)*functionObject, tuuvm_tuple_getType(context, (tuuvm_tuple_t)*definitionFunctionObject));
     return TUUVM_VOID_TUPLE;
 }

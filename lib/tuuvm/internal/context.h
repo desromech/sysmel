@@ -49,6 +49,8 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t applyWithoutArgumentsSelector;
     tuuvm_tuple_t applyWithArgumentsSelector;
 
+    tuuvm_tuple_t primitiveNamedSelector;
+
     tuuvm_tuple_t astNodeAnalysisSelector;
     tuuvm_tuple_t astNodeEvaluationSelector;
     tuuvm_tuple_t astNodeAnalysisAndEvaluationSelector;

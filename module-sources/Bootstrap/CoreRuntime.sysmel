@@ -471,8 +471,15 @@ Class
 
 FunctionDefinition
     withSelector: #hasPragmaNamed: addMethod: {:(FunctionDefinition)self :selector :: Boolean |
+        let: #analyzedPragmas with: self analyzedPragmas.
         let: #definitionBodyNode with: self definitionBodyNode.
-        (definitionBodyNode ~~ nil) && (definitionBodyNode hasPragmaNamed: selector)
+        if: analyzedPragmas ~~ nil
+        then: (analyzedPragmas anySatisfy: {:(Pragma)pragma :: Boolean | selector == pragma selector })
+        else: (
+            if: definitionBodyNode ~~ nil
+            then: (definitionBodyNode hasPragmaNamed: selector)
+            else: false
+        )
     }.
 
 Function

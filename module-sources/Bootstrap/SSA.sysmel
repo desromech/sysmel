@@ -763,9 +763,13 @@ ASTFunctionApplicationNode extend: {
                     self arguments do: {:(ASTNode)each :: Void | each generateSSAValueWith: context }.
                     context builder literal: void
                 } ifFalse: {
-                    context builder call: functionExpression
-                        arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
-                        resultType: self analyzedType
+                    primitiveName == #yourself ifTrue: {
+                        self arguments first generateSSAValueWith: context
+                    } ifFalse: {
+                        context builder call: functionExpression
+                            arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
+                            resultType: self analyzedType
+                    }
                 }
             }.
         }.

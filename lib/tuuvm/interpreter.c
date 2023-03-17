@@ -12,6 +12,7 @@
 #include "tuuvm/macro.h"
 #include "tuuvm/message.h"
 #include "tuuvm/parser.h"
+#include "tuuvm/pragma.h"
 #include "tuuvm/string.h"
 #include "tuuvm/sourceCode.h"
 #include "tuuvm/stackFrame.h"
@@ -620,6 +621,8 @@ tuuvm_tuple_t tuuvm_interpreter_recompileAndOptimizeFunction(tuuvm_context_t *co
     gcFrame.optimizedFunctionDefinition->analyzedCaptures = TUUVM_NULL_TUPLE;
     gcFrame.optimizedFunctionDefinition->analyzedArguments = TUUVM_NULL_TUPLE;
     gcFrame.optimizedFunctionDefinition->analyzedLocals = TUUVM_NULL_TUPLE;
+    gcFrame.optimizedFunctionDefinition->analyzedPragmas = TUUVM_NULL_TUPLE;
+    gcFrame.optimizedFunctionDefinition->analyzedPrimitiveName = TUUVM_NULL_TUPLE;
 
     gcFrame.optimizedFunctionDefinition->analyzedArgumentNodes = TUUVM_NULL_TUPLE;
     gcFrame.optimizedFunctionDefinition->analyzedBodyNode = TUUVM_NULL_TUPLE;
@@ -723,6 +726,8 @@ static void tuuvm_functionDefinition_analyze(tuuvm_context_t *context, tuuvm_fun
     (*functionDefinition)->analyzedCaptures = tuuvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->captureBindingList);
     (*functionDefinition)->analyzedArguments = tuuvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->argumentBindingList);
     (*functionDefinition)->analyzedLocals = tuuvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->localBindingList);
+    (*functionDefinition)->analyzedPragmas = tuuvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->pragmaList);
+    (*functionDefinition)->analyzedPrimitiveName = gcFrame.analysisEnvironmentObject->primitiveName;
 
     (*functionDefinition)->analyzedArgumentNodes = gcFrame.analyzedArgumentsNode;
     (*functionDefinition)->analyzedResultTypeNode = gcFrame.analyzedResultTypeNode;
@@ -1782,6 +1787,11 @@ static tuuvm_tuple_t tuuvm_astPragmaNode_primitiveAnalyze(tuuvm_context_t *conte
         tuuvm_tuple_t argumentNode;
         tuuvm_tuple_t analyzedArgument;
         tuuvm_tuple_t analyzedArguments;
+
+        tuuvm_tuple_t literalPragmaSelector;
+        tuuvm_tuple_t literalPragmaArguments;
+        tuuvm_tuple_t literalPragma;
+        tuuvm_tuple_t literalPragmaNode;
     } gcFrame = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
@@ -1791,6 +1801,7 @@ static tuuvm_tuple_t tuuvm_astPragmaNode_primitiveAnalyze(tuuvm_context_t *conte
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.pragmaNode->super.sourcePosition);
 
     gcFrame.analyzedSelector = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.pragmaNode->selector, context->roots.symbolType, *environment);
+    bool isLiteral = tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedSelector);
 
     size_t pragmaArgumentCount = tuuvm_array_getSize(gcFrame.pragmaNode->arguments);
     gcFrame.analyzedArguments = tuuvm_array_create(context, pragmaArgumentCount);
@@ -1798,7 +1809,23 @@ static tuuvm_tuple_t tuuvm_astPragmaNode_primitiveAnalyze(tuuvm_context_t *conte
     {
         gcFrame.argumentNode = tuuvm_array_at(gcFrame.pragmaNode->arguments, i);
         gcFrame.analyzedArgument = tuuvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.argumentNode, *environment);
+        isLiteral = isLiteral && tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedArgument);
         tuuvm_array_atPut(gcFrame.analyzedArguments, i, gcFrame.analyzedArgument);
+    }
+
+    if(isLiteral)
+    {
+        gcFrame.literalPragmaSelector = tuuvm_astLiteralNode_getValue(gcFrame.analyzedSelector);
+        gcFrame.literalPragmaArguments = tuuvm_array_create(context, pragmaArgumentCount);
+        for(size_t i = 0; i < pragmaArgumentCount; ++i)
+            tuuvm_array_atPut(gcFrame.literalPragmaArguments, i, tuuvm_astLiteralNode_getValue(tuuvm_array_at(gcFrame.analyzedArguments, i)));
+        
+        gcFrame.literalPragma = tuuvm_pragma_create(context, gcFrame.literalPragmaSelector, gcFrame.literalPragmaArguments);
+        gcFrame.literalPragmaNode = tuuvm_astLiteralNode_create(context, gcFrame.pragmaNode->super.sourcePosition, gcFrame.literalPragma);
+        tuuvm_analysisEnvironment_addPragma(context, *environment, gcFrame.literalPragma);
+        TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return (tuuvm_tuple_t)gcFrame.literalPragmaNode;
     }
 
     gcFrame.pragmaNode->arguments = gcFrame.analyzedArguments;

@@ -94,6 +94,10 @@ ASTLiteralNode
     withSelector: #isLiteralNode addMethod: {:(ASTLiteralNode)self :: Boolean | true };
     withSelector: #hasLiteralValueEqualTo: addMethod: {:(ASTLiteralNode)self :expectedValue :: Boolean | self value = expectedValue };
 
+    withSelector: #hasPragmaNamed: addMethod: {:(ASTLiteralNode)self :selector :: Boolean |
+        (self analyzedType == Pragma) && (self value selector == selector)
+    };
+
     withSelector: #childrenDo: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | };
     withSelector: #transformWith: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | };
 

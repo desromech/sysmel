@@ -5,6 +5,7 @@
 #include "tuuvm/association.h"
 #include "tuuvm/dictionary.h"
 #include "tuuvm/errors.h"
+#include "tuuvm/pragma.h"
 #include "tuuvm/sourceCode.h"
 #include "tuuvm/string.h"
 #include "tuuvm/function.h"
@@ -178,6 +179,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_functionAnalysisEnvironment_create(tuuvm_context_t
     result->captureBindingList = tuuvm_arrayList_create(context);
     result->argumentBindingList = tuuvm_arrayList_create(context);
     result->localBindingList = tuuvm_arrayList_create(context);
+    result->pragmaList = tuuvm_arrayList_create(context);
     result->hasBreakTarget = TUUVM_FALSE_TUPLE;
     result->hasContinueTarget = TUUVM_FALSE_TUPLE;
     return (tuuvm_tuple_t)result;
@@ -528,6 +530,20 @@ TUUVM_API tuuvm_tuple_t tuuvm_analysisEnvironment_setNewSymbolLocalBinding(tuuvm
     tuuvm_environment_setNewBinding(context, environment, binding);
     tuuvm_arrayList_add(context, functionAnalysisEnvironmentObject->localBindingList, binding);
     return binding;
+}
+
+TUUVM_API void tuuvm_analysisEnvironment_addPragma(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t pragma)
+{
+    tuuvm_tuple_t functionAnalysisEnvironment = tuuvm_environment_lookFunctionAnalysisEnvironmentRecursively(context, environment);
+    if(!functionAnalysisEnvironment)
+        tuuvm_error("A function analysis environment is required here.");
+
+    tuuvm_functionAnalysisEnvironment_t *functionAnalysisEnvironmentObject = (tuuvm_functionAnalysisEnvironment_t*)functionAnalysisEnvironment;
+    tuuvm_pragma_t *pragmaObject = (tuuvm_pragma_t*)pragma;
+    tuuvm_arrayList_add(context, functionAnalysisEnvironmentObject->pragmaList, pragma);
+
+    if(pragmaObject->selector == context->roots.primitiveNamedSelector && !functionAnalysisEnvironmentObject->primitiveName)
+        functionAnalysisEnvironmentObject->primitiveName = tuuvm_array_at(pragmaObject->arguments, 0);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_environment_setNewMacroValueBinding(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t expansion)

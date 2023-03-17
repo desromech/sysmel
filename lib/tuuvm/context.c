@@ -394,6 +394,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.applyWithoutArgumentsSelector = tuuvm_symbol_internWithCString(context, "()");
     context->roots.applyWithArgumentsSelector = tuuvm_symbol_internWithCString(context, "():");
 
+    context->roots.primitiveNamedSelector = tuuvm_symbol_internWithCString(context, "primitive:");
+
     context->roots.coerceValueSelector = tuuvm_symbol_internWithCString(context, "coerceValue:");
     context->roots.coerceASTNodeWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "coerceASTNode:withEnvironment:");
     context->roots.typeCheckFunctionApplicationWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "typeCheckFunctionApplication:withEnvironment:");
@@ -573,6 +575,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "captureBindingList", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
         "argumentBindingList", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
         "localBindingList", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
+        "pragmaList", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
         "hasBreakTarget", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "hasContinueTarget", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         NULL);
@@ -629,6 +632,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "analyzedCaptures", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "analyzedArguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "analyzedLocals", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "analyzedPragmas", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "analyzedPrimitiveName", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
 
         "analyzedArgumentNodes", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "analyzedResultTypeNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
