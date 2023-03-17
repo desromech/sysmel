@@ -274,11 +274,6 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_lookupFallbackSelector(tuuvm_context_t *conte
 TUUVM_API void tuuvm_type_setMethodWithSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector, tuuvm_tuple_t method);
 
 /**
- * Computes the valid type hierarchy depth
- */
-TUUVM_API int tuuvm_type_validTypeHierarchyDepth(tuuvm_tuple_t type);
-
-/**
  * Is this type a subtype of?
  */
 TUUVM_INLINE bool tuuvm_type_isDirectSubtypeOf(tuuvm_tuple_t type, tuuvm_tuple_t supertype)
