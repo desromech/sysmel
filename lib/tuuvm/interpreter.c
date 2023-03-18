@@ -2152,7 +2152,7 @@ static tuuvm_tuple_t tuuvm_astFunctionApplicationNode_primitiveAnalyze(tuuvm_con
     gcFrame.functionType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedFunctionExpression);
 
     // Type check the function application.
-    gcFrame.typeCheckFunction = tuuvm_type_getTypeCheckFunctionApplicationWithEnvironmentNode(context, tuuvm_tuple_getType(context, gcFrame.functionType));
+    gcFrame.typeCheckFunction = tuuvm_type_getAnalyzeAndTypeCheckFunctionApplicationNodeWithEnvironment(context, tuuvm_tuple_getType(context, gcFrame.functionType));
     if(gcFrame.typeCheckFunction)
         gcFrame.result = tuuvm_function_apply3(context, gcFrame.typeCheckFunction, gcFrame.functionType, (tuuvm_tuple_t)gcFrame.applicationNode, *environment);
     else
@@ -2609,7 +2609,8 @@ static tuuvm_tuple_t tuuvm_astMessageChainNode_primitiveAnalyze(tuuvm_context_t 
         }
 
         gcFrame.receiverType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedReceiver);
-        if(gcFrame.receiverType)
+        // HACK: remove this literal check when properly implementing this analysis in the target system.
+        if(gcFrame.receiverType && tuuvm_astNode_isLiteralNode(context, gcFrame.chainNode->receiver))
         {
             gcFrame.receiverMetaType = tuuvm_tuple_getType(context, gcFrame.receiverType);
             gcFrame.analysisFunction = tuuvm_type_getAnalyzeMessageChainNodeWithEnvironmentFunction(context, gcFrame.receiverMetaType);
@@ -2967,6 +2968,7 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyze(tuuvm_context_t *
         tuuvm_tuple_t receiverMetaType;
         tuuvm_tuple_t selector;
         tuuvm_tuple_t method;
+        tuuvm_tuple_t methodType;
         tuuvm_tuple_t analysisFunction;
         tuuvm_tuple_t result;
         tuuvm_tuple_t newMethodNode;
@@ -3014,7 +3016,8 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyze(tuuvm_context_t *
             gcFrame.receiverMetaType = tuuvm_tuple_getType(context, gcFrame.receiverType);
             gcFrame.analysisFunction = tuuvm_type_getAnalyzeMessageSendNodeWithEnvironmentFunction(context, gcFrame.receiverMetaType);
 
-            if(gcFrame.analysisFunction)
+            // HACK: Remove this literal check when properly implementing this.
+            if(gcFrame.analysisFunction && tuuvm_astNode_isLiteralNode(context, gcFrame.sendNode->receiver))
             {
                 gcFrame.result = tuuvm_function_apply3(context, gcFrame.analysisFunction, gcFrame.receiverType, (tuuvm_tuple_t)gcFrame.sendNode, *environment);
                 TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
@@ -3081,7 +3084,7 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyze(tuuvm_context_t *
 
     // Turn this node onto an unexpanded application.
     bool hasExplicitLookupType = gcFrame.sendNode->receiverLookupType != TUUVM_NULL_TUPLE;
-    if(gcFrame.method && (hasExplicitLookupType || tuuvm_function_shouldOptimizeLookup(context, gcFrame.method, gcFrame.receiverType)))
+    if(gcFrame.method && (hasExplicitLookupType || tuuvm_function_shouldOptimizeLookup(context, gcFrame.method, gcFrame.receiverType, tuuvm_astNode_isLiteralNode(context, gcFrame.sendNode->receiver))))
     {
         size_t applicationArgumentCount = tuuvm_array_getSize(gcFrame.sendNode->arguments);
         gcFrame.newMethodNode = tuuvm_astLiteralNode_create(context, gcFrame.sendNode->super.sourcePosition, gcFrame.method);
@@ -3094,6 +3097,25 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyze(tuuvm_context_t *
         gcFrame.unexpandedApplicationNode = tuuvm_astUnexpandedApplicationNode_create(context, gcFrame.sendNode->super.sourcePosition, gcFrame.newMethodNode, gcFrame.newArgumentNodes);
         TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
         return tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.unexpandedApplicationNode, *environment);
+    }
+
+    if(gcFrame.method)
+    {
+        gcFrame.sendNode->boundMethod = gcFrame.method;
+        gcFrame.methodType = tuuvm_tuple_getType(context, gcFrame.method);
+
+        gcFrame.analysisFunction = tuuvm_type_getAnalyzeAndTypeCheckMessageSendNodeWithEnvironment(context, tuuvm_tuple_getType(context, gcFrame.methodType));
+        if(gcFrame.analysisFunction)
+        {
+            TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+            return tuuvm_function_apply3(context, gcFrame.analysisFunction, gcFrame.methodType, (tuuvm_tuple_t)gcFrame.sendNode, *environment);
+        }
+    }
+    else
+    {
+        // TODO: Implement the missing required machinery for supporting this.
+        if(false && !tuuvm_type_isDynamic(gcFrame.receiverType))
+            tuuvm_error("Cannot send undeclared message to receiver without a non-dynamic type.");
     }
 
     size_t applicationArgumentCount = tuuvm_array_getSize(gcFrame.sendNode->arguments);
@@ -4034,7 +4056,60 @@ static void tuuvm_interpreter_evaluateArgumentNodeInEnvironment(tuuvm_context_t 
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
 }
 
-static tuuvm_tuple_t tuuvm_simpleFunctionType_primitiveTypeCheckFunctionApplicationNode(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckMessageSendNode(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+
+    tuuvm_simpleFunctionType_t **simpleFunctionType = (tuuvm_simpleFunctionType_t**)&arguments[0];
+    tuuvm_astMessageSendNode_t **sendNode = (tuuvm_astMessageSendNode_t**)&arguments[1];
+    tuuvm_tuple_t *environment = &arguments[2];
+
+    struct {
+        tuuvm_tuple_t analyzedReceiver;
+
+        tuuvm_tuple_t argumentNode;
+        tuuvm_tuple_t analyzedArgument;
+        tuuvm_tuple_t analyzedArguments;
+        tuuvm_tuple_t expectedArgumentType;
+    } gcFrame = {0};
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    size_t typeArgumentCount = tuuvm_array_getSize((*simpleFunctionType)->argumentTypes);
+    size_t sendArgumentCount = tuuvm_array_getSize((*sendNode)->arguments);
+    size_t sendArgumentStartIndex = (*sendNode)->receiver ? 1 : 0;
+
+    size_t applicationArgumentCount = sendArgumentStartIndex + sendArgumentCount;
+    if(applicationArgumentCount != typeArgumentCount)
+        tuuvm_error("Expected number of arguments is mismatching.");
+
+    // Analyze the receiver
+    if(sendArgumentStartIndex > 0)
+    {
+        gcFrame.expectedArgumentType = tuuvm_array_at((*simpleFunctionType)->argumentTypes, 0);
+        gcFrame.analyzedReceiver = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, (*sendNode)->receiver, gcFrame.expectedArgumentType, *environment);
+        (*sendNode)->receiver = gcFrame.analyzedReceiver;
+    }
+
+    // Analyze the send arguments.
+    gcFrame.analyzedArguments = tuuvm_array_create(context, sendArgumentCount);
+    for(size_t i = 0; i < sendArgumentCount; ++i)
+    {
+        gcFrame.expectedArgumentType = tuuvm_array_at((*simpleFunctionType)->argumentTypes, sendArgumentStartIndex + i);
+        gcFrame.argumentNode = tuuvm_array_at((*sendNode)->arguments, i);
+        gcFrame.analyzedArgument = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.argumentNode, gcFrame.expectedArgumentType, *environment);
+        tuuvm_array_atPut(gcFrame.analyzedArguments, i, gcFrame.analyzedArgument);
+    }
+
+    (*sendNode)->arguments = gcFrame.analyzedArguments;
+    (*sendNode)->super.analyzedType = (*simpleFunctionType)->resultType;
+
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return (tuuvm_tuple_t)*sendNode;
+}
+
+static tuuvm_tuple_t tuuvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckFunctionApplicationNode(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
@@ -4081,15 +4156,21 @@ static tuuvm_tuple_t tuuvm_simpleFunctionType_primitiveTypeCheckFunctionApplicat
     return tuuvm_astFunctionApplicationNode_optimizePureApplication(context, functionApplicationNode);
 }
 
-static tuuvm_tuple_t tuuvm_dependentFunctionType_getOrCreateApplicationValueForNode(tuuvm_context_t *context, tuuvm_tuple_t node)
+static tuuvm_tuple_t tuuvm_dependentFunctionType_getOrCreateDependentApplicationValueForNode(tuuvm_context_t *context, tuuvm_tuple_t node)
 {
     // Unwrap the literal values.
     if(tuuvm_astNode_isLiteralNode(context, node))
         return tuuvm_astLiteralNode_getValue(node);
 
     // Get the analyzed type of the node.
-    // FIXME: Delegate this onto the analyzed type.
     tuuvm_tuple_t analyzedType = tuuvm_astNode_getAnalyzedType(node);
+
+    // Find a 
+    tuuvm_tuple_t method = tuuvm_type_lookupSelector(context, tuuvm_tuple_getType(context, analyzedType), context->roots.getOrCreateDependentApplicationValueForNodeSelector);
+    if(method)
+        return tuuvm_function_apply2(context, method, analyzedType, node);
+
+    // If the node is a subtype of metatype, and this type is defined then return the type.
     if(tuuvm_tuple_isKindOf(context, analyzedType, context->roots.metatypeType))
     {
         tuuvm_metatype_t *metatype = (tuuvm_metatype_t*)analyzedType;
@@ -4103,7 +4184,7 @@ static tuuvm_tuple_t tuuvm_dependentFunctionType_getOrCreateApplicationValueForN
     return dummyValue;
 }
 
-static tuuvm_tuple_t tuuvm_dependentFunctionType_primitiveTypeCheckFunctionApplicationNode(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_dependentFunctionType_primitiveAnalyzeAndTypeCheckFunctionApplicationNode(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
@@ -4165,7 +4246,7 @@ static tuuvm_tuple_t tuuvm_dependentFunctionType_primitiveTypeCheckFunctionAppli
             gcFrame.expectedArgumentType = tuuvm_interpreter_evaluateArgumentNodeTypeInEnvironment(context, gcFrame.argumentNode, &gcFrame.applicationEnvironment);
             gcFrame.analyzedArgument = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.applicationArgumentNode, gcFrame.expectedArgumentType, *environment);
             tuuvm_array_atPut(gcFrame.analyzedArguments, sourceArgumentIndex, gcFrame.analyzedArgument);
-            gcFrame.applicationArgumentValue = tuuvm_dependentFunctionType_getOrCreateApplicationValueForNode(context, gcFrame.analyzedArgument);
+            gcFrame.applicationArgumentValue = tuuvm_dependentFunctionType_getOrCreateDependentApplicationValueForNode(context, gcFrame.analyzedArgument);
             tuuvm_interpreter_bindArgumentNodeValueInEnvironment(context, i, &gcFrame.applicationEnvironment, gcFrame.applicationArgumentValue);
             ++sourceArgumentIndex;
         }
@@ -4192,6 +4273,101 @@ static tuuvm_tuple_t tuuvm_dependentFunctionType_primitiveTypeCheckFunctionAppli
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&functionActivationRecord);  
     return tuuvm_astFunctionApplicationNode_optimizePureApplication(context, (tuuvm_astFunctionApplicationNode_t**)node);
+}
+
+static tuuvm_tuple_t tuuvm_dependentFunctionType_primitiveAnalyzeAndTypeCheckMessageSendNode(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+
+    tuuvm_dependentFunctionType_t **dependentFunctionType = (tuuvm_dependentFunctionType_t **)&arguments[0];
+    tuuvm_tuple_t *node = &arguments[1];
+    tuuvm_tuple_t *environment = &arguments[2];
+
+    struct {
+        tuuvm_astMessageSendNode_t *sendNode;
+
+        tuuvm_tuple_t applicationEnvironment;
+        tuuvm_tuple_t argumentNode;
+
+        tuuvm_tuple_t applicationArgumentNode;
+        tuuvm_tuple_t applicationArgumentValue;
+        tuuvm_tuple_t resultType;
+
+        tuuvm_tuple_t analyzedArgument;
+        tuuvm_tuple_t analyzedArguments;
+        tuuvm_tuple_t expectedArgumentType;
+    } gcFrame = {
+        .sendNode = (tuuvm_astMessageSendNode_t*)*node,
+    };
+
+    tuuvm_stackFrameFunctionActivationRecord_t functionActivationRecord = {
+        .type = TUUVM_STACK_FRAME_RECORD_TYPE_FUNCTION_ACTIVATION,
+    };
+    tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&functionActivationRecord); 
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.sendNode->super.sourcePosition);
+
+    gcFrame.applicationEnvironment = tuuvm_functionActivationEnvironment_createForDependentFunctionType(context, TUUVM_NULL_TUPLE, (tuuvm_tuple_t)*dependentFunctionType);
+
+    size_t argumentNodeCount = tuuvm_array_getSize((*dependentFunctionType)->argumentNodes);
+    
+    size_t directEvaluationArgumentNodeCount = argumentNodeCount;
+
+    size_t applicationArgumentCount = tuuvm_array_getSize(gcFrame.sendNode->arguments);
+    size_t sourceArgumentIndex = 0;
+    bool hasAnalyzedReceiver = false;
+
+    gcFrame.analyzedArguments = tuuvm_array_create(context, applicationArgumentCount);
+    for(size_t i = 0; i < directEvaluationArgumentNodeCount; ++i)
+    {
+        gcFrame.argumentNode = tuuvm_array_at((*dependentFunctionType)->argumentNodes, i);
+        if(tuuvm_astArgumentNode_isForAll(argumentNodeCount))
+        {
+            tuuvm_error("TODO: Support forall argument types");
+        }
+        else
+        {
+            bool isReceiverArgument = !hasAnalyzedReceiver && gcFrame.sendNode->receiver;
+            if(isReceiverArgument)
+            {
+                gcFrame.applicationArgumentNode = gcFrame.sendNode->receiver;
+            }
+            else
+            {
+                if(sourceArgumentIndex >= applicationArgumentCount)
+                    tuuvm_error("Message send is missing required arguments.");
+                gcFrame.applicationArgumentNode = tuuvm_array_at(gcFrame.sendNode->arguments, sourceArgumentIndex);
+            }
+
+            gcFrame.expectedArgumentType = tuuvm_interpreter_evaluateArgumentNodeTypeInEnvironment(context, gcFrame.argumentNode, &gcFrame.applicationEnvironment);
+            gcFrame.analyzedArgument = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.applicationArgumentNode, gcFrame.expectedArgumentType, *environment);
+            if(isReceiverArgument)
+                gcFrame.sendNode->receiver = gcFrame.analyzedArgument;
+            else
+                tuuvm_array_atPut(gcFrame.analyzedArguments, sourceArgumentIndex, gcFrame.analyzedArgument);
+            gcFrame.applicationArgumentValue = tuuvm_dependentFunctionType_getOrCreateDependentApplicationValueForNode(context, gcFrame.analyzedArgument);
+            tuuvm_interpreter_bindArgumentNodeValueInEnvironment(context, i, &gcFrame.applicationEnvironment, gcFrame.applicationArgumentValue);
+            if(isReceiverArgument)
+                hasAnalyzedReceiver = true;
+            else
+                ++sourceArgumentIndex;
+        }
+    }
+
+    if(sourceArgumentIndex != applicationArgumentCount)
+        tuuvm_error("Message send is not receiving the expected number of arguments.");
+
+    gcFrame.sendNode->arguments = gcFrame.analyzedArguments;
+
+    if((*dependentFunctionType)->resultTypeNode)
+        gcFrame.resultType = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*dependentFunctionType)->resultTypeNode, gcFrame.applicationEnvironment);
+    gcFrame.sendNode->super.analyzedType = gcFrame.resultType;
+
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&functionActivationRecord);  
+    return *node;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_t *context, tuuvm_tuple_t *function, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -4407,8 +4583,10 @@ void tuuvm_astInterpreter_registerPrimitives(void)
 
     tuuvm_primitiveTable_registerFunction(tuuvm_functionDefinition_primitiveEnsureAnalysis, "FunctionDefinition::ensureAnalysis");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_simpleFunctionType_primitiveTypeCheckFunctionApplicationNode, "SimpleFunctionType::typeCheckFunctionApplication:withEnvironment:");
-    tuuvm_primitiveTable_registerFunction(tuuvm_dependentFunctionType_primitiveTypeCheckFunctionApplicationNode, "DependentFunctionType::typeCheckFunctionApplication:withEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckFunctionApplicationNode, "SimpleFunctionType::analyzeAndTypeCheckFunctionApplicationNode:withEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckMessageSendNode, "SimpleFunctionType::analyzeAndTypeCheckMessageSendNode:withEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_dependentFunctionType_primitiveAnalyzeAndTypeCheckFunctionApplicationNode, "DependentFunctionType::analyzeAndTypeCheckFunctionApplicationNode:withEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_dependentFunctionType_primitiveAnalyzeAndTypeCheckMessageSendNode, "DependentFunctionType::analyzeAndTypeCheckMessageSendNode:withEnvironment:");
 }
 
 static void tuuvm_astInterpreter_setupNodeInterpretationFunctions(tuuvm_context_t *context, tuuvm_tuple_t astNodeType, tuuvm_functionEntryPoint_t analysisFunction, tuuvm_functionEntryPoint_t evaluationFunction, tuuvm_functionEntryPoint_t analysisAndEvaluationFunction)
@@ -4430,8 +4608,11 @@ void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context)
 
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "FunctionDefinition::ensureAnalysis", context->roots.functionDefinitionType, "ensureAnalysis", 1, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_functionDefinition_primitiveEnsureAnalysis);
 
-    tuuvm_type_setTypeCheckFunctionApplicationWithEnvironmentNode(context, context->roots.simpleFunctionTypeType, tuuvm_function_createPrimitive(context, 3, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_simpleFunctionType_primitiveTypeCheckFunctionApplicationNode));
-    tuuvm_type_setTypeCheckFunctionApplicationWithEnvironmentNode(context, context->roots.dependentFunctionTypeType, tuuvm_function_createPrimitive(context, 3, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_dependentFunctionType_primitiveTypeCheckFunctionApplicationNode));
+    tuuvm_type_setAnalyzeAndTypeCheckFunctionApplicationNodeWithEnvironment(context, context->roots.simpleFunctionTypeType, tuuvm_function_createPrimitive(context, 3, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckFunctionApplicationNode));
+    tuuvm_type_setAnalyzeAndTypeCheckMessageSendNodeWithEnvironment(context, context->roots.simpleFunctionTypeType, tuuvm_function_createPrimitive(context, 3, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckMessageSendNode));
+
+    tuuvm_type_setAnalyzeAndTypeCheckFunctionApplicationNodeWithEnvironment(context, context->roots.dependentFunctionTypeType, tuuvm_function_createPrimitive(context, 3, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_dependentFunctionType_primitiveAnalyzeAndTypeCheckFunctionApplicationNode));
+    tuuvm_type_setAnalyzeAndTypeCheckMessageSendNodeWithEnvironment(context, context->roots.dependentFunctionTypeType, tuuvm_function_createPrimitive(context, 3, TUUVM_FUNCTION_FLAGS_NONE, NULL, tuuvm_dependentFunctionType_primitiveAnalyzeAndTypeCheckMessageSendNode));
 
     tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astArgumentNodeType,
         tuuvm_astArgumentNode_primitiveAnalyze,

@@ -324,6 +324,6 @@ TUUVM_API tuuvm_tuple_t tuuvm_functionCallFrameStack_finish(tuuvm_context_t *con
 /**
  * Does the function require an optimized lookup?
  */
-TUUVM_API bool tuuvm_function_shouldOptimizeLookup(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_tuple_t receiverType);
+TUUVM_API bool tuuvm_function_shouldOptimizeLookup(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_tuple_t receiverType, bool hasLiteralReceiver);
 
 #endif //TUUVM_FUNCTION_H

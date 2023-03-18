@@ -44,9 +44,8 @@ MetaBuilder
         result
     };
     withSelector: #analyzeMessageChainNode:withEnvironment: addClassMethod: {:self :messageChainNode :(Environment)environment |
-        let: #selfReceiver with: messageChainNode receiver. 
+        let: #selfReceiver with: messageChainNode receiver.
         let: #receiver with: selfReceiver value.
-        
         let: #result type: ASTNode mutableWith: selfReceiver.
 
         messageChainNode messages do: {:messageChainMessageNode :: Void |

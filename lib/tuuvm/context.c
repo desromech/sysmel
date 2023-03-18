@@ -285,7 +285,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)context->roots.typeType, context->roots.typeType);
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)context->roots.anyValueType, context->roots.typeType);
 
-    tuuvm_type_setFlags(context, context->roots.anyValueType, TUUVM_TYPE_FLAGS_NULLABLE);
+    tuuvm_type_setFlags(context, context->roots.anyValueType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_DYNAMIC);
     tuuvm_type_setFlags(context, context->roots.typeType, TUUVM_TYPE_FLAGS_NULLABLE);
 
     context->roots.objectType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.anyValueType);
@@ -391,14 +391,17 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.analyzeAndEvaluateConcreteMetaValueWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "analyzeAndEvaluateConcreteMetaValue:withEnvironment:");
     context->roots.analyzeConcreteMetaValueWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "analyzeConcreteMetaValue:withEnvironment:");
 
+    context->roots.coerceASTNodeWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "coerceASTNode:withEnvironment:");
+    context->roots.analyzeAndTypeCheckFunctionApplicationNodeWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "analyzeAndTypeCheckFunctionApplicationNode:withEnvironment:");
+    context->roots.analyzeAndTypeCheckMessageSendNodeWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "analyzeAndTypeCheckMessageSendNode:withEnvironment:");
+    context->roots.getOrCreateDependentApplicationValueForNodeSelector = tuuvm_symbol_internWithCString(context, "getOrCreateDependentApplicationValueForNode:");
+
     context->roots.applyWithoutArgumentsSelector = tuuvm_symbol_internWithCString(context, "()");
     context->roots.applyWithArgumentsSelector = tuuvm_symbol_internWithCString(context, "():");
 
     context->roots.primitiveNamedSelector = tuuvm_symbol_internWithCString(context, "primitive:");
 
     context->roots.coerceValueSelector = tuuvm_symbol_internWithCString(context, "coerceValue:");
-    context->roots.coerceASTNodeWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "coerceASTNode:withEnvironment:");
-    context->roots.typeCheckFunctionApplicationWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "typeCheckFunctionApplication:withEnvironment:");
     context->roots.defaultValueSelector = tuuvm_symbol_internWithCString(context, "defaultValue");
 
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "nil"), TUUVM_NULL_TUPLE);
@@ -499,7 +502,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.controlFlowBreakType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "ControlFlowBreakType", context->roots.controlFlowEscapeType);
     context->roots.controlFlowContinueType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "ControlFlowContinueType", context->roots.controlFlowEscapeType);
     context->roots.controlFlowReturnType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "ControlFlowReturnType", context->roots.controlFlowEscapeType);
-    context->roots.controlFlowNoReturnType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "ControlFlowNoReturnType", context->roots.controlFlowEscapeType);
+    context->roots.noReturnType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "NoReturn", context->roots.controlFlowEscapeType);
+    context->roots.unwindsType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "Unwinds", context->roots.controlFlowEscapeType);
 
     context->roots.decayedTypeInferenceType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "DecayedTypeInferenceType", TUUVM_NULL_TUPLE);
     context->roots.directTypeInferenceType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "DirectTypeInferenceType", TUUVM_NULL_TUPLE);
@@ -871,6 +875,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "receiverLookupType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "selector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "boundMethod", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     context->roots.astMessageChainNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMessageChainNode", context->roots.astNodeType,
         "receiver", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,

@@ -34,9 +34,11 @@ typedef enum tuuvm_typeFlags_e
 
     TUUVM_TYPE_FLAGS_FINAL = 1<<3,
     TUUVM_TYPE_FLAGS_ABSTRACT = 1<<4,
+    TUUVM_TYPE_FLAGS_DYNAMIC = 1<<5,
 
-    TUUVM_TYPE_FLAGS_POINTER_VALUE = 1<<5,
-    TUUVM_TYPE_FLAGS_REFERENCE_VALUE = 1<<6,
+    TUUVM_TYPE_FLAGS_POINTER_VALUE = 1<<6,
+    TUUVM_TYPE_FLAGS_REFERENCE_VALUE = 1<<7,
+
     TUUVM_TYPE_FLAGS_POINTER_LIKE_VALUE = TUUVM_TYPE_FLAGS_POINTER_VALUE | TUUVM_TYPE_FLAGS_REFERENCE_VALUE,
 
     TUUVM_TYPE_FLAGS_CLASS_DEFAULT_FLAGS = TUUVM_TYPE_FLAGS_NULLABLE,
@@ -381,6 +383,14 @@ TUUVM_INLINE bool tuuvm_type_isNullable(tuuvm_tuple_t type)
 }
 
 /**
+ * Is this a dynamic type?
+ */
+TUUVM_INLINE bool tuuvm_type_isDynamic(tuuvm_tuple_t type)
+{
+    return !type || (tuuvm_type_getFlags(type) & TUUVM_TYPE_FLAGS_DYNAMIC) != 0;
+}
+
+/**
  * Is this a pointer like value?
  */
 TUUVM_INLINE bool tuuvm_type_isPointerLikeType(tuuvm_tuple_t type)
@@ -583,12 +593,23 @@ TUUVM_API void tuuvm_type_setCoerceValueFunction(tuuvm_context_t *context, tuuvm
 /**
  * Gets the typeCheckFunction function of a type.
  */
-TUUVM_API tuuvm_tuple_t tuuvm_type_getTypeCheckFunctionApplicationWithEnvironmentNode(tuuvm_context_t *context, tuuvm_tuple_t type);
+TUUVM_API tuuvm_tuple_t tuuvm_type_getAnalyzeAndTypeCheckFunctionApplicationNodeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t type);
 
 /**
  * Sets the typeCheckFunctionApplication function of a type
  */
-TUUVM_API void tuuvm_type_setTypeCheckFunctionApplicationWithEnvironmentNode(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t coerceValueFunction);
+TUUVM_API void tuuvm_type_setAnalyzeAndTypeCheckFunctionApplicationNodeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t coerceValueFunction);
+
+/**
+ * Gets the typeCheckFunction function of a type.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_getAnalyzeAndTypeCheckMessageSendNodeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t type);
+
+/**
+ * Sets the typeCheckFunctionApplication function of a type
+ */
+TUUVM_API void tuuvm_type_setAnalyzeAndTypeCheckMessageSendNodeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t coerceValueFunction);
+
 
 /**
  * Coerces a value into the specified type. Error if the coercion is not possible.

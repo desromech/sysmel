@@ -155,6 +155,7 @@ typedef struct tuuvm_astMessageSendNode_s
     tuuvm_tuple_t receiverLookupType;
     tuuvm_tuple_t selector;
     tuuvm_tuple_t arguments;
+    tuuvm_tuple_t boundMethod;
 } tuuvm_astMessageSendNode_t;
 
 typedef struct tuuvm_astMessageChainNode_s

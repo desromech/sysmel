@@ -116,6 +116,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousPrimitiveValueTypeAndValueMeta
 {
     tuuvm_tuple_t metatypeSupertype = context->roots.primitiveValueType;
     tuuvm_tuple_t actualSuperType = supertype;
+    tuuvm_tuple_t supertypeMetatype = tuuvm_tuple_getType(context, supertype);
+    if(tuuvm_type_isDirectSubtypeOf(supertypeMetatype, context->roots.primitiveValueType))
+        metatypeSupertype = supertypeMetatype;
 
     tuuvm_tuple_t metatype = tuuvm_type_createAnonymousValueMetatype(context, metatypeSupertype, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_primitiveValueType_t));
     tuuvm_tuple_t primitiveValueType = tuuvm_type_createAnonymousPrimitiveValueType(context, actualSuperType, metatype);
@@ -638,14 +641,24 @@ TUUVM_API void tuuvm_type_setCoerceValueFunction(tuuvm_context_t *context, tuuvm
     tuuvm_type_setMethodWithSelector(context, type, context->roots.coerceValueSelector, coerceValueFunction);
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_type_getTypeCheckFunctionApplicationWithEnvironmentNode(tuuvm_context_t *context, tuuvm_tuple_t type)
+TUUVM_API tuuvm_tuple_t tuuvm_type_getAnalyzeAndTypeCheckFunctionApplicationNodeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t type)
 {
-    return tuuvm_type_lookupSelector(context, type, context->roots.typeCheckFunctionApplicationWithEnvironmentSelector);
+    return tuuvm_type_lookupSelector(context, type, context->roots.analyzeAndTypeCheckFunctionApplicationNodeWithEnvironmentSelector);
 }
 
-TUUVM_API void tuuvm_type_setTypeCheckFunctionApplicationWithEnvironmentNode(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t typeCheckFunction)
+TUUVM_API void tuuvm_type_setAnalyzeAndTypeCheckFunctionApplicationNodeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t typeCheckFunction)
 {
-    tuuvm_type_setMethodWithSelector(context, type, context->roots.typeCheckFunctionApplicationWithEnvironmentSelector, typeCheckFunction);
+    tuuvm_type_setMethodWithSelector(context, type, context->roots.analyzeAndTypeCheckFunctionApplicationNodeWithEnvironmentSelector, typeCheckFunction);
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_type_getAnalyzeAndTypeCheckMessageSendNodeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t type)
+{
+    return tuuvm_type_lookupSelector(context, type, context->roots.analyzeAndTypeCheckMessageSendNodeWithEnvironmentSelector);
+}
+
+TUUVM_API void tuuvm_type_setAnalyzeAndTypeCheckMessageSendNodeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t typeCheckFunction)
+{
+    tuuvm_type_setMethodWithSelector(context, type, context->roots.analyzeAndTypeCheckMessageSendNodeWithEnvironmentSelector, typeCheckFunction);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_pointerLikeType_load(tuuvm_context_t *context, tuuvm_tuple_t pointerLikeValue)
@@ -914,7 +927,7 @@ static tuuvm_tuple_t tuuvm_type_primitive_coerceASTNodeWithEnvironment(tuuvm_con
     (void)environment;
 
     tuuvm_tuple_t sourceType = tuuvm_astNode_getAnalyzedType(*astNode);
-    if(sourceType)
+    if(sourceType && !tuuvm_type_isDirectSubtypeOf(sourceType, context->roots.controlFlowEscapeType))
         tuuvm_error("Cannot perform the type coercion.");
 
     return *astNode;
@@ -930,7 +943,13 @@ static tuuvm_tuple_t tuuvm_void_primitive_coerceASTNodeWithEnvironment(tuuvm_con
     tuuvm_tuple_t *astNode = &arguments[1];
     tuuvm_tuple_t *environment = &arguments[2];
 
-    if(*targetType != context->roots.voidType) tuuvm_error("Invalid type conversion requested.");
+    if(*targetType != context->roots.voidType)
+    {
+        if(tuuvm_type_isDirectSubtypeOf(*targetType, context->roots.controlFlowEscapeType))
+            return *astNode;
+
+        tuuvm_error("Invalid type conversion requested.");
+    }
 
     tuuvm_tuple_t sourcePosition = tuuvm_astNode_getSourcePosition(*astNode);
     tuuvm_tuple_t functionLiteral = tuuvm_astLiteralNode_create(context, sourcePosition, context->roots.anyValueToVoidPrimitive);

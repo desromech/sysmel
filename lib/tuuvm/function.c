@@ -451,12 +451,13 @@ static tuuvm_tuple_t tuuvm_function_primitive_recompileAndOptimize(tuuvm_context
     return *function;
 }
 
-bool tuuvm_function_shouldOptimizeLookup(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_tuple_t receiverType)
+bool tuuvm_function_shouldOptimizeLookup(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_tuple_t receiverType, bool hasLiteralReceiver)
 {
-    (void)receiverType;
+    size_t functionFlags = tuuvm_function_getFlags(context, function);
     return
+        hasLiteralReceiver ||
         (tuuvm_type_getFlags(receiverType) & (TUUVM_TYPE_FLAGS_FINAL)) != TUUVM_TYPE_FLAGS_NONE ||
-        (tuuvm_function_getFlags(context, function) & (TUUVM_FUNCTION_FLAGS_MACRO | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL)) != TUUVM_FUNCTION_FLAGS_NONE;
+        (functionFlags & (TUUVM_FUNCTION_FLAGS_MACRO | TUUVM_FUNCTION_FLAGS_FINAL)) != TUUVM_FUNCTION_FLAGS_NONE;
 }
 
 void tuuvm_function_registerPrimitives(void)

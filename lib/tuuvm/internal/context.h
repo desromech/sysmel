@@ -70,7 +70,9 @@ typedef struct tuuvm_context_roots_s
 
     tuuvm_tuple_t coerceValueSelector;
     tuuvm_tuple_t coerceASTNodeWithEnvironmentSelector;
-    tuuvm_tuple_t typeCheckFunctionApplicationWithEnvironmentSelector;
+    tuuvm_tuple_t analyzeAndTypeCheckFunctionApplicationNodeWithEnvironmentSelector;
+    tuuvm_tuple_t analyzeAndTypeCheckMessageSendNodeWithEnvironmentSelector;
+    tuuvm_tuple_t getOrCreateDependentApplicationValueForNodeSelector;
     tuuvm_tuple_t defaultValueSelector;
 
     tuuvm_tuple_t anyValueType;
@@ -155,7 +157,8 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t controlFlowBreakType;
     tuuvm_tuple_t controlFlowContinueType;
     tuuvm_tuple_t controlFlowReturnType;
-    tuuvm_tuple_t controlFlowNoReturnType;
+    tuuvm_tuple_t noReturnType;
+    tuuvm_tuple_t unwindsType;
     tuuvm_tuple_t decayedTypeInferenceType;
     tuuvm_tuple_t directTypeInferenceType;
 

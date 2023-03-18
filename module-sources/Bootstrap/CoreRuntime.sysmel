@@ -1,4 +1,6 @@
 ## We use these for the different implementations of Size
+error __type__: (SimpleFunctionTypeTemplate((String,), false, Unwinds)).
+
 {
     let: #binaryFunctionType with: SimpleFunctionTypeTemplate((UInt32, UInt32), false, UInt32).
     let: #equalityComparisonFunctionType with: SimpleFunctionTypeTemplate((UInt32, nil), false, Boolean).
@@ -109,7 +111,7 @@ AnyValue
     withSelector: #shallowCopy addMethod: {:(AnyValue)self :: self __type__ | RawTuple::shallowCopy(self) } makeFinal;
     withSelector: #copy addMethod: {:(AnyValue)self :: self __type__ | self shallowCopy postCopy; yourself };
 
-    withSelector: #doesNotUnderstand: addMethod: {:(AnyValue)self :(Message)message :: Void |
+    withSelector: #doesNotUnderstand: addMethod: {:(AnyValue)self :(Message)message |
         error("doesNotUnderstand: " -- message selector printString)
     };
 
@@ -119,17 +121,16 @@ AnyValue
     withSelector: #= addMethod: {:(AnyValue)self :other :: Boolean | self == other } makePure;
     withSelector: #~= addMethod: {:(AnyValue)self :other :: Boolean | self ~~ other } makePure.
 
-
 Object
     withSelector: #class addMethod: {:(Object)self :: self __type__ __type__ | self __type__ } makePure makeFinal;
     withSelector: #species addMethod: {:(Object)self :: Class | self class };
 
-    withSelector: #error: addMethod: {:(Object)self :(String)errorMessage :: Void | error(errorMessage) };
+    withSelector: #error: addMethod: {:(Object)self :(String)errorMessage :: Unwinds | error(errorMessage) };
     withSelector: #assert: addMethod: {:(Object)self :(Boolean)condition :: Void |
         if: condition then: void else: error("Assertion failure.")
     };
-    withSelector: #subclassResponsibility addMethod: {:(Object)self :: Void | self error: self __type__ printString -- " Subclass responsibility." };
-    withSelector: #doesNotUnderstand: addMethod: {:(AnyValue)self :(Message)message :: Void |
+    withSelector: #subclassResponsibility addMethod: {:(Object)self :: Unwinds | self error: self __type__ printString -- " Subclass responsibility." };
+    withSelector: #doesNotUnderstand: addMethod: {:(AnyValue)self :(Message)message |
         error((self printString -- " doesNotUnderstand: ") -- message selector printString)
     }.
 
@@ -277,6 +278,11 @@ Type
                 then: (supertype lookupSelector: selector)
                 else: (nil)
         }
+    }.
+
+ControlFlowEscapeType class
+    withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(Type)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
+        astNode
     }.
 
 UndefinedObject class
@@ -1037,11 +1043,16 @@ SourcePosition
 
 GeneratedSymbol
     withSelector: #printOn: addMethod: {:(GeneratedSymbol)self :(Stream)stream :: Void |
-        stream print: self class; nextPutAll: " value: ("; print: self value; nextPut: ')'
+        stream print: self class; nextPut: '('; print: self value; nextPut: ')'
+    }.
+
+Metaclass class
+    withSelector: #getOrCreateDependentApplicationValueForNode: addMethod: {:(Metaclass class)self :(ASTNode)astNode |
+        Class
     }.
 
 Class
-    withSelector: #subclassWithClassSlots: addMethod: {:(Class)self :(Array)classSlots  :: Class |
+    withSelector: #subclassWithClassSlots: addMethod: {:(Class)self :(Array)classSlots :: Class |
         let: #metaclass with: Metaclass basicNew.
         let: #metaclassSuper with: self class.
         metaclass
