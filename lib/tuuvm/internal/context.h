@@ -71,6 +71,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t coerceValueSelector;
     tuuvm_tuple_t coerceASTNodeWithEnvironmentSelector;
     tuuvm_tuple_t typeCheckFunctionApplicationWithEnvironmentSelector;
+    tuuvm_tuple_t defaultValueSelector;
 
     tuuvm_tuple_t anyValueType;
     tuuvm_tuple_t anyReferenceType;

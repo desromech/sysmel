@@ -530,14 +530,14 @@ SSAInstructionBuilder definition: {
     public method call: (receiver: SSAValue) selector: (selector: SSAValue) arguments: (arguments: Array) ::=> SSASendInstruction
         := self call: receiver selector: selector arguments: arguments resultType: nil.
 
-    public method coerceValue: (value: SSAValue) into: (targetType: SSAValue) ::=> SSAValue := {
+    public method coerceValue: (value: SSAValue) into: (targetType: SSAValue) type: (type: Type) ::=> SSAValue := {
         (targetType == nil) || (targetType isLiteralConstant && (value type == targetType value)) ifTrue: {
             value
         } ifFalse: {
             self addInstruction: (SSACoerceValueInstruction new
                 value: value;
                 targetType: targetType;
-                type: (targetType isLiteralConstant ifTrue: targetType value ifFalse: nil);
+                type: type;
                 yourself)
         }.
     }.
@@ -735,6 +735,15 @@ ASTBreakNode extend: {
     }.
 }.
 
+ASTCoerceValueNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let type := self typeExpression generateSSAValueWith: context.
+        let value := self valueExpression generateSSAValueWith: context.
+        context builder coerceValue: value into: type type: self analyzedType
+    }.
+        
+}.
+
 ASTContinueNode extend: {
     public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
         context continueDestination ifNil: (self error: 'Invalid continue at ' context).
@@ -806,26 +815,16 @@ ASTLocalDefinitionNode extend: {
     public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
         let builder := context builder.
 
-        let typeExpression := self typeExpression.
-        let type := typeExpression
-            ifNotNil: (typeExpression generateSSAValueWith: context)
-            ifNil: nil.
-
-        let valueExpression := self valueExpression.
-        let value := valueExpression
-            ifNotNil: (valueExpression generateSSAValueWith: context)
-            ifNil: (builder literal: nil).
-
-        let coercedValue := builder coerceValue: value into: type.
+        let value := self valueExpression generateSSAValueWith: context.
 
         self isMutable ifTrue: {
-            let localVariable := builder alloca: type type: self analyzedType.
-            builder store: coercedValue in: localVariable.
+            let localVariable := builder alloca: (builder literal: self analyzedValueType) type: self analyzedType.
+            builder store: value in: localVariable.
             context setValue: localVariable forBinding: self binding.
             localVariable
         } ifFalse: {
-            context setValue: coercedValue forBinding: self binding.
-            coercedValue
+            context setValue: value forBinding: self binding.
+            value
         }
     }.
 }.

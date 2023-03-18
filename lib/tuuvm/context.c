@@ -399,6 +399,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.coerceValueSelector = tuuvm_symbol_internWithCString(context, "coerceValue:");
     context->roots.coerceASTNodeWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "coerceASTNode:withEnvironment:");
     context->roots.typeCheckFunctionApplicationWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "typeCheckFunctionApplication:withEnvironment:");
+    context->roots.defaultValueSelector = tuuvm_symbol_internWithCString(context, "defaultValue");
 
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "nil"), TUUVM_NULL_TUPLE);
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "false"), TUUVM_FALSE_TUPLE);
@@ -839,6 +840,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "binding", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "isMacroSymbol", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "isMutable", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        "analyzedValueType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         NULL);
     context->roots.astIdentifierReferenceNodeType = tuuvm_context_createIntrinsicClass(context, "ASTIdentifierReferenceNode", context->roots.astNodeType,
         "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,

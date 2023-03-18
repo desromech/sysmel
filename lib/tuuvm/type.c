@@ -750,6 +750,21 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_decay(tuuvm_context_t *context, tuuvm_tuple_t
     return type;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_type_getCanonicalPendingInstanceType(tuuvm_context_t *context, tuuvm_tuple_t type)
+{
+    if(tuuvm_type_isDirectSubtypeOf(type, context->roots.referenceType))
+        return tuuvm_type_createReferenceType(context, context->roots.anyValueType, TUUVM_NULL_TUPLE);
+    return context->roots.anyValueType;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_type_getDefaultValue(tuuvm_context_t *context, tuuvm_tuple_t type)
+{
+    if(tuuvm_type_isNullable(type))
+        return TUUVM_NULL_TUPLE;
+    
+    return tuuvm_tuple_send0(context, context->roots.defaultValueSelector, type);
+}
+
 static tuuvm_tuple_t tuuvm_type_primitive_flushLookupSelector(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;

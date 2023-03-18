@@ -105,6 +105,7 @@ typedef struct tuuvm_astLocalDefinitionNode_s
     tuuvm_tuple_t binding;
     tuuvm_tuple_t isMacroSymbol;
     tuuvm_tuple_t isMutable;
+    tuuvm_tuple_t analyzedValueType;
 } tuuvm_astLocalDefinitionNode_t;
 
 typedef struct tuuvm_astIdentifierReferenceNode_s

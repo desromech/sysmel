@@ -610,4 +610,14 @@ TUUVM_API tuuvm_tuple_t tuuvm_pointerLikeType_load(tuuvm_context_t *context, tuu
  */
 TUUVM_API tuuvm_tuple_t tuuvm_type_decay(tuuvm_context_t *context, tuuvm_tuple_t type);
 
+/**
+ * Gets the canonical pending type
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_getCanonicalPendingInstanceType(tuuvm_context_t *context, tuuvm_tuple_t type);
+
+/**
+ * Gets the default value for the given type.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_getDefaultValue(tuuvm_context_t *context, tuuvm_tuple_t type);
+
 #endif //TUUVM_TYPE_H

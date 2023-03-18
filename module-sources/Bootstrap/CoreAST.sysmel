@@ -33,6 +33,16 @@ ASTBinaryExpressionSequenceNode
         self operators: (self operators collect: aBlock).
     }.
 
+ASTCoerceValueNode
+    withSelector: #childrenDo: addMethod: {:(ASTDoWhileContinueWithNode)self :aBlock :: Void |
+        if: (self typeExpression isNotNil) then: aBlock(self typeExpression).
+        if: (self valueExpression isNotNil) then: aBlock(self valueExpression).
+    };
+    withSelector: #transformWith: addMethod: {:(ASTDoWhileContinueWithNode)self :aBlock :: Void |
+        if: (self typeExpression isNotNil) then: (self typeExpression: aBlock(self typeExpression)).
+        if: (self valueExpression isNotNil) then: (self valueExpression: aBlock(self valueExpression)).
+    }.
+
 ASTDoWhileContinueWithNode
     withSelector: #childrenDo: addMethod: {:(ASTDoWhileContinueWithNode)self :aBlock :: Void |
         if: (self bodyExpression isNotNil) then: aBlock(self bodyExpression).
