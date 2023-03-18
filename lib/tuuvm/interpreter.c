@@ -183,9 +183,57 @@ static tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithDirectTypeWithEnvironment(t
     return tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, astNode, context->roots.directTypeInferenceType, environment);
 }
 
+static tuuvm_tuple_t tuuvm_interpreter_applyCoercionToASTNodeIntoType(tuuvm_context_t *context, tuuvm_tuple_t astNode_, tuuvm_tuple_t environment_, tuuvm_tuple_t targetType_)
+{
+    struct {
+        tuuvm_tuple_t targetType;
+        tuuvm_tuple_t environment;
+        tuuvm_tuple_t nodeType;
+        tuuvm_tuple_t result;
+
+        tuuvm_tuple_t coercionExpressionType;
+    } gcFrame = {
+        .result = astNode_,
+        .targetType = targetType_,
+        .environment = environment_
+    };
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    if(!gcFrame.targetType)
+        gcFrame.targetType = context->roots.decayedTypeInferenceType;
+
+    // We do not need to perform type checking when just passing the type.
+    if(gcFrame.targetType != context->roots.directTypeInferenceType)
+    {
+        gcFrame.nodeType = tuuvm_astNode_getAnalyzedType(gcFrame.result);
+        bool isDecayedType = gcFrame.targetType == context->roots.decayedTypeInferenceType;
+        if(isDecayedType)
+            gcFrame.targetType = tuuvm_type_decay(context, gcFrame.nodeType);
+
+        if(gcFrame.targetType && !tuuvm_type_isDirectSubtypeOf(gcFrame.nodeType, gcFrame.targetType))
+            gcFrame.result = tuuvm_tuple_send2(context, context->roots.coerceASTNodeWithEnvironmentSelector, gcFrame.targetType, gcFrame.result, gcFrame.environment);
+    }
+
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
+}
+
 static tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithCurrentExpectedTypeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t environment)
 {
-    return tuuvm_interpreter_analyzeASTIfNeededWithEnvironment(context, astNode, environment);
+    struct {
+        tuuvm_tuple_t targetType;
+        tuuvm_tuple_t result;
+
+        tuuvm_tuple_t coercionExpressionType;
+    } gcFrame = {0};
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    gcFrame.targetType = tuuvm_analysisAndEvaluationEnvironment_getExpectedType(context, environment);
+    gcFrame.result = tuuvm_interpreter_analyzeASTIfNeededWithEnvironment(context, astNode, environment);
+
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return tuuvm_interpreter_applyCoercionToASTNodeIntoType(context, gcFrame.result, environment, gcFrame.targetType);
 }
 
 static tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode_, tuuvm_tuple_t expectedType_, tuuvm_tuple_t environment_)
@@ -221,20 +269,8 @@ static tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment
     // Restore the old expected type.
     tuuvm_analysisAndEvaluationEnvironment_setExpectedType(context, gcFrame.environment, gcFrame.oldExpectedType);
 
-    // We do not need to perform type checking when just passing the type.
-    if(gcFrame.expectedType != context->roots.directTypeInferenceType)
-    {
-        gcFrame.nodeType = tuuvm_astNode_getAnalyzedType(gcFrame.result);
-        bool isDecayedType = gcFrame.expectedType == context->roots.decayedTypeInferenceType;
-        if(isDecayedType)
-            gcFrame.expectedType = tuuvm_type_decay(context, gcFrame.nodeType);
-
-        if(gcFrame.expectedType && !tuuvm_type_isDirectSubtypeOf(gcFrame.nodeType, gcFrame.expectedType))
-            gcFrame.result = tuuvm_tuple_send2(context, context->roots.coerceASTNodeWithEnvironmentSelector, gcFrame.expectedType, gcFrame.result, gcFrame.environment);
-    }
-
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-    return gcFrame.result;
+    return tuuvm_interpreter_applyCoercionToASTNodeIntoType(context, gcFrame.result, gcFrame.environment, gcFrame.expectedType);
 }
 
 static tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithExpectedTypeExpressionWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t expectedTypeExpression, tuuvm_tuple_t environment)
