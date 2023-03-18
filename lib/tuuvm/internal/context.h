@@ -111,6 +111,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t namespaceType;
     tuuvm_tuple_t negativeIntegerType;
     tuuvm_tuple_t objectType;
+    tuuvm_tuple_t pendingMemoizationValueType;
     tuuvm_tuple_t pointerLikeType;
     tuuvm_tuple_t pointerType;
     tuuvm_tuple_t positiveIntegerType;

@@ -225,9 +225,16 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
             {
                 if(tuuvm_weakValueDictionary_find(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, &gcFrame.result))
                 {
+                    if(gcFrame.result == TUUVM_PENDING_MEMOIZATION_VALUE)
+                        tuuvm_error("Computing cyclic memoized value.");
+
                     tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
                     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
                     return gcFrame.result;
+                }
+                else
+                {
+                    tuuvm_weakValueDictionary_atPut(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, TUUVM_PENDING_MEMOIZATION_VALUE);
                 }
             }
             else

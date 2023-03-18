@@ -483,8 +483,13 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 
     context->roots.undefinedObjectType = tuuvm_context_createIntrinsicClass(context, "UndefinedObject", TUUVM_NULL_TUPLE, NULL);
     tuuvm_typeAndMetatype_setFlags(context, context->roots.undefinedObjectType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
+
+    context->roots.pendingMemoizationValueType = tuuvm_context_createIntrinsicClass(context, "PendingMemoizationValue", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_typeAndMetatype_setFlags(context, context->roots.pendingMemoizationValueType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
+
     context->roots.tombstoneType = tuuvm_context_createIntrinsicClass(context, "ObjectTombstone", TUUVM_NULL_TUPLE, NULL);
     tuuvm_typeAndMetatype_setFlags(context, context->roots.tombstoneType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_IMMEDIATE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
+
     context->roots.stringType = tuuvm_context_createIntrinsicClass(context, "String", context->roots.arrayedCollectionType, NULL);
     tuuvm_typeAndMetatype_setFlags(context, context->roots.stringType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_BYTES | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
 
@@ -939,6 +944,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.immediateTrivialTypeTable[TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_VOID] = context->roots.voidType;
     context->roots.immediateTrivialTypeTable[TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_HASHTABLE_EMPTY_ELEMENT] = context->roots.hashtableEmptyType;
     context->roots.immediateTrivialTypeTable[TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_TOMBSTONE] = context->roots.tombstoneType;
+    context->roots.immediateTrivialTypeTable[TUUVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_PENDING_MEMOIZATION_VALUE] = context->roots.pendingMemoizationValueType;
 }
 
 TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
