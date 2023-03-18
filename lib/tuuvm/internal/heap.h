@@ -57,6 +57,6 @@ void tuuvm_heap_compact(tuuvm_heap_t *heap);
 void tuuvm_heap_swapGCColors(tuuvm_heap_t *heap);
 
 void tuuvm_heap_dumpToFile(tuuvm_heap_t *heap, FILE *file);
-void tuuvm_heap_loadFromFile(tuuvm_heap_t *heap, FILE *file, size_t numberOfRootsToRelocate, tuuvm_tuple_t *rootsToRelocate);
+bool tuuvm_heap_loadFromFile(tuuvm_heap_t *heap, FILE *file, size_t numberOfRootsToRelocate, tuuvm_tuple_t *rootsToRelocate);
 
 #endif //TUUVM_INTERNAL_HEAP_H

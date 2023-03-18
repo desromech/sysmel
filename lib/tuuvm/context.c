@@ -997,17 +997,22 @@ TUUVM_API tuuvm_context_t *tuuvm_context_loadImageFromFileNamed(const char *file
         return NULL;
 
     char magic[4] = {0};
-    fread(magic, 4, 1, inputFile);
-    if(memcmp(magic, "TVIM", 4))
+    if(fread(magic, 4, 1, inputFile) != 1 || memcmp(magic, "TVIM", 4))
     {
         fclose(inputFile);
         return NULL;
     }
 
     tuuvm_context_t *context = (tuuvm_context_t*)calloc(1, sizeof(tuuvm_context_t));
-    fread(&context->identityHashSeed, sizeof(context->identityHashSeed), 1, inputFile);
-    fread(&context->roots, sizeof(context->roots), 1, inputFile);
-    tuuvm_heap_loadFromFile(&context->heap, inputFile, sizeof(context->roots) / sizeof(tuuvm_tuple_t), (tuuvm_tuple_t*)&context->roots);
+    if(fread(&context->identityHashSeed, sizeof(context->identityHashSeed), 1, inputFile) != 1 ||
+        fread(&context->roots, sizeof(context->roots), 1, inputFile) != 1 ||
+        !tuuvm_heap_loadFromFile(&context->heap, inputFile, sizeof(context->roots) / sizeof(tuuvm_tuple_t), (tuuvm_tuple_t*)&context->roots))
+    {
+        fclose(inputFile);
+        free(context);
+        return NULL;
+    }
+
     fclose(inputFile);
     return context;
 }

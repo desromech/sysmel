@@ -442,15 +442,15 @@ void tuuvm_heap_dumpToFile(tuuvm_heap_t *heap, FILE *file)
     free(chunkRecords);
 }
 
-void tuuvm_heap_loadFromFile(tuuvm_heap_t *heap, FILE *file, size_t numberOfRootsToRelocate, tuuvm_tuple_t *rootsToRelocate)
+bool tuuvm_heap_loadFromFile(tuuvm_heap_t *heap, FILE *file, size_t numberOfRootsToRelocate, tuuvm_tuple_t *rootsToRelocate)
 {
     tuuvm_heap_initialize(heap);
 
     uint32_t chunkCount = 0;
-    fread(&chunkCount, 4, 1, file);
+    if(fread(&chunkCount, 4, 1, file) != 1) return false;
 
     tuuvm_heap_chunkRecord_t *chunkRecords = (tuuvm_heap_chunkRecord_t*)calloc(sizeof(tuuvm_heap_chunkRecord_t), chunkCount);
-    fread(chunkRecords, sizeof(tuuvm_heap_chunkRecord_t), chunkCount, file);
+    if(fread(chunkRecords, sizeof(tuuvm_heap_chunkRecord_t), chunkCount, file) != chunkCount) return false;
 
     tuuvm_heap_relocationTable_t relocationTable = {
         .entryCount = chunkCount,
@@ -463,7 +463,7 @@ void tuuvm_heap_loadFromFile(tuuvm_heap_t *heap, FILE *file, size_t numberOfRoot
         tuuvm_heap_chunkRecord_t *record = chunkRecords + i;
         tuuvm_heap_chunk_t *allocatedChunk = tuuvm_heap_allocateChunkWithRequiredChunkCapacity(heap, record->capacity);
 
-        fread(&allocatedChunk[1], record->size - sizeof(tuuvm_heap_chunk_t), 1, file);
+        if(fread(&allocatedChunk[1], record->size - sizeof(tuuvm_heap_chunk_t), 1, file) != 1) return false;
         allocatedChunk->size = record->size;
 
         tuuvm_heap_relocationRecord_t *relocationRecord = relocationTable.entries + i;
@@ -481,4 +481,5 @@ void tuuvm_heap_loadFromFile(tuuvm_heap_t *heap, FILE *file, size_t numberOfRoot
     // Relocate the objects.
     tuuvm_heap_relocateWithTable(heap, &relocationTable);
     free(relocationTable.entries);
+    return true;
 }
