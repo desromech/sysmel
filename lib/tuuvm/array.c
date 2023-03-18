@@ -16,6 +16,23 @@ TUUVM_API tuuvm_tuple_t tuuvm_array_create(tuuvm_context_t *context, tuuvm_tuple
     return (tuuvm_tuple_t)tuuvm_context_allocatePointerTuple(context, context->roots.arrayType, slotCount);
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_weakArray_create(tuuvm_context_t *context, tuuvm_tuple_t slotCount)
+{
+    if(slotCount == 0)
+    {
+        if(!context->roots.emptyWeakArrayConstant)
+        {
+            context->roots.emptyWeakArrayConstant = (tuuvm_tuple_t)tuuvm_context_allocatePointerTuple(context, context->roots.weakArrayType, 0);
+            tuuvm_tuple_markWeakObject(context->roots.emptyWeakArrayConstant);
+        }
+        return context->roots.emptyWeakArrayConstant;
+    }
+
+    tuuvm_tuple_t result = (tuuvm_tuple_t)tuuvm_context_allocatePointerTuple(context, context->roots.weakArrayType, slotCount);
+    tuuvm_tuple_markWeakObject(result);
+    return result;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_byteArray_create(tuuvm_context_t *context, tuuvm_tuple_t size)
 {
     if(size == 0)
@@ -160,4 +177,7 @@ void tuuvm_array_setupPrimitives(tuuvm_context_t *context)
 {
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Array::=", context->roots.arrayType, "=", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_array_primitive_equals);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Array::hash", context->roots.arrayType, "hash", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_array_primitive_hash);
+
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "WeakArray::=", context->roots.weakArrayType, "=", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_array_primitive_equals);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "WeakArray::hash", context->roots.weakArrayType, "hash", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_array_primitive_hash);
 }

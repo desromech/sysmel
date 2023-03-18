@@ -1,6 +1,6 @@
 ## We use these for the different implementations of Size
 error __type__: (SimpleFunctionTypeTemplate((String,), false, Unwinds)).
-
+    
 {
     let: #binaryFunctionType with: SimpleFunctionTypeTemplate((UInt32, UInt32), false, UInt32).
     let: #equalityComparisonFunctionType with: SimpleFunctionTypeTemplate((UInt32, nil), false, Boolean).
@@ -54,40 +54,40 @@ Function
         self flags: self flags | flag
     };
     withSelector: #makeMacro addMethod: {:(Function)self :: Function |
-        self addFlags: (1sz << 0sz).
+        self addFlags: FunctionFlags::Macro.
         self
     };
     withSelector: #makePure addMethod: {:(Function)self :: Function |
-        self addFlags: (1sz << 3sz).
+        self addFlags: FunctionFlags::Pure.
         self
     };
     withSelector: #makeFinal addMethod: {:(Function)self :: Function |
-        self addFlags: (1sz << 4sz).
+        self addFlags: FunctionFlags::Final.
         self
     };
     withSelector: #makeVirtual addMethod: {:(Function)self :: Function |
-        self addFlags: (1sz << 5sz).
+        self addFlags: FunctionFlags::Virtual.
         self
     };
     withSelector: #makeAbstract addMethod: {:(Function)self :: Function |
-        self addFlags: (1sz << 6sz).
+        self addFlags: FunctionFlags::Abstract.
         self
     };
     withSelector: #makeOverride addMethod: {:(Function)self :: Function |
-        self addFlags: (1sz << 7sz).
+        self addFlags: FunctionFlags::Override.
         self
     };
     withSelector: #makeStatic addMethod: {:(Function)self :: Function |
-        self addFlags: (1sz << 8sz).
+        self addFlags: FunctionFlags::Static.
         self
     };
 
     withSelector: #makeMemoized addMethod: {:(Function)self :: Function |
-        self addFlags: (1sz << 9sz).
+        self addFlags: FunctionFlags::Memoized.
         self
     };
     withSelector: #makeTemplate addMethod: {:(Function)self :: Function |
-        self addFlags: (1sz << 10sz).
+        self addFlags: FunctionFlags::Template.
         self
     }.
 
@@ -166,43 +166,51 @@ Type
     };
 
     withSelector: #makeNullable addMethod: {:(Type)self :: Type |
-        self addFlags: (1sz << 0sz).
+        self addFlags: TypeFlags::Nullable.
         self
     };
     withSelector: #isNullable addMethod: {:(Type)self :: Boolean |
-        self hasFlag: (1sz << 0sz).
+        self hasFlag: TypeFlags::Nullable.
     };
 
     withSelector: #makeBytes addMethod: {:(Type)self :: Type |
-        self addFlags: (1sz << 1sz).
+        self addFlags: TypeFlags::Bytes.
         self
     };
     withSelector: #isBytes addMethod: {:(Type)self :: Boolean |
-        self hasFlag: (1sz << 1sz).
+        self hasFlag: TypeFlags::Bytes.
+    };
+
+    withSelector: #makeWeak addMethod: {:(Type)self :: Type |
+        self addFlags: TypeFlags::Weak.
+        self
+    };
+    withSelector: #isWeak addMethod: {:(Type)self :: Boolean |
+        self hasFlag: TypeFlags::Weak.
     };
 
     withSelector: #makeImmediate addMethod: {:(Type)self :: Type |
-        self addFlags: (1sz << 2sz).
+        self addFlags: TypeFlags::Immediate.
         self
     };
     withSelector: #isImmediate addMethod: {:(Type)self :: Boolean |
-        self hasFlag: (1sz << 2sz).
+        self hasFlag: TypeFlags::Immediate.
     };
 
     withSelector: #makeFinal addMethod: {:(Type)self :: Type |
-        self addFlags: (1sz << 3sz).
+        self addFlags: TypeFlags::Final.
         self
     };
-    withSelector: #isImmediate addMethod: {:(Type)self :: Boolean |
-        self hasFlag: (1sz << 3sz).
+    withSelector: #isFinal addMethod: {:(Type)self :: Boolean |
+        self hasFlag: TypeFlags::Final.
     };
 
     withSelector: #makeAbstract addMethod: {:(Type)self :: Type |
-        self addFlags: (1sz << 4sz).
+        self addFlags: TypeFlags::Abstract.
         self
     };
     withSelector: #isAbstract addMethod: {:(Type)self :: Boolean |
-        self hasFlag: (1sz << 4sz).
+        self hasFlag: TypeFlags::Abstract.
     };
 
     withSelector: #addTypeSlot: addMethod: {:(Type)self :(TypeSlot)extraSlot :: Void |
@@ -493,33 +501,33 @@ Function
         (self flags & flag) ~= 0sz
     };
     withSelector: #isMacro addMethod: {:(Function)self :: Boolean |
-        self hasFlag: (1sz << 0sz)
+        self hasFlag: FunctionFlags::Macro
     };
     
     withSelector: #isVariadic addMethod: {:(Function)self :: Boolean |
-        self hasFlag: (1sz << 1sz)
+        self hasFlag: FunctionFlags::Variadic
     };
     withSelector: #isCorePrimitive addMethod: {:(Function)self :: Boolean |
-        self hasFlag: (1sz << 2sz)
+        self hasFlag: FunctionFlags::CorePrimitive
     };
 
     withSelector: #isPure addMethod: {:(Function)self :: Boolean |
-        self hasFlag: (1sz << 3sz)
+        self hasFlag: FunctionFlags::Pure
     };
     withSelector: #isFinal addMethod: {:(Function)self :: Boolean |
-        self hasFlag: (1sz << 4sz)
+        self hasFlag: FunctionFlags::Final
     };
     withSelector: #isVirtual addMethod: {:(Function)self :: Boolean |
-        self hasFlag: (1sz << 5sz)
+        self hasFlag: FunctionFlags::Virtual
     };
     withSelector: #isAbstract addMethod: {:(Function)self :: Boolean |
-        self hasFlag: (1sz << 6sz)
+        self hasFlag: FunctionFlags::Abstract
     };
     withSelector: #isOverride addMethod: {:(Function)self :: Boolean |
-        self hasFlag: (1sz << 7sz)
+        self hasFlag: FunctionFlags::Override
     };
     withSelector: #isStatic addMethod: {:(Function)self :: Boolean |
-        self hasFlag: (1sz << 8sz)
+        self hasFlag: FunctionFlags::Static
     };
 
     withSelector: #hasPragmaNamed: addMethod: {:(Function)self :selector :: Boolean |
@@ -835,7 +843,7 @@ TypeSlot
             yourself
     };
     withSelector: #named:type: addClassMethod: {:(TypeSlot class)self :name :(Type)type :: self |
-        self named: name type: type flags: 0sz
+        self named: name type: type flags: TypeSlotFlags::None
     };
     withSelector: #named:flags: addClassMethod: {:(TypeSlot class)self :name :(Size)flags :: self |
         self named: name type: nil flags: flags
@@ -844,17 +852,20 @@ TypeSlot
         self publicNamed: name type: nil
     };
     withSelector: #publicNamed:type: addClassMethod: {:(TypeSlot class)self :name :(Type)type :: self |
-        self named: name type: type flags: 1sz
+        self named: name type: type flags: TypeSlotFlags::Public
     };
     withSelector: #publicNamed: addClassMethod: {:(TypeSlot class)self :name :(Type)type :: self |
         self publicNamed: name type: nil
     };
 
+    withSelector: #hasFlag: addMethod: {:(TypeSlot)self :(Size)flag :: Boolean |
+        (self flags & flag) ~= 0sz
+    };
     withSelector: #isPublic addMethod: {:(TypeSlot)self :: Boolean |
-        (self flags & 1sz) ~= 0sz
+        self hasFlag: TypeSlotFlags::Public
     };
     withSelector: #isReadonly addMethod: {:(TypeSlot)self :: Boolean |
-        (self flags & 2sz) ~= 0sz
+        self hasFlag: TypeSlotFlags::ReadOnly
     };
     withSelector: #generateAccessorsOn:withIndex: addMethod: {:(TypeSlot)self :(Type)type :(Size)slotIndex :: Void |
         if: self isPublic then: {
@@ -1056,7 +1067,7 @@ Class
         let: #metaclass with: Metaclass basicNew.
         let: #metaclassSuper with: self class.
         metaclass
-            flags: 1sz;
+            flags: TypeFlags::MetatypeRequiredFlags;
             supertype: metaclassSuper;
             slots: classSlots;
             totalSlotCount: metaclassSuper validTotalSlotCount + classSlots size;
@@ -1064,7 +1075,7 @@ Class
         
         let: #class with: metaclass basicNew.
         class
-            flags: 1sz;
+            flags: TypeFlags::ClassDefaultFlags;
             supertype: self;
             slots: ();
             totalSlotCount: nil.

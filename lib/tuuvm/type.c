@@ -1000,4 +1000,33 @@ void tuuvm_type_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Type::flushLookupSelector:", context->roots.typeType, "flushLookupSelector:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_flushLookupSelector);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Type::flushMacroLookupSelector:", context->roots.typeType, "flushMacroLookupSelector:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_flushMacroLookupSelector);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Type::flushFallbackLookupSelector:", context->roots.typeType, "flushFallbackLookupSelector:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_flushFallbackLookupSelector);
+
+    // Export the type flags.
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::None", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_NONE));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::Nullable", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_NULLABLE));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::Bytes", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_BYTES));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::Immediate", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_IMMEDIATE));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::Weak", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_WEAK));
+
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::Final", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_FINAL));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::Abstract", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_ABSTRACT));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::Dynamic", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_DYNAMIC));
+
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::PointerValue", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_POINTER_VALUE));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::ReferenceValue", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_REFERENCE_VALUE));
+
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::PointerLikeValue", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_POINTER_LIKE_VALUE));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::ClassDefaultFlags", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_CLASS_DEFAULT_FLAGS));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::MetatypeRequiredFlags", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_METATYPE_REQUIRED_FLAGS));
+
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::PointerTypeFlags", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_POINTER_TYPE_FLAGS));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::ReferenceTypeFlags", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_REFERENCE_TYPE_FLAGS));
+
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::PrimitiveValueTypeDefaultFlags", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_PRIMITIVE_VALUE_TYPE_DEFAULT_FLAGS));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::PrimitiveValueMetatypeDefaultFlags", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_PRIMITIVE_VALUE_TYPE_METATYPE_FLAGS));
+
+    // Export the type slot flags.
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlotFlags::None", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_SLOT_FLAG_NONE));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlotFlags::Public", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_SLOT_FLAG_PUBLIC));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlotFlags::ReadOnly", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_SLOT_FLAG_READONLY));
 }

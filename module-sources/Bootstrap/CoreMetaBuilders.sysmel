@@ -198,7 +198,7 @@ TypeMetaBuilder
     withSelector: #initialize addMethod: {:self :: Void |
         (object: self withLookupStartingFrom: TypeMetaBuilder supertype) initialize.
         self isPublic: false.
-        self typeFlags: 0sz
+        self typeFlags: TypeFlags::None
     };
     withSelector: #metaSlots: addMethod: {:self :(ASTNode)metaSlotsExpression :: ASTNode |
         <metaBuilder>
@@ -330,7 +330,7 @@ VariableMetaBuilder publicSubclass: #FieldMetaBuilder slots: (
 FieldMetaBuilder
     withSelector: #initialize addMethod: {:self :: Void |
         (object: self withLookupStartingFrom: FieldMetaBuilder supertype) initialize.
-        self fieldFlags: 0sz
+        self fieldFlags: TypeSlotFlags::None
     };
     withSelector: #addFieldFlags: addMethod: {:self :(Size)flags :: Void |
         self fieldFlags: self fieldFlags | flags
@@ -404,7 +404,7 @@ ASTUnexpandedApplicationNode
 MethodMetaBuilder
     withSelector: #initialize addMethod: {:self :: Void |
         (object: self withLookupStartingFrom: MethodMetaBuilder supertype) initialize.
-        self methodFlags: 0sz.
+        self methodFlags: FunctionFlags::None.
         self isMacro: false.
         self isFallbackMethod: false.
     };
@@ -491,7 +491,7 @@ MacroMetaBuilder publicSubclass: #MacroMethodMetaBuilder slots: (
 MacroMethodMetaBuilder
     withSelector: #initialize addMethod: {:self :: Void |
         (object: self withLookupStartingFrom: MacroMethodMetaBuilder supertype) initialize.
-        self methodFlags: 1sz.
+        self methodFlags: FunctionFlags::Macro.
         self isFallbackMethod: false.
     };
     withSelector: #addMethodFlags: addMethod: {:self :(Size)flags :: Void |
@@ -521,9 +521,9 @@ MacroMetaBuilder publicSubclass: #FlagMetaBuilder slots: (
 FlagMetaBuilder
     withSelector: #initialize addMethod: {:self :: Void |
         (object: self withLookupStartingFrom: FlagMetaBuilder supertype) initialize.
-        self methodFlags: 0sz.
-        self typeFlags: 0sz.
-        self fieldFlags: 0sz.
+        self methodFlags: FunctionFlags::None.
+        self typeFlags: TypeFlags::None.
+        self fieldFlags: TypeSlotFlags::None.
         self isPublic: false.
     };
     withSelector: #expandMessageSendNode: addMethod: {:self :(ASTMessageSendNode)messageSendNode :: ASTNode |
@@ -548,39 +548,39 @@ FlagMetaBuilder
     };
     withSelector: #pure addMethod: {:self :: ASTNode |
         <metaBuilder>
-        self addMethodFlags: 1sz<<3sz.
+        self addMethodFlags: FunctionFlags::Pure.
         self continueExpansion
     };
     withSelector: #final addMethod: {:self :: ASTNode |
         <metaBuilder>
-        self addTypeFlags: 1sz<<3sz.
-        self addMethodFlags: 1sz<<4sz.
+        self addTypeFlags: TypeFlags::Final.
+        self addMethodFlags: FunctionFlags::Final.
         self continueExpansion
     };
     withSelector: #virtual addMethod: {:self :: ASTNode |
         <metaBuilder>
-        self addMethodFlags: 1sz<<5sz.
+        self addMethodFlags: FunctionFlags::Virtual.
         self continueExpansion
     };
     withSelector: #abstract addMethod: {:self :: ASTNode |
         <metaBuilder>
-        self addTypeFlags: 1sz<<4sz.
-        self addMethodFlags: 1sz<<6sz.
+        self addTypeFlags: TypeFlags::Abstract.
+        self addMethodFlags: FunctionFlags::Abstract.
         self continueExpansion
     };
     withSelector: #override addMethod: {:self :: ASTNode |
         <metaBuilder>
-        self addMethodFlags: 1sz<<7sz.
+        self addMethodFlags: FunctionFlags::Override.
         self continueExpansion
     };
     withSelector: #static addMethod: {:self :: ASTNode |
         <metaBuilder>
-        self addMethodFlags: 1sz<<8sz.
+        self addMethodFlags: FunctionFlags::Static.
         self continueExpansion
     };
     withSelector: #readonly addMethod: {:self :: ASTNode |
         <metaBuilder>
-        self addFieldFlags: 1sz<<1sz.
+        self addFieldFlags: TypeSlotFlags::ReadOnly.
         self continueExpansion
     };
     withSelector: #method addMethod: {:self :: ASTNode |
@@ -608,7 +608,7 @@ FlagMetaBuilder publicSubclass: #PublicMetaBuilder slots: (
 PublicMetaBuilder
     withSelector: #initialize addMethod: {:self :: Void |
         (object: self withLookupStartingFrom: PublicMetaBuilder supertype) initialize.
-        self fieldFlags: 1sz.
+        self fieldFlags: TypeSlotFlags::Public.
         self isPublic: true.
     }.
 

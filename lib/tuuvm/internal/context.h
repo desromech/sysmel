@@ -66,6 +66,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t functionLocalAddressSpaceName;
 
     tuuvm_tuple_t emptyArrayConstant;
+    tuuvm_tuple_t emptyWeakArrayConstant;
     tuuvm_tuple_t emptyByteArrayConstant;
 
     tuuvm_tuple_t coerceValueSelector;
@@ -147,6 +148,8 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t valueType;
     tuuvm_tuple_t valueMetatypeType;
     tuuvm_tuple_t voidType;
+    tuuvm_tuple_t weakArrayType;
+    tuuvm_tuple_t weakArrayListType;
     tuuvm_tuple_t weakSetType;
     tuuvm_tuple_t weakIdentitySetType;
     tuuvm_tuple_t weakKeyDictionaryType;

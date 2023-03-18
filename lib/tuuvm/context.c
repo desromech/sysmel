@@ -233,6 +233,11 @@ TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingValue(tuuvm_context_t *con
     }
 }
 
+TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(tuuvm_context_t *context, const char *symbolName, tuuvm_tuple_t binding)
+{
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, symbolName), binding);
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(tuuvm_context_t *context, const char *symbolString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
 {
     struct {
@@ -357,15 +362,17 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 
     context->roots.setType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.hashedCollectionType);
     context->roots.identitySetType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.setType);
-    context->roots.weakSetType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.weakSetType);
+    context->roots.weakSetType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.hashedCollectionType);
     context->roots.weakIdentitySetType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.weakIdentitySetType);
+
+    context->roots.arrayType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
+    context->roots.arrayListType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.sequenceableCollectionType);
+    context->roots.weakArrayType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
+    context->roots.weakArrayListType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.sequenceableCollectionType);
 
     context->roots.internedSymbolSet = tuuvm_identitySet_create(context);
 
     // Create the intrinsic built-in environment
-    context->roots.arrayType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
-    context->roots.arrayListType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.sequenceableCollectionType);
-
     context->roots.globalNamespace = tuuvm_environment_create(context, TUUVM_NULL_TUPLE);
     context->roots.intrinsicTypes = tuuvm_arrayList_create(context);
 
@@ -676,6 +683,12 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.identitySetType, "IdentitySet", TUUVM_NULL_TUPLE,
+        NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.weakArrayType, "WeakArray", TUUVM_NULL_TUPLE,
+        NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.weakArrayListType, "WeakArrayList", TUUVM_NULL_TUPLE,
+        "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.weakArrayType,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.weakSetType, "WeakSet", TUUVM_NULL_TUPLE,
         NULL);

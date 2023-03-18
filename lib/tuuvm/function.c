@@ -474,4 +474,23 @@ void tuuvm_function_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::adoptDefinitionOf:", context->roots.functionType, "adoptDefinitionOf:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_function_primitive_adoptDefinitionOf);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::isCorePrimitive", context->roots.functionType, "isCorePrimitive", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_function_primitive_isCorePrimitive);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::recompileAndOptimize", context->roots.functionType, "recompileAndOptimize", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_function_primitive_recompileAndOptimize);
+
+    // Export the function flags.
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::None", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_NONE));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::Macro", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_MACRO));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::Variadic", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_VARIADIC));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::CorePrimitive", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::Pure", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_PURE));
+
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::Final", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_FINAL));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::Virtual", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_VIRTUAL));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::Abstract", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_ABSTRACT));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::Override", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_OVERRIDE));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::Static", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_STATIC));
+
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::Memoized", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_MEMOIZED));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::Template", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_TEMPLATE));
+
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::NoTypecheckArguments", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_NO_TYPECHECK_ARGUMENTS));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::AllowReferenceInReceiver", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_ALLOW_REFERENCE_IN_RECEIVER));
 }

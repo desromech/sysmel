@@ -21,6 +21,9 @@ typedef uint32_t tuuvm_char32_t;
 typedef float tuuvm_float32_t;
 typedef double tuuvm_float64_t;
 
+typedef size_t tuuvm_bitflags_t;
+typedef size_t tuuvm_handle_t;
+
 /**
  * A tuple object pointer.
  */
@@ -149,6 +152,7 @@ typedef struct tuuvm_object_tuple_s
 
 #define TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(structureType) ((sizeof(structureType) - sizeof(tuuvm_tuple_header_t)) / sizeof(tuuvm_tuple_t))
 #define TUUVM_BYTE_SIZE_FOR_STRUCTURE_TYPE(structureType) (sizeof(structureType) - sizeof(tuuvm_tuple_header_t))
+#define TUUVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(structureType, memberName) ((offsetof(structureType, memberName) - sizeof(tuuvm_tuple_header_t)) / sizeof(tuuvm_tuple_t))
 
 #define TUUVM_STRING_PRINTF_FORMAT "%.*s"
 #define TUUVM_STRING_PRINTF_ARG(arg) (int)tuuvm_tuple_getSizeInBytes(arg), TUUVM_CAST_OOP_TO_OBJECT_TUPLE(arg)->bytes
@@ -800,6 +804,28 @@ TUUVM_INLINE size_t tuuvm_tuple_size_decode(tuuvm_tuple_t tuple)
         return tuuvm_tuple_uint32_decode(tuple);
     else
         return tuuvm_tuple_uint64_decode(tuple);
+}
+
+/**
+ * Decodes a bitflags from tuple.
+ */
+TUUVM_INLINE tuuvm_bitflags_t tuuvm_tuple_bitflags_decode(tuuvm_tuple_t tuple)
+{
+    if(sizeof(tuuvm_bitflags_t) == sizeof(uint32_t))
+        return (tuuvm_bitflags_t)tuuvm_tuple_uint32_decode(tuple);
+    else
+        return (tuuvm_bitflags_t)tuuvm_tuple_uint64_decode(tuple);
+}
+
+/**
+ * Decodes a bitflags from tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_bitflags_encode(tuuvm_bitflags_t flags)
+{
+    if(sizeof(tuuvm_bitflags_t) == sizeof(uint32_t))
+        return tuuvm_tuple_uint32_encodeSmall(flags);
+    else
+        return tuuvm_tuple_uint64_encodeSmall(flags);
 }
 
 /**

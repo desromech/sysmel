@@ -25,6 +25,11 @@ typedef struct tuuvm_byteArray_s
 TUUVM_API tuuvm_tuple_t tuuvm_array_create(tuuvm_context_t *context, tuuvm_tuple_t slotCount);
 
 /**
+ * Creates a weak array with the specified size.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_weakArray_create(tuuvm_context_t *context, tuuvm_tuple_t slotCount);
+
+/**
  * Gets an element from an array.
  */
 TUUVM_INLINE tuuvm_tuple_t tuuvm_array_at(tuuvm_tuple_t array, size_t index)

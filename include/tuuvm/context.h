@@ -65,6 +65,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicType(tuuvm_context_t *conte
 TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingValue(tuuvm_context_t *context, tuuvm_tuple_t symbol, tuuvm_tuple_t binding);
 
 /**
+ * Sets an intrinsic symbol binding.
+ */
+TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(tuuvm_context_t *context, const char *symbolName, tuuvm_tuple_t binding);
+
+/**
  * Sets an intrinsic symbol binding with primitive function.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(tuuvm_context_t *context, const char *symbolString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint);
