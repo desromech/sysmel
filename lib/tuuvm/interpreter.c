@@ -4375,10 +4375,19 @@ static tuuvm_tuple_t tuuvm_dependentFunctionType_getOrCreateDependentApplication
     // Get the analyzed type of the node.
     tuuvm_tuple_t analyzedType = tuuvm_astNode_getAnalyzedType(node);
 
-    // Find a 
+    // Find a method.
     tuuvm_tuple_t method = tuuvm_type_lookupSelector(context, tuuvm_tuple_getType(context, analyzedType), context->roots.getOrCreateDependentApplicationValueForNodeSelector);
     if(method)
         return tuuvm_function_apply2(context, method, analyzedType, node);
+
+    // Use the base type in the case of reference types.
+    if(tuuvm_type_isReferenceType(analyzedType))
+    {
+        analyzedType = ((tuuvm_referenceType_t*)analyzedType)->super.baseType;
+        tuuvm_tuple_t method = tuuvm_type_lookupSelector(context, tuuvm_tuple_getType(context, analyzedType), context->roots.getOrCreateDependentApplicationValueForNodeSelector);
+        if(method)
+            return tuuvm_function_apply2(context, method, analyzedType, node);
+    }
 
     // If the node is a subtype of metatype, and this type is defined then return the type.
     if(tuuvm_tuple_isKindOf(context, analyzedType, context->roots.metatypeType))

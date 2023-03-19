@@ -748,6 +748,16 @@ SequenceableCollection
             if: (self at: i) = oldObject then: (self at: i put: newObject)
         } continueWith: (i := i + 1sz)
     };
+    withSelector: #replaceAllWithDictionary: addMethod: {:(SequenceableCollection)self :(Dictionary)replacementDictionary :: Void |
+        let: #i mutableWith: 0sz.
+        let: #size with: self size.
+
+        while: i < self size do: {
+            replacementDictionary at: (self at: i) ifPresent: {:replacement :: Void |
+                (self at: i put: replacement)
+            }
+        } continueWith: (i := i + 1sz)
+    };
     withSelector: #first addMethod: {:(SequenceableCollection)self | self at: 0sz } makeFinal;
     withSelector: #second addMethod: {:(SequenceableCollection)self | self at: 1sz } makeFinal;
     withSelector: #third addMethod: {:(SequenceableCollection)self | self at: 2sz } makeFinal;

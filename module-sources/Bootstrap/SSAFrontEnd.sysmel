@@ -1,0 +1,451 @@
+public final class SSAFunctionCompilationContext superclass: Object; definition: {
+    public field functionDefinition => FunctionDefinition.
+    public field ssaFunction => SSAFunctionDefinition.
+    public field builder => SSAInstructionBuilder.
+    public field bindingDictionary => IdentityDictionary.
+
+    public field breakDestination => SSABasicBlock.
+    public field continueDestination => SSABasicBlock.
+
+    public method initialize => Void := {
+        super initialize.
+        self bindingDictionary: IdentityDictionary new.
+    }.
+
+    public method generateArgumentForNode: (argumentNode: ASTArgumentNode) ::=> SSAFunctionArgument := {
+        let binding := argumentNode binding.
+        self assert: binding isNotNil.
+
+        let ssaArgument := SSAFunctionArgument new
+            name: binding name;
+            type: binding type;
+            yourself.
+
+        self bindingDictionary at: binding put: ssaArgument.
+
+        ssaArgument
+    }.
+
+    public method generateCaptureForBinding: (captureBinding: SymbolCaptureBinding) ::=> SSAFunctionCapture := {
+        let capture := SSAFunctionCapture new
+            name: captureBinding name;
+            type: captureBinding type;
+            yourself.
+
+        self bindingDictionary at: captureBinding put: capture.
+
+        capture
+    }.
+
+    public method setValue: (value: SSAValue) forBinding: (binding: SymbolBinding) ::=> Void := {
+        self assert: binding isNotNil.
+        self bindingDictionary at: binding put: value
+    }.
+
+    public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> SSAFunctionDefinition := {
+        let ssaFunction := SSAFunctionDefinition new.
+        functionDefinition ensureAnalysis.
+        self functionDefinition: functionDefinition.
+        self ssaFunction: ssaFunction.
+
+        ssaFunction
+            sourcePosition: functionDefinition sourcePosition;
+            arguments: (functionDefinition analyzedArgumentNodes collect: {:(ASTArgumentNode)argumentNode :: SSAFunctionArgument |
+                self generateArgumentForNode: argumentNode
+            }) asArray;
+            captures: (functionDefinition analyzedCaptures collect: {:(SymbolCaptureBinding)captureBinding :: SSAFunctionCapture |
+                self generateCaptureForBinding: captureBinding
+            }) asArray.
+
+        functionDefinition analyzedBodyNode ifNotNil: {:bodyNode |
+            self builder: (SSAInstructionBuilder new
+                sourcePosition: bodyNode sourcePosition;
+                function: ssaFunction;
+                beginBasicBlockNamed: #entry;
+                yourself).
+            
+            let resultValue := bodyNode generateSSAValueWith: self.
+            self builder isLastTerminator ifFalse: (self builder return: resultValue).
+        }.
+
+        ssaFunction
+    }.
+
+    public method getValueForLocalBinding: (localBinding: SymbolAnalysisBinding) ::=> SSAValue
+        := self bindingDictionary at: localBinding.
+
+    public method functionDefinitionValueFor: (functionDefinition: FunctionDefinition) ::=> SSAValue
+        := self builder literal: functionDefinition.
+
+    public method withBreakDestination: (breakDestination: SSABasicBlock) continueDestination: (continueDestination: SSABasicBlock) do: aBlock := {
+        let oldBreakDestination := self breakDestination.
+        let oldContinueDestination := self continueDestination.
+
+        self
+            breakDestination: breakDestination;
+            continueDestination: continueDestination.
+        
+        let result := aBlock().
+
+        self
+            breakDestination: oldBreakDestination;
+            continueDestination: oldContinueDestination.
+
+        result
+    }.
+}.
+
+ASTNode extend: {
+    public method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context builder withSourceASTNode: self do: {:: SSAValue |
+            self doGenerateSSAValueWith: context
+    }.
+
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := self subclassResponsibility.
+}.
+
+ASTBreakNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        context breakDestination ifNil: (self error: 'Invalid break at ' context).
+        context builder branch: context breakDestination.
+        context builder literal: void
+    }.
+}.
+
+ASTCoerceValueNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let type := self typeExpression generateSSAValueWith: context.
+        let value := self valueExpression generateSSAValueWith: context.
+        context builder coerceValue: value into: type type: self analyzedType
+    }.
+        
+}.
+
+ASTContinueNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        context continueDestination ifNil: (self error: 'Invalid continue at ' context).
+        context builder branch: context continueDestination.
+        context builder literal: void
+    }.
+}.
+
+let primitiveFunctionGenerators := #{
+    #PointerLikeType::load : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+        let reference := self arguments first generateSSAValueWith: context.
+        context builder load: reference type: self analyzedType
+    }.
+    #PointerLikeType::store: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+        let reference := self arguments first generateSSAValueWith: context.
+        let value := self arguments second generateSSAValueWith: context.
+        context builder store: value in: reference.
+        reference
+    }.
+    #Void::fromAnyValue : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+        self arguments do: {:(ASTNode)each :: Void | each generateSSAValueWith: context }.
+        context builder literal: void
+    }.
+    #yourself : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+        self arguments first generateSSAValueWith: context
+    }.
+}.
+
+ASTFunctionApplicationNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let functionExpression := self functionExpression generateSSAValueWith: context.
+        let primitiveGenerator := primitiveFunctionGenerators atOrNil: functionExpression primitiveName.
+        primitiveGenerator ifNotNil: {
+            primitiveGenerator(self, context)
+        } ifNil: {
+            context builder call: functionExpression
+                arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
+                resultType: self analyzedType
+        }.
+    }.
+}.
+
+ASTLexicalBlockNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context builder withSourceEnvironment: self bodyEnvironment do: {:: SSAValue | self body generateSSAValueWith: context }.
+}.
+
+ASTLiteralNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context builder literal: self value type: self analyzedType.
+}.
+
+ASTLambdaNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let functionDefinition := self functionDefinition.
+        functionDefinition ensureAnalysis.
+
+        let functionDefinitionValue := context functionDefinitionValueFor: functionDefinition.
+
+        let captures := functionDefinition analyzedCaptures collect: {:(SymbolCaptureBinding)capture :: SSAValue |
+            context getValueForLocalBinding: capture sourceBinding
+        }.
+
+        context builder makeClosure: functionDefinitionValue captures: captures type: self analyzedType
+    }.
+}.
+
+ASTLocalDefinitionNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let builder := context builder.
+
+        let value := self valueExpression generateSSAValueWith: context.
+
+        self isMutable ifTrue: {
+            let localVariable := builder alloca: (builder literal: self analyzedValueType) type: self analyzedType.
+            builder store: value in: localVariable.
+            context setValue: localVariable forBinding: self binding.
+            localVariable
+        } ifFalse: {
+            context setValue: value forBinding: self binding.
+            value
+        }
+    }.
+}.
+
+SymbolAnalysisBinding extend: {
+    public method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context getValueForLocalBinding: self.
+}.
+
+ASTIdentifierReferenceNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := self binding generateSSAValueWith: context.
+}.
+
+ASTIfNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let builder := context builder.
+
+        ## Condition
+        let condition := self conditionExpression
+            ifNotNil: {:condition :: SSAValue | condition generateSSAValueWith: context}
+            ifNil: (builder literal: false).
+        
+        let conditionBlock := builder basicBlock.
+        let mergeBlock := builder newBasicBlockNamed: #ifMerge.
+
+        let trueExpression := self trueExpression.
+        let trueDestination := trueExpression
+            ifNotNil: (builder newBasicBlockNamed: #ifTrue)
+            ifNil: mergeBlock.
+
+        let falseExpression := self falseExpression.
+        let falseDestination := falseExpression
+            ifNotNil: (builder newBasicBlockNamed: #ifFalse)
+            ifNil: mergeBlock.
+
+        builder conditionalBranch: condition trueDestination: trueDestination falseDestination: falseDestination.
+
+        ## True branch
+        let trueResult mutable => SSAValue := nil.
+        let trueResultBlock mutable := conditionBlock.
+        let trueResultIsTerminator mutable => Boolean := false.
+
+        trueExpression ifNotNil: {
+            builder beginBasicBlock: trueDestination.
+            trueResult := trueExpression generateSSAValueWith: context.
+            trueResultBlock := builder basicBlock.
+
+            let isTerminator := builder isLastTerminator.
+            trueResultIsTerminator := isTerminator.
+            isTerminator
+                ifTrue: (trueResult := builder literal: void)
+                ifFalse: (builder branch: mergeBlock)
+        } ifNil: {
+            trueResult := builder literal: void
+        }.
+
+        ## False branch
+        let falseResult mutable => SSAValue := nil.
+        let falseResultBlock mutable := conditionBlock.
+        let falseResultIsTerminator mutable => Boolean := false.
+        falseExpression ifNotNil: {
+            builder beginBasicBlock: falseDestination.
+            falseResult := falseExpression generateSSAValueWith: context.
+            falseResultBlock := builder basicBlock.
+
+            let isTerminator := builder isLastTerminator.
+            falseResultIsTerminator := isTerminator.
+            isTerminator
+                ifTrue: (falseResult := builder literal: void)
+                ifFalse: (builder branch: mergeBlock)
+        } ifNil: {
+            falseResult := builder literal: void
+        }.
+
+        ## Merge
+        trueResultIsTerminator ifFalse: {
+            builder beginBasicBlock: mergeBlock.
+            trueResultIsTerminator ifTrue: (
+                falseResult
+            ) ifFalse: (
+                falseResultIsTerminator ifTrue: (
+                    trueResult
+                ) ifFalse: (
+                    (builder phi: self analyzedType)
+                        addValue: trueResult incomingFrom: trueResultBlock;
+                        addValue: falseResult incomingFrom: falseResultBlock;
+                        yourself
+                )
+            ).
+        } ifTrue: {
+            builder literal: void
+        }.
+    }
+}.
+
+ASTDoWhileContinueWithNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let builder := context builder.
+
+        let conditionExpression := self conditionExpression.
+        let bodyExpression := self bodyExpression.
+        let continueExpression := self continueExpression.
+
+        let entryBlock := builder newBasicBlockNamed: #doWhileBody.
+        let conditionBlock := builder newBasicBlockNamed: #doWhileCondition.
+        let continueBlock := continueExpression
+            ifNil: (entryBlock)
+            ifNotNil: (builder newBasicBlockNamed: #doWhileContinue).
+        let mergeBlock := builder newBasicBlockNamed: #doWhileMerge.
+
+        builder
+            branch: entryBlock;
+            beginBasicBlock: entryBlock.
+
+        ## Emit the body.
+        bodyExpression ifNotNil: {
+            context withBreakDestination: mergeBlock continueDestination: continueBlock do: {:: Void |
+                bodyExpression generateSSAValueWith: context.
+                builder isLastTerminator ifFalse: {
+                    builder branch: conditionBlock
+                }.
+            }
+        }.
+
+        ## Emit the condition.
+        builder beginBasicBlock: conditionBlock.
+        conditionExpression ifNil: {
+            builder branch: continueBlock
+        } ifNotNil: {
+            let condition := conditionExpression generateSSAValueWith: context.
+            builder isLastTerminator ifFalse: {
+                builder conditionalBranch: condition trueDestination: continueBlock falseDestination: mergeBlock
+            }
+        }.
+
+        ## Emit the optional continue expression.
+        continueExpression ifNotNil: {
+            builder beginBasicBlock: continueBlock.
+            continueExpression generateSSAValueWith: context.
+            builder isLastTerminator ifFalse: {
+                builder branch: entryBlock
+            }.
+        }.
+
+        builder beginBasicBlock: mergeBlock.
+        builder literal: void
+    }
+}.
+
+ASTWhileContinueWithNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let builder := context builder.
+
+        let conditionExpression := self conditionExpression.
+        let bodyExpression := self bodyExpression.
+        let continueExpression := self continueExpression.
+
+        let entryBlock := builder newBasicBlockNamed: #whileEntry.
+        let bodyBlock := builder newBasicBlockNamed: #whileContinue.
+        let continueBlock := continueExpression
+            ifNil: (entryBlock)
+            ifNotNil: (builder newBasicBlockNamed: #whileContinue).
+        let mergeBlock := builder newBasicBlockNamed: #whileMerge.
+
+        builder
+            branch: entryBlock;
+            beginBasicBlock: entryBlock.
+
+        ## Emit the condition.
+        conditionExpression ifNil: {
+            builder branch: bodyBlock
+        } ifNotNil: {
+            let condition := conditionExpression generateSSAValueWith: context.
+            builder isLastTerminator ifFalse: {
+                builder conditionalBranch: condition trueDestination: bodyBlock falseDestination: mergeBlock
+            }
+        }.
+
+        ## Emit the body.
+        builder beginBasicBlock: bodyBlock.
+        bodyExpression ifNotNil: {
+            context withBreakDestination: mergeBlock continueDestination: continueBlock do: {:: Void |
+                bodyExpression generateSSAValueWith: context.
+                builder isLastTerminator ifFalse: {
+                    builder branch: continueBlock
+                }.
+            }
+        }.
+
+        ## Emit the optional continue expression.
+        continueExpression ifNotNil: {
+            builder beginBasicBlock: continueBlock.
+            continueExpression generateSSAValueWith: context.
+            builder isLastTerminator ifFalse: {
+                builder branch: entryBlock
+            }.
+        }.
+
+        builder beginBasicBlock: mergeBlock.
+        builder literal: void
+    }
+}.
+
+ASTMessageSendNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context builder send: (self receiver generateSSAValueWith: context)
+            receiverLookupType: (self receiverLookupType ifNotNil: {:(ASTNode)lookupTypeExpression :: SSAValue | lookupTypeExpression generateSSAValueWith: context })
+            selector: (self selector generateSSAValueWith: context)
+            arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
+            resultType: self analyzedType
+}.
+
+ASTSequenceNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let result mutable => SSAValue := context builder literal: void.
+        self expressions do: {:(ASTNode)expression :: Void |
+            context builder isLastTerminator ifFalse: {
+                result := expression generateSSAValueWith: context
+            }
+        }.
+
+        result
+    }
+}.
+
+ASTReturnNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context builder return: (self expression generateSSAValueWith: context)
+}.
+
+Function extend: {
+    public method asSSAFunction => SSAFunction := {
+        SSAFunction new
+            name: self name;
+            definition: self definition asSSAFunctionDefinition;
+            yourself
+    }.
+}.
+
+FunctionDefinition extend: {
+    public method asSSAFunctionDefinition => SSAFunctionDefinition := {
+        SSAFunctionCompilationContext new
+            compileFunctionDefinition: self
+    }.
+}.
