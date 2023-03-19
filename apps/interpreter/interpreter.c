@@ -86,26 +86,8 @@ int doMain(int startArgumentIndex, int argc, const char *argv[])
     return 0;
 }
 
-int main(int argc, const char *argv[])
+int mainWithContext(int startArgumentIndex, int argc, const char *argv[])
 {
-    // Allow creating the context by loading it from an image.
-    int startArgumentIndex = 1;
-    if(argc >= 3 && !strcmp(argv[1], "-load-image"))
-    {
-        context = tuuvm_context_loadImageFromFileNamed(argv[2]);
-        startArgumentIndex = 3;
-    }
-    else
-    {
-        context = tuuvm_context_create();
-    }
-
-    if(!context)
-    {
-        fprintf(stderr, "Failed to create tuuvm context.\n");
-        return 1;
-    }
-
     tuuvm_stackFrameLandingPadRecord_t topLevelFrame = {
         .type = TUUVM_STACK_FRAME_RECORD_TYPE_LANDING_PAD,
         .keepStackTrace = true
@@ -126,6 +108,30 @@ int main(int argc, const char *argv[])
     }
 
     tuuvm_stackFrame_leaveContext();
+    return exitCode;
+}
+
+int main(int argc, const char *argv[])
+{
+    // Allow creating the context by loading it from an image.
+    int startArgumentIndex = 1;
+    if(argc >= 3 && !strcmp(argv[1], "-load-image"))
+    {
+        context = tuuvm_context_loadImageFromFileNamed(argv[2]);
+        startArgumentIndex = 3;
+    }
+    else
+    {
+        context = tuuvm_context_create();
+    }
+
+    if(!context)
+    {
+        fprintf(stderr, "Failed to create tuuvm context.\n");
+        return 1;
+    }
+
+    int exitCode = mainWithContext(startArgumentIndex, argc, argv);
 
     // Allow saving the context as an image.
     if(destinationImageFilename)
