@@ -23,6 +23,9 @@ SSAValue definition: {
     public method isBasicBlock => Boolean := false.
     
     public method isInstruction => Boolean := false.
+    public method isPhiInstruction => Boolean := false.
+    public method isLoadInstruction => Boolean := false.
+    public method isStoreInstruction => Boolean := false.
     public method isTerminatorInstruction => Boolean := false.
 
     public method primitiveName => Symbol := nil.
@@ -611,6 +614,8 @@ public final class SSAConditionalBranchInstruction superclass: SSAInstruction; d
 public final class SSALoadInstruction superclass: SSAInstruction; definition: {
     public field storage => SSAValue.
 
+    public method isLoadInstruction => Boolean := true.
+
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := load "; print: self storage
     }.
@@ -656,28 +661,33 @@ public final class SSAMakeClosureInstruction superclass: SSAInstruction; definit
 }.
 
 public final class SSAPhiInstruction superclass: SSAInstruction; definition: {
-    public field incomingValues => Array.
-    public field incomingBlocks => Array.
+    public field incomingValuesAndBlocks => ArrayList.
+
+    public method isPhiInstruction => Boolean := true.
+
+    public method initialize => Void := {
+        self initialize.
+        self incomingValuesAndBlocks: ArrayList new.
+    }.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := phi ["; nl.
-        let incomingValues := self incomingValues.
-        self incomingBlocks doWithIndex: {:(SSABasicBlock)block :(Size)index :: Void |
-            let value := incomingValues at: index.
-            stream nextPutAll: "        "; print: value; nextPutAll: " from "; print: block; nl 
+        self incomingValuesAndBlocks do: {:(Association)blockAndValue :: Void |
+            stream nextPutAll: "        "; print: blockAndValue value; nextPutAll: " from "; print: blockAndValue key; nl 
         }.
 
         stream nextPutAll: "    ]"
     }.
 
     public method addValue: (value: SSAValue) incomingFrom: (block: SSABasicBlock) ::=> Void := {
-        self incomingValues: self incomingValues -- (Array with: value).
-        self incomingBlocks: self incomingBlocks -- (Array with: block).
+        self incomingValuesAndBlocks add: (Association new key: block; value: value; yourself).
     }.
 
     public method usedValuesDo: aBlock ::=> Void := {
-        self incomingValues do: aBlock,
-        self incomingBlocks do: aBlock.
+        self incomingValuesAndBlocks do: {:(Association)association :: Void |
+            aBlock(association key).
+            aBlock(association value).
+        }
     }.
 
     public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
@@ -761,6 +771,8 @@ public final class SSASendInstruction superclass: SSAInstruction; definition: {
 public final class SSAStoreInstruction superclass: SSAInstruction; definition: {
     public field storage => SSAValue.
     public field value => SSAValue.
+
+    public method isStoreInstruction => Boolean := true.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "store "; print: self value; nextPutAll: " in "; print: self storage
@@ -930,8 +942,6 @@ SSAInstructionBuilder definition: {
 
     public method phi: (type: Type) ::=> SSAPhiInstruction
         := self addInstruction: (SSAPhiInstruction new
-            incomingBlocks: ();
-            incomingValues: ();
             type: type;
             registerInUsedValues;
             yourself).

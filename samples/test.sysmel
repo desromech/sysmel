@@ -193,3 +193,5 @@ printLine(#{#test : 42}).
 
 ## Min
 printLine(min asSSAFunction runPasses: (SSADestroySSAFunctionPass,); fullPrintString).
+
+printLine(#(-5 3 4 8 5 -7 0 5 2 1 42 90 -80) sorted).

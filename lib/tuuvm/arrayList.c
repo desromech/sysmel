@@ -19,8 +19,8 @@ static void tuuvm_arrayList_increaseCapacity(tuuvm_context_t *context, tuuvm_tup
     size_t size = tuuvm_tuple_size_decode(arrayListObject->size);
     size_t oldCapacity = tuuvm_tuple_getSizeInSlots(arrayListObject->storage);
     size_t newCapacity = oldCapacity * 2;
-    if(newCapacity < 16)
-        newCapacity = 16;
+    if(newCapacity < 4)
+        newCapacity = 4;
 
     bool isWeakArrayList = tuuvm_tuple_getType(context, arrayList) == context->roots.weakArrayListType;
     tuuvm_array_t *newStorage = isWeakArrayList

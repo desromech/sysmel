@@ -779,6 +779,107 @@ SequenceableCollection
     withSelector: #eighth addMethod: {:(SequenceableCollection)self | self at: 7sz } makeFinal;
     withSelector: #ninth addMethod: {:(SequenceableCollection)self | self at: 8sz } makeFinal;
     withSelector: #tenth addMethod: {:(SequenceableCollection)self | self at: 9sz } makeFinal;
+
+    withSelector: #insertionSort:from:until: addMethod: {:(SequenceableCollection)self :lessThanComparison :(Size)startIndex :(Size)endIndex :: Void |
+        ## Insertion sort algorithm from https://en.wikipedia.org/wiki/Insertion_sort [March 2023]
+        let: #i mutableWith: startIndex + 1sz.
+        let: #j mutableWith: 0sz.
+
+        while: (i < endIndex) do: {
+            let: #insertedElement with: (self at: i).
+            j := i.
+            while: (j > startIndex) && lessThanComparison(insertedElement, self at: j - 1sz) do: {
+                self at: j put: (self at: j - 1sz)
+            } continueWith: (j := j - 1sz).
+
+            self at: j put: insertedElement.
+        } continueWith: (i := i + 1sz)
+    };
+    withSelector: #partition:from:until: addMethod: {:(SequenceableCollection)self :lessThanComparison :(Size)startIndex :(Size)endIndex :: Size |
+        let: #pivotIndex with: endIndex - 1sz.
+        let: #pivot with: (self at: pivotIndex).
+
+        let: #i mutableWith: startIndex.
+        let: #j mutableWith: startIndex.
+        while: (j < pivotIndex) do: {
+            let: #element with: (self at: j).
+
+            if: lessThanComparison(element, pivot) then: {
+                if: i ~= j then: {
+                    let: #temp with: (self at: i).
+                    self at: i put: element.
+                    self at: j put: temp.
+                }.
+                i := i + 1sz
+            }
+        } continueWith: (j := j + 1sz).
+
+        let: #destElement with: (self at: i).
+        self at: i put: pivot.
+        self at: pivotIndex put: destElement.
+
+        i
+    };
+    withSelector: #heapSort:from:until: addMethod: {:(SequenceableCollection)self :lessThanComparison :(Size)startIndex :(Size)endIndex :: Void |
+        ## TODO: Implement this properly.
+        self insertionSort: lessThanComparison from: startIndex until: endIndex
+    };
+    withSelector: #quickSort:from:until: addMethod: {:(SequenceableCollection)self :lessThanComparison :(Size)startIndex :(Size)endIndex :: Void |
+        if: startIndex < endIndex then: {
+            let: #partition with: (self partition: lessThanComparison from: startIndex until: endIndex).
+            self quickSort: lessThanComparison from: startIndex until: partition.
+            self quickSort: lessThanComparison from: partition + 1sz until: endIndex.
+        }
+    };
+    withSelector: #introSort:from:until:maxDepth: addMethod: {:(SequenceableCollection)self :lessThanComparison :(Size)startIndex :(Size)endIndex :(Size)maxDepth :: Void |
+        if: startIndex < endIndex then: {
+            let: #rangeSize with: endIndex - startIndex.
+            if: rangeSize <= 16sz then: {
+                self insertionSort: lessThanComparison from: startIndex until: endIndex
+            } else: {
+                if: maxDepth = 0sz then: {
+                    self heapSort: lessThanComparison from: startIndex until: endIndex
+                } else: {
+                    let: #partition with: (self partition: lessThanComparison from: startIndex until: endIndex).
+                    self quickSort: lessThanComparison from: startIndex until: partition.
+                    self quickSort: lessThanComparison from: partition + 1sz until: endIndex.
+                }.
+            }
+        }
+    };
+    withSelector: #insertionSort: addMethod: {:(SequenceableCollection)self :lessThanComparison :: Void |
+        self insertionSort: lessThanComparison from: 0sz until: self size
+    };
+    withSelector: #insertionSort addMethod: {:(SequenceableCollection)self :: Void |
+        self sort: {:a :b :: Boolean | a < b }
+    };
+    withSelector: #heapSort: addMethod: {:(SequenceableCollection)self :lessThanComparison :: Void |
+        self heapSort: lessThanComparison from: 0sz until: self size
+    };
+    withSelector: #heapSort addMethod: {:(SequenceableCollection)self :: Void |
+        self sort: {:a :b :: Boolean | a < b }
+    };
+    withSelector: #quickSort: addMethod: {:(SequenceableCollection)self :lessThanComparison :: Void |
+        self quickSort: lessThanComparison from: 0sz until: self size
+    };
+    withSelector: #quickSort addMethod: {:(SequenceableCollection)self :: Void |
+        self sort: {:a :b :: Boolean | a < b }
+    };
+    withSelector: #sort: addMethod: {:(SequenceableCollection)self :lessThanComparison :: Void |
+        self introSort: lessThanComparison from: 0sz until: self size maxDepth: 16sz
+        ##self insertionSort: lessThanComparison from: 0sz until: self size
+        ##self quickSort: lessThanComparison from: 0sz until: self size
+        ##self heapSort: lessThanComparison from: 0sz until: self size
+    };
+    withSelector: #sort addMethod: {:(SequenceableCollection)self :: Void |
+        self sort: {:a :b :: Boolean | a < b }
+    };
+    withSelector: #sorted: addMethod: {:(SequenceableCollection)self :lessThanComparison :: self __type__ |
+        self copy sort: lessThanComparison; yourself
+    };
+    withSelector: #sorted addMethod: {:(SequenceableCollection)self :: self __type__ |
+        self sorted: {:a :b :: Boolean | a < b }
+    };
     
     withSelector: #=> addMethod: {:(SequenceableCollection)self :(Type)resultType :: SimpleFunctionType |
         SimpleFunctionTypeTemplate(self asArray, false, resultType)
@@ -817,7 +918,23 @@ ArrayList
             error("Index out of bounds.")
         }
     };
-    withSelector: #removeAllOcurrencesOf: addMethod: {:(ArrayList)self :(Size)index :value :: Void |
+    withSelector: #removeAllThat: addMethod: {:(ArrayList)self :aPredicate :: Void |
+        let: #size with: self size.
+        let: #storage with: self storage.
+        let: #newSize mutableWith: 0sz.
+        let: #i mutableWith: 0sz.
+
+        while: i < size do: {
+            let: #element with: (storage at: i).
+            (__tombstone__ == element) || aPredicate(element) ifFalse: {
+                storage at: newSize put: element.
+                newSize := newSize + 1sz
+            }
+        } continueWith: (i := i + 1sz).
+
+        self size: newSize
+    };
+    withSelector: #removeAllOcurrencesOf: addMethod: {:(ArrayList)self :value :: Void |
         let: #size with: self size.
         let: #storage with: self storage.
         let: #newSize mutableWith: 0sz.
