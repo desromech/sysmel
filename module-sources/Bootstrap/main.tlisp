@@ -1,22 +1,3 @@
-## Type layout descriptions. This must match the definition in the tuuvm/type.h
-(define Type::nameSlotIndex 0)
-(define Type::ownerSlotIndex 1)
-(define Type::supertypeSlotIndex 2)
-(define Type::slotsSlotIndex 3)
-(define Type::totalSlotCountSlotIndex 4)
-(define Type::flagsSlotIndex 5)
-(define Type::macroMethodDictionarySlotIndex 6)
-(define Type::methodDictionarySlotIndex 7)
-(define Type::fallbackMethodDictionarySlotIndex 8)
-
-(define TypeSlot::nameSlotIndex 0)
-(define TypeSlot::flagsSlotIndex 1)
-(define TypeSlot::typeSlotIndex 2)
-
-(define Function::flagsSlotIndex 0)
-(define Function::getterFlags (Size::fromInteger 24)) ## Pure and Final
-(define Function::setterFlags (Size::fromInteger 16)) ## Final
-
 ## Some utility functions.
 
 ## until:do:
@@ -36,45 +17,45 @@
 
 ## Type::validMethodDictionary
 (define (Type::validMethodDictionary type)
-    (define existingMethodDictionary (RawTuple::slotAt: type Type::methodDictionarySlotIndex))
+    (define existingMethodDictionary (RawTuple::slotAt: type Type::Layout::methodDictionary))
     (if:then:else: (== existingMethodDictionary nil)
         (begin
             (define newMethodDictionary (MethodDictionary::new))
-            (RawTuple::slotAt:put: type Type::methodDictionarySlotIndex newMethodDictionary)
+            (RawTuple::slotAt:put: type Type::Layout::methodDictionary newMethodDictionary)
             newMethodDictionary)
         existingMethodDictionary))
 
 ## Setup a getter method.
 (define (setupGetter getter)
-    (RawTuple::slotAt:put: getter Function::flagsSlotIndex Function::getterFlags)
+    (RawTuple::slotAt:put: getter Function::Layout::flags FunctionFlags::GetterFlags)
     (Function::recompileAndOptimize getter))
 
 ## Setup a setter method.
 (define (setupSetter setter)
-    (RawTuple::slotAt:put: setter Function::flagsSlotIndex Function::setterFlags)
+    (RawTuple::slotAt:put: setter Function::Layout::flags FunctionFlags::SetterFlags)
     (Function::recompileAndOptimize setter))
 
 ## Bootstrap environment reflection core.
 (define (makeTypeAccessors type)
-    (define typeName (RawTuple::slotAt: type Type::nameSlotIndex))
+    (define typeName (RawTuple::slotAt: type Type::Layout::name))
 
     (define (exportAndBindInstanceMethod selector method)
         (define exportedName (StringSymbol::intern (String::concat: typeName (String::concat: "::" (asString selector)))))
         (MethodDictionary::at:put: (Type::validMethodDictionary type) selector method)
         (exportInstrinsicBuiltInBinding exportedName method))
 
-    (define slots (RawTuple::slotAt: type Type::slotsSlotIndex))
+    (define slots (RawTuple::slotAt: type Type::Layout::slots))
     (define slotCount (RawTuple::size slots))
-    (define supertype (RawTuple::slotAt: type Type::supertypeSlotIndex))
+    (define supertype (RawTuple::slotAt: type Type::Layout::supertype))
     (define supertypeSlotCount (if:then:else: (== supertype nil)
         0
-        (RawTuple::slotAt: supertype Type::totalSlotCountSlotIndex)))
+        (RawTuple::slotAt: supertype Type::Layout::totalSlotCount)))
     (until:do: slotCount (lambda (localSlotIndex)
         (define slotIndex (Size::+ supertypeSlotCount localSlotIndex))
         (define slot (RawTuple::slotAt: slots localSlotIndex))
-        (define slotName (RawTuple::slotAt: slot TypeSlot::nameSlotIndex))
-        (define slotFlags (RawTuple::slotAt: slot TypeSlot::flagsSlotIndex))
-        (define slotType (RawTuple::slotAt: slot TypeSlot::typeSlotIndex))
+        (define slotName (RawTuple::slotAt: slot TypeSlot::Layout::name))
+        (define slotFlags (RawTuple::slotAt: slot TypeSlot::Layout::flags))
+        (define slotType (RawTuple::slotAt: slot TypeSlot::Layout::type))
 
         ## Getter
         (exportAndBindInstanceMethod slotName

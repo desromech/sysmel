@@ -1001,6 +1001,22 @@ void tuuvm_type_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Type::flushMacroLookupSelector:", context->roots.typeType, "flushMacroLookupSelector:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_flushMacroLookupSelector);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Type::flushFallbackLookupSelector:", context->roots.typeType, "flushFallbackLookupSelector:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_type_primitive_flushFallbackLookupSelector);
 
+    // Export the type layout. This is used by the bootstraping algorithm for creating the accessors.
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::name", tuuvm_tuple_integer_encodeSmall(TUUVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(tuuvm_type_tuple_t, name)));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::owner", tuuvm_tuple_integer_encodeSmall(TUUVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(tuuvm_type_tuple_t, owner)));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::supertype", tuuvm_tuple_integer_encodeSmall(TUUVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(tuuvm_type_tuple_t, supertype)));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::slots", tuuvm_tuple_integer_encodeSmall(TUUVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(tuuvm_type_tuple_t, slots)));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::totalSlotCount", tuuvm_tuple_integer_encodeSmall(TUUVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(tuuvm_type_tuple_t, totalSlotCount)));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::flags", tuuvm_tuple_integer_encodeSmall(TUUVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(tuuvm_type_tuple_t, flags)));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::macroMethodDictionary", tuuvm_tuple_integer_encodeSmall(TUUVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(tuuvm_type_tuple_t, macroMethodDictionary)));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::methodDictionary", tuuvm_tuple_integer_encodeSmall(TUUVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(tuuvm_type_tuple_t, methodDictionary)));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::fallbackMethodDictionary", tuuvm_tuple_integer_encodeSmall(TUUVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(tuuvm_type_tuple_t, fallbackMethodDictionary)));
+
+    // Export the type slot layout. This is used by the bootstraping algorithm for creating the accessors.
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlot::Layout::name", tuuvm_tuple_integer_encodeSmall(TUUVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(tuuvm_typeSlot_t, name)));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlot::Layout::flags", tuuvm_tuple_integer_encodeSmall(TUUVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(tuuvm_typeSlot_t, flags)));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlot::Layout::type", tuuvm_tuple_integer_encodeSmall(TUUVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(tuuvm_typeSlot_t, type)));
+
     // Export the type flags.
     tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::None", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_NONE));
     tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::Nullable", tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_NULLABLE));

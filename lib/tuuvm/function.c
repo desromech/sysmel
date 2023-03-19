@@ -475,6 +475,9 @@ void tuuvm_function_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::isCorePrimitive", context->roots.functionType, "isCorePrimitive", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_function_primitive_isCorePrimitive);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::recompileAndOptimize", context->roots.functionType, "recompileAndOptimize", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_function_primitive_recompileAndOptimize);
 
+    // Export the function. This is used by the bootstraping algorithm for creating the accessors.
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Function::Layout::flags", tuuvm_tuple_integer_encodeSmall(TUUVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(tuuvm_function_t, flags)));
+
     // Export the function flags.
     tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::None", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_NONE));
     tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::Macro", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_MACRO));
@@ -493,4 +496,7 @@ void tuuvm_function_setupPrimitives(tuuvm_context_t *context)
 
     tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::NoTypecheckArguments", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_NO_TYPECHECK_ARGUMENTS));
     tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::AllowReferenceInReceiver", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_ALLOW_REFERENCE_IN_RECEIVER));
+
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::GetterFlags", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_GETTER_FLAGS));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::SetterFlags", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_SETTER_FLAGS));
 }
