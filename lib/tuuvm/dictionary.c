@@ -8,6 +8,24 @@
 #include "internal/context.h"
 #include <stdlib.h>
 
+TUUVM_API tuuvm_tuple_t tuuvm_dictionary_create(tuuvm_context_t *context)
+{
+    tuuvm_dictionary_t *result = (tuuvm_dictionary_t*)tuuvm_context_allocatePointerTuple(context, context->roots.dictionaryType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_dictionary_t));
+    result->size = tuuvm_tuple_size_encode(context, 0);
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_dictionary_createWithCapacity(tuuvm_context_t *context, size_t expectedCapacity)
+{
+    size_t requiredStorageCapacity = expectedCapacity * 130 / 100;
+
+    tuuvm_dictionary_t *result = (tuuvm_dictionary_t*)tuuvm_context_allocatePointerTuple(context, context->roots.dictionaryType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_dictionary_t));
+    result->size = tuuvm_tuple_size_encode(context, 0);
+    if(requiredStorageCapacity > 0)
+        result->storage = tuuvm_array_create(context, requiredStorageCapacity);
+    return (tuuvm_tuple_t)result;
+}
+
 static intptr_t tuuvm_dictionary_scanFor(tuuvm_context_t *context, tuuvm_dictionary_t **dictionary, tuuvm_tuple_t *element)
 {
     struct {
@@ -58,6 +76,174 @@ static void tuuvm_dictionary_insertNoCheck(tuuvm_context_t *context, tuuvm_dicti
 
     tuuvm_array_t *storage = (tuuvm_array_t*)(*dictionary)->storage;
     storage->elements[elementIndex] = (tuuvm_tuple_t)*association;
+}
+
+TUUVM_API bool tuuvm_dictionary_find(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t *outValue)
+{
+    if(!tuuvm_tuple_isNonNullPointer(dictionary))
+        return false;
+
+    struct {
+        tuuvm_weakValueDictionary_t *dictionary;
+        tuuvm_tuple_t key;
+        tuuvm_weakValueAssociation_t *association;
+    } gcFrame = {
+        .dictionary = (tuuvm_weakValueDictionary_t*)dictionary,
+        .key = key
+    };
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    intptr_t elementIndex = tuuvm_dictionary_scanFor(context, &gcFrame.dictionary, &gcFrame.key);
+    if(elementIndex < 0)
+    {
+        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return false;
+    }
+
+    tuuvm_dictionary_t *dictionaryObject = (tuuvm_dictionary_t*)dictionary;
+    tuuvm_array_t *storage = (tuuvm_array_t*)dictionaryObject->storage;
+    gcFrame.association = (tuuvm_weakValueAssociation_t*)storage->elements[elementIndex];
+    if(!gcFrame.association)
+    {
+        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return false;
+    }
+
+    *outValue = gcFrame.association->value;
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return true;
+}
+
+static void tuuvm_dictionary_increaseCapacity(tuuvm_context_t *context, tuuvm_dictionary_t **dictionary)
+{
+    struct {
+        tuuvm_array_t *oldStorage;
+        tuuvm_array_t *newStorage;
+        tuuvm_association_t *association;
+        tuuvm_tuple_t key;
+    } gcFrame = {
+        .oldStorage = (tuuvm_array_t*)(*dictionary)->storage,
+    };
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    size_t oldCapacity = tuuvm_tuple_getSizeInSlots((tuuvm_tuple_t)gcFrame.oldStorage);
+    size_t newCapacity = oldCapacity * 2;
+    size_t newSize = 0;
+    if(newCapacity < 8)
+        newCapacity = 8;
+
+    // Make the new storage.
+    gcFrame.newStorage = (tuuvm_array_t*)tuuvm_array_create(context, newCapacity);
+    (*dictionary)->storage = (tuuvm_tuple_t)gcFrame.newStorage;
+
+    // Reinsert the old elements.
+    for(size_t i = 0; i < oldCapacity; ++i)
+    {
+        gcFrame.association = (tuuvm_association_t *)gcFrame.oldStorage->elements[i];
+        if(gcFrame.association)
+        {
+            gcFrame.key = gcFrame.association->key;
+            tuuvm_dictionary_insertNoCheck(context, dictionary, &gcFrame.association, &gcFrame.key);
+            ++newSize;
+        }
+    }
+
+    // We need to recompute the size due to deleted weak objects.
+    (*dictionary)->size = tuuvm_tuple_size_encode(context, newSize);
+}
+
+TUUVM_API void tuuvm_dictionary_add(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t association)
+{
+    if(!tuuvm_tuple_isNonNullPointer(dictionary)) return;
+
+    struct {
+        tuuvm_dictionary_t *dictionary;
+        tuuvm_tuple_t key;
+        tuuvm_tuple_t associationToInsert;
+        tuuvm_tuple_t association;
+    } gcFrame = {
+        .dictionary = (tuuvm_dictionary_t*)dictionary,
+        .associationToInsert = association,
+    };
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    gcFrame.key = tuuvm_association_getKey(gcFrame.associationToInsert);
+
+    intptr_t elementIndex = tuuvm_dictionary_scanFor(context, &gcFrame.dictionary, &gcFrame.key);
+    if(elementIndex < 0)
+    {
+        tuuvm_dictionary_increaseCapacity(context, &gcFrame.dictionary);
+        elementIndex = tuuvm_dictionary_scanFor(context, &gcFrame.dictionary, &gcFrame.key);
+        if(elementIndex < 0)
+           tuuvm_error("Dictionary out of memory.");
+    }
+
+    tuuvm_array_t *storage = (tuuvm_array_t*)gcFrame.dictionary->storage;
+    gcFrame.association = storage->elements[elementIndex];
+    if(gcFrame.association)
+    {
+        gcFrame.association = gcFrame.associationToInsert;
+    }
+    else
+    {
+        storage->elements[elementIndex] = gcFrame.associationToInsert;
+        size_t capacity = tuuvm_tuple_getSizeInSlots(gcFrame.dictionary->storage);
+        size_t newSize = tuuvm_tuple_size_decode(gcFrame.dictionary->size) + 1;
+        gcFrame.dictionary->size = tuuvm_tuple_size_encode(context, newSize);
+        size_t capacityThreshold = capacity * 4 / 5;
+
+        // Make sure the maximum occupancy rate is not greater than 80%.
+        if(newSize >= capacityThreshold)
+            tuuvm_dictionary_increaseCapacity(context, &gcFrame.dictionary);
+    }
+
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+}
+
+TUUVM_API void tuuvm_dictionary_atPut(tuuvm_context_t *context, tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t value)
+{
+    if(!tuuvm_tuple_isNonNullPointer(dictionary)) return;
+
+    struct {
+        tuuvm_dictionary_t *dictionary;
+        tuuvm_tuple_t key;
+        tuuvm_tuple_t value;
+        tuuvm_association_t *association;
+    } gcFrame = {
+        .dictionary = (tuuvm_dictionary_t*)dictionary,
+        .key = key,
+        .value = value,
+    };
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    intptr_t elementIndex = tuuvm_dictionary_scanFor(context, &gcFrame.dictionary, &gcFrame.key);
+    if(elementIndex < 0)
+    {
+        tuuvm_dictionary_increaseCapacity(context, &gcFrame.dictionary);
+        elementIndex = tuuvm_dictionary_scanFor(context, &gcFrame.dictionary, &gcFrame.key);
+        if(elementIndex < 0)
+           tuuvm_error("Dictionary out of memory.");
+    }
+
+    tuuvm_array_t *storage = (tuuvm_array_t*)gcFrame.dictionary->storage;
+    gcFrame.association = (tuuvm_association_t*)storage->elements[elementIndex];
+    if(gcFrame.association)
+    {
+        gcFrame.association->value = gcFrame.value;
+    }
+    else
+    {
+        storage->elements[elementIndex] = tuuvm_association_create(context, gcFrame.key, gcFrame.value);
+        size_t capacity = tuuvm_tuple_getSizeInSlots(gcFrame.dictionary->storage);
+        size_t newSize = tuuvm_tuple_size_decode(gcFrame.dictionary->size) + 1;
+        gcFrame.dictionary->size = tuuvm_tuple_size_encode(context, newSize);
+        size_t capacityThreshold = capacity * 4 / 5;
+
+        // Make sure the maximum occupancy rate is not greater than 80%.
+        if(newSize >= capacityThreshold)
+            tuuvm_dictionary_increaseCapacity(context, &gcFrame.dictionary);
+    }
+
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_weakValueDictionary_create(tuuvm_context_t *context)
@@ -493,6 +679,41 @@ TUUVM_API void tuuvm_methodDictionary_atPut(tuuvm_context_t *context, tuuvm_tupl
     }
 }
 
+static tuuvm_tuple_t tuuvm_dictionary_primitive_atOrNil(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t found = TUUVM_NULL_TUPLE;
+    if(!tuuvm_weakValueDictionary_find(context, arguments[0], arguments[1], &found))
+        found = TUUVM_NULL_TUPLE;
+
+    return found;
+}
+
+static tuuvm_tuple_t tuuvm_dictionary_primitive_at(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t found = TUUVM_NULL_TUPLE;
+    if(!tuuvm_weakValueDictionary_find(context, arguments[0], arguments[1], &found))
+        tuuvm_error("Failed to find the expected key in the dictionary.");
+
+    return found;
+}
+
+static tuuvm_tuple_t tuuvm_dictionary_primitive_atPut(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+
+    tuuvm_weakValueDictionary_atPut(context, arguments[0], arguments[1], arguments[2]);
+    return TUUVM_VOID_TUPLE;
+}
+
 static tuuvm_tuple_t tuuvm_identityDictionary_primitive_atOrNil(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
@@ -525,6 +746,41 @@ static tuuvm_tuple_t tuuvm_identityDictionary_primitive_atPut(tuuvm_context_t *c
     if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
 
     tuuvm_identityDictionary_atPut(context, arguments[0], arguments[1], arguments[2]);
+    return TUUVM_VOID_TUPLE;
+}
+
+static tuuvm_tuple_t tuuvm_weakValueDictionary_primitive_atOrNil(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t found = TUUVM_NULL_TUPLE;
+    if(!tuuvm_weakValueDictionary_find(context, arguments[0], arguments[1], &found))
+        found = TUUVM_NULL_TUPLE;
+
+    return found;
+}
+
+static tuuvm_tuple_t tuuvm_weakValueDictionary_primitive_at(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t found = TUUVM_NULL_TUPLE;
+    if(!tuuvm_weakValueDictionary_find(context, arguments[0], arguments[1], &found))
+        tuuvm_error("Failed to find the expected key in the dictionary.");
+
+    return found;
+}
+
+static tuuvm_tuple_t tuuvm_weakValueDictionary_primitive_atPut(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+
+    tuuvm_weakValueDictionary_atPut(context, arguments[0], arguments[1], arguments[2]);
     return TUUVM_VOID_TUPLE;
 }
 
@@ -574,9 +830,17 @@ static tuuvm_tuple_t tuuvm_methodDictionary_primitive_atPut(tuuvm_context_t *con
 
 void tuuvm_dictionary_registerPrimitives(void)
 {
+    tuuvm_primitiveTable_registerFunction(tuuvm_dictionary_primitive_atOrNil, "Dictionary::atOrNil:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_dictionary_primitive_atPut, "Dictionary::at:put:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_dictionary_primitive_at, "Dictionary::at:");
+
     tuuvm_primitiveTable_registerFunction(tuuvm_identityDictionary_primitive_atOrNil, "IdentityDictionary::atOrNil:");
     tuuvm_primitiveTable_registerFunction(tuuvm_identityDictionary_primitive_atPut, "IdentityDictionary::at:put:");
     tuuvm_primitiveTable_registerFunction(tuuvm_identityDictionary_primitive_at, "IdentityDictionary::at:");
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_weakValueDictionary_primitive_atOrNil, "WeakValueDictionary::atOrNil:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_weakValueDictionary_primitive_atPut, "WeakValueDictionary::at:put:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_weakValueDictionary_primitive_at, "WeakValueDictionary::at:");
 
     tuuvm_primitiveTable_registerFunction(tuuvm_methodDictionary_primitive_new, "MethodDictionary::new");
     tuuvm_primitiveTable_registerFunction(tuuvm_methodDictionary_primitive_atOrNil, "MethodDictionary::atOrNil:");
@@ -586,9 +850,17 @@ void tuuvm_dictionary_registerPrimitives(void)
 
 void tuuvm_dictionary_setupPrimitives(tuuvm_context_t *context)
 {
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Dictionary::atOrNil:", context->roots.dictionaryType, "atOrNil:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_dictionary_primitive_atOrNil);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Dictionary::at:put:", context->roots.dictionaryType, "at:put:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_dictionary_primitive_atPut);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Dictionary::at:", context->roots.dictionaryType, "at:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_dictionary_primitive_at);
+
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentityDictionary::atOrNil:", context->roots.identityDictionaryType, "atOrNil:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_identityDictionary_primitive_atOrNil);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentityDictionary::at:put:", context->roots.identityDictionaryType, "at:put:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_identityDictionary_primitive_atPut);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentityDictionary::at:", context->roots.identityDictionaryType, "at:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_identityDictionary_primitive_at);
+
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "WeakValueDictionary::atOrNil:", context->roots.weakValueDictionaryType, "atOrNil:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_weakValueDictionary_primitive_atOrNil);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "WeakValueDictionary::at:put:", context->roots.weakValueDictionaryType, "at:put:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_weakValueDictionary_primitive_atPut);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "WeakValueDictionary::at:", context->roots.weakValueDictionaryType, "at:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_weakValueDictionary_primitive_at);
 
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "MethodDictionary::new", 0, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_methodDictionary_primitive_new);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "MethodDictionary::atOrNil:", context->roots.methodDictionaryType, "atOrNil:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_methodDictionary_primitive_atOrNil);

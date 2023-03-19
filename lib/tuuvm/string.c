@@ -81,6 +81,26 @@ TUUVM_API tuuvm_tuple_t tuuvm_string_createWithSuffix(tuuvm_context_t *context, 
     return result;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_string_createWithoutSuffix(tuuvm_context_t *context, tuuvm_tuple_t string, const char *suffix)
+{
+    size_t suffixLen = strlen(suffix);
+    if(suffixLen == 0)
+        return string;
+
+    size_t stringSize = tuuvm_tuple_getSizeInBytes(string);
+    if(stringSize < suffixLen)
+        return string;
+
+    uint8_t *stringData = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(string)->bytes;
+    if(memcmp(stringData + stringSize - suffixLen, suffix, suffixLen))
+        return string;
+
+    tuuvm_tuple_t result = tuuvm_string_createEmptyWithSize(context, stringSize - suffixLen);
+    uint8_t *resultData = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(result)->bytes;
+    memcpy(resultData, stringData, stringSize - suffixLen);
+    return result;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_string_createWithCString(tuuvm_context_t *context, const char *cstring)
 {
     return tuuvm_string_createWithString(context, strlen(cstring), cstring);

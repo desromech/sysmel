@@ -184,3 +184,9 @@ let: #functionWithMutableLocal with: {:(Int32)x :: Int32 |
 
 printLine(functionWithMutableLocal asSSAFunction fullPrintString).
 printLine(functionWithMutableLocal(1i32)).
+
+printLine(#{}).
+printLine(#{test: 42}).
+printLine(#{test:}).
+printLine(#{#test : }).
+printLine(#{#test : 42}).

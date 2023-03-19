@@ -23,6 +23,7 @@ typedef struct tuuvm_sysmelParser_state_s
 static tuuvm_tuple_t tuuvm_sysmelParser_parseLiteralArrayExpression(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state);
 
 static tuuvm_tuple_t tuuvm_sysmelParser_parseUnaryExpression(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state);
+static tuuvm_tuple_t tuuvm_sysmelParser_parseBinaryExpression(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state);
 static tuuvm_tuple_t tuuvm_sysmelParser_parseCommaExpressionElement(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state);
 static tuuvm_tuple_t tuuvm_sysmelParser_parseExpression(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state);
 
@@ -401,23 +402,78 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseByteArrayExpression(tuuvm_context_t
     return tuuvm_astMakeByteArrayNode_create(context, tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition), elements);
 }
 
+static tuuvm_tuple_t tuuvm_sysmelParser_parseDictionaryElement(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state)
+{
+    size_t startPosition = state->tokenPosition;
+    tuuvm_tuple_t key = TUUVM_NULL_TUPLE;
+
+    // Parse the key
+    if(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_KEYWORD)
+    {
+        tuuvm_tuple_t keyToken = tuuvm_sysmelParser_lookAt(state, 0);
+        tuuvm_tuple_t keyValue = tuuvm_token_getValue(keyToken);
+        keyValue = tuuvm_symbol_internFromTuple(context, tuuvm_string_createWithoutSuffix(context, keyValue, ":"));
+        key = tuuvm_astLiteralNode_create(context, tuuvm_token_getSourcePosition(keyToken), keyValue);
+        ++state->tokenPosition;
+    }
+    else
+    {
+        key = tuuvm_sysmelParser_parseBinaryExpression(context, state);
+        if(!key || tuuvm_astNode_isErrorNode(context, key))
+            return key;
+        
+        if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_COLON)
+        {
+            tuuvm_tuple_t sourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, state->tokenPosition);
+            return tuuvm_astMakeAssociationNode_create(context, sourcePosition, key, TUUVM_NULL_TUPLE);
+        }
+        ++state->tokenPosition;
+    }
+
+    // Do we have a value?.
+    tuuvm_tuple_t value = TUUVM_NULL_TUPLE;
+    if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_DOT &&
+        tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_RCBRACKET)
+        value = tuuvm_sysmelParser_parseExpression(context, state);
+
+    tuuvm_tuple_t sourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, state->tokenPosition);
+    return tuuvm_astMakeAssociationNode_create(context, sourcePosition, key, value);
+}
+
 static tuuvm_tuple_t tuuvm_sysmelParser_parseDictionaryElements(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state)
 {
-    // TODO: Implement this part.
-    return tuuvm_array_create(context, 0);
+    while(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_DOT)
+        ++state->tokenPosition;
+
+    tuuvm_tuple_t associations = tuuvm_arrayList_create(context);
+    while(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_RCBRACKET)
+    {
+        tuuvm_tuple_t association = tuuvm_sysmelParser_parseDictionaryElement(context, state);
+        if(!association)
+            break;
+
+        tuuvm_arrayList_add(context, associations, association);
+        if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_DOT || tuuvm_astNode_isErrorNode(context, association))
+            break;
+        
+        while(tuuvm_sysmelParser_lookKindAt(state, 0) == TUUVM_TOKEN_KIND_DOT)
+            ++state->tokenPosition;
+    }
+
+    return tuuvm_arrayList_asArray(context, associations);
 }
 
 static tuuvm_tuple_t tuuvm_sysmelParser_parseDictionaryExpression(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state)
 {
     if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_DICTIONARY_START)
-        return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a byte array start.");
+        return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a dictionary start.");
 
     size_t startPosition = state->tokenPosition;
     ++state->tokenPosition;
 
     tuuvm_tuple_t elements = tuuvm_sysmelParser_parseDictionaryElements(context, state);
 
-    if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_RBRACKET)
+    if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_RCBRACKET)
         return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a right bracket.");
 
     ++state->tokenPosition;
@@ -481,7 +537,7 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parsePrimaryExpression(tuuvm_context_t *
 static tuuvm_tuple_t tuuvm_sysmelParser_parseCallExpressionWithReceiver(tuuvm_context_t *context, tuuvm_sysmelParser_state_t *state, tuuvm_tuple_t receiver, size_t receiverPosition)
 {
     if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_LPARENT)
-        return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a byte array start.");
+        return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a left parenthesis.");
     ++state->tokenPosition;
 
     // Optional arguments.
@@ -502,7 +558,7 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseCallExpressionWithReceiver(tuuvm_co
 
     tuuvm_tuple_t arguments = tuuvm_arrayList_asArray(context, argumentArrayList);
     if(tuuvm_sysmelParser_lookKindAt(state, 0) != TUUVM_TOKEN_KIND_RPARENT)
-        return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a byte array start.");
+        return tuuvm_astErrorNode_createWithCString(context, tuuvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a right parenthesis.");
     ++state->tokenPosition;
 
     tuuvm_tuple_t sourcePosition = tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, receiverPosition, state->tokenPosition);

@@ -4,6 +4,8 @@
 #include "tuuvm/arrayList.h"
 #include "tuuvm/ast.h"
 #include "tuuvm/assert.h"
+#include "tuuvm/association.h"
+#include "tuuvm/dictionary.h"
 #include "tuuvm/function.h"
 #include "tuuvm/gc.h"
 #include "tuuvm/errors.h"
@@ -2317,6 +2319,100 @@ static tuuvm_tuple_t tuuvm_astLexicalBlockNode_primitiveEvaluate(tuuvm_context_t
     return tuuvm_interpreter_evaluateASTWithEnvironment(context, (*lexicalBlockNode)->body, *environment);
 }
 
+static tuuvm_tuple_t tuuvm_astMakeAssociationNode_primitiveAnalyzeAndEvaluate(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *node = &arguments[0];
+    tuuvm_tuple_t *environment = &arguments[1];
+
+    tuuvm_astMakeAssociationNode_t **associationNode = (tuuvm_astMakeAssociationNode_t**)node;
+
+    struct {
+        tuuvm_tuple_t key;
+        tuuvm_tuple_t value;
+        tuuvm_tuple_t result;
+    } gcFrame = {0};
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*associationNode)->super.sourcePosition);
+
+    gcFrame.key = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*associationNode)->key, *environment);
+    if((*associationNode)->value)
+        gcFrame.value = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*associationNode)->value, *environment);
+    gcFrame.result = tuuvm_association_create(context, gcFrame.key, gcFrame.value);
+
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
+}
+
+static tuuvm_tuple_t tuuvm_astMakeAssociationNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *node = &arguments[0];
+    tuuvm_tuple_t *environment = &arguments[1];
+
+    tuuvm_astMakeAssociationNode_t **associationNode = (tuuvm_astMakeAssociationNode_t**)node;
+
+    struct {
+        tuuvm_astMakeAssociationNode_t *analyzedAssociationNode;
+        tuuvm_tuple_t analyzedKey;
+        tuuvm_tuple_t analyzedValue;
+    } gcFrame = {0};
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*associationNode)->super.sourcePosition);
+
+    gcFrame.analyzedAssociationNode = (tuuvm_astMakeAssociationNode_t *)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.analyzedAssociationNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
+
+    gcFrame.analyzedKey = tuuvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.analyzedAssociationNode->key, *environment);
+    gcFrame.analyzedAssociationNode->key = gcFrame.analyzedKey;
+    if(gcFrame.analyzedAssociationNode->value)
+    {
+        gcFrame.analyzedValue = tuuvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.analyzedAssociationNode->value, *environment);
+        gcFrame.analyzedAssociationNode->value = gcFrame.analyzedValue;
+    }
+
+    gcFrame.analyzedAssociationNode->super.analyzedType = context->roots.associationType;
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return (tuuvm_tuple_t)gcFrame.analyzedAssociationNode;
+}
+
+static tuuvm_tuple_t tuuvm_astMakeAssociationNode_primitiveEvaluate(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *node = &arguments[0];
+    tuuvm_tuple_t *environment = &arguments[1];
+
+    tuuvm_astMakeAssociationNode_t **associationNode = (tuuvm_astMakeAssociationNode_t**)node;
+
+    struct {
+        tuuvm_tuple_t key;
+        tuuvm_tuple_t value;
+        tuuvm_tuple_t result;
+    } gcFrame = {0};
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*associationNode)->super.sourcePosition);
+
+    gcFrame.key = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*associationNode)->key, *environment);
+    if((*associationNode)->value)
+        gcFrame.value = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*associationNode)->value, *environment);
+    gcFrame.result = tuuvm_association_create(context, gcFrame.key, gcFrame.value);
+
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
+}
+
 static tuuvm_tuple_t tuuvm_astMakeByteArrayNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
@@ -2502,6 +2598,120 @@ static tuuvm_tuple_t tuuvm_astMakeTupleNode_primitiveEvaluate(tuuvm_context_t *c
         tuuvm_tuple_t expression = tuuvm_array_at((*tupleNode)->elements, i);
         gcFrame.element = tuuvm_interpreter_evaluateASTWithEnvironment(context, expression, *environment);
         tuuvm_array_atPut(gcFrame.result, i, gcFrame.element);
+    }
+
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
+}
+
+static tuuvm_tuple_t tuuvm_astMakeDictionaryNode_primitiveAnalyzeAndEvaluate(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *node = &arguments[0];
+    tuuvm_tuple_t *environment = &arguments[1];
+
+    tuuvm_astMakeDictionaryNode_t **dictionaryNode = (tuuvm_astMakeDictionaryNode_t**)node;
+
+    struct {
+        tuuvm_tuple_t result;
+        tuuvm_tuple_t expression;
+        tuuvm_tuple_t element;
+    } gcFrame = {0};
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*dictionaryNode)->super.sourcePosition);
+
+    size_t expressionCount = tuuvm_array_getSize((*dictionaryNode)->elements);
+    gcFrame.result = tuuvm_dictionary_createWithCapacity(context, expressionCount);
+    for(size_t i = 0; i < expressionCount; ++i)
+    {
+        gcFrame.expression = tuuvm_array_at((*dictionaryNode)->elements, i);
+        gcFrame.element = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, gcFrame.expression, *environment);
+        tuuvm_dictionary_add(context, gcFrame.result, gcFrame.element);
+    }
+
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
+}
+
+static tuuvm_tuple_t tuuvm_astMakeDictionaryNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *node = &arguments[0];
+    tuuvm_tuple_t *environment = &arguments[1];
+
+    tuuvm_astMakeDictionaryNode_t **dictionaryNode = (tuuvm_astMakeDictionaryNode_t**)node;
+
+    struct {
+        tuuvm_astMakeDictionaryNode_t *analyzedDictionaryNode;
+        tuuvm_tuple_t expressions;
+        tuuvm_tuple_t analyzedExpressions;
+        tuuvm_tuple_t expression;
+        tuuvm_tuple_t analyzedExpression;
+    } gcFrame = {0};
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*dictionaryNode)->super.sourcePosition);
+
+    gcFrame.expressions = (*dictionaryNode)->elements;
+    size_t expressionCount = tuuvm_array_getSize(gcFrame.expressions);
+    if(expressionCount == 0 && (*dictionaryNode)->super.analyzedType)
+    {
+        TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return *node;
+    }
+
+    gcFrame.analyzedDictionaryNode = (tuuvm_astMakeDictionaryNode_t *)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.analyzedDictionaryNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
+    
+    gcFrame.analyzedExpressions = tuuvm_array_create(context, expressionCount);
+    for(size_t i = 0; i < expressionCount; ++i)
+    {
+        gcFrame.expression = tuuvm_array_at(gcFrame.expressions, i);
+        gcFrame.analyzedExpression = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.expression, context->roots.associationType, *environment);
+        tuuvm_array_atPut(gcFrame.analyzedExpressions, i, gcFrame.analyzedExpression);
+    }
+
+    gcFrame.analyzedDictionaryNode->super.analyzedType = context->roots.arrayType;
+    gcFrame.analyzedDictionaryNode->elements = gcFrame.analyzedExpressions;
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return (tuuvm_tuple_t)gcFrame.analyzedDictionaryNode;
+}
+
+static tuuvm_tuple_t tuuvm_astMakeDictionaryNode_primitiveEvaluate(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *node = &arguments[0];
+    tuuvm_tuple_t *environment = &arguments[1];
+
+    tuuvm_astMakeDictionaryNode_t **dictionaryNode = (tuuvm_astMakeDictionaryNode_t**)node;
+
+    struct {
+        tuuvm_tuple_t result;
+        tuuvm_tuple_t element;
+        tuuvm_tuple_t expression;
+    } gcFrame = {0};
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*dictionaryNode)->super.sourcePosition);
+
+    size_t expressionCount = tuuvm_array_getSize((*dictionaryNode)->elements);
+    gcFrame.result = tuuvm_dictionary_createWithCapacity(context, expressionCount);
+    for(size_t i = 0; i < expressionCount; ++i)
+    {
+        gcFrame.expression = tuuvm_array_at((*dictionaryNode)->elements, i);
+        gcFrame.element = tuuvm_interpreter_evaluateASTWithEnvironment(context, gcFrame.expression, *environment);
+        tuuvm_dictionary_add(context, gcFrame.result, gcFrame.element);
     }
 
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
@@ -4514,9 +4724,17 @@ void tuuvm_astInterpreter_registerPrimitives(void)
     tuuvm_primitiveTable_registerFunction(tuuvm_astLexicalBlockNode_primitiveEvaluate, "ASTLexicalBlockNode::evaluateWithEnvironment:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astLexicalBlockNode_primitiveAnalyzeAndEvaluate, "ASTLexicalBlockNode::analyzeAndEvaluateWithEnvironment:");
 
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeAssociationNode_primitiveAnalyze, "ASTMakeAssociationNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeAssociationNode_primitiveEvaluate, "ASTMakeAssociationNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeAssociationNode_primitiveAnalyzeAndEvaluate, "ASTMakeAssociationNode::analyzeAndEvaluateWithEnvironment:");
+
     tuuvm_primitiveTable_registerFunction(tuuvm_astMakeByteArrayNode_primitiveAnalyze, "ASTMakeByteArrayNode::analyzeWithEnvironment:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astMakeByteArrayNode_primitiveEvaluate, "ASTMakeByteArrayNode::evaluateWithEnvironment:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astMakeByteArrayNode_primitiveAnalyzeAndEvaluate, "ASTMakeByteArrayNode::analyzeAndEvaluateWithEnvironment:");
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeDictionaryNode_primitiveAnalyze, "ASTMakeDictionaryNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeDictionaryNode_primitiveEvaluate, "ASTMakeDictionaryNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeDictionaryNode_primitiveAnalyzeAndEvaluate, "ASTMakeDictionaryNode::analyzeAndEvaluateWithEnvironment:");
 
     tuuvm_primitiveTable_registerFunction(tuuvm_astMakeTupleNode_primitiveAnalyze, "ASTMakeTupleNode::analyzeWithEnvironment:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astMakeTupleNode_primitiveEvaluate, "ASTMakeTupleNode::evaluateWithEnvironment:");
@@ -4671,10 +4889,20 @@ void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context)
         tuuvm_astLexicalBlockNode_primitiveEvaluate,
         tuuvm_astLexicalBlockNode_primitiveAnalyzeAndEvaluate
     );
+    tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astMakeAssociationNodeType,
+        tuuvm_astMakeAssociationNode_primitiveAnalyze,
+        tuuvm_astMakeAssociationNode_primitiveEvaluate,
+        tuuvm_astMakeAssociationNode_primitiveAnalyzeAndEvaluate
+    );
     tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astMakeByteArrayNodeType,
         tuuvm_astMakeByteArrayNode_primitiveAnalyze,
         tuuvm_astMakeByteArrayNode_primitiveEvaluate,
         tuuvm_astMakeByteArrayNode_primitiveAnalyzeAndEvaluate
+    );
+    tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astMakeDictionaryNodeType,
+        tuuvm_astMakeDictionaryNode_primitiveAnalyze,
+        tuuvm_astMakeDictionaryNode_primitiveEvaluate,
+        tuuvm_astMakeDictionaryNode_primitiveAnalyzeAndEvaluate
     );
     tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astMakeTupleNodeType,
         tuuvm_astMakeTupleNode_primitiveAnalyze,

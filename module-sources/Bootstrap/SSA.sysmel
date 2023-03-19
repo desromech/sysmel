@@ -752,37 +752,37 @@ ASTContinueNode extend: {
     }.
 }.
 
+let primitiveFunctionGenerators := #{
+    #PointerLikeType::load : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+        let reference := self arguments first generateSSAValueWith: context.
+        context builder load: reference type: self analyzedType
+    }.
+    #PointerLikeType::store: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+        let reference := self arguments first generateSSAValueWith: context.
+        let value := self arguments second generateSSAValueWith: context.
+        context builder store: value in: reference.
+        reference
+    }.
+    #Void::fromAnyValue : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+        self arguments do: {:(ASTNode)each :: Void | each generateSSAValueWith: context }.
+        context builder literal: void
+    }.
+    #yourself : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+        self arguments first generateSSAValueWith: context
+    }.
+}.
+
 ASTFunctionApplicationNode extend: {
     public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
         let functionExpression := self functionExpression generateSSAValueWith: context.
-        let primitiveName := functionExpression primitiveName.
-
-        ## FIXME: Use a dictionary here.
-        primitiveName == #PointerLikeType::load ifTrue: {
-            let reference := self arguments first generateSSAValueWith: context.
-            context builder load: reference type: self analyzedType
-        } ifFalse: {
-            primitiveName == #PointerLikeType::store: ifTrue: {
-                let reference := self arguments first generateSSAValueWith: context.
-                let value := self arguments second generateSSAValueWith: context.
-                context builder store: value in: reference.
-                reference
-            } ifFalse: {
-                primitiveName == #Void::fromAnyValue ifTrue: {
-                    self arguments do: {:(ASTNode)each :: Void | each generateSSAValueWith: context }.
-                    context builder literal: void
-                } ifFalse: {
-                    primitiveName == #yourself ifTrue: {
-                        self arguments first generateSSAValueWith: context
-                    } ifFalse: {
-                        context builder call: functionExpression
-                            arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
-                            resultType: self analyzedType
-                    }
-                }
-            }.
+        let primitiveGenerator := primitiveFunctionGenerators atOrNil: functionExpression primitiveName.
+        primitiveGenerator ifNotNil: {
+            primitiveGenerator(self, context)
+        } ifNil: {
+            context builder call: functionExpression
+                arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
+                resultType: self analyzedType
         }.
-
     }.
 }.
 
