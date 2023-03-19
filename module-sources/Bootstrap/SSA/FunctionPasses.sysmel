@@ -33,6 +33,43 @@ public class SSAPromoteAllocaPass superclass: SSAFunctionPass; definition: {
 ## Destroy SSA pass
 public class SSADestroySSAFunctionPass superclass: SSAFunctionPass; definition: {
     public method runIn: (function: SSAFunctionDefinition) ::=> Void := {
-        printLine("TODO: SSADestroySSAFunctionPass")
+        function
+            computeControlFlowAndNormalizeBasicBlocks.
+
+        let allocaBuilder := SSAInstructionBuilder new
+            beginInsertingInBasicBlock: function firstBasicBlock;
+            insertionPoint: function firstBasicBlock findAllocaInsertionPoint;
+            yourself.
+
+        let storeBuilder := SSAInstructionBuilder new.
+        let loadBuilder := SSAInstructionBuilder new.
+
+        function basicBlocksDo: {:(SSABasicBlock)basicBlock :: Void |
+            loadBuilder 
+                beginInsertingInBasicBlock: basicBlock;
+                insertionPoint: basicBlock findPhiLoadInsertionPoint;
+                yourself.
+
+            basicBlock phiInstructionsDo: {:(SSAInstruction)phi :: Void |
+                allocaBuilder useSourceInformationOfValue: phi.
+
+                let valueType := phi type.
+                let pointerType := PointerTypeTemplate(valueType, nil).
+                
+                let temporary := allocaBuilder alloca: (allocaBuilder literal: valueType) type: pointerType.
+                phi incomingBlocksAndValuesDo: {:(SSABasicBlock)incomingBlock :(SSAValue)incomingValue :: Void |
+                    storeBuilder
+                        beginInsertingInBasicBlock: incomingBlock;
+                        insertionPoint: incomingBlock lastInstruction;
+                        useSourceInformationOfValue: phi;
+                        store: incomingValue in: temporary
+                }.
+
+                let load := loadBuilder
+                    useSourceInformationOfValue: phi;
+                    load: temporary type: valueType.
+                phi replaceWith: load.
+            }
+        }.
     }.
 }.

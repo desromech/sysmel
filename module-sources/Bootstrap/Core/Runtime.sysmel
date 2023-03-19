@@ -131,7 +131,7 @@ Object
     };
     withSelector: #subclassResponsibility addMethod: {:(Object)self :: Unwinds | self error: self __type__ printString -- " Subclass responsibility." };
     withSelector: #doesNotUnderstand: addMethod: {:(AnyValue)self :(Message)message |
-        error((self printString -- " doesNotUnderstand: ") -- message selector printString)
+        error((self class printString -- " doesNotUnderstand: ") -- message selector printString)
     }.
 
 Type
@@ -611,8 +611,15 @@ Collection
     }.
 
 Association
+    withSelector: #key:value: addClassMethod: {:(Association class)self :key :value :: self |
+        self new key: key; value: value; yourself
+    };
     withSelector: #printOn: addMethod: {:(Association)self :(Stream)stream :: Void |
         stream print: self key; nextPutAll: " -> "; print: self value
+    }.
+Object
+    withSelector:#-> addMethod: {:(Object)self :value :: Association |
+        Association key: self value: value
     }.
 
 WeakValueAssociation
@@ -662,6 +669,27 @@ SequenceableCollection
             at: 0sz put: value;
             yourself
     };
+    withSelector: #with:with: addClassMethod: {:(SequenceableCollection class)self :first :second :: self |
+        (self new: 2sz)
+            at: 0sz put: first;
+            at: 1sz put: second;
+            yourself
+    };
+    withSelector: #with:with:with: addClassMethod: {:(SequenceableCollection class)self :first :second :third :: self |
+        (self new: 3sz)
+            at: 0sz put: first;
+            at: 1sz put: second;
+            at: 2sz put: third;
+            yourself
+    };
+    withSelector: #with:with:with:with: addClassMethod: {:(SequenceableCollection class)self :first :second :third :fourth :: self |
+        (self new: 4sz)
+            at: 0sz put: first;
+            at: 1sz put: second;
+            at: 2sz put: third;
+            at: 3sz put: fourth;
+            yourself
+    };
     withSelector: #at: addMethod: {:(Collection)self :(Size)index  |
         self subclassResponsibility
     } makeAbstract;
@@ -709,6 +737,17 @@ SequenceableCollection
 
         result
     } makeFinal;
+    withSelector: #collect:as: addMethod: {:(SequenceableCollection)self :aBlock :(SequenceableCollection class)resultType :: resultType |
+        let: #i mutableWith: 0sz.
+        let: #size with: self size.
+        let: #result with: (resultType new: size).
+
+        while: i < self size do: {
+            result at: i put: aBlock(self at: i)
+        } continueWith: (i := i + 1sz).
+
+        result
+    } makeFinal;
     withSelector: #collectWithIndex: addMethod: {:(SequenceableCollection)self :aBlock :: self species |
         let: #i mutableWith: 0sz.
         let: #size with: self size.
@@ -720,6 +759,24 @@ SequenceableCollection
 
         result
     } makeFinal;
+    withSelector: #detect:ifFound:ifNone: addMethod: {:(SequenceableCollection)self :aPredicate :foundBlock :notFoundBlock |
+        let: #i mutableWith: 0sz.
+        let: #size with: self size.
+        let: #hasFoundIt type: Boolean mutableWith: false.
+        let: #foundElement type: AnyValue mutableWith: nil.
+
+        while: (if: hasFoundIt then: false else: i < self size) do: {
+            foundElement := self at: i.
+            hasFoundIt := aPredicate(foundElement)
+        } continueWith: (i := i + 1sz).
+
+        if: hasFoundIt
+            then: foundBlock(foundElement)
+            else: notFoundBlock(notFoundBlock)
+    };
+    withSelector: #detect:ifNone: addMethod: {:(SequenceableCollection)self :aPredicate :notFoundBlock |
+        self detect: aPredicate ifFound: {:element | element } ifNone: notFoundBlock
+    };
     withSelector: #do: addMethod: {:(SequenceableCollection)self :aBlock :: Void |
         let: #i mutableWith: 0sz.
         let: #size with: self size.
@@ -901,7 +958,7 @@ ArrayList
         self size: 0sz
     };
     withSelector: #initializeWithSize: addMethod: {:(ArrayList)self :(Size)initialSize :: Void |
-        self size: initialSize sz.
+        self size: initialSize.
         self storage: (self class arrayType new: initialSize).
     };
     withSelector: #at: addMethod: {:(ArrayList)self :(Size)index |

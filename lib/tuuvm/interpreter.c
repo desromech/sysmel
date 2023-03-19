@@ -3706,6 +3706,21 @@ static tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_primitiveMacro(tuuvm_conte
     return tuuvm_astDoWhileContinueWithNode_create(context, sourcePosition, *bodyExpressionNode, *conditionNode, *continueExpressionNode);
 }
 
+static tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_primitiveDoWhileMacro(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+
+    tuuvm_tuple_t *macroContext = &arguments[0];
+    tuuvm_tuple_t *bodyExpressionNode = &arguments[1];
+    tuuvm_tuple_t *conditionNode = &arguments[2];
+
+    tuuvm_tuple_t sourcePosition = tuuvm_macroContext_getSourcePosition(*macroContext);
+
+    return tuuvm_astDoWhileContinueWithNode_create(context, sourcePosition, *bodyExpressionNode, *conditionNode, TUUVM_NULL_TUPLE);
+}
+
 static tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
@@ -3837,11 +3852,26 @@ static tuuvm_tuple_t tuuvm_astWhileContinueWithNode_primitiveMacro(tuuvm_context
     tuuvm_tuple_t *macroContext = &arguments[0];
     tuuvm_tuple_t *conditionNode = &arguments[1];
     tuuvm_tuple_t *bodyExpressionNode = &arguments[2];
-    tuuvm_tuple_t *continueExpressionNode = &arguments[3];
+    tuuvm_tuple_t *continueNode = &arguments[3];
 
     tuuvm_tuple_t sourcePosition = tuuvm_macroContext_getSourcePosition(*macroContext);
 
-    return tuuvm_astWhileContinueWithNode_create(context, sourcePosition, *conditionNode, *bodyExpressionNode, *continueExpressionNode);
+    return tuuvm_astWhileContinueWithNode_create(context, sourcePosition, *conditionNode, *bodyExpressionNode, *continueNode);
+}
+
+static tuuvm_tuple_t tuuvm_astWhileContinueWithNode_primitiveWhileDoMacro(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+
+    tuuvm_tuple_t *macroContext = &arguments[0];
+    tuuvm_tuple_t *conditionNode = &arguments[1];
+    tuuvm_tuple_t *bodyExpressionNode = &arguments[2];
+
+    tuuvm_tuple_t sourcePosition = tuuvm_macroContext_getSourcePosition(*macroContext);
+
+    return tuuvm_astWhileContinueWithNode_create(context, sourcePosition, *conditionNode, *bodyExpressionNode, TUUVM_NULL_TUPLE);
 }
 
 static tuuvm_tuple_t tuuvm_astWhileContinueWithNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -4821,12 +4851,14 @@ void tuuvm_astInterpreter_registerPrimitives(void)
     tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveEvaluate, "ASTObjectWithLookupStartingFrom::evaluateWithEnvironment:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveAnalyzeAndEvaluate, "ASTObjectWithLookupStartingFrom::analyzeAndEvaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveMacro, "ASTDoWhileContinueWithNode::macro");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveMacro, "ASTDoWhileContinueWithNode::do:while:continueWith:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveDoWhileMacro, "ASTDoWhileContinueWithNode::do:while:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveAnalyze, "ASTDoWhileContinueWithNode::analyzeWithEnvironment:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveEvaluate, "ASTDoWhileContinueWithNode::evaluateWithEnvironment:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveAnalyzeAndEvaluate, "ASTDoWhileContinueWithNode::analyzeAndEvaluateWithEnvironment:");
 
     tuuvm_primitiveTable_registerFunction(tuuvm_astWhileContinueWithNode_primitiveMacro, "ASTWhileContinueWithNode::while:do:continueWith:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astWhileContinueWithNode_primitiveWhileDoMacro, "ASTWhileContinueWithNode::while:do:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astWhileContinueWithNode_primitiveAnalyze, "ASTWhileContinueWithNode::analyzeWithEnvironment:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astWhileContinueWithNode_primitiveEvaluate, "ASTWhileContinueWithNode::evaluateWithEnvironment:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astWhileContinueWithNode_primitiveAnalyzeAndEvaluate, "ASTWhileContinueWithNode::analyzeAndEvaluateWithEnvironment:");
@@ -5003,6 +5035,7 @@ void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context)
     );
 
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "do:while:continueWith:", 4, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astDoWhileContinueWithNode_primitiveMacro);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "do:while:", 3, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astDoWhileContinueWithNode_primitiveDoWhileMacro);
     tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astDoWhileContinueWithNodeType,
         tuuvm_astDoWhileContinueWithNode_primitiveAnalyze,
         tuuvm_astDoWhileContinueWithNode_primitiveEvaluate,
@@ -5010,6 +5043,7 @@ void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context)
     );
 
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "while:do:continueWith:", 4, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astWhileContinueWithNode_primitiveMacro);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "while:do:", 3, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astWhileContinueWithNode_primitiveWhileDoMacro);
     tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astWhileContinueWithNodeType,
         tuuvm_astWhileContinueWithNode_primitiveAnalyze,
         tuuvm_astWhileContinueWithNode_primitiveEvaluate,

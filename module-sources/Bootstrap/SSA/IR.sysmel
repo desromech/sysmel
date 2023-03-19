@@ -7,6 +7,7 @@ public final class SSAFunctionArgument superclass: SSAFunctionLocalValue.
 public final class SSAFunctionCapture superclass: SSAFunctionLocalValue.
 public class SSABasicBlock superclass: SSAFunctionLocalValue.
 public class SSAInstruction superclass: SSAFunctionLocalValue.
+public final class SSAPhiInstruction superclass: SSAInstruction.
 public final class SSAInstructionBuilder superclass: Object.
 
 SSAValue definition: {
@@ -18,11 +19,14 @@ SSAValue definition: {
 
     public method isConstant => Boolean := false.
     public method isLiteralConstant => Boolean := false.
+    public method isUndefinedConstant => Boolean := false.
+
     public method isFunction => Boolean := false.
     public method isFunctionLocalValue => Boolean := false.
     public method isBasicBlock => Boolean := false.
     
     public method isInstruction => Boolean := false.
+    public method isAllocaInstruction => Boolean := false.
     public method isPhiInstruction => Boolean := false.
     public method isLoadInstruction => Boolean := false.
     public method isStoreInstruction => Boolean := false.
@@ -77,7 +81,14 @@ SSAConstant definition: {
     public method isConstant => Boolean := true.
 }.
 
-public class SSALiteralConstant superclass: SSAConstant; definition: {
+public final class SSAUndefinedConstant superclass: SSAConstant; definition: {
+    public method isUndefinedConstant => Boolean := true.
+
+    public method printOn: (stream: Stream) ::=> Void
+        := stream nextPutAll: "undefined "; print: self type.
+}.
+
+public final class SSALiteralConstant superclass: SSAConstant; definition: {
     public field value.
 
     public method isLiteralConstant => Boolean := true.
@@ -193,9 +204,11 @@ SSAFunctionDefinition definition: {
 
     public method basicBlocksDo: aBlock ::=> Void := {
         let position mutable := self firstBasicBlock.
-        while: position isNotNil do: (
-            aBlock(position)
-        ) continueWith: (position := position nextBlock)
+        while: position isNotNil do: {
+            let nextPosition := position nextBlock.
+            aBlock(position).
+            position := nextPosition
+        }
     }.
 
     public method localValuesDo: aBlock ::=> Void := {
@@ -221,6 +234,49 @@ SSAFunctionDefinition definition: {
             localValue localValueIndex: index.
             index := index + 1sz
         }
+    }.
+
+    public method computeControlFlowAndNormalizeBasicBlocks => Void := {
+        self basicBlocksDo: {:(SSABasicBlock)basicBlock :: Void |
+            basicBlock
+                computeSuccessors;
+                predecessors: ArrayList new;
+                isLive: false.
+        }.
+
+        self firstBasicBlock ifNotNil: {:(SSABasicBlock)entryBlock :: Void |
+            self traverseBasicBlockForLiveness: entryBlock from: nil
+        }.
+
+        self basicBlocksDo: {:(SSABasicBlock)eachBasicBlock :: Void |
+            if: eachBasicBlock isLive then: {
+                let predecessors := eachBasicBlock predecessors.
+                eachBasicBlock phiInstructionsDo: {:(SSAPhiInstruction)phi :: Void |
+                    let newIncomingBlocksAndValues := predecessors collect: {:(SSABasicBlock)eachRequiredPredecessor :: Association |
+                        (phi findIncomingBlockAndValueFor: eachRequiredPredecessor)
+                            ifNotNil: {:(Association)found | found }
+                            ifNil: { eachRequiredPredecessor -> (SSAUndefinedConstant new type: phi type; yourself) }.
+                    } as: Array.
+
+                    phi incomingBlocksAndValues: newIncomingBlocksAndValues
+                }
+            } else: {
+                self removeBasicBlock: eachBasicBlock
+            }
+        }.
+    }.
+
+    public method traverseBasicBlockForLiveness: (basicBlock: SSABasicBlock) from: (predecessor: SSABasicBlock) ::=> Void := {
+        predecessor ifNotNil: {
+            basicBlock predecessors add: predecessor
+        }.
+
+        if: basicBlock isLive not then: {
+            basicBlock isLive: true.
+            basicBlock successors do: {:(SSABasicBlock)eachSuccessor :: Void|
+                self traverseBasicBlockForLiveness: eachSuccessor from: basicBlock
+            }
+        }.
     }.
 
     public method removeBasicBlock: (basicBlock: SSABasicBlock) ::=> Void := {
@@ -314,6 +370,11 @@ SSAFunctionDefinition definition: {
         }.
         stream nextPutAll: "}"; nl.
     }.
+
+    public method computeBasicBlockPredecessors => Void := {
+        self basicBlocksDo: {:(SSABasicBlock)each :: Void |
+        }.
+    }.
 }.
 
 SSAFunctionLocalValue definition: {
@@ -347,6 +408,10 @@ SSABasicBlock definition: {
 
     public field firstInstruction => SSAInstruction.
     public field lastInstruction => SSAInstruction.
+
+    public field isLive => Boolean.
+    public field predecessors => ArrayList.
+    public field successors => Array.
 
     public method isBasicBlock => Boolean := true.
 
@@ -404,9 +469,47 @@ SSABasicBlock definition: {
 
     public method instructionsDo: aBlock ::=> Void := {
         let position mutable := self firstInstruction.
-        while: position isNotNil do: (
-            aBlock(position)
-        ) continueWith: (position := position nextInstruction)
+        while: position isNotNil do: {
+            let nextPosition := position nextInstruction.
+            aBlock(position).
+            position := nextPosition
+        }
+    }.
+
+    public method firstAllocaInstructionsDo: aBlock ::=> Void := {
+        let position mutable := self firstInstruction.
+        while: position isNotNil && position isAllocaInstruction do: {
+            let nextPosition := position nextInstruction.
+            aBlock(position).
+            position := nextPosition
+        }
+    }.
+
+    public method findAllocaInsertionPoint => SSAInstruction := {
+        let position mutable := self firstInstruction.
+        while: position isNotNil && position isAllocaInstruction do: (
+            position := position nextInstruction
+        ).
+
+        position
+    }.
+
+    public method findPhiLoadInsertionPoint => SSAInstruction := {
+        let position mutable := self firstInstruction.
+        while: position isNotNil && position isPhiInstruction do: (
+            position := position nextInstruction
+        ).
+
+        position
+    }.
+
+    public method phiInstructionsDo: aBlock ::=> Void := {
+        let position mutable := self firstInstruction.
+        while: position isNotNil && position isPhiInstruction do: {
+            let nextPosition := position nextInstruction.
+            aBlock(position).
+            position := nextPosition
+        }
     }.
 
     public method removeInstruction: (instruction: SSAInstruction) ::=> Void := {
@@ -431,6 +534,10 @@ SSABasicBlock definition: {
             parent: nil;
             previousInstruction: nil;
             nextInstruction: nil
+    }.
+
+    public method computeSuccessors => Void := {
+        self successors: self lastInstruction successors
     }.
 
     public method postCopy => Void := {
@@ -484,10 +591,15 @@ SSAInstruction definition: {
         super replaceWith: replacement.
         self parent ifNotNil: {:parent :: Void | parent removeInstruction: self }
     }.
+
+    public method successors => Array
+        := self error: "Non terminator instruction is present at the end of a basic block " -- self fullPrintString
 }.
 
 public final class SSAAllocaInstruction superclass: SSAInstruction; definition: {
     public field valueType => SSAValue.
+
+    public method isAllocaInstruction => Boolean := true.
 
     public method fullPrintOn: (stream: Stream) ::=> Void
         := stream print: self; nextPutAll: " := alloca: "; print: self valueType.
@@ -509,6 +621,9 @@ public final class SSABranchInstruction superclass: SSAInstruction; definition: 
     public field destination => SSABasicBlock.
 
     public method isTerminatorInstruction => Boolean := true.
+
+    public method successors => Array
+        := Array with: self destination.
 
     public method fullPrintOn: (stream: Stream) ::=> Void
         := stream nextPutAll: "branch: "; print: self destination.
@@ -587,6 +702,9 @@ public final class SSAConditionalBranchInstruction superclass: SSAInstruction; d
 
     public method isTerminatorInstruction => Boolean := true.
 
+    public method successors => Array
+        := Array with: self trueDestination with: self falseDestination.
+
     public method fullPrintOn: (stream: Stream) ::=> Void
         := stream nextPutAll: "condBranch: "; print: self condition;
             nextPut: ' '; print: self trueDestination;
@@ -660,19 +778,19 @@ public final class SSAMakeClosureInstruction superclass: SSAInstruction; definit
     }.
 }.
 
-public final class SSAPhiInstruction superclass: SSAInstruction; definition: {
-    public field incomingValuesAndBlocks => ArrayList.
+SSAPhiInstruction definition: {
+    public field incomingBlocksAndValues => Array.
 
     public method isPhiInstruction => Boolean := true.
 
     public method initialize => Void := {
         self initialize.
-        self incomingValuesAndBlocks: ArrayList new.
+        self incomingBlocksAndValues: #().
     }.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := phi ["; nl.
-        self incomingValuesAndBlocks do: {:(Association)blockAndValue :: Void |
+        self incomingBlocksAndValues do: {:(Association)blockAndValue :: Void |
             stream nextPutAll: "        "; print: blockAndValue value; nextPutAll: " from "; print: blockAndValue key; nl 
         }.
 
@@ -680,11 +798,20 @@ public final class SSAPhiInstruction superclass: SSAInstruction; definition: {
     }.
 
     public method addValue: (value: SSAValue) incomingFrom: (block: SSABasicBlock) ::=> Void := {
-        self incomingValuesAndBlocks add: (Association new key: block; value: value; yourself).
+        self incomingBlocksAndValues: self incomingBlocksAndValues -- (Array with: block -> value).
+    }.
+
+    public method findIncomingBlockAndValueFor: (expectedBlock: SSABasicBlock) ::=> SSAValue
+        := self incomingBlocksAndValues detect: {:(Association)each | each key = expectedBlock } ifNone: {: nil}.
+
+    public method incomingBlocksAndValuesDo: aBlock ::=> Void := {
+        self incomingBlocksAndValues do: {:(Association)blockAndValue :: Void |
+            aBlock(blockAndValue key, blockAndValue value)
+        }
     }.
 
     public method usedValuesDo: aBlock ::=> Void := {
-        self incomingValuesAndBlocks do: {:(Association)association :: Void |
+        self incomingBlocksAndValues do: {:(Association)association :: Void |
             aBlock(association key).
             aBlock(association value).
         }
@@ -705,6 +832,9 @@ public final class SSAReturnInstruction superclass: SSAInstruction; definition: 
     public field value => SSAValue.
 
     public method isTerminatorInstruction => Boolean := true.
+
+    public method successors => Array
+        := #().
 
     public method fullPrintOn: (stream: Stream) ::=> Void
         := stream nextPutAll: "return: "; print: self value.
@@ -797,6 +927,11 @@ public final class SSAStoreInstruction superclass: SSAInstruction; definition: {
 public final class SSAUnreachableInstruction superclass: SSAInstruction; definition: {
     public method isUnreachableInstruction => Boolean := true.
 
+    public method isTerminatorInstruction => Boolean := true.
+
+    public method successors => Array
+        := #().
+
     public method fullPrintOn: (stream: Stream) ::=> Void
         := stream nextPutAll: "unreachable".
 }.
@@ -808,6 +943,7 @@ SSAInstructionBuilder definition: {
 
     public field function => SSAFunctionDefinition.
     public field basicBlock => SSABasicBlock.
+    public field insertionPoint => SSAInstruction.
 
     __Meta__ definition: {
         public method for: (function: SSAFunctionDefinition)
@@ -826,7 +962,15 @@ SSAInstructionBuilder definition: {
 
     public method beginBasicBlock: (newBasicBlock: SSABasicBlock) ::=> SSABasicBlock := {
         self basicBlock: newBasicBlock.
+        self insertionPoint: nil.
         self function addBasicBlock: newBasicBlock.
+        newBasicBlock
+    }.
+
+    public method beginInsertingInBasicBlock: (newBasicBlock: SSABasicBlock) ::=> SSABasicBlock := {
+        self function: newBasicBlock parent.
+        self basicBlock: newBasicBlock.
+        self insertionPoint: nil.
         newBasicBlock
     }.
 
@@ -838,8 +982,14 @@ SSAInstructionBuilder definition: {
             sourcePosition: self sourcePosition;
             sourceASTNode: self sourceASTNode;
             sourceEnvironment: self sourceEnvironment.
-        self basicBlock addInstruction: instruction.
+        self basicBlock addInstruction: instruction before: self insertionPoint.
         instruction
+    }.
+
+    public method useSourceInformationOfValue: (value: SSAValue) ::=> Void := {
+        self sourcePosition: value sourcePosition.
+        self sourceASTNode: value sourceASTNode.
+        self sourceEnvironment: value sourceEnvironment.
     }.
 
     public method withSourcePosition: (sourcePosition: SourcePosition) do: aBlock := {
