@@ -367,8 +367,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 
     context->roots.arrayType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
     context->roots.arrayListType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.sequenceableCollectionType);
-    context->roots.weakArrayType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
-    context->roots.weakArrayListType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.sequenceableCollectionType);
+    context->roots.weakArrayType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayType);
+    context->roots.weakArrayListType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayListType);
 
     context->roots.internedSymbolSet = tuuvm_identitySet_create(context);
 
@@ -687,12 +687,6 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.identitySetType, "IdentitySet", TUUVM_NULL_TUPLE,
         NULL);
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.weakArrayType, "WeakArray", TUUVM_NULL_TUPLE,
-        NULL);
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.weakArrayListType, "WeakArrayList", TUUVM_NULL_TUPLE,
-        "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
-        "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.weakArrayType,
-        NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.weakSetType, "WeakSet", TUUVM_NULL_TUPLE,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.weakIdentitySetType, "WeakIdentitySet", TUUVM_NULL_TUPLE,
@@ -709,8 +703,12 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "size", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.weakArrayType, "WeakArray", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.weakArrayListType, "WeakArrayList", TUUVM_NULL_TUPLE, NULL);
     tuuvm_typeAndMetatype_setFlags(context, context->roots.arrayType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
-    tuuvm_typeAndMetatype_setFlags(context, context->roots.arrayListType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
+    tuuvm_typeAndMetatype_setFlags(context, context->roots.arrayListType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_NONE);
+    tuuvm_typeAndMetatype_setFlags(context, context->roots.weakArrayType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_FINAL | TUUVM_TYPE_FLAGS_WEAK, TUUVM_TYPE_FLAGS_FINAL);
+    tuuvm_typeAndMetatype_setFlags(context, context->roots.weakArrayListType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
 
     // Create other root basic types.
     context->roots.arraySliceType = tuuvm_context_createIntrinsicClass(context, "ArraySlice", context->roots.sequenceableCollectionType,

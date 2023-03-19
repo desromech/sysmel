@@ -3,6 +3,7 @@
 #include "tuuvm/arraySlice.h"
 #include "tuuvm/errors.h"
 #include "tuuvm/function.h"
+#include "tuuvm/type.h"
 #include "internal/context.h"
 
 TUUVM_API tuuvm_tuple_t tuuvm_arrayList_create(tuuvm_context_t *context)
@@ -10,7 +11,6 @@ TUUVM_API tuuvm_tuple_t tuuvm_arrayList_create(tuuvm_context_t *context)
     tuuvm_arrayList_t *result = (tuuvm_arrayList_t*)tuuvm_context_allocatePointerTuple(context, context->roots.arrayListType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_arrayList_t));
     result->size = tuuvm_tuple_size_encode(context, 0);
     return (tuuvm_tuple_t)result;
-
 }
 
 static void tuuvm_arrayList_increaseCapacity(tuuvm_context_t *context, tuuvm_tuple_t arrayList)
@@ -22,7 +22,10 @@ static void tuuvm_arrayList_increaseCapacity(tuuvm_context_t *context, tuuvm_tup
     if(newCapacity < 16)
         newCapacity = 16;
 
-    tuuvm_array_t *newStorage = (tuuvm_array_t*)tuuvm_array_create(context, newCapacity);
+    bool isWeakArrayList = tuuvm_tuple_getType(context, arrayList) == context->roots.weakArrayListType;
+    tuuvm_array_t *newStorage = isWeakArrayList
+        ? (tuuvm_array_t*)tuuvm_weakArray_create(context, newCapacity)
+        : (tuuvm_array_t*)tuuvm_array_create(context, newCapacity);
     tuuvm_array_t *oldStorage = (tuuvm_array_t*)arrayListObject->storage;
     for(size_t i = 0; i < size; ++i)
         newStorage->elements[i] = oldStorage->elements[i];
@@ -114,7 +117,7 @@ static tuuvm_tuple_t tuuvm_arrayList_primitive_asArray(tuuvm_context_t *context,
 
 void tuuvm_arrayList_registerPrimitives(void)
 {
-    tuuvm_primitiveTable_registerFunction(tuuvm_arrayList_primitive_add, "ArrayList::add");
+    tuuvm_primitiveTable_registerFunction(tuuvm_arrayList_primitive_add, "ArrayList::add:");
     tuuvm_primitiveTable_registerFunction(tuuvm_arrayList_primitive_asArray, "ArrayList::asArray");
 }
 

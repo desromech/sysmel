@@ -252,6 +252,7 @@ Type
             then: RawTuple::byteNew(0sz)
             else: RawTuple::new(self validTotalSlotCount)).
         (RawTuple::type:)(result, self).
+        if: self isWeak then: RawTuple::markWeak(result).
         result
     };
     withSelector: #basicAllocate: addMethod: {:(Type)self :(Size)variableSize :: self |
@@ -681,6 +682,16 @@ SequenceableCollection
         ) continueWith: (i := i + 1sz).
         everythingIsFine
     } makeFinal;
+    withSelector: #includes: addMethod: {:(SequenceableCollection)self :element :: Boolean |
+        let: #i mutableWith: 0sz.
+        let: #size with: self size.
+        let: #hasFoundIt type: Boolean mutableWith: false.
+
+        while: (if: hasFoundIt then: false else: i < self size) do: (
+            hasFoundIt := (self at: i) = element
+        ) continueWith: (i := i + 1sz).
+        hasFoundIt
+    } makeFinal;
     withSelector: #collect: addMethod: {:(SequenceableCollection)self :aBlock :: self species |
         let: #i mutableWith: 0sz.
         let: #size with: self size.
@@ -738,6 +749,9 @@ Type
     } makePure makeFinal.
 
 ArrayList
+    withSelector: #arrayType addClassMethod: {:(ArrayList class)self :: Array class |
+        Array
+    };
     withSelector: #new: addClassMethod: {:(ArrayList class)self :(Size)initialSize :: self |
         self basicNew initializeWithSize: initialSize; yourself
     } makeFinal;
@@ -746,7 +760,7 @@ ArrayList
     };
     withSelector: #initializeWithSize: addMethod: {:(ArrayList)self :(Size)initialSize :: Void |
         self size: initialSize sz.
-        self storage: (Array new: initialSize).
+        self storage: (self class arrayType new: initialSize).
     };
     withSelector: #at: addMethod: {:(ArrayList)self :(Size)index |
         if: index < self size then: {
@@ -763,6 +777,11 @@ ArrayList
         }
     }.
 
+WeakArrayList
+    withSelector: #arrayType addClassMethod: {:(ArrayList class)self :: Array class |
+        WeakArray
+    }.
+    
 StringStream
     withSelector: #initialize addMethod: {:(StringStream)self :: Void |
         self size: 0
