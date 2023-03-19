@@ -33,6 +33,17 @@ SSAValue definition: {
         self users ifNotNil: {:users | users do: aBlock }
     }.
 
+    public method replaceWith: (replacement: SSAValue) ::=> Void := {
+        self users do: {:(SSAValue)user :: Void |
+            user replaceUsedValue: self with: replacement.
+            replacement registerUser: user
+        }.
+
+        self usedValuesDo: {:(SSAValue)usedValue :: Void |
+            usedValue unregisterUser: self
+        }.
+    }.
+
     public method replaceUsedValue: replacedValue with: replacement ::=> Void := {}.
     public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {}.
 
@@ -46,6 +57,12 @@ SSAValue definition: {
         }.
 
         self users add: user
+    }.
+
+    public method unregisterUser: (user: SSAValue) ::=> Void := {
+        self users ifNotNil: {:userList :: Void |
+            userList removeAllOcurrencesOf: self
+        }.
     }.
 
     public method postCopy => Void := {
@@ -201,6 +218,30 @@ SSAFunctionDefinition definition: {
             localValue localValueIndex: index.
             index := index + 1sz
         }
+    }.
+
+    public method removeBasicBlock: (basicBlock: SSABasicBlock) ::=> Void := {
+        self assert: basicBlock parent == self.
+
+        let previousBlock := basicBlock previousBlock.
+        let nextBlock := basicBlock nextBlock.
+
+        previousBlock ifNotNil: {
+            previousBlock nextBlock: nextBlock
+        } ifNil: {
+            self firstBlock: nextBlock
+        }.
+
+        nextBlock ifNotNil: {
+            nextBlock previousBlock: previousBlock
+        } ifNil: {
+            self lastBlock: previousBlock
+        }.
+
+        basicBlock
+            parent: nil;
+            previousBlock: nil;
+            nextBlock: nil
     }.
 
     public method postCopy => Void := {
@@ -365,6 +406,30 @@ SSABasicBlock definition: {
         ) continueWith: (position := position nextInstruction)
     }.
 
+    public method removeInstruction: (instruction: SSAInstruction) ::=> Void := {
+        self assert: instruction parent == self.
+
+        let previousInstruction := instruction previousInstruction.
+        let nextInstruction := instruction nextInstruction.
+
+        previousInstruction ifNotNil: {
+            previousInstruction nextInstruction: nextInstruction
+        } ifNil: {
+            self firstInstruction: nextInstruction
+        }.
+
+        nextInstruction ifNotNil: {
+            nextInstruction previousInstruction: previousInstruction
+        } ifNil: {
+            self lastInstruction: previousInstruction
+        }.
+
+        instruction
+            parent: nil;
+            previousInstruction: nil;
+            nextInstruction: nil
+    }.
+
     public method postCopy => Void := {
         super postCopy.
         self parent: nil.
@@ -376,6 +441,11 @@ SSABasicBlock definition: {
         while: nextInstructionToAdd ~~ nil do: {
             self addInstruction: nextInstructionToAdd copy
         } continueWith: (nextInstructionToAdd := nextInstructionToAdd nextInstruction)
+    }.
+
+    public method replaceWith: (replacement: SSAValue) ::=> Void := {
+        super replaceWith: replacement.
+        self parent ifNotNil: {:parent :: Void | parent removeBasicBlock: self }
     }.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
@@ -405,6 +475,11 @@ SSAInstruction definition: {
         self parent: nil.
         self previousInstruction: nil.
         self nextInstruction: nil.
+    }.
+
+    public method replaceWith: (replacement: SSAValue) ::=> Void := {
+        super replaceWith: replacement.
+        self parent ifNotNil: {:parent :: Void | parent removeInstruction: self }
     }.
 }.
 

@@ -190,3 +190,6 @@ printLine(#{test: 42}).
 printLine(#{test:}).
 printLine(#{#test : }).
 printLine(#{#test : 42}).
+
+## Min
+printLine(min asSSAFunction runPasses: (SSADestroySSAFunctionPass,); fullPrintString).

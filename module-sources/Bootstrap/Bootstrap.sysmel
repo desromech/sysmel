@@ -1,7 +1,2 @@
-loadSourceNamed: "CoreRuntime.sysmel".
-loadSourceNamed: "CoreAST.sysmel".
-loadSourceNamed: "CoreRuntimeMacros.sysmel".
-loadSourceNamed: "CoreMetaBuilders.sysmel".
-
-loadSourceNamed: "SSAIR.sysmel".
-loadSourceNamed: "SSAFrontEnd.sysmel".
+loadSourceNamed: "Core/package.sysmel".
+loadSourceNamed: "SSA/package.sysmel".

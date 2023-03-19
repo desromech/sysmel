@@ -709,6 +709,17 @@ SequenceableCollection
 
         result
     } makeFinal;
+    withSelector: #collectWithIndex: addMethod: {:(SequenceableCollection)self :aBlock :: self species |
+        let: #i mutableWith: 0sz.
+        let: #size with: self size.
+        let: #result with: (self species new: size).
+
+        while: i < self size do: {
+            result at: i put: aBlock(self at: i, i)
+        } continueWith: (i := i + 1sz).
+
+        result
+    } makeFinal;
     withSelector: #do: addMethod: {:(SequenceableCollection)self :aBlock :: Void |
         let: #i mutableWith: 0sz.
         let: #size with: self size.
@@ -805,6 +816,22 @@ ArrayList
         } else: {
             error("Index out of bounds.")
         }
+    };
+    withSelector: #removeAllOcurrencesOf: addMethod: {:(ArrayList)self :(Size)index :value :: Void |
+        let: #size with: self size.
+        let: #storage with: self storage.
+        let: #newSize mutableWith: 0sz.
+        let: #i mutableWith: 0sz.
+
+        while: i < size do: {
+            let: #element with: (storage at: i).
+            (__tombstone__ == element) || (element = value) ifFalse: {
+                storage at: newSize put: element.
+                newSize := newSize + 1sz
+            }
+        } continueWith: (i := i + 1sz).
+
+        self size: newSize
     }.
 
 WeakArrayList

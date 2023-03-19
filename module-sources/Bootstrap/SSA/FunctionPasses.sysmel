@@ -1,0 +1,38 @@
+public class SSAFunctionPass superclass: Object; definition: {
+    __Meta__ definition:{
+        public method runIn: (function: SSAFunctionDefinition) ::=> SSAFunctionPass
+            := self new runIn: function
+    }.
+
+    public method runIn: (function: SSAFunctionDefinition) ::=> Void := {
+
+    }
+}.
+
+SSAFunction extend: {
+    public method runPasses: passes ::=> Void := {
+        self definition ifNotNil: {:definition |
+            definition runPasses: passes
+        }.
+    }.
+}.
+
+SSAFunctionDefinition extend: {
+    public method runPasses: passes ::=> Void := {
+        passes do: {:each :: Void | each runIn: self }
+    }.
+}.
+
+## Promote alloca
+public class SSAPromoteAllocaPass superclass: SSAFunctionPass; definition: {
+    public method runIn: (function: SSAFunctionDefinition) ::=> Void := {
+        printLine("TODO: SSAPromoteAllocaPass")
+    }.
+}.
+
+## Destroy SSA pass
+public class SSADestroySSAFunctionPass superclass: SSAFunctionPass; definition: {
+    public method runIn: (function: SSAFunctionDefinition) ::=> Void := {
+        printLine("TODO: SSADestroySSAFunctionPass")
+    }.
+}.
