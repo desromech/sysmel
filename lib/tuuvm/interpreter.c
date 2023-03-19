@@ -1679,6 +1679,8 @@ static tuuvm_tuple_t tuuvm_astIfNode_primitiveAnalyze(tuuvm_context_t *context, 
         tuuvm_tuple_t analyzedTrueExpressionType;
         tuuvm_tuple_t analyzedFalseExpression;
         tuuvm_tuple_t analyzedFalseExpressionType;
+
+        tuuvm_tuple_t analyzedTakenBranch;
     } gcFrame = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
@@ -1697,6 +1699,18 @@ static tuuvm_tuple_t tuuvm_astIfNode_primitiveAnalyze(tuuvm_context_t *context, 
     {
         gcFrame.analyzedFalseExpression = tuuvm_interpreter_analyzeASTWithCurrentExpectedTypeWithEnvironment(context, gcFrame.ifNode->falseExpression, *environment);
         gcFrame.ifNode->falseExpression = gcFrame.analyzedFalseExpression;
+    }
+
+    if(tuuvm_astNode_isLiteralNode(context, gcFrame.ifNode->conditionExpression))
+    {
+        bool conditionValue = tuuvm_tuple_boolean_decode(tuuvm_astLiteralNode_getValue(gcFrame.ifNode->conditionExpression));
+        gcFrame.analyzedTakenBranch = conditionValue ? gcFrame.ifNode->trueExpression : gcFrame.ifNode->falseExpression;
+        if(!gcFrame.analyzedTakenBranch)
+            gcFrame.analyzedTakenBranch = tuuvm_astLiteralNode_create(context, gcFrame.ifNode->super.sourcePosition, TUUVM_VOID_TUPLE);
+        
+        TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return gcFrame.analyzedTakenBranch;
     }
 
     // Require the same, otherwise fallback to void.
@@ -3731,6 +3745,18 @@ static tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_primitiveAnalyze(tuuvm_con
         gcFrame.doWhileNode->continueExpression = gcFrame.analyzedContinueExpression;
     }
 
+    if(gcFrame.doWhileNode->conditionExpression &&
+        tuuvm_astNode_isLiteralNode(context, gcFrame.doWhileNode->conditionExpression) &&
+        !tuuvm_tuple_boolean_decode(tuuvm_astLiteralNode_getValue(gcFrame.doWhileNode->conditionExpression)))
+    {
+        if(!gcFrame.analyzedBodyExpression)
+            gcFrame.analyzedBodyExpression = tuuvm_astLiteralNode_create(context, gcFrame.doWhileNode->super.sourcePosition, TUUVM_VOID_TUPLE);
+
+        TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return gcFrame.analyzedBodyExpression;
+    }
+
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return (tuuvm_tuple_t)gcFrame.doWhileNode;
@@ -3857,6 +3883,16 @@ static tuuvm_tuple_t tuuvm_astWhileContinueWithNode_primitiveAnalyze(tuuvm_conte
         gcFrame.whileNode->continueExpression = gcFrame.analyzedContinueExpression;
     }
     
+    // Optimize out the loop if the condition is the literal false.
+    if(gcFrame.whileNode->conditionExpression &&
+        tuuvm_astNode_isLiteralNode(context, gcFrame.whileNode->conditionExpression) &&
+        !tuuvm_tuple_boolean_decode(tuuvm_astLiteralNode_getValue(gcFrame.whileNode->conditionExpression)))
+    {
+        TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return tuuvm_astLiteralNode_create(context, gcFrame.whileNode->super.sourcePosition, TUUVM_VOID_TUPLE);
+    }
+
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return (tuuvm_tuple_t)gcFrame.whileNode;
