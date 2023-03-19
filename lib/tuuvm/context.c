@@ -238,7 +238,7 @@ TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(tuuvm_conte
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, symbolName), binding);
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(tuuvm_context_t *context, const char *symbolString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
+TUUVM_API tuuvm_tuple_t tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(tuuvm_context_t *context, const char *symbolString, size_t argumentCount, tuuvm_bitflags_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
 {
     struct {
         tuuvm_tuple_t symbol;
@@ -253,7 +253,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiv
     return gcFrame.primitiveFunction;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(tuuvm_context_t *context, const char *symbolString, tuuvm_tuple_t ownerClass, const char *selectorString, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
+TUUVM_API tuuvm_tuple_t tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(tuuvm_context_t *context, const char *symbolString, tuuvm_tuple_t ownerClass, const char *selectorString, size_t argumentCount, tuuvm_bitflags_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
 {
     struct {
         tuuvm_tuple_t symbol;
@@ -480,9 +480,12 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.float32Type = tuuvm_context_createIntrinsicPrimitiveValueType(context, "Float32", context->roots.primitiveFloatType);
     context->roots.float64Type = tuuvm_context_createIntrinsicPrimitiveValueType(context, "Float64", context->roots.primitiveFloatType);
     
-    context->roots.sizeType = sizeof(size_t) == 4 ? context->roots.uint32Type : context->roots.uint64Type;
-    context->roots.uintptrType = sizeof(size_t) == 4 ? context->roots.uint32Type : context->roots.uint64Type;
-    context->roots.intptrType = sizeof(size_t) == 4 ? context->roots.int32Type : context->roots.int64Type;
+    context->roots.bitflagsType = sizeof(tuuvm_bitflags_t) == 4 ? context->roots.uint32Type : context->roots.uint64Type;
+    context->roots.systemHandleType = sizeof(tuuvm_systemHandle_t) == 4 ? context->roots.int32Type : context->roots.int64Type;
+
+    context->roots.sizeType = context->targetWordSize == 4 ? context->roots.uint32Type : context->roots.uint64Type;
+    context->roots.uintptrType = context->targetWordSize == 4 ? context->roots.uint32Type : context->roots.uint64Type;
+    context->roots.intptrType = context->targetWordSize == 4 ? context->roots.int32Type : context->roots.int64Type;
 
     context->roots.booleanType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "Boolean", context->roots.anyValueType);
     context->roots.trueType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "True", context->roots.booleanType);
@@ -525,7 +528,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "supertype", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         "slots", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "totalSlotCount", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
-        "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         
         "macroMethodDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "methodDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
@@ -624,18 +627,18 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.functionType, "Function", TUUVM_NULL_TUPLE,
         "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "owner", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         "argumentCount", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "captureVector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "definition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
-        "primitiveTableIndex", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "primitiveTableIndex", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
         "primitiveName", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
-        "nativeUserdata", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "nativeEntryPoint", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uintptrType,
+        "nativeUserdata", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
+        "nativeEntryPoint", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
         "memoizationTable", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.weakValueDictionaryType,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.functionDefinitionType, "FunctionDefinition", TUUVM_NULL_TUPLE,
-        "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         "argumentCount", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
 
@@ -771,6 +774,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         NULL);
     tuuvm_typeAndMetatype_setFlags(context, context->roots.valueBoxType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
 
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "Bitflags"), context->roots.bitflagsType);
+    tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "SystemHandle"), context->roots.systemHandleType);
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "Size"), context->roots.sizeType);
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "UIntPointer"), context->roots.uintptrType);
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "IntPointer"), context->roots.intptrType);
@@ -831,7 +836,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.astFunctionApplicationNodeType = tuuvm_context_createIntrinsicClass(context, "ASTFunctionApplicationNode", context->roots.astNodeType,
         "functionExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
-        "applicationFlags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "applicationFlags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         NULL);
     context->roots.astLambdaNodeType = tuuvm_context_createIntrinsicClass(context, "ASTLambdaNode", context->roots.astNodeType,
         "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
@@ -970,6 +975,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
 {
     tuuvm_context_t *context = (tuuvm_context_t*)calloc(1, sizeof(tuuvm_context_t));
+    context->targetWordSize = sizeof(void*);
     context->identityHashSeed = 1;
     tuuvm_heap_initialize(&context->heap);
     tuuvm_gc_lock(context);
@@ -1022,7 +1028,8 @@ TUUVM_API tuuvm_context_t *tuuvm_context_loadImageFromFileNamed(const char *file
     }
 
     tuuvm_context_t *context = (tuuvm_context_t*)calloc(1, sizeof(tuuvm_context_t));
-    if(fread(&context->identityHashSeed, sizeof(context->identityHashSeed), 1, inputFile) != 1 ||
+    if(fread(&context->targetWordSize, sizeof(context->targetWordSize), 1, inputFile) != 1 ||
+        fread(&context->identityHashSeed, sizeof(context->identityHashSeed), 1, inputFile) != 1 ||
         fread(&context->roots, sizeof(context->roots), 1, inputFile) != 1 ||
         !tuuvm_heap_loadFromFile(&context->heap, inputFile, sizeof(context->roots) / sizeof(tuuvm_tuple_t), (tuuvm_tuple_t*)&context->roots))
     {
@@ -1040,6 +1047,7 @@ TUUVM_API void tuuvm_context_saveImageToFileNamed(tuuvm_context_t *context, cons
     tuuvm_gc_collect(context);
     FILE *outputFile = fopen(filename, "wb");
     fwrite("TVIM", 4, 1, outputFile);
+    fwrite(&context->targetWordSize, sizeof(context->targetWordSize), 1, outputFile);
     fwrite(&context->identityHashSeed, sizeof(context->identityHashSeed), 1, outputFile);
     fwrite(&context->roots, sizeof(context->roots), 1, outputFile);
     tuuvm_heap_dumpToFile(&context->heap, outputFile);

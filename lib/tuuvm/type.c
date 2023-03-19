@@ -37,7 +37,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousClass(tuuvm_context_t *context
     tuuvm_class_t* result = (tuuvm_class_t*)tuuvm_context_allocatePointerTuple(context, metaclass, classSlotCount);
     result->super.supertype = supertype;
     result->super.totalSlotCount = tuuvm_tuple_size_encode(context, 0);
-    result->super.flags = tuuvm_tuple_size_encode(context, TUUVM_TYPE_FLAGS_CLASS_DEFAULT_FLAGS);
+    result->super.flags = tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_CLASS_DEFAULT_FLAGS);
     if(supertype)
         result->super.totalSlotCount = tuuvm_tuple_size_encode(context, tuuvm_type_getTotalSlotCount(supertype));
     return (tuuvm_tuple_t)result;
@@ -47,7 +47,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousMetaclass(tuuvm_context_t *con
 {
     tuuvm_metaclass_t* result = (tuuvm_metaclass_t*)tuuvm_context_allocatePointerTuple(context, context->roots.metaclassType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_metaclass_t));
     result->super.super.supertype = supertype;
-    result->super.super.flags = tuuvm_tuple_size_encode(context, TUUVM_TYPE_FLAGS_METATYPE_REQUIRED_FLAGS);
+    result->super.super.flags = tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_METATYPE_REQUIRED_FLAGS);
 
     size_t slotCount = TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_class_t);
     if(supertype)
@@ -90,7 +90,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousPrimitiveValueType(tuuvm_conte
     tuuvm_primitiveValueType_t* result = (tuuvm_primitiveValueType_t*)tuuvm_context_allocatePointerTuple(context, metaclass, typeSlotCount);
     result->super.super.supertype = supertype;
     result->super.super.totalSlotCount = tuuvm_tuple_size_encode(context, 0);
-    result->super.super.flags = tuuvm_tuple_size_encode(context, TUUVM_TYPE_FLAGS_PRIMITIVE_VALUE_TYPE_DEFAULT_FLAGS);
+    result->super.super.flags = tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_PRIMITIVE_VALUE_TYPE_DEFAULT_FLAGS);
     return (tuuvm_tuple_t)result;
 }
 
@@ -98,7 +98,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousValueMetatype(tuuvm_context_t 
 {
     tuuvm_valueMetatype_t* result = (tuuvm_valueMetatype_t*)tuuvm_context_allocatePointerTuple(context, context->roots.valueMetatypeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_valueMetatype_t));
     result->super.super.supertype = supertype;
-    result->super.super.flags = tuuvm_tuple_size_encode(context, TUUVM_TYPE_FLAGS_METATYPE_REQUIRED_FLAGS);
+    result->super.super.flags = tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_METATYPE_REQUIRED_FLAGS);
 
     size_t slotCount = minimumSlotCount;
     if(supertype)
@@ -205,7 +205,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createSimpleFunctionTypeWithArguments2(tuuvm_
     return gcFrame.result;
 }
 
-static tuuvm_tuple_t tuuvm_pointerLikeType_createPointerLikeLoadFunction(tuuvm_context_t *context, tuuvm_tuple_t pointerLikeType_, tuuvm_tuple_t baseType_, size_t extraFlags)
+static tuuvm_tuple_t tuuvm_pointerLikeType_createPointerLikeLoadFunction(tuuvm_context_t *context, tuuvm_tuple_t pointerLikeType_, tuuvm_tuple_t baseType_, tuuvm_bitflags_t extraFlags)
 {
     struct {
         tuuvm_tuple_t pointerLikeType;
@@ -228,7 +228,7 @@ static tuuvm_tuple_t tuuvm_pointerLikeType_createPointerLikeLoadFunction(tuuvm_c
     return gcFrame.function;
 }
 
-static tuuvm_tuple_t tuuvm_pointerLikeType_createPointerLikeStoreFunction(tuuvm_context_t *context, tuuvm_tuple_t pointerLikeType_, tuuvm_tuple_t baseType_, size_t extraFlags)
+static tuuvm_tuple_t tuuvm_pointerLikeType_createPointerLikeStoreFunction(tuuvm_context_t *context, tuuvm_tuple_t pointerLikeType_, tuuvm_tuple_t baseType_, tuuvm_bitflags_t extraFlags)
 {
     struct {
         tuuvm_tuple_t pointerLikeType;
@@ -267,7 +267,7 @@ static tuuvm_tuple_t tuuvm_type_doCreatePointerType(tuuvm_context_t *context, tu
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     gcFrame.result = (tuuvm_pointerType_t*)tuuvm_context_allocatePointerTuple(context, context->roots.pointerType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_pointerType_t));
-    gcFrame.result->super.super.super.flags = tuuvm_tuple_size_encode(context, TUUVM_TYPE_FLAGS_POINTER_TYPE_FLAGS);
+    gcFrame.result->super.super.super.flags = tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_POINTER_TYPE_FLAGS);
     gcFrame.result->super.super.super.totalSlotCount = tuuvm_tuple_size_encode(context, 0);
     gcFrame.result->super.super.super.supertype = context->roots.anyPointerType;
     gcFrame.result->super.baseType = gcFrame.baseType;
@@ -304,7 +304,7 @@ static tuuvm_tuple_t tuuvm_type_doCreateReferenceType(tuuvm_context_t *context, 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     gcFrame.result = (tuuvm_referenceType_t*)tuuvm_context_allocatePointerTuple(context, context->roots.referenceType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_referenceType_t));
-    gcFrame.result->super.super.super.flags = tuuvm_tuple_size_encode(context, TUUVM_TYPE_FLAGS_REFERENCE_TYPE_FLAGS);
+    gcFrame.result->super.super.super.flags = tuuvm_tuple_bitflags_encode(TUUVM_TYPE_FLAGS_REFERENCE_TYPE_FLAGS);
     gcFrame.result->super.super.super.totalSlotCount = tuuvm_tuple_size_encode(context, 0);
     gcFrame.result->super.super.super.supertype = context->roots.anyReferenceType;
     gcFrame.result->super.baseType = gcFrame.baseType;
@@ -384,19 +384,20 @@ TUUVM_API void tuuvm_type_setTotalSlotCount(tuuvm_context_t *context, tuuvm_tupl
     ((tuuvm_type_tuple_t*)type)->totalSlotCount = tuuvm_tuple_size_encode(context, totalSlotCount);
 }
 
-TUUVM_API size_t tuuvm_type_getFlags(tuuvm_tuple_t type)
+TUUVM_API tuuvm_bitflags_t tuuvm_type_getFlags(tuuvm_tuple_t type)
 {
     if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
-    return tuuvm_tuple_size_decode(((tuuvm_type_tuple_t*)type)->flags);
+    return tuuvm_tuple_bitflags_decode(((tuuvm_type_tuple_t*)type)->flags);
 }
 
-TUUVM_API void tuuvm_type_setFlags(tuuvm_context_t *context, tuuvm_tuple_t type, size_t flags)
+TUUVM_API void tuuvm_type_setFlags(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_bitflags_t flags)
 {
+    (void)context;
     if(!tuuvm_tuple_isNonNullPointer(type)) return;
-    ((tuuvm_type_tuple_t*)type)->flags = tuuvm_tuple_size_encode(context, flags);
+    ((tuuvm_type_tuple_t*)type)->flags = tuuvm_tuple_bitflags_encode(flags);
 }
 
-TUUVM_API void tuuvm_typeAndMetatype_setFlags(tuuvm_context_t *context, tuuvm_tuple_t type, size_t flags, size_t metatypeFlags)
+TUUVM_API void tuuvm_typeAndMetatype_setFlags(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_bitflags_t flags, tuuvm_bitflags_t metatypeFlags)
 {
     tuuvm_type_setFlags(context, type, flags);
     tuuvm_type_setFlags(context, tuuvm_tuple_getType(context, type), TUUVM_TYPE_FLAGS_METATYPE_REQUIRED_FLAGS | metatypeFlags);

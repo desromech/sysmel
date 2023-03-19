@@ -22,7 +22,11 @@ typedef float tuuvm_float32_t;
 typedef double tuuvm_float64_t;
 
 typedef size_t tuuvm_bitflags_t;
-typedef size_t tuuvm_handle_t;
+typedef intptr_t tuuvm_systemHandle_t;
+
+typedef size_t tuuvm_size_t;
+typedef uintptr_t tuuvm_uintptr_t;
+typedef intptr_t tuuvm_intptr_t;
 
 /**
  * A tuple object pointer.
@@ -787,9 +791,9 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_int64_encode(tuuvm_context_t *context, in
 /**
  * Encodes a size as a tuple.
  */
-TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_size_encode(tuuvm_context_t *context, size_t value)
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_size_encode(tuuvm_context_t *context, tuuvm_size_t value)
 {
-    if(sizeof(size_t) == sizeof(uint32_t))
+    if(sizeof(tuuvm_size_t) == sizeof(uint32_t))
         return tuuvm_tuple_uint32_encode(context, (uint32_t)value);
     else
         return tuuvm_tuple_uint64_encode(context, (uint64_t)value);
@@ -798,9 +802,9 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_size_encode(tuuvm_context_t *context, siz
 /**
  * Decodes a size from tuple.
  */
-TUUVM_INLINE size_t tuuvm_tuple_size_decode(tuuvm_tuple_t tuple)
+TUUVM_INLINE tuuvm_size_t tuuvm_tuple_size_decode(tuuvm_tuple_t tuple)
 {
-    if(sizeof(size_t) == sizeof(uint32_t))
+    if(sizeof(tuuvm_size_t) == sizeof(uint32_t))
         return tuuvm_tuple_uint32_decode(tuple);
     else
         return tuuvm_tuple_uint64_decode(tuple);
@@ -831,9 +835,9 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_bitflags_encode(tuuvm_bitflags_t flags)
 /**
  * Encodes an uintptr_t as a tuple.
  */
-TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_uintptr_encode(tuuvm_context_t *context, uintptr_t value)
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_uintptr_encode(tuuvm_context_t *context, tuuvm_uintptr_t value)
 {
-    if(sizeof(uintptr_t) == sizeof(uint32_t))
+    if(sizeof(tuuvm_uintptr_t) == sizeof(uint32_t))
         return tuuvm_tuple_uint32_encode(context, (uint32_t)value);
     else
         return tuuvm_tuple_uint64_encode(context, (uint64_t)value);
@@ -842,9 +846,9 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_uintptr_encode(tuuvm_context_t *context, 
 /**
  * Decodes a intptr_t from tuple.
  */
-TUUVM_INLINE uintptr_t tuuvm_tuple_uintptr_decode(tuuvm_tuple_t tuple)
+TUUVM_INLINE tuuvm_uintptr_t tuuvm_tuple_uintptr_decode(tuuvm_tuple_t tuple)
 {
-    if(sizeof(uintptr_t) == sizeof(uint32_t))
+    if(sizeof(tuuvm_uintptr_t) == sizeof(uint32_t))
         return tuuvm_tuple_uint32_decode(tuple);
     else
         return tuuvm_tuple_uint64_decode(tuple);
@@ -853,9 +857,9 @@ TUUVM_INLINE uintptr_t tuuvm_tuple_uintptr_decode(tuuvm_tuple_t tuple)
 /**
  * Encodes an intptr_t as a tuple.
  */
-TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_intptr_encode(tuuvm_context_t *context, intptr_t value)
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_intptr_encode(tuuvm_context_t *context, tuuvm_intptr_t value)
 {
-    if(sizeof(intptr_t) == sizeof(int32_t))
+    if(sizeof(tuuvm_intptr_t) == sizeof(int32_t))
         return tuuvm_tuple_int32_encode(context, (int32_t)value);
     else
         return tuuvm_tuple_int64_encode(context, (int64_t)value);
@@ -864,9 +868,31 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_intptr_encode(tuuvm_context_t *context, i
 /**
  * Decodes a intptr_t from tuple.
  */
-TUUVM_INLINE intptr_t tuuvm_tuple_intptr_decode(tuuvm_tuple_t tuple)
+TUUVM_INLINE tuuvm_intptr_t tuuvm_tuple_intptr_decode(tuuvm_tuple_t tuple)
 {
-    if(sizeof(intptr_t) == sizeof(int32_t))
+    if(sizeof(tuuvm_intptr_t) == sizeof(int32_t))
+        return tuuvm_tuple_int32_decode(tuple);
+    else
+        return tuuvm_tuple_int64_decode(tuple);
+}
+
+/**
+ * Encodes a system handle as a tuple.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_systemHandle_encode(tuuvm_context_t *context, tuuvm_systemHandle_t value)
+{
+    if(sizeof(tuuvm_systemHandle_t) == sizeof(int32_t))
+        return tuuvm_tuple_int32_encode(context, (int32_t)value);
+    else
+        return tuuvm_tuple_int64_encode(context, (int64_t)value);
+}
+
+/**
+ * Decodes a system handle from tuple.
+ */
+TUUVM_INLINE tuuvm_intptr_t tuuvm_tuple_systemHandle_decode(tuuvm_tuple_t tuple)
+{
+    if(sizeof(tuuvm_systemHandle_t) == sizeof(int32_t))
         return tuuvm_tuple_int32_decode(tuple);
     else
         return tuuvm_tuple_int64_decode(tuple);

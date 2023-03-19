@@ -187,6 +187,9 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t uint64Type;
     tuuvm_tuple_t int64Type;
 
+    tuuvm_tuple_t bitflagsType;
+    tuuvm_tuple_t systemHandleType;
+
     tuuvm_tuple_t sizeType;
     tuuvm_tuple_t uintptrType;
     tuuvm_tuple_t intptrType;
@@ -243,6 +246,7 @@ struct tuuvm_context_s
 {
     tuuvm_heap_t heap;
     tuuvm_context_roots_t roots;
+    uint32_t targetWordSize;
     size_t identityHashSeed;
 };
 

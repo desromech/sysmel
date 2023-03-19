@@ -50,7 +50,7 @@ error __type__: (SimpleFunctionTypeTemplate((String,), false, Unwinds)).
 }.
 
 Function
-    withSelector: #addFlags: addMethod: {:(Function)self :(Size)flag :: Void |
+    withSelector: #addFlags: addMethod: {:(Function)self :(Bitflags)flag :: Void |
         self flags: self flags | flag
     };
     withSelector: #makeMacro addMethod: {:(Function)self :: Function |
@@ -158,11 +158,11 @@ Type
     };
     withSelector: #isReferenceType addMethod: {:(Type)self :: Boolean | false } makePure;
 
-    withSelector: #addFlags: addMethod: {:(Type)self :(Size)flag :: Void |
+    withSelector: #addFlags: addMethod: {:(Type)self :(Bitflags)flag :: Void |
         self flags: self flags | flag
     };
-    withSelector: #hasFlag: addMethod: {:(Type)self :(Size)flag :: Boolean |
-        (self flags & flag) ~= 0sz
+    withSelector: #hasFlag: addMethod: {:(Type)self :(Bitflags)flag :: Boolean |
+        (self flags & flag) ~= 0bflgs
     };
 
     withSelector: #makeNullable addMethod: {:(Type)self :: Type |
@@ -497,8 +497,8 @@ FunctionDefinition
     }.
 
 Function
-    withSelector: #hasFlag: addMethod: {:(Function)self :(Size)flag :: Boolean |
-        (self flags & flag) ~= 0sz
+    withSelector: #hasFlag: addMethod: {:(Function)self :(Bitflags)flag :: Boolean |
+        (self flags & flag) ~= 0bflgs
     };
     withSelector: #isMacro addMethod: {:(Function)self :: Boolean |
         self hasFlag: FunctionFlags::Macro
@@ -859,7 +859,7 @@ TypeSlot
     };
 
     withSelector: #hasFlag: addMethod: {:(TypeSlot)self :(Size)flag :: Boolean |
-        (self flags & flag) ~= 0sz
+        (self flags & flag) ~= 0bflgs
     };
     withSelector: #isPublic addMethod: {:(TypeSlot)self :: Boolean |
         self hasFlag: TypeSlotFlags::Public

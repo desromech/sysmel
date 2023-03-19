@@ -363,17 +363,17 @@ TUUVM_API void tuuvm_type_setTotalSlotCount(tuuvm_context_t *context, tuuvm_tupl
 /**
  * Gets the type flags.
  */
-TUUVM_API size_t tuuvm_type_getFlags(tuuvm_tuple_t type);
+TUUVM_API tuuvm_bitflags_t tuuvm_type_getFlags(tuuvm_tuple_t type);
 
 /**
  * Sets the type flags.
  */
-TUUVM_API void tuuvm_type_setFlags(tuuvm_context_t *context, tuuvm_tuple_t type, size_t flags);
+TUUVM_API void tuuvm_type_setFlags(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_bitflags_t flags);
 
 /**
  * Sets the type and meta type flags.
  */
-TUUVM_API void tuuvm_typeAndMetatype_setFlags(tuuvm_context_t *context, tuuvm_tuple_t type, size_t flags, size_t metatypeFlags);
+TUUVM_API void tuuvm_typeAndMetatype_setFlags(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_bitflags_t flags, tuuvm_bitflags_t metatypeFlags);
 
 /**
  * Is this a nullable type?

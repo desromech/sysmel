@@ -105,7 +105,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_functionDefinition_create(tuuvm_context_t *context
 /**
  * Creates a primitive function tuple.
  */
-TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint);
+TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context, size_t argumentCount, tuuvm_bitflags_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint);
 
 /**
  * Creates a closure by passing its definition and environment.
@@ -120,17 +120,17 @@ TUUVM_API size_t tuuvm_function_getArgumentCount(tuuvm_context_t *context, tuuvm
 /**
  * Gets the function flags.
  */
-TUUVM_API size_t tuuvm_function_getFlags(tuuvm_context_t *context, tuuvm_tuple_t function);
+TUUVM_API tuuvm_bitflags_t tuuvm_function_getFlags(tuuvm_context_t *context, tuuvm_tuple_t function);
 
 /**
  * Sets the function flags.
  */
-TUUVM_API void tuuvm_function_setFlags(tuuvm_context_t *context, tuuvm_tuple_t function, size_t flags);
+TUUVM_API void tuuvm_function_setFlags(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_bitflags_t flags);
 
 /**
  * Add flags to the function.
  */
-TUUVM_API void tuuvm_function_addFlags(tuuvm_context_t *context, tuuvm_tuple_t function, size_t flags);
+TUUVM_API void tuuvm_function_addFlags(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_bitflags_t flags);
 
 /**
  * Is this function a macro?

@@ -308,7 +308,7 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseBlockExpression(tuuvm_context_t *co
         if(!argumentList)
             argumentList = tuuvm_arrayList_create(context);
 
-        tuuvm_tuple_t flags = tuuvm_tuple_size_encode(context, hasEllipsis ? TUUVM_FUNCTION_FLAGS_VARIADIC : TUUVM_FUNCTION_FLAGS_NONE);
+        tuuvm_tuple_t flags = tuuvm_tuple_bitflags_encode(hasEllipsis ? TUUVM_FUNCTION_FLAGS_VARIADIC : TUUVM_FUNCTION_FLAGS_NONE);
         return tuuvm_astLambdaNode_create(context, sourcePosition, flags,
             tuuvm_arrayList_asArray(context, argumentList),
             resultTypeExpression, sequenceNode);

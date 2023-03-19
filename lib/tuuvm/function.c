@@ -78,15 +78,15 @@ TUUVM_API tuuvm_tuple_t tuuvm_functionDefinition_create(tuuvm_context_t *context
     return (tuuvm_tuple_t)result;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context, size_t argumentCount, size_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
+TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context, size_t argumentCount, tuuvm_bitflags_t flags, void *userdata, tuuvm_functionEntryPoint_t entryPoint)
 {
     tuuvm_function_t *result = (tuuvm_function_t*)tuuvm_context_allocatePointerTuple(context, context->roots.functionType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_function_t));
     result->argumentCount = tuuvm_tuple_size_encode(context, argumentCount);
-    result->flags = tuuvm_tuple_size_encode(context, flags);
+    result->flags = tuuvm_tuple_bitflags_encode(flags);
     size_t primitiveEntryIndex = 0;
     if(!userdata && tuuvm_primitiveTable_findEntryFor(entryPoint, &primitiveEntryIndex))
     {
-        result->primitiveTableIndex = tuuvm_tuple_uintptr_encode(context, primitiveEntryIndex);
+        result->primitiveTableIndex = tuuvm_tuple_uint32_encode(context, primitiveEntryIndex + 1);
         const char *primitiveName = tuuvm_primitiveTable[primitiveEntryIndex].name;
         if(primitiveName)
             result->primitiveName = tuuvm_symbol_internWithCString(context, primitiveName);
@@ -94,8 +94,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context,
     else
     {
         TUUVM_ASSERT(!tuuvm_checkPrimitivesArePresentInTable);
-        result->nativeUserdata = tuuvm_tuple_uintptr_encode(context, (size_t)userdata);
-        result->nativeEntryPoint = tuuvm_tuple_uintptr_encode(context, (size_t)entryPoint);
+        result->nativeUserdata = tuuvm_tuple_systemHandle_encode(context, (intptr_t)userdata);
+        result->nativeEntryPoint = tuuvm_tuple_systemHandle_encode(context, (intptr_t)entryPoint);
     }
     return (tuuvm_tuple_t)result;
 }
@@ -128,33 +128,33 @@ TUUVM_API size_t tuuvm_function_getArgumentCount(tuuvm_context_t *context, tuuvm
     return 0;
 }
 
-TUUVM_API size_t tuuvm_function_getFlags(tuuvm_context_t *context, tuuvm_tuple_t function)
+TUUVM_API tuuvm_bitflags_t tuuvm_function_getFlags(tuuvm_context_t *context, tuuvm_tuple_t function)
 {
     if(tuuvm_tuple_isKindOf(context, function, context->roots.functionType))
     {
         tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
-        return tuuvm_tuple_size_decode(functionObject->flags);
+        return tuuvm_tuple_bitflags_decode(functionObject->flags);
     }
 
     return 0;
 }
 
-TUUVM_API void tuuvm_function_setFlags(tuuvm_context_t *context, tuuvm_tuple_t function, size_t flags)
+TUUVM_API void tuuvm_function_setFlags(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_bitflags_t flags)
 {
     if(!tuuvm_tuple_isKindOf(context, function, context->roots.functionType))
         tuuvm_error("Expected a function.");
 
     tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
-    functionObject->flags = tuuvm_tuple_size_encode(context, flags);
+    functionObject->flags = tuuvm_tuple_bitflags_encode(flags);
 }
 
-TUUVM_API void tuuvm_function_addFlags(tuuvm_context_t *context, tuuvm_tuple_t function, size_t flags)
+TUUVM_API void tuuvm_function_addFlags(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_bitflags_t flags)
 {
     if(!tuuvm_tuple_isKindOf(context, function, context->roots.functionType))
         tuuvm_error("Expected a function.");
 
     tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
-    functionObject->flags = tuuvm_tuple_size_encode(context, tuuvm_tuple_size_decode(functionObject->flags) | flags);
+    functionObject->flags = tuuvm_tuple_bitflags_encode(tuuvm_tuple_bitflags_decode(functionObject->flags) | flags);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tuple_t function_, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags)
@@ -181,7 +181,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
     gcFrame.functionType = tuuvm_tuple_getType(context, gcFrame.function);
     if(tuuvm_tuple_isKindOf(context, gcFrame.function, context->roots.functionType))
     {
-        size_t functionFlags = tuuvm_function_getFlags(context, gcFrame.function);
+        tuuvm_bitflags_t functionFlags = tuuvm_function_getFlags(context, gcFrame.function);
         bool noTypecheck = (applicationFlags & TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK) | (functionFlags & TUUVM_FUNCTION_FLAGS_NO_TYPECHECK_ARGUMENTS);
         bool passThroughReferences = (applicationFlags & TUUVM_FUNCTION_APPLICATION_FLAGS_PASS_THROUGH_REFERENCES);
 
@@ -247,13 +247,13 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
         if((*functionObject)->primitiveTableIndex)
         {
             tuuvm_primitiveTable_ensureIsComputed();
-            size_t primitiveNumber = tuuvm_tuple_size_decode((*functionObject)->primitiveTableIndex);
-            if(primitiveNumber < tuuvm_primitiveTableSize)
-                nativeEntryPoint = tuuvm_primitiveTable[primitiveNumber].entryPoint;
+            uint32_t primitiveNumber = tuuvm_tuple_uint32_decode((*functionObject)->primitiveTableIndex);
+            if(primitiveNumber > 0 && primitiveNumber <= tuuvm_primitiveTableSize)
+                nativeEntryPoint = tuuvm_primitiveTable[primitiveNumber - 1].entryPoint;
         }
 
-        if(!nativeEntryPoint)
-            nativeEntryPoint = (tuuvm_functionEntryPoint_t)tuuvm_tuple_uintptr_decode((*functionObject)->nativeEntryPoint);
+        if(!nativeEntryPoint && (*functionObject)->nativeEntryPoint)
+            nativeEntryPoint = (tuuvm_functionEntryPoint_t)(uintptr_t)tuuvm_tuple_systemHandle_decode((*functionObject)->nativeEntryPoint);
         if(nativeEntryPoint)
         {
             gcFrame.result = nativeEntryPoint(context, &gcFrame.function, argumentCount, arguments);

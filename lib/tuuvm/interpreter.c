@@ -651,7 +651,7 @@ static tuuvm_tuple_t tuuvm_astLambdaNode_primitiveMacro(tuuvm_context_t *context
     gcFrame.bodyNodes = *bodyNodes;
     gcFrame.bodySequence = tuuvm_astSequenceNode_create(context, gcFrame.sourcePosition, gcFrame.pragmas, gcFrame.bodyNodes);
     tuuvm_tuple_t result = tuuvm_astLambdaNode_create(context, gcFrame.sourcePosition,
-        tuuvm_tuple_size_encode(context, hasVariadicArguments ? TUUVM_FUNCTION_FLAGS_VARIADIC : TUUVM_FUNCTION_FLAGS_NONE),
+        tuuvm_tuple_bitflags_encode(hasVariadicArguments ? TUUVM_FUNCTION_FLAGS_VARIADIC : TUUVM_FUNCTION_FLAGS_NONE),
         gcFrame.argumentsArraySlice, TUUVM_NULL_TUPLE, gcFrame.bodySequence);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return result;
@@ -919,7 +919,7 @@ static void tuuvm_functionDefinition_analyze(tuuvm_context_t *context, tuuvm_fun
     if((*functionDefinition)->definitionResultTypeNode)
         gcFrame.analyzedResultTypeNode = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, (*functionDefinition)->definitionResultTypeNode, context->roots.typeType, gcFrame.analysisEnvironment);
 
-    bool isVariadic = (tuuvm_tuple_size_decode((*functionDefinition)->flags) & TUUVM_FUNCTION_FLAGS_VARIADIC) != 0;
+    bool isVariadic = (tuuvm_tuple_bitflags_decode((*functionDefinition)->flags) & TUUVM_FUNCTION_FLAGS_VARIADIC) != 0;
     gcFrame.analyzedType = tuuvm_type_createDependentFunctionType(context, gcFrame.analyzedArgumentsNode, isVariadic, gcFrame.analyzedResultTypeNode,
         gcFrame.analysisEnvironment,
         tuuvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->captureBindingList),
@@ -1265,7 +1265,7 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveMacro(tuuvm_context_t
         gcFrame.bodyNodes = *valueOrBodyNodes;
         gcFrame.bodySequence = tuuvm_astSequenceNode_create(context, gcFrame.sourcePosition, gcFrame.pragmas, gcFrame.bodyNodes);
         gcFrame.valueNode = tuuvm_astLambdaNode_create(context, gcFrame.sourcePosition,
-            tuuvm_tuple_size_encode(context, hasVariadicArguments ? TUUVM_FUNCTION_FLAGS_VARIADIC : TUUVM_FUNCTION_FLAGS_NONE),
+            tuuvm_tuple_bitflags_encode(hasVariadicArguments ? TUUVM_FUNCTION_FLAGS_VARIADIC : TUUVM_FUNCTION_FLAGS_NONE),
             gcFrame.arguments, TUUVM_NULL_TUPLE, gcFrame.bodySequence);
     }
     else
@@ -1323,7 +1323,7 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveDefineMacro(tuuvm_con
         gcFrame.bodyNodes = *valueOrBodyNodes;
         gcFrame.bodySequence = tuuvm_astSequenceNode_create(context, gcFrame.sourcePosition, gcFrame.pragmas, gcFrame.bodyNodes);
         gcFrame.valueNode = tuuvm_astLambdaNode_create(context, gcFrame.sourcePosition,
-            tuuvm_tuple_size_encode(context, (hasVariadicArguments ? TUUVM_FUNCTION_FLAGS_VARIADIC : TUUVM_FUNCTION_FLAGS_NONE) | TUUVM_FUNCTION_FLAGS_MACRO),
+            tuuvm_tuple_bitflags_encode((hasVariadicArguments ? TUUVM_FUNCTION_FLAGS_VARIADIC : TUUVM_FUNCTION_FLAGS_NONE) | TUUVM_FUNCTION_FLAGS_MACRO),
             gcFrame.arguments, TUUVM_NULL_TUPLE, gcFrame.bodySequence);
     }
     else
@@ -2084,7 +2084,7 @@ static tuuvm_tuple_t tuuvm_astFunctionApplicationNode_optimizePureApplication(tu
     }
 
     TUUVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
-    gcFrame.pureCallResult = tuuvm_functionCallFrameStack_finish(context, &callFrameStack, tuuvm_tuple_size_decode((*applicationNode)->applicationFlags));
+    gcFrame.pureCallResult = tuuvm_functionCallFrameStack_finish(context, &callFrameStack, tuuvm_tuple_bitflags_decode((*applicationNode)->applicationFlags));
 
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return tuuvm_astLiteralNode_create(context, (*applicationNode)->super.sourcePosition, gcFrame.pureCallResult);
@@ -2240,7 +2240,7 @@ static tuuvm_tuple_t tuuvm_astFunctionApplicationNode_primitiveEvaluate(tuuvm_co
     }
 
     TUUVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
-    gcFrame.result = tuuvm_functionCallFrameStack_finish(context, &callFrameStack, tuuvm_tuple_size_decode((*applicationNode)->applicationFlags));
+    gcFrame.result = tuuvm_functionCallFrameStack_finish(context, &callFrameStack, tuuvm_tuple_bitflags_decode((*applicationNode)->applicationFlags));
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
@@ -4148,7 +4148,7 @@ static tuuvm_tuple_t tuuvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckFuncti
         tuuvm_array_atPut(gcFrame.analyzedArguments, i, gcFrame.analyzedArgument);
     }
 
-    (*functionApplicationNode)->applicationFlags = tuuvm_tuple_size_encode(context, tuuvm_tuple_size_decode((*functionApplicationNode)->applicationFlags) | TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK);
+    (*functionApplicationNode)->applicationFlags = tuuvm_tuple_bitflags_encode(tuuvm_tuple_bitflags_decode((*functionApplicationNode)->applicationFlags) | TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK);
     (*functionApplicationNode)->arguments = gcFrame.analyzedArguments;
     (*functionApplicationNode)->super.analyzedType = (*simpleFunctionType)->resultType;
 
@@ -4266,7 +4266,7 @@ static tuuvm_tuple_t tuuvm_dependentFunctionType_primitiveAnalyzeAndTypeCheckFun
 
     if((*dependentFunctionType)->resultTypeNode)
         gcFrame.resultType = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*dependentFunctionType)->resultTypeNode, gcFrame.applicationEnvironment);
-    gcFrame.functionApplicationNode->applicationFlags = tuuvm_tuple_size_encode(context, tuuvm_tuple_size_decode(gcFrame.functionApplicationNode->applicationFlags) | TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK);
+    gcFrame.functionApplicationNode->applicationFlags = tuuvm_tuple_bitflags_encode(tuuvm_tuple_bitflags_decode(gcFrame.functionApplicationNode->applicationFlags) | TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK);
     gcFrame.functionApplicationNode->super.analyzedType = gcFrame.resultType;
 
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);

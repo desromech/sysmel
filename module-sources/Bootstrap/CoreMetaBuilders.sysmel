@@ -188,7 +188,7 @@ NamedMetaBuilder
 
 NamedMetaBuilder publicSubclass: #TypeMetaBuilder slots: (
     TypeSlot publicNamed: #isPublic type: Boolean ,
-    TypeSlot publicNamed: #typeFlags type: Size ,
+    TypeSlot publicNamed: #typeFlags type: Bitflags ,
     TypeSlot publicNamed: #metaSlotsExpression type: ASTNode ,
     TypeSlot publicNamed: #supertypeExpression type: ASTNode ,
     TypeSlot publicNamed: #definitionExpression type: ASTNode ,
@@ -323,7 +323,7 @@ LetMetaBuilder
 public: #let with: (MetaBuilderFactory for: LetMetaBuilder).
 
 VariableMetaBuilder publicSubclass: #FieldMetaBuilder slots: (
-    TypeSlot publicNamed: #fieldFlags type: Size ,
+    TypeSlot publicNamed: #fieldFlags type: Bitflags ,
     TypeSlot publicNamed: #bitsExpression type: ASTNode
 ).
 
@@ -332,7 +332,7 @@ FieldMetaBuilder
         (object: self withLookupStartingFrom: FieldMetaBuilder supertype) initialize.
         self fieldFlags: TypeSlotFlags::None
     };
-    withSelector: #addFieldFlags: addMethod: {:self :(Size)flags :: Void |
+    withSelector: #addFieldFlags: addMethod: {:self :(Bitflags)flags :: Void |
         self fieldFlags: self fieldFlags | flags
     };
     withSelector: #bits: addMethod: {:self :(ASTNode)bitsExpression :: Void |
@@ -353,7 +353,7 @@ FieldMetaBuilder
     }.
 
 MacroMetaBuilder publicSubclass: #MethodMetaBuilder slots: (
-    TypeSlot publicNamed: #methodFlags type: Size ,
+    TypeSlot publicNamed: #methodFlags type: Bitflags ,
     TypeSlot publicNamed: #isMacro type: Boolean ,
     TypeSlot publicNamed: #isFallbackMethod type: Boolean ,
     TypeSlot publicNamed: #selector type: ASTNode ,
@@ -417,7 +417,7 @@ MethodMetaBuilder
             self expandMessageSendNodeWithMetaBuilderMethod: messageSendNode
         }.
     };
-    withSelector: #addMethodFlags: addMethod: {:self :(Size)flags :: Void |
+    withSelector: #addMethodFlags: addMethod: {:self :(Bitflags)flags :: Void |
         self methodFlags: self methodFlags | flags
     };
     withSelector: #":=" addMethod: {:self :(ASTNode)bodyNode :: ASTNode |
@@ -484,7 +484,7 @@ MethodMetaBuilder
     }.
 
 MacroMetaBuilder publicSubclass: #MacroMethodMetaBuilder slots: (
-    TypeSlot publicNamed: #methodFlags type: Size ,
+    TypeSlot publicNamed: #methodFlags type: Bitflags ,
     TypeSlot publicNamed: #isFallbackMethod type: Boolean ,
 ).
 
@@ -494,7 +494,7 @@ MacroMethodMetaBuilder
         self methodFlags: FunctionFlags::Macro.
         self isFallbackMethod: false.
     };
-    withSelector: #addMethodFlags: addMethod: {:self :(Size)flags :: Void |
+    withSelector: #addMethodFlags: addMethod: {:self :(Bitflags)flags :: Void |
         self methodFlags: self methodFlags | flags
     };
     withSelector: #fallback addMethod: {:self :: ASTNode |
@@ -512,9 +512,9 @@ MacroMethodMetaBuilder
     }.
 
 MacroMetaBuilder publicSubclass: #FlagMetaBuilder slots: (
-    TypeSlot publicNamed: #methodFlags type: Size ,
-    TypeSlot publicNamed: #typeFlags type: Size ,
-    TypeSlot publicNamed: #fieldFlags type: Size ,
+    TypeSlot publicNamed: #methodFlags type: Bitflags ,
+    TypeSlot publicNamed: #typeFlags type: Bitflags ,
+    TypeSlot publicNamed: #fieldFlags type: Bitflags ,
     TypeSlot publicNamed: #isPublic type: Boolean ,
 ).
 
@@ -537,13 +537,13 @@ FlagMetaBuilder
             self expandMessageSendNodeWithMetaBuilderMethod: messageSendNode
         }.
     };
-    withSelector: #addFieldFlags: addMethod: {:self :(Size)flags :: Void |
+    withSelector: #addFieldFlags: addMethod: {:self :(Bitflags)flags :: Void |
         self fieldFlags: self fieldFlags | flags
     };
-    withSelector: #addMethodFlags: addMethod: {:self :(Size)flags :: Void |
+    withSelector: #addMethodFlags: addMethod: {:self :(Bitflags)flags :: Void |
         self methodFlags: self methodFlags | flags
     };
-    withSelector: #addTypeFlags: addMethod: {:self :(Size)flags :: Void |
+    withSelector: #addTypeFlags: addMethod: {:self :(Bitflags)flags :: Void |
         self typeFlags: self typeFlags | flags
     };
     withSelector: #pure addMethod: {:self :: ASTNode |
