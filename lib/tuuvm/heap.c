@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#define TUUVM_HEAP_FAST_GROWTH_THRESHOLD (8<<20)
 #define TUUVM_HEAP_MIN_CHUNK_SIZE (4<<20)
+#define TUUVM_HEAP_FAST_GROWTH_THRESHOLD (TUUVM_HEAP_MIN_CHUNK_SIZE*4)
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN

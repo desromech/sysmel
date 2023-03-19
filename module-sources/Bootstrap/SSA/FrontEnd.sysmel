@@ -362,7 +362,7 @@ ASTWhileContinueWithNode extend: {
         let continueExpression := self continueExpression.
 
         let entryBlock := builder newBasicBlockNamed: #whileEntry.
-        let bodyBlock := builder newBasicBlockNamed: #whileContinue.
+        let bodyBlock := builder newBasicBlockNamed: #whileBody.
         let continueBlock := continueExpression
             ifNil: (entryBlock)
             ifNotNil: (builder newBasicBlockNamed: #whileContinue).

@@ -970,7 +970,7 @@ ArrayList
     };
     withSelector: #at:put: addMethod: {:(ArrayList)self :(Size)index :value :: Void |
         if: index < self size then: {
-            self storage at: index + self offset put: value
+            self storage at: index put: value
         } else: {
             error("Index out of bounds.")
         }

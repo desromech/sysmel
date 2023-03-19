@@ -240,8 +240,8 @@ SSAFunctionDefinition definition: {
         self basicBlocksDo: {:(SSABasicBlock)basicBlock :: Void |
             basicBlock
                 computeSuccessors;
-                predecessors: ArrayList new;
-                isLive: false.
+                resetPredecessors;
+                markWhite.
         }.
 
         self firstBasicBlock ifNotNil: {:(SSABasicBlock)entryBlock :: Void |
@@ -249,33 +249,31 @@ SSAFunctionDefinition definition: {
         }.
 
         self basicBlocksDo: {:(SSABasicBlock)eachBasicBlock :: Void |
-            if: eachBasicBlock isLive then: {
-                let predecessors := eachBasicBlock predecessors.
-                eachBasicBlock phiInstructionsDo: {:(SSAPhiInstruction)phi :: Void |
-                    let newIncomingBlocksAndValues := predecessors collect: {:(SSABasicBlock)eachRequiredPredecessor :: Association |
-                        (phi findIncomingBlockAndValueFor: eachRequiredPredecessor)
-                            ifNotNil: {:(Association)found | found }
-                            ifNil: { eachRequiredPredecessor -> (SSAUndefinedConstant new type: phi type; yourself) }.
-                    } as: Array.
-
-                    phi incomingBlocksAndValues: newIncomingBlocksAndValues
-                }
+            if: eachBasicBlock isBlack then: {
+                eachBasicBlock normalizePhiInstructions
             } else: {
+                self assert: eachBasicBlock isWhite.
                 self removeBasicBlock: eachBasicBlock
             }
+        }.
+
+        self basicBlocksDo: {:(SSABasicBlock)eachBasicBlock :: Void |
+            eachBasicBlock fixCriticalEdges
         }.
     }.
 
     public method traverseBasicBlockForLiveness: (basicBlock: SSABasicBlock) from: (predecessor: SSABasicBlock) ::=> Void := {
         predecessor ifNotNil: {
-            basicBlock predecessors add: predecessor
+            basicBlock addPredecessor: predecessor isBackEdge: basicBlock isGray.
         }.
 
-        if: basicBlock isLive not then: {
-            basicBlock isLive: true.
+        if: basicBlock isWhite then: {
+            basicBlock markGray.
             basicBlock successors do: {:(SSABasicBlock)eachSuccessor :: Void|
                 self traverseBasicBlockForLiveness: eachSuccessor from: basicBlock
-            }
+            }.
+
+            basicBlock markBlack.
         }.
     }.
 
@@ -288,13 +286,13 @@ SSAFunctionDefinition definition: {
         previousBlock ifNotNil: {
             previousBlock nextBlock: nextBlock
         } ifNil: {
-            self firstBlock: nextBlock
+            self firstBasicBlock: nextBlock
         }.
 
         nextBlock ifNotNil: {
             nextBlock previousBlock: previousBlock
         } ifNil: {
-            self lastBlock: previousBlock
+            self lastBasicBlock: previousBlock
         }.
 
         basicBlock
@@ -409,11 +407,40 @@ SSABasicBlock definition: {
     public field firstInstruction => SSAInstruction.
     public field lastInstruction => SSAInstruction.
 
-    public field isLive => Boolean.
+    public field traversalColor => UInt8.
     public field predecessors => ArrayList.
+    public field predecessorKinds => ArrayList.
     public field successors => Array.
 
     public method isBasicBlock => Boolean := true.
+
+    public method markWhite => Void := {
+        self traversalColor: 0u8
+    }.
+
+    public method isWhite => Boolean := self traversalColor == 0u8.
+
+    public method markGray => Void := {
+        self traversalColor: 1u8
+    }.
+
+    public method isGray => Boolean := self traversalColor == 1u8.
+
+    public method markBlack => Void := {
+        self traversalColor: 2u8
+    }.
+
+    public method isBlack => Boolean := self traversalColor == 2u8.
+
+    public method resetPredecessors => Void := {
+        self predecessors: ArrayList new.
+        self predecessorKinds: ArrayList new.
+    }.
+
+    public method addPredecessor: (predecessor: SSABasicBlock) isBackEdge: (isBackEdge: Boolean) ::=> Void := {
+        self predecessors add: predecessor.
+        self predecessorKinds add: isBackEdge.
+    }.
 
     public method addInstruction: (instruction: SSAInstruction) before: (position: SSAInstruction) ::=> Void := {
         self assert: instruction parent isNil.
@@ -512,6 +539,61 @@ SSABasicBlock definition: {
         }
     }.
 
+    public method normalizePhiInstructions => Void := {
+        let predecessors := self predecessors.
+        self phiInstructionsDo: {:(SSAPhiInstruction)phi :: Void |
+            let newIncomingBlocksAndValues := predecessors collect: {:(SSABasicBlock)eachRequiredPredecessor :: Association |
+                (phi findIncomingBlockAndValueFor: eachRequiredPredecessor)
+                    ifNotNil: {:(Association)found | found }
+                    ifNil: { eachRequiredPredecessor -> (SSAUndefinedConstant new type: phi type; yourself) }.
+            } as: Array.
+
+            phi incomingBlocksAndValues: newIncomingBlocksAndValues
+        }.
+    }.
+
+    public method fixCriticalEdges => Void := {
+        ## We require at least two predecessors in order for having a critical edge.
+        if: self predecessors size > 1sz then: {
+            self predecessors doWithIndex: {:(SSABasicBlock)predecessor :(Size)predecessorIndex :: Void |
+                if: predecessor successors size > 1sz then: {
+                    self fixCriticalEdge: predecessor index: predecessorIndex.
+                }
+            }
+        }.
+    }.
+
+    public method fixCriticalEdge: (incomingBlock: SSABasicBlock) index: (incomingBlockIndex: Size) ::=> Void := {
+        self assert: self predecessors size > 1sz.
+        self assert: incomingBlock successors size > 1sz.
+        self assert: incomingBlock lastInstruction isTerminatorInstruction.
+
+        let builder := SSAInstructionBuilder new
+            function: incomingBlock parent;
+            useSourceInformationOfValue: incomingBlock lastInstruction;
+            yourself.
+        
+        let intermediateBlock := builder newBasicBlockNamed: #criticalEdge.
+        intermediateBlock
+            traversalColor: incomingBlock traversalColor;
+            successors: (Array with: self);
+            resetPredecessors;
+            addPredecessor: incomingBlock isBackEdge: (self predecessorKinds at: incomingBlockIndex).
+
+        incomingBlock parent addBasicBlock: intermediateBlock after: incomingBlock.
+        builder
+            beginInsertingInBasicBlock: intermediateBlock;
+            branch: self.
+        
+        incomingBlock lastInstruction replaceDestination: self with: intermediateBlock.
+        incomingBlock replaceSuccessor: self with: incomingBlock.
+        self predecessors at: incomingBlockIndex put: intermediateBlock.
+
+        self phiInstructionsDo: {:(SSAPhiInstruction)each :: Void |
+            each replaceIncomingBlock: incomingBlock with: intermediateBlock
+        }
+    }.
+
     public method removeInstruction: (instruction: SSAInstruction) ::=> Void := {
         self assert: instruction parent == self.
 
@@ -534,6 +616,12 @@ SSABasicBlock definition: {
             parent: nil;
             previousInstruction: nil;
             nextInstruction: nil
+    }.
+
+    public method replaceSuccessor: (oldSuccessor: SSABasicBlock) with: (newSuccessor: SSABasicBlock) ::=> Void := {
+        self successors doWithIndex: {:(SSABasicBlock)eachSuccessor :(Size)index :: Void |
+            if: eachSuccessor = oldSuccessor then: (self successors at: index put: newSuccessor)
+        }
     }.
 
     public method computeSuccessors => Void := {
@@ -560,7 +648,15 @@ SSABasicBlock definition: {
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         self printOn: stream.
-        stream nextPutAll: ":"; nl.
+        stream nextPutAll: ":".
+        if: (self predecessors ~~ nil) && self predecessors isNotEmpty then: {
+            stream nextPutAll: " ## Predecessors".
+            self predecessors do: {:(SSABasicBlock)each :: Void |
+                stream nextPut: ' '; print: each
+            }
+        }.
+
+        stream nl.
         self instructionsDo: {:(SSAInstruction)instruction :: Void |
             stream nextPutAll: "    ".
             instruction fullPrintOn: stream.
@@ -591,6 +687,9 @@ SSAInstruction definition: {
         super replaceWith: replacement.
         self parent ifNotNil: {:parent :: Void | parent removeInstruction: self }
     }.
+
+    public method replaceDestination: (oldDestination: SSABasicBlock) with: (newDestination: SSABasicBlock) ::=> Void
+        := self error: "Not a branch instruction.".
 
     public method successors => Array
         := self error: "Non terminator instruction is present at the end of a basic block " -- self fullPrintString
@@ -634,6 +733,10 @@ public final class SSABranchInstruction superclass: SSAInstruction; definition: 
 
     public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
         if: self destination = replacedValue then: (self destination: replacement)
+    }.
+
+    public method replaceDestination: (oldDestination: SSABasicBlock) with: (newDestination: SSABasicBlock) ::=> Void := {
+        if: self destination = oldDestination then: (self destination: newDestination)
     }.
 
     public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
@@ -727,6 +830,11 @@ public final class SSAConditionalBranchInstruction superclass: SSAInstruction; d
         replacementDictionary at: self trueDestination isPresent: {:(SSAValue)replacement :: Void | self trueDestination: replacement}.
         replacementDictionary at: self falseDestination isPresent: {:(SSAValue)replacement :: Void | self falseDestination: replacement}.
     }.
+
+    public method replaceDestination: (oldDestination: SSABasicBlock) with: (newDestination: SSABasicBlock) ::=> Void := {
+        if: self trueDestination = oldDestination then: (self trueDestination: newDestination).
+        if: self falseDestination = oldDestination then: (self falseDestination: newDestination)
+    }.
 }.
 
 public final class SSALoadInstruction superclass: SSAInstruction; definition: {
@@ -818,13 +926,23 @@ SSAPhiInstruction definition: {
     }.
 
     public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
-        self incomingValues replaceAll: replacedValue with: replacement.
-        self incomingBlocks replaceAll: replacedValue with: replacement
+        self incomingBlocksAndValues do: {:(Association)association :: Void |
+            if: association key = replacedValue then: (association key: replacement).
+            if: association value = replacedValue then: (association value: replacement).
+        }
     }.
 
     public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        self incomingValues replaceAllWithDictionary: replacementDictionary
-        self incomingBlocks replaceAllWithDictionary: replacementDictionary
+        self incomingBlocksAndValues do: {:(Association)association :: Void |
+            replacementDictionary at: association key isPresent: {:(SSAValue)replacement :: Void | association key: replacement}.
+            replacementDictionary at: association value isPresent: {:(SSAValue)replacement :: Void | association value: replacement}.
+        }
+    }.
+
+    public method replaceIncomingBlock: (oldIncomingBlock: SSABasicBlock) with: (newIncomingBlock: SSABasicBlock) ::=> Void := {
+        self incomingBlocksAndValues do: {:(Association)association :: Void |
+            if: association key = oldIncomingBlock then: (association key: newIncomingBlock).
+        }
     }.
 }.
 

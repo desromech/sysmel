@@ -6,7 +6,7 @@ public class SSAFunctionPass superclass: Object; definition: {
 
     public method runIn: (function: SSAFunctionDefinition) ::=> Void := {
 
-    }
+    }.
 }.
 
 SSAFunction extend: {
