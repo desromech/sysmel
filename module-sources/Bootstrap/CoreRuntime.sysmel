@@ -662,6 +662,12 @@ SequenceableCollection
             at: 0sz put: value;
             yourself
     };
+    withSelector: #at: addMethod: {:(Collection)self :(Size)index  |
+        self subclassResponsibility
+    } makeAbstract;
+    withSelector: #at:put: addMethod: {:(Collection)self :(Size)index :value  |
+        self subclassResponsibility
+    } makeAbstract;
     withSelector: #anySatisfy: addMethod: {:(SequenceableCollection)self :aBlock :: Boolean |
         let: #i mutableWith: 0sz.
         let: #size with: self size.
@@ -734,10 +740,24 @@ SequenceableCollection
 
         result
     };
+    withSelector: #replaceAll:with: addMethod: {:(SequenceableCollection)self :oldObject :newObject :: Void |
+        let: #i mutableWith: 0sz.
+        let: #size with: self size.
+
+        while: i < self size do: {
+            if: (self at: i) = oldObject then: (self at: i put: newObject)
+        } continueWith: (i := i + 1sz)
+    };
     withSelector: #first addMethod: {:(SequenceableCollection)self | self at: 0sz } makeFinal;
     withSelector: #second addMethod: {:(SequenceableCollection)self | self at: 1sz } makeFinal;
     withSelector: #third addMethod: {:(SequenceableCollection)self | self at: 2sz } makeFinal;
     withSelector: #fourth addMethod: {:(SequenceableCollection)self | self at: 3sz } makeFinal;
+    withSelector: #fifth addMethod: {:(SequenceableCollection)self | self at: 4sz } makeFinal;
+    withSelector: #sixth addMethod: {:(SequenceableCollection)self | self at: 5sz } makeFinal;
+    withSelector: #seventh addMethod: {:(SequenceableCollection)self | self at: 6sz } makeFinal;
+    withSelector: #eighth addMethod: {:(SequenceableCollection)self | self at: 7sz } makeFinal;
+    withSelector: #ninth addMethod: {:(SequenceableCollection)self | self at: 8sz } makeFinal;
+    withSelector: #tenth addMethod: {:(SequenceableCollection)self | self at: 9sz } makeFinal;
     
     withSelector: #=> addMethod: {:(SequenceableCollection)self :(Type)resultType :: SimpleFunctionType |
         SimpleFunctionTypeTemplate(self asArray, false, resultType)

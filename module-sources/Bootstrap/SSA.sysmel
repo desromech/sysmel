@@ -14,6 +14,7 @@ SSAValue definition: {
     public field sourcePosition => SourcePosition.
     public field sourceASTNode => ASTNode.
     public field sourceEnvironment => Environment.
+    public field users => WeakArrayList.
 
     public method isConstant => Boolean := false.
     public method isLiteralConstant => Boolean := false.
@@ -25,6 +26,26 @@ SSAValue definition: {
     public method isTerminatorInstruction => Boolean := false.
 
     public method primitiveName => Symbol := nil.
+
+    public method usedValuesDo: aBlock ::=> Void := {}.
+
+    public method usersDo: aBlock ::=> Void := {
+        self users ifNotNil: {:users | users do: aBlock }
+    }.
+
+    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {}.
+
+    public method registerInUsedValues => Void := {
+        self usedValuesDo: {:(SSAValue)each :: Void | each registerUser: self }
+    }.
+
+    public method registerUser: (user: SSAValue) ::=> Void := {
+        self users ifNil: {
+            self users: WeakArrayList new
+        }.
+
+        self users add: user
+    }.
 }.
 
 SSAConstant definition: {
@@ -94,6 +115,8 @@ SSAFunctionDefinition definition: {
     public method isFunction => Boolean := true.
 
     public method addBasicBlock: (basicBlock: SSABasicBlock) before: (position: SSABasicBlock) ::=> Void := {
+        self assert: basicBlock parent isNil.
+
         let before := position ifNotNil: position previousBlock ifNil: self lastBasicBlock.
         let after := position.
 
@@ -110,9 +133,13 @@ SSAFunctionDefinition definition: {
         } ifNil: {
             self lastBasicBlock: basicBlock
         }.
+
+        basicBlock parent: self
     }.
 
     public method addBasicBlock: (basicBlock: SSABasicBlock) after: (position: SSABasicBlock) ::=> Void := {
+        self assert: basicBlock parent isNil.
+
         let before := position .
         let after := position ifNotNil: position nextBlock ifNil: self firstBasicBlock.
 
@@ -129,6 +156,8 @@ SSAFunctionDefinition definition: {
         } ifNil: {
             self lastBasicBlock: basicBlock
         }.
+
+        basicBlock parent: self
     }.
 
     public method addBasicBlock: (basicBlock: SSABasicBlock) ::=> Void
@@ -221,6 +250,7 @@ SSAFunctionLocalValue definition: {
 }.
 
 SSABasicBlock definition: {
+    public field parent => SSAFunctionDefinition.
 
     public field previousBlock => SSABasicBlock.
     public field nextBlock => SSABasicBlock.
@@ -231,6 +261,8 @@ SSABasicBlock definition: {
     public method isBasicBlock => Boolean := true.
 
     public method addInstruction: (instruction: SSAInstruction) before: (position: SSAInstruction) ::=> Void := {
+        self assert: instruction parent isNil.
+
         let before := position ifNotNil: position previousInstruction ifNil: self lastInstruction.
         let after := position.
 
@@ -247,9 +279,13 @@ SSABasicBlock definition: {
         } ifNil: {
             self lastInstruction: instruction
         }.
+
+        instruction parent: self
     }.
 
     public method addInstruction: (instruction: SSAInstruction) after: (position: SSAInstruction) ::=> Void := {
+        self assert: instruction parent isNil.
+
         let before := position .
         let after := position ifNotNil: position nextInstruction ifNil: self firstInstruction.
 
@@ -266,6 +302,8 @@ SSABasicBlock definition: {
         } ifNil: {
             self lastInstruction: instruction
         }.
+
+        instruction parent: self
     }.
 
     public method addInstruction: (instruction: SSAInstruction) ::=> Void
@@ -293,10 +331,15 @@ SSABasicBlock definition: {
 }.
 
 SSAInstruction definition: {
-    public method isInstruction => Boolean := true.
-    
+    public field parent => SSABasicBlock.
+
     public field previousInstruction => SSAInstruction.
     public field nextInstruction => SSAInstruction.
+
+    public method parentFunction => SSAFunctionDefinition
+        := self parent ifNil: nil ifNotNil: {:(SSABasicBlock)parentBlock | parentBlock parent }.
+
+    public method isInstruction => Boolean := true.
 }.
 
 public final class SSAAllocaInstruction superclass: SSAInstruction; definition: {
@@ -304,6 +347,14 @@ public final class SSAAllocaInstruction superclass: SSAInstruction; definition: 
 
     public method fullPrintOn: (stream: Stream) ::=> Void
         := stream print: self; nextPutAll: " := alloca: "; print: self valueType.
+
+    public method usedValuesDo: aBlock ::=> Void := {
+        aBlock(self valueType)
+    }.
+
+    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        if: self valueType = replacedValue then: (self valueType: replacement)
+    }.
 }.
 
 public final class SSABranchInstruction superclass: SSAInstruction; definition: {
@@ -313,6 +364,14 @@ public final class SSABranchInstruction superclass: SSAInstruction; definition: 
 
     public method fullPrintOn: (stream: Stream) ::=> Void
         := stream nextPutAll: "branch: "; print: self destination.
+
+    public method usedValuesDo: aBlock ::=> Void := {
+        aBlock(self destination).
+    }.
+
+    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        if: self destination = replacedValue then: (self destination: replacement)
+    }.
 }.
 
 public final class SSACallInstruction superclass: SSAInstruction; definition: {
@@ -328,6 +387,16 @@ public final class SSACallInstruction superclass: SSAInstruction; definition: {
             stream print: argument
         }
     }.
+
+    public method usedValuesDo: aBlock ::=> Void := {
+        aBlock(self calledFunction).
+        self arguments do: aBlock
+    }.
+
+    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        if: self calledFunction = replacedValue then: (self calledFunction: replacement).
+        self arguments replaceAll: replacedValue with: replacement
+    }.
 }.
 
 public final class SSACoerceValueInstruction superclass: SSAInstruction; definition: {
@@ -336,7 +405,17 @@ public final class SSACoerceValueInstruction superclass: SSAInstruction; definit
 
     public method fullPrintOn: (stream: Stream) ::=> Void
         := stream print: self; nextPutAll: " := coerceValue: "; print: self value;
-            nextPut: ' '; print: self targetType
+            nextPut: ' '; print: self targetType.
+
+    public method usedValuesDo: aBlock ::=> Void := {
+        aBlock(self value).
+        aBlock(self targetType).
+    }.
+
+    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        if: self value = replacedValue then: (self value: replacement).
+        if: self targetType = replacedValue then: (self targetType: replacement).
+    }.
 }.
 
 public final class SSAConditionalBranchInstruction superclass: SSAInstruction; definition: {
@@ -350,6 +429,18 @@ public final class SSAConditionalBranchInstruction superclass: SSAInstruction; d
         := stream nextPutAll: "condBranch: "; print: self condition;
             nextPut: ' '; print: self trueDestination;
             nextPut: ' '; print: self falseDestination.
+
+    public method usedValuesDo: aBlock ::=> Void := {
+        aBlock(self condition).
+        aBlock(self trueDestination).
+        aBlock(self falseDestination).
+    }.
+
+    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        if: self condition = replacedValue then: (self condition: replacement).
+        if: self trueDestination = replacedValue then: (self trueDestination: replacement).
+        if: self falseDestination = replacedValue then: (self falseDestination: replacement).
+    }.
 }.
 
 public final class SSALoadInstruction superclass: SSAInstruction; definition: {
@@ -357,6 +448,14 @@ public final class SSALoadInstruction superclass: SSAInstruction; definition: {
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := load "; print: self storage
+    }.
+
+    public method usedValuesDo: aBlock ::=> Void := {
+        aBlock(self storage).
+    }.
+
+    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        if: self storage = replacedValue then: (self storage: replacement).
     }.
 }.
 
@@ -369,6 +468,16 @@ public final class SSAMakeClosureInstruction superclass: SSAInstruction; definit
         self captures do: {:(SSAValue)capture :: Void |
             stream nextPutAll: ", "; print: capture
         }
+    }.
+
+    public method usedValuesDo: aBlock ::=> Void := {
+        aBlock(self functionDefinition).
+        self captures do: aBlock
+    }.
+
+    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        if: self functionDefinition = replacedValue then: (self functionDefinition: replacement).
+        self captures replaceAll: replacedValue with: replacement
     }.
 }.
 
@@ -391,6 +500,16 @@ public final class SSAPhiInstruction superclass: SSAInstruction; definition: {
         self incomingValues: self incomingValues -- (Array with: value).
         self incomingBlocks: self incomingBlocks -- (Array with: block).
     }.
+
+    public method usedValuesDo: aBlock ::=> Void := {
+        self incomingValues do: aBlock,
+        self incomingBlocks do: aBlock.
+    }.
+
+    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        self incomingValues replaceAll: replacedValue with: replacement.
+        self incomingBlocks replaceAll: replacedValue with: replacement
+    }.
 }.
 
 public final class SSAReturnInstruction superclass: SSAInstruction; definition: {
@@ -400,6 +519,14 @@ public final class SSAReturnInstruction superclass: SSAInstruction; definition: 
 
     public method fullPrintOn: (stream: Stream) ::=> Void
         := stream nextPutAll: "return: "; print: self value.
+
+    public method usedValuesDo: aBlock ::=> Void := {
+        aBlock(self value)
+    }.
+
+    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        if: self value = replacedValue then: (self value: replacement)
+    }.
 }.
 
 public final class SSASendInstruction superclass: SSAInstruction; definition: {
@@ -425,6 +552,20 @@ public final class SSASendInstruction superclass: SSAInstruction; definition: {
             stream print: argument
         }
     }.
+
+    public method usedValuesDo: aBlock ::=> Void := {
+        aBlock(self receiver).
+        if: self receiverLookupType ~~ nil then: aBlock(self receiverLookupType).
+        aBlock(self selector).
+        self arguments do: aBlock
+    }.
+
+    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        if: self receiver = replacedValue then: (self receiver: replacement).
+        if: self receiverLookupType = replacedValue then: (self receiverLookupType: replacement).
+        if: self selector = replacedValue then: (self selector: replacement).
+        self arguments replaceAll: replacedValue with: replacement
+    }.
 }.
 
 public final class SSAStoreInstruction superclass: SSAInstruction; definition: {
@@ -433,6 +574,16 @@ public final class SSAStoreInstruction superclass: SSAInstruction; definition: {
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "store "; print: self value; nextPutAll: " in "; print: self storage
+    }.
+
+    public method usedValuesDo: aBlock ::=> Void := {
+        aBlock(self storage).
+        aBlock(self value).
+    }.
+
+    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        if: self storage = replacedValue then: (self storage: replacement).
+        if: self value = replacedValue then: (self value: replacement).
     }.
 }.
 
@@ -512,12 +663,14 @@ SSAInstructionBuilder definition: {
         := self addInstruction: (SSAAllocaInstruction new
             valueType: valueType;
             type: type;
+            registerInUsedValues;
             yourself).
 
     public method branch: (destination: SSAValue) ::=> SSABranchInstruction
         := self addInstruction: (SSABranchInstruction new
             destination: destination;
             type: Void;
+            registerInUsedValues;
             yourself).
 
     public method call: (calledFunction: SSAValue) arguments: (arguments: Array) resultType: (resultType: Type) ::=> SSACallInstruction
@@ -525,6 +678,7 @@ SSAInstructionBuilder definition: {
             calledFunction: calledFunction;
             arguments: arguments;
             type: resultType;
+            registerInUsedValues;
             yourself).
 
     public method call: (receiver: SSAValue) selector: (selector: SSAValue) arguments: (arguments: Array) ::=> SSASendInstruction
@@ -538,6 +692,7 @@ SSAInstructionBuilder definition: {
                 value: value;
                 targetType: targetType;
                 type: type;
+            registerInUsedValues;
                 yourself)
         }.
     }.
@@ -548,6 +703,7 @@ SSAInstructionBuilder definition: {
             trueDestination: trueDestination;
             falseDestination: falseDestination;
             type: Void;
+            registerInUsedValues;
             yourself).
 
     public method literal: value type: (type: Type) ::=> SSALiteralConstant
@@ -566,6 +722,7 @@ SSAInstructionBuilder definition: {
         := self addInstruction: (SSALoadInstruction new
             storage: storage;
             type: type;
+            registerInUsedValues;
             yourself).
 
     public method makeClosure: (functionDefinition: SSAValue) captures: (captures: Array) type: (type: Type) ::=> SSAMakeClosureInstruction
@@ -573,6 +730,7 @@ SSAInstructionBuilder definition: {
             functionDefinition: functionDefinition;
             captures: captures;
             type: type;
+            registerInUsedValues;
             yourself).
 
     public method phi: (type: Type) ::=> SSAPhiInstruction
@@ -580,11 +738,13 @@ SSAInstructionBuilder definition: {
             incomingBlocks: ();
             incomingValues: ();
             type: type;
+            registerInUsedValues;
             yourself).
 
     public method return: (value: SSAValue) ::=> SSAReturnInstruction
         := self addInstruction: (SSAReturnInstruction new
             value: value;
+            registerInUsedValues;
             yourself).
 
     public method returnVoid ::=> SSAReturnInstruction
@@ -597,6 +757,7 @@ SSAInstructionBuilder definition: {
             selector: selector;
             arguments: arguments;
             type: resultType;
+            registerInUsedValues;
             yourself).
 
     public method send: (receiver: SSAValue) selector: (selector: SSAValue) arguments: (arguments: Array) resultType: (resultType: Type) ::=> SSASendInstruction
@@ -609,6 +770,7 @@ SSAInstructionBuilder definition: {
         := self addInstruction: (SSAStoreInstruction new
             value: value;
             storage: storage;
+            registerInUsedValues;
             yourself).
 
     public method lastInstruction => SSAInstruction
