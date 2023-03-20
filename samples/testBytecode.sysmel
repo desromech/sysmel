@@ -4,8 +4,8 @@ let bytecodes := FunctionBytecode new
     captureVectorSize: 0sz;
     localVectorSize: 0sz;
     instructions: #[
-        FunctionBytecode::Opcode::Return. 2u8. 0u8.
         FunctionBytecode::Opcode::Nop.
+        FunctionBytecode::Opcode::Return. 2u8. 0u8.
     ];
     yourself.
 

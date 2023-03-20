@@ -75,8 +75,8 @@ let isBranchOpcode := {:(UInt8)opcode :: Boolean |
     (opcode = FunctionBytecode::Opcode::JumpIfFalse)
 }.
 
-FunctionBytecode
-    withSelector: #decodedInstructionsDo: addMethod: {:(FunctionBytecode)self :aBlock :: Void |
+FunctionBytecode definition: {
+    public method decodedInstructionsDo: aBlock ::=> Void := {
         let instructions := self instructions.
         let instructionsSize := instructions size.
         let pc mutable := 0sz.
@@ -100,8 +100,9 @@ FunctionBytecode
             let nextPC := pc.
             aBlock(opcode, operands, instructionPC, nextPC).
         }.
-    };
-    withSelector: #printOpcodeMnemonic:on: addMethod: {:(FunctionBytecode)self :(UInt8)opcode :(Stream)stream :: Void |
+    }.
+
+    public method printOpcodeMnemonic: (opcode: UInt8) on: (stream: Stream) ::=> Void := {
         if: opcode >= FunctionBytecode::Opcode::Call then: {
             let standardOpcode := opcode & 16rF0 u8.
             let opcodeVariantNumber := opcode & 16r0F u8.
@@ -109,8 +110,9 @@ FunctionBytecode
         } else: {
             stream nextPutAll: (opcodeNameDictionary at: opcode).
         }
-    } makeFinal;
-    withSelector: #fullPrintOn: addMethod: {:(FunctionBytecode)self :(Stream)stream :: Void |
+    }.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self class; nl;
             nextPutAll: "argumentCount: "; print: self argumentCount; nl;
             nextPutAll: "captureVectorSize: "; print: self captureVectorSize; nl;
@@ -119,7 +121,7 @@ FunctionBytecode
             nextPutAll: "instructions: ["; nl.
 
         self decodedInstructionsDo: {:(UInt8)opcode :(Array)operands :(Size)pc :(Size)nextPC :: Void |
-            stream nextPutAll: " "; nextPutAll: (pc printString padLeft: 4sz with: '0'asChar8); nextPutAll: " | ".
+            stream nextPutAll: "  "; nextPutAll: (pc printString padLeft: 4sz with: '0'asChar8); nextPutAll: " ".
             self printOpcodeMnemonic: opcode on: stream.
             
             let isBranchInstruction := isBranchOpcode(opcode).
@@ -130,7 +132,7 @@ FunctionBytecode
                 } else: {
                     let operandVector := each & FunctionBytecode::OperandVectorName::BitMask.
                     let operandIndex := each >> FunctionBytecode::OperandVectorName::Bits.
-                    stream nextPutAll: (operandVectorNameDictionary at: operandVector); nextPut: ':'; print: operandIndex.
+                    stream nextPutAll: (operandVectorNameDictionary at: operandVector); nextPut: '@'; print: operandIndex.
                     if: operandVector = FunctionBytecode::OperandVectorName::Literal
                         then: (stream nextPut: ':'; print: (self literalVector at: operandIndex asSize)).
                 }.
@@ -139,14 +141,16 @@ FunctionBytecode
         }.
 
         stream nextPutAll: "]"; nl
-    };
-    withSelector: #asFunctionDefinition addMethod: {:(FunctionBytecode)self :: FunctionDefinition |
-        FunctionDefinition new
+    }.
+
+    public method asFunctionDefinition => FunctionDefinition
+        := FunctionDefinition new
             flags: 0sz;
             argumentCount: self argumentCount;
             bytecode: self;
-            yourself
-    };
-    withSelector: #asFunction addMethod: {:(FunctionBytecode)self :: Function |
-        self asFunctionDefinition asFunction
-    }.
+            yourself.
+
+    public method asFunction => Function
+        := self asFunctionDefinition asFunction.
+}.
+

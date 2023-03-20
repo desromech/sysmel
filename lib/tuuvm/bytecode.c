@@ -129,7 +129,7 @@ TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_con
         }
 
         // Decode the operands.
-        TUUVM_ASSERT(pc + operandCount*2 < instructionsSize);
+        TUUVM_ASSERT(pc + operandCount*2 <= instructionsSize);
         for(uint8_t i = 0; i < operandCount; ++i)
         {
             uint16_t lowByte = instructions[pc++];
