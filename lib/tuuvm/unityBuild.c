@@ -11,6 +11,7 @@
 #include "association.c"
 #include "ast.c"
 #include "boolean.c"
+#include "bytecode.c"
 #include "context.c"
 #include "dictionary.c"
 #include "environment.c"

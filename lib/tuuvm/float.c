@@ -266,6 +266,105 @@ static tuuvm_tuple_t tuuvm_float32_primitive_greaterEquals(tuuvm_context_t *cont
     return tuuvm_tuple_boolean_encode(left >= right);
 }
 
+static tuuvm_tuple_t tuuvm_float32_primitive_asUInt8(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_uint8_encode((uint8_t)tuuvm_tuple_float32_decode(arguments[0]));
+}
+
+static tuuvm_tuple_t tuuvm_float32_primitive_asInt8(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_int8_encode((int8_t)tuuvm_tuple_float32_decode(arguments[0]));
+}
+
+static tuuvm_tuple_t tuuvm_float32_primitive_asChar8(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_char8_encode((tuuvm_char8_t)tuuvm_tuple_float32_decode(arguments[0]));
+}
+
+static tuuvm_tuple_t tuuvm_float32_primitive_asUInt16(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_uint16_encode((uint16_t)tuuvm_tuple_float32_decode(arguments[0]));
+}
+
+static tuuvm_tuple_t tuuvm_float32_primitive_asInt16(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_int16_encode((int16_t)tuuvm_tuple_float32_decode(arguments[0]));
+}
+
+static tuuvm_tuple_t tuuvm_float32_primitive_asChar16(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_char16_encode((tuuvm_char16_t)tuuvm_tuple_float32_decode(arguments[0]));
+}
+
+static tuuvm_tuple_t tuuvm_float32_primitive_asUInt32(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_uint32_encode(context, (uint32_t)tuuvm_tuple_float32_decode(arguments[0]));
+}
+
+static tuuvm_tuple_t tuuvm_float32_primitive_asInt32(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_int32_encode(context, (int32_t)tuuvm_tuple_float32_decode(arguments[0]));
+}
+
+static tuuvm_tuple_t tuuvm_float32_primitive_asChar32(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_char32_encode(context, (tuuvm_char32_t)tuuvm_tuple_float32_decode(arguments[0]));
+}
+
+static tuuvm_tuple_t tuuvm_float32_primitive_asUInt64(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_uint64_encode(context, (uint64_t)tuuvm_tuple_float32_decode(arguments[0]));
+}
+
+static tuuvm_tuple_t tuuvm_float32_primitive_asInt64(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_int64_encode(context, (int64_t)tuuvm_tuple_float32_decode(arguments[0]));
+}
+
 static tuuvm_tuple_t tuuvm_float64_primitive_printString(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
@@ -437,6 +536,105 @@ static tuuvm_tuple_t tuuvm_float64_primitive_greaterEquals(tuuvm_context_t *cont
     return tuuvm_tuple_boolean_encode(left >= right);
 }
 
+static tuuvm_tuple_t tuuvm_float64_primitive_asUInt8(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_uint8_encode((uint8_t)tuuvm_tuple_float64_decode(arguments[0]));
+}
+
+static tuuvm_tuple_t tuuvm_float64_primitive_asInt8(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_int8_encode((int8_t)tuuvm_tuple_float64_decode(arguments[0]));
+}
+
+static tuuvm_tuple_t tuuvm_float64_primitive_asChar8(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_char8_encode((tuuvm_char8_t)tuuvm_tuple_float64_decode(arguments[0]));
+}
+
+static tuuvm_tuple_t tuuvm_float64_primitive_asUInt16(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_uint16_encode((uint16_t)tuuvm_tuple_float64_decode(arguments[0]));
+}
+
+static tuuvm_tuple_t tuuvm_float64_primitive_asInt16(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_int16_encode((int16_t)tuuvm_tuple_float64_decode(arguments[0]));
+}
+
+static tuuvm_tuple_t tuuvm_float64_primitive_asChar16(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_char16_encode((tuuvm_char16_t)tuuvm_tuple_float64_decode(arguments[0]));
+}
+
+static tuuvm_tuple_t tuuvm_float64_primitive_asUInt32(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_uint32_encode(context, (uint32_t)tuuvm_tuple_float64_decode(arguments[0]));
+}
+
+static tuuvm_tuple_t tuuvm_float64_primitive_asInt32(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_int32_encode(context, (int32_t)tuuvm_tuple_float64_decode(arguments[0]));
+}
+
+static tuuvm_tuple_t tuuvm_float64_primitive_asChar32(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_char32_encode(context, (tuuvm_char32_t)tuuvm_tuple_float64_decode(arguments[0]));
+}
+
+static tuuvm_tuple_t tuuvm_float64_primitive_asUInt64(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_uint64_encode(context, (uint64_t)tuuvm_tuple_float64_decode(arguments[0]));
+}
+
+static tuuvm_tuple_t tuuvm_float64_primitive_asInt64(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    return tuuvm_tuple_int64_encode(context, (int64_t)tuuvm_tuple_float64_decode(arguments[0]));
+}
+
 void tuuvm_float_registerPrimitives(void)
 {
     // Float32
@@ -458,6 +656,18 @@ void tuuvm_float_registerPrimitives(void)
     tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_greaterThan, "Float32::>");
     tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_greaterEquals, "Float32::>=");
 
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_asUInt8, "Float32::asUInt8");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_asInt8, "Float32::asInt8");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_asChar8, "Float32::asChar8");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_asUInt16, "Float32::asUInt16");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_asInt16, "Float32::asInt16");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_asChar16, "Float32::asChar16");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_asUInt32, "Float32::asUInt32");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_asInt32, "Float32::asInt32");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_asChar32, "Float32::asChar32");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_asUInt64, "Float32::asUInt64");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float32_primitive_asInt64, "Float32::asInt64");
+
     // Float64
     tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_printString, "Float64::printString");
     tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_fromFloat32, "Float64::fromFloat32");
@@ -476,6 +686,18 @@ void tuuvm_float_registerPrimitives(void)
     tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_lessEquals, "Float64::<=");
     tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_greaterThan, "Float64::>");
     tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_greaterEquals, "Float64::>=");
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_asUInt8, "Float64::asUInt8");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_asInt8, "Float64::asInt8");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_asChar8, "Float64::asChar8");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_asUInt16, "Float64::asUInt16");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_asInt16, "Float64::asInt16");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_asChar16, "Float64::asChar16");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_asUInt32, "Float64::asUInt32");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_asInt32, "Float64::asInt32");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_asChar32, "Float64::asChar32");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_asUInt64, "Float64::asUInt64");
+    tuuvm_primitiveTable_registerFunction(tuuvm_float64_primitive_asInt64, "Float64::asInt64");
 }
 
 void tuuvm_float_setupPrimitives(tuuvm_context_t *context)
@@ -500,6 +722,18 @@ void tuuvm_float_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::>", context->roots.float32Type, ">", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float32_primitive_greaterThan);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::>=", context->roots.float32Type, ">=", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float32_primitive_greaterEquals);
 
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::asUInt8", context->roots.float32Type, "asUInt8", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float32_primitive_asUInt8);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::asInt8", context->roots.float32Type, "asInt8", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float32_primitive_asInt8);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::asChar8", context->roots.float32Type, "asChar8", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float32_primitive_asChar8);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::asUInt16", context->roots.float32Type, "asUInt16", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float32_primitive_asUInt16);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::asInt16", context->roots.float32Type, "asInt16", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float32_primitive_asInt16);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::asChar16", context->roots.float32Type, "asChar16", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float32_primitive_asChar16);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::asUInt32", context->roots.float32Type, "asUInt32", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float32_primitive_asUInt32);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::asInt32", context->roots.float32Type, "asInt32", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float32_primitive_asInt32);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::asChar32", context->roots.float32Type, "asChar32", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float32_primitive_asChar32);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::asUInt64", context->roots.float32Type, "asUInt64", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float32_primitive_asUInt64);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::asInt64", context->roots.float32Type, "asInt64", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float32_primitive_asInt64);
+
     // Float64
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::fromFloat32", context->roots.float32Type, "f64", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_fromFloat32);
 
@@ -518,4 +752,16 @@ void tuuvm_float_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::<=", context->roots.float64Type, "<=", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_lessEquals);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::>", context->roots.float64Type, ">", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_greaterThan);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::>=", context->roots.float64Type, ">=", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_greaterEquals);
+
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::asUInt8", context->roots.float64Type, "asUInt8", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float32_primitive_asUInt8);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::asInt8", context->roots.float64Type, "asInt8", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_asInt8);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::asChar8", context->roots.float64Type, "asChar8", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_asChar8);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::asUInt16", context->roots.float64Type, "asUInt16", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_asUInt16);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::asInt16", context->roots.float64Type, "asInt16", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_asInt16);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::asChar16", context->roots.float64Type, "asChar16", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_asChar16);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::asUInt32", context->roots.float64Type, "asUInt32", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_asUInt32);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::asInt32", context->roots.float64Type, "asInt32", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_asInt32);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::asChar32", context->roots.float64Type, "asChar32", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_asChar32);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::asUInt64", context->roots.float64Type, "asUInt64", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_asUInt64);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::asInt64", context->roots.float64Type, "asInt64", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_float64_primitive_asInt64);
 }

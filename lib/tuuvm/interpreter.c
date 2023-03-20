@@ -2539,7 +2539,7 @@ static tuuvm_tuple_t tuuvm_astMakeByteArrayNode_primitiveAnalyzeAndEvaluate(tuuv
     return gcFrame.result;
 }
 
-static tuuvm_tuple_t tuuvm_astMakeTupleNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_astMakeArrayNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
@@ -2547,10 +2547,10 @@ static tuuvm_tuple_t tuuvm_astMakeTupleNode_primitiveAnalyze(tuuvm_context_t *co
     tuuvm_tuple_t *node = &arguments[0];
     tuuvm_tuple_t *environment = &arguments[1];
 
-    tuuvm_astMakeTupleNode_t **tupleNode = (tuuvm_astMakeTupleNode_t**)node;
+    tuuvm_astMakeArrayNode_t **tupleNode = (tuuvm_astMakeArrayNode_t**)node;
 
     struct {
-        tuuvm_astMakeTupleNode_t *analyzedTupleNode;
+        tuuvm_astMakeArrayNode_t *analyzedTupleNode;
         tuuvm_tuple_t expressions;
         tuuvm_tuple_t analyzedExpressions;
         tuuvm_tuple_t expression;
@@ -2569,7 +2569,7 @@ static tuuvm_tuple_t tuuvm_astMakeTupleNode_primitiveAnalyze(tuuvm_context_t *co
         return *node;
     }
 
-    gcFrame.analyzedTupleNode = (tuuvm_astMakeTupleNode_t *)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.analyzedTupleNode = (tuuvm_astMakeArrayNode_t *)tuuvm_context_shallowCopy(context, *node);
     gcFrame.analyzedTupleNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
     
     gcFrame.analyzedExpressions = tuuvm_array_create(context, expressionCount);
@@ -2587,7 +2587,7 @@ static tuuvm_tuple_t tuuvm_astMakeTupleNode_primitiveAnalyze(tuuvm_context_t *co
     return (tuuvm_tuple_t)gcFrame.analyzedTupleNode;
 }
 
-static tuuvm_tuple_t tuuvm_astMakeTupleNode_primitiveEvaluate(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_astMakeArrayNode_primitiveEvaluate(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
@@ -2595,7 +2595,7 @@ static tuuvm_tuple_t tuuvm_astMakeTupleNode_primitiveEvaluate(tuuvm_context_t *c
     tuuvm_tuple_t *node = &arguments[0];
     tuuvm_tuple_t *environment = &arguments[1];
 
-    tuuvm_astMakeTupleNode_t **tupleNode = (tuuvm_astMakeTupleNode_t**)node;
+    tuuvm_astMakeArrayNode_t **tupleNode = (tuuvm_astMakeArrayNode_t**)node;
 
     struct {
         tuuvm_tuple_t result;
@@ -2733,7 +2733,7 @@ static tuuvm_tuple_t tuuvm_astMakeDictionaryNode_primitiveEvaluate(tuuvm_context
     return gcFrame.result;
 }
 
-static tuuvm_tuple_t tuuvm_astMakeTupleNode_primitiveAnalyzeAndEvaluate(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_astMakeArrayNode_primitiveAnalyzeAndEvaluate(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
@@ -2741,7 +2741,7 @@ static tuuvm_tuple_t tuuvm_astMakeTupleNode_primitiveAnalyzeAndEvaluate(tuuvm_co
     tuuvm_tuple_t *node = &arguments[0];
     tuuvm_tuple_t *environment = &arguments[1];
 
-    tuuvm_astMakeTupleNode_t **tupleNode = (tuuvm_astMakeTupleNode_t**)node;
+    tuuvm_astMakeArrayNode_t **tupleNode = (tuuvm_astMakeArrayNode_t**)node;
 
     struct {
         tuuvm_tuple_t result;
@@ -4811,9 +4811,9 @@ void tuuvm_astInterpreter_registerPrimitives(void)
     tuuvm_primitiveTable_registerFunction(tuuvm_astMakeDictionaryNode_primitiveEvaluate, "ASTMakeDictionaryNode::evaluateWithEnvironment:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astMakeDictionaryNode_primitiveAnalyzeAndEvaluate, "ASTMakeDictionaryNode::analyzeAndEvaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeTupleNode_primitiveAnalyze, "ASTMakeTupleNode::analyzeWithEnvironment:");
-    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeTupleNode_primitiveEvaluate, "ASTMakeTupleNode::evaluateWithEnvironment:");
-    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeTupleNode_primitiveAnalyzeAndEvaluate, "ASTMakeTupleNode::analyzeAndEvaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeArrayNode_primitiveAnalyze, "ASTMakeArrayNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeArrayNode_primitiveEvaluate, "ASTMakeArrayNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astMakeArrayNode_primitiveAnalyzeAndEvaluate, "ASTMakeArrayNode::analyzeAndEvaluateWithEnvironment:");
 
     tuuvm_primitiveTable_registerFunction(tuuvm_astMessageChainNode_primitiveAnalyze, "ASTMessageChainNode::analyzeWithEnvironment:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astMessageChainNode_primitiveEvaluate, "ASTMessageChainNode::evaluateWithEnvironment:");
@@ -4981,10 +4981,10 @@ void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context)
         tuuvm_astMakeDictionaryNode_primitiveEvaluate,
         tuuvm_astMakeDictionaryNode_primitiveAnalyzeAndEvaluate
     );
-    tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astMakeTupleNodeType,
-        tuuvm_astMakeTupleNode_primitiveAnalyze,
-        tuuvm_astMakeTupleNode_primitiveEvaluate,
-        tuuvm_astMakeTupleNode_primitiveAnalyzeAndEvaluate
+    tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astMakeArrayNodeType,
+        tuuvm_astMakeArrayNode_primitiveAnalyze,
+        tuuvm_astMakeArrayNode_primitiveEvaluate,
+        tuuvm_astMakeArrayNode_primitiveAnalyzeAndEvaluate
     );
     tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astMessageChainNodeType,
         tuuvm_astMessageChainNode_primitiveAnalyze,

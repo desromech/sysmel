@@ -173,6 +173,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_slotAt(tuuvm_context_t *context, tuuvm_tuple
             return TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->pointers[slotIndex];
     }
 
+    tuuvm_error_outOfBoundsSlotAccess();
     return TUUVM_NULL_TUPLE;
 }
 
@@ -196,11 +197,15 @@ TUUVM_API void tuuvm_tuple_slotAtPut(tuuvm_context_t *context, tuuvm_tuple_t tup
     {
         if(slotIndex < tuuvm_tuple_getSizeInBytes(tuple))
             TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->bytes[slotIndex] = tuuvm_tuple_anySize_decode(value) & 0xFF;
+        else
+            tuuvm_error_outOfBoundsSlotAccess();
     }
     else
     {
         if(slotIndex < tuuvm_tuple_getSizeInSlots(tuple))
             TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->pointers[slotIndex] = value;
+        else
+            tuuvm_error_outOfBoundsSlotAccess();
     }
 }
 

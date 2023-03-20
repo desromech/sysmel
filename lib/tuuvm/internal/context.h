@@ -97,6 +97,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t functionActivationEnvironmentType;
     tuuvm_tuple_t functionAnalysisEnvironmentType;
     tuuvm_tuple_t functionType;
+    tuuvm_tuple_t functionBytecodeType;
     tuuvm_tuple_t functionDefinitionType;
     tuuvm_tuple_t dependentFunctionTypeType;
     tuuvm_tuple_t simpleFunctionTypeType;
@@ -219,7 +220,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t astMakeAssociationNodeType;
     tuuvm_tuple_t astMakeByteArrayNodeType;
     tuuvm_tuple_t astMakeDictionaryNodeType;
-    tuuvm_tuple_t astMakeTupleNodeType;
+    tuuvm_tuple_t astMakeArrayNodeType;
     tuuvm_tuple_t astMessageSendNodeType;
     tuuvm_tuple_t astMessageChainNodeType;
     tuuvm_tuple_t astMessageChainMessageNodeType;

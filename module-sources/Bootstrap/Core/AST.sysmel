@@ -187,11 +187,11 @@ ASTMakeDictionaryNode
         self elements: (self elements collect: aBlock)
     }.
 
-ASTMakeTupleNode
-    withSelector: #childrenDo: addMethod: {:(ASTMakeTupleNode)self :aBlock :: Void |
+ASTMakeArrayNode
+    withSelector: #childrenDo: addMethod: {:(ASTMakeArrayNode)self :aBlock :: Void |
         self elements do: aBlock
     };
-    withSelector: #transformWith: addMethod: {:(ASTMakeTupleNode)self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTMakeArrayNode)self :aBlock :: Void |
         self elements: (self elements collect: aBlock)
     }.
 

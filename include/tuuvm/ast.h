@@ -142,11 +142,11 @@ typedef struct tuuvm_astMakeDictionaryNode_s
     tuuvm_tuple_t elements;
 } tuuvm_astMakeDictionaryNode_t;
 
-typedef struct tuuvm_astMakeTupleNode_s
+typedef struct tuuvm_astMakeArrayNode_s
 {
     tuuvm_astNode_t super;
     tuuvm_tuple_t elements;
-} tuuvm_astMakeTupleNode_t;
+} tuuvm_astMakeArrayNode_t;
 
 typedef struct tuuvm_astMessageSendNode_s
 {
@@ -333,7 +333,7 @@ TUUVM_API bool tuuvm_astNode_isMakeDictionaryNode(tuuvm_context_t *context, tuuv
 /**
  * Is this a make tuple node?
  */ 
-TUUVM_API bool tuuvm_astNode_isMakeTupleNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+TUUVM_API bool tuuvm_astNode_isMakeArrayNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
 
 /**
  * Is this a message send node?
@@ -629,7 +629,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_astMakeDictionaryNode_create(tuuvm_context_t *cont
 /**
  * Creates a make tuple node.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_astMakeTupleNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t elements);
+TUUVM_API tuuvm_tuple_t tuuvm_astMakeArrayNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t elements);
 
 /**
  * Creates a message send node.

@@ -331,15 +331,50 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_parseString(tuuvm_context_t *context, size
     }
 
     tuuvm_tuple_t result = tuuvm_tuple_integer_encodeSmall(0);
-    tuuvm_tuple_t ten = tuuvm_tuple_integer_encodeSmall(10);
+    tuuvm_tuple_t radix = tuuvm_tuple_integer_encodeSmall(10);
+    bool canParseRadix = true;
     for(; index < stringSize; ++index)
     {
         char digit = string[index];
         if('0' <= digit && digit <= '9')
         {
             tuuvm_tuple_t digitValue = tuuvm_tuple_integer_encodeSmall(digit - '0');
-            result = tuuvm_integer_multiply(context, result, ten);
+            if(tuuvm_integer_greaterEquals(context, digitValue, radix))
+                tuuvm_error("Digit value is beyond the radix.");
+
+            result = tuuvm_integer_multiply(context, result, radix);
             result = tuuvm_integer_add(context, result, digitValue);
+        }
+        else if(!canParseRadix && 'a' <= digit && digit <= 'z')
+        {
+            tuuvm_tuple_t digitValue = tuuvm_tuple_integer_encodeSmall(digit - 'a' + 10);
+            if(tuuvm_integer_greaterEquals(context, digitValue, radix))
+                tuuvm_error("Digit value is beyond the radix.");
+            result = tuuvm_integer_multiply(context, result, radix);
+            result = tuuvm_integer_add(context, result, digitValue);
+        }
+        else if(!canParseRadix && 'A' <= digit && digit <= 'Z')
+        {
+            tuuvm_tuple_t digitValue = tuuvm_tuple_integer_encodeSmall(digit - 'A' + 10);
+            if(tuuvm_integer_greaterEquals(context, digitValue, radix))
+                tuuvm_error("Digit value is beyond the radix.");
+            result = tuuvm_integer_multiply(context, result, radix);
+            result = tuuvm_integer_add(context, result, digitValue);
+        }
+        else if('_' == digit)
+        {
+            // Ignore it
+        }
+        else if(canParseRadix && ('r' == digit || 'r' == digit))
+        {
+            // We just saw the radix.
+            radix = result;
+            result = tuuvm_tuple_integer_encodeSmall(0);
+            canParseRadix = false;
+        }
+        else
+        {
+            tuuvm_error("Invalid integer literal.");
         }
     }
 
@@ -521,18 +556,18 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_remainder(tuuvm_context_t *context, tuuvm_
     return TUUVM_NULL_TUPLE;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_integer_compare(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
+TUUVM_API int tuuvm_integer_compare(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
 {
     if(tuuvm_tuple_isImmediate(left) && tuuvm_tuple_isImmediate(right))
     {
         tuuvm_stuple_t leftValue = tuuvm_tuple_integer_decodeSmall(left);
         tuuvm_stuple_t rightValue = tuuvm_tuple_integer_decodeSmall(right);
         if(leftValue < rightValue)
-            return tuuvm_tuple_integer_encodeSmall(-1);
+            return -1;
         else if(leftValue > rightValue)
-            return tuuvm_tuple_integer_encodeSmall(1);
+            return 1;
         else
-            return tuuvm_tuple_integer_encodeSmall(0);
+            return 0;
     }
 
     tuuvm_decoded_integer_t decodedLeftInteger = {0};
@@ -544,9 +579,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_compare(tuuvm_context_t *context, tuuvm_tu
     if(decodedLeftInteger.isNegative != decodedRightInteger.isNegative)
     {
         if(decodedLeftInteger.isNegative)
-            return tuuvm_tuple_integer_encodeSmall(-1);
+            return -1;
         else
-            return tuuvm_tuple_integer_encodeSmall(1);
+            return 1;
     }
 
     // Check the word count.
@@ -554,53 +589,47 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_compare(tuuvm_context_t *context, tuuvm_tu
     if(decodedLeftInteger.isNegative)
         magnitudeComparison = -magnitudeComparison;
 
-    return tuuvm_tuple_integer_encodeSmall(magnitudeComparison);
+    return magnitudeComparison;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_integer_factorial(tuuvm_context_t *context, tuuvm_tuple_t integer)
 {
     tuuvm_tuple_t one = tuuvm_tuple_integer_encodeSmall(1);
-    if(tuuvm_integer_lessEquals(context, integer, one) == TUUVM_TRUE_TUPLE)
+    if(tuuvm_integer_lessEquals(context, integer, one))
         return one;
     
     tuuvm_tuple_t n1 = tuuvm_integer_factorial(context, tuuvm_integer_subtract(context, integer, tuuvm_tuple_integer_encodeSmall(1)));
     return tuuvm_integer_multiply(context, n1, integer);
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_integer_equals(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
+TUUVM_API bool tuuvm_integer_equals(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
 {
-    tuuvm_stuple_t comparisonResult = tuuvm_tuple_integer_decodeSmall(tuuvm_integer_compare(context, left, right));
-    return tuuvm_tuple_boolean_encode(comparisonResult == 0);
+    return tuuvm_integer_compare(context, left, right) == 0;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_integer_notEquals(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
+TUUVM_API bool tuuvm_integer_notEquals(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
 {
-    tuuvm_stuple_t comparisonResult = tuuvm_tuple_integer_decodeSmall(tuuvm_integer_compare(context, left, right));
-    return tuuvm_tuple_boolean_encode(comparisonResult != 0);
+    return tuuvm_integer_compare(context, left, right) != 0;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_integer_lessThan(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
+TUUVM_API bool tuuvm_integer_lessThan(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
 {
-    tuuvm_stuple_t comparisonResult = tuuvm_tuple_integer_decodeSmall(tuuvm_integer_compare(context, left, right));
-    return tuuvm_tuple_boolean_encode(comparisonResult < 0);
+    return tuuvm_integer_compare(context, left, right) < 0;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_integer_lessEquals(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
+TUUVM_API bool tuuvm_integer_lessEquals(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
 {
-    tuuvm_stuple_t comparisonResult = tuuvm_tuple_integer_decodeSmall(tuuvm_integer_compare(context, left, right));
-    return tuuvm_tuple_boolean_encode(comparisonResult <= 0);
+    return tuuvm_integer_compare(context, left, right) <= 0;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_integer_greaterThan(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
+TUUVM_API bool tuuvm_integer_greaterThan(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
 {
-    tuuvm_stuple_t comparisonResult = tuuvm_tuple_integer_decodeSmall(tuuvm_integer_compare(context, left, right));
-    return tuuvm_tuple_boolean_encode(comparisonResult > 0);
+    return tuuvm_integer_compare(context, left, right) > 0;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_integer_greaterEquals(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
+TUUVM_API bool tuuvm_integer_greaterEquals(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right)
 {
-    tuuvm_stuple_t comparisonResult = tuuvm_tuple_integer_decodeSmall(tuuvm_integer_compare(context, left, right));
-    return tuuvm_tuple_boolean_encode(comparisonResult >= 0);
+    return tuuvm_integer_compare(context, left, right) >= 0;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_integer_printString(tuuvm_context_t *context, tuuvm_tuple_t integer)
@@ -759,7 +788,7 @@ static tuuvm_tuple_t tuuvm_integer_primitive_compare(tuuvm_context_t *context, t
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
 
-    return tuuvm_integer_compare(context, arguments[0], arguments[1]);
+    return tuuvm_tuple_integer_encodeSmall(tuuvm_integer_compare(context, arguments[0], arguments[1]));
 }
 
 static tuuvm_tuple_t tuuvm_integer_primitive_equals(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -768,7 +797,7 @@ static tuuvm_tuple_t tuuvm_integer_primitive_equals(tuuvm_context_t *context, tu
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
 
-    return tuuvm_integer_equals(context, arguments[0], arguments[1]);
+    return tuuvm_tuple_boolean_encode(tuuvm_integer_equals(context, arguments[0], arguments[1]));
 }
 
 static tuuvm_tuple_t tuuvm_integer_primitive_notEquals(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -777,7 +806,7 @@ static tuuvm_tuple_t tuuvm_integer_primitive_notEquals(tuuvm_context_t *context,
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
 
-    return tuuvm_integer_notEquals(context, arguments[0], arguments[1]);
+    return tuuvm_tuple_boolean_encode(tuuvm_integer_notEquals(context, arguments[0], arguments[1]));
 }
 
 static tuuvm_tuple_t tuuvm_integer_primitive_lessThan(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -786,7 +815,7 @@ static tuuvm_tuple_t tuuvm_integer_primitive_lessThan(tuuvm_context_t *context, 
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
 
-    return tuuvm_integer_lessThan(context, arguments[0], arguments[1]);
+    return tuuvm_tuple_boolean_encode(tuuvm_integer_lessThan(context, arguments[0], arguments[1]));
 }
 
 static tuuvm_tuple_t tuuvm_integer_primitive_lessEquals(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -795,7 +824,7 @@ static tuuvm_tuple_t tuuvm_integer_primitive_lessEquals(tuuvm_context_t *context
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
 
-    return tuuvm_integer_lessEquals(context, arguments[0], arguments[1]);
+    return tuuvm_tuple_boolean_encode(tuuvm_integer_lessEquals(context, arguments[0], arguments[1]));
 }
 
 static tuuvm_tuple_t tuuvm_integer_primitive_greaterThan(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -804,7 +833,7 @@ static tuuvm_tuple_t tuuvm_integer_primitive_greaterThan(tuuvm_context_t *contex
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
 
-    return tuuvm_integer_greaterThan(context, arguments[0], arguments[1]);
+    return tuuvm_tuple_boolean_encode(tuuvm_integer_greaterThan(context, arguments[0], arguments[1]));
 }
 
 static tuuvm_tuple_t tuuvm_integer_primitive_greaterEquals(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -813,7 +842,7 @@ static tuuvm_tuple_t tuuvm_integer_primitive_greaterEquals(tuuvm_context_t *cont
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
 
-    return tuuvm_integer_greaterEquals(context, arguments[0], arguments[1]);
+    return tuuvm_tuple_boolean_encode(tuuvm_integer_greaterEquals(context, arguments[0], arguments[1]));
 }
 
 static tuuvm_tuple_t tuuvm_integer_primitive_factorial(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)

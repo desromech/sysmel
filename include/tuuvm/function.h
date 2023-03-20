@@ -80,6 +80,8 @@ typedef struct tuuvm_functionDefinition_s
     tuuvm_tuple_t analyzedArgumentNodes;
     tuuvm_tuple_t analyzedResultTypeNode;
     tuuvm_tuple_t analyzedBodyNode;
+
+    tuuvm_tuple_t bytecode;
 } tuuvm_functionDefinition_t;
 
 #define TUUVM_MAX_FUNCTION_ARGUMENTS 16

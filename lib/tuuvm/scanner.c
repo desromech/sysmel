@@ -299,9 +299,25 @@ static inline bool tuuvm_scanner_isIdentifierStart(int c)
         '_' == c;
 }
 
+static inline bool tuuvm_scanner_isAlpha(int c)
+{
+    return ('A' <= c && c <= 'Z') ||
+        ('a' <= c && c <= 'z');
+}
+
 static inline bool tuuvm_scanner_isDigit(int c)
 {
     return '0' <= c && c <= '9';
+}
+
+static inline bool tuuvm_scanner_isDigitOrUnderscore(int c)
+{
+    return ('0' <= c && c <= '9') || c == '_';
+}
+
+static inline bool tuuvm_scanner_isAlphanumericOrUnderscore(int c)
+{
+    return tuuvm_scanner_isDigit(c) || tuuvm_scanner_isAlpha(c) || c == '_';
 }
 
 static inline bool tuuvm_scanner_isSign(int c)
@@ -399,8 +415,19 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
         (tuuvm_scanner_isSign(c) && tuuvm_scanner_isDigit(tuuvm_scanner_lookAt(state, 1))))
     {
         ++state->position;
-        while(tuuvm_scanner_isDigit(tuuvm_scanner_lookAt(state, 0)))
+        while(tuuvm_scanner_isDigitOrUnderscore(tuuvm_scanner_lookAt(state, 0)))
             ++state->position;
+
+        // Did we parse the radix?
+        if(tuuvm_scanner_lookAt(state, 0) == 'r' || tuuvm_scanner_lookAt(state, 0) == 'R')
+        {
+            ++state->position;
+            while(tuuvm_scanner_isAlphanumericOrUnderscore(tuuvm_scanner_lookAt(state, 0)))
+                ++state->position;
+
+            tuuvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, TUUVM_TOKEN_KIND_INTEGER, tuuvm_scanner_tokenAsInteger, outTokenList);
+            return true;
+        }
 
         // Look for a float
         if(tuuvm_scanner_lookAt(state, 0) == '.')
@@ -414,7 +441,7 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
                 ++state->position; // First decimal
 
                 // Remaining fractional part
-                while(tuuvm_scanner_isDigit(tuuvm_scanner_lookAt(state, 0)))
+                while(tuuvm_scanner_isDigitOrUnderscore(tuuvm_scanner_lookAt(state, 0)))
                     ++state->position;
 
                 // Exponent.
@@ -424,7 +451,7 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
                     if(tuuvm_scanner_lookAt(state, 0) == '+' || tuuvm_scanner_lookAt(state, 0) == '-')
                         --state->position;
 
-                    while(tuuvm_scanner_isDigit(tuuvm_scanner_lookAt(state, 0)))
+                    while(tuuvm_scanner_isDigitOrUnderscore(tuuvm_scanner_lookAt(state, 0)))
                         ++state->position;
                 }
 

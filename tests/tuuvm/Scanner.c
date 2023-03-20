@@ -135,6 +135,28 @@ TEST_SUITE(Scanner)
         TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_INTEGER, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 0)));
     }
 
+
+    TEST_CASE_WITH_FIXTURE(Integer2, TuuvmCore)
+    {
+        tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "12_345", "test", "tlisp");
+        TEST_ASSERT_EQUALS(1, tuuvm_arraySlice_getSize(tokenList));
+        TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_INTEGER, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 0)));
+    }
+
+    TEST_CASE_WITH_FIXTURE(IntegerWithRadix, TuuvmCore)
+    {
+        tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "16rFF00", "test", "tlisp");
+        TEST_ASSERT_EQUALS(1, tuuvm_arraySlice_getSize(tokenList));
+        TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_INTEGER, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 0)));
+    }
+
+    TEST_CASE_WITH_FIXTURE(IntegerWithRadix2, TuuvmCore)
+    {
+        tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "16rFF_00", "test", "tlisp");
+        TEST_ASSERT_EQUALS(1, tuuvm_arraySlice_getSize(tokenList));
+        TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_INTEGER, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 0)));
+    }
+
     TEST_CASE_WITH_FIXTURE(Float, TuuvmCore)
     {
         tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "12345.0", "test", "tlisp");

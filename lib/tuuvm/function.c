@@ -1,6 +1,7 @@
 #include "tuuvm/function.h"
 #include "tuuvm/array.h"
 #include "tuuvm/assert.h"
+#include "tuuvm/bytecode.h"
 #include "tuuvm/dictionary.h"
 #include "tuuvm/errors.h"
 #include "tuuvm/interpreter.h"
@@ -36,6 +37,7 @@ void tuuvm_primitiveTable_registerFunction(tuuvm_functionEntryPoint_t primitiveE
             return;
     }
 
+    TUUVM_ASSERT(tuuvm_primitiveTableSize < PRIMITIVE_TABLE_CAPACITY);
     tuuvm_primitiveTable[tuuvm_primitiveTableSize].entryPoint = primitiveEntryPoint;
     tuuvm_primitiveTable[tuuvm_primitiveTableSize].name = primitiveName;
     ++tuuvm_primitiveTableSize;
@@ -272,7 +274,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
         }
         else if(tuuvm_tuple_isKindOf(context, (*functionObject)->definition, context->roots.functionDefinitionType))
         {
-            gcFrame.result = tuuvm_interpreter_applyClosureASTFunction(context, &gcFrame.function, argumentCount, arguments);
+            tuuvm_functionDefinition_t *definition = (tuuvm_functionDefinition_t*)(*functionObject)->definition;
+            if(definition->bytecode)
+                gcFrame.result = tuuvm_bytecodeInterpreter_apply(context, &gcFrame.function, argumentCount, arguments);
+            else
+                gcFrame.result = tuuvm_interpreter_applyClosureASTFunction(context, &gcFrame.function, argumentCount, arguments);
             if(isMemoized)
                 tuuvm_weakValueDictionary_atPut(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, gcFrame.result);
 

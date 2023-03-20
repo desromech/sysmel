@@ -6,6 +6,7 @@ set(tuuvm_sources
     association.c
     ast.c
     boolean.c
+    bytecode.c
     context.c
     dictionary.c
     environment.c

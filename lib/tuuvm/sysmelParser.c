@@ -193,7 +193,7 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseParenthesesExpression(tuuvm_context
     {
         ++state->tokenPosition;
         size_t endPosition = state->tokenPosition;
-        return tuuvm_astMakeTupleNode_create(context, tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition), tuuvm_array_create(context, 0));
+        return tuuvm_astMakeArrayNode_create(context, tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition), tuuvm_array_create(context, 0));
     }
     else
     {
@@ -378,7 +378,7 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseLiteralArrayExpression(tuuvm_contex
 
     ++state->tokenPosition;
     size_t endPosition = state->tokenPosition;
-    return tuuvm_astMakeTupleNode_create(context,
+    return tuuvm_astMakeArrayNode_create(context,
         tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition),
         tuuvm_arrayList_asArray(context, elements));
 }
@@ -942,7 +942,7 @@ static tuuvm_tuple_t tuuvm_sysmelParser_parseCommaExpression(tuuvm_context_t *co
         }
 
         size_t endPosition = state->tokenPosition;
-        return tuuvm_astMakeTupleNode_create(context,
+        return tuuvm_astMakeArrayNode_create(context,
             tuuvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition),
             tuuvm_arrayList_asArray(context, elements));
     }

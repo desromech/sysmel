@@ -30,7 +30,7 @@ public class SSAPromoteAllocaPass superclass: SSAFunctionPass; definition: {
     }.
 }.
 
-## Destroy SSA pass
+## Destroy SSA pass. This pass destroys the phi nodes by inserting alloca instructions.
 public class SSADestroySSAFunctionPass superclass: SSAFunctionPass; definition: {
     public method runIn: (function: SSAFunctionDefinition) ::=> Void := {
         function

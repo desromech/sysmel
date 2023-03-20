@@ -61,37 +61,37 @@ TUUVM_API tuuvm_tuple_t tuuvm_integer_factorial(tuuvm_context_t *context, tuuvm_
 /**
  * Comparison of two integers.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_integer_compare(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right);
+TUUVM_API int tuuvm_integer_compare(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right);
 
 /**
  * Equals comparison of two integers.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_integer_equals(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right);
+TUUVM_API bool tuuvm_integer_equals(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right);
 
 /**
  * Not equals comparison of two integers.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_integer_notEquals(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right);
+TUUVM_API bool tuuvm_integer_notEquals(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right);
 
 /**
  * Less than comparison of two integers.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_integer_lessThan(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right);
+TUUVM_API bool tuuvm_integer_lessThan(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right);
 
 /**
  * Less or equals comparison of two integers.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_integer_lessEquals(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right);
+TUUVM_API bool tuuvm_integer_lessEquals(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right);
 
 /**
  * Greater than comparison of two integers.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_integer_greaterThan(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right);
+TUUVM_API bool tuuvm_integer_greaterThan(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right);
 
 /**
  * Greater or equals comparison of two integers.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_integer_greaterEquals(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right);
+TUUVM_API bool tuuvm_integer_greaterEquals(tuuvm_context_t *context, tuuvm_tuple_t left, tuuvm_tuple_t right);
 
 /**
  * Converts an integer into a string.

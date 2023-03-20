@@ -17,6 +17,7 @@ extern void tuuvm_array_registerPrimitives(void);
 extern void tuuvm_arrayList_registerPrimitives(void);
 extern void tuuvm_astInterpreter_registerPrimitives(void);
 extern void tuuvm_boolean_registerPrimitives(void);
+extern void tuuvm_bytecode_registerPrimitives(void);
 extern void tuuvm_dictionary_registerPrimitives(void);
 extern void tuuvm_errors_registerPrimitives(void);
 extern void tuuvm_environment_registerPrimitives(void);
@@ -35,6 +36,7 @@ extern void tuuvm_array_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_arrayList_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context);
 extern void tuuvm_boolean_setupPrimitives(tuuvm_context_t *context);
+extern void tuuvm_bytecode_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_dictionary_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_errors_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_environment_setupPrimitives(tuuvm_context_t *context);
@@ -61,6 +63,7 @@ void tuuvm_context_registerPrimitives(void)
     tuuvm_arrayList_registerPrimitives();
     tuuvm_astInterpreter_registerPrimitives();
     tuuvm_boolean_registerPrimitives();
+    tuuvm_bytecode_registerPrimitives();
     tuuvm_dictionary_registerPrimitives();
     tuuvm_errors_registerPrimitives();
     tuuvm_environment_registerPrimitives();
@@ -320,6 +323,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     // Create the function class.
     context->roots.functionType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.functionDefinitionType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.functionBytecodeType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
 
     // Create the function type classes.
     context->roots.functionTypeType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.typeType);
@@ -585,7 +589,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.functionActivationEnvironmentType = tuuvm_context_createIntrinsicClass(context, "FunctionActivationEnvironment", context->roots.analysisAndEvaluationEnvironmentType,
         "function", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionType,
         "functionDefinition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
-        "dependentFunctionType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
+        "dependentFunctionType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionTypeType,
         "argumentVectorSize", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "captureVector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "valueVector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
@@ -659,6 +663,21 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "analyzedArgumentNodes", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "analyzedResultTypeNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "analyzedBodyNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+
+        "bytecode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionBytecodeType,
+        NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.functionBytecodeType, "FunctionBytecode", TUUVM_NULL_TUPLE,
+        "argumentCount", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "captureVectorSize", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "localVectorSize", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "literalVector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "instructions", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.byteArrayType,
+
+        "definition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
+        "pcToDebugListTable", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "debugSourceASTNodes", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "debugSourcePositions", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "debugSourceEnvironments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.functionTypeType, "FunctionType", TUUVM_NULL_TUPLE,
         NULL);
@@ -882,7 +901,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.astMakeDictionaryNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMakeDictionaryNode", context->roots.astNodeType,
         "elements", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
-    context->roots.astMakeTupleNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMakeTupleNode", context->roots.astNodeType,
+    context->roots.astMakeArrayNodeType = tuuvm_context_createIntrinsicClass(context, "ASTMakeArrayNode", context->roots.astNodeType,
         "elements", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
 
@@ -984,6 +1003,7 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
     tuuvm_arrayList_setupPrimitives(context);
     tuuvm_astInterpreter_setupASTInterpreter(context);
     tuuvm_boolean_setupPrimitives(context);
+    tuuvm_bytecode_setupPrimitives(context);
     tuuvm_dictionary_setupPrimitives(context);
     tuuvm_errors_setupPrimitives(context);
     tuuvm_environment_setupPrimitives(context);
