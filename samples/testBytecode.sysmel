@@ -1,11 +1,11 @@
 let bytecodes := FunctionBytecode new
-    literalVector: #(nil);
+    literalVector: #(42);
     argumentCount: 0sz;
     captureVectorSize: 0sz;
     localVectorSize: 0sz;
     instructions: #[
-        FunctionBytecode::Opcode::Return. 0u8.
-        FunctionBytecode::Opcode::Nop. 0u8.
+        FunctionBytecode::Opcode::Return. 2u8. 0u8.
+        FunctionBytecode::Opcode::Nop.
     ];
     yourself.
 

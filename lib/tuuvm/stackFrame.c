@@ -1,6 +1,7 @@
 #include "tuuvm/stackFrame.h"
 #include "tuuvm/array.h"
 #include "tuuvm/arrayList.h"
+#include "tuuvm/bytecode.h"
 #include "tuuvm/errors.h"
 #include "tuuvm/environment.h"
 #include "tuuvm/function.h"
@@ -63,6 +64,29 @@ TUUVM_API void tuuvm_stackFrame_iterateGCRootsInRecordWith(tuuvm_stackFrameRecor
             iterationFunction(userdata, &functionRecord->function);
             iterationFunction(userdata, &functionRecord->functionDefinition);
             iterationFunction(userdata, &functionRecord->applicationEnvironment);
+            iterationFunction(userdata, &functionRecord->result);
+        }   
+        break;
+    case TUUVM_STACK_FRAME_RECORD_TYPE_BYTECODE_FUNCTION_ACTIVATION:
+        {
+            tuuvm_stackFrameBytecodeFunctionActivationRecord_t *functionRecord = (tuuvm_stackFrameBytecodeFunctionActivationRecord_t*)record;
+            iterationFunction(userdata, &functionRecord->function);
+            iterationFunction(userdata, &functionRecord->functionDefinition);
+            iterationFunction(userdata, &functionRecord->functionBytecode);
+
+            iterationFunction(userdata, &functionRecord->captureVector);
+            iterationFunction(userdata, &functionRecord->literalVector);
+            iterationFunction(userdata, &functionRecord->instructions);
+
+            for(size_t i = 0; i < functionRecord->argumentCount; ++i)
+                iterationFunction(userdata, functionRecord->arguments + i);
+
+            for(size_t i = 0; i < functionRecord->inlineLocalVectorSize; ++i)
+                iterationFunction(userdata, functionRecord->inlineLocalVector + i);
+
+            for(size_t i = 0; i < TUUVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE; ++i)
+                iterationFunction(userdata, functionRecord->operandRegisterFile + i);
+
             iterationFunction(userdata, &functionRecord->result);
         }   
         break;
@@ -273,6 +297,12 @@ TUUVM_API tuuvm_tuple_t tuuvm_stackFrame_buildStackTraceUpTo(tuuvm_stackFrameRec
                 currentSourcePosition = TUUVM_NULL_TUPLE;
             }
             //currentFunction = ((tuuvm_stackFrameFunctionActivationRecord_t*)stackFrameRecord)->function;
+        }
+        else if(stackFrameRecord->type == TUUVM_STACK_FRAME_RECORD_TYPE_BYTECODE_FUNCTION_ACTIVATION)
+        {
+            if(currentSourcePosition)
+                tuuvm_arrayList_add(context, arrayList, currentSourcePosition);
+            currentSourcePosition = tuuvm_bytecodeInterpreter_getSourcePositionForActivationRecord(context, (tuuvm_stackFrameBytecodeFunctionActivationRecord_t*)stackFrameRecord);
         }
 
         stackFrameRecord = stackFrameRecord->previous;

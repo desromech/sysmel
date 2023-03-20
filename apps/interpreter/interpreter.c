@@ -95,7 +95,7 @@ int mainWithContext(int startArgumentIndex, int argc, const char *argv[])
 
     tuuvm_stackFrame_enterContext(context, (tuuvm_stackFrameRecord_t*)&topLevelFrame);
     int exitCode = 0;
-    if(!setjmp(topLevelFrame.jmpbuffer))
+    if(!_setjmp(topLevelFrame.jmpbuffer))
     {
         doMain(startArgumentIndex, argc, argv);
     }

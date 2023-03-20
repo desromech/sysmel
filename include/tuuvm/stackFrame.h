@@ -10,6 +10,7 @@ typedef enum tuuvm_stackFrameRecordType_e
 {
     TUUVM_STACK_FRAME_RECORD_TYPE_GC_ROOTS = 0,
     TUUVM_STACK_FRAME_RECORD_TYPE_FUNCTION_ACTIVATION,
+    TUUVM_STACK_FRAME_RECORD_TYPE_BYTECODE_FUNCTION_ACTIVATION,
     TUUVM_STACK_FRAME_RECORD_TYPE_BREAK_TARGET,
     TUUVM_STACK_FRAME_RECORD_TYPE_CONTINUE_TARGET,
     TUUVM_STACK_FRAME_RECORD_TYPE_SOURCE_POSITION,
@@ -41,6 +42,33 @@ typedef struct tuuvm_stackFrameFunctionActivationRecord_s
     tuuvm_tuple_t result;
     jmp_buf jmpbuffer;
 } tuuvm_stackFrameFunctionActivationRecord_t;
+
+#define TUUVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE 20
+
+typedef struct tuuvm_stackFrameBytecodeFunctionActivationRecord_s
+{
+    tuuvm_stackFrameRecord_t *previous;
+    tuuvm_stackFrameRecordType_t type;
+    tuuvm_tuple_t function;
+    tuuvm_tuple_t functionDefinition;
+    tuuvm_tuple_t functionBytecode;
+
+    tuuvm_tuple_t captureVector;
+    tuuvm_tuple_t literalVector;
+    tuuvm_tuple_t instructions;
+
+    size_t argumentCount;
+    tuuvm_tuple_t *arguments;
+
+    size_t inlineLocalVectorSize;
+    tuuvm_tuple_t *inlineLocalVector;
+
+    tuuvm_tuple_t operandRegisterFile[TUUVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE];
+
+    tuuvm_tuple_t result;
+    size_t pc;
+    jmp_buf jmpbuffer;
+} tuuvm_stackFrameBytecodeFunctionActivationRecord_t;
 
 typedef struct tuuvm_stackFrameBreakTargetRecord_s
 {

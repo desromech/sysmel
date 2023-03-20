@@ -32,16 +32,18 @@ typedef enum tuuvm_opcode_e
     TUUVM_OPCODE_MAKE_CLOSURE_WITH_VECTOR, /// <Result> = makeClosureWithVector <Function Definition> <Capture vector>
 
     // Variable operand instructions
-    TUUVM_OPCODE_CALL = 0x40,
-    TUUVM_OPCODE_UNCHECKED_CALL = 0x50,
-    TUUVM_OPCODE_SEND = 0x60,
-    TUUVM_OPCODE_SEND_WITH_LOOKUP = 0x70,
+    TUUVM_OPCODE_CALL = 0x40, /// <Result> := call <Function> <Arguments>...
+    TUUVM_OPCODE_UNCHECKED_CALL = 0x50, /// <Result> := call <Function> <Arguments>...
+    TUUVM_OPCODE_SEND = 0x60, /// <Result> := send <Receiver> <Selector> <Arguments>...
+    TUUVM_OPCODE_SEND_WITH_LOOKUP = 0x70, /// <Result> := sendWithLookup <Receiver> <ReceiverType> <Selector> <Arguments>....
 
     TUUVM_OPCODE_MAKE_ARRAY_WITH_ELEMENTS = 0x80,
     TUUVM_OPCODE_MAKE_BYTE_ARRAY_WITH_ELEMENTS = 0x90,
     TUUVM_OPCODE_MAKE_CLOSURE_WITH_CAPTURES = 0xA0,
     TUUVM_OPCODE_MAKE_DICTIONARY_WITH_KEY_VALUES = 0xB0,
     TUUVM_OPCODE_MAKE_TUPLE_WITH_ELEMENTS = 0xC0,
+
+    TUUVM_OPCODE_FIRST_VARIABLE = TUUVM_OPCODE_CALL
 } tuuvm_opcode_t;
 
 typedef enum tuuvm_operandVectorName_e
@@ -50,10 +52,14 @@ typedef enum tuuvm_operandVectorName_e
     TUUVM_OPERAND_VECTOR_CAPTURES = 1,
     TUUVM_OPERAND_VECTOR_LITERAL = 2,
     TUUVM_OPERAND_VECTOR_LOCAL = 3,
+
+    TUUVM_OPERAND_VECTOR_BITS = 2,
+    TUUVM_OPERAND_VECTOR_BITMASK = 3,
 } tuuvm_operandVectorName_t;
 
 typedef struct tuuvm_functionBytecode_s
 {
+    tuuvm_tuple_header_t header;
     tuuvm_tuple_t argumentCount;
     tuuvm_tuple_t captureVectorSize;
     tuuvm_tuple_t localVectorSize;
@@ -63,10 +69,13 @@ typedef struct tuuvm_functionBytecode_s
     tuuvm_tuple_t definition;
     tuuvm_tuple_t pcToDebugListTable;
     tuuvm_tuple_t debugSourceASTNodes;
-    tuuvm_tuple_t debugSourcePosition;
-    tuuvm_tuple_t debugSourceEnvironment;
+    tuuvm_tuple_t debugSourcePositions;
+    tuuvm_tuple_t debugSourceEnvironments;
 } tuuvm_functionBytecode_t;
 
+typedef struct tuuvm_stackFrameBytecodeFunctionActivationRecord_s tuuvm_stackFrameBytecodeFunctionActivationRecord_t;
+
 TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_apply(tuuvm_context_t *context, tuuvm_tuple_t *function, size_t argumentCount, tuuvm_tuple_t *arguments);
+TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_getSourcePositionForActivationRecord(tuuvm_context_t *context, tuuvm_stackFrameBytecodeFunctionActivationRecord_t *activationRecord);
 
 #endif //TUUVM_BYTECODE_H

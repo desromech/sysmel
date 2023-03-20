@@ -11,19 +11,19 @@ FunctionDefinition
     }.
 
 let opcodeExtraImplicitOperandCountDictionay := #{
-    FunctionBytecode::Opcode::Call : 1sz.
-    FunctionBytecode::Opcode::Send : 2sz.
-    FunctionBytecode::Opcode::SendWithLookup : 3sz.
+    FunctionBytecode::Opcode::Call : 2sz.
+    FunctionBytecode::Opcode::Send : 3sz.
+    FunctionBytecode::Opcode::SendWithLookup : 4sz.
 
-    FunctionBytecode::Opcode::MakeArrayWithElements : 0sz.
-    FunctionBytecode::Opcode::MakeByteArrayWithElements : 0sz.
-    FunctionBytecode::Opcode::MakeClosureWithCaptures : 0sz.
-    FunctionBytecode::Opcode::MakeDictionaryWithElements : 0sz.
-    FunctionBytecode::Opcode::MakeTupleWithElements : 0sz
+    FunctionBytecode::Opcode::MakeArrayWithElements : 1sz.
+    FunctionBytecode::Opcode::MakeByteArrayWithElements : 1sz.
+    FunctionBytecode::Opcode::MakeClosureWithCaptures : 1sz.
+    FunctionBytecode::Opcode::MakeDictionaryWithElements : 1sz.
+    FunctionBytecode::Opcode::MakeTupleWithElements : 1sz
 }.
 
 let computeOperandCountForOpcode := {:(UInt8)opcode :: Size |
-    if: opcode >= FunctionBytecode::Opcode::Call then: {
+    if: opcode >= FunctionBytecode::Opcode::FirstVariable then: {
         let standardOpcode := opcode & 16rF0 u8.
         let opcodeVariantNumber := opcode & 16r0F u8.
         if: standardOpcode = FunctionBytecode::Opcode::MakeDictionaryWithElements
@@ -92,7 +92,9 @@ FunctionBytecode
             let operands := Array new: operandCount.
             let i mutable := 0sz.
             while: (i < operandCount) do: {
-                let operandIndex := ((instructions at: pc) asUInt16 asInt16) | ((instructions at: pc) asInt16 << 8i16).
+                let lowByte := (instructions at: pc).
+                let highByte := (instructions at: pc + 1sz).
+                let operandIndex := ((lowByte asUInt16) | (highByte asUInt16 << 8u16)) asInt16.
                 operands at: i put: operandIndex.
                 pc := pc + 2sz
             } continueWith: (i := i + 1sz).
@@ -128,11 +130,11 @@ FunctionBytecode
                 if: isBranchInstruction && ((operandIndex + 1sz) = operands size) then: {
                     stream print: each; nextPut: '|'; nextPutAll: ((nextPC asIntPointer + each asIntPointer) printString padLeft: 4 with: '0')
                 } else: {
-                    let operandVector := (each & 3i16) asSize.
-                    let operandIndex := each >> 2i16.
-                    stream nextPutAll: (operandVectorNameDictionary at: operandIndex); nextPut: ':'; print: operandIndex.
+                    let operandVector := each & FunctionBytecode::OperandVectorName::BitMask.
+                    let operandIndex := each >> FunctionBytecode::OperandVectorName::Bits.
+                    stream nextPutAll: (operandVectorNameDictionary at: operandVector); nextPut: ':'; print: operandIndex.
                     if: operandVector = FunctionBytecode::OperandVectorName::Literal
-                        then: (stream print: (self literalVector at: operandIndex asSize)).
+                        then: (stream nextPut: ':'; print: (self literalVector at: operandIndex asSize)).
                 }.
             }.
             stream nl.

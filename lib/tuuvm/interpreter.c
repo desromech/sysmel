@@ -3954,7 +3954,7 @@ static tuuvm_tuple_t tuuvm_astWhileContinueWithNode_primitiveEvaluate(tuuvm_cont
     tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&breakTargetRecord);  
     tuuvm_analysisAndEvaluationEnvironment_setBreakTarget(context, gcFrame.loopEnvironment, tuuvm_tuple_uintptr_encode(context, (uintptr_t)&breakTargetRecord));
 
-    if(!setjmp(breakTargetRecord.jmpbuffer))
+    if(!_setjmp(breakTargetRecord.jmpbuffer))
     {
         if((*whileNode)->conditionExpression)
             shouldContinue = tuuvm_tuple_boolean_decode(tuuvm_interpreter_evaluateASTWithEnvironment(context, (*whileNode)->conditionExpression, gcFrame.loopEnvironment));
@@ -3970,7 +3970,7 @@ static tuuvm_tuple_t tuuvm_astWhileContinueWithNode_primitiveEvaluate(tuuvm_cont
                 tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&continueTargetRecord);
                 tuuvm_analysisAndEvaluationEnvironment_setContinueTarget(context, gcFrame.loopEnvironment, tuuvm_tuple_uintptr_encode(context, (uintptr_t)&breakTargetRecord));
 
-                if(!setjmp(continueTargetRecord.jmpbuffer))
+                if(!_setjmp(continueTargetRecord.jmpbuffer))
                 {
                     tuuvm_interpreter_evaluateASTWithEnvironment(context, (*whileNode)->bodyExpression, gcFrame.loopEnvironment);
                 }
@@ -4024,7 +4024,7 @@ static tuuvm_tuple_t tuuvm_astWhileContinueWithNode_primitiveAnalyzeAndEvaluate(
     tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&breakTargetRecord);  
     tuuvm_analysisAndEvaluationEnvironment_setBreakTarget(context, gcFrame.loopEnvironment, tuuvm_tuple_uintptr_encode(context, (uintptr_t)&breakTargetRecord));
 
-    if(!setjmp(breakTargetRecord.jmpbuffer))
+    if(!_setjmp(breakTargetRecord.jmpbuffer))
     {
         if((*whileNode)->conditionExpression)
             shouldContinue = tuuvm_tuple_boolean_decode(tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*whileNode)->conditionExpression, gcFrame.loopEnvironment));
@@ -4040,7 +4040,7 @@ static tuuvm_tuple_t tuuvm_astWhileContinueWithNode_primitiveAnalyzeAndEvaluate(
                 tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&continueTargetRecord);
                 tuuvm_analysisAndEvaluationEnvironment_setContinueTarget(context, gcFrame.loopEnvironment, tuuvm_tuple_uintptr_encode(context, (uintptr_t)&breakTargetRecord));
 
-                if(!setjmp(continueTargetRecord.jmpbuffer))
+                if(!_setjmp(continueTargetRecord.jmpbuffer))
                 {
                     tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*whileNode)->bodyExpression, gcFrame.loopEnvironment);
                 }
@@ -4682,7 +4682,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_
         tuuvm_interpreter_evaluateArgumentNodeInEnvironment(context, i, tuuvm_array_at((*functionDefinition)->analyzedArgumentNodes, i), &functionActivationRecord.applicationEnvironment, &arguments[i]);
 
     // Use setjmp for implementing the #return: statement.
-    if(!setjmp(functionActivationRecord.jmpbuffer))
+    if(!_setjmp(functionActivationRecord.jmpbuffer))
     {
         tuuvm_gc_safepoint(context);
         functionActivationRecord.result = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*functionDefinition)->analyzedBodyNode, functionActivationRecord.applicationEnvironment);
