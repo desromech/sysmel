@@ -1041,6 +1041,9 @@ Array
     }.
 
 ByteArray
+    withSelector: #new: addClassMethod: {:(ByteArray class)self :(Size)initialSize :: self |
+        self basicNew: initialSize
+    } makeFinal;
     withSelector: #at: addMethod: {:(ByteArray)self :(Size)index |
         self __slotAt__: index
     };
@@ -1059,6 +1062,42 @@ ByteArray
         }.
 
         stream nextPutAll: "]"
+    }.
+
+String
+    withSelector: #new: addClassMethod: {:(String class)self :(Size)initialSize :: self |
+        self basicNew: initialSize
+    } makeFinal;
+    withSelector: #at: addMethod: {:(String)self :(Size)index :: Char8 |
+        (self __slotAt__: index) asChar8
+    };
+    withSelector: #at:put: addMethod: {:(String)self :(Size)index :(Char8)value :: Void |
+        self __slotAt__: index put: value
+    };
+    withSelector: #size addMethod: {:(String)self :: Size |
+        self __byteSize__
+    };
+    withSelector: #padLeft:with: addMethod: {:(String)self :(Size)requiredLength :(Char8)paddingCharacter :: self species |
+        let: #size with: self size.
+        if: size >= requiredLength then: self
+        else: {
+            let: #paddingSize with: requiredLength - size.
+            let: #result with: (self species new: requiredLength).
+
+            let: #i mutableWith: 0sz.
+            while: i < paddingSize do: (
+                result at: i put: paddingCharacter
+            ) continueWith: (i := i + 1sz).
+            
+            i := 0sz.
+            while: i < size do: (
+                result at: i + paddingSize put: (self at: i)
+            ) continueWith: (i := i + 1sz).
+            result
+        }
+    };
+    withSelector: #padLeft: addMethod: {:(String)self :(Size)requiredLength :: self species |
+        self padLeft: requiredLength with: ' 'asChar8
     }.
 
 ArraySlice

@@ -33,6 +33,8 @@ void tuuvm_bytecode_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::JumpIfFalse", tuuvm_tuple_uint8_encode(TUUVM_OPCODE_JUMP_IF_FALSE));
 
     // Three operands.
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::AllocaWithValue", tuuvm_tuple_uint8_encode(TUUVM_OPCODE_ALLOCA_WITH_VALUE));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::CoerceValue", tuuvm_tuple_uint8_encode(TUUVM_OPCODE_COERCE_VALUE));
     tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::MakeAssociation", tuuvm_tuple_uint8_encode(TUUVM_OPCODE_MAKE_ASSOCIATION));
     tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::MakeClosureWithVector", tuuvm_tuple_uint8_encode(TUUVM_OPCODE_MAKE_CLOSURE_WITH_VECTOR));
 

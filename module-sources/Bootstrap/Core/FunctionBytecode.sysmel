@@ -48,6 +48,8 @@ let opcodeNameDictionary := #{
     FunctionBytecode::Opcode::JumpIfTrue : #jumpIfTrue.
     FunctionBytecode::Opcode::JumpIfFalse : #jumpIfFalse.
 
+    FunctionBytecode::Opcode::AllocaWithValue : #allocaWithValue.
+    FunctionBytecode::Opcode::CoerceValue : #coerceValue.
     FunctionBytecode::Opcode::MakeAssociation : #makeAssociation.
     FunctionBytecode::Opcode::MakeClosureWithVector : #makeClosureWithVector.
 
@@ -82,8 +84,8 @@ FunctionBytecode
         let pc mutable := 0sz.
 
         while: pc < instructionsSize do: {
+            let instructionPC := pc.
             let opcode := instructions at: pc.
-            printLine(opcode __type__, " ", opcode).
             pc := pc + 1sz.
 
             let operandCount := computeOperandCountForOpcode(opcode).
@@ -95,7 +97,8 @@ FunctionBytecode
                 pc := pc + 2sz
             } continueWith: (i := i + 1sz).
 
-            aBlock(opcode, operands).
+            let nextPC := pc.
+            aBlock(opcode, operands, instructionPC, nextPC).
         }.
     };
     withSelector: #printOpcodeMnemonic:on: addMethod: {:(FunctionBytecode)self :(UInt8)opcode :(Stream)stream :: Void |
@@ -115,15 +118,15 @@ FunctionBytecode
             nextPutAll: "literalVector: "; print: self literalVector; nl;
             nextPutAll: "instructions: ["; nl.
 
-        self decodedInstructionsDo: {:(UInt8)opcode :(Array)operands :: Void |
-            stream nextPutAll: "    ".
+        self decodedInstructionsDo: {:(UInt8)opcode :(Array)operands :(Size)pc :(Size)nextPC :: Void |
+            stream nextPutAll: " "; nextPutAll: (pc printString padLeft: 4sz with: '0'asChar8); nextPutAll: " | ".
             self printOpcodeMnemonic: opcode on: stream.
             
             let isBranchInstruction := isBranchOpcode(opcode).
-            operands do: {:(Int16)each :: Void |
+            operands doWithIndex: {:(Int16)each :(Size)operandIndex :: Void |
                 stream nextPut: ' '.
-                if: isBranchInstruction then: {
-                    stream print: each
+                if: isBranchInstruction && ((operandIndex + 1sz) = operands size) then: {
+                    stream print: each; nextPut: '|'; nextPutAll: ((nextPC asIntPointer + each asIntPointer) printString padLeft: 4 with: '0')
                 } else: {
                     let operandVector := (each & 3i16) asSize.
                     let operandIndex := each >> 2i16.

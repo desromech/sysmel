@@ -26,22 +26,22 @@ typedef enum tuuvm_opcode_e
     TUUVM_OPCODE_JUMP_IF_FALSE, /// jumpIfFalse <Condition> <Destination Relative PC>
 
     // Three operand instructions
-    TUUVM_OPCODE_MAKE_ASSOCIATION = 0x30, /// <Result> = makeAssociation <Key> <Value>
-    TUUVM_OPCODE_MAKE_CLOSURE_WITH_VECTOR, /// <Result> = makeClosure <Function Definition> withVector <Capture vector>
-
-    // Four operand instructions
+    TUUVM_OPCODE_ALLOCA_WITH_VALUE = 0x30, /// <Result> := alloca <Pointer Type> <Value>
+    TUUVM_OPCODE_COERCE_VALUE, /// <Result> = coerceValue <Type> <Value>
+    TUUVM_OPCODE_MAKE_ASSOCIATION, /// <Result> = makeAssociation <Key> <Value>
+    TUUVM_OPCODE_MAKE_CLOSURE_WITH_VECTOR, /// <Result> = makeClosureWithVector <Function Definition> <Capture vector>
 
     // Variable operand instructions
-    TUUVM_OPCODE_CALL = 0x50,
-    TUUVM_OPCODE_UNCHECKED_CALL = 0x60,
-    TUUVM_OPCODE_SEND = 0x70,
-    TUUVM_OPCODE_SEND_WITH_LOOKUP = 0x80,
+    TUUVM_OPCODE_CALL = 0x40,
+    TUUVM_OPCODE_UNCHECKED_CALL = 0x50,
+    TUUVM_OPCODE_SEND = 0x60,
+    TUUVM_OPCODE_SEND_WITH_LOOKUP = 0x70,
 
-    TUUVM_OPCODE_MAKE_ARRAY_WITH_ELEMENTS = 0x90,
-    TUUVM_OPCODE_MAKE_BYTE_ARRAY_WITH_ELEMENTS = 0xA0,
-    TUUVM_OPCODE_MAKE_CLOSURE_WITH_CAPTURES = 0xB0,
-    TUUVM_OPCODE_MAKE_DICTIONARY_WITH_KEY_VALUES = 0xC0,
-    TUUVM_OPCODE_MAKE_TUPLE_WITH_ELEMENTS = 0xD0,
+    TUUVM_OPCODE_MAKE_ARRAY_WITH_ELEMENTS = 0x80,
+    TUUVM_OPCODE_MAKE_BYTE_ARRAY_WITH_ELEMENTS = 0x90,
+    TUUVM_OPCODE_MAKE_CLOSURE_WITH_CAPTURES = 0xA0,
+    TUUVM_OPCODE_MAKE_DICTIONARY_WITH_KEY_VALUES = 0xB0,
+    TUUVM_OPCODE_MAKE_TUPLE_WITH_ELEMENTS = 0xC0,
 } tuuvm_opcode_t;
 
 typedef enum tuuvm_operandVectorName_e

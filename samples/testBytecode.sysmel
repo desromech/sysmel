@@ -3,7 +3,10 @@ let bytecodes := FunctionBytecode new
     argumentCount: 0sz;
     captureVectorSize: 0sz;
     localVectorSize: 0sz;
-    instructions: #[FunctionBytecode::Opcode::Return. 0u8];
+    instructions: #[
+        FunctionBytecode::Opcode::Return. 0u8.
+        FunctionBytecode::Opcode::Nop. 0u8.
+    ];
     yourself.
 
 printLine(16rF0).
