@@ -26,9 +26,7 @@ let computeOperandCountForOpcode := {:(UInt8)opcode :: Size |
     if: opcode >= FunctionBytecode::Opcode::FirstVariable then: {
         let standardOpcode := opcode & 16rF0 u8.
         let opcodeVariantNumber := opcode & 16r0F u8.
-        if: standardOpcode = FunctionBytecode::Opcode::MakeDictionaryWithElements
-            then: opcodeVariantNumber asSize * 2sz
-            else: (opcodeVariantNumber asSize) + (opcodeExtraImplicitOperandCountDictionay at: standardOpcode)
+        (opcodeVariantNumber asSize) + (opcodeExtraImplicitOperandCountDictionay at: standardOpcode)
     } else: {
         (opcode >> 4u8) asSize
     }

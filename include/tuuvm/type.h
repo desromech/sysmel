@@ -242,6 +242,16 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createPointerType(tuuvm_context_t *context, t
 TUUVM_API tuuvm_tuple_t tuuvm_valueBox_with(tuuvm_context_t *context, tuuvm_tuple_t boxedValue);
 
 /**
+ * Creates a pointer like with the specified storage
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_pointerLikeType_withStorage(tuuvm_context_t *context, tuuvm_tuple_t referenceType, tuuvm_tuple_t storage);
+
+/**
+ * Creates a pointer like that boxes a value.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_pointerLikeType_withBoxForValue(tuuvm_context_t *context, tuuvm_tuple_t referenceType, tuuvm_tuple_t boxedValue);
+
+/**
  * Creates a reference with the specified storage
  */
 TUUVM_API tuuvm_tuple_t tuuvm_referenceType_withStorage(tuuvm_context_t *context, tuuvm_tuple_t referenceType, tuuvm_tuple_t storage);
@@ -626,6 +636,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValuePassingReferences(tuuvm_context_t 
  * Loads the value from a pointer like type instance.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_pointerLikeType_load(tuuvm_context_t *context, tuuvm_tuple_t pointerLikeValue);
+
+/**
+ * Store the value into a pointer like type instance.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_pointerLikeType_store(tuuvm_context_t *context, tuuvm_tuple_t pointerLikeValue, tuuvm_tuple_t valueToStore);
 
 /**
  * Gets a decayed version of the type.
