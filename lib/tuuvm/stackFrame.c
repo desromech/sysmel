@@ -84,9 +84,6 @@ TUUVM_API void tuuvm_stackFrame_iterateGCRootsInRecordWith(tuuvm_stackFrameRecor
             for(size_t i = 0; i < functionRecord->inlineLocalVectorSize; ++i)
                 iterationFunction(userdata, functionRecord->inlineLocalVector + i);
 
-            for(size_t i = 0; i < TUUVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE; ++i)
-                iterationFunction(userdata, functionRecord->operandRegisterFile + i);
-
             iterationFunction(userdata, &functionRecord->result);
         }   
         break;

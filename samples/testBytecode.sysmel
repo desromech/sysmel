@@ -37,7 +37,10 @@ printLine({:n :y | {:x | x + n} (y) }(3, 2)).
             result := result + (i*3i32)
         } continueWith: ( i := i + 1i32 ).
         result
-    }, (Array with: 50i32))
+    }, (Array with: 50i32)),
+
+    ({:x :y | (x, 2, y)
+    }, #(1 5))
 
 ) do: {:functionAndArguments :: Void |
     let function := functionAndArguments first.

@@ -125,8 +125,7 @@ TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_con
 {
     tuuvm_bytecodeInterpreter_ensureTablesAreFilled();
     int16_t decodedOperands[TUUVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE] = {};
-    
-    tuuvm_tuple_t *operandRegisterFile = activationRecord->operandRegisterFile;
+    tuuvm_tuple_t operandRegisterFile[TUUVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE] = {};
     tuuvm_tuple_t *localVector = activationRecord->inlineLocalVector;
 
     size_t instructionsSize;
@@ -282,10 +281,10 @@ TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_con
             operandRegisterFile[0] = tuuvm_bytecodeInterpreter_functionApply(context, operandRegisterFile[1], opcode & 0xF, operandRegisterFile + 2, TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK);
             break;
         case TUUVM_OPCODE_SEND:
-            operandRegisterFile[0] = tuuvm_bytecodeInterpreter_interpretSend(context, tuuvm_tuple_getType(context, operandRegisterFile[2]), operandRegisterFile[1], opcode & 0xF, operandRegisterFile + 3);
+            operandRegisterFile[0] = tuuvm_bytecodeInterpreter_interpretSend(context, tuuvm_tuple_getType(context, operandRegisterFile[2]), operandRegisterFile[1], opcode & 0xF, operandRegisterFile + 2);
             break;
         case TUUVM_OPCODE_SEND_WITH_LOOKUP:
-            operandRegisterFile[0] = tuuvm_bytecodeInterpreter_interpretSend(context, operandRegisterFile[1], operandRegisterFile[2], opcode & 0xF, operandRegisterFile + 4);
+            operandRegisterFile[0] = tuuvm_bytecodeInterpreter_interpretSend(context, operandRegisterFile[1], operandRegisterFile[2], opcode & 0xF, operandRegisterFile + 3);
             break;
 
         case TUUVM_OPCODE_MAKE_ARRAY_WITH_ELEMENTS:
@@ -337,10 +336,6 @@ TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_con
         }
         activationRecord->pc = pc;
 
-        // Clear the temporary register file.
-        for(uint8_t i = 0; i < operandCount - offsetOperandCount; ++i)
-            operandRegisterFile[i] = TUUVM_NULL_TUPLE;
-
         // Safepoint in backward branches.
         if(isBackwardBranch)
             tuuvm_gc_safepoint(context);
@@ -387,6 +382,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_apply(tuuvm_context_t *context
     // Allocate the inline local vector.
     size_t requiredLocalVectorSize = tuuvm_tuple_size_decode((*functionBytecodeObject)->localVectorSize);
     tuuvm_tuple_t *inlineLocalVector = (tuuvm_tuple_t *)alloca(requiredLocalVectorSize * sizeof(tuuvm_tuple_t));
+    memset(inlineLocalVector, 0, requiredLocalVectorSize * sizeof(tuuvm_tuple_t));
 
     activationRecord.inlineLocalVectorSize = requiredLocalVectorSize;
     activationRecord.inlineLocalVector = inlineLocalVector;

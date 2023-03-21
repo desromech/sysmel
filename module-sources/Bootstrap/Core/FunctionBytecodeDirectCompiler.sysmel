@@ -287,19 +287,16 @@ ASTFunctionApplicationNode extend: {
         primitiveGenerator ifNotNil: {
             primitiveGenerator(self, compiler)
         } ifNil: {
+            let function := (functionExpression compileBytecodesDirectlyWith: compiler).
+            let arguments := (self arguments collect: {:(ASTNode)each :: FunctionBytecodeAssemblerOperand |
+                each compileBytecodesDirectlyWith: compiler
+            }).
+
             let result := compiler assembler temporary: #sendResult.
             self isNoTypechecked ifNotNil: {
-                compiler assembler uncheckedCall: (functionExpression compileBytecodesDirectlyWith: compiler)
-                    arguments: (self arguments collect: {:(ASTNode)each :: FunctionBytecodeAssemblerOperand |
-                        each compileBytecodesDirectlyWith: compiler
-                    })
-                    result: result
+                compiler assembler uncheckedCall: function arguments: arguments result: result
             } ifNil: {
-                compiler assembler call: (functionExpression compileBytecodesDirectlyWith: compiler)
-                    arguments: (self arguments collect: {:(ASTNode)each :: FunctionBytecodeAssemblerOperand |
-                        each compileBytecodesDirectlyWith: compiler
-                    })
-                    result: result
+                compiler assembler call: function arguments: arguments result: result
             }.
 
             result
@@ -318,25 +315,28 @@ ASTMakeArrayNode extend: {
 
 ASTMessageSendNode extend: {
     public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand := {
-        let result := compiler assembler temporary: #sendResult.
         self receiverLookupType ifNotNil: {
-            compiler assembler sendTo: (self receiver compileBytecodesDirectlyWith: compiler)
-                receiverLookupType: (self receiver compileBytecodesDirectlyWith: compiler)
-                selector: (self selector compileBytecodesDirectlyWith: compiler)
-                arguments: (self arguments collect: {:(ASTNode)each :: FunctionBytecodeAssemblerOperand |
-                    each compileBytecodesDirectlyWith: compiler
-                })
-                result: result
-        } ifNil: {
-            compiler assembler sendTo: (self receiver compileBytecodesDirectlyWith: compiler)
-                selector: (self selector compileBytecodesDirectlyWith: compiler)
-                arguments: (self arguments collect: {:(ASTNode)each :: FunctionBytecodeAssemblerOperand |
-                    each compileBytecodesDirectlyWith: compiler
-                })
-                result: result
-        }.
+            let receiver := self receiver compileBytecodesDirectlyWith: compiler.
+            let receiverLookupType := self receiver compileBytecodesDirectlyWith: compiler.
+            let selector := self selector compileBytecodesDirectlyWith: compiler.
+            let arguments := self arguments collect: {:(ASTNode)each :: FunctionBytecodeAssemblerOperand |
+                each compileBytecodesDirectlyWith: compiler
+            }.
 
-        result
+            let result := compiler assembler temporary: #sendResult.
+            compiler assembler sendTo: receiver receiverLookupType: receiverLookupType selector: selector arguments: arguments result: result.
+            result
+        } ifNil: {
+            let receiver := self receiver compileBytecodesDirectlyWith: compiler.
+            let selector := self selector compileBytecodesDirectlyWith: compiler.
+            let arguments := self arguments collect: {:(ASTNode)each :: FunctionBytecodeAssemblerOperand |
+                each compileBytecodesDirectlyWith: compiler
+            }.
+
+            let result := compiler assembler temporary: #sendResult.
+            compiler assembler sendTo: receiver selector: selector arguments: arguments result: result.
+            result
+        }
     }.
 }.
 
@@ -368,6 +368,16 @@ Function
         self definition ifNotNil: {:def | def doCompileIntoBytecode }
     }.
 
+#*
+printLine((FunctionBytecodeDirectCompiler compileFunction: (Int16 >> #printOn:)) fullPrintString).
+(Int16 >> #printOn:) doCompileIntoBytecode.
+{
+    let stream := StringStream new.
+    42i16 printOn: stream.
+    printLine(stream asString).
+    error(stream asString)
+}.
+*#
 (SourcePosition >> #printString) doCompileIntoBytecode.
 ##printLine((SourcePosition >> #printString) definition bytecode fullPrintString).
 
@@ -380,11 +390,9 @@ Function
     }
 }.
 
-printLine(`'42 sourcePosition).
-
 ## This allows to activate the on-demand bytecode compiler.
 if: false then: {
-    if: true then: {
+    if: false then: {
         FunctionDefinition
             withSelector: #onDemandCompileIntoBytecode addMethod: {:(FunctionDefinition)self :: Void |
                 let sourcePosition := self sourcePosition printString.
@@ -392,6 +400,7 @@ if: false then: {
                 let compiledBytecode := (FunctionBytecodeDirectCompiler compileFunctionDefinition: self).
                 let compiledBytecodeString := compiledBytecode fullPrintString.
                 printLine("End compiling ", sourcePosition, "\n", compiledBytecodeString).
+                ##printLine("End compiling ", sourcePosition).
                 self bytecode: compiledBytecode
             }.
     }
