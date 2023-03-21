@@ -229,12 +229,14 @@ typedef struct tuuvm_astQuasiUnquoteNode_s
 {
     tuuvm_astNode_t super;
     tuuvm_tuple_t expression;
+    tuuvm_tuple_t astTemplateParameterIndex;
 } tuuvm_astQuasiUnquoteNode_t;
 
 typedef struct tuuvm_astSpliceNode_s
 {
     tuuvm_astNode_t super;
     tuuvm_tuple_t expression;
+    tuuvm_tuple_t astTemplateParameterIndex;
 } tuuvm_astSpliceNode_t;
 
 typedef struct tuuvm_astWhileContinueWithNode_s

@@ -957,9 +957,11 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         NULL);
     context->roots.astQuasiUnquoteNodeType = tuuvm_context_createIntrinsicClass(context, "ASTQuasiUnquoteNode", context->roots.astNodeType,
         "expression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "astTemplateParameterIndex", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         NULL);
     context->roots.astSpliceNodeType = tuuvm_context_createIntrinsicClass(context, "ASTSpliceNode", context->roots.astNodeType,
         "expression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "astTemplateParameterIndex", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         NULL);
 
     // Fill the immediate type table.
