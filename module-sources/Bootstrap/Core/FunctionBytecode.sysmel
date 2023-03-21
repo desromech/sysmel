@@ -10,23 +10,25 @@ FunctionDefinition
         self asFunctionWithCaptureVector: #()
     }.
 
-let opcodeExtraImplicitOperandCountDictionay := #{
+let opcodeExtraImplicitOperandCountDictionary := #{
     FunctionBytecode::Opcode::Call : 2sz.
+    FunctionBytecode::Opcode::UncheckedCall : 2sz.
     FunctionBytecode::Opcode::Send : 3sz.
     FunctionBytecode::Opcode::SendWithLookup : 4sz.
 
     FunctionBytecode::Opcode::MakeArrayWithElements : 1sz.
     FunctionBytecode::Opcode::MakeByteArrayWithElements : 1sz.
-    FunctionBytecode::Opcode::MakeClosureWithCaptures : 1sz.
+    FunctionBytecode::Opcode::MakeClosureWithCaptures : 2sz.
     FunctionBytecode::Opcode::MakeDictionaryWithElements : 1sz.
     FunctionBytecode::Opcode::MakeTupleWithElements : 1sz
 }.
+public: #FunctionBytecode::OpcodeExtraImplicitOperandCountDictionary with: opcodeExtraImplicitOperandCountDictionary.
 
 let computeOperandCountForOpcode := {:(UInt8)opcode :: Size |
     if: opcode >= FunctionBytecode::Opcode::FirstVariable then: {
         let standardOpcode := opcode & 16rF0 u8.
         let opcodeVariantNumber := opcode & 16r0F u8.
-        (opcodeVariantNumber asSize) + (opcodeExtraImplicitOperandCountDictionay at: standardOpcode)
+        (opcodeVariantNumber asSize) + (opcodeExtraImplicitOperandCountDictionary at: standardOpcode)
     } else: {
         (opcode >> 4u8) asSize
     }
@@ -52,6 +54,7 @@ let opcodeNameDictionary := #{
     FunctionBytecode::Opcode::MakeClosureWithVector : #makeClosureWithVector.
 
     FunctionBytecode::Opcode::Call : #call.
+    FunctionBytecode::Opcode::UncheckedCall : #uncheckedCall.
     FunctionBytecode::Opcode::Send : #send.
     FunctionBytecode::Opcode::SendWithLookup : #sendWithLookup.
 
@@ -61,6 +64,7 @@ let opcodeNameDictionary := #{
     FunctionBytecode::Opcode::MakeDictionaryWithElements : #makeDictionaryWithElements.
     FunctionBytecode::Opcode::MakeTupleWithElements : #makeTupleWithElements.
 }.
+public: #FunctionBytecode::OpcodeNameDictionary with: opcodeNameDictionary.
 
 let operandVectorNameDictionary := #{
     FunctionBytecode::OperandVectorName::Arguments : #arguments.
@@ -68,6 +72,7 @@ let operandVectorNameDictionary := #{
     FunctionBytecode::OperandVectorName::Literal : #literal.
     FunctionBytecode::OperandVectorName::Local : #local.
 }.
+public: #FunctionBytecode::OperandVectorNameDictionary with: operandVectorNameDictionary.
 
 let isBranchOpcode := {:(UInt8)opcode :: Boolean |
     ((opcode = FunctionBytecode::Opcode::Jump) ||
@@ -103,10 +108,10 @@ FunctionBytecode definition: {
     }.
 
     public method printOpcodeMnemonic: (opcode: UInt8) on: (stream: Stream) ::=> Void := {
-        if: opcode >= FunctionBytecode::Opcode::Call then: {
+        if: opcode >= FunctionBytecode::Opcode::FirstVariable then: {
             let standardOpcode := opcode & 16rF0 u8.
             let opcodeVariantNumber := opcode & 16r0F u8.
-            stream nextPutAll: (opcodeNameDictionary at: opcode); print: opcodeVariantNumber.
+            stream nextPutAll: (opcodeNameDictionary at: standardOpcode); print: opcodeVariantNumber.
         } else: {
             stream nextPutAll: (opcodeNameDictionary at: opcode).
         }
@@ -128,7 +133,7 @@ FunctionBytecode definition: {
             operands doWithIndex: {:(Int16)each :(Size)operandIndex :: Void |
                 stream nextPut: ' '.
                 if: isBranchInstruction && ((operandIndex + 1sz) = operands size) then: {
-                    stream print: each; nextPut: '|'; nextPutAll: ((nextPC asIntPointer + each asIntPointer) printString padLeft: 4 with: '0')
+                    stream print: each; nextPut: '|'; nextPutAll: ((nextPC asIntPointer + each asIntPointer) printString padLeft: 4sz with: '0'asChar8)
                 } else: {
                     let operandVector := each & FunctionBytecode::OperandVectorName::BitMask.
                     let operandIndex := each >> FunctionBytecode::OperandVectorName::Bits.
@@ -153,4 +158,3 @@ FunctionBytecode definition: {
     public method asFunction => Function
         := self asFunctionDefinition asFunction.
 }.
-

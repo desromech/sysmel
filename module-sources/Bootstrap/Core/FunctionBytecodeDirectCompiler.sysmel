@@ -1,0 +1,405 @@
+
+public final class FunctionBytecodeDirectCompiler superclass: Object.
+
+ASTNode definition: {
+    public final method compileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand
+        := compiler compileASTNode: self.
+
+    public abstract method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand
+        := self subclassResponsibility
+}.
+
+FunctionBytecodeDirectCompiler definition: {
+    public field assembler => FunctionBytecodeAssembler.
+    public field bindingDictionary => IdentityDictionary.
+
+    public field breakLabel => FunctionBytecodeAssemblerLabel.
+    public field continueLabel => FunctionBytecodeAssemblerLabel.
+
+    __Meta__ definition: {
+        public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> FunctionBytecode
+            := self new compileFunctionDefinition: functionDefinition.
+
+        public method compileFunction: (function: Function) ::=> FunctionBytecode
+            := self new compileFunction: function.
+    }.
+
+    public method initialize => Void := {
+        self assembler: FunctionBytecodeAssembler new.
+        self bindingDictionary: IdentityDictionary new.
+    }.
+
+    public method generateArgumentForNode: (argumentNode: ASTArgumentNode) index: (index: Size) ::=> FunctionBytecodeAssemblerOperand := {
+        let binding := argumentNode binding.
+        self assert: binding isNotNil.
+
+        let argumentOperand := self assembler makeArgumentWithIndex: index.
+        argumentOperand name: binding name.
+
+        self bindingDictionary at: binding put: argumentOperand.
+
+        argumentOperand
+    }.
+
+    public method generateCaptureForBinding: (captureBinding: SymbolCaptureBinding) index: (index: Size) ::=> FunctionBytecodeAssemblerOperand := {
+        let captureOperand := self assembler makeCaptureWithIndex: index.
+        captureOperand name: captureBinding name.
+
+        self bindingDictionary at: captureBinding put: captureOperand.
+
+        captureOperand
+    }.
+
+    public method compileASTNode: (node: ASTNode) ::=> FunctionBytecodeAssemblerOperand
+        := self assembler withASTNode: node do: {| node doCompileBytecodesDirectlyWith: self }.
+
+    public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> FunctionBytecode := {
+        functionDefinition ensureAnalysis.
+        self assembler
+            sourcePosition: functionDefinition sourcePosition;
+            arguments: (functionDefinition analyzedArgumentNodes collectWithIndex: {:(ASTArgumentNode)argumentNode :(Size)index :: FunctionBytecodeAssemblerOperand |
+                self generateArgumentForNode: argumentNode index: index
+            }) asArray;
+            captures: (functionDefinition analyzedCaptures collectWithIndex: {:(SymbolCaptureBinding)captureBinding :(Size)index :: FunctionBytecodeAssemblerOperand |
+                self generateCaptureForBinding: captureBinding index: index
+            }) asArray.
+
+        let resultValue := functionDefinition analyzedBodyNode compileBytecodesDirectlyWith: self.
+        self assembler return: resultValue.
+
+        self assembler build
+    }.
+
+    public method compileFunction: (function: Function) ::=> FunctionBytecode
+        := self compileFunctionDefinition: function definition.
+
+    public method getValueForLocalBinding: (localBinding: SymbolAnalysisBinding) ::=> FunctionBytecodeAssemblerOperand
+        := self bindingDictionary at: localBinding.
+
+    public method functionDefinitionValueFor: (functionDefinition: FunctionDefinition) ::=> FunctionBytecodeAssemblerOperand
+        := self assembler literal: functionDefinition.
+
+    public method setValue: (value: FunctionBytecodeAssemblerOperand) forBinding: (binding: SymbolBinding) ::=> Void := {
+        self assert: binding isNotNil.
+        self bindingDictionary at: binding put: value
+    }.
+
+    public method withBreakLabel: (newBreakLabel: FunctionBytecodeAssemblerLabel) continueLabel: (newContinueLabel: FunctionBytecodeAssemblerLabel) do: aBlock := {
+        let oldBreakLabel := self breakLabel.
+        let oldContinueLabel := self continueLabel.
+
+        self breakLabel: newBreakLabel.
+        self continueLabel: newContinueLabel.
+
+        ## FIXME: Wrap this on an ensure.
+        let result := aBlock.
+
+        self breakLabel: oldBreakLabel.
+        self continueLabel: oldContinueLabel.
+
+        result
+    }.
+}.
+
+ASTBreakNode extend: {
+    public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand
+        := compiler assembler
+            jumpTo: compiler breakLabel;
+            literal: nil
+}.
+
+ASTCoerceValueNode extend: {
+    public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand := {
+        let type := self typeExpression compileBytecodesDirectlyWith: compiler.
+        let value := self valueExpression compileBytecodesDirectlyWith: compiler.
+        let result := compiler assembler temporary: #coercedValue.
+        compiler assembler coerceValue: value toType: type in: result.
+        result
+    }.      
+}.
+
+ASTContinueNode extend: {
+    public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand
+        := compiler assembler
+            jumpTo: compiler continueLabel;
+            literal: nil
+}.
+
+ASTLambdaNode extend: {
+    public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand := {
+        let functionDefinition := self functionDefinition.
+        functionDefinition ensureAnalysis.
+
+        let functionDefinitionValue := compiler functionDefinitionValueFor: functionDefinition.
+
+        let captures := functionDefinition analyzedCaptures collect: {:(SymbolCaptureBinding)capture :: FunctionBytecodeAssemblerOperand |
+            compiler getValueForLocalBinding: capture sourceBinding
+        }.
+
+        let result := compiler assembler temporary: #lambda.
+        compiler assembler makeClosure: functionDefinitionValue withCaptures: captures in: result.
+        result
+    }.
+}.
+
+ASTLexicalBlockNode extend: {
+    public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand
+        := compiler assembler withSourceEnvironment: self bodyEnvironment do: {:: FunctionBytecodeAssemblerOperand | self body compileBytecodesDirectlyWith: compiler }.
+}.
+
+ASTLiteralNode extend: {
+    public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand
+        := compiler assembler literal: self value.
+}.
+
+ASTLocalDefinitionNode extend: {
+    public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand := {
+        let value := self valueExpression compileBytecodesDirectlyWith: compiler.
+
+        let assembler := compiler assembler.
+
+        self isMutable ifTrue: {
+            let localVariable := assembler temporary: #localVariable.
+            assembler allocaWithValue: value inPointerOfType: (assembler literal: self analyzedType) in: localVariable.
+            compiler setValue: localVariable forBinding: self binding.
+            localVariable
+        } ifFalse: {
+            compiler setValue: value forBinding: self binding.
+            value
+        }
+    }.
+}.
+
+SymbolAnalysisBinding extend: {
+    public override method compileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand
+        := compiler getValueForLocalBinding: self.
+}.
+
+ASTIdentifierReferenceNode extend: {
+    public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand
+        := self binding compileBytecodesDirectlyWith: compiler.
+}.
+
+ASTIfNode extend: {
+    public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand := {
+        let assembler := compiler assembler.
+
+        let condition := self conditionExpression compileBytecodesDirectlyWith: compiler.
+
+        let result := assembler temporary: #ifResult.
+        let ifFalseBranch := assembler label: #ifFalseBranch.
+        let ifMerge := assembler label: #ifMerge.
+
+        ## IfTrue branch.
+        assembler
+            jumpTo: ifFalseBranch ifFalse: condition.
+
+        let trueResult := self trueExpression
+            ifNotNil: {:(ASTNode)expression :: FunctionBytecodeAssemblerOperand | expression compileBytecodesDirectlyWith: compiler }
+            ifNil: (assembler literal: void).
+
+        assembler
+            move: trueResult into: result;
+            jumpTo: ifMerge.
+
+        ## IfFalse branch.
+        assembler beginLabel: ifFalseBranch.
+        let falseResult := self falseExpression
+            ifNotNil: {:(ASTNode)expression :: FunctionBytecodeAssemblerOperand | expression compileBytecodesDirectlyWith: compiler }
+            ifNil: (assembler literal: void).
+
+        assembler
+            move: falseResult into: result;
+            jumpTo: ifMerge.
+
+        ## Merge
+        assembler beginLabel: ifMerge.
+        result
+    }.
+}.
+
+ASTWhileContinueWithNode extend: {
+    public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand := {
+        let assembler := compiler assembler.
+
+        let entryLabel := assembler beginLabelNamed: #whileEntry.
+        let bodyLabel := assembler label: #whileBody.
+        let mergeLabel := assembler label: #whileMerge.
+        let continueLabel := assembler label: #whileContinue.
+
+        ## Condition.
+        self conditionExpression ifNotNil: {:(ASTNode)expression :: Void |
+            let condition := expression compileBytecodesDirectlyWith: compiler.
+            assembler jumpTo: mergeLabel ifFalse: condition.
+        } ifNil: {
+            assembler jumpTo: bodyLabel.
+        }.
+        
+        ## Body
+        assembler beginLabel: bodyLabel.
+        self bodyExpression ifNotNil: {:(ASTNode)expression :: Void |
+            compiler withBreakLabel: mergeLabel continueLabel: continueLabel do: {
+                expression compileBytecodesDirectlyWith: compiler
+            }.
+        }.
+        
+        ## Continue
+        assembler beginLabel: continueLabel.
+        self continueExpression ifNotNil: {:(ASTNode)expression :: Void |
+            expression compileBytecodesDirectlyWith: compiler
+        }.
+
+        ## End loop and merge.
+        assembler
+            jumpTo: entryLabel;
+            beginLabel: mergeLabel;
+            literal: void
+    }
+}.
+
+let primitiveFunctionGenerators := #{
+    #PointerLikeType::load : {:(ASTFunctionApplicationNode)self :(FunctionBytecodeDirectCompiler)compiler :: FunctionBytecodeAssemblerOperand |
+        let pointer := self arguments first compileBytecodesDirectlyWith: compiler.
+        let result := compiler assembler temporary: #load.
+        compiler assembler loadPointer: pointer in: result.
+        result
+    }.
+    #PointerLikeType::store: : {:(ASTFunctionApplicationNode)self :(FunctionBytecodeDirectCompiler)compiler :: FunctionBytecodeAssemblerOperand |
+        let pointer := self arguments first compileBytecodesDirectlyWith: compiler.
+        let value := self arguments second compileBytecodesDirectlyWith: compiler.
+        compiler assembler storeValue: value inPointer: pointer.
+        pointer
+    }.
+    #Void::fromAnyValue : {:(ASTFunctionApplicationNode)self :(FunctionBytecodeDirectCompiler)compiler :: FunctionBytecodeAssemblerOperand |
+        self arguments do: {:(ASTNode)each :: Void | each compileBytecodesDirectlyWith: compiler }.
+        compiler assembler literal: void
+    }.
+    #yourself : {:(ASTFunctionApplicationNode)self :(FunctionBytecodeDirectCompiler)compiler :: FunctionBytecodeAssemblerOperand |
+        self arguments first compileBytecodesDirectlyWith: compiler
+    }.
+}.
+
+ASTFunctionApplicationNode extend: {
+    public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand := {
+        let functionExpression := self functionExpression.
+        let primitiveGenerator := primitiveFunctionGenerators atOrNil: functionExpression literalFunctionPrimitiveName.
+
+        primitiveGenerator ifNotNil: {
+            primitiveGenerator(self, compiler)
+        } ifNil: {
+            let result := compiler assembler temporary: #sendResult.
+            self isNoTypechecked ifNotNil: {
+                compiler assembler uncheckedCall: (functionExpression compileBytecodesDirectlyWith: compiler)
+                    arguments: (self arguments collect: {:(ASTNode)each :: FunctionBytecodeAssemblerOperand |
+                        each compileBytecodesDirectlyWith: compiler
+                    })
+                    result: result
+            } ifNil: {
+                compiler assembler call: (functionExpression compileBytecodesDirectlyWith: compiler)
+                    arguments: (self arguments collect: {:(ASTNode)each :: FunctionBytecodeAssemblerOperand |
+                        each compileBytecodesDirectlyWith: compiler
+                    })
+                    result: result
+            }.
+
+            result
+        }.
+    }.
+}.
+
+ASTMakeArrayNode extend: {
+    public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand := {
+        let elements := self elements collect: {:(ASTNode)each :: FunctionBytecodeAssemblerOperand | each compileBytecodesDirectlyWith: compiler }.
+        let result := compiler assembler temporary: #makeArray.
+        compiler assembler makeArrayWithElements: elements in: result.
+        result
+    }.
+}.
+
+ASTMessageSendNode extend: {
+    public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand := {
+        let result := compiler assembler temporary: #sendResult.
+        self receiverLookupType ifNotNil: {
+            compiler assembler sendTo: (self receiver compileBytecodesDirectlyWith: compiler)
+                receiverLookupType: (self receiver compileBytecodesDirectlyWith: compiler)
+                selector: (self selector compileBytecodesDirectlyWith: compiler)
+                arguments: (self arguments collect: {:(ASTNode)each :: FunctionBytecodeAssemblerOperand |
+                    each compileBytecodesDirectlyWith: compiler
+                })
+                result: result
+        } ifNil: {
+            compiler assembler sendTo: (self receiver compileBytecodesDirectlyWith: compiler)
+                selector: (self selector compileBytecodesDirectlyWith: compiler)
+                arguments: (self arguments collect: {:(ASTNode)each :: FunctionBytecodeAssemblerOperand |
+                    each compileBytecodesDirectlyWith: compiler
+                })
+                result: result
+        }.
+
+        result
+    }.
+}.
+
+ASTSequenceNode extend: {
+    public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand := {
+        let result mutable => FunctionBytecodeAssemblerOperand := compiler assembler literal: void.
+        self expressions do: {:(ASTNode)expression :: Void |
+            result := expression compileBytecodesDirectlyWith: compiler
+        }.
+
+        result
+    }
+}.
+
+ASTReturnNode extend: {
+    public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand
+        := compiler assembler
+            return: (self expression compileBytecodesDirectlyWith: compiler);
+            literal: nil
+}.
+
+## Force the compilation of SourcePosition printString early on for having a proper stacktrace.
+FunctionDefinition
+    withSelector: #doCompileIntoBytecode addMethod: {:(FunctionDefinition)self :: Void |
+        self bytecode: (FunctionBytecodeDirectCompiler compileFunctionDefinition: self)
+    }.
+Function
+    withSelector: #doCompileIntoBytecode addMethod: {:(Function)self :: Void |
+        self definition ifNotNil: {:def | def doCompileIntoBytecode }
+    }.
+
+(SourcePosition >> #printString) doCompileIntoBytecode.
+##printLine((SourcePosition >> #printString) definition bytecode fullPrintString).
+
+(SourcePosition >> #printString) definition bytecode literalVector do: {:each |
+    if: (each __type__ isSubtypeOf: Function) then: {
+        each doCompileIntoBytecode.
+        each definition ifNotNil: {:def |
+            ##printLine(each definition bytecode fullPrintString)
+        }
+    }
+}.
+
+printLine(`'42 sourcePosition).
+
+## This allows to activate the on-demand bytecode compiler.
+if: false then: {
+    if: true then: {
+        FunctionDefinition
+            withSelector: #onDemandCompileIntoBytecode addMethod: {:(FunctionDefinition)self :: Void |
+                let sourcePosition := self sourcePosition printString.
+                ##printLine("Compiling ", sourcePosition).
+                let compiledBytecode := (FunctionBytecodeDirectCompiler compileFunctionDefinition: self).
+                let compiledBytecodeString := compiledBytecode fullPrintString.
+                printLine("End compiling ", sourcePosition, "\n", compiledBytecodeString).
+                self bytecode: compiledBytecode
+            }.
+    }
+    else: {
+        FunctionDefinition
+            withSelector: #onDemandCompileIntoBytecode addMethod: {:(FunctionDefinition)self :: Void |
+                self bytecode: (FunctionBytecodeDirectCompiler compileFunctionDefinition: self)
+            }.
+    }.
+}.
+

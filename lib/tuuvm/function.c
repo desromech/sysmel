@@ -17,6 +17,7 @@
 static bool tuuvm_primitiveTableIsComputed = false;
 static size_t tuuvm_primitiveTableSize = 0;
 static bool tuuvm_checkPrimitivesArePresentInTable = true;
+static bool tuuvm_function_useBytecodeInterpreter = true;
 
 typedef struct tuuvm_primitiveTableEntry_s
 {
@@ -159,6 +160,25 @@ TUUVM_API void tuuvm_function_addFlags(tuuvm_context_t *context, tuuvm_tuple_t f
     functionObject->flags = tuuvm_tuple_bitflags_encode(tuuvm_tuple_bitflags_decode(functionObject->flags) | flags);
 }
 
+static void tuuvm_function_attemptBytecodeCompilation(tuuvm_context_t *context, tuuvm_functionDefinition_t *definition)
+{
+    // Avoid cyclic compilation.
+    if(definition->bytecode == TUUVM_PENDING_MEMOIZATION_VALUE)
+        return;
+
+    tuuvm_tuple_t compilationMethod = tuuvm_type_lookupSelector(context, tuuvm_tuple_getType(context, (tuuvm_tuple_t)definition), context->roots.compileIntoBytecodeSelector);
+    if(!compilationMethod)
+        return;
+
+    // TODO: Register a cleanup for exception handling here.
+
+    definition->bytecode = TUUVM_PENDING_MEMOIZATION_VALUE;
+    tuuvm_function_apply1(context, compilationMethod, (tuuvm_tuple_t)definition);
+
+    if(definition->bytecode == TUUVM_PENDING_MEMOIZATION_VALUE)
+        definition->bytecode = TUUVM_NULL_TUPLE;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tuple_t function_, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags)
 {
     if(!function_) tuuvm_error("Cannot apply nil as a function.");
@@ -275,7 +295,12 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
         else if(tuuvm_tuple_isKindOf(context, (*functionObject)->definition, context->roots.functionDefinitionType))
         {
             tuuvm_functionDefinition_t *definition = (tuuvm_functionDefinition_t*)(*functionObject)->definition;
-            if(definition->bytecode)
+
+            // On demand bytecode compilation
+            if(!definition->bytecode)
+                tuuvm_function_attemptBytecodeCompilation(context, (tuuvm_functionDefinition_t*)definition);
+
+            if(definition->bytecode && definition->bytecode != TUUVM_PENDING_MEMOIZATION_VALUE && tuuvm_function_useBytecodeInterpreter)
                 gcFrame.result = tuuvm_bytecodeInterpreter_apply(context, &gcFrame.function, argumentCount, arguments);
             else
                 gcFrame.result = tuuvm_interpreter_applyClosureASTFunction(context, &gcFrame.function, argumentCount, arguments);
@@ -398,9 +423,9 @@ static tuuvm_tuple_t tuuvm_function_primitive_apply(tuuvm_context_t *context, tu
         for(size_t i = 0; i < variadicArgumentCount - 1; ++i)
             tuuvm_functionCallFrameStack_push(&callFrameStack, tuuvm_array_at(*argumentList, i));
         
-        tuuvm_tuple_t argumentArraySlice = tuuvm_array_at(*argumentList, variadicArgumentCount - 1);
+        tuuvm_tuple_t argumentArray = tuuvm_array_at(*argumentList, variadicArgumentCount - 1);
         for(size_t i = 0; i < argumentListSize; ++i)
-            tuuvm_functionCallFrameStack_push(&callFrameStack, tuuvm_array_at(argumentArraySlice, i));
+            tuuvm_functionCallFrameStack_push(&callFrameStack, tuuvm_array_at(argumentArray, i));
     }
 
     TUUVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
@@ -505,4 +530,9 @@ void tuuvm_function_setupPrimitives(tuuvm_context_t *context)
 
     tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::GetterFlags", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_GETTER_FLAGS));
     tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::SetterFlags", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_FLAGS_SETTER_FLAGS));
+
+    // Export the function application flags.
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionApplicationFlags::None", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_APPLICATION_FLAGS_NONE));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionApplicationFlags::NoTypecheck", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionApplicationFlags::PassThroughReferences", tuuvm_tuple_bitflags_encode(TUUVM_FUNCTION_APPLICATION_FLAGS_PASS_THROUGH_REFERENCES));
 }

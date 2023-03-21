@@ -11,7 +11,8 @@ ASTNode
     withSelector: #hasPragmaNamed: addMethod: {:(ASTNode)self :selector :: Boolean | false };
     withSelector: #hasLiteralValueEqualTo: addMethod: {:(ASTNode)self :expectedValue :: Boolean | false };
 
-    withSelector: #isLiteralNode addMethod: {:(ASTNode)self :: Boolean | false }.
+    withSelector: #isLiteralNode addMethod: {:(ASTNode)self :: Boolean | false };
+    withSelector: #literalFunctionPrimitiveName addMethod: {:(ASTNode)self :: Symbol | nil }.
 
 ASTArgumentNode
     withSelector: #childrenDo: addMethod: {:(ASTArgumentNode)self :aBlock :: Void |
@@ -60,6 +61,16 @@ ASTErrorNode
     }.
 
 ASTFunctionApplicationNode
+    withSelector: #initialize addMethod: {:(ASTFunctionApplicationNode)self :: Void |
+        (object: self withLookupStartingFrom: ASTFunctionApplicationNode supertype) initialize.
+        self applicationFlags: 0sz
+    };
+    withSelector: #hasApplicationFlag: addMethod: {:(ASTFunctionApplicationNode)self :(Bitflags)flag :: Boolean |
+        (self applicationFlags & flag) ~= 0bflgs
+    };
+    withSelector: #isNoTypechecked addMethod: {:(ASTFunctionApplicationNode)self :: Boolean |
+        self hasApplicationFlag: FunctionApplicationFlags::NoTypecheck
+    };
     withSelector: #childrenDo: addMethod: {:(ASTFunctionApplicationNode)self :aBlock :: Void |
         if: (self functionExpression isNotNil) then: aBlock(self functionExpression).
         self arguments do: aBlock.
@@ -110,6 +121,12 @@ ASTLiteralNode
 
     withSelector: #childrenDo: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | };
     withSelector: #transformWith: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | };
+
+    withSelector: #literalFunctionPrimitiveName addMethod: {:(ASTNode)self :: Symbol |
+        if: (self value __type__ lookupSelector: #primitiveName) ~~ nil
+            then: self value primitiveName
+            else: nil
+    };
 
     withSelector: #printOn: addMethod: {:(ASTLiteralNode)self :(Stream)stream :: Void |
         stream print: self class; 

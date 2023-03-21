@@ -75,6 +75,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t analyzeAndTypeCheckMessageSendNodeWithEnvironmentSelector;
     tuuvm_tuple_t getOrCreateDependentApplicationValueForNodeSelector;
     tuuvm_tuple_t defaultValueSelector;
+    tuuvm_tuple_t compileIntoBytecodeSelector;
 
     tuuvm_tuple_t anyValueType;
     tuuvm_tuple_t anyReferenceType;

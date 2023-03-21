@@ -20,7 +20,7 @@ static uint8_t tuuvm_implicitVariableBytecodeOperandCountTable[16];
 
 static void tuuvm_bytecodeInterpreter_ensureTablesAreFilled()
 {
-    if(!tuuvm_bytecodeInterpreter_tablesAreFilled)
+    if(tuuvm_bytecodeInterpreter_tablesAreFilled)
         return;
 
     tuuvm_implicitVariableBytecodeOperandCountTable[TUUVM_OPCODE_CALL >> 4] = 2;
@@ -29,7 +29,7 @@ static void tuuvm_bytecodeInterpreter_ensureTablesAreFilled()
     tuuvm_implicitVariableBytecodeOperandCountTable[TUUVM_OPCODE_SEND_WITH_LOOKUP >> 4] = 4;
 
     tuuvm_implicitVariableBytecodeOperandCountTable[TUUVM_OPCODE_MAKE_ARRAY_WITH_ELEMENTS >> 4] = 1;
-    tuuvm_implicitVariableBytecodeOperandCountTable[TUUVM_OPCODE_MAKE_ARRAY_WITH_ELEMENTS >> 4] = 1;
+    tuuvm_implicitVariableBytecodeOperandCountTable[TUUVM_OPCODE_MAKE_BYTE_ARRAY_WITH_ELEMENTS >> 4] = 1;
     tuuvm_implicitVariableBytecodeOperandCountTable[TUUVM_OPCODE_MAKE_CLOSURE_WITH_CAPTURES >> 4] = 2;
     tuuvm_implicitVariableBytecodeOperandCountTable[TUUVM_OPCODE_MAKE_DICTIONARY_WITH_ELEMENTS >> 4] = 1;
     tuuvm_implicitVariableBytecodeOperandCountTable[TUUVM_OPCODE_MAKE_TUPLE_WITH_ELEMENTS >> 4] = 1;
@@ -75,11 +75,36 @@ static uint8_t tuuvm_bytecodeInterpreter_offsetOperandCountForOpcode(uint8_t opc
     }
 }
 
+static tuuvm_tuple_t tuuvm_bytecodeInterpreter_functionApply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments, tuuvm_bitflags_t applicationFlags)
+{
+    if(tuuvm_function_isVariadic(context, function))
+    {
+        size_t expectedArgumentCount = tuuvm_function_getArgumentCount(context, function);
+        TUUVM_ASSERT(expectedArgumentCount > 0);
+
+        size_t directArgumentCount = expectedArgumentCount - 1;
+        if(argumentCount < directArgumentCount)
+            tuuvm_error("Missing required arguments.");
+
+        // Move the variadic arguments into a variadic vector.
+        size_t variadicArgumentCount = argumentCount - directArgumentCount;
+        tuuvm_tuple_t *variadicVector = arguments + directArgumentCount;
+        *variadicVector = tuuvm_array_create(context, variadicArgumentCount);
+        tuuvm_tuple_t *variadicVectorElements = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(*variadicVector)->pointers;
+        for(size_t i = 0; i < variadicArgumentCount; ++i)
+            variadicVectorElements[i] = arguments[directArgumentCount + i];
+
+        return tuuvm_function_apply(context, function, expectedArgumentCount, arguments, applicationFlags);
+
+    }
+    return tuuvm_function_apply(context, function, argumentCount, arguments, applicationFlags);
+}
+
 static tuuvm_tuple_t tuuvm_bytecodeInterpreter_interpretSend(tuuvm_context_t *context, tuuvm_tuple_t receiverType, tuuvm_tuple_t selector, size_t argumentCount, tuuvm_tuple_t *receiverAndArguments)
 {
     tuuvm_tuple_t method = tuuvm_type_lookupSelector(context, receiverType, selector);
     if(method)
-        return tuuvm_function_apply(context, method, argumentCount + 1, receiverAndArguments, 0);
+        return tuuvm_bytecodeInterpreter_functionApply(context, method, argumentCount + 1, receiverAndArguments, 0);
 
     // Attempt to send doesNotUnderstand:
     if(selector != context->roots.doesNotUnderstandSelector)
@@ -99,7 +124,7 @@ static tuuvm_tuple_t tuuvm_bytecodeInterpreter_interpretSend(tuuvm_context_t *co
 TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_context_t *context, tuuvm_stackFrameBytecodeFunctionActivationRecord_t *activationRecord)
 {
     tuuvm_bytecodeInterpreter_ensureTablesAreFilled();
-    int16_t decodedOperands[TUUVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE];
+    int16_t decodedOperands[TUUVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE] = {};
     
     tuuvm_tuple_t *operandRegisterFile = activationRecord->operandRegisterFile;
     tuuvm_tuple_t *localVector = activationRecord->inlineLocalVector;
@@ -121,7 +146,7 @@ TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_con
         if(opcode >= TUUVM_OPCODE_FIRST_VARIABLE)
         {
             operandCount = (opcode & 0x0F) + tuuvm_implicitVariableBytecodeOperandCountTable[opcode >> 4];
-            standardOpcode = 0xF0;
+            standardOpcode = opcode & 0xF0;
         }
         else
         {
@@ -156,8 +181,10 @@ TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_con
         {
             TUUVM_ASSERT(i < TUUVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE);
 
-            int16_t vectorIndex = decodedOperands[i] >> TUUVM_OPERAND_VECTOR_BITS;
-            switch(decodedOperands[i] & TUUVM_OPERAND_VECTOR_BITMASK)
+            int16_t decodedOperand = decodedOperands[i];
+            int16_t vectorIndex = decodedOperand >> TUUVM_OPERAND_VECTOR_BITS;
+            uint8_t vectorType = decodedOperand & TUUVM_OPERAND_VECTOR_BITMASK;
+            switch(vectorType)
             {
             case TUUVM_OPERAND_VECTOR_ARGUMENTS:
                 if((size_t)vectorIndex >= activationRecord->argumentCount)
@@ -203,7 +230,7 @@ TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_con
         case TUUVM_OPCODE_JUMP:
             pc += decodedOperands[0];
             isBackwardBranch = decodedOperands[0] < 0;
-            return;
+            break;
 
         // Two operands.
         case TUUVM_OPCODE_ALLOCA:
@@ -229,7 +256,7 @@ TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_con
             if(!tuuvm_tuple_boolean_decode(operandRegisterFile[0]))
             {
                 pc += decodedOperands[1];
-                isBackwardBranch = decodedOperands[1];
+                isBackwardBranch = decodedOperands[1 < 0];
             }
             break;
 
@@ -249,10 +276,10 @@ TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_con
 
         // Variable operand.
         case TUUVM_OPCODE_CALL:
-            operandRegisterFile[0] = tuuvm_function_apply(context, operandRegisterFile[1], opcode & 0xF, operandRegisterFile + 2, 0);
+            operandRegisterFile[0] = tuuvm_bytecodeInterpreter_functionApply(context, operandRegisterFile[1], opcode & 0xF, operandRegisterFile + 2, 0);
             break;
         case TUUVM_OPCODE_UNCHECKED_CALL:
-            operandRegisterFile[0] = tuuvm_function_apply(context, operandRegisterFile[1], opcode & 0xF, operandRegisterFile + 2, TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK);
+            operandRegisterFile[0] = tuuvm_bytecodeInterpreter_functionApply(context, operandRegisterFile[1], opcode & 0xF, operandRegisterFile + 2, TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK);
             break;
         case TUUVM_OPCODE_SEND:
             operandRegisterFile[0] = tuuvm_bytecodeInterpreter_interpretSend(context, tuuvm_tuple_getType(context, operandRegisterFile[2]), operandRegisterFile[1], opcode & 0xF, operandRegisterFile + 3);
@@ -263,7 +290,7 @@ TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_con
 
         case TUUVM_OPCODE_MAKE_ARRAY_WITH_ELEMENTS:
             {
-                size_t arraySize = standardOpcode & 0xF;
+                size_t arraySize = opcode & 0xF;
                 operandRegisterFile[0] = tuuvm_array_create(context, arraySize);
                 tuuvm_tuple_t *arraySlots = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(operandRegisterFile[0])->pointers;
                 for(size_t i = 0; i < arraySize; ++i)
@@ -272,7 +299,7 @@ TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_con
             break;
         case TUUVM_OPCODE_MAKE_BYTE_ARRAY_WITH_ELEMENTS:
             {
-                size_t arraySize = standardOpcode & 0xF;
+                size_t arraySize = opcode & 0xF;
                 operandRegisterFile[0] = tuuvm_byteArray_create(context, arraySize);
                 uint8_t *bytes = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(operandRegisterFile[0])->bytes;
                 for(size_t i = 0; i < arraySize; ++i)
@@ -281,17 +308,17 @@ TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_con
             break;
         case TUUVM_OPCODE_MAKE_CLOSURE_WITH_CAPTURES:
             {
-                size_t captureVectorSize = standardOpcode & 0xF;
+                size_t captureVectorSize = opcode & 0xF;
                 operandRegisterFile[0] = tuuvm_array_create(context, captureVectorSize);
                 tuuvm_tuple_t *captureVectorSlots = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(operandRegisterFile[0])->pointers;
                 for(size_t i = 0; i < captureVectorSize; ++i)
-                    captureVectorSlots[i] = operandRegisterFile[1 + 2];
+                    captureVectorSlots[i] = operandRegisterFile[2 + i];
                 operandRegisterFile[0] = tuuvm_function_createClosureWithCaptureVector(context, operandRegisterFile[1], operandRegisterFile[0]);
             }
             break;
         case TUUVM_OPCODE_MAKE_DICTIONARY_WITH_ELEMENTS:
             {
-                size_t dictionarySize = standardOpcode & 0xF;
+                size_t dictionarySize = opcode & 0xF;
                 operandRegisterFile[0] = tuuvm_dictionary_createWithCapacity(context, dictionarySize);
                 for(size_t i = 0; i < dictionarySize; ++i)
                     tuuvm_dictionary_add(context, operandRegisterFile[0], operandRegisterFile[1 + i]);
