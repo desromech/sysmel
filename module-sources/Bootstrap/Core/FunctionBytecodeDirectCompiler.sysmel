@@ -315,9 +315,9 @@ ASTMakeArrayNode extend: {
 
 ASTMessageSendNode extend: {
     public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand := {
-        self receiverLookupType ifNotNil: {
+        self receiverLookupType ifNotNil: {:(ASTNode)receiverLookupTypeNode |
             let receiver := self receiver compileBytecodesDirectlyWith: compiler.
-            let receiverLookupType := self receiver compileBytecodesDirectlyWith: compiler.
+            let receiverLookupType := receiverLookupTypeNode compileBytecodesDirectlyWith: compiler.
             let selector := self selector compileBytecodesDirectlyWith: compiler.
             let arguments := self arguments collect: {:(ASTNode)each :: FunctionBytecodeAssemblerOperand |
                 each compileBytecodesDirectlyWith: compiler
@@ -368,30 +368,20 @@ Function
         self definition ifNotNil: {:def | def doCompileIntoBytecode }
     }.
 
-#*
-printLine((FunctionBytecodeDirectCompiler compileFunction: (Int16 >> #printOn:)) fullPrintString).
-(Int16 >> #printOn:) doCompileIntoBytecode.
-{
-    let stream := StringStream new.
-    42i16 printOn: stream.
-    printLine(stream asString).
-    error(stream asString)
-}.
-*#
-(SourcePosition >> #printString) doCompileIntoBytecode.
-##printLine((SourcePosition >> #printString) definition bytecode fullPrintString).
-
-(SourcePosition >> #printString) definition bytecode literalVector do: {:each |
-    if: (each __type__ isSubtypeOf: Function) then: {
-        each doCompileIntoBytecode.
-        each definition ifNotNil: {:def |
-            ##printLine(each definition bytecode fullPrintString)
+if: true then: {
+    (SourcePosition >> #printString) doCompileIntoBytecode.
+    (SourcePosition >> #printString) definition bytecode literalVector do: {:each |
+        if: (each __type__ isSubtypeOf: Function) then: {
+            each doCompileIntoBytecode.
+            each definition ifNotNil: {:def |
+                ##printLine(each definition bytecode fullPrintString)
+            }
         }
-    }
+    }.
 }.
 
 ## This allows to activate the on-demand bytecode compiler.
-if: false then: {
+if: true then: {
     if: false then: {
         FunctionDefinition
             withSelector: #onDemandCompileIntoBytecode addMethod: {:(FunctionDefinition)self :: Void |
@@ -403,8 +393,7 @@ if: false then: {
                 ##printLine("End compiling ", sourcePosition).
                 self bytecode: compiledBytecode
             }.
-    }
-    else: {
+    } else: {
         FunctionDefinition
             withSelector: #onDemandCompileIntoBytecode addMethod: {:(FunctionDefinition)self :: Void |
                 self bytecode: (FunctionBytecodeDirectCompiler compileFunctionDefinition: self)

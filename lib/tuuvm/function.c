@@ -301,9 +301,20 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
                 tuuvm_function_attemptBytecodeCompilation(context, (tuuvm_functionDefinition_t*)definition);
 
             if(definition->bytecode && definition->bytecode != TUUVM_PENDING_MEMOIZATION_VALUE && tuuvm_function_useBytecodeInterpreter)
+            {
+                // We cannot have duplicated arguments record.
+                tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
                 gcFrame.result = tuuvm_bytecodeInterpreter_apply(context, &gcFrame.function, argumentCount, arguments);
+                if(isMemoized)
+                    tuuvm_weakValueDictionary_atPut(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, gcFrame.result);
+                TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+                return gcFrame.result;
+            }
             else
+            {
                 gcFrame.result = tuuvm_interpreter_applyClosureASTFunction(context, &gcFrame.function, argumentCount, arguments);
+            }
+
             if(isMemoized)
                 tuuvm_weakValueDictionary_atPut(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, gcFrame.result);
 

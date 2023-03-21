@@ -400,7 +400,13 @@ ASTQuasiUnquoteNode
     }.
 
 ASTQuoteNode
-    withSelector: #analyzeWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment | self};
+    withSelector: #analyzeWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment |
+        ASTLiteralNode new
+            sourcePosition: self sourcePosition;
+            value: self node;
+            analyzedType: self node __type__;
+            yourself
+    };
     withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment | self node};
     withSelector: #evaluateWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment | self node};
     withSelector: #childrenDo: addMethod: {:(ASTQuoteNode)self :aBlock :: Void |

@@ -82,17 +82,20 @@ static tuuvm_tuple_t tuuvm_bytecodeInterpreter_functionApply(tuuvm_context_t *co
         size_t expectedArgumentCount = tuuvm_function_getArgumentCount(context, function);
         TUUVM_ASSERT(expectedArgumentCount > 0);
 
-        size_t directArgumentCount = expectedArgumentCount - 1;
-        if(argumentCount < directArgumentCount)
-            tuuvm_error("Missing required arguments.");
 
         // Move the variadic arguments into a variadic vector.
-        size_t variadicArgumentCount = argumentCount - directArgumentCount;
-        tuuvm_tuple_t *variadicVector = arguments + directArgumentCount;
-        *variadicVector = tuuvm_array_create(context, variadicArgumentCount);
-        tuuvm_tuple_t *variadicVectorElements = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(*variadicVector)->pointers;
-        for(size_t i = 0; i < variadicArgumentCount; ++i)
-            variadicVectorElements[i] = arguments[directArgumentCount + i];
+        {
+            size_t directArgumentCount = expectedArgumentCount - 1;
+            if(argumentCount < directArgumentCount)
+                tuuvm_error("Missing required arguments.");
+
+            size_t variadicArgumentCount = argumentCount - directArgumentCount;
+            tuuvm_tuple_t variadicVector = tuuvm_array_create(context, variadicArgumentCount);
+            tuuvm_tuple_t *variadicVectorElements = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(variadicVector)->pointers;
+            for(size_t i = 0; i < variadicArgumentCount; ++i)
+                variadicVectorElements[i] = arguments[directArgumentCount + i];
+            arguments[directArgumentCount] = variadicVector;
+        }
 
         return tuuvm_function_apply(context, function, expectedArgumentCount, arguments, applicationFlags);
 
@@ -108,7 +111,7 @@ static tuuvm_tuple_t tuuvm_bytecodeInterpreter_interpretSend(tuuvm_context_t *co
 
     // Attempt to send doesNotUnderstand:
     if(selector != context->roots.doesNotUnderstandSelector)
-        method = tuuvm_type_lookupSelector(context, receiverType, receiverAndArguments[0]);
+        method = tuuvm_type_lookupSelector(context, receiverType, selector);
     if(!method)
         tuuvm_error("Message not understood");
 
