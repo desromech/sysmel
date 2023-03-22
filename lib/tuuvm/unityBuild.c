@@ -1,7 +1,12 @@
 #ifndef _WIN32
-#ifndef _DEFAULT_SOURCE
-#define _DEFAULT_SOURCE // for realpath
-#endif
+
+#   ifndef _DEFAULT_SOURCE
+#       define _DEFAULT_SOURCE // for realpath
+#   endif
+
+#   ifndef _XOPEN_SOURCE
+#       define _XOPEN_SOURCE 600 // CLOCK_MONOTONIC
+#   endif
 #endif
 
 #include "array.c"
@@ -37,6 +42,7 @@
 #include "string.c"
 #include "stringStream.c"
 #include "sysmelParser.c"
+#include "time.c"
 #include "token.c"
 #include "tuple.c"
 #include "type.c"

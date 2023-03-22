@@ -46,6 +46,7 @@ typedef struct tuuvm_functionAnalysisEnvironment_s
     tuuvm_tuple_t argumentBindingList;
     tuuvm_tuple_t localBindingList;
     tuuvm_tuple_t pragmaList;
+    tuuvm_tuple_t innerFunctionList;
     tuuvm_tuple_t primitiveName;
     tuuvm_tuple_t hasBreakTarget;
     tuuvm_tuple_t hasContinueTarget;
@@ -374,6 +375,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_analysisEnvironment_setNewSymbolLocalBinding(tuuvm
  * Adds a pragma
  */ 
 TUUVM_API void tuuvm_analysisEnvironment_addPragma(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t pragma);
+
+/**
+ * Adds a closure
+ */ 
+TUUVM_API void tuuvm_analysisEnvironment_addInnerFunction(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t innerFunction);
 
 /**
  * Makes a new macro value binding in the analysis environment.

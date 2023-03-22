@@ -833,6 +833,7 @@ tuuvm_tuple_t tuuvm_interpreter_recompileAndOptimizeFunction(tuuvm_context_t *co
     gcFrame.optimizedFunctionDefinition->analyzedArguments = TUUVM_NULL_TUPLE;
     gcFrame.optimizedFunctionDefinition->analyzedLocals = TUUVM_NULL_TUPLE;
     gcFrame.optimizedFunctionDefinition->analyzedPragmas = TUUVM_NULL_TUPLE;
+    gcFrame.optimizedFunctionDefinition->analyzedInnerFunctions = TUUVM_NULL_TUPLE;
     gcFrame.optimizedFunctionDefinition->analyzedPrimitiveName = TUUVM_NULL_TUPLE;
 
     gcFrame.optimizedFunctionDefinition->analyzedArgumentNodes = TUUVM_NULL_TUPLE;
@@ -938,6 +939,7 @@ static void tuuvm_functionDefinition_analyze(tuuvm_context_t *context, tuuvm_fun
     (*functionDefinition)->analyzedArguments = tuuvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->argumentBindingList);
     (*functionDefinition)->analyzedLocals = tuuvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->localBindingList);
     (*functionDefinition)->analyzedPragmas = tuuvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->pragmaList);
+    (*functionDefinition)->analyzedInnerFunctions = tuuvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->innerFunctionList);
     (*functionDefinition)->analyzedPrimitiveName = gcFrame.analysisEnvironmentObject->primitiveName;
 
     (*functionDefinition)->analyzedArgumentNodes = gcFrame.analyzedArgumentsNode;
@@ -1010,6 +1012,9 @@ static tuuvm_tuple_t tuuvm_astLambdaNode_primitiveAnalyze(tuuvm_context_t *conte
         gcFrame.lambdaNode->arguments, gcFrame.lambdaNode->resultType, gcFrame.lambdaNode->body
     );
     gcFrame.lambdaNode->functionDefinition = (tuuvm_tuple_t)gcFrame.functionDefinition;
+
+    // Register the inner function.
+    tuuvm_analysisEnvironment_addInnerFunction(context, *environment, (tuuvm_tuple_t)gcFrame.functionDefinition);
 
     // Perform the lambda analysis.
     tuuvm_functionDefinition_ensureAnalysis(context, &gcFrame.functionDefinition);

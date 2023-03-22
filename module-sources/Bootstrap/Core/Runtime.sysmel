@@ -91,6 +91,11 @@ Function
         self
     }.
 
+Type
+    withSelector: #=> addMethod: {:(Type)self :(Type)resultType :: SimpleFunctionType |
+        SimpleFunctionTypeTemplate((self,), false, resultType)
+    } makePure makeFinal.
+
 ValueBox
     withSelector: #loadAtOffset:withType: addMethod: {:(ValueBox)self :(IntPointer)offset :(Type)valueType :: valueType |
         (RawTuple::slotAt:)(self, 0sz)
@@ -144,7 +149,14 @@ Type
                 then: (supertype isSubtypeOf: expectedParent )
                 else: false
         }
-    } makePure;
+    } makePure.
+
+AnyValue
+    withSelector: #isKindOf: addMethod: {:(AnyValue)self :(Type)expectedType :: Boolean |
+        self __type__ isSubtypeOf: expectedType
+    } makePure makeFinal.
+
+Type
     withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(Type)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
         if: (self isSubtypeOf: targetType)
         then: astNode
@@ -583,6 +595,12 @@ Collection
         self subclassResponsibility
     } makeAbstract;
 
+    withSelector: #doWithoutTombstones: addMethod: {:(Collection)self :aBlock :: Void |
+        self do: {:each :: Void |
+            if: __tombstone__ ~~ each then: aBlock(each)
+        }
+    };
+
     withSelector: #doWithIndex: addMethod: {:(Collection)self :aBlock :: Void |
         let: #i mutableWith: 0sz.
         self do: {:element :: Void |
@@ -609,6 +627,11 @@ Collection
 
         array
     }.
+
+SequenceableCollection
+    withSelector: #=> addMethod: {:(SequenceableCollection)self :(Type)resultType :: SimpleFunctionType |
+        SimpleFunctionTypeTemplate(self asArray, false, resultType)
+    } makePure makeFinal.
 
 Association
     withSelector: #key:value: addClassMethod: {:(Association class)self :key :value :: self |
@@ -793,6 +816,14 @@ SequenceableCollection
             aBlock(self at: i, i)
         } continueWith: (i := i + 1sz)
     };
+    withSelector: #pairsDo: addMethod: {:(SequenceableCollection)self :aBlock :: Void |
+        let: #i mutableWith: 0sz.
+        let: #size with: self size.
+
+        while: i < self size do: {
+            aBlock(self at: i, self at: i + 1sz)
+        } continueWith: (i := i + 2sz)
+    };
     withSelector: #-- addMethod: {:(SequenceableCollection)self :(SequenceableCollection)other :: self species |
         let: #size with: self size.
         let: #otherSize with: other size.
@@ -936,16 +967,7 @@ SequenceableCollection
     };
     withSelector: #sorted addMethod: {:(SequenceableCollection)self :: self __type__ |
         self sorted: {:a :b :: Boolean | a < b }
-    };
-    
-    withSelector: #=> addMethod: {:(SequenceableCollection)self :(Type)resultType :: SimpleFunctionType |
-        SimpleFunctionTypeTemplate(self asArray, false, resultType)
-    } makePure makeFinal.
-
-Type
-    withSelector: #=> addMethod: {:(Type)self :(Type)resultType :: SimpleFunctionType |
-        SimpleFunctionTypeTemplate((self,), false, resultType)
-    } makePure makeFinal.
+    }.
 
 ArrayList
     withSelector: #arrayType addClassMethod: {:(ArrayList class)self :: Array class |
@@ -1122,6 +1144,97 @@ ArraySlice
             error("Index out of bounds.")
         }
     }.
+
+MethodDictionary
+    withSelector: #keysAndValuesDo: addMethod: {:(MethodDictionary)self :aBlock :: Void |
+        let: #storage with: self storage.
+        if: storage ~~ nil then: {
+            self storage pairsDo: {:selector :method :: Void |
+                if: selector ~~ __hashtableEmptyElement__ then: aBlock(selector, method)
+            }
+        }
+    };
+    withSelector: #do: addMethod: {:(MethodDictionary)self :aBlock :: Void |
+        self keysAndValuesDo: {:selector :method :: Void |
+            aBlock(Association key: selector value: method)
+        }
+    }.
+
+Type
+    withSelector: #validSubtypeList addMethod: {:(Type)self :: WeakArrayList |
+        if: self subtypes == nil then: (self subtypes: WeakArrayList new).
+        self subtypes
+    };
+    withSelector: #addSubtype: addMethod: {:(Type)self :(Type)aSubtype :: Void |
+        let: #subtypes with: self validSubtypeList.
+        if: (subtypes includes: aSubtype) not then: (subtypes add: aSubtype)
+    };
+    withSelector: #registerInSuperMetatype addMethod: {:(Type)self :: Void |
+        ## By default do nothing
+    };
+    withSelector: #registerInSupertype addMethod: {:(Type)self :: Void |
+        let: #supertype with: self supertype.
+        if: supertype ~~ nil then: (supertype addSubtype: self).
+        self __type__ registerInSuperMetatype
+    };
+    withSelector: #subtypesDo: addMethod: {:(Type)self :aBlock :: Void |
+        let: #subtypes with: self subtypes.
+        if: subtypes ~~ nil then: (subtypes doWithoutTombstones: aBlock)
+    };
+    withSelector: #withSubtypesDo: addMethod: {:(Type)self :aBlock :: Void |
+        aBlock(self).
+        self subtypesDo: aBlock.
+    };
+    withSelector: #allSubtypesDo: addMethod: {:(Type)self :aBlock :: Void |
+        self subtypesDo: {:(Type)each :: Void |
+            aBlock(each).
+            each allSubtypesDo: aBlock
+        }
+    };
+    withSelector: #withAllSubtypesDo: addMethod: {:(Type)self :aBlock :: Void |
+        aBlock(self).
+        self allSubtypesDo: aBlock
+    };
+
+    withSelector: #allSubtypes addMethod: {:(Type)self :: ArrayList |
+        let: #result with: ArrayList new.
+        self allSubtypesDo: {:(Type)each :: Void |
+            result add: each
+        }.
+        result
+    };
+    withSelector: #withAllSubtypes addMethod: {:(Type)self :: ArrayList |
+        let: #result with: ArrayList new.
+        self withAllSubtypesDo: {:(Type)each :: Void |
+            result add: each
+        }.
+        result
+    };
+
+    withSelector: #allMethodsDo: addMethod: {:(Type)self :aBlock :: Void |
+        let: #dictionaryIterationBlock with: {:selector :method :: Void |
+            aBlock(method)
+        }.
+
+        let: #macroMethodDictionary with: self macroMethodDictionary.
+        if: macroMethodDictionary ~~ nil then: (macroMethodDictionary keysAndValuesDo: dictionaryIterationBlock).
+
+        let: #methodDictionary with: self methodDictionary.
+        if: methodDictionary ~~ nil then: (methodDictionary keysAndValuesDo: dictionaryIterationBlock).
+
+        let: #fallbackMethodDictionary with: self fallbackMethodDictionary.
+        if: fallbackMethodDictionary ~~ nil then: (fallbackMethodDictionary keysAndValuesDo: dictionaryIterationBlock).
+    }.
+
+Metatype
+    withSelector: #registerInSuperMetatype addMethod: {:(Type)self :: Void |
+        self registerInSupertype
+    }.
+
+## Construct the subtype links
+BootstrapEnv::IntrinsicTypes do: {:(Type)each :: Void |
+    each registerInSupertype
+}.
 
 TypeSlot
     withSelector: #named:type:flags: addClassMethod: {:(TypeSlot class)self :name :(Type)type :(Size)flags :: self |
@@ -1325,6 +1438,21 @@ SimpleFunctionType
 (Float32 >> #sqrt) __type__: (Float32 => Float32).
 (Float64 >> #sqrt) __type__: (Float32 => Float32).
 
+
+Function
+    withSelector: #timeToRunInNanoseconds addMethod: {:(() => Void)self :: Int64 |
+        let: #startTime with: Time::Timestamp::nanosecondsNow().
+        self().
+        let: #endTime with: Time::Timestamp::nanosecondsNow().
+        endTime - startTime
+    };
+    withSelector: #timeToRunInMicroseconds addMethod: {:(() => Void)self :: Int64 |
+        let: #startTime with: Time::Timestamp::microsecondsNow().
+        self().
+        let: #endTime with: Time::Timestamp::microsecondsNow().
+        endTime - startTime
+    }.
+
 SourcePosition
     withSelector: #printOn: addMethod: {:(SourcePosition)self :(Stream)stream :: Void |
         let: #sourceCode with: self sourceCode.
@@ -1367,7 +1495,8 @@ Class
             flags: TypeFlags::ClassDefaultFlags;
             supertype: self;
             slots: ();
-            totalSlotCount: nil.
+            totalSlotCount: nil;
+            registerInSupertype.
         metaclass thisClass: class.
         class
     };

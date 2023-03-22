@@ -1,0 +1,90 @@
+## Force the compilation of SourcePosition printString early on for having a proper stacktrace.
+FunctionDefinition
+    withSelector: #compileIntoBytecode addMethod: {:(FunctionDefinition)self :: Void |
+        self ensureAnalysis.
+        self analyzedInnerFunctions do: {:each | each compileIntoBytecode }.
+        self bytecode: (FunctionBytecodeDirectCompiler compileFunctionDefinition: self).
+    }.
+
+Function
+    withSelector: #compileIntoBytecode addMethod: {:(Function)self :: Void |
+        self definition ifNotNil: {:def | def compileIntoBytecode }
+    }.
+
+Type
+    withSelector: #compileIntoBytecode addMethod: {:(Type)self :: Void |
+        self allMethodsDo: {:eachMethod :: Void | eachMethod compileIntoBytecode }.
+    }.
+
+FunctionDefinition
+    withSelector: #compileIntoBytecodeIfNeeded addMethod: {:(FunctionDefinition)self :: Void |
+        self ensureAnalysis.
+        self analyzedInnerFunctions do: {:each | each compileIntoBytecodeIfNeeded }.
+        if: self bytecode == nil then: {
+            self bytecode: (FunctionBytecodeDirectCompiler compileFunctionDefinition: self)
+        }.
+    }.
+
+Function
+    withSelector: #compileIntoBytecodeIfNeeded addMethod: {:(Function)self :: Void |
+        self definition ifNotNil: {:def | def compileIntoBytecodeIfNeeded }
+    }.
+
+Type
+    withSelector: #compileIntoBytecodeIfNeeded addMethod: {:(Type)self :: Void |
+        self allMethodsDo: {:eachMethod :: Void | eachMethod compileIntoBytecodeIfNeeded }.
+    }.
+
+## Compile the compiler first.
+if: true then: {
+    let typeCompilationBlock := {:(Type)each |
+        print("Compiling type if needed: ", each).
+        let compilationTime := {:: Void | each compileIntoBytecodeIfNeeded } timeToRunInMicroseconds asFloat32 * 0.001f32.
+        printLine(" ", compilationTime, " ms").
+    }.
+
+    (
+        Collection,
+        SequenceableCollection,
+        Array,
+        ArrayList,
+        Dictionary,
+        IdentityDictionary,
+        MethodDictionary,
+        SourcePosition,
+        FunctionBytecodeAssemblerAbstractOperand,
+        FunctionBytecodeAssemblerOperand,
+        FunctionBytecodeAssemblerAbstractInstruction,
+        FunctionBytecodeAssemblerLabel,
+        FunctionBytecodeAssemblerInstruction,
+        FunctionBytecodeAssembler,
+        FunctionBytecodeDirectCompiler,
+        ASTSequenceNode,
+        ASTMessageSendNode,
+        ASTFunctionApplicationNode
+    ) -- ASTNode withAllSubtypes do: typeCompilationBlock.
+
+    ##AnyValue withAllSubtypesDo: typeCompilationBlock
+}.
+
+## This allows to activate the on-demand bytecode compiler.
+if: false then: {
+    if: false then: {
+        FunctionDefinition
+            withSelector: #onDemandCompileIntoBytecode addMethod: {:(FunctionDefinition)self :: Void |
+                let sourcePosition := self sourcePosition printString.
+                ##printLine("Compiling ", sourcePosition).
+                let compiledBytecode := (FunctionBytecodeDirectCompiler compileFunctionDefinition: self).
+                let compiledBytecodeString := compiledBytecode fullPrintString.
+                printLine("End compiling ", sourcePosition, "\n", compiledBytecodeString).
+                ##printLine("End compiling ", sourcePosition).
+                self bytecode: compiledBytecode
+            }.
+    } else: {
+        FunctionDefinition
+            withSelector: #onDemandCompileIntoBytecode addMethod: {:(FunctionDefinition)self :: Void |
+                self compileIntoIfNeededBytecode
+            }.
+    }.
+}.
+

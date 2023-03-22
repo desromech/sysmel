@@ -144,7 +144,7 @@ static tuuvm_tuple_t tuuvm_type_doCreateSimpleFunctionType(tuuvm_context_t *cont
     
     tuuvm_simpleFunctionType_t* result = (tuuvm_simpleFunctionType_t*)tuuvm_context_allocatePointerTuple(context, context->roots.simpleFunctionTypeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_simpleFunctionType_t));
     result->super.supertype = (tuuvm_tuple_t)supertype;
-    result->super.flags = supertype->flags;
+    result->super.flags = tuuvm_tuple_bitflags_encode(tuuvm_tuple_bitflags_decode(supertype->flags) | TUUVM_TYPE_FLAGS_FUNCTION);
     result->super.totalSlotCount = supertype->totalSlotCount;
     result->argumentTypes = argumentTypes;
     result->isVariadic = isVariadic;
@@ -371,7 +371,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createDependentFunctionType(tuuvm_context_t *
 
     tuuvm_dependentFunctionType_t* result = (tuuvm_dependentFunctionType_t*)tuuvm_context_allocatePointerTuple(context, context->roots.dependentFunctionTypeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_dependentFunctionType_t));
     result->super.supertype = (tuuvm_tuple_t)supertype;
-    result->super.flags = supertype->flags;
+    result->super.flags = tuuvm_tuple_bitflags_encode(tuuvm_tuple_bitflags_decode(supertype->flags) | TUUVM_TYPE_FLAGS_FUNCTION);
     result->super.totalSlotCount = supertype->totalSlotCount;
     result->argumentNodes = argumentNodes;
     result->isVariadic = tuuvm_tuple_boolean_encode(isVariadic);
@@ -394,12 +394,6 @@ TUUVM_API void tuuvm_type_setTotalSlotCount(tuuvm_context_t *context, tuuvm_tupl
 {
     if(!tuuvm_tuple_isNonNullPointer(type)) return;
     ((tuuvm_type_tuple_t*)type)->totalSlotCount = tuuvm_tuple_size_encode(context, totalSlotCount);
-}
-
-TUUVM_API tuuvm_bitflags_t tuuvm_type_getFlags(tuuvm_tuple_t type)
-{
-    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
-    return tuuvm_tuple_bitflags_decode(((tuuvm_type_tuple_t*)type)->flags);
 }
 
 TUUVM_API void tuuvm_type_setFlags(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_bitflags_t flags)
@@ -504,7 +498,7 @@ TUUVM_API void tuuvm_type_setMethodWithSelector(tuuvm_context_t *context, tuuvm_
         typeObject->methodDictionary = tuuvm_methodDictionary_create(context);
     tuuvm_methodDictionary_atPut(context, typeObject->methodDictionary, selector, method);
 
-    if(tuuvm_tuple_isKindOf(context, method, context->roots.functionType))
+    if(tuuvm_tuple_isFunction(context, method))
     {
         tuuvm_function_t *functionObject = (tuuvm_function_t*)method;
         if(!functionObject->owner && !functionObject->name)

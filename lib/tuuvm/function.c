@@ -122,7 +122,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_createClosureWithCaptureVector(tuuvm_cont
 
 TUUVM_API size_t tuuvm_function_getArgumentCount(tuuvm_context_t *context, tuuvm_tuple_t function)
 {
-    if(tuuvm_tuple_isKindOf(context, function, context->roots.functionType))
+    if(tuuvm_tuple_isFunction(context, function))
     {
         tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
         return tuuvm_tuple_size_decode(functionObject->argumentCount);
@@ -133,7 +133,7 @@ TUUVM_API size_t tuuvm_function_getArgumentCount(tuuvm_context_t *context, tuuvm
 
 TUUVM_API tuuvm_bitflags_t tuuvm_function_getFlags(tuuvm_context_t *context, tuuvm_tuple_t function)
 {
-    if(tuuvm_tuple_isKindOf(context, function, context->roots.functionType))
+    if(tuuvm_tuple_isFunction(context, function))
     {
         tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
         return tuuvm_tuple_bitflags_decode(functionObject->flags);
@@ -144,7 +144,7 @@ TUUVM_API tuuvm_bitflags_t tuuvm_function_getFlags(tuuvm_context_t *context, tuu
 
 TUUVM_API void tuuvm_function_setFlags(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_bitflags_t flags)
 {
-    if(!tuuvm_tuple_isKindOf(context, function, context->roots.functionType))
+    if(!tuuvm_tuple_isFunction(context, function))
         tuuvm_error("Expected a function.");
 
     tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
@@ -153,7 +153,7 @@ TUUVM_API void tuuvm_function_setFlags(tuuvm_context_t *context, tuuvm_tuple_t f
 
 TUUVM_API void tuuvm_function_addFlags(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_bitflags_t flags)
 {
-    if(!tuuvm_tuple_isKindOf(context, function, context->roots.functionType))
+    if(!tuuvm_tuple_isFunction(context, function))
         tuuvm_error("Expected a function.");
 
     tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
@@ -201,7 +201,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
     tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
 
     gcFrame.functionType = tuuvm_tuple_getType(context, gcFrame.function);
-    if(tuuvm_tuple_isKindOf(context, gcFrame.function, context->roots.functionType))
+    if(tuuvm_tuple_isFunction(context, gcFrame.function))
     {
         tuuvm_bitflags_t functionFlags = tuuvm_function_getFlags(context, gcFrame.function);
         bool noTypecheck = (applicationFlags & TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK) | (functionFlags & TUUVM_FUNCTION_FLAGS_NO_TYPECHECK_ARGUMENTS);
@@ -449,7 +449,7 @@ static tuuvm_tuple_t tuuvm_function_primitive_isCorePrimitive(tuuvm_context_t *c
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
 
     tuuvm_tuple_t *function = &arguments[0];
-    if(!tuuvm_tuple_isKindOf(context, *function, context->roots.functionType))
+    if(!tuuvm_tuple_isFunction(context, *function))
         return TUUVM_FALSE_TUPLE;
     
     tuuvm_function_t *functionObject = (tuuvm_function_t*)*function;
@@ -464,8 +464,8 @@ static tuuvm_tuple_t tuuvm_function_primitive_adoptDefinitionOf(tuuvm_context_t 
 
     tuuvm_tuple_t *function = &arguments[0];
     tuuvm_tuple_t *definitionFunction = &arguments[1];
-    if(!tuuvm_tuple_isKindOf(context, *function, context->roots.functionType)) tuuvm_error("Expected a function.");
-    if(!tuuvm_tuple_isKindOf(context, *definitionFunction, context->roots.functionType)) tuuvm_error("Expected a function.");
+    if(!tuuvm_tuple_isFunction(context, *function)) tuuvm_error("Expected a function.");
+    if(!tuuvm_tuple_isFunction(context, *definitionFunction)) tuuvm_error("Expected a function.");
     
     tuuvm_function_t **functionObject = (tuuvm_function_t**)function;
     tuuvm_function_t **definitionFunctionObject = (tuuvm_function_t**)definitionFunction;
@@ -484,7 +484,7 @@ static tuuvm_tuple_t tuuvm_function_primitive_recompileAndOptimize(tuuvm_context
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(2, argumentCount);
 
     tuuvm_tuple_t *function = &arguments[0];
-    if(!tuuvm_tuple_isKindOf(context, *function, context->roots.functionType)) tuuvm_error("Expected a function.");
+    if(!tuuvm_tuple_isFunction(context, *function)) tuuvm_error("Expected a function.");
     
     tuuvm_function_t **functionObject = (tuuvm_function_t**)function;
     if((*functionObject)->definition && tuuvm_array_getSize((*functionObject)->captureVector) > 0)

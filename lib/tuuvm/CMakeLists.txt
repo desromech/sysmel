@@ -32,6 +32,7 @@ set(tuuvm_sources
     string.c
     stringStream.c
     sysmelParser.c
+    time.c
     token.c
     tuple.c
     type.c

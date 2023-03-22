@@ -771,7 +771,7 @@ TUUVM_INLINE int64_t tuuvm_tuple_int64_decode(tuuvm_tuple_t tuple)
  */
 TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_uint64_encode(tuuvm_context_t *context, uint64_t value)
 {
-    if(sizeof(uint64_t) < sizeof(tuuvm_tuple_t) || value <= TUUVM_IMMEDIATE_UINT_MAX)
+    if(value <= TUUVM_IMMEDIATE_UINT_MAX)
         return tuuvm_tuple_uint64_encodeSmall(value);
     else
         return tuuvm_tuple_uint64_encodeBig(context, value);
@@ -782,7 +782,7 @@ TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_uint64_encode(tuuvm_context_t *context, u
  */
 TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_int64_encode(tuuvm_context_t *context, int64_t value)
 {
-    if(sizeof(int64_t) < sizeof(tuuvm_tuple_t) || (TUUVM_IMMEDIATE_INT_MIN <= value && value <= TUUVM_IMMEDIATE_INT_MAX))
+    if((TUUVM_IMMEDIATE_INT_MIN <= value && value <= TUUVM_IMMEDIATE_INT_MAX))
         return tuuvm_tuple_int64_encodeSmall(value);
     else
         return tuuvm_tuple_int64_encodeBig(context, value);
@@ -1025,5 +1025,10 @@ TUUVM_API void tuuvm_tuple_slotAtPut(tuuvm_context_t *context, tuuvm_tuple_t tup
  * Is this tuple a kind of the specified type?
  */
 TUUVM_API bool tuuvm_tuple_isKindOf(tuuvm_context_t *context, tuuvm_tuple_t tuple, tuuvm_tuple_t type);
+
+/**
+ * Is this tuple a function?
+ */
+TUUVM_API bool tuuvm_tuple_isFunction(tuuvm_context_t *context, tuuvm_tuple_t tuple);
 
 #endif //TUUVM_TUPLE_H

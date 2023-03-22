@@ -75,6 +75,7 @@ typedef struct tuuvm_functionDefinition_s
     tuuvm_tuple_t analyzedArguments;
     tuuvm_tuple_t analyzedLocals;
     tuuvm_tuple_t analyzedPragmas;
+    tuuvm_tuple_t analyzedInnerFunctions;
     tuuvm_tuple_t analyzedPrimitiveName;
 
     tuuvm_tuple_t analyzedArgumentNodes;

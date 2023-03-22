@@ -29,6 +29,7 @@ extern void tuuvm_io_registerPrimitives(void);
 extern void tuuvm_primitiveInteger_registerPrimitives(void);
 extern void tuuvm_string_registerPrimitives(void);
 extern void tuuvm_stringStream_registerPrimitives(void);
+extern void tuuvm_time_registerPrimitives(void);
 extern void tuuvm_tuple_registerPrimitives(void);
 extern void tuuvm_type_registerPrimitives(void);
 
@@ -48,6 +49,7 @@ extern void tuuvm_io_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_primitiveInteger_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_string_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_stringStream_setupPrimitives(tuuvm_context_t *context);
+extern void tuuvm_time_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_tuple_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_type_setupPrimitives(tuuvm_context_t *context);
 
@@ -75,6 +77,7 @@ void tuuvm_context_registerPrimitives(void)
     tuuvm_primitiveInteger_registerPrimitives();
     tuuvm_string_registerPrimitives();
     tuuvm_stringStream_registerPrimitives();
+    tuuvm_time_registerPrimitives();
     tuuvm_tuple_registerPrimitives();
     tuuvm_type_registerPrimitives();
 }
@@ -228,7 +231,7 @@ TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingValue(tuuvm_context_t *con
 {
     tuuvm_environment_setNewSymbolBindingWithValue(context, context->roots.globalNamespace, symbol, value);
 
-    if(tuuvm_tuple_isKindOf(context, value, context->roots.functionType))
+    if(tuuvm_tuple_isFunction(context, value))
     {
         tuuvm_function_t *functionObject = (tuuvm_function_t*)value;
         if(!functionObject->owner && !functionObject->name)
@@ -322,6 +325,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 
     // Create the function class.
     context->roots.functionType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    tuuvm_type_setFlags(context, context->roots.functionType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_FUNCTION);
     context->roots.functionDefinitionType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.functionBytecodeType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
 
@@ -602,6 +606,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "captureBindingList", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
         "argumentBindingList", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
         "localBindingList", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
+        "innerFunctionList", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
         "pragmaList", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
         "hasBreakTarget", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "hasContinueTarget", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
@@ -660,6 +665,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "analyzedArguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "analyzedLocals", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "analyzedPragmas", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "analyzedInnerFunctions", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "analyzedPrimitiveName", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
 
         "analyzedArgumentNodes", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
@@ -1019,6 +1025,7 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
     tuuvm_primitiveInteger_setupPrimitives(context);
     tuuvm_string_setupPrimitives(context);
     tuuvm_stringStream_setupPrimitives(context);
+    tuuvm_time_setupPrimitives(context);
     tuuvm_tuple_setupPrimitives(context);
     tuuvm_type_setupPrimitives(context);
     

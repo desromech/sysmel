@@ -40,6 +40,8 @@ typedef enum tuuvm_typeFlags_e
     TUUVM_TYPE_FLAGS_POINTER_VALUE = 1<<6,
     TUUVM_TYPE_FLAGS_REFERENCE_VALUE = 1<<7,
 
+    TUUVM_TYPE_FLAGS_FUNCTION = 1<<8,
+
     TUUVM_TYPE_FLAGS_POINTER_LIKE_VALUE = TUUVM_TYPE_FLAGS_POINTER_VALUE | TUUVM_TYPE_FLAGS_REFERENCE_VALUE,
 
     TUUVM_TYPE_FLAGS_CLASS_DEFAULT_FLAGS = TUUVM_TYPE_FLAGS_NULLABLE,
@@ -373,7 +375,11 @@ TUUVM_API void tuuvm_type_setTotalSlotCount(tuuvm_context_t *context, tuuvm_tupl
 /**
  * Gets the type flags.
  */
-TUUVM_API tuuvm_bitflags_t tuuvm_type_getFlags(tuuvm_tuple_t type);
+TUUVM_INLINE tuuvm_bitflags_t tuuvm_type_getFlags(tuuvm_tuple_t type)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+    return tuuvm_tuple_bitflags_decode(((tuuvm_type_tuple_t*)type)->flags);
+}
 
 /**
  * Sets the type flags.
@@ -399,6 +405,14 @@ TUUVM_INLINE bool tuuvm_type_isNullable(tuuvm_tuple_t type)
 TUUVM_INLINE bool tuuvm_type_isDynamic(tuuvm_tuple_t type)
 {
     return !type || (tuuvm_type_getFlags(type) & TUUVM_TYPE_FLAGS_DYNAMIC) != 0;
+}
+
+/**
+ * Is this type a function type?
+ */
+TUUVM_INLINE bool tuuvm_type_isFunctionType(tuuvm_tuple_t type)
+{
+    return (tuuvm_type_getFlags(type) & TUUVM_TYPE_FLAGS_FUNCTION) != 0;
 }
 
 /**

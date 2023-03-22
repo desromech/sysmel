@@ -127,7 +127,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_namespace_create(tuuvm_context_t *context, tuuvm_t
 
 TUUVM_API tuuvm_tuple_t tuuvm_functionActivationEnvironment_create(tuuvm_context_t *context, tuuvm_tuple_t parent, tuuvm_tuple_t function)
 {
-    if(!function || !tuuvm_tuple_isKindOf(context, function, context->roots.functionType))
+    if(!function || !tuuvm_tuple_isFunction(context, function))
         tuuvm_error("Expected a function");
 
     tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
@@ -179,6 +179,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_functionAnalysisEnvironment_create(tuuvm_context_t
     result->captureBindingList = tuuvm_arrayList_create(context);
     result->argumentBindingList = tuuvm_arrayList_create(context);
     result->localBindingList = tuuvm_arrayList_create(context);
+    result->innerFunctionList = tuuvm_arrayList_create(context);
     result->pragmaList = tuuvm_arrayList_create(context);
     result->hasBreakTarget = TUUVM_FALSE_TUPLE;
     result->hasContinueTarget = TUUVM_FALSE_TUPLE;
@@ -544,6 +545,16 @@ TUUVM_API void tuuvm_analysisEnvironment_addPragma(tuuvm_context_t *context, tuu
 
     if(pragmaObject->selector == context->roots.primitiveNamedSelector && !functionAnalysisEnvironmentObject->primitiveName)
         functionAnalysisEnvironmentObject->primitiveName = tuuvm_array_at(pragmaObject->arguments, 0);
+}
+
+TUUVM_API void tuuvm_analysisEnvironment_addInnerFunction(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t innerFunction)
+{
+    tuuvm_tuple_t functionAnalysisEnvironment = tuuvm_environment_lookFunctionAnalysisEnvironmentRecursively(context, environment);
+    if(!functionAnalysisEnvironment)
+        tuuvm_error("A function analysis environment is required here.");
+
+    tuuvm_functionAnalysisEnvironment_t *functionAnalysisEnvironmentObject = (tuuvm_functionAnalysisEnvironment_t*)functionAnalysisEnvironment;
+    tuuvm_arrayList_add(context, functionAnalysisEnvironmentObject->innerFunctionList, innerFunction);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_environment_setNewMacroValueBinding(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t name, tuuvm_tuple_t expansion)
