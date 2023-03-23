@@ -75,7 +75,7 @@ typedef struct tuuvm_functionBytecode_s
 
 typedef struct tuuvm_stackFrameBytecodeFunctionActivationRecord_s tuuvm_stackFrameBytecodeFunctionActivationRecord_t;
 
-TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_apply(tuuvm_context_t *context, tuuvm_tuple_t *function, size_t argumentCount, tuuvm_tuple_t *arguments);
+TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_apply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments);
 TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_getSourcePositionForActivationRecord(tuuvm_context_t *context, tuuvm_stackFrameBytecodeFunctionActivationRecord_t *activationRecord);
 
 #endif //TUUVM_BYTECODE_H

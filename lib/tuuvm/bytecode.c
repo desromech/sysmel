@@ -357,14 +357,14 @@ TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_getSourcePositionForActivation
     return (*functionDefinitionObject)->sourcePosition;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_apply(tuuvm_context_t *context, tuuvm_tuple_t *function, size_t argumentCount, tuuvm_tuple_t *arguments)
+TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_apply(tuuvm_context_t *context, tuuvm_tuple_t function_, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     tuuvm_stackFrameBytecodeFunctionActivationRecord_t activationRecord = {
         .type = TUUVM_STACK_FRAME_RECORD_TYPE_BYTECODE_FUNCTION_ACTIVATION,
     };
     tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&activationRecord);  
 
-    activationRecord.function = *function;
+    activationRecord.function = function_;
     tuuvm_function_t **functionObject = (tuuvm_function_t**)&activationRecord.function;
     
     activationRecord.functionDefinition = (*functionObject)->definition;

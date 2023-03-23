@@ -4621,11 +4621,11 @@ static tuuvm_tuple_t tuuvm_dependentFunctionType_primitiveAnalyzeAndTypeCheckMes
     return tuuvm_astFunctionApplicationNode_optimizePureApplication(context, (tuuvm_astFunctionApplicationNode_t**)node);
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_t *context, tuuvm_tuple_t *function, size_t argumentCount, tuuvm_tuple_t *arguments)
+TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_t *context, tuuvm_tuple_t function_, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags)
 {
     tuuvm_stackFrameFunctionActivationRecord_t functionActivationRecord = {
         .type = TUUVM_STACK_FRAME_RECORD_TYPE_FUNCTION_ACTIVATION,
-        .function = *function,
+        .function = function_,
     };
     tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&functionActivationRecord);  
     tuuvm_function_t **closure = (tuuvm_function_t**)&functionActivationRecord.function;
@@ -4642,9 +4642,19 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_
     functionActivationRecord.applicationEnvironment = tuuvm_functionActivationEnvironment_create(context, TUUVM_NULL_TUPLE, functionActivationRecord.function);
     tuuvm_analysisAndEvaluationEnvironment_setReturnTarget(context, functionActivationRecord.applicationEnvironment, tuuvm_tuple_uintptr_encode(context, (uintptr_t)&functionActivationRecord));
 
-    // FIXME: Add support for the forall arguments here.
-    for(size_t i = 0; i < argumentCount; ++i)
-        tuuvm_interpreter_evaluateArgumentNodeInEnvironment(context, i, tuuvm_array_at((*functionDefinition)->analyzedArgumentNodes, i), &functionActivationRecord.applicationEnvironment, &arguments[i]);
+    bool isNoTypecheck = (applicationFlags & TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK) != 0;
+    if(isNoTypecheck)
+    {
+        // Avoid the coercion here.
+        for(size_t i = 0; i < argumentCount; ++i)
+            tuuvm_interpreter_bindArgumentNodeValueInEnvironment(context, i, &functionActivationRecord.applicationEnvironment, arguments[i]);
+    }
+    else
+    {
+        // FIXME: Add support for the forall arguments here.
+        for(size_t i = 0; i < argumentCount; ++i)
+            tuuvm_interpreter_evaluateArgumentNodeInEnvironment(context, i, tuuvm_array_at((*functionDefinition)->analyzedArgumentNodes, i), &functionActivationRecord.applicationEnvironment, &arguments[i]);
+    }
 
     // Use setjmp for implementing the #return: statement.
     if(!_setjmp(functionActivationRecord.jmpbuffer))
