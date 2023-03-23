@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "tuple.h"
+#include "type.h"
 
 typedef struct tuuvm_context_s tuuvm_context_t;
 
@@ -123,7 +123,10 @@ TUUVM_API size_t tuuvm_function_getArgumentCount(tuuvm_context_t *context, tuuvm
 /**
  * Gets the function flags.
  */
-TUUVM_API tuuvm_bitflags_t tuuvm_function_getFlags(tuuvm_context_t *context, tuuvm_tuple_t function);
+TUUVM_INLINE tuuvm_bitflags_t tuuvm_function_getFlags(tuuvm_context_t *context, tuuvm_tuple_t function)
+{
+    return tuuvm_tuple_isFunction(context, function) ? tuuvm_tuple_bitflags_decode(((tuuvm_function_t*)function)->flags) : 0;
+}
 
 /**
  * Sets the function flags.

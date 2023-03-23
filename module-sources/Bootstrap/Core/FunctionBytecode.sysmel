@@ -24,16 +24,6 @@ let opcodeExtraImplicitOperandCountDictionary := #{
 }.
 public: #FunctionBytecode::OpcodeExtraImplicitOperandCountDictionary with: opcodeExtraImplicitOperandCountDictionary.
 
-let computeOperandCountForOpcode := {:(UInt8)opcode :: Size |
-    if: opcode >= FunctionBytecode::Opcode::FirstVariable then: {
-        let standardOpcode := opcode & 16rF0 u8.
-        let opcodeVariantNumber := opcode & 16r0F u8.
-        (opcodeVariantNumber asSize) + (opcodeExtraImplicitOperandCountDictionary at: standardOpcode)
-    } else: {
-        (opcode >> 4u8) asSize
-    }
-}.
-
 let opcodeNameDictionary := #{
     FunctionBytecode::Opcode::Nop : #nop.
     FunctionBytecode::Opcode::Trap : #trap.
@@ -74,13 +64,23 @@ let operandVectorNameDictionary := #{
 }.
 public: #FunctionBytecode::OperandVectorNameDictionary with: operandVectorNameDictionary.
 
-let isBranchOpcode := {:(UInt8)opcode :: Boolean |
-    ((opcode = FunctionBytecode::Opcode::Jump) ||
-    (opcode = FunctionBytecode::Opcode::JumpIfTrue)) ||
-    (opcode = FunctionBytecode::Opcode::JumpIfFalse)
-}.
-
 FunctionBytecode definition: {
+
+    public final method computeOperandCountForOpcode: (opcode: UInt8) ::=> Size := {
+        if: opcode >= FunctionBytecode::Opcode::FirstVariable then: {
+        let standardOpcode := opcode & 16rF0 u8.
+        let opcodeVariantNumber := opcode & 16r0F u8.
+        (opcodeVariantNumber asSize) + (opcodeExtraImplicitOperandCountDictionary at: standardOpcode)
+        } else: {
+            (opcode >> 4u8) asSize
+        }
+    }.
+
+    public final method isBranchOpcode: (opcode: UInt8) ::=> Boolean
+        := ((opcode = FunctionBytecode::Opcode::Jump) ||
+            (opcode = FunctionBytecode::Opcode::JumpIfTrue)) ||
+            (opcode = FunctionBytecode::Opcode::JumpIfFalse).
+
     public method decodedInstructionsDo: aBlock ::=> Void := {
         let instructions := self instructions.
         let instructionsSize := instructions size.
@@ -91,7 +91,7 @@ FunctionBytecode definition: {
             let opcode := instructions at: pc.
             pc := pc + 1sz.
 
-            let operandCount := computeOperandCountForOpcode(opcode).
+            let operandCount := self computeOperandCountForOpcode: opcode.
             let operands := Array new: operandCount.
             let i mutable := 0sz.
             while: (i < operandCount) do: {
@@ -129,7 +129,7 @@ FunctionBytecode definition: {
             stream nextPutAll: "  "; nextPutAll: (pc printString padLeft: 4sz with: '0'asChar8); nextPutAll: " ".
             self printOpcodeMnemonic: opcode on: stream.
             
-            let isBranchInstruction := isBranchOpcode(opcode).
+            let isBranchInstruction := self isBranchOpcode: opcode.
             operands doWithIndex: {:(Int16)each :(Size)operandIndex :: Void |
                 stream nextPut: ' '.
                 if: isBranchInstruction && ((operandIndex + 1sz) = operands size) then: {

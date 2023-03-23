@@ -416,6 +416,15 @@ TUUVM_INLINE bool tuuvm_type_isFunctionType(tuuvm_tuple_t type)
 }
 
 /**
+ * Is this tuple a function?
+ */
+TUUVM_INLINE bool tuuvm_tuple_isFunction(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    (void)context;
+    return tuuvm_tuple_isNonNullPointer(tuple) && tuuvm_type_isFunctionType(tuuvm_pointerTuple_getType(tuple));
+}
+
+/**
  * Is this a pointer like value?
  */
 TUUVM_INLINE bool tuuvm_type_isPointerLikeType(tuuvm_tuple_t type)

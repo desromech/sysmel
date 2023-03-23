@@ -222,6 +222,14 @@ TUUVM_INLINE void tuuvm_tuple_setType(tuuvm_object_tuple_t *objectTuple, tuuvm_t
 /**
  * Gets the type tuple of the specified tuple.
  */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_pointerTuple_getType(tuuvm_tuple_t tuple)
+{
+    return TUUVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_POINTER_MASK;
+}
+
+/**
+ * Gets the type tuple of the specified tuple.
+ */
 TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_getType(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
     if(tuuvm_tuple_isNonNullPointer(tuple))
@@ -1025,10 +1033,5 @@ TUUVM_API void tuuvm_tuple_slotAtPut(tuuvm_context_t *context, tuuvm_tuple_t tup
  * Is this tuple a kind of the specified type?
  */
 TUUVM_API bool tuuvm_tuple_isKindOf(tuuvm_context_t *context, tuuvm_tuple_t tuple, tuuvm_tuple_t type);
-
-/**
- * Is this tuple a function?
- */
-TUUVM_API bool tuuvm_tuple_isFunction(tuuvm_context_t *context, tuuvm_tuple_t tuple);
 
 #endif //TUUVM_TUPLE_H

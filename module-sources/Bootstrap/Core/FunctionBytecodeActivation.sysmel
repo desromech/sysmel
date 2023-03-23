@@ -44,6 +44,7 @@ if: true then: {
     }.
 
     (
+        SourcePosition,
         Collection,
         SequenceableCollection,
         Array,
@@ -51,7 +52,6 @@ if: true then: {
         Dictionary,
         IdentityDictionary,
         MethodDictionary,
-        SourcePosition,
         FunctionBytecodeAssemblerAbstractOperand,
         FunctionBytecodeAssemblerOperand,
         FunctionBytecodeAssemblerAbstractInstruction,

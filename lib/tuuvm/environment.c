@@ -131,7 +131,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_functionActivationEnvironment_create(tuuvm_context
         tuuvm_error("Expected a function");
 
     tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
-    if(!functionObject->definition || !tuuvm_tuple_isKindOf(context, functionObject->definition, context->roots.functionDefinitionType))
+    if(!functionObject->definition)
         tuuvm_error("Expected a function with a definition.");
 
     tuuvm_functionDefinition_t *functionDefinitionObject = (tuuvm_functionDefinition_t*)functionObject->definition;

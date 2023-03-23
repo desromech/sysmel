@@ -131,17 +131,6 @@ TUUVM_API size_t tuuvm_function_getArgumentCount(tuuvm_context_t *context, tuuvm
     return 0;
 }
 
-TUUVM_API tuuvm_bitflags_t tuuvm_function_getFlags(tuuvm_context_t *context, tuuvm_tuple_t function)
-{
-    if(tuuvm_tuple_isFunction(context, function))
-    {
-        tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
-        return tuuvm_tuple_bitflags_decode(functionObject->flags);
-    }
-
-    return 0;
-}
-
 TUUVM_API void tuuvm_function_setFlags(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_bitflags_t flags)
 {
     if(!tuuvm_tuple_isFunction(context, function))
@@ -160,7 +149,7 @@ TUUVM_API void tuuvm_function_addFlags(tuuvm_context_t *context, tuuvm_tuple_t f
     functionObject->flags = tuuvm_tuple_bitflags_encode(tuuvm_tuple_bitflags_decode(functionObject->flags) | flags);
 }
 
-static void tuuvm_function_attemptBytecodeCompilation(tuuvm_context_t *context, tuuvm_functionDefinition_t *definition)
+TUUVM_API void tuuvm_ordinaryFunction_attemptBytecodeCompilation(tuuvm_context_t *context, tuuvm_functionDefinition_t *definition)
 {
     // Avoid cyclic compilation.
     if(definition->bytecode == TUUVM_PENDING_MEMOIZATION_VALUE)
@@ -179,7 +168,7 @@ static void tuuvm_function_attemptBytecodeCompilation(tuuvm_context_t *context, 
         definition->bytecode = TUUVM_NULL_TUPLE;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tuple_t function_, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags)
+TUUVM_API tuuvm_tuple_t tuuvm_ordinaryFunction_apply(tuuvm_context_t *context, tuuvm_tuple_t function_, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags)
 {
     if(!function_) tuuvm_error("Cannot apply nil as a function.");
 
@@ -201,134 +190,131 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
     tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
 
     gcFrame.functionType = tuuvm_tuple_getType(context, gcFrame.function);
-    if(tuuvm_tuple_isFunction(context, gcFrame.function))
+
+    tuuvm_bitflags_t functionFlags = tuuvm_function_getFlags(context, gcFrame.function);
+    bool noTypecheck = (applicationFlags & TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK) | (functionFlags & TUUVM_FUNCTION_FLAGS_NO_TYPECHECK_ARGUMENTS);
+    bool passThroughReferences = (applicationFlags & TUUVM_FUNCTION_APPLICATION_FLAGS_PASS_THROUGH_REFERENCES);
+
+    tuuvm_function_t **functionObject = (tuuvm_function_t**)&gcFrame.function;
+    tuuvm_functionEntryPoint_t nativeEntryPoint = NULL;
+
+    bool shouldTypecheckSimpleFunction = !noTypecheck && tuuvm_tuple_isKindOf(context, gcFrame.functionType, context->roots.simpleFunctionTypeType);
+    bool shouldLoadReferences = !noTypecheck && !shouldTypecheckSimpleFunction && !passThroughReferences && !tuuvm_tuple_isKindOf(context, gcFrame.functionType, context->roots.dependentFunctionTypeType);
+    if(shouldTypecheckSimpleFunction)
     {
-        tuuvm_bitflags_t functionFlags = tuuvm_function_getFlags(context, gcFrame.function);
-        bool noTypecheck = (applicationFlags & TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK) | (functionFlags & TUUVM_FUNCTION_FLAGS_NO_TYPECHECK_ARGUMENTS);
-        bool passThroughReferences = (applicationFlags & TUUVM_FUNCTION_APPLICATION_FLAGS_PASS_THROUGH_REFERENCES);
+        tuuvm_simpleFunctionType_t **simpleFunctionType = (tuuvm_simpleFunctionType_t**)&gcFrame.functionType;
+        size_t expectedArgumentCount = tuuvm_array_getSize((*simpleFunctionType)->argumentTypes);
+        for(size_t i = 0; i < expectedArgumentCount; ++i)
+            arguments[i] = tuuvm_type_coerceValue(context, tuuvm_array_at((*simpleFunctionType)->argumentTypes, i), arguments[i]);
+    }
+    else if(shouldLoadReferences)
+    {
+        bool allowReferenceInReceiver = (functionFlags & TUUVM_FUNCTION_FLAGS_ALLOW_REFERENCE_IN_RECEIVER) != 0;
+        for(size_t i = allowReferenceInReceiver ? 1 : 0; i < argumentCount; ++i)
+            arguments[i] = tuuvm_type_coerceValue(context, TUUVM_NULL_TUPLE, arguments[i]);
+    }
 
-        tuuvm_function_t **functionObject = (tuuvm_function_t**)&gcFrame.function;
-        tuuvm_functionEntryPoint_t nativeEntryPoint = NULL;
-
-        bool shouldTypecheckSimpleFunction = !noTypecheck && tuuvm_tuple_isKindOf(context, gcFrame.functionType, context->roots.simpleFunctionTypeType);
-        bool shouldLoadReferences = !noTypecheck && !shouldTypecheckSimpleFunction && !passThroughReferences && !tuuvm_tuple_isKindOf(context, gcFrame.functionType, context->roots.dependentFunctionTypeType);
-        if(shouldTypecheckSimpleFunction)
+    // Is this a memoized function?
+    bool isMemoized = tuuvm_function_isMemoized(context, gcFrame.function);
+    if(isMemoized)
+    {
+        // Make the memoization lookup key.
+        if(argumentCount > 1)
         {
-            tuuvm_simpleFunctionType_t **simpleFunctionType = (tuuvm_simpleFunctionType_t**)&gcFrame.functionType;
-            size_t expectedArgumentCount = tuuvm_array_getSize((*simpleFunctionType)->argumentTypes);
-            for(size_t i = 0; i < expectedArgumentCount; ++i)
-                arguments[i] = tuuvm_type_coerceValue(context, tuuvm_array_at((*simpleFunctionType)->argumentTypes, i), arguments[i]);
+            gcFrame.memoizationKey = tuuvm_array_create(context, argumentCount);
+            for(size_t i = 0; i < argumentCount; ++i)
+                tuuvm_array_atPut(gcFrame.memoizationKey, i , arguments[i]);
         }
-        else if(shouldLoadReferences)
+        else if(argumentCount == 1)
         {
-            bool allowReferenceInReceiver = (functionFlags & TUUVM_FUNCTION_FLAGS_ALLOW_REFERENCE_IN_RECEIVER) != 0;
-            for(size_t i = allowReferenceInReceiver ? 1 : 0; i < argumentCount; ++i)
-                arguments[i] = tuuvm_type_coerceValue(context, TUUVM_NULL_TUPLE, arguments[i]);
-        }
-
-        // Is this a memoized function?
-        bool isMemoized = tuuvm_function_isMemoized(context, gcFrame.function);
-        if(isMemoized)
-        {
-            // Make the memoization lookup key.
-            if(argumentCount > 1)
-            {
-                gcFrame.memoizationKey = tuuvm_array_create(context, argumentCount);
-                for(size_t i = 0; i < argumentCount; ++i)
-                    tuuvm_array_atPut(gcFrame.memoizationKey, i , arguments[i]);
-            }
-            else if(argumentCount == 1)
-            {
-                gcFrame.memoizationKey = arguments[0];
-            }
-
-            // Find the result in the memoization table
-            if((*functionObject)->memoizationTable)
-            {
-                if(tuuvm_weakValueDictionary_find(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, &gcFrame.result))
-                {
-                    if(gcFrame.result == TUUVM_PENDING_MEMOIZATION_VALUE)
-                        tuuvm_error("Computing cyclic memoized value.");
-
-                    tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
-                    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-                    return gcFrame.result;
-                }
-                else
-                {
-                    tuuvm_weakValueDictionary_atPut(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, TUUVM_PENDING_MEMOIZATION_VALUE);
-                }
-            }
-            else
-            {
-                (*functionObject)->memoizationTable = tuuvm_weakValueDictionary_create(context);
-            }
-        }
-        
-        // Find the entry point in the primitive table.
-        if((*functionObject)->primitiveTableIndex)
-        {
-            tuuvm_primitiveTable_ensureIsComputed();
-            uint32_t primitiveNumber = tuuvm_tuple_uint32_decode((*functionObject)->primitiveTableIndex);
-            if(primitiveNumber > 0 && primitiveNumber <= tuuvm_primitiveTableSize)
-                nativeEntryPoint = tuuvm_primitiveTable[primitiveNumber - 1].entryPoint;
+            gcFrame.memoizationKey = arguments[0];
         }
 
-        if(!nativeEntryPoint && (*functionObject)->nativeEntryPoint)
-            nativeEntryPoint = (tuuvm_functionEntryPoint_t)(uintptr_t)tuuvm_tuple_systemHandle_decode((*functionObject)->nativeEntryPoint);
-        if(nativeEntryPoint)
+        // Find the result in the memoization table
+        if((*functionObject)->memoizationTable)
         {
-            gcFrame.result = nativeEntryPoint(context, &gcFrame.function, argumentCount, arguments);
-            if(shouldTypecheckSimpleFunction)
+            if(tuuvm_weakValueDictionary_find(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, &gcFrame.result))
             {
-                tuuvm_simpleFunctionType_t **simpleFunctionType = (tuuvm_simpleFunctionType_t**)&gcFrame.functionType;
-                gcFrame.result = tuuvm_type_coerceValue(context, (*simpleFunctionType)->resultType, gcFrame.result);
-            }
+                if(gcFrame.result == TUUVM_PENDING_MEMOIZATION_VALUE)
+                    tuuvm_error("Computing cyclic memoized value.");
 
-            if(isMemoized)
-                tuuvm_weakValueDictionary_atPut(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, gcFrame.result);
-
-            tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
-            TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-            return gcFrame.result;            
-        }
-        else if(tuuvm_tuple_isKindOf(context, (*functionObject)->definition, context->roots.functionDefinitionType))
-        {
-            tuuvm_functionDefinition_t *definition = (tuuvm_functionDefinition_t*)(*functionObject)->definition;
-
-            // On demand bytecode compilation
-            if(!definition->bytecode)
-                tuuvm_function_attemptBytecodeCompilation(context, (tuuvm_functionDefinition_t*)definition);
-
-            if(definition->bytecode && definition->bytecode != TUUVM_PENDING_MEMOIZATION_VALUE && tuuvm_function_useBytecodeInterpreter)
-            {
-                // We cannot have duplicated arguments record.
                 tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
-                gcFrame.result = tuuvm_bytecodeInterpreter_apply(context, &gcFrame.function, argumentCount, arguments);
-                if(isMemoized)
-                    tuuvm_weakValueDictionary_atPut(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, gcFrame.result);
                 TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
                 return gcFrame.result;
             }
             else
             {
-                gcFrame.result = tuuvm_interpreter_applyClosureASTFunction(context, &gcFrame.function, argumentCount, arguments);
+                tuuvm_weakValueDictionary_atPut(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, TUUVM_PENDING_MEMOIZATION_VALUE);
             }
-
-            if(isMemoized)
-                tuuvm_weakValueDictionary_atPut(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, gcFrame.result);
-
-            tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
-            TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-            return gcFrame.result;
+        }
+        else
+        {
+            (*functionObject)->memoizationTable = tuuvm_weakValueDictionary_create(context);
         }
     }
+    
+    // Find the entry point in the primitive table.
+    if((*functionObject)->primitiveTableIndex)
+    {
+        tuuvm_primitiveTable_ensureIsComputed();
+        uint32_t primitiveNumber = tuuvm_tuple_uint32_decode((*functionObject)->primitiveTableIndex);
+        if(primitiveNumber > 0 && primitiveNumber <= tuuvm_primitiveTableSize)
+            nativeEntryPoint = tuuvm_primitiveTable[primitiveNumber - 1].entryPoint;
+    }
+
+    if(!nativeEntryPoint && (*functionObject)->nativeEntryPoint)
+        nativeEntryPoint = (tuuvm_functionEntryPoint_t)(uintptr_t)tuuvm_tuple_systemHandle_decode((*functionObject)->nativeEntryPoint);
+    if(nativeEntryPoint)
+    {
+        gcFrame.result = nativeEntryPoint(context, &gcFrame.function, argumentCount, arguments);
+        if(shouldTypecheckSimpleFunction)
+        {
+            tuuvm_simpleFunctionType_t **simpleFunctionType = (tuuvm_simpleFunctionType_t**)&gcFrame.functionType;
+            gcFrame.result = tuuvm_type_coerceValue(context, (*simpleFunctionType)->resultType, gcFrame.result);
+        }
+    }
+    else if((*functionObject)->definition)
+    {
+        tuuvm_functionDefinition_t *definition = (tuuvm_functionDefinition_t*)(*functionObject)->definition;
+
+        // On demand bytecode compilation
+        if(!definition->bytecode)
+            tuuvm_ordinaryFunction_attemptBytecodeCompilation(context, (tuuvm_functionDefinition_t*)definition);
+
+        if(definition->bytecode && definition->bytecode != TUUVM_PENDING_MEMOIZATION_VALUE && tuuvm_function_useBytecodeInterpreter)
+        {
+            // We cannot have duplicated arguments record.
+            tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
+            gcFrame.result = tuuvm_bytecodeInterpreter_apply(context, &gcFrame.function, argumentCount, arguments);
+        }
+        else
+        {
+            gcFrame.result = tuuvm_interpreter_applyClosureASTFunction(context, &gcFrame.function, argumentCount, arguments);
+        }
+    }
+    else
+    {
+        tuuvm_error("Cannot apply a function without a proper definition.");
+    }
+
+    if(isMemoized)
+        tuuvm_weakValueDictionary_atPut(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, gcFrame.result);
+
+    //tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags)
+{
+    // Is this an ordinary function?
+    if(tuuvm_tuple_isFunction(context, function))
+        return tuuvm_ordinaryFunction_apply(context, function, argumentCount, arguments, applicationFlags);
 
     // Send the #() and #(): messages to the functional object.
     if(argumentCount == 0)
     {
-        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-        return tuuvm_tuple_send0(context, context->roots.applyWithoutArgumentsSelector, gcFrame.function);
+        return tuuvm_tuple_send0(context, context->roots.applyWithoutArgumentsSelector, function);
     }
     else
     {
@@ -336,8 +322,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
         for(size_t i = 0; i < argumentCount; ++i)
             tuuvm_array_atPut(argumentsArray, i, arguments[i]);
 
-        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-        return tuuvm_tuple_send1(context, context->roots.applyWithArgumentsSelector, gcFrame.function, argumentsArray);
+        return tuuvm_tuple_send1(context, context->roots.applyWithArgumentsSelector, function, argumentsArray);
     }
 }
 

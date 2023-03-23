@@ -3941,63 +3941,19 @@ static tuuvm_tuple_t tuuvm_astWhileContinueWithNode_primitiveEvaluate(tuuvm_cont
     tuuvm_tuple_t *node = &arguments[0];
     tuuvm_tuple_t *environment = &arguments[1];
 
-    struct {
-        tuuvm_tuple_t loopEnvironment;
-    } gcFrame = {0};
-    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
-    gcFrame.loopEnvironment = *environment;
-
     tuuvm_astWhileContinueWithNode_t **whileNode = (tuuvm_astWhileContinueWithNode_t**)node;
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*whileNode)->super.sourcePosition);
-
-    bool shouldContinue = true;
-    
-    tuuvm_stackFrameBreakTargetRecord_t breakTargetRecord = {
-        .type = TUUVM_STACK_FRAME_RECORD_TYPE_BREAK_TARGET,
-        .environment = gcFrame.loopEnvironment
-    };
-    tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&breakTargetRecord);  
-    tuuvm_analysisAndEvaluationEnvironment_setBreakTarget(context, gcFrame.loopEnvironment, tuuvm_tuple_uintptr_encode(context, (uintptr_t)&breakTargetRecord));
-
-    if(!_setjmp(breakTargetRecord.jmpbuffer))
+    while(!(*whileNode)->conditionExpression
+        || tuuvm_tuple_boolean_decode(tuuvm_interpreter_evaluateASTWithEnvironment(context, (*whileNode)->conditionExpression, *environment)))
     {
-        if((*whileNode)->conditionExpression)
-            shouldContinue = tuuvm_tuple_boolean_decode(tuuvm_interpreter_evaluateASTWithEnvironment(context, (*whileNode)->conditionExpression, gcFrame.loopEnvironment));
+        if((*whileNode)->bodyExpression)
+            tuuvm_interpreter_evaluateASTWithEnvironment(context, (*whileNode)->bodyExpression, *environment);
 
-        while(shouldContinue)
-        {
-            if((*whileNode)->bodyExpression)
-            {
-                tuuvm_stackFrameContinueTargetRecord_t continueTargetRecord = {
-                    .type = TUUVM_STACK_FRAME_RECORD_TYPE_CONTINUE_TARGET,
-                    .environment = gcFrame.loopEnvironment
-                };
-                tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&continueTargetRecord);
-                tuuvm_analysisAndEvaluationEnvironment_setContinueTarget(context, gcFrame.loopEnvironment, tuuvm_tuple_uintptr_encode(context, (uintptr_t)&breakTargetRecord));
+        if((*whileNode)->continueExpression)
+            tuuvm_interpreter_evaluateASTWithEnvironment(context, (*whileNode)->continueExpression, *environment);
 
-                if(!_setjmp(continueTargetRecord.jmpbuffer))
-                {
-                    tuuvm_interpreter_evaluateASTWithEnvironment(context, (*whileNode)->bodyExpression, gcFrame.loopEnvironment);
-                }
-
-                tuuvm_analysisAndEvaluationEnvironment_setContinueTarget(context, gcFrame.loopEnvironment, TUUVM_NULL_TUPLE);
-                tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&continueTargetRecord);  
-            }
-
-            if((*whileNode)->continueExpression)
-                tuuvm_interpreter_evaluateASTWithEnvironment(context, (*whileNode)->continueExpression, gcFrame.loopEnvironment);
-
-            if((*whileNode)->conditionExpression)
-                shouldContinue = tuuvm_tuple_boolean_decode(tuuvm_interpreter_evaluateASTWithEnvironment(context, (*whileNode)->conditionExpression, gcFrame.loopEnvironment));
-
-            if(shouldContinue)
-                tuuvm_gc_safepoint(context);
-        }
-
-        tuuvm_analysisAndEvaluationEnvironment_setBreakTarget(context, gcFrame.loopEnvironment, TUUVM_NULL_TUPLE);
+        tuuvm_gc_safepoint(context);
     }
-
-    tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&breakTargetRecord);  
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
 
     return TUUVM_VOID_TUPLE;
@@ -4673,7 +4629,6 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_
     tuuvm_functionDefinition_t **functionDefinition = (tuuvm_functionDefinition_t**)&functionActivationRecord.functionDefinition;
 
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*functionDefinition)->sourcePosition);
-
     tuuvm_functionDefinition_ensureAnalysis(context, functionDefinition);
 
     size_t expectedArgumentCount = tuuvm_array_getSize((*functionDefinition)->analyzedArgumentNodes);
