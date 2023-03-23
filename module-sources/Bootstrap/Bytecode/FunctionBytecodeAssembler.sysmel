@@ -1,5 +1,6 @@
 public class FunctionBytecodeAssemblerAbstractOperand superclass: Object; definition.
 public class FunctionBytecodeAssemblerAbstractInstruction superclass: FunctionBytecodeAssemblerAbstractOperand.
+public final class FunctionBytecodeAssembler superclass: Object.
 
 FunctionBytecodeAssemblerAbstractOperand definition: {
     public field name => Symbol.
@@ -11,6 +12,23 @@ FunctionBytecodeAssemblerAbstractOperand definition: {
 public class FunctionBytecodeAssemblerOperand superclass: FunctionBytecodeAssemblerAbstractOperand; definition: {
     public field index => Int16.
     public field vectorType => Int16.
+
+    public field hasAllocaDestination => Boolean.
+    public field hasNonAllocaDestination => Boolean.
+    public field hasLoadStoreUsage => Boolean.
+    public field hasNonLoadStoreUsage => Boolean.
+
+    public method initialize => Void := {
+        super initialize.
+        self hasAllocaDestination: false.
+        self hasNonAllocaDestination: false.
+        self hasLoadStoreUsage: false.
+        self hasNonLoadStoreUsage: false.
+    }.
+
+    public method isLocalOnlyAlloca => Boolean
+        := (self hasAllocaDestination && self hasNonAllocaDestination not) &&
+            (self hasLoadStoreUsage && self hasNonLoadStoreUsage not).
 
     public override method encodedValueForInstruction: (instruction: FunctionBytecodeAssemblerAbstractInstruction) ::=> Int16
         := (self index << FunctionBytecode::OperandVectorName::Bits) | self vectorType.
@@ -45,6 +63,9 @@ FunctionBytecodeAssemblerAbstractInstruction definition: {
 
     public method destinationInstruction => FunctionBytecodeAssemblerAbstractInstruction
         := nil.
+
+    public method markOperandUsages => Void := {}.
+    public method optimizeLocalOnlyAllocasWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {}.
 }.
 
 public final class FunctionBytecodeAssemblerLabel superclass: FunctionBytecodeAssemblerAbstractInstruction; definition: {
@@ -96,17 +117,92 @@ public final class FunctionBytecodeAssemblerInstruction superclass: FunctionByte
         }
     }.
 
+    public method isAllocaInstruction => Boolean := {
+        let opcode := self standardOpcode.
+        (opcode = FunctionBytecode::Opcode::Alloca) || (opcode = FunctionBytecode::Opcode::AllocaWithValue)
+    }.
+
     public method isBranchInstruction => Boolean := {
         let opcode := self standardOpcode.
         ((opcode = FunctionBytecode::Opcode::Jump) || (opcode = FunctionBytecode::Opcode::JumpIfTrue))
         || (opcode = FunctionBytecode::Opcode::JumpIfFalse)
     }.
 
+    public method isLoadStoreInstruction => Boolean := {
+        let opcode := self standardOpcode.
+        (opcode = FunctionBytecode::Opcode::Load) || (opcode = FunctionBytecode::Opcode::Store)
+    }.
+
+    public method isLoadInstruction => Boolean
+        := self standardOpcode = FunctionBytecode::Opcode::Load.
+
+    public method isStoreInstruction => Boolean
+        := self standardOpcode = FunctionBytecode::Opcode::Store.
+
     public method destinationInstruction => FunctionBytecodeAssemblerAbstractInstruction
         := self operands last.
+
+    public method markOperandUsages => Void := {
+        let destinationOperandCount := FunctionBytecode::OpcodeDestinationOperandCountDictionary at: self standardOpcode.
+        let operands := self operands.
+        let operandCount := operands size - (if: self isBranchInstruction then: 1sz else: 0sz).
+        
+        let i mutable := 0sz.
+        if: self isAllocaInstruction then: {
+            while: i < destinationOperandCount do: (
+                (operands at: i) hasAllocaDestination: true
+            ) continueWith: (i := i + 1sz)
+        } else: {
+            while: i < destinationOperandCount do: (
+                (operands at: i) hasNonAllocaDestination: true
+            ) continueWith: (i := i + 1sz)
+        }.
+
+        if: self isLoadStoreInstruction then: {
+            while: i < operandCount do: (
+                (operands at: i) hasLoadStoreUsage: true
+            ) continueWith: (i := i + 1sz)
+        } else: {
+            while: i < operandCount do: (
+                (operands at: i) hasNonLoadStoreUsage: true
+            ) continueWith: (i := i + 1sz)
+        }
+    }.
+
+    public method optimizeLocalOnlyAllocaWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {
+        let reference := self operands first.
+        if: reference isLocalOnlyAlloca then: {
+            let value := (if: self standardOpcode = FunctionBytecode::Opcode::Alloca
+                then: (assembler literal: nil)
+                else: self operands third).
+
+            self standardOpcode: FunctionBytecode::Opcode::Move.
+            self operands: (Array with: reference with: value)
+        }
+    }.
+
+    public method optimizeLocalOnlyLoadWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {
+        let reference := self operands second.
+        if: reference isLocalOnlyAlloca then: {
+            self standardOpcode: FunctionBytecode::Opcode::Move
+        }
+    }.
+
+    public method optimizeLocalOnlyStoreWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {
+        let reference := self operands first.
+        if: reference isLocalOnlyAlloca then: {
+            self standardOpcode: FunctionBytecode::Opcode::Move
+        }
+    }.
+
+    public method optimizeLocalOnlyAllocasWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {
+        if: self isAllocaInstruction then: (self optimizeLocalOnlyAllocaWith: assembler).
+        if: self isLoadInstruction then: (self optimizeLocalOnlyLoadWith: assembler).
+        if: self isStoreInstruction then: (self optimizeLocalOnlyStoreWith: assembler).
+    }.
 }.
 
-public final class FunctionBytecodeAssembler superclass: Object; definition: {
+FunctionBytecodeAssembler definition: {
     public field arguments => Array.
     public field captures => Array.
     public field literals => ArrayList.
@@ -407,6 +503,16 @@ public final class FunctionBytecodeAssembler superclass: Object; definition: {
             standardOpcode: FunctionBytecode::Opcode::Trap;
             yourself).
 
+    public method optimizeTemporaries => Void := {
+        self instructionsDo: {:(FunctionBytecodeAssemblerAbstractInstruction)each |
+            each markOperandUsages.
+        }.
+
+        self instructionsDo: {:(FunctionBytecodeAssemblerAbstractInstruction)each |
+            each optimizeLocalOnlyAllocasWith: self
+        }.
+    }.
+
     public method optimizeJumps => Void := {
         self instructionsDo: {:(FunctionBytecodeAssemblerAbstractInstruction)each |
             if: each isBranchInstruction && (each destinationInstruction == each nextInstruction) then: {
@@ -416,7 +522,9 @@ public final class FunctionBytecodeAssembler superclass: Object; definition: {
     }.
 
     public method optimize => Void := {
-        self optimizeJumps
+        self
+            optimizeTemporaries;
+            optimizeJumps
     }.
 
     public method build => FunctionBytecode := {

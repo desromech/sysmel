@@ -56,6 +56,38 @@ let opcodeNameDictionary := #{
 }.
 public: #FunctionBytecode::OpcodeNameDictionary with: opcodeNameDictionary.
 
+let opcodeDestinationOperandCount := #{
+    FunctionBytecode::Opcode::Nop : 0sz.
+    FunctionBytecode::Opcode::Trap : 0sz.
+
+    FunctionBytecode::Opcode::Return : 0sz.
+    FunctionBytecode::Opcode::Jump : 0sz.
+
+    FunctionBytecode::Opcode::Alloca : 1sz.
+    FunctionBytecode::Opcode::Move : 1sz.
+    FunctionBytecode::Opcode::Load : 1sz.
+    FunctionBytecode::Opcode::Store : 0sz.
+    FunctionBytecode::Opcode::JumpIfTrue : 0sz.
+    FunctionBytecode::Opcode::JumpIfFalse : 0sz.
+
+    FunctionBytecode::Opcode::AllocaWithValue : 1sz.
+    FunctionBytecode::Opcode::CoerceValue : 1sz.
+    FunctionBytecode::Opcode::MakeAssociation : 1sz.
+    FunctionBytecode::Opcode::MakeClosureWithVector : 1sz.
+
+    FunctionBytecode::Opcode::Call : 1sz.
+    FunctionBytecode::Opcode::UncheckedCall : 1sz.
+    FunctionBytecode::Opcode::Send : 1sz.
+    FunctionBytecode::Opcode::SendWithLookup : 1sz.
+
+    FunctionBytecode::Opcode::MakeArrayWithElements : 1sz.
+    FunctionBytecode::Opcode::MakeByteArrayWithElements : 1sz.
+    FunctionBytecode::Opcode::MakeClosureWithCaptures : 1sz.
+    FunctionBytecode::Opcode::MakeDictionaryWithElements : 1sz.
+    FunctionBytecode::Opcode::MakeTupleWithElements : 1sz.
+}.
+public: #FunctionBytecode::OpcodeDestinationOperandCountDictionary with: opcodeDestinationOperandCount.
+
 let operandVectorNameDictionary := #{
     FunctionBytecode::OperandVectorName::Arguments : #arguments.
     FunctionBytecode::OperandVectorName::Captures : #captures.

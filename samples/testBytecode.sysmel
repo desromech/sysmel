@@ -30,6 +30,9 @@ printLine({:n :y | {:x | x + n} (y) }(3, 2)).
 
     ({| let x := 42. x }, #()),
     ({| let x mutable := 42. x := x + 5. x }, #()),
+
+    ({:x :y | (x, 2, y)
+    }, #(1 5)),
     ({:(Int32)n :: Int32 |
         let result mutable := 0i32.
         let i mutable := 0i32.
@@ -37,10 +40,7 @@ printLine({:n :y | {:x | x + n} (y) }(3, 2)).
             result := result + (i*3i32)
         } continueWith: ( i := i + 1i32 ).
         result
-    }, (Array with: 50i32)),
-
-    ({:x :y | (x, 2, y)
-    }, #(1 5))
+    }, (Array with: 50i32))
 
 ) do: {:functionAndArguments :: Void |
     let function := functionAndArguments first.
