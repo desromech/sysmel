@@ -279,7 +279,10 @@ TUUVM_API tuuvm_tuple_t tuuvm_ordinaryFunction_apply(tuuvm_context_t *context, t
 
         // On demand bytecode compilation
         if(!definition->bytecode)
+        {
             tuuvm_ordinaryFunction_attemptBytecodeCompilation(context, (tuuvm_functionDefinition_t*)definition);
+            definition = (tuuvm_functionDefinition_t*)(*functionObject)->definition;
+        }
 
         if(definition->bytecode && definition->bytecode != TUUVM_PENDING_MEMOIZATION_VALUE && tuuvm_function_useBytecodeInterpreter)
         {
