@@ -195,7 +195,6 @@ TUUVM_API tuuvm_tuple_t tuuvm_ordinaryFunction_nativeApply(tuuvm_context_t *cont
 TUUVM_API tuuvm_tuple_t tuuvm_ordinaryFunction_directApply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags)
 {
     tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
-    tuuvm_functionEntryPoint_t nativeEntryPoint = NULL;
 
     // Find the entry point in the primitive table.
     if(functionObject->primitiveTableIndex)
@@ -203,14 +202,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_ordinaryFunction_directApply(tuuvm_context_t *cont
         tuuvm_primitiveTable_ensureIsComputed();
         uint32_t primitiveNumber = tuuvm_tuple_uint32_decode(functionObject->primitiveTableIndex);
         if(primitiveNumber > 0 && primitiveNumber <= tuuvm_primitiveTableSize)
-            nativeEntryPoint = tuuvm_primitiveTable[primitiveNumber - 1].entryPoint;
+            return tuuvm_ordinaryFunction_nativeApply(context, function, tuuvm_primitiveTable[primitiveNumber - 1].entryPoint, argumentCount, arguments, applicationFlags);
     }
 
-    if(!nativeEntryPoint && functionObject->nativeEntryPoint)
-        nativeEntryPoint = (tuuvm_functionEntryPoint_t)(uintptr_t)tuuvm_tuple_systemHandle_decode(functionObject->nativeEntryPoint);
-    
-    if(nativeEntryPoint)
-        return tuuvm_ordinaryFunction_nativeApply(context, function, nativeEntryPoint, argumentCount, arguments, applicationFlags);
+    if(functionObject->nativeEntryPoint)
+        return tuuvm_ordinaryFunction_nativeApply(context, function, (tuuvm_functionEntryPoint_t)(uintptr_t)tuuvm_tuple_systemHandle_decode(functionObject->nativeEntryPoint), argumentCount, arguments, applicationFlags);
     
     if(!functionObject->definition)
         tuuvm_error("Cannot apply a function without a proper definition.");
