@@ -1,2 +1,2 @@
 loadSourceNamed: "Core/package.sysmel".
-##loadSourceNamed: "SSA/package.sysmel".
+loadSourceNamed: "SSA/package.sysmel".

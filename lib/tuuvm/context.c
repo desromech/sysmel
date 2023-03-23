@@ -455,6 +455,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     
     context->roots.anyPointerType = tuuvm_type_createAnonymous(context);
     context->roots.anyReferenceType = tuuvm_type_createAnonymous(context);
+    tuuvm_type_setSupertype(context->roots.anyReferenceType, TUUVM_NULL_TUPLE);
 
     context->roots.pointerLikeType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.valueType);
     context->roots.pointerType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.pointerLikeType);

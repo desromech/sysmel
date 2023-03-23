@@ -335,4 +335,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_functionCallFrameStack_finish(tuuvm_context_t *con
  */
 TUUVM_API bool tuuvm_function_shouldOptimizeLookup(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_tuple_t receiverType, bool hasLiteralReceiver);
 
+/**
+ * Attempt the compilation of the bytecode of an ordinary function.
+ */
+TUUVM_API void tuuvm_ordinaryFunction_attemptBytecodeCompilation(tuuvm_context_t *context, tuuvm_functionDefinition_t *definition);
+
 #endif //TUUVM_FUNCTION_H

@@ -489,7 +489,12 @@ StringSymbol
     withSelector: #printOn: addMethod: {:(StringSymbol)self :(Stream)stream :: Void |
         ## TODO: Implement this part properly.
         stream nextPut: '#'; nextPutAll: self
+    };
+    withSelector: #fullPrintOn: addMethod: {:(StringSymbol)self :(Stream)stream :: Void |
+        ## TODO: Implement this part properly.
+        stream nextPut: '#'; nextPutAll: self
     }.
+
 
 Class
     withSelector: #withSelector:addClassMethod: addMethod: {:(Class)self :selector :method :: Void |
@@ -614,6 +619,16 @@ Collection
         self doWithIndex: {:element :(Size)index :: Void |
             if: index > 0sz then: (stream nextPutAll: ", ").
             stream print: element.
+            void
+        }.
+
+        stream nextPutAll: ")"
+    };
+    withSelector: #fullPrintOn: addMethod: {:(Collection)self :(Stream)stream :: Void |
+        stream print: self class; nextPutAll: "(".
+        self doWithIndex: {:element :(Size)index :: Void |
+            if: index > 0sz then: (stream nextPutAll: ", ").
+            stream fullPrint: element.
             void
         }.
 

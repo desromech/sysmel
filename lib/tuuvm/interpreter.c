@@ -795,7 +795,6 @@ static tuuvm_tuple_t tuuvm_astErrorNode_primitiveEvaluate(tuuvm_context_t *conte
 
 tuuvm_tuple_t tuuvm_interpreter_recompileAndOptimizeFunction(tuuvm_context_t *context, tuuvm_function_t **functionObject)
 {
-    //return (tuuvm_tuple_t)*functionObject;
     struct {
         tuuvm_functionDefinition_t *functionDefinition;
         tuuvm_tuple_t optimizedFunction;
@@ -839,6 +838,8 @@ tuuvm_tuple_t tuuvm_interpreter_recompileAndOptimizeFunction(tuuvm_context_t *co
     gcFrame.optimizedFunctionDefinition->analyzedArgumentNodes = TUUVM_NULL_TUPLE;
     gcFrame.optimizedFunctionDefinition->analyzedBodyNode = TUUVM_NULL_TUPLE;
     gcFrame.optimizedFunctionDefinition->analyzedResultTypeNode = TUUVM_NULL_TUPLE;
+
+    gcFrame.optimizedFunctionDefinition->bytecode = TUUVM_NULL_TUPLE;
 
     tuuvm_functionDefinition_ensureAnalysis(context, &gcFrame.optimizedFunctionDefinition);
     TUUVM_ASSERT(tuuvm_array_getSize(gcFrame.optimizedFunctionDefinition->analyzedCaptures) == 0);
@@ -945,6 +946,10 @@ static void tuuvm_functionDefinition_analyze(tuuvm_context_t *context, tuuvm_fun
     (*functionDefinition)->analyzedArgumentNodes = gcFrame.analyzedArgumentsNode;
     (*functionDefinition)->analyzedResultTypeNode = gcFrame.analyzedResultTypeNode;
     (*functionDefinition)->analyzedBodyNode = gcFrame.analyzedBodyNode;
+
+    (*functionDefinition)->bytecode = TUUVM_NULL_TUPLE;
+
+    tuuvm_ordinaryFunction_attemptBytecodeCompilation(context, *functionDefinition);
 
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -4613,7 +4618,7 @@ static tuuvm_tuple_t tuuvm_dependentFunctionType_primitiveAnalyzeAndTypeCheckMes
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&functionActivationRecord);  
-    return *node;
+    return tuuvm_astFunctionApplicationNode_optimizePureApplication(context, (tuuvm_astFunctionApplicationNode_t**)node);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_t *context, tuuvm_tuple_t *function, size_t argumentCount, tuuvm_tuple_t *arguments)

@@ -79,12 +79,13 @@ ASTFunctionApplicationNode
         if: (self functionExpression isNotNil) then: (self functionExpression: aBlock(self functionExpression)).
         self arguments: (self arguments collect: aBlock).
     };
-    withSelector: #printOn: addMethod: {:(ASTFunctionApplicationNode)self :(Stream)stream :: Void |
+    withSelector: #fullPrintOn: addMethod: {:(ASTFunctionApplicationNode)self :(Stream)stream :: Void |
         stream print: self class; 
-            nextPutAll: " analyzedType: "; print: self analyzedType;
-            nextPutAll: " functionExpression: ("; print: self functionExpression;
-            nextPutAll: ") arguments: "; print: self arguments
-    }..
+            nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
+            nextPutAll: " functionExpression: ("; fullPrint: self functionExpression;
+            nextPutAll: ") arguments: "; fullPrint: self arguments;
+            nextPutAll: " applicationFlags: "; print: self applicationFlags
+    }.
 
 ASTLambdaNode
     withSelector: #childrenDo: addMethod: {:(ASTLambdaNode)self :aBlock :: Void |
@@ -107,6 +108,10 @@ ASTLexicalBlockNode
     };
     withSelector: #transformWith: addMethod: {:(ASTLexicalBlockNode)self :aBlock :: Void |
         if: (self body isNotNil) then: (self body: aBlock(self body)).
+    };
+    withSelector: #fullPrintOn: addMethod: {:(ASTLexicalBlockNode)self :(Stream)stream :: Void |
+        stream print: self class; 
+            nextPutAll: " body: ("; fullPrint: self body; nextPut: ')'
     }.
 
 ASTLiteralNode
@@ -127,11 +132,10 @@ ASTLiteralNode
             then: self value primitiveName
             else: nil
     };
-
-    withSelector: #printOn: addMethod: {:(ASTLiteralNode)self :(Stream)stream :: Void |
+    withSelector: #fullPrintOn: addMethod: {:(ASTLiteralNode)self :(Stream)stream :: Void |
         stream print: self class; 
-            nextPutAll: " analyzedType: "; print: self analyzedType;
-            nextPutAll: " value: "; print: self value
+            nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
+            nextPutAll: " value: "; fullPrint: self value
     }.
 
 ASTLocalDefinitionNode
@@ -143,11 +147,11 @@ ASTLocalDefinitionNode
         if: (self nameExpression isNotNil) then: (self nameExpression: aBlock(self nameExpression)).
         if: (self valueExpression isNotNil) then: (self valueExpression: aBlock(self valueExpression)).
     };
-    withSelector: #printOn: addMethod: {:(ASTLocalDefinitionNode)self :(Stream)stream :: Void |
+    withSelector: #fullPrintOn: addMethod: {:(ASTLocalDefinitionNode)self :(Stream)stream :: Void |
         stream print: self class; 
-            nextPutAll: " analyzedType: "; print: self analyzedType;
-            nextPutAll: " nameExpression: ("; print: self nameExpression;
-            nextPutAll: ") valueExpression: ("; print: self valueExpression; nextPut: ')'
+            nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
+            nextPutAll: " nameExpression: ("; fullPrint: self nameExpression;
+            nextPutAll: ") valueExpression: ("; fullPrint: self valueExpression; nextPut: ')'
     }.
 
 ASTIdentifierReferenceNode
@@ -159,11 +163,11 @@ ASTIdentifierReferenceNode
             value: self value;
             yourself
     };
-    withSelector: #printOn: addMethod: {:(ASTIdentifierReferenceNode)self :(Stream)stream :: Void |
+    withSelector: #fullPrintOn: addMethod: {:(ASTIdentifierReferenceNode)self :(Stream)stream :: Void |
         stream print: self class; 
-            nextPutAll: " analyzedType: "; print: self analyzedType;
-            nextPutAll: " value: ("; print: self value;
-            nextPutAll: ") binding: ("; print: self binding; nextPut: ')'
+            nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
+            nextPutAll: " value: ("; fullPrint: self value;
+            nextPutAll: ") binding: ("; fullPrint: self binding; nextPut: ')'
     }.
 
 ASTIfNode
@@ -225,12 +229,12 @@ ASTMessageSendNode
         if: (self selector isNotNil) then: (self selector: aBlock(self selector)).
         self arguments: (self arguments collect: aBlock)
     };
-    withSelector: #printOn: addMethod: {:(ASTMessageSendNode)self :(Stream)stream :: Void |
+    withSelector: #fullPrintOn: addMethod: {:(ASTMessageSendNode)self :(Stream)stream :: Void |
         stream print: self class; 
-            nextPutAll: " analyzedType: "; print: self analyzedType;
-            nextPutAll: " receiver: ("; print: self receiver;
-            nextPutAll: ") selector: ("; print: self selector;
-            nextPutAll: ") arguments: "; print: self arguments
+            nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
+            nextPutAll: " receiver: ("; fullPrint: self receiver;
+            nextPutAll: ") selector: ("; fullPrint: self selector;
+            nextPutAll: ") arguments: "; fullPrint: self arguments
     }.
 
 ASTMessageChainNode
@@ -301,11 +305,11 @@ ASTSequenceNode
         self pragmas: (self pragmas collect: aBlock).
         self expressions: (self expressions collect: aBlock)
     };
-    withSelector: #printOn: addMethod: {:(ASTSequenceNode)self :(Stream)stream :: Void |
+    withSelector: #fullPrintOn: addMethod: {:(ASTSequenceNode)self :(Stream)stream :: Void |
         stream print: self class; 
-            nextPutAll: " analyzedType: "; print: self analyzedType;
-            nextPutAll: " pragmas: "; print: self pragmas;
-            nextPutAll: " expressions: "; print: self expressions
+            nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
+            nextPutAll: " pragmas: "; fullPrint: self pragmas;
+            nextPutAll: " expressions: "; fullPrint: self expressions
     }.
 
 ASTUnexpandedApplicationNode
@@ -445,4 +449,10 @@ ASTWhileContinueWithNode
         if: (self conditionExpression isNotNil) then: (self conditionExpression: aBlock(self conditionExpression)).
         if: (self bodyExpression isNotNil) then: (self bodyExpression: aBlock(self bodyExpression)).
         if: (self continueExpression isNotNil) then: (self continueExpression: aBlock(self continueExpression)).
+    };
+    withSelector: #fullPrintOn: addMethod: {:(ASTWhileContinueWithNode)self :(Stream)stream :: Void |
+        stream print: self class; 
+            nextPutAll: " conditionExpression: ("; fullPrint: self conditionExpression;
+            nextPutAll: ") bodyExpression: ("; fullPrint: self bodyExpression;
+            nextPutAll: ") continueExpression: ("; fullPrint: self continueExpression; nextPut: ')'
     }.

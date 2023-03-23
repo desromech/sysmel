@@ -300,6 +300,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_stackFrame_buildStackTraceUpTo(tuuvm_stackFrameRec
             if(currentSourcePosition)
                 tuuvm_arrayList_add(context, arrayList, currentSourcePosition);
             currentSourcePosition = tuuvm_bytecodeInterpreter_getSourcePositionForActivationRecord(context, (tuuvm_stackFrameBytecodeFunctionActivationRecord_t*)stackFrameRecord);
+            if(currentSourcePosition)
+                tuuvm_arrayList_add(context, arrayList, currentSourcePosition);
+            currentSourcePosition = TUUVM_NULL_TUPLE;
         }
 
         stackFrameRecord = stackFrameRecord->previous;

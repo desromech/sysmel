@@ -61,29 +61,31 @@ if: true then: {
         FunctionBytecodeDirectCompiler,
         ASTSequenceNode,
         ASTMessageSendNode,
-        ASTFunctionApplicationNode
+        ASTFunctionApplicationNode,
+        ASTIdentifierReferenceNode,
+        ASTLexicalBlockNode,
+        ASTLambdaNode,
+        ASTLiteralNode,
+        ASTLocalDefinitionNode
     ) -- ASTNode withAllSubtypes do: typeCompilationBlock.
 
-    ##AnyValue withAllSubtypesDo: typeCompilationBlock
+    AnyValue withAllSubtypesDo: typeCompilationBlock
 }.
 
 ## This allows to activate the on-demand bytecode compiler.
-if: false then: {
+if: true then: {
     if: false then: {
         FunctionDefinition
             withSelector: #onDemandCompileIntoBytecode addMethod: {:(FunctionDefinition)self :: Void |
                 let sourcePosition := self sourcePosition printString.
-                ##printLine("Compiling ", sourcePosition).
-                let compiledBytecode := (FunctionBytecodeDirectCompiler compileFunctionDefinition: self).
-                let compiledBytecodeString := compiledBytecode fullPrintString.
-                printLine("End compiling ", sourcePosition, "\n", compiledBytecodeString).
-                ##printLine("End compiling ", sourcePosition).
-                self bytecode: compiledBytecode
+                printLine("Compiling ", sourcePosition).
+                self compileIntoBytecodeIfNeeded.
+                printLine("Done compiling ", sourcePosition, "\n").
             }.
     } else: {
         FunctionDefinition
             withSelector: #onDemandCompileIntoBytecode addMethod: {:(FunctionDefinition)self :: Void |
-                self compileIntoIfNeededBytecode
+                self compileIntoBytecodeIfNeeded
             }.
     }.
 }.
