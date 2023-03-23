@@ -26,6 +26,12 @@ public class FunctionBytecodeAssemblerOperand superclass: FunctionBytecodeAssemb
         self hasNonLoadStoreUsage: false.
     }.
 
+    public method hasDestinationUsage => Boolean
+        := self hasAllocaDestination || self hasNonAllocaDestination.
+
+    public method hasNonDestinationUsage => Boolean
+        := self hasLoadStoreUsage || self hasNonLoadStoreUsage.
+
     public method isLocalOnlyAlloca => Boolean
         := (self hasAllocaDestination && self hasNonAllocaDestination not) &&
             (self hasLoadStoreUsage && self hasNonLoadStoreUsage not).
@@ -208,6 +214,7 @@ FunctionBytecodeAssembler definition: {
     public field literals => ArrayList.
     public field literalDictionary => IdentityDictionary.
     public field temporaries => ArrayList.
+    public field usedTemporaryCount => Size.
 
     public field firstInstruction => FunctionBytecodeAssemblerAbstractInstruction.
     public field lastInstruction => FunctionBytecodeAssemblerAbstractInstruction.
@@ -222,6 +229,7 @@ FunctionBytecodeAssembler definition: {
         self literals: ArrayList new.
         self literalDictionary: IdentityDictionary new.
         self temporaries: ArrayList new.
+        self usedTemporaryCount: 0sz.
     }.
 
     public method addInstruction: (instruction: FunctionBytecodeAssemblerAbstractInstruction) ::=> instruction class := {
@@ -317,6 +325,7 @@ FunctionBytecodeAssembler definition: {
             vectorType: FunctionBytecode::OperandVectorName::Local;
             yourself.
         self temporaries add: operand.
+        self usedTemporaryCount: self temporaries size.
         operand
     }.
 
@@ -511,6 +520,25 @@ FunctionBytecodeAssembler definition: {
         self instructionsDo: {:(FunctionBytecodeAssemblerAbstractInstruction)each |
             each optimizeLocalOnlyAllocasWith: self
         }.
+
+        ## Optimize out the temporaries that are not used.
+        let usedTemporaryCount mutable := 0i16.
+        self temporaries do: {:(FunctionBytecodeAssemblerOperand)each :: Void |
+            if: each hasNonDestinationUsage then: {
+                if: each hasDestinationUsage then: {
+                    each index: usedTemporaryCount.
+                    usedTemporaryCount := usedTemporaryCount + 1i16
+                } else: {
+                    let nilLiteral := self literal: nil.
+                    each index: nilLiteral index.
+                    each vectorType: nilLiteral vectorType.
+                }.
+            } else: {
+                each index: -1i16.
+            }
+        }.
+
+        self usedTemporaryCount: usedTemporaryCount asSize.
     }.
 
     public method optimizeJumps => Void := {
@@ -523,8 +551,9 @@ FunctionBytecodeAssembler definition: {
 
     public method optimize => Void := {
         self
-            optimizeTemporaries;
-            optimizeJumps
+            optimizeJumps;
+            optimizeTemporaries
+            
     }.
 
     public method build => FunctionBytecode := {
@@ -532,7 +561,7 @@ FunctionBytecodeAssembler definition: {
             literalVector: self literals asArray;
             argumentCount: self arguments size;
             captureVectorSize: self captures size;
-            localVectorSize: self temporaries size;
+            localVectorSize: self usedTemporaryCount;
             yourself.
 
         ## Compute the instruction stream size, and the pc of each instruction.

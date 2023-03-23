@@ -176,7 +176,7 @@ TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_con
                 tuuvm_error("Bytecode destination operands must be in the local vector.");
             
             decodedOperands[i] >>= TUUVM_OPERAND_VECTOR_BITS;
-            if((size_t)decodedOperands[i] >= activationRecord->inlineLocalVectorSize)
+            if(decodedOperands[i] >= 0 && (size_t)decodedOperands[i] >= activationRecord->inlineLocalVectorSize)
                 tuuvm_error("Bytecode destination operand is beyond the local vector bounds.");
         }
 
