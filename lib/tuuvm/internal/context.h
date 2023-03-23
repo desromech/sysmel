@@ -77,6 +77,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t defaultValueSelector;
     tuuvm_tuple_t compileIntoBytecodeSelector;
 
+    tuuvm_tuple_t untypedType;
     tuuvm_tuple_t anyValueType;
     tuuvm_tuple_t anyReferenceType;
     tuuvm_tuple_t anyPointerType;
