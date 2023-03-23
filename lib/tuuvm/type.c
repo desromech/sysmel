@@ -802,7 +802,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValuePassingReferences(tuuvm_context_t 
 TUUVM_API tuuvm_tuple_t tuuvm_type_decay(tuuvm_context_t *context, tuuvm_tuple_t type)
 {
     if(tuuvm_tuple_isKindOf(context, type, context->roots.referenceType))
-        return ((tuuvm_referenceType_t*)type)->super.baseType;
+    {
+        // FIXME: Introduce a proper Untyped type.
+        tuuvm_tuple_t baseType = ((tuuvm_referenceType_t*)type)->super.baseType;
+        return baseType ? baseType : context->roots.anyValueType;
+    }
 
     return type;
 }

@@ -77,11 +77,13 @@ static uint8_t tuuvm_bytecodeInterpreter_offsetOperandCountForOpcode(uint8_t opc
 
 static tuuvm_tuple_t tuuvm_bytecodeInterpreter_functionApply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments, tuuvm_bitflags_t applicationFlags)
 {
+    tuuvm_tuple_t argumentsBuffer[16];
+    memcpy(argumentsBuffer, arguments, argumentCount * sizeof(tuuvm_tuple_t));
+
     if(tuuvm_function_isVariadic(context, function))
     {
         size_t expectedArgumentCount = tuuvm_function_getArgumentCount(context, function);
         TUUVM_ASSERT(expectedArgumentCount > 0);
-
 
         // Move the variadic arguments into a variadic vector.
         {
@@ -93,14 +95,14 @@ static tuuvm_tuple_t tuuvm_bytecodeInterpreter_functionApply(tuuvm_context_t *co
             tuuvm_tuple_t variadicVector = tuuvm_array_create(context, variadicArgumentCount);
             tuuvm_tuple_t *variadicVectorElements = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(variadicVector)->pointers;
             for(size_t i = 0; i < variadicArgumentCount; ++i)
-                variadicVectorElements[i] = arguments[directArgumentCount + i];
-            arguments[directArgumentCount] = variadicVector;
+                variadicVectorElements[i] = argumentsBuffer[directArgumentCount + i];
+            argumentsBuffer[directArgumentCount] = variadicVector;
         }
 
-        return tuuvm_function_apply(context, function, expectedArgumentCount, arguments, applicationFlags);
+        return tuuvm_function_apply(context, function, expectedArgumentCount, argumentsBuffer, applicationFlags);
 
     }
-    return tuuvm_function_apply(context, function, argumentCount, arguments, applicationFlags);
+    return tuuvm_function_apply(context, function, argumentCount, argumentsBuffer, applicationFlags);
 }
 
 static tuuvm_tuple_t tuuvm_bytecodeInterpreter_interpretSend(tuuvm_context_t *context, tuuvm_tuple_t receiverType, tuuvm_tuple_t selector, size_t argumentCount, tuuvm_tuple_t *receiverAndArguments)
@@ -128,7 +130,7 @@ TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_con
 {
     tuuvm_bytecodeInterpreter_ensureTablesAreFilled();
     int16_t decodedOperands[TUUVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE] = {};
-    tuuvm_tuple_t operandRegisterFile[TUUVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE] = {};
+    tuuvm_tuple_t *operandRegisterFile = activationRecord->operandRegisterFile;
     tuuvm_tuple_t *localVector = activationRecord->inlineLocalVector;
 
     size_t instructionsSize;

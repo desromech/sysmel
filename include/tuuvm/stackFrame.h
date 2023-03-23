@@ -63,6 +63,8 @@ typedef struct tuuvm_stackFrameBytecodeFunctionActivationRecord_s
     size_t inlineLocalVectorSize;
     tuuvm_tuple_t *inlineLocalVector;
 
+    tuuvm_tuple_t operandRegisterFile[TUUVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE];
+
     tuuvm_tuple_t result;
     size_t pc;
     jmp_buf jmpbuffer;

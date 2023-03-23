@@ -44,6 +44,7 @@ if: true then: {
     }.
 
     (
+        ValueBox,
         SourcePosition,
         Collection,
         SequenceableCollection,

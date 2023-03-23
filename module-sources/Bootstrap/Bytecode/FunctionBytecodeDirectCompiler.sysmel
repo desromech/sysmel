@@ -67,7 +67,9 @@ FunctionBytecodeDirectCompiler definition: {
         let resultValue := functionDefinition analyzedBodyNode compileBytecodesDirectlyWith: self.
         self assembler return: resultValue.
 
-        self assembler build
+        self assembler
+            optimize;
+            build
     }.
 
     public method compileFunction: (function: Function) ::=> FunctionBytecode

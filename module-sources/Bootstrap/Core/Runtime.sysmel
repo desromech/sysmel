@@ -342,6 +342,34 @@ ReferenceType
     }.
 
 AnyValue
+    withSelector: #isNil addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :: ASTMessageSendNode |
+        ASTMessageSendNode new
+            sourcePosition: macroContext sourcePosition;
+            receiver: self;
+            selector: (ASTLiteralNode new
+                sourcePosition: macroContext sourcePosition;
+                value: #==;
+                yourself);
+            arguments: (ASTLiteralNode new
+                sourcePosition: macroContext sourcePosition;
+                value: nil;
+                yourself,);
+            yourself
+    } makeMacro;
+    withSelector: #isNotNil addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :: ASTMessageSendNode |
+        ASTMessageSendNode new
+            sourcePosition: macroContext sourcePosition;
+            receiver: self;
+            selector: (ASTLiteralNode new
+                sourcePosition: macroContext sourcePosition;
+                value: #~~;
+                yourself);
+            arguments: (ASTLiteralNode new
+                sourcePosition: macroContext sourcePosition;
+                value: nil;
+                yourself,);
+            yourself
+    } makeMacro;
     withSelector: #&& addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)other :: ASTIfNode |
         ASTIfNode new
             sourcePosition: macroContext sourcePosition;
@@ -882,6 +910,8 @@ SequenceableCollection
     withSelector: #eighth addMethod: {:(SequenceableCollection)self | self at: 7sz } makeFinal;
     withSelector: #ninth addMethod: {:(SequenceableCollection)self | self at: 8sz } makeFinal;
     withSelector: #tenth addMethod: {:(SequenceableCollection)self | self at: 9sz } makeFinal;
+
+    withSelector: #last addMethod: {:(SequenceableCollection)self | self at: self size - 1sz } makeFinal;
 
     withSelector: #insertionSort:from:until: addMethod: {:(SequenceableCollection)self :lessThanComparison :(Size)startIndex :(Size)endIndex :: Void |
         ## Insertion sort algorithm from https://en.wikipedia.org/wiki/Insertion_sort [March 2023]

@@ -23,6 +23,8 @@ public class FunctionBytecodeAssemblerOperand superclass: FunctionBytecodeAssemb
 
 FunctionBytecodeAssemblerAbstractInstruction definition: {
     public field pc => Size.
+    public field previousInstruction => FunctionBytecodeAssemblerAbstractInstruction.
+    public field nextInstruction => FunctionBytecodeAssemblerAbstractInstruction.
 
     public method initialize => Void := {
         self pc: 0sz
@@ -37,6 +39,12 @@ FunctionBytecodeAssemblerAbstractInstruction definition: {
     public method assembledSize => Size := 0sz.
 
     public method assembleIn: (instructionStream: ByteArray) ::=> Void := {}.
+
+    public method isBranchInstruction => Boolean
+        := false.
+
+    public method destinationInstruction => FunctionBytecodeAssemblerAbstractInstruction
+        := nil.
 }.
 
 public final class FunctionBytecodeAssemblerLabel superclass: FunctionBytecodeAssemblerAbstractInstruction; definition: {
@@ -87,6 +95,15 @@ public final class FunctionBytecodeAssemblerInstruction superclass: FunctionByte
             instructionStream at: destination put: highByte. destination := destination + 1sz.
         }
     }.
+
+    public method isBranchInstruction => Boolean := {
+        let opcode := self standardOpcode.
+        ((opcode = FunctionBytecode::Opcode::Jump) || (opcode = FunctionBytecode::Opcode::JumpIfTrue))
+        || (opcode = FunctionBytecode::Opcode::JumpIfFalse)
+    }.
+
+    public method destinationInstruction => FunctionBytecodeAssemblerAbstractInstruction
+        := self operands last.
 }.
 
 public final class FunctionBytecodeAssembler superclass: Object; definition: {
@@ -94,8 +111,10 @@ public final class FunctionBytecodeAssembler superclass: Object; definition: {
     public field captures => Array.
     public field literals => ArrayList.
     public field literalDictionary => IdentityDictionary.
-    public field instructions => ArrayList.
     public field temporaries => ArrayList.
+
+    public field firstInstruction => FunctionBytecodeAssemblerAbstractInstruction.
+    public field lastInstruction => FunctionBytecodeAssemblerAbstractInstruction.
 
     public field sourcePosition => SourcePosition.
     public field sourceEnvironment => Environment.
@@ -106,13 +125,49 @@ public final class FunctionBytecodeAssembler superclass: Object; definition: {
         self captures: #().
         self literals: ArrayList new.
         self literalDictionary: IdentityDictionary new.
-        self instructions: ArrayList new.
         self temporaries: ArrayList new.
     }.
 
     public method addInstruction: (instruction: FunctionBytecodeAssemblerAbstractInstruction) ::=> instruction class := {
-        self instructions add: instruction.
+        let lastInstruction := self lastInstruction.
+        instruction previousInstruction: lastInstruction.
+
+        if: lastInstruction == nil then: {
+            self firstInstruction: instruction.
+        } else: {
+            lastInstruction nextInstruction: instruction.
+        }.
+        
+        self lastInstruction: instruction.
+
         instruction
+    }.
+
+    public method instructionsDo: aBlock ::=> Void := {
+        let position mutable := self firstInstruction.
+
+        while: position isNotNil do: {
+            let nextPosition := position nextInstruction.
+            aBlock(position).
+            position := nextPosition
+        }
+    }.
+
+    public method removeInstruction: (instruction: FunctionBytecodeAssemblerAbstractInstruction) ::=> Void := {
+        let previous := instruction previousInstruction.
+        let next := instruction nextInstruction.
+
+        if: previous == nil then: {
+            self firstInstruction: next.
+        } else: {
+            previous nextInstruction: next
+        }.
+
+        if: next == nil then: {
+            self lastInstruction: previous.
+        } else: {
+            next previousInstruction: previous
+        }.
     }.
 
     public method makeArgumentWithIndex: (argumentIndex: Size) ::=> FunctionBytecodeAssemblerOperand
@@ -353,7 +408,11 @@ public final class FunctionBytecodeAssembler superclass: Object; definition: {
             yourself).
 
     public method optimizeJumps => Void := {
-        ## TODO: Remove the branches onto the next instruction.
+        self instructionsDo: {:(FunctionBytecodeAssemblerAbstractInstruction)each |
+            if: each isBranchInstruction && (each destinationInstruction == each nextInstruction) then: {
+                self removeInstruction: each
+            }
+        }.
     }.
 
     public method optimize => Void := {
@@ -370,7 +429,7 @@ public final class FunctionBytecodeAssembler superclass: Object; definition: {
 
         ## Compute the instruction stream size, and the pc of each instruction.
         let instructionOffset mutable := 0sz.
-        self instructions do: {:(FunctionBytecodeAssemblerAbstractInstruction)eachInstruction :: Void |
+        self instructionsDo: {:(FunctionBytecodeAssemblerAbstractInstruction)eachInstruction :: Void |
             eachInstruction pc: instructionOffset.
             instructionOffset := instructionOffset + eachInstruction assembledSize
         }.
@@ -378,7 +437,7 @@ public final class FunctionBytecodeAssembler superclass: Object; definition: {
         ## Assemble the instructions.
         let instructionStream := ByteArray new: instructionOffset.
         result instructions: instructionStream.
-        self instructions do: {:(FunctionBytecodeAssemblerAbstractInstruction)eachInstruction :: Void |
+        self instructionsDo: {:(FunctionBytecodeAssemblerAbstractInstruction)eachInstruction :: Void |
             eachInstruction assembleIn: instructionStream
         }.
 
