@@ -2,7 +2,3 @@ loadSourceNamed: "Runtime.sysmel".
 loadSourceNamed: "AST.sysmel".
 loadSourceNamed: "RuntimeMacros.sysmel".
 loadSourceNamed: "MetaBuilders.sysmel".
-loadSourceNamed: "FunctionBytecode.sysmel".
-loadSourceNamed: "FunctionBytecodeAssembler.sysmel".
-loadSourceNamed: "FunctionBytecodeDirectCompiler.sysmel".
-loadSourceNamed: "FunctionBytecodeActivation.sysmel".
