@@ -28,6 +28,13 @@ struct tuuvm_heap_s
     uint32_t gcBlackColor;
 };
 
+typedef struct tuuvm_heapIterator_s
+{
+    tuuvm_heap_t *heap;
+    tuuvm_heap_chunk_t *chunk;
+    size_t offset;
+} tuuvm_heapIterator_t;
+
 typedef struct tuuvm_heap_relocationRecord_s
 {
     uintptr_t sourceStartAddress;
@@ -58,5 +65,14 @@ void tuuvm_heap_swapGCColors(tuuvm_heap_t *heap);
 
 void tuuvm_heap_dumpToFile(tuuvm_heap_t *heap, FILE *file);
 bool tuuvm_heap_loadFromFile(tuuvm_heap_t *heap, FILE *file, size_t numberOfRootsToRelocate, tuuvm_tuple_t *rootsToRelocate);
+
+void tuuvm_heapIterator_begin(tuuvm_heap_t *heap, tuuvm_heapIterator_t *iterator);
+void tuuvm_heapIterator_beginWithPointer(tuuvm_heap_t *heap, tuuvm_tuple_t pointer, tuuvm_heapIterator_t *iterator);
+bool tuuvm_heapIterator_isAtEnd(tuuvm_heapIterator_t *iterator);
+
+tuuvm_object_tuple_t *tuuvm_heapIterator_get(tuuvm_heapIterator_t *iterator);
+void tuuvm_heapIterator_advance(tuuvm_heapIterator_t *iterator);
+void tuuvm_heapIterator_compactionAdvance(tuuvm_heapIterator_t *iterator, size_t sizeToAdvance, tuuvm_object_tuple_t **outObjectPointer, bool commitNewSize);
+void tuuvm_heapIterator_compactionFinish(tuuvm_heapIterator_t *iterator, bool commitNewSize);
 
 #endif //TUUVM_INTERNAL_HEAP_H

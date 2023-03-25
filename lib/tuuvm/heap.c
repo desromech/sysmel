@@ -209,6 +209,264 @@ void tuuvm_heap_destroy(tuuvm_heap_t *heap)
     }
 }
 
+void tuuvm_heapIterator_begin(tuuvm_heap_t *heap, tuuvm_heapIterator_t *iterator)
+{
+    iterator->heap = heap;
+    iterator->chunk = heap->firstChunk;
+    iterator->offset = uintptrAlignedTo(sizeof(tuuvm_heap_chunk_t), 16);
+}
+
+void tuuvm_heapIterator_beginWithPointer(tuuvm_heap_t *heap, tuuvm_tuple_t pointer, tuuvm_heapIterator_t *iterator)
+{
+    memset(iterator, 0, sizeof(*iterator));
+    if(!pointer || tuuvm_tuple_isImmediate(pointer))
+        return;
+
+    tuuvm_heap_chunk_t *chunk = heap->firstChunk;
+    for(; chunk; chunk = chunk->nextChunk)
+    {
+        tuuvm_tuple_t startAddress = (uintptr_t)chunk + uintptrAlignedTo(sizeof(tuuvm_heap_chunk_t), 16);
+        tuuvm_tuple_t endAddress = (uintptr_t)chunk + chunk->size;
+        if(startAddress <= pointer && pointer < endAddress)
+            break;
+    }
+
+    if(!chunk)
+        return;
+
+    iterator->chunk = chunk;
+    iterator->offset = pointer - (uintptr_t)iterator->chunk;
+}
+
+bool tuuvm_heapIterator_isAtEnd(tuuvm_heapIterator_t *iterator)
+{
+    return !iterator->heap || !iterator->chunk || iterator->offset >= iterator->chunk->size;
+}
+
+tuuvm_object_tuple_t *tuuvm_heapIterator_get(tuuvm_heapIterator_t *iterator)
+{
+    if(!iterator->chunk)
+        return NULL;
+
+    uintptr_t chunkAddress = (uintptr_t)iterator->chunk;
+    return (tuuvm_object_tuple_t*)(chunkAddress + iterator->offset);
+}
+
+static void tuuvm_heapIterator_advanceWithIncrementForSize(tuuvm_heapIterator_t *iterator, size_t increment)
+{
+    size_t newOffset = uintptrAlignedTo(iterator->offset + increment, 16);
+    if(newOffset < iterator->chunk->size)
+    {
+        iterator->offset = newOffset;
+    }
+    else
+    {
+        iterator->chunk = iterator->chunk->nextChunk;
+        if(iterator->chunk)
+            iterator->offset = uintptrAlignedTo(sizeof(tuuvm_heap_chunk_t), 16);
+        else
+            iterator->offset = 0;
+    }
+}
+
+void tuuvm_heapIterator_advance(tuuvm_heapIterator_t *iterator)
+{
+    if(tuuvm_heapIterator_isAtEnd(iterator))
+        return;
+
+    size_t objectSize = sizeof(tuuvm_object_tuple_t) + tuuvm_heapIterator_get(iterator)->header.objectSize;
+    tuuvm_heapIterator_advanceWithIncrementForSize(iterator, objectSize);
+}
+
+void tuuvm_heapIterator_compactionAdvance(tuuvm_heapIterator_t *iterator, size_t increment, tuuvm_object_tuple_t **outObjectPointer, bool commitNewSize)
+{
+    if(tuuvm_heapIterator_isAtEnd(iterator))
+    {
+        if(outObjectPointer)
+            *outObjectPointer = NULL;
+        return;
+    }
+
+    while(iterator->chunk)
+    {
+        size_t newOffset = uintptrAlignedTo(iterator->offset + increment, 16);
+
+        // Does it fit in the current chunk?
+        if(newOffset <= iterator->chunk->capacity)
+        {
+            if(outObjectPointer)
+                *outObjectPointer = (tuuvm_object_tuple_t*) ((uintptr_t)iterator->chunk + iterator->offset);
+
+            iterator->offset = newOffset;
+            if(commitNewSize)
+                iterator->chunk->size = iterator->offset;
+
+            if(newOffset == iterator->chunk->capacity)
+            {
+                iterator->chunk = iterator->chunk->nextChunk;
+                iterator->offset = iterator->chunk ? uintptrAlignedTo(sizeof(tuuvm_heap_chunk_t), 16) : 0;
+            }
+            else
+            {
+                iterator->offset = newOffset;
+            }
+            return;
+        }
+
+        if(commitNewSize)
+            iterator->chunk->size = iterator->offset;
+
+        iterator->chunk = iterator->chunk->nextChunk;
+        iterator->offset = uintptrAlignedTo(sizeof(tuuvm_heap_chunk_t), 16);
+    }
+
+    TUUVM_ASSERT(iterator->chunk && "Out of memory for compaction.");
+}
+
+void tuuvm_heapIterator_compactionFinish(tuuvm_heapIterator_t *iterator, bool commitNewSize)
+{
+    if(tuuvm_heapIterator_isAtEnd(iterator))
+        return;
+
+    if(commitNewSize && iterator->chunk)
+        iterator->chunk->size = iterator->offset;
+
+    if(commitNewSize)
+    {
+        // Reset the size of the remaining chunks.
+        for(tuuvm_heap_chunk_t *chunk = iterator->chunk; chunk; chunk = chunk->nextChunk)
+            chunk->size = uintptrAlignedTo(sizeof(tuuvm_heap_chunk_t), 16);
+    }
+
+    iterator->chunk = NULL;
+    iterator->offset = 0;
+}
+
+static void tuuvm_heap_computeNextCollectionThreshold(tuuvm_heap_t *heap)
+{
+    heap->shouldAttemptToCollect = false;
+
+    const size_t ChunkThreshold = TUUVM_HEAP_MIN_CHUNK_SIZE * 5 / 100;
+    const size_t NextChunkAllocateThreshold = TUUVM_HEAP_MIN_CHUNK_SIZE * 50 / 100;
+    if(heap->totalCapacity == 0)
+    {
+        heap->nextGCSizeThreshold = TUUVM_HEAP_MIN_CHUNK_SIZE - ChunkThreshold;
+    }
+    else
+    {
+        size_t capacityDelta = heap->totalCapacity - heap->totalSize;
+        if(capacityDelta < NextChunkAllocateThreshold)
+            heap->nextGCSizeThreshold = heap->totalCapacity + TUUVM_HEAP_MIN_CHUNK_SIZE - ChunkThreshold;
+        else
+            heap->nextGCSizeThreshold = heap->totalCapacity - ChunkThreshold;
+    }
+
+    if(heap->nextGCSizeThreshold < TUUVM_HEAP_FAST_GROWTH_THRESHOLD - ChunkThreshold)
+        heap->nextGCSizeThreshold = TUUVM_HEAP_FAST_GROWTH_THRESHOLD - ChunkThreshold;
+}
+
+#if 0
+
+void tuuvm_heap_computeCompactionForwardingPointers(tuuvm_heap_t *heap)
+{
+    tuuvm_heapIterator_t compactedIterator = {};
+    tuuvm_heapIterator_t heapIterator = {};
+    tuuvm_heapIterator_begin(heap, &compactedIterator);
+    tuuvm_heapIterator_begin(heap, &heapIterator);
+
+    while(!tuuvm_heapIterator_isAtEnd(&heapIterator))
+    {
+        tuuvm_object_tuple_t *object = tuuvm_heapIterator_get(&heapIterator);
+        if((object->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_GC_COLOR_MASK) == heap->gcBlackColor)
+        {
+            size_t objectSize = sizeof(tuuvm_object_tuple_t) + object->header.objectSize;
+
+            tuuvm_object_tuple_t *compactedObject = NULL;
+            tuuvm_heapIterator_compactionAdvance(&compactedIterator, objectSize, &compactedObject, false);
+            object->header.forwardingPointer = (tuuvm_tuple_t)compactedObject;
+        }
+        else
+        {
+            // Replace with tombstone.
+            object->header.forwardingPointer = TUUVM_TOMBSTONE_TUPLE;
+        }
+
+        tuuvm_heapIterator_advance(&heapIterator);
+    }
+}
+
+void tuuvm_heap_applyForwardingPointers(tuuvm_heap_t *heap)
+{
+    tuuvm_heapIterator_t heapIterator = {};
+    tuuvm_heapIterator_begin(heap, &heapIterator);
+
+    while(!tuuvm_heapIterator_isAtEnd(&heapIterator))
+    {
+        tuuvm_object_tuple_t *object = tuuvm_heapIterator_get(&heapIterator);
+        if((object->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_GC_COLOR_MASK) == heap->gcBlackColor)
+        {
+            // Apply the forwarding to the type pointer.
+            tuuvm_tuple_t type = object->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_POINTER_MASK;
+            if(tuuvm_tuple_isNonNullPointer(type))
+                tuuvm_tuple_setType(object, TUUVM_CAST_OOP_TO_OBJECT_TUPLE(type)->header.forwardingPointer);
+
+            // Apply the forwarding to the slots.
+            if((object->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_BYTES_BIT) == 0)
+            {
+                size_t slotCount = object->header.objectSize / sizeof(tuuvm_tuple_t);
+                tuuvm_tuple_t *slots = object->pointers;
+
+                for(size_t i = 0; i < slotCount; ++i)
+                {
+                    if(tuuvm_tuple_isNonNullPointer(slots[i]))
+                        slots[i] = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(slots[i])->header.forwardingPointer;
+                }
+            }
+        }
+
+        tuuvm_heapIterator_advance(&heapIterator);
+    }
+}
+
+void tuuvm_heap_compact(tuuvm_heap_t *heap)
+{
+    tuuvm_heapIterator_t compactedIterator = {};
+    tuuvm_heapIterator_t heapIterator = {};
+    tuuvm_heapIterator_begin(heap, &compactedIterator);
+    tuuvm_heapIterator_begin(heap, &heapIterator);
+
+    while(!tuuvm_heapIterator_isAtEnd(&heapIterator))
+    {
+        tuuvm_object_tuple_t *object = tuuvm_heapIterator_get(&heapIterator);
+        if((object->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_GC_COLOR_MASK) == heap->gcBlackColor)
+        {
+            size_t objectSize = sizeof(tuuvm_object_tuple_t) + object->header.objectSize;
+
+            tuuvm_object_tuple_t *compactedObject = NULL;
+            tuuvm_heapIterator_compactionAdvance(&compactedIterator, objectSize, &compactedObject, true);
+            memmove(compactedObject, object, objectSize);
+        }
+
+        tuuvm_heapIterator_advance(&heapIterator);
+    }
+
+    tuuvm_heapIterator_compactionFinish(&compactedIterator, true);
+
+    // Compute the new heap size.
+
+    heap->totalSize = 0;
+    heap->totalCapacity = 0;
+
+    for(tuuvm_heap_chunk_t *chunk = heap->firstChunk; chunk; chunk = chunk->nextChunk)
+    {
+        heap->totalSize += chunk->size;
+        heap->totalCapacity += chunk->capacity;
+    }
+
+    tuuvm_heap_computeNextCollectionThreshold(heap);
+}
+
+#else
 static void tuuvm_heap_chunk_computeCompactionForwardingPointers(uint32_t blackColor, tuuvm_heap_chunk_t *chunk)
 {
     uintptr_t offset = sizeof(tuuvm_heap_chunk_t);
@@ -349,6 +607,8 @@ void tuuvm_heap_compact(tuuvm_heap_t *heap)
     if(heap->nextGCSizeThreshold < TUUVM_HEAP_FAST_GROWTH_THRESHOLD - ChunkThreshold)
         heap->nextGCSizeThreshold = TUUVM_HEAP_FAST_GROWTH_THRESHOLD - ChunkThreshold;
 }
+
+#endif
 
 static inline tuuvm_heap_relocationRecord_t *tuuvm_heap_relocationTable_findRecord(tuuvm_heap_relocationTable_t *relocationTable, uintptr_t address)
 {
