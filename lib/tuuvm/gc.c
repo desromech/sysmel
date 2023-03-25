@@ -130,7 +130,11 @@ TUUVM_API void tuuvm_gc_iterateRoots(tuuvm_context_t *context, void *userdata, t
         size_t contextRootCount = sizeof(context->roots) / sizeof(tuuvm_tuple_t);
         for(size_t i = 0; i < contextRootCount; ++i)
             iterationFunction(userdata, &contextRoots[i]);
+
+        for(size_t i = 0; i < context->heap.gcRootTableSize; ++i)
+            iterationFunction(userdata, context->heap.gcRootTable + i);
     }
+
 
     // Stack roots.
     tuuvm_stackFrame_iterateGCRootsInStackWith(tuuvm_stackFrame_getActiveRecord(), userdata, iterationFunction);

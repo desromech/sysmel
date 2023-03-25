@@ -7,6 +7,8 @@
 #define TUUVM_HEAP_MIN_CHUNK_SIZE (4<<20)
 #define TUUVM_HEAP_FAST_GROWTH_THRESHOLD (TUUVM_HEAP_MIN_CHUNK_SIZE*4)
 
+#define TUUVM_HEAP_CODE_ZONE_CHUNK_SIZE TUUVM_HEAP_MIN_CHUNK_SIZE
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
@@ -45,6 +47,15 @@ static void *tuuvm_heap_allocateSystemMemory(size_t sizeToAllocate)
     return result;
 }
 
+static void *tuuvm_heap_allocateSystemMemoryForCode(size_t sizeToAllocate)
+{
+    void *result = mmap(0, sizeToAllocate, PROT_READ | PROT_EXEC, MAP_PRIVATE | MAP_ANON | MAP_EXECUTABLE, -1, 0);
+    if(result == MAP_FAILED)
+        return 0;
+
+    return result;
+}
+
 static void tuuvm_heap_freeSystemMemory(void *memory, size_t sizeToFree)
 {
     munmap(memory, sizeToFree);
@@ -53,6 +64,24 @@ static void tuuvm_heap_freeSystemMemory(void *memory, size_t sizeToFree)
 static size_t tuuvm_heap_getSystemAllocationAlignment(void)
 {
     return getpagesize();
+}
+
+static void tuuvm_heap_lockCodePagesForWriting(void *codePointer, size_t size)
+{
+    size_t pageAlignment = tuuvm_heap_getSystemAllocationAlignment();
+    uintptr_t startAddress = (uintptr_t)codePointer & (-pageAlignment);
+    uintptr_t endAddress = ((uintptr_t)codePointer + size + pageAlignment - 1) & (-pageAlignment);
+
+    mprotect((void*)startAddress, endAddress - startAddress, PROT_READ | PROT_WRITE);
+}
+
+static void tuuvm_heap_unlockCodePagesForExecution(void *codePointer, size_t size)
+{
+    size_t pageAlignment = tuuvm_heap_getSystemAllocationAlignment();
+    uintptr_t startAddress = (uintptr_t)codePointer & (-pageAlignment);
+    uintptr_t endAddress = ((uintptr_t)codePointer + size + pageAlignment - 1) & (-pageAlignment);
+
+    mprotect((void*)startAddress, endAddress - startAddress, PROT_READ | PROT_EXEC);
 }
 
 #endif
@@ -178,6 +207,53 @@ TUUVM_API tuuvm_object_tuple_t *tuuvm_heap_allocatePointerTuple(tuuvm_heap_t *he
     return result;
 }
 
+tuuvm_tuple_t *tuuvm_heap_allocateGCRootTableEntry(tuuvm_heap_t *heap)
+{
+    if(!heap->gcRootTable)
+    {
+        heap->gcRootTable = (tuuvm_tuple_t*)tuuvm_heap_allocateSystemMemory(TUUVM_HEAP_CODE_ZONE_CHUNK_SIZE);
+        heap->gcRootTableCapacity = TUUVM_HEAP_CODE_ZONE_CHUNK_SIZE / sizeof(tuuvm_tuple_t);
+        heap->gcRootTableSize = 0;
+    }
+
+    if(heap->gcRootTableSize >= heap->gcRootTableCapacity)
+        abort();
+    
+    tuuvm_tuple_t *result = heap->gcRootTable + heap->gcRootTableSize;
+    *result = TUUVM_NULL_TUPLE;
+    ++heap->gcRootTableSize;
+    return result;
+}
+
+void *tuuvm_heap_allocateAndLockCodeZone(tuuvm_heap_t *heap, size_t size, size_t alignment)
+{
+    if(!heap->codeZone)
+    {
+        heap->codeZone = (uint8_t*)tuuvm_heap_allocateSystemMemoryForCode(TUUVM_HEAP_CODE_ZONE_CHUNK_SIZE);
+        if(!heap->codeZone)
+            abort();
+
+        heap->codeZoneCapacity = TUUVM_HEAP_CODE_ZONE_CHUNK_SIZE;
+        heap->codeZoneSize = 0;
+    }
+
+    uintptr_t alignedOffset = uintptrAlignedTo(heap->codeZoneSize, alignment);
+    if(alignedOffset + size > heap->codeZoneCapacity)
+        abort();
+
+    heap->codeZoneSize = alignedOffset + size;;
+
+    uint8_t *result = heap->codeZone + alignedOffset;
+    tuuvm_heap_lockCodePagesForWriting(result, size);
+    return result;
+}
+
+void tuuvm_heap_unlockCodeZone(tuuvm_heap_t *heap, void *codePointer, size_t size)
+{
+    (void)heap;
+    tuuvm_heap_unlockCodePagesForExecution(codePointer, size);
+}
+
 TUUVM_API tuuvm_object_tuple_t *tuuvm_heap_shallowCopyTuple(tuuvm_heap_t *heap, tuuvm_object_tuple_t *tupleToCopy)
 {
     size_t objectSize = tupleToCopy->header.objectSize;
@@ -207,6 +283,9 @@ void tuuvm_heap_destroy(tuuvm_heap_t *heap)
         position = position->nextChunk;
         tuuvm_heap_freeSystemMemory(chunkToFree, chunkToFree->capacity);
     }
+
+    if(heap->codeZone)
+        tuuvm_heap_freeSystemMemory(heap->codeZone, heap->codeZoneCapacity);
 }
 
 void tuuvm_heapIterator_begin(tuuvm_heap_t *heap, tuuvm_heapIterator_t *iterator)

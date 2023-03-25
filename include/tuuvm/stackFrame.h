@@ -76,7 +76,7 @@ typedef struct tuuvm_stackFrameBytecodeFunctionJitActivationRecord_s
     tuuvm_stackFrameRecord_t *previous;
     tuuvm_stackFrameRecordType_t type;
 
-    tuuvm_tuple_t pc;
+    size_t pc;
 
     tuuvm_tuple_t literalVector;
     tuuvm_tuple_t captureVector;

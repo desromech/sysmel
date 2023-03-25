@@ -17,7 +17,7 @@
 
 #if defined(__x86_64__) || defined(__aarch64__)
 #   define TUUVM_JIT_SUPPORTED
-static bool tuuvm_bytecodeJit_enabled = true;
+static bool tuuvm_bytecodeJit_enabled = false;
 #endif
 
 static bool tuuvm_bytecodeInterpreter_tablesAreFilled;
@@ -396,6 +396,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_getSourcePositionForActivation
 TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_getSourcePositionForJitActivationRecord(tuuvm_context_t *context, tuuvm_stackFrameBytecodeFunctionJitActivationRecord_t *activationRecord)
 {
     (void)context;
+    (void)activationRecord;
     return TUUVM_NULL_TUPLE;
 }
 

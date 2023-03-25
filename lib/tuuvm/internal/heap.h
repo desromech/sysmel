@@ -26,6 +26,14 @@ struct tuuvm_heap_s
     uint32_t gcWhiteColor;
     uint32_t gcGrayColor;
     uint32_t gcBlackColor;
+
+    size_t gcRootTableCapacity;
+    size_t gcRootTableSize;
+    tuuvm_tuple_t *gcRootTable;
+
+    size_t codeZoneCapacity;
+    size_t codeZoneSize;
+    uint8_t *codeZone;
 };
 
 typedef struct tuuvm_heapIterator_s
@@ -57,6 +65,11 @@ typedef struct tuuvm_heap_chunkRecord_s
 
 void tuuvm_heap_initialize(tuuvm_heap_t *heap);
 void tuuvm_heap_destroy(tuuvm_heap_t *heap);
+
+tuuvm_tuple_t *tuuvm_heap_allocateGCRootTableEntry(tuuvm_heap_t *heap);
+
+void *tuuvm_heap_allocateAndLockCodeZone(tuuvm_heap_t *heap, size_t size, size_t alignment);
+void tuuvm_heap_unlockCodeZone(tuuvm_heap_t *heap, void *codePointer, size_t size);
 
 void tuuvm_heap_computeCompactionForwardingPointers(tuuvm_heap_t *heap);
 void tuuvm_heap_applyForwardingPointers(tuuvm_heap_t *heap);

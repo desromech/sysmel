@@ -15,9 +15,6 @@ printLine(bytecodes asFunction ()).
 *#
 
 (
-    ({:a :b :c :d | #{a : b. c : d}}, (#first, 1, #second, 2)),
-    ({:(UInt8)a :(UInt8)b | #[a. b]}, (1u8, 3u8)),
-
     ({| 42}, #()),
     ({:c :a :b | if: c then: a else: b }, (false, 1, 2)),
     ({:x :y | if: x < y then: x else: y }, #(1 2)),
@@ -42,7 +39,9 @@ printLine(bytecodes asFunction ()).
             result := result + (i*3i32)
         } continueWith: ( i := i + 1i32 ).
         result
-    }, (Array with: 50i32))
+    }, (Array with: 50i32)),
+    ({:a :b :c :d | #{a : b. c : d}}, (#first, 1, #second, 2)),
+    ({:(UInt8)a :(UInt8)b | #[a. b]}, (1u8, 3u8))
 
 ) do: {:functionAndArguments :: Void |
     let function := functionAndArguments first.

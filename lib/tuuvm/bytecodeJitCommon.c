@@ -1,8 +1,11 @@
+#include "internal/context.h"
+
 typedef tuuvm_tuple_t (*tuuvm_bytecodeJit_entryPoint) (tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments);
 
 typedef enum tuuvm_bytecodeJitRelocationType_e
 {
     TUUVM_BYTECODE_JIT_RELOCATION_RELATIVE32,
+    TUUVM_BYTECODE_JIT_RELOCATION_RELATIVE64,
 } tuuvm_bytecodeJitRelocationType_t;
 
 typedef struct tuuvm_bytecodeJitRelocation_s
@@ -32,6 +35,7 @@ typedef struct tuuvm_bytecodeJit_s
     int32_t literalVectorOffset;
     int32_t captureVectorOffset;
     int32_t pcOffset;
+    int32_t stackFrameRecordOffset;
 
     size_t instructionsCapacity;
     size_t instructionsSize;
@@ -47,6 +51,7 @@ typedef struct tuuvm_bytecodeJit_s
 
     intptr_t *pcDestinations;
 
+    tuuvm_tuple_t *literalVectorGCRoot;
 } tuuvm_bytecodeJit_t;
 
 static size_t tuuvm_bytecodeJit_addBytes(tuuvm_bytecodeJit_t *jit, size_t byteCount, uint8_t *bytes)
@@ -85,7 +90,7 @@ static void tuuvm_bytecodeJit_addPCRelocation(tuuvm_bytecodeJit_t *jit, tuuvm_by
 
         tuuvm_bytecodeJitPCRelocation_t *newRelocations = (tuuvm_bytecodeJitPCRelocation_t*)malloc(newCapacity*sizeof(tuuvm_bytecodeJitPCRelocation_t));
         memcpy(newRelocations, jit->pcRelocations, jit->pcRelocationsSize * sizeof(tuuvm_bytecodeJitPCRelocation_t));
-        free(jit->relocations);
+        free(jit->pcRelocations);
         jit->pcRelocations = newRelocations;
         jit->pcRelocationsCapacity = newCapacity;
     }
@@ -132,6 +137,9 @@ static void tuuvm_bytecodeJit_jit(tuuvm_context_t *context, tuuvm_functionByteco
     tuuvm_bytecodeInterpreter_ensureTablesAreFilled();
 
     tuuvm_bytecodeJit_t jit = {};
+
+    jit.literalVectorGCRoot = tuuvm_heap_allocateGCRootTableEntry(&context->heap);
+    *jit.literalVectorGCRoot = functionBytecode->literalVector;
 
     size_t instructionsSize = tuuvm_tuple_getSizeInBytes(functionBytecode->instructions);
     uint8_t *instructions = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(functionBytecode->instructions)->bytes;
@@ -309,6 +317,13 @@ static void tuuvm_bytecodeJit_jit(tuuvm_context_t *context, tuuvm_functionByteco
     }
 
     tuuvm_jit_finish(&jit);
+
+    uint8_t *codeZonePointer = tuuvm_heap_allocateAndLockCodeZone(&context->heap, jit.instructionsSize, 16);
+    tuuvm_jit_installIn(&jit, codeZonePointer);
+    tuuvm_heap_unlockCodeZone(&context->heap, codeZonePointer, jit.instructionsSize);
+
+    functionBytecode->jittedCode = tuuvm_tuple_systemHandle_encode(context, (tuuvm_systemHandle_t)(uintptr_t)codeZonePointer);
+    functionBytecode->jittedCodeSessionToken = context->roots.sessionToken;
 
     tuuvm_bytecodeJit_jitFree(&jit);
 }
