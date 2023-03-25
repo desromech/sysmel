@@ -146,11 +146,6 @@ static void tuuvm_jit_x86_ret(tuuvm_bytecodeJit_t *jit)
     tuuvm_bytecodeJit_addByte(jit, 0xc3);
 }
 
-static void tuuvm_jit_x86_int3(tuuvm_bytecodeJit_t *jit)
-{
-    tuuvm_bytecodeJit_addByte(jit, 0xcc);
-}
-
 static void tuuvm_jit_x86_mov64Register(tuuvm_bytecodeJit_t *jit, tuuvm_x86_register_t destination, tuuvm_x86_register_t source)
 {
     uint8_t instruction[] = {
@@ -339,11 +334,6 @@ static void tuuvm_jit_x86_xorRegister(tuuvm_bytecodeJit_t *jit, tuuvm_x86_regist
     };
 
     tuuvm_bytecodeJit_addBytes(jit, sizeof(instruction), instruction);
-}
-
-static void tuuvm_jit_trap(tuuvm_bytecodeJit_t *jit)
-{
-    tuuvm_jit_x86_int3(jit);
 }
 
 static void tuuvm_jit_x86_jitLoadContextInRegister(tuuvm_bytecodeJit_t *jit, tuuvm_x86_register_t reg)

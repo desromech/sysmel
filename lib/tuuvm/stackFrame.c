@@ -93,9 +93,10 @@ TUUVM_API void tuuvm_stackFrame_iterateGCRootsInRecordWith(tuuvm_stackFrameRecor
     case TUUVM_STACK_FRAME_RECORD_TYPE_BYTECODE_JIT_FUNCTION_ACTIVATION:
         {
             tuuvm_stackFrameBytecodeFunctionJitActivationRecord_t *functionRecord = (tuuvm_stackFrameBytecodeFunctionJitActivationRecord_t*)record;
-            iterationFunction(userdata, &functionRecord->function);
 
+            iterationFunction(userdata, &functionRecord->literalVector);
             iterationFunction(userdata, &functionRecord->captureVector);
+            iterationFunction(userdata, &functionRecord->function);
 
             for(size_t i = 0; i < functionRecord->argumentCount; ++i)
                 iterationFunction(userdata, functionRecord->arguments + i);

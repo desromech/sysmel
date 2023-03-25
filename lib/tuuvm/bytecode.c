@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(__x86_64__) || defined(__aarch64__)
+#if defined(__x86_64__)
 #   define TUUVM_JIT_SUPPORTED
 static bool tuuvm_bytecodeJit_enabled = true;
 #endif
