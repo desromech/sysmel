@@ -36,7 +36,7 @@ Type
     }.
 
 ## Compile the compiler first.
-if: true then: {
+if: false then: {
     let typeCompilationBlock := {:(Type)each |
         print("Compiling type if needed: ", each).
         let compilationTime := {:: Void | each compileIntoBytecodeIfNeeded } timeToRunInMicroseconds asFloat32 * 0.001f32.
@@ -71,23 +71,24 @@ if: true then: {
     ) -- ASTNode withAllSubtypes do: typeCompilationBlock.
 
     AnyValue withAllSubtypesDo: typeCompilationBlock
-}.
 
-## This allows to activate the on-demand bytecode compiler.
-if: true then: {
+    ## This allows to activate the on-demand bytecode compiler.
     if: false then: {
-        FunctionDefinition
-            withSelector: #onDemandCompileIntoBytecode addMethod: {:(FunctionDefinition)self :: Void |
-                let sourcePosition := self sourcePosition printString.
-                printLine("Compiling ", sourcePosition).
-                self compileIntoBytecodeIfNeeded.
-                printLine("Done compiling ", sourcePosition, "\n").
-            }.
-    } else: {
-        FunctionDefinition
-            withSelector: #onDemandCompileIntoBytecode addMethod: {:(FunctionDefinition)self :: Void |
-                self compileIntoBytecodeIfNeeded
-            }.
+        if: false then: {
+            FunctionDefinition
+                withSelector: #onDemandCompileIntoBytecode addMethod: {:(FunctionDefinition)self :: Void |
+                    let sourcePosition := self sourcePosition printString.
+                    printLine("Compiling ", sourcePosition).
+                    self compileIntoBytecodeIfNeeded.
+                    printLine("Done compiling ", sourcePosition, "\n").
+                }.
+        } else: {
+            FunctionDefinition
+                withSelector: #onDemandCompileIntoBytecode addMethod: {:(FunctionDefinition)self :: Void |
+                    self compileIntoBytecodeIfNeeded
+                }.
+        }.
     }.
 }.
+
 

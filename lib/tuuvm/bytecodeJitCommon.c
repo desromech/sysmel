@@ -235,7 +235,6 @@ static void tuuvm_bytecodeJit_jit(tuuvm_context_t *context, tuuvm_functionByteco
         // Zero operands
         case TUUVM_OPCODE_NOP:
             // Nothing is required here.
-            tuuvm_jit_trap(&jit);
             break;
         case TUUVM_OPCODE_TRAP:
             // Nothing is required here.
