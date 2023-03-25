@@ -5,6 +5,7 @@
 #include "tuuvm/function.h"
 #include "tuuvm/string.h"
 #include "internal/context.h"
+#include "internal/heap.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -280,6 +281,38 @@ static tuuvm_tuple_t tuuvm_tuple_primitive_markWeak(tuuvm_context_t *context, tu
     return arguments[0];
 }
 
+static tuuvm_tuple_t tuuvm_tuple_primitive_firstInstanceWithType(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    tuuvm_heapIterator_t iterator = {};
+    tuuvm_heapIterator_begin(&context->heap, &iterator);
+    if(!tuuvm_heapIterator_advanceUntilInstanceWithType(&iterator, arguments[0]))
+        return TUUVM_NULL_TUPLE;
+
+    return (tuuvm_tuple_t)tuuvm_heapIterator_get(&iterator);
+}
+
+static tuuvm_tuple_t tuuvm_tuple_primitive_nextInstanceWithSameType(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
+
+    tuuvm_tuple_t *object = &arguments[0];
+    tuuvm_tuple_t objectType = tuuvm_tuple_getType(context, *object);
+
+    tuuvm_heapIterator_t iterator = {};
+    tuuvm_heapIterator_beginWithPointer(&context->heap, *object, &iterator);
+    tuuvm_heapIterator_advance(&iterator);
+    if(!tuuvm_heapIterator_advanceUntilInstanceWithType(&iterator, objectType))
+        return TUUVM_NULL_TUPLE;
+
+    return (tuuvm_tuple_t)tuuvm_heapIterator_get(&iterator);
+}
+
 void tuuvm_tuple_registerPrimitives(void)
 {
     tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_getType, "RawTuple::type");
@@ -292,6 +325,8 @@ void tuuvm_tuple_registerPrimitives(void)
     tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_byteSize, "RawTuple::byteSize");
     tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_shallowCopy, "RawTuple::shallowCopy");
     tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_markWeak, "RawTuple::markWeak");
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_firstInstanceWithType, "RawTuple::firstInstanceWithType");
+    tuuvm_primitiveTable_registerFunction(tuuvm_tuple_primitive_nextInstanceWithSameType, "RawTuple::nextInstanceWithSameType");
 }
 
 void tuuvm_tuple_setupPrimitives(tuuvm_context_t *context)
@@ -306,4 +341,6 @@ void tuuvm_tuple_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::byteSize", context->roots.anyValueType, "__byteSize__", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_tuple_primitive_byteSize);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::shallowCopy", context->roots.anyValueType, "__shallowCopy__", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_tuple_primitive_shallowCopy);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::markWeak", context->roots.anyValueType, "__markWeak__", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_tuple_primitive_markWeak);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "RawTuple::firstInstanceWithType", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_firstInstanceWithType);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "RawTuple::nextInstanceWithSameType", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_nextInstanceWithSameType);
 }

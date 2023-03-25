@@ -1269,6 +1269,21 @@ Type
 
         let: #fallbackMethodDictionary with: self fallbackMethodDictionary.
         if: fallbackMethodDictionary ~~ nil then: (fallbackMethodDictionary keysAndValuesDo: dictionaryIterationBlock).
+    };
+    withSelector: #allInstancesDo: addMethod: {:(Type)self :aBlock :: Void |
+        let: #instance mutableWith: RawTuple::firstInstanceWithType(self).
+        while: instance ~~ nil do: (
+            aBlock(instance)
+        ) continueWith: (instance := RawTuple::nextInstanceWithSameType(instance))
+    };
+    withSelector: #allInstances addMethod: {:(Type)self :: Array |
+        let: #instance mutableWith: RawTuple::firstInstanceWithType(self).
+        let: #result with: ArrayList new.
+        while: instance ~~ nil do: (
+            result add: instance
+        ) continueWith: (instance := RawTuple::nextInstanceWithSameType(instance)).
+
+        result asArray
     }.
 
 Metatype

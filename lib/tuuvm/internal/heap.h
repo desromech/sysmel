@@ -72,6 +72,7 @@ bool tuuvm_heapIterator_isAtEnd(tuuvm_heapIterator_t *iterator);
 
 tuuvm_object_tuple_t *tuuvm_heapIterator_get(tuuvm_heapIterator_t *iterator);
 void tuuvm_heapIterator_advance(tuuvm_heapIterator_t *iterator);
+bool tuuvm_heapIterator_advanceUntilInstanceWithType(tuuvm_heapIterator_t *iterator, tuuvm_tuple_t expectedType);
 void tuuvm_heapIterator_compactionAdvance(tuuvm_heapIterator_t *iterator, size_t sizeToAdvance, tuuvm_object_tuple_t **outObjectPointer, bool commitNewSize);
 void tuuvm_heapIterator_compactionFinish(tuuvm_heapIterator_t *iterator, bool commitNewSize);
 

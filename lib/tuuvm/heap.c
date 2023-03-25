@@ -234,6 +234,7 @@ void tuuvm_heapIterator_beginWithPointer(tuuvm_heap_t *heap, tuuvm_tuple_t point
     if(!chunk)
         return;
 
+    iterator->heap = heap;
     iterator->chunk = chunk;
     iterator->offset = pointer - (uintptr_t)iterator->chunk;
 }
@@ -273,6 +274,21 @@ void tuuvm_heapIterator_advance(tuuvm_heapIterator_t *iterator)
         else
             iterator->offset = 0;
     }
+}
+
+bool tuuvm_heapIterator_advanceUntilInstanceWithType(tuuvm_heapIterator_t *iterator, tuuvm_tuple_t expectedType)
+{
+    while(!tuuvm_heapIterator_isAtEnd(iterator))
+    {
+        tuuvm_object_tuple_t *object = tuuvm_heapIterator_get(iterator);
+        tuuvm_tuple_t objectType = object->header.typePointerAndFlags & TUUVM_TUPLE_TYPE_POINTER_MASK;
+        if(objectType == expectedType)
+            return true;
+
+        tuuvm_heapIterator_advance(iterator);
+    }
+
+    return false;
 }
 
 void tuuvm_heapIterator_compactionAdvance(tuuvm_heapIterator_t *iterator, size_t increment, tuuvm_object_tuple_t **outObjectPointer, bool commitNewSize)

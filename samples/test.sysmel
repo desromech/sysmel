@@ -1,3 +1,7 @@
+#*
 AnyValue withAllSubtypesDo: {:each |
     printLine(each)
 }.
+*#
+
+printLine("Function bytecodes ", FunctionBytecode allInstances size).
