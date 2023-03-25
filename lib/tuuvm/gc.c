@@ -135,7 +135,6 @@ TUUVM_API void tuuvm_gc_iterateRoots(tuuvm_context_t *context, void *userdata, t
             iterationFunction(userdata, context->heap.gcRootTable + i);
     }
 
-
     // Stack roots.
     tuuvm_stackFrame_iterateGCRootsInStackWith(tuuvm_stackFrame_getActiveRecord(), userdata, iterationFunction);
 }

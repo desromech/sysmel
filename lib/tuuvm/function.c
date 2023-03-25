@@ -326,6 +326,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tup
     if(tuuvm_tuple_isFunction(context, function))
         return tuuvm_ordinaryFunction_apply(context, function, argumentCount, arguments, applicationFlags);
 
+    if(!function)
+        tuuvm_error("Cannot apply nil as a function.");
+
     // Send the #() and #(): messages to the functional object.
     if(argumentCount == 0)
     {

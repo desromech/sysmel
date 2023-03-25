@@ -17,7 +17,7 @@
 
 #if defined(__x86_64__) || defined(__aarch64__)
 #   define TUUVM_JIT_SUPPORTED
-static bool tuuvm_bytecodeJit_enabled = false;
+static bool tuuvm_bytecodeJit_enabled = true;
 #endif
 
 static bool tuuvm_bytecodeInterpreter_tablesAreFilled;
@@ -136,11 +136,11 @@ static tuuvm_tuple_t tuuvm_bytecodeInterpreter_interpretSend(tuuvm_context_t *co
     return tuuvm_function_apply2(context, method, receiverAndArguments[0], message);
 }
 
-static tuuvm_tuple_t tuuvm_bytecodeInterpreter_interpretSendWithReceiverTypeNoCopyArguments(tuuvm_context_t *context, tuuvm_tuple_t receiverType, tuuvm_tuple_t selector, size_t argumentCount, tuuvm_tuple_t *receiverAndArguments)
+static tuuvm_tuple_t tuuvm_bytecodeInterpreter_interpretSendWithReceiverTypeNoCopyArguments(tuuvm_context_t *context, tuuvm_tuple_t receiverType, tuuvm_tuple_t selector, size_t argumentCount, tuuvm_tuple_t *receiverAndArguments, tuuvm_bitflags_t applicationFlags)
 {
     tuuvm_tuple_t method = tuuvm_type_lookupSelector(context, receiverType, selector);
     if(method)
-        return tuuvm_bytecodeInterpreter_functionApplyNoCopyArguments(context, method, argumentCount + 1, receiverAndArguments, 0);
+        return tuuvm_bytecodeInterpreter_functionApplyNoCopyArguments(context, method, argumentCount + 1, receiverAndArguments, applicationFlags);
 
     // Attempt to send doesNotUnderstand:
     if(selector != context->roots.doesNotUnderstandSelector)
@@ -160,9 +160,9 @@ static tuuvm_tuple_t tuuvm_bytecodeInterpreter_interpretSendWithReceiverTypeNoCo
     return tuuvm_function_apply2(context, method, receiverAndArguments[0], message);
 }
 
-static tuuvm_tuple_t tuuvm_bytecodeInterpreter_interpretSendNoCopyArguments(tuuvm_context_t *context, tuuvm_tuple_t selector, size_t argumentCount, tuuvm_tuple_t *receiverAndArguments)
+static tuuvm_tuple_t tuuvm_bytecodeInterpreter_interpretSendNoCopyArguments(tuuvm_context_t *context, tuuvm_tuple_t selector, size_t argumentCount, tuuvm_tuple_t *receiverAndArguments, tuuvm_bitflags_t applicationFlags)
 {
-    return tuuvm_bytecodeInterpreter_interpretSendWithReceiverTypeNoCopyArguments(context, tuuvm_tuple_getType(context, receiverAndArguments[0]), selector, argumentCount, receiverAndArguments);
+    return tuuvm_bytecodeInterpreter_interpretSendWithReceiverTypeNoCopyArguments(context, tuuvm_tuple_getType(context, receiverAndArguments[0]), selector, argumentCount, receiverAndArguments, applicationFlags);
 }
 
 TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_context_t *context, tuuvm_stackFrameBytecodeFunctionActivationRecord_t *activationRecord)
