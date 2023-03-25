@@ -17,7 +17,7 @@
 
 #if defined(__x86_64__) || defined(__aarch64__)
 #   define TUUVM_JIT_SUPPORTED
-static bool tuuvm_bytecodeJit_enabled = true;
+static bool tuuvm_bytecodeJit_enabled = false;
 #endif
 
 static bool tuuvm_bytecodeInterpreter_tablesAreFilled;
@@ -146,7 +146,10 @@ static tuuvm_tuple_t tuuvm_bytecodeInterpreter_interpretSendWithReceiverTypeNoCo
     if(selector != context->roots.doesNotUnderstandSelector)
         method = tuuvm_type_lookupSelector(context, receiverType, selector);
     if(!method)
+    {
+        tuuvm_bytecodeJit_enabled = false; 
         tuuvm_error("Message not understood");
+    }
 
     // Make the message.
     tuuvm_tuple_t arguments = tuuvm_array_create(context, argumentCount);
@@ -396,8 +399,9 @@ TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_getSourcePositionForActivation
 TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_getSourcePositionForJitActivationRecord(tuuvm_context_t *context, tuuvm_stackFrameBytecodeFunctionJitActivationRecord_t *activationRecord)
 {
     (void)context;
-    (void)activationRecord;
-    return TUUVM_NULL_TUPLE;
+    tuuvm_function_t *functionObject = (tuuvm_function_t*)activationRecord->function;
+    tuuvm_functionDefinition_t *functionDefinitionObject = (tuuvm_functionDefinition_t*)functionObject->definition;
+    return functionDefinitionObject->sourcePosition;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_activateAndApply(tuuvm_context_t *context, tuuvm_tuple_t function_, size_t argumentCount, tuuvm_tuple_t *arguments)

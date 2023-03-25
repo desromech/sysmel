@@ -41,6 +41,10 @@ typedef struct tuuvm_bytecodeJit_s
     size_t instructionsSize;
     uint8_t *instructions;
 
+    size_t constantsCapacity;
+    size_t constantsSize;
+    uint8_t *constants;
+
     size_t relocationsCapacity;
     size_t relocationsSize;
     tuuvm_bytecodeJitRelocation_t *relocations;
@@ -53,6 +57,11 @@ typedef struct tuuvm_bytecodeJit_s
 
     tuuvm_tuple_t *literalVectorGCRoot;
 } tuuvm_bytecodeJit_t;
+
+static size_t sizeAlignedTo(size_t pointer, size_t alignment)
+{
+    return (pointer + alignment - 1) & (~(alignment - 1));
+}
 
 static size_t tuuvm_bytecodeJit_addBytes(tuuvm_bytecodeJit_t *jit, size_t byteCount, uint8_t *bytes)
 {
@@ -78,6 +87,27 @@ static size_t tuuvm_bytecodeJit_addByte(tuuvm_bytecodeJit_t *jit, uint8_t byte)
 {
     tuuvm_bytecodeJit_addBytes(jit, 1, &byte);
     return jit->instructionsSize;
+}
+
+static size_t tuuvm_bytecodeJit_addConstantsBytes(tuuvm_bytecodeJit_t *jit, size_t byteCount, uint8_t *bytes)
+{
+    if(jit->constantsSize + byteCount > jit->constantsCapacity)
+    {
+        size_t newCapacity = jit->constantsCapacity * 2;
+        if(newCapacity < 1024)
+            newCapacity = 1024;
+
+        uint8_t *newInstructions = (uint8_t*)malloc(newCapacity);
+        memcpy(newInstructions, jit->constants, jit->constantsSize);
+        free(jit->constants);
+        jit->constants = newInstructions;
+        jit->constantsCapacity = newCapacity;
+    }
+
+    size_t constantOffset = jit->constantsSize;
+    memcpy(jit->constants + jit->constantsSize, bytes, byteCount);
+    jit->constantsSize += byteCount;
+    return constantOffset;
 }
 
 static void tuuvm_bytecodeJit_addPCRelocation(tuuvm_bytecodeJit_t *jit, tuuvm_bytecodeJitPCRelocation_t relocation)
@@ -247,7 +277,7 @@ static void tuuvm_bytecodeJit_jit(tuuvm_context_t *context, tuuvm_functionByteco
             break;
         case TUUVM_OPCODE_JUMP:
             if(decodedOperands[0] < 0)
-                tuuvm_jit_callNoResult0(&jit, &tuuvm_gc_safepoint);
+                tuuvm_jit_callWithContextNoResult0(&jit, &tuuvm_gc_safepoint);
             tuuvm_jit_jumpRelative(&jit, pc + decodedOperands[0]);
             break;
         // Two operands.
@@ -264,9 +294,13 @@ static void tuuvm_bytecodeJit_jit(tuuvm_context_t *context, tuuvm_functionByteco
             tuuvm_jit_moveOperandToOperand(&jit, decodedOperands[0], decodedOperands[1]);
             break;
         case TUUVM_OPCODE_JUMP_IF_TRUE:
+            if(decodedOperands[1] < 0)
+                tuuvm_jit_callWithContextNoResult0(&jit, &tuuvm_gc_safepoint);
             tuuvm_jit_jumpRelativeIfTrue(&jit, decodedOperands[0], pc + decodedOperands[1]);
             break;
         case TUUVM_OPCODE_JUMP_IF_FALSE:
+            if(decodedOperands[1] < 0)
+                tuuvm_jit_callWithContextNoResult0(&jit, &tuuvm_gc_safepoint);
             tuuvm_jit_jumpRelativeIfFalse(&jit, decodedOperands[0], pc + decodedOperands[1]);
             break;
 
@@ -317,9 +351,11 @@ static void tuuvm_bytecodeJit_jit(tuuvm_context_t *context, tuuvm_functionByteco
 
     tuuvm_jit_finish(&jit);
 
-    uint8_t *codeZonePointer = tuuvm_heap_allocateAndLockCodeZone(&context->heap, jit.instructionsSize, 16);
+    size_t requiredCodeSize = sizeAlignedTo(jit.instructionsSize, 16) + sizeAlignedTo(jit.constantsSize, 16);
+    uint8_t *codeZonePointer = tuuvm_heap_allocateAndLockCodeZone(&context->heap, requiredCodeSize, 16);
+    memset(codeZonePointer, 0xcc, requiredCodeSize); // int3;
     tuuvm_jit_installIn(&jit, codeZonePointer);
-    tuuvm_heap_unlockCodeZone(&context->heap, codeZonePointer, jit.instructionsSize);
+    tuuvm_heap_unlockCodeZone(&context->heap, codeZonePointer, requiredCodeSize);
 
     functionBytecode->jittedCode = tuuvm_tuple_systemHandle_encode(context, (tuuvm_systemHandle_t)(uintptr_t)codeZonePointer);
     functionBytecode->jittedCodeSessionToken = context->roots.sessionToken;

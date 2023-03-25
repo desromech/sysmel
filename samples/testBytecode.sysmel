@@ -36,7 +36,7 @@ printLine(bytecodes asFunction ()).
         let result mutable := 0i32.
         let i mutable := 0i32.
         while: (i < n) do: {
-            result := result + (i*3i32)
+            result := result + (i*3i32).
         } continueWith: ( i := i + 1i32 ).
         result
     }, (Array with: 50i32)),

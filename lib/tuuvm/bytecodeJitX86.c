@@ -69,7 +69,7 @@ static void tuuvm_jit_x86_call(tuuvm_bytecodeJit_t *jit, void *functionPointer)
         .addend = -4
     };
     tuuvm_bytecodeJit_addRelocation(jit, relocation);
-#else
+#elif 0
     tuuvm_jit_x86_mov64Absolute(jit, TUUVM_X86_RAX, (uint64_t)functionPointer);
     uint8_t instruction[] = {
         0xFF,
@@ -77,6 +77,23 @@ static void tuuvm_jit_x86_call(tuuvm_bytecodeJit_t *jit, void *functionPointer)
     };
 
     tuuvm_bytecodeJit_addBytes(jit, sizeof(instruction), instruction);
+#else
+    size_t constantOffset = tuuvm_bytecodeJit_addConstantsBytes(jit, sizeof(functionPointer), (uint8_t*)&functionPointer);
+    uint8_t instruction[] = {
+        0xFF,
+        tuuvm_jit_x86_modRM(5, 2, 0),
+        0x00, 0x00, 0x00, 0x00,
+    };
+
+    size_t relocationOffset = tuuvm_bytecodeJit_addBytes(jit, sizeof(instruction), instruction) - 4;
+
+    tuuvm_bytecodeJitRelocation_t relocation = {
+        .offset = relocationOffset,
+        .type = TUUVM_BYTECODE_JIT_RELOCATION_RELATIVE32,
+        .value = constantOffset,
+        .addend = -4
+    };
+    tuuvm_bytecodeJit_addRelocation(jit, relocation);
 #endif
 }
 
@@ -327,6 +344,12 @@ static void tuuvm_jit_callNoResult0(tuuvm_bytecodeJit_t *jit, void *functionPoin
     tuuvm_jit_x86_call(jit, functionPointer);
 }
 
+static void tuuvm_jit_callWithContextNoResult0(tuuvm_bytecodeJit_t *jit, void *functionPointer)
+{
+    tuuvm_jit_x86_jitLoadContextInRegister(jit, TUUVM_X86_SYSV_ARG0);
+    tuuvm_jit_x86_call(jit, functionPointer);
+}
+
 static void tuuvm_jit_callWithContext1(tuuvm_bytecodeJit_t *jit, void *functionPointer, int16_t resultOperand, int16_t argumentOperand0)
 {
     tuuvm_jit_x86_jitLoadContextInRegister(jit, TUUVM_X86_SYSV_ARG0);
@@ -361,7 +384,7 @@ static void tuuvm_jit_functionApply(tuuvm_bytecodeJit_t *jit, int16_t resultOper
 
     // Push all of the arguments in the stack.
     for(size_t i = 0; i < argumentCount; ++i)
-        tuuvm_jit_pushOperand(jit, argumentOperands[i]);
+        tuuvm_jit_pushOperand(jit, argumentOperands[argumentCount - i - 1]);
 
     tuuvm_jit_x86_jitLoadContextInRegister(jit, TUUVM_X86_SYSV_ARG0);
     tuuvm_jit_moveOperandToRegister(jit, TUUVM_X86_SYSV_ARG1, functionOperand);
@@ -382,8 +405,9 @@ static void tuuvm_jit_send(tuuvm_bytecodeJit_t *jit, int16_t resultOperand, int1
     tuuvm_jit_x86_subImmediate32(jit, TUUVM_X86_RSP, paddingSize);
 
     // Push all of the arguments in the stack.
-    for(size_t i = 0; i < argumentCount + 1; ++i)
-        tuuvm_jit_pushOperand(jit, argumentOperands[i]);
+    size_t pushCount = argumentCount + 1;
+    for(size_t i = 0; i < pushCount; ++i)
+        tuuvm_jit_pushOperand(jit, argumentOperands[pushCount - i - 1]);
 
     tuuvm_jit_x86_jitLoadContextInRegister(jit, TUUVM_X86_SYSV_ARG0);
     tuuvm_jit_moveOperandToRegister(jit, TUUVM_X86_SYSV_ARG1, selectorOperand);
@@ -404,8 +428,10 @@ static void tuuvm_jit_sendWithReceiverType(tuuvm_bytecodeJit_t *jit, int16_t res
     tuuvm_jit_x86_subImmediate32(jit, TUUVM_X86_RSP, paddingSize);
 
     // Push all of the arguments in the stack.
-    for(size_t i = 0; i < argumentCount + 1; ++i)
-        tuuvm_jit_pushOperand(jit, argumentOperands[i]);
+    size_t pushCount = argumentCount + 1;
+    for(size_t i = 0; i < pushCount; ++i)
+        tuuvm_jit_pushOperand(jit, argumentOperands[pushCount - i - 1]);
+    tuuvm_jit_x86_mov64Register(jit, TUUVM_X86_SYSV_ARG5, TUUVM_X86_RSP);
 
     tuuvm_jit_x86_pushImmediate32(jit, applicationFlags);
 
@@ -413,7 +439,6 @@ static void tuuvm_jit_sendWithReceiverType(tuuvm_bytecodeJit_t *jit, int16_t res
     tuuvm_jit_moveOperandToRegister(jit, TUUVM_X86_SYSV_ARG2, receiverTypeOperand);
     tuuvm_jit_moveOperandToRegister(jit, TUUVM_X86_SYSV_ARG3, selectorOperand);
     tuuvm_jit_x86_movImmediate32(jit, TUUVM_X86_SYSV_ARG4, argumentCount);
-    tuuvm_jit_x86_mov64Register(jit, TUUVM_X86_SYSV_ARG5, TUUVM_X86_RSP);
     tuuvm_jit_x86_call(jit, &tuuvm_bytecodeInterpreter_interpretSendWithReceiverTypeNoCopyArguments);
     tuuvm_jit_x86_addImmediate32(jit, TUUVM_X86_RSP, (/* application flags */ 1 + /* receiver */1 + argumentCount) * sizeof(void*));
 
@@ -445,7 +470,7 @@ static void tuuvm_jit_makeByteArray(tuuvm_bytecodeJit_t *jit, int16_t resultOper
 
     tuuvm_jit_x86_jitLoadContextInRegister(jit, TUUVM_X86_SYSV_ARG0);
     tuuvm_jit_x86_movImmediate32(jit, TUUVM_X86_SYSV_ARG1, elementCount);
-    tuuvm_jit_x86_call(jit, &tuuvm_array_create);
+    tuuvm_jit_x86_call(jit, &tuuvm_byteArray_create);
 
     for(size_t i = 0; i < elementCount; ++i)
     {
@@ -520,7 +545,7 @@ static void tuuvm_jit_x86_cmpRAXWithImmediate32(tuuvm_bytecodeJit_t *jit, int32_
     uint8_t instruction[] = {
         tuuvm_jit_x86_rex(true, false, false, false),
         0x3D,
-        immediate & 0xFF, (immediate >> 8) & 0xFF, (immediate >> 16) & 0xFF, (immediate >> 4) & 0xFF,
+        immediate & 0xFF, (immediate >> 8) & 0xFF, (immediate >> 16) & 0xFF, (immediate >> 24) & 0xFF,
     };
 
     tuuvm_bytecodeJit_addBytes(jit, sizeof(instruction), instruction);
@@ -563,7 +588,6 @@ static void tuuvm_jit_jumpRelativeIfFalse(tuuvm_bytecodeJit_t *jit, int16_t cond
     };
     tuuvm_bytecodeJit_addPCRelocation(jit, relocation);
 }
-
 
 static void tuuvm_jit_prologue(tuuvm_bytecodeJit_t *jit)
 {
@@ -609,15 +633,13 @@ static void tuuvm_jit_prologue(tuuvm_bytecodeJit_t *jit)
     --stackFrameIndex;
 
     // Push the capture vector.
-    tuuvm_jit_x86_mov64FromMemoryWithOffset(jit, TUUVM_X86_RAX, TUUVM_X86_SYSV_ARG1, offsetof(tuuvm_function_t, captureVector));
-    tuuvm_jit_x86_pushRegister(jit, TUUVM_X86_RAX); // Capture vector
+    tuuvm_jit_x86_pushFromMemoryWithOffset(jit, TUUVM_X86_SYSV_ARG1, offsetof(tuuvm_function_t, captureVector));
     --stackFrameIndex;
     jit->captureVectorOffset = stackFrameIndex*sizeof(tuuvm_tuple_t);
 
     // Push the literal vector.
     tuuvm_jit_x86_mov64Absolute(jit, TUUVM_X86_RAX, (uintptr_t)jit->literalVectorGCRoot); // Pointer to GC root with the literal vector.
-    tuuvm_jit_x86_mov64FromMemoryWithOffset(jit, TUUVM_X86_RAX, TUUVM_X86_RAX, 0);
-    tuuvm_jit_x86_pushRegister(jit, TUUVM_X86_RAX);
+    tuuvm_jit_x86_pushFromMemoryWithOffset(jit, TUUVM_X86_RAX, 0);
     --stackFrameIndex;
     jit->literalVectorOffset = stackFrameIndex*sizeof(tuuvm_tuple_t);
 
@@ -635,8 +657,7 @@ static void tuuvm_jit_prologue(tuuvm_bytecodeJit_t *jit)
     
     // Connect with the stack unwinder.
     tuuvm_jit_x86_mov64Register(jit, TUUVM_X86_SYSV_ARG0, TUUVM_X86_RSP);
-    if(paddingRequired > 0)
-        tuuvm_jit_x86_subImmediate32(jit, TUUVM_X86_RSP, paddingRequired);
+    tuuvm_jit_x86_subImmediate32(jit, TUUVM_X86_RSP, paddingRequired);
 
     tuuvm_jit_x86_call(jit, &tuuvm_stackFrame_pushRecord);
 }
@@ -768,13 +789,17 @@ static void tuuvm_jit_finish(tuuvm_bytecodeJit_t *jit)
 static void tuuvm_jit_installIn(tuuvm_bytecodeJit_t *jit, uint8_t *codeZonePointer)
 {
     memcpy(codeZonePointer, jit->instructions, jit->instructionsSize);
+    size_t constantsOffset = sizeAlignedTo(jit->instructionsSize, 16);
+    uint8_t *constantZonePointer = codeZonePointer + constantsOffset;
+    memcpy(constantZonePointer, jit->constants, jit->constantsSize);
+
     for(size_t i = 0; i < jit->relocationsSize; ++i)
     {
         tuuvm_bytecodeJitRelocation_t *relocation = jit->relocations + i;
         uint8_t *relocationTarget = codeZonePointer + relocation->offset;
         intptr_t relocationTargetAddress = (intptr_t)relocationTarget;
 
-        intptr_t relativeValue = relocation->value - relocationTargetAddress + relocation->addend;
+        intptr_t relativeValue = (intptr_t)constantZonePointer + relocation->value - relocationTargetAddress + relocation->addend;
         switch(relocation->type)
         {
         case TUUVM_BYTECODE_JIT_RELOCATION_RELATIVE32:

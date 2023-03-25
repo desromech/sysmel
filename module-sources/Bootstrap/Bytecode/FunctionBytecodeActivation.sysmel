@@ -36,7 +36,7 @@ Type
     }.
 
 ## Compile the compiler first.
-if: false then: {
+if: true then: {
     let typeCompilationBlock := {:(Type)each |
         print("Compiling type if needed: ", each).
         let compilationTime := {:: Void | each compileIntoBytecodeIfNeeded } timeToRunInMicroseconds asFloat32 * 0.001f32.
@@ -70,7 +70,7 @@ if: false then: {
         ASTLocalDefinitionNode
     ) -- ASTNode withAllSubtypes do: typeCompilationBlock.
 
-    AnyValue withAllSubtypesDo: typeCompilationBlock
+    AnyValue withAllSubtypesDo: typeCompilationBlock.
 
     ## This allows to activate the on-demand bytecode compiler.
     if: false then: {
