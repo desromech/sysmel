@@ -249,9 +249,14 @@ TUUVM_API tuuvm_tuple_t tuuvm_valueBox_with(tuuvm_context_t *context, tuuvm_tupl
 TUUVM_API tuuvm_tuple_t tuuvm_pointerLikeType_withStorage(tuuvm_context_t *context, tuuvm_tuple_t referenceType, tuuvm_tuple_t storage);
 
 /**
- * Creates a pointer like that boxes a value.
+ * Creates a pointer like value that boxes a value.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_pointerLikeType_withBoxForValue(tuuvm_context_t *context, tuuvm_tuple_t referenceType, tuuvm_tuple_t boxedValue);
+
+/**
+ * Creates a pointer like value that boxes a value which is empty.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_pointerLikeType_withEmptyBox(tuuvm_context_t *context, tuuvm_tuple_t referenceType);
 
 /**
  * Creates a reference with the specified storage

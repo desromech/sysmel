@@ -21,6 +21,8 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t immediateTrivialTypeTable[TUUVM_TUPLE_IMMEDIATE_TRIVIAL_COUNT];
     tuuvm_tuple_t internedSymbolSet;
 
+    tuuvm_tuple_t sessionToken;
+
     tuuvm_tuple_t identityEqualsFunction;
     tuuvm_tuple_t identityNotEqualsFunction;
     tuuvm_tuple_t identityHashFunction;

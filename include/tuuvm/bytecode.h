@@ -71,11 +71,16 @@ typedef struct tuuvm_functionBytecode_s
     tuuvm_tuple_t debugSourceASTNodes;
     tuuvm_tuple_t debugSourcePositions;
     tuuvm_tuple_t debugSourceEnvironments;
+
+    tuuvm_tuple_t jittedCode;
+    tuuvm_tuple_t jittedCodeSessionToken;
 } tuuvm_functionBytecode_t;
 
 typedef struct tuuvm_stackFrameBytecodeFunctionActivationRecord_s tuuvm_stackFrameBytecodeFunctionActivationRecord_t;
+typedef struct tuuvm_stackFrameBytecodeFunctionJitActivationRecord_s tuuvm_stackFrameBytecodeFunctionJitActivationRecord_t;
 
 TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_apply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments);
 TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_getSourcePositionForActivationRecord(tuuvm_context_t *context, tuuvm_stackFrameBytecodeFunctionActivationRecord_t *activationRecord);
+TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_getSourcePositionForJitActivationRecord(tuuvm_context_t *context, tuuvm_stackFrameBytecodeFunctionJitActivationRecord_t *activationRecord);
 
 #endif //TUUVM_BYTECODE_H

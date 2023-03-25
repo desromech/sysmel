@@ -349,6 +349,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_pointerLikeType_withBoxForValue(tuuvm_context_t *c
     return tuuvm_pointerLikeType_withStorage(context, pointerLikeType, tuuvm_valueBox_with(context, boxedValue));
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_pointerLikeType_withEmptyBox(tuuvm_context_t *context, tuuvm_tuple_t pointerLikeType)
+{
+    return tuuvm_pointerLikeType_withBoxForValue(context, pointerLikeType, TUUVM_NULL_TUPLE);
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_referenceType_withStorage(tuuvm_context_t *context, tuuvm_tuple_t referenceType, tuuvm_tuple_t storage)
 {
     if(!tuuvm_tuple_isKindOf(context, referenceType, context->roots.referenceType))

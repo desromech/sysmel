@@ -19,5 +19,6 @@ TUUVM_API void tuuvm_error_modifyImmediateValue();
 TUUVM_API void tuuvm_error_modifyImmutableTuple();
 TUUVM_API void tuuvm_error_argumentCountMismatch(size_t expected, size_t gotten);
 TUUVM_API void tuuvm_error_outOfBoundsSlotAccess();
+TUUVM_API void tuuvm_error_trap();
 
 #endif //TUUVM_ERRORS_H

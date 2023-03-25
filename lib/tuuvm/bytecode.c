@@ -15,6 +15,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(__x86_64__) || defined(__aarch64__)
+#   define TUUVM_JIT_SUPPORTED
+static bool tuuvm_bytecodeJit_enabled = true;
+#endif
+
 static bool tuuvm_bytecodeInterpreter_tablesAreFilled;
 static uint8_t tuuvm_implicitVariableBytecodeOperandCountTable[16];
 
@@ -75,11 +80,8 @@ static uint8_t tuuvm_bytecodeInterpreter_offsetOperandCountForOpcode(uint8_t opc
     }
 }
 
-static tuuvm_tuple_t tuuvm_bytecodeInterpreter_functionApply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments, tuuvm_bitflags_t applicationFlags)
+static tuuvm_tuple_t tuuvm_bytecodeInterpreter_functionApplyNoCopyArguments(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments, tuuvm_bitflags_t applicationFlags)
 {
-    tuuvm_tuple_t argumentsBuffer[16];
-    memcpy(argumentsBuffer, arguments, argumentCount * sizeof(tuuvm_tuple_t));
-
     if(tuuvm_function_isVariadic(context, function))
     {
         size_t expectedArgumentCount = tuuvm_function_getArgumentCount(context, function);
@@ -95,14 +97,22 @@ static tuuvm_tuple_t tuuvm_bytecodeInterpreter_functionApply(tuuvm_context_t *co
             tuuvm_tuple_t variadicVector = tuuvm_array_create(context, variadicArgumentCount);
             tuuvm_tuple_t *variadicVectorElements = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(variadicVector)->pointers;
             for(size_t i = 0; i < variadicArgumentCount; ++i)
-                variadicVectorElements[i] = argumentsBuffer[directArgumentCount + i];
-            argumentsBuffer[directArgumentCount] = variadicVector;
+                variadicVectorElements[i] = arguments[directArgumentCount + i];
+            arguments[directArgumentCount] = variadicVector;
         }
 
-        return tuuvm_function_apply(context, function, expectedArgumentCount, argumentsBuffer, applicationFlags);
+        return tuuvm_function_apply(context, function, expectedArgumentCount, arguments, applicationFlags);
 
     }
-    return tuuvm_function_apply(context, function, argumentCount, argumentsBuffer, applicationFlags);
+    return tuuvm_function_apply(context, function, argumentCount, arguments, applicationFlags);
+}
+
+static tuuvm_tuple_t tuuvm_bytecodeInterpreter_functionApply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments, tuuvm_bitflags_t applicationFlags)
+{
+    tuuvm_tuple_t argumentsBuffer[16];
+    memcpy(argumentsBuffer, arguments, argumentCount * sizeof(tuuvm_tuple_t));
+
+    return tuuvm_bytecodeInterpreter_functionApplyNoCopyArguments(context, function, argumentCount, argumentsBuffer, applicationFlags);
 }
 
 static tuuvm_tuple_t tuuvm_bytecodeInterpreter_interpretSend(tuuvm_context_t *context, tuuvm_tuple_t receiverType, tuuvm_tuple_t selector, size_t argumentCount, tuuvm_tuple_t *receiverAndArguments)
@@ -124,6 +134,32 @@ static tuuvm_tuple_t tuuvm_bytecodeInterpreter_interpretSend(tuuvm_context_t *co
 
     tuuvm_tuple_t message = tuuvm_message_create(context, selector, arguments);
     return tuuvm_function_apply2(context, method, receiverAndArguments[0], message);
+}
+
+static tuuvm_tuple_t tuuvm_bytecodeInterpreter_interpretSendWithReceiverTypeNoCopyArguments(tuuvm_context_t *context, tuuvm_tuple_t receiverType, tuuvm_tuple_t selector, size_t argumentCount, tuuvm_tuple_t *receiverAndArguments)
+{
+    tuuvm_tuple_t method = tuuvm_type_lookupSelector(context, receiverType, selector);
+    if(method)
+        return tuuvm_bytecodeInterpreter_functionApplyNoCopyArguments(context, method, argumentCount + 1, receiverAndArguments, 0);
+
+    // Attempt to send doesNotUnderstand:
+    if(selector != context->roots.doesNotUnderstandSelector)
+        method = tuuvm_type_lookupSelector(context, receiverType, selector);
+    if(!method)
+        tuuvm_error("Message not understood");
+
+    // Make the message.
+    tuuvm_tuple_t arguments = tuuvm_array_create(context, argumentCount);
+    for(size_t i = 0; i < argumentCount; ++i)
+        tuuvm_array_atPut(arguments, i, receiverAndArguments[1 + i]);
+
+    tuuvm_tuple_t message = tuuvm_message_create(context, selector, arguments);
+    return tuuvm_function_apply2(context, method, receiverAndArguments[0], message);
+}
+
+static tuuvm_tuple_t tuuvm_bytecodeInterpreter_interpretSendNoCopyArguments(tuuvm_context_t *context, tuuvm_tuple_t selector, size_t argumentCount, tuuvm_tuple_t *receiverAndArguments)
+{
+    return tuuvm_bytecodeInterpreter_interpretSendWithReceiverTypeNoCopyArguments(context, tuuvm_tuple_getType(context, receiverAndArguments[0]), selector, argumentCount, receiverAndArguments);
 }
 
 TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_context_t *context, tuuvm_stackFrameBytecodeFunctionActivationRecord_t *activationRecord)
@@ -238,7 +274,7 @@ TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_con
 
         // Two operands.
         case TUUVM_OPCODE_ALLOCA:
-            operandRegisterFile[0] = tuuvm_pointerLikeType_withBoxForValue(context, operandRegisterFile[1], TUUVM_NULL_TUPLE);
+            operandRegisterFile[0] = tuuvm_pointerLikeType_withEmptyBox(context, operandRegisterFile[1]);
             break;
         case TUUVM_OPCODE_LOAD:
             operandRegisterFile[0] = tuuvm_pointerLikeType_load(context, operandRegisterFile[1]);
@@ -357,7 +393,13 @@ TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_getSourcePositionForActivation
     return (*functionDefinitionObject)->sourcePosition;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_apply(tuuvm_context_t *context, tuuvm_tuple_t function_, size_t argumentCount, tuuvm_tuple_t *arguments)
+TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_getSourcePositionForJitActivationRecord(tuuvm_context_t *context, tuuvm_stackFrameBytecodeFunctionJitActivationRecord_t *activationRecord)
+{
+    (void)context;
+    return TUUVM_NULL_TUPLE;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_activateAndApply(tuuvm_context_t *context, tuuvm_tuple_t function_, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     tuuvm_stackFrameBytecodeFunctionActivationRecord_t activationRecord = {
         .type = TUUVM_STACK_FRAME_RECORD_TYPE_BYTECODE_FUNCTION_ACTIVATION,
@@ -398,6 +440,32 @@ TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_apply(tuuvm_context_t *context
 
     tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&activationRecord);
     return activationRecord.result;
+}
+
+#ifdef TUUVM_JIT_SUPPORTED
+#include "bytecodeJitCommon.c"
+#endif
+
+TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_apply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+#ifdef TUUVM_JIT_SUPPORTED
+    if(tuuvm_bytecodeJit_enabled)
+    {
+        tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
+        tuuvm_functionDefinition_t *functionDefinitionObject = (tuuvm_functionDefinition_t*)functionObject->definition;
+        tuuvm_functionBytecode_t *functionBytecodeObject = (tuuvm_functionBytecode_t *)functionDefinitionObject->bytecode;
+        if(!functionBytecodeObject->jittedCode || functionBytecodeObject->jittedCodeSessionToken != context->roots.sessionToken)
+            tuuvm_bytecodeJit_jit(context, functionBytecodeObject);
+
+        if(functionBytecodeObject->jittedCode && functionBytecodeObject->jittedCodeSessionToken == context->roots.sessionToken)
+        {
+            tuuvm_bytecodeJit_entryPoint entryPoint = (tuuvm_bytecodeJit_entryPoint)tuuvm_tuple_systemHandle_decode(functionBytecodeObject->jittedCode);
+            return entryPoint(context, function, argumentCount, arguments);
+        }
+    }
+#endif
+
+    return tuuvm_bytecodeInterpreter_activateAndApply(context, function, argumentCount, arguments);
 }
 
 void tuuvm_bytecode_registerPrimitives(void)

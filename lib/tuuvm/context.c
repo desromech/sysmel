@@ -383,6 +383,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.weakArrayListType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayListType);
 
     context->roots.internedSymbolSet = tuuvm_identitySet_create(context);
+    context->roots.sessionToken = tuuvm_tuple_systemHandle_encode(context, 1);
 
     // Create the intrinsic built-in environment
     context->roots.globalNamespace = tuuvm_environment_create(context, TUUVM_NULL_TUPLE);
@@ -692,6 +693,9 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "debugSourceASTNodes", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "debugSourcePositions", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "debugSourceEnvironments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        
+        "jittedCode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
+        "jittedCodeSessionToken", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.functionTypeType, "FunctionType", TUUVM_NULL_TUPLE,
         NULL);

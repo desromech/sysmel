@@ -90,6 +90,20 @@ TUUVM_API void tuuvm_stackFrame_iterateGCRootsInRecordWith(tuuvm_stackFrameRecor
             iterationFunction(userdata, &functionRecord->result);
         }   
         break;
+    case TUUVM_STACK_FRAME_RECORD_TYPE_BYTECODE_JIT_FUNCTION_ACTIVATION:
+        {
+            tuuvm_stackFrameBytecodeFunctionJitActivationRecord_t *functionRecord = (tuuvm_stackFrameBytecodeFunctionJitActivationRecord_t*)record;
+            iterationFunction(userdata, &functionRecord->function);
+
+            iterationFunction(userdata, &functionRecord->captureVector);
+
+            for(size_t i = 0; i < functionRecord->argumentCount; ++i)
+                iterationFunction(userdata, functionRecord->arguments + i);
+
+            for(size_t i = 0; i < functionRecord->inlineLocalVectorSize; ++i)
+                iterationFunction(userdata, functionRecord->inlineLocalVector + i);
+        }   
+        break;
     case TUUVM_STACK_FRAME_RECORD_TYPE_BREAK_TARGET:
         {
             tuuvm_stackFrameBreakTargetRecord_t *breakRecord = (tuuvm_stackFrameBreakTargetRecord_t*)record;
@@ -303,6 +317,15 @@ TUUVM_API tuuvm_tuple_t tuuvm_stackFrame_buildStackTraceUpTo(tuuvm_stackFrameRec
             if(currentSourcePosition)
                 tuuvm_arrayList_add(context, arrayList, currentSourcePosition);
             currentSourcePosition = tuuvm_bytecodeInterpreter_getSourcePositionForActivationRecord(context, (tuuvm_stackFrameBytecodeFunctionActivationRecord_t*)stackFrameRecord);
+            if(currentSourcePosition)
+                tuuvm_arrayList_add(context, arrayList, currentSourcePosition);
+            currentSourcePosition = TUUVM_NULL_TUPLE;
+        }
+        else if(stackFrameRecord->type == TUUVM_STACK_FRAME_RECORD_TYPE_BYTECODE_JIT_FUNCTION_ACTIVATION)
+        {
+            if(currentSourcePosition)
+                tuuvm_arrayList_add(context, arrayList, currentSourcePosition);
+            currentSourcePosition = tuuvm_bytecodeInterpreter_getSourcePositionForJitActivationRecord(context, (tuuvm_stackFrameBytecodeFunctionJitActivationRecord_t*)stackFrameRecord);
             if(currentSourcePosition)
                 tuuvm_arrayList_add(context, arrayList, currentSourcePosition);
             currentSourcePosition = TUUVM_NULL_TUPLE;

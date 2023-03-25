@@ -55,6 +55,11 @@ TUUVM_API void tuuvm_error_outOfBoundsSlotAccess()
     tuuvm_error("Accessing a slot that is out of bounds.");
 }
 
+TUUVM_API void tuuvm_error_trap()
+{
+    tuuvm_error("Trap instruction.");
+}
+
 TUUVM_API void tuuvm_error_argumentCountMismatch(size_t expected, size_t gotten)
 {
     (void)expected;

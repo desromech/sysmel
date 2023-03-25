@@ -306,11 +306,42 @@ ASTFunctionApplicationNode extend: {
     }.
 }.
 
+ASTMakeAssociationNode extend: {
+    public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand := {
+        let key := self key compileBytecodesDirectlyWith: compiler.
+        let value := self value
+            ifNotNil: {:(ASTNode)value | value compileBytecodesDirectlyWith: compiler}
+            ifNil: { compiler assembler literal: nil }.
+
+        let result := compiler assembler temporary: #makeAssociation.
+        compiler assembler makeAssociationWithKey: key value: value in: result.
+        result
+    }.
+}.
+
+ASTMakeByteArrayNode extend: {
+    public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand := {
+        let elements := self elements collect: {:(ASTNode)each :: FunctionBytecodeAssemblerOperand | each compileBytecodesDirectlyWith: compiler }.
+        let result := compiler assembler temporary: #makeByteArray.
+        compiler assembler makeByteArrayWithElements: elements in: result.
+        result
+    }.
+}.
+
 ASTMakeArrayNode extend: {
     public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand := {
         let elements := self elements collect: {:(ASTNode)each :: FunctionBytecodeAssemblerOperand | each compileBytecodesDirectlyWith: compiler }.
         let result := compiler assembler temporary: #makeArray.
         compiler assembler makeArrayWithElements: elements in: result.
+        result
+    }.
+}.
+
+ASTMakeDictionaryNode extend: {
+    public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand := {
+        let elements := self elements collect: {:(ASTNode)each :: FunctionBytecodeAssemblerOperand | each compileBytecodesDirectlyWith: compiler }.
+        let result := compiler assembler temporary: #makeDictionary.
+        compiler assembler makeDictionaryWithElements: elements in: result.
         result
     }.
 }.

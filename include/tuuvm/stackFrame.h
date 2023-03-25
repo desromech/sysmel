@@ -11,6 +11,7 @@ typedef enum tuuvm_stackFrameRecordType_e
     TUUVM_STACK_FRAME_RECORD_TYPE_GC_ROOTS = 0,
     TUUVM_STACK_FRAME_RECORD_TYPE_FUNCTION_ACTIVATION,
     TUUVM_STACK_FRAME_RECORD_TYPE_BYTECODE_FUNCTION_ACTIVATION,
+    TUUVM_STACK_FRAME_RECORD_TYPE_BYTECODE_JIT_FUNCTION_ACTIVATION,
     TUUVM_STACK_FRAME_RECORD_TYPE_BREAK_TARGET,
     TUUVM_STACK_FRAME_RECORD_TYPE_CONTINUE_TARGET,
     TUUVM_STACK_FRAME_RECORD_TYPE_SOURCE_POSITION,
@@ -69,6 +70,23 @@ typedef struct tuuvm_stackFrameBytecodeFunctionActivationRecord_s
     size_t pc;
     jmp_buf jmpbuffer;
 } tuuvm_stackFrameBytecodeFunctionActivationRecord_t;
+
+typedef struct tuuvm_stackFrameBytecodeFunctionJitActivationRecord_s
+{
+    tuuvm_stackFrameRecord_t *previous;
+    tuuvm_stackFrameRecordType_t type;
+
+    tuuvm_tuple_t pc;
+
+    tuuvm_tuple_t literalVector;
+    tuuvm_tuple_t captureVector;
+    tuuvm_tuple_t function;
+    size_t argumentCount;
+    tuuvm_tuple_t *arguments;
+
+    size_t inlineLocalVectorSize;
+    tuuvm_tuple_t inlineLocalVector[];
+} tuuvm_stackFrameBytecodeFunctionJitActivationRecord_t;
 
 typedef struct tuuvm_stackFrameBreakTargetRecord_s
 {

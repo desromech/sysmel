@@ -14,9 +14,10 @@ printLine(bytecodes fullPrintString).
 printLine(bytecodes asFunction ()).
 *#
 
-printLine({:n :y | {:x | x + n} (y) }(3, 2)).
-
 (
+    ({:a :b :c :d | #{a : b. c : d}}, (#first, 1, #second, 2)),
+    ({:(UInt8)a :(UInt8)b | #[a. b]}, (1u8, 3u8)),
+
     ({| 42}, #()),
     ({:c :a :b | if: c then: a else: b }, (false, 1, 2)),
     ({:x :y | if: x < y then: x else: y }, #(1 2)),
@@ -33,6 +34,7 @@ printLine({:n :y | {:x | x + n} (y) }(3, 2)).
 
     ({:x :y | (x, 2, y)
     }, #(1 5)),
+    
     ({:(Int32)n :: Int32 |
         let result mutable := 0i32.
         let i mutable := 0i32.
