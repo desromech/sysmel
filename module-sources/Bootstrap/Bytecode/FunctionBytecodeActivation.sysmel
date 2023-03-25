@@ -73,7 +73,7 @@ if: true then: {
     AnyValue withAllSubtypesDo: typeCompilationBlock.
 
     ## This allows to activate the on-demand bytecode compiler.
-    if: false then: {
+    if: true then: {
         if: false then: {
             FunctionDefinition
                 withSelector: #onDemandCompileIntoBytecode addMethod: {:(FunctionDefinition)self :: Void |
