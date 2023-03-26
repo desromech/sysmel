@@ -865,7 +865,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_getDefaultValue(tuuvm_context_t *context, tuu
     return tuuvm_tuple_send0(context, context->roots.defaultValueSelector, type);
 }
 
-static tuuvm_tuple_t tuuvm_type_primitive_flushLookupSelector(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_type_primitive_flushLookupSelector(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
@@ -884,7 +884,7 @@ static tuuvm_tuple_t tuuvm_type_primitive_flushLookupSelector(tuuvm_context_t *c
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_type_primitive_flushMacroLookupSelector(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_type_primitive_flushMacroLookupSelector(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -894,7 +894,7 @@ static tuuvm_tuple_t tuuvm_type_primitive_flushMacroLookupSelector(tuuvm_context
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_type_primitive_flushFallbackLookupSelector(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_type_primitive_flushFallbackLookupSelector(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -904,7 +904,7 @@ static tuuvm_tuple_t tuuvm_type_primitive_flushFallbackLookupSelector(tuuvm_cont
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_type_primitive_coerceValue(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_type_primitive_coerceValue(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -914,7 +914,7 @@ static tuuvm_tuple_t tuuvm_type_primitive_coerceValue(tuuvm_context_t *context, 
     return tuuvm_type_coerceValue(context, arguments[1], arguments[0]);
 }
 
-static tuuvm_tuple_t tuuvm_type_primitive_createSimpleFunctionType(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_type_primitive_createSimpleFunctionType(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -924,7 +924,7 @@ static tuuvm_tuple_t tuuvm_type_primitive_createSimpleFunctionType(tuuvm_context
     return tuuvm_type_doCreateSimpleFunctionType(context, arguments[0], arguments[1], arguments[2]);
 }
 
-static tuuvm_tuple_t tuuvm_type_primitive_createPointerType(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_type_primitive_createPointerType(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -934,7 +934,7 @@ static tuuvm_tuple_t tuuvm_type_primitive_createPointerType(tuuvm_context_t *con
     return tuuvm_type_doCreatePointerType(context, arguments[0], arguments[1]);
 }
 
-static tuuvm_tuple_t tuuvm_type_primitive_createReferenceType(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_type_primitive_createReferenceType(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -944,7 +944,7 @@ static tuuvm_tuple_t tuuvm_type_primitive_createReferenceType(tuuvm_context_t *c
     return tuuvm_type_doCreateReferenceType(context, arguments[0], arguments[1]);
 }
 
-static tuuvm_tuple_t tuuvm_type_primitive_pointerLikeLoad(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_type_primitive_pointerLikeLoad(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -954,7 +954,7 @@ static tuuvm_tuple_t tuuvm_type_primitive_pointerLikeLoad(tuuvm_context_t *conte
     return tuuvm_pointerLikeType_load(context, arguments[0]);
 }
 
-static tuuvm_tuple_t tuuvm_type_primitive_pointerLikeStore(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_type_primitive_pointerLikeStore(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -964,7 +964,7 @@ static tuuvm_tuple_t tuuvm_type_primitive_pointerLikeStore(tuuvm_context_t *cont
     return tuuvm_pointerLikeType_store(context, arguments[0], arguments[1]);
 }
 
-static tuuvm_tuple_t tuuvm_void_primitive_anyValueToVoid(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_void_primitive_anyValueToVoid(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -973,7 +973,7 @@ static tuuvm_tuple_t tuuvm_void_primitive_anyValueToVoid(tuuvm_context_t *contex
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_type_primitive_coerceASTNodeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_type_primitive_coerceASTNodeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -993,7 +993,7 @@ static tuuvm_tuple_t tuuvm_type_primitive_coerceASTNodeWithEnvironment(tuuvm_con
     return *astNode;
 }
 
-static tuuvm_tuple_t tuuvm_void_primitive_coerceASTNodeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_void_primitive_coerceASTNodeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;

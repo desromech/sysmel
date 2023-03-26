@@ -74,7 +74,7 @@ TUUVM_API bool tuuvm_io_saveWholeFileNamed(tuuvm_tuple_t filename, tuuvm_tuple_t
     return success;
 }
 
-static tuuvm_tuple_t tuuvm_io_primitive_printLine(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_io_primitive_printLine(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -93,7 +93,7 @@ static tuuvm_tuple_t tuuvm_io_primitive_printLine(tuuvm_context_t *context, tuuv
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_io_primitive_print(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_io_primitive_print(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -111,7 +111,7 @@ static tuuvm_tuple_t tuuvm_io_primitive_print(tuuvm_context_t *context, tuuvm_tu
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_io_primitive_readWholeFileNamedAsString(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_io_primitive_readWholeFileNamedAsString(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
@@ -119,7 +119,7 @@ static tuuvm_tuple_t tuuvm_io_primitive_readWholeFileNamedAsString(tuuvm_context
     return tuuvm_io_readWholeFileNamedAsString(context, arguments[0]);
 }
 
-static tuuvm_tuple_t tuuvm_io_primitive_readWholeFileNamedAsByteArray(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_io_primitive_readWholeFileNamedAsByteArray(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
@@ -127,7 +127,7 @@ static tuuvm_tuple_t tuuvm_io_primitive_readWholeFileNamedAsByteArray(tuuvm_cont
     return tuuvm_io_readWholeFileNamedAsString(context, arguments[0]);
 }
 
-static tuuvm_tuple_t tuuvm_io_primitive_saveWholeFileNamed(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_io_primitive_saveWholeFileNamed(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;

@@ -107,7 +107,7 @@ TUUVM_API size_t tuuvm_stringStream_getCapacity(tuuvm_tuple_t stringStream)
     return tuuvm_tuple_getSizeInSlots(((tuuvm_stringStream_t*)stringStream)->storage);
 }
 
-static tuuvm_tuple_t tuuvm_stringStream_primitive_nextPut(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_stringStream_primitive_nextPut(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -117,7 +117,7 @@ static tuuvm_tuple_t tuuvm_stringStream_primitive_nextPut(tuuvm_context_t *conte
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_stringStream_primitive_nextPutAll(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_stringStream_primitive_nextPutAll(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -127,7 +127,7 @@ static tuuvm_tuple_t tuuvm_stringStream_primitive_nextPutAll(tuuvm_context_t *co
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_stringStream_primitive_asString(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_stringStream_primitive_asString(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -136,7 +136,7 @@ static tuuvm_tuple_t tuuvm_stringStream_primitive_asString(tuuvm_context_t *cont
     return tuuvm_stringStream_asString(context, arguments[0]);
 }
 
-static tuuvm_tuple_t tuuvm_stringStream_primitive_asSymbol(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_stringStream_primitive_asSymbol(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;

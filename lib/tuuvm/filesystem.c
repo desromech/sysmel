@@ -210,7 +210,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_filesystem_joinPath(tuuvm_context_t *context, tuuv
     return result;
 }
 
-static tuuvm_tuple_t tuuvm_filesystem_primitive_getWorkingDirectory(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_filesystem_primitive_getWorkingDirectory(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     (void)arguments;
@@ -219,7 +219,7 @@ static tuuvm_tuple_t tuuvm_filesystem_primitive_getWorkingDirectory(tuuvm_contex
     return tuuvm_filesystem_getWorkingDirectory(context);
 }
 
-static tuuvm_tuple_t tuuvm_filesystem_primitive_setWorkingDirectory(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_filesystem_primitive_setWorkingDirectory(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -229,7 +229,7 @@ static tuuvm_tuple_t tuuvm_filesystem_primitive_setWorkingDirectory(tuuvm_contex
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_filesystem_primitive_absolute(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_filesystem_primitive_absolute(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
@@ -237,7 +237,7 @@ static tuuvm_tuple_t tuuvm_filesystem_primitive_absolute(tuuvm_context_t *contex
     return tuuvm_filesystem_absolute(context, arguments[0]);
 }
 
-static tuuvm_tuple_t tuuvm_filesystem_primitive_isAbsolute(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_filesystem_primitive_isAbsolute(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -246,7 +246,7 @@ static tuuvm_tuple_t tuuvm_filesystem_primitive_isAbsolute(tuuvm_context_t *cont
     return tuuvm_filesystem_isAbsolute(arguments[0]);
 }
 
-static tuuvm_tuple_t tuuvm_filesystem_primitive_dirname(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_filesystem_primitive_dirname(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
@@ -254,7 +254,7 @@ static tuuvm_tuple_t tuuvm_filesystem_primitive_dirname(tuuvm_context_t *context
     return tuuvm_filesystem_dirname(context, arguments[0]);
 }
 
-static tuuvm_tuple_t tuuvm_filesystem_primitive_basename(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_filesystem_primitive_basename(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
@@ -262,7 +262,7 @@ static tuuvm_tuple_t tuuvm_filesystem_primitive_basename(tuuvm_context_t *contex
     return tuuvm_filesystem_basename(context, arguments[0]);
 }
 
-static tuuvm_tuple_t tuuvm_filesystem_primitive_extension(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_filesystem_primitive_extension(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
@@ -270,7 +270,7 @@ static tuuvm_tuple_t tuuvm_filesystem_primitive_extension(tuuvm_context_t *conte
     return tuuvm_filesystem_extension(context, arguments[0]);
 }
 
-static tuuvm_tuple_t tuuvm_filesystem_primitive_joinPath(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_filesystem_primitive_joinPath(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);

@@ -171,14 +171,6 @@ TUUVM_API void tuuvm_ordinaryFunction_attemptBytecodeCompilation(tuuvm_context_t
 TUUVM_API tuuvm_tuple_t tuuvm_ordinaryFunction_nativeApply(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_functionEntryPoint_t nativeEntryPoint, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags)
 {
     (void)applicationFlags;
-    struct {
-        tuuvm_tuple_t function;
-        tuuvm_tuple_t result;
-    } gcFrame = {
-        .function = function,
-    };
-    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
-
     tuuvm_stackFrameGCRootsRecord_t argumentsRecord = {
         .type = TUUVM_STACK_FRAME_RECORD_TYPE_GC_ROOTS,
         .rootCount = argumentCount,
@@ -186,10 +178,18 @@ TUUVM_API tuuvm_tuple_t tuuvm_ordinaryFunction_nativeApply(tuuvm_context_t *cont
     };
     tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
 
-    gcFrame.result = nativeEntryPoint(context, &gcFrame.function, argumentCount, arguments);
+    tuuvm_tuple_t result = nativeEntryPoint(context, function, argumentCount, arguments);
         
-    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-    return gcFrame.result;
+    tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
+    return result;
+}
+
+TUUVM_API tuuvm_functionEntryPoint_t tuuvm_function_getNumberedPrimitiveEntryPoint(tuuvm_context_t *context, uint32_t primitiveNumber)
+{
+    (void)context;
+    if(primitiveNumber > 0 && primitiveNumber <= tuuvm_primitiveTableSize)
+        return tuuvm_primitiveTable[primitiveNumber - 1].entryPoint;
+    return NULL;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_ordinaryFunction_directApply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags)
@@ -411,7 +411,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_functionCallFrameStack_finish(tuuvm_context_t *con
     return tuuvm_function_apply(context, callFrameStack->gcRoots.function, callFrameStack->expectedArgumentCount, callFrameStack->gcRoots.applicationArguments, applicationFlags);
 }
 
-static tuuvm_tuple_t tuuvm_function_primitive_apply(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_function_primitive_apply(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
@@ -446,7 +446,7 @@ static tuuvm_tuple_t tuuvm_function_primitive_apply(tuuvm_context_t *context, tu
     return tuuvm_functionCallFrameStack_finish(context, &callFrameStack, 0);
 }
 
-static tuuvm_tuple_t tuuvm_function_primitive_isCorePrimitive(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_function_primitive_isCorePrimitive(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
@@ -456,11 +456,11 @@ static tuuvm_tuple_t tuuvm_function_primitive_isCorePrimitive(tuuvm_context_t *c
         return TUUVM_FALSE_TUPLE;
     
     tuuvm_function_t *functionObject = (tuuvm_function_t*)*function;
-    size_t flags = tuuvm_tuple_size_decode(functionObject->flags);
+    size_t flags = tuuvm_tuple_bitflags_decode(functionObject->flags);
     return tuuvm_tuple_boolean_encode((flags & TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE) != 0);
 }
 
-static tuuvm_tuple_t tuuvm_function_primitive_adoptDefinitionOf(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_function_primitive_adoptDefinitionOf(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
@@ -481,7 +481,7 @@ static tuuvm_tuple_t tuuvm_function_primitive_adoptDefinitionOf(tuuvm_context_t 
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_function_primitive_recompileAndOptimize(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_function_primitive_recompileAndOptimize(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(2, argumentCount);

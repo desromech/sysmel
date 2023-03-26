@@ -25,6 +25,8 @@ typedef struct tuuvm_bytecodeJitPCRelocation_s
 
 typedef struct tuuvm_bytecodeJit_s
 {
+    tuuvm_context_t *context;
+
     size_t argumentCount;
     size_t captureVectorSize;
     size_t literalCount;
@@ -154,6 +156,23 @@ static void tuuvm_bytecodeJit_jitFree(tuuvm_bytecodeJit_t *jit)
     free(jit->pcDestinations);
 }
 
+static bool tuuvm_bytecodeJit_getLiteralValueForOperand(tuuvm_bytecodeJit_t *jit, int16_t operand, tuuvm_tuple_t *outLiteralValue)
+{
+    *outLiteralValue = TUUVM_NULL_TUPLE;
+    int16_t vectorType = operand & TUUVM_OPERAND_VECTOR_BITMASK;
+    int16_t vectorIndex = operand >> TUUVM_OPERAND_VECTOR_BITS;
+    tuuvm_tuple_t literalVector = *jit->literalVectorGCRoot;
+    if(vectorType == TUUVM_OPERAND_VECTOR_LITERAL &&
+        vectorIndex >= 0 &&
+        (size_t)vectorIndex < tuuvm_tuple_getSizeInSlots(literalVector))
+    {
+        *outLiteralValue = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(literalVector)->pointers[vectorIndex];
+        return true;
+    }
+
+    return false;   
+}
+
 #if defined(__x86_64__)
 #   include "bytecodeJitX86.c"
 #elif defined(__aarch64__)
@@ -166,7 +185,9 @@ static void tuuvm_bytecodeJit_jit(tuuvm_context_t *context, tuuvm_functionByteco
     (void)context;
     tuuvm_bytecodeInterpreter_ensureTablesAreFilled();
 
-    tuuvm_bytecodeJit_t jit = {};
+    tuuvm_bytecodeJit_t jit = {
+        .context = context,
+    };
 
     jit.literalVectorGCRoot = tuuvm_heap_allocateGCRootTableEntry(&context->heap);
     *jit.literalVectorGCRoot = functionBytecode->literalVector;

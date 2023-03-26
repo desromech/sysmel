@@ -679,7 +679,7 @@ TUUVM_API void tuuvm_methodDictionary_atPut(tuuvm_context_t *context, tuuvm_tupl
     }
 }
 
-static tuuvm_tuple_t tuuvm_dictionary_primitive_atOrNil(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_dictionary_primitive_atOrNil(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -692,7 +692,7 @@ static tuuvm_tuple_t tuuvm_dictionary_primitive_atOrNil(tuuvm_context_t *context
     return found;
 }
 
-static tuuvm_tuple_t tuuvm_dictionary_primitive_at(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_dictionary_primitive_at(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -705,7 +705,7 @@ static tuuvm_tuple_t tuuvm_dictionary_primitive_at(tuuvm_context_t *context, tuu
     return found;
 }
 
-static tuuvm_tuple_t tuuvm_dictionary_primitive_atPut(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_dictionary_primitive_atPut(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
@@ -714,7 +714,7 @@ static tuuvm_tuple_t tuuvm_dictionary_primitive_atPut(tuuvm_context_t *context, 
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_dictionary_primitive_scanFor(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_dictionary_primitive_scanFor(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -723,7 +723,7 @@ static tuuvm_tuple_t tuuvm_dictionary_primitive_scanFor(tuuvm_context_t *context
     return tuuvm_tuple_intptr_encode(context, tuuvm_dictionary_scanFor(context, (tuuvm_dictionary_t**)&arguments[0], &arguments[1]));
 }
 
-static tuuvm_tuple_t tuuvm_identityDictionary_primitive_atOrNil(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_identityDictionary_primitive_atOrNil(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -736,7 +736,7 @@ static tuuvm_tuple_t tuuvm_identityDictionary_primitive_atOrNil(tuuvm_context_t 
     return found;
 }
 
-static tuuvm_tuple_t tuuvm_identityDictionary_primitive_at(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_identityDictionary_primitive_at(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -749,7 +749,7 @@ static tuuvm_tuple_t tuuvm_identityDictionary_primitive_at(tuuvm_context_t *cont
     return found;
 }
 
-static tuuvm_tuple_t tuuvm_identityDictionary_primitive_atPut(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_identityDictionary_primitive_atPut(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
@@ -758,7 +758,7 @@ static tuuvm_tuple_t tuuvm_identityDictionary_primitive_atPut(tuuvm_context_t *c
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_identityDictionary_primitive_scanFor(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_identityDictionary_primitive_scanFor(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -767,7 +767,7 @@ static tuuvm_tuple_t tuuvm_identityDictionary_primitive_scanFor(tuuvm_context_t 
     return tuuvm_tuple_intptr_encode(context, tuuvm_identityDictionary_scanFor(arguments[0], arguments[1]));
 }
 
-static tuuvm_tuple_t tuuvm_weakValueDictionary_primitive_atOrNil(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_weakValueDictionary_primitive_atOrNil(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -780,7 +780,7 @@ static tuuvm_tuple_t tuuvm_weakValueDictionary_primitive_atOrNil(tuuvm_context_t
     return found;
 }
 
-static tuuvm_tuple_t tuuvm_weakValueDictionary_primitive_at(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_weakValueDictionary_primitive_at(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -793,7 +793,7 @@ static tuuvm_tuple_t tuuvm_weakValueDictionary_primitive_at(tuuvm_context_t *con
     return found;
 }
 
-static tuuvm_tuple_t tuuvm_weakValueDictionary_primitive_atPut(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_weakValueDictionary_primitive_atPut(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
@@ -802,7 +802,7 @@ static tuuvm_tuple_t tuuvm_weakValueDictionary_primitive_atPut(tuuvm_context_t *
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_methodDictionary_primitive_new(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_methodDictionary_primitive_new(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     (void)arguments;
@@ -811,7 +811,7 @@ static tuuvm_tuple_t tuuvm_methodDictionary_primitive_new(tuuvm_context_t *conte
     return tuuvm_methodDictionary_create(context);
 }
 
-static tuuvm_tuple_t tuuvm_methodDictionary_primitive_atOrNil(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_methodDictionary_primitive_atOrNil(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -824,7 +824,7 @@ static tuuvm_tuple_t tuuvm_methodDictionary_primitive_atOrNil(tuuvm_context_t *c
     return found;
 }
 
-static tuuvm_tuple_t tuuvm_methodDictionary_primitive_at(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_methodDictionary_primitive_at(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -837,7 +837,7 @@ static tuuvm_tuple_t tuuvm_methodDictionary_primitive_at(tuuvm_context_t *contex
     return found;
 }
 
-static tuuvm_tuple_t tuuvm_methodDictionary_primitive_atPut(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_methodDictionary_primitive_atPut(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
@@ -846,7 +846,7 @@ static tuuvm_tuple_t tuuvm_methodDictionary_primitive_atPut(tuuvm_context_t *con
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_methodDictionary_primitive_scanFor(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_methodDictionary_primitive_scanFor(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;

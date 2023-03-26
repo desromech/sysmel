@@ -10,7 +10,7 @@
 typedef struct tuuvm_context_s tuuvm_context_t;
 typedef struct tuuvm_heap_s tuuvm_heap_t;
 
-typedef tuuvm_tuple_t (*tuuvm_functionEntryPoint_t)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments);
+typedef tuuvm_tuple_t (*tuuvm_functionEntryPoint_t)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments);
 
 
 /**

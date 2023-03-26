@@ -96,7 +96,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_arrayList_at(tuuvm_tuple_t arrayList, size_t index
     return ((tuuvm_array_t*)arrayListObject->storage)->elements[index];
 }
 
-static tuuvm_tuple_t tuuvm_arrayList_primitive_add(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_arrayList_primitive_add(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -106,7 +106,7 @@ static tuuvm_tuple_t tuuvm_arrayList_primitive_add(tuuvm_context_t *context, tuu
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_arrayList_primitive_asArray(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_arrayList_primitive_asArray(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;

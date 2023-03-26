@@ -1,4 +1,4 @@
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_printString)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_printString)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -11,7 +11,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_printString)(tuuvm_con
 #endif
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_fromInteger)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_fromInteger)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -25,7 +25,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_fromInteger)(tuuvm_con
     return primitiveInteger_encode(value);
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_toInteger)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_toInteger)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -39,7 +39,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_toInteger)(tuuvm_conte
 #endif
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_add)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_add)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -50,7 +50,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_add)(tuuvm_context_t *
     return primitiveInteger_encode(left + right);
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_subtract)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_subtract)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -61,7 +61,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_subtract)(tuuvm_contex
     return primitiveInteger_encode(left - right);
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_negated)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_negated)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -71,7 +71,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_negated)(tuuvm_context
     return primitiveInteger_encode(-operand);
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_bitInvert)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_bitInvert)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -81,7 +81,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_bitInvert)(tuuvm_conte
     return primitiveInteger_encode(~operand);
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_multiply)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_multiply)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -92,7 +92,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_multiply)(tuuvm_contex
     return primitiveInteger_encode(left * right);
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_divide)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_divide)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -103,7 +103,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_divide)(tuuvm_context_
     return primitiveInteger_encode(left / right);
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_remainder)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_remainder)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -114,7 +114,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_remainder)(tuuvm_conte
     return primitiveInteger_encode(left % right);
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_bitAnd)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_bitAnd)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -125,7 +125,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_bitAnd)(tuuvm_context_
     return primitiveInteger_encode(left & right);
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_bitOr)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_bitOr)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -136,7 +136,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_bitOr)(tuuvm_context_t
     return primitiveInteger_encode(left | right);
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_bitXor)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_bitXor)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -147,7 +147,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_bitXor)(tuuvm_context_
     return primitiveInteger_encode(left ^ right);
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_shiftLeft)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_shiftLeft)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -158,7 +158,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_shiftLeft)(tuuvm_conte
     return primitiveInteger_encode(left << right);
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_shiftRight)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_shiftRight)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -169,7 +169,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_shiftRight)(tuuvm_cont
     return primitiveInteger_encode(left >> right);
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_equals)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_equals)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -180,7 +180,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_equals)(tuuvm_context_
     return tuuvm_tuple_boolean_encode(left == right);
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_notEquals)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_notEquals)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -191,7 +191,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_notEquals)(tuuvm_conte
     return tuuvm_tuple_boolean_encode(left != right);
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_lessThan)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_lessThan)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -202,7 +202,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_lessThan)(tuuvm_contex
     return tuuvm_tuple_boolean_encode(left < right);
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_lessEquals)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_lessEquals)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -213,7 +213,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_lessEquals)(tuuvm_cont
     return tuuvm_tuple_boolean_encode(left <= right);
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_greaterThan)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_greaterThan)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -224,7 +224,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_greaterThan)(tuuvm_con
     return tuuvm_tuple_boolean_encode(left > right);
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_greaterEquals)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_greaterEquals)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -235,7 +235,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_greaterEquals)(tuuvm_c
     return tuuvm_tuple_boolean_encode(left >= right);
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asUInt8)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asUInt8)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -244,7 +244,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asUInt8)(tuuvm_context
     return tuuvm_tuple_uint8_encode((uint8_t)primitiveInteger_decode(arguments[0]));
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asInt8)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asInt8)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -253,7 +253,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asInt8)(tuuvm_context_
     return tuuvm_tuple_int8_encode((int8_t)primitiveInteger_decode(arguments[0]));
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asChar8)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asChar8)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -262,7 +262,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asChar8)(tuuvm_context
     return tuuvm_tuple_char8_encode((tuuvm_char8_t)primitiveInteger_decode(arguments[0]));
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asUInt16)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asUInt16)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -271,7 +271,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asUInt16)(tuuvm_contex
     return tuuvm_tuple_uint16_encode((uint16_t)primitiveInteger_decode(arguments[0]));
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asInt16)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asInt16)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -280,7 +280,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asInt16)(tuuvm_context
     return tuuvm_tuple_int16_encode((int16_t)primitiveInteger_decode(arguments[0]));
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asChar16)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asChar16)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -289,7 +289,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asChar16)(tuuvm_contex
     return tuuvm_tuple_char16_encode((tuuvm_char16_t)primitiveInteger_decode(arguments[0]));
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asUInt32)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asUInt32)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -298,7 +298,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asUInt32)(tuuvm_contex
     return tuuvm_tuple_uint32_encode(context, (uint32_t)primitiveInteger_decode(arguments[0]));
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asInt32)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asInt32)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -307,7 +307,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asInt32)(tuuvm_context
     return tuuvm_tuple_int32_encode(context, (int32_t)primitiveInteger_decode(arguments[0]));
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asChar32)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asChar32)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -316,7 +316,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asChar32)(tuuvm_contex
     return tuuvm_tuple_char32_encode(context, (tuuvm_char32_t)primitiveInteger_decode(arguments[0]));
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asUInt64)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asUInt64)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -325,7 +325,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asUInt64)(tuuvm_contex
     return tuuvm_tuple_uint64_encode(context, (uint64_t)primitiveInteger_decode(arguments[0]));
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asInt64)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asInt64)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -334,7 +334,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asInt64)(tuuvm_context
     return tuuvm_tuple_int64_encode(context, (int64_t)primitiveInteger_decode(arguments[0]));
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asFloat32)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asFloat32)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -343,7 +343,7 @@ static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asFloat32)(tuuvm_conte
     return tuuvm_tuple_float32_encode(context, (tuuvm_float32_t)primitiveInteger_decode(arguments[0]));
 }
 
-static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asFloat64)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asFloat64)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;

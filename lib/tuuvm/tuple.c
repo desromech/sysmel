@@ -80,14 +80,14 @@ TUUVM_API bool tuuvm_tuple_equals(tuuvm_context_t *context, tuuvm_tuple_t a, tuu
     return tuuvm_tuple_identityEquals(a, b);
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_tuple_primitive_identityHash(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_primitive_identityHash(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     (void)argumentCount;
     return tuuvm_tuple_size_encode(context, tuuvm_tuple_identityHash(arguments[0]));
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_tuple_primitive_identityEquals(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_primitive_identityEquals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -95,7 +95,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_primitive_identityEquals(tuuvm_context_t *co
     return tuuvm_tuple_boolean_encode(tuuvm_tuple_identityEquals(arguments[0], arguments[1]));
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_tuple_primitive_identityNotEquals(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+TUUVM_API tuuvm_tuple_t tuuvm_tuple_primitive_identityNotEquals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -118,7 +118,7 @@ TUUVM_API void tuuvm_tuple_bytesToCStringFree(char *cstring)
     free(cstring);
 }
 
-static tuuvm_tuple_t tuuvm_tuple_primitive_getType(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_tuple_primitive_getType(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -127,7 +127,7 @@ static tuuvm_tuple_t tuuvm_tuple_primitive_getType(tuuvm_context_t *context, tuu
     return tuuvm_tuple_getType(context, arguments[0]);
 }
 
-static tuuvm_tuple_t tuuvm_tuple_primitive_setType(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_tuple_primitive_setType(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -178,7 +178,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_slotAt(tuuvm_context_t *context, tuuvm_tuple
     return TUUVM_NULL_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_tuple_primitive_slotAt(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_tuple_primitive_slotAt(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -216,7 +216,7 @@ bool tuuvm_tuple_isKindOf(tuuvm_context_t *context, tuuvm_tuple_t tuple, tuuvm_t
     return tupleType == type || tuuvm_type_isDirectSubtypeOf(tuuvm_tuple_getType(context, tuple), type);
 }
 
-static tuuvm_tuple_t tuuvm_tuple_primitive_slotAtPut(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_tuple_primitive_slotAtPut(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -226,7 +226,7 @@ static tuuvm_tuple_t tuuvm_tuple_primitive_slotAtPut(tuuvm_context_t *context, t
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_tuple_primitive_new(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_tuple_primitive_new(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -235,7 +235,7 @@ static tuuvm_tuple_t tuuvm_tuple_primitive_new(tuuvm_context_t *context, tuuvm_t
     return (tuuvm_tuple_t)tuuvm_context_allocatePointerTuple(context, TUUVM_NULL_TUPLE, tuuvm_tuple_anySize_decode(arguments[0]));
 }
 
-static tuuvm_tuple_t tuuvm_tuple_primitive_byteNew(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_tuple_primitive_byteNew(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -244,7 +244,7 @@ static tuuvm_tuple_t tuuvm_tuple_primitive_byteNew(tuuvm_context_t *context, tuu
     return (tuuvm_tuple_t)tuuvm_context_allocateByteTuple(context, TUUVM_NULL_TUPLE, tuuvm_tuple_anySize_decode(arguments[0]));
 }
 
-static tuuvm_tuple_t tuuvm_tuple_primitive_size(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_tuple_primitive_size(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -253,7 +253,7 @@ static tuuvm_tuple_t tuuvm_tuple_primitive_size(tuuvm_context_t *context, tuuvm_
     return tuuvm_tuple_size_encode(context, tuuvm_tuple_getSizeInSlots(arguments[0]));
 }
 
-static tuuvm_tuple_t tuuvm_tuple_primitive_byteSize(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_tuple_primitive_byteSize(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -262,7 +262,7 @@ static tuuvm_tuple_t tuuvm_tuple_primitive_byteSize(tuuvm_context_t *context, tu
     return tuuvm_tuple_size_encode(context, tuuvm_tuple_getSizeInBytes(arguments[0]));
 }
 
-static tuuvm_tuple_t tuuvm_tuple_primitive_shallowCopy(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_tuple_primitive_shallowCopy(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -271,7 +271,7 @@ static tuuvm_tuple_t tuuvm_tuple_primitive_shallowCopy(tuuvm_context_t *context,
     return tuuvm_context_shallowCopy(context, arguments[0]);
 }
 
-static tuuvm_tuple_t tuuvm_tuple_primitive_markWeak(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_tuple_primitive_markWeak(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -281,7 +281,7 @@ static tuuvm_tuple_t tuuvm_tuple_primitive_markWeak(tuuvm_context_t *context, tu
     return arguments[0];
 }
 
-static tuuvm_tuple_t tuuvm_tuple_primitive_firstInstanceWithType(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_tuple_primitive_firstInstanceWithType(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -295,7 +295,7 @@ static tuuvm_tuple_t tuuvm_tuple_primitive_firstInstanceWithType(tuuvm_context_t
     return (tuuvm_tuple_t)tuuvm_heapIterator_get(&iterator);
 }
 
-static tuuvm_tuple_t tuuvm_tuple_primitive_nextInstanceWithSameType(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_tuple_primitive_nextInstanceWithSameType(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;

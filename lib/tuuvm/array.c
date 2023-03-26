@@ -125,7 +125,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_array_fromOffset(tuuvm_context_t *context, tuuvm_t
     return result;
 }
 
-static tuuvm_tuple_t tuuvm_array_primitive_equals(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_array_primitive_equals(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -151,7 +151,7 @@ static tuuvm_tuple_t tuuvm_array_primitive_equals(tuuvm_context_t *context, tuuv
     return TUUVM_TRUE_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_array_primitive_hash(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_array_primitive_hash(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;

@@ -7,7 +7,7 @@
 
 typedef struct tuuvm_context_s tuuvm_context_t;
 
-typedef tuuvm_tuple_t (*tuuvm_functionEntryPoint_t)(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments);
+typedef tuuvm_tuple_t (*tuuvm_functionEntryPoint_t)(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments);
 
 typedef enum tuuvm_functionFlags_e
 {
@@ -339,5 +339,10 @@ TUUVM_API bool tuuvm_function_shouldOptimizeLookup(tuuvm_context_t *context, tuu
  * Attempt the compilation of the bytecode of an ordinary function.
  */
 TUUVM_API void tuuvm_ordinaryFunction_attemptBytecodeCompilation(tuuvm_context_t *context, tuuvm_functionDefinition_t *definition);
+
+/**
+ * Gets the entry point of the numbered primitive.
+ */
+TUUVM_API tuuvm_functionEntryPoint_t tuuvm_function_getNumberedPrimitiveEntryPoint(tuuvm_context_t *context, uint32_t primitiveNumber);
 
 #endif //TUUVM_FUNCTION_H

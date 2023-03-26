@@ -34,7 +34,7 @@ TUUVM_API int64_t tuuvm_time_nanosecondsTimestamp(void)
 #endif
 }
 
-static tuuvm_tuple_t tuuvm_time_timestamp_primitive_microsecondsNow(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_time_timestamp_primitive_microsecondsNow(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -44,7 +44,7 @@ static tuuvm_tuple_t tuuvm_time_timestamp_primitive_microsecondsNow(tuuvm_contex
     return tuuvm_tuple_int64_encode(context, tuuvm_time_microsecondsTimestamp());
 }
 
-static tuuvm_tuple_t tuuvm_time_timestamp_primitive_nanosecondsNow(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_time_timestamp_primitive_nanosecondsNow(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;

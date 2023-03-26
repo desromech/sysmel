@@ -571,7 +571,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_analysisEnvironment_setNewValueBinding(tuuvm_conte
     return binding;
 }
 
-static tuuvm_tuple_t tuuvm_environment_primitive_setNewBinding(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_environment_primitive_setNewBinding(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -581,7 +581,7 @@ static tuuvm_tuple_t tuuvm_environment_primitive_setNewBinding(tuuvm_context_t *
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_environment_primitive_setBinding(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_environment_primitive_setBinding(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -591,7 +591,7 @@ static tuuvm_tuple_t tuuvm_environment_primitive_setBinding(tuuvm_context_t *con
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_environment_primitive_setNewSymbolBindingWithValue(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_environment_primitive_setNewSymbolBindingWithValue(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -601,7 +601,7 @@ static tuuvm_tuple_t tuuvm_environment_primitive_setNewSymbolBindingWithValue(tu
     return TUUVM_VOID_TUPLE;
 }
 
-static tuuvm_tuple_t tuuvm_environment_primitive_setSymbolBindingWithValue(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_environment_primitive_setSymbolBindingWithValue(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;

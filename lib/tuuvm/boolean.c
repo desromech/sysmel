@@ -5,7 +5,7 @@
 #include "tuuvm/type.h"
 #include "internal/context.h"
 
-static tuuvm_tuple_t tuuvm_boolean_primitive_not(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_boolean_primitive_not(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -14,7 +14,7 @@ static tuuvm_tuple_t tuuvm_boolean_primitive_not(tuuvm_context_t *context, tuuvm
     return tuuvm_tuple_boolean_encode(!tuuvm_tuple_boolean_decode(arguments[0]));
 }
 
-static tuuvm_tuple_t tuuvm_boolean_primitive_xor(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_boolean_primitive_xor(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
