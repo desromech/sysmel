@@ -1081,6 +1081,8 @@ TUUVM_API tuuvm_context_t *tuuvm_context_loadImageFromFileNamed(const char *file
     }
 
     fclose(inputFile);
+
+    context->roots.sessionToken = tuuvm_tuple_systemHandle_encode(context, tuuvm_tuple_systemHandle_decode(context->roots.sessionToken) +  1);
     return context;
 }
 
