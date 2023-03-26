@@ -41,7 +41,13 @@ printLine(bytecodes asFunction ()).
         result
     }, (Array with: 50i32)),
     ({:a :b :c :d | #{a : b. c : d}}, (#first, 1, #second, 2)),
-    ({:(UInt8)a :(UInt8)b | #[a. b]}, (1u8, 3u8))
+    ({:(UInt8)a :(UInt8)b | #[a. b]}, (1u8, 3u8)),
+
+    (({:(UInt8)a :(UInt8)b | 
+        printLine(a + b).
+        error("Test error")
+        a - b
+    }, (1u8, 3u8)))
 
 ) do: {:functionAndArguments :: Void |
     let function := functionAndArguments first.

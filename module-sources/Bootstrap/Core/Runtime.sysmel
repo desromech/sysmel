@@ -707,6 +707,22 @@ Dictionary
                 if: element ~~ nil then: aBlock(element).
             }
         }
+    };
+    withSelector: #ensureStorage addMethod: {:(Dictionary)self :: Void |
+        if: self storage == nil then: (self storage: (Array new: 16sz)).
+    };
+    withSelector: #at:ifAbsentPut: addMethod: {:(Dictionary)self :key :ifAbsentBlock |
+        self ensureStorage.
+        let: #entryIndex with: (self scanFor: key) asSize.
+        let: #storage with: self storage.
+        let: #entry with: (storage at: entryIndex).
+        if: entry == nil then: {
+            let: #value with: ifAbsentBlock().
+            self at: key put: value.
+            value
+        } else: {
+            entry value
+        }
     }.
 
 Set

@@ -7,6 +7,7 @@
 #include "heap.h"
 
 #define GLOBAL_LOOKUP_CACHE_ENTRY_COUNT 256
+#define PIC_ENTRY_COUNT 16
 
 typedef struct tuuvm_globalLookupCacheEntry_s
 {
@@ -14,6 +15,17 @@ typedef struct tuuvm_globalLookupCacheEntry_s
     tuuvm_tuple_t selector;
     tuuvm_tuple_t method;
 }tuuvm_globalLookupCacheEntry_t;
+
+typedef struct tuuvm_inlineLookupCacheEntry_s
+{
+    tuuvm_tuple_t receiverType;
+    tuuvm_tuple_t method;
+} tuuvm_inlineLookupCacheEntry_t;
+
+typedef struct tuuvm_polymorphicInlineLookupCache_s
+{
+    tuuvm_inlineLookupCacheEntry_t entries[PIC_ENTRY_COUNT];
+} tuuvm_polymorphicInlineLookupCache_t;
 
 typedef struct tuuvm_context_roots_s
 {
@@ -244,6 +256,14 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t globalNamespace;
     tuuvm_tuple_t intrinsicTypes;
 
+    struct
+    {
+        tuuvm_inlineLookupCacheEntry_t onDemandBytecodeCompilation;
+        tuuvm_polymorphicInlineLookupCache_t analyzeASTWithEnvironment;
+        tuuvm_polymorphicInlineLookupCache_t evaluateASTWithEnvironment;
+        tuuvm_polymorphicInlineLookupCache_t evaluateAndAnalyzeASTWithEnvironment;
+    } inlineCaches;
+    
     tuuvm_globalLookupCacheEntry_t globalMethodLookupCache[GLOBAL_LOOKUP_CACHE_ENTRY_COUNT];
 } tuuvm_context_roots_t;
 

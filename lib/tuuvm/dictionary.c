@@ -686,7 +686,7 @@ static tuuvm_tuple_t tuuvm_dictionary_primitive_atOrNil(tuuvm_context_t *context
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
 
     tuuvm_tuple_t found = TUUVM_NULL_TUPLE;
-    if(!tuuvm_weakValueDictionary_find(context, arguments[0], arguments[1], &found))
+    if(!tuuvm_dictionary_find(context, arguments[0], arguments[1], &found))
         found = TUUVM_NULL_TUPLE;
 
     return found;
@@ -699,7 +699,7 @@ static tuuvm_tuple_t tuuvm_dictionary_primitive_at(tuuvm_context_t *context, tuu
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
 
     tuuvm_tuple_t found = TUUVM_NULL_TUPLE;
-    if(!tuuvm_weakValueDictionary_find(context, arguments[0], arguments[1], &found))
+    if(!tuuvm_dictionary_find(context, arguments[0], arguments[1], &found))
         tuuvm_error("Failed to find the expected key in the dictionary.");
 
     return found;
@@ -710,8 +710,17 @@ static tuuvm_tuple_t tuuvm_dictionary_primitive_atPut(tuuvm_context_t *context, 
     (void)closure;
     if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
 
-    tuuvm_weakValueDictionary_atPut(context, arguments[0], arguments[1], arguments[2]);
+    tuuvm_dictionary_atPut(context, arguments[0], arguments[1], arguments[2]);
     return TUUVM_VOID_TUPLE;
+}
+
+static tuuvm_tuple_t tuuvm_dictionary_primitive_scanFor(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    return tuuvm_tuple_intptr_encode(context, tuuvm_dictionary_scanFor(context, (tuuvm_dictionary_t**)&arguments[0], &arguments[1]));
 }
 
 static tuuvm_tuple_t tuuvm_identityDictionary_primitive_atOrNil(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -747,6 +756,15 @@ static tuuvm_tuple_t tuuvm_identityDictionary_primitive_atPut(tuuvm_context_t *c
 
     tuuvm_identityDictionary_atPut(context, arguments[0], arguments[1], arguments[2]);
     return TUUVM_VOID_TUPLE;
+}
+
+static tuuvm_tuple_t tuuvm_identityDictionary_primitive_scanFor(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    return tuuvm_tuple_intptr_encode(context, tuuvm_identityDictionary_scanFor(arguments[0], arguments[1]));
 }
 
 static tuuvm_tuple_t tuuvm_weakValueDictionary_primitive_atOrNil(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -828,15 +846,26 @@ static tuuvm_tuple_t tuuvm_methodDictionary_primitive_atPut(tuuvm_context_t *con
     return TUUVM_VOID_TUPLE;
 }
 
+static tuuvm_tuple_t tuuvm_methodDictionary_primitive_scanFor(tuuvm_context_t *context, tuuvm_tuple_t *closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    return tuuvm_tuple_intptr_encode(context, tuuvm_methodDictionary_scanFor(arguments[0], arguments[1]));
+}
+
 void tuuvm_dictionary_registerPrimitives(void)
 {
     tuuvm_primitiveTable_registerFunction(tuuvm_dictionary_primitive_atOrNil, "Dictionary::atOrNil:");
     tuuvm_primitiveTable_registerFunction(tuuvm_dictionary_primitive_atPut, "Dictionary::at:put:");
     tuuvm_primitiveTable_registerFunction(tuuvm_dictionary_primitive_at, "Dictionary::at:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_dictionary_primitive_scanFor, "Dictionary::scanFor:");
 
     tuuvm_primitiveTable_registerFunction(tuuvm_identityDictionary_primitive_atOrNil, "IdentityDictionary::atOrNil:");
     tuuvm_primitiveTable_registerFunction(tuuvm_identityDictionary_primitive_atPut, "IdentityDictionary::at:put:");
     tuuvm_primitiveTable_registerFunction(tuuvm_identityDictionary_primitive_at, "IdentityDictionary::at:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_identityDictionary_primitive_scanFor, "IdentityDictionary::scanFor:");
 
     tuuvm_primitiveTable_registerFunction(tuuvm_weakValueDictionary_primitive_atOrNil, "WeakValueDictionary::atOrNil:");
     tuuvm_primitiveTable_registerFunction(tuuvm_weakValueDictionary_primitive_atPut, "WeakValueDictionary::at:put:");
@@ -846,6 +875,7 @@ void tuuvm_dictionary_registerPrimitives(void)
     tuuvm_primitiveTable_registerFunction(tuuvm_methodDictionary_primitive_atOrNil, "MethodDictionary::atOrNil:");
     tuuvm_primitiveTable_registerFunction(tuuvm_methodDictionary_primitive_at, "MethodDictionary::at:");
     tuuvm_primitiveTable_registerFunction(tuuvm_methodDictionary_primitive_atPut, "MethodDictionary::at:put:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_methodDictionary_primitive_scanFor, "MethodDictionary::scanFor:");
 }
 
 void tuuvm_dictionary_setupPrimitives(tuuvm_context_t *context)
@@ -853,10 +883,12 @@ void tuuvm_dictionary_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Dictionary::atOrNil:", context->roots.dictionaryType, "atOrNil:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_dictionary_primitive_atOrNil);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Dictionary::at:put:", context->roots.dictionaryType, "at:put:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_dictionary_primitive_atPut);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Dictionary::at:", context->roots.dictionaryType, "at:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_dictionary_primitive_at);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Dictionary::scanFor:", context->roots.dictionaryType, "scanFor:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_dictionary_primitive_scanFor);
 
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentityDictionary::atOrNil:", context->roots.identityDictionaryType, "atOrNil:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_identityDictionary_primitive_atOrNil);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentityDictionary::at:put:", context->roots.identityDictionaryType, "at:put:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_identityDictionary_primitive_atPut);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentityDictionary::at:", context->roots.identityDictionaryType, "at:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_identityDictionary_primitive_at);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentityDictionary::scanFor:", context->roots.identityDictionaryType, "scanFor:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_identityDictionary_primitive_scanFor);
 
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "WeakValueDictionary::atOrNil:", context->roots.weakValueDictionaryType, "atOrNil:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_weakValueDictionary_primitive_atOrNil);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "WeakValueDictionary::at:put:", context->roots.weakValueDictionaryType, "at:put:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_weakValueDictionary_primitive_atPut);
@@ -866,4 +898,5 @@ void tuuvm_dictionary_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "MethodDictionary::atOrNil:", context->roots.methodDictionaryType, "atOrNil:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_methodDictionary_primitive_atOrNil);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "MethodDictionary::at:", context->roots.methodDictionaryType, "at:put:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_methodDictionary_primitive_at);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "MethodDictionary::at:put:", context->roots.methodDictionaryType, "at:put:", 3, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_methodDictionary_primitive_atPut);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "MethodDictionary::scanFor:", context->roots.methodDictionaryType, "scanFor:", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_methodDictionary_primitive_scanFor);
 }

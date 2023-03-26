@@ -388,19 +388,61 @@ TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_con
     TUUVM_ASSERT(activationRecord->pc < tuuvm_tuple_getSizeInBytes(activationRecord->instructions));
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_getSourcePositionForActivationRecord(tuuvm_context_t *context, tuuvm_stackFrameBytecodeFunctionActivationRecord_t *activationRecord)
+TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_getSourcePositionForPC(tuuvm_context_t *context, tuuvm_functionBytecode_t *functionBytecode, size_t pc)
 {
     (void)context;
-    //tuuvm_functionBytecode_t **functionBytecodeObject = (tuuvm_functionBytecode_t **)&activationRecord->functionBytecode;
+    if(!functionBytecode->pcToDebugListTable)
+        return TUUVM_NULL_TUPLE;
+
+    size_t pcToDebugTableListSize = tuuvm_tuple_getSizeInSlots(functionBytecode->pcToDebugListTable) / 2;
+    tuuvm_tuple_t *pcToDebugTableEntries = TUUVM_CAST_OOP_TO_OBJECT_TUPLE(functionBytecode->pcToDebugListTable)->pointers;
+
+    // Binary search
+    size_t lower = 0;
+    size_t upper = pcToDebugTableListSize;
+    intptr_t bestFound = -1;
+    while(lower < upper)
+    {
+        size_t middle = lower + (upper - lower) / 2;
+        size_t entryPC = tuuvm_tuple_size_decode(pcToDebugTableEntries[middle*2]);
+        if(entryPC <= pc)
+        {
+            lower = middle + 1;
+            bestFound = tuuvm_tuple_size_decode(pcToDebugTableEntries[middle*2 + 1]);
+        }
+        else
+        {
+            upper = middle;
+        }
+    }
+
+    size_t sourcePositionsTableSize = tuuvm_tuple_getSizeInSlots(functionBytecode->debugSourcePositions);
+    if(bestFound < 0 || (size_t)bestFound >= sourcePositionsTableSize)
+        return TUUVM_NULL_TUPLE;
+
+    return TUUVM_CAST_OOP_TO_OBJECT_TUPLE(functionBytecode->debugSourcePositions)->pointers[bestFound];
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_getSourcePositionForActivationRecord(tuuvm_context_t *context, tuuvm_stackFrameBytecodeFunctionActivationRecord_t *activationRecord)
+{
+    tuuvm_functionBytecode_t **functionBytecodeObject = (tuuvm_functionBytecode_t **)&activationRecord->functionBytecode;
+    tuuvm_tuple_t actualSourcePosition = tuuvm_bytecodeInterpreter_getSourcePositionForPC(context, *functionBytecodeObject, activationRecord->pc);
+    if(actualSourcePosition)
+        return actualSourcePosition;
+
     tuuvm_functionDefinition_t **functionDefinitionObject = (tuuvm_functionDefinition_t**)&activationRecord->functionDefinition;
     return (*functionDefinitionObject)->sourcePosition;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_getSourcePositionForJitActivationRecord(tuuvm_context_t *context, tuuvm_stackFrameBytecodeFunctionJitActivationRecord_t *activationRecord)
 {
-    (void)context;
     tuuvm_function_t *functionObject = (tuuvm_function_t*)activationRecord->function;
     tuuvm_functionDefinition_t *functionDefinitionObject = (tuuvm_functionDefinition_t*)functionObject->definition;
+    tuuvm_functionBytecode_t *functionBytecodeObject = (tuuvm_functionBytecode_t *)functionDefinitionObject->bytecode;
+    tuuvm_tuple_t actualSourcePosition = tuuvm_bytecodeInterpreter_getSourcePositionForPC(context, functionBytecodeObject, activationRecord->pc);
+    if(actualSourcePosition)
+        return actualSourcePosition;
+
     return functionDefinitionObject->sourcePosition;
 }
 

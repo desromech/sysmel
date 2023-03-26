@@ -152,6 +152,9 @@ typedef enum tuuvm_typeSlotFlags_e
     TUUVM_TYPE_SLOT_FLAG_READONLY = 1<<1,
 } tuuvm_typeSlotFlags_t;
 
+typedef struct tuuvm_inlineLookupCacheEntry_s tuuvm_inlineLookupCacheEntry_t;
+typedef struct tuuvm_polymorphicInlineLookupCache_s tuuvm_polymorphicInlineLookupCache_t;
+
 /**
  * Creates a type slot
  */
@@ -282,6 +285,16 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_lookupMacroSelector(tuuvm_context_t *context,
  * Performs the lookup of the given selector.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_type_lookupSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector);
+
+/**
+ * Performs the lookup of the given selector accelerated with the given inline cache.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_lookupSelectorWithInlineCache(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector, tuuvm_inlineLookupCacheEntry_t *inlineCache);
+
+/**
+ * Performs the lookup of the given selector accelerated with the given polymorphic inline cache.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_lookupSelectorWithPIC(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector, tuuvm_polymorphicInlineLookupCache_t *inlineCache);
 
 /**
  * Performs the lookup of the given macro fallback selector.

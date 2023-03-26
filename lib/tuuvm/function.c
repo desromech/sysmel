@@ -155,7 +155,7 @@ TUUVM_API void tuuvm_ordinaryFunction_attemptBytecodeCompilation(tuuvm_context_t
     if(definition->bytecode == TUUVM_PENDING_MEMOIZATION_VALUE)
         return;
 
-    tuuvm_tuple_t compilationMethod = tuuvm_type_lookupSelector(context, tuuvm_tuple_getType(context, (tuuvm_tuple_t)definition), context->roots.compileIntoBytecodeSelector);
+    tuuvm_tuple_t compilationMethod = tuuvm_type_lookupSelectorWithInlineCache(context, tuuvm_tuple_getType(context, (tuuvm_tuple_t)definition), context->roots.compileIntoBytecodeSelector, &context->roots.inlineCaches.onDemandBytecodeCompilation);
     if(!compilationMethod)
         return;
 

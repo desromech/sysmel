@@ -74,6 +74,8 @@ typedef struct tuuvm_functionBytecode_s
 
     tuuvm_tuple_t jittedCode;
     tuuvm_tuple_t jittedCodeSessionToken;
+    tuuvm_tuple_t jittedCodeTrampoline;
+    tuuvm_tuple_t jittedCodeTrampolineSessionToken;
 } tuuvm_functionBytecode_t;
 
 typedef struct tuuvm_stackFrameBytecodeFunctionActivationRecord_s tuuvm_stackFrameBytecodeFunctionActivationRecord_t;

@@ -53,42 +53,29 @@ if: true then: {
         Dictionary,
         IdentityDictionary,
         MethodDictionary,
+        Function,
+        FunctionDefinition,
         FunctionBytecodeAssemblerAbstractOperand,
         FunctionBytecodeAssemblerOperand,
         FunctionBytecodeAssemblerAbstractInstruction,
         FunctionBytecodeAssemblerLabel,
         FunctionBytecodeAssemblerInstruction,
         FunctionBytecodeAssembler,
-        FunctionBytecodeDirectCompiler,
-        ASTSequenceNode,
-        ASTMessageSendNode,
-        ASTFunctionApplicationNode,
-        ASTIdentifierReferenceNode,
-        ASTLexicalBlockNode,
-        ASTLambdaNode,
-        ASTLiteralNode,
-        ASTLocalDefinitionNode
+        FunctionBytecodeDirectCompiler
     ) -- ASTNode withAllSubtypes do: typeCompilationBlock.
-
-    AnyValue withAllSubtypesDo: typeCompilationBlock.
 
     ## This allows to activate the on-demand bytecode compiler.
     if: true then: {
-        if: false then: {
-            FunctionDefinition
-                withSelector: #onDemandCompileIntoBytecode addMethod: {:(FunctionDefinition)self :: Void |
-                    let sourcePosition := self sourcePosition printString.
-                    printLine("Compiling ", sourcePosition).
-                    self compileIntoBytecodeIfNeeded.
-                    printLine("Done compiling ", sourcePosition, "\n").
-                }.
-        } else: {
-            FunctionDefinition
-                withSelector: #onDemandCompileIntoBytecode addMethod: {:(FunctionDefinition)self :: Void |
-                    self compileIntoBytecodeIfNeeded
-                }.
+        let: #onDemandCompileIntoBytecode with: {:(FunctionDefinition)self :: Void |
+            self compileIntoBytecodeIfNeeded
         }.
+        onDemandCompileIntoBytecode compileIntoBytecodeIfNeeded.
+
+        FunctionDefinition
+            withSelector: #onDemandCompileIntoBytecode addMethod: onDemandCompileIntoBytecode
     }.
+
+    AnyValue withAllSubtypesDo: typeCompilationBlock.
 }.
 
 

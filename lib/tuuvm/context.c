@@ -696,6 +696,9 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         
         "jittedCode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
         "jittedCodeSessionToken", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
+
+        "jittedCodeTrampoline", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
+        "jittedCodeTrampolineSessionToken", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.functionTypeType, "FunctionType", TUUVM_NULL_TUPLE,
         NULL);

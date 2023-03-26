@@ -471,6 +471,27 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_lookupSelector(tuuvm_context_t *context, tuuv
     }
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_type_lookupSelectorWithInlineCache(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector, tuuvm_inlineLookupCacheEntry_t *inlineCache)
+{
+    // FIXME: Make this thread safe
+    if(inlineCache->receiverType == type)
+        return inlineCache->method;
+    
+    inlineCache->receiverType = type;
+    return inlineCache->method = tuuvm_type_lookupSelector(context, type, selector);
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_type_lookupSelectorWithPIC(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector, tuuvm_polymorphicInlineLookupCache_t *pic)
+{
+    size_t expectedEntryIndex = tuuvm_tuple_identityHash(type) % PIC_ENTRY_COUNT;
+    tuuvm_inlineLookupCacheEntry_t *entry = pic->entries + expectedEntryIndex;
+    if(entry->receiverType == type)
+        return entry->method;
+    
+    entry->receiverType = type;
+    return entry->method = tuuvm_type_lookupSelector(context, type, selector);
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_type_lookupFallbackSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector)
 {
     if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
@@ -556,7 +577,7 @@ TUUVM_API void tuuvm_type_setPrintStringFunction(tuuvm_context_t *context, tuuvm
 
 TUUVM_API tuuvm_tuple_t tuuvm_type_getAstNodeAnalysisFunction(tuuvm_context_t *context, tuuvm_tuple_t type)
 {
-    return tuuvm_type_lookupSelector(context, type, context->roots.astNodeAnalysisSelector);
+    return tuuvm_type_lookupSelectorWithPIC(context, type, context->roots.astNodeAnalysisSelector, &context->roots.inlineCaches.analyzeASTWithEnvironment);
 }
 
 TUUVM_API void tuuvm_type_setAstNodeAnalysisFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t astNodeAnalysisFunction)
@@ -566,7 +587,7 @@ TUUVM_API void tuuvm_type_setAstNodeAnalysisFunction(tuuvm_context_t *context, t
 
 TUUVM_API tuuvm_tuple_t tuuvm_type_getAstNodeEvaluationFunction(tuuvm_context_t *context, tuuvm_tuple_t type)
 {
-    return tuuvm_type_lookupSelector(context, type, context->roots.astNodeEvaluationSelector);
+    return tuuvm_type_lookupSelectorWithPIC(context, type, context->roots.astNodeEvaluationSelector, &context->roots.inlineCaches.evaluateASTWithEnvironment);
 }
 
 TUUVM_API void tuuvm_type_setAstNodeEvaluationFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t astNodeEvaluationFunction)
@@ -576,7 +597,7 @@ TUUVM_API void tuuvm_type_setAstNodeEvaluationFunction(tuuvm_context_t *context,
 
 TUUVM_API tuuvm_tuple_t tuuvm_type_getAstNodeAnalysisAndEvaluationFunction(tuuvm_context_t *context, tuuvm_tuple_t type)
 {
-    return tuuvm_type_lookupSelector(context, type, context->roots.astNodeAnalysisAndEvaluationSelector);
+    return tuuvm_type_lookupSelectorWithPIC(context, type, context->roots.astNodeAnalysisAndEvaluationSelector, &context->roots.inlineCaches.evaluateAndAnalyzeASTWithEnvironment);
 }
 
 TUUVM_API void tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t astNodeAnalysisAndEvaluationFunction)
@@ -858,6 +879,7 @@ static tuuvm_tuple_t tuuvm_type_primitive_flushLookupSelector(tuuvm_context_t *c
         if(cacheEntry->selector == *selector)
             memset(cacheEntry, 0, sizeof(tuuvm_globalLookupCacheEntry_t));
     }
+    memset(&context->roots.inlineCaches, 0, sizeof(context->roots.inlineCaches));
 
     return TUUVM_VOID_TUPLE;
 }

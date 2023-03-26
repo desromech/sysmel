@@ -50,6 +50,10 @@ FunctionBytecodeAssemblerAbstractInstruction definition: {
     public field previousInstruction => FunctionBytecodeAssemblerAbstractInstruction.
     public field nextInstruction => FunctionBytecodeAssemblerAbstractInstruction.
 
+    public field sourcePosition => SourcePosition.
+    public field sourceEnvironment => Environment.
+    public field sourceASTNode => ASTNode.
+
     public method initialize => Void := {
         self pc: 0sz
     }.
@@ -245,6 +249,10 @@ FunctionBytecodeAssembler definition: {
         self lastInstruction: instruction.
 
         instruction
+            sourcePosition: self sourcePosition;
+            sourceEnvironment: self sourceEnvironment;
+            sourceASTNode: self sourceASTNode;
+            yourself
     }.
 
     public method instructionsDo: aBlock ::=> Void := {
@@ -564,11 +572,36 @@ FunctionBytecodeAssembler definition: {
             localVectorSize: self usedTemporaryCount;
             yourself.
 
-        ## Compute the instruction stream size, and the pc of each instruction.
+        let pcToDebugListTable := ArrayList new.
+        let debugSourceASTNodes := ArrayList new.
+        let debugSourcePositions := ArrayList new.
+        let debugSourceEnvironments := ArrayList new.
+        let debugListsDictionary := Dictionary new.
+
+        ## Compute the instruction stream size, and the pc of each instruction. Also construct the debug information.
         let instructionOffset mutable := 0sz.
         self instructionsDo: {:(FunctionBytecodeAssemblerAbstractInstruction)eachInstruction :: Void |
-            eachInstruction pc: instructionOffset.
-            instructionOffset := instructionOffset + eachInstruction assembledSize
+            let pc := instructionOffset.
+            eachInstruction pc: pc.
+            instructionOffset := instructionOffset + eachInstruction assembledSize.
+
+            ## Generate the debug table entries.
+            let sourceASTNode := eachInstruction sourceASTNode.
+            let sourcePosition := eachInstruction sourcePosition.
+            let sourceEnvironment := eachInstruction sourceEnvironment.
+            let debugTuple := Array with: sourcePosition with: sourceASTNode with: sourceEnvironment.
+
+            let debugTableEntryIndex := debugListsDictionary at: debugTuple ifAbsentPut: { :: Size | 
+                let debugEntryIndex := debugSourceASTNodes size.
+                debugSourceASTNodes add: sourceASTNode.
+                debugSourcePositions add: sourcePosition.
+                debugSourceEnvironments add: sourceEnvironment.
+                debugEntryIndex
+            }.
+
+            if: pcToDebugListTable isEmpty || (pcToDebugListTable last ~= debugTableEntryIndex) then: {
+                pcToDebugListTable add: pc; add: debugTableEntryIndex
+            }.
         }.
 
         ## Assemble the instructions.
@@ -577,6 +610,13 @@ FunctionBytecodeAssembler definition: {
         self instructionsDo: {:(FunctionBytecodeAssemblerAbstractInstruction)eachInstruction :: Void |
             eachInstruction assembleIn: instructionStream
         }.
+
+        ## Store the debug information tables.
+        result
+            pcToDebugListTable: pcToDebugListTable asArray;
+            debugSourceASTNodes: debugSourceASTNodes asArray;
+            debugSourcePositions: debugSourcePositions asArray;
+            debugSourceEnvironments: debugSourceEnvironments asArray.
 
         result
     }.
