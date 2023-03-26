@@ -515,6 +515,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_apply(tuuvm_context_t *context
     return tuuvm_bytecodeInterpreter_activateAndApply(context, function, argumentCount, arguments);
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_applyJitTrampolineDestination(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    return tuuvm_bytecodeInterpreter_apply(context, function, argumentCount, arguments);
+}
+
 void tuuvm_bytecode_registerPrimitives(void)
 {
 }

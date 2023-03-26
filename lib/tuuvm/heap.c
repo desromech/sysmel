@@ -248,6 +248,12 @@ void *tuuvm_heap_allocateAndLockCodeZone(tuuvm_heap_t *heap, size_t size, size_t
     return result;
 }
 
+void tuuvm_heap_lockCodeZone(tuuvm_heap_t *heap, void *codePointer, size_t size)
+{
+    (void)heap;
+    tuuvm_heap_lockCodePagesForWriting(codePointer, size);
+}
+
 void tuuvm_heap_unlockCodeZone(tuuvm_heap_t *heap, void *codePointer, size_t size)
 {
     (void)heap;

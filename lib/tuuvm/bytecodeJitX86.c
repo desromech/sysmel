@@ -430,7 +430,28 @@ static void tuuvm_jit_functionApplyVia(tuuvm_bytecodeJit_t *jit, int16_t resultO
     tuuvm_jit_moveRegisterToOperand(jit, resultOperand, TUUVM_X86_RAX);
 }
 
-static void tuuvm_jit_functionApplyWithArgumentsRecordVia(tuuvm_bytecodeJit_t *jit, int16_t resultOperand, int16_t functionOperand, size_t argumentCount, int16_t *argumentOperands, void *calledFunctionPointer)
+static void tuuvm_jit_functionApplyDirectVia(tuuvm_bytecodeJit_t *jit, int16_t resultOperand, int16_t functionOperand, size_t argumentCount, int16_t *argumentOperands, void *calledFunctionPointer)
+{
+    size_t stackSize = argumentCount * sizeof(void*);
+    size_t alignedStackSize = (stackSize + 15) & (-16);
+    size_t paddingSize = alignedStackSize - stackSize;
+    tuuvm_jit_x86_subImmediate32(jit, TUUVM_X86_RSP, paddingSize);
+
+    // Push all of the arguments in the stack.
+    for(size_t i = 0; i < argumentCount; ++i)
+        tuuvm_jit_pushOperand(jit, argumentOperands[argumentCount - i - 1]);
+
+    tuuvm_jit_x86_jitLoadContextInRegister(jit, TUUVM_X86_SYSV_ARG0);
+    tuuvm_jit_moveOperandToRegister(jit, TUUVM_X86_SYSV_ARG1, functionOperand);
+    tuuvm_jit_x86_movImmediate32(jit, TUUVM_X86_SYSV_ARG2, argumentCount);
+    tuuvm_jit_x86_mov64Register(jit, TUUVM_X86_SYSV_ARG3, TUUVM_X86_RSP);
+    tuuvm_jit_x86_call(jit, calledFunctionPointer);
+    tuuvm_jit_x86_addImmediate32(jit, TUUVM_X86_RSP, alignedStackSize);
+
+    tuuvm_jit_moveRegisterToOperand(jit, resultOperand, TUUVM_X86_RAX);
+}
+
+static void tuuvm_jit_functionApplyDirectWithArgumentsRecord(tuuvm_bytecodeJit_t *jit, int16_t resultOperand, int16_t functionOperand, size_t argumentCount, int16_t *argumentOperands, void *calledFunctionPointer)
 {
     size_t stackSize = argumentCount * sizeof(void*) + sizeof(tuuvm_stackFrameGCRootsRecord_t);
     size_t alignedStackSize = (stackSize + 15) & (-16);
@@ -467,6 +488,61 @@ static void tuuvm_jit_functionApplyWithArgumentsRecordVia(tuuvm_bytecodeJit_t *j
     tuuvm_jit_x86_addImmediate32(jit, TUUVM_X86_RSP, alignedStackSize);
 }
 
+static void *tuuvm_jit_getTrampolineOrEntryPointForBytecode(tuuvm_bytecodeJit_t *jit, tuuvm_functionBytecode_t *bytecode)
+{
+    // Attempt direct entry first.
+    if(bytecode->jittedCode && bytecode->jittedCodeSessionToken == jit->context->roots.sessionToken)
+        return (void*)tuuvm_tuple_systemHandle_decode(bytecode->jittedCode);
+
+    if(bytecode->jittedCodeTrampoline && bytecode->jittedCodeTrampolineSessionToken == jit->context->roots.sessionToken)
+        return (void*)tuuvm_tuple_systemHandle_decode(bytecode->jittedCodeTrampoline);
+
+    uint64_t trampolineTargetAddress = (uint64_t)(uintptr_t)&tuuvm_bytecodeInterpreter_applyJitTrampolineDestination;
+
+    uint8_t trampolineCode[] = {
+        // Endbr64
+        0xF3, 0x0F, 0x1E, 0xFA,
+
+        // Mov64
+        tuuvm_jit_x86_rex(true, false, false, false),
+        0xB8 + TUUVM_X86_RAX,
+        trampolineTargetAddress & 0xFF, (trampolineTargetAddress >> 8) & 0xFF, (trampolineTargetAddress >> 16) & 0xFF, (trampolineTargetAddress >> 24) & 0xFF,
+        (trampolineTargetAddress >> 32) & 0xFF, (trampolineTargetAddress >> 40) & 0xFF, (trampolineTargetAddress >> 48) & 0xFF, (trampolineTargetAddress >> 56) & 0xFF,
+
+        // Jmp RAX
+        0xFF,
+        tuuvm_jit_x86_modRMRegister(TUUVM_X86_RAX, 4),
+    };
+
+    // Install the trampoline in the code zone.
+    size_t trampolineCodeSize = sizeof(trampolineCode);
+    size_t requiredCodeSize = sizeAlignedTo(trampolineCodeSize, 16);
+    uint8_t *codeZonePointer = tuuvm_heap_allocateAndLockCodeZone(&jit->context->heap, requiredCodeSize, 16);
+    memset(codeZonePointer, 0xcc, requiredCodeSize); // int3;
+    memcpy(codeZonePointer, trampolineCode, trampolineCodeSize);
+    tuuvm_heap_unlockCodeZone(&jit->context->heap, codeZonePointer, requiredCodeSize);
+
+    bytecode->jittedCodeTrampoline = tuuvm_tuple_systemHandle_encode(jit->context, (tuuvm_systemHandle_t)(uintptr_t)codeZonePointer);
+    bytecode->jittedCodeTrampolineSessionToken = jit->context->roots.sessionToken;
+
+    return codeZonePointer;
+}
+
+static void tuuvm_jit_patchTrampolineWithRealEntryPoint(tuuvm_bytecodeJit_t *jit, tuuvm_functionBytecode_t *bytecode)
+{
+    if(bytecode->jittedCodeTrampoline && bytecode->jittedCodeTrampolineSessionToken == jit->context->roots.sessionToken)
+    {
+        uint8_t *realEntryPoint = (uint8_t*)tuuvm_tuple_systemHandle_decode(bytecode->jittedCode);
+        uint8_t *trampolineEntryPoint = (uint8_t*)tuuvm_tuple_systemHandle_decode(bytecode->jittedCodeTrampoline);
+
+        size_t trampolineCodeSize = 16;
+        size_t targetAddressOffset = trampolineCodeSize - 2 - sizeof(void*);
+        tuuvm_heap_lockCodeZone(&jit->context->heap, trampolineEntryPoint, trampolineCodeSize);
+        memcpy(trampolineEntryPoint +targetAddressOffset, &realEntryPoint, sizeof(realEntryPoint));
+        tuuvm_heap_unlockCodeZone(&jit->context->heap, trampolineEntryPoint, trampolineCodeSize);
+    }
+}
+
 static void tuuvm_jit_functionApply(tuuvm_bytecodeJit_t *jit, int16_t resultOperand, int16_t functionOperand, size_t argumentCount, int16_t *argumentOperands, int applicationFlags)
 {
     bool isNoTypecheck = applicationFlags & TUUVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK;
@@ -488,8 +564,23 @@ static void tuuvm_jit_functionApply(tuuvm_bytecodeJit_t *jit, int16_t resultOper
             tuuvm_functionEntryPoint_t entryPoint = tuuvm_function_getNumberedPrimitiveEntryPoint(jit->context, primitiveNumber);
             if(entryPoint)
             {
-                tuuvm_jit_functionApplyWithArgumentsRecordVia(jit, resultOperand, functionOperand, argumentCount, argumentOperands, entryPoint);
+                tuuvm_jit_functionApplyDirectWithArgumentsRecord(jit, resultOperand, functionOperand, argumentCount, argumentOperands, entryPoint);
                 return;
+            }
+        }
+        
+        if(literalFunctionObject->definition)
+        {
+            tuuvm_functionDefinition_t *literalFunctionDefinitionObject = (tuuvm_functionDefinition_t*)literalFunctionObject->definition;
+            if(literalFunctionDefinitionObject->bytecode && literalFunctionDefinitionObject->bytecode != TUUVM_PENDING_MEMOIZATION_VALUE)
+            {
+                void *trampolineOrEntryPoint = tuuvm_jit_getTrampolineOrEntryPointForBytecode(jit, (tuuvm_functionBytecode_t*)literalFunctionDefinitionObject->bytecode);
+                if(trampolineOrEntryPoint)
+                {
+                    //printf("trampolineOrEntryPoint %p\n", trampolineOrEntryPoint);
+                    tuuvm_jit_functionApplyDirectVia(jit, resultOperand, functionOperand, argumentCount, argumentOperands, trampolineOrEntryPoint);
+                    return;
+                }
             }
         }
     }

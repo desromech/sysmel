@@ -381,5 +381,8 @@ static void tuuvm_bytecodeJit_jit(tuuvm_context_t *context, tuuvm_functionByteco
     functionBytecode->jittedCode = tuuvm_tuple_systemHandle_encode(context, (tuuvm_systemHandle_t)(uintptr_t)codeZonePointer);
     functionBytecode->jittedCodeSessionToken = context->roots.sessionToken;
 
+    // Patch the trampoline.
+    tuuvm_jit_patchTrampolineWithRealEntryPoint(&jit, functionBytecode);
+
     tuuvm_bytecodeJit_jitFree(&jit);
 }

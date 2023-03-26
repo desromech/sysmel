@@ -69,6 +69,7 @@ void tuuvm_heap_destroy(tuuvm_heap_t *heap);
 tuuvm_tuple_t *tuuvm_heap_allocateGCRootTableEntry(tuuvm_heap_t *heap);
 
 void *tuuvm_heap_allocateAndLockCodeZone(tuuvm_heap_t *heap, size_t size, size_t alignment);
+void tuuvm_heap_lockCodeZone(tuuvm_heap_t *heap, void *codePointer, size_t size);
 void tuuvm_heap_unlockCodeZone(tuuvm_heap_t *heap, void *codePointer, size_t size);
 
 void tuuvm_heap_computeCompactionForwardingPointers(tuuvm_heap_t *heap);
