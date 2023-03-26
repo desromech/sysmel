@@ -1516,17 +1516,24 @@ SimpleFunctionType
 
 
 Function
-    withSelector: #timeToRunInNanoseconds addMethod: {:(() => Void)self :: Int64 |
+    withSelector: #timeToRunInNanoseconds addMethod: {:(Function)self :: Int64 |
         let: #startTime with: Time::Timestamp::nanosecondsNow().
         self().
         let: #endTime with: Time::Timestamp::nanosecondsNow().
         endTime - startTime
     };
-    withSelector: #timeToRunInMicroseconds addMethod: {:(() => Void)self :: Int64 |
+    withSelector: #timeToRunInMicroseconds addMethod: {:(Function)self :: Int64 |
         let: #startTime with: Time::Timestamp::microsecondsNow().
         self().
         let: #endTime with: Time::Timestamp::microsecondsNow().
         endTime - startTime
+    };
+    withSelector: #printTimeToRunInMicrosecondsWithTitle: addMethod: {:(Function)self :(String)title |
+        let: #startTime with: Time::Timestamp::microsecondsNow().
+        let: #result with: self().
+        let: #endTime with: Time::Timestamp::microsecondsNow().
+        printLine(title, " ", (endTime - startTime) asFloat32 * 0.001f32,  " ms").
+        result
     }.
 
 SourcePosition
@@ -1547,6 +1554,9 @@ SourcePosition
 
 GeneratedSymbol
     withSelector: #printOn: addMethod: {:(GeneratedSymbol)self :(Stream)stream :: Void |
+        stream print: self class; nextPut: '('; print: self value; nextPut: ')'
+    };
+    withSelector: #fullPrintOn: addMethod: {:(GeneratedSymbol)self :(Stream)stream :: Void |
         stream print: self class; nextPut: '('; print: self value; nextPut: ')'
     }.
 

@@ -55,6 +55,7 @@ FunctionBytecodeDirectCompiler definition: {
 
     public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> FunctionBytecode := {
         functionDefinition ensureAnalysis.
+
         self assembler
             sourcePosition: functionDefinition sourcePosition;
             arguments: (functionDefinition analyzedArgumentNodes collectWithIndex: {:(ASTArgumentNode)argumentNode :(Size)index :: FunctionBytecodeAssemblerOperand |
@@ -67,9 +68,8 @@ FunctionBytecodeDirectCompiler definition: {
         let resultValue := functionDefinition analyzedBodyNode compileBytecodesDirectlyWith: self.
         self assembler return: resultValue.
 
-        self assembler
-            optimize;
-            build
+        self assembler optimize.
+        self assembler build
     }.
 
     public method compileFunction: (function: Function) ::=> FunctionBytecode
@@ -86,7 +86,7 @@ FunctionBytecodeDirectCompiler definition: {
         self bindingDictionary at: binding put: value
     }.
 
-    public method withBreakLabel: (newBreakLabel: FunctionBytecodeAssemblerLabel) continueLabel: (newContinueLabel: FunctionBytecodeAssemblerLabel) do: aBlock := {
+    public method withBreakLabel: (newBreakLabel: FunctionBytecodeAssemblerLabel) continueLabel: (newContinueLabel: FunctionBytecodeAssemblerLabel) do: (aBlock: () => Void) ::=> Void := {
         let oldBreakLabel := self breakLabel.
         let oldContinueLabel := self continueLabel.
 
@@ -94,12 +94,10 @@ FunctionBytecodeDirectCompiler definition: {
         self continueLabel: newContinueLabel.
 
         ## FIXME: Wrap this on an ensure.
-        let result := aBlock.
+        aBlock().
 
         self breakLabel: oldBreakLabel.
         self continueLabel: oldContinueLabel.
-
-        result
     }.
 }.
 
@@ -240,7 +238,7 @@ ASTWhileContinueWithNode extend: {
         ## Body
         assembler beginLabel: bodyLabel.
         self bodyExpression ifNotNil: {:(ASTNode)expression :: Void |
-            compiler withBreakLabel: mergeLabel continueLabel: continueLabel do: {
+            compiler withBreakLabel: mergeLabel continueLabel: continueLabel do: {|
                 expression compileBytecodesDirectlyWith: compiler
             }.
         }.

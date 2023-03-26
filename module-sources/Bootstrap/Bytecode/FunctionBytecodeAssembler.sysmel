@@ -255,7 +255,7 @@ FunctionBytecodeAssembler definition: {
             yourself
     }.
 
-    public method instructionsDo: aBlock ::=> Void := {
+    public method instructionsDo: (aBlock: FunctionBytecodeAssemblerAbstractInstruction => Void) ::=> Void := {
         let position mutable := self firstInstruction.
 
         while: position isNotNil do: {
@@ -521,11 +521,11 @@ FunctionBytecodeAssembler definition: {
             yourself).
 
     public method optimizeTemporaries => Void := {
-        self instructionsDo: {:(FunctionBytecodeAssemblerAbstractInstruction)each |
+        self instructionsDo: {:(FunctionBytecodeAssemblerAbstractInstruction)each :: Void |
             each markOperandUsages.
         }.
 
-        self instructionsDo: {:(FunctionBytecodeAssemblerAbstractInstruction)each |
+        self instructionsDo: {:(FunctionBytecodeAssemblerAbstractInstruction)each :: Void  |
             each optimizeLocalOnlyAllocasWith: self
         }.
 
@@ -550,7 +550,7 @@ FunctionBytecodeAssembler definition: {
     }.
 
     public method optimizeJumps => Void := {
-        self instructionsDo: {:(FunctionBytecodeAssemblerAbstractInstruction)each |
+        self instructionsDo: {:(FunctionBytecodeAssemblerAbstractInstruction)each :: Void  |
             if: each isBranchInstruction && (each destinationInstruction == each nextInstruction) then: {
                 self removeInstruction: each
             }
