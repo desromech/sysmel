@@ -1,0 +1,42 @@
+public abstract class TestCase superclass: TestAsserter; definition: {
+    __Meta__ definition: {
+        public method withAllSubclassesRun ::=> Void := {
+            self withAllSubtypesDo: {:(TestCase class)eachClass :: Void |
+                eachClass isAbstract ifFalse: {
+                    eachClass run
+                }
+            }
+        }.
+
+        public method run ::=> Void := {
+            self testSelectors do: {:(Symbol)eachTestSelector :: Void |
+                self run: eachTestSelector
+            }
+        }.
+
+        public method run: (testSelector: Symbol) ::=> Void := {
+            printLine(testSelector).
+        }.
+
+        public method testSelectors => Array := {
+            let: #selectors with: ArrayList new.
+            self withAllSubtypesDo: {:subtype :: Void |
+                subtype selectorsDo: {:(Symbol)each :: Void |
+                    if: (each beginsWith: "test") && (each numSelectorArgs = 0sz) then: {
+                        selectors add: each
+                    }
+                }
+            }.
+
+            selectors asArray
+        }.
+    }.
+
+    public method setUp => Void := {
+
+    }.
+
+    public method tearDown => Void := {
+
+    }.
+}.

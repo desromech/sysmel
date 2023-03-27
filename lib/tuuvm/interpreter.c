@@ -4687,6 +4687,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_loadSourceNamedWithSolvedPath(tuuvm_co
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     gcFrame.sourceString = tuuvm_io_readWholeFileNamedAsString(context, gcFrame.filename);
+    if(!gcFrame.sourceString)
+        tuuvm_errorWithMessageTuple(tuuvm_string_concat(context,
+            tuuvm_symbol_internWithCString(context, "Failed to load source file from: "),
+            gcFrame.filename));
+
     gcFrame.sourceDirectory = tuuvm_filesystem_dirname(context, gcFrame.filename);
     gcFrame.sourceName = tuuvm_filesystem_basename(context, gcFrame.filename);
     gcFrame.sourceLanguage = tuuvm_sourceCode_inferLanguageFromSourceName(context, gcFrame.sourceName);

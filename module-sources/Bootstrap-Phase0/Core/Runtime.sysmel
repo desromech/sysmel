@@ -1272,6 +1272,21 @@ Type
         result
     };
 
+    withSelector: #selectorsDo: addMethod: {:(Type)self :aBlock :: Void |
+        let: #methodDictionary with: self methodDictionary.
+        if: methodDictionary ~~ nil then: (methodDictionary keysAndValuesDo: {:key :value |
+            aBlock(key)
+        })
+    };
+    withSelector: #selectors addMethod: {:(Type)self :: Array |
+        let: #selectors with: ArrayList new.
+
+        self selectorsDo: {:each :: Void |
+            selectors add: each
+        }.
+
+        selectors asArray
+    };
     withSelector: #allMethodsDo: addMethod: {:(Type)self :aBlock :: Void |
         let: #dictionaryIterationBlock with: {:selector :method :: Void |
             aBlock(method)
