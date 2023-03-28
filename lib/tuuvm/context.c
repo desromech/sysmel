@@ -18,6 +18,7 @@ extern void tuuvm_arrayList_registerPrimitives(void);
 extern void tuuvm_astInterpreter_registerPrimitives(void);
 extern void tuuvm_boolean_registerPrimitives(void);
 extern void tuuvm_bytecode_registerPrimitives(void);
+extern void tuuvm_bytecodeCompiler_registerPrimitives();
 extern void tuuvm_dictionary_registerPrimitives(void);
 extern void tuuvm_errors_registerPrimitives(void);
 extern void tuuvm_environment_registerPrimitives(void);
@@ -38,6 +39,7 @@ extern void tuuvm_arrayList_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context);
 extern void tuuvm_boolean_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_bytecode_setupPrimitives(tuuvm_context_t *context);
+extern void tuuvm_bytecodeCompiler_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_dictionary_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_errors_setupPrimitives(tuuvm_context_t *context);
 extern void tuuvm_environment_setupPrimitives(tuuvm_context_t *context);
@@ -66,6 +68,7 @@ void tuuvm_context_registerPrimitives(void)
     tuuvm_astInterpreter_registerPrimitives();
     tuuvm_boolean_registerPrimitives();
     tuuvm_bytecode_registerPrimitives();
+    tuuvm_bytecodeCompiler_registerPrimitives();
     tuuvm_dictionary_registerPrimitives();
     tuuvm_errors_registerPrimitives();
     tuuvm_environment_registerPrimitives();
@@ -985,6 +988,27 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "astTemplateParameterIndex", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         NULL);
 
+    context->roots.bytecodeCompilerInstructionOperandType = tuuvm_context_createIntrinsicClass(context, "BootstrapBytecodeCompilerInstructionOperand", context->roots.objectType,
+        NULL);
+    context->roots.bytecodeCompilerInstructionType = tuuvm_context_createIntrinsicClass(context, "bytecodeCompilerInstructionOperandType", context->roots.objectType,
+        "pc", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "opcode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, NULL,
+        "operands", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        NULL);
+    context->roots.bytecodeCompilerInstructionVectorOperandType = tuuvm_context_createIntrinsicClass(context, "BootstrapBytecodeCompilerInstruction", context->roots.bytecodeCompilerInstructionOperandType,
+        "index", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.int16Type,
+        "vectorType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.int16Type,
+
+        "hasAllocaDestination", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        "hasNonAllocaDestination", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        "hasLoadStoreUsage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        "hasNonLoadStoreUsage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        NULL);
+    context->roots.bytecodeCompilerType = tuuvm_context_createIntrinsicClass(context, "BootstrapBytecodeCompiler", context->roots.objectType,
+        "firstInstruction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bytecodeCompilerInstructionType,
+        "lastInstruction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bytecodeCompilerInstructionType,
+        NULL);
+    
     // Fill the immediate type table.
     context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_NIL] = context->roots.undefinedObjectType;
     context->roots.immediateTypeTable[TUUVM_TUPLE_TAG_INTEGER] = context->roots.integerType;
@@ -1027,6 +1051,7 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
     tuuvm_astInterpreter_setupASTInterpreter(context);
     tuuvm_boolean_setupPrimitives(context);
     tuuvm_bytecode_setupPrimitives(context);
+    tuuvm_bytecodeCompiler_setupPrimitives(context);
     tuuvm_dictionary_setupPrimitives(context);
     tuuvm_errors_setupPrimitives(context);
     tuuvm_environment_setupPrimitives(context);

@@ -136,6 +136,16 @@ static tuuvm_tuple_t tuuvm_io_primitive_saveWholeFileNamed(tuuvm_context_t *cont
     return tuuvm_tuple_boolean_encode(tuuvm_io_saveWholeFileNamed(arguments[0], arguments[1]));
 }
 
+static tuuvm_tuple_t tuuvm_io_primitive_halt(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    (void)arguments;
+    if(argumentCount != 0) tuuvm_error_argumentCountMismatch(0, argumentCount);
+
+    return TUUVM_VOID_TUPLE;
+}
+
 void tuuvm_io_registerPrimitives(void)
 {
     tuuvm_primitiveTable_registerFunction(tuuvm_io_primitive_printLine, "printLine");
@@ -144,6 +154,7 @@ void tuuvm_io_registerPrimitives(void)
     tuuvm_primitiveTable_registerFunction(tuuvm_io_primitive_readWholeFileNamedAsString, "IO::readWholeFileNamedAsString");
     tuuvm_primitiveTable_registerFunction(tuuvm_io_primitive_readWholeFileNamedAsByteArray, "IO::readWholeFileNamedAsByteArray");
     tuuvm_primitiveTable_registerFunction(tuuvm_io_primitive_saveWholeFileNamed, "IO::saveWholeFileNamed");
+    tuuvm_primitiveTable_registerFunction(tuuvm_io_primitive_halt, "halt");
 }
 
 void tuuvm_io_setupPrimitives(tuuvm_context_t *context)
@@ -154,4 +165,6 @@ void tuuvm_io_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "IO::readWholeFileNamedAsString", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_io_primitive_readWholeFileNamedAsString);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "IO::readWholeFileNamedAsByteArray", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_io_primitive_readWholeFileNamedAsByteArray);
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "IO::saveWholeFileNamed", 2, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_io_primitive_saveWholeFileNamed);
+
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "halt", 0, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_io_primitive_halt);
 }

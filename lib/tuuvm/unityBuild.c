@@ -17,6 +17,7 @@
 #include "ast.c"
 #include "boolean.c"
 #include "bytecode.c"
+#include "bytecodeCompiler.c"
 #include "context.c"
 #include "dictionary.c"
 #include "environment.c"

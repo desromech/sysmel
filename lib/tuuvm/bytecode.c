@@ -17,7 +17,7 @@
 
 #if defined(__x86_64__)
 #   define TUUVM_JIT_SUPPORTED
-static bool tuuvm_bytecodeJit_enabled = true;
+static bool tuuvm_bytecodeJit_enabled = false;
 #endif
 
 static bool tuuvm_bytecodeInterpreter_tablesAreFilled;

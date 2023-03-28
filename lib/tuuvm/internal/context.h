@@ -253,6 +253,11 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t astQuasiUnquoteNodeType;
     tuuvm_tuple_t astSpliceNodeType;
 
+    tuuvm_tuple_t bytecodeCompilerType;
+    tuuvm_tuple_t bytecodeCompilerInstructionOperandType;
+    tuuvm_tuple_t bytecodeCompilerInstructionType;
+    tuuvm_tuple_t bytecodeCompilerInstructionVectorOperandType;
+
     tuuvm_tuple_t globalNamespace;
     tuuvm_tuple_t intrinsicTypes;
 
