@@ -995,7 +995,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 
     context->roots.bytecodeCompilerInstructionOperandType = tuuvm_context_createIntrinsicClass(context, "BootstrapBytecodeCompilerInstructionOperand", context->roots.objectType,
         NULL);
-    context->roots.bytecodeCompilerInstructionType = tuuvm_context_createIntrinsicClass(context, "bytecodeCompilerInstructionOperandType", context->roots.objectType,
+    context->roots.bytecodeCompilerInstructionType = tuuvm_context_createIntrinsicClass(context, "BootstrapBytecodeCompilerInstruction", context->roots.objectType,
         "pc", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "endPC", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "opcode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, NULL,
@@ -1006,7 +1006,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "sourceASTNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
 
         NULL);
-    context->roots.bytecodeCompilerInstructionVectorOperandType = tuuvm_context_createIntrinsicClass(context, "BootstrapBytecodeCompilerInstruction", context->roots.bytecodeCompilerInstructionOperandType,
+    context->roots.bytecodeCompilerInstructionVectorOperandType = tuuvm_context_createIntrinsicClass(context, "BootstrapBytecodeCompilerInstructionVectorOperand", context->roots.bytecodeCompilerInstructionOperandType,
         "index", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.int16Type,
         "vectorType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.int16Type,
 
