@@ -1,0 +1,10 @@
+printLine("digraph typehierarchy {").
+
+Untyped withAllSubtypesDo: {:each |
+    printLine("    \"", each, "\" -> \"", each __type__, "\";").
+    each supertype ifNotNil: {:supertype |
+        printLine("    \"", each, "\" -> \"", supertype, "\";").
+    }.
+}.
+
+printLine("}").

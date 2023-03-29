@@ -174,18 +174,18 @@ TEST_SUITE(Scanner)
 
     TEST_CASE_WITH_FIXTURE(String, TuuvmCore)
     {
-        tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "\"Hello World\\r\\n\"", "test", "tlisp");
+        tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "\"Hello \\\"World\\r\\n\"", "test", "tlisp");
         TEST_ASSERT_EQUALS(1, tuuvm_arraySlice_getSize(tokenList));
         TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_STRING, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 0)));
-        TEST_ASSERT(tuuvm_string_equals(tuuvm_string_createWithCString(tuuvm_test_context, "Hello World\r\n"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 0))));
+        TEST_ASSERT(tuuvm_string_equals(tuuvm_string_createWithCString(tuuvm_test_context, "Hello \"World\r\n"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 0))));
     }
 
     TEST_CASE_WITH_FIXTURE(StringSymbol, TuuvmCore)
     {
-        tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "#\"Hello World\\r\\n\"", "test", "tlisp");
+        tuuvm_tuple_t tokenList = tuuvm_scanner_scanCString(tuuvm_test_context, "#\"Hello \\\"World\\r\\n\"", "test", "tlisp");
         TEST_ASSERT_EQUALS(1, tuuvm_arraySlice_getSize(tokenList));
         TEST_ASSERT_EQUALS(TUUVM_TOKEN_KIND_SYMBOL, tuuvm_token_getKind(tuuvm_arraySlice_at(tokenList, 0)));
-        TEST_ASSERT(tuuvm_string_equals(tuuvm_string_createWithCString(tuuvm_test_context, "Hello World\r\n"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 0))));
+        TEST_ASSERT(tuuvm_string_equals(tuuvm_string_createWithCString(tuuvm_test_context, "Hello \"World\r\n"), tuuvm_token_getValue(tuuvm_arraySlice_at(tokenList, 0))));
     }
 
     TEST_CASE_WITH_FIXTURE(Delimiters, TuuvmCore)

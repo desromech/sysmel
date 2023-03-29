@@ -130,6 +130,7 @@ static tuuvm_tuple_t tuuvm_scanner_tokenAsString(tuuvm_context_t *context, size_
                 *destination++ = '\n';
                 break;
             default:
+                *destination++ = c;
                 break;
             }
         }
@@ -168,6 +169,7 @@ static tuuvm_tuple_t tuuvm_scanner_tokenAsSymbolString(tuuvm_context_t *context,
                 *destination++ = '\n';
                 break;
             default:
+                *destination++ = c;
                 break;
             }
         }
@@ -479,10 +481,7 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
                     return true;
                 }
             }
-            else
-            {
-                ++state->position;
-            }
+            ++state->position;
         }
 
         if(tuuvm_scanner_lookAt(state, 0) != '"')
@@ -586,10 +585,8 @@ static bool tuuvm_scanner_scanNextTokenInto(tuuvm_context_t *context, tuuvm_scan
                         return true;
                     }
                 }
-                else
-                {
-                    ++state->position;
-                }
+
+                ++state->position;
             }
 
             if(tuuvm_scanner_lookAt(state, 0) != '"')
