@@ -150,28 +150,6 @@ TUUVM_API void tuuvm_function_addFlags(tuuvm_context_t *context, tuuvm_tuple_t f
     functionObject->flags = tuuvm_tuple_bitflags_encode(tuuvm_tuple_bitflags_decode(functionObject->flags) | flags);
 }
 
-TUUVM_API void tuuvm_ordinaryFunction_attemptBytecodeCompilation(tuuvm_context_t *context, tuuvm_functionDefinition_t *definition)
-{
-    tuuvm_bytecodeCompiler_compileFunctionDefinition(context, definition);
-/*    
-    // Avoid cyclic compilation.
-    if(definition->bytecode == TUUVM_PENDING_MEMOIZATION_VALUE)
-        return;
-
-    tuuvm_tuple_t compilationMethod = tuuvm_type_lookupSelectorWithInlineCache(context, tuuvm_tuple_getType(context, (tuuvm_tuple_t)definition), context->roots.compileIntoBytecodeSelector, &context->roots.inlineCaches.onDemandBytecodeCompilation);
-    if(!compilationMethod)
-        return;
-
-    // TODO: Register a cleanup for exception handling here.
-
-    definition->bytecode = TUUVM_PENDING_MEMOIZATION_VALUE;
-    tuuvm_function_apply1(context, compilationMethod, (tuuvm_tuple_t)definition);
-
-    if(definition->bytecode == TUUVM_PENDING_MEMOIZATION_VALUE)
-        definition->bytecode = TUUVM_NULL_TUPLE;
-*/
-}
-
 TUUVM_API tuuvm_tuple_t tuuvm_ordinaryFunction_nativeApply(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_functionEntryPoint_t nativeEntryPoint, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags)
 {
     (void)applicationFlags;
@@ -217,38 +195,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_ordinaryFunction_directApply(tuuvm_context_t *cont
 
     // Attempt to use the bytecode.
     tuuvm_functionDefinition_t *definition = (tuuvm_functionDefinition_t*)functionObject->definition;
-    if(tuuvm_function_useBytecodeInterpreter)
-    {
-        if(!definition->bytecode)
-        {
-            struct {
-                tuuvm_function_t *functionObject;
-                tuuvm_functionDefinition_t *definition;
-            } gcFrame = {
-                .functionObject = functionObject,
-                .definition = definition,
-            };
-            TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
-
-            tuuvm_stackFrameGCRootsRecord_t argumentsRecord = {
-                .type = TUUVM_STACK_FRAME_RECORD_TYPE_GC_ROOTS,
-                .rootCount = argumentCount,
-                .roots = arguments
-            };
-            tuuvm_stackFrame_pushRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
-            
-            tuuvm_ordinaryFunction_attemptBytecodeCompilation(context, (tuuvm_functionDefinition_t*)definition);
-
-            //tuuvm_stackFrame_popRecord((tuuvm_stackFrameRecord_t*)&argumentsRecord);
-            functionObject = gcFrame.functionObject;
-            definition = gcFrame.definition;
-            function = (tuuvm_tuple_t)functionObject;
-            TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-        }
-
-        if(definition->bytecode && definition->bytecode != TUUVM_PENDING_MEMOIZATION_VALUE && tuuvm_function_useBytecodeInterpreter)
-            return tuuvm_bytecodeInterpreter_apply(context, function, argumentCount, arguments);
-    }
+    if(tuuvm_function_useBytecodeInterpreter && definition->bytecode)
+        return tuuvm_bytecodeInterpreter_apply(context, function, argumentCount, arguments);
     
     return tuuvm_interpreter_applyClosureASTFunction(context, function, argumentCount, arguments, applicationFlags);
 }

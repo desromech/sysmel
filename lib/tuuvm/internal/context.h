@@ -90,7 +90,6 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t analyzeAndTypeCheckMessageSendNodeWithEnvironmentSelector;
     tuuvm_tuple_t getOrCreateDependentApplicationValueForNodeSelector;
     tuuvm_tuple_t defaultValueSelector;
-    tuuvm_tuple_t compileIntoBytecodeSelector;
 
     tuuvm_tuple_t untypedType;
     tuuvm_tuple_t anyValueType;
@@ -264,7 +263,6 @@ typedef struct tuuvm_context_roots_s
 
     struct
     {
-        tuuvm_inlineLookupCacheEntry_t onDemandBytecodeCompilation;
         tuuvm_polymorphicInlineLookupCache_t analyzeASTWithEnvironment;
         tuuvm_polymorphicInlineLookupCache_t evaluateASTWithEnvironment;
         tuuvm_polymorphicInlineLookupCache_t evaluateAndAnalyzeASTWithEnvironment;
