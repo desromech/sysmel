@@ -5,6 +5,7 @@
 #include "tuuvm/ast.h"
 #include "tuuvm/assert.h"
 #include "tuuvm/association.h"
+#include "tuuvm/bytecodeCompiler.h"
 #include "tuuvm/dictionary.h"
 #include "tuuvm/function.h"
 #include "tuuvm/gc.h"
@@ -80,13 +81,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(t
 
     gcFrame.function = tuuvm_type_getAstNodeAnalysisAndEvaluationFunction(context, tuuvm_tuple_getType(context, gcFrame.astNode));
     if(!gcFrame.function)
-    {
-        TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
-        gcFrame.analyzedAstNode = tuuvm_interpreter_analyzeASTWithEnvironment(context, gcFrame.astNode, gcFrame.environment);
-        gcFrame.result = tuuvm_interpreter_evaluateASTWithEnvironment(context, gcFrame.analyzedAstNode, gcFrame.environment);
-        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-        return gcFrame.result;
-    }
+        tuuvm_error("Cannot analyze and evaluate non AST node tuple.");
 
     return tuuvm_function_applyNoCheck2(context, gcFrame.function, gcFrame.astNode, gcFrame.environment);
 }
@@ -688,14 +683,14 @@ static tuuvm_tuple_t tuuvm_astArgumentNode_primitiveAnalyze(tuuvm_context_t *con
         gcFrame.argumentNode->name = gcFrame.analyzedName;
 
         if(tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedName))
-            gcFrame.evaluatedName = tuuvm_interpreter_evaluateASTWithEnvironment(context, gcFrame.analyzedName, *environment);
+            gcFrame.evaluatedName = tuuvm_astLiteralNode_getValue(gcFrame.analyzedName);
     }
     if(gcFrame.argumentNode->type)
     {
         gcFrame.analyzedType = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.argumentNode->type, context->roots.typeType, *environment);
         gcFrame.argumentNode->type = gcFrame.analyzedType;
         if(tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedType))
-            gcFrame.evaluatedType = tuuvm_interpreter_evaluateASTWithEnvironment(context, gcFrame.analyzedType, *environment);
+            gcFrame.evaluatedType = tuuvm_astLiteralNode_getValue(gcFrame.analyzedType);
     }
 
     if(gcFrame.evaluatedName)
@@ -948,8 +943,7 @@ static void tuuvm_functionDefinition_analyze(tuuvm_context_t *context, tuuvm_fun
     (*functionDefinition)->analyzedBodyNode = gcFrame.analyzedBodyNode;
 
     (*functionDefinition)->bytecode = TUUVM_NULL_TUPLE;
-
-    tuuvm_ordinaryFunction_attemptBytecodeCompilation(context, *functionDefinition);
+    tuuvm_bytecodeCompiler_compileFunctionDefinition(context, (*functionDefinition));
 
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -1855,7 +1849,8 @@ static tuuvm_tuple_t tuuvm_astUnexpandedApplicationNode_primitiveAnalyze(tuuvm_c
     bool isMacro = tuuvm_astNode_isMacroExpression(context, gcFrame.functionOrMacroExpression);
     if(isMacro)
     {
-        gcFrame.macro = tuuvm_interpreter_evaluateASTWithEnvironment(context, gcFrame.functionOrMacroExpression, *environment);
+        TUUVM_ASSERT(tuuvm_astNode_isLiteralNode(context, gcFrame.functionOrMacroExpression));
+        gcFrame.macro = tuuvm_astLiteralNode_getValue(gcFrame.functionOrMacroExpression);
         gcFrame.expansionResult = tuuvm_astUnexpandedApplicationNode_expandNodeWithMacro(context, node, &gcFrame.macro, environment);
         TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
         TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);

@@ -2,6 +2,7 @@
 #include "tuuvm/array.h"
 #include "tuuvm/assert.h"
 #include "tuuvm/bytecode.h"
+#include "tuuvm/bytecodeCompiler.h"
 #include "tuuvm/dictionary.h"
 #include "tuuvm/errors.h"
 #include "tuuvm/interpreter.h"
@@ -151,6 +152,8 @@ TUUVM_API void tuuvm_function_addFlags(tuuvm_context_t *context, tuuvm_tuple_t f
 
 TUUVM_API void tuuvm_ordinaryFunction_attemptBytecodeCompilation(tuuvm_context_t *context, tuuvm_functionDefinition_t *definition)
 {
+    tuuvm_bytecodeCompiler_compileFunctionDefinition(context, definition);
+/*    
     // Avoid cyclic compilation.
     if(definition->bytecode == TUUVM_PENDING_MEMOIZATION_VALUE)
         return;
@@ -166,6 +169,7 @@ TUUVM_API void tuuvm_ordinaryFunction_attemptBytecodeCompilation(tuuvm_context_t
 
     if(definition->bytecode == TUUVM_PENDING_MEMOIZATION_VALUE)
         definition->bytecode = TUUVM_NULL_TUPLE;
+*/
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_ordinaryFunction_nativeApply(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_functionEntryPoint_t nativeEntryPoint, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags)
@@ -356,6 +360,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_send(tuuvm_context_t *context, tuuvm_tuple_t
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     gcFrame.receiverType = tuuvm_tuple_getType(context, arguments[0]);
     gcFrame.method = tuuvm_type_lookupSelector(context, gcFrame.receiverType, selector);
+    if(!gcFrame.method)
+    {
+        tuuvm_tuple_t receiverTypeName = tuuvm_tuple_printString(context, gcFrame.receiverType);
+        tuuvm_errorWithMessageTuple(tuuvm_string_concat(context, tuuvm_string_createWithCString(context, "Message notUnderstood by "), receiverTypeName));
+    }
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     
     return tuuvm_function_apply(context, gcFrame.method, argumentCount, arguments, applicationFlags);

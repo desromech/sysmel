@@ -1,0 +1,5 @@
+loadSourceNamed: "Core/package.sysmel".
+
+loadSourceNamed: "MiniSUnit/package.sysmel".
+loadSourceNamed: "Bytecode/package.sysmel".
+loadSourceNamed: "SSA/package.sysmel".

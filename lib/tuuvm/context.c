@@ -406,6 +406,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.astNodeAnalysisSelector = tuuvm_symbol_internWithCString(context, "analyzeWithEnvironment:");
     context->roots.astNodeEvaluationSelector = tuuvm_symbol_internWithCString(context, "evaluateWithEnvironment:");
     context->roots.astNodeAnalysisAndEvaluationSelector = tuuvm_symbol_internWithCString(context, "analyzeAndEvaluateWithEnvironment:");
+    context->roots.astNodeCompileIntoBytecodeSelector = tuuvm_symbol_internWithCString(context, "compileIntoBytecodeWith:");
     
     context->roots.analyzeAndEvaluateMessageSendNodeForReceiverWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "analyzeAndEvaluateMessageSendNode:forReceiver:withEnvironment:");
     context->roots.analyzeMessageSendNodeWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "analyzeMessageSendNode:withEnvironment:");
@@ -992,8 +993,14 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         NULL);
     context->roots.bytecodeCompilerInstructionType = tuuvm_context_createIntrinsicClass(context, "bytecodeCompilerInstructionOperandType", context->roots.objectType,
         "pc", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "endPC", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "opcode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, NULL,
         "operands", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+
+        "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sourcePositionType,
+        "sourceEnvironment", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
+        "sourceASTNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+
         NULL);
     context->roots.bytecodeCompilerInstructionVectorOperandType = tuuvm_context_createIntrinsicClass(context, "BootstrapBytecodeCompilerInstruction", context->roots.bytecodeCompilerInstructionOperandType,
         "index", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.int16Type,
@@ -1005,8 +1012,24 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "hasNonLoadStoreUsage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         NULL);
     context->roots.bytecodeCompilerType = tuuvm_context_createIntrinsicClass(context, "BootstrapBytecodeCompiler", context->roots.objectType,
+        "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "captures", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "literals", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
+        "literalDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.identityDictionaryType,
+        "temporaries", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
+        "usedTemporaryCount", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+
         "firstInstruction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bytecodeCompilerInstructionType,
         "lastInstruction", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bytecodeCompilerInstructionType,
+
+        "breakLabel", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bytecodeCompilerInstructionOperandType,
+        "continueLabel", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bytecodeCompilerInstructionOperandType,
+
+        "sourcePosition", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sourcePositionType,
+        "sourceEnvironment", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
+        "sourceASTNode", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+
+        "bindingDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.dictionaryType,
         NULL);
     
     // Fill the immediate type table.

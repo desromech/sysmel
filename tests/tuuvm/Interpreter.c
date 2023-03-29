@@ -87,6 +87,15 @@ TEST_SUITE(Interpreter)
         TEST_ASSERT_EQUALS(TUUVM_VOID_TUPLE, testAnalyzeAndEvaluateSysmel("{:x | x} (void)"));
     }
 
+    TEST_CASE_WITH_FIXTURE(IfExpression, TuuvmCore)
+    {
+        TEST_ASSERT_EQUALS(tuuvm_tuple_integer_encodeSmall(1), testAnalyzeAndEvaluate("(if:then:else: true 1 2)"));
+        TEST_ASSERT_EQUALS(tuuvm_tuple_integer_encodeSmall(2), testAnalyzeAndEvaluate("(if:then:else: false 1 2)"));
+
+        TEST_ASSERT_EQUALS(tuuvm_tuple_integer_encodeSmall(1), testAnalyzeAndEvaluate("((lambda (cond trueValue falseValue) (if:then:else: cond trueValue falseValue)) true 1 2)"));
+        TEST_ASSERT_EQUALS(tuuvm_tuple_integer_encodeSmall(2), testAnalyzeAndEvaluate("((lambda (cond trueValue falseValue) (if:then:else: cond trueValue falseValue)) false 1 2)"));
+    }
+    
     TEST_CASE_WITH_FIXTURE(Define, TuuvmCore)
     {
         TEST_ASSERT_EQUALS(TUUVM_FALSE_TUPLE, testAnalyzeAndEvaluate("(define myvar false) myvar"));

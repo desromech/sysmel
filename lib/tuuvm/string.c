@@ -411,6 +411,7 @@ void tuuvm_string_setupPrimitives(tuuvm_context_t *context)
     // StringSymbol primitives.
     {
         tuuvm_type_setAsStringFunction(context, context->roots.stringSymbolType, tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE | TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_symbol_primitive_asString));
+        tuuvm_type_setPrintStringFunction(context, context->roots.stringSymbolType, tuuvm_function_createPrimitive(context, 1, TUUVM_FUNCTION_FLAGS_PURE | TUUVM_FUNCTION_FLAGS_FINAL, NULL, tuuvm_symbol_primitive_asString));
     }
 
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "printString", 1, TUUVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, tuuvm_tuple_primitive_printString);
