@@ -163,6 +163,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_jumpIfTrue(tuuvm_context_t *conte
 TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_jumpIfFalse(tuuvm_context_t *context, tuuvm_tuple_t compiler, tuuvm_tuple_t condition, tuuvm_tuple_t destination);
 
 /**
+ * Load instruction.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_load(tuuvm_context_t *context, tuuvm_tuple_t compiler, tuuvm_tuple_t destination, tuuvm_tuple_t pointer);
+
+/**
  * Make array with elements.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_makeArrayWithElements(tuuvm_context_t *context, tuuvm_tuple_t compiler, tuuvm_tuple_t result, tuuvm_tuple_t elements);
@@ -206,6 +211,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_send(tuuvm_context_t *context, tu
  * Send with lookup receiver type instruction.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_sendWithLookupReceiverType(tuuvm_context_t *context, tuuvm_tuple_t compiler, tuuvm_tuple_t result, tuuvm_tuple_t receiverLookupType, tuuvm_tuple_t selector, tuuvm_tuple_t receiver, tuuvm_tuple_t arguments);
+
+/**
+ * Store instruction.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_store(tuuvm_context_t *context, tuuvm_tuple_t compiler, tuuvm_tuple_t pointer, tuuvm_tuple_t value);
 
 /**
  * Creates a bytecode instruction.

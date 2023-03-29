@@ -428,6 +428,10 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.coerceValueSelector = tuuvm_symbol_internWithCString(context, "coerceValue:");
     context->roots.defaultValueSelector = tuuvm_symbol_internWithCString(context, "defaultValue");
 
+    context->roots.anyValueToVoidPrimitiveName = tuuvm_symbol_internWithCString(context, "Void::fromAnyValue");
+    context->roots.pointerLikeLoadPrimitiveName = tuuvm_symbol_internWithCString(context, "PointerLikeType::load");
+    context->roots.pointerLikeStorePrimitiveName = tuuvm_symbol_internWithCString(context, "PointerLikeType::store:");
+
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "nil"), TUUVM_NULL_TUPLE);
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "false"), TUUVM_FALSE_TUPLE);
     tuuvm_context_setIntrinsicSymbolBindingValue(context, tuuvm_symbol_internWithCString(context, "true"), TUUVM_TRUE_TUPLE);

@@ -58,7 +58,11 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t pointerTypeTemplate;
     tuuvm_tuple_t referenceTypeTemplate;
     tuuvm_tuple_t simpleFunctionTypeTemplate;
+    
     tuuvm_tuple_t anyValueToVoidPrimitive;
+    tuuvm_tuple_t anyValueToVoidPrimitiveName;
+    tuuvm_tuple_t pointerLikeLoadPrimitiveName;
+    tuuvm_tuple_t pointerLikeStorePrimitiveName;
 
     tuuvm_tuple_t applyWithoutArgumentsSelector;
     tuuvm_tuple_t applyWithArgumentsSelector;

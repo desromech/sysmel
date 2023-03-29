@@ -55,7 +55,6 @@ printLine(bytecodes asFunction ()).
 ) do: {:functionAndArguments :: Void |
     let function := functionAndArguments first.
     let arguments := functionAndArguments second.
-    function compileIntoBytecode.
 
     printLine(function definition bytecode fullPrintString).
     printLine(arguments, " := ", apply(function, arguments)).

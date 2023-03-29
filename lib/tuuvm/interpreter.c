@@ -2236,20 +2236,6 @@ static tuuvm_tuple_t tuuvm_astFunctionApplicationNode_primitiveEvaluate(tuuvm_co
     size_t applicationArgumentCount = tuuvm_array_getSize((*applicationNode)->arguments);
     gcFrame.function = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*applicationNode)->functionExpression, *environment);
 
-    // For performance reason handle this dummy case in a special way.
-    if(gcFrame.function && gcFrame.function == context->roots.anyValueToVoidPrimitive)
-    {
-        for(size_t i = 0; i < applicationArgumentCount; ++i)
-        {
-            gcFrame.argumentNode = tuuvm_array_at((*applicationNode)->arguments, i);
-            tuuvm_interpreter_evaluateASTWithEnvironment(context, gcFrame.argumentNode, *environment);
-        }
-
-        TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
-        TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-        return TUUVM_VOID_TUPLE;
-    }
-
     tuuvm_functionCallFrameStack_t callFrameStack = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(callFrameStackRecord, callFrameStack.gcRoots);
     tuuvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.function, applicationArgumentCount);
