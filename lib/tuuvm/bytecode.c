@@ -15,9 +15,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(__x86_64__)
+#if defined(__x86_64__) && !defined(_WIN32)
 #   define TUUVM_JIT_SUPPORTED
-static bool tuuvm_bytecodeJit_enabled = true;
 #endif
 
 static bool tuuvm_bytecodeInterpreter_tablesAreFilled;
@@ -42,7 +41,7 @@ static void tuuvm_bytecodeInterpreter_ensureTablesAreFilled()
     tuuvm_bytecodeInterpreter_tablesAreFilled = true;
 }
 
-static uint8_t tuuvm_bytecodeInterpreter_destinationOperandCountForOpcode(uint8_t opcode)
+TUUVM_API uint8_t tuuvm_bytecodeInterpreter_destinationOperandCountForOpcode(uint8_t opcode)
 {
     switch(opcode)
     {
@@ -146,10 +145,7 @@ static tuuvm_tuple_t tuuvm_bytecodeInterpreter_interpretSendWithReceiverTypeNoCo
     if(selector != context->roots.doesNotUnderstandSelector)
         method = tuuvm_type_lookupSelector(context, receiverType, selector);
     if(!method)
-    {
-        tuuvm_bytecodeJit_enabled = false; 
         tuuvm_error("Message not understood");
-    }
 
     // Make the message.
     tuuvm_tuple_t arguments = tuuvm_array_create(context, argumentCount);
@@ -496,7 +492,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_activateAndApply(tuuvm_context
 TUUVM_API tuuvm_tuple_t tuuvm_bytecodeInterpreter_apply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
 #ifdef TUUVM_JIT_SUPPORTED
-    if(tuuvm_bytecodeJit_enabled)
+    if(context->jitEnabled)
     {
         tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
         tuuvm_functionDefinition_t *functionDefinitionObject = (tuuvm_functionDefinition_t*)functionObject->definition;

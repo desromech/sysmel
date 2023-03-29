@@ -168,14 +168,25 @@ public final class FunctionBytecodeAssemblerInstruction superclass: FunctionByte
             ) continueWith: (i := i + 1sz)
         }.
 
-        if: self isLoadStoreInstruction then: {
+        ## FIXME: Handle the store value properly here.
+        if: self isLoadInstruction then: {
             while: i < operandCount do: (
                 (operands at: i) hasLoadStoreUsage: true
             ) continueWith: (i := i + 1sz)
         } else: {
-            while: i < operandCount do: (
-                (operands at: i) hasNonLoadStoreUsage: true
-            ) continueWith: (i := i + 1sz)
+            if: self isStoreInstruction then: {
+                while: i < operandCount do: (
+                    if: i = 0sz then: {
+                        (operands at: i) hasLoadStoreUsage: true
+                    } else: {
+                        (operands at: i) hasLoadStoreUsage: false
+                    }
+                ) continueWith: (i := i + 1sz)
+            } else: {
+                while: i < operandCount do: (
+                    (operands at: i) hasNonLoadStoreUsage: true
+                ) continueWith: (i := i + 1sz)
+            }
         }
     }.
 

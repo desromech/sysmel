@@ -213,7 +213,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_newTemporary(tuuvm_context_t *con
     tuuvm_bytecodeCompiler_t *compilerObject = (tuuvm_bytecodeCompiler_t*)compiler;
     size_t temporaryIndex = tuuvm_arrayList_getSize(compilerObject->temporaries);
     tuuvm_tuple_t temporaryOperand = tuuvm_bytecodeCompilerInstructionVectorOperand_create(context, TUUVM_OPERAND_VECTOR_LOCAL, temporaryIndex);
-    tuuvm_arrayList_add(context, compilerObject->temporaries, temporaryIndex);
+    tuuvm_arrayList_add(context, compilerObject->temporaries, temporaryOperand);
     return temporaryOperand;
 }
 
@@ -498,6 +498,156 @@ static size_t tuuvm_bytecodeCompilerInstruction_assembleInto(tuuvm_context_t *co
     return offset;
 }
 
+static void tuuvm_bytecodeCompiler_removeInstruction(tuuvm_bytecodeCompiler_t *compiler, tuuvm_bytecodeCompilerInstruction_t *instruction)
+{
+    tuuvm_bytecodeCompilerInstruction_t *previous = instruction->previous;
+    tuuvm_bytecodeCompilerInstruction_t *next = instruction->next;
+
+    if(previous)
+        previous->next = next;
+    else
+        compiler->firstInstruction = next;
+
+    if(next)
+        next->previous = previous;
+    else
+        compiler->lastInstruction = previous;
+}
+
+static void tuuvm_bytecodeCompiler_optimizeJumps(tuuvm_bytecodeCompiler_t *compiler)
+{
+    tuuvm_bytecodeCompilerInstruction_t *instruction = compiler->firstInstruction;
+    while(instruction)
+    {
+        tuuvm_bytecodeCompilerInstruction_t *nextInstruction = instruction->next;
+        uint8_t opcode = tuuvm_tuple_uint8_decode(instruction->opcode);
+        if(opcode == TUUVM_OPCODE_JUMP || opcode == TUUVM_OPCODE_JUMP_IF_TRUE || opcode == TUUVM_OPCODE_JUMP_IF_FALSE)
+        {
+            tuuvm_tuple_t lastOperand = tuuvm_array_at(instruction->operands, tuuvm_array_getSize(instruction->operands) - 1);
+            if(lastOperand == (tuuvm_tuple_t)nextInstruction)
+                tuuvm_bytecodeCompiler_removeInstruction(compiler, instruction);
+
+        }
+
+        instruction = nextInstruction;
+    }
+
+}
+
+static void tuuvm_bytecodeCompiler_markInstructionOperandUsages(tuuvm_context_t *context, tuuvm_bytecodeCompilerInstruction_t *instruction)
+{
+    (void)context;
+    // Ignore labels.
+    if(!instruction->opcode || !instruction->operands)
+        return;
+
+    uint8_t opcode = tuuvm_tuple_uint8_decode(instruction->opcode);
+    uint8_t destinationOperandCount = tuuvm_bytecodeInterpreter_destinationOperandCountForOpcode(opcode);
+
+    size_t operandCount = tuuvm_array_getSize(instruction->operands);
+    if(opcode == TUUVM_OPCODE_JUMP || opcode == TUUVM_OPCODE_JUMP_IF_TRUE || opcode == TUUVM_OPCODE_JUMP_IF_FALSE)
+        --operandCount;
+    
+    // Mark the destination operands.
+    for(size_t i = 0; i < destinationOperandCount; ++i)
+    {
+        tuuvm_bytecodeCompilerInstructionVectorOperand_t *operand = (tuuvm_bytecodeCompilerInstructionVectorOperand_t*)tuuvm_array_at(instruction->operands, i);
+        if(opcode == TUUVM_OPCODE_ALLOCA || opcode == TUUVM_OPCODE_ALLOCA_WITH_VALUE)
+            operand->hasAllocaDestination = TUUVM_TRUE_TUPLE;
+        else
+            operand->hasNonAllocaDestination = TUUVM_TRUE_TUPLE;
+    }
+
+    // Mark the used operands.
+    for(size_t i = destinationOperandCount; i < operandCount; ++i)
+    {
+        tuuvm_bytecodeCompilerInstructionVectorOperand_t *operand = (tuuvm_bytecodeCompilerInstructionVectorOperand_t*)tuuvm_array_at(instruction->operands, i);
+        if(opcode == TUUVM_OPCODE_LOAD)
+            operand->hasLoadStoreUsage = TUUVM_TRUE_TUPLE;
+        else if(opcode == TUUVM_OPCODE_STORE && i == 0)
+            operand->hasLoadStoreUsage = TUUVM_TRUE_TUPLE;
+        else
+            operand->hasNonLoadStoreUsage = TUUVM_TRUE_TUPLE;
+    }
+}
+
+static bool tuuvm_bytecodeCompiler_isLocalOnlyAlloca(tuuvm_tuple_t operand)
+{
+    tuuvm_bytecodeCompilerInstructionVectorOperand_t *vectorOperand = (tuuvm_bytecodeCompilerInstructionVectorOperand_t*)operand;
+
+    bool hasAllocaDestination = tuuvm_tuple_boolean_decode(vectorOperand->hasAllocaDestination);
+    bool hasNonAllocaDestination = tuuvm_tuple_boolean_decode(vectorOperand->hasNonAllocaDestination);
+    bool hasLoadStoreUsage = tuuvm_tuple_boolean_decode(vectorOperand->hasLoadStoreUsage);
+    bool hasNonLoadStoreUsage = tuuvm_tuple_boolean_decode(vectorOperand->hasNonLoadStoreUsage);
+    
+    return (hasAllocaDestination && !hasNonAllocaDestination) &&
+        (hasLoadStoreUsage && !hasNonLoadStoreUsage);
+}
+
+static void tuuvm_bytecodeCompiler_optimizeLocalOnlyAlloca(tuuvm_context_t *context, tuuvm_tuple_t compiler, tuuvm_bytecodeCompilerInstruction_t *instruction)
+{
+    // Ignore labels.
+    if(!instruction->opcode || !instruction->operands)
+        return;
+
+    uint8_t opcode = tuuvm_tuple_uint8_decode(instruction->opcode);
+    if(opcode == TUUVM_OPCODE_ALLOCA
+        && tuuvm_bytecodeCompiler_isLocalOnlyAlloca(tuuvm_array_at(instruction->operands, 0)))
+    {
+        instruction->opcode = tuuvm_tuple_uint8_encode(TUUVM_OPCODE_MOVE);
+        tuuvm_array_atPut(instruction->operands, 1, tuuvm_bytecodeCompiler_addLiteral(context, compiler, TUUVM_NULL_TUPLE));
+    }
+    else if(opcode == TUUVM_OPCODE_ALLOCA_WITH_VALUE
+        && tuuvm_bytecodeCompiler_isLocalOnlyAlloca(tuuvm_array_at(instruction->operands, 0)))
+    {
+        tuuvm_tuple_t newOperands = tuuvm_array_create(context, 2);
+        tuuvm_array_atPut(newOperands, 0, tuuvm_array_at(instruction->operands, 0));
+        tuuvm_array_atPut(newOperands, 1, tuuvm_array_at(instruction->operands, 2));
+        instruction->opcode = tuuvm_tuple_uint8_encode(TUUVM_OPCODE_MOVE);
+        instruction->operands = newOperands;
+    }
+    else if(opcode == TUUVM_OPCODE_LOAD
+        && tuuvm_bytecodeCompiler_isLocalOnlyAlloca(tuuvm_array_at(instruction->operands, 1)))
+    {
+        instruction->opcode = tuuvm_tuple_uint8_encode(TUUVM_OPCODE_MOVE);
+    }
+    else if(opcode == TUUVM_OPCODE_STORE
+        && tuuvm_bytecodeCompiler_isLocalOnlyAlloca(tuuvm_array_at(instruction->operands, 0)))
+    {
+        instruction->opcode = tuuvm_tuple_uint8_encode(TUUVM_OPCODE_MOVE);
+    }
+}
+
+static void tuuvm_bytecodeCompiler_optimizeTemporaries(tuuvm_context_t *context, tuuvm_bytecodeCompiler_t *compiler)
+{
+    // Clear the temporaries usage flags.
+    size_t temporaryCount = tuuvm_arrayList_getSize(compiler->temporaries);
+    for(size_t i = 0; i < temporaryCount; ++i)
+    {
+        tuuvm_bytecodeCompilerInstructionVectorOperand_t *temporary = (tuuvm_bytecodeCompilerInstructionVectorOperand_t*)tuuvm_arrayList_at(compiler->temporaries, i);
+        temporary->hasAllocaDestination = TUUVM_FALSE_TUPLE;
+        temporary->hasNonAllocaDestination = TUUVM_FALSE_TUPLE;
+        temporary->hasLoadStoreUsage = TUUVM_FALSE_TUPLE;
+        temporary->hasNonLoadStoreUsage = TUUVM_FALSE_TUPLE;
+    }
+
+    // Mark the temporaries per instruction usage.
+    tuuvm_bytecodeCompilerInstruction_t *instruction = compiler->firstInstruction;
+    while(instruction)
+    {
+        tuuvm_bytecodeCompiler_markInstructionOperandUsages(context, instruction);
+        instruction = instruction->next;
+    }
+
+    // Optimize the local only allocas.
+    instruction = compiler->firstInstruction;
+    while(instruction)
+    {
+        tuuvm_bytecodeCompiler_optimizeLocalOnlyAlloca(context, (tuuvm_tuple_t)compiler, instruction);
+        instruction = instruction->next;
+    }
+}
+
 TUUVM_API void tuuvm_bytecodeCompiler_compileFunctionDefinition(tuuvm_context_t *context, tuuvm_functionDefinition_t *definition_)
 {
     struct {
@@ -546,9 +696,11 @@ TUUVM_API void tuuvm_bytecodeCompiler_compileFunctionDefinition(tuuvm_context_t 
     if(gcFrame.bodyResult)
         tuuvm_bytecodeCompiler_return(context, (tuuvm_tuple_t)gcFrame.compiler, gcFrame.bodyResult);
 
+    // Perform some optimizations.
+    tuuvm_bytecodeCompiler_optimizeJumps(gcFrame.compiler);
+    tuuvm_bytecodeCompiler_optimizeTemporaries(context, gcFrame.compiler);
     
-    // TODO: Optimize the temporaries.
-    // TODO: Optimize the jumps onto the next instruction.
+    // Assemble the instructions.
     gcFrame.compiler->usedTemporaryCount = tuuvm_tuple_size_encode(context, tuuvm_arrayList_getSize(gcFrame.compiler->temporaries));
 
     gcFrame.bytecode = (tuuvm_functionBytecode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.functionBytecodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_functionBytecode_t));
@@ -576,6 +728,21 @@ TUUVM_API void tuuvm_bytecodeCompiler_compileFunctionDefinition(tuuvm_context_t 
     gcFrame.definition->bytecode = (tuuvm_tuple_t)gcFrame.bytecode;
 }
 
+static tuuvm_tuple_t tuuvm_astBreakNode_primitiveCompileIntoBytecode(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    //tuuvm_tuple_t *node = &arguments[0];
+    tuuvm_bytecodeCompiler_t **compiler = (tuuvm_bytecodeCompiler_t **)&arguments[1];
+    if(!(*compiler)->breakLabel)
+        tuuvm_error("Break statement in wrong location.");
+    tuuvm_bytecodeCompiler_jump(context, (tuuvm_tuple_t)*compiler, (*compiler)->breakLabel);
+     
+    return tuuvm_bytecodeCompiler_addLiteral(context, (tuuvm_tuple_t)*compiler, TUUVM_VOID_TUPLE);
+}
+
 static tuuvm_tuple_t tuuvm_astCoerceValueNode_primitiveCompileIntoBytecode(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
@@ -600,6 +767,21 @@ static tuuvm_tuple_t tuuvm_astCoerceValueNode_primitiveCompileIntoBytecode(tuuvm
 
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
+}
+
+static tuuvm_tuple_t tuuvm_astContinueNode_primitiveCompileIntoBytecode(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    //tuuvm_tuple_t *node = &arguments[0];
+    tuuvm_bytecodeCompiler_t **compiler = (tuuvm_bytecodeCompiler_t **)&arguments[1];
+    if(!(*compiler)->continueLabel)
+        tuuvm_error("Continue statement in wrong location.");
+    tuuvm_bytecodeCompiler_jump(context, (tuuvm_tuple_t)*compiler, (*compiler)->continueLabel);
+     
+    return tuuvm_bytecodeCompiler_addLiteral(context, (tuuvm_tuple_t)*compiler, TUUVM_VOID_TUPLE);
 }
 
 static tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_primitiveCompileIntoBytecode(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -1191,7 +1373,9 @@ static void tuuvm_bytecodeCompiler_setupNodeCompilationFunction(tuuvm_context_t 
 
 void tuuvm_bytecodeCompiler_registerPrimitives(void)
 {
+    tuuvm_primitiveTable_registerFunction(tuuvm_astBreakNode_primitiveCompileIntoBytecode, "ASTBreakNode::compileIntoBytecodeWith:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astCoerceValueNode_primitiveCompileIntoBytecode, "ASTCoerceValueNode::compileIntoBytecodeWith:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astContinueNode_primitiveCompileIntoBytecode, "ASTContinueNode::compileIntoBytecodeWith:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveCompileIntoBytecode, "ASTDoWhileContinueWithNode::compileIntoBytecodeWith:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astFunctionApplicationNode_primitiveCompileIntoBytecode, "ASTFunctionApplicationNode::compileIntoBytecodeWith:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astIdentifierReferenceNode_primitiveCompileIntoBytecode, "ASTIdentifierReferenceNode::compileIntoBytecodeWith:");
@@ -1212,7 +1396,9 @@ void tuuvm_bytecodeCompiler_registerPrimitives(void)
 
 void tuuvm_bytecodeCompiler_setupPrimitives(tuuvm_context_t *context)
 {
+    tuuvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astBreakNodeType, &tuuvm_astBreakNode_primitiveCompileIntoBytecode);
     tuuvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astCoerceValueNodeType, &tuuvm_astCoerceValueNode_primitiveCompileIntoBytecode);
+    tuuvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astContinueNodeType, &tuuvm_astContinueNode_primitiveCompileIntoBytecode);
     tuuvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astDoWhileContinueWithNodeType, &tuuvm_astDoWhileContinueWithNode_primitiveCompileIntoBytecode);
     tuuvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astFunctionApplicationNodeType, &tuuvm_astFunctionApplicationNode_primitiveCompileIntoBytecode);
     tuuvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astIdentifierReferenceNodeType, &tuuvm_astIdentifierReferenceNode_primitiveCompileIntoBytecode);

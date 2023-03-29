@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include <string.h>
 
+static bool tuuvm_context_default_jitEnabled = true;
+
 extern void tuuvm_array_registerPrimitives(void);
 extern void tuuvm_arrayList_registerPrimitives(void);
 extern void tuuvm_astInterpreter_registerPrimitives(void);
@@ -1066,6 +1068,7 @@ TUUVM_API tuuvm_context_t *tuuvm_context_create(void)
     tuuvm_context_t *context = (tuuvm_context_t*)calloc(1, sizeof(tuuvm_context_t));
     context->targetWordSize = sizeof(void*);
     context->identityHashSeed = 1;
+    context->jitEnabled = tuuvm_context_default_jitEnabled;
     tuuvm_heap_initialize(&context->heap);
     tuuvm_gc_lock(context);
 
@@ -1129,6 +1132,8 @@ TUUVM_API tuuvm_context_t *tuuvm_context_loadImageFromFileNamed(const char *file
         free(context);
         return NULL;
     }
+    
+    context->jitEnabled = tuuvm_context_default_jitEnabled;
 
     fclose(inputFile);
 

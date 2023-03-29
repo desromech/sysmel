@@ -281,6 +281,7 @@ struct tuuvm_context_s
     tuuvm_context_roots_t roots;
     uint32_t targetWordSize;
     size_t identityHashSeed;
+    bool jitEnabled;
 };
 
 #endif //TUUVM_INTERNAL_CONTEXT_H
