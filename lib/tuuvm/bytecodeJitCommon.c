@@ -151,6 +151,7 @@ static void tuuvm_bytecodeJit_addRelocation(tuuvm_bytecodeJit_t *jit, tuuvm_byte
 static void tuuvm_bytecodeJit_jitFree(tuuvm_bytecodeJit_t *jit)
 {
     free(jit->instructions);
+    free(jit->constants);
     free(jit->relocations);
     free(jit->pcRelocations);
     free(jit->pcDestinations);
