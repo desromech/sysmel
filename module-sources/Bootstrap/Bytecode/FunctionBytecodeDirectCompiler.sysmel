@@ -238,7 +238,7 @@ ASTWhileContinueWithNode extend: {
         ## Body
         assembler beginLabel: bodyLabel.
         self bodyExpression ifNotNil: {:(ASTNode)expression :: Void |
-            compiler withBreakLabel: mergeLabel continueLabel: continueLabel do: {|
+            compiler withBreakLabel: mergeLabel continueLabel: continueLabel do: { :: Void |
                 expression compileBytecodesDirectlyWith: compiler
             }.
         }.

@@ -15,7 +15,7 @@ Class
 Object publicSubclass: #MetaBuilder slots: ().
 
 MetaBuilder
-    withSelector: #analyzeAndEvaluateMessageSendNode:forReceiver:withEnvironment: addClassMethod: {:self :(ASTMessageSendNode)messageSendNode :receiver :(Environment)environment |
+    withSelector: #analyzeAndEvaluateMessageSendNode:forReceiver:withEnvironment: addClassMethod: {:self :(ASTMessageSendNode)messageSendNode :(Untyped)receiver :(Environment)environment |
         let: #selfReceiver with: (ASTLiteralNode new
             sourcePosition: messageSendNode receiver sourcePosition;
             value: receiver;
@@ -29,13 +29,13 @@ MetaBuilder
     withSelector: #analyzeMessageSendNode:withEnvironment: addClassMethod: {:self :(ASTMessageSendNode)messageSendNode :(Environment)environment |
         messageSendNode receiver value analyzeMessageSendNode: messageSendNode withEnvironment: environment
     };
-    withSelector: #analyzeAndEvaluateMessageChainNode:forReceiver:withEnvironment: addClassMethod: {:self :messageChainNode :receiver :(Environment)environment |
+    withSelector: #analyzeAndEvaluateMessageChainNode:forReceiver:withEnvironment: addClassMethod: {:self :messageChainNode :(Untyped)receiver :(Environment)environment :: Untyped |
         let: #selfReceiver with: (ASTLiteralNode new
             sourcePosition: messageChainNode receiver sourcePosition;
             value: receiver;
             yourself). 
         
-        let: #result type: nil mutableWith: receiver.
+        let: #result type: Untyped mutableWith: receiver.
 
         messageChainNode messages do: {:messageChainMessageNode :: Void |
             result := receiver analyzeAndEvaluateMessageSendNode: (messageChainMessageNode asMessageSendNodeWithReceiver: selfReceiver) withEnvironment: environment

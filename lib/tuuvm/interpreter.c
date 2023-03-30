@@ -40,6 +40,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithEnvironment(tuuvm_contex
 {
     struct {
         tuuvm_tuple_t function;
+        tuuvm_tuple_t result;
     } gcFrame = {0};
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
@@ -47,8 +48,18 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithEnvironment(tuuvm_contex
     if(!gcFrame.function)
         tuuvm_error("Cannot analyze non AST node tuple.");
 
+    gcFrame.result = tuuvm_function_applyNoCheck2(context, gcFrame.function, astNode, environment);
+    if(!tuuvm_astNode_getAnalyzedType(gcFrame.result))
+    {
+        tuuvm_tuple_t nodeTypeString = tuuvm_tuple_printString(context, tuuvm_tuple_getType(context, gcFrame.result));
+        tuuvm_errorWithMessageTuple(tuuvm_string_concat(context,
+            nodeTypeString,
+            tuuvm_string_createWithCString(context, " without analyzed type"))
+        );
+    }
+
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-    return tuuvm_function_applyNoCheck2(context, gcFrame.function, astNode, environment);
+    return gcFrame.result;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_interpreter_evaluateASTWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t environment)
@@ -438,7 +449,7 @@ static tuuvm_tuple_t tuuvm_astSequenceNode_primitiveAnalyze(tuuvm_context_t *con
     gcFrame.expressions = (*sequenceNode)->expressions;
     size_t pragmaCount = tuuvm_array_getSize(gcFrame.pragmas);
     size_t expressionCount = tuuvm_array_getSize(gcFrame.expressions);
-    if(pragmaCount == 0 && expressionCount == 0)
+    if(pragmaCount == 0 && expressionCount == 0 && (*sequenceNode)->super.analyzedType)
     {
         TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
         TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -459,6 +470,7 @@ static tuuvm_tuple_t tuuvm_astSequenceNode_primitiveAnalyze(tuuvm_context_t *con
     gcFrame.analyzedSequenceNode->pragmas = gcFrame.analyzedPragmas;
 
     gcFrame.analyzedExpressions = tuuvm_array_create(context, expressionCount);
+    gcFrame.resultType = context->roots.voidType;
     for(size_t i = 0; i < expressionCount; ++i)
     {
         gcFrame.expression = tuuvm_array_at(gcFrame.expressions, i);
@@ -693,6 +705,13 @@ static tuuvm_tuple_t tuuvm_astArgumentNode_primitiveAnalyze(tuuvm_context_t *con
         if(tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedType))
             gcFrame.evaluatedType = tuuvm_astLiteralNode_getValue(gcFrame.analyzedType);
     }
+
+    // TODO: Fetch or attempt to infer the default argument type from a more proper place.
+    if(!gcFrame.argumentNode->type)
+        gcFrame.argumentNode->type = tuuvm_astLiteralNode_create(context, gcFrame.argumentNode->super.sourcePosition, context->roots.anyValueType);
+    if(!gcFrame.evaluatedType)
+        gcFrame.evaluatedType = context->roots.anyValueType;
+    gcFrame.argumentNode->super.analyzedType = gcFrame.evaluatedType;
 
     if(gcFrame.evaluatedName)
     {
@@ -1018,6 +1037,8 @@ static tuuvm_tuple_t tuuvm_astLambdaNode_primitiveAnalyze(tuuvm_context_t *conte
 
     // Perform the lambda analysis.
     tuuvm_functionDefinition_ensureAnalysis(context, &gcFrame.functionDefinition);
+
+    gcFrame.lambdaNode->super.analyzedType = gcFrame.functionDefinition->analyzedType;
 
     // Optimize lambdas without captures by turning them onto a literal.
     if(tuuvm_array_getSize(gcFrame.functionDefinition->analyzedCaptures) == 0)
@@ -1719,7 +1740,7 @@ static tuuvm_tuple_t tuuvm_astIfNode_primitiveAnalyze(tuuvm_context_t *context, 
     }
 
     // Require the same, otherwise fallback to void.
-    gcFrame.ifNode->super.analyzedType = TUUVM_NULL_TUPLE;
+    gcFrame.ifNode->super.analyzedType = context->roots.anyValueType;
     if(gcFrame.analyzedTrueExpression && gcFrame.analyzedFalseExpression)
     {
         gcFrame.analyzedTrueExpressionType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedTrueExpression);
@@ -3220,6 +3241,7 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyze(tuuvm_context_t *
             
             gcFrame.analyzedReceiverTypeExpression = objectLookup->typeExpression;
             gcFrame.sendNode->receiverLookupType = gcFrame.analyzedReceiverTypeExpression;
+            
         }
         else if(gcFrame.sendNode->receiverLookupType)
         {
@@ -3300,8 +3322,8 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyze(tuuvm_context_t *
     }
 
     // Turn this node onto an unexpanded application.
-    bool hasExplicitLookupType = gcFrame.sendNode->receiverLookupType != TUUVM_NULL_TUPLE;
-    if(gcFrame.method && (hasExplicitLookupType || tuuvm_function_shouldOptimizeLookup(context, gcFrame.method, gcFrame.receiverType, tuuvm_astNode_isLiteralNode(context, gcFrame.sendNode->receiver))))
+    bool hasExplicitSolvedLookupType = tuuvm_astNode_isLiteralNode(context, gcFrame.sendNode->receiverLookupType);
+    if(gcFrame.method && (hasExplicitSolvedLookupType || tuuvm_function_shouldOptimizeLookup(context, gcFrame.method, gcFrame.receiverType, tuuvm_astNode_isLiteralNode(context, gcFrame.sendNode->receiver))))
     {
         size_t applicationArgumentCount = tuuvm_array_getSize(gcFrame.sendNode->arguments);
         gcFrame.newMethodNode = tuuvm_astLiteralNode_create(context, gcFrame.sendNode->super.sourcePosition, gcFrame.method);
