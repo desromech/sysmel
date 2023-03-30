@@ -436,6 +436,46 @@ AnyValue
             trueExpression: trueExpression;
             falseExpression: falseExpression;
             yourself
+    } makeMacro;
+    withSelector: #perform: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)selector :: ASTMessageSendNode |
+        ASTMessageSendNode new
+            sourcePosition: macroContext sourcePosition;
+            receiver: self;
+            selector: selector;
+            arguments: Array new;
+            yourself
+    } makeMacro;
+    withSelector: #perform:with: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)selector :(ASTNode)argument :: ASTMessageSendNode |
+        ASTMessageSendNode new
+            sourcePosition: macroContext sourcePosition;
+            receiver: self;
+            selector: selector;
+            arguments: (Array with: argument);
+            yourself
+    } makeMacro;
+    withSelector: #perform:with:with: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)selector :(ASTNode)firstArgument :(ASTNode)secondArgument :: ASTMessageSendNode |
+        ASTMessageSendNode new
+            sourcePosition: macroContext sourcePosition;
+            receiver: self;
+            selector: selector;
+            arguments: (Array with: firstArgument with: secondArgument);
+            yourself
+    } makeMacro;
+    withSelector: #perform:with:with:with: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)selector :(ASTNode)firstArgument :(ASTNode)secondArgument :(ASTNode)thirdArgument :: ASTMessageSendNode |
+        ASTMessageSendNode new
+            sourcePosition: macroContext sourcePosition;
+            receiver: self;
+            selector: selector;
+            arguments: (Array with: firstArgument with: secondArgument with: thirdArgument);
+            yourself
+    } makeMacro;
+    withSelector: #perform:with:with:with:with: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)selector :(ASTNode)firstArgument :(ASTNode)secondArgument :(ASTNode)thirdArgument :(ASTNode)fourthArgument :: ASTMessageSendNode |
+        ASTMessageSendNode new
+            sourcePosition: macroContext sourcePosition;
+            receiver: self;
+            selector: selector;
+            arguments: (Array with: firstArgument with: secondArgument with: thirdArgument with: fourthArgument);
+            yourself
     } makeMacro.
 
 AnyReference

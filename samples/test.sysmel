@@ -16,3 +16,6 @@ printLine(Type supertype).
 printLine(Type supertype supertype).
 printLine(Type supertype supertype supertype).
 
+printLine(1 perform: #+ with: 2).
+
+

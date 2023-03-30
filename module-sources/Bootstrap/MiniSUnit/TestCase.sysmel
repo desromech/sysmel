@@ -15,7 +15,10 @@ public abstract class TestCase superclass: TestAsserter; definition: {
         }.
 
         public method run: (testSelector: Symbol) ::=> Void := {
-            printLine(testSelector).
+            self new
+                setUp;
+                perform: testSelector;
+                tearDown.
         }.
 
         public method testSelectors => Array := {
