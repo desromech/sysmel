@@ -656,6 +656,18 @@ TUUVM_API void tuuvm_bytecodeCompiler_compileFunctionDefinition(tuuvm_context_t 
         tuuvm_tuple_t bodyResult;
         tuuvm_functionBytecode_t *bytecode;
         tuuvm_bytecodeCompilerInstruction_t *instruction;
+
+        tuuvm_tuple_t pcToDebugListTable;
+        tuuvm_tuple_t debugSourceTuple;
+        tuuvm_tuple_t debugSourceASTNodes;
+        tuuvm_tuple_t debugSourcePositions;
+        tuuvm_tuple_t debugSourceEnvironments;
+        tuuvm_tuple_t debugListsDictionary;
+        tuuvm_tuple_t tableEntry;
+
+        tuuvm_tuple_t debugPC;
+        tuuvm_tuple_t lastDebugPC;
+        tuuvm_tuple_t lastTableEntity;
     } gcFrame = {
         .definition = (tuuvm_functionDefinition_t*)definition_,
     };
@@ -709,13 +721,46 @@ TUUVM_API void tuuvm_bytecodeCompiler_compileFunctionDefinition(tuuvm_context_t 
     gcFrame.bytecode->localVectorSize = gcFrame.compiler->usedTemporaryCount;
     gcFrame.bytecode->literalVector = tuuvm_arrayList_asArray(context, gcFrame.compiler->literals);
 
+    // Tables for the debug information.
+    gcFrame.pcToDebugListTable = tuuvm_arrayList_create(context);
+    gcFrame.debugSourceASTNodes = tuuvm_arrayList_create(context);
+    gcFrame.debugSourcePositions = tuuvm_arrayList_create(context);
+    gcFrame.debugSourceEnvironments = tuuvm_arrayList_create(context);
+    gcFrame.debugListsDictionary = tuuvm_dictionary_create(context);
+
     // Assemble the instructions.
     size_t instructionsOffset = 0;
     for(gcFrame.instruction = gcFrame.compiler->firstInstruction; gcFrame.instruction; gcFrame.instruction = gcFrame.instruction->next)
     {
+        size_t pc = instructionsOffset;
         gcFrame.instruction->pc = tuuvm_tuple_size_encode(context, instructionsOffset);
         instructionsOffset += tuuvm_bytecodeCompilerInstruction_computeAssembledSize(gcFrame.instruction);
         gcFrame.instruction->endPC = tuuvm_tuple_size_encode(context, instructionsOffset);
+
+        // Ensure the debug source tuple is on their respective tables.
+        gcFrame.debugSourceTuple = tuuvm_array_create(context, 3);
+        tuuvm_array_atPut(gcFrame.debugSourceTuple, 0, gcFrame.instruction->sourceASTNode);
+        tuuvm_array_atPut(gcFrame.debugSourceTuple, 1, gcFrame.instruction->sourcePosition);
+        tuuvm_array_atPut(gcFrame.debugSourceTuple, 2, gcFrame.instruction->sourceEnvironment);
+        if(!tuuvm_dictionary_find(context, gcFrame.debugListsDictionary, gcFrame.debugSourceTuple, &gcFrame.tableEntry))
+        {
+            gcFrame.tableEntry = tuuvm_tuple_size_encode(context, tuuvm_arrayList_getSize(gcFrame.debugSourceASTNodes));
+            tuuvm_dictionary_atPut(context, gcFrame.debugListsDictionary, gcFrame.debugSourceTuple, gcFrame.tableEntry);
+
+            tuuvm_arrayList_add(context, gcFrame.debugSourceASTNodes, gcFrame.instruction->sourceASTNode);
+            tuuvm_arrayList_add(context, gcFrame.debugSourcePositions, gcFrame.instruction->sourcePosition);
+            tuuvm_arrayList_add(context, gcFrame.debugSourceEnvironments, gcFrame.instruction->sourceEnvironment);
+        }
+
+        gcFrame.debugPC = tuuvm_tuple_size_encode(context, pc);
+        if(gcFrame.debugPC != gcFrame.lastDebugPC || gcFrame.tableEntry != gcFrame.lastTableEntity)
+        {
+            tuuvm_arrayList_add(context, gcFrame.pcToDebugListTable, gcFrame.debugPC);
+            tuuvm_arrayList_add(context, gcFrame.pcToDebugListTable, gcFrame.tableEntry);
+        }
+
+        gcFrame.lastDebugPC = gcFrame.debugPC;
+        gcFrame.lastTableEntity = gcFrame.tableEntry;
     }
 
     gcFrame.bytecode->instructions = tuuvm_byteArray_create(context, instructionsOffset);
@@ -726,6 +771,11 @@ TUUVM_API void tuuvm_bytecodeCompiler_compileFunctionDefinition(tuuvm_context_t 
 
     // Finish by installing it on the definition.
     gcFrame.definition->bytecode = (tuuvm_tuple_t)gcFrame.bytecode;
+
+    gcFrame.bytecode->pcToDebugListTable = tuuvm_arrayList_asArray(context, gcFrame.pcToDebugListTable);
+    gcFrame.bytecode->debugSourceASTNodes = tuuvm_arrayList_asArray(context, gcFrame.debugSourceASTNodes);
+    gcFrame.bytecode->debugSourcePositions = tuuvm_arrayList_asArray(context, gcFrame.debugSourcePositions);
+    gcFrame.bytecode->debugSourceEnvironments = tuuvm_arrayList_asArray(context, gcFrame.debugSourceEnvironments);
 }
 
 static tuuvm_tuple_t tuuvm_astBreakNode_primitiveCompileIntoBytecode(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
