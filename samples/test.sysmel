@@ -4,4 +4,15 @@ AnyValue withAllSubtypesDo: {:each |
 }.
 *#
 
-printLine("Function bytecodes ", FunctionBytecode allInstances size).
+##printLine("Function bytecodes ", FunctionBytecode allInstances size).
+
+printLine(Untyped).
+printLine(Untyped __type__).
+
+printLine(AnyValue).
+printLine(AnyValue __type__).
+
+printLine(Type supertype).
+printLine(Type supertype supertype).
+printLine(Type supertype supertype supertype).
+

@@ -166,6 +166,16 @@ TUUVM_API tuuvm_tuple_t tuuvm_typeSlot_create(tuuvm_context_t *context, tuuvm_tu
 TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymous(tuuvm_context_t *context);
 
 /**
+ * Creates an anonymous metatype.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousMetatype(tuuvm_context_t *context);
+
+/**
+ * Creates an anonymous type with a corresponding metatype.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousAndMetatype(tuuvm_context_t *context);
+
+/**
  * Creates an anonymous class type.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousClass(tuuvm_context_t *context, tuuvm_tuple_t supertype, tuuvm_tuple_t metaclass);

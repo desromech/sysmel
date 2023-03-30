@@ -296,12 +296,10 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiv
 static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
 {
     // Make a circular base type.
-    context->roots.untypedType = tuuvm_type_createAnonymous(context);
-    context->roots.anyValueType = tuuvm_type_createAnonymous(context);
+    context->roots.untypedType = tuuvm_type_createAnonymousAndMetatype(context);
+    context->roots.anyValueType = tuuvm_type_createAnonymousAndMetatype(context);
     context->roots.typeType = tuuvm_type_createAnonymous(context);
     tuuvm_tuple_setType((tuuvm_object_tuple_t*)context->roots.typeType, context->roots.typeType);
-    tuuvm_tuple_setType((tuuvm_object_tuple_t*)context->roots.untypedType, context->roots.typeType);
-    tuuvm_tuple_setType((tuuvm_object_tuple_t*)context->roots.anyValueType, context->roots.typeType);
     tuuvm_type_setSupertype(context->roots.anyValueType, context->roots.untypedType);
 
     tuuvm_type_setFlags(context, context->roots.anyValueType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_DYNAMIC);
@@ -314,6 +312,12 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     tuuvm_type_setSupertype(tuuvm_tuple_getType(context, context->roots.programEntityType), tuuvm_tuple_getType(context, context->roots.objectType));
 
     context->roots.metatypeType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.typeType);
+
+    tuuvm_tuple_setType((tuuvm_object_tuple_t*)tuuvm_tuple_getType(context, context->roots.untypedType), context->roots.metatypeType);
+    tuuvm_type_setSupertype(tuuvm_tuple_getType(context, context->roots.untypedType), context->roots.typeType);
+
+    tuuvm_tuple_setType((tuuvm_object_tuple_t*)tuuvm_tuple_getType(context, context->roots.anyValueType), context->roots.metatypeType);
+    tuuvm_type_setSupertype(tuuvm_tuple_getType(context, context->roots.anyValueType), context->roots.typeType);
 
     context->roots.classType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.typeType);
     context->roots.metaclassType = tuuvm_type_createAnonymousClassAndMetaclass(context, context->roots.metatypeType);
@@ -543,7 +547,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.directTypeInferenceType = tuuvm_context_createIntrinsicPrimitiveValueType(context, "DirectTypeInferenceType", TUUVM_NULL_TUPLE);
 
     // Set the name of the root basic type.
-    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.anyValueType, "Untyped", TUUVM_NULL_TUPLE, NULL);
+    tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.untypedType, "Untyped", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.anyValueType, "AnyValue", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.objectType, "Object", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.programEntityType, "ProgramEntity", TUUVM_NULL_TUPLE, NULL);
