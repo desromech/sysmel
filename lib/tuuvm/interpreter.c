@@ -306,9 +306,10 @@ static tuuvm_tuple_t tuuvm_interpreter_analyzeASTWithExpectedTypeExpressionWithE
     // Attempt to delegate first.
     if(!expectedTypeExpression_)
     {
+        tuuvm_tuple_t result = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironmentAt(context, astNode_, TUUVM_NULL_TUPLE, environment_, sourcePosition_);
         if(outExpectedCanonicalType)
-            *outExpectedCanonicalType = TUUVM_NULL_TUPLE;
-        return tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironmentAt(context, astNode_, TUUVM_NULL_TUPLE, environment_, sourcePosition_);
+            *outExpectedCanonicalType = tuuvm_astNode_getAnalyzedType(result);
+        return result;
     }
     else if(tuuvm_astNode_isLiteralNode(context, expectedTypeExpression_))
     {
@@ -875,13 +876,13 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_canonicalizeFunctionType(tuuvm_context_t *con
     for(size_t i = 0; i < argumentCount; ++i)
     {
         tuuvm_astArgumentNode_t *argumentNode = (tuuvm_astArgumentNode_t*)tuuvm_array_at(dependentFunctionType->argumentNodes, i);
-        tuuvm_tuple_t argumentType = TUUVM_NULL_TUPLE;
+        tuuvm_tuple_t argumentType = context->roots.anyValueType;
         if(argumentNode->type)
             argumentType = tuuvm_astLiteralNode_getValue(argumentNode->type);
         tuuvm_array_atPut(argumentTypes, i, argumentType);
     }
 
-    tuuvm_tuple_t resultType = TUUVM_NULL_TUPLE;
+    tuuvm_tuple_t resultType = context->roots.anyValueType;
     if(dependentFunctionType->resultTypeNode)
         resultType = tuuvm_astLiteralNode_getValue(dependentFunctionType->resultTypeNode);
 
@@ -2131,6 +2132,7 @@ static tuuvm_tuple_t tuuvm_astFunctionApplicationNode_defaultTypeCheck(tuuvm_con
     }
 
     (*applicationNode)->arguments = gcFrame.analyzedArguments;
+    (*applicationNode)->super.analyzedType = context->roots.anyValueType;
 
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return tuuvm_astFunctionApplicationNode_optimizePureApplication(context, applicationNode);
@@ -3343,6 +3345,7 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyze(tuuvm_context_t *
     }
 
     gcFrame.sendNode->arguments = gcFrame.analyzedArguments;
+    gcFrame.sendNode->super.analyzedType = context->roots.anyValueType;
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return (tuuvm_tuple_t)gcFrame.sendNode;

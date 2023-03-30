@@ -46,7 +46,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymousAndMetatype(tuuvm_context_t *c
     tuuvm_type_tuple_t* result = (tuuvm_type_tuple_t*)tuuvm_context_allocatePointerTuple(context, metatype, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_type_tuple_t));
     result->supertype = context->roots.anyValueType;
     result->totalSlotCount = tuuvm_tuple_size_encode(context, 0);
-    ((tuuvm_metatype_t*)metatype)->thisType = result;
+    ((tuuvm_metatype_t*)metatype)->thisType = (tuuvm_tuple_t)result;
     return (tuuvm_tuple_t)result;
 }
 
@@ -1009,7 +1009,11 @@ static tuuvm_tuple_t tuuvm_type_primitive_coerceASTNodeWithEnvironment(tuuvm_con
 
     tuuvm_tuple_t sourceType = tuuvm_astNode_getAnalyzedType(*astNode);
     if(sourceType && !tuuvm_type_isDirectSubtypeOf(sourceType, context->roots.controlFlowEscapeType))
-        tuuvm_error("Cannot perform the type coercion.");
+    {
+        // TODO: Add a downcast for the untyped case.
+        if(!tuuvm_type_isDynamic(sourceType))
+            tuuvm_error("Cannot perform the type coercion.");
+    }
 
     return *astNode;
 }

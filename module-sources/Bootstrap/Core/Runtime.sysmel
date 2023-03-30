@@ -3,7 +3,7 @@ error __type__: (SimpleFunctionTypeTemplate((String,), false, Unwinds)).
     
 {
     let: #binaryFunctionType with: SimpleFunctionTypeTemplate((UInt32, UInt32), false, UInt32).
-    let: #equalityComparisonFunctionType with: SimpleFunctionTypeTemplate((UInt32, nil), false, Boolean).
+    let: #equalityComparisonFunctionType with: SimpleFunctionTypeTemplate((UInt32, AnyValue), false, Boolean).
     let: #comparisonFunctionType with: SimpleFunctionTypeTemplate((UInt32, UInt32), false, Boolean).
 
     UInt32::+ __type__: binaryFunctionType.
@@ -27,7 +27,7 @@ error __type__: (SimpleFunctionTypeTemplate((String,), false, Unwinds)).
 
 {
     let: #binaryFunctionType with: SimpleFunctionTypeTemplate((UInt64, UInt64), false, UInt64).
-    let: #equalityComparisonFunctionType with: SimpleFunctionTypeTemplate((UInt64, nil), false, Boolean).
+    let: #equalityComparisonFunctionType with: SimpleFunctionTypeTemplate((UInt64, AnyValue), false, Boolean).
     let: #comparisonFunctionType with: SimpleFunctionTypeTemplate((UInt64, UInt64), false, Boolean).
 
     UInt64::+ __type__: binaryFunctionType.
@@ -156,11 +156,28 @@ AnyValue
         self __type__ isSubtypeOf: expectedType
     } makePure makeFinal.
 
+Untyped __type__
+    withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(Type)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
+        ## TODO: Add a downcast node.
+        astNode
+    }.
+    
 Type
+    withSelector: #hasFlag: addMethod: {:(Type)self :(Bitflags)flag :: Boolean |
+        (self flags & flag) ~= 0bflgs
+    };
+    withSelector: #isDynamic addMethod: {:(Type)self :: Boolean |
+        self hasFlag: TypeFlags::Dynamic.
+    };
+
     withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(Type)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
         if: (self isSubtypeOf: targetType)
         then: astNode
-        else: error((("Cannot coerce node from type " -- self printString) -- " into type ") -- targetType printString)
+        else: {
+            if: self isDynamic then: astNode else: {
+                error((("Cannot coerce node from type " -- self printString) -- " into type ") -- targetType printString)
+            }
+        }
     };
     withSelector: #coerceASTNode:withEnvironment: addMethod: {:(Type)self :(ASTNode)astNode :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
         let: #sourceType with: astNode analyzedType.
@@ -172,9 +189,6 @@ Type
 
     withSelector: #addFlags: addMethod: {:(Type)self :(Bitflags)flag :: Void |
         self flags: self flags | flag
-    };
-    withSelector: #hasFlag: addMethod: {:(Type)self :(Bitflags)flag :: Boolean |
-        (self flags & flag) ~= 0bflgs
     };
 
     withSelector: #makeNullable addMethod: {:(Type)self :: Type |
@@ -1339,16 +1353,16 @@ TypeSlot
         self named: name type: type flags: TypeSlotFlags::None
     };
     withSelector: #named:flags: addClassMethod: {:(TypeSlot class)self :name :(Size)flags :: self |
-        self named: name type: nil flags: flags
+        self named: name type: AnyValue flags: flags
     };
     withSelector: #named: addClassMethod: {:(TypeSlot class)self :name :(Type)type :: self |
-        self publicNamed: name type: nil
+        self publicNamed: name type: AnyValue
     };
     withSelector: #publicNamed:type: addClassMethod: {:(TypeSlot class)self :name :(Type)type :: self |
         self named: name type: type flags: TypeSlotFlags::Public
     };
     withSelector: #publicNamed: addClassMethod: {:(TypeSlot class)self :name :(Type)type :: self |
-        self publicNamed: name type: nil
+        self publicNamed: name type: AnyValue
     };
 
     withSelector: #hasFlag: addMethod: {:(TypeSlot)self :(Size)flag :: Boolean |
@@ -1412,13 +1426,13 @@ Type
         ReferenceTypeTemplate(self, addressSpace)
     } makePure;
     withSelector: #ref addMethod: {:(Type)self :: ReferenceType |
-        self refFor: nil
+        self refFor: AnyValue
     } makePure;
     withSelector: #pointerFor: addMethod: {:(Type)self :addressSpace :: ReferenceType |
         PointerTypeTemplate(self, addressSpace)
     } makePure;
     withSelector: #pointer addMethod: {:(Type)self :addressSpace :: ReferenceType |
-        self pointerFor: nil
+        self pointerFor: AnyValue
     } makePure.
 
 ReferenceType
@@ -1472,7 +1486,7 @@ SimpleFunctionType
 ) do: {:SelfType :: Void |
     let: #unaryFunctionType with: SelfType => SelfType.
     let: #binaryFunctionType with: (SelfType, SelfType) => SelfType.
-    let: #equalityFunctionType with: (SelfType, nil) => Boolean.
+    let: #equalityFunctionType with: (SelfType, AnyValue) => Boolean.
     let: #binaryComparisonFunctionType with: (SelfType, SelfType) => Boolean.
 
     ## Unary selectors

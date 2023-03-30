@@ -115,6 +115,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicClass(tuuvm_context_t *cont
         tuuvm_tuple_t name = tuuvm_symbol_internWithCString(context, va_arg(valist, const char *));
         tuuvm_tuple_t flags = tuuvm_tuple_integer_encodeSmall(va_arg(valist, int));
         tuuvm_tuple_t type = va_arg(valist, tuuvm_tuple_t);
+        if(!type)
+            type = context->roots.anyValueType;
         tuuvm_array_atPut(slots, i, tuuvm_typeSlot_create(context, name, flags, type));
     }
 
@@ -173,6 +175,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicType(tuuvm_context_t *conte
         tuuvm_tuple_t name = tuuvm_symbol_internWithCString(context, va_arg(valist, const char *));
         tuuvm_tuple_t flags = tuuvm_tuple_integer_encodeSmall(va_arg(valist, int));
         tuuvm_tuple_t type = va_arg(valist, tuuvm_tuple_t);
+        if(!type)
+            type = context->roots.anyValueType;
         tuuvm_array_atPut(slots, i, tuuvm_typeSlot_create(context, name, flags, type));
     }
 
@@ -218,6 +222,8 @@ static void tuuvm_context_setIntrinsicTypeMetadata(tuuvm_context_t *context, tuu
         tuuvm_tuple_t name = tuuvm_symbol_internWithCString(context, va_arg(valist, const char *));
         tuuvm_tuple_t flags = tuuvm_tuple_integer_encodeSmall(va_arg(valist, int));
         tuuvm_tuple_t type = va_arg(valist, tuuvm_tuple_t);
+        if(!type)
+            type = context->roots.anyValueType;
         tuuvm_array_atPut(slots, i, tuuvm_typeSlot_create(context, name, flags, type));
     }
 
@@ -820,7 +826,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "storage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,
         NULL);
     context->roots.valueBoxType = tuuvm_context_createIntrinsicClass(context, "ValueBox", TUUVM_NULL_TUPLE,
-        "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "value", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.untypedType,
         NULL);
     tuuvm_typeAndMetatype_setFlags(context, context->roots.valueBoxType, TUUVM_TYPE_FLAGS_NULLABLE | TUUVM_TYPE_FLAGS_FINAL, TUUVM_TYPE_FLAGS_FINAL);
 
