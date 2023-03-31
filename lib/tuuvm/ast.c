@@ -34,6 +34,11 @@ TUUVM_API bool tuuvm_astNode_isDoWhileContinueWithNode(tuuvm_context_t *context,
     return tuuvm_tuple_isKindOf(context, tuple, context->roots.astDoWhileContinueWithNodeType);
 }
 
+TUUVM_API bool tuuvm_astNode_isDownCastNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
+{
+    return tuuvm_tuple_isKindOf(context, tuple, context->roots.astDownCastNodeType);
+}
+
 TUUVM_API bool tuuvm_astNode_isErrorNode(tuuvm_context_t *context, tuuvm_tuple_t tuple)
 {
     return tuuvm_tuple_isKindOf(context, tuple, context->roots.astErrorNodeType);
@@ -245,6 +250,22 @@ TUUVM_API tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_getContinueExpression(t
 {
     if(!tuuvm_tuple_isNonNullPointer(node)) return TUUVM_NULL_TUPLE;
     return ((tuuvm_astDoWhileContinueWithNode_t*)node)->continueExpression;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astDownCastNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t typeExpression, tuuvm_tuple_t valueExpression)
+{
+    tuuvm_astDownCastNode_t *result = (tuuvm_astDownCastNode_t*)tuuvm_context_allocatePointerTuple(context, context->roots.astDownCastNodeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_astDownCastNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->typeExpression = typeExpression;
+    result->valueExpression = valueExpression;
+    return (tuuvm_tuple_t)result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_astDownCastNode_addOntoNodeWithTargetType(tuuvm_context_t *context, tuuvm_tuple_t valueExpression, tuuvm_tuple_t targetType)
+{
+    tuuvm_tuple_t sourcePosition = tuuvm_astNode_getSourcePosition(valueExpression);
+    tuuvm_tuple_t targetTypeExpression = tuuvm_astLiteralNode_create(context, sourcePosition, targetType);
+    return tuuvm_astDownCastNode_create(context, sourcePosition, targetTypeExpression, valueExpression);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_astErrorNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t errorMessage)

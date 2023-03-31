@@ -890,6 +890,31 @@ static tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_primitiveCompileIntoByteco
     return tuuvm_bytecodeCompiler_addLiteral(context, *compiler, TUUVM_VOID_TUPLE);
 }
 
+static tuuvm_tuple_t tuuvm_astDownCastNode_primitiveCompileIntoBytecode(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *node = &arguments[0];
+    tuuvm_tuple_t *compiler = &arguments[1];
+
+    tuuvm_astCoerceValueNode_t **coerceValueNode = (tuuvm_astCoerceValueNode_t**)node;
+    struct {
+        tuuvm_tuple_t typeOperand;
+        tuuvm_tuple_t valueOperand;
+    } gcFrame = {0};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    gcFrame.typeOperand = tuuvm_bytecodeCompiler_compileASTNode(context, *compiler, (*coerceValueNode)->typeExpression);
+    gcFrame.valueOperand = tuuvm_bytecodeCompiler_compileASTNode(context, *compiler, (*coerceValueNode)->valueExpression);
+    //tuuvm_bytecodeCompiler_coerceValue(context, *compiler, gcFrame.result, gcFrame.typeOperand, gcFrame.valueOperand);
+
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.valueOperand;
+}
+
+
 static tuuvm_tuple_t tuuvm_bytecodeCompiler_getLiteralFunctionPrimitiveName(tuuvm_context_t *context, tuuvm_tuple_t compiler, tuuvm_tuple_t operand)
 {
     //tuuvm_tuple_t operandType 
@@ -1427,6 +1452,7 @@ void tuuvm_bytecodeCompiler_registerPrimitives(void)
     tuuvm_primitiveTable_registerFunction(tuuvm_astCoerceValueNode_primitiveCompileIntoBytecode, "ASTCoerceValueNode::compileIntoBytecodeWith:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astContinueNode_primitiveCompileIntoBytecode, "ASTContinueNode::compileIntoBytecodeWith:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveCompileIntoBytecode, "ASTDoWhileContinueWithNode::compileIntoBytecodeWith:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astDownCastNode_primitiveCompileIntoBytecode, "ASTDownCastNode::compileIntoBytecodeWith:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astFunctionApplicationNode_primitiveCompileIntoBytecode, "ASTFunctionApplicationNode::compileIntoBytecodeWith:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astIdentifierReferenceNode_primitiveCompileIntoBytecode, "ASTIdentifierReferenceNode::compileIntoBytecodeWith:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveCompileIntoBytecode, "ASTIfNode::compileIntoBytecodeWith:");
@@ -1450,6 +1476,7 @@ void tuuvm_bytecodeCompiler_setupPrimitives(tuuvm_context_t *context)
     tuuvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astCoerceValueNodeType, &tuuvm_astCoerceValueNode_primitiveCompileIntoBytecode);
     tuuvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astContinueNodeType, &tuuvm_astContinueNode_primitiveCompileIntoBytecode);
     tuuvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astDoWhileContinueWithNodeType, &tuuvm_astDoWhileContinueWithNode_primitiveCompileIntoBytecode);
+    tuuvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astDownCastNodeType, &tuuvm_astDownCastNode_primitiveCompileIntoBytecode);
     tuuvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astFunctionApplicationNodeType, &tuuvm_astFunctionApplicationNode_primitiveCompileIntoBytecode);
     tuuvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astIdentifierReferenceNodeType, &tuuvm_astIdentifierReferenceNode_primitiveCompileIntoBytecode);
     tuuvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astIfNodeType, &tuuvm_astIfNode_primitiveCompileIntoBytecode);

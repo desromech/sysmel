@@ -161,6 +161,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeASTIfNeededWithEnvironment(tuuv
     struct {
         tuuvm_tuple_t astNode;
         tuuvm_tuple_t environment;
+        tuuvm_tuple_t astNodeAnalysisToken;
         tuuvm_tuple_t analysisToken;
         tuuvm_tuple_t result;
     } gcFrame = {
@@ -170,7 +171,8 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeASTIfNeededWithEnvironment(tuuv
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     gcFrame.analysisToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, gcFrame.environment);
-    if(tuuvm_astNode_getAnalyzerToken(gcFrame.astNode) == gcFrame.analysisToken)
+    gcFrame.astNodeAnalysisToken = tuuvm_astNode_getAnalyzerToken(gcFrame.astNode);
+    if(gcFrame.astNodeAnalysisToken == gcFrame.analysisToken)
     {
         TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
         return gcFrame.astNode;
@@ -220,7 +222,10 @@ static tuuvm_tuple_t tuuvm_interpreter_applyCoercionToASTNodeIntoType(tuuvm_cont
             gcFrame.targetType = tuuvm_type_decay(context, gcFrame.nodeType);
 
         if(gcFrame.targetType && !tuuvm_type_isDirectSubtypeOf(gcFrame.nodeType, gcFrame.targetType))
+        {
             gcFrame.result = tuuvm_tuple_send2(context, context->roots.coerceASTNodeWithEnvironmentSelector, gcFrame.targetType, gcFrame.result, gcFrame.environment);
+            gcFrame.result = tuuvm_interpreter_analyzeASTIfNeededWithEnvironment(context, gcFrame.result, gcFrame.environment);
+        }
     }
 
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -786,6 +791,120 @@ static tuuvm_tuple_t tuuvm_astCoerceValueNode_primitiveAnalyzeAndEvaluate(tuuvm_
 
     gcFrame.result = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*coerceValueNode)->valueExpression, *environment);
     gcFrame.result = tuuvm_type_coerceValue(context, gcFrame.type, gcFrame.result);
+
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    return gcFrame.result;
+}
+
+static tuuvm_tuple_t tuuvm_astDownCastNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *node = &arguments[0];
+    tuuvm_tuple_t *environment = &arguments[1];
+
+    struct {
+        tuuvm_astDownCastNode_t *downCastNode;
+        tuuvm_tuple_t typeExpression;
+        tuuvm_tuple_t typeExpressionType;
+        tuuvm_tuple_t type;
+
+        tuuvm_tuple_t valueExpression;
+        tuuvm_tuple_t valueExpressionType;
+    } gcFrame = {0};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    gcFrame.downCastNode = (tuuvm_astDownCastNode_t*)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.downCastNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.downCastNode->super.sourcePosition);
+
+    gcFrame.typeExpression = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.downCastNode->typeExpression, context->roots.typeType, *environment);
+    gcFrame.downCastNode->typeExpression = gcFrame.typeExpression;
+    bool hasLiteralType = tuuvm_astNode_isLiteralNode(context, gcFrame.typeExpression);
+    if(hasLiteralType)
+    {
+        gcFrame.type = tuuvm_astLiteralNode_getValue(gcFrame.typeExpression);
+    }
+    else
+    {
+        gcFrame.typeExpressionType = tuuvm_astNode_getAnalyzedType(gcFrame.typeExpression);
+        gcFrame.type = tuuvm_type_getCanonicalPendingInstanceType(context, gcFrame.typeExpressionType);
+    }
+
+    gcFrame.valueExpression = tuuvm_interpreter_analyzeASTWithDirectTypeWithEnvironment(context, gcFrame.downCastNode->valueExpression, *environment);
+    gcFrame.downCastNode->valueExpression = gcFrame.valueExpression;
+    TUUVM_ASSERT(gcFrame.type);
+    gcFrame.downCastNode->super.analyzedType = gcFrame.type;
+
+    // Is this already a value with the expected type?
+    if(hasLiteralType)
+    {
+        gcFrame.valueExpressionType = tuuvm_astNode_getAnalyzedType(gcFrame.valueExpression);
+        if(tuuvm_type_isDirectSubtypeOf(gcFrame.valueExpressionType, gcFrame.type))
+        {
+            TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+            TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+            return (tuuvm_tuple_t)gcFrame.valueExpression;
+        }
+    }
+
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return (tuuvm_tuple_t)gcFrame.downCastNode;
+}
+
+static tuuvm_tuple_t tuuvm_astDownCastNode_primitiveEvaluate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *node = &arguments[0];
+    tuuvm_tuple_t *environment = &arguments[1];
+
+    tuuvm_astDownCastNode_t **downCastNode = (tuuvm_astDownCastNode_t**)node;
+    struct {
+        tuuvm_tuple_t type;
+        tuuvm_tuple_t result;
+    } gcFrame = {0};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*downCastNode)->super.sourcePosition);
+
+    gcFrame.type = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*downCastNode)->typeExpression, *environment);
+    gcFrame.result = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*downCastNode)->valueExpression, *environment);
+    if(!tuuvm_tuple_isKindOf(context, gcFrame.result, gcFrame.type))
+        tuuvm_error("Downcast failure.");
+
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    return gcFrame.result;
+}
+
+static tuuvm_tuple_t tuuvm_astDownCastNode_primitiveAnalyzeAndEvaluate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *node = &arguments[0];
+    tuuvm_tuple_t *environment = &arguments[1];
+
+    tuuvm_astCoerceValueNode_t **coerceValueNode = (tuuvm_astCoerceValueNode_t**)node;
+    struct {
+        tuuvm_tuple_t type;
+        tuuvm_tuple_t result;
+    } gcFrame = {0};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*coerceValueNode)->super.sourcePosition);
+
+    gcFrame.type = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*coerceValueNode)->typeExpression, *environment);
+    gcFrame.type = tuuvm_type_coerceValue(context, context->roots.typeType, gcFrame.type);
+
+    gcFrame.result = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*coerceValueNode)->valueExpression, *environment);
+    if(!tuuvm_tuple_isKindOf(context, gcFrame.result, gcFrame.type))
+        tuuvm_error("Downcast failure.");
 
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
@@ -1388,6 +1507,7 @@ static tuuvm_tuple_t tuuvm_astLocalDefinitionNode_primitiveAnalyze(tuuvm_context
     gcFrame.localDefinitionNode = (tuuvm_astLocalDefinitionNode_t*)tuuvm_context_shallowCopy(context, *node);
 
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.localDefinitionNode->super.sourcePosition);
+    gcFrame.localDefinitionNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
 
     gcFrame.analyzedNameExpression = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.localDefinitionNode->nameExpression, context->roots.symbolType, *environment);
     gcFrame.localDefinitionNode->nameExpression = gcFrame.analyzedNameExpression;
@@ -4756,6 +4876,10 @@ void tuuvm_astInterpreter_registerPrimitives(void)
     tuuvm_primitiveTable_registerFunction(tuuvm_astCoerceValueNode_primitiveEvaluate, "ASTCoerceValueNode::evaluateWithEnvironment:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astCoerceValueNode_primitiveAnalyzeAndEvaluate, "ASTCoerceValueNode::analyzeAndEvaluateWithEnvironment:");
 
+    tuuvm_primitiveTable_registerFunction(tuuvm_astDownCastNode_primitiveAnalyze, "ASTDownCastNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astDownCastNode_primitiveEvaluate, "ASTDownCastNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astDownCastNode_primitiveAnalyzeAndEvaluate, "ASTDownCastNode::analyzeAndEvaluateWithEnvironment:");
+
     tuuvm_primitiveTable_registerFunction(tuuvm_astErrorNode_primitiveEvaluate, "ASTErrorNode::analyzeWithEnvironment:");
 
     tuuvm_primitiveTable_registerFunction(tuuvm_astPragmaNode_primitiveAnalyze, "ASTPragmaNode::analyzeWithEnvironment:");
@@ -4905,6 +5029,12 @@ void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context)
         tuuvm_astCoerceValueNode_primitiveAnalyze,
         tuuvm_astCoerceValueNode_primitiveEvaluate,
         tuuvm_astCoerceValueNode_primitiveAnalyzeAndEvaluate
+    );
+
+    tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astDownCastNodeType,
+        tuuvm_astDownCastNode_primitiveAnalyze,
+        tuuvm_astDownCastNode_primitiveEvaluate,
+        tuuvm_astDownCastNode_primitiveAnalyzeAndEvaluate
     );
 
     tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astErrorNodeType,

@@ -886,6 +886,10 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "conditionExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "continueExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
+    context->roots.astDownCastNodeType = tuuvm_context_createIntrinsicClass(context, "ASTDownCastNode", context->roots.astNodeType,
+        "typeExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "valueExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        NULL);
     context->roots.astErrorNodeType = tuuvm_context_createIntrinsicClass(context, "ASTErrorNode", context->roots.astNodeType,
         "errorMessage", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,
         NULL);

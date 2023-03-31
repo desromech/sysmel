@@ -56,6 +56,13 @@ typedef struct tuuvm_astDoWhileContinueWithNode_s
     tuuvm_tuple_t continueExpression;
 } tuuvm_astDoWhileContinueWithNode_t;
 
+typedef struct tuuvm_astDownCastNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t typeExpression;
+    tuuvm_tuple_t valueExpression;
+} tuuvm_astDownCastNode_t;
+
 typedef struct tuuvm_astErrorNode_s
 {
     tuuvm_astNode_t super;
@@ -276,6 +283,11 @@ TUUVM_API bool tuuvm_astNode_isContinueNode(tuuvm_context_t *context, tuuvm_tupl
  * Is this a do while continue with node?
  */ 
 TUUVM_API bool tuuvm_astNode_isDoWhileContinueWithNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this a downcast node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isDownCastNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
 
 /**
  * Is this an error node?
@@ -502,6 +514,16 @@ TUUVM_API tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_getBodyExpression(tuuvm
  * Gets the continue expression from a while node.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_getContinueExpression(tuuvm_tuple_t node);
+
+/**
+ * Creates a down cast node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astDownCastNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t typeExpression, tuuvm_tuple_t valueExpression);
+
+/**
+ * Creates a down cast node for the specified node with the given target type.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astDownCastNode_addOntoNodeWithTargetType(tuuvm_context_t *context, tuuvm_tuple_t valueExpression, tuuvm_tuple_t targetType);
 
 /**
  * Creates an error node

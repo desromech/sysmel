@@ -168,7 +168,6 @@ public final class FunctionBytecodeAssemblerInstruction superclass: FunctionByte
             ) continueWith: (i := i + 1sz)
         }.
 
-        ## FIXME: Handle the store value properly here.
         if: self isLoadInstruction then: {
             while: i < operandCount do: (
                 (operands at: i) hasLoadStoreUsage: true

@@ -862,11 +862,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_coerceValuePassingReferences(tuuvm_context_t 
 TUUVM_API tuuvm_tuple_t tuuvm_type_decay(tuuvm_context_t *context, tuuvm_tuple_t type)
 {
     if(tuuvm_tuple_isKindOf(context, type, context->roots.referenceType))
-    {
-        // FIXME: Introduce a proper Untyped type.
-        tuuvm_tuple_t baseType = ((tuuvm_referenceType_t*)type)->super.baseType;
-        return baseType ? baseType : context->roots.anyValueType;
-    }
+        return ((tuuvm_referenceType_t*)type)->super.baseType;
 
     return type;
 }
@@ -875,6 +871,13 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_getCanonicalPendingInstanceType(tuuvm_context
 {
     if(tuuvm_type_isDirectSubtypeOf(type, context->roots.referenceType))
         return tuuvm_type_createReferenceType(context, context->roots.anyValueType, TUUVM_NULL_TUPLE);
+    if(tuuvm_type_isDirectSubtypeOf(type, context->roots.metatypeType))
+    {
+        tuuvm_tuple_t thisType = ((tuuvm_metatype_t*)type)->thisType;
+        if(thisType)
+            return thisType;
+    }
+    
     return context->roots.anyValueType;
 }
 
@@ -1010,9 +1013,15 @@ static tuuvm_tuple_t tuuvm_type_primitive_coerceASTNodeWithEnvironment(tuuvm_con
     tuuvm_tuple_t sourceType = tuuvm_astNode_getAnalyzedType(*astNode);
     if(sourceType && !tuuvm_type_isDirectSubtypeOf(sourceType, context->roots.controlFlowEscapeType))
     {
-        // TODO: Add a downcast for the untyped case.
-        if(!tuuvm_type_isDynamic(sourceType))
+        if(tuuvm_type_isDynamic(sourceType))
+        {
+            // Add a downcast for the untyped case.
+            return tuuvm_astDownCastNode_addOntoNodeWithTargetType(context, *astNode, *targetType);
+        }
+        else
+        {
             tuuvm_error("Cannot perform the type coercion.");
+        }
     }
 
     return *astNode;

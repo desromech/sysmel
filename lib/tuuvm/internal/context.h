@@ -229,6 +229,7 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t astCoerceValueNodeType;
     tuuvm_tuple_t astContinueNodeType;
     tuuvm_tuple_t astDoWhileContinueWithNodeType;
+    tuuvm_tuple_t astDownCastNodeType;
     tuuvm_tuple_t astErrorNodeType;
     tuuvm_tuple_t astFunctionApplicationNodeType;
     tuuvm_tuple_t astLambdaNodeType;
