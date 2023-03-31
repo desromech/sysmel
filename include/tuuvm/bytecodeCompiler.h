@@ -218,6 +218,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_sendWithLookupReceiverType(tuuvm_
 TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_store(tuuvm_context_t *context, tuuvm_tuple_t compiler, tuuvm_tuple_t pointer, tuuvm_tuple_t value);
 
 /**
+ * Typecheck instruction.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_typecheck(tuuvm_context_t *context, tuuvm_tuple_t compiler, tuuvm_tuple_t expectedType, tuuvm_tuple_t value);
+
+/**
  * Creates a bytecode instruction.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompilerInstruction_create(tuuvm_context_t *context, uint8_t opcode, tuuvm_tuple_t operands);

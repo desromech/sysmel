@@ -181,6 +181,12 @@ static bool tuuvm_bytecodeJit_getLiteralValueForOperand(tuuvm_bytecodeJit_t *jit
 #   include "bytecodeJitArmArch64.c"
 #endif
 
+static void tuuvm_jit_typecheckInstruction(tuuvm_context_t *context, tuuvm_tuple_t expectedType, tuuvm_tuple_t value)
+{
+    if(!tuuvm_tuple_isKindOf(context, value, expectedType))
+        tuuvm_error_unexpectedType(expectedType, value);
+}
+
 static void tuuvm_bytecodeJit_jit(tuuvm_context_t *context, tuuvm_functionBytecode_t *functionBytecode)
 {
     (void)context;
@@ -326,6 +332,9 @@ static void tuuvm_bytecodeJit_jit(tuuvm_context_t *context, tuuvm_functionByteco
             tuuvm_jit_jumpRelativeIfFalse(&jit, decodedOperands[0], pc + decodedOperands[1]);
             break;
 
+        case TUUVM_OPCODE_TYPECHECK:
+            tuuvm_jit_callWithContextNoResult2(&jit, &tuuvm_jit_typecheckInstruction, decodedOperands[0], decodedOperands[1]);
+            break;
         // Three operands.
         case TUUVM_OPCODE_ALLOCA_WITH_VALUE:
             tuuvm_jit_callWithContext2(&jit, &tuuvm_pointerLikeType_withBoxForValue, decodedOperands[0], decodedOperands[1], decodedOperands[2]);

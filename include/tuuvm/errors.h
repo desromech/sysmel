@@ -20,5 +20,6 @@ TUUVM_API void tuuvm_error_modifyImmutableTuple();
 TUUVM_API void tuuvm_error_argumentCountMismatch(size_t expected, size_t gotten);
 TUUVM_API void tuuvm_error_outOfBoundsSlotAccess();
 TUUVM_API void tuuvm_error_trap();
+TUUVM_API void tuuvm_error_unexpectedType(tuuvm_tuple_t expectedType, tuuvm_tuple_t value);
 
 #endif //TUUVM_ERRORS_H

@@ -298,6 +298,10 @@ TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_con
                 isBackwardBranch = decodedOperands[1 < 0];
             }
             break;
+        case TUUVM_OPCODE_TYPECHECK:
+            if(!tuuvm_tuple_isKindOf(context, operandRegisterFile[1], operandRegisterFile[0]))
+                tuuvm_error_unexpectedType(operandRegisterFile[0], operandRegisterFile[1]);
+            break;
 
         // Three operands.
         case TUUVM_OPCODE_ALLOCA_WITH_VALUE:

@@ -24,6 +24,7 @@ typedef enum tuuvm_opcode_e
     TUUVM_OPCODE_STORE, /// store <PointerLikeValue> <Value>
     TUUVM_OPCODE_JUMP_IF_TRUE, /// jumpIfTrue <Condition> <Destination Relative PC>
     TUUVM_OPCODE_JUMP_IF_FALSE, /// jumpIfFalse <Condition> <Destination Relative PC>
+    TUUVM_OPCODE_TYPECHECK, /// typecheck <ExpectedType> <Value>
 
     // Three operand instructions
     TUUVM_OPCODE_ALLOCA_WITH_VALUE = 0x30, /// <Result> := alloca <Pointer Type> <Value>

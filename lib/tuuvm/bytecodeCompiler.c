@@ -284,6 +284,17 @@ TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_store(tuuvm_context_t *context, t
     return instruction;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_typecheck(tuuvm_context_t *context, tuuvm_tuple_t compiler, tuuvm_tuple_t expectedType, tuuvm_tuple_t value)
+{
+    tuuvm_tuple_t operands = tuuvm_array_create(context, 2);
+    tuuvm_array_atPut(operands, 0, expectedType);
+    tuuvm_array_atPut(operands, 1, value);
+
+    tuuvm_tuple_t instruction = tuuvm_bytecodeCompilerInstruction_create(context, TUUVM_OPCODE_TYPECHECK, operands);
+    tuuvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    return instruction;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_jumpIfTrue(tuuvm_context_t *context, tuuvm_tuple_t compiler, tuuvm_tuple_t condition, tuuvm_tuple_t destination)
 {
     tuuvm_tuple_t operands = tuuvm_array_create(context, 2);
@@ -899,16 +910,16 @@ static tuuvm_tuple_t tuuvm_astDownCastNode_primitiveCompileIntoBytecode(tuuvm_co
     tuuvm_tuple_t *node = &arguments[0];
     tuuvm_tuple_t *compiler = &arguments[1];
 
-    tuuvm_astCoerceValueNode_t **coerceValueNode = (tuuvm_astCoerceValueNode_t**)node;
+    tuuvm_astDownCastNode_t **downCastNode = (tuuvm_astDownCastNode_t**)node;
     struct {
         tuuvm_tuple_t typeOperand;
         tuuvm_tuple_t valueOperand;
     } gcFrame = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    gcFrame.typeOperand = tuuvm_bytecodeCompiler_compileASTNode(context, *compiler, (*coerceValueNode)->typeExpression);
-    gcFrame.valueOperand = tuuvm_bytecodeCompiler_compileASTNode(context, *compiler, (*coerceValueNode)->valueExpression);
-    //tuuvm_bytecodeCompiler_coerceValue(context, *compiler, gcFrame.result, gcFrame.typeOperand, gcFrame.valueOperand);
+    gcFrame.typeOperand = tuuvm_bytecodeCompiler_compileASTNode(context, *compiler, (*downCastNode)->typeExpression);
+    gcFrame.valueOperand = tuuvm_bytecodeCompiler_compileASTNode(context, *compiler, (*downCastNode)->valueExpression);
+    tuuvm_bytecodeCompiler_typecheck(context, *compiler, gcFrame.typeOperand, gcFrame.valueOperand);
 
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.valueOperand;

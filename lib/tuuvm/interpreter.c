@@ -875,7 +875,7 @@ static tuuvm_tuple_t tuuvm_astDownCastNode_primitiveEvaluate(tuuvm_context_t *co
     gcFrame.type = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*downCastNode)->typeExpression, *environment);
     gcFrame.result = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*downCastNode)->valueExpression, *environment);
     if(!tuuvm_tuple_isKindOf(context, gcFrame.result, gcFrame.type))
-        tuuvm_error("Downcast failure.");
+        tuuvm_error_unexpectedType(gcFrame.type, gcFrame.result);
 
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);

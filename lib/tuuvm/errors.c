@@ -60,6 +60,13 @@ TUUVM_API void tuuvm_error_trap()
     tuuvm_error("Trap instruction.");
 }
 
+TUUVM_API void tuuvm_error_unexpectedType(tuuvm_tuple_t expectedType, tuuvm_tuple_t value)
+{
+    (void)expectedType;
+    (void)value;
+    tuuvm_error("Unexpected type.");
+}
+
 TUUVM_API void tuuvm_error_argumentCountMismatch(size_t expected, size_t gotten)
 {
     (void)expected;

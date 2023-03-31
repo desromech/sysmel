@@ -302,8 +302,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_tuple_send(tuuvm_context_t *context, tuuvm_tuple_t
     struct {
         tuuvm_tuple_t method;
         tuuvm_tuple_t receiverType;
-    } gcFrame = {
-    };
+    } gcFrame = {0};
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     gcFrame.receiverType = tuuvm_tuple_getType(context, arguments[0]);
