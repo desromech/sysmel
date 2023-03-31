@@ -478,6 +478,12 @@ AnyValue
             yourself
     } makeMacro.
 
+ASTNode
+    withSelector: #postCopy addMethod: {:(ASTNode)self :: Void |
+        (object: self withLookupStartingFrom: ASTNode supertype) postCopy.
+        self analyzerToken: nil.
+    }.
+
 AnyReference
     withSelector: #doesNotUnderstand: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTMessageSendNode)messageSend :: ASTNode |
         messageSend copy
