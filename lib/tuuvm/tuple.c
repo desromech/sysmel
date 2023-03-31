@@ -216,6 +216,19 @@ bool tuuvm_tuple_isKindOf(tuuvm_context_t *context, tuuvm_tuple_t tuple, tuuvm_t
     return tupleType == type || tuuvm_type_isDirectSubtypeOf(tuuvm_tuple_getType(context, tuple), type);
 }
 
+TUUVM_API bool tuuvm_tuple_isTypeSatisfiedWithValue(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t value)
+{
+    if(!value && tuuvm_type_isNullable(type))
+        return true;
+    return tuuvm_tuple_isKindOf(context, value, type);
+}
+
+TUUVM_API void tuuvm_tuple_typecheckValue(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t value)
+{
+    if(!tuuvm_tuple_isTypeSatisfiedWithValue(context, type, value))
+        tuuvm_error_unexpectedType(type, value);
+}
+
 static tuuvm_tuple_t tuuvm_tuple_primitive_slotAtPut(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;

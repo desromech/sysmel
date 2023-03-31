@@ -1034,4 +1034,14 @@ TUUVM_API void tuuvm_tuple_slotAtPut(tuuvm_context_t *context, tuuvm_tuple_t tup
  */
 TUUVM_API bool tuuvm_tuple_isKindOf(tuuvm_context_t *context, tuuvm_tuple_t tuple, tuuvm_tuple_t type);
 
+/**
+ * Is this tuple a kind of the specified type?
+ */
+TUUVM_API bool tuuvm_tuple_isTypeSatisfiedWithValue(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t value);
+
+/**
+ * Typechecks the given value
+ */
+TUUVM_API void tuuvm_tuple_typecheckValue(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t value);
+
 #endif //TUUVM_TUPLE_H

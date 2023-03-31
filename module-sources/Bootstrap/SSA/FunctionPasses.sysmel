@@ -1,7 +1,7 @@
 public class SSAFunctionPass superclass: Object; definition: {
     __Meta__ definition:{
         public method runIn: (function: SSAFunctionDefinition) ::=> SSAFunctionPass
-            := self new runIn: function
+            := self new runIn: function; yourself
     }.
 
     public method runIn: (function: SSAFunctionDefinition) ::=> Void := {

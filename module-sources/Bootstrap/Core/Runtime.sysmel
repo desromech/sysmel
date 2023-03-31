@@ -156,10 +156,46 @@ AnyValue
         self __type__ isSubtypeOf: expectedType
     } makePure makeFinal.
 
+## Early new implementation
+Type
+    withSelector: #basicAllocate addMethod: {:(Type)self :: self |
+        let: #result with: (if: self isBytes
+            then: RawTuple::byteNew(0sz)
+            else: RawTuple::new(self totalSlotCount)).
+        (RawTuple::type:)(result, self).
+        if: self isWeak then: RawTuple::markWeak(result).
+        result
+    };
+    withSelector: #basicNew addMethod: {:(Type)self :: self |
+        self basicAllocate
+    };
+    withSelector: #new addMethod: {:(Type)self :: self |
+        self basicNew initialize; yourself
+    }.
+
+ASTDownCastNode __type__
+    withSelector: #makeForASTNode:targetType: addMethod: {:(ASTDownCastNode __type__)self :(ASTNode)astNode :(Type)targetType :: self |
+        let: #sourcePosition with: astNode sourcePosition.
+
+        self new
+            sourcePosition: sourcePosition;
+            analyzedType: targetType;
+            typeExpression: (ASTLiteralNode new
+                analyzedType: targetType __type__;
+                sourcePosition: sourcePosition;
+                value: targetType;
+                yourself);
+            valueExpression: astNode;
+            yourself
+    }.
+
 Untyped __type__
     withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(Type)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
-        ## TODO: Add a downcast node.
-        astNode
+        if: self == targetType then: {
+            astNode
+        } else: {
+            ASTDownCastNode makeForASTNode: astNode targetType: targetType
+        }.
     }.
     
 Type
@@ -174,7 +210,11 @@ Type
         if: (self isSubtypeOf: targetType)
         then: astNode
         else: {
-            if: self isDynamic then: astNode else: {
+            if: self isDynamic then: {
+                ## TODO: Add a downcast node.
+                ##astNode.
+                ASTDownCastNode makeForASTNode: astNode targetType: targetType
+            } else: {
                 error((("Cannot coerce node from type " -- self printString) -- " into type ") -- targetType printString)
             }
         }

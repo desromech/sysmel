@@ -909,7 +909,7 @@ SSAPhiInstruction definition: {
         self incomingBlocksAndValues: self incomingBlocksAndValues -- (Array with: block -> value).
     }.
 
-    public method findIncomingBlockAndValueFor: (expectedBlock: SSABasicBlock) ::=> SSAValue
+    public method findIncomingBlockAndValueFor: (expectedBlock: SSABasicBlock) ::=> Association
         := self incomingBlocksAndValues detect: {:(Association)each | each key = expectedBlock } ifNone: {: nil}.
 
     public method incomingBlocksAndValuesDo: aBlock ::=> Void := {

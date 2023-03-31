@@ -299,8 +299,7 @@ TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_con
             }
             break;
         case TUUVM_OPCODE_TYPECHECK:
-            if(!tuuvm_tuple_isKindOf(context, operandRegisterFile[1], operandRegisterFile[0]))
-                tuuvm_error_unexpectedType(operandRegisterFile[0], operandRegisterFile[1]);
+            tuuvm_tuple_typecheckValue(context, operandRegisterFile[0], operandRegisterFile[1]);
             break;
 
         // Three operands.
@@ -543,6 +542,7 @@ void tuuvm_bytecode_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::Store", tuuvm_tuple_uint8_encode(TUUVM_OPCODE_STORE));
     tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::JumpIfTrue", tuuvm_tuple_uint8_encode(TUUVM_OPCODE_JUMP_IF_TRUE));
     tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::JumpIfFalse", tuuvm_tuple_uint8_encode(TUUVM_OPCODE_JUMP_IF_FALSE));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::TypeCheck", tuuvm_tuple_uint8_encode(TUUVM_OPCODE_TYPECHECK));
 
     // Three operands.
     tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::AllocaWithValue", tuuvm_tuple_uint8_encode(TUUVM_OPCODE_ALLOCA_WITH_VALUE));
