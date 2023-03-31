@@ -969,10 +969,6 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "selector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
-    context->roots.astTupleWithLookupStartingFromNodeType = tuuvm_context_createIntrinsicClass(context, "ASTTupleWithLookupStartingFromNode", context->roots.astNodeType,
-        "objectExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
-        "typeExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
-        NULL);
     context->roots.astPragmaNodeType = tuuvm_context_createIntrinsicClass(context, "ASTPragmaNode", context->roots.astNodeType,
         "selector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
@@ -983,6 +979,26 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.astSequenceNodeType = tuuvm_context_createIntrinsicClass(context, "ASTSequenceNode", context->roots.astNodeType,
         "pragmas", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "expressions", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        NULL);
+    context->roots.astTupleSlotNamedAtNodeType = tuuvm_context_createIntrinsicClass(context, "ASTTupleSlotNamedAtNode", context->roots.astNodeType,
+        "tupleExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "nameExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "boundSlot", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeSlotType,
+        NULL);
+    context->roots.astTupleSlotNamedAtPutNodeType = tuuvm_context_createIntrinsicClass(context, "ASTTupleSlotNamedAtPutNode", context->roots.astNodeType,
+        "tupleExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "nameExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "valueExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "boundSlot", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeSlotType,
+        NULL);
+    context->roots.astTupleSlotNamedReferenceAtNodeType = tuuvm_context_createIntrinsicClass(context, "ASTTupleSlotNamedReferenceAtNode", context->roots.astNodeType,
+        "tupleExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "nameExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "boundSlot", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeSlotType,
+        NULL);
+    context->roots.astTupleWithLookupStartingFromNodeType = tuuvm_context_createIntrinsicClass(context, "ASTTupleWithLookupStartingFromNode", context->roots.astNodeType,
+        "tupleExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "typeExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     context->roots.astUnexpandedApplicationNodeType = tuuvm_context_createIntrinsicClass(context, "ASTUnexpandedApplicationNode", context->roots.astNodeType,
         "functionOrMacroExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,

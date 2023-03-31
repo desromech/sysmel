@@ -269,11 +269,11 @@ ASTMessageChainMessageNode
 
 ASTTupleWithLookupStartingFromNode
     withSelector: #childrenDo: addMethod: {:(ASTTupleWithLookupStartingFromNode)self :aBlock :: Void |
-        if: (self objectExpression isNotNil) then: aBlock(self objectExpression).
+        if: (self tupleExpression isNotNil) then: aBlock(self tupleExpression).
         if: (self typeExpression isNotNil) then: aBlock(self typeExpression).
     };
     withSelector: #transformWith: addMethod: {:(ASTTupleWithLookupStartingFromNode)self :aBlock :: Void |
-        if: (self objectExpression isNotNil) then: (self objectExpression: aBlock(self objectExpression)).
+        if: (self tupleExpression isNotNil) then: (self tupleExpression: aBlock(self tupleExpression)).
         if: (self typeExpression isNotNil) then: (self typeExpression: aBlock(self typeExpression)).
     }.
 

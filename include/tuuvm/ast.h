@@ -180,13 +180,6 @@ typedef struct tuuvm_astMessageChainMessageNode_s
     tuuvm_tuple_t arguments;
 } tuuvm_astMessageChainMessageNode_t;
 
-typedef struct tuuvm_astTupleWithLookupStartingFromNode_s
-{
-    tuuvm_astNode_t super;
-    tuuvm_tuple_t objectExpression;
-    tuuvm_tuple_t typeExpression;
-} tuuvm_astTupleWithLookupStartingFromNode_t;
-
 typedef struct tuuvm_astPragmaNode_s
 {
     tuuvm_astNode_t super;
@@ -245,6 +238,38 @@ typedef struct tuuvm_astSpliceNode_s
     tuuvm_tuple_t expression;
     tuuvm_tuple_t astTemplateParameterIndex;
 } tuuvm_astSpliceNode_t;
+
+typedef struct tuuvm_astTupleSlotNamedAtNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t tupleExpression;
+    tuuvm_tuple_t nameExpression;
+    tuuvm_tuple_t boundSlot;
+} tuuvm_astTupleSlotNamedAtNode_t;
+
+typedef struct tuuvm_astTupleSlotNamedAtPutNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t tupleExpression;
+    tuuvm_tuple_t nameExpression;
+    tuuvm_tuple_t valueExpression;
+    tuuvm_tuple_t boundSlot;
+} tuuvm_astTupleSlotNamedAtPutNode_t;
+
+typedef struct tuuvm_astTupleSlotNamedReferenceAtNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t tupleExpression;
+    tuuvm_tuple_t nameExpression;
+    tuuvm_tuple_t boundSlot;
+} tuuvm_astTupleSlotNamedReferenceAtNode_t;
+
+typedef struct tuuvm_astTupleWithLookupStartingFromNode_s
+{
+    tuuvm_astNode_t super;
+    tuuvm_tuple_t tupleExpression;
+    tuuvm_tuple_t typeExpression;
+} tuuvm_astTupleWithLookupStartingFromNode_t;
 
 typedef struct tuuvm_astWhileContinueWithNode_s
 {
@@ -365,11 +390,6 @@ TUUVM_API bool tuuvm_astNode_isMessageChainNode(tuuvm_context_t *context, tuuvm_
 TUUVM_API bool tuuvm_astNode_isMessageChainMessageNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
 
 /**
- * Is this an object with lookup starting from node?
- */ 
-TUUVM_API bool tuuvm_astNode_isObjectWithLookupStartingFromNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
-
-/**
  * Is this a pragma node?
  */ 
 TUUVM_API bool tuuvm_astNode_isPragmaNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
@@ -383,6 +403,26 @@ TUUVM_API bool tuuvm_astNode_isReturnNode(tuuvm_context_t *context, tuuvm_tuple_
  * Is this a sequence node?
  */ 
 TUUVM_API bool tuuvm_astNode_isSequenceNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this a tuple slot named at node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isTupleSlotNamedAtNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this a tuple slot named at put node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isTupleSlotNamedAtPutNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this a tuple slot named reference at node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isTupleSlotNamedReferenceAtNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
+
+/**
+ * Is this a tuple with lookup starting from node?
+ */ 
+TUUVM_API bool tuuvm_astNode_isTupleWithLookupStartingFromNode(tuuvm_context_t *context, tuuvm_tuple_t tuple);
 
 /**
  * Is this an unexpanded application node?
@@ -671,11 +711,6 @@ TUUVM_API tuuvm_tuple_t tuuvm_astMessageChainNode_create(tuuvm_context_t *contex
 TUUVM_API tuuvm_tuple_t tuuvm_astMessageChainMessageNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t selector, tuuvm_tuple_t arguments);
 
 /**
- * Creates an object with lookup starting from node.
- */ 
-TUUVM_API tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFrom_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t objectExpression, tuuvm_tuple_t typeExpression);
-
-/**
  * Creates a pragma node.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_astPragmaNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t selector, tuuvm_tuple_t arguments);
@@ -699,6 +734,26 @@ TUUVM_API size_t tuuvm_astSequenceNode_getExpressionCount(tuuvm_tuple_t sequence
  * Gets an expression with the given index in the sequence node.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_astSequenceNode_getExpressionAt(tuuvm_tuple_t sequenceNode, size_t index);
+
+/**
+ * Creates a tuple slot named at node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astTupleSlotNamedAtNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t tupleExpression, tuuvm_tuple_t nameExpression);
+
+/**
+ * Creates a tuple slot named at node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astTupleSlotNamedAtPutNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t tupleExpression, tuuvm_tuple_t nameExpression, tuuvm_tuple_t valueExpression);
+
+/**
+ * Creates a tuple slot named reference at node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astTupleSlotNamedReferenceAtNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t tupleExpression, tuuvm_tuple_t nameExpression);
+
+/**
+ * Creates a tuple with lookup starting from node.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFromNode_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t tupleExpression, tuuvm_tuple_t typeExpression);
 
 /**
  * Creates an unexpanded application node.

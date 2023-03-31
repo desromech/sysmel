@@ -2955,10 +2955,10 @@ static tuuvm_tuple_t tuuvm_astMessageChainNode_primitiveAnalyze(tuuvm_context_t 
         gcFrame.chainNode->receiver = gcFrame.analyzedReceiver;
 
         // Inline the object with lookup starting from node.
-        if(tuuvm_astNode_isObjectWithLookupStartingFromNode(context, gcFrame.analyzedReceiver))
+        if(tuuvm_astNode_isTupleWithLookupStartingFromNode(context, gcFrame.analyzedReceiver))
         {
             tuuvm_astTupleWithLookupStartingFromNode_t *objectLookup = (tuuvm_astTupleWithLookupStartingFromNode_t*)gcFrame.analyzedReceiver;
-            gcFrame.analyzedReceiver = objectLookup->objectExpression;
+            gcFrame.analyzedReceiver = objectLookup->tupleExpression;
             gcFrame.chainNode->receiver = gcFrame.analyzedReceiver;
             
             gcFrame.analyzedReceiverTypeExpression = objectLookup->typeExpression;
@@ -3354,10 +3354,10 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyze(tuuvm_context_t *
         gcFrame.receiverType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedReceiver);
 
         // Inline the object with lookup starting from node.
-        if(tuuvm_astNode_isObjectWithLookupStartingFromNode(context, gcFrame.analyzedReceiver))
+        if(tuuvm_astNode_isTupleWithLookupStartingFromNode(context, gcFrame.analyzedReceiver))
         {
             tuuvm_astTupleWithLookupStartingFromNode_t *objectLookup = (tuuvm_astTupleWithLookupStartingFromNode_t*)gcFrame.analyzedReceiver;
-            gcFrame.analyzedReceiver = objectLookup->objectExpression;
+            gcFrame.analyzedReceiver = objectLookup->tupleExpression;
             gcFrame.sendNode->receiver = gcFrame.analyzedReceiver;
             
             gcFrame.analyzedReceiverTypeExpression = objectLookup->typeExpression;
@@ -3764,11 +3764,11 @@ static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFrom_primitiveMacro(tuuvm_c
     if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
 
     tuuvm_tuple_t *macroContext = &arguments[0];
-    tuuvm_tuple_t *objectExpression = &arguments[1];
+    tuuvm_tuple_t *tupleExpression = &arguments[1];
     tuuvm_tuple_t *typeExpression = &arguments[2];
 
     tuuvm_tuple_t sourcePosition = tuuvm_macroContext_getSourcePosition(*macroContext);
-    return tuuvm_astTupleWithLookupStartingFrom_create(context, sourcePosition, *objectExpression, *typeExpression);
+    return tuuvm_astTupleWithLookupStartingFromNode_create(context, sourcePosition, *tupleExpression, *typeExpression);
 }
 
 static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFrom_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -3793,8 +3793,8 @@ static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFrom_primitiveAnalyze(tuuvm
 
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.objectWithLookupStartingFromNode->super.sourcePosition);
 
-    gcFrame.analyzedObjectExpression = tuuvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.objectWithLookupStartingFromNode->objectExpression, *environment);
-    gcFrame.objectWithLookupStartingFromNode->objectExpression = gcFrame.analyzedObjectExpression;
+    gcFrame.analyzedObjectExpression = tuuvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.objectWithLookupStartingFromNode->tupleExpression, *environment);
+    gcFrame.objectWithLookupStartingFromNode->tupleExpression = gcFrame.analyzedObjectExpression;
 
     gcFrame.analyzedTypeExpression = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.objectWithLookupStartingFromNode->typeExpression, context->roots.typeType, *environment);
     gcFrame.objectWithLookupStartingFromNode->typeExpression = gcFrame.analyzedTypeExpression;
@@ -3815,7 +3815,7 @@ static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFrom_primitiveEvaluate(tuuv
 
     tuuvm_astTupleWithLookupStartingFromNode_t **node = (tuuvm_astTupleWithLookupStartingFromNode_t**)&arguments[0];
     tuuvm_tuple_t *environment = &arguments[1];
-    return tuuvm_interpreter_evaluateASTWithEnvironment(context, (*node)->objectExpression, *environment);
+    return tuuvm_interpreter_evaluateASTWithEnvironment(context, (*node)->tupleExpression, *environment);
 }
 
 static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFrom_primitiveAnalyzeAndEvaluate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -3825,7 +3825,7 @@ static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFrom_primitiveAnalyzeAndEva
 
     tuuvm_astTupleWithLookupStartingFromNode_t **node = (tuuvm_astTupleWithLookupStartingFromNode_t**)&arguments[0];
     tuuvm_tuple_t *environment = &arguments[1];
-    return tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*node)->objectExpression, *environment);
+    return tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*node)->tupleExpression, *environment);
 }
 
 static tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_primitiveMacro(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
