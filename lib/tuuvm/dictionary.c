@@ -388,6 +388,22 @@ TUUVM_API tuuvm_tuple_t tuuvm_methodDictionary_create(tuuvm_context_t *context)
     return (tuuvm_tuple_t)result;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_methodDictionary_createWithCapacity(tuuvm_context_t *context, size_t initialCapacity)
+{
+    size_t requiredStorageCapacity = initialCapacity * 130 / 100;
+    tuuvm_methodDictionary_t *result = (tuuvm_methodDictionary_t*)tuuvm_context_allocatePointerTuple(context, context->roots.methodDictionaryType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_methodDictionary_t));
+    result->size = tuuvm_tuple_size_encode(context, 0);
+    if(requiredStorageCapacity > 0)
+    {
+        size_t entryCount = requiredStorageCapacity * 2;
+        result->storage = tuuvm_array_create(context, entryCount);
+        for(size_t i = 0; i < entryCount; ++i)
+            tuuvm_array_atPut(result->storage, i, TUUVM_HASHTABLE_EMPTY_ELEMENT_TUPLE);
+    }
+
+    return (tuuvm_tuple_t)result;
+}
+
 static intptr_t tuuvm_identityDictionary_scanFor(tuuvm_tuple_t dictionary, tuuvm_tuple_t element)
 {
     if(!tuuvm_tuple_isNonNullPointer(dictionary))

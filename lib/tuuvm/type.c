@@ -12,12 +12,14 @@
 #include "internal/context.h"
 #include <string.h>
 
-TUUVM_API tuuvm_tuple_t tuuvm_typeSlot_create(tuuvm_context_t *context, tuuvm_tuple_t name, tuuvm_tuple_t flags, tuuvm_tuple_t type)
+TUUVM_API tuuvm_tuple_t tuuvm_typeSlot_create(tuuvm_context_t *context, tuuvm_tuple_t name, tuuvm_tuple_t flags, tuuvm_tuple_t type, size_t localIndex, size_t index)
 {
     tuuvm_typeSlot_t* result = (tuuvm_typeSlot_t*)tuuvm_context_allocatePointerTuple(context, context->roots.typeSlotType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_typeSlot_t));
     result->flags = flags;
     result->name = name;
     result->type = type;
+    result->localIndex = tuuvm_tuple_size_encode(context, localIndex);
+    result->index = tuuvm_tuple_size_encode(context, index);
     return (tuuvm_tuple_t)result;
 }
 
@@ -468,6 +470,21 @@ static tuuvm_tuple_t tuuvm_type_lookupSelectorRecursively(tuuvm_context_t *conte
     return tuuvm_type_lookupSelectorRecursively(context, tuuvm_type_getSupertype(type), selector);
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_type_lookupSlot(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t slotName)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+
+    tuuvm_tuple_t slotDictionary = tuuvm_type_getSlotDictionary(type);
+    if(slotDictionary)
+    {
+        tuuvm_tuple_t found = TUUVM_NULL_TUPLE;
+        if(tuuvm_methodDictionary_find(slotDictionary, slotName, &found))
+            return found;
+    }
+
+    return tuuvm_type_lookupSlot(context, tuuvm_type_getSupertype(type), slotName);
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_type_lookupSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector)
 {
     if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
@@ -553,6 +570,25 @@ TUUVM_API void tuuvm_type_setMethodWithSelector(tuuvm_context_t *context, tuuvm_
             functionObject->owner = type;
             functionObject->name = selector;
         }
+    }
+}
+
+TUUVM_API void tuuvm_type_buildSlotDictionary(tuuvm_context_t *context, tuuvm_tuple_t type)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return;
+
+    tuuvm_type_tuple_t* typeObject = (tuuvm_type_tuple_t*)type;
+    size_t slotCount = tuuvm_array_getSize(typeObject->slots);
+    if(slotCount == 0) return;
+
+    if(!typeObject->slotDictionary)
+        typeObject->slotDictionary = tuuvm_methodDictionary_createWithCapacity(context, slotCount);
+
+    for(size_t i = 0; i < slotCount; ++i)
+    {
+        tuuvm_typeSlot_t *typeSlot = (tuuvm_typeSlot_t*)tuuvm_array_at(typeObject->slots, i);
+        if(typeSlot->name)
+            tuuvm_methodDictionary_atPut(context, typeObject->slotDictionary, typeSlot->name, (tuuvm_tuple_t)typeSlot);
     }
 }
 

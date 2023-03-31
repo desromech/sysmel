@@ -279,20 +279,47 @@ Type
         self hasFlag: TypeFlags::Abstract.
     };
 
+    withSelector: #validSlotDictionary addMethod: {:(Type)self :: MethodDictionary |
+        if: self slotDictionary == nil then: (self slotDictionary: MethodDictionary new).
+        self slotDictionary
+    };
+    withSelector: #addSlotToDictionary: addMethod: {:(Type)self :(TypeSlot)slot :: Void |
+        let: #slotName with: slot name.
+        if: slotName ~~ nil then: {
+            self validSlotDictionary at: slotName put: slot
+        }
+    };
+    withSelector: #registerSlotsInDictionary addMethod: {:(Type)self :: Void |
+        let: #supertypeSlotCount with: self validSupertypeTotalSlotCount.
+
+        self slots doWithIndex: {:(TypeSlot)slot :(Size)index :: Void |
+            slot
+                localIndex: index;
+                index: supertypeSlotCount + index.
+            self addSlotToDictionary: slot
+        }
+    };
     withSelector: #addTypeSlot: addMethod: {:(Type)self :(TypeSlot)extraSlot :: Void |
         if: self totalSlotCount ~~ nil then: (self error: "Cannot add type slot when the total slot count has already been computed").
         if: self pendingSlots == nil then: (self pendingSlots: ArrayList new).
-        self pendingSlots add: extraSlot
+
+        self pendingSlots add: extraSlot.
+        self addSlotToDictionary: extraSlot.
     };
     withSelector: #validSlots addMethod: {:(Type)self |
         let: #pendingSlots with: self pendingSlots.
         if: pendingSlots ~~ nil then: {
 
             let: #pendingSlotsArray with: pendingSlots asArray.
-            let: #baseIndex with: self validSupertypeTotalSlotCount + self slots size.
+            let: #localBaseIndex with: self slots size.
+            let: #baseIndex with: self validSupertypeTotalSlotCount + localBaseIndex.
 
             pendingSlotsArray doWithIndex: {:pendingSlot :pendingSlotIndex :: Void |
+                let: #localSlotIndex with: localBaseIndex + pendingSlotIndex.
                 let: #slotIndex with: baseIndex + pendingSlotIndex.
+                pendingSlot
+                    localIndex: localSlotIndex;
+                    index: slotIndex.
                 pendingSlot generateAccessorsOn: self withIndex: slotIndex
             }.
 
@@ -337,13 +364,13 @@ Type
     withSelector: #new addMethod: {:(Type)self :: self |
         self basicNew initialize; yourself
     };
-    withSelector: #>> addMethod: {:(Type)self :selector |
+    withSelector: #>> addMethod: {:(Type)self :(Symbol)selector |
         let: #methodDictionary with: self methodDictionary.
         if: methodDictionary ~~ nil
             then: (methodDictionary atOrNil: selector)
             else: nil
     };
-    withSelector: #lookupSelector: addMethod: {:(Type)self :selector |
+    withSelector: #lookupSelector: addMethod: {:(Type)self :(Symbol)selector |
         let: #method with: self >> selector.
         if: method ~~ nil
         then: method
@@ -351,6 +378,23 @@ Type
             let: #supertype with: self supertype.
             if: supertype ~~ nil
                 then: (supertype lookupSelector: selector)
+                else: (nil)
+        }
+    };
+    withSelector: #localSlotNamed: addMethod: {:(Type)self :(Symbol)name |
+        let: #slotDictionary with: self slotDictionary.
+        if: slotDictionary ~~ nil
+            then: (slotDictionary atOrNil: name)
+            else: nil
+    };
+    withSelector: #lookupSlot: addMethod: {:(Type)self :(Symbol)name |
+        let: #slot with: (self localSlotNamed: name).
+        if: slot ~~ nil
+        then: slot
+        else: {
+            let: #supertype with: self supertype.
+            if: supertype ~~ nil
+                then: (supertype lookupSlot: name)
                 else: (nil)
         }
     }.
@@ -1433,6 +1477,8 @@ TypeSlot
             name: name;
             type: type;
             flags: flags;
+            localIndex: 0sz;
+            index: 0sz;
             yourself
     };
     withSelector: #named:type: addClassMethod: {:(TypeSlot class)self :name :(Type)type :: self |
@@ -1689,6 +1735,7 @@ Class
             supertype: metaclassSuper;
             slots: classSlots;
             totalSlotCount: metaclassSuper validTotalSlotCount + classSlots size;
+            registerSlotsInDictionary;
             generatePublicAccessors.
         
         let: #class with: metaclass basicNew.
@@ -1705,6 +1752,7 @@ Class
         (self subclassWithClassSlots: classSlots)
             slots: instanceSlots;
             totalSlotCount: self validTotalSlotCount + instanceSlots size;
+            registerSlotsInDictionary;
             generatePublicAccessors;
             yourself
     };

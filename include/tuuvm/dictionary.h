@@ -72,6 +72,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_identityDictionary_create(tuuvm_context_t *context
 TUUVM_API tuuvm_tuple_t tuuvm_methodDictionary_create(tuuvm_context_t *context);
 
 /**
+ * Creates a method dictionary data structure with the specified capacity.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_methodDictionary_createWithCapacity(tuuvm_context_t *context, size_t initialCapacity);
+
+/**
  * Finds an association in the dictionary.
  */ 
 TUUVM_API bool tuuvm_identityDictionary_findAssociation(tuuvm_tuple_t dictionary, tuuvm_tuple_t key, tuuvm_tuple_t *outAssociation);

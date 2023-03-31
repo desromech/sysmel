@@ -108,6 +108,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicClass(tuuvm_context_t *cont
     va_end(valist);
 
     // Second pass: make the argument list.
+    size_t supertypeTotalSlotCount = 0;
+    tuuvm_tuple_t actualSupertype = tuuvm_type_getSupertype(type);
+    if(tuuvm_tuple_isNonNullPointer(actualSupertype))
+        supertypeTotalSlotCount = tuuvm_type_getTotalSlotCount(actualSupertype);
+
     tuuvm_tuple_t slots = tuuvm_array_create(context, slotNameCount);
     va_start(valist, supertype);
     for(size_t i = 0; i < slotNameCount; ++i)
@@ -117,18 +122,13 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicClass(tuuvm_context_t *cont
         tuuvm_tuple_t type = va_arg(valist, tuuvm_tuple_t);
         if(!type)
             type = context->roots.anyValueType;
-        tuuvm_array_atPut(slots, i, tuuvm_typeSlot_create(context, name, flags, type));
+        tuuvm_array_atPut(slots, i, tuuvm_typeSlot_create(context, name, flags, type, i, supertypeTotalSlotCount + i));
     }
 
     va_end(valist);
     tuuvm_type_setSlots(type, slots);
-
-    // Set the total slot count.
-    size_t totalSlotCount = slotNameCount;
-    tuuvm_tuple_t actualSupertype = tuuvm_type_getSupertype(type);
-    if(tuuvm_tuple_isNonNullPointer(actualSupertype))
-        totalSlotCount += tuuvm_type_getTotalSlotCount(actualSupertype);
-    tuuvm_type_setTotalSlotCount(context, type, totalSlotCount);
+    tuuvm_type_setTotalSlotCount(context, type, supertypeTotalSlotCount + slotNameCount);
+    tuuvm_type_buildSlotDictionary(context, type);
 
     return type;
 }
@@ -143,6 +143,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicPrimitiveValueType(tuuvm_co
 
     tuuvm_type_setSlots(type, tuuvm_array_create(context, 0));
     tuuvm_type_setTotalSlotCount(context, type, 0);
+    tuuvm_type_buildSlotDictionary(context, type);
     return type;
 }
 
@@ -168,6 +169,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicType(tuuvm_context_t *conte
     va_end(valist);
 
     // Second pass: make the argument list.
+    size_t supertypeTotalSlotCount = 0;
+    tuuvm_tuple_t actualSupertype = tuuvm_type_getSupertype(type);
+    if(tuuvm_tuple_isNonNullPointer(actualSupertype))
+        supertypeTotalSlotCount = tuuvm_type_getTotalSlotCount(actualSupertype);
+
     tuuvm_tuple_t slots = tuuvm_array_create(context, slotNameCount);
     va_start(valist, supertype);
     for(size_t i = 0; i < slotNameCount; ++i)
@@ -177,18 +183,13 @@ TUUVM_API tuuvm_tuple_t tuuvm_context_createIntrinsicType(tuuvm_context_t *conte
         tuuvm_tuple_t type = va_arg(valist, tuuvm_tuple_t);
         if(!type)
             type = context->roots.anyValueType;
-        tuuvm_array_atPut(slots, i, tuuvm_typeSlot_create(context, name, flags, type));
+        tuuvm_array_atPut(slots, i, tuuvm_typeSlot_create(context, name, flags, type, i, supertypeTotalSlotCount + i));
     }
 
     va_end(valist);
     tuuvm_type_setSlots(type, slots);
-
-    // Set the total slot count.
-    size_t totalSlotCount = slotNameCount;
-    tuuvm_tuple_t actualSupertype = tuuvm_type_getSupertype(type);
-    if(tuuvm_tuple_isNonNullPointer(actualSupertype))
-        totalSlotCount += tuuvm_type_getTotalSlotCount(actualSupertype);
-    tuuvm_type_setTotalSlotCount(context, type, totalSlotCount);
+    tuuvm_type_setTotalSlotCount(context, type, supertypeTotalSlotCount + slotNameCount);
+    tuuvm_type_buildSlotDictionary(context, type);
 
     return type;
 }
@@ -215,6 +216,11 @@ static void tuuvm_context_setIntrinsicTypeMetadata(tuuvm_context_t *context, tuu
     va_end(valist);
 
     // Second pass: make the argument list.
+    size_t supertypeTotalSlotCount = 0;
+    tuuvm_tuple_t actualSupertype = tuuvm_type_getSupertype(type);
+    if(tuuvm_tuple_isNonNullPointer(actualSupertype))
+        supertypeTotalSlotCount = tuuvm_type_getTotalSlotCount(actualSupertype);
+
     tuuvm_tuple_t slots = tuuvm_array_create(context, slotNameCount);
     va_start(valist, supertype);
     for(size_t i = 0; i < slotNameCount; ++i)
@@ -224,18 +230,13 @@ static void tuuvm_context_setIntrinsicTypeMetadata(tuuvm_context_t *context, tuu
         tuuvm_tuple_t type = va_arg(valist, tuuvm_tuple_t);
         if(!type)
             type = context->roots.anyValueType;
-        tuuvm_array_atPut(slots, i, tuuvm_typeSlot_create(context, name, flags, type));
+        tuuvm_array_atPut(slots, i, tuuvm_typeSlot_create(context, name, flags, type, i, supertypeTotalSlotCount + i));
     }
 
     va_end(valist);
     tuuvm_type_setSlots(type, slots);
-
-    // Set the total slot count.
-    size_t totalSlotCount = slotNameCount;
-    tuuvm_tuple_t actualSupertype = tuuvm_type_getSupertype(type);
-    if(tuuvm_tuple_isNonNullPointer(actualSupertype))
-        totalSlotCount += tuuvm_type_getTotalSlotCount(actualSupertype);
-    tuuvm_type_setTotalSlotCount(context, type, totalSlotCount);
+    tuuvm_type_setTotalSlotCount(context, type, supertypeTotalSlotCount + slotNameCount);
+    tuuvm_type_buildSlotDictionary(context, type);
 }
 
 TUUVM_API void tuuvm_context_setIntrinsicSymbolBindingValue(tuuvm_context_t *context, tuuvm_tuple_t symbol, tuuvm_tuple_t value)
@@ -564,24 +565,28 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "slots", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "totalSlotCount", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
-        
-        "macroMethodDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "methodDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "fallbackMethodDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+
+        "slotDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.methodDictionaryType,
+
+        "macroMethodDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.methodDictionaryType,
+        "methodDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.methodDictionaryType,
+        "fallbackMethodDictionary", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.methodDictionaryType,
 
         "pendingSlots", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         "subtypes", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.classType, "Class", TUUVM_NULL_TUPLE, NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.metatypeType, "Metatype", TUUVM_NULL_TUPLE,
-        "thisType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "thisType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.metaclassType, "Metaclass", TUUVM_NULL_TUPLE,
         NULL);
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.typeSlotType, "TypeSlot", TUUVM_NULL_TUPLE,
-        "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
-        "type", TUUVM_TYPE_SLOT_FLAG_PUBLIC, TUUVM_NULL_TUPLE,
+        "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
+        "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
+        "type", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
+        "localIndex", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "index", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         NULL);
 
     tuuvm_context_setIntrinsicTypeMetadata(context, context->roots.valueType, "ValueType", TUUVM_NULL_TUPLE, NULL);

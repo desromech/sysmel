@@ -17,6 +17,8 @@ typedef struct tuuvm_type_tuple_s
     tuuvm_tuple_t totalSlotCount;
     tuuvm_tuple_t flags;
 
+    tuuvm_tuple_t slotDictionary;
+
     tuuvm_tuple_t macroMethodDictionary;
     tuuvm_tuple_t methodDictionary;
     tuuvm_tuple_t fallbackMethodDictionary;
@@ -115,6 +117,8 @@ typedef struct tuuvm_typeSlot_s
     tuuvm_tuple_t name;
     tuuvm_tuple_t flags;
     tuuvm_tuple_t type;
+    tuuvm_tuple_t localIndex;
+    tuuvm_tuple_t index;
 } tuuvm_typeSlot_t;
 
 typedef struct tuuvm_functionType_s
@@ -158,7 +162,7 @@ typedef struct tuuvm_polymorphicInlineLookupCache_s tuuvm_polymorphicInlineLooku
 /**
  * Creates a type slot
  */
-TUUVM_API tuuvm_tuple_t tuuvm_typeSlot_create(tuuvm_context_t *context, tuuvm_tuple_t name, tuuvm_tuple_t flags, tuuvm_tuple_t type);
+TUUVM_API tuuvm_tuple_t tuuvm_typeSlot_create(tuuvm_context_t *context, tuuvm_tuple_t name, tuuvm_tuple_t flags, tuuvm_tuple_t type, size_t localIndex, size_t index);
 
 /**
  * Creates an anonymous type.
@@ -292,6 +296,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_canonicalizeFunctionType(tuuvm_context_t *con
 TUUVM_API tuuvm_tuple_t tuuvm_type_lookupMacroSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector);
 
 /**
+ * Performs the lookup of the given slot.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_lookupSlot(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector);
+
+/**
  * Performs the lookup of the given selector.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_type_lookupSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector);
@@ -315,6 +324,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_lookupFallbackSelector(tuuvm_context_t *conte
  * Sets the specified method with the given selector in the method dictionary.
  */
 TUUVM_API void tuuvm_type_setMethodWithSelector(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t selector, tuuvm_tuple_t method);
+
+/**
+ * Build the slot dictionary.
+ */
+TUUVM_API void tuuvm_type_buildSlotDictionary(tuuvm_context_t *context, tuuvm_tuple_t type);
 
 /**
  * Is this type a subtype of?
@@ -474,6 +488,15 @@ TUUVM_INLINE bool tuuvm_type_isPointerType(tuuvm_tuple_t type)
 TUUVM_INLINE bool tuuvm_type_isReferenceType(tuuvm_tuple_t type)
 {
     return (tuuvm_type_getFlags(type) & TUUVM_TYPE_FLAGS_REFERENCE_VALUE) != 0;
+}
+
+/**
+ * Gets the slot dictionary.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_type_getSlotDictionary(tuuvm_tuple_t type)
+{
+    if(!tuuvm_tuple_isNonNullPointer(type)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_type_tuple_t*)type)->slotDictionary;
 }
 
 /**
