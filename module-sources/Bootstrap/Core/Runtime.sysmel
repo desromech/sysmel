@@ -564,7 +564,7 @@ AnyValue
 
 ASTNode
     withSelector: #postCopy addMethod: {:(ASTNode)self :: Void |
-        (object: self withLookupStartingFrom: ASTNode supertype) postCopy.
+        (tuple: self withLookupStartingFrom: ASTNode supertype) postCopy.
         self analyzerToken: nil.
     }.
 

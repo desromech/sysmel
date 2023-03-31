@@ -196,7 +196,7 @@ NamedMetaBuilder publicSubclass: #TypeMetaBuilder slots: (
 
 TypeMetaBuilder
     withSelector: #initialize addMethod: {:self :: Void |
-        (object: self withLookupStartingFrom: TypeMetaBuilder supertype) initialize.
+        (tuple: self withLookupStartingFrom: TypeMetaBuilder supertype) initialize.
         self isPublic: false.
         self typeFlags: TypeFlags::None
     };
@@ -302,7 +302,7 @@ VariableMetaBuilder publicSubclass: #LetMetaBuilder slots: (
 
 LetMetaBuilder
     withSelector: #initialize addMethod: {:self :: Void |
-        (object: self withLookupStartingFrom: TypeMetaBuilder supertype) initialize.
+        (tuple: self withLookupStartingFrom: TypeMetaBuilder supertype) initialize.
         self isMutable: false
     };
     withSelector: #mutable addMethod: {:self :: ASTNode |
@@ -329,7 +329,7 @@ VariableMetaBuilder publicSubclass: #FieldMetaBuilder slots: (
 
 FieldMetaBuilder
     withSelector: #initialize addMethod: {:self :: Void |
-        (object: self withLookupStartingFrom: FieldMetaBuilder supertype) initialize.
+        (tuple: self withLookupStartingFrom: FieldMetaBuilder supertype) initialize.
         self fieldFlags: TypeSlotFlags::None
     };
     withSelector: #addFieldFlags: addMethod: {:self :(Bitflags)flags :: Void |
@@ -403,7 +403,7 @@ ASTUnexpandedApplicationNode
 
 MethodMetaBuilder
     withSelector: #initialize addMethod: {:self :: Void |
-        (object: self withLookupStartingFrom: MethodMetaBuilder supertype) initialize.
+        (tuple: self withLookupStartingFrom: MethodMetaBuilder supertype) initialize.
         self methodFlags: FunctionFlags::None.
         self isMacro: false.
         self isFallbackMethod: false.
@@ -490,7 +490,7 @@ MacroMetaBuilder publicSubclass: #MacroMethodMetaBuilder slots: (
 
 MacroMethodMetaBuilder
     withSelector: #initialize addMethod: {:self :: Void |
-        (object: self withLookupStartingFrom: MacroMethodMetaBuilder supertype) initialize.
+        (tuple: self withLookupStartingFrom: MacroMethodMetaBuilder supertype) initialize.
         self methodFlags: FunctionFlags::Macro.
         self isFallbackMethod: false.
     };
@@ -520,7 +520,7 @@ MacroMetaBuilder publicSubclass: #FlagMetaBuilder slots: (
 
 FlagMetaBuilder
     withSelector: #initialize addMethod: {:self :: Void |
-        (object: self withLookupStartingFrom: FlagMetaBuilder supertype) initialize.
+        (tuple: self withLookupStartingFrom: FlagMetaBuilder supertype) initialize.
         self methodFlags: FunctionFlags::None.
         self typeFlags: TypeFlags::None.
         self fieldFlags: TypeSlotFlags::None.
@@ -607,7 +607,7 @@ FlagMetaBuilder publicSubclass: #PublicMetaBuilder slots: (
 
 PublicMetaBuilder
     withSelector: #initialize addMethod: {:self :: Void |
-        (object: self withLookupStartingFrom: PublicMetaBuilder supertype) initialize.
+        (tuple: self withLookupStartingFrom: PublicMetaBuilder supertype) initialize.
         self fieldFlags: TypeSlotFlags::Public.
         self isPublic: true.
     }.
@@ -629,7 +629,7 @@ public: #private with: (MetaBuilderFactory for: PrivateMetaBuilder).
                 let: #SuperType with: SelfType supertype.
                 let: #__Meta__ with: SelfType __type__.
                 let: #__OwnerProgramEntity__ with: SelfType.
-                macroLet: #super with: (object: self withLookupStartingFrom: SuperType).
+                macroLet: #super with: (tuple: self withLookupStartingFrom: SuperType).
                 `,extensionBlock
             }
         } makeMacro.

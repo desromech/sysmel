@@ -2957,7 +2957,7 @@ static tuuvm_tuple_t tuuvm_astMessageChainNode_primitiveAnalyze(tuuvm_context_t 
         // Inline the object with lookup starting from node.
         if(tuuvm_astNode_isObjectWithLookupStartingFromNode(context, gcFrame.analyzedReceiver))
         {
-            tuuvm_astObjectWithLookupStartingFromNode_t *objectLookup = (tuuvm_astObjectWithLookupStartingFromNode_t*)gcFrame.analyzedReceiver;
+            tuuvm_astTupleWithLookupStartingFromNode_t *objectLookup = (tuuvm_astTupleWithLookupStartingFromNode_t*)gcFrame.analyzedReceiver;
             gcFrame.analyzedReceiver = objectLookup->objectExpression;
             gcFrame.chainNode->receiver = gcFrame.analyzedReceiver;
             
@@ -3356,7 +3356,7 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveAnalyze(tuuvm_context_t *
         // Inline the object with lookup starting from node.
         if(tuuvm_astNode_isObjectWithLookupStartingFromNode(context, gcFrame.analyzedReceiver))
         {
-            tuuvm_astObjectWithLookupStartingFromNode_t *objectLookup = (tuuvm_astObjectWithLookupStartingFromNode_t*)gcFrame.analyzedReceiver;
+            tuuvm_astTupleWithLookupStartingFromNode_t *objectLookup = (tuuvm_astTupleWithLookupStartingFromNode_t*)gcFrame.analyzedReceiver;
             gcFrame.analyzedReceiver = objectLookup->objectExpression;
             gcFrame.sendNode->receiver = gcFrame.analyzedReceiver;
             
@@ -3757,7 +3757,7 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveEvaluate(tuuvm_context_t 
     return gcFrame.result;
 }
 
-static tuuvm_tuple_t tuuvm_astObjectWithLookupStartingFrom_primitiveMacro(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFrom_primitiveMacro(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -3768,10 +3768,10 @@ static tuuvm_tuple_t tuuvm_astObjectWithLookupStartingFrom_primitiveMacro(tuuvm_
     tuuvm_tuple_t *typeExpression = &arguments[2];
 
     tuuvm_tuple_t sourcePosition = tuuvm_macroContext_getSourcePosition(*macroContext);
-    return tuuvm_astObjectWithLookupStartingFrom_create(context, sourcePosition, *objectExpression, *typeExpression);
+    return tuuvm_astTupleWithLookupStartingFrom_create(context, sourcePosition, *objectExpression, *typeExpression);
 }
 
-static tuuvm_tuple_t tuuvm_astObjectWithLookupStartingFrom_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFrom_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
@@ -3783,12 +3783,12 @@ static tuuvm_tuple_t tuuvm_astObjectWithLookupStartingFrom_primitiveAnalyze(tuuv
     tuuvm_tuple_t *environment = &arguments[1];
 
     struct {
-        tuuvm_astObjectWithLookupStartingFromNode_t *objectWithLookupStartingFromNode;
+        tuuvm_astTupleWithLookupStartingFromNode_t *objectWithLookupStartingFromNode;
         tuuvm_tuple_t analyzedObjectExpression;
         tuuvm_tuple_t analyzedTypeExpression;
     } gcFrame = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
-    gcFrame.objectWithLookupStartingFromNode = (tuuvm_astObjectWithLookupStartingFromNode_t*)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.objectWithLookupStartingFromNode = (tuuvm_astTupleWithLookupStartingFromNode_t*)tuuvm_context_shallowCopy(context, *node);
     gcFrame.objectWithLookupStartingFromNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
 
     TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.objectWithLookupStartingFromNode->super.sourcePosition);
@@ -3808,22 +3808,22 @@ static tuuvm_tuple_t tuuvm_astObjectWithLookupStartingFrom_primitiveAnalyze(tuuv
     return (tuuvm_tuple_t)gcFrame.objectWithLookupStartingFromNode;
 }
 
-static tuuvm_tuple_t tuuvm_astObjectWithLookupStartingFrom_primitiveEvaluate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFrom_primitiveEvaluate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
 
-    tuuvm_astObjectWithLookupStartingFromNode_t **node = (tuuvm_astObjectWithLookupStartingFromNode_t**)&arguments[0];
+    tuuvm_astTupleWithLookupStartingFromNode_t **node = (tuuvm_astTupleWithLookupStartingFromNode_t**)&arguments[0];
     tuuvm_tuple_t *environment = &arguments[1];
     return tuuvm_interpreter_evaluateASTWithEnvironment(context, (*node)->objectExpression, *environment);
 }
 
-static tuuvm_tuple_t tuuvm_astObjectWithLookupStartingFrom_primitiveAnalyzeAndEvaluate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFrom_primitiveAnalyzeAndEvaluate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
 
-    tuuvm_astObjectWithLookupStartingFromNode_t **node = (tuuvm_astObjectWithLookupStartingFromNode_t**)&arguments[0];
+    tuuvm_astTupleWithLookupStartingFromNode_t **node = (tuuvm_astTupleWithLookupStartingFromNode_t**)&arguments[0];
     tuuvm_tuple_t *environment = &arguments[1];
     return tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*node)->objectExpression, *environment);
 }
@@ -4953,10 +4953,10 @@ void tuuvm_astInterpreter_registerPrimitives(void)
     tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveEvaluate, "ASTLocalDefinitionNode::evaluateWithEnvironment:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveAnalyzeAndEvaluate, "ASTLocalDefinitionNode::analyzeAndEvaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astObjectWithLookupStartingFrom_primitiveMacro, "ASTObjectWithLookupStartingFrom::macro");
-    tuuvm_primitiveTable_registerFunction(tuuvm_astObjectWithLookupStartingFrom_primitiveAnalyze, "ASTObjectWithLookupStartingFrom::analyzeWithEnvironment:");
-    tuuvm_primitiveTable_registerFunction(tuuvm_astObjectWithLookupStartingFrom_primitiveEvaluate, "ASTObjectWithLookupStartingFrom::evaluateWithEnvironment:");
-    tuuvm_primitiveTable_registerFunction(tuuvm_astObjectWithLookupStartingFrom_primitiveAnalyzeAndEvaluate, "ASTObjectWithLookupStartingFrom::analyzeAndEvaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleWithLookupStartingFrom_primitiveMacro, "ASTObjectWithLookupStartingFrom::macro");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleWithLookupStartingFrom_primitiveAnalyze, "ASTObjectWithLookupStartingFrom::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleWithLookupStartingFrom_primitiveEvaluate, "ASTObjectWithLookupStartingFrom::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleWithLookupStartingFrom_primitiveAnalyzeAndEvaluate, "ASTObjectWithLookupStartingFrom::analyzeAndEvaluateWithEnvironment:");
     
     tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveMacro, "ASTIfNode::if:then:else:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveMacroIfThen, "ASTIfNode::if:then:");
@@ -5138,11 +5138,11 @@ void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context)
         tuuvm_astLocalDefinitionNode_primitiveAnalyzeAndEvaluate
     );
 
-    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "object:withLookupStartingFrom:", 3, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astObjectWithLookupStartingFrom_primitiveMacro);
-    tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astObjectWithLookupStartingFromNodeType,
-        tuuvm_astObjectWithLookupStartingFrom_primitiveAnalyze,
-        tuuvm_astObjectWithLookupStartingFrom_primitiveEvaluate,
-        tuuvm_astObjectWithLookupStartingFrom_primitiveAnalyzeAndEvaluate
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "tuple:withLookupStartingFrom:", 3, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astTupleWithLookupStartingFrom_primitiveMacro);
+    tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astTupleWithLookupStartingFromNodeType,
+        tuuvm_astTupleWithLookupStartingFrom_primitiveAnalyze,
+        tuuvm_astTupleWithLookupStartingFrom_primitiveEvaluate,
+        tuuvm_astTupleWithLookupStartingFrom_primitiveAnalyzeAndEvaluate
     );
 
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "if:then:else:", 4, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astIfNode_primitiveMacro);

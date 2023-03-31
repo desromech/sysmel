@@ -62,7 +62,7 @@ ASTErrorNode
 
 ASTFunctionApplicationNode
     withSelector: #initialize addMethod: {:(ASTFunctionApplicationNode)self :: Void |
-        (object: self withLookupStartingFrom: ASTFunctionApplicationNode supertype) initialize.
+        (tuple: self withLookupStartingFrom: ASTFunctionApplicationNode supertype) initialize.
         self applicationFlags: 0sz
     };
     withSelector: #hasApplicationFlag: addMethod: {:(ASTFunctionApplicationNode)self :(Bitflags)flag :: Boolean |
@@ -267,12 +267,12 @@ ASTMessageChainMessageNode
         self arguments: (self arguments collect: aBlock)
     }.
 
-ASTObjectWithLookupStartingFromNode
-    withSelector: #childrenDo: addMethod: {:(ASTObjectWithLookupStartingFromNode)self :aBlock :: Void |
+ASTTupleWithLookupStartingFromNode
+    withSelector: #childrenDo: addMethod: {:(ASTTupleWithLookupStartingFromNode)self :aBlock :: Void |
         if: (self objectExpression isNotNil) then: aBlock(self objectExpression).
         if: (self typeExpression isNotNil) then: aBlock(self typeExpression).
     };
-    withSelector: #transformWith: addMethod: {:(ASTObjectWithLookupStartingFromNode)self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTTupleWithLookupStartingFromNode)self :aBlock :: Void |
         if: (self objectExpression isNotNil) then: (self objectExpression: aBlock(self objectExpression)).
         if: (self typeExpression isNotNil) then: (self typeExpression: aBlock(self typeExpression)).
     }.

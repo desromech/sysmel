@@ -969,7 +969,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "selector", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "arguments", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
-    context->roots.astObjectWithLookupStartingFromNodeType = tuuvm_context_createIntrinsicClass(context, "ASTObjectWithLookupStartingFromNode", context->roots.astNodeType,
+    context->roots.astTupleWithLookupStartingFromNodeType = tuuvm_context_createIntrinsicClass(context, "ASTTupleWithLookupStartingFromNode", context->roots.astNodeType,
         "objectExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "typeExpression", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);

@@ -180,12 +180,12 @@ typedef struct tuuvm_astMessageChainMessageNode_s
     tuuvm_tuple_t arguments;
 } tuuvm_astMessageChainMessageNode_t;
 
-typedef struct tuuvm_astObjectWithLookupStartingFromNode_s
+typedef struct tuuvm_astTupleWithLookupStartingFromNode_s
 {
     tuuvm_astNode_t super;
     tuuvm_tuple_t objectExpression;
     tuuvm_tuple_t typeExpression;
-} tuuvm_astObjectWithLookupStartingFromNode_t;
+} tuuvm_astTupleWithLookupStartingFromNode_t;
 
 typedef struct tuuvm_astPragmaNode_s
 {
@@ -673,7 +673,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_astMessageChainMessageNode_create(tuuvm_context_t 
 /**
  * Creates an object with lookup starting from node.
  */ 
-TUUVM_API tuuvm_tuple_t tuuvm_astObjectWithLookupStartingFrom_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t objectExpression, tuuvm_tuple_t typeExpression);
+TUUVM_API tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFrom_create(tuuvm_context_t *context, tuuvm_tuple_t sourcePosition, tuuvm_tuple_t objectExpression, tuuvm_tuple_t typeExpression);
 
 /**
  * Creates a pragma node.
