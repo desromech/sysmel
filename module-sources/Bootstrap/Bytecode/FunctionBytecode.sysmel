@@ -43,6 +43,9 @@ let opcodeNameDictionary := #{
     FunctionBytecode::Opcode::CoerceValue : #coerceValue.
     FunctionBytecode::Opcode::MakeAssociation : #makeAssociation.
     FunctionBytecode::Opcode::MakeClosureWithVector : #makeClosureWithVector.
+    FunctionBytecode::Opcode::SlotAt : #slotAt.
+    FunctionBytecode::Opcode::SlotReferenceAt : #slotReferenceAt.
+    FunctionBytecode::Opcode::SlotAtPut : #slotAtPut.
 
     FunctionBytecode::Opcode::Call : #call.
     FunctionBytecode::Opcode::UncheckedCall : #uncheckedCall.
@@ -76,6 +79,8 @@ let opcodeDestinationOperandCount := #{
     FunctionBytecode::Opcode::CoerceValue : 1sz.
     FunctionBytecode::Opcode::MakeAssociation : 1sz.
     FunctionBytecode::Opcode::MakeClosureWithVector : 1sz.
+    FunctionBytecode::Opcode::SlotAt : 1sz.
+    FunctionBytecode::Opcode::SlotReferenceAt : 1sz.
 
     FunctionBytecode::Opcode::Call : 1sz.
     FunctionBytecode::Opcode::UncheckedCall : 1sz.

@@ -411,8 +411,8 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.printStringSelector = tuuvm_symbol_internWithCString(context, "printString");
     context->roots.doesNotUnderstandSelector = tuuvm_symbol_internWithCString(context, "doesNotUnderstand:");
 
-    context->roots.loadAtOffsetWithTypeSelector = tuuvm_symbol_internWithCString(context, "loadAtOffset:withType:");
-    context->roots.storeAtOffsetWithTypeSelector = tuuvm_symbol_internWithCString(context, "store:atOffset:withType:");
+    context->roots.loadFromAtOffsetWithTypeSelector = tuuvm_symbol_internWithCString(context, "loadFrom:atOffset:withType:");
+    context->roots.storeInAtOffsetWithTypeSelector = tuuvm_symbol_internWithCString(context, "store:in:atOffset:withType:");
     context->roots.assignmentSelector = tuuvm_symbol_internWithCString(context, ":=");
     context->roots.underscoreSelector = tuuvm_symbol_internWithCString(context, "_");
 
@@ -585,6 +585,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
         "name", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
         "flags", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         "type", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
+        "referenceType", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         "localIndex", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "index", TUUVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         NULL);

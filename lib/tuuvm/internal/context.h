@@ -47,8 +47,8 @@ typedef struct tuuvm_context_roots_s
     tuuvm_tuple_t printStringSelector;
     tuuvm_tuple_t doesNotUnderstandSelector;
 
-    tuuvm_tuple_t loadAtOffsetWithTypeSelector;
-    tuuvm_tuple_t storeAtOffsetWithTypeSelector;
+    tuuvm_tuple_t loadFromAtOffsetWithTypeSelector;
+    tuuvm_tuple_t storeInAtOffsetWithTypeSelector;
 
     tuuvm_tuple_t assignmentSelector;
     tuuvm_tuple_t underscoreSelector;

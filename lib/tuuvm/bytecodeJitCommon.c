@@ -181,6 +181,24 @@ static bool tuuvm_bytecodeJit_getLiteralValueForOperand(tuuvm_bytecodeJit_t *jit
 #   include "bytecodeJitArmArch64.c"
 #endif
 
+static tuuvm_tuple_t tuuvm_bytecodeJit_slotAt(tuuvm_context_t *context, tuuvm_tuple_t tuple, tuuvm_tuple_t typeSlot)
+{
+    size_t slotIndex = tuuvm_typeSlot_getIndex(typeSlot);
+    return tuuvm_tuple_slotAt(context, tuple, slotIndex);
+}
+
+static tuuvm_tuple_t tuuvm_bytecodeJit_slotReferenceAt(tuuvm_context_t *context, tuuvm_tuple_t tuple, tuuvm_tuple_t typeSlot)
+{
+    tuuvm_tuple_t slotReferenceType = tuuvm_typeSlot_getValidReferenceType(context, typeSlot);
+    return tuuvm_referenceType_withTupleAndTypeSlot(context, slotReferenceType, tuple, typeSlot);
+}
+
+static void tuuvm_bytecodeJit_slotAtPut(tuuvm_context_t *context, tuuvm_tuple_t tuple, tuuvm_tuple_t typeSlot, tuuvm_tuple_t value)
+{
+    size_t slotIndex = tuuvm_typeSlot_getIndex(typeSlot);
+    tuuvm_tuple_slotAtPut(context, tuple, slotIndex, value);
+}
+
 static void tuuvm_bytecodeJit_jit(tuuvm_context_t *context, tuuvm_functionBytecode_t *functionBytecode)
 {
     (void)context;
@@ -341,6 +359,15 @@ static void tuuvm_bytecodeJit_jit(tuuvm_context_t *context, tuuvm_functionByteco
             break;
         case TUUVM_OPCODE_MAKE_CLOSURE_WITH_VECTOR:
             tuuvm_jit_callWithContext2(&jit, &tuuvm_function_createClosureWithCaptureVector, decodedOperands[0], decodedOperands[1], decodedOperands[2]);
+            break;
+        case TUUVM_OPCODE_SLOT_AT:
+            tuuvm_jit_callWithContext2(&jit, &tuuvm_bytecodeJit_slotAt, decodedOperands[0], decodedOperands[1], decodedOperands[2]);
+            break;
+        case TUUVM_OPCODE_SLOT_AT_PUT:
+            tuuvm_jit_callWithContextNoResult3(&jit, &tuuvm_bytecodeJit_slotAtPut, decodedOperands[0], decodedOperands[1], decodedOperands[2]);
+            break;
+        case TUUVM_OPCODE_SLOT_REFERENCE_AT:
+            tuuvm_jit_callWithContext2(&jit, &tuuvm_bytecodeJit_slotReferenceAt, decodedOperands[0], decodedOperands[1], decodedOperands[2]);
             break;
 
         // Variable operand.

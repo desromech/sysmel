@@ -218,6 +218,21 @@ TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_sendWithLookupReceiverType(tuuvm_
 TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_store(tuuvm_context_t *context, tuuvm_tuple_t compiler, tuuvm_tuple_t pointer, tuuvm_tuple_t value);
 
 /**
+ * Slot at instruction.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_slotAt(tuuvm_context_t *context, tuuvm_tuple_t compiler, tuuvm_tuple_t result, tuuvm_tuple_t tuple, tuuvm_tuple_t typeSlot);
+
+/**
+ * Slot reference at instruction.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_slotReferenceAt(tuuvm_context_t *context, tuuvm_tuple_t compiler, tuuvm_tuple_t result, tuuvm_tuple_t tuple, tuuvm_tuple_t typeSlot);
+
+/**
+ * Slot at put instruction.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_slotAtPut(tuuvm_context_t *context, tuuvm_tuple_t compiler, tuuvm_tuple_t tuple, tuuvm_tuple_t typeSlot, tuuvm_tuple_t value);
+
+/**
  * Typecheck instruction.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_typecheck(tuuvm_context_t *context, tuuvm_tuple_t compiler, tuuvm_tuple_t expectedType, tuuvm_tuple_t value);

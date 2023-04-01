@@ -97,11 +97,20 @@ Type
     } makePure makeFinal.
 
 ValueBox
-    withSelector: #loadAtOffset:withType: addMethod: {:(ValueBox)self :(IntPointer)offset :(Type)valueType :: valueType |
+    withSelector: #loadFrom:atOffset:withType: addMethod: {:(ValueBox)self :(Untyped)containerBase :(IntPointer)offset :(Type)valueType :: valueType |
         (RawTuple::slotAt:)(self, 0sz)
     } makeFinal;
-    withSelector: #store:atOffset:withType: addMethod: {:(ValueBox)self :value :(IntPointer)offset :(Type)valueType :: Void |
+    withSelector: #store:in:atOffset:withType: addMethod: {:(ValueBox)self :(Untyped)value :(Untyped)containerBase :(IntPointer)offset :(Type)valueType :: Void |
         RawTuple::slotAt:put:(self, 0sz, value).
+        void
+    } makeFinal.
+
+TypeSlot
+    withSelector: #loadFrom:atOffset:withType: addMethod: {:(TypeSlot)self :(Untyped)containerBase :(IntPointer)offset :(Type)valueType :: valueType |
+        (RawTuple::slotAt:)(containerBase, (tuple: self slotNamedAt: #index))
+    } makeFinal;
+    withSelector: #store:in:atOffset:withType: addMethod: {:(TypeSlot)self :(Untyped)value :(Untyped)containerBase :(IntPointer)offset :(Type)valueType :: Void |
+        RawTuple::slotAt:put:(containerBase, (tuple: self slotNamedAt: #index), value).
         void
     } makeFinal.
 

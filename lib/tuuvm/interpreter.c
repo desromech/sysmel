@@ -3757,7 +3757,7 @@ static tuuvm_tuple_t tuuvm_astMessageSendNode_primitiveEvaluate(tuuvm_context_t 
     return gcFrame.result;
 }
 
-static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFrom_primitiveMacro(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFromNode_primitiveMacro(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -3771,7 +3771,7 @@ static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFrom_primitiveMacro(tuuvm_c
     return tuuvm_astTupleWithLookupStartingFromNode_create(context, sourcePosition, *tupleExpression, *typeExpression);
 }
 
-static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFrom_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFromNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
@@ -3808,7 +3808,7 @@ static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFrom_primitiveAnalyze(tuuvm
     return (tuuvm_tuple_t)gcFrame.objectWithLookupStartingFromNode;
 }
 
-static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFrom_primitiveEvaluate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFromNode_primitiveEvaluate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
@@ -3818,7 +3818,7 @@ static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFrom_primitiveEvaluate(tuuv
     return tuuvm_interpreter_evaluateASTWithEnvironment(context, (*node)->tupleExpression, *environment);
 }
 
-static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFrom_primitiveAnalyzeAndEvaluate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFromNode_primitiveAnalyzeAndEvaluate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
@@ -3826,6 +3826,404 @@ static tuuvm_tuple_t tuuvm_astTupleWithLookupStartingFrom_primitiveAnalyzeAndEva
     tuuvm_astTupleWithLookupStartingFromNode_t **node = (tuuvm_astTupleWithLookupStartingFromNode_t**)&arguments[0];
     tuuvm_tuple_t *environment = &arguments[1];
     return tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*node)->tupleExpression, *environment);
+}
+
+static tuuvm_tuple_t tuuvm_astTupleSlotNamedAtNode_primitiveMacro(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+
+    tuuvm_tuple_t *macroContext = &arguments[0];
+    tuuvm_tuple_t *tupleExpression = &arguments[1];
+    tuuvm_tuple_t *nameExpression = &arguments[2];
+
+    tuuvm_tuple_t sourcePosition = tuuvm_macroContext_getSourcePosition(*macroContext);
+    return tuuvm_astTupleSlotNamedAtNode_create(context, sourcePosition, *tupleExpression, *nameExpression);
+}
+
+static tuuvm_tuple_t tuuvm_astTupleSlotNamedAtNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *node = &arguments[0];
+    tuuvm_tuple_t *environment = &arguments[1];
+
+    struct {
+        tuuvm_astTupleSlotNamedAtNode_t *tupleSlotNamedAtNode;
+        tuuvm_tuple_t analyzedTupleExpression;
+        tuuvm_tuple_t analyzedNameExpression;
+        tuuvm_tuple_t analyzedTupleExpressionType;
+        tuuvm_tuple_t slotName;
+        tuuvm_tuple_t slot;
+    } gcFrame = {0};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    gcFrame.tupleSlotNamedAtNode = (tuuvm_astTupleSlotNamedAtNode_t*)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.tupleSlotNamedAtNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
+
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.tupleSlotNamedAtNode->super.sourcePosition);
+
+    gcFrame.analyzedTupleExpression = tuuvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.tupleSlotNamedAtNode->tupleExpression, *environment);
+    gcFrame.tupleSlotNamedAtNode->tupleExpression = gcFrame.analyzedTupleExpression;
+
+    gcFrame.analyzedNameExpression = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.tupleSlotNamedAtNode->nameExpression, context->roots.symbolType, *environment);
+    gcFrame.tupleSlotNamedAtNode->nameExpression = gcFrame.analyzedNameExpression;
+
+    if(!tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedNameExpression))
+        tuuvm_error("Expected a literal slot name.");
+
+    gcFrame.slotName = tuuvm_astLiteralNode_getValue(gcFrame.analyzedNameExpression);
+    gcFrame.analyzedTupleExpressionType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedTupleExpression);
+    TUUVM_ASSERT(gcFrame.analyzedTupleExpressionType);
+
+    gcFrame.slot = tuuvm_type_lookupSlot(context, gcFrame.analyzedTupleExpressionType, gcFrame.slotName);
+    if(!gcFrame.slot)
+        tuuvm_error("Type does not have a slot with the specified name.");
+
+    gcFrame.tupleSlotNamedAtNode->boundSlot = gcFrame.slot;
+    gcFrame.tupleSlotNamedAtNode->super.analyzedType = tuuvm_typeSlot_getType(gcFrame.slot);
+    if(!gcFrame.tupleSlotNamedAtNode->super.analyzedType)
+        gcFrame.tupleSlotNamedAtNode->super.analyzedType = context->roots.anyValueType;
+
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return (tuuvm_tuple_t)gcFrame.tupleSlotNamedAtNode;
+}
+
+static tuuvm_tuple_t tuuvm_astTupleSlotNamedAtNode_primitiveEvaluate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_astTupleSlotNamedAtNode_t **node = (tuuvm_astTupleSlotNamedAtNode_t**)&arguments[0];
+    tuuvm_tuple_t *environment = &arguments[1];
+
+    struct {
+        tuuvm_tuple_t tuple;
+        tuuvm_tuple_t result;
+    } gcFrame = {0};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*node)->super.sourcePosition);
+
+    gcFrame.tuple = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*node)->tupleExpression, *environment);
+    size_t slotIndex = tuuvm_typeSlot_getIndex((*node)->boundSlot);
+    gcFrame.result = tuuvm_tuple_slotAt(context, gcFrame.tuple, slotIndex);
+
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+
+    return gcFrame.result;
+}
+
+static tuuvm_tuple_t tuuvm_astTupleSlotNamedAtNode_primitiveAnalyzeAndEvaluate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_astTupleSlotNamedAtNode_t **node = (tuuvm_astTupleSlotNamedAtNode_t**)&arguments[0];
+    tuuvm_tuple_t *environment = &arguments[1];
+
+    struct {
+        tuuvm_tuple_t tuple;
+        tuuvm_tuple_t name;
+        tuuvm_tuple_t slot;
+        tuuvm_tuple_t result;
+        tuuvm_tuple_t resultType;
+    } gcFrame = {0};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*node)->super.sourcePosition);
+
+    gcFrame.tuple = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*node)->tupleExpression, *environment);
+    if((*node)->boundSlot)
+    {
+        gcFrame.slot = (*node)->boundSlot;
+    }
+    else
+    {
+        gcFrame.name = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*node)->nameExpression, *environment);
+        gcFrame.slot = tuuvm_type_lookupSlot(context, tuuvm_tuple_getType(context, gcFrame.tuple), gcFrame.name);
+        if(!gcFrame.slot)
+            tuuvm_error("Failed to find the slot with the specified name.");
+    }
+
+    size_t slotIndex = tuuvm_typeSlot_getIndex(gcFrame.slot);
+    gcFrame.resultType = tuuvm_typeSlot_getType(gcFrame.slot);
+    gcFrame.result = tuuvm_tuple_slotAt(context, gcFrame.tuple, slotIndex);
+    gcFrame.result = tuuvm_type_coerceValue(context, gcFrame.resultType, gcFrame.result);
+
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
+}
+
+static tuuvm_tuple_t tuuvm_astTupleSlotNamedReferenceAtNode_primitiveMacro(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+
+    tuuvm_tuple_t *macroContext = &arguments[0];
+    tuuvm_tuple_t *tupleExpression = &arguments[1];
+    tuuvm_tuple_t *nameExpression = &arguments[2];
+
+    tuuvm_tuple_t sourcePosition = tuuvm_macroContext_getSourcePosition(*macroContext);
+    return tuuvm_astTupleSlotNamedReferenceAtNode_create(context, sourcePosition, *tupleExpression, *nameExpression);
+}
+
+static tuuvm_tuple_t tuuvm_astTupleSlotNamedReferenceAtNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *node = &arguments[0];
+    tuuvm_tuple_t *environment = &arguments[1];
+
+    struct {
+        tuuvm_astTupleSlotNamedReferenceAtNode_t *tupleSlotNamedReferenceAtNode;
+        tuuvm_tuple_t analyzedTupleExpression;
+        tuuvm_tuple_t analyzedNameExpression;
+        tuuvm_tuple_t analyzedTupleExpressionType;
+        tuuvm_tuple_t slotName;
+        tuuvm_tuple_t slot;
+    } gcFrame = {0};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    gcFrame.tupleSlotNamedReferenceAtNode = (tuuvm_astTupleSlotNamedReferenceAtNode_t*)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.tupleSlotNamedReferenceAtNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
+
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.tupleSlotNamedReferenceAtNode->super.sourcePosition);
+
+    gcFrame.analyzedTupleExpression = tuuvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.tupleSlotNamedReferenceAtNode->tupleExpression, *environment);
+    gcFrame.tupleSlotNamedReferenceAtNode->tupleExpression = gcFrame.analyzedTupleExpression;
+
+    gcFrame.analyzedNameExpression = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.tupleSlotNamedReferenceAtNode->nameExpression, context->roots.symbolType, *environment);
+    gcFrame.tupleSlotNamedReferenceAtNode->nameExpression = gcFrame.analyzedNameExpression;
+
+    if(!tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedNameExpression))
+        tuuvm_error("Expected a literal slot name.");
+
+    gcFrame.slotName = tuuvm_astLiteralNode_getValue(gcFrame.analyzedNameExpression);
+    gcFrame.analyzedTupleExpressionType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedTupleExpression);
+    TUUVM_ASSERT(gcFrame.analyzedTupleExpressionType);
+
+    gcFrame.slot = tuuvm_type_lookupSlot(context, gcFrame.analyzedTupleExpressionType, gcFrame.slotName);
+    if(!gcFrame.slot)
+        tuuvm_error("Type does not have a slot with the specified name.");
+
+    gcFrame.tupleSlotNamedReferenceAtNode->boundSlot = gcFrame.slot;
+    gcFrame.tupleSlotNamedReferenceAtNode->super.analyzedType = tuuvm_typeSlot_getValidReferenceType(context, gcFrame.slot);
+
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return (tuuvm_tuple_t)gcFrame.tupleSlotNamedReferenceAtNode;
+}
+
+static tuuvm_tuple_t tuuvm_astTupleSlotNamedReferenceAtNode_primitiveEvaluate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_astTupleSlotNamedAtNode_t **node = (tuuvm_astTupleSlotNamedAtNode_t**)&arguments[0];
+    tuuvm_tuple_t *environment = &arguments[1];
+
+    struct {
+        tuuvm_tuple_t tuple;
+        tuuvm_tuple_t result;
+    } gcFrame = {0};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*node)->super.sourcePosition);
+
+    gcFrame.tuple = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*node)->tupleExpression, *environment);
+    gcFrame.result = tuuvm_referenceType_withTupleAndTypeSlot(context, (*node)->super.analyzedType, gcFrame.tuple, (*node)->boundSlot);
+
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+
+    return gcFrame.result;
+}
+
+static tuuvm_tuple_t tuuvm_astTupleSlotNamedReferenceAtNode_primitiveAnalyzeAndEvaluate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_astTupleSlotNamedAtNode_t **node = (tuuvm_astTupleSlotNamedAtNode_t**)&arguments[0];
+    tuuvm_tuple_t *environment = &arguments[1];
+
+    struct {
+        tuuvm_tuple_t tuple;
+        tuuvm_tuple_t name;
+        tuuvm_tuple_t slot;
+        tuuvm_tuple_t result;
+        tuuvm_tuple_t resultType;
+    } gcFrame = {0};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*node)->super.sourcePosition);
+
+    gcFrame.tuple = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*node)->tupleExpression, *environment);
+    if((*node)->boundSlot)
+    {
+        gcFrame.slot = (*node)->boundSlot;
+    }
+    else
+    {
+        gcFrame.name = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*node)->nameExpression, *environment);
+        gcFrame.slot = tuuvm_type_lookupSlot(context, tuuvm_tuple_getType(context, gcFrame.tuple), gcFrame.name);
+        if(!gcFrame.slot)
+            tuuvm_error("Failed to find the slot with the specified name.");
+    }
+
+    gcFrame.resultType = tuuvm_typeSlot_getValidReferenceType(context, gcFrame.slot);
+    gcFrame.result = tuuvm_referenceType_withTupleAndTypeSlot(context, gcFrame.resultType, gcFrame.tuple, gcFrame.slot);
+
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
+}
+
+static tuuvm_tuple_t tuuvm_astTupleSlotNamedAtPutNode_primitiveMacro(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 4) tuuvm_error_argumentCountMismatch(4, argumentCount);
+
+    tuuvm_tuple_t *macroContext = &arguments[0];
+    tuuvm_tuple_t *tupleExpression = &arguments[1];
+    tuuvm_tuple_t *nameExpression = &arguments[2];
+    tuuvm_tuple_t *valueExpression = &arguments[3];
+
+    tuuvm_tuple_t sourcePosition = tuuvm_macroContext_getSourcePosition(*macroContext);
+    return tuuvm_astTupleSlotNamedAtPutNode_create(context, sourcePosition, *tupleExpression, *nameExpression, *valueExpression);
+}
+
+static tuuvm_tuple_t tuuvm_astTupleSlotNamedAtPutNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *node = &arguments[0];
+    tuuvm_tuple_t *environment = &arguments[1];
+
+    struct {
+        tuuvm_astTupleSlotNamedAtPutNode_t *tupleSlotNamedAtPutNode;
+        tuuvm_tuple_t analyzedTupleExpression;
+        tuuvm_tuple_t analyzedNameExpression;
+        tuuvm_tuple_t analyzedTupleExpressionType;
+        tuuvm_tuple_t slotName;
+        tuuvm_tuple_t slot;
+        tuuvm_tuple_t analyzedValueExpression;
+    } gcFrame = {0};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    gcFrame.tupleSlotNamedAtPutNode = (tuuvm_astTupleSlotNamedAtPutNode_t*)tuuvm_context_shallowCopy(context, *node);
+    gcFrame.tupleSlotNamedAtPutNode->super.analyzerToken = tuuvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
+
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.tupleSlotNamedAtPutNode->super.sourcePosition);
+
+    gcFrame.analyzedTupleExpression = tuuvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.tupleSlotNamedAtPutNode->tupleExpression, *environment);
+    gcFrame.tupleSlotNamedAtPutNode->tupleExpression = gcFrame.analyzedTupleExpression;
+
+    gcFrame.analyzedNameExpression = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.tupleSlotNamedAtPutNode->nameExpression, context->roots.symbolType, *environment);
+    gcFrame.tupleSlotNamedAtPutNode->nameExpression = gcFrame.analyzedNameExpression;
+
+    if(!tuuvm_astNode_isLiteralNode(context, gcFrame.analyzedNameExpression))
+        tuuvm_error("Expected a literal slot name.");
+
+    gcFrame.slotName = tuuvm_astLiteralNode_getValue(gcFrame.analyzedNameExpression);
+    gcFrame.analyzedTupleExpressionType = tuuvm_astNode_getAnalyzedType(gcFrame.analyzedTupleExpression);
+    TUUVM_ASSERT(gcFrame.analyzedTupleExpressionType);
+
+    gcFrame.slot = tuuvm_type_lookupSlot(context, gcFrame.analyzedTupleExpressionType, gcFrame.slotName);
+    if(!gcFrame.slot)
+        tuuvm_error("Type does not have a slot with the specified name.");
+
+    gcFrame.tupleSlotNamedAtPutNode->boundSlot = gcFrame.slot;
+    gcFrame.tupleSlotNamedAtPutNode->super.analyzedType = tuuvm_typeSlot_getType(gcFrame.slot);
+    if(!gcFrame.tupleSlotNamedAtPutNode->super.analyzedType)
+        gcFrame.tupleSlotNamedAtPutNode->super.analyzedType = context->roots.anyValueType;
+
+    gcFrame.analyzedValueExpression = tuuvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.tupleSlotNamedAtPutNode->valueExpression, gcFrame.tupleSlotNamedAtPutNode->super.analyzedType, *environment);
+    gcFrame.tupleSlotNamedAtPutNode->valueExpression = gcFrame.analyzedValueExpression;
+
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return (tuuvm_tuple_t)gcFrame.tupleSlotNamedAtPutNode;
+}
+
+static tuuvm_tuple_t tuuvm_astTupleSlotNamedAtPutNode_primitiveEvaluate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_astTupleSlotNamedAtPutNode_t **node = (tuuvm_astTupleSlotNamedAtPutNode_t**)&arguments[0];
+    tuuvm_tuple_t *environment = &arguments[1];
+
+    struct {
+        tuuvm_tuple_t tuple;
+        tuuvm_tuple_t value;
+    } gcFrame = {0};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*node)->super.sourcePosition);
+
+    gcFrame.tuple = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*node)->tupleExpression, *environment);
+    gcFrame.value = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*node)->valueExpression, *environment);
+    size_t slotIndex = tuuvm_typeSlot_getIndex((*node)->boundSlot);
+    tuuvm_tuple_slotAtPut(context, gcFrame.tuple, slotIndex, gcFrame.value);
+
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+
+    return gcFrame.value;
+}
+
+static tuuvm_tuple_t tuuvm_astTupleSlotNamedAtPutNode_primitiveAnalyzeAndEvaluate(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_astTupleSlotNamedAtPutNode_t **node = (tuuvm_astTupleSlotNamedAtPutNode_t**)&arguments[0];
+    tuuvm_tuple_t *environment = &arguments[1];
+
+    struct {
+        tuuvm_tuple_t tuple;
+        tuuvm_tuple_t name;
+        tuuvm_tuple_t slot;
+        tuuvm_tuple_t value;
+        tuuvm_tuple_t valueType;
+    } gcFrame = {0};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    TUUVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*node)->super.sourcePosition);
+
+    gcFrame.tuple = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*node)->tupleExpression, *environment);
+    if((*node)->boundSlot)
+    {
+        gcFrame.slot = (*node)->boundSlot;
+    }
+    else
+    {
+        gcFrame.name = tuuvm_interpreter_evaluateASTWithEnvironment(context, (*node)->nameExpression, *environment);
+        gcFrame.slot = tuuvm_type_lookupSlot(context, tuuvm_tuple_getType(context, gcFrame.tuple), gcFrame.name);
+        if(!gcFrame.slot)
+            tuuvm_error("Failed to find the slot with the specified name.");
+    }
+
+    size_t slotIndex = tuuvm_typeSlot_getIndex(gcFrame.slot);
+    gcFrame.valueType = tuuvm_typeSlot_getType(gcFrame.slot);
+    gcFrame.value = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*node)->valueExpression, *environment);
+    gcFrame.value = tuuvm_type_coerceValue(context, gcFrame.valueType, gcFrame.value);
+    tuuvm_tuple_slotAtPut(context, gcFrame.tuple, slotIndex, gcFrame.value);
+
+    TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.value;
 }
 
 static tuuvm_tuple_t tuuvm_astDoWhileContinueWithNode_primitiveMacro(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -4953,16 +5351,31 @@ void tuuvm_astInterpreter_registerPrimitives(void)
     tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveEvaluate, "ASTLocalDefinitionNode::evaluateWithEnvironment:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astLocalDefinitionNode_primitiveAnalyzeAndEvaluate, "ASTLocalDefinitionNode::analyzeAndEvaluateWithEnvironment:");
 
-    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleWithLookupStartingFrom_primitiveMacro, "ASTObjectWithLookupStartingFrom::macro");
-    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleWithLookupStartingFrom_primitiveAnalyze, "ASTObjectWithLookupStartingFrom::analyzeWithEnvironment:");
-    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleWithLookupStartingFrom_primitiveEvaluate, "ASTObjectWithLookupStartingFrom::evaluateWithEnvironment:");
-    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleWithLookupStartingFrom_primitiveAnalyzeAndEvaluate, "ASTObjectWithLookupStartingFrom::analyzeAndEvaluateWithEnvironment:");
-    
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleWithLookupStartingFromNode_primitiveMacro, "ASTTupleWithLookupStartingFromNode::macro");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleWithLookupStartingFromNode_primitiveAnalyze, "ASTTupleWithLookupStartingFromNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleWithLookupStartingFromNode_primitiveEvaluate, "ASTTupleWithLookupStartingFromNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleWithLookupStartingFromNode_primitiveAnalyzeAndEvaluate, "ASTTupleWithLookupStartingFromNode::analyzeAndEvaluateWithEnvironment:");
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleSlotNamedAtNode_primitiveMacro, "ASTTupleSlotNamedAtNode::macro");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleSlotNamedAtNode_primitiveAnalyze, "ASTTupleSlotNamedAtNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleSlotNamedAtNode_primitiveEvaluate, "ASTTupleSlotNamedAtNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleSlotNamedAtNode_primitiveAnalyzeAndEvaluate, "ASTTupleSlotNamedAtNode::analyzeAndEvaluateWithEnvironment:");
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleSlotNamedReferenceAtNode_primitiveMacro, "ASTTupleSlotNamedReferenceAtNode::macro");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleSlotNamedReferenceAtNode_primitiveAnalyze, "ASTTupleSlotNamedReferenceAtNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleSlotNamedReferenceAtNode_primitiveEvaluate, "ASTTupleSlotNamedReferenceAtNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleSlotNamedReferenceAtNode_primitiveAnalyzeAndEvaluate, "ASTTupleSlotNamedReferenceAtNode::analyzeAndEvaluateWithEnvironment:");
+
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleSlotNamedAtPutNode_primitiveMacro, "ASTTupleSlotNamedAtPutNode::macro");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleSlotNamedAtPutNode_primitiveAnalyze, "ASTTupleSlotNamedAtPutNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleSlotNamedAtPutNode_primitiveEvaluate, "ASTTupleSlotNamedAtPutNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleSlotNamedAtPutNode_primitiveAnalyzeAndEvaluate, "ASTTupleSlotNamedAtPutNode::analyzeAndEvaluateWithEnvironment:");
+
     tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveMacro, "ASTIfNode::if:then:else:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveMacroIfThen, "ASTIfNode::if:then:");
-    tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveAnalyze, "ASTObjectWithLookupStartingFrom::analyzeWithEnvironment:");
-    tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveEvaluate, "ASTObjectWithLookupStartingFrom::evaluateWithEnvironment:");
-    tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveAnalyzeAndEvaluate, "ASTObjectWithLookupStartingFrom::analyzeAndEvaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveAnalyze, "ASTTupleWithLookupStartingFromNode::analyzeWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveEvaluate, "ASTTupleWithLookupStartingFromNode::evaluateWithEnvironment:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astIfNode_primitiveAnalyzeAndEvaluate, "ASTTupleWithLookupStartingFromNode::analyzeAndEvaluateWithEnvironment:");
 
     tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveMacro, "ASTDoWhileContinueWithNode::do:while:continueWith:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astDoWhileContinueWithNode_primitiveDoWhileMacro, "ASTDoWhileContinueWithNode::do:while:");
@@ -5138,11 +5551,32 @@ void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context)
         tuuvm_astLocalDefinitionNode_primitiveAnalyzeAndEvaluate
     );
 
-    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "tuple:withLookupStartingFrom:", 3, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astTupleWithLookupStartingFrom_primitiveMacro);
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "tuple:withLookupStartingFrom:", 3, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astTupleWithLookupStartingFromNode_primitiveMacro);
     tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astTupleWithLookupStartingFromNodeType,
-        tuuvm_astTupleWithLookupStartingFrom_primitiveAnalyze,
-        tuuvm_astTupleWithLookupStartingFrom_primitiveEvaluate,
-        tuuvm_astTupleWithLookupStartingFrom_primitiveAnalyzeAndEvaluate
+        tuuvm_astTupleWithLookupStartingFromNode_primitiveAnalyze,
+        tuuvm_astTupleWithLookupStartingFromNode_primitiveEvaluate,
+        tuuvm_astTupleWithLookupStartingFromNode_primitiveAnalyzeAndEvaluate
+    );
+
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "tuple:slotNamedAt:", 3, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astTupleSlotNamedAtNode_primitiveMacro);
+    tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astTupleSlotNamedAtNodeType,
+        tuuvm_astTupleSlotNamedAtNode_primitiveAnalyze,
+        tuuvm_astTupleSlotNamedAtNode_primitiveEvaluate,
+        tuuvm_astTupleSlotNamedAtNode_primitiveAnalyzeAndEvaluate
+    );
+
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "tuple:slotNamedReferenceAt:", 3, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astTupleSlotNamedReferenceAtNode_primitiveMacro);
+    tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astTupleSlotNamedReferenceAtNodeType,
+        tuuvm_astTupleSlotNamedReferenceAtNode_primitiveAnalyze,
+        tuuvm_astTupleSlotNamedReferenceAtNode_primitiveEvaluate,
+        tuuvm_astTupleSlotNamedReferenceAtNode_primitiveAnalyzeAndEvaluate
+    );
+
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "tuple:slotNamedAt:put:", 4, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astTupleSlotNamedAtPutNode_primitiveMacro);
+    tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astTupleSlotNamedAtPutNodeType,
+        tuuvm_astTupleSlotNamedAtPutNode_primitiveAnalyze,
+        tuuvm_astTupleSlotNamedAtPutNode_primitiveEvaluate,
+        tuuvm_astTupleSlotNamedAtPutNode_primitiveAnalyzeAndEvaluate
     );
 
     tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "if:then:else:", 4, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astIfNode_primitiveMacro);

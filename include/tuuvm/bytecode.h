@@ -31,6 +31,9 @@ typedef enum tuuvm_opcode_e
     TUUVM_OPCODE_COERCE_VALUE, /// <Result> = coerceValue <Type> <Value>
     TUUVM_OPCODE_MAKE_ASSOCIATION, /// <Result> = makeAssociation <Key> <Value>
     TUUVM_OPCODE_MAKE_CLOSURE_WITH_VECTOR, /// <Result> = makeClosureWithVector <Function Definition> <Capture vector>
+    TUUVM_OPCODE_SLOT_AT, /// <Result> = slotAt <Tuple> <TypeSlot>
+    TUUVM_OPCODE_SLOT_REFERENCE_AT, /// <Result> = slotAt <Tuple> <TypeSlot>
+    TUUVM_OPCODE_SLOT_AT_PUT, /// slotAt <Tuple> <TypeSlot> <Value>
 
     // Variable operand instructions
     TUUVM_OPCODE_CALL = 0x40, /// <Result> := call <Function> <Arguments>...

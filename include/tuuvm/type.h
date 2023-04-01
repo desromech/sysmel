@@ -117,6 +117,7 @@ typedef struct tuuvm_typeSlot_s
     tuuvm_tuple_t name;
     tuuvm_tuple_t flags;
     tuuvm_tuple_t type;
+    tuuvm_tuple_t referenceType;
     tuuvm_tuple_t localIndex;
     tuuvm_tuple_t index;
 } tuuvm_typeSlot_t;
@@ -163,6 +164,29 @@ typedef struct tuuvm_polymorphicInlineLookupCache_s tuuvm_polymorphicInlineLooku
  * Creates a type slot
  */
 TUUVM_API tuuvm_tuple_t tuuvm_typeSlot_create(tuuvm_context_t *context, tuuvm_tuple_t name, tuuvm_tuple_t flags, tuuvm_tuple_t type, size_t localIndex, size_t index);
+
+/**
+ * Gets the type from type slot.
+ */
+TUUVM_INLINE tuuvm_tuple_t tuuvm_typeSlot_getType(tuuvm_tuple_t typeSlot)
+{
+    if(!tuuvm_tuple_isNonNullPointer(typeSlot)) return TUUVM_NULL_TUPLE;
+    return ((tuuvm_typeSlot_t*)typeSlot)->type;
+}
+
+/**
+ * Gets the index from type slot.
+ */
+TUUVM_INLINE size_t tuuvm_typeSlot_getIndex(tuuvm_tuple_t typeSlot)
+{
+    if(!tuuvm_tuple_isNonNullPointer(typeSlot)) return 0;
+    return tuuvm_tuple_size_decode(((tuuvm_typeSlot_t*)typeSlot)->index);
+}
+
+/**
+ * Gets a valid reference type corresponding to the specified type slot.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_typeSlot_getValidReferenceType(tuuvm_context_t *context, tuuvm_tuple_t typeSlot);
 
 /**
  * Creates an anonymous type.
@@ -284,6 +308,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_referenceType_withStorage(tuuvm_context_t *context
  * Creates a reference that boxes a value.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_referenceType_withBoxForValue(tuuvm_context_t *context, tuuvm_tuple_t referenceType, tuuvm_tuple_t boxedValue);
+
+/**
+ * Creates a reference onto a specific type slot in an object
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_referenceType_withTupleAndTypeSlot(tuuvm_context_t *context, tuuvm_tuple_t referenceType, tuuvm_tuple_t tuple, tuuvm_tuple_t typeSlot);
 
 /**
  * Canonicalizes a function type

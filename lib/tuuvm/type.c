@@ -23,6 +23,18 @@ TUUVM_API tuuvm_tuple_t tuuvm_typeSlot_create(tuuvm_context_t *context, tuuvm_tu
     return (tuuvm_tuple_t)result;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_typeSlot_getValidReferenceType(tuuvm_context_t *context, tuuvm_tuple_t typeSlot)
+{
+    if(!tuuvm_tuple_isNonNullPointer(typeSlot))
+        return tuuvm_type_createFunctionLocalReferenceType(context, context->roots.anyValueType);
+
+    tuuvm_typeSlot_t *typeSlotObject = (tuuvm_typeSlot_t*)typeSlot;
+    if(!typeSlotObject->referenceType)
+        typeSlotObject->referenceType = tuuvm_type_createFunctionLocalReferenceType(context, typeSlotObject->type);
+
+    return typeSlotObject->referenceType;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_type_createAnonymous(tuuvm_context_t *context)
 {
     tuuvm_type_tuple_t* result = (tuuvm_type_tuple_t*)tuuvm_context_allocatePointerTuple(context, context->roots.typeType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_type_tuple_t));
@@ -379,7 +391,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_pointerLikeType_withEmptyBox(tuuvm_context_t *cont
 
 TUUVM_API tuuvm_tuple_t tuuvm_referenceType_withStorage(tuuvm_context_t *context, tuuvm_tuple_t referenceType, tuuvm_tuple_t storage)
 {
-    if(!tuuvm_tuple_isKindOf(context, referenceType, context->roots.referenceType))
+    if(!tuuvm_type_isReferenceType(referenceType))
         tuuvm_error("Expected a reference type");
 
     tuuvm_object_tuple_t *reference = tuuvm_context_allocatePointerTuple(context, referenceType, 1);
@@ -390,6 +402,17 @@ TUUVM_API tuuvm_tuple_t tuuvm_referenceType_withStorage(tuuvm_context_t *context
 TUUVM_API tuuvm_tuple_t tuuvm_referenceType_withBoxForValue(tuuvm_context_t *context, tuuvm_tuple_t referenceType, tuuvm_tuple_t boxedValue)
 {
     return tuuvm_referenceType_withStorage(context, referenceType, tuuvm_valueBox_with(context, boxedValue));
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_referenceType_withTupleAndTypeSlot(tuuvm_context_t *context, tuuvm_tuple_t referenceType, tuuvm_tuple_t tuple, tuuvm_tuple_t typeSlot)
+{
+    if(!tuuvm_type_isReferenceType(referenceType))
+        tuuvm_error("Expected a reference type");
+
+    tuuvm_object_tuple_t *reference = tuuvm_context_allocatePointerTuple(context, referenceType, 2);
+    reference->pointers[0] = typeSlot;
+    reference->pointers[1] = tuple;
+    return (tuuvm_tuple_t)reference;
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_type_createDependentFunctionType(tuuvm_context_t *context, tuuvm_tuple_t argumentNodes, bool isVariadic, tuuvm_tuple_t resultTypeNode,
@@ -764,15 +787,20 @@ TUUVM_API tuuvm_tuple_t tuuvm_pointerLikeType_load(tuuvm_context_t *context, tuu
 
     tuuvm_object_tuple_t *pointerObject = (tuuvm_object_tuple_t*)pointerLikeValue;
     tuuvm_tuple_t storage = pointerObject->pointers[0];
+    tuuvm_tuple_t base = TUUVM_NULL_TUPLE;
     intptr_t offset = tuuvm_tuple_intptr_encode(context, 0);
     if(slotCount >= 2)
-        offset = tuuvm_tuple_intptr_decode(pointerObject->pointers[1]);
+    {
+        base = pointerObject->pointers[1];
+        if(slotCount >= 3)
+            offset = pointerObject->pointers[2];
+    }
 
     if(tuuvm_tuple_getType(context, storage) == context->roots.valueBoxType)
         return TUUVM_CAST_OOP_TO_OBJECT_TUPLE(storage)->pointers[0];
 
     tuuvm_pointerLikeType_t *pointerLikeType = (tuuvm_pointerLikeType_t*)tuuvm_tuple_getType(context, pointerLikeValue);
-    return tuuvm_tuple_send2(context, context->roots.loadAtOffsetWithTypeSelector, storage, offset, pointerLikeType->baseType);
+    return tuuvm_tuple_send3(context, context->roots.loadFromAtOffsetWithTypeSelector, storage, base, offset, pointerLikeType->baseType);
 }
 
 TUUVM_API tuuvm_tuple_t tuuvm_pointerLikeType_store(tuuvm_context_t *context, tuuvm_tuple_t pointerLikeValue_, tuuvm_tuple_t valueToStore_)
@@ -784,6 +812,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_pointerLikeType_store(tuuvm_context_t *context, tu
         tuuvm_pointerLikeType_t *pointerLikeType;
         tuuvm_tuple_t coercedValue;
         tuuvm_tuple_t storage;
+        tuuvm_tuple_t base;
         tuuvm_tuple_t offset;
     } gcFrame = {
         .pointerLikeValue = pointerLikeValue_,
@@ -803,9 +832,14 @@ TUUVM_API tuuvm_tuple_t tuuvm_pointerLikeType_store(tuuvm_context_t *context, tu
 
     tuuvm_object_tuple_t **pointerObject = (tuuvm_object_tuple_t**)&gcFrame.pointerLikeValue;
     gcFrame.storage = (*pointerObject)->pointers[0];
+    gcFrame.base = TUUVM_NULL_TUPLE;
     gcFrame.offset = tuuvm_tuple_intptr_encode(context, 0);
     if(slotCount >= 2)
-        gcFrame.offset = (*pointerObject)->pointers[1];
+    {
+        gcFrame.base = (*pointerObject)->pointers[1];
+        if(slotCount >= 3)
+            gcFrame.offset = (*pointerObject)->pointers[2];
+    }
     else
     {
         if(tuuvm_tuple_getType(context, gcFrame.storage) == context->roots.valueBoxType)
@@ -816,8 +850,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_pointerLikeType_store(tuuvm_context_t *context, tu
         }
     }
 
-
-    tuuvm_tuple_send3(context, context->roots.storeAtOffsetWithTypeSelector, gcFrame.storage, gcFrame.valueToStore, gcFrame.offset, gcFrame.pointerLikeType->baseType);
+    tuuvm_tuple_send4(context, context->roots.storeInAtOffsetWithTypeSelector, gcFrame.storage, gcFrame.valueToStore, gcFrame.base, gcFrame.offset, gcFrame.pointerLikeType->baseType);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.pointerLikeValue;
 }

@@ -52,6 +52,8 @@ TUUVM_API uint8_t tuuvm_bytecodeInterpreter_destinationOperandCountForOpcode(uin
     case TUUVM_OPCODE_COERCE_VALUE:
     case TUUVM_OPCODE_MAKE_ASSOCIATION:
     case TUUVM_OPCODE_MAKE_CLOSURE_WITH_VECTOR:
+    case TUUVM_OPCODE_SLOT_AT:
+    case TUUVM_OPCODE_SLOT_REFERENCE_AT:
     case TUUVM_OPCODE_CALL:
     case TUUVM_OPCODE_UNCHECKED_CALL:
     case TUUVM_OPCODE_SEND:
@@ -302,6 +304,25 @@ TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_con
             tuuvm_tuple_typecheckValue(context, operandRegisterFile[0], operandRegisterFile[1]);
             break;
 
+        case TUUVM_OPCODE_SLOT_AT:
+            {
+                size_t slotIndex = tuuvm_typeSlot_getIndex(operandRegisterFile[2]);
+                operandRegisterFile[0] = tuuvm_tuple_slotAt(context, operandRegisterFile[1], slotIndex);
+            }
+            break;
+        case TUUVM_OPCODE_SLOT_REFERENCE_AT:
+            {
+                tuuvm_tuple_t slotReferenceType = tuuvm_typeSlot_getValidReferenceType(context, operandRegisterFile[2]);
+                operandRegisterFile[0] = tuuvm_referenceType_withTupleAndTypeSlot(context, slotReferenceType, operandRegisterFile[1], operandRegisterFile[2]);
+            }
+            break;
+        case TUUVM_OPCODE_SLOT_AT_PUT:
+            {
+                size_t slotIndex = tuuvm_typeSlot_getIndex(operandRegisterFile[1]);
+                tuuvm_tuple_slotAtPut(context, operandRegisterFile[0], slotIndex, operandRegisterFile[2]);
+            }
+            break;
+
         // Three operands.
         case TUUVM_OPCODE_ALLOCA_WITH_VALUE:
             operandRegisterFile[0] = tuuvm_pointerLikeType_withBoxForValue(context, operandRegisterFile[1], operandRegisterFile[2]);
@@ -549,6 +570,9 @@ void tuuvm_bytecode_setupPrimitives(tuuvm_context_t *context)
     tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::CoerceValue", tuuvm_tuple_uint8_encode(TUUVM_OPCODE_COERCE_VALUE));
     tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::MakeAssociation", tuuvm_tuple_uint8_encode(TUUVM_OPCODE_MAKE_ASSOCIATION));
     tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::MakeClosureWithVector", tuuvm_tuple_uint8_encode(TUUVM_OPCODE_MAKE_CLOSURE_WITH_VECTOR));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::SlotAt", tuuvm_tuple_uint8_encode(TUUVM_OPCODE_SLOT_AT));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::SlotReferenceAt", tuuvm_tuple_uint8_encode(TUUVM_OPCODE_SLOT_REFERENCE_AT));
+    tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::SlotAtPut", tuuvm_tuple_uint8_encode(TUUVM_OPCODE_SLOT_AT_PUT));
 
     // Variable operand count.
     tuuvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::Call", tuuvm_tuple_uint8_encode(TUUVM_OPCODE_CALL));

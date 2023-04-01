@@ -408,6 +408,15 @@ static void tuuvm_jit_callWithContextNoResult2(tuuvm_bytecodeJit_t *jit, void *f
     tuuvm_jit_x86_call(jit, functionPointer);
 }
 
+static void tuuvm_jit_callWithContextNoResult3(tuuvm_bytecodeJit_t *jit, void *functionPointer, int16_t argumentOperand0, int16_t argumentOperand1, int16_t argumentOperand2)
+{
+    tuuvm_jit_x86_jitLoadContextInRegister(jit, TUUVM_X86_SYSV_ARG0);
+    tuuvm_jit_moveOperandToRegister(jit, TUUVM_X86_SYSV_ARG1, argumentOperand0);
+    tuuvm_jit_moveOperandToRegister(jit, TUUVM_X86_SYSV_ARG2, argumentOperand1);
+    tuuvm_jit_moveOperandToRegister(jit, TUUVM_X86_SYSV_ARG3, argumentOperand2);
+    tuuvm_jit_x86_call(jit, functionPointer);
+}
+
 static void tuuvm_jit_functionApplyVia(tuuvm_bytecodeJit_t *jit, int16_t resultOperand, int16_t functionOperand, size_t argumentCount, int16_t *argumentOperands, int applicationFlags, void *calledFunctionPointer)
 {
     size_t stackSize = argumentCount * sizeof(void*);

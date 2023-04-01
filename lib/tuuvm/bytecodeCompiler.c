@@ -284,6 +284,42 @@ TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_store(tuuvm_context_t *context, t
     return instruction;
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_slotAt(tuuvm_context_t *context, tuuvm_tuple_t compiler, tuuvm_tuple_t result, tuuvm_tuple_t tuple, tuuvm_tuple_t typeSlot)
+{
+    tuuvm_tuple_t operands = tuuvm_array_create(context, 3);
+    tuuvm_array_atPut(operands, 0, result);
+    tuuvm_array_atPut(operands, 1, tuple);
+    tuuvm_array_atPut(operands, 2, typeSlot);
+
+    tuuvm_tuple_t instruction = tuuvm_bytecodeCompilerInstruction_create(context, TUUVM_OPCODE_SLOT_AT, operands);
+    tuuvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    return instruction;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_slotReferenceAt(tuuvm_context_t *context, tuuvm_tuple_t compiler, tuuvm_tuple_t result, tuuvm_tuple_t tuple, tuuvm_tuple_t typeSlot)
+{
+    tuuvm_tuple_t operands = tuuvm_array_create(context, 3);
+    tuuvm_array_atPut(operands, 0, result);
+    tuuvm_array_atPut(operands, 1, tuple);
+    tuuvm_array_atPut(operands, 2, typeSlot);
+
+    tuuvm_tuple_t instruction = tuuvm_bytecodeCompilerInstruction_create(context, TUUVM_OPCODE_SLOT_REFERENCE_AT, operands);
+    tuuvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    return instruction;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_slotAtPut(tuuvm_context_t *context, tuuvm_tuple_t compiler, tuuvm_tuple_t tuple, tuuvm_tuple_t typeSlot, tuuvm_tuple_t value)
+{
+    tuuvm_tuple_t operands = tuuvm_array_create(context, 3);
+    tuuvm_array_atPut(operands, 0, tuple);
+    tuuvm_array_atPut(operands, 1, typeSlot);
+    tuuvm_array_atPut(operands, 2, value);
+
+    tuuvm_tuple_t instruction = tuuvm_bytecodeCompilerInstruction_create(context, TUUVM_OPCODE_SLOT_AT_PUT, operands);
+    tuuvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    return instruction;
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_typecheck(tuuvm_context_t *context, tuuvm_tuple_t compiler, tuuvm_tuple_t expectedType, tuuvm_tuple_t value)
 {
     tuuvm_tuple_t operands = tuuvm_array_create(context, 2);
@@ -1396,6 +1432,85 @@ static tuuvm_tuple_t tuuvm_astSequenceNode_primitiveCompileIntoBytecode(tuuvm_co
     return gcFrame.result;
 }
 
+static tuuvm_tuple_t tuuvm_astTupleSlotNamedAtNode_primitiveCompileIntoBytecode(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *node = &arguments[0];
+    tuuvm_tuple_t *compiler = &arguments[1];
+
+    tuuvm_astTupleSlotNamedAtNode_t **slotNamedNode = (tuuvm_astTupleSlotNamedAtNode_t**)node;
+    struct {
+        tuuvm_tuple_t tuple;
+        tuuvm_tuple_t slot;
+        tuuvm_tuple_t result;
+    } gcFrame = {0};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    gcFrame.tuple = tuuvm_bytecodeCompiler_compileASTNode(context, *compiler, (*slotNamedNode)->tupleExpression);
+    gcFrame.slot = tuuvm_bytecodeCompiler_addLiteral(context, *compiler, (*slotNamedNode)->boundSlot);
+    gcFrame.result = tuuvm_bytecodeCompiler_newTemporary(context, *compiler);
+    tuuvm_bytecodeCompiler_slotAt(context, *compiler, gcFrame.result, gcFrame.tuple, gcFrame.slot);
+
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
+}
+
+static tuuvm_tuple_t tuuvm_astTupleSlotNamedReferenceAtNode_primitiveCompileIntoBytecode(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *node = &arguments[0];
+    tuuvm_tuple_t *compiler = &arguments[1];
+
+    tuuvm_astTupleSlotNamedReferenceAtNode_t **slotNamedNode = (tuuvm_astTupleSlotNamedReferenceAtNode_t**)node;
+    struct {
+        tuuvm_tuple_t tuple;
+        tuuvm_tuple_t slot;
+        tuuvm_tuple_t result;
+    } gcFrame = {0};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    gcFrame.tuple = tuuvm_bytecodeCompiler_compileASTNode(context, *compiler, (*slotNamedNode)->tupleExpression);
+    gcFrame.slot = tuuvm_bytecodeCompiler_addLiteral(context, *compiler, (*slotNamedNode)->boundSlot);
+    gcFrame.result = tuuvm_bytecodeCompiler_newTemporary(context, *compiler);
+    tuuvm_bytecodeCompiler_slotReferenceAt(context, *compiler, gcFrame.result, gcFrame.tuple, gcFrame.slot);
+
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
+}
+
+static tuuvm_tuple_t tuuvm_astTupleSlotNamedAtPutNode_primitiveCompileIntoBytecode(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) tuuvm_error_argumentCountMismatch(2, argumentCount);
+
+    tuuvm_tuple_t *node = &arguments[0];
+    tuuvm_tuple_t *compiler = &arguments[1];
+
+    tuuvm_astTupleSlotNamedAtPutNode_t **slotNamedNode = (tuuvm_astTupleSlotNamedAtPutNode_t**)node;
+    struct {
+        tuuvm_tuple_t tuple;
+        tuuvm_tuple_t slot;
+        tuuvm_tuple_t value;
+        tuuvm_tuple_t result;
+    } gcFrame = {0};
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    gcFrame.tuple = tuuvm_bytecodeCompiler_compileASTNode(context, *compiler, (*slotNamedNode)->tupleExpression);
+    gcFrame.slot = tuuvm_bytecodeCompiler_addLiteral(context, *compiler, (*slotNamedNode)->boundSlot);
+    gcFrame.value = tuuvm_bytecodeCompiler_compileASTNode(context, *compiler, (*slotNamedNode)->valueExpression);
+    tuuvm_bytecodeCompiler_slotAtPut(context, *compiler, gcFrame.tuple, gcFrame.slot, gcFrame.value);
+
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
+}
+
 static tuuvm_tuple_t tuuvm_astWhileContinueNode_primitiveCompileIntoBytecode(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
@@ -1478,6 +1593,9 @@ void tuuvm_bytecodeCompiler_registerPrimitives(void)
     tuuvm_primitiveTable_registerFunction(tuuvm_astMessageSendNode_primitiveCompileIntoBytecode, "ASTMessageSendNode::compileIntoBytecodeWith:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astReturnNode_primitiveCompileIntoBytecode, "ASTReturnNode::compileIntoBytecodeWith:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astSequenceNode_primitiveCompileIntoBytecode, "ASTSequenceNode::compileIntoBytecodeWith:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleSlotNamedAtNode_primitiveCompileIntoBytecode, "ASTTupleSlotNamedAtNode::compileIntoBytecodeWith:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleSlotNamedAtPutNode_primitiveCompileIntoBytecode, "ASTTupleSlotNamedAtPutNode::compileIntoBytecodeWith:");
+    tuuvm_primitiveTable_registerFunction(tuuvm_astTupleSlotNamedReferenceAtNode_primitiveCompileIntoBytecode, "ASTTupleSlotNamedReferenceAtNode::compileIntoBytecodeWith:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astWhileContinueNode_primitiveCompileIntoBytecode, "ASTWhileNodeNode::compileIntoBytecodeWith:");
 }
 
@@ -1502,5 +1620,8 @@ void tuuvm_bytecodeCompiler_setupPrimitives(tuuvm_context_t *context)
     tuuvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astMessageSendNodeType, &tuuvm_astMessageSendNode_primitiveCompileIntoBytecode);
     tuuvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astReturnNodeType, &tuuvm_astReturnNode_primitiveCompileIntoBytecode);
     tuuvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astSequenceNodeType, &tuuvm_astSequenceNode_primitiveCompileIntoBytecode);
+    tuuvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astTupleSlotNamedAtNodeType, &tuuvm_astTupleSlotNamedAtNode_primitiveCompileIntoBytecode);
+    tuuvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astTupleSlotNamedAtPutNodeType, &tuuvm_astTupleSlotNamedAtPutNode_primitiveCompileIntoBytecode);
+    tuuvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astTupleSlotNamedReferenceAtNodeType, &tuuvm_astTupleSlotNamedReferenceAtNode_primitiveCompileIntoBytecode);
     tuuvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astWhileContinueWithNodeType, &tuuvm_astWhileContinueNode_primitiveCompileIntoBytecode);
 }
