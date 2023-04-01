@@ -102,6 +102,22 @@
     (MethodDictionary::at:put: methodDict selector method)
     (Type::flushMacroLookupSelector: type selector))
 
+## Type::validFallbackMethodDictionary
+(define (Type::validFallbackMethodDictionary type)
+    (define existingMethodDictionary (Type::fallbackMethodDictionary type))
+    (if:then:else: (== existingMethodDictionary nil)
+        (begin
+            (define newMethodDictionary (MethodDictionary::new))
+            (Type::fallbackMethodDictionary: type newMethodDictionary)
+            newMethodDictionary)
+        existingMethodDictionary))
+
+## Type::withSelector:addFallbackMethod:
+(define (Type::withSelector:addFallbackMethod: type selector method)
+    (define methodDict (Type::validFallbackMethodDictionary type))
+    (MethodDictionary::at:put: methodDict selector method)
+    (Type::flushFallbackLookupSelector: type selector))
+
 (Type::withSelector:addMethod: SourcePosition #printString (lambda (sourcePosition)
     (define sourceDirectory (SourceCode::directory (SourcePosition::sourceCode sourcePosition)))
     (define sourceName (SourceCode::name (SourcePosition::sourceCode sourcePosition)))
@@ -119,11 +135,15 @@
         (String::concat: "-" endString))
     ))
 
+
 (exportInstrinsicBuiltInBinding #Type::withSelector:addMacroMethod: Type::withSelector:addMacroMethod:)
 (exportInstrinsicBuiltInBinding #Type::validMacroMethodDictionary Type::validMacroMethodDictionary)
 
 (exportInstrinsicBuiltInBinding #Type::withSelector:addMethod: Type::withSelector:addMethod:)
 (exportInstrinsicBuiltInBinding #Type::validMethodDictionary Type::validMethodDictionary)
+
+(exportInstrinsicBuiltInBinding #Type::withSelector:addFallbackMethod: Type::withSelector:addFallbackMethod:)
+(exportInstrinsicBuiltInBinding #Type::validFallbackMethodDictionary Type::validFallbackMethodDictionary)
 
 ## Register the Type methods.
 (Type::withSelector:addMethod: Type #withSelector:addMethod: Type::withSelector:addMethod:)
@@ -131,6 +151,9 @@
 
 (Type::withSelector:addMethod: Type #withSelector:addMacroMethod: Type::withSelector:addMacroMethod:)
 (Type::withSelector:addMethod: Type #validMacroMethodDictionary Type::validMacroMethodDictionary)
+
+(Type::withSelector:addMethod: Type #withSelector:addFallbackMethod: Type::withSelector:addFallbackMethod:)
+(Type::withSelector:addMethod: Type #validFallbackMethodDictionary Type::validFallbackMethodDictionary)
 
 ## Load the sysmel sources.
 (loadSourceNamed: "Bootstrap.sysmel")

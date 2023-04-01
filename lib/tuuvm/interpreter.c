@@ -729,6 +729,20 @@ static tuuvm_tuple_t tuuvm_astArgumentNode_primitiveAnalyze(tuuvm_context_t *con
     return (tuuvm_tuple_t)gcFrame.argumentNode;
 }
 
+static tuuvm_tuple_t tuuvm_astCoerceValueNode_primitiveMacro(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+
+    tuuvm_tuple_t *macroContext = &arguments[0];
+    tuuvm_tuple_t *tupleExpression = &arguments[1];
+    tuuvm_tuple_t *typeExpression = &arguments[2];
+
+    tuuvm_tuple_t sourcePosition = tuuvm_macroContext_getSourcePosition(*macroContext);
+    return tuuvm_astCoerceValueNode_create(context, sourcePosition, *typeExpression, *tupleExpression);
+}
+
 static tuuvm_tuple_t tuuvm_astCoerceValueNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
 {
     (void)context;
@@ -795,6 +809,20 @@ static tuuvm_tuple_t tuuvm_astCoerceValueNode_primitiveAnalyzeAndEvaluate(tuuvm_
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     TUUVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     return gcFrame.result;
+}
+
+static tuuvm_tuple_t tuuvm_astDownCastNode_primitiveMacro(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) tuuvm_error_argumentCountMismatch(3, argumentCount);
+
+    tuuvm_tuple_t *macroContext = &arguments[0];
+    tuuvm_tuple_t *tupleExpression = &arguments[1];
+    tuuvm_tuple_t *typeExpression = &arguments[2];
+
+    tuuvm_tuple_t sourcePosition = tuuvm_macroContext_getSourcePosition(*macroContext);
+    return tuuvm_astDownCastNode_create(context, sourcePosition, *typeExpression, *tupleExpression);
 }
 
 static tuuvm_tuple_t tuuvm_astDownCastNode_primitiveAnalyze(tuuvm_context_t *context, tuuvm_tuple_t closure, size_t argumentCount, tuuvm_tuple_t *arguments)
@@ -5273,10 +5301,12 @@ void tuuvm_astInterpreter_registerPrimitives(void)
 
     tuuvm_primitiveTable_registerFunction(tuuvm_astArgumentNode_primitiveAnalyze, "ASTArgumentNode::analyzeWithEnvironment:");
     
+    tuuvm_primitiveTable_registerFunction(tuuvm_astCoerceValueNode_primitiveMacro, "ASTCoerceValueNode::macro");
     tuuvm_primitiveTable_registerFunction(tuuvm_astCoerceValueNode_primitiveAnalyze, "ASTCoerceValueNode::analyzeWithEnvironment:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astCoerceValueNode_primitiveEvaluate, "ASTCoerceValueNode::evaluateWithEnvironment:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astCoerceValueNode_primitiveAnalyzeAndEvaluate, "ASTCoerceValueNode::analyzeAndEvaluateWithEnvironment:");
 
+    tuuvm_primitiveTable_registerFunction(tuuvm_astDownCastNode_primitiveMacro, "ASTDownCastNode::macro");
     tuuvm_primitiveTable_registerFunction(tuuvm_astDownCastNode_primitiveAnalyze, "ASTDownCastNode::analyzeWithEnvironment:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astDownCastNode_primitiveEvaluate, "ASTDownCastNode::evaluateWithEnvironment:");
     tuuvm_primitiveTable_registerFunction(tuuvm_astDownCastNode_primitiveAnalyzeAndEvaluate, "ASTDownCastNode::analyzeAndEvaluateWithEnvironment:");
@@ -5441,12 +5471,14 @@ void tuuvm_astInterpreter_setupASTInterpreter(tuuvm_context_t *context)
         NULL
     );
 
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "tuple:coerceTo:", 3, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astCoerceValueNode_primitiveMacro);
     tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astCoerceValueNodeType,
         tuuvm_astCoerceValueNode_primitiveAnalyze,
         tuuvm_astCoerceValueNode_primitiveEvaluate,
         tuuvm_astCoerceValueNode_primitiveAnalyzeAndEvaluate
     );
 
+    tuuvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "tuple:downCastTo:", 3, TUUVM_FUNCTION_FLAGS_MACRO, NULL, tuuvm_astDownCastNode_primitiveMacro);
     tuuvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astDownCastNodeType,
         tuuvm_astDownCastNode_primitiveAnalyze,
         tuuvm_astDownCastNode_primitiveEvaluate,

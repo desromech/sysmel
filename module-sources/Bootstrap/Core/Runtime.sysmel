@@ -578,7 +578,7 @@ ASTNode
     }.
 
 AnyReference
-    withSelector: #doesNotUnderstand: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTMessageSendNode)messageSend :: ASTNode |
+    withSelector: #doesNotUnderstand: addFallbackMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTMessageSendNode)messageSend :: ASTNode |
         messageSend copy
             receiver: (ASTFunctionApplicationNode new
                 sourcePosition: self sourcePosition;
