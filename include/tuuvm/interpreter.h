@@ -23,9 +23,20 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_evaluateASTWithEnvironment(tuuvm_conte
 TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t environment);
 
 /**
- * Analyzes and evaluates a C String with the given environment.
+ * Analyzes and evaluates an AST node with the given environment.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_interpreter_validateThenAnalyzeAndEvaluateASTWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t environment);
+
+
+/**
+ * Analyzes and evaluates the source code with the given environment.
  */ 
 TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeAndEvaluateSourceCodeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t sourceCode);
+
+/**
+ * Validates, then analyzes and evaluates the source code with the given environment.
+ */ 
+TUUVM_API tuuvm_tuple_t tuuvm_interpreter_validateThenAnalyzeAndEvaluateSourceCodeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t sourceCode);
 
 /**
  * Analyzes and evaluates a C String with the given environment.

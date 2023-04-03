@@ -635,6 +635,11 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_getAstNodeAnalysisAndEvaluationFunction(tuuvm
 TUUVM_API void tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(tuuvm_context_t *context, tuuvm_tuple_t type, tuuvm_tuple_t astNodeAnalysisAndEvaluationFunction);
 
 /**
+ * Gets the astNodeValidationThenAnalysisAndEvaluationFunction function of a type.
+ */
+TUUVM_API tuuvm_tuple_t tuuvm_type_getAstNodeValidationWithAnalysisAndEvaluationFunction(tuuvm_context_t *context, tuuvm_tuple_t type);
+
+/**
  * Gets the analyzeAndEvaluateMessageSendNode with environment function function of a type.
  */
 TUUVM_API tuuvm_tuple_t tuuvm_type_getAnalyzeAndEvaluateMessageSendNodeForReceiverWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type);

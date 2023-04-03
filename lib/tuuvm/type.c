@@ -685,6 +685,11 @@ TUUVM_API void tuuvm_type_setAstNodeAnalysisAndEvaluationFunction(tuuvm_context_
     tuuvm_type_setMethodWithSelector(context, type, context->roots.astNodeAnalysisAndEvaluationSelector, astNodeAnalysisAndEvaluationFunction);
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_type_getAstNodeValidationWithAnalysisAndEvaluationFunction(tuuvm_context_t *context, tuuvm_tuple_t type)
+{
+    return tuuvm_type_lookupSelector(context, type, context->roots.astNodeValidateThenAnalyzeAndEvaluateWithEnvironmentSelector);
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_type_getAnalyzeAndEvaluateMessageSendNodeForReceiverWithEnvironmentFunction(tuuvm_context_t *context, tuuvm_tuple_t type)
 {
     return tuuvm_type_lookupSelector(context, type, context->roots.analyzeAndEvaluateMessageSendNodeForReceiverWithEnvironmentSelector);

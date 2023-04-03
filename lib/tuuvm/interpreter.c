@@ -97,6 +97,30 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(t
     return tuuvm_function_applyNoCheck2(context, gcFrame.function, gcFrame.astNode, gcFrame.environment);
 }
 
+TUUVM_API tuuvm_tuple_t tuuvm_interpreter_validateThenAnalyzeAndEvaluateASTWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t astNode, tuuvm_tuple_t environment)
+{
+    struct {
+        tuuvm_tuple_t environment;
+        tuuvm_tuple_t astNode;
+        tuuvm_tuple_t analyzedAstNode;
+        tuuvm_tuple_t function;
+        tuuvm_tuple_t result;
+    } gcFrame = {
+        .environment = environment,
+        .astNode = astNode,
+    };
+
+    gcFrame.function = tuuvm_type_getAstNodeValidationWithAnalysisAndEvaluationFunction(context, tuuvm_tuple_getType(context, gcFrame.astNode));
+    if(!gcFrame.function)
+    {
+        gcFrame.function = tuuvm_type_getAstNodeAnalysisAndEvaluationFunction(context, tuuvm_tuple_getType(context, gcFrame.astNode));
+        if(!gcFrame.function)
+            tuuvm_error("Cannot validate, analyze and evaluate non AST node tuple.");
+    }
+
+    return tuuvm_function_applyNoCheck2(context, gcFrame.function, gcFrame.astNode, gcFrame.environment);
+}
+
 TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeAndEvaluateSourceCodeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t sourceCode)
 {
     struct {
@@ -115,6 +139,28 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_analyzeAndEvaluateSourceCodeWithEnviro
     else
         gcFrame.ast = tuuvm_parser_parseSourceCode(context, gcFrame.sourceCode);
     gcFrame.result = tuuvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, gcFrame.ast, gcFrame.environment);
+    TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
+}
+
+TUUVM_API tuuvm_tuple_t tuuvm_interpreter_validateThenAnalyzeAndEvaluateSourceCodeWithEnvironment(tuuvm_context_t *context, tuuvm_tuple_t environment, tuuvm_tuple_t sourceCode)
+{
+    struct {
+        tuuvm_tuple_t environment;
+        tuuvm_tuple_t sourceCode;
+        tuuvm_tuple_t ast;
+        tuuvm_tuple_t result;
+    } gcFrame = {
+        .environment = environment,
+        .sourceCode = sourceCode
+    };
+
+    TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    if(tuuvm_string_equalsCString(tuuvm_sourceCode_getLanguage(gcFrame.sourceCode), "sysmel"))
+        gcFrame.ast = tuuvm_sysmelParser_parseSourceCode(context, gcFrame.sourceCode);
+    else
+        gcFrame.ast = tuuvm_parser_parseSourceCode(context, gcFrame.sourceCode);
+    gcFrame.result = tuuvm_interpreter_validateThenAnalyzeAndEvaluateASTWithEnvironment(context, gcFrame.ast, gcFrame.environment);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
 }
@@ -5252,7 +5298,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_interpreter_loadSourceNamedWithSolvedPath(tuuvm_co
     gcFrame.sourceLanguage = tuuvm_sourceCode_inferLanguageFromSourceName(context, gcFrame.sourceName);
     gcFrame.sourceCode = tuuvm_sourceCode_create(context, gcFrame.sourceString, gcFrame.sourceDirectory, gcFrame.sourceName, gcFrame.sourceLanguage);
     gcFrame.sourceEnvironment = tuuvm_environment_createDefaultForSourceCodeEvaluation(context, gcFrame.sourceCode);
-    gcFrame.result = tuuvm_interpreter_analyzeAndEvaluateSourceCodeWithEnvironment(context, gcFrame.sourceEnvironment, gcFrame.sourceCode);
+    gcFrame.result = tuuvm_interpreter_validateThenAnalyzeAndEvaluateSourceCodeWithEnvironment(context, gcFrame.sourceEnvironment, gcFrame.sourceCode);
     TUUVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
 }

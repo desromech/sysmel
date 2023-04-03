@@ -419,6 +419,7 @@ static void tuuvm_context_createBasicTypes(tuuvm_context_t *context)
     context->roots.astNodeAnalysisSelector = tuuvm_symbol_internWithCString(context, "analyzeWithEnvironment:");
     context->roots.astNodeEvaluationSelector = tuuvm_symbol_internWithCString(context, "evaluateWithEnvironment:");
     context->roots.astNodeAnalysisAndEvaluationSelector = tuuvm_symbol_internWithCString(context, "analyzeAndEvaluateWithEnvironment:");
+    context->roots.astNodeValidateThenAnalyzeAndEvaluateWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "validateThenAnalyzeAndEvaluateWithEnvironment:");
     context->roots.astNodeCompileIntoBytecodeSelector = tuuvm_symbol_internWithCString(context, "compileIntoBytecodeWith:");
     
     context->roots.analyzeAndEvaluateMessageSendNodeForReceiverWithEnvironmentSelector = tuuvm_symbol_internWithCString(context, "analyzeAndEvaluateMessageSendNode:forReceiver:withEnvironment:");
