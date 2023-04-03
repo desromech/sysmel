@@ -173,7 +173,7 @@ TUUVM_INLINE bool tuuvm_function_isMemoized(tuuvm_context_t *context, tuuvm_tupl
 /**
  * Applies a function tuple with the given parameters
  */
-TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags);
+TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments, tuuvm_bitflags_t applicationFlags);
 
 TUUVM_INLINE tuuvm_tuple_t tuuvm_function_apply0(tuuvm_context_t *context, tuuvm_tuple_t function)
 {
@@ -328,7 +328,7 @@ TUUVM_API void tuuvm_functionCallFrameStack_push(tuuvm_functionCallFrameStack_t 
 /**
  * Ends constructing a function call frame stack and dispatch the function call.
  */
-TUUVM_API tuuvm_tuple_t tuuvm_functionCallFrameStack_finish(tuuvm_context_t *context, tuuvm_functionCallFrameStack_t *callFrameStack, uint32_t applicationFlags);
+TUUVM_API tuuvm_tuple_t tuuvm_functionCallFrameStack_finish(tuuvm_context_t *context, tuuvm_functionCallFrameStack_t *callFrameStack, tuuvm_bitflags_t applicationFlags);
 
 /**
  * Does the function require an optimized lookup?

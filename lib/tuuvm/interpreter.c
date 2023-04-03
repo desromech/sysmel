@@ -5222,7 +5222,7 @@ static tuuvm_tuple_t tuuvm_dependentFunctionType_primitiveAnalyzeAndTypeCheckMes
     return tuuvm_astFunctionApplicationNode_optimizePureApplication(context, (tuuvm_astFunctionApplicationNode_t**)node);
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_t *context, tuuvm_tuple_t function_, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags)
+TUUVM_API tuuvm_tuple_t tuuvm_interpreter_applyClosureASTFunction(tuuvm_context_t *context, tuuvm_tuple_t function_, size_t argumentCount, tuuvm_tuple_t *arguments, tuuvm_bitflags_t applicationFlags)
 {
     tuuvm_stackFrameFunctionActivationRecord_t functionActivationRecord = {
         .type = TUUVM_STACK_FRAME_RECORD_TYPE_FUNCTION_ACTIVATION,

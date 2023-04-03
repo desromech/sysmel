@@ -31,8 +31,7 @@ static intptr_t tuuvm_dictionary_scanFor(tuuvm_context_t *context, tuuvm_diction
     struct {
         tuuvm_array_t *storage;
         tuuvm_association_t *association;
-    } gcFrame = {
-    };
+    } gcFrame = {0};
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     size_t capacity = tuuvm_tuple_getSizeInSlots((*dictionary)->storage);

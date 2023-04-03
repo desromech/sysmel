@@ -300,7 +300,7 @@ static tuuvm_tuple_t tuuvm_tuple_primitive_firstInstanceWithType(tuuvm_context_t
     (void)closure;
     if(argumentCount != 1) tuuvm_error_argumentCountMismatch(1, argumentCount);
 
-    tuuvm_heapIterator_t iterator = {};
+    tuuvm_heapIterator_t iterator = {0};
     tuuvm_heapIterator_begin(&context->heap, &iterator);
     if(!tuuvm_heapIterator_advanceUntilInstanceWithType(&iterator, arguments[0]))
         return TUUVM_NULL_TUPLE;
@@ -317,7 +317,7 @@ static tuuvm_tuple_t tuuvm_tuple_primitive_nextInstanceWithSameType(tuuvm_contex
     tuuvm_tuple_t *object = &arguments[0];
     tuuvm_tuple_t objectType = tuuvm_tuple_getType(context, *object);
 
-    tuuvm_heapIterator_t iterator = {};
+    tuuvm_heapIterator_t iterator = {0};
     tuuvm_heapIterator_beginWithPointer(&context->heap, *object, &iterator);
     tuuvm_heapIterator_advance(&iterator);
     if(!tuuvm_heapIterator_advanceUntilInstanceWithType(&iterator, objectType))

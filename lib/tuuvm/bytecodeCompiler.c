@@ -54,7 +54,7 @@ TUUVM_API void tuuvm_bytecodeCompiler_setArgumentCount(tuuvm_context_t *context,
     tuuvm_tuple_t arguments = tuuvm_array_create(context, argumentCount);
     for(size_t i = 0; i < argumentCount; ++i )
     {
-        tuuvm_tuple_t argumentOperand = tuuvm_bytecodeCompilerInstructionVectorOperand_create(context, TUUVM_OPERAND_VECTOR_ARGUMENTS, i);
+        tuuvm_tuple_t argumentOperand = tuuvm_bytecodeCompilerInstructionVectorOperand_create(context, TUUVM_OPERAND_VECTOR_ARGUMENTS, (int16_t)i);
         tuuvm_array_atPut(arguments, i, argumentOperand);
     }
 
@@ -66,7 +66,7 @@ TUUVM_API void tuuvm_bytecodeCompiler_setCaptureCount(tuuvm_context_t *context, 
     tuuvm_tuple_t captures = tuuvm_array_create(context, argumentCount);
     for(size_t i = 0; i < argumentCount; ++i )
     {
-        tuuvm_tuple_t captureOperand = tuuvm_bytecodeCompilerInstructionVectorOperand_create(context, TUUVM_OPERAND_VECTOR_CAPTURES, i);
+        tuuvm_tuple_t captureOperand = tuuvm_bytecodeCompilerInstructionVectorOperand_create(context, TUUVM_OPERAND_VECTOR_CAPTURES, (int16_t)i);
         tuuvm_array_atPut(captures, i, captureOperand);
     }
 
@@ -81,7 +81,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_addLiteral(tuuvm_context_t *conte
         return existent;
 
     size_t literalIndex = tuuvm_arrayList_getSize(compilerObject->literals);
-    tuuvm_tuple_t newLiteralOperand = tuuvm_bytecodeCompilerInstructionVectorOperand_create(context, TUUVM_OPERAND_VECTOR_LITERAL, literalIndex);
+    tuuvm_tuple_t newLiteralOperand = tuuvm_bytecodeCompilerInstructionVectorOperand_create(context, TUUVM_OPERAND_VECTOR_LITERAL, (int16_t)literalIndex);
     tuuvm_arrayList_add(context, compilerObject->literals, literalValue);
     tuuvm_identityDictionary_atPut(context, compilerObject->literalDictionary, literalValue, newLiteralOperand);
     return newLiteralOperand;
@@ -212,7 +212,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_bytecodeCompiler_newTemporary(tuuvm_context_t *con
 {
     tuuvm_bytecodeCompiler_t *compilerObject = (tuuvm_bytecodeCompiler_t*)compiler;
     size_t temporaryIndex = tuuvm_arrayList_getSize(compilerObject->temporaries);
-    tuuvm_tuple_t temporaryOperand = tuuvm_bytecodeCompilerInstructionVectorOperand_create(context, TUUVM_OPERAND_VECTOR_LOCAL, temporaryIndex);
+    tuuvm_tuple_t temporaryOperand = tuuvm_bytecodeCompilerInstructionVectorOperand_create(context, TUUVM_OPERAND_VECTOR_LOCAL, (int16_t)temporaryIndex);
     tuuvm_arrayList_add(context, compilerObject->temporaries, temporaryOperand);
     return temporaryOperand;
 }

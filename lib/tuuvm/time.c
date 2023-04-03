@@ -5,6 +5,9 @@
 #include <stdio.h>
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN 
+#define NOMINMAX
+#include <windows.h>
 #else
 #   ifndef _XOPEN_SOURCE
 #       define _XOPEN_SOURCE 600
@@ -15,7 +18,13 @@
 TUUVM_API int64_t tuuvm_time_microsecondsTimestamp(void)
 {
 #ifdef _WIN32
-#error Implement this
+    LARGE_INTEGER timestamp = {0};
+    LARGE_INTEGER timestampFrequency = {0};
+    if(!QueryPerformanceCounter(&timestamp) || !QueryPerformanceFrequency(&timestampFrequency))
+        return 0;
+
+    int64_t frequencyDivisor = timestamp.QuadPart / (int64_t)1000000;
+    return timestamp.QuadPart / frequencyDivisor;
 #else
     struct timespec ts = {};
     clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -26,7 +35,13 @@ TUUVM_API int64_t tuuvm_time_microsecondsTimestamp(void)
 TUUVM_API int64_t tuuvm_time_nanosecondsTimestamp(void)
 {
 #ifdef _WIN32
-#error Implement this
+    LARGE_INTEGER timestamp = {0};
+    LARGE_INTEGER timestampFrequency = {0};
+    if(!QueryPerformanceCounter(&timestamp) || !QueryPerformanceFrequency(&timestampFrequency))
+        return 0;
+
+    int64_t frequencyDivisor = timestamp.QuadPart / (int64_t)1000000000;
+    return timestamp.QuadPart / frequencyDivisor;
 #else
     struct timespec ts = {};
     clock_gettime(CLOCK_MONOTONIC, &ts);

@@ -197,7 +197,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createSimpleFunctionTypeWithArguments0(tuuvm_
     struct {
         tuuvm_tuple_t arguments;
         tuuvm_tuple_t result;
-    } gcFrame = {};
+    } gcFrame = {0};
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     gcFrame.arguments = tuuvm_array_create(context, 0);
@@ -212,7 +212,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createSimpleFunctionTypeWithArguments1(tuuvm_
     struct {
         tuuvm_tuple_t arguments;
         tuuvm_tuple_t result;
-    } gcFrame = {};
+    } gcFrame = {0};
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     gcFrame.arguments = tuuvm_array_create(context, 1);
@@ -228,7 +228,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_type_createSimpleFunctionTypeWithArguments2(tuuvm_
     struct {
         tuuvm_tuple_t arguments;
         tuuvm_tuple_t result;
-    } gcFrame = {};
+    } gcFrame = {0};
 
     TUUVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     gcFrame.arguments = tuuvm_array_create(context, 2);

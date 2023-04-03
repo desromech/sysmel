@@ -10,7 +10,11 @@
 #include "tuuvm/type.h"
 #include "tuuvm/stackFrame.h"
 #include "internal/context.h"
+#ifdef _WIN32
+#define alloca _alloca
+#else
 #include <alloca.h>
+#endif
 #include <setjmp.h>
 #include <stdlib.h>
 #include <string.h>
@@ -166,7 +170,7 @@ static tuuvm_tuple_t tuuvm_bytecodeInterpreter_interpretSendNoCopyArguments(tuuv
 TUUVM_API void tuuvm_bytecodeInterpreter_interpretWithActivationRecord(tuuvm_context_t *context, tuuvm_stackFrameBytecodeFunctionActivationRecord_t *activationRecord)
 {
     tuuvm_bytecodeInterpreter_ensureTablesAreFilled();
-    int16_t decodedOperands[TUUVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE] = {};
+    int16_t decodedOperands[TUUVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE] = {0};
     tuuvm_tuple_t *operandRegisterFile = activationRecord->operandRegisterFile;
     tuuvm_tuple_t *localVector = activationRecord->inlineLocalVector;
 

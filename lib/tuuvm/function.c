@@ -16,7 +16,7 @@
 #define PRIMITIVE_TABLE_CAPACITY 1024
 
 static bool tuuvm_primitiveTableIsComputed = false;
-static size_t tuuvm_primitiveTableSize = 0;
+static uint32_t tuuvm_primitiveTableSize = 0;
 static bool tuuvm_checkPrimitivesArePresentInTable = true;
 static bool tuuvm_function_useBytecodeInterpreter = true;
 
@@ -54,11 +54,11 @@ static void tuuvm_primitiveTable_ensureIsComputed(void)
     tuuvm_context_registerPrimitives();
 }
 
-static bool tuuvm_primitiveTable_findEntryFor(tuuvm_functionEntryPoint_t primitiveEntryPoint, size_t *outEntryIndex)
+static bool tuuvm_primitiveTable_findEntryFor(tuuvm_functionEntryPoint_t primitiveEntryPoint, uint32_t *outEntryIndex)
 {
     tuuvm_primitiveTable_ensureIsComputed();
     
-    for(size_t i = 0; i < tuuvm_primitiveTableSize; ++i)
+    for(uint32_t i = 0; i < tuuvm_primitiveTableSize; ++i)
     {
         if(tuuvm_primitiveTable[i].entryPoint == primitiveEntryPoint)
         {
@@ -87,7 +87,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_function_createPrimitive(tuuvm_context_t *context,
     tuuvm_function_t *result = (tuuvm_function_t*)tuuvm_context_allocatePointerTuple(context, context->roots.functionType, TUUVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(tuuvm_function_t));
     result->argumentCount = tuuvm_tuple_size_encode(context, argumentCount);
     result->flags = tuuvm_tuple_bitflags_encode(flags);
-    size_t primitiveEntryIndex = 0;
+    uint32_t primitiveEntryIndex = 0;
     if(!userdata && tuuvm_primitiveTable_findEntryFor(entryPoint, &primitiveEntryIndex))
     {
         result->primitiveTableIndex = tuuvm_tuple_uint32_encode(context, primitiveEntryIndex + 1);
@@ -150,7 +150,7 @@ TUUVM_API void tuuvm_function_addFlags(tuuvm_context_t *context, tuuvm_tuple_t f
     functionObject->flags = tuuvm_tuple_bitflags_encode(tuuvm_tuple_bitflags_decode(functionObject->flags) | flags);
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_ordinaryFunction_nativeApply(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_functionEntryPoint_t nativeEntryPoint, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags)
+TUUVM_API tuuvm_tuple_t tuuvm_ordinaryFunction_nativeApply(tuuvm_context_t *context, tuuvm_tuple_t function, tuuvm_functionEntryPoint_t nativeEntryPoint, size_t argumentCount, tuuvm_tuple_t *arguments, tuuvm_bitflags_t applicationFlags)
 {
     (void)applicationFlags;
     tuuvm_stackFrameGCRootsRecord_t argumentsRecord = {
@@ -174,7 +174,7 @@ TUUVM_API tuuvm_functionEntryPoint_t tuuvm_function_getNumberedPrimitiveEntryPoi
     return NULL;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_ordinaryFunction_directApply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags)
+TUUVM_API tuuvm_tuple_t tuuvm_ordinaryFunction_directApply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments, tuuvm_bitflags_t applicationFlags)
 {
     tuuvm_function_t *functionObject = (tuuvm_function_t*)function;
 
@@ -201,7 +201,7 @@ TUUVM_API tuuvm_tuple_t tuuvm_ordinaryFunction_directApply(tuuvm_context_t *cont
     return tuuvm_interpreter_applyClosureASTFunction(context, function, argumentCount, arguments, applicationFlags);
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_ordinaryFunction_memoizedApply(tuuvm_context_t *context, tuuvm_tuple_t function_, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags)
+TUUVM_API tuuvm_tuple_t tuuvm_ordinaryFunction_memoizedApply(tuuvm_context_t *context, tuuvm_tuple_t function_, size_t argumentCount, tuuvm_tuple_t *arguments, tuuvm_bitflags_t applicationFlags)
 {
     struct {
         tuuvm_tuple_t function;
@@ -265,14 +265,14 @@ TUUVM_API tuuvm_tuple_t tuuvm_ordinaryFunction_memoizedApply(tuuvm_context_t *co
     return gcFrame.result;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_ordinaryFunction_apply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags)
+TUUVM_API tuuvm_tuple_t tuuvm_ordinaryFunction_apply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments, tuuvm_bitflags_t applicationFlags)
 {
     if(tuuvm_function_isMemoized(context, function))
         return tuuvm_ordinaryFunction_memoizedApply(context, function, argumentCount, arguments, applicationFlags);
     return tuuvm_ordinaryFunction_directApply(context, function, argumentCount, arguments, applicationFlags);
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments, uint32_t applicationFlags)
+TUUVM_API tuuvm_tuple_t tuuvm_function_apply(tuuvm_context_t *context, tuuvm_tuple_t function, size_t argumentCount, tuuvm_tuple_t *arguments, tuuvm_bitflags_t applicationFlags)
 {
     // Is this an ordinary function?
     if(tuuvm_tuple_isFunction(context, function))
@@ -362,7 +362,7 @@ TUUVM_API void tuuvm_functionCallFrameStack_push(tuuvm_functionCallFrameStack_t 
     ++callFrameStack->argumentIndex;
 }
 
-TUUVM_API tuuvm_tuple_t tuuvm_functionCallFrameStack_finish(tuuvm_context_t *context, tuuvm_functionCallFrameStack_t *callFrameStack, uint32_t applicationFlags)
+TUUVM_API tuuvm_tuple_t tuuvm_functionCallFrameStack_finish(tuuvm_context_t *context, tuuvm_functionCallFrameStack_t *callFrameStack, tuuvm_bitflags_t applicationFlags)
 {
     return tuuvm_function_apply(context, callFrameStack->gcRoots.function, callFrameStack->expectedArgumentCount, callFrameStack->gcRoots.applicationArguments, applicationFlags);
 }

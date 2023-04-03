@@ -19,6 +19,11 @@ static void *tuuvm_heap_allocateSystemMemory(size_t sizeToAllocate)
     return VirtualAlloc(NULL, sizeToAllocate, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 }
 
+static void *tuuvm_heap_allocateSystemMemoryForCode(size_t sizeToAllocate)
+{
+    return VirtualAlloc(NULL, sizeToAllocate, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READ);
+}
+
 static void tuuvm_heap_freeSystemMemory(void *memory, size_t sizeToFree)
 {
     (void)sizeToFree;
@@ -31,6 +36,26 @@ static size_t tuuvm_heap_getSystemAllocationAlignment(void)
     memset(&systemInfo, 0, sizeof(systemInfo));
     GetSystemInfo(&systemInfo);
     return systemInfo.dwPageSize;
+}
+
+static void tuuvm_heap_lockCodePagesForWriting(void *codePointer, size_t size)
+{
+    size_t pageAlignment = tuuvm_heap_getSystemAllocationAlignment();
+    uintptr_t startAddress = (uintptr_t)codePointer & (-pageAlignment);
+    uintptr_t endAddress = ((uintptr_t)codePointer + size + pageAlignment - 1) & (-pageAlignment);
+
+    DWORD oldProtection = 0;
+    VirtualProtect((void*)startAddress, endAddress - startAddress, PAGE_READWRITE, &oldProtection);
+}
+
+static void tuuvm_heap_unlockCodePagesForExecution(void *codePointer, size_t size)
+{
+    size_t pageAlignment = tuuvm_heap_getSystemAllocationAlignment();
+    uintptr_t startAddress = (uintptr_t)codePointer & (-pageAlignment);
+    uintptr_t endAddress = ((uintptr_t)codePointer + size + pageAlignment - 1) & (-pageAlignment);
+
+    DWORD oldProtection = 0;
+    VirtualProtect((void*)startAddress, endAddress - startAddress, PAGE_EXECUTE_READ, &oldProtection);
 }
 
 #else
@@ -466,8 +491,8 @@ static void tuuvm_heap_computeNextCollectionThreshold(tuuvm_heap_t *heap)
 
 void tuuvm_heap_computeCompactionForwardingPointers(tuuvm_heap_t *heap)
 {
-    tuuvm_heapIterator_t compactedIterator = {};
-    tuuvm_heapIterator_t heapIterator = {};
+    tuuvm_heapIterator_t compactedIterator = {0};
+    tuuvm_heapIterator_t heapIterator = {0};
     tuuvm_heapIterator_begin(heap, &compactedIterator);
     tuuvm_heapIterator_begin(heap, &heapIterator);
 
@@ -494,7 +519,7 @@ void tuuvm_heap_computeCompactionForwardingPointers(tuuvm_heap_t *heap)
 
 void tuuvm_heap_applyForwardingPointers(tuuvm_heap_t *heap)
 {
-    tuuvm_heapIterator_t heapIterator = {};
+    tuuvm_heapIterator_t heapIterator = {0};
     tuuvm_heapIterator_begin(heap, &heapIterator);
 
     while(!tuuvm_heapIterator_isAtEnd(&heapIterator))
@@ -527,8 +552,8 @@ void tuuvm_heap_applyForwardingPointers(tuuvm_heap_t *heap)
 
 void tuuvm_heap_compact(tuuvm_heap_t *heap)
 {
-    tuuvm_heapIterator_t compactedIterator = {};
-    tuuvm_heapIterator_t heapIterator = {};
+    tuuvm_heapIterator_t compactedIterator = {0};
+    tuuvm_heapIterator_t heapIterator = {0};
     tuuvm_heapIterator_begin(heap, &compactedIterator);
     tuuvm_heapIterator_begin(heap, &heapIterator);
 
@@ -586,7 +611,7 @@ static inline tuuvm_tuple_t tuuvm_heap_relocatePointerWithTable(tuuvm_heap_reloc
 
 void tuuvm_heap_relocateWithTable(tuuvm_heap_t *heap, tuuvm_heap_relocationTable_t *relocationTable)
 {
-    tuuvm_heapIterator_t heapIterator = {};
+    tuuvm_heapIterator_t heapIterator = {0};
     tuuvm_heapIterator_begin(heap, &heapIterator);
 
     while(!tuuvm_heapIterator_isAtEnd(&heapIterator))

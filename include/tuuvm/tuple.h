@@ -835,7 +835,7 @@ TUUVM_INLINE tuuvm_bitflags_t tuuvm_tuple_bitflags_decode(tuuvm_tuple_t tuple)
 TUUVM_INLINE tuuvm_tuple_t tuuvm_tuple_bitflags_encode(tuuvm_bitflags_t flags)
 {
     if(sizeof(tuuvm_bitflags_t) == sizeof(uint32_t))
-        return tuuvm_tuple_uint32_encodeSmall(flags);
+        return tuuvm_tuple_uint32_encodeSmall((uint32_t)flags);
     else
         return tuuvm_tuple_uint64_encodeSmall(flags);
 }
