@@ -200,6 +200,15 @@ SYSBVM_API void sysbvm_bytecodeCompiler_setBindingValue(sysbvm_context_t *contex
 SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_getBindingValue(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t binding)
 {
     (void)context;
+    if(sysbvm_tuple_isKindOf(context, binding, context->roots.symbolTupleSlotBindingType))
+    {
+        sysbvm_symbolTupleSlotBinding_t *bindingObject = (sysbvm_symbolTupleSlotBinding_t*)binding;
+        sysbvm_tuple_t tupleValue = sysbvm_bytecodeCompiler_getBindingValue(context, compiler, bindingObject->tupleBinding);
+        sysbvm_tuple_t reference = sysbvm_bytecodeCompiler_newTemporary(context, compiler);
+        sysbvm_bytecodeCompiler_slotReferenceAt(context, compiler, reference, tupleValue, sysbvm_bytecodeCompiler_addLiteral(context, compiler, bindingObject->typeSlot));
+        return reference;
+    }
+
     sysbvm_tuple_t value = SYSBVM_NULL_TUPLE;
     sysbvm_bytecodeCompiler_t *compilerObject = (sysbvm_bytecodeCompiler_t*)compiler;
     if(!sysbvm_identityDictionary_find(compilerObject->bindingDictionary, binding, &value))
@@ -1511,6 +1520,28 @@ static sysbvm_tuple_t sysbvm_astTupleSlotNamedAtPutNode_primitiveCompileIntoByte
     return gcFrame.result;
 }
 
+static sysbvm_tuple_t sysbvm_astUseNamedSlotsOfNode_primitiveCompileIntoBytecode(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_tuple_t *node = &arguments[0];
+    sysbvm_tuple_t *compiler = &arguments[1];
+
+    sysbvm_astUseNamedSlotsOfNode_t **usedNamedSlots = (sysbvm_astUseNamedSlotsOfNode_t**)node;
+    struct {
+        sysbvm_tuple_t tuple;
+    } gcFrame = {0};
+    SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    gcFrame.tuple = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*usedNamedSlots)->tupleExpression);
+    sysbvm_bytecodeCompiler_setBindingValue(context, *compiler, (*usedNamedSlots)->binding, gcFrame.tuple);
+
+    SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return sysbvm_bytecodeCompiler_addLiteral(context, *compiler, SYSBVM_VOID_TUPLE);
+}
+
 static sysbvm_tuple_t sysbvm_astWhileContinueNode_primitiveCompileIntoBytecode(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
@@ -1596,6 +1627,7 @@ void sysbvm_bytecodeCompiler_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_astTupleSlotNamedAtNode_primitiveCompileIntoBytecode, "ASTTupleSlotNamedAtNode::compileIntoBytecodeWith:");
     sysbvm_primitiveTable_registerFunction(sysbvm_astTupleSlotNamedAtPutNode_primitiveCompileIntoBytecode, "ASTTupleSlotNamedAtPutNode::compileIntoBytecodeWith:");
     sysbvm_primitiveTable_registerFunction(sysbvm_astTupleSlotNamedReferenceAtNode_primitiveCompileIntoBytecode, "ASTTupleSlotNamedReferenceAtNode::compileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astUseNamedSlotsOfNode_primitiveCompileIntoBytecode, "ASTUseNamedSlotsOfNode::compileIntoBytecodeWith:");
     sysbvm_primitiveTable_registerFunction(sysbvm_astWhileContinueNode_primitiveCompileIntoBytecode, "ASTWhileNodeNode::compileIntoBytecodeWith:");
 }
 
@@ -1623,5 +1655,6 @@ void sysbvm_bytecodeCompiler_setupPrimitives(sysbvm_context_t *context)
     sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astTupleSlotNamedAtNodeType, &sysbvm_astTupleSlotNamedAtNode_primitiveCompileIntoBytecode);
     sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astTupleSlotNamedAtPutNodeType, &sysbvm_astTupleSlotNamedAtPutNode_primitiveCompileIntoBytecode);
     sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astTupleSlotNamedReferenceAtNodeType, &sysbvm_astTupleSlotNamedReferenceAtNode_primitiveCompileIntoBytecode);
+    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astUseNamedSlotsOfNodeType, &sysbvm_astUseNamedSlotsOfNode_primitiveCompileIntoBytecode);
     sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astWhileContinueWithNodeType, &sysbvm_astWhileContinueNode_primitiveCompileIntoBytecode);
 }

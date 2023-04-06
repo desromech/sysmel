@@ -617,6 +617,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.namespaceType, "Namespace", SYSBVM_NULL_TUPLE,
         NULL);
     context->roots.analysisAndEvaluationEnvironmentType = sysbvm_context_createIntrinsicClass(context, "AnalysisAndEvaluationEnvironment", context->roots.environmentType,
+        "usedTuplesWithNamedSlots", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
         "analyzerToken", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.objectType,
         "expectedType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         "returnTarget", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
@@ -1013,6 +1014,10 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         NULL);
     context->roots.astUnexpandedSExpressionNodeType = sysbvm_context_createIntrinsicClass(context, "ASTUnexpandedSExpressionNode", context->roots.astNodeType,
         "elements", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        NULL);
+    context->roots.astUseNamedSlotsOfNodeType = sysbvm_context_createIntrinsicClass(context, "ASTUseNamedSlotsOfNode", context->roots.astNodeType,
+        "tupleExpression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "binding", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolLocalBindingType,
         NULL);
     context->roots.astWhileContinueWithNodeType = sysbvm_context_createIntrinsicClass(context, "ASTWhileContinueWithNode", context->roots.astNodeType,
         "conditionExpression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,

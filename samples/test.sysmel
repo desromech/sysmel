@@ -23,12 +23,12 @@ public class TestClass superclass: Object; definition: {
     protected field second => Int32.
 
     public method initialize => Void := {
-        tuple: self slotNamedAt: #first put: 1i32.
-        tuple: self slotNamedAt: #second put: (tuple: self slotNamedAt: #first) + 1i32.
+        first := 1i32.
+        second := first + 1i32.
     }.
 
     public method mySecond => Int32 
-        := tuple: self slotNamedReferenceAt: #second.
+        := second.
 }.
 
 printLine((TestClass >> #initialize) definition bytecode fullPrintString).

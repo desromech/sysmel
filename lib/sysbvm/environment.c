@@ -100,6 +100,15 @@ SYSBVM_API sysbvm_tuple_t sysbvm_symbolValueBinding_create(sysbvm_context_t *con
     return (sysbvm_tuple_t)result;
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_symbolTupleSlotBinding_create(sysbvm_context_t *context, sysbvm_tuple_t tupleBinding, sysbvm_tuple_t typeSlot)
+{
+    sysbvm_symbolTupleSlotBinding_t *result = (sysbvm_symbolTupleSlotBinding_t*)sysbvm_context_allocatePointerTuple(context, context->roots.symbolTupleSlotBindingType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_symbolTupleSlotBinding_t));
+    result->super.type = sysbvm_typeSlot_getValidReferenceType(context, typeSlot);
+    result->tupleBinding = tupleBinding;
+    result->typeSlot = typeSlot;
+    return (sysbvm_tuple_t)result;
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_environment_create(sysbvm_context_t *context, sysbvm_tuple_t parent)
 {
     sysbvm_environment_t *result = (sysbvm_environment_t*)sysbvm_context_allocatePointerTuple(context, context->roots.environmentType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_environment_t));
@@ -445,6 +454,17 @@ SYSBVM_API sysbvm_tuple_t sysbvm_analysisAndEvaluationEnvironment_ensureValidAna
     return environmentObject->analyzerToken;
 }
 
+SYSBVM_API void sysbvm_analysisAndEvaluationEnvironment_addUseTupleWithNamedSlotsBinding(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t binding)
+{
+    if(!sysbvm_environment_isAnalysisAndEvaluationEnvironment(context, environment))
+        sysbvm_error("Expected an analysis and evaluation environment.");
+
+    sysbvm_analysisAndEvaluationEnvironment_t *environmentObject = (sysbvm_analysisAndEvaluationEnvironment_t*)environment;
+    if(!environmentObject->usedTuplesWithNamedSlots)
+        environmentObject->usedTuplesWithNamedSlots = sysbvm_arrayList_create(context);
+    sysbvm_arrayList_add(context, environmentObject->usedTuplesWithNamedSlots, binding);
+}
+
 SYSBVM_API bool sysbvm_environment_isAnalysisAndEvaluationEnvironment(sysbvm_context_t *context, sysbvm_tuple_t environment)
 {
     return sysbvm_tuple_isKindOf(context, environment, context->roots.analysisAndEvaluationEnvironmentType);
@@ -476,6 +496,27 @@ SYSBVM_API bool sysbvm_analysisEnvironment_lookSymbolRecursively(sysbvm_context_
     sysbvm_environment_t *environmentObject = (sysbvm_environment_t*)environment;
     if(environmentObject->symbolTable && sysbvm_identityDictionary_findAssociation(environmentObject->symbolTable, symbol, outBinding))
         return true;
+
+    // Look for the used symbols.
+    if(sysbvm_environment_isAnalysisAndEvaluationEnvironment(context, environment))
+    {
+        sysbvm_analysisAndEvaluationEnvironment_t *analyzeAndEvalEnvironment = (sysbvm_analysisAndEvaluationEnvironment_t*)environment;
+        if(analyzeAndEvalEnvironment->usedTuplesWithNamedSlots)
+        {
+            size_t usedObjectCount = sysbvm_arrayList_getSize(analyzeAndEvalEnvironment->usedTuplesWithNamedSlots);
+            for(size_t i = 0; i < usedObjectCount; ++i)
+            {
+                sysbvm_tuple_t binding = sysbvm_arrayList_at(analyzeAndEvalEnvironment->usedTuplesWithNamedSlots, i);
+                sysbvm_tuple_t bindingType = sysbvm_symbolBinding_getType(binding);
+                sysbvm_tuple_t foundSlot = sysbvm_type_lookupSlot(context, bindingType, symbol);
+                if(foundSlot)
+                {
+                    *outBinding = sysbvm_symbolTupleSlotBinding_create(context, binding, foundSlot);
+                    return true;
+                }
+            }
+        }
+    }
 
     // If the symbol is not found on the local table, we might need to capture it.
     if(sysbvm_environment_isFunctionAnalysisEnvironment(context, environment))
@@ -528,7 +569,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_analysisEnvironment_setNewSymbolLocalBinding(sy
 
     sysbvm_functionAnalysisEnvironment_t *functionAnalysisEnvironmentObject = (sysbvm_functionAnalysisEnvironment_t*)functionAnalysisEnvironment;
     sysbvm_tuple_t binding = sysbvm_symbolLocalBinding_create(context, sourcePosition, name, type, functionAnalysisEnvironmentObject->functionDefinition, sysbvm_arrayList_getSize(functionAnalysisEnvironmentObject->localBindingList));
-    sysbvm_environment_setNewBinding(context, environment, binding);
+    if(name)
+        sysbvm_environment_setNewBinding(context, environment, binding);
     sysbvm_arrayList_add(context, functionAnalysisEnvironmentObject->localBindingList, binding);
     return binding;
 }
@@ -567,7 +609,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_environment_setNewMacroValueBinding(sysbvm_cont
 SYSBVM_API sysbvm_tuple_t sysbvm_analysisEnvironment_setNewValueBinding(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t name, sysbvm_tuple_t value)
 {
     sysbvm_tuple_t binding = sysbvm_symbolValueBinding_create(context, sourcePosition, name, value);
-    sysbvm_environment_setNewBinding(context, environment, binding);
+    if(name)
+        sysbvm_environment_setNewBinding(context, environment, binding);
     return binding;
 }
 

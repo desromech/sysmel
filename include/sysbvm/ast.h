@@ -271,6 +271,13 @@ typedef struct sysbvm_astTupleWithLookupStartingFromNode_s
     sysbvm_tuple_t typeExpression;
 } sysbvm_astTupleWithLookupStartingFromNode_t;
 
+typedef struct sysbvm_astUseNamedSlotsOf_s
+{
+    sysbvm_astNode_t super;
+    sysbvm_tuple_t tupleExpression;
+    sysbvm_tuple_t binding;
+} sysbvm_astUseNamedSlotsOfNode_t;
+
 typedef struct sysbvm_astWhileContinueWithNode_s
 {
     sysbvm_astNode_t super;
@@ -458,6 +465,11 @@ SYSBVM_API bool sysbvm_astNode_isSpliceNode(sysbvm_context_t *context, sysbvm_tu
  * Is this a macro evaluable expression?
  */ 
 SYSBVM_API bool sysbvm_astNode_isMacroExpression(sysbvm_context_t *context, sysbvm_tuple_t tuple);
+
+/**
+ * Is this an use named slots of node?
+ */ 
+SYSBVM_API bool sysbvm_astNode_isUseNamedSlotsOfNode(sysbvm_context_t *context, sysbvm_tuple_t tuple);
 
 /**
  * Is this an while continue with node?
@@ -799,6 +811,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_astQuasiUnquoteNode_create(sysbvm_context_t *co
  * Creates a splice node
  */ 
 SYSBVM_API sysbvm_tuple_t sysbvm_astSpliceNode_create(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t expression);
+
+/**
+ * Creates an use named slots of node
+ */ 
+SYSBVM_API sysbvm_tuple_t sysbvm_astUseNamedSlotsOfNode_create(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t tupleExpression);
 
 /**
  * Creates a while node.

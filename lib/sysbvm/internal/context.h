@@ -256,6 +256,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t astTupleWithLookupStartingFromNodeType;
     sysbvm_tuple_t astUnexpandedApplicationNodeType;
     sysbvm_tuple_t astUnexpandedSExpressionNodeType;
+    sysbvm_tuple_t astUseNamedSlotsOfNodeType;
     sysbvm_tuple_t astWhileContinueWithNodeType;
 
     sysbvm_tuple_t astQuoteNodeType;

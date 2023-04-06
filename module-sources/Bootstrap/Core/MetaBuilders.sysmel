@@ -430,6 +430,20 @@ MethodMetaBuilder
         self resultType: resultType.
         self continueExpansion
     };
+    withSelector: #bodyWithInjectedCode addMethod: {:self :: ASTNode |
+        let: #selfIdentifier with: (ASTIdentifierReferenceNode new
+            sourcePosition: self sourcePosition;
+            value: #self;
+            yourself).
+        let: #useSelf with: (ASTUseNamedSlotsOfNode new
+            sourcePosition: self sourcePosition;
+            tupleExpression: selfIdentifier;
+            yourself).
+        let: #sequence with: (ASTSequenceNode new
+            sourcePosition: self sourcePosition;
+            expressions: (Array with: useSelf with: self body);
+            yourself)
+    };
     withSelector: #finishMacroMethod addMethod: {:self :: ASTNode |
         let: #macroContextArgument with: (ASTArgumentNode new
             sourcePosition: self sourcePosition;
@@ -448,7 +462,7 @@ MethodMetaBuilder
             sourcePosition: self sourcePosition;
             flags: self methodFlags;
             arguments: arguments;
-            body: self body;
+            body: self bodyWithInjectedCode;
             resultType: self resultType;
             yourself
         ).
@@ -469,7 +483,7 @@ MethodMetaBuilder
             sourcePosition: self sourcePosition;
             flags: self methodFlags;
             arguments: arguments;
-            body: self body;
+            body: self bodyWithInjectedCode;
             resultType: self resultType;
             hasLazyAnalysis: false;
             yourself

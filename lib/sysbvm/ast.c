@@ -187,6 +187,11 @@ SYSBVM_API bool sysbvm_astNode_isUnexpandedSExpressionNode(sysbvm_context_t *con
     return sysbvm_tuple_isKindOf(context, tuple, context->roots.astUnexpandedSExpressionNodeType);
 }
 
+SYSBVM_API bool sysbvm_astNode_isUseNamedSlotsOfNode(sysbvm_context_t *context, sysbvm_tuple_t tuple)
+{
+    return sysbvm_tuple_isKindOf(context, tuple, context->roots.astUseNamedSlotsOfNodeType);
+}
+
 SYSBVM_API bool sysbvm_astNode_isWhileContinueWithNode(sysbvm_context_t *context, sysbvm_tuple_t tuple)
 {
     return sysbvm_tuple_isKindOf(context, tuple, context->roots.astWhileContinueWithNodeType);
@@ -648,6 +653,14 @@ SYSBVM_API sysbvm_tuple_t sysbvm_astSpliceNode_create(sysbvm_context_t *context,
     sysbvm_astSpliceNode_t *result = (sysbvm_astSpliceNode_t*)sysbvm_context_allocatePointerTuple(context, context->roots.astSpliceNodeType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_astSpliceNode_t));
     result->super.sourcePosition = sourcePosition;
     result->expression = expression;
+    return (sysbvm_tuple_t)result;
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_astUseNamedSlotsOfNode_create(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t tupleExpression)
+{
+    sysbvm_astUseNamedSlotsOfNode_t *result = (sysbvm_astUseNamedSlotsOfNode_t*)sysbvm_context_allocatePointerTuple(context, context->roots.astUseNamedSlotsOfNodeType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_astUseNamedSlotsOfNode_t));
+    result->super.sourcePosition = sourcePosition;
+    result->tupleExpression = tupleExpression;
     return (sysbvm_tuple_t)result;
 }
 

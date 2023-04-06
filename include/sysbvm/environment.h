@@ -19,6 +19,7 @@ typedef sysbvm_environment_t sysbvm_namespace_t;
 typedef struct sysbvm_analysisAndEvaluationEnvironment_s
 {
     sysbvm_environment_t super;
+    sysbvm_tuple_t usedTuplesWithNamedSlots;
     sysbvm_tuple_t analyzerToken;
     sysbvm_tuple_t expectedType;
     sysbvm_tuple_t returnTarget;
@@ -93,6 +94,13 @@ typedef struct sysbvm_symbolMacroValueBinding_s
     sysbvm_symbolBinding_t super;
     sysbvm_tuple_t expansion;
 } sysbvm_symbolMacroValueBinding_t;
+
+typedef struct sysbvm_symbolTupleSlotBinding_s
+{
+    sysbvm_symbolBinding_t super;
+    sysbvm_tuple_t tupleBinding;
+    sysbvm_tuple_t typeSlot;
+} sysbvm_symbolTupleSlotBinding_t;
 
 typedef struct sysbvm_symbolValueBinding_s
 {
@@ -189,6 +197,12 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_symbolValueBinding_getValue(sysbvm_tuple_t b
     if(!sysbvm_tuple_isNonNullPointer(binding) || sysbvm_tuple_getSizeInSlots(binding) < SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_symbolValueBinding_t)) return SYSBVM_NULL_TUPLE;
     return ((sysbvm_symbolValueBinding_t*)binding)->value;
 }
+
+/**
+ * Creates a tuple slot binding.
+ */ 
+SYSBVM_API sysbvm_tuple_t sysbvm_symbolTupleSlotBinding_create(sysbvm_context_t *context, sysbvm_tuple_t tupleBinding, sysbvm_tuple_t typeSlot);
+
 
 /**
  * Creates an environment.
@@ -335,6 +349,11 @@ SYSBVM_API void sysbvm_analysisAndEvaluationEnvironment_clearAnalyzerToken(sysbv
  * Ensures a valid analyzer token
  */ 
 SYSBVM_API sysbvm_tuple_t sysbvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(sysbvm_context_t *context, sysbvm_tuple_t environment);
+
+/**
+ * Add an used tuple with named slots binding
+ */ 
+SYSBVM_API void sysbvm_analysisAndEvaluationEnvironment_addUseTupleWithNamedSlotsBinding(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t binding);
 
 /**
  * Is this an analysis and evaluation environment?

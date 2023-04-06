@@ -4634,6 +4634,116 @@ static sysbvm_tuple_t sysbvm_astWhileContinueWithNode_primitiveAnalyzeAndEvaluat
     return SYSBVM_VOID_TUPLE;
 }
 
+static sysbvm_tuple_t sysbvm_astUseNamedSlotsOfNode_primitiveMacro(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(3, argumentCount);
+
+    sysbvm_tuple_t *macroContext = &arguments[0];
+    sysbvm_tuple_t *tupleNode = &arguments[1];
+
+    sysbvm_tuple_t sourcePosition = sysbvm_macroContext_getSourcePosition(*macroContext);
+
+    return sysbvm_astUseNamedSlotsOfNode_create(context, sourcePosition, *tupleNode);
+}
+
+static sysbvm_tuple_t sysbvm_astUseNamedSlotsOfNode_primitiveAnalyze(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_tuple_t *node = &arguments[0];
+    sysbvm_tuple_t *environment = &arguments[1];
+
+    struct {
+        sysbvm_astUseNamedSlotsOfNode_t *useNode;
+        sysbvm_tuple_t analyzedTupleNode;
+        sysbvm_tuple_t localBinding;
+        sysbvm_tuple_t literalVoid;
+        sysbvm_tuple_t value;
+    } gcFrame = {0};
+    SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    gcFrame.useNode = (sysbvm_astUseNamedSlotsOfNode_t*)sysbvm_context_shallowCopy(context, *node);
+    gcFrame.useNode->super.analyzerToken = sysbvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
+    gcFrame.useNode->super.analyzedType = context->roots.voidType;
+    SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.useNode->super.sourcePosition);
+
+    gcFrame.analyzedTupleNode = sysbvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.useNode->tupleExpression, *environment);
+    gcFrame.useNode->tupleExpression = gcFrame.analyzedTupleNode;
+
+    if(sysbvm_astNode_isLiteralNode(context, gcFrame.analyzedTupleNode))
+    {
+        gcFrame.value = sysbvm_astLiteralNode_getValue(gcFrame.analyzedTupleNode);
+        gcFrame.localBinding = sysbvm_analysisEnvironment_setNewValueBinding(context, *environment, gcFrame.useNode->super.sourcePosition, SYSBVM_NULL_TUPLE, gcFrame.value);
+        gcFrame.literalVoid = sysbvm_astLiteralNode_create(context, gcFrame.useNode->super.sourcePosition, SYSBVM_VOID_TUPLE);
+        sysbvm_analysisAndEvaluationEnvironment_addUseTupleWithNamedSlotsBinding(context, *environment, gcFrame.localBinding);
+
+        SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+        SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return (sysbvm_tuple_t)gcFrame.useNode;
+    }
+    else
+    {
+        gcFrame.localBinding = sysbvm_analysisEnvironment_setNewSymbolLocalBinding(context, *environment, gcFrame.useNode->super.sourcePosition, SYSBVM_NULL_TUPLE, sysbvm_astNode_getAnalyzedType(gcFrame.analyzedTupleNode));
+        sysbvm_analysisAndEvaluationEnvironment_addUseTupleWithNamedSlotsBinding(context, *environment, gcFrame.localBinding);
+        gcFrame.useNode->binding = gcFrame.localBinding;
+    }
+
+    SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return (sysbvm_tuple_t)gcFrame.useNode;
+}
+
+static sysbvm_tuple_t sysbvm_astUseNamedSlotsOfNode_primitiveEvaluate(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_tuple_t *node = &arguments[0];
+    sysbvm_tuple_t *environment = &arguments[1];
+
+    sysbvm_astUseNamedSlotsOfNode_t **useNode = (sysbvm_astUseNamedSlotsOfNode_t**)node;
+
+    struct {
+        sysbvm_tuple_t usedTuple;
+    } gcFrame = {0};
+    SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*useNode)->super.sourcePosition);
+
+    gcFrame.usedTuple = sysbvm_interpreter_evaluateASTWithEnvironment(context, (*useNode)->tupleExpression, *environment);
+
+    SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return SYSBVM_VOID_TUPLE;
+}
+
+static sysbvm_tuple_t sysbvm_astUseNamedSlotsOfNode_primitiveAnalyzeAndEvaluate(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_tuple_t *node = &arguments[0];
+    sysbvm_tuple_t *environment = &arguments[1];
+
+    sysbvm_astUseNamedSlotsOfNode_t **useNode = (sysbvm_astUseNamedSlotsOfNode_t**)node;
+
+    struct {
+        sysbvm_tuple_t usedTuple;
+        sysbvm_tuple_t localBinding;
+    } gcFrame = {0};
+    SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*useNode)->super.sourcePosition);
+
+    gcFrame.usedTuple = sysbvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*useNode)->tupleExpression, *environment);
+    gcFrame.localBinding = sysbvm_analysisEnvironment_setNewValueBinding(context, *environment, (*useNode)->super.sourcePosition, SYSBVM_NULL_TUPLE, gcFrame.usedTuple);
+    sysbvm_analysisAndEvaluationEnvironment_addUseTupleWithNamedSlotsBinding(context, *environment, gcFrame.localBinding);
+
+    SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return SYSBVM_VOID_TUPLE;
+}
+
 static sysbvm_tuple_t sysbvm_astBreakNode_primitiveMacro(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
@@ -5459,6 +5569,11 @@ void sysbvm_astInterpreter_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_astDoWhileContinueWithNode_primitiveEvaluate, "ASTDoWhileContinueWithNode::evaluateWithEnvironment:");
     sysbvm_primitiveTable_registerFunction(sysbvm_astDoWhileContinueWithNode_primitiveAnalyzeAndEvaluate, "ASTDoWhileContinueWithNode::analyzeAndEvaluateWithEnvironment:");
 
+    sysbvm_primitiveTable_registerFunction(sysbvm_astUseNamedSlotsOfNode_primitiveMacro, "ASTUseNamedSlotsOfNode::useNamedSlotsOf:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astUseNamedSlotsOfNode_primitiveAnalyze, "ASTUseNamedSlotsOfNode::analyzeWithEnvironment:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astUseNamedSlotsOfNode_primitiveEvaluate, "ASTUseNamedSlotsOfNode::evaluateWithEnvironment:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astUseNamedSlotsOfNode_primitiveAnalyzeAndEvaluate, "ASTUseNamedSlotsOfNode::analyzeAndEvaluateWithEnvironment:");
+
     sysbvm_primitiveTable_registerFunction(sysbvm_astWhileContinueWithNode_primitiveMacro, "ASTWhileContinueWithNode::while:do:continueWith:");
     sysbvm_primitiveTable_registerFunction(sysbvm_astWhileContinueWithNode_primitiveWhileDoMacro, "ASTWhileContinueWithNode::while:do:");
     sysbvm_primitiveTable_registerFunction(sysbvm_astWhileContinueWithNode_primitiveAnalyze, "ASTWhileContinueWithNode::analyzeWithEnvironment:");
@@ -5671,6 +5786,13 @@ void sysbvm_astInterpreter_setupASTInterpreter(sysbvm_context_t *context)
         sysbvm_astDoWhileContinueWithNode_primitiveAnalyze,
         sysbvm_astDoWhileContinueWithNode_primitiveEvaluate,
         sysbvm_astDoWhileContinueWithNode_primitiveAnalyzeAndEvaluate
+    );
+
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "useNamedSlotsOf:", 2, SYSBVM_FUNCTION_FLAGS_MACRO, NULL, sysbvm_astUseNamedSlotsOfNode_primitiveMacro);
+    sysbvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astUseNamedSlotsOfNodeType,
+        sysbvm_astUseNamedSlotsOfNode_primitiveAnalyze,
+        sysbvm_astUseNamedSlotsOfNode_primitiveEvaluate,
+        sysbvm_astUseNamedSlotsOfNode_primitiveAnalyzeAndEvaluate
     );
 
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "while:do:continueWith:", 4, SYSBVM_FUNCTION_FLAGS_MACRO, NULL, sysbvm_astWhileContinueWithNode_primitiveMacro);
