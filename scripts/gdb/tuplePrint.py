@@ -12,7 +12,7 @@ ImmediateTypeName = [
 ImmediateValueTable = ["false", "true", "void", "HashtableEmptyElement"]
 
 class TuplePrinter(object):
-    "Prints tuuvm_tuple_t"
+    "Prints sysbvm_tuple_t"
 
     def __init__(self, val):
         self.val = val
@@ -35,7 +35,7 @@ class TuplePrinter(object):
         return '0x%016x' % pointerValue
 
 def tupleLookupFunction(val):
-    if str(val.type) in ['tuuvm_tuple_t', 'tuuvm_stuple_t']:
+    if str(val.type) in ['sysbvm_tuple_t', 'sysbvm_stuple_t']:
         return TuplePrinter(val)
     return None
 

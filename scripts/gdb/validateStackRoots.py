@@ -1,5 +1,5 @@
 GCROOT_TYPES = [
-    'tuuvm_tuple_t', 'tuuvm_stuple_t'
+    'sysbvm_tuple_t', 'sysbvm_stuple_t'
 ]
 FUNCTION_BLACKLIST = [
 ]
@@ -16,7 +16,7 @@ class StackRootVariable:
         return '0x%08x: %s %s %s:%s' % (self.address, self.type, self.name, self.function, self.line)
 
 def dumpRecordedStackRoots():
-    gdb.execute('call tuuvm_stackFrame_dumpStackGCRootsToFileNamed("stackRoots.dmp")')
+    gdb.execute('call sysbvm_stackFrame_dumpStackGCRootsToFileNamed("stackRoots.dmp")')
     with open('stackRoots.dmp') as f:
         return list(map(lambda line: int(line, 0), f.read().splitlines()))
 
@@ -53,7 +53,7 @@ class ValidateGCStackRoots(gdb.Command):
                 print(str(root))
 
 ValidateGCStackRoots()
-gdb.Breakpoint('tuuvm_gc_debugStackValidationHook').commands = """
+gdb.Breakpoint('sysbvm_gc_debugStackValidationHook').commands = """
 validategcstackroots
 continue
 """

@@ -1,1 +1,1 @@
-add_subdirectory(tuuvm)
+add_subdirectory(sysbvm)
