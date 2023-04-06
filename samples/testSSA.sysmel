@@ -94,7 +94,7 @@ printLine(TestClass validTotalSlotCount).
 printLine(TestClass new testField).
 printLine(TestClass new testField: 42; testField).
 
-printLine((TestClass >> #myTestMethod) definition analyzedBodyNode value).
+printLine((TestClass >> #myTestMethod) definition analyzedBodyNode).
 
 let: #theAnswer with: {:: Int32 | 42i32 }.
 printLine(theAnswer, " ", theAnswer()).

@@ -2,14 +2,14 @@ public final class SSAFunctionCompilationContext superclass: Object; definition:
     public field functionDefinition => FunctionDefinition.
     public field ssaFunction => SSAFunctionDefinition.
     public field builder => SSAInstructionBuilder.
-    public field bindingDictionary => IdentityDictionary.
+    protected field bindingDictionary => IdentityDictionary.
 
     public field breakDestination => SSABasicBlock.
     public field continueDestination => SSABasicBlock.
 
     public method initialize => Void := {
         super initialize.
-        self bindingDictionary: IdentityDictionary new.
+        bindingDictionary := IdentityDictionary new.
     }.
 
     public method generateArgumentForNode: (argumentNode: ASTArgumentNode) ::=> SSAFunctionArgument := {
@@ -21,7 +21,7 @@ public final class SSAFunctionCompilationContext superclass: Object; definition:
             type: binding type;
             yourself.
 
-        self bindingDictionary at: binding put: ssaArgument.
+        bindingDictionary at: binding put: ssaArgument.
 
         ssaArgument
     }.
@@ -32,14 +32,14 @@ public final class SSAFunctionCompilationContext superclass: Object; definition:
             type: captureBinding type;
             yourself.
 
-        self bindingDictionary at: captureBinding put: capture.
+        bindingDictionary at: captureBinding put: capture.
 
         capture
     }.
 
     public method setValue: (value: SSAValue) forBinding: (binding: SymbolBinding) ::=> Void := {
         self assert: binding isNotNil.
-        self bindingDictionary at: binding put: value
+        bindingDictionary at: binding put: value
     }.
 
     public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> SSAFunctionDefinition := {
@@ -72,7 +72,7 @@ public final class SSAFunctionCompilationContext superclass: Object; definition:
     }.
 
     public method getValueForLocalBinding: (localBinding: SymbolAnalysisBinding) ::=> SSAValue
-        := self bindingDictionary at: localBinding.
+        := bindingDictionary at: localBinding.
 
     public method functionDefinitionValueFor: (functionDefinition: FunctionDefinition) ::=> SSAValue
         := self builder literal: functionDefinition.

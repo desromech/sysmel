@@ -15,7 +15,7 @@ SSAValue definition: {
     public field sourcePosition => SourcePosition.
     public field sourceASTNode => ASTNode.
     public field sourceEnvironment => Environment.
-    public field users => WeakArrayList.
+    private field users => WeakArrayList.
 
     public method isConstant => Boolean := false.
     public method isLiteralConstant => Boolean := false.
@@ -37,11 +37,11 @@ SSAValue definition: {
     public method usedValuesDo: aBlock ::=> Void := {}.
 
     public method usersDo: aBlock ::=> Void := {
-        self users ifNotNil: {:users | users do: aBlock }
+        users ifNotNil: {:users | users do: aBlock }
     }.
 
     public method replaceWith: (replacement: SSAValue) ::=> Void := {
-        self users do: {:(SSAValue)user :: Void |
+        users do: {:(SSAValue)user :: Void |
             user replaceUsedValue: self with: replacement.
             replacement registerUser: user
         }.
@@ -59,21 +59,21 @@ SSAValue definition: {
     }.
 
     public method registerUser: (user: SSAValue) ::=> Void := {
-        self users ifNil: {
-            self users: WeakArrayList new
+        users ifNil: {
+            users := WeakArrayList new
         }.
 
-        self users add: user
+        users add: user
     }.
 
     public method unregisterUser: (user: SSAValue) ::=> Void := {
-        self users ifNotNil: {:userList :: Void |
+        users ifNotNil: {:userList :: Void |
             userList removeAllOcurrencesOf: self
         }.
     }.
 
     public method postCopy => Void := {
-        self users: nil
+        users := nil
     }.
 }.
 
@@ -112,28 +112,28 @@ SSAFunction definition: {
 
     public method initialize => Void := {
         super initialize.
-        self captures: #().
+        captures := #().
     }.
 
     public method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: '@'.
-        self name ifNil: {
-            stream print: self sourcePosition.
+        name ifNil: {
+            stream print: sourcePosition.
         } ifNotNil: {:name :: Void |
-            stream print: self name
+            stream print: name
         }
     }.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self.
         stream nextPutAll: " captures [".
-        self captures doWithIndex: {:(SSAValue)capture :(Size)index :: Void |
+        captures doWithIndex: {:(SSAValue)capture :(Size)index :: Void |
             index > 0sz ifTrue: (stream nextPutAll: ", ").
             stream print: capture
         }.
 
         stream nextPut: ']'.
-        self definition ifNotNil: {:(SSAValue)definition :: Void |
+        definition ifNotNil: {:(SSAValue)definition :: Void |
             stream nextPutAll: " definition ".
             stream fullPrint: definition
         }
@@ -160,14 +160,14 @@ SSAFunctionDefinition definition: {
             before nextBlock: basicBlock.
             basicBlock previousBlock: before.
         } ifNil: {
-            self firstBasicBlock: basicBlock
+            firstBasicBlock := basicBlock
         }.
 
         after ifNotNil: {
             after previousBlock: basicBlock.
             basicBlock nextBlock: after
         } ifNil: {
-            self lastBasicBlock: basicBlock
+            lastBasicBlock := basicBlock
         }.
 
         basicBlock parent: self
@@ -183,14 +183,14 @@ SSAFunctionDefinition definition: {
             before nextBlock: basicBlock.
             basicBlock previousBlock: before.
         } ifNil: {
-            self firstBasicBlock: basicBlock
+            firstBasicBlock := basicBlock
         }.
 
         after ifNotNil: {
             after previousBlock: basicBlock.
             basicBlock nextBlock: after
         } ifNil: {
-            self lastBasicBlock: basicBlock
+            lastBasicBlock := basicBlock
         }.
 
         basicBlock parent: self
@@ -203,7 +203,7 @@ SSAFunctionDefinition definition: {
         := self addBasicBlock: basicBlock after: nil.
 
     public method basicBlocksDo: aBlock ::=> Void := {
-        let position mutable := self firstBasicBlock.
+        let position mutable := firstBasicBlock.
         while: position isNotNil do: {
             let nextPosition := position nextBlock.
             aBlock(position).
@@ -212,8 +212,8 @@ SSAFunctionDefinition definition: {
     }.
 
     public method localValuesDo: aBlock ::=> Void := {
-        self arguments do: aBlock.
-        self captures do: aBlock.
+        arguments do: aBlock.
+        captures do: aBlock.
         self basicBlocksDo: {:basicBlock :: Void |
             aBlock(basicBlock).
             basicBlock instructionsDo: aBlock
@@ -445,21 +445,21 @@ SSABasicBlock definition: {
     public method addInstruction: (instruction: SSAInstruction) before: (position: SSAInstruction) ::=> Void := {
         self assert: instruction parent isNil.
 
-        let before := position ifNotNil: position previousInstruction ifNil: self lastInstruction.
+        let before := position ifNotNil: position previousInstruction ifNil: lastInstruction.
         let after := position.
 
         before ifNotNil: {
             before nextInstruction: instruction.
             instruction previousInstruction: before.
         } ifNil: {
-            self firstInstruction: instruction
+            firstInstruction := instruction
         }.
 
         after ifNotNil: {
             after previousInstruction: instruction.
             instruction nextInstruction: after
         } ifNil: {
-            self lastInstruction: instruction
+            lastInstruction := instruction
         }.
 
         instruction parent: self
@@ -469,20 +469,20 @@ SSABasicBlock definition: {
         self assert: instruction parent isNil.
 
         let before := position .
-        let after := position ifNotNil: position nextInstruction ifNil: self firstInstruction.
+        let after := position ifNotNil: position nextInstruction ifNil: firstInstruction.
 
         before ifNotNil: {
             before nextInstruction: instruction.
             instruction previousInstruction: before.
         } ifNil: {
-            self firstInstruction: instruction
+            firstInstruction := instruction
         }.
 
         after ifNotNil: {
             after previousInstruction: instruction.
             instruction nextInstruction: after
         } ifNil: {
-            self lastInstruction: instruction
+            lastInstruction := instruction
         }.
 
         instruction parent: self
@@ -495,7 +495,7 @@ SSABasicBlock definition: {
         := self addInstruction: instruction after: nil.
 
     public method instructionsDo: aBlock ::=> Void := {
-        let position mutable := self firstInstruction.
+        let position mutable := firstInstruction.
         while: position isNotNil do: {
             let nextPosition := position nextInstruction.
             aBlock(position).
@@ -504,7 +504,7 @@ SSABasicBlock definition: {
     }.
 
     public method firstAllocaInstructionsDo: aBlock ::=> Void := {
-        let position mutable := self firstInstruction.
+        let position mutable := firstInstruction.
         while: position isNotNil && position isAllocaInstruction do: {
             let nextPosition := position nextInstruction.
             aBlock(position).
@@ -513,7 +513,7 @@ SSABasicBlock definition: {
     }.
 
     public method findAllocaInsertionPoint => SSAInstruction := {
-        let position mutable := self firstInstruction.
+        let position mutable := firstInstruction.
         while: position isNotNil && position isAllocaInstruction do: (
             position := position nextInstruction
         ).
@@ -522,7 +522,7 @@ SSABasicBlock definition: {
     }.
 
     public method findPhiLoadInsertionPoint => SSAInstruction := {
-        let position mutable := self firstInstruction.
+        let position mutable := firstInstruction.
         while: position isNotNil && position isPhiInstruction do: (
             position := position nextInstruction
         ).
@@ -531,7 +531,7 @@ SSABasicBlock definition: {
     }.
 
     public method phiInstructionsDo: aBlock ::=> Void := {
-        let position mutable := self firstInstruction.
+        let position mutable := firstInstruction.
         while: position isNotNil && position isPhiInstruction do: {
             let nextPosition := position nextInstruction.
             aBlock(position).
@@ -603,13 +603,13 @@ SSABasicBlock definition: {
         previousInstruction ifNotNil: {
             previousInstruction nextInstruction: nextInstruction
         } ifNil: {
-            self firstInstruction: nextInstruction
+            firstInstruction := nextInstruction
         }.
 
         nextInstruction ifNotNil: {
             nextInstruction previousInstruction: previousInstruction
         } ifNil: {
-            self lastInstruction: previousInstruction
+            lastInstruction := previousInstruction
         }.
 
         instruction
@@ -678,14 +678,14 @@ SSAInstruction definition: {
 
     public method postCopy => Void := {
         super postCopy.
-        self parent: nil.
-        self previousInstruction: nil.
-        self nextInstruction: nil.
+        parent := nil.
+        previousInstruction := nil.
+        nextInstruction := nil.
     }.
 
     public method replaceWith: (replacement: SSAValue) ::=> Void := {
         super replaceWith: replacement.
-        self parent ifNotNil: {:parent :: Void | parent removeInstruction: self }
+        parent ifNotNil: {parent removeInstruction: self }
     }.
 
     public method replaceDestination: (oldDestination: SSABasicBlock) with: (newDestination: SSABasicBlock) ::=> Void
@@ -760,17 +760,17 @@ public final class SSACallInstruction superclass: SSAInstruction; definition: {
 
     public method usedValuesDo: aBlock ::=> Void := {
         aBlock(self calledFunction).
-        self arguments do: aBlock
+        arguments do: aBlock
     }.
 
     public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
-        if: self calledFunction = replacedValue then: (self calledFunction: replacement).
-        self arguments replaceAll: replacedValue with: replacement
+        if: calledFunction = replacedValue then: (calledFunction := replacement).
+        arguments replaceAll: replacedValue with: replacement
     }.
 
     public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         replacementDictionary at: self calledFunction isPresent: {:(SSAValue)replacement :: Void | self calledFunction: replacement}.
-        self arguments replaceAllWithDictionary: replacementDictionary
+        arguments replaceAllWithDictionary: replacementDictionary
     }.
 }.
 
