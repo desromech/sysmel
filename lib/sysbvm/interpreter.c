@@ -28,8 +28,6 @@
 
 //#define sysbvm_gc_safepoint(x) false
 
-static void sysbvm_functionDefinition_ensureAnalysis(sysbvm_context_t *context, sysbvm_functionDefinition_t **functionDefinition);
-
 static sysbvm_tuple_t sysbvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(sysbvm_context_t *context, sysbvm_tuple_t astNode, sysbvm_tuple_t environment);
 static sysbvm_tuple_t sysbvm_interpreter_analyzeASTWithDirectTypeWithEnvironment(sysbvm_context_t *context, sysbvm_tuple_t astNode, sysbvm_tuple_t environment);
 static sysbvm_tuple_t sysbvm_interpreter_analyzeASTWithCurrentExpectedTypeWithEnvironment(sysbvm_context_t *context, sysbvm_tuple_t astNode, sysbvm_tuple_t environment);
@@ -1162,7 +1160,7 @@ static void sysbvm_functionDefinition_analyze(sysbvm_context_t *context, sysbvm_
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
 }
 
-static void sysbvm_functionDefinition_ensureAnalysis(sysbvm_context_t *context, sysbvm_functionDefinition_t **functionDefinition)
+SYSBVM_API void sysbvm_functionDefinition_ensureAnalysis(sysbvm_context_t *context, sysbvm_functionDefinition_t **functionDefinition)
 {
     // Make sure this is a valid function definition for analysis.
     if(!sysbvm_tuple_isKindOf(context, (sysbvm_tuple_t)*functionDefinition, context->roots.functionDefinitionType) || !(*functionDefinition)->definitionArgumentNodes || !(*functionDefinition)->definitionBodyNode)
@@ -1173,6 +1171,52 @@ static void sysbvm_functionDefinition_ensureAnalysis(sysbvm_context_t *context, 
         return;
 
     sysbvm_functionDefinition_analyze(context, functionDefinition);
+}
+
+SYSBVM_API void sysbvm_function_ensureAnalysis(sysbvm_context_t *context, sysbvm_function_t **function)
+{
+    // Make sure this is an actual function
+    if(!sysbvm_tuple_isFunction(context, (sysbvm_tuple_t)*function))
+        return;
+
+    // Does it require an analysis?
+    if(!(*function)->captureEnvironment || !(*function)->definition)
+        return;
+
+    if((*function)->captureEnvironment == SYSBVM_PENDING_MEMOIZATION_VALUE)
+        sysbvm_error("Function ensure analysis cycle.");
+
+    // Ensure the function definition analysis.
+    struct {
+        sysbvm_functionDefinition_t *functionDefinition;
+        sysbvm_tuple_t captureEnvironment;
+        sysbvm_tuple_t captureVector;
+        sysbvm_tuple_t captureBinding;
+        sysbvm_tuple_t captureValue;
+    } gcFrame = {
+        .functionDefinition = (sysbvm_functionDefinition_t*)(*function)->definition,
+        .captureEnvironment = (*function)->captureEnvironment,
+    };
+
+    SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    (*function)->captureEnvironment = SYSBVM_PENDING_MEMOIZATION_VALUE;
+    sysbvm_functionDefinition_ensureAnalysis(context, &gcFrame.functionDefinition);
+
+    // Create the actual capture vector.
+    size_t captureVectorSize = sysbvm_array_getSize(gcFrame.functionDefinition->analyzedCaptures);
+    gcFrame.captureVector = sysbvm_array_create(context, captureVectorSize);
+    for(size_t i = 0; i < captureVectorSize; ++i)
+    {
+        gcFrame.captureBinding = sysbvm_symbolCaptureBinding_getSourceBinding(sysbvm_array_at(gcFrame.functionDefinition->analyzedCaptures, i));
+        gcFrame.captureValue = sysbvm_environment_evaluateSymbolBinding(context, gcFrame.captureEnvironment, gcFrame.captureBinding);
+        sysbvm_array_atPut(gcFrame.captureVector, i, gcFrame.captureValue);
+    }
+
+    (*function)->captureVector = gcFrame.captureVector;
+    (*function)->captureEnvironment = SYSBVM_NULL_TUPLE;
+    sysbvm_tuple_setType((sysbvm_object_tuple_t*)function, gcFrame.functionDefinition->analyzedType);
+
+    SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
 }
 
 static sysbvm_tuple_t sysbvm_functionDefinition_primitiveEnsureAnalysis(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -1311,7 +1355,7 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveAnalyzeAndEvaluate(sysbvm_co
         (*lambdaNode)->arguments, (*lambdaNode)->resultType, (*lambdaNode)->body
     );
     
-    if(!sysbvm_tuple_boolean_decode((*lambdaNode)->hasLazyAnalysis))
+    if((*lambdaNode)->hasLazyAnalysis && !sysbvm_tuple_boolean_decode((*lambdaNode)->hasLazyAnalysis))
     {
         sysbvm_functionDefinition_ensureAnalysis(context, &gcFrame.functionDefinition);
 
@@ -1327,8 +1371,7 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveAnalyzeAndEvaluate(sysbvm_co
     }
     else
     {
-        // TODO: Implement this case properly
-        abort();
+        gcFrame.closure = sysbvm_function_createClosureWithCaptureEnvironment(context, (sysbvm_tuple_t)gcFrame.functionDefinition, *environment);
     }
 
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);

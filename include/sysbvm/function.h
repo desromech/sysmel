@@ -48,6 +48,7 @@ typedef struct sysbvm_function_s
     sysbvm_tuple_t flags;
     sysbvm_tuple_t argumentCount;
     sysbvm_tuple_t captureVector;
+    sysbvm_tuple_t captureEnvironment;
     sysbvm_tuple_t definition;
     sysbvm_tuple_t primitiveTableIndex;
     sysbvm_tuple_t primitiveName;
@@ -111,9 +112,24 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionDefinition_create(sysbvm_context_t *con
 SYSBVM_API sysbvm_tuple_t sysbvm_function_createPrimitive(sysbvm_context_t *context, size_t argumentCount, sysbvm_bitflags_t flags, void *userdata, sysbvm_functionEntryPoint_t entryPoint);
 
 /**
- * Creates a closure by passing its definition and environment.
+ * Creates a closure by passing its definition and capture vector.
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_function_createClosureWithCaptureVector(sysbvm_context_t *context, sysbvm_tuple_t functionDefinition, sysbvm_tuple_t captureVector);
+
+/**
+ * Creates a closure with lazy analysis by passing its capture environment.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_function_createClosureWithCaptureEnvironment(sysbvm_context_t *context, sysbvm_tuple_t functionDefinition, sysbvm_tuple_t captureEnvironment);
+
+/**
+ * Ensures the completion of a lazy function analysis.
+ */
+SYSBVM_API void sysbvm_function_ensureAnalysis(sysbvm_context_t *context, sysbvm_function_t **function);
+
+/**
+ * Ensures the completion of a function definition.
+ */
+SYSBVM_API void sysbvm_functionDefinition_ensureAnalysis(sysbvm_context_t *context, sysbvm_functionDefinition_t **functionDefinition);
 
 /**
  * Gets the function argument count.

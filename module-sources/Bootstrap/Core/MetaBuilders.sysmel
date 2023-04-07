@@ -485,7 +485,6 @@ MethodMetaBuilder
             arguments: arguments;
             body: self bodyWithInjectedCode;
             resultType: self resultType;
-            hasLazyAnalysis: false;
             yourself
         ).
         

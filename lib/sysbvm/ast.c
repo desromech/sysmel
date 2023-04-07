@@ -364,7 +364,6 @@ SYSBVM_API sysbvm_tuple_t sysbvm_astLambdaNode_create(sysbvm_context_t *context,
     result->arguments = arguments;
     result->resultType = resultType;
     result->body = body;
-    result->hasLazyAnalysis = SYSBVM_FALSE_TUPLE;
     return (sysbvm_tuple_t)result;
 }
 

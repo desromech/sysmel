@@ -121,6 +121,22 @@ SYSBVM_API sysbvm_tuple_t sysbvm_function_createClosureWithCaptureVector(sysbvm_
     return (sysbvm_tuple_t)result;
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_function_createClosureWithCaptureEnvironment(sysbvm_context_t *context, sysbvm_tuple_t functionDefinition, sysbvm_tuple_t captureEnviroment)
+{
+    if(!sysbvm_tuple_isKindOf(context, functionDefinition, context->roots.functionDefinitionType))
+        sysbvm_error("An actual function definition is required here.");
+
+    sysbvm_functionDefinition_t *functionDefinitionObject = (sysbvm_functionDefinition_t*)functionDefinition;
+    sysbvm_tuple_t functionType = functionDefinitionObject->analyzedType ? functionDefinitionObject->analyzedType : context->roots.functionType;
+
+    sysbvm_function_t *result = (sysbvm_function_t*)sysbvm_context_allocatePointerTuple(context, functionType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_function_t));
+    result->flags = functionDefinitionObject->flags;
+    result->argumentCount = functionDefinitionObject->argumentCount; 
+    result->captureEnvironment = captureEnviroment;
+    result->definition = functionDefinition;
+    return (sysbvm_tuple_t)result;
+}
+
 SYSBVM_API size_t sysbvm_function_getArgumentCount(sysbvm_context_t *context, sysbvm_tuple_t function)
 {
     if(sysbvm_tuple_isFunction(context, function))
@@ -267,6 +283,34 @@ SYSBVM_API sysbvm_tuple_t sysbvm_ordinaryFunction_memoizedApply(sysbvm_context_t
 
 SYSBVM_API sysbvm_tuple_t sysbvm_ordinaryFunction_apply(sysbvm_context_t *context, sysbvm_tuple_t function, size_t argumentCount, sysbvm_tuple_t *arguments, sysbvm_bitflags_t applicationFlags)
 {
+    // Make sure the closure with lazy analysis is done and reified.
+    sysbvm_function_t* functionObject = (sysbvm_function_t*)function;
+    if(functionObject->captureEnvironment)
+    {
+        if(functionObject->captureEnvironment == SYSBVM_PENDING_MEMOIZATION_VALUE)
+            sysbvm_error("Applying function with cyclic pending lazy analysis process.");
+
+        struct {
+            sysbvm_tuple_t function;
+        } gcFrame = {
+            .function = function
+        };
+        SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+        sysbvm_stackFrameGCRootsRecord_t argumentsRecord = {
+            .type = SYSBVM_STACK_FRAME_RECORD_TYPE_GC_ROOTS,
+            .rootCount = argumentCount,
+            .roots = arguments
+        };
+        sysbvm_stackFrame_pushRecord((sysbvm_stackFrameRecord_t*)&argumentsRecord);
+
+        sysbvm_function_ensureAnalysis(context, (sysbvm_function_t**)&gcFrame.function);
+
+        function = gcFrame.function;
+        sysbvm_stackFrame_popRecord((sysbvm_stackFrameRecord_t*)&argumentsRecord);
+        SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    }
+
     if(sysbvm_function_isMemoized(context, function))
         return sysbvm_ordinaryFunction_memoizedApply(context, function, argumentCount, arguments, applicationFlags);
     return sysbvm_ordinaryFunction_directApply(context, function, argumentCount, arguments, applicationFlags);

@@ -71,6 +71,7 @@ void sysbvm_gc_debugStackValidationHook(void)
 
 static void sysbvm_gc_performCycle(sysbvm_context_t *context)
 {
+    return;
     // LISP 2 moving collection algorithm.
     // Phase 1: marking phase
     sysbvm_gc_iterateRoots(context, context, sysbvm_gc_markPointer);

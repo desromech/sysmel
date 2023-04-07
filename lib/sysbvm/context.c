@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 
-static bool sysbvm_context_default_jitEnabled = true;
+static bool sysbvm_context_default_jitEnabled = false;
 
 extern void sysbvm_array_registerPrimitives(void);
 extern void sysbvm_arrayList_registerPrimitives(void);
@@ -679,6 +679,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         "argumentCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "captureVector", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "captureEnvironment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
         "definition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
         "primitiveTableIndex", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
         "primitiveName", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
