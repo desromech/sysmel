@@ -207,6 +207,8 @@ SYSBVM_API void sysbvm_bytecodeInterpreter_interpretWithActivationRecord(sysbvm_
             decodedOperands[i] = lowByte | (highByte << 8);
         }
 
+        SYSBVM_ASSERT(operandCount <= SYSBVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE);
+
         // Validate the destination operands.
         uint8_t destinationOperandCount = sysbvm_bytecodeInterpreter_destinationOperandCountForOpcode(standardOpcode);
         uint8_t offsetOperandCount = sysbvm_bytecodeInterpreter_offsetOperandCountForOpcode(standardOpcode);
@@ -400,7 +402,11 @@ SYSBVM_API void sysbvm_bytecodeInterpreter_interpretWithActivationRecord(sysbvm_
         for(uint8_t i = 0; i < destinationOperandCount; ++i)
         {
             if(decodedOperands[i] >= 0)
+            {
+                if((size_t)decodedOperands[i] >= activationRecord->inlineLocalVectorSize)
+                    sysbvm_error("Bytecode destination operand is beyond the local vector bounds.");
                 localVector[decodedOperands[i]] = operandRegisterFile[i];
+            }
         }
         activationRecord->pc = pc;
 

@@ -74,6 +74,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t astNodeAnalysisAndEvaluationSelector;
     sysbvm_tuple_t astNodeValidateThenAnalyzeAndEvaluateWithEnvironmentSelector;
     sysbvm_tuple_t astNodeCompileIntoBytecodeSelector;
+    sysbvm_tuple_t ensureAnalysisSelector;
 
     sysbvm_tuple_t analyzeAndEvaluateMessageSendNodeForReceiverWithEnvironmentSelector;
     sysbvm_tuple_t analyzeMessageSendNodeWithEnvironmentSelector;
@@ -113,6 +114,8 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t dictionaryType;
     sysbvm_tuple_t analysisAndEvaluationEnvironmentType;
     sysbvm_tuple_t analysisEnvironmentType;
+    sysbvm_tuple_t analysisQueueType;
+    sysbvm_tuple_t analysisQueueEntryType;
     sysbvm_tuple_t environmentType;
     sysbvm_tuple_t falseType;
     sysbvm_tuple_t functionActivationEnvironmentType;
@@ -270,6 +273,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t bytecodeCompilerInstructionVectorOperandType;
 
     sysbvm_tuple_t globalNamespace;
+    sysbvm_tuple_t defaultAnalysisQueue;
     sysbvm_tuple_t intrinsicTypes;
 
     struct

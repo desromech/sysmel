@@ -1,4 +1,5 @@
 #include "TestMacros.h"
+#include "sysbvm/environment.h"
 
 const char *sysbvm_test_currentTestSuiteName;
 const char *sysbvm_test_currentTestCaseName;
@@ -15,6 +16,7 @@ TEST_SUITE_FIXTURE_INITIALIZE(TuuvmCore)
 
 TEST_SUITE_FIXTURE_SHUTDOWN(TuuvmCore)
 {
+    sysbvm_analysisQueue_waitPendingAnalysis(sysbvm_test_context, sysbvm_analysisQueue_getDefault(sysbvm_test_context));
     sysbvm_context_destroy(sysbvm_test_context);
 }
 

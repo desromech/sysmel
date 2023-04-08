@@ -10,4 +10,10 @@
 #define SYSBVM_ASSERT_LINE_TO_STRING(x) SYSBVM_ASSERT_LINE_TO_STRING_(x)
 #define SYSBVM_ASSERT(x) if(!(x)) sysbvm_error_assertionFailure(__FILE__ ":" SYSBVM_ASSERT_LINE_TO_STRING_(__LINE__)": assertion failure: " #x)
 
+#ifdef NDEBUG
+#   define SYSBVM_DASSERT(x) while(false)
+#else
+#   define SYSBVM_DASSERT(x) if(!(x)) sysbvm_error_fatalAssertionFailure(__FILE__ ":" SYSBVM_ASSERT_LINE_TO_STRING_(__LINE__)": assertion failure: " #x)
+#endif
+
 #endif //SYSBVM_ASSERT_H

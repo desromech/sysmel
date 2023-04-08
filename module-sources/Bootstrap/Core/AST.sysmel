@@ -435,7 +435,7 @@ ASTSpliceNode
     withSelector: #analyzeAndEvaluateQuasiQuoteWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError };
     withSelector: #evaluateQuasiQuoteWithParameters: addMethod: {:(ASTSpliceNode)self :(Array)parameters | self invalidLocationError };
 
-    withSelector: #invalidLocationError addMethod: {:(ASTSpliceNode)self :(Environment)environment |
+    withSelector: #invalidLocationError addMethod: {:(ASTSpliceNode)self |
         self error: "Invalid location for a splice expression."
     }.
 

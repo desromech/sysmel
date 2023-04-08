@@ -31,8 +31,8 @@ public class TestClass superclass: Object; definition: {
         := second.
 }.
 
-printLine((TestClass >> #initialize) definition bytecode fullPrintString).
-printLine((TestClass >> #mySecond) definition bytecode fullPrintString).
+printLine(((TestClass >> #initialize) ensureAnalysis; definition) bytecode fullPrintString).
+printLine(((TestClass >> #mySecond) ensureAnalysis; definition) bytecode fullPrintString).
 
 let testObject := TestClass new.
 tuple: testObject slotNamedAt: #first put: 4i32.

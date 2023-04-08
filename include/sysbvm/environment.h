@@ -7,10 +7,25 @@
 
 typedef struct sysbvm_context_s sysbvm_context_t;
 
+typedef struct sysbvm_analysisQueueEntry_s
+{
+    sysbvm_tuple_header_t header;
+    sysbvm_tuple_t programEntity;
+    sysbvm_tuple_t nextEntry;
+} sysbvm_analysisQueueEntry_t;
+
+typedef struct sysbvm_analysisQueue_s
+{
+    sysbvm_tuple_header_t header;
+    sysbvm_tuple_t firstEntry;
+    sysbvm_tuple_t lastEntry;
+} sysbvm_analysisQueue_t;
+
 typedef struct sysbvm_environment_s
 {
     sysbvm_tuple_header_t header;
     sysbvm_tuple_t parent;
+    sysbvm_tuple_t analysisQueue;
     sysbvm_tuple_t symbolTable;
 } sysbvm_environment_t;
 
@@ -109,6 +124,31 @@ typedef struct sysbvm_symbolValueBinding_s
 } sysbvm_symbolValueBinding_t;
 
 /**
+ * Creates an analysis queue entry.
+ */ 
+SYSBVM_API sysbvm_tuple_t sysbvm_analysisQueueEntry_create(sysbvm_context_t *context, sysbvm_tuple_t programEntity);
+
+/**
+ * Creates an analysis queue.
+ */ 
+SYSBVM_API sysbvm_tuple_t sysbvm_analysisQueue_create(sysbvm_context_t *context);
+
+/**
+ * Enqueue the analysis of a program entity.
+ */ 
+SYSBVM_API void sysbvm_analysisQueue_enqueueProgramEntity(sysbvm_context_t *context, sysbvm_tuple_t queue, sysbvm_tuple_t programEntity);
+
+/**
+ * Get the default analysis queue.
+ */ 
+SYSBVM_API sysbvm_tuple_t sysbvm_analysisQueue_getDefault(sysbvm_context_t *context);
+
+/**
+ * Wait for the pending analysis.
+ */
+SYSBVM_API void sysbvm_analysisQueue_waitPendingAnalysis(sysbvm_context_t *context, sysbvm_tuple_t queue);
+
+/**
  * Creates an analyzer token.
  */ 
 SYSBVM_API sysbvm_tuple_t sysbvm_analyzerToken_create(sysbvm_context_t *context);
@@ -203,16 +243,25 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_symbolValueBinding_getValue(sysbvm_tuple_t b
  */ 
 SYSBVM_API sysbvm_tuple_t sysbvm_symbolTupleSlotBinding_create(sysbvm_context_t *context, sysbvm_tuple_t tupleBinding, sysbvm_tuple_t typeSlot);
 
-
 /**
  * Creates an environment.
  */ 
 SYSBVM_API sysbvm_tuple_t sysbvm_environment_create(sysbvm_context_t *context, sysbvm_tuple_t parent);
 
 /**
+ * Creates an environment with analysis queue.
+ */ 
+SYSBVM_API sysbvm_tuple_t sysbvm_environment_createWithAnalysisQueue(sysbvm_context_t *context, sysbvm_tuple_t parent, sysbvm_tuple_t analysisQueue);
+
+/**
  * Creates an environment that is used for simultaneous analysis and evaluation.
  */ 
 SYSBVM_API sysbvm_tuple_t sysbvm_analysisAndEvaluationEnvironment_create(sysbvm_context_t *context, sysbvm_tuple_t parent);
+
+/**
+ * Lookup the analysis queue
+ */ 
+SYSBVM_API sysbvm_tuple_t sysbvm_environment_lookupAnalysisQueue(sysbvm_context_t *context, sysbvm_tuple_t environment);
 
 /**
  * Enqueues the pending analysis of a program entity.

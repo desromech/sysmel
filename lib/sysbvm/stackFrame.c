@@ -1,6 +1,7 @@
 #include "sysbvm/stackFrame.h"
 #include "sysbvm/array.h"
 #include "sysbvm/arrayList.h"
+#include "sysbvm/assert.h"
 #include "sysbvm/bytecode.h"
 #include "sysbvm/errors.h"
 #include "sysbvm/environment.h"
@@ -38,13 +39,17 @@ SYSBVM_API sysbvm_stackFrameRecord_t *sysbvm_stackFrame_getActiveRecord()
 
 SYSBVM_API void sysbvm_stackFrame_pushRecord(sysbvm_stackFrameRecord_t *record)
 {
+    SYSBVM_DASSERT(record->type < SYSBVM_STACK_FRAME_RECORD_TYPE_COUNT);
     record->previous = sysbvm_stackFrame_activeRecord;
     sysbvm_stackFrame_activeRecord = record;
 }
 
 SYSBVM_API void sysbvm_stackFrame_popRecord(sysbvm_stackFrameRecord_t *record)
 {
+    SYSBVM_DASSERT(record->type < SYSBVM_STACK_FRAME_RECORD_TYPE_COUNT);
     sysbvm_stackFrame_activeRecord = record->previous;
+
+    SYSBVM_DASSERT(!sysbvm_stackFrame_activeRecord || sysbvm_stackFrame_activeRecord->type < SYSBVM_STACK_FRAME_RECORD_TYPE_COUNT);
 }
 
 SYSBVM_API void sysbvm_stackFrame_iterateGCRootsInRecordWith(sysbvm_stackFrameRecord_t *record, void *userdata, sysbvm_GCRootIterationFunction_t iterationFunction)

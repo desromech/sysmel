@@ -8,6 +8,7 @@
 #include "sysbvm/pragma.h"
 #include "sysbvm/sourceCode.h"
 #include "sysbvm/string.h"
+#include "sysbvm/stackFrame.h"
 #include "sysbvm/function.h"
 #include "sysbvm/type.h"
 #include "internal/context.h"
@@ -19,6 +20,63 @@ static inline bool sysbvm_symbolBinding_isValueQuick(sysbvm_context_t *context, 
 
     sysbvm_tuple_t type = SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(binding)->header.typePointerAndFlags & SYSBVM_TUPLE_TYPE_POINTER_MASK;
     return type == context->roots.symbolValueBindingType;
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_analysisQueueEntry_create(sysbvm_context_t *context, sysbvm_tuple_t programEntity)
+{
+    sysbvm_analysisQueueEntry_t *result = (sysbvm_analysisQueueEntry_t*)sysbvm_context_allocatePointerTuple(context, context->roots.analysisQueueEntryType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_analysisQueueEntry_t));
+    result->programEntity = programEntity;
+    return (sysbvm_tuple_t)result;
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_analysisQueue_create(sysbvm_context_t *context)
+{
+    return (sysbvm_tuple_t)sysbvm_context_allocatePointerTuple(context, context->roots.analysisQueueType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_analysisQueue_t));
+}
+
+SYSBVM_API void sysbvm_analysisQueue_enqueueProgramEntity(sysbvm_context_t *context, sysbvm_tuple_t queue, sysbvm_tuple_t programEntity)
+{
+    if(!sysbvm_tuple_isNonNullPointer(queue))
+        sysbvm_error("Expected a valid analysis queue.");
+
+    sysbvm_analysisQueue_t *queueObject = (sysbvm_analysisQueue_t*)queue;
+    sysbvm_tuple_t newEntry = sysbvm_analysisQueueEntry_create(context, programEntity);
+    if(queueObject->lastEntry)
+        ((sysbvm_analysisQueueEntry_t*)queueObject->lastEntry)->nextEntry = newEntry;
+    else
+        queueObject->firstEntry = newEntry;
+    queueObject->lastEntry = newEntry;
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_analysisQueue_getDefault(sysbvm_context_t *context)
+{
+    if(!context->roots.defaultAnalysisQueue)
+        context->roots.defaultAnalysisQueue = sysbvm_analysisQueue_create(context);
+    return context->roots.defaultAnalysisQueue;
+}
+
+SYSBVM_API void sysbvm_analysisQueue_waitPendingAnalysis(sysbvm_context_t *context, sysbvm_tuple_t queue)
+{
+    if(!sysbvm_tuple_isNonNullPointer(queue))
+        sysbvm_error("Expected a valid analysis queue.");
+
+    struct {
+        sysbvm_analysisQueue_t *queue;
+        sysbvm_analysisQueueEntry_t *entry;
+    } gcFrame = {
+        .queue = (sysbvm_analysisQueue_t*)queue,
+    };
+    SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    while((gcFrame.entry = (sysbvm_analysisQueueEntry_t*)gcFrame.queue->firstEntry) != SYSBVM_NULL_TUPLE)
+    {
+        gcFrame.queue->firstEntry = gcFrame.entry->nextEntry;
+        if(!gcFrame.queue->firstEntry)
+            gcFrame.queue->lastEntry = SYSBVM_NULL_TUPLE;
+        sysbvm_tuple_send0(context, context->roots.ensureAnalysisSelector, gcFrame.entry->programEntity);
+    }
+
+    SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_analyzerToken_create(sysbvm_context_t *context)
@@ -116,6 +174,14 @@ SYSBVM_API sysbvm_tuple_t sysbvm_environment_create(sysbvm_context_t *context, s
     return (sysbvm_tuple_t)result;
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_environment_createWithAnalysisQueue(sysbvm_context_t *context, sysbvm_tuple_t parent, sysbvm_tuple_t analysisQueue)
+{
+    sysbvm_environment_t *result = (sysbvm_environment_t*)sysbvm_context_allocatePointerTuple(context, context->roots.environmentType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_environment_t));
+    result->parent = parent;
+    result->analysisQueue = analysisQueue;
+    return (sysbvm_tuple_t)result;
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_analysisAndEvaluationEnvironment_create(sysbvm_context_t *context, sysbvm_tuple_t parent)
 {
     sysbvm_analysisAndEvaluationEnvironment_t *result = (sysbvm_analysisAndEvaluationEnvironment_t*)sysbvm_context_allocatePointerTuple(context, context->roots.analysisAndEvaluationEnvironmentType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_analysisAndEvaluationEnvironment_t));
@@ -127,14 +193,34 @@ SYSBVM_API sysbvm_tuple_t sysbvm_analysisAndEvaluationEnvironment_create(sysbvm_
     return (sysbvm_tuple_t)result;
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_environment_lookupAnalysisQueue(sysbvm_context_t *context, sysbvm_tuple_t environment)
+{
+    if(!sysbvm_tuple_isNonNullPointer(environment))
+        return SYSBVM_NULL_TUPLE;
+    
+    sysbvm_environment_t *environmentObject = (sysbvm_environment_t*)environment;
+    if(environmentObject->analysisQueue)
+        return environmentObject->analysisQueue;
+
+    return sysbvm_environment_lookupAnalysisQueue(context, environmentObject->parent);
+}
+
 SYSBVM_API void sysbvm_environment_enqueuePendingAnalysis(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t programEntity)
 {
-    // TODO: Implement this context specific queue!
+    sysbvm_tuple_t analysisQueue = sysbvm_environment_lookupAnalysisQueue(context, environment);
+    if(!analysisQueue)
+        sysbvm_error("A delayed analysis queue is not available in this context.");
+
+    sysbvm_analysisQueue_enqueueProgramEntity(context, analysisQueue, programEntity);
 }
 
 SYSBVM_API void sysbvm_environment_waitPendingAnalysis(sysbvm_context_t *context, sysbvm_tuple_t environment)
 {
-    // TODO: Implement this context specific queue!
+    sysbvm_tuple_t analysisQueue = sysbvm_environment_lookupAnalysisQueue(context, environment);
+    if(!analysisQueue)
+        sysbvm_error("A delayed analysis queue is not available in this context.");
+
+    sysbvm_analysisQueue_waitPendingAnalysis(context, analysisQueue);
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_namespace_create(sysbvm_context_t *context, sysbvm_tuple_t parent)
@@ -220,7 +306,9 @@ SYSBVM_API sysbvm_tuple_t sysbvm_environment_getIntrinsicsBuiltInEnvironment(sys
 
 SYSBVM_API sysbvm_tuple_t sysbvm_environment_createDefaultForEvaluation(sysbvm_context_t *context)
 {
-    return sysbvm_analysisAndEvaluationEnvironment_create(context, sysbvm_environment_getIntrinsicsBuiltInEnvironment(context));
+    return sysbvm_environment_createWithAnalysisQueue(context,
+        sysbvm_environment_getIntrinsicsBuiltInEnvironment(context),
+        sysbvm_analysisQueue_getDefault(context));
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_environment_createDefaultForSourceCodeEvaluation(sysbvm_context_t *context, sysbvm_tuple_t sourceCode)

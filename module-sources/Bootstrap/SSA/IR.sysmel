@@ -740,7 +740,7 @@ public final class SSABranchInstruction superclass: SSAInstruction; definition: 
     }.
 
     public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self destination isPresent: {:(SSAValue)replacement :: Void | self destination: replacement}.
+        replacementDictionary at: self destination isPresent: {:(SSABasicBlock)replacement :: Void | self destination: replacement}.
     }.
 }.
 
@@ -827,8 +827,8 @@ public final class SSAConditionalBranchInstruction superclass: SSAInstruction; d
 
     public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         replacementDictionary at: self condition isPresent: {:(SSAValue)replacement :: Void | self condition: replacement}.
-        replacementDictionary at: self trueDestination isPresent: {:(SSAValue)replacement :: Void | self trueDestination: replacement}.
-        replacementDictionary at: self falseDestination isPresent: {:(SSAValue)replacement :: Void | self falseDestination: replacement}.
+        replacementDictionary at: self trueDestination isPresent: {:(SSABasicBlock)replacement :: Void | self trueDestination: replacement}.
+        replacementDictionary at: self falseDestination isPresent: {:(SSABasicBlock)replacement :: Void | self falseDestination: replacement}.
     }.
 
     public method replaceDestination: (oldDestination: SSABasicBlock) with: (newDestination: SSABasicBlock) ::=> Void := {

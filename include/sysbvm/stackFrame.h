@@ -17,6 +17,8 @@ typedef enum sysbvm_stackFrameRecordType_e
     SYSBVM_STACK_FRAME_RECORD_TYPE_SOURCE_POSITION,
     SYSBVM_STACK_FRAME_RECORD_TYPE_LANDING_PAD,
     SYSBVM_STACK_FRAME_RECORD_TYPE_CLEANUP,
+
+    SYSBVM_STACK_FRAME_RECORD_TYPE_COUNT,
 } sysbvm_stackFrameRecordType_t;
 
 typedef struct sysbvm_stackFrameRecord_s

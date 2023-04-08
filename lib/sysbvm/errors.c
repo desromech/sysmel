@@ -45,6 +45,12 @@ SYSBVM_API void sysbvm_error_assertionFailure(const char *message)
     sysbvm_error(message);
 }
 
+SYSBVM_API void sysbvm_error_fatalAssertionFailure(const char *message)
+{
+    fprintf(stderr, "%s\n", message);
+    abort();
+}
+
 SYSBVM_API void sysbvm_error_indexOutOfBounds()
 {
     sysbvm_error("Index out of bounds");

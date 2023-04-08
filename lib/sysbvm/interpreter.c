@@ -100,7 +100,6 @@ SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_validateThenAnalyzeAndEvaluateASTWi
     struct {
         sysbvm_tuple_t environment;
         sysbvm_tuple_t astNode;
-        sysbvm_tuple_t analyzedAstNode;
         sysbvm_tuple_t function;
         sysbvm_tuple_t result;
     } gcFrame = {
@@ -108,6 +107,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_validateThenAnalyzeAndEvaluateASTWi
         .astNode = astNode,
     };
 
+    SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     gcFrame.function = sysbvm_type_getAstNodeValidationWithAnalysisAndEvaluationFunction(context, sysbvm_tuple_getType(context, gcFrame.astNode));
     if(!gcFrame.function)
     {
@@ -116,7 +116,9 @@ SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_validateThenAnalyzeAndEvaluateASTWi
             sysbvm_error("Cannot validate, analyze and evaluate non AST node tuple.");
     }
 
-    return sysbvm_function_applyNoCheck2(context, gcFrame.function, gcFrame.astNode, gcFrame.environment);
+    gcFrame.result = sysbvm_function_applyNoCheck2(context, gcFrame.function, gcFrame.astNode, gcFrame.environment);
+    SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_analyzeAndEvaluateSourceCodeWithEnvironment(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t sourceCode)
@@ -276,21 +278,26 @@ static sysbvm_tuple_t sysbvm_interpreter_applyCoercionToASTNodeIntoType(sysbvm_c
     return gcFrame.result;
 }
 
-static sysbvm_tuple_t sysbvm_interpreter_analyzeASTWithCurrentExpectedTypeWithEnvironment(sysbvm_context_t *context, sysbvm_tuple_t astNode, sysbvm_tuple_t environment)
+static sysbvm_tuple_t sysbvm_interpreter_analyzeASTWithCurrentExpectedTypeWithEnvironment(sysbvm_context_t *context, sysbvm_tuple_t astNode_, sysbvm_tuple_t environment_)
 {
     struct {
+        sysbvm_tuple_t astNode;
+        sysbvm_tuple_t environment;
         sysbvm_tuple_t targetType;
         sysbvm_tuple_t result;
 
         sysbvm_tuple_t coercionExpressionType;
-    } gcFrame = {0};
+    } gcFrame = {
+        .astNode = astNode_,
+        .environment = environment_
+    };
 
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
-    gcFrame.targetType = sysbvm_analysisAndEvaluationEnvironment_getExpectedType(context, environment);
-    gcFrame.result = sysbvm_interpreter_analyzeASTIfNeededWithEnvironment(context, astNode, environment);
+    gcFrame.targetType = sysbvm_analysisAndEvaluationEnvironment_getExpectedType(context, gcFrame.environment);
+    gcFrame.result = sysbvm_interpreter_analyzeASTIfNeededWithEnvironment(context, gcFrame.astNode, gcFrame.environment);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-    return sysbvm_interpreter_applyCoercionToASTNodeIntoType(context, gcFrame.result, environment, gcFrame.targetType);
+    return sysbvm_interpreter_applyCoercionToASTNodeIntoType(context, gcFrame.result, gcFrame.environment, gcFrame.targetType);
 }
 
 static sysbvm_tuple_t sysbvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(sysbvm_context_t *context, sysbvm_tuple_t astNode_, sysbvm_tuple_t expectedType_, sysbvm_tuple_t environment_)
@@ -1252,7 +1259,7 @@ SYSBVM_API void sysbvm_function_ensureAnalysis(sysbvm_context_t *context, sysbvm
 
     (*function)->captureVector = gcFrame.captureVector;
     (*function)->captureEnvironment = SYSBVM_NULL_TUPLE;
-    sysbvm_tuple_setType((sysbvm_object_tuple_t*)function, gcFrame.functionDefinition->analyzedType);
+    sysbvm_tuple_setType((sysbvm_object_tuple_t*)*function, gcFrame.functionDefinition->analyzedType);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
 }
@@ -1430,8 +1437,8 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveAnalyzeAndEvaluate(sysbvm_co
     else
     {
         sysbvm_functionDefinition_ensureTypeAnalysis(context, &gcFrame.functionDefinition);
-        sysbvm_environment_enqueuePendingAnalysis(context, *environment, gcFrame.functionDefinition);
         gcFrame.closure = sysbvm_function_createClosureWithCaptureEnvironment(context, (sysbvm_tuple_t)gcFrame.functionDefinition, *environment);
+        sysbvm_environment_enqueuePendingAnalysis(context, *environment, gcFrame.closure);
     }
 
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);

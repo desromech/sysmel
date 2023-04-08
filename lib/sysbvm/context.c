@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 
-static bool sysbvm_context_default_jitEnabled = false;
+static bool sysbvm_context_default_jitEnabled = true;
 
 extern void sysbvm_array_registerPrimitives(void);
 extern void sysbvm_arrayList_registerPrimitives(void);
@@ -422,6 +422,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.astNodeAnalysisAndEvaluationSelector = sysbvm_symbol_internWithCString(context, "analyzeAndEvaluateWithEnvironment:");
     context->roots.astNodeValidateThenAnalyzeAndEvaluateWithEnvironmentSelector = sysbvm_symbol_internWithCString(context, "validateThenAnalyzeAndEvaluateWithEnvironment:");
     context->roots.astNodeCompileIntoBytecodeSelector = sysbvm_symbol_internWithCString(context, "compileIntoBytecodeWith:");
+    context->roots.ensureAnalysisSelector = sysbvm_symbol_internWithCString(context, "ensureAnalysis");
     
     context->roots.analyzeAndEvaluateMessageSendNodeForReceiverWithEnvironmentSelector = sysbvm_symbol_internWithCString(context, "analyzeAndEvaluateMessageSendNode:forReceiver:withEnvironment:");
     context->roots.analyzeMessageSendNodeWithEnvironmentSelector = sysbvm_symbol_internWithCString(context, "analyzeMessageSendNode:withEnvironment:");
@@ -609,6 +610,16 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.referenceType, "ReferenceType", SYSBVM_NULL_TUPLE, NULL);
 
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.structureType, "Structure", SYSBVM_NULL_TUPLE, NULL);
+
+    context->roots.analysisQueueEntryType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.valueType);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.analysisQueueEntryType, "AnalysisQueueEntry", context->roots.objectType,
+        "programEntity", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.programEntityType,
+        "nextEntry", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.analysisQueueEntryType,
+        NULL);
+    context->roots.analysisQueueType = sysbvm_context_createIntrinsicClass(context, "AnalysisQueue", context->roots.objectType,
+        "firstEntry", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.analysisQueueEntryType,
+        "lastEntry", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.analysisQueueEntryType,
+        NULL);
 
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.environmentType, "Environment", SYSBVM_NULL_TUPLE,
         "parent", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,

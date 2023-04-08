@@ -14,6 +14,7 @@ SYSBVM_API void sysbvm_errorWithMessageTuple(sysbvm_tuple_t message);
 SYSBVM_API void sysbvm_error(const char *message);
 SYSBVM_API void sysbvm_error_accessDummyValue();
 SYSBVM_API void sysbvm_error_assertionFailure(const char *message);
+SYSBVM_API void sysbvm_error_fatalAssertionFailure(const char *message);
 SYSBVM_API void sysbvm_error_indexOutOfBounds();
 SYSBVM_API void sysbvm_error_modifyImmediateValue();
 SYSBVM_API void sysbvm_error_modifyImmutableTuple();

@@ -82,6 +82,8 @@ int doMain(int startArgumentIndex, int argc, const char *argv[])
         sysbvm_interpreter_loadSourceNamedWithSolvedPath(context, gcFrame.inputFileName);
     }
 
+    sysbvm_analysisQueue_waitPendingAnalysis(context, sysbvm_analysisQueue_getDefault(context));
+
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return 0;
 }
