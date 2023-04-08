@@ -50,103 +50,107 @@ error __type__: (SimpleFunctionTypeTemplate((String,), false, Unwinds)).
 }.
 
 Function
+    withSelector: #withEagerAnalysis addMethod: {:(Function)self :: Function |
+        self ensureAnalysis.
+        self
+    };
     withSelector: #addFlags: addMethod: {:(Function)self :(Bitflags)flag :: Void |
         self flags: self flags | flag
-    };
+    } withEagerAnalysis;
     withSelector: #makeMacro addMethod: {:(Function)self :: Function |
         self addFlags: FunctionFlags::Macro.
         self
-    };
+    } withEagerAnalysis;
     withSelector: #makePure addMethod: {:(Function)self :: Function |
         self addFlags: FunctionFlags::Pure.
         self
-    };
+    } withEagerAnalysis;
     withSelector: #makeFinal addMethod: {:(Function)self :: Function |
         self addFlags: FunctionFlags::Final.
         self
-    };
+    } withEagerAnalysis;
     withSelector: #makeVirtual addMethod: {:(Function)self :: Function |
         self addFlags: FunctionFlags::Virtual.
         self
-    };
+    } withEagerAnalysis;
     withSelector: #makeAbstract addMethod: {:(Function)self :: Function |
         self addFlags: FunctionFlags::Abstract.
         self
-    };
+    } withEagerAnalysis;
     withSelector: #makeOverride addMethod: {:(Function)self :: Function |
         self addFlags: FunctionFlags::Override.
         self
-    };
+    } withEagerAnalysis;
     withSelector: #makeStatic addMethod: {:(Function)self :: Function |
         self addFlags: FunctionFlags::Static.
         self
-    };
+    } withEagerAnalysis;
 
     withSelector: #makeMemoized addMethod: {:(Function)self :: Function |
         self addFlags: FunctionFlags::Memoized.
         self
-    };
+    } withEagerAnalysis;
     withSelector: #makeTemplate addMethod: {:(Function)self :: Function |
         self addFlags: FunctionFlags::Template.
         self
-    }.
+    } withEagerAnalysis.
 
 Type
     withSelector: #=> addMethod: {:(Type)self :(Type)resultType :: SimpleFunctionType |
         SimpleFunctionTypeTemplate((self,), false, resultType)
-    } makePure makeFinal.
+    } makePure makeFinal withEagerAnalysis.
 
 ValueBox
     withSelector: #loadFrom:atOffset:withType: addMethod: {:(ValueBox)self :(Untyped)containerBase :(IntPointer)offset :(Type)valueType :: valueType |
         (RawTuple::slotAt:)(self, 0sz)
-    } makeFinal;
+    } makeFinal withEagerAnalysis;
     withSelector: #store:in:atOffset:withType: addMethod: {:(ValueBox)self :(Untyped)value :(Untyped)containerBase :(IntPointer)offset :(Type)valueType :: Void |
         RawTuple::slotAt:put:(self, 0sz, value).
         void
-    } makeFinal.
+    } makeFinal withEagerAnalysis.
 
 TypeSlot
     withSelector: #loadFrom:atOffset:withType: addMethod: {:(TypeSlot)self :(Untyped)containerBase :(IntPointer)offset :(Type)valueType :: valueType |
         (RawTuple::slotAt:)(containerBase, (tuple: self slotNamedAt: #index))
-    } makeFinal;
+    } makeFinal withEagerAnalysis;
     withSelector: #store:in:atOffset:withType: addMethod: {:(TypeSlot)self :(Untyped)value :(Untyped)containerBase :(IntPointer)offset :(Type)valueType :: Void |
         RawTuple::slotAt:put:(containerBase, (tuple: self slotNamedAt: #index), value).
         void
-    } makeFinal.
+    } makeFinal withEagerAnalysis.
 
 AnyValue
-    withSelector: #initialize addMethod: {:(AnyValue)self :: Void | };
+    withSelector: #initialize addMethod: {:(AnyValue)self :: Void | } withEagerAnalysis;
     withSelector: #yourself addMethod: {:(AnyValue)self :: self __type__ |
         <primitive: #yourself>
         self
-    } makePure makeFinal;
+    } makePure makeFinal withEagerAnalysis;
 
-    withSelector: #postCopy addMethod: {:(AnyValue)self :: Void | };
-    withSelector: #shallowCopy addMethod: {:(AnyValue)self :: self __type__ | RawTuple::shallowCopy(self) } makeFinal;
-    withSelector: #copy addMethod: {:(AnyValue)self :: self __type__ | self shallowCopy postCopy; yourself };
+    withSelector: #postCopy addMethod: {:(AnyValue)self :: Void | } withEagerAnalysis;
+    withSelector: #shallowCopy addMethod: {:(AnyValue)self :: self __type__ | RawTuple::shallowCopy(self) } makeFinal withEagerAnalysis;
+    withSelector: #copy addMethod: {:(AnyValue)self :: self __type__ | self shallowCopy postCopy; yourself } withEagerAnalysis;
 
     withSelector: #doesNotUnderstand: addMethod: {:(AnyValue)self :(Message)message |
         error("doesNotUnderstand: " -- message selector printString)
-    };
+    } withEagerAnalysis;
 
-    withSelector: #isNil addMethod: {:(AnyValue)self :: Boolean | self == nil } makePure makeFinal;
-    withSelector: #isNotNil addMethod: {:(AnyValue)self :: Boolean | self ~~ nil } makePure makeFinal;
+    withSelector: #isNil addMethod: {:(AnyValue)self :: Boolean | self == nil } makePure makeFinal withEagerAnalysis;
+    withSelector: #isNotNil addMethod: {:(AnyValue)self :: Boolean | self ~~ nil } makePure makeFinal withEagerAnalysis;
 
-    withSelector: #= addMethod: {:(AnyValue)self :other :: Boolean | self == other } makePure;
-    withSelector: #~= addMethod: {:(AnyValue)self :other :: Boolean | self ~~ other } makePure.
+    withSelector: #= addMethod: {:(AnyValue)self :other :: Boolean | self == other } makePure withEagerAnalysis;
+    withSelector: #~= addMethod: {:(AnyValue)self :other :: Boolean | self ~~ other } makePure withEagerAnalysis.
 
 Object
-    withSelector: #class addMethod: {:(Object)self :: self __type__ __type__ | self __type__ } makePure makeFinal;
-    withSelector: #species addMethod: {:(Object)self :: Class | self class };
+    withSelector: #class addMethod: {:(Object)self :: self __type__ __type__ | self __type__ } makePure makeFinal withEagerAnalysis;
+    withSelector: #species addMethod: {:(Object)self :: Class | self class } withEagerAnalysis;
 
-    withSelector: #error: addMethod: {:(Object)self :(String)errorMessage :: Unwinds | error(errorMessage) };
+    withSelector: #error: addMethod: {:(Object)self :(String)errorMessage :: Unwinds | error(errorMessage) } withEagerAnalysis;
     withSelector: #assert: addMethod: {:(Object)self :(Boolean)condition :: Void |
         if: condition then: void else: error("Assertion failure.")
-    };
-    withSelector: #subclassResponsibility addMethod: {:(Object)self :: Unwinds | self error: self __type__ printString -- " Subclass responsibility." };
+    } withEagerAnalysis;
+    withSelector: #subclassResponsibility addMethod: {:(Object)self :: Unwinds | self error: self __type__ printString -- " Subclass responsibility." } withEagerAnalysis;
     withSelector: #doesNotUnderstand: addMethod: {:(AnyValue)self :(Message)message |
         error((self class printString -- " doesNotUnderstand: ") -- message selector printString)
-    }.
+    } withEagerAnalysis.
 
 Type
     withSelector: #isSubtypeOf: addMethod: {:(Type)self :(Type)expectedParent :: Boolean |
@@ -158,15 +162,27 @@ Type
                 then: (supertype isSubtypeOf: expectedParent )
                 else: false
         }
-    } makePure.
+    } makePure withEagerAnalysis.
 
 AnyValue
     withSelector: #isKindOf: addMethod: {:(AnyValue)self :(Type)expectedType :: Boolean |
         self __type__ isSubtypeOf: expectedType
-    } makePure makeFinal.
+    } makePure makeFinal withEagerAnalysis.
 
 ## Early new implementation
 Type
+    withSelector: #hasFlag: addMethod: {:(Type)self :(Bitflags)flag :: Boolean |
+        (self flags & flag) ~= 0bflgs
+    } withEagerAnalysis;
+    withSelector: #isDynamic addMethod: {:(Type)self :: Boolean |
+        self hasFlag: TypeFlags::Dynamic.
+    } withEagerAnalysis;
+    withSelector: #isBytes addMethod: {:(Type)self :: Boolean |
+        self hasFlag: TypeFlags::Bytes.
+    } withEagerAnalysis;
+    withSelector: #isWeak addMethod: {:(Type)self :: Boolean |
+        self hasFlag: TypeFlags::Weak.
+    } withEagerAnalysis;
     withSelector: #basicAllocate addMethod: {:(Type)self :: self |
         let: #result with: (if: self isBytes
             then: RawTuple::byteNew(0sz)
@@ -174,13 +190,13 @@ Type
         (RawTuple::type:)(result, self).
         if: self isWeak then: RawTuple::markWeak(result).
         result
-    };
+    } withEagerAnalysis;
     withSelector: #basicNew addMethod: {:(Type)self :: self |
         self basicAllocate
-    };
+    } withEagerAnalysis;
     withSelector: #new addMethod: {:(Type)self :: self |
         self basicNew initialize; yourself
-    }.
+    } withEagerAnalysis.
 
 ASTDownCastNode __type__
     withSelector: #makeForASTNode:targetType: addMethod: {:(ASTDownCastNode __type__)self :(ASTNode)astNode :(Type)targetType :: self |
@@ -196,7 +212,7 @@ ASTDownCastNode __type__
                 yourself);
             valueExpression: astNode;
             yourself
-    }.
+    } withEagerAnalysis.
 
 Untyped __type__
     withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(Type)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
@@ -205,15 +221,9 @@ Untyped __type__
         } else: {
             ASTDownCastNode makeForASTNode: astNode targetType: targetType
         }.
-    }.
+    } withEagerAnalysis.
     
 Type
-    withSelector: #hasFlag: addMethod: {:(Type)self :(Bitflags)flag :: Boolean |
-        (self flags & flag) ~= 0bflgs
-    };
-    withSelector: #isDynamic addMethod: {:(Type)self :: Boolean |
-        self hasFlag: TypeFlags::Dynamic.
-    };
 
     withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(Type)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
         if: (self isSubtypeOf: targetType)
@@ -227,77 +237,71 @@ Type
                 error((("Cannot coerce node from type " -- self printString) -- " into type ") -- targetType printString)
             }
         }
-    };
+    } withEagerAnalysis;
     withSelector: #coerceASTNode:withEnvironment: addMethod: {:(Type)self :(ASTNode)astNode :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
         let: #sourceType with: astNode analyzedType.
         if: (if: sourceType ~~ nil then: sourceType ~= self else: false)
         then: (sourceType coerceASTNode: astNode into: self withEnvironment: environment)
         else: astNode
-    };
-    withSelector: #isReferenceType addMethod: {:(Type)self :: Boolean | false } makePure;
+    } withEagerAnalysis;
+    withSelector: #isReferenceType addMethod: {:(Type)self :: Boolean | false } makePure withEagerAnalysis;
 
     withSelector: #addFlags: addMethod: {:(Type)self :(Bitflags)flag :: Void |
         self flags: self flags | flag
-    };
+    } withEagerAnalysis;
 
     withSelector: #makeNullable addMethod: {:(Type)self :: Type |
         self addFlags: TypeFlags::Nullable.
         self
-    };
+    } withEagerAnalysis;
     withSelector: #isNullable addMethod: {:(Type)self :: Boolean |
         self hasFlag: TypeFlags::Nullable.
-    };
+    } withEagerAnalysis;
 
     withSelector: #makeBytes addMethod: {:(Type)self :: Type |
         self addFlags: TypeFlags::Bytes.
         self
-    };
-    withSelector: #isBytes addMethod: {:(Type)self :: Boolean |
-        self hasFlag: TypeFlags::Bytes.
-    };
+    } withEagerAnalysis;
 
     withSelector: #makeWeak addMethod: {:(Type)self :: Type |
         self addFlags: TypeFlags::Weak.
         self
-    };
-    withSelector: #isWeak addMethod: {:(Type)self :: Boolean |
-        self hasFlag: TypeFlags::Weak.
-    };
+    } withEagerAnalysis;
 
     withSelector: #makeImmediate addMethod: {:(Type)self :: Type |
         self addFlags: TypeFlags::Immediate.
         self
-    };
+    } withEagerAnalysis;
     withSelector: #isImmediate addMethod: {:(Type)self :: Boolean |
         self hasFlag: TypeFlags::Immediate.
-    };
+    } withEagerAnalysis;
 
     withSelector: #makeFinal addMethod: {:(Type)self :: Type |
         self addFlags: TypeFlags::Final.
         self
-    };
+    } withEagerAnalysis;
     withSelector: #isFinal addMethod: {:(Type)self :: Boolean |
         self hasFlag: TypeFlags::Final.
-    };
+    } withEagerAnalysis;
 
     withSelector: #makeAbstract addMethod: {:(Type)self :: Type |
         self addFlags: TypeFlags::Abstract.
         self
-    };
+    } withEagerAnalysis;
     withSelector: #isAbstract addMethod: {:(Type)self :: Boolean |
         self hasFlag: TypeFlags::Abstract.
-    };
+    } withEagerAnalysis;
 
     withSelector: #validSlotDictionary addMethod: {:(Type)self :: MethodDictionary |
         if: self slotDictionary == nil then: (self slotDictionary: MethodDictionary new).
         self slotDictionary
-    };
+    } withEagerAnalysis;
     withSelector: #addSlotToDictionary: addMethod: {:(Type)self :(TypeSlot)slot :: Void |
         let: #slotName with: slot name.
         if: slotName ~~ nil then: {
             self validSlotDictionary at: slotName put: slot
         }
-    };
+    } withEagerAnalysis;
     withSelector: #registerSlotsInDictionary addMethod: {:(Type)self :: Void |
         let: #supertypeSlotCount with: self validSupertypeTotalSlotCount.
 
@@ -307,14 +311,14 @@ Type
                 index: supertypeSlotCount + index.
             self addSlotToDictionary: slot
         }
-    };
+    } withEagerAnalysis;
     withSelector: #addTypeSlot: addMethod: {:(Type)self :(TypeSlot)extraSlot :: Void |
         if: self totalSlotCount ~~ nil then: (self error: "Cannot add type slot when the total slot count has already been computed").
         if: self pendingSlots == nil then: (self pendingSlots: ArrayList new).
 
         self pendingSlots add: extraSlot.
         self addSlotToDictionary: extraSlot.
-    };
+    } withEagerAnalysis;
     withSelector: #validSlots addMethod: {:(Type)self |
         let: #pendingSlots with: self pendingSlots.
         if: pendingSlots ~~ nil then: {
@@ -337,18 +341,18 @@ Type
         }.
         
         self slots
-    };
+    } withEagerAnalysis;
     withSelector: #validSupertypeTotalSlotCount addMethod: {:(Type)self :: Size |
         let: #supertype with: self supertype.
         if: supertype == nil then: 0sz else: supertype validTotalSlotCount.
-    };
+    } withEagerAnalysis;
     withSelector: #validTotalSlotCount addMethod: {:(Type)self :: Size |
         let: #totalSlotCount with: self totalSlotCount.
         if: totalSlotCount == nil then: {
             self totalSlotCount: self validSupertypeTotalSlotCount + self validSlots size.
             self totalSlotCount
         } else: totalSlotCount
-    };
+    } withEagerAnalysis;
     withSelector: #basicAllocate addMethod: {:(Type)self :: self |
         let: #result with: (if: self isBytes
             then: RawTuple::byteNew(0sz)
@@ -356,23 +360,23 @@ Type
         (RawTuple::type:)(result, self).
         if: self isWeak then: RawTuple::markWeak(result).
         result
-    };
+    } withEagerAnalysis;
     withSelector: #basicAllocate: addMethod: {:(Type)self :(Size)variableSize :: self |
         let: #result with: (if: self isBytes
             then: RawTuple::byteNew(variableSize)
             else: RawTuple::new(self validTotalSlotCount + variableSize)).
         (RawTuple::type:)(result, self).
         result
-    };
+    } withEagerAnalysis;
     withSelector: #basicNew addMethod: {:(Type)self :: self |
         self basicAllocate
-    };
+    } withEagerAnalysis;
     withSelector: #basicNew: addMethod: {:(Type)self :(Size)variableSlotCount :: self |
         self basicAllocate: variableSlotCount
-    };
+    } withEagerAnalysis;
     withSelector: #new addMethod: {:(Type)self :: self |
         self basicNew initialize; yourself
-    };
+    } withEagerAnalysis;
     withSelector: #>> addMethod: {:(Type)self :(Symbol)selector |
         let: #methodDictionary with: self methodDictionary.
         if: methodDictionary ~~ nil

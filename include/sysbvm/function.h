@@ -132,6 +132,11 @@ SYSBVM_API void sysbvm_function_ensureAnalysis(sysbvm_context_t *context, sysbvm
 SYSBVM_API void sysbvm_functionDefinition_ensureAnalysis(sysbvm_context_t *context, sysbvm_functionDefinition_t **functionDefinition);
 
 /**
+ * Ensures the completion of a function definition type analysis.
+ */
+SYSBVM_API void sysbvm_functionDefinition_ensureTypeAnalysis(sysbvm_context_t *context, sysbvm_functionDefinition_t **functionDefinition);
+
+/**
  * Gets the function argument count.
  */
 SYSBVM_API size_t sysbvm_function_getArgumentCount(sysbvm_context_t *context, sysbvm_tuple_t function);

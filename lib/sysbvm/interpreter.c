@@ -1045,6 +1045,8 @@ sysbvm_tuple_t sysbvm_interpreter_recompileAndOptimizeFunction(sysbvm_context_t 
     gcFrame.optimizedFunctionDefinition->analyzedBodyNode = SYSBVM_NULL_TUPLE;
     gcFrame.optimizedFunctionDefinition->analyzedResultTypeNode = SYSBVM_NULL_TUPLE;
 
+    gcFrame.optimizedFunctionDefinition->analyzedType = SYSBVM_NULL_TUPLE;
+
     gcFrame.optimizedFunctionDefinition->bytecode = SYSBVM_NULL_TUPLE;
 
     sysbvm_functionDefinition_ensureAnalysis(context, &gcFrame.optimizedFunctionDefinition);
@@ -1100,7 +1102,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_canonicalizeFunctionType(sysbvm_context_t 
     return sysbvm_type_createSimpleFunctionType(context, argumentTypes, isVariadic, resultType);
 }
 
-static void sysbvm_functionDefinition_analyze(sysbvm_context_t *context, sysbvm_functionDefinition_t **functionDefinition)
+static void sysbvm_functionDefinition_analyzeType(sysbvm_context_t *context, sysbvm_functionDefinition_t **functionDefinition)
 {
     struct {
         sysbvm_tuple_t analysisEnvironment;
@@ -1138,10 +1140,35 @@ static void sysbvm_functionDefinition_analyze(sysbvm_context_t *context, sysbvm_
     );
     gcFrame.analyzedType = sysbvm_type_canonicalizeFunctionType(context, gcFrame.analyzedType);
 
-    gcFrame.analyzedBodyNode = sysbvm_interpreter_analyzeASTWithExpectedTypeExpressionWithEnvironmentAt(context, (*functionDefinition)->definitionBodyNode, gcFrame.analyzedResultTypeNode, gcFrame.analysisEnvironment, (*functionDefinition)->sourcePosition, NULL);
-
     (*functionDefinition)->analyzedType = gcFrame.analyzedType;
     (*functionDefinition)->analysisEnvironment = gcFrame.analysisEnvironment;
+    (*functionDefinition)->analyzedArgumentNodes = gcFrame.analyzedArgumentsNode;
+    (*functionDefinition)->analyzedResultTypeNode = gcFrame.analyzedResultTypeNode;
+
+    (*functionDefinition)->bytecode = SYSBVM_NULL_TUPLE;
+
+    SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+    SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+}
+
+static void sysbvm_functionDefinition_analyze(sysbvm_context_t *context, sysbvm_functionDefinition_t **functionDefinition)
+{
+    sysbvm_functionDefinition_ensureTypeAnalysis(context, functionDefinition);
+
+    struct {
+        sysbvm_tuple_t analysisEnvironment;
+        sysbvm_functionAnalysisEnvironment_t *analysisEnvironmentObject;
+        sysbvm_tuple_t analyzedBodyNode;
+    } gcFrame = {0};
+
+    SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*functionDefinition)->sourcePosition);
+
+    gcFrame.analysisEnvironment = (*functionDefinition)->analysisEnvironment;
+    gcFrame.analysisEnvironmentObject = (sysbvm_functionAnalysisEnvironment_t*)gcFrame.analysisEnvironment;
+
+    gcFrame.analyzedBodyNode = sysbvm_interpreter_analyzeASTWithExpectedTypeExpressionWithEnvironmentAt(context, (*functionDefinition)->definitionBodyNode, (*functionDefinition)->analyzedResultTypeNode, gcFrame.analysisEnvironment, (*functionDefinition)->sourcePosition, NULL);
+
     (*functionDefinition)->analyzedCaptures = sysbvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->captureBindingList);
     (*functionDefinition)->analyzedArguments = sysbvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->argumentBindingList);
     (*functionDefinition)->analyzedLocals = sysbvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->localBindingList);
@@ -1149,8 +1176,6 @@ static void sysbvm_functionDefinition_analyze(sysbvm_context_t *context, sysbvm_
     (*functionDefinition)->analyzedInnerFunctions = sysbvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->innerFunctionList);
     (*functionDefinition)->analyzedPrimitiveName = gcFrame.analysisEnvironmentObject->primitiveName;
 
-    (*functionDefinition)->analyzedArgumentNodes = gcFrame.analyzedArgumentsNode;
-    (*functionDefinition)->analyzedResultTypeNode = gcFrame.analyzedResultTypeNode;
     (*functionDefinition)->analyzedBodyNode = gcFrame.analyzedBodyNode;
 
     (*functionDefinition)->bytecode = SYSBVM_NULL_TUPLE;
@@ -1167,10 +1192,23 @@ SYSBVM_API void sysbvm_functionDefinition_ensureAnalysis(sysbvm_context_t *conte
         return;
 
     // Is it already analyzed?
-    if((*functionDefinition)->analysisEnvironment)
+    if((*functionDefinition)->analyzedCaptures)
         return;
 
     sysbvm_functionDefinition_analyze(context, functionDefinition);
+}
+
+SYSBVM_API void sysbvm_functionDefinition_ensureTypeAnalysis(sysbvm_context_t *context, sysbvm_functionDefinition_t **functionDefinition)
+{
+    // Make sure this is a valid function definition for analysis.
+    if(!sysbvm_tuple_isKindOf(context, (sysbvm_tuple_t)*functionDefinition, context->roots.functionDefinitionType) || !(*functionDefinition)->definitionArgumentNodes || !(*functionDefinition)->definitionBodyNode)
+        return;
+
+    // Is it already analyzed?
+    if((*functionDefinition)->analyzedType)
+        return;
+
+    sysbvm_functionDefinition_analyzeType(context, functionDefinition);
 }
 
 SYSBVM_API void sysbvm_function_ensureAnalysis(sysbvm_context_t *context, sysbvm_function_t **function)
@@ -1219,6 +1257,16 @@ SYSBVM_API void sysbvm_function_ensureAnalysis(sysbvm_context_t *context, sysbvm
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
 }
 
+static sysbvm_tuple_t sysbvm_functionDefinition_primitiveEnsureTypeAnalysis(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
+
+    sysbvm_functionDefinition_t **functionDefinition = (sysbvm_functionDefinition_t **)&arguments[0];
+    sysbvm_functionDefinition_ensureTypeAnalysis(context, functionDefinition);
+    return SYSBVM_VOID_TUPLE;
+}
+
 static sysbvm_tuple_t sysbvm_functionDefinition_primitiveEnsureAnalysis(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)closure;
@@ -1226,7 +1274,17 @@ static sysbvm_tuple_t sysbvm_functionDefinition_primitiveEnsureAnalysis(sysbvm_c
 
     sysbvm_functionDefinition_t **functionDefinition = (sysbvm_functionDefinition_t **)&arguments[0];
     sysbvm_functionDefinition_ensureAnalysis(context, functionDefinition);
-    return SYSBVM_NULL_TUPLE;
+    return SYSBVM_VOID_TUPLE;
+}
+
+static sysbvm_tuple_t sysbvm_function_primitiveEnsureAnalysis(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
+
+    sysbvm_function_t **function = (sysbvm_function_t **)&arguments[0];
+    sysbvm_function_ensureAnalysis(context, function);
+    return SYSBVM_VOID_TUPLE;
 }
 
 static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveAnalyze(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -1371,6 +1429,8 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveAnalyzeAndEvaluate(sysbvm_co
     }
     else
     {
+        sysbvm_functionDefinition_ensureTypeAnalysis(context, &gcFrame.functionDefinition);
+        sysbvm_environment_enqueuePendingAnalysis(context, *environment, gcFrame.functionDefinition);
         gcFrame.closure = sysbvm_function_createClosureWithCaptureEnvironment(context, (sysbvm_tuple_t)gcFrame.functionDefinition, *environment);
     }
 
@@ -5636,6 +5696,8 @@ void sysbvm_astInterpreter_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_astReturnNode_primitiveEvaluate, "ASTReturnNode::evaluateWithEnvironment:");
     sysbvm_primitiveTable_registerFunction(sysbvm_astReturnNode_primitiveAnalyzeAndEvaluate, "ASTReturnNode::analyzeAndEvaluateWithEnvironment:");
 
+    sysbvm_primitiveTable_registerFunction(sysbvm_function_primitiveEnsureAnalysis, "Function::ensureAnalysis");
+    sysbvm_primitiveTable_registerFunction(sysbvm_functionDefinition_primitiveEnsureTypeAnalysis, "FunctionDefinition::ensureTypeAnalysis");
     sysbvm_primitiveTable_registerFunction(sysbvm_functionDefinition_primitiveEnsureAnalysis, "FunctionDefinition::ensureAnalysis");
 
     sysbvm_primitiveTable_registerFunction(sysbvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckFunctionApplicationNode, "SimpleFunctionType::analyzeAndTypeCheckFunctionApplicationNode:withEnvironment:");
@@ -5661,6 +5723,8 @@ void sysbvm_astInterpreter_setupASTInterpreter(sysbvm_context_t *context)
 
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "begin", 2, SYSBVM_FUNCTION_FLAGS_MACRO | SYSBVM_FUNCTION_FLAGS_VARIADIC, NULL, sysbvm_astSequenceNode_primitiveMacro);
 
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::ensureAnalysis", context->roots.functionType, "ensureAnalysis", 1, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_function_primitiveEnsureAnalysis);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "FunctionDefinition::ensureTypeAnalysis", context->roots.functionDefinitionType, "ensureAnalysis", 1, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_functionDefinition_primitiveEnsureTypeAnalysis);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "FunctionDefinition::ensureAnalysis", context->roots.functionDefinitionType, "ensureAnalysis", 1, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_functionDefinition_primitiveEnsureAnalysis);
 
     sysbvm_type_setAnalyzeAndTypeCheckFunctionApplicationNodeWithEnvironment(context, context->roots.simpleFunctionTypeType, sysbvm_function_createPrimitive(context, 3, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckFunctionApplicationNode));

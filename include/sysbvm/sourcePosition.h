@@ -36,5 +36,10 @@ SYSBVM_API sysbvm_tuple_t sysbvm_sourcePosition_createWithIndices(sysbvm_context
  */ 
 SYSBVM_API sysbvm_tuple_t sysbvm_sourcePosition_createWithUnion(sysbvm_context_t *context, sysbvm_tuple_t startSourcePosition, sysbvm_tuple_t endSourcePosition);
 
+/**
+ * Dumps a source position.
+ */ 
+SYSBVM_API void sysbvm_sourcePosition_dump(sysbvm_tuple_t sourcePosition);
+
 
 #endif //SYSBVM_SOURCE_POSITION_H

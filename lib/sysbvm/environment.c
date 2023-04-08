@@ -127,6 +127,16 @@ SYSBVM_API sysbvm_tuple_t sysbvm_analysisAndEvaluationEnvironment_create(sysbvm_
     return (sysbvm_tuple_t)result;
 }
 
+SYSBVM_API void sysbvm_environment_enqueuePendingAnalysis(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t programEntity)
+{
+    // TODO: Implement this context specific queue!
+}
+
+SYSBVM_API void sysbvm_environment_waitPendingAnalysis(sysbvm_context_t *context, sysbvm_tuple_t environment)
+{
+    // TODO: Implement this context specific queue!
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_namespace_create(sysbvm_context_t *context, sysbvm_tuple_t parent)
 {
     sysbvm_namespace_t *result = (sysbvm_namespace_t*)sysbvm_context_allocatePointerTuple(context, context->roots.namespaceType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_namespace_t));

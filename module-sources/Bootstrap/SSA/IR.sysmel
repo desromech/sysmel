@@ -892,7 +892,7 @@ SSAPhiInstruction definition: {
     public method isPhiInstruction => Boolean := true.
 
     public method initialize => Void := {
-        self initialize.
+        super initialize.
         self incomingBlocksAndValues: #().
     }.
 

@@ -215,6 +215,16 @@ SYSBVM_API sysbvm_tuple_t sysbvm_environment_create(sysbvm_context_t *context, s
 SYSBVM_API sysbvm_tuple_t sysbvm_analysisAndEvaluationEnvironment_create(sysbvm_context_t *context, sysbvm_tuple_t parent);
 
 /**
+ * Enqueues the pending analysis of a program entity.
+ */
+SYSBVM_API void sysbvm_environment_enqueuePendingAnalysis(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t programEntity);
+
+/**
+ * Waits for the pending analysis of program entities.
+ */
+SYSBVM_API void sysbvm_environment_waitPendingAnalysis(sysbvm_context_t *context, sysbvm_tuple_t environment);
+
+/**
  * Creates a namespace.
  */ 
 SYSBVM_API sysbvm_tuple_t sysbvm_namespace_create(sysbvm_context_t *context, sysbvm_tuple_t parent);

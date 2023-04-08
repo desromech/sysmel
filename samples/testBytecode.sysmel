@@ -54,6 +54,7 @@ printLine(bytecodes asFunction ()).
     let function := functionAndArguments first.
     let arguments := functionAndArguments second.
 
+    function ensureAnalysis.
     printLine(function definition bytecode fullPrintString).
     printLine(arguments, " := ", apply(function, arguments)).
 }.
