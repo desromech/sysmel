@@ -38,8 +38,14 @@ typedef struct sysbvm_bytecodeCompilerInstructionVectorOperand_s
 
     sysbvm_tuple_t hasAllocaDestination;
     sysbvm_tuple_t hasNonAllocaDestination;
+    sysbvm_tuple_t hasSlotReferenceAtDestination;
+    sysbvm_tuple_t hasNonSlotReferenceAtDestination;
+
     sysbvm_tuple_t hasLoadStoreUsage;
     sysbvm_tuple_t hasNonLoadStoreUsage;
+
+    sysbvm_tuple_t optimizationTupleOperand;
+    sysbvm_tuple_t optimizationTypeSlotOperand;
 } sysbvm_bytecodeCompilerInstructionVectorOperand_t;
 
 typedef struct sysbvm_bytecodeCompiler_s

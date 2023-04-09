@@ -1071,8 +1071,12 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
 
         "hasAllocaDestination", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "hasNonAllocaDestination", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        "hasSlotReferenceAtDestination", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        "hasNonSlotReferenceAtDestination", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "hasLoadStoreUsage", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "hasNonLoadStoreUsage", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        "optimizationTupleOperand", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anyValueType,
+        "optimizationTypeSlotOperand", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anyValueType,
         NULL);
     context->roots.bytecodeCompilerType = sysbvm_context_createIntrinsicClass(context, "BootstrapBytecodeCompiler", context->roots.objectType,
         "arguments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,

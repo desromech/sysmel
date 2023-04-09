@@ -31,6 +31,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompilerInstructionVectorOperand_create
     result->index = sysbvm_tuple_int16_encode(vectorIndex);
     result->hasAllocaDestination = SYSBVM_FALSE_TUPLE;
     result->hasNonAllocaDestination = SYSBVM_FALSE_TUPLE;
+    result->hasSlotReferenceAtDestination = SYSBVM_FALSE_TUPLE;
+    result->hasNonSlotReferenceAtDestination = SYSBVM_FALSE_TUPLE;
     result->hasLoadStoreUsage = SYSBVM_FALSE_TUPLE;
     result->hasNonLoadStoreUsage = SYSBVM_FALSE_TUPLE;
     return (sysbvm_tuple_t)result;
@@ -612,6 +614,11 @@ static void sysbvm_bytecodeCompiler_markInstructionOperandUsages(sysbvm_context_
             operand->hasAllocaDestination = SYSBVM_TRUE_TUPLE;
         else
             operand->hasNonAllocaDestination = SYSBVM_TRUE_TUPLE;
+
+        if(opcode == SYSBVM_OPCODE_SLOT_REFERENCE_AT)
+            operand->hasSlotReferenceAtDestination = SYSBVM_TRUE_TUPLE;
+        else
+            operand->hasNonSlotReferenceAtDestination = SYSBVM_TRUE_TUPLE;
     }
 
     // Mark the used operands.
@@ -640,7 +647,20 @@ static bool sysbvm_bytecodeCompiler_isLocalOnlyAlloca(sysbvm_tuple_t operand)
         (hasLoadStoreUsage && !hasNonLoadStoreUsage);
 }
 
-static void sysbvm_bytecodeCompiler_optimizeLocalOnlyAlloca(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_bytecodeCompilerInstruction_t *instruction)
+static bool sysbvm_bytecodeCompiler_isLocalOnlyReferenceAt(sysbvm_tuple_t operand)
+{
+    sysbvm_bytecodeCompilerInstructionVectorOperand_t *vectorOperand = (sysbvm_bytecodeCompilerInstructionVectorOperand_t*)operand;
+
+    bool hasSlotReferenceAtDestination = sysbvm_tuple_boolean_decode(vectorOperand->hasSlotReferenceAtDestination);
+    bool hasNonSlotReferenceAtDestination = sysbvm_tuple_boolean_decode(vectorOperand->hasNonSlotReferenceAtDestination);
+    bool hasLoadStoreUsage = sysbvm_tuple_boolean_decode(vectorOperand->hasLoadStoreUsage);
+    bool hasNonLoadStoreUsage = sysbvm_tuple_boolean_decode(vectorOperand->hasNonLoadStoreUsage);
+    
+    return (hasSlotReferenceAtDestination && !hasNonSlotReferenceAtDestination) &&
+        (hasLoadStoreUsage && !hasNonLoadStoreUsage);
+}
+
+static void sysbvm_bytecodeCompiler_optimizeLocalOnlyAllocaAndSlotReferences(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_bytecodeCompilerInstruction_t *instruction)
 {
     // Ignore labels.
     if(!instruction->opcode || !instruction->operands)
@@ -662,15 +682,48 @@ static void sysbvm_bytecodeCompiler_optimizeLocalOnlyAlloca(sysbvm_context_t *co
         instruction->opcode = sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_MOVE);
         instruction->operands = newOperands;
     }
+    else if(opcode == SYSBVM_OPCODE_SLOT_REFERENCE_AT
+        && sysbvm_bytecodeCompiler_isLocalOnlyReferenceAt(sysbvm_array_at(instruction->operands, 0)))
+    {
+        sysbvm_bytecodeCompilerInstructionVectorOperand_t *referenceOperand = (sysbvm_bytecodeCompilerInstructionVectorOperand_t*)sysbvm_array_at(instruction->operands, 0);
+        referenceOperand->optimizationTupleOperand = sysbvm_array_at(instruction->operands, 1);
+        referenceOperand->optimizationTypeSlotOperand = sysbvm_array_at(instruction->operands, 2);
+
+        sysbvm_bytecodeCompiler_removeInstruction((sysbvm_bytecodeCompiler_t*)compiler, instruction);
+    }
     else if(opcode == SYSBVM_OPCODE_LOAD
         && sysbvm_bytecodeCompiler_isLocalOnlyAlloca(sysbvm_array_at(instruction->operands, 1)))
     {
         instruction->opcode = sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_MOVE);
     }
+    else if(opcode == SYSBVM_OPCODE_LOAD
+        && sysbvm_bytecodeCompiler_isLocalOnlyReferenceAt(sysbvm_array_at(instruction->operands, 1)))
+    {
+        sysbvm_bytecodeCompilerInstructionVectorOperand_t *referenceOperand = (sysbvm_bytecodeCompilerInstructionVectorOperand_t*)sysbvm_array_at(instruction->operands, 1);
+
+        sysbvm_tuple_t newOperands = sysbvm_array_create(context, 3);
+        sysbvm_array_atPut(newOperands, 0, sysbvm_array_at(instruction->operands, 0));
+        sysbvm_array_atPut(newOperands, 1, referenceOperand->optimizationTupleOperand);
+        sysbvm_array_atPut(newOperands, 2, referenceOperand->optimizationTypeSlotOperand);
+        instruction->opcode = sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_SLOT_AT);
+        instruction->operands = newOperands;
+    }
     else if(opcode == SYSBVM_OPCODE_STORE
         && sysbvm_bytecodeCompiler_isLocalOnlyAlloca(sysbvm_array_at(instruction->operands, 0)))
     {
         instruction->opcode = sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_MOVE);
+    }
+    else if(opcode == SYSBVM_OPCODE_STORE
+        && sysbvm_bytecodeCompiler_isLocalOnlyReferenceAt(sysbvm_array_at(instruction->operands, 0)))
+    {
+        sysbvm_bytecodeCompilerInstructionVectorOperand_t *referenceOperand = (sysbvm_bytecodeCompilerInstructionVectorOperand_t*)sysbvm_array_at(instruction->operands, 0);
+
+        sysbvm_tuple_t newOperands = sysbvm_array_create(context, 3);
+        sysbvm_array_atPut(newOperands, 0, referenceOperand->optimizationTupleOperand);
+        sysbvm_array_atPut(newOperands, 1, referenceOperand->optimizationTypeSlotOperand);
+        sysbvm_array_atPut(newOperands, 2, sysbvm_array_at(instruction->operands, 1));
+        instruction->opcode = sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_SLOT_AT_PUT);
+        instruction->operands = newOperands;
     }
 }
 
@@ -699,8 +752,9 @@ static void sysbvm_bytecodeCompiler_optimizeTemporaries(sysbvm_context_t *contex
     instruction = compiler->firstInstruction;
     while(instruction)
     {
-        sysbvm_bytecodeCompiler_optimizeLocalOnlyAlloca(context, (sysbvm_tuple_t)compiler, instruction);
-        instruction = instruction->next;
+        sysbvm_bytecodeCompilerInstruction_t *nextInstruction = instruction->next;
+        sysbvm_bytecodeCompiler_optimizeLocalOnlyAllocaAndSlotReferences(context, (sysbvm_tuple_t)compiler, instruction);
+        instruction = nextInstruction;
     }
 }
 
