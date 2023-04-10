@@ -1154,6 +1154,33 @@ SequenceableCollection
 
     withSelector: #last addMethod: {:(SequenceableCollection)self | self at: self size - 1sz } makeFinal;
 
+    withSelector: #first: addMethod: {:(SequenceableCollection)self :(Size)elementsToKeep :: self species |
+        let: #size with: self size.
+        let: #resultSize with: (if: size < elementsToKeep then: size else: size).
+        
+        let: #result with: (self species new: resultSize).
+        let: #i mutableWith: 0sz.
+        while: i < resultSize do: (
+            result at: i put: (self at: i)
+        ) continueWith: (i := i + 1sz).
+    };
+    withSelector: #allButFirst: addMethod: {:(SequenceableCollection)self :(Size)dropCount :: self species |
+        let: #size with: self size.
+        if: dropCount >= size then: (self species new: 0sz)
+        else: {
+            let: #resultSize with: size - dropCount.
+            let: #result with: (self species new: resultSize).
+            let: #i mutableWith: dropCount.
+            while: i < size do: (
+                result at: i - dropCount put: (self at: i)
+            ) continueWith: (i := i + 1sz).
+            result
+        }
+    };
+    withSelector: #allButFirst addMethod: {:(SequenceableCollection)self :: self species |
+        self allButFirst: 1sz
+    };
+
     withSelector: #insertionSort:from:until: addMethod: {:(SequenceableCollection)self :lessThanComparison :(Size)startIndex :(Size)endIndex :: Void |
         ## Insertion sort algorithm from https://en.wikipedia.org/wiki/Insertion_sort [March 2023]
         let: #i mutableWith: startIndex + 1sz.

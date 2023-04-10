@@ -1,5 +1,6 @@
 public final class AsmStream superclass: Object.
-public class AsmStreamElement superclass: Object.
+public class AsmInstructionOperand superclass: Object.
+public class AsmStreamElement superclass: AsmInstructionOperand.
 
 public class AsmStreamElement superclass: Object; definition: {
     ## Instruction links.
@@ -110,7 +111,7 @@ public final class AsmLabel superclass: AsmStreamElement; definition: {
     public override method isFormattedWithIndentation => Boolean := false.
 
     public method printOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: ".L"; print: streamElementIndex.
+        stream nextPutAll: "label_"; print: streamElementIndex.
         name ifNotNil: {
             stream nextPut: '_'; nextPutAll: name
         }.
@@ -127,7 +128,7 @@ public final class AsmLabelEnd superclass: AsmStreamElement; definition: {
     public override method isFormattedWithIndentation => Boolean := false.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: ".endof "; print: label.
+        stream nextPutAll: "/* "; print: label; nextPutAll: " end */".
     }.
 }.
 

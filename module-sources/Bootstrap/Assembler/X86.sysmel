@@ -1,0 +1,124 @@
+public final class AsmX86InstructionDefinition superclass: Object; definition: {
+    public field mnemonic => Symbol.
+    public field operandNames => Array.
+    public field description => String.
+}.
+
+public class AsmX86Instruction superclass: AsmStreamElement; definition: {
+    public field definition => AsmX86InstructionDefinition.
+}.
+
+public final class AsmX86InstructionWithoutOperands superclass: AsmX86Instruction; definition: {
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: definition mnemonic.
+    }.
+}.
+
+public final class AsmX86InstructionWithSingleOperand superclass: AsmX86Instruction; definition: {
+    public field operand => AsmInstructionOperand.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: definition mnemonic; space; print: operand.
+    }.
+}.
+
+public final class AsmX86InstructionWithTwoOperands superclass: AsmX86Instruction; definition: {
+    public field firstOperand => AsmInstructionOperand.
+    public field secondOperand => AsmInstructionOperand.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: definition mnemonic; space; print: firstOperand; space; print: secondOperand.
+    }.
+}.
+
+AsmX86InstructionDefinition definition: {
+    public method generateStreamBuilderMethod => Void := {
+        let selectorBuilder := StringStream new.
+        selectorBuilder nextPutAll: "x86_"; nextPutAll: mnemonic.
+        operandNames doWithIndex: {:(Symbol)operandName :(Size)index :: Void |
+            if: index ~= 0sz then: (selectorBuilder nextPutAll: mnemonic).
+            selectorBuilder nextPut: ':'
+        }.
+
+        let selector := selectorBuilder asSymbol.
+        let operandCount := operandNames size.
+
+        ## Zero operand case.
+        if: operandCount = 0sz then: {
+            AsmStreamBuilder withSelector: selector addMethod: {:(AsmStreamBuilder)builder :: AsmX86InstructionWithoutOperands |
+                builder addElement: (AsmX86InstructionWithoutOperands new
+                    definition: self;
+                    yourself)
+            }. 
+        }.
+
+        ## Single operand case.
+        if: operandCount = 1sz then: {
+            AsmStreamBuilder withSelector: selector addMethod: {:(AsmStreamBuilder)builder :(AsmInstructionOperand)operand :: AsmX86InstructionWithSingleOperand |
+                builder addElement: (AsmX86InstructionWithSingleOperand new
+                    definition: self;
+                    operand: operand;
+                    yourself)
+            }. 
+        }.
+
+        ## Two operand case.
+        if: operandCount = 2sz then: {
+            AsmStreamBuilder withSelector: selector addMethod: {:(AsmStreamBuilder)builder :(AsmInstructionOperand)firstOperand :(AsmInstructionOperand)secondOperand :: AsmX86InstructionWithTwoOperands |
+                builder addElement: (AsmX86InstructionWithTwoOperands new
+                    definition: self;
+                    firstOperand: firstOperand;
+                    secondOperand: secondOperand;
+                    yourself)
+            }. 
+        }.
+    }.
+}.
+
+let instructionDefinitionTable := #(
+    (add (dst src) "Integer addition."
+        ())
+
+    (call (target) "Call the function in the specified address."
+        ())
+
+    (cmp (dst src) "Compares by subtracting the specified values."
+        ())
+
+    (lea (dst src) "Load effective address."
+        ())
+
+    (mov (dst src) "Move values."
+        ())
+
+    (jmp (target) "Jumps into the specified address."
+        ())
+
+    (int (number) "Software interruption."
+        ())
+
+    (int3 () "Software interruption 3 (Breakpoint)."
+        ())
+
+    (ret () "Return from function."
+        ())
+
+    (sub (dst src) "Integer subtraction."
+        ())
+).
+public: #AsmX86InstructionDefinition::Table with: Dictionary new.
+
+instructionDefinitionTable do: {:instructionDescription :: Void |
+    let mnemonic := instructionDescription first.
+    let operandNames := instructionDescription second.
+    let description := instructionDescription third.
+    let alternatives := instructionDescription allButFirst: 3.
+    let definition := AsmX86InstructionDefinition new
+        mnemonic: mnemonic;
+        operandNames: operandNames;
+        description: description;
+        yourself.
+
+    definition generateStreamBuilderMethod.
+    AsmX86InstructionDefinition::Table at: definition mnemonic put: definition.
+}.

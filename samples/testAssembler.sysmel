@@ -4,7 +4,7 @@ let code := (AsmStream buildWith: {:builder |
         align: 16sz;
         blockNamed: #main with: {:builder |
             builder
-                byte: 16rCC
+                x86_ret
         }.
 }).
 
