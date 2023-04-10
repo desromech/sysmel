@@ -1,0 +1,11 @@
+let code := (AsmStream buildWith: {:builder |
+    builder
+        textSection;
+        align: 16sz;
+        blockNamed: #main with: {:builder |
+            builder
+                byte: 16rCC
+        }.
+}).
+
+printLine(code fullPrintString).

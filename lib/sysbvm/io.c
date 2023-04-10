@@ -20,7 +20,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_io_readWholeFileNamedAsString(sysbvm_context_t 
     fseek(inputFile, 0, SEEK_SET);
 
     sysbvm_tuple_t readString = sysbvm_string_createEmptyWithSize(context, fileSize);
-    if(readString)
+    if(readString && fileSize > 0)
     {
         if(fread(SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(readString)->bytes, fileSize, 1, inputFile) != 1)
             readString = SYSBVM_NULL_TUPLE;
@@ -44,7 +44,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_io_readWholeFileNamedAsByteArray(sysbvm_context
     fseek(inputFile, 0, SEEK_SET);
 
     sysbvm_tuple_t readByteArray = sysbvm_byteArray_create(context, fileSize);
-    if(readByteArray)
+    if(readByteArray && fileSize > 0)
     {
         if(fread(SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(readByteArray)->bytes, fileSize, 1, inputFile) != 1)
             readByteArray = SYSBVM_NULL_TUPLE;
