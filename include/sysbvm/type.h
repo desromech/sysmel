@@ -773,6 +773,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_decay(sysbvm_context_t *context, sysbvm_tu
 SYSBVM_API sysbvm_tuple_t sysbvm_type_getCanonicalPendingInstanceType(sysbvm_context_t *context, sysbvm_tuple_t type);
 
 /**
+ * Gets the canonical dependent result type.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_type_canonicalizeDependentResultType(sysbvm_context_t *context, sysbvm_tuple_t type);
+
+/**
  * Gets the default value for the given type.
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_type_getDefaultValue(sysbvm_context_t *context, sysbvm_tuple_t type);

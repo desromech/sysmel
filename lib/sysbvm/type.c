@@ -959,6 +959,13 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_getCanonicalPendingInstanceType(sysbvm_con
     return context->roots.anyValueType;
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_type_canonicalizeDependentResultType(sysbvm_context_t *context, sysbvm_tuple_t type)
+{
+    if(!sysbvm_tuple_isDummyValue(type)) return type;
+
+    return context->roots.anyValueType;
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_type_getDefaultValue(sysbvm_context_t *context, sysbvm_tuple_t type)
 {
     if(sysbvm_type_isNullable(type))

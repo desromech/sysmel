@@ -5337,6 +5337,7 @@ static sysbvm_tuple_t sysbvm_dependentFunctionType_primitiveAnalyzeAndTypeCheckF
 
     if((*dependentFunctionType)->resultTypeNode)
         gcFrame.resultType = sysbvm_interpreter_evaluateASTWithEnvironment(context, (*dependentFunctionType)->resultTypeNode, gcFrame.applicationEnvironment);
+    gcFrame.resultType = sysbvm_type_canonicalizeDependentResultType(context, gcFrame.resultType);
     gcFrame.functionApplicationNode->applicationFlags = sysbvm_tuple_bitflags_encode(sysbvm_tuple_bitflags_decode(gcFrame.functionApplicationNode->applicationFlags) | SYSBVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK);
     gcFrame.functionApplicationNode->super.analyzedType = gcFrame.resultType;
 
@@ -5433,6 +5434,7 @@ static sysbvm_tuple_t sysbvm_dependentFunctionType_primitiveAnalyzeAndTypeCheckM
 
     if((*dependentFunctionType)->resultTypeNode)
         gcFrame.resultType = sysbvm_interpreter_evaluateASTWithEnvironment(context, (*dependentFunctionType)->resultTypeNode, gcFrame.applicationEnvironment);
+    gcFrame.resultType = sysbvm_type_canonicalizeDependentResultType(context, gcFrame.resultType);
     gcFrame.sendNode->super.analyzedType = gcFrame.resultType;
 
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
