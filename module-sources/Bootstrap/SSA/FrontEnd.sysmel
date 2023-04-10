@@ -107,7 +107,7 @@ ASTNode extend: {
 
 ASTBreakNode extend: {
     public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
-        context breakDestination ifNil: (self error: 'Invalid break at ' context).
+        context breakDestination ifNil: (self error: "Invalid break at this location.").
         context builder branch: context breakDestination.
         context builder literal: void
     }.
@@ -124,7 +124,7 @@ ASTCoerceValueNode extend: {
 
 ASTContinueNode extend: {
     public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
-        context continueDestination ifNil: (self error: 'Invalid continue at ' context).
+        context continueDestination ifNil: (self error: "Invalid continue at this location.").
         context builder branch: context continueDestination.
         context builder literal: void
     }.

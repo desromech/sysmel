@@ -19,7 +19,7 @@ SSAFunction extend: {
 
 SSAFunctionDefinition extend: {
     public method runPasses: passes ::=> Void := {
-        passes do: {:each :: Void | each runIn: self }
+        passes do: {:(SSAFunctionPass)each :: Void | each runIn: self }
     }.
 }.
 
@@ -50,7 +50,7 @@ public class SSADestroySSAFunctionPass superclass: SSAFunctionPass; definition: 
                 insertionPoint: basicBlock findPhiLoadInsertionPoint;
                 yourself.
 
-            basicBlock phiInstructionsDo: {:(SSAInstruction)phi :: Void |
+            basicBlock phiInstructionsDo: {:(SSAPhiInstruction)phi :: Void |
                 allocaBuilder useSourceInformationOfValue: phi.
 
                 let valueType := phi type.

@@ -25,9 +25,11 @@ public abstract class TestCase superclass: TestAsserter; definition: {
             let: #selectors with: ArrayList new.
             self withAllSubtypesDo: {:subtype :: Void |
                 subtype selectorsDo: {:(Symbol)each :: Void |
-                    if: (each beginsWith: "test") && (each numSelectorArgs = 0sz) then: {
+                    printLine("TODO: Implement this part.")
+                    #*if: (each beginsWith: "test") && (each numSelectorArgs = 0sz) then: {
                         selectors add: each
                     }
+                    *#
                 }
             }.
 

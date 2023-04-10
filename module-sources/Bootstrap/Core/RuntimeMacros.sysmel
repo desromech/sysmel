@@ -18,7 +18,7 @@ ASTNode
     }.
 
 ASTLambdaNode
-    withSelector: #cullExpressionWithArguments:at: addMethod: {:(ASTNode)self :(Array)arguments :(SourcePosition)sourcePosition :: ASTNode |
+    withSelector: #cullExpressionWithArguments:at: addMethod: {:(ASTLambdaNode)self :(Array)arguments :(SourcePosition)sourcePosition :: ASTNode |
         arguments size < self arguments size ifTrue: (self error: "Block receives more arguments than the provided one.").
 
         let: #localDeclarationNodes with: (self arguments collectWithIndex: {:(ASTArgumentNode)argumentNode :(Size)argumentIndex |
@@ -48,7 +48,7 @@ ASTLambdaNode
                 yourself);
             yourself
     };
-    withSelector: #cullExpressionWith:at: addMethod: {:(ASTNode)self :(ASTNode)argument :(SourcePosition)sourcePosition :: ASTNode |
+    withSelector: #cullExpressionWith:at: addMethod: {:(ASTLambdaNode)self :(ASTNode)argument :(SourcePosition)sourcePosition :: ASTNode |
         self cullExpressionWithArguments: (Array with: argument) at: sourcePosition
     }.
     

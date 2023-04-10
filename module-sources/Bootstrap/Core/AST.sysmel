@@ -35,11 +35,11 @@ ASTBinaryExpressionSequenceNode
     }.
 
 ASTCoerceValueNode
-    withSelector: #childrenDo: addMethod: {:(ASTDoWhileContinueWithNode)self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTCoerceValueNode)self :aBlock :: Void |
         if: (self typeExpression isNotNil) then: aBlock(self typeExpression).
         if: (self valueExpression isNotNil) then: aBlock(self valueExpression).
     };
-    withSelector: #transformWith: addMethod: {:(ASTDoWhileContinueWithNode)self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTCoerceValueNode)self :aBlock :: Void |
         if: (self typeExpression isNotNil) then: (self typeExpression: aBlock(self typeExpression)).
         if: (self valueExpression isNotNil) then: (self valueExpression: aBlock(self valueExpression)).
     }.
@@ -127,7 +127,7 @@ ASTLiteralNode
     withSelector: #childrenDo: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | };
     withSelector: #transformWith: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | };
 
-    withSelector: #literalFunctionPrimitiveName addMethod: {:(ASTNode)self :: Symbol |
+    withSelector: #literalFunctionPrimitiveName addMethod: {:(ASTLiteralNode)self :: Symbol |
         if: (self value __type__ lookupSelector: #primitiveName) ~~ nil
             then: self value primitiveName
             else: nil
@@ -289,7 +289,7 @@ ASTPragmaNode
         self arguments do: aBlock
     };
     withSelector: #transformWith: addMethod: {:(ASTPragmaNode)self :aBlock :: Void |
-        if: (self selector isNotNil) then: (self bodyselector: aBlock(self body)).
+        if: (self selector isNotNil) then: (self selector: aBlock(self selector)).
         self arguments: (self arguments collect: aBlock)
     }.
 
@@ -397,10 +397,10 @@ ASTQuasiUnquoteNode
         parameters at: self astTemplateParameterIndex
     };
     withSelector: #childrenDo: addMethod: {:(ASTQuasiUnquoteNode)self :aBlock :: Void |
-        if: (self expression) then: aBlock(self node)
+        if: (self expression) then: aBlock(self expression)
     };
     withSelector: #transformWith: addMethod: {:(ASTQuasiUnquoteNode)self :aBlock :: Void |
-        if: (self expression) then: (self node: aBlock(self node))
+        if: (self expression) then: (self expression: aBlock(self expression))
     }.
 
 ASTQuoteNode
@@ -425,10 +425,10 @@ ASTSpliceNode
     withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError };
     withSelector: #evaluateWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError };
     withSelector: #childrenDo: addMethod: {:(ASTSpliceNode)self :aBlock :: Void |
-        if: (self expression) then: aBlock(self node)
+        if: (self expression) then: aBlock(self expression)
     };
     withSelector: #transformWith: addMethod: {:(ASTSpliceNode)self :aBlock :: Void |
-        if: (self expression) then: (self node: aBlock(self node))
+        if: (self expression) then: (self expression: aBlock(self expression))
     };
 
     withSelector: #analyzeQuasiQuoteWithEnvironment:parameterList: addMethod: {:(ASTSpliceNode)self :(Environment)environment :(ArrayList)parameterList | self invalidLocationError };

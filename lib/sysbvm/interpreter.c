@@ -3658,9 +3658,8 @@ static sysbvm_tuple_t sysbvm_astMessageSendNode_primitiveAnalyze(sysbvm_context_
     }
     else
     {
-        // TODO: Implement the missing required machinery for supporting this.
-        if(false && !sysbvm_type_isDynamic(gcFrame.receiverType))
-            sysbvm_error("Cannot send undeclared message to receiver without a non-dynamic type.");
+        if(!sysbvm_tuple_boolean_decode(gcFrame.sendNode->isDynamic) && !sysbvm_type_isDynamic(gcFrame.receiverType))
+            sysbvm_error("Cannot send undeclared message to receiver without a dynamic type.");
     }
 
     size_t applicationArgumentCount = sysbvm_array_getSize(gcFrame.sendNode->arguments);

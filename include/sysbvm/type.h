@@ -475,7 +475,7 @@ SYSBVM_INLINE bool sysbvm_type_isNullable(sysbvm_tuple_t type)
  */
 SYSBVM_INLINE bool sysbvm_type_isDynamic(sysbvm_tuple_t type)
 {
-    return !type || (sysbvm_type_getFlags(type) & SYSBVM_TYPE_FLAGS_DYNAMIC) != 0;
+    return !type || sysbvm_tuple_isDummyValue(type) || (sysbvm_type_getFlags(type) & SYSBVM_TYPE_FLAGS_DYNAMIC) != 0;
 }
 
 /**

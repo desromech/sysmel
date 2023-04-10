@@ -108,7 +108,7 @@ public final class SSALiteralConstant superclass: SSAConstant; definition: {
 SSAFunction definition: {
     public field name.
     public field captures => Array.
-    public field definition => SSAValue.
+    public field definition => SSAFunctionDefinition.
 
     public method initialize => Void := {
         super initialize.
@@ -309,9 +309,9 @@ SSAFunctionDefinition definition: {
         self arguments: (self arguments collect: {:(SSAFunctionArgument)each | each copy}).
         self captures: (self captures collect: {:(SSAFunctionCapture)each | each copy}).
 
-        let nextBasicBlockToAdd mutable => SSABasicBlock := self firstBasicBlock.
-        self firstInstruction: nil.
-        self lastInstruction: nil.
+        let nextBasicBlockToAdd mutable := firstBasicBlock.
+        firstBasicBlock := nil.
+        lastBasicBlock := nil.
 
         while: nextBasicBlockToAdd ~~ nil do: {
             self addBasicBlock: nextBasicBlockToAdd copy
@@ -712,7 +712,7 @@ public final class SSAAllocaInstruction superclass: SSAInstruction; definition: 
     }.
 
     public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self valueType isPresent: {:(SSAValue)replacement :: Void | self valueType: replacement}.
+        replacementDictionary at: self valueType ifPresent: {:(SSAValue)replacement :: Void | self valueType: replacement}.
     }.
 }.
 
@@ -740,7 +740,7 @@ public final class SSABranchInstruction superclass: SSAInstruction; definition: 
     }.
 
     public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self destination isPresent: {:(SSABasicBlock)replacement :: Void | self destination: replacement}.
+        replacementDictionary at: self destination ifPresent: {:(SSABasicBlock)replacement :: Void | self destination: replacement}.
     }.
 }.
 
@@ -769,7 +769,7 @@ public final class SSACallInstruction superclass: SSAInstruction; definition: {
     }.
 
     public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self calledFunction isPresent: {:(SSAValue)replacement :: Void | self calledFunction: replacement}.
+        replacementDictionary at: self calledFunction ifPresent: {:(SSAValue)replacement :: Void | self calledFunction: replacement}.
         arguments replaceAllWithDictionary: replacementDictionary
     }.
 }.
@@ -793,8 +793,8 @@ public final class SSACoerceValueInstruction superclass: SSAInstruction; definit
     }.
 
     public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self value isPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
-        replacementDictionary at: self targetType isPresent: {:(SSAValue)replacement :: Void | self targetType: replacement}.
+        replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
+        replacementDictionary at: self targetType ifPresent: {:(SSAValue)replacement :: Void | self targetType: replacement}.
     }.
 }.
 
@@ -826,9 +826,9 @@ public final class SSAConditionalBranchInstruction superclass: SSAInstruction; d
     }.
 
     public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self condition isPresent: {:(SSAValue)replacement :: Void | self condition: replacement}.
-        replacementDictionary at: self trueDestination isPresent: {:(SSABasicBlock)replacement :: Void | self trueDestination: replacement}.
-        replacementDictionary at: self falseDestination isPresent: {:(SSABasicBlock)replacement :: Void | self falseDestination: replacement}.
+        replacementDictionary at: self condition ifPresent: {:(SSAValue)replacement :: Void | self condition: replacement}.
+        replacementDictionary at: self trueDestination ifPresent: {:(SSABasicBlock)replacement :: Void | self trueDestination: replacement}.
+        replacementDictionary at: self falseDestination ifPresent: {:(SSABasicBlock)replacement :: Void | self falseDestination: replacement}.
     }.
 
     public method replaceDestination: (oldDestination: SSABasicBlock) with: (newDestination: SSABasicBlock) ::=> Void := {
@@ -855,7 +855,7 @@ public final class SSALoadInstruction superclass: SSAInstruction; definition: {
     }.
 
     public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self storage isPresent: {:(SSAValue)replacement :: Void | self storage: replacement}.
+        replacementDictionary at: self storage ifPresent: {:(SSAValue)replacement :: Void | self storage: replacement}.
     }.
 }.
 
@@ -881,7 +881,7 @@ public final class SSAMakeClosureInstruction superclass: SSAInstruction; definit
     }.
 
     public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self functionDefinition isPresent: {:(SSAValue)replacement :: Void | self functionDefinition: replacement}.
+        replacementDictionary at: self functionDefinition ifPresent: {:(SSAValue)replacement :: Void | self functionDefinition: replacement}.
         self captures replaceAllWithDictionary: replacementDictionary
     }.
 }.
@@ -934,8 +934,8 @@ SSAPhiInstruction definition: {
 
     public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         self incomingBlocksAndValues do: {:(Association)association :: Void |
-            replacementDictionary at: association key isPresent: {:(SSAValue)replacement :: Void | association key: replacement}.
-            replacementDictionary at: association value isPresent: {:(SSAValue)replacement :: Void | association value: replacement}.
+            replacementDictionary at: association key ifPresent: {:(SSAValue)replacement :: Void | association key: replacement}.
+            replacementDictionary at: association value ifPresent: {:(SSAValue)replacement :: Void | association value: replacement}.
         }
     }.
 
@@ -966,7 +966,7 @@ public final class SSAReturnInstruction superclass: SSAInstruction; definition: 
     }.
 
     public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self value isPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
+        replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
     }.
 }.
 
@@ -1009,9 +1009,9 @@ public final class SSASendInstruction superclass: SSAInstruction; definition: {
     }.
 
     public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self receiver isPresent: {:(SSAValue)replacement :: Void | self receiver: replacement}.
-        replacementDictionary at: self receiverLookupType isPresent: {:(SSAValue)replacement :: Void | self receiverLookupType: replacement}.
-        replacementDictionary at: self selector isPresent: {:(SSAValue)replacement :: Void | self selector: replacement}.
+        replacementDictionary at: self receiver ifPresent: {:(SSAValue)replacement :: Void | self receiver: replacement}.
+        replacementDictionary at: self receiverLookupType ifPresent: {:(SSAValue)replacement :: Void | self receiverLookupType: replacement}.
+        replacementDictionary at: self selector ifPresent: {:(SSAValue)replacement :: Void | self selector: replacement}.
         self arguments replaceAllWithDictionary: replacementDictionary
     }.
 }.
@@ -1037,8 +1037,8 @@ public final class SSAStoreInstruction superclass: SSAInstruction; definition: {
     }.
 
     public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self storage isPresent: {:(SSAValue)replacement :: Void | self storage: replacement}.
-        replacementDictionary at: self value isPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
+        replacementDictionary at: self storage ifPresent: {:(SSAValue)replacement :: Void | self storage: replacement}.
+        replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
     }.
 }.
 
@@ -1141,7 +1141,7 @@ SSAInstructionBuilder definition: {
             registerInUsedValues;
             yourself).
 
-    public method branch: (destination: SSAValue) ::=> SSABranchInstruction
+    public method branch: (destination: SSABasicBlock) ::=> SSABranchInstruction
         := self addInstruction: (SSABranchInstruction new
             destination: destination;
             type: Void;
@@ -1156,11 +1156,11 @@ SSAInstructionBuilder definition: {
             registerInUsedValues;
             yourself).
 
-    public method call: (receiver: SSAValue) selector: (selector: SSAValue) arguments: (arguments: Array) ::=> SSASendInstruction
-        := self call: receiver selector: selector arguments: arguments resultType: nil.
+    public method call: (receiver: SSAValue) arguments: (arguments: Array) ::=> SSACallInstruction
+        := self call: receiver arguments: arguments resultType: nil.
 
     public method coerceValue: (value: SSAValue) into: (targetType: SSAValue) type: (type: Type) ::=> SSAValue := {
-        (targetType == nil) || (targetType isLiteralConstant && (value type == targetType value)) ifTrue: {
+        (targetType == nil) || (targetType isLiteralConstant && (value type == (targetType downCastTo: SSALiteralConstant) value)) ifTrue: {
             value
         } ifFalse: {
             self addInstruction: (SSACoerceValueInstruction new

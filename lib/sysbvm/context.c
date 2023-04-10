@@ -391,8 +391,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
 
     context->roots.setType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.hashedCollectionType);
     context->roots.identitySetType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.setType);
-    context->roots.weakSetType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.hashedCollectionType);
-    context->roots.weakIdentitySetType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.weakIdentitySetType);
+    context->roots.weakSetType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.setType);
+    context->roots.weakIdentitySetType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.weakSetType);
 
     context->roots.arrayType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
     context->roots.arrayListType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.sequenceableCollectionType);
@@ -896,7 +896,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         NULL);
     context->roots.astBinaryExpressionSequenceNodeType = sysbvm_context_createIntrinsicClass(context, "ASTBinaryExpressionSequenceNode", context->roots.astNodeType,
         "operands", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
-        "operations", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "operators", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     context->roots.astBreakNodeType = sysbvm_context_createIntrinsicClass(context, "ASTBreakNode", context->roots.astNodeType,
         NULL);
@@ -978,6 +978,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "receiverLookupType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "selector", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "arguments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "isDynamic", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "boundMethod", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
         NULL);
     context->roots.astMessageChainNodeType = sysbvm_context_createIntrinsicClass(context, "ASTMessageChainNode", context->roots.astNodeType,

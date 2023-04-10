@@ -162,6 +162,7 @@ typedef struct sysbvm_astMessageSendNode_s
     sysbvm_tuple_t receiverLookupType;
     sysbvm_tuple_t selector;
     sysbvm_tuple_t arguments;
+    sysbvm_tuple_t isDynamic;
     sysbvm_tuple_t boundMethod;
 } sysbvm_astMessageSendNode_t;
 
@@ -506,9 +507,9 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_astNode_getAnalyzerToken(sysbvm_tuple_t node
 /**
  * Sets the analyzer token in the ast node.
  */ 
-SYSBVM_INLINE sysbvm_tuple_t sysbvm_astNode_setAnalyzerToken(sysbvm_tuple_t node, sysbvm_tuple_t token)
+SYSBVM_INLINE void sysbvm_astNode_setAnalyzerToken(sysbvm_tuple_t node, sysbvm_tuple_t token)
 {
-    if(!sysbvm_tuple_isNonNullPointer(node)) return SYSBVM_NULL_TUPLE;
+    if(!sysbvm_tuple_isNonNullPointer(node)) return;
     ((sysbvm_astNode_t*)node)->analyzerToken = token;
 }
 

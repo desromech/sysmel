@@ -223,8 +223,38 @@ Untyped __type__
         }.
     } withEagerAnalysis.
     
-Type
+TypeSlot
+    withSelector: #hasFlag: addMethod: {:(TypeSlot)self :(Size)flag :: Boolean |
+        (self flags & flag) ~= 0bflgs
+    } withEagerAnalysis;
+    withSelector: #isPublic addMethod: {:(TypeSlot)self :: Boolean |
+        self hasFlag: TypeSlotFlags::Public
+    } withEagerAnalysis;
+    withSelector: #isReadonly addMethod: {:(TypeSlot)self :: Boolean |
+        self hasFlag: TypeSlotFlags::ReadOnly
+    } withEagerAnalysis;
+    withSelector: #generateAccessorsOn: addMethod: {:(TypeSlot)typeSlot :(Type)type :: Void |
+        if: typeSlot isPublic then: {
+            let: #slotType with: typeSlot type.
+            let: #getterName with: typeSlot name.
+            let: #setterName with: (typeSlot name asString -- ":") asSymbol.
 
+            ## Getter.
+            type withSelector: getterName addMethod: {:(type)self :: slotType |
+                ## TODO: Perform direct access via the AST node.
+                (RawTuple::slotAt:)(self, typeSlot index)
+            } makePure makeFinal recompileAndOptimize.
+
+            ## Setter
+            if: typeSlot isReadonly not then: {
+                type withSelector: setterName addMethod: {:(type)self :(slotType)value :: Void |
+                    RawTuple::slotAt:put:(self, typeSlot index, value)
+                } makeFinal recompileAndOptimize.
+            }
+        }
+    } withEagerAnalysis.
+
+Type
     withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(Type)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
         if: (self isSubtypeOf: targetType)
         then: astNode
@@ -302,6 +332,39 @@ Type
             self validSlotDictionary at: slotName put: slot
         }
     } withEagerAnalysis;
+    withSelector: #validSupertypeTotalSlotCount addMethod: {:(Type)self :: Size |
+        let: #supertype with: self supertype.
+        if: supertype == nil then: 0sz else: supertype validTotalSlotCount.
+    };
+    withSelector: #validSlots addMethod: {:(Type)self |
+        let: #pendingSlots with: self pendingSlots.
+        if: pendingSlots ~~ nil then: {
+
+            let: #pendingSlotsArray with: pendingSlots asArray.
+            let: #localBaseIndex with: self slots size.
+            let: #baseIndex with: self validSupertypeTotalSlotCount + localBaseIndex.
+
+            pendingSlotsArray doWithIndex: {:pendingSlot :pendingSlotIndex :: Void |
+                let: #localSlotIndex with: localBaseIndex + pendingSlotIndex.
+                let: #slotIndex with: baseIndex + pendingSlotIndex.
+                pendingSlot
+                    localIndex: localSlotIndex;
+                    index: slotIndex
+            }.
+
+            self slots: self slots -- pendingSlotsArray.
+            self pendingSlots: nil
+        }.
+        
+        self slots
+    };
+    withSelector: #validTotalSlotCount addMethod: {:(Type)self :: Size |
+        let: #totalSlotCount with: self totalSlotCount.
+        if: totalSlotCount == nil then: {
+            self totalSlotCount: self validSupertypeTotalSlotCount + self validSlots size.
+            self totalSlotCount
+        } else: totalSlotCount
+    } withEagerAnalysis;
     withSelector: #registerSlotsInDictionary addMethod: {:(Type)self :: Void |
         let: #supertypeSlotCount with: self validSupertypeTotalSlotCount.
 
@@ -318,40 +381,7 @@ Type
 
         self pendingSlots add: extraSlot.
         self addSlotToDictionary: extraSlot.
-    } withEagerAnalysis;
-    withSelector: #validSlots addMethod: {:(Type)self |
-        let: #pendingSlots with: self pendingSlots.
-        if: pendingSlots ~~ nil then: {
-
-            let: #pendingSlotsArray with: pendingSlots asArray.
-            let: #localBaseIndex with: self slots size.
-            let: #baseIndex with: self validSupertypeTotalSlotCount + localBaseIndex.
-
-            pendingSlotsArray doWithIndex: {:pendingSlot :pendingSlotIndex :: Void |
-                let: #localSlotIndex with: localBaseIndex + pendingSlotIndex.
-                let: #slotIndex with: baseIndex + pendingSlotIndex.
-                pendingSlot
-                    localIndex: localSlotIndex;
-                    index: slotIndex.
-                pendingSlot generateAccessorsOn: self withIndex: slotIndex
-            }.
-
-            self slots: self slots -- pendingSlotsArray.
-            self pendingSlots: nil
-        }.
-        
-        self slots
-    } withEagerAnalysis;
-    withSelector: #validSupertypeTotalSlotCount addMethod: {:(Type)self :: Size |
-        let: #supertype with: self supertype.
-        if: supertype == nil then: 0sz else: supertype validTotalSlotCount.
-    } withEagerAnalysis;
-    withSelector: #validTotalSlotCount addMethod: {:(Type)self :: Size |
-        let: #totalSlotCount with: self totalSlotCount.
-        if: totalSlotCount == nil then: {
-            self totalSlotCount: self validSupertypeTotalSlotCount + self validSlots size.
-            self totalSlotCount
-        } else: totalSlotCount
+        extraSlot generateAccessorsOn: self.
     } withEagerAnalysis;
     withSelector: #basicAllocate addMethod: {:(Type)self :: self |
         let: #result with: (if: self isBytes
@@ -376,6 +406,9 @@ Type
     } withEagerAnalysis;
     withSelector: #new addMethod: {:(Type)self :: self |
         self basicNew initialize; yourself
+    } withEagerAnalysis;
+    withSelector: #new: addMethod: {:(Type)self :(Size)variableSlotCount :: self |
+        (self basicNew: variableSlotCount) initialize; yourself
     } withEagerAnalysis;
     withSelector: #>> addMethod: {:(Type)self :(Symbol)selector |
         let: #methodDictionary with: self methodDictionary.
@@ -425,8 +458,8 @@ UndefinedObject class
     }.
 
 ReferenceType
-    withSelector: #isReferenceType addMethod: {:(Type)self :: Boolean | true } makePure;
-    withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(Type)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
+    withSelector: #isReferenceType addMethod: {:(ReferenceType)self :: Boolean | true } makePure;
+    withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(ReferenceType)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
 
         if: targetType isReferenceType then: {
             error("TODO: Implement coercion between two reference types.")
@@ -504,6 +537,21 @@ AnyValue
             yourself
     } makeMacro;
 
+    withSelector: #implicitCastTo: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)targetTypeExpression :: ASTCoerceValueNode |
+        ASTCoerceValueNode new
+            sourcePosition: macroContext sourcePosition;
+            typeExpression: targetTypeExpression;
+            valueExpression: self;
+            yourself
+    } makeMacro;
+    withSelector: #downCastTo: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)targetTypeExpression :: ASTDownCastNode |
+        ASTDownCastNode new
+            sourcePosition: macroContext sourcePosition;
+            typeExpression: targetTypeExpression;
+            valueExpression: self;
+            yourself
+    } makeMacro;
+
     withSelector: #ifTrue: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)trueExpression :: ASTIfNode |
         ASTIfNode new
             sourcePosition: macroContext sourcePosition;
@@ -540,6 +588,7 @@ AnyValue
             receiver: self;
             selector: selector;
             arguments: Array new;
+            isDynamic: true;
             yourself
     } makeMacro;
     withSelector: #perform:with: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)selector :(ASTNode)argument :: ASTMessageSendNode |
@@ -548,6 +597,7 @@ AnyValue
             receiver: self;
             selector: selector;
             arguments: (Array with: argument);
+            isDynamic: true;
             yourself
     } makeMacro;
     withSelector: #perform:with:with: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)selector :(ASTNode)firstArgument :(ASTNode)secondArgument :: ASTMessageSendNode |
@@ -556,6 +606,7 @@ AnyValue
             receiver: self;
             selector: selector;
             arguments: (Array with: firstArgument with: secondArgument);
+            isDynamic: true;
             yourself
     } makeMacro;
     withSelector: #perform:with:with:with: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)selector :(ASTNode)firstArgument :(ASTNode)secondArgument :(ASTNode)thirdArgument :: ASTMessageSendNode |
@@ -564,6 +615,7 @@ AnyValue
             receiver: self;
             selector: selector;
             arguments: (Array with: firstArgument with: secondArgument with: thirdArgument);
+            isDynamic: true;
             yourself
     } makeMacro;
     withSelector: #perform:with:with:with:with: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)selector :(ASTNode)firstArgument :(ASTNode)secondArgument :(ASTNode)thirdArgument :(ASTNode)fourthArgument :: ASTMessageSendNode |
@@ -572,6 +624,7 @@ AnyValue
             receiver: self;
             selector: selector;
             arguments: (Array with: firstArgument with: secondArgument with: thirdArgument with: fourthArgument);
+            isDynamic: true;
             yourself
     } makeMacro.
 
@@ -596,6 +649,12 @@ AnyReference
     } makeMacro.
 
 Stream
+    withSelector: #nextPut: addMethod: {:(Stream)self :element :: Void | 
+        self subclassResponsibility
+    };
+    withSelector: #nextPutAll: addMethod: {:(Stream)self :aCollection :: Void | 
+        aCollection do: {:each :: Void | self nextPut: each}
+    };
     withSelector: #print: addMethod: {:(Stream)self :value :: Void | 
         value printOn: self
     };
@@ -879,6 +938,15 @@ Dictionary
             value
         } else: {
             entry value
+        }
+    };
+    withSelector: #at:ifPresent: addMethod: {:(Dictionary)self :key :ifPresentBlock :: Void |
+        self ensureStorage.
+        let: #entryIndex with: (self scanFor: key) asSize.
+        let: #storage with: self storage.
+        let: #entry with: (storage at: entryIndex).
+        if: entry ~~ nil then: {
+            ifPresentBlock(entry value)
         }
     }.
 
@@ -1508,35 +1576,6 @@ TypeSlot
     };
     withSelector: #publicNamed: addClassMethod: {:(TypeSlot class)self :name :(Type)type :: self |
         self publicNamed: name type: AnyValue
-    };
-
-    withSelector: #hasFlag: addMethod: {:(TypeSlot)self :(Size)flag :: Boolean |
-        (self flags & flag) ~= 0bflgs
-    };
-    withSelector: #isPublic addMethod: {:(TypeSlot)self :: Boolean |
-        self hasFlag: TypeSlotFlags::Public
-    };
-    withSelector: #isReadonly addMethod: {:(TypeSlot)self :: Boolean |
-        self hasFlag: TypeSlotFlags::ReadOnly
-    };
-    withSelector: #generateAccessorsOn:withIndex: addMethod: {:(TypeSlot)self :(Type)type :(Size)slotIndex :: Void |
-        if: self isPublic then: {
-            let: #slotType with: self type.
-            let: #getterName with: self name.
-            let: #setterName with: (self name asString -- ":") asSymbol.
-
-            ## Getter.
-            type withSelector: getterName addMethod: {:(type)self :: slotType |
-                (RawTuple::slotAt:)(self, slotIndex)
-            } makePure makeFinal recompileAndOptimize.
-
-            ## Setter
-            if: self isReadonly not then: {
-                type withSelector: setterName addMethod: {:(type)self :(slotType)value :: Void |
-                    RawTuple::slotAt:put:(self, slotIndex, value)
-                } makeFinal recompileAndOptimize.
-            }
-        }
     }.
 
 Type
@@ -1544,7 +1583,9 @@ Type
         let: #baseSlotIndex with: self validSupertypeTotalSlotCount.
         self slots doWithIndex: {:slot :index :: Void |
             let: #slotIndex with: baseSlotIndex + index.
-            slot generateAccessorsOn: self withIndex: slotIndex
+            slot localIndex: index.
+            slot index: slotIndex.
+            slot generateAccessorsOn: self
         }.
     }.
 
@@ -1581,7 +1622,7 @@ Type
     } makePure.
 
 ReferenceType
-    withSelector: #printOn: addMethod: {:(Type)self :(Stream)stream :: Void |
+    withSelector: #printOn: addMethod: {:(ReferenceType)self :(Stream)stream :: Void |
         stream print: self baseType.
         if: self addressSpace == nil then: {
             stream nextPutAll: " ref"
@@ -1591,7 +1632,7 @@ ReferenceType
     }.
 
 PointerType
-    withSelector: #printOn: addMethod: {:(Type)self :(Stream)stream :: Void |
+    withSelector: #printOn: addMethod: {:(ReferenceType)self :(Stream)stream :: Void |
         stream print: self baseType.
         if: self addressSpace == nil then: {
             stream nextPutAll: " pointer"
@@ -1601,12 +1642,12 @@ PointerType
     }.
 
 DependentFunctionType
-    withSelector: #printOn: addMethod: {:(Type)self :(Stream)stream :: Void |
+    withSelector: #printOn: addMethod: {:(DependentFunctionType)self :(Stream)stream :: Void |
         stream nextPutAll: "DependentFunctionType at "; print: self sourcePosition
     }.
 
 SimpleFunctionType
-    withSelector: #printOn: addMethod: {:(Type)self :(Stream)stream :: Void |
+    withSelector: #printOn: addMethod: {:(SimpleFunctionType)self :(Stream)stream :: Void |
         stream nextPut: '('.
         self argumentTypes doWithIndex: {:(Type)argumentType :(Size)index :: Void |
             index > 0sz ifTrue: (stream nextPutAll: ", ").
