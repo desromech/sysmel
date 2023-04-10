@@ -22,6 +22,9 @@ public class AsmStreamElement superclass: Object; definition: {
     }.
 
     public method isFormattedWithIndentation => Boolean := true.
+
+    public abstract method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void
+        := self subclassResponsibility.
 }.
 
 public final class AsmStream superclass: Object; definition: {
@@ -100,6 +103,8 @@ public final class AsmStream superclass: Object; definition: {
 public final class AsmAlignDirective superclass: AsmStreamElement; definition: {
     public field alignment => Size.
 
+    public override method isFormattedWithIndentation => Boolean := false.
+
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".align "; print: alignment
     }.
@@ -154,7 +159,7 @@ public final class AsmSByteDirective superclass: AsmStreamElement; definition: {
     public field value => Int8.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: ".sbyte "; print: value.
+        stream nextPutAll: ".byte "; print: value.
     }.
 }.
 
@@ -170,7 +175,7 @@ public final class AsmSWordDirective superclass: AsmStreamElement; definition: {
     public field value => Int16.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: ".sword "; print: value.
+        stream nextPutAll: ".word "; print: value.
     }.
 }.
 
@@ -178,7 +183,7 @@ public final class AsmDWordDirective superclass: AsmStreamElement; definition: {
     public field value => UInt32.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: ".dword "; print: value.
+        stream nextPutAll: ".word "; print: value.
     }.
 }.
 
@@ -186,7 +191,7 @@ public final class AsmSDWordDirective superclass: AsmStreamElement; definition: 
     public field value => Int32.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: ".sdword "; print: value.
+        stream nextPutAll: ".dword "; print: value.
     }.
 }.
 
@@ -194,7 +199,7 @@ public final class AsmQWordDirective superclass: AsmStreamElement; definition: {
     public field value => UInt64.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: ".qword "; print: value.
+        stream nextPutAll: ".word "; print: value.
     }.
 }.
 
@@ -202,7 +207,7 @@ public final class AsmSQWordDirective superclass: AsmStreamElement; definition: 
     public field value => Int64.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: ".sqword "; print: value.
+        stream nextPutAll: ".qword "; print: value.
     }.
 }.
 

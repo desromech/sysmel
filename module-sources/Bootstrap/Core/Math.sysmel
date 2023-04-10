@@ -1,0 +1,45 @@
+## Number methods
+#*(
+    UInt8,Int8,Char8,
+    UInt16,Int16,Char16,
+    UInt32,Int32,Char32,
+    UInt64,Int64,
+    Float32,Float64,
+    Integer
+) do: {:(Type)NumberType :: Void |
+    NumberType extend: {
+        public pure final method min: (other: SelfType) ::=> SelfType
+            := if: self <= other then: self else: other.
+
+        public pure final method max: (other: SelfType) ::=> SelfType
+            := if: self >= other then: self else: other.
+    }
+}.
+*#
+
+## Integer methods.
+#*
+(
+    UInt8,Int8,Char8,
+    UInt16,Int16,Char16,
+    UInt32,Int32,Char32,
+    UInt64,Int64,
+    Integer
+) do: {:(Type)IntegerType :: Void |
+    IntegerType extend: {
+        public pure final method alignedTo: (alignment: SelfType) ::=> SelfType
+            := ((self + alignment) - (SelfType fromInteger: 1)) & alignment negated.
+    }
+}.
+*#
+
+Size extend: {
+    public pure final method min: (other: SelfType) ::=> SelfType
+        := if: self <= other then: self else: other.
+
+    public pure final method max: (other: SelfType) ::=> SelfType
+        := if: self >= other then: self else: other.
+
+    public pure final method alignedTo: (alignment: SelfType) ::=> SelfType
+        := ((self + alignment) - 1sz) & alignment negated.
+}.

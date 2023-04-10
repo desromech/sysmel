@@ -6,19 +6,30 @@ public final class AsmX86InstructionDefinition superclass: Object; definition: {
 
 public class AsmX86Instruction superclass: AsmStreamElement; definition: {
     public field definition => AsmX86InstructionDefinition.
+
+    public abstract method operandCount => Size
+        := self subclassResponsibility.
+
+    public abstract method firstOperand => AsmInstructionOperand
+        := self error: "Operand not present.".
+
+    public abstract method secondOperand => AsmInstructionOperand
+        := self error: "Operand not present.".
 }.
 
 public final class AsmX86InstructionWithoutOperands superclass: AsmX86Instruction; definition: {
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: definition mnemonic.
     }.
+
+    public override method operandCount => Size := 0sz.
 }.
 
 public final class AsmX86InstructionWithSingleOperand superclass: AsmX86Instruction; definition: {
-    public field operand => AsmInstructionOperand.
+    public field firstOperand => AsmInstructionOperand.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: definition mnemonic; space; print: operand.
+        stream nextPutAll: definition mnemonic; space; print: firstOperand.
     }.
 }.
 
@@ -28,6 +39,27 @@ public final class AsmX86InstructionWithTwoOperands superclass: AsmX86Instructio
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: definition mnemonic; space; print: firstOperand; space; print: secondOperand.
+    }.
+}.
+
+public final class AsmX86InstructionTemplate superclass: Object; definition: {
+    public field when => ((AsmX86InstructionTemplate, AsmX86Instruction) => Boolean).
+    public field writeWith => ((AsmX86InstructionTemplate, AsmX86Instruction, AsmObjectCodeStream) => Void).
+
+    public field mandatoryPrefix => ByteArray.
+    public field opcode => ByteArray.
+    public field registerOpcode => UInt8.
+
+    public method initialize => Void := {
+        mandatoryPrefix := #[].
+        opcode := #[].
+        registerOpcode := 0u8.
+    }.
+
+    public method parseDescription: (description: Array) ::=> Void := {
+        mandatoryPrefix := description second.
+        opcode := description third.
+        description size >= 4sz ifTrue: (registerOpcode := description fourth asUInt8).
     }.
 }.
 
@@ -57,7 +89,7 @@ AsmX86InstructionDefinition definition: {
             AsmStreamBuilder withSelector: selector addMethod: {:(AsmStreamBuilder)builder :(AsmInstructionOperand)operand :: AsmX86InstructionWithSingleOperand |
                 builder addElement: (AsmX86InstructionWithSingleOperand new
                     definition: self;
-                    operand: operand;
+                    firstOperand: operand;
                     yourself)
             }. 
         }.
@@ -75,36 +107,47 @@ AsmX86InstructionDefinition definition: {
     }.
 }.
 
+let instructionTemplateTable := #{
+    Op: (AsmX86InstructionTemplate new
+        when: {:templ :instruction :: Boolean | 
+            instruction operandCount = 0sz
+        };
+        writeWith: {:templ :instruction :stream :: Void |
+            stream nextPutAll: templ mandatoryPrefix; nextPutAll: templ opcode.
+        };
+        yourself).
+}.
+
 let instructionDefinitionTable := #(
     (add (dst src) "Integer addition."
-        ())
+        )
 
     (call (target) "Call the function in the specified address."
-        ())
+        )
 
     (cmp (dst src) "Compares by subtracting the specified values."
-        ())
+        )
 
     (lea (dst src) "Load effective address."
-        ())
+        )
 
     (mov (dst src) "Move values."
-        ())
+        )
 
     (jmp (target) "Jumps into the specified address."
-        ())
+        )
 
     (int (number) "Software interruption."
-        ())
+        )
 
     (int3 () "Software interruption 3 (Breakpoint)."
-        ())
+        (Op #[] #[16rCC]))
 
     (ret () "Return from function."
-        ())
+        (Op #[] #[16rF3]))
 
     (sub (dst src) "Integer subtraction."
-        ())
+        )
 ).
 public: #AsmX86InstructionDefinition::Table with: Dictionary new.
 
@@ -113,6 +156,13 @@ instructionDefinitionTable do: {:instructionDescription :: Void |
     let operandNames := instructionDescription second.
     let description := instructionDescription third.
     let alternatives := instructionDescription allButFirst: 3.
+    let parsedAlternatives := alternatives collect: {:(Array)alternativeDescription :: AsmX86InstructionTemplate |
+        let alternativeName := alternativeDescription first.
+        let instructionTemplate := instructionTemplateTable at: alternativeName.
+        instructionTemplate copy
+            parseDescription: alternativeDescription;
+            yourself
+    }.
     let definition := AsmX86InstructionDefinition new
         mnemonic: mnemonic;
         operandNames: operandNames;

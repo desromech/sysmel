@@ -1,0 +1,70 @@
+public final class AsmObjectCodeSection superclass: Object; definition: {
+    public field name => Symbol.
+    public field data => ByteArray.
+    public field alignment => Size.
+    public field size => Size.
+
+    public method initialize => Void := {
+        data := #[].
+        size := 0sz.
+        alignment := 1sz.
+    }.
+
+    public method increaseSizeBy: (extraSize: Size) ::=> Void := {
+        size := size + extraSize
+    }.
+
+    public method alignSizeTo: (requiredAlignment: Size) ::=> Void := {
+        alignment := alignment max: requiredAlignment.
+        size := size alignedTo: requiredAlignment.
+    }.
+}.
+
+public class AsmObjectCodeBuilder superclass: Object; definition: {
+    public field sections => ArrayList.
+    public field sectionNameTable => Dictionary.
+
+    public method initialize => Void := {
+        sections := ArrayList new.
+        sectionNameTable := Dictionary new.
+    }.
+
+    public method getOrCreateSectionNamed: (name: Symbol) ::=> AsmObjectCodeSection
+        := sectionNameTable at: name ifAbsentPut: {:: AsmObjectCodeSection |
+            AsmObjectCodeSection new
+                name: name;
+                yourself
+        }
+}.
+
+public abstract class AsmObjectCodeStream superclass: Object; definition: {
+    public field objectCodeBuilder => AsmObjectCodeBuilder.
+    public field activeSection => AsmObjectCodeSection.
+
+    public abstract method alignTo: (requiredAlignment: Size) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method nextPut: (value: UInt8) ::=> Void
+        := self subclassResponsibility.
+
+    public method nextPutAll: (bytes: ByteArray) ::=> Void := {
+        bytes do: {:(UInt8)each :: Void | self nextPut: each}
+    }.
+}.
+
+public final class AsmObjectCodeSizeStream superclass: AsmObjectCodeStream; definition: {
+    public override method alignTo: (requiredAlignment: Size) ::=> Void := {
+        activeSection alignSizeTo: requiredAlignment.
+    }.
+
+    public override method nextPut: (value: UInt8) ::=> Void := {
+        activeSection increaseSizeBy: 1sz
+    }.
+
+    public override method nextPutAll: (bytes: ByteArray) ::=> Void := {
+        activeSection increaseSizeBy: bytes size
+    }.
+}.
+
+public final class AsmObjectCodeWriteStream superclass: AsmObjectCodeStream; definition: {
+}.

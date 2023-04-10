@@ -2,3 +2,4 @@ loadSourceNamed: "Runtime.sysmel".
 loadSourceNamed: "AST.sysmel".
 loadSourceNamed: "RuntimeMacros.sysmel".
 loadSourceNamed: "MetaBuilders.sysmel".
+loadSourceNamed: "Math.sysmel".

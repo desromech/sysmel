@@ -21,6 +21,7 @@ typedef struct sysbvm_sysmelParser_state_s
 } sysbvm_sysmelParser_state_t;
 
 static sysbvm_tuple_t sysbvm_sysmelParser_parseLiteralArrayExpression(sysbvm_context_t *context, sysbvm_sysmelParser_state_t *state);
+static sysbvm_tuple_t sysbvm_sysmelParser_parseLiteralByteArrayExpression(sysbvm_context_t *context, sysbvm_sysmelParser_state_t *state);
 
 static sysbvm_tuple_t sysbvm_sysmelParser_parseUnaryExpression(sysbvm_context_t *context, sysbvm_sysmelParser_state_t *state);
 static sysbvm_tuple_t sysbvm_sysmelParser_parseBinaryExpression(sysbvm_context_t *context, sysbvm_sysmelParser_state_t *state);
@@ -349,9 +350,51 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseLiteralArrayElement(sysbvm_contex
     case SYSBVM_TOKEN_KIND_LPARENT:
     case SYSBVM_TOKEN_KIND_LITERAL_ARRAY_START:
         return sysbvm_sysmelParser_parseLiteralArrayExpression(context, state);
+    case SYSBVM_TOKEN_KIND_BYTE_ARRAY_START:
+        return sysbvm_sysmelParser_parseLiteralByteArrayExpression(context, state);
     default:
         return sysbvm_sysmelParser_unexpectedTokenAt(context, state);
     }
+}
+
+static sysbvm_tuple_t sysbvm_sysmelParser_parseLiteralByteArrayExpression(sysbvm_context_t *context, sysbvm_sysmelParser_state_t *state)
+{
+    if(sysbvm_sysmelParser_lookKindAt(state, 0) != SYSBVM_TOKEN_KIND_BYTE_ARRAY_START)
+        return sysbvm_astErrorNode_createWithCString(context, sysbvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a left literal byte array start.");
+
+    size_t startPosition = state->tokenPosition;
+    ++state->tokenPosition;
+
+    sysbvm_tuple_t elements = sysbvm_arrayList_create(context);
+    while(sysbvm_sysmelParser_lookKindAt(state, 0) >= 0
+        && sysbvm_sysmelParser_lookKindAt(state, 0) != SYSBVM_TOKEN_KIND_RBRACKET)
+    {
+        if(sysbvm_sysmelParser_lookKindAt(state, 0) == SYSBVM_TOKEN_KIND_DOT)
+        {
+            ++state->tokenPosition;
+            continue;
+        }
+        else if(sysbvm_sysmelParser_lookKindAt(state, 0) == SYSBVM_TOKEN_KIND_INTEGER)
+        {
+            sysbvm_tuple_t element = sysbvm_sysmelParser_parseLiteralTokenValue(context, state);
+            if(!element)
+                break;
+            sysbvm_arrayList_add(context, elements, element);
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    if(sysbvm_sysmelParser_lookKindAt(state, 0) != SYSBVM_TOKEN_KIND_RBRACKET)
+        return sysbvm_astErrorNode_createWithCString(context, sysbvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a right parent.");
+
+    ++state->tokenPosition;
+    size_t endPosition = state->tokenPosition;
+    return sysbvm_astMakeByteArrayNode_create(context,
+        sysbvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition),
+        sysbvm_arrayList_asArray(context, elements));
 }
 
 static sysbvm_tuple_t sysbvm_sysmelParser_parseLiteralArrayExpression(sysbvm_context_t *context, sysbvm_sysmelParser_state_t *state)
