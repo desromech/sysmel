@@ -482,6 +482,7 @@ static inline size_t computeLookupCacheEntryIndexFor(sysbvm_tuple_t type, sysbvm
 static sysbvm_tuple_t sysbvm_type_lookupSelectorRecursively(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t selector)
 {
     if(!sysbvm_tuple_isNonNullPointer(type)) return SYSBVM_NULL_TUPLE;
+    if(sysbvm_tuple_isDummyValue(type)) return SYSBVM_NULL_TUPLE;
     sysbvm_tuple_t methodDictionary = sysbvm_type_getMethodDictionary(type);
     if(methodDictionary)
     {
@@ -496,6 +497,7 @@ static sysbvm_tuple_t sysbvm_type_lookupSelectorRecursively(sysbvm_context_t *co
 SYSBVM_API sysbvm_tuple_t sysbvm_type_lookupSlot(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t slotName)
 {
     if(!sysbvm_tuple_isNonNullPointer(type)) return SYSBVM_NULL_TUPLE;
+    if(sysbvm_tuple_isDummyValue(type)) return SYSBVM_NULL_TUPLE;
 
     sysbvm_tuple_t slotDictionary = sysbvm_type_getSlotDictionary(type);
     if(slotDictionary)
@@ -511,6 +513,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_lookupSlot(sysbvm_context_t *context, sysb
 SYSBVM_API sysbvm_tuple_t sysbvm_type_lookupSelector(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t selector)
 {
     if(!sysbvm_tuple_isNonNullPointer(type)) return SYSBVM_NULL_TUPLE;
+    if(sysbvm_tuple_isDummyValue(type)) return SYSBVM_NULL_TUPLE;
 
     // FIXME: Make this cache atomic and thread safe.
     size_t cacheEntryIndex = computeLookupCacheEntryIndexFor(type, selector);
@@ -556,6 +559,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_lookupSelectorWithPIC(sysbvm_context_t *co
 SYSBVM_API sysbvm_tuple_t sysbvm_type_lookupFallbackSelector(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t selector)
 {
     if(!sysbvm_tuple_isNonNullPointer(type)) return SYSBVM_NULL_TUPLE;
+    if(sysbvm_tuple_isDummyValue(type)) return SYSBVM_NULL_TUPLE;
     sysbvm_tuple_t methodDictionary = sysbvm_type_getFallbackMethodDictionary(type);
     if(methodDictionary)
     {

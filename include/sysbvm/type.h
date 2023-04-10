@@ -366,6 +366,7 @@ SYSBVM_INLINE bool sysbvm_type_isDirectSubtypeOf(sysbvm_tuple_t type, sysbvm_tup
 {
     if(!sysbvm_tuple_isNonNullPointer(supertype)) return false;
     if(!sysbvm_tuple_isNonNullPointer(type)) return false;
+    if(sysbvm_tuple_isDummyValue(type)) return false;
 
     while(type)
     {
@@ -384,6 +385,7 @@ SYSBVM_INLINE bool sysbvm_type_isDirectSubtypeOf(sysbvm_tuple_t type, sysbvm_tup
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_type_getName(sysbvm_tuple_t type)
 {
     if(!sysbvm_tuple_isNonNullPointer(type)) return SYSBVM_NULL_TUPLE;
+    if(sysbvm_tuple_isDummyValue(type)) return SYSBVM_NULL_TUPLE;
     return ((sysbvm_type_tuple_t*)type)->name;
 }
 
@@ -393,6 +395,7 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_type_getName(sysbvm_tuple_t type)
 SYSBVM_INLINE void sysbvm_type_setName(sysbvm_tuple_t type, sysbvm_tuple_t name)
 {
     if(!sysbvm_tuple_isNonNullPointer(type)) return;
+    if(sysbvm_tuple_isDummyValue(type)) return;
     ((sysbvm_type_tuple_t*)type)->name = name;
 }
 
@@ -402,6 +405,7 @@ SYSBVM_INLINE void sysbvm_type_setName(sysbvm_tuple_t type, sysbvm_tuple_t name)
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_type_getSupertype(sysbvm_tuple_t type)
 {
     if(!sysbvm_tuple_isNonNullPointer(type)) return SYSBVM_NULL_TUPLE;
+    if(sysbvm_tuple_isDummyValue(type)) return SYSBVM_NULL_TUPLE;
     return ((sysbvm_type_tuple_t*)type)->supertype;
 }
 
@@ -411,6 +415,7 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_type_getSupertype(sysbvm_tuple_t type)
 SYSBVM_INLINE void sysbvm_type_setSupertype(sysbvm_tuple_t type, sysbvm_tuple_t supertype)
 {
     if(!sysbvm_tuple_isNonNullPointer(type)) return;
+    if(sysbvm_tuple_isDummyValue(type)) return;
     
     ((sysbvm_type_tuple_t*)type)->supertype = supertype;
 }
@@ -421,6 +426,7 @@ SYSBVM_INLINE void sysbvm_type_setSupertype(sysbvm_tuple_t type, sysbvm_tuple_t 
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_type_getSlots(sysbvm_tuple_t type)
 {
     if(!sysbvm_tuple_isNonNullPointer(type)) return SYSBVM_NULL_TUPLE;
+    if(sysbvm_tuple_isDummyValue(type)) return SYSBVM_NULL_TUPLE;
     return ((sysbvm_type_tuple_t*)type)->slots;
 }
 
@@ -448,7 +454,8 @@ SYSBVM_API void sysbvm_type_setTotalSlotCount(sysbvm_context_t *context, sysbvm_
  */
 SYSBVM_INLINE sysbvm_bitflags_t sysbvm_type_getFlags(sysbvm_tuple_t type)
 {
-    if(!sysbvm_tuple_isNonNullPointer(type)) return SYSBVM_NULL_TUPLE;
+    if(!sysbvm_tuple_isNonNullPointer(type)) return 0;
+    if(sysbvm_tuple_isDummyValue(type)) return 0;
     return sysbvm_tuple_bitflags_decode(((sysbvm_type_tuple_t*)type)->flags);
 }
 
@@ -525,6 +532,7 @@ SYSBVM_INLINE bool sysbvm_type_isReferenceType(sysbvm_tuple_t type)
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_type_getSlotDictionary(sysbvm_tuple_t type)
 {
     if(!sysbvm_tuple_isNonNullPointer(type)) return SYSBVM_NULL_TUPLE;
+    if(sysbvm_tuple_isDummyValue(type)) return SYSBVM_NULL_TUPLE;
     return ((sysbvm_type_tuple_t*)type)->slotDictionary;
 }
 
@@ -534,6 +542,7 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_type_getSlotDictionary(sysbvm_tuple_t type)
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_type_getMacroMethodDictionary(sysbvm_tuple_t type)
 {
     if(!sysbvm_tuple_isNonNullPointer(type)) return SYSBVM_NULL_TUPLE;
+    if(sysbvm_tuple_isDummyValue(type)) return SYSBVM_NULL_TUPLE;
     return ((sysbvm_type_tuple_t*)type)->macroMethodDictionary;
 }
 
@@ -543,6 +552,7 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_type_getMacroMethodDictionary(sysbvm_tuple_t
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_type_getMethodDictionary(sysbvm_tuple_t type)
 {
     if(!sysbvm_tuple_isNonNullPointer(type)) return SYSBVM_NULL_TUPLE;
+    if(sysbvm_tuple_isDummyValue(type)) return SYSBVM_NULL_TUPLE;
     return ((sysbvm_type_tuple_t*)type)->methodDictionary;
 }
 
@@ -552,6 +562,7 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_type_getMethodDictionary(sysbvm_tuple_t type
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_type_getFallbackMethodDictionary(sysbvm_tuple_t type)
 {
     if(!sysbvm_tuple_isNonNullPointer(type)) return SYSBVM_NULL_TUPLE;
+    if(sysbvm_tuple_isDummyValue(type)) return SYSBVM_NULL_TUPLE;
     return ((sysbvm_type_tuple_t*)type)->fallbackMethodDictionary;
 }
 
@@ -561,6 +572,7 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_type_getFallbackMethodDictionary(sysbvm_tupl
 SYSBVM_INLINE void sysbvm_type_setMethodDictionary(sysbvm_tuple_t type, sysbvm_tuple_t methodDictionary)
 {
     if(!sysbvm_tuple_isNonNullPointer(type)) return;
+    if(sysbvm_tuple_isDummyValue(type)) return;
     ((sysbvm_type_tuple_t*)type)->methodDictionary = methodDictionary;
 }
 
