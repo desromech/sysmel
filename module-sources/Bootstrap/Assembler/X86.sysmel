@@ -231,7 +231,7 @@ public final class AsmX86InstructionWithTwoOperands superclass: AsmX86Instructio
 AsmX86InstructionDefinition definition: {
     public method generateStreamBuilderMethod => Void := {
         let selectorBuilder := StringStream new.
-        selectorBuilder nextPutAll: "x86_"; nextPutAll: mnemonic.
+        selectorBuilder nextPutAll: "x86::"; nextPutAll: mnemonic.
         operandNames doWithIndex: {:(Symbol)operandName :(Size)index :: Void |
             if: index ~= 0sz then: (selectorBuilder nextPutAll: operandName).
             selectorBuilder nextPut: ':'
