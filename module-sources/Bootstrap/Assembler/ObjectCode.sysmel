@@ -1,8 +1,10 @@
+public final class AsmObjectCodeSection superclass: Object.
 public abstract class AsmObjectCodeStream superclass: Object.
 public final class AsmObjectCodeSizeStream superclass: AsmObjectCodeStream.
 public final class AsmObjectCodeWriteStream superclass: AsmObjectCodeStream.
+public final class AsmSymbol superclass: Object.
 
-public final class AsmObjectCodeSection superclass: Object; definition: {
+AsmObjectCodeSection definition: {
     public field name => Symbol.
     public field data => ByteArray.
     public field alignment => Size.
@@ -43,6 +45,57 @@ public final class AsmObjectCodeSection superclass: Object; definition: {
         writeOffset := writeOffset + byteCount.
     }.
 
+    public method nextPutInt8: (value: Int8) ::=> Void := {
+        data at: writeOffset put: value asUInt8.
+        writeOffset := writeOffset + 1sz.
+    }.
+
+    public method nextPutUInt16: (value: UInt16) ::=> Void := {
+        data at: writeOffset put: value asUInt8.
+        data at: writeOffset + 1sz put: (value >> 8u16) asUInt8.
+        writeOffset := writeOffset + 2sz.
+    }.
+
+    public method nextPutInt16: (value: Int16) ::=> Void := {
+        self nextPutUInt16: value asUInt16
+    }.
+
+    public method nextPutUInt32: (value: UInt32) ::=> Void := {
+        data at: writeOffset put: value asUInt8.
+        data at: writeOffset + 1sz put: (value >> 8u32) asUInt8.
+        data at: writeOffset + 2sz put: (value >> 16u32) asUInt8.
+        data at: writeOffset + 3sz put: (value >> 24u32) asUInt8.
+        writeOffset := writeOffset + 4sz.
+    }.
+
+    public method nextPutInt32: (value: Int32) ::=> Void := {
+        self nextPutUInt32: value asUInt32
+    }.
+
+    public method nextPutUInt64: (value: UInt64) ::=> Void := {
+        data at: writeOffset put: value asUInt8.
+        data at: writeOffset + 1sz put: (value >> 8u64) asUInt8.
+        data at: writeOffset + 2sz put: (value >> 16u64) asUInt8.
+        data at: writeOffset + 3sz put: (value >> 24u64) asUInt8.
+        data at: writeOffset + 4sz put: (value >> 32u64) asUInt8.
+        data at: writeOffset + 5sz put: (value >> 40u64) asUInt8.
+        data at: writeOffset + 6sz put: (value >> 48u64) asUInt8.
+        data at: writeOffset + 7sz put: (value >> 56u64) asUInt8.
+        writeOffset := writeOffset + 8sz.
+    }.
+
+    public method nextPutInt64: (value: Int64) ::=> Void := {
+        self nextPutUInt64: value asUInt64
+    }.
+
+    public method nextPutFloat32: (value: Float32) ::=> Void := {
+        self nextPutUInt32: value asIEEEFloat32Encoding
+    }.
+
+    public method nextPutFloat64: (value: Float64) ::=> Void := {
+        self nextPutUInt64: value asIEEEFloat64Encoding
+    }.
+
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream
             nextPutAll: "section: "; print: name;
@@ -59,10 +112,37 @@ public final class AsmObjectCodeSection superclass: Object; definition: {
 
 public final class AsmObjectCode superclass: Object; definition: {
     public field sections => Array.
+    public field symbols => Array.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         sections do: {:(AsmObjectCodeSection)each :: Void |
             stream fullPrint: each
+        }.
+        symbols do: {:(AsmSymbol)each :: Void |
+            stream fullPrint: each
+        }.
+    }.
+}.
+
+AsmSymbol definition: {
+    public field name => Symbol.
+    public field section => AsmObjectCodeSection.
+    public field value => UInt64.
+    public field endValue => UInt64.
+
+    public method makePublic => Void := {
+
+    }.
+
+    public method makeFunction => Void := {
+
+    }.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        name ifNotNil: {
+            stream nextPutAll: name.
+        } ifNil: {
+            stream nextPutAll: "anon".
         }
     }.
 }.
@@ -70,10 +150,12 @@ public final class AsmObjectCode superclass: Object; definition: {
 public final class AsmObjectCodeBuilder superclass: Object; definition: {
     public field sections => ArrayList.
     public field sectionNameTable => Dictionary.
+    public field symbols => ArrayList.
 
     public method initialize => Void := {
         sections := ArrayList new.
         sectionNameTable := Dictionary new.
+        symbols := ArrayList new.
     }.
 
     public method getOrCreateSectionNamed: (name: Symbol) ::=> AsmObjectCodeSection
@@ -88,6 +170,7 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
     public method finish => AsmObjectCode 
         := AsmObjectCode new
             sections: sections asArray;
+            symbols: symbols asArray;
             yourself.
 
     public method newSizeStream => AsmObjectCodeSizeStream
@@ -114,16 +197,49 @@ AsmObjectCodeStream definition: {
     public abstract method alignTo: (requiredAlignment: Size) ::=> Void
         := self subclassResponsibility.
 
-    public abstract method nextPut: (value: UInt8) ::=> Void
-        := self subclassResponsibility.
-
     public method enterSectionNamed: (name: Symbol) ::=> Void := {
         activeSection := objectCodeBuilder getOrCreateSectionNamed: name
     }.
 
+    public abstract method nextPut: (value: UInt8) ::=> Void
+        := self subclassResponsibility.
+
     public method nextPutAll: (bytes: ByteArray) ::=> Void := {
         bytes do: {:(UInt8)each :: Void | self nextPut: each}
     }.
+
+    public abstract method nextPutInt8: (value: Int8) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method nextPutUInt16: (value: UInt16) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method nextPutInt16: (value: Int16) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method nextPutUInt32: (value: UInt32) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method nextPutInt32: (value: Int32) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method nextPutUInt64: (value: UInt64) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method nextPutInt64: (value: Int64) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method nextPutFloat32: (value: Float32) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method nextPutFloat64: (value: Float64) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method recordSymbol: (symbol: AsmSymbol) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method recordSymbolEnd: (symbol: AsmSymbol) ::=> Void
+        := self subclassResponsibility.
 }.
 
 AsmObjectCodeSizeStream definition: {
@@ -138,6 +254,52 @@ AsmObjectCodeSizeStream definition: {
     public override method nextPutAll: (bytes: ByteArray) ::=> Void := {
         activeSection increaseSizeBy: bytes size
     }.
+
+    public override method nextPutInt8: (value: Int8) ::=> Void := {
+        activeSection increaseSizeBy: 1sz
+    }.
+
+    public override method nextPutUInt16: (value: UInt16) ::=> Void := {
+        activeSection increaseSizeBy: 2sz
+    }.
+
+    public override method nextPutInt16: (value: Int16) ::=> Void := {
+        activeSection increaseSizeBy: 2sz
+    }.
+
+    public override method nextPutUInt32: (value: UInt32) ::=> Void := {
+        activeSection increaseSizeBy: 4sz
+    }.
+
+    public override method nextPutInt32: (value: Int32) ::=> Void := {
+        activeSection increaseSizeBy: 4sz
+    }.
+
+    public override method nextPutUInt64: (value: UInt64) ::=> Void := {
+        activeSection increaseSizeBy: 8sz
+    }.
+
+    public override method nextPutInt64: (value: Int64) ::=> Void := {
+        activeSection increaseSizeBy: 8sz
+    }.
+
+    public override method nextPutFloat32: (value: Float32) ::=> Void := {
+        activeSection increaseSizeBy: 4sz
+    }.
+
+    public override method nextPutFloat64: (value: Float64) ::=> Void := {
+        activeSection increaseSizeBy: 8sz
+    }.
+
+    public override method recordSymbol: (symbol: AsmSymbol) ::=> Void := {
+        symbol
+            section: activeSection;
+            value: activeSection size asUInt64.
+    }.
+
+    public override method recordSymbolEnd: (symbol: AsmSymbol) ::=> Void := {
+        symbol endValue: activeSection size asUInt64.
+    }.
 }.
 
 AsmObjectCodeWriteStream definition: {
@@ -149,7 +311,50 @@ AsmObjectCodeWriteStream definition: {
         activeSection nextPut: value
     }.
 
+    public override method nextPutInt8: (value: Int8) ::=> Void := {
+        activeSection nextPutInt8: value
+    }.
+
+    public override method nextPutUInt16: (value: UInt16) ::=> Void := {
+        activeSection nextPutUInt16: value
+    }.
+
+    public override method nextPutInt16: (value: Int16) ::=> Void := {
+        activeSection nextPutInt16: value
+    }.
+
+    public override method nextPutUInt32: (value: UInt32) ::=> Void := {
+        activeSection nextPutUInt32: value
+    }.
+
+    public override method nextPutInt32: (value: Int32) ::=> Void := {
+        activeSection nextPutInt32: value
+    }.
+
+    public override method nextPutUInt64: (value: UInt64) ::=> Void := {
+        activeSection nextPutUInt64: value
+    }.
+
+    public override method nextPutInt64: (value: Int64) ::=> Void := {
+        activeSection nextPutInt64: value
+    }.
+
+    public override method nextPutFloat32: (value: Float32) ::=> Void := {
+        activeSection nextPutFloat32: value
+    }.
+
+    public override method nextPutFloat64: (value: Float64) ::=> Void := {
+        activeSection nextPutFloat64: value
+    }.
+
     public override method nextPutAll: (bytes: ByteArray) ::=> Void := {
         activeSection nextPutAll: bytes
     }.
+
+    public abstract method recordSymbol: (symbol: AsmSymbol) ::=> Void
+        := void.
+
+    public abstract method recordSymbolEnd: (symbol: AsmSymbol) ::=> Void
+        := void.
+
 }.

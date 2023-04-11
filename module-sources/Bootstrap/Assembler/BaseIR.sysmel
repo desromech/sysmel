@@ -7,7 +7,6 @@ public class AsmStreamElement superclass: Object; definition: {
     public field previous => AsmStreamElement.
     public field next => AsmStreamElement.
 
-    public field streamElementIndex => Size.
     public field position => Size.
     ##public field section => Size.
 
@@ -17,7 +16,6 @@ public class AsmStreamElement superclass: Object; definition: {
     public field debugSourceEnvironment => Environment.
 
     public method initialize => Void := {
-        streamElementIndex := 0sz.
         position := 0sz
     }.
 
@@ -88,14 +86,6 @@ public final class AsmStream superclass: Object; definition: {
         }
     }.
 
-    public method enumerateElements ::=> Void := {
-        let index mutable := 0sz.
-        self elementsDo: {:(AsmStreamElement)each :: Void |
-            each streamElementIndex: index.
-            index := index + 1sz.
-        }.
-    }.
-
     public method selectElementsEncodingAlternatives ::=> Void := {
         self elementsDo: {:(AsmStreamElement)each :: Void |
             each selectEncodingAlternatives.
@@ -112,7 +102,6 @@ public final class AsmStream superclass: Object; definition: {
     public method assemble => AsmObjectCode := {
         let objectCodeBuilder := AsmObjectCodeBuilder new.
         self
-            enumerateElements;
             selectElementsEncodingAlternatives.
 
         ## Compute sizes.
@@ -146,37 +135,30 @@ public final class AsmAlignDirective superclass: AsmStreamElement; definition: {
 }.
 
 public final class AsmLabel superclass: AsmStreamElement; definition: {
-    public field name => Symbol.
+    public field symbol => AsmSymbol.
 
     public override method isFormattedWithIndentation => Boolean := false.
 
-    public method printOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: "label_"; print: streamElementIndex.
-        name ifNotNil: {
-            stream nextPut: '_'; nextPutAll: name
-        }.
-    }.
-
     public method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream print: self; nextPut: ':'.
+        stream print: symbol; nextPut: ':'.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
-        ## TODO: Record the label.
+        stream recordSymbol: symbol
     }.
 }.
 
 public final class AsmLabelEnd superclass: AsmStreamElement; definition: {
-    public field label => AsmLabel.
+    public field symbol => AsmSymbol.
 
     public override method isFormattedWithIndentation => Boolean := false.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: "/* "; print: label; nextPutAll: " end */".
+        stream nextPutAll: "/* "; print: symbol; nextPutAll: " end */".
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
-        ## TODO: Record the label.
+        stream recordSymbolEnd: symbol
     }.
 }.
 
@@ -200,6 +182,10 @@ public final class AsmByteDirective superclass: AsmStreamElement; definition: {
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".byte "; print: value.
     }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPut: value
+    }.
 }.
 
 public final class AsmSByteDirective superclass: AsmStreamElement; definition: {
@@ -207,6 +193,9 @@ public final class AsmSByteDirective superclass: AsmStreamElement; definition: {
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".byte "; print: value.
+    }.
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutInt8: value
     }.
 }.
 
@@ -216,6 +205,10 @@ public final class AsmWordDirective superclass: AsmStreamElement; definition: {
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".word "; print: value.
     }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutUInt16: value
+    }.
 }.
 
 public final class AsmSWordDirective superclass: AsmStreamElement; definition: {
@@ -223,6 +216,10 @@ public final class AsmSWordDirective superclass: AsmStreamElement; definition: {
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".word "; print: value.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutInt16: value
     }.
 }.
 
@@ -232,6 +229,10 @@ public final class AsmDWordDirective superclass: AsmStreamElement; definition: {
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".word "; print: value.
     }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutUInt32: value
+    }.
 }.
 
 public final class AsmSDWordDirective superclass: AsmStreamElement; definition: {
@@ -239,6 +240,10 @@ public final class AsmSDWordDirective superclass: AsmStreamElement; definition: 
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".dword "; print: value.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutInt32: value
     }.
 }.
 
@@ -248,6 +253,10 @@ public final class AsmQWordDirective superclass: AsmStreamElement; definition: {
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".word "; print: value.
     }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutUInt64: value
+    }.
 }.
 
 public final class AsmSQWordDirective superclass: AsmStreamElement; definition: {
@@ -255,6 +264,10 @@ public final class AsmSQWordDirective superclass: AsmStreamElement; definition: 
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".qword "; print: value.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutInt64: value
     }.
 }.
 
@@ -264,6 +277,10 @@ public final class AsmFloatDirective superclass: AsmStreamElement; definition: {
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".float "; print: value.
     }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutFloat32: value
+    }.
 }.
 
 public final class AsmDoubleDirective superclass: AsmStreamElement; definition: {
@@ -271,6 +288,10 @@ public final class AsmDoubleDirective superclass: AsmStreamElement; definition: 
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".double "; print: value.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutFloat64: value
     }.
 }.
 
@@ -292,25 +313,30 @@ public final class AsmStreamBuilder superclass: Object; definition: {
             yourself
     }.
 
-    public method label: (name: Symbol) ::=> AsmLabel
+    public method label: (symbol: AsmSymbol) ::=> AsmLabel
         := self addElement: (AsmLabel new
-            name: name;
+            symbol: symbol;
             yourself).
 
     public method label ::=> AsmLabel
         := self label: nil.
 
-    public method endLabel: (label: AsmLabel) ::=> AsmLabelEnd
+    public method endLabel: (symbol: AsmSymbol) ::=> AsmLabelEnd
         := self addElement: (AsmLabelEnd new
-            label: label;
+            symbol: symbol;
             yourself).
 
-    public method blockNamed: (name: Symbol) with: (aBlock: (AsmStreamBuilder => Void)) ::=> AsmLabel := {
-        let label := self label: name.
+    public method blockNamed: (symbol: AsmSymbol) with: (aBlock: (AsmStreamBuilder => Void)) ::=> AsmLabel := {
+        let label := self label: symbol.
         aBlock(self).
-        self endLabel: label.
+        self endLabel: symbol.
         label
     }.
+
+    public method symbolNamed: (name: Symbol) ::=> AsmSymbol
+        := AsmSymbol new
+            name: name;
+            yourself.
 
     public method align: (alignment: Size) ::=> AsmAlignDirective
         := self addElement: (AsmAlignDirective new

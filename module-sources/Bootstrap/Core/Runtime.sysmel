@@ -1736,7 +1736,29 @@ SimpleFunctionType
     SelfType
         withSelector: #printOn: addMethod: {:(SelfType)self :(Stream)stream :: Void |
             stream nextPutAll: self printString
-        } makeFinal recompileAndOptimize
+        } makeFinal recompileAndOptimize.
+
+    let: #setConversionTypeFunction with: {:method :targetType :: Void |
+        if: method ~~ nil then: (method __type__: (SelfType => targetType))
+    }.
+
+    setConversionTypeFunction((SelfType >> #asChar8), Char8).
+    setConversionTypeFunction((SelfType >> #asUInt8), UInt8).
+    setConversionTypeFunction((SelfType >> #asInt8), Int8).
+
+    setConversionTypeFunction((SelfType >> #asChar16), Char16).
+    setConversionTypeFunction((SelfType >> #asUInt16), UInt16).
+    setConversionTypeFunction((SelfType >> #asInt16), Int16).
+
+    setConversionTypeFunction((SelfType >> #asChar32), Char32).
+    setConversionTypeFunction((SelfType >> #asUInt32), UInt32).
+    setConversionTypeFunction((SelfType >> #asInt32), Int32).
+
+    setConversionTypeFunction((SelfType >> #asUInt64), UInt64).
+    setConversionTypeFunction((SelfType >> #asInt64), Int64).
+
+    setConversionTypeFunction((SelfType >> #asFloat32), Float32).
+    setConversionTypeFunction((SelfType >> #asFloat64), Float64).
 }.
 
 (Integer >> #i8) __type__: (Integer => Int8).
@@ -1754,7 +1776,10 @@ SimpleFunctionType
 ##(Integer >> #f64) __type__: (Integer => Float64).
 
 (Float32 >> #sqrt) __type__: (Float32 => Float32).
+(Float32 >> #asIEEEFloat32Encoding) __type__: (Float32 => UInt32).
+
 (Float64 >> #sqrt) __type__: (Float32 => Float32).
+(Float64 >> #asIEEEFloat64Encoding) __type__: (Float64 => UInt64).
 
 
 Function

@@ -2,7 +2,7 @@ let code := (AsmStream buildWith: {:builder |
     builder
         textSection;
         align: 16sz;
-        blockNamed: #main with: {:builder |
+        blockNamed: ((builder symbolNamed: #main) makeFunction; makePublic; yourself) with: {:builder |
             builder
                 x86_ret
         }.
