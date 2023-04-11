@@ -1,13 +1,19 @@
+public abstract class AsmObjectCodeStream superclass: Object.
+public final class AsmObjectCodeSizeStream superclass: AsmObjectCodeStream.
+public final class AsmObjectCodeWriteStream superclass: AsmObjectCodeStream.
+
 public final class AsmObjectCodeSection superclass: Object; definition: {
     public field name => Symbol.
     public field data => ByteArray.
     public field alignment => Size.
     public field size => Size.
+    public field writeOffset => Size.
 
     public method initialize => Void := {
         data := #[].
         size := 0sz.
         alignment := 1sz.
+        writeOffset := 0sz.
     }.
 
     public method increaseSizeBy: (extraSize: Size) ::=> Void := {
@@ -18,9 +24,50 @@ public final class AsmObjectCodeSection superclass: Object; definition: {
         alignment := alignment max: requiredAlignment.
         size := size alignedTo: requiredAlignment.
     }.
+
+    public method alignWriteOffsetTo: (requiredAlignment: Size) ::=> Void := {
+        writeOffset := writeOffset alignedTo: requiredAlignment.
+    }.
+
+    public method nextPut: (value: UInt8) ::=> Void := {
+        data at: writeOffset put: value.
+        writeOffset := writeOffset + 1sz.
+    }.
+
+    public method nextPutAll: (bytes: ByteArray) ::=> Void := {
+        let i mutable := 0sz.
+        let byteCount := bytes size.
+        while: i < byteCount do: (
+            data at: writeOffset + i put: (bytes at: i)
+        ) continueWith: (i := i + 1sz).
+        writeOffset := writeOffset + byteCount.
+    }.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream
+            nextPutAll: "section: "; print: name;
+            nextPutAll: " size: "; print: size;
+            nextPutAll: " alignment: "; print: alignment;
+            nextPutAll: " data: "; print: data.
+    }.
+
+    public method allocateMemoryForWriting => Void := {
+        data := ByteArray new: size.
+        writeOffset := 0sz.
+    }.
 }.
 
-public class AsmObjectCodeBuilder superclass: Object; definition: {
+public final class AsmObjectCode superclass: Object; definition: {
+    public field sections => Array.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        sections do: {:(AsmObjectCodeSection)each :: Void |
+            stream fullPrint: each
+        }
+    }.
+}.
+
+public final class AsmObjectCodeBuilder superclass: Object; definition: {
     public field sections => ArrayList.
     public field sectionNameTable => Dictionary.
 
@@ -31,13 +78,36 @@ public class AsmObjectCodeBuilder superclass: Object; definition: {
 
     public method getOrCreateSectionNamed: (name: Symbol) ::=> AsmObjectCodeSection
         := sectionNameTable at: name ifAbsentPut: {:: AsmObjectCodeSection |
-            AsmObjectCodeSection new
+            let newSection := AsmObjectCodeSection new
                 name: name;
-                yourself
+                yourself.
+            sections add: newSection.
+            newSection
+        }.
+
+    public method finish => AsmObjectCode 
+        := AsmObjectCode new
+            sections: sections asArray;
+            yourself.
+
+    public method newSizeStream => AsmObjectCodeSizeStream
+        := AsmObjectCodeSizeStream new
+            objectCodeBuilder: self;
+            yourself.
+
+    public method allocateMemoryForWriting => Void := {
+        sections do: {:(AsmObjectCodeSection)each :: Void |
+            each allocateMemoryForWriting
         }
+    }.
+
+    public method newWriteStream => AsmObjectCodeWriteStream
+        := AsmObjectCodeWriteStream new
+            objectCodeBuilder: self;
+            yourself.
 }.
 
-public abstract class AsmObjectCodeStream superclass: Object; definition: {
+AsmObjectCodeStream definition: {
     public field objectCodeBuilder => AsmObjectCodeBuilder.
     public field activeSection => AsmObjectCodeSection.
 
@@ -47,12 +117,16 @@ public abstract class AsmObjectCodeStream superclass: Object; definition: {
     public abstract method nextPut: (value: UInt8) ::=> Void
         := self subclassResponsibility.
 
+    public method enterSectionNamed: (name: Symbol) ::=> Void := {
+        activeSection := objectCodeBuilder getOrCreateSectionNamed: name
+    }.
+
     public method nextPutAll: (bytes: ByteArray) ::=> Void := {
         bytes do: {:(UInt8)each :: Void | self nextPut: each}
     }.
 }.
 
-public final class AsmObjectCodeSizeStream superclass: AsmObjectCodeStream; definition: {
+AsmObjectCodeSizeStream definition: {
     public override method alignTo: (requiredAlignment: Size) ::=> Void := {
         activeSection alignSizeTo: requiredAlignment.
     }.
@@ -66,5 +140,16 @@ public final class AsmObjectCodeSizeStream superclass: AsmObjectCodeStream; defi
     }.
 }.
 
-public final class AsmObjectCodeWriteStream superclass: AsmObjectCodeStream; definition: {
+AsmObjectCodeWriteStream definition: {
+    public override method alignTo: (requiredAlignment: Size) ::=> Void := {
+        activeSection alignWriteOffsetTo: requiredAlignment.
+    }.
+
+    public override method nextPut: (value: UInt8) ::=> Void := {
+        activeSection nextPut: value
+    }.
+
+    public override method nextPutAll: (bytes: ByteArray) ::=> Void := {
+        activeSection nextPutAll: bytes
+    }.
 }.

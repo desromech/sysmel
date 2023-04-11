@@ -9,3 +9,4 @@ let code := (AsmStream buildWith: {:builder |
 }).
 
 printLine(code fullPrintString).
+printLine(code assemble fullPrintString).

@@ -21,10 +21,14 @@ public class AsmStreamElement superclass: Object; definition: {
         position := 0sz
     }.
 
-    public method isFormattedWithIndentation => Boolean := true.
+    public virtual method isFormattedWithIndentation => Boolean := true.
 
     public abstract method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void
         := self subclassResponsibility.
+
+    public virtual method selectEncodingAlternatives => Void := {
+        ## By default do nothing
+    }.
 }.
 
 public final class AsmStream superclass: Object; definition: {
@@ -92,11 +96,38 @@ public final class AsmStream superclass: Object; definition: {
         }.
     }.
 
+    public method selectElementsEncodingAlternatives ::=> Void := {
+        self elementsDo: {:(AsmStreamElement)each :: Void |
+            each selectEncodingAlternatives.
+        }.
+    }.
+
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         self elementsDo: {:(AsmStreamElement)each :: Void |
             each isFormattedWithIndentation ifTrue: (stream nextPutAll: "    ").
             stream fullPrint: each; nl
         }
+    }.
+
+    public method assemble => AsmObjectCode := {
+        let objectCodeBuilder := AsmObjectCodeBuilder new.
+        self
+            enumerateElements;
+            selectElementsEncodingAlternatives.
+
+        ## Compute sizes.
+        let sizeStream := objectCodeBuilder newSizeStream.
+        self elementsDo: {:(AsmStreamElement)each :: Void |
+            each writeOnObjectCodeStream: sizeStream.
+        }.
+
+        objectCodeBuilder allocateMemoryForWriting.
+        let writeStream := objectCodeBuilder newWriteStream.
+        self elementsDo: {:(AsmStreamElement)each :: Void |
+            each writeOnObjectCodeStream: writeStream.
+        }.
+
+        objectCodeBuilder finish
     }.
 }.
 
@@ -107,6 +138,10 @@ public final class AsmAlignDirective superclass: AsmStreamElement; definition: {
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".align "; print: alignment
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream alignTo: alignment
     }.
 }.
 
@@ -125,6 +160,10 @@ public final class AsmLabel superclass: AsmStreamElement; definition: {
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPut: ':'.
     }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        ## TODO: Record the label.
+    }.
 }.
 
 public final class AsmLabelEnd superclass: AsmStreamElement; definition: {
@@ -135,6 +174,10 @@ public final class AsmLabelEnd superclass: AsmStreamElement; definition: {
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "/* "; print: label; nextPutAll: " end */".
     }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        ## TODO: Record the label.
+    }.
 }.
 
 public final class AsmSectionDirective superclass: AsmStreamElement; definition: {
@@ -144,6 +187,10 @@ public final class AsmSectionDirective superclass: AsmStreamElement; definition:
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".section "; nextPutAll: name.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream enterSectionNamed: name
     }.
 }.
 

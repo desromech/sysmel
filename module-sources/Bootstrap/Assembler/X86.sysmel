@@ -1,11 +1,48 @@
+public class AsmX86Instruction superclass: AsmStreamElement.
+
 public final class AsmX86InstructionDefinition superclass: Object; definition: {
     public field mnemonic => Symbol.
     public field operandNames => Array.
     public field description => String.
+    public field alternatives => Array.
 }.
 
-public class AsmX86Instruction superclass: AsmStreamElement; definition: {
+public final class AsmX86InstructionTemplate superclass: Object; definition: {
+    public field when => ((AsmX86InstructionTemplate, AsmX86Instruction) => Boolean).
+    public field whenIfShortDistance => ((AsmX86InstructionTemplate, AsmX86Instruction) => Boolean).
+    public field writeWith => ((AsmX86InstructionTemplate, AsmX86Instruction, AsmObjectCodeStream) => Void).
+
+    public field mandatoryPrefix => ByteArray.
+    public field opcode => ByteArray.
+    public field registerOpcode => UInt8.
+
+    public method initialize => Void := {
+        mandatoryPrefix := #[].
+        opcode := #[].
+        registerOpcode := 0u8.
+    }.
+
+    public method parseDescription: (description: Array) ::=> Void := {
+        mandatoryPrefix := description second.
+        opcode := description third.
+        description size >= 4sz ifTrue: (registerOpcode := description fourth asUInt8).
+    }.
+
+    public method canWriteInstruction: (instruction: AsmX86Instruction) ::=> Boolean
+        := when(self, instruction).
+
+    public method canWriteInstructionIfShort: (instruction: AsmX86Instruction) ::=> Boolean
+        := (whenIfShortDistance ~~ nil) && whenIfShortDistance(self, instruction).
+
+    public method writeInstruction: (instruction: AsmX86Instruction) onObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void
+        := writeWith(self, instruction, stream).
+}.
+
+AsmX86Instruction definition: {
     public field definition => AsmX86InstructionDefinition.
+    public field activeAlternative => AsmX86InstructionTemplate.
+    public field longAlternative => AsmX86InstructionTemplate.
+    public field shortAlternative => AsmX86InstructionTemplate.
 
     public abstract method operandCount => Size
         := self subclassResponsibility.
@@ -15,6 +52,25 @@ public class AsmX86Instruction superclass: AsmStreamElement; definition: {
 
     public abstract method secondOperand => AsmInstructionOperand
         := self error: "Operand not present.".
+
+    public override method selectEncodingAlternatives => Void := {
+        definition alternatives do: {:(AsmX86InstructionTemplate)eachAlternative :: Void |
+            shortAlternative isNil && (eachAlternative canWriteInstructionIfShort: self) ifTrue: {
+                shortAlternative := eachAlternative.
+            }.
+            longAlternative isNil && (eachAlternative canWriteInstruction: self) ifTrue: {
+                longAlternative := eachAlternative.
+            }.
+        }.
+
+        activeAlternative := longAlternative.
+        ## TODO: Add support for the different spanning options.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        self assert: activeAlternative isNotNil.
+        activeAlternative writeInstruction: self onObjectCodeStream: stream
+    }.
 }.
 
 public final class AsmX86InstructionWithoutOperands superclass: AsmX86Instruction; definition: {
@@ -39,27 +95,6 @@ public final class AsmX86InstructionWithTwoOperands superclass: AsmX86Instructio
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: definition mnemonic; space; print: firstOperand; space; print: secondOperand.
-    }.
-}.
-
-public final class AsmX86InstructionTemplate superclass: Object; definition: {
-    public field when => ((AsmX86InstructionTemplate, AsmX86Instruction) => Boolean).
-    public field writeWith => ((AsmX86InstructionTemplate, AsmX86Instruction, AsmObjectCodeStream) => Void).
-
-    public field mandatoryPrefix => ByteArray.
-    public field opcode => ByteArray.
-    public field registerOpcode => UInt8.
-
-    public method initialize => Void := {
-        mandatoryPrefix := #[].
-        opcode := #[].
-        registerOpcode := 0u8.
-    }.
-
-    public method parseDescription: (description: Array) ::=> Void := {
-        mandatoryPrefix := description second.
-        opcode := description third.
-        description size >= 4sz ifTrue: (registerOpcode := description fourth asUInt8).
     }.
 }.
 
@@ -109,10 +144,10 @@ AsmX86InstructionDefinition definition: {
 
 let instructionTemplateTable := #{
     Op: (AsmX86InstructionTemplate new
-        when: {:templ :instruction :: Boolean | 
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
             instruction operandCount = 0sz
         };
-        writeWith: {:templ :instruction :stream :: Void |
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
             stream nextPutAll: templ mandatoryPrefix; nextPutAll: templ opcode.
         };
         yourself).
@@ -167,6 +202,7 @@ instructionDefinitionTable do: {:instructionDescription :: Void |
         mnemonic: mnemonic;
         operandNames: operandNames;
         description: description;
+        alternatives: parsedAlternatives;
         yourself.
 
     definition generateStreamBuilderMethod.
