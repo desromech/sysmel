@@ -194,6 +194,9 @@ AsmObjectCodeStream definition: {
     public field objectCodeBuilder => AsmObjectCodeBuilder.
     public field activeSection => AsmObjectCodeSection.
 
+    public field isInX86LongMode => Boolean
+        := true.
+
     public abstract method alignTo: (requiredAlignment: Size) ::=> Void
         := self subclassResponsibility.
 
@@ -356,5 +359,4 @@ AsmObjectCodeWriteStream definition: {
 
     public abstract method recordSymbolEnd: (symbol: AsmSymbol) ::=> Void
         := void.
-
 }.

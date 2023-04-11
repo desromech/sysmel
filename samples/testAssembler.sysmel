@@ -4,6 +4,12 @@ let code := (AsmStream buildWith: {:builder |
         align: 16sz;
         blockNamed: ((builder symbolNamed: #main) makeFunction; makePublic; yourself) with: {:builder |
             builder
+                x86_endbr64;
+                x86_push: X86::RBP;
+                x86_mov: X86::RBP src: X86::RSP;
+
+                x86_pop: X86::RBP;
+                x86_mov: X86::RSP src: X86::RBP;
                 x86_ret
         }.
 }).

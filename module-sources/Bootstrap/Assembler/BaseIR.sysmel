@@ -29,6 +29,18 @@ public class AsmStreamElement superclass: Object; definition: {
     }.
 }.
 
+AsmInstructionOperand definition: {
+    public method isRegister => Boolean := false.
+    public method isRegisterOrRegisterAddress => Boolean := false.
+
+    public abstract method size => Size := self subclassResponsibility.
+}.
+
+public class AsmRegister superclass: AsmInstructionOperand; definition: {
+    public method isRegister => Boolean := true.
+    public method isRegisterOrRegisterAddress => Boolean := true.
+}.
+
 public final class AsmStream superclass: Object; definition: {
     public field firstElement => AsmStreamElement.
     public field lastElement => AsmStreamElement.

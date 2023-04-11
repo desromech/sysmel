@@ -1,5 +1,74 @@
 public class AsmX86Instruction superclass: AsmStreamElement.
 
+AsmInstructionOperand extend: {
+    public virtual method isX86WordRegister => Boolean := false.
+}.
+
+public class AsmX86Register superclass: AsmRegister; definition: {
+    public field name => Symbol.
+    public field value => UInt8.
+
+    __Meta__ definition: {
+        public method name: (name: Symbol) value: (value: UInt8) ::=> self
+            := self new name: name; value: value; yourself.
+
+    }.
+
+    public method initialize => Void := {
+        value := 0u8
+    }.
+
+    public method valueLow => UInt8
+        := value & 7u8.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: name
+    }.
+}.
+
+public class AsmX86IntRegister superclass: AsmX86Register; definition: {
+    public override method isX86WordRegister => Boolean := true.
+}.
+
+public class AsmX86Int8Register superclass: AsmX86IntRegister; definition: {
+    public override method isX86WordRegister => Boolean := false.
+
+    public override method size => Size := 1sz.
+}.
+
+public class AsmX86Int16Register superclass: AsmX86IntRegister; definition: {
+    public override method size => Size := 2sz.
+}.
+
+public class AsmX86Int32Register superclass: AsmX86IntRegister; definition: {
+    public override method size => Size := 4sz.
+}.
+
+public class AsmX86Int64Register superclass: AsmX86IntRegister; definition: {
+    public override method size => Size := 8sz.
+}.
+
+public class AsmX86VectorRegister superclass: AsmX86IntRegister; definition: {
+    public override method size => Size := 16sz.
+}.
+
+public global X86::RAX := AsmX86Int64Register name: #RAX value: 0u8.
+public global X86::RCX := AsmX86Int64Register name: #RCX value: 1u8.
+public global X86::RDX := AsmX86Int64Register name: #RDX value: 2u8.
+public global X86::RBX := AsmX86Int64Register name: #RBX value: 3u8.
+public global X86::RSP := AsmX86Int64Register name: #RSP value: 4u8.
+public global X86::RBP := AsmX86Int64Register name: #RBP value: 5u8.
+public global X86::RSI := AsmX86Int64Register name: #RSI value: 6u8.
+public global X86::RDI := AsmX86Int64Register name: #RDI value: 7u8.
+public global X86::R8 := AsmX86Int64Register name: #R8 value: 8u8.
+public global X86::R9 := AsmX86Int64Register name: #R9 value: 9u8.
+public global X86::R10 := AsmX86Int64Register name: #R10 value: 10u8.
+public global X86::R11 := AsmX86Int64Register name: #R11 value: 11u8.
+public global X86::R12 := AsmX86Int64Register name: #R12 value: 12u8.
+public global X86::R13 := AsmX86Int64Register name: #R13 value: 13u8.
+public global X86::R14 := AsmX86Int64Register name: #R14 value: 14u8.
+public global X86::R15 := AsmX86Int64Register name: #R15 value: 15u8.
+
 public final class AsmX86InstructionDefinition superclass: Object; definition: {
     public field mnemonic => Symbol.
     public field operandNames => Array.
@@ -36,6 +105,63 @@ public final class AsmX86InstructionTemplate superclass: Object; definition: {
 
     public method writeInstruction: (instruction: AsmX86Instruction) onObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void
         := writeWith(self, instruction, stream).
+}.
+
+AsmObjectCodeStream definition: {
+    public method nextPutX86RexSize: (operandSize: Size) rm: (rm: AsmInstructionOperand) reg: (reg: AsmInstructionOperand) ::=> Void := {
+        #*
+        | wbit rbit xbit bbit lowBits |
+        wbit := (size = 8) asBit.
+        rbit := 0.
+        xbit := 0.
+        bbit := 0.
+        first isRegisterOrRegisterAddress  ifTrue: [ 
+            first isRegister ifTrue: [
+                bbit := first isHighRegister asBit
+            ] ifFalse: [
+                bbit := (first base isNotNil and: [ first base isHighRegister ]) asBit.
+                xbit := (first index isNotNil and: [ first index isHighRegister ]) asBit.
+            ]
+        ].
+
+        (second isInteger not and: [ second isRegister ]) ifTrue: [
+            rbit := second isHighRegister asBit.
+        ].
+
+        lowBits := (wbit << 3) | (rbit << 2) | (xbit << 1) | (bbit).
+        lowBits ~= 0 ifTrue: [ 
+            self assert: writer isLongMode.
+            writer nextPutC8: 16r40 | lowBits
+        ]
+        *#
+    }.
+
+    public method nextPutX86RexRM: (rm: AsmInstructionOperand) ::=> Void := {
+        #*
+        | bbit xbit lowBits |
+        rm isRegister ifTrue: [ 
+            bbit := rm isHighRegister asBit.
+            xbit := 0.
+        ] ifFalse: [ 
+            bbit := (rm base isNotNil and: [ rm base isHighRegister ]) asBit.
+            xbit := (rm index isNotNil and: [ rm index isHighRegister ]) asBit.
+        ].
+        lowBits := (xbit << 1) | (bbit).
+        
+        lowBits ~= 0 ifTrue: [ 
+            self assert: writer isLongMode.
+            writer nextPutC8: 16r40 | lowBits
+        ]
+        *#
+    }.
+
+    public method nextPutX86Opcode: (opcode: UInt8) plusRegister: (register: AsmX86Register) ::=> Void := {
+        self nextPut: opcode + register valueLow
+    }.
+
+    public method nextPutX86ModRM: (rm: AsmInstructionOperand) reg: (register: AsmInstructionOperand) ::=> Void := {
+
+    }.
 }.
 
 AsmX86Instruction definition: {
@@ -84,6 +210,8 @@ public final class AsmX86InstructionWithoutOperands superclass: AsmX86Instructio
 public final class AsmX86InstructionWithSingleOperand superclass: AsmX86Instruction; definition: {
     public field firstOperand => AsmInstructionOperand.
 
+    public override method operandCount => Size := 1sz.
+
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: definition mnemonic; space; print: firstOperand.
     }.
@@ -93,8 +221,10 @@ public final class AsmX86InstructionWithTwoOperands superclass: AsmX86Instructio
     public field firstOperand => AsmInstructionOperand.
     public field secondOperand => AsmInstructionOperand.
 
+    public override method operandCount => Size := 2sz.
+
     public method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: definition mnemonic; space; print: firstOperand; space; print: secondOperand.
+        stream nextPutAll: definition mnemonic; space; print: firstOperand; nextPutAll: ", "; print: secondOperand.
     }.
 }.
 
@@ -103,7 +233,7 @@ AsmX86InstructionDefinition definition: {
         let selectorBuilder := StringStream new.
         selectorBuilder nextPutAll: "x86_"; nextPutAll: mnemonic.
         operandNames doWithIndex: {:(Symbol)operandName :(Size)index :: Void |
-            if: index ~= 0sz then: (selectorBuilder nextPutAll: mnemonic).
+            if: index ~= 0sz then: (selectorBuilder nextPutAll: operandName).
             selectorBuilder nextPut: ':'
         }.
 
@@ -151,40 +281,110 @@ let instructionTemplateTable := #{
             stream nextPutAll: templ mandatoryPrefix; nextPutAll: templ opcode.
         };
         yourself).
+    OppR: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
+            (instruction operandCount = 1sz) && instruction firstOperand isX86WordRegister
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let register := instruction firstOperand downCastTo: AsmX86Register.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86RexRM: register;
+                nextPutX86Opcode: templ opcode first plusRegister: register.
+        };
+        yourself).
+
+    OpRmwRw: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
+            (instruction operandCount = 2sz) &&
+                (instruction firstOperand isRegisterOrRegisterAddress && 
+                instruction secondOperand isRegister)
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let registerAddress := instruction firstOperand.
+            let register := instruction secondOperand.
+            let operandSize := register size.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86RexSize: operandSize rm: registerAddress reg: register;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress reg: register
+        };
+        yourself).
+
+    OpRwRmw: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
+            (instruction operandCount = 2sz) &&
+                (instruction firstOperand isRegister && 
+                instruction secondOperand isRegisterOrRegisterAddress)
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let register := instruction firstOperand.
+            let registerAddress := instruction secondOperand.
+            let operandSize := register size.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86RexSize: operandSize rm: registerAddress reg: register;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress reg: register
+        };
+        yourself).
 }.
 
 let instructionDefinitionTable := #(
     (add (dst src) "Integer addition."
-        )
+    )
 
     (call (target) "Call the function in the specified address."
-        )
+    )
 
     (cmp (dst src) "Compares by subtracting the specified values."
-        )
+    )
+
+    (endbr32 () "Ends indirect branch in 32 mode"
+        (Op #[] #[16rF3 16r0F 16r1E 16rFB])
+    )
+
+    (endbr64 () "Ends indirect branch in 64 mode"
+        (Op #[] #[16rF3 16r0F 16r1E 16rFA])
+    )
 
     (lea (dst src) "Load effective address."
-        )
+    )
 
     (mov (dst src) "Move values."
-        )
+        (OpRmwRw #[] #[16r89])
+        (OpRwRmw #[] #[16r8B])
+    )
 
     (jmp (target) "Jumps into the specified address."
-        )
+    )
 
     (int (number) "Software interruption."
-        )
+        ##(OpI8 #[] #[16rCD])
+    )
 
     (int3 () "Software interruption 3 (Breakpoint)."
-        (Op #[] #[16rCC]))
+        (Op #[] #[16rCC])
+    )
+
+    (pop (dst) "Pops a value from the stack"
+        (OppR #[] #[16r58])
+    )
+
+    (push (src) "Pushes a value onto the stack"
+        (OppR #[] #[16r50])
+    )
 
     (ret () "Return from function."
-        (Op #[] #[16rF3]))
+        (Op #[] #[16rF3])
+    )
 
     (sub (dst src) "Integer subtraction."
-        )
+    )
 ).
-public: #AsmX86InstructionDefinition::Table with: Dictionary new.
+
+public global AsmX86InstructionDefinition::Table := Dictionary new.
 
 instructionDefinitionTable do: {:instructionDescription :: Void |
     let mnemonic := instructionDescription first.

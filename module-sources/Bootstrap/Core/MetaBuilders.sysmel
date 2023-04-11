@@ -322,6 +322,28 @@ LetMetaBuilder
 
 public: #let with: (MetaBuilderFactory for: LetMetaBuilder).
 
+LetMetaBuilder publicSubclass: #GlobalMetaBuilder slots: (
+    TypeSlot publicNamed: #isPublic type: Boolean ,
+).
+
+GlobalMetaBuilder
+    withSelector: #finishExpansionWithEnvironment: addMethod: {:self :(Environment)environment :: ASTNode |
+        let: #name with: self name.
+        let: #localDefinitionNode with: (ASTLocalDefinitionNode new
+            sourcePosition: self sourcePosition;
+            nameExpression: self name;
+            typeExpression: self typeExpression;
+            valueExpression: self initialValue;
+            isMutable: self isMutable;
+            yourself).
+
+        if: self isPublic then: {
+            ``(public: `,name with: `,localDefinitionNode)
+        } else: {
+            localDefinitionNode
+        }
+    }.
+
 VariableMetaBuilder publicSubclass: #FieldMetaBuilder slots: (
     TypeSlot publicNamed: #fieldFlags type: Bitflags ,
     TypeSlot publicNamed: #bitsExpression type: ASTNode
@@ -612,6 +634,12 @@ FlagMetaBuilder
         <metaBuilder>
         self delegateToMetaBuilder: (FieldMetaBuilder new
             addFieldFlags: self fieldFlags;
+            yourself)
+    };
+    withSelector: #global addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self delegateToMetaBuilder: (GlobalMetaBuilder new
+            isPublic: self isPublic;
             yourself)
     }.
 
