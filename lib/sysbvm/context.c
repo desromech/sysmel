@@ -488,8 +488,6 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.pointerType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.pointerLikeType);
     context->roots.referenceType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.pointerLikeType);
 
-    context->roots.structureType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.valueType);
-
     // Some basic types
     context->roots.voidType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Void", context->roots.anyValueType);
 
@@ -608,8 +606,6 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         SYSBVM_NULL_TUPLE);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.pointerType, "PointerType", SYSBVM_NULL_TUPLE, NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.referenceType, "ReferenceType", SYSBVM_NULL_TUPLE, NULL);
-
-    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.structureType, "Structure", SYSBVM_NULL_TUPLE, NULL);
 
     context->roots.analysisQueueEntryType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.valueType);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.analysisQueueEntryType, "AnalysisQueueEntry", context->roots.objectType,
