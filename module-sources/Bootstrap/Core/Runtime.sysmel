@@ -1528,7 +1528,7 @@ ByteArray
         self uint32At: index put: value asIEEEFloat32Encoding
     };
 
-    withSelector: #float32At: addMethod: {:(ByteArray)self :(Size)index :: Float64 |
+    withSelector: #float64At: addMethod: {:(ByteArray)self :(Size)index :: Float64 |
         (self uint64At: index) asIEEEFloat64Decoded
     };
     withSelector: #float64At:put: addMethod: {:(ByteArray)self :(Size)index :(Float64)value :: Void |
@@ -1622,16 +1622,33 @@ MethodDictionary
 
 ## Byte encoding
 Type
-    withSelector: #canEncodeValueInBytes addMethod: {:(Type)self :: Boolean | self isBytes };
+    withSelector: #canEncodeValueInBytes addMethod: {:(Type)self :: Boolean | false };
     withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Type)self :value :(ByteArray)bytes :(Size)offset :: Void |
-        self assert: self canEncodeValueInBytes.
+        self subclassResponsibility
+    };
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Type)self :: Boolean | false };
+    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Type)self :(ByteArray)bytes :(Size)offset :: self |
+        self subclassResponsibility
+    };
+    
+    withSelector: #encodeValueAsByteArray: addMethod: {:(Type)self :value :: ByteArray |
+        let result := ByteArray new: self alignedValueSize.
+        self encodeValue: value inBytes: result atOffset: 0sz.
+        result
+    };
+    withSelector: #decodeValueFromByteArray: addMethod: {:(Type)self :(ByteArray)bytes :: self |
+        self decodeValueFromBytes: bytes atOffset: 0sz
     }.
 
 ## Primitive numbers meta methods.
 Char8 class
     withSelector: #canEncodeValueInBytes addMethod: {:(Char8 class)self :: Boolean | true };
-    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Type)self :(Char8)value :(ByteArray)bytes :(Size)offset :: Void |
+    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Char8 class)self :(Char8)value :(ByteArray)bytes :(Size)offset :: Void |
         bytes char8At: offset put: value
+    };
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Char8 class)self :: Boolean | true };
+    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Char8 class)self :(ByteArray)bytes :(Size)offset :: Char8 |
+        bytes char8At: offset
     };
 
     withSelector: #defaultValue addMethod: {:(Char8 class)self :: Char8 | 0c8 };
@@ -1639,66 +1656,183 @@ Char8 class
     withSelector: #one addMethod: {:(Char8 class)self :: Char8 | 1c8 }.
 
 UInt8 class
+    withSelector: #canEncodeValueInBytes addMethod: {:(UInt8 class)self :: Boolean | true };
+    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(UInt8 class)self :(UInt8)value :(ByteArray)bytes :(Size)offset :: Void |
+        bytes uint8At: offset put: value
+    };
+    withSelector: #canDecodeValueFromBytes addMethod: {:(UInt8 class)self :: Boolean | true };
+    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(UInt8 class)self :(ByteArray)bytes :(Size)offset :: UInt8 |
+        bytes uint8At: offset
+    };
+
     withSelector: #defaultValue addMethod: {:(UInt8 class)self :: UInt8 | 0u8 };
     withSelector: #zero addMethod: {:(UInt8 class)self :: UInt8 | 0u8 };
     withSelector: #one addMethod: {:(UInt8 class)self :: UInt8 | 1u8 }.
 
 Int8 class
+    withSelector: #canEncodeValueInBytes addMethod: {:(Int8 class)self :: Boolean | true };
+    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Int8 class)self :(Int8)value :(ByteArray)bytes :(Size)offset :: Void |
+        bytes int8At: offset put: value
+    };
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Int8 class)self :: Boolean | true };
+    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Int8 class)self :(ByteArray)bytes :(Size)offset :: Int8 |
+        bytes int8At: offset
+    };
+
     withSelector: #defaultValue addMethod: {:(Int8 class)self :: Int8 | 0i8 };
     withSelector: #zero addMethod: {:(Int8 class)self :: Int8 | 0i8 };
     withSelector: #one addMethod: {:(Int8 class)self :: Int8 | 1i8 }.
 
 Char16 class
+    withSelector: #canEncodeValueInBytes addMethod: {:(Char16 class)self :: Boolean | true };
+    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Char16 class)self :(Char16)value :(ByteArray)bytes :(Size)offset :: Void |
+        bytes char16At: offset put: value
+    };
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Char16 class)self :: Boolean | true };
+    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Char16 class)self :(ByteArray)bytes :(Size)offset :: Char16 |
+        bytes char16At: offset
+    };
+
     withSelector: #defaultValue addMethod: {:(Char16 class)self :: Char16 | 0c16 };
     withSelector: #zero addMethod: {:(Char16 class)self :: Char16 | 0c16 };
     withSelector: #one addMethod: {:(Char16 class)self :: Char16 | 1c16 }.
 
 UInt16 class
+    withSelector: #canEncodeValueInBytes addMethod: {:(UInt16 class)self :: Boolean | true };
+    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(UInt16 class)self :(UInt16)value :(ByteArray)bytes :(Size)offset :: Void |
+        bytes uint16At: offset put: value
+    };
+    withSelector: #canDecodeValueFromBytes addMethod: {:(UInt16 class)self :: Boolean | true };
+    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(UInt16 class)self :(ByteArray)bytes :(Size)offset :: UInt16 |
+        bytes uint16At: offset
+    };
+
     withSelector: #defaultValue addMethod: {:(UInt16 class)self :: UInt16 | 0u16 };
     withSelector: #zero addMethod: {:(UInt16 class)self :: UInt16 | 0u16 };
     withSelector: #one addMethod: {:(UInt16 class)self :: UInt16 | 1u16 }.
 
 Int16 class
+    withSelector: #canEncodeValueInBytes addMethod: {:(Int16 class)self :: Boolean | true };
+    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Int16 class)self :(Int16)value :(ByteArray)bytes :(Size)offset :: Void |
+        bytes int16At: offset put: value
+    };
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Int16 class)self :: Boolean | true };
+    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Int16 class)self :(ByteArray)bytes :(Size)offset :: Int16 |
+        bytes int16At: offset
+    };
+
     withSelector: #defaultValue addMethod: {:(Int16 class)self :: Int16 | 0i16 };
     withSelector: #zero addMethod: {:(Int16 class)self :: Int16 | 0i16 };
     withSelector: #one addMethod: {:(Int16 class)self :: Int16 | 1i16 }.
 
 Char32 class
+    withSelector: #canEncodeValueInBytes addMethod: {:(Char32 class)self :: Boolean | true };
+    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Char32 class)self :(Char32)value :(ByteArray)bytes :(Size)offset :: Void |
+        bytes char32At: offset put: value
+    };
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Char32 class)self :: Boolean | true };
+    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Char32 class)self :(ByteArray)bytes :(Size)offset :: Char32 |
+        bytes char32At: offset
+    };
+
     withSelector: #defaultValue addMethod: {:(Char32 class)self :: Char32 | 0c32 };
     withSelector: #zero addMethod: {:(Char32 class)self :: Char32 | 0c32 };
     withSelector: #one addMethod: {:(Char32 class)self :: Char32 | 1c32 }.
 
 UInt32 class
+    withSelector: #canEncodeValueInBytes addMethod: {:(UInt32 class)self :: Boolean | true };
+    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(UInt32 class)self :(UInt32)value :(ByteArray)bytes :(Size)offset :: Void |
+        bytes uint32At: offset put: value
+    };
+    withSelector: #canDecodeValueFromBytes addMethod: {:(UInt32 class)self :: Boolean | true };
+    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(UInt32 class)self :(ByteArray)bytes :(Size)offset :: UInt32 |
+        bytes uint32At: offset
+    };
+
     withSelector: #defaultValue addMethod: {:(UInt32 class)self :: UInt32 | 0u32 };
     withSelector: #zero addMethod: {:(UInt32 class)self :: UInt32 | 0u32 };
     withSelector: #one addMethod: {:(UInt32 class)self :: UInt32 | 1u32 }.
 
 Int32 class
+    withSelector: #canEncodeValueInBytes addMethod: {:(Int32 class)self :: Boolean | true };
+    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Int32 class)self :(Int32)value :(ByteArray)bytes :(Size)offset :: Void |
+        bytes int32At: offset put: value
+    };
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Int32 class)self :: Boolean | true };
+    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Int32 class)self :(ByteArray)bytes :(Size)offset :: Int32 |
+        bytes int32At: offset
+    };
+
     withSelector: #defaultValue addMethod: {:(Int32 class)self :: Int32 | 0i32 };
     withSelector: #zero addMethod: {:(Int32 class)self :: Int32 | 0i32 };
     withSelector: #one addMethod: {:(Int32 class)self :: Int32 | 1i32 }.
 
 Int64 class
+    withSelector: #canEncodeValueInBytes addMethod: {:(Int64 class)self :: Boolean | true };
+    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Int64 class)self :(Int64)value :(ByteArray)bytes :(Size)offset :: Void |
+        bytes int64At: offset put: value
+    };
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Int64 class)self :: Boolean | true };
+    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Int64 class)self :(ByteArray)bytes :(Size)offset :: Int64 |
+        bytes int64At: offset
+    };
+
     withSelector: #defaultValue addMethod: {:(Int64 class)self :: Int64 | 0i64 };
     withSelector: #zero addMethod: {:(Int64 class)self :: Int64 | 0i64 };
     withSelector: #one addMethod: {:(Int64 class)self :: Int64 | 1i64 }.
 
 UInt64 class
+    withSelector: #canEncodeValueInBytes addMethod: {:(UInt64 class)self :: Boolean | true };
+    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(UInt64 class)self :(UInt64)value :(ByteArray)bytes :(Size)offset :: Void |
+        bytes uint64At: offset put: value
+    };
+    withSelector: #canDecodeValueFromBytes addMethod: {:(UInt64 class)self :: Boolean | true };
+    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(UInt64 class)self :(ByteArray)bytes :(Size)offset :: UInt64 |
+        bytes uint64At: offset
+    };
+
     withSelector: #defaultValue addMethod: {:(UInt64 class)self :: UInt64 | 0u64 };
     withSelector: #zero addMethod: {:(UInt64 class)self :: UInt64 | 0u64 };
     withSelector: #one addMethod: {:(UInt64 class)self :: UInt64 | 1u64 }.
 
 Float32 class
+    withSelector: #canEncodeValueInBytes addMethod: {:(Float32 class)self :: Boolean | true };
+    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Float32 class)self :(Float32)value :(ByteArray)bytes :(Size)offset :: Void |
+        bytes float32At: offset put: value
+    };
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Float32 class)self :: Boolean | true };
+    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Float32 class)self :(ByteArray)bytes :(Size)offset :: Float32 |
+        bytes float32At: offset
+    };
+
     withSelector: #defaultValue addMethod: {:(Float32 class)self :: Float32 | 0.0f32 };
     withSelector: #zero addMethod: {:(Float32 class)self :: Float32 | 0.0f32 };
     withSelector: #one addMethod: {:(Float32 class)self :: Float32 | 1.0f32 }.
 
 Float64 class
+    withSelector: #canEncodeValueInBytes addMethod: {:(Float64 class)self :: Boolean | true };
+    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Float64 class)self :(Float64)value :(ByteArray)bytes :(Size)offset :: Void |
+        bytes float64At: offset put: value
+    };
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Float64 class)self :: Boolean | true };
+    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Float64 class)self :(ByteArray)bytes :(Size)offset :: Float64 |
+        bytes float64At: offset
+    };
+
     withSelector: #defaultValue addMethod: {:(Float64 class)self :: Float64 | 0.0 };
     withSelector: #zero addMethod: {:(Float64 class)self :: Float64 | 0.0 };
     withSelector: #one addMethod: {:(Float64 class)self :: Float64 | 1.0 }.
 
 Boolean class
+    withSelector: #canEncodeValueInBytes addMethod: {:(Boolean class)self :: Boolean | true };
+    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Boolean class)self :(Boolean)value :(ByteArray)bytes :(Size)offset :: Void |
+        bytes at: offset put: (if: value then: 1u8 else: 0u8)
+    };
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Boolean class)self :: Boolean | true };
+    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Boolean class)self :(ByteArray)bytes :(Size)offset :: Boolean |
+        (bytes at: offset) ~= 0u8
+    };
+
     withSelector: #defaultValue addMethod: {:(Boolean class)self :: Boolean | false }.
 
 TypeSlot
@@ -2227,6 +2361,9 @@ Type
     };
     withSelector: #valueAlignment addMethod: {:(Type)self :: Size |
         UIntPointer instanceAlignment
+    };
+    withSelector: #alignedValueSize addMethod: {:(Type)self :: Size |
+        self valueSize alignedTo: self valueAlignment
     }.
 
 ValueType

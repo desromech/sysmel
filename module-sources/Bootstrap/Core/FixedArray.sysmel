@@ -38,6 +38,39 @@ public class FixedArrayType superclass: ValueType; definition: {
         instanceSize := elementType valueSize * size.
         instanceAlignment := elementType valueAlignment.
     }.
+
+    public method canEncodeValueInBytes => Boolean
+        := elementType canEncodeValueInBytes.
+
+    public method encodeValue: (value: self) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
+        let i mutable := 0sz.
+        let elementOffset mutable := offset.
+        let elementSize := elementType alignedValueSize.
+        while: (i < size) do: (
+            elementType encodeValue: (RawTuple::slotAt:)(value, i) inBytes: bytes atOffset: elementOffset 
+        ) continueWith: {
+            i := i + 1sz.
+            elementOffset := elementOffset + elementSize
+        }.
+    }.
+
+    public method canDecodeValueFromBytes => Boolean
+        := elementType canDecodeValueFromBytes.
+
+    public method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> self := {
+        let result := self basicAllocate.
+        let i mutable := 0sz.
+        let elementOffset mutable := offset.
+        let elementSize := elementType alignedValueSize.
+        while: (i < size) do: (
+            (RawTuple::slotAt:put:)(result, i, elementType decodeValueFromBytes: bytes atOffset: elementOffset)
+        ) continueWith: {
+            i := i + 1sz.
+            elementOffset := elementOffset + elementSize
+        }.
+
+        result
+    }.
 }.
 
 public global FixedArrayTypeTemplate := {:(Type)elementType :(Size)size :: FixedArrayType |

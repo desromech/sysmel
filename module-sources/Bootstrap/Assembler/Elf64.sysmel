@@ -55,3 +55,6 @@ public struct Elf64::Rela definition: {
     public field info => Elf64::Xword.
     public field addend => Elf64::Sxword.
 }.
+
+let header := Elf64::Header new.
+printLine("Elf64 header ", header __type__ encodeValueAsByteArray: header).

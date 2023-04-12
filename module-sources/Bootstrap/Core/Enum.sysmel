@@ -86,5 +86,6 @@ FlagMetaBuilder
         <metaBuilder>
         self delegateToMetaBuilder: (EnumMetaBuilder new
             typeFlags: self typeFlags;
+            isPublic: self isPublic;
             yourself)
     }.

@@ -25,6 +25,59 @@ public class StructType superclass: ValueType; definition: {
 
     public method defaultValue => self
         := self basicNew.
+
+    protected field canEncodeValueInBytes.
+    public method canEncodeValueInBytes => Boolean := {
+        canEncodeValueInBytes ifNil: {
+            canEncodeValueInBytes := true.
+            supertype ifNotNil: {
+                canEncodeValueInBytes := canEncodeValueInBytes && supertype canEncodeValueInBytes
+            }.
+            
+            canEncodeValueInBytes := canEncodeValueInBytes && (self validSlots allSatisfy: {:(TypeSlot)eachSlot :: Boolean |
+                (eachSlot type ~~ nil) && (eachSlot type canEncodeValueInBytes)
+            })
+        }.
+
+        canEncodeValueInBytes
+    }.
+
+    public method encodeValue: (value: self) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
+        self ensureLayoutIsComputed.
+
+        self allSlotsDo: {:(TypeSlot)eachSlot :: Void |
+            eachSlot type encodeValue: (RawTuple::slotAt:)(value, eachSlot index) inBytes: bytes atOffset: offset + eachSlot offset
+        }
+    }.
+
+    protected field canDecodeValueFromBytes.
+    public method canDecodeValueFromBytes => Boolean := {
+        canDecodeValueFromBytes ifNil: {
+            canDecodeValueFromBytes := true.
+            supertype ifNotNil: {
+                canDecodeValueFromBytes := canDecodeValueFromBytes && supertype canDecodeValueFromBytes
+            }.
+            
+            canDecodeValueFromBytes := canDecodeValueFromBytes && (self validSlots allSatisfy: {:(TypeSlot)eachSlot :: Boolean |
+                (eachSlot type ~~ nil) && (eachSlot type canDecodeValueFromBytes)
+            })
+        }.
+
+        canDecodeValueFromBytes
+    }.
+
+    public method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> self := {
+        let result := self basicAllocate.
+        self ensureLayoutIsComputed.
+
+        self allSlotsDo: {:(TypeSlot)eachSlot :: Void |
+            (RawTuple::slotAt:put:)(result, eachSlot index,
+                eachSlot type decodeValueFromBytes: bytes atOffset: offset + eachSlot offset
+            )
+        }.
+
+        result
+    }.
 }.
 
 public class StructureMetatype superclass: ValueMetatype; definition: {
@@ -91,5 +144,6 @@ FlagMetaBuilder
         <metaBuilder>
         self delegateToMetaBuilder: (StructMetaBuilder new
             typeFlags: self typeFlags;
+            isPublic: self isPublic;
             yourself)
     }.
