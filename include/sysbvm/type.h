@@ -15,6 +15,8 @@ typedef struct sysbvm_type_tuple_s
     sysbvm_tuple_t supertype;
     sysbvm_tuple_t slots;
     sysbvm_tuple_t totalSlotCount;
+    sysbvm_tuple_t instanceSize;
+    sysbvm_tuple_t instanceAlignment;
     sysbvm_tuple_t flags;
 
     sysbvm_tuple_t slotDictionary;
@@ -120,6 +122,7 @@ typedef struct sysbvm_typeSlot_s
     sysbvm_tuple_t referenceType;
     sysbvm_tuple_t localIndex;
     sysbvm_tuple_t index;
+    sysbvm_tuple_t offset;
 } sysbvm_typeSlot_t;
 
 typedef struct sysbvm_functionType_s
@@ -448,6 +451,11 @@ SYSBVM_API size_t sysbvm_type_getTotalSlotCount(sysbvm_tuple_t type);
  * Sets the total slot count
  */
 SYSBVM_API void sysbvm_type_setTotalSlotCount(sysbvm_context_t *context, sysbvm_tuple_t type, size_t totalSlotCount);
+
+/**
+ * Sets the instance size and alignment.
+ */
+SYSBVM_API void sysbvm_type_setInstanceSizeAndAlignment(sysbvm_context_t *context, sysbvm_tuple_t type, size_t instanceSize, size_t instanceAlignment);
 
 /**
  * Gets the type flags.

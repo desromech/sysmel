@@ -20,6 +20,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_typeSlot_create(sysbvm_context_t *context, sysb
     result->type = type;
     result->localIndex = sysbvm_tuple_size_encode(context, localIndex);
     result->index = sysbvm_tuple_size_encode(context, index);
+    result->offset = sysbvm_tuple_size_encode(context, 0);
     return (sysbvm_tuple_t)result;
 }
 
@@ -40,6 +41,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createAnonymous(sysbvm_context_t *context)
     sysbvm_type_tuple_t* result = (sysbvm_type_tuple_t*)sysbvm_context_allocatePointerTuple(context, context->roots.typeType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_type_tuple_t));
     result->supertype = context->roots.anyValueType;
     result->totalSlotCount = sysbvm_tuple_size_encode(context, 0);
+    result->instanceSize = sysbvm_tuple_size_encode(context, 0);
+    result->instanceAlignment = sysbvm_tuple_size_encode(context, 0);
     return (sysbvm_tuple_t)result;
 }
 
@@ -51,6 +54,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createAnonymousMetatype(sysbvm_context_t *
     size_t slotCount = SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_type_tuple_t);
     
     result->super.totalSlotCount = sysbvm_tuple_size_encode(context, slotCount);
+    result->super.instanceSize = sysbvm_tuple_size_encode(context, 0);
+    result->super.instanceAlignment = sysbvm_tuple_size_encode(context, 0);
     return (sysbvm_tuple_t)result;
 }
 
@@ -60,6 +65,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createAnonymousAndMetatype(sysbvm_context_
     sysbvm_type_tuple_t* result = (sysbvm_type_tuple_t*)sysbvm_context_allocatePointerTuple(context, metatype, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_type_tuple_t));
     result->supertype = context->roots.anyValueType;
     result->totalSlotCount = sysbvm_tuple_size_encode(context, 0);
+    result->instanceSize = sysbvm_tuple_size_encode(context, 0);
+    result->instanceAlignment = sysbvm_tuple_size_encode(context, 0);
     ((sysbvm_metatype_t*)metatype)->thisType = (sysbvm_tuple_t)result;
     return (sysbvm_tuple_t)result;
 }
@@ -72,6 +79,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createAnonymousClass(sysbvm_context_t *con
     sysbvm_class_t* result = (sysbvm_class_t*)sysbvm_context_allocatePointerTuple(context, metaclass, classSlotCount);
     result->super.supertype = supertype;
     result->super.totalSlotCount = sysbvm_tuple_size_encode(context, 0);
+    result->super.instanceSize = sysbvm_tuple_size_encode(context, 0);
+    result->super.instanceAlignment = sysbvm_tuple_size_encode(context, 0);
     result->super.flags = sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_CLASS_DEFAULT_FLAGS);
     if(supertype)
         result->super.totalSlotCount = sysbvm_tuple_size_encode(context, sysbvm_type_getTotalSlotCount(supertype));
@@ -93,6 +102,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createAnonymousMetaclass(sysbvm_context_t 
     }
     
     result->super.super.totalSlotCount = sysbvm_tuple_size_encode(context, slotCount);
+    result->super.super.instanceSize = sysbvm_tuple_size_encode(context, 0);
+    result->super.super.instanceAlignment = sysbvm_tuple_size_encode(context, 0);
     return (sysbvm_tuple_t)result;
 }
 
@@ -125,6 +136,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createAnonymousPrimitiveValueType(sysbvm_c
     sysbvm_primitiveValueType_t* result = (sysbvm_primitiveValueType_t*)sysbvm_context_allocatePointerTuple(context, metaclass, typeSlotCount);
     result->super.super.supertype = supertype;
     result->super.super.totalSlotCount = sysbvm_tuple_size_encode(context, 0);
+    result->super.super.instanceSize = sysbvm_tuple_size_encode(context, 0);
+    result->super.super.instanceAlignment = sysbvm_tuple_size_encode(context, 0);
     result->super.super.flags = sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_PRIMITIVE_VALUE_TYPE_DEFAULT_FLAGS);
     return (sysbvm_tuple_t)result;
 }
@@ -144,6 +157,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createAnonymousValueMetatype(sysbvm_contex
     }
     
     result->super.super.totalSlotCount = sysbvm_tuple_size_encode(context, slotCount);
+    result->super.super.instanceSize = sysbvm_tuple_size_encode(context, 0);
+    result->super.super.instanceAlignment = sysbvm_tuple_size_encode(context, 0);
     return (sysbvm_tuple_t)result;
 }
 
@@ -181,6 +196,8 @@ static sysbvm_tuple_t sysbvm_type_doCreateSimpleFunctionType(sysbvm_context_t *c
     result->super.supertype = (sysbvm_tuple_t)supertype;
     result->super.flags = sysbvm_tuple_bitflags_encode(sysbvm_tuple_bitflags_decode(supertype->flags) | SYSBVM_TYPE_FLAGS_FUNCTION);
     result->super.totalSlotCount = supertype->totalSlotCount;
+    result->super.instanceSize = sysbvm_tuple_size_encode(context, 0);
+    result->super.instanceAlignment = sysbvm_tuple_size_encode(context, 0);
     result->argumentTypes = argumentTypes;
     result->isVariadic = isVariadic;
     result->resultType = resultType;
@@ -444,7 +461,18 @@ SYSBVM_API size_t sysbvm_type_getTotalSlotCount(sysbvm_tuple_t type)
 SYSBVM_API void sysbvm_type_setTotalSlotCount(sysbvm_context_t *context, sysbvm_tuple_t type, size_t totalSlotCount)
 {
     if(!sysbvm_tuple_isNonNullPointer(type)) return;
+    if(sysbvm_tuple_isDummyValue(type)) return;
     ((sysbvm_type_tuple_t*)type)->totalSlotCount = sysbvm_tuple_size_encode(context, totalSlotCount);
+}
+
+SYSBVM_API void sysbvm_type_setInstanceSizeAndAlignment(sysbvm_context_t *context, sysbvm_tuple_t type, size_t instanceSize, size_t instanceAlignment)
+{
+    if(!sysbvm_tuple_isNonNullPointer(type)) return;
+    if(sysbvm_tuple_isDummyValue(type)) return;
+
+    sysbvm_type_tuple_t *typeObject = (sysbvm_type_tuple_t*)type;
+    typeObject->instanceSize = sysbvm_tuple_size_encode(context, instanceSize);
+    typeObject->instanceAlignment = sysbvm_tuple_size_encode(context, instanceAlignment);
 }
 
 SYSBVM_API void sysbvm_type_setFlags(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_bitflags_t flags)

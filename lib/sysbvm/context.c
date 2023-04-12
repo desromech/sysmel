@@ -133,7 +133,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_context_createIntrinsicClass(sysbvm_context_t *
     return type;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_context_createIntrinsicPrimitiveValueType(sysbvm_context_t *context, const char *name, sysbvm_tuple_t supertype)
+SYSBVM_API sysbvm_tuple_t sysbvm_context_createIntrinsicPrimitiveValueType(sysbvm_context_t *context, const char *name, sysbvm_tuple_t supertype, size_t instanceSize, size_t instanceAlignment)
 {
     sysbvm_tuple_t nameSymbol = sysbvm_symbol_internWithCString(context, name);
     sysbvm_tuple_t type = sysbvm_type_createAnonymousPrimitiveValueTypeAndValueMetatype(context, supertype);
@@ -143,6 +143,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_context_createIntrinsicPrimitiveValueType(sysbv
 
     sysbvm_type_setSlots(type, sysbvm_array_create(context, 0));
     sysbvm_type_setTotalSlotCount(context, type, 0);
+    sysbvm_type_setInstanceSizeAndAlignment(context, type, instanceSize, instanceAlignment);
     sysbvm_type_buildSlotDictionary(context, type);
     return type;
 }
@@ -489,32 +490,32 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.referenceType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.pointerLikeType);
 
     // Some basic types
-    context->roots.voidType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Void", context->roots.anyValueType);
+    context->roots.voidType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Void", context->roots.anyValueType, 0, 1);
 
-    context->roots.primitiveNumberType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "PrimitiveNumber", context->roots.anyValueType);
-    context->roots.primitiveIntegerType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "PrimitiveInteger", context->roots.primitiveNumberType);
-    context->roots.primitiveCharacterType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "PrimitiveCharacter", context->roots.primitiveIntegerType);
-    context->roots.primitiveUnsignedIntegerType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "PrimitiveUnsignedInteger", context->roots.primitiveIntegerType);
-    context->roots.primitiveSignedIntegerType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "PrimitiveSignedInteger", context->roots.primitiveIntegerType);
-    context->roots.primitiveFloatType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "PrimitiveFloat", context->roots.primitiveNumberType);
+    context->roots.primitiveNumberType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "PrimitiveNumber", context->roots.anyValueType, 0, 1);
+    context->roots.primitiveIntegerType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "PrimitiveInteger", context->roots.primitiveNumberType, 0, 1);
+    context->roots.primitiveCharacterType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "PrimitiveCharacter", context->roots.primitiveIntegerType, 0, 1);
+    context->roots.primitiveUnsignedIntegerType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "PrimitiveUnsignedInteger", context->roots.primitiveIntegerType, 0, 1);
+    context->roots.primitiveSignedIntegerType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "PrimitiveSignedInteger", context->roots.primitiveIntegerType, 0, 1);
+    context->roots.primitiveFloatType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "PrimitiveFloat", context->roots.primitiveNumberType, 0, 1);
 
-    context->roots.char8Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Char8", context->roots.primitiveCharacterType);
-    context->roots.uint8Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "UInt8", context->roots.primitiveUnsignedIntegerType);
-    context->roots.int8Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Int8", context->roots.primitiveSignedIntegerType);
+    context->roots.char8Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Char8", context->roots.primitiveCharacterType, 1, 1);
+    context->roots.uint8Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "UInt8", context->roots.primitiveUnsignedIntegerType, 1, 1);
+    context->roots.int8Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Int8", context->roots.primitiveSignedIntegerType, 1, 1);
 
-    context->roots.char16Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Char16", context->roots.primitiveCharacterType);
-    context->roots.uint16Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "UInt16", context->roots.primitiveUnsignedIntegerType);
-    context->roots.int16Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Int16", context->roots.primitiveSignedIntegerType);
+    context->roots.char16Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Char16", context->roots.primitiveCharacterType, 2, 2);
+    context->roots.uint16Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "UInt16", context->roots.primitiveUnsignedIntegerType, 2, 2);
+    context->roots.int16Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Int16", context->roots.primitiveSignedIntegerType, 2, 2);
 
-    context->roots.char32Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Char32", context->roots.primitiveCharacterType);
-    context->roots.uint32Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "UInt32", context->roots.primitiveUnsignedIntegerType);
-    context->roots.int32Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Int32", context->roots.primitiveSignedIntegerType);
+    context->roots.char32Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Char32", context->roots.primitiveCharacterType, 4, 4);
+    context->roots.uint32Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "UInt32", context->roots.primitiveUnsignedIntegerType, 4, 4);
+    context->roots.int32Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Int32", context->roots.primitiveSignedIntegerType, 4, 4);
 
-    context->roots.uint64Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "UInt64", context->roots.primitiveUnsignedIntegerType);
-    context->roots.int64Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Int64", context->roots.primitiveSignedIntegerType);
+    context->roots.uint64Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "UInt64", context->roots.primitiveUnsignedIntegerType, 8, 8);
+    context->roots.int64Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Int64", context->roots.primitiveSignedIntegerType, 8, 8);
 
-    context->roots.float32Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Float32", context->roots.primitiveFloatType);
-    context->roots.float64Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Float64", context->roots.primitiveFloatType);
+    context->roots.float32Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Float32", context->roots.primitiveFloatType, 4, 4);
+    context->roots.float64Type = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Float64", context->roots.primitiveFloatType, 8, 8);
     
     context->roots.bitflagsType = sizeof(sysbvm_bitflags_t) == 4 ? context->roots.uint32Type : context->roots.uint64Type;
     context->roots.systemHandleType = sizeof(sysbvm_systemHandle_t) == 4 ? context->roots.int32Type : context->roots.int64Type;
@@ -523,9 +524,9 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.uintptrType = context->targetWordSize == 4 ? context->roots.uint32Type : context->roots.uint64Type;
     context->roots.intptrType = context->targetWordSize == 4 ? context->roots.int32Type : context->roots.int64Type;
 
-    context->roots.booleanType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Boolean", context->roots.anyValueType);
-    context->roots.trueType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "True", context->roots.booleanType);
-    context->roots.falseType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "False", context->roots.booleanType);
+    context->roots.booleanType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Boolean", context->roots.anyValueType, 1, 1);
+    context->roots.trueType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "True", context->roots.booleanType, 1, 1);
+    context->roots.falseType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "False", context->roots.booleanType, 1, 1);
 
     context->roots.integerType = sysbvm_context_createIntrinsicClass(context, "Integer", SYSBVM_NULL_TUPLE, NULL);
     context->roots.positiveIntegerType = sysbvm_context_createIntrinsicClass(context, "PositiveInteger", context->roots.integerType, NULL);
@@ -544,15 +545,15 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_typeAndMetatype_setFlags(context, context->roots.stringType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_BYTES | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);
 
     // Special types used during semantic analysis.
-    context->roots.controlFlowEscapeType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "ControlFlowEscapeType", context->roots.voidType);
-    context->roots.controlFlowBreakType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "ControlFlowBreakType", context->roots.controlFlowEscapeType);
-    context->roots.controlFlowContinueType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "ControlFlowContinueType", context->roots.controlFlowEscapeType);
-    context->roots.controlFlowReturnType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "ControlFlowReturnType", context->roots.controlFlowEscapeType);
-    context->roots.noReturnType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "NoReturn", context->roots.controlFlowEscapeType);
-    context->roots.unwindsType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Unwinds", context->roots.controlFlowEscapeType);
+    context->roots.controlFlowEscapeType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "ControlFlowEscapeType", context->roots.voidType, 0, 1);
+    context->roots.controlFlowBreakType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "ControlFlowBreakType", context->roots.controlFlowEscapeType, 0, 1);
+    context->roots.controlFlowContinueType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "ControlFlowContinueType", context->roots.controlFlowEscapeType, 0, 1);
+    context->roots.controlFlowReturnType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "ControlFlowReturnType", context->roots.controlFlowEscapeType, 0, 1);
+    context->roots.noReturnType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "NoReturn", context->roots.controlFlowEscapeType, 0, 1);
+    context->roots.unwindsType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Unwinds", context->roots.controlFlowEscapeType, 0, 1);
 
-    context->roots.decayedTypeInferenceType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "DecayedTypeInferenceType", SYSBVM_NULL_TUPLE);
-    context->roots.directTypeInferenceType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "DirectTypeInferenceType", SYSBVM_NULL_TUPLE);
+    context->roots.decayedTypeInferenceType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "DecayedTypeInferenceType", SYSBVM_NULL_TUPLE, 0, 1);
+    context->roots.directTypeInferenceType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "DirectTypeInferenceType", SYSBVM_NULL_TUPLE, 0, 1);
 
     // Set the name of the root basic type.
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.untypedType, "Untyped", SYSBVM_NULL_TUPLE, NULL);
@@ -565,6 +566,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "supertype", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         "slots", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "totalSlotCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "instanceSize", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "instanceAlignment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
 
         "slotDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.methodDictionaryType,
@@ -589,6 +592,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "referenceType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         "localIndex", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "index", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "offset", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         NULL);
 
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.valueType, "ValueType", SYSBVM_NULL_TUPLE, NULL);
