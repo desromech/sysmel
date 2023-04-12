@@ -479,11 +479,11 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     // Create the value type classes.
     context->roots.valueType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.typeType);
     context->roots.valueMetatypeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.metatypeType);
-    context->roots.primitiveValueType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.typeType);
+    context->roots.primitiveValueType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.valueType);
     
     context->roots.anyPointerType = sysbvm_type_createAnonymous(context);
     context->roots.anyReferenceType = sysbvm_type_createAnonymous(context);
-    sysbvm_type_setSupertype(context->roots.anyReferenceType, SYSBVM_NULL_TUPLE);
+    sysbvm_type_setSupertype(context->roots.anyReferenceType, context->roots.untypedType);
 
     context->roots.pointerLikeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.valueType);
     context->roots.pointerType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.pointerLikeType);

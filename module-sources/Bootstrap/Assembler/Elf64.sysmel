@@ -55,3 +55,7 @@ public struct Elf64::Rela definition: {
     public field info => Elf64::Xword.
     public field addend => Elf64::Sxword.
 }.
+
+Elf64::Header allSlotsDo: {:(TypeSlot)slot :: Void |
+    printLine(slot name, " ", slot offset).
+}.

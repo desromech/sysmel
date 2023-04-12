@@ -396,10 +396,15 @@ Type
             self addSlotToDictionary: slot
         }
     } withEagerAnalysis;
+    withSelector: #invalidateLayout addMethod: {:(Type)self  :: Void |
+        self instanceSize: 0sz.
+        self instanceAlignment: 0sz.
+    } withEagerAnalysis;
     withSelector: #addTypeSlot: addMethod: {:(Type)self :(TypeSlot)extraSlot :: Void |
         if: self totalSlotCount ~~ nil then: (self error: "Cannot add type slot when the total slot count has already been computed").
         if: self pendingSlots == nil then: (self pendingSlots: ArrayList new).
 
+        self invalidateLayout.
         self pendingSlots add: extraSlot.
         self addSlotToDictionary: extraSlot.
         extraSlot generateAccessorsOn: self.
@@ -1715,6 +1720,11 @@ Type
         ) continueWith: (instance := RawTuple::nextInstanceWithSameType(instance)).
 
         result asArray
+    };
+    withSelector: #allSlotsDo: addMethod: {:(Type)self :(TypeSlot => Void)aBlock :: Void |
+        let: #supertype with: self supertype.
+        if: supertype ~~ nil then: (supertype allSlotsDo: aBlock).
+        self validSlots do: aBlock
     }.
 
 Metatype
@@ -2030,6 +2040,78 @@ Class
     };
     withSelector: #subclass:slots: addMethod: {:(Class)self :(StringSymbol)name :(Array)instanceSlots :: Class |
         self subclass: name classSlots: () slots: instanceSlots
+    }.
+
+Size
+    withSelector: #min: addMethod: {:(Size)a :(Size)b :: Size |
+        if: a <= b then: a else: b
+    };
+    withSelector: #max: addMethod: {:(Size)a :(Size)b :: Size |
+        if: a >= b then: a else: b
+    };
+    withSelector: #alignedTo: addMethod: {:(Size)value :(Size)alignment :: Size |
+        ((value + alignment) - 1sz) & alignment negated.
+    }.
+
+TypeSlot
+    withSelector: #size addMethod: {:(TypeSlot)self :: Size |
+        self type valueSize
+    };
+    withSelector: #alignment addMethod: {:(TypeSlot)self :: Size |
+        self type valueAlignment
+    }.
+
+Type
+    withSelector: #ensureLayoutIsComputed addMethod: {:(Type)self :: Void |
+        if: self instanceAlignment = 0sz then: (self computeLayout)
+    };
+    withSelector: #computeLayout addMethod: {:(Type)self :: Void |
+        self instanceSize: 0sz.
+        self instanceAlignment: 1sz.
+
+        let: #supertype with: self supertype.
+        if: supertype ~~ nil then: {
+            self instanceSize: supertype validInstanceSize.
+            self instanceAlignment: (supertype validInstanceAlignment max: 1sz).
+        }.
+
+        self validSlots do: {:(TypeSlot)eachSlot :: Void |
+            let: #slotSize with: eachSlot size.
+            let: #slotAlignment with: eachSlot alignment.
+
+            let: #slotOffset with: (self instanceSize alignedTo: slotAlignment).
+            eachSlot offset: slotOffset.
+
+            self instanceAlignment: (self instanceAlignment max: slotAlignment).
+            self instanceSize: slotOffset + slotSize.
+        }.
+
+        self instanceSize: (self instanceSize alignedTo: self instanceAlignment).
+    };
+    withSelector: #validInstanceSize addMethod: {:(Type)self :: Size |
+        if: self instanceAlignment = 0sz then: (self ensureLayoutIsComputed).
+        self instanceSize
+    };
+    withSelector: #validInstanceAlignment addMethod: {:(Type)self :: Size |
+        if: self instanceAlignment = 0sz then: (self ensureLayoutIsComputed).
+        self instanceAlignment
+    };
+    withSelector: #valueAlignment addMethod: {:(Type)self :: Size |
+        UIntPointer instanceAlignment
+    };
+    withSelector: #valueSize addMethod: {:(Type)self :: Size |
+        UIntPointer instanceSize
+    };
+    withSelector: #valueAlignment addMethod: {:(Type)self :: Size |
+        UIntPointer instanceAlignment
+    }.
+
+ValueType
+    withSelector: #valueSize addMethod: {:(ValueType)self :: Size |
+        self validInstanceSize
+    };
+    withSelector: #valueAlignment addMethod: {:(ValueType)self :: Size |
+        self validInstanceSize
     }.
 
 Environment

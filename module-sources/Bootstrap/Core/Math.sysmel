@@ -32,14 +32,3 @@
     }
 }.
 *#
-
-Size extend: {
-    public pure final method min: (other: SelfType) ::=> SelfType
-        := if: self <= other then: self else: other.
-
-    public pure final method max: (other: SelfType) ::=> SelfType
-        := if: self >= other then: self else: other.
-
-    public pure final method alignedTo: (alignment: SelfType) ::=> SelfType
-        := ((self + alignment) - 1sz) & alignment negated.
-}.

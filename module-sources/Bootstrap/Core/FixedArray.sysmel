@@ -30,6 +30,14 @@ public class FixedArrayType superclass: ValueType; definition: {
 
     public method defaultValue => self
         := self basicNew.
+
+    public method computeLayout => Void := {
+        instanceSize := 0sz.
+        instanceAlignment := 1sz.
+
+        instanceSize := elementType valueSize * size.
+        instanceAlignment := elementType valueAlignment.
+    }.
 }.
 
 public global FixedArrayTypeTemplate := {:(Type)elementType :(Size)size :: FixedArrayType |
