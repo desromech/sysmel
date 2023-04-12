@@ -6,9 +6,29 @@ public class FixedArrayType superclass: ValueType; definition: {
         elementType := initialElementType.
         size := initialSize.
 
-        self supertype: AnyValue;
+        self
+            supertype: AnyValue;
             slots: #();
-            totalSlotCount: 0sz.
+            totalSlotCount: 0sz;
+            generatePublicAccessors.
+    }.
+
+    public method generatePublicAccessors => Void := {
+        let SelfType := self.
+        let elementType := self elementType.
+        let size := self size.
+
+        self
+            withSelector: #at: addMethod: {:(SelfType)self :(Size)index :: elementType |
+                if: index >= size then: error("Index is out of bounds.").
+
+                (RawTuple::slotAt:)(self, index)
+            } makeFinal recompileAndOptimize;
+            withSelector: #at:put: addMethod: {:(SelfType)self :(Size)index :(elementType)value :: Void |
+                if: index >= size then: error("Index is out of bounds.").
+
+                (RawTuple::slotAt:put:)(self, index, value)
+            } makeFinal recompileAndOptimize.
     }.
 
     public method printOn: (stream: Stream) ::=> Void := {
