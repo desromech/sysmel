@@ -34,13 +34,13 @@ public class StructureMetatype superclass: ValueMetatype; definition: {
     }.
 }.
 
-let EmptyStructType := StructureMetatype basicNew
+let AnyStructType := StructureMetatype basicNew
     flags: TypeFlags::MetatypeRequiredFlags;
     supertype: StructType;
     totalSlotCount: StructType validTotalSlotCount;
     yourself.
-public global EmptyStruct := EmptyStructType basicNew
-    name: #EmptyStruct;
+public global AnyStruct := AnyStructType basicNew
+    name: #AnyStruct;
     flags: TypeFlags::StructDefaultFlags;
     supertype: AnyValue;
     slots: ();
@@ -54,7 +54,7 @@ TypeMetaBuilder publicSubclass: #StructMetaBuilder slots: (
 
 StructMetaBuilder
     withSelector: #validSupertypeExpression addMethod: {:self :: ASTNode |
-        self supertypeExpression ifNil: `'EmptyStruct
+        self supertypeExpression ifNil: `'AnyStruct
     };
     withSelector: #finishExpansionWithEnvironment: addMethod: {:self :(Environment)environment :: ASTNode |
         let: #flagsExpression with: (ASTLiteralNode new

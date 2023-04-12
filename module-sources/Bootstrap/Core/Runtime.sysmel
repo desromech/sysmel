@@ -1416,15 +1416,125 @@ ByteArray
     withSelector: #new: addClassMethod: {:(ByteArray class)self :(Size)initialSize :: self |
         self basicNew: initialSize
     } makeFinal;
-    withSelector: #at: addMethod: {:(ByteArray)self :(Size)index |
+    withSelector: #at: addMethod: {:(ByteArray)self :(Size)index :: UInt8 |
         self __slotAt__: index
     };
-    withSelector: #at:put: addMethod: {:(ByteArray)self :(Size)index :value :: Void |
+    withSelector: #at:put: addMethod: {:(ByteArray)self :(Size)index :(UInt8)value :: Void |
         self __slotAt__: index put: value
     };
     withSelector: #size addMethod: {:(ByteArray)self :: Size |
         self __byteSize__
     };
+
+    withSelector: #uint8At: addMethod: {:(ByteArray)self :(Size)index :: UInt8 |
+        self at: index
+    };
+    withSelector: #uint8At:put: addMethod: {:(ByteArray)self :(Size)index :(UInt8)value :: Void |
+        self at: index put: value
+    };
+    withSelector: #char8At: addMethod: {:(ByteArray)self :(Size)index :: Char8 |
+        (self at: index) asChar8
+    };
+    withSelector: #char8At:put: addMethod: {:(ByteArray)self :(Size)index :(Char8)value :: Void |
+        self uint8At: index put: value asUInt8
+    };
+    withSelector: #int8At: addMethod: {:(ByteArray)self :(Size)index :: Int8 |
+        (self at: index) asInt8
+    };
+    withSelector: #int8At:put: addMethod: {:(ByteArray)self :(Size)index :(Int8)value :: Void |
+        self uint8At: index put: value asUInt8
+    };
+
+    withSelector: #uint16At: addMethod: {:(ByteArray)self :(Size)index :: UInt16 |
+        (self at: index) asUInt16
+        | ((self at: index + 1sz) asUInt16 << 8u16)
+    };
+    withSelector: #uint16At:put: addMethod: {:(ByteArray)self :(Size)index :(UInt16)value :: Void |
+        self
+            at: index put: value asUInt8;
+            at: index + 1sz put: (value >> 8u16) asUInt8
+    };
+    withSelector: #char16At: addMethod: {:(ByteArray)self :(Size)index :: Char16 |
+        (self uint16At: index) asChar16
+    };
+    withSelector: #char16At:put: addMethod: {:(ByteArray)self :(Size)index :(Char16)value :: Void |
+        self uint16At: index put: value asUInt16
+    };
+    withSelector: #int16At: addMethod: {:(ByteArray)self :(Size)index :: Int16 |
+        (self uint16At: index) asInt16
+    };
+    withSelector: #int16At:put: addMethod: {:(ByteArray)self :(Size)index :(Int16)value :: Void |
+        self uint16At: index put: value asUInt16
+    };
+
+    withSelector: #uint32At: addMethod: {:(ByteArray)self :(Size)index :: UInt32 |
+        (((self at: index) asUInt32
+        | ((self at: index + 1sz) asUInt32 << 8u32))
+        | ((self at: index + 2sz) asUInt32 << 16u32))
+        | ((self at: index + 3sz) asUInt32 << 24u32)
+    };
+    withSelector: #uint32At:put: addMethod: {:(ByteArray)self :(Size)index :(UInt32)value :: Void |
+        self
+            at: index put: value asUInt8;
+            at: index + 1sz put: (value >> 8u32) asUInt8;
+            at: index + 2sz put: (value >> 16u32) asUInt8;
+            at: index + 3sz put: (value >> 24u32) asUInt8
+    };
+    withSelector: #char32At: addMethod: {:(ByteArray)self :(Size)index :: Char32 |
+        (self uint32At: index) asChar32
+    };
+    withSelector: #char32At:put: addMethod: {:(ByteArray)self :(Size)index :(Char32)value :: Void |
+        self uint32At: index put: value asUInt32
+    };
+    withSelector: #int32At: addMethod: {:(ByteArray)self :(Size)index :: Int32 |
+        (self uint32At: index) asInt32
+    };
+    withSelector: #int32At:put: addMethod: {:(ByteArray)self :(Size)index :(Int32)value :: Void |
+        self uint32At: index put: value asUInt32
+    };
+
+    withSelector: #uint64At: addMethod: {:(ByteArray)self :(Size)index :: UInt64 |
+        (((((((self at: index) asUInt64
+        | ((self at: index + 1sz) asUInt64 << 8u64))
+        | ((self at: index + 2sz) asUInt64 << 16u64))
+        | ((self at: index + 3sz) asUInt64 << 24u64))
+        | ((self at: index + 4sz) asUInt64 << 32u64))
+        | ((self at: index + 5sz) asUInt64 << 40u64))
+        | ((self at: index + 6sz) asUInt64 << 48u64))
+        | ((self at: index + 7sz) asUInt64 << 56u64)
+    };
+    withSelector: #uint64At:put: addMethod: {:(ByteArray)self :(Size)index :(UInt64) value :: Void |
+        self
+            at: index put: value asUInt8;
+            at: index + 1sz put: (value >> 8u64) asUInt8;
+            at: index + 2sz put: (value >> 16u64) asUInt8;
+            at: index + 3sz put: (value >> 24u64) asUInt8;
+            at: index + 4sz put: (value >> 32u64) asUInt8;
+            at: index + 5sz put: (value >> 40u64) asUInt8;
+            at: index + 6sz put: (value >> 48u64) asUInt8;
+            at: index + 7sz put: (value >> 56u64) asUInt8
+    };
+    withSelector: #int64At: addMethod: {:(ByteArray)self :(Size)index :: Int64 |
+        (self uint64At: index) asInt64
+    };
+    withSelector: #int64At:put: addMethod: {:(ByteArray)self :(Size)index :(Int64) value :: Void |
+        self uint64At: index put: value asUInt64
+    };
+
+    withSelector: #float32At: addMethod: {:(ByteArray)self :(Size)index :: Float32 |
+        (self uint32At: index) asIEEEFloat32Decoded
+    };
+    withSelector: #float32At:put: addMethod: {:(ByteArray)self :(Size)index :(Float32)value :: Void |
+        self uint32At: index put: value asIEEEFloat32Encoding
+    };
+
+    withSelector: #float32At: addMethod: {:(ByteArray)self :(Size)index :: Float64 |
+        (self uint64At: index) asIEEEFloat64Decoded
+    };
+    withSelector: #float64At:put: addMethod: {:(ByteArray)self :(Size)index :(Float64)value :: Void |
+        self uint64At: index put: value asIEEEFloat64Encoding
+    };
+
     withSelector: #printOn: addMethod: {:(ByteArray)self :(Stream)stream :: Void |
         stream nextPutAll: "#[".
         self doWithIndex: {:element :index :: Void |
@@ -1510,8 +1620,20 @@ MethodDictionary
         }
     }.
 
+## Byte encoding
+Type
+    withSelector: #canEncodeValueInBytes addMethod: {:(Type)self :: Boolean | self isBytes };
+    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Type)self :value :(ByteArray)bytes :(Size)offset :: Void |
+        self assert: self canEncodeValueInBytes.
+    }.
+
 ## Primitive numbers meta methods.
 Char8 class
+    withSelector: #canEncodeValueInBytes addMethod: {:(Char8 class)self :: Boolean | true };
+    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Type)self :(Char8)value :(ByteArray)bytes :(Size)offset :: Void |
+        bytes char8At: offset put: value
+    };
+
     withSelector: #defaultValue addMethod: {:(Char8 class)self :: Char8 | 0c8 };
     withSelector: #zero addMethod: {:(Char8 class)self :: Char8 | 0c8 };
     withSelector: #one addMethod: {:(Char8 class)self :: Char8 | 1c8 }.

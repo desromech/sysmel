@@ -46,54 +46,48 @@ AsmObjectCodeSection definition: {
     }.
 
     public method nextPutInt8: (value: Int8) ::=> Void := {
-        data at: writeOffset put: value asUInt8.
+        data int8At: writeOffset put: value.
         writeOffset := writeOffset + 1sz.
     }.
 
     public method nextPutUInt16: (value: UInt16) ::=> Void := {
-        data at: writeOffset put: value asUInt8.
-        data at: writeOffset + 1sz put: (value >> 8u16) asUInt8.
+        data uint16At: writeOffset put: value.
         writeOffset := writeOffset + 2sz.
     }.
 
     public method nextPutInt16: (value: Int16) ::=> Void := {
-        self nextPutUInt16: value asUInt16
+        data int16At: writeOffset put: value.
+        writeOffset := writeOffset + 2sz.
     }.
 
     public method nextPutUInt32: (value: UInt32) ::=> Void := {
-        data at: writeOffset put: value asUInt8.
-        data at: writeOffset + 1sz put: (value >> 8u32) asUInt8.
-        data at: writeOffset + 2sz put: (value >> 16u32) asUInt8.
-        data at: writeOffset + 3sz put: (value >> 24u32) asUInt8.
+        data uint32At: writeOffset put: value.
         writeOffset := writeOffset + 4sz.
     }.
 
     public method nextPutInt32: (value: Int32) ::=> Void := {
-        self nextPutUInt32: value asUInt32
+        data int32At: writeOffset put: value.
+        writeOffset := writeOffset + 4sz.
     }.
 
     public method nextPutUInt64: (value: UInt64) ::=> Void := {
-        data at: writeOffset put: value asUInt8.
-        data at: writeOffset + 1sz put: (value >> 8u64) asUInt8.
-        data at: writeOffset + 2sz put: (value >> 16u64) asUInt8.
-        data at: writeOffset + 3sz put: (value >> 24u64) asUInt8.
-        data at: writeOffset + 4sz put: (value >> 32u64) asUInt8.
-        data at: writeOffset + 5sz put: (value >> 40u64) asUInt8.
-        data at: writeOffset + 6sz put: (value >> 48u64) asUInt8.
-        data at: writeOffset + 7sz put: (value >> 56u64) asUInt8.
+        data uint64At: writeOffset put: value.
         writeOffset := writeOffset + 8sz.
     }.
 
     public method nextPutInt64: (value: Int64) ::=> Void := {
-        self nextPutUInt64: value asUInt64
+        data int64At: writeOffset put: value.
+        writeOffset := writeOffset + 8sz.
     }.
 
     public method nextPutFloat32: (value: Float32) ::=> Void := {
-        self nextPutUInt32: value asIEEEFloat32Encoding
+        data float32At: writeOffset put: value.
+        writeOffset := writeOffset + 4sz.
     }.
 
     public method nextPutFloat64: (value: Float64) ::=> Void := {
-        self nextPutUInt64: value asIEEEFloat64Encoding
+        data float64At: writeOffset put: value.
+        writeOffset := writeOffset + 8sz.
     }.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
