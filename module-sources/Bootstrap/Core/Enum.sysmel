@@ -1,0 +1,90 @@
+public global TypeFlags::EnumDefaultFlags := TypeFlags::None.
+
+public class EnumType superclass: ValueType; definition: {
+    public field valueType => Type.
+
+    __Meta__ definition: {
+        public method makeWithValueType: (valueType: Type) typeSlots: (typeSlots: Array) ::=> EnumType := {
+            let: #metatype with: EnumMetatype basicNew.
+            let: #metatypeSuper with: EnumType.
+            metatype
+                flags: TypeFlags::MetatypeRequiredFlags;
+                supertype: metatypeSuper;
+                slots: typeSlots;
+                totalSlotCount: metatypeSuper validTotalSlotCount + typeSlots size;
+                registerSlotsInDictionary;
+                generatePublicAccessors.
+            
+            let: #enum with: metatype basicNew.
+            enum
+                flags: TypeFlags::EnumDefaultFlags;
+                supertype: AnyValue;
+                valueType: valueType;
+                slots: (TypeSlot publicNamed: #methodFlags type: Bitflags,);
+                totalSlotCount: 1;
+                registerSlotsInDictionary;
+                generatePublicAccessors.
+            metatype thisType: enum.
+            enum
+        }.
+    }.
+}.
+
+public class EnumMetatype superclass: ValueMetatype; definition: {
+    __Meta__ definition:{
+        public method getOrCreateDependentApplicationValueForNode: (astNode: ASTNode)
+            := EnumType
+    }.
+}.
+
+## Enum MetaBuilder.
+TypeMetaBuilder publicSubclass: #EnumMetaBuilder slots: (
+    TypeSlot publicNamed: #valueTypeExpression type: ASTNode ,
+).
+
+EnumMetaBuilder
+    withSelector: #validValueTypeExpression addMethod: {:self :: ASTNode |
+        self valueTypeExpression ifNil: `'AnyValue
+    };
+    withSelector: #valueType: addMethod: {:self :(ASTNode)valueTypeExpression :: ASTNode |
+        <metaBuilder>
+        self valueTypeExpression: valueTypeExpression.
+        self continueExpansion
+    };
+    withSelector: #finishExpansionWithEnvironment: addMethod: {:self :(Environment)environment :: ASTNode |
+        let: #flagsExpression with: (ASTLiteralNode new
+            sourcePosition: self sourcePosition;
+            value: self typeFlags;
+            yourself).
+
+        let: #makeEnumExpression with: ``(
+            (EnumType makeWithValueType: `,(self validValueTypeExpression) typeSlots: `,(self validMetaSlotsExpression))
+                addFlags: `,flagsExpression;
+                yourself
+        ).
+
+        let: #name with: self name.
+
+        let: #structValueExpression with: (name
+            ifNil: makeEnumExpression
+            ifNotNil: (if: self isPublic
+                then: ``(public: `,name with: (`,makeEnumExpression name: `,name; yourself))
+                else: ``(let: `,name with: `,makeEnumExpression) 
+            )
+        ).
+
+        let: #definitionExpression with: self definitionExpression.
+        definitionExpression
+        ifNil: structValueExpression
+        ifNotNil: ``(`,structValueExpression definition: `,definitionExpression)
+    }.
+
+public: #enum with: (MetaBuilderFactory for: EnumMetaBuilder).
+
+FlagMetaBuilder
+    withSelector: #enum addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self delegateToMetaBuilder: (EnumMetaBuilder new
+            typeFlags: self typeFlags;
+            yourself)
+    }.

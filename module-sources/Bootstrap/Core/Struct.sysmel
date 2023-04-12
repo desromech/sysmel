@@ -1,0 +1,92 @@
+public global TypeFlags::StructDefaultFlags := TypeFlags::None.
+
+public class StructType superclass: ValueType; definition: {
+    public method substructureWithTypeSlots: (typeSlots: Array) ::=> StructType := {
+        let: #metatype with: StructureMetatype basicNew.
+        let: #metatypeSuper with: self __type__.
+        metatype
+            flags: TypeFlags::MetatypeRequiredFlags;
+            supertype: metatypeSuper;
+            slots: typeSlots;
+            totalSlotCount: metatypeSuper validTotalSlotCount + typeSlots size;
+            registerSlotsInDictionary;
+            generatePublicAccessors.
+        
+        let: #struct with: metatype basicNew.
+        struct
+            flags: TypeFlags::StructDefaultFlags;
+            supertype: self;
+            slots: ();
+            totalSlotCount: nil;
+            registerInSupertype.
+        metatype thisType: struct.
+        struct
+    }.
+}.
+
+public class StructureMetatype superclass: ValueMetatype; definition: {
+    __Meta__ definition:{
+        public method getOrCreateDependentApplicationValueForNode: (astNode: ASTNode)
+            := StructType
+    }.
+}.
+
+let EmptyStructType := StructureMetatype basicNew
+    flags: TypeFlags::MetatypeRequiredFlags;
+    supertype: StructType;
+    totalSlotCount: StructType validTotalSlotCount;
+    yourself.
+public global EmptyStruct := EmptyStructType basicNew
+    name: #EmptyStruct;
+    flags: TypeFlags::StructDefaultFlags;
+    supertype: AnyValue;
+    slots: ();
+    totalSlotCount: 0sz;
+    registerInSupertype;
+    yourself.
+
+## Struct MetaBuilder.
+TypeMetaBuilder publicSubclass: #StructMetaBuilder slots: (
+).
+
+StructMetaBuilder
+    withSelector: #validSupertypeExpression addMethod: {:self :: ASTNode |
+        self supertypeExpression ifNil: `'EmptyStruct
+    };
+    withSelector: #finishExpansionWithEnvironment: addMethod: {:self :(Environment)environment :: ASTNode |
+        let: #flagsExpression with: (ASTLiteralNode new
+            sourcePosition: self sourcePosition;
+            value: self typeFlags;
+            yourself).
+
+        let: #makeStructExpression with: ``(
+            (`,(self validSupertypeExpression) substructureWithTypeSlots: `,(self validMetaSlotsExpression))
+                addFlags: `,flagsExpression;
+                yourself
+        ).
+
+        let: #name with: self name.
+
+        let: #structValueExpression with: (name
+            ifNil: makeStructExpression
+            ifNotNil: (if: self isPublic
+                then: ``(public: `,name with: (`,makeStructExpression name: `,name; yourself))
+                else: ``(let: `,name with: `,makeStructExpression) 
+            )
+        ).
+
+        let: #definitionExpression with: self definitionExpression.
+        definitionExpression
+        ifNil: structValueExpression
+        ifNotNil: ``(`,structValueExpression definition: `,definitionExpression)
+    }.
+
+public: #struct with: (MetaBuilderFactory for: StructMetaBuilder).
+
+FlagMetaBuilder
+    withSelector: #struct addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self delegateToMetaBuilder: (StructMetaBuilder new
+            typeFlags: self typeFlags;
+            yourself)
+    }.

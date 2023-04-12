@@ -272,43 +272,6 @@ ClassMetaBuilder
 
 public: #class with: (MetaBuilderFactory for: ClassMetaBuilder).
 
-TypeMetaBuilder publicSubclass: #StructMetaBuilder slots: (
-).
-
-StructMetaBuilder
-    withSelector: #validSupertypeExpression addMethod: {:self :: ASTNode |
-        self supertypeExpression ifNil: `'Struct
-    };
-    withSelector: #finishExpansionWithEnvironment: addMethod: {:self :(Environment)environment :: ASTNode |
-        let: #flagsExpression with: (ASTLiteralNode new
-            sourcePosition: self sourcePosition;
-            value: self typeFlags;
-            yourself).
-
-        let: #makeStructExpression with: ``(
-            (`,(self validSupertypeExpression) substructureWithTypeSlot: `,(self validMetaSlotsExpression))
-                addFlags: `,flagsExpression;
-                yourself
-        ).
-
-        let: #name with: self name.
-
-        let: #structValueExpression with: (name
-            ifNil: makeStructExpression
-            ifNotNil: (if: self isPublic
-                then: ``(public: `,name with: (`,makeStructExpression name: `,name; yourself))
-                else: ``(let: `,name with: `,makeStructExpression) 
-            )
-        ).
-
-        let: #definitionExpression with: self definitionExpression.
-        definitionExpression
-        ifNil: structValueExpression
-        ifNotNil: ``(`,structValueExpression definition: `,definitionExpression)
-    }.
-
-public: #struct with: (MetaBuilderFactory for: StructMetaBuilder).
-
 NamedMetaBuilder publicSubclass: #VariableMetaBuilder slots: (
     TypeSlot publicNamed: #typeExpression type: ASTNode ,
     TypeSlot publicNamed: #initialValue type: ASTNode ,
@@ -677,12 +640,6 @@ FlagMetaBuilder
         <metaBuilder>
         self delegateToMetaBuilder: (GlobalMetaBuilder new
             isPublic: self isPublic;
-            yourself)
-    };
-    withSelector: #struct addMethod: {:self :: ASTNode |
-        <metaBuilder>
-        self delegateToMetaBuilder: (StructMetaBuilder new
-            typeFlags: self typeFlags;
             yourself)
     }.
 

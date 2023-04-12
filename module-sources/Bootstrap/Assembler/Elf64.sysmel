@@ -1,0 +1,57 @@
+public global Elf64::Addr = UInt64.
+public global Elf64::Off = UInt64.
+public global Elf64::Half = UInt16.
+public global Elf64::Word = UInt32.
+public global Elf64::Sword = Int32.
+public global Elf64::Xword = UInt64.
+public global Elf64::Sxword = Int64.
+
+public struct Elf64::Header definition: {
+    public field ident => Char8[16].
+    public field type => Elf64::Half.
+    public field machine => Elf64::Half.
+    public field version => Elf64::Word.
+    public field entry => Elf64::Addr.
+    public field programHeaderOffset => Elf64::Off.
+    public field sectionHeaderOffset => Elf64::Off.
+    public field flags => Elf64::Word.
+    public field elfHeaderSize => Elf64::Half.
+    public field programHeaderEntrySize => Elf64::Half.
+    public field programHeaderEntryNumber => Elf64::Half.
+    public field sectionHeaderEntrySize => Elf64::Half.
+    public field sectionHeaderEntryNumber => Elf64::Half.
+    public field sectionNameStringStringTableIndex => Elf64::Half.
+}.
+
+public struct Elf64::SectionHeader definition: {
+    public field name => Elf64::Word.
+    public field type => Elf64::Word.
+    public field flags => Elf64::Xword.
+    public field addr => Elf64::Addr.
+    public field offset => Elf64::Off.
+    public field size => Elf64::Xword.
+    public field link => Elf64::Word.
+    public field info => Elf64::Word.
+    public field addrAlign => Elf64::Xword.
+    public field entrySize => Elf64::Xword.
+}.
+
+public struct Elf64::Symbol definition: {
+    public field name => Elf64::Word.
+    public field info => UInt8.
+    public field other => UInt8.
+    public field sectionHeaderIndex => Elf64::Half.
+    public field value => Elf64::Addr.
+    public field size => Elf64::Xword.
+}.
+
+public struct Elf64::Rel definition: {
+    public field offset => Elf64::Addr.
+    public field info => Elf64::Xword.
+}.
+
+public struct Elf64::Rela definition: {
+    public field offset => Elf64::Addr.
+    public field info => Elf64::Xword.
+    public field addend => Elf64::Sxword.
+}.

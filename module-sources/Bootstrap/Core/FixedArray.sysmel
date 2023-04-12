@@ -1,0 +1,43 @@
+public class FixedArrayType superclass: ValueType; definition: {
+    public field elementType => Type.
+    public field size => Size.
+
+    public method initializeWithElementType: (initialElementType: Type) size: (initialSize: Size) ::=> Void := {
+        elementType := initialElementType.
+        size := initialSize.
+
+        self supertype: AnyValue;
+            slots: #();
+            totalSlotCount: 0sz.
+    }.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream print: elementType; nextPut: '['; print: size; nextPut: ']'
+    }.
+
+    public method basicAllocate => self := {
+        let result := RawTuple::new(size).
+        (RawTuple::type:)(result, self).
+        result
+    }.
+}.
+
+public global FixedArrayTypeTemplate := {:(Type)elementType :(Size)size :: FixedArrayType |
+    FixedArrayType basicNew
+        initializeWithElementType: elementType size: size;
+        yourself.
+} makeMemoized makeTemplate.
+
+Type extend: {
+    public pure final method fixedArray: (size: Size) ::=> FixedArrayType
+        := FixedArrayTypeTemplate(self, size).
+
+    public pure final method fixedArray ::=> FixedArrayType
+        := self fixedArray: 0sz.
+
+    public pure final method[size: Size] ::=> FixedArrayType
+        := self fixedArray: size.
+
+    public pure final method[] ::=> FixedArrayType
+        := self fixedArray: 0sz.
+}.

@@ -2,4 +2,7 @@ loadSourceNamed: "Runtime.sysmel".
 loadSourceNamed: "AST.sysmel".
 loadSourceNamed: "RuntimeMacros.sysmel".
 loadSourceNamed: "MetaBuilders.sysmel".
+loadSourceNamed: "FixedArray.sysmel".
+loadSourceNamed: "Enum.sysmel".
+loadSourceNamed: "Struct.sysmel".
 loadSourceNamed: "Math.sysmel".
