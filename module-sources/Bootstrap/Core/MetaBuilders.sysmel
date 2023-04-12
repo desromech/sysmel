@@ -368,10 +368,19 @@ FieldMetaBuilder
             sourcePosition: self sourcePosition;
             value: self fieldFlags;
             yourself).
+        let: #initialValue with: self initialValue.
+        let: #initialValueBlock with: (initialValue ifNotNil: (``{:(SelfType)self :: `,typeExpression | `,initialValue })).
 
-        typeExpression
-            ifNil: ``(__OwnerProgramEntity__ addTypeSlot: (TypeSlot named: `,(self name) flags: `,flagsExpression))
-            ifNotNil: ``(__OwnerProgramEntity__ addTypeSlot: (TypeSlot named: `,(self name) type: `,typeExpression flags: `,flagsExpression))
+        initialValueBlock
+            ifNil: (
+                typeExpression
+                    ifNil: ``(__OwnerProgramEntity__ addTypeSlot: (TypeSlot named: `,(self name) flags: `,flagsExpression))
+                    ifNotNil: ``(__OwnerProgramEntity__ addTypeSlot: (TypeSlot named: `,(self name) type: `,typeExpression flags: `,flagsExpression))
+            ) ifNotNil: (
+                typeExpression
+                    ifNil: ``(__OwnerProgramEntity__ addTypeSlot: (TypeSlot named: `,(self name) flags: `,flagsExpression) initialValueBlock: `,initialValueBlock)
+                    ifNotNil: ``(__OwnerProgramEntity__ addTypeSlot: (TypeSlot named: `,(self name) type: `,typeExpression flags: `,flagsExpression) initialValueBlock: `,initialValueBlock)
+            )
     }.
 
 MacroMetaBuilder publicSubclass: #MethodMetaBuilder slots: (

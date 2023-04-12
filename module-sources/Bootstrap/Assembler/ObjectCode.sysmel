@@ -194,7 +194,7 @@ AsmObjectCodeStream definition: {
     public field objectCodeBuilder => AsmObjectCodeBuilder.
     public field activeSection => AsmObjectCodeSection.
 
-    public field isInX86LongMode => Boolean
+    public method isInX86LongMode => Boolean
         := true.
 
     public abstract method alignTo: (requiredAlignment: Size) ::=> Void

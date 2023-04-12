@@ -1,10 +1,10 @@
-public global Elf64::Addr = UInt64.
-public global Elf64::Off = UInt64.
-public global Elf64::Half = UInt16.
-public global Elf64::Word = UInt32.
-public global Elf64::Sword = Int32.
-public global Elf64::Xword = UInt64.
-public global Elf64::Sxword = Int64.
+public global Elf64::Addr := UInt64.
+public global Elf64::Off := UInt64.
+public global Elf64::Half := UInt16.
+public global Elf64::Word := UInt32.
+public global Elf64::Sword := Int32.
+public global Elf64::Xword := UInt64.
+public global Elf64::Sxword := Int64.
 
 public struct Elf64::Header definition: {
     public field ident => Char8[16].

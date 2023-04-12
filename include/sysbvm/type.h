@@ -14,6 +14,7 @@ typedef struct sysbvm_type_tuple_s
     sysbvm_tuple_t owner;
     sysbvm_tuple_t supertype;
     sysbvm_tuple_t slots;
+    sysbvm_tuple_t slotsWithBasicInitialization;
     sysbvm_tuple_t totalSlotCount;
     sysbvm_tuple_t instanceSize;
     sysbvm_tuple_t instanceAlignment;
@@ -123,6 +124,7 @@ typedef struct sysbvm_typeSlot_s
     sysbvm_tuple_t localIndex;
     sysbvm_tuple_t index;
     sysbvm_tuple_t offset;
+    sysbvm_tuple_t initialValueBlock;
 } sysbvm_typeSlot_t;
 
 typedef struct sysbvm_functionType_s

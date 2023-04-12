@@ -20,6 +20,16 @@ public class FixedArrayType superclass: ValueType; definition: {
         (RawTuple::type:)(result, self).
         result
     }.
+
+    public method basicInitializeInstance: instance ::=> Void := {
+        let i mutable := 0sz.
+        while: (i < size) do: (
+            (RawTuple::slotAt:put:)(instance, i, elementType defaultValue)
+        ) continueWith: (i := i + 1sz)
+    }.
+
+    public method defaultValue => self
+        := self basicNew.
 }.
 
 public global FixedArrayTypeTemplate := {:(Type)elementType :(Size)size :: FixedArrayType |

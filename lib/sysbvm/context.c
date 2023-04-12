@@ -565,7 +565,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "owner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
         "supertype", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         "slots", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
-        "totalSlotCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "slotsWithBasicInitialization", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "totalSlotCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anyValueType,
         "instanceSize", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "instanceAlignment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
@@ -593,6 +594,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "localIndex", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "index", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "offset", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "initialValueBlock", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anyValueType,
         NULL);
 
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.valueType, "ValueType", SYSBVM_NULL_TUPLE, NULL);
@@ -929,7 +931,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "arguments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "resultType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "body", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
-        "hasLazyAnalysis", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        "hasLazyAnalysis", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anyValueType,
         "functionDefinition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
         "binding", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
         NULL);

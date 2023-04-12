@@ -119,6 +119,7 @@ TypeSlot
     } makeFinal withEagerAnalysis.
 
 AnyValue
+    withSelector: #basicInitialize addMethod: {:(AnyValue)self :: Void | self __type__ basicInitializeInstance: self } withEagerAnalysis;
     withSelector: #initialize addMethod: {:(AnyValue)self :: Void | } withEagerAnalysis;
     withSelector: #yourself addMethod: {:(AnyValue)self :: self __type__ |
         <primitive: #yourself>
@@ -194,6 +195,8 @@ Type
     withSelector: #basicNew addMethod: {:(Type)self :: self |
         self basicAllocate
     } withEagerAnalysis;
+    withSelector: #basicInitializeInstance: addMethod: {:(TypeSlot)self :(AnyValue)instance :: Void |
+    } withEagerAnalysis;
     withSelector: #new addMethod: {:(Type)self :: self |
         self basicNew initialize; yourself
     } withEagerAnalysis.
@@ -252,6 +255,17 @@ TypeSlot
                 } makeFinal recompileAndOptimize.
             }
         }
+    } withEagerAnalysis.
+
+Array
+    withSelector: #at: addMethod: {:(Array)self :(Size)index |
+        self __slotAt__: index
+    } withEagerAnalysis;
+    withSelector: #at:put: addMethod: {:(Array)self :(Size)index :value :: Void |
+        self __slotAt__: index put: value
+    } withEagerAnalysis;
+    withSelector: #size addMethod: {:(Array)self :: Size |
+        self __size__
     } withEagerAnalysis.
 
 Type
@@ -322,6 +336,12 @@ Type
         self hasFlag: TypeFlags::Abstract.
     } withEagerAnalysis;
 
+    withSelector: #defaultValue addMethod: {:(Type)self :: self |
+        if: self isNullable
+            then: nil
+            else: (self error: "A proper default value must be defined for " -- self printString).
+    } withEagerAnalysis;
+
     withSelector: #validSlotDictionary addMethod: {:(Type)self :: MethodDictionary |
         if: self slotDictionary == nil then: (self slotDictionary: MethodDictionary new).
         self slotDictionary
@@ -336,7 +356,7 @@ Type
         let: #supertype with: self supertype.
         if: supertype == nil then: 0sz else: supertype validTotalSlotCount.
     };
-    withSelector: #validSlots addMethod: {:(Type)self |
+    withSelector: #validSlots addMethod: {:(Type)self :: Array |
         let: #pendingSlots with: self pendingSlots.
         if: pendingSlots ~~ nil then: {
 
@@ -355,7 +375,8 @@ Type
             self slots: self slots -- pendingSlotsArray.
             self pendingSlots: nil
         }.
-        
+
+        if: self slots == nil then: (self slots: #()).
         self slots
     };
     withSelector: #validTotalSlotCount addMethod: {:(Type)self :: Size |
@@ -399,10 +420,10 @@ Type
         result
     } withEagerAnalysis;
     withSelector: #basicNew addMethod: {:(Type)self :: self |
-        self basicAllocate
+        self basicAllocate basicInitialize; yourself
     } withEagerAnalysis;
     withSelector: #basicNew: addMethod: {:(Type)self :(Size)variableSlotCount :: self |
-        self basicAllocate: variableSlotCount
+        (self basicAllocate: variableSlotCount) basicInitialize; yourself
     } withEagerAnalysis;
     withSelector: #new addMethod: {:(Type)self :: self |
         self basicNew initialize; yourself
@@ -858,6 +879,21 @@ Collection
         }
     };
 
+    withSelector: #select: addMethod: {:(Collection)self :aBlock :: Collection |
+        let: #result with: ArrayList new.
+        self do: {:each :: Void |
+            if: aBlock(each) then: (result add: each)
+        }.
+        result
+    };
+    withSelector: #reject: addMethod: {:(Collection)self :aBlock :: Collection |
+        let: #result with: ArrayList new.
+        self do: {:each :: Void |
+            if: aBlock(each) not then: (result add: each)
+        }.
+        result
+    };
+
     withSelector: #printOn: addMethod: {:(Collection)self :(Stream)stream :: Void |
         stream print: self class; nextPutAll: "(".
         self doWithIndex: {:element :(Size)index :: Void |
@@ -878,7 +914,7 @@ Collection
 
         stream nextPutAll: ")"
     };
-    withSelector: #asArray addMethod: {:(SequenceableCollection)self :: Array |
+    withSelector: #asArray addMethod: {:(Collection)self :: Array |
         let: #array with: (Array new: self size).
         self doWithIndex: {:element :(Size)index :: Void |
             array at: index put: element
@@ -1296,6 +1332,11 @@ ArrayList
         self size: initialSize.
         self storage: (self class arrayType new: initialSize).
     };
+    withSelector: #addAll: addMethod: {:(ArrayList)self :(Collection)elements |
+        elements do: {:each :: Void |
+            self add: each
+        }
+    };
     withSelector: #at: addMethod: {:(ArrayList)self :(Size)index |
         if: index < self size then: {
             self storage at: index
@@ -1357,15 +1398,6 @@ Array
     withSelector: #new: addClassMethod: {:(Array class)self :(Size)initialSize :: self |
         self basicNew: initialSize
     } makeFinal;
-    withSelector: #at: addMethod: {:(Array)self :(Size)index |
-        self __slotAt__: index
-    };
-    withSelector: #at:put: addMethod: {:(Array)self :(Size)index :value :: Void |
-        self __slotAt__: index put: value
-    };
-    withSelector: #size addMethod: {:(Array)self :: Size |
-        self __size__
-    };
     withSelector: #asArray addMethod: {:(Array)self :: Array | self };
     withSelector: #asArraySlice addMethod: {:(Array)self :: ArraySlice |
         ArraySlice basicNew
@@ -1473,7 +1505,123 @@ MethodDictionary
         }
     }.
 
+## Primitive numbers meta methods.
+Char8 class
+    withSelector: #defaultValue addMethod: {:(Char8 class)self :: Char8 | 0c8 };
+    withSelector: #zero addMethod: {:(Char8 class)self :: Char8 | 0c8 };
+    withSelector: #one addMethod: {:(Char8 class)self :: Char8 | 1c8 }.
+
+UInt8 class
+    withSelector: #defaultValue addMethod: {:(UInt8 class)self :: UInt8 | 0u8 };
+    withSelector: #zero addMethod: {:(UInt8 class)self :: UInt8 | 0u8 };
+    withSelector: #one addMethod: {:(UInt8 class)self :: UInt8 | 1u8 }.
+
+Int8 class
+    withSelector: #defaultValue addMethod: {:(Int8 class)self :: Int8 | 0i8 };
+    withSelector: #zero addMethod: {:(Int8 class)self :: Int8 | 0i8 };
+    withSelector: #one addMethod: {:(Int8 class)self :: Int8 | 1i8 }.
+
+Char16 class
+    withSelector: #defaultValue addMethod: {:(Char16 class)self :: Char16 | 0c16 };
+    withSelector: #zero addMethod: {:(Char16 class)self :: Char16 | 0c16 };
+    withSelector: #one addMethod: {:(Char16 class)self :: Char16 | 1c16 }.
+
+UInt16 class
+    withSelector: #defaultValue addMethod: {:(UInt16 class)self :: UInt16 | 0u16 };
+    withSelector: #zero addMethod: {:(UInt16 class)self :: UInt16 | 0u16 };
+    withSelector: #one addMethod: {:(UInt16 class)self :: UInt16 | 1u16 }.
+
+Int16 class
+    withSelector: #defaultValue addMethod: {:(Int16 class)self :: Int16 | 0i16 };
+    withSelector: #zero addMethod: {:(Int16 class)self :: Int16 | 0i16 };
+    withSelector: #one addMethod: {:(Int16 class)self :: Int16 | 1i16 }.
+
+Char32 class
+    withSelector: #defaultValue addMethod: {:(Char32 class)self :: Char32 | 0c32 };
+    withSelector: #zero addMethod: {:(Char32 class)self :: Char32 | 0c32 };
+    withSelector: #one addMethod: {:(Char32 class)self :: Char32 | 1c32 }.
+
+UInt32 class
+    withSelector: #defaultValue addMethod: {:(UInt32 class)self :: UInt32 | 0u32 };
+    withSelector: #zero addMethod: {:(UInt32 class)self :: UInt32 | 0u32 };
+    withSelector: #one addMethod: {:(UInt32 class)self :: UInt32 | 1u32 }.
+
+Int32 class
+    withSelector: #defaultValue addMethod: {:(Int32 class)self :: Int32 | 0i32 };
+    withSelector: #zero addMethod: {:(Int32 class)self :: Int32 | 0i32 };
+    withSelector: #one addMethod: {:(Int32 class)self :: Int32 | 1i32 }.
+
+Int64 class
+    withSelector: #defaultValue addMethod: {:(Int64 class)self :: Int64 | 0i64 };
+    withSelector: #zero addMethod: {:(Int64 class)self :: Int64 | 0i64 };
+    withSelector: #one addMethod: {:(Int64 class)self :: Int64 | 1i64 }.
+
+UInt64 class
+    withSelector: #defaultValue addMethod: {:(UInt64 class)self :: UInt64 | 0u64 };
+    withSelector: #zero addMethod: {:(UInt64 class)self :: UInt64 | 0u64 };
+    withSelector: #one addMethod: {:(UInt64 class)self :: UInt64 | 1u64 }.
+
+Float32 class
+    withSelector: #defaultValue addMethod: {:(Float32 class)self :: Float32 | 0.0f32 };
+    withSelector: #zero addMethod: {:(Float32 class)self :: Float32 | 0.0f32 };
+    withSelector: #one addMethod: {:(Float32 class)self :: Float32 | 1.0f32 }.
+
+Float64 class
+    withSelector: #defaultValue addMethod: {:(Float64 class)self :: Float64 | 0.0 };
+    withSelector: #zero addMethod: {:(Float64 class)self :: Float64 | 0.0 };
+    withSelector: #one addMethod: {:(Float64 class)self :: Float64 | 1.0 }.
+
+Boolean class
+    withSelector: #defaultValue addMethod: {:(Boolean class)self :: Boolean | false }.
+
+TypeSlot
+    withSelector: #requiresBasicInitialization addMethod: {:(TypeSlot)self :: Boolean |
+        let: #type with: self type.
+        (self initialValueBlock ~~ nil) || ((type ~~ nil) && (type isNullable not))
+    } withEagerAnalysis;
+    withSelector: #basicInitializeInstance: addMethod: {:(TypeSlot)self :(AnyValue)instance :: Void |
+        let: #initialValueBlock with: self initialValueBlock.
+        if: initialValueBlock ~~ nil then: {
+            let: #initialValue with: initialValueBlock(instance).
+            (RawTuple::slotAt:put:)(instance, self index, initialValue)
+        } else: {
+            let: #type with: self type.
+            if: type ~~ nil then: {
+                (RawTuple::slotAt:put:)(instance, self index, type defaultValue)
+            }.
+        }
+    } withEagerAnalysis.
+
 Type
+    withSelector: #validSlotsWithBasicInitialization addMethod: {:(Type)self :: Array |
+        if: self slotsWithBasicInitialization == nil then: {
+            let: #supertype with: self supertype.
+            let: #result with: ArrayList new.
+            if: supertype ~~ nil then: (result addAll: supertype validSlotsWithBasicInitialization).
+
+            self validSlots do: {:(TypeSlot)typeSlot :: Void |
+                if: typeSlot requiresBasicInitialization then: {
+                    result add: typeSlot
+                }.
+            }.
+
+            self slotsWithBasicInitialization: result asArray
+        }.
+        self slotsWithBasicInitialization
+    }.
+
+Array validSlotsWithBasicInitialization.
+ArrayList validSlotsWithBasicInitialization.
+
+Type
+    withSelector: #basicInitializeInstance: addMethod: {:(Type)self :(AnyValue)instance :: Void |
+        let: #validSlots with: self validSlotsWithBasicInitialization.
+        let: #slotCount with: validSlots size.
+        let: #i mutableWith: 0sz.
+        while: (i < slotCount) do: (
+            (validSlots at: i) basicInitializeInstance: instance
+        ) continueWith: (i := i + 1sz)
+    } withEagerAnalysis;
     withSelector: #validSubtypeList addMethod: {:(Type)self :: WeakArrayList |
         if: self subtypes == nil then: (self subtypes: WeakArrayList new).
         self subtypes
@@ -1589,11 +1737,24 @@ TypeSlot
             index: 0sz;
             yourself
     };
+    withSelector: #named:type:flags:initialValueBlock: addClassMethod: {:(TypeSlot class)self :name :(Type)type :(Size)flags :(AnyValue)initialValueBlock :: self |
+        self new
+            name: name;
+            type: type;
+            flags: flags;
+            localIndex: 0sz;
+            index: 0sz;
+            initialValueBlock: initialValueBlock;
+            yourself
+    };
     withSelector: #named:type: addClassMethod: {:(TypeSlot class)self :name :(Type)type :: self |
         self named: name type: type flags: TypeSlotFlags::None
     };
     withSelector: #named:flags: addClassMethod: {:(TypeSlot class)self :name :(Size)flags :: self |
         self named: name type: AnyValue flags: flags
+    };
+    withSelector: #named:flags:initialValueBlock: addClassMethod: {:(TypeSlot class)self :name :(Size)flags :(AnyValue)initialValueBlock :: self |
+        self named: name type: AnyValue flags: flags initialValueBlock: initialValueBlock
     };
     withSelector: #named: addClassMethod: {:(TypeSlot class)self :name :(Type)type :: self |
         self publicNamed: name type: AnyValue
