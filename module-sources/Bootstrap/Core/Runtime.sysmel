@@ -2070,10 +2070,11 @@ SimpleFunctionType
 
 (Float32 >> #sqrt) __type__: (Float32 => Float32).
 (Float32 >> #asIEEEFloat32Encoding) __type__: (Float32 => UInt32).
+(UInt32 >> #asIEEEFloat32Decoded) __type__: (UInt32 => Float32).
 
 (Float64 >> #sqrt) __type__: (Float32 => Float32).
 (Float64 >> #asIEEEFloat64Encoding) __type__: (Float64 => UInt64).
-
+(UInt64 >> #asIEEEFloat64Decoded) __type__: (UInt64 => Float64).
 
 Function
     withSelector: #timeToRunInNanoseconds addMethod: {:(Function)self :: Int64 |
