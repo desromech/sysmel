@@ -68,6 +68,8 @@ public struct Elf32::Header definition: {
             at: Elf::Ident::Version put: Elf::Ident::CurrentVersion.
         
         version := Elf::CurrentVersion.
+        elfHeaderSize := self __type__ validInstanceSize asUInt16.
+        sectionHeaderEntrySize := Elf32::SectionHeader validInstanceSize asUInt16.
     }.
 }.
 
@@ -98,20 +100,22 @@ public struct Elf64::Header definition: {
             at: Elf::Ident::Version put: Elf::Ident::CurrentVersion.
         
         version := Elf::CurrentVersion.
+        elfHeaderSize := self __type__ validInstanceSize asUInt16.
+        sectionHeaderEntrySize := Elf64::SectionHeader validInstanceSize asUInt16.
     }.
 }.
 
 public struct Elf32::SectionHeader definition: {
-    public field name => Elf64::Word.
-    public field type => Elf64::Word.
-    public field flags => Elf64::Xword.
-    public field addr => Elf64::Addr.
-    public field offset => Elf64::Off.
-    public field size => Elf64::Xword.
-    public field link => Elf64::Word.
-    public field info => Elf64::Word.
-    public field addrAlign => Elf64::Xword.
-    public field entrySize => Elf64::Xword.
+    public field name => Elf32::Word.
+    public field type => Elf32::Word.
+    public field flags => Elf32::Word.
+    public field addr => Elf32::Addr.
+    public field offset => Elf32::Off.
+    public field size => Elf32::Word.
+    public field link => Elf32::Word.
+    public field info => Elf32::Word.
+    public field addrAlign => Elf32::Word.
+    public field entrySize => Elf32::Word.
 }.
 
 public struct Elf64::SectionHeader definition: {
@@ -147,7 +151,21 @@ public struct Elf64::Rela definition: {
     public field addend => Elf64::Sxword.
 }.
 
-let header := Elf64::Header new
-    type: Elf::Type::Rel;
-    yourself.
-printLine("Elf64 header ", header __type__ encodeValueAsByteArray: header).
+AsmObjectCode extend: {
+    public method encodeAsElf64 => ByteArray := {
+        let header := Elf64::Header new
+            type: Elf::Type::Rel;
+            machine: Elf::Machine::X86_64;
+            yourself.
+
+        let fileLayout := ArrayList new.
+        fileLayout
+            add: header;
+            addAll: sections.
+
+        fileLayout encodedElementsInByteArray
+    }.
+
+    public method writeElf64ToFileNamed: (fileName: String) ::=> Void
+        := IO::saveWholeFileNamed(fileName, self encodeAsElf64).
+}.

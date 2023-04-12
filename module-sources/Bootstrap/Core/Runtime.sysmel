@@ -1164,6 +1164,13 @@ SequenceableCollection
 
         result
     };
+    withSelector: #replaceFrom:until:with: addMethod: {:(SequenceableCollection)self :(Size)start :(Size)stop :(SequenceableCollection)replacements :: Void |
+        let: #i mutableWith: start.
+
+        while: i < stop do: {
+            self at: i put: (replacements at: i - start)
+        } continueWith: (i := i + 1sz)
+    };
     withSelector: #replaceAll:with: addMethod: {:(SequenceableCollection)self :oldObject :newObject :: Void |
         let: #i mutableWith: 0sz.
         let: #size with: self size.
@@ -1640,6 +1647,18 @@ Type
         self decodeValueFromBytes: bytes atOffset: 0sz
     }.
 
+AnyValue
+    withSelector: #sizeOfByteEncoding addMethod: {:self :: Size | self __type__ alignedValueSize };
+    withSelector: #canEncodeInBytes addMethod: {:self :: Boolean | self __type__ canEncodeValueInBytes };
+    withSelector: #encodeInBytes:atOffset: addMethod: {:self :(ByteArray)bytes :(Size)offset :: Void |
+        self __type__ encodeValue: self inBytes: bytes atOffset: offset
+    };
+    withSelector: #encodedInByteArray addMethod: {:self :: ByteArray |
+        let result := ByteArray new: self sizeOfByteEncoding.
+        self encodeInBytes: result atOffset: 0sz.
+        result
+    }.
+
 ## Primitive numbers meta methods.
 Char8 class
     withSelector: #canEncodeValueInBytes addMethod: {:(Char8 class)self :: Boolean | true };
@@ -1834,6 +1853,22 @@ Boolean class
     };
 
     withSelector: #defaultValue addMethod: {:(Boolean class)self :: Boolean | false }.
+
+SequenceableCollection
+    withSelector: #encodedElementsInByteArray addMethod: {:(SequenceableCollection)self :: ByteArray |
+        let: #offset mutableWith: 0sz.
+        self do: {:each :: Void |
+            offset := offset + each sizeOfByteEncoding
+        }.
+
+        let: #result with: (ByteArray new: offset).
+        offset := 0sz.
+        self do: {:each :: Void |
+            each encodeInBytes: result atOffset: offset.
+            offset := offset + each sizeOfByteEncoding
+        }.
+        result
+    }.
 
 TypeSlot
     withSelector: #requiresBasicInitialization addMethod: {:(TypeSlot)self :: Boolean |

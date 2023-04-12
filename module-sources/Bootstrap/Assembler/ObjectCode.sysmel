@@ -102,6 +102,13 @@ AsmObjectCodeSection definition: {
         data := ByteArray new: size.
         writeOffset := 0sz.
     }.
+
+    public method sizeOfByteEncoding => Size := data size.
+    public method canEncodeInBytes => Boolean := true.
+
+    public method encodeInBytes: (destination: ByteArray) atOffset: (destinationOffset) ::=> Void := {
+        destination replaceFrom: destinationOffset until: destinationOffset + data size with: data
+    }.
 }.
 
 public final class AsmObjectCode superclass: Object; definition: {

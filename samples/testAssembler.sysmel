@@ -15,4 +15,6 @@ let code := (AsmStream buildWith: {:builder |
 }).
 
 printLine(code fullPrintString).
-printLine(code assemble fullPrintString).
+##printLine(code assemble fullPrintString).
+code assemble writeElf64ToFileNamed: "test.elf64".
+
