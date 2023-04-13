@@ -304,6 +304,15 @@ AsmObjectCode extend: {
             symbolTable addSymbol: eachSymbol
         }.
 
+        ## Emit the relocations.
+        sections doWithIndex: {:(AsmObjectCodeSection)eachSection :(Size)index :: Void |
+            let sectionHeader := sectionHeaders at: index + 1sz.
+            let relocations := eachSection relocations.
+            relocations size > 0sz ifTrue: {
+                printLine("TODO: Convert relocations ", relocations)
+            }.
+        }.
+
         ## Symbol table.
         {
             let tableLabel := ByteStreamEncodingLabel new.

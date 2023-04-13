@@ -16,6 +16,8 @@ AsmObjectCodeSection definition: {
     public field readable => Boolean.
     public field loaded => Boolean.
 
+    public field relocations => Array.
+
     public field offsetOfEncodedElementInByteStream => Size.
 
     public method initialize => Void := {
@@ -23,6 +25,7 @@ AsmObjectCodeSection definition: {
         size := 0sz.
         alignment := 1sz.
         writeOffset := 0sz.
+        relocations := #().
     }.
 
     public method increaseSizeBy: (extraSize: Size) ::=> Void := {
