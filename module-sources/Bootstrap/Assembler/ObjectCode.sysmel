@@ -11,6 +11,13 @@ AsmObjectCodeSection definition: {
     public field size => Size.
     public field writeOffset => Size.
 
+    public field executable => Boolean.
+    public field writeable => Boolean.
+    public field readable => Boolean.
+    public field loaded => Boolean.
+
+    public field offsetOfEncodedElementInByteStream => Size.
+
     public method initialize => Void := {
         data := #[].
         size := 0sz.
@@ -29,6 +36,22 @@ AsmObjectCodeSection definition: {
 
     public method alignWriteOffsetTo: (requiredAlignment: Size) ::=> Void := {
         writeOffset := writeOffset alignedTo: requiredAlignment.
+    }.
+
+    public method addExecutable: (flag: Boolean) ::=> Boolean := {
+        executable := executable || flag
+    }.
+
+    public method addWriteable: (flag: Boolean) ::=> Boolean := {
+        writeable := writeable || flag
+    }.
+
+    public method addReadable: (flag: Boolean) ::=> Boolean := {
+        readable := readable || flag
+    }.
+
+    public method addLoaded: (flag: Boolean) ::=> Boolean := {
+        loaded := loaded || flag
     }.
 
     public method nextPut: (value: UInt8) ::=> Void := {
@@ -125,6 +148,47 @@ public final class AsmObjectCode superclass: Object; definition: {
     }.
 }.
 
+public final class AsmObjectCodeCStringTable superclass: Object; definition: {
+    public field stringStream => StringStream.
+    public field stringIndexTable => Dictionary.
+    
+    public field size => Size.
+    public field data => ByteArray.
+    
+    public field offsetOfEncodedElementInByteStream => Size.
+
+    public method initialize => Void := {
+        stringStream := StringStream new.
+        stringIndexTable := Dictionary new.
+        self addString: "".
+    }.
+
+    public method addString: (string: String) ::=> Size
+        := stringIndexTable at: string ifAbsentPut: {:: Size |
+            let index := size.
+            stringStream nextPutAll: string; nextPut: 0c8.
+            size := size + (string size + 1sz).
+            index
+        }.
+
+    public method addSymbol: (symbol: Symbol) ::=> Size
+        := stringIndexTable at: symbol ifAbsentPut: {:: Size |
+            self addString: symbol asString
+        }.
+
+    public method finish => Void := {
+        data := stringStream asByteArray.
+        size := data size.
+    }.
+
+    public method sizeOfByteEncoding => Size := size.
+    public method canEncodeInBytes => Boolean := true.
+
+    public method encodeInBytes: (destination: ByteArray) atOffset: (destinationOffset) ::=> Void := {
+        destination replaceFrom: destinationOffset until: destinationOffset + data size with: data
+    }.
+}.
+
 AsmSymbol definition: {
     public field name => Symbol.
     public field section => AsmObjectCodeSection.
@@ -201,7 +265,7 @@ AsmObjectCodeStream definition: {
     public abstract method alignTo: (requiredAlignment: Size) ::=> Void
         := self subclassResponsibility.
 
-    public method enterSectionNamed: (name: Symbol) ::=> Void := {
+    public method enterSectionNamed: (name: Symbol) ::=> AsmObjectCodeSection := {
         activeSection := objectCodeBuilder getOrCreateSectionNamed: name
     }.
 

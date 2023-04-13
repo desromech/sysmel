@@ -1,0 +1,8 @@
+public final class ByteStreamEncodingLabel superclass: Object; definition: {
+    public field offsetOfEncodedElementInByteStream => Size.
+
+    public method sizeOfByteEncoding => Size := 0sz.
+    public method canEncodeInBytes => Boolean := true.
+
+    public method encodeInBytes: (destination: ByteArray) atOffset: (destinationOffset) ::=> Void := {}.
+}.

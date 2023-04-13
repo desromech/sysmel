@@ -1,4 +1,5 @@
 #include "sysbvm/stringStream.h"
+#include "sysbvm/array.h"
 #include "sysbvm/errors.h"
 #include "sysbvm/function.h"
 #include "sysbvm/string.h"
@@ -77,6 +78,19 @@ SYSBVM_API void sysbvm_stringStream_nextPutCString(sysbvm_context_t *context, sy
     sysbvm_stringStream_nextPutStringWithSize(context, stringStream, strlen(cstring), cstring);
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_stringStream_asByteArray(sysbvm_context_t *context, sysbvm_tuple_t stringStream)
+{
+    if(!sysbvm_tuple_isNonNullPointer(stringStream))
+        return SYSBVM_NULL_TUPLE;
+
+    sysbvm_stringStream_t *stringStreamObject = (sysbvm_stringStream_t*)stringStream;
+    size_t size = sysbvm_tuple_size_decode(stringStreamObject->size);
+    sysbvm_object_tuple_t *result = (sysbvm_object_tuple_t*)sysbvm_byteArray_create(context, size);
+    sysbvm_object_tuple_t *storage = (sysbvm_object_tuple_t*)stringStreamObject->storage;
+    memcpy(result->bytes, storage->bytes, size);
+    return (sysbvm_tuple_t)result;
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_stringStream_asString(sysbvm_context_t *context, sysbvm_tuple_t stringStream)
 {
     if(!sysbvm_tuple_isNonNullPointer(stringStream))
@@ -127,6 +141,15 @@ static sysbvm_tuple_t sysbvm_stringStream_primitive_nextPutAll(sysbvm_context_t 
     return SYSBVM_VOID_TUPLE;
 }
 
+static sysbvm_tuple_t sysbvm_stringStream_primitive_asByteArray(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
+
+    return sysbvm_stringStream_asByteArray(context, arguments[0]);
+}
+
 static sysbvm_tuple_t sysbvm_stringStream_primitive_asString(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
@@ -149,6 +172,7 @@ void sysbvm_stringStream_registerPrimitives(void)
 {
     sysbvm_primitiveTable_registerFunction(sysbvm_stringStream_primitive_nextPut, "StringStream::nextPut:");
     sysbvm_primitiveTable_registerFunction(sysbvm_stringStream_primitive_nextPutAll, "StringStream::nextPutAll:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_stringStream_primitive_asByteArray, "StringStream::asByteArray");
     sysbvm_primitiveTable_registerFunction(sysbvm_stringStream_primitive_asString, "StringStream::asString");
     sysbvm_primitiveTable_registerFunction(sysbvm_stringStream_primitive_asSymbol, "StringStream::asSymbol");
 }
@@ -157,6 +181,7 @@ void sysbvm_stringStream_setupPrimitives(sysbvm_context_t *context)
 {
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "StringStream::nextPut:", context->roots.stringStreamType, "nextPut:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_stringStream_primitive_nextPut);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "StringStream::nextPutAll:", context->roots.stringStreamType, "nextPutAll:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_stringStream_primitive_nextPutAll);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "StringStream::asByteArray", context->roots.stringStreamType, "asByteArray", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_stringStream_primitive_asByteArray);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "StringStream::asString", context->roots.stringStreamType, "asString", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_stringStream_primitive_asString);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "StringStream::asSymbol", context->roots.stringStreamType, "asSymbol", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_stringStream_primitive_asSymbol);
 }

@@ -35,6 +35,23 @@ public global Elf::CurrentVersion := 1u32.
 public global Elf::Machine::I386 := 3u16.
 public global Elf::Machine::X86_64 := 62u16.
 
+public global Elf::SectionHeaderType::Null := 0u32.
+public global Elf::SectionHeaderType::Progbits := 1u32.
+public global Elf::SectionHeaderType::Symtab := 2u32.
+public global Elf::SectionHeaderType::Strtab := 3u32.
+public global Elf::SectionHeaderType::Rela := 4u32.
+public global Elf::SectionHeaderType::Hash := 5u32.
+public global Elf::SectionHeaderType::Dynamic := 6u32.
+public global Elf::SectionHeaderType::Note := 7u32.
+public global Elf::SectionHeaderType::Nobits := 8u32.
+public global Elf::SectionHeaderType::Rel := 9u32.
+public global Elf::SectionHeaderType::Shlib := 10u32.
+public global Elf::SectionHeaderType::Dynsym := 11u32.
+
+public global Elf::SectionHeaderFlag::Write := 1u32.
+public global Elf::SectionHeaderFlag::Alloc := 2u32.
+public global Elf::SectionHeaderFlag::ExecInstr := 4u32.
+
 public global Elf::Type::None := 0u16.
 public global Elf::Type::Rel := 1u16.
 public global Elf::Type::Exec := 2u16.
@@ -151,6 +168,21 @@ public struct Elf64::Rela definition: {
     public field addend => Elf64::Sxword.
 }.
 
+AsmObjectCodeSection extend: {
+    public method elfSectionType => UInt32
+        := loaded
+            ifTrue: Elf::SectionHeaderType::Progbits
+            ifFalse: Elf::SectionHeaderType::Nobits.
+
+    public method elfSectionFlags => UInt32 := {
+        let elfFlags mutable := 0u32.
+        readable ifTrue: (elfFlags := elfFlags | Elf::SectionHeaderFlag::Alloc).
+        writeable ifTrue: (elfFlags := elfFlags | Elf::SectionHeaderFlag::Write).
+        executable ifTrue: (elfFlags := elfFlags | Elf::SectionHeaderFlag::ExecInstr).
+        elfFlags
+    }.
+}.
+
 AsmObjectCode extend: {
     public method encodeAsElf64 => ByteArray := {
         let header := Elf64::Header new
@@ -162,6 +194,70 @@ AsmObjectCode extend: {
         fileLayout
             add: header;
             addAll: sections.
+
+        let stringTable := AsmObjectCodeCStringTable new.
+        let sectionNameStringTable := AsmObjectCodeCStringTable new.
+        fileLayout add: sectionNameStringTable.
+
+        let sectionHeaders := ArrayList new.
+        let sectionDataElements := ArrayList new.
+        sectionHeaders add: Elf64::SectionHeader new. ## Null section
+        sectionDataElements add: nil.
+
+        sections do: {:(AsmObjectCodeSection)eachSection :: Void |
+            let sectionHeader := Elf64::SectionHeader new
+                name: (sectionNameStringTable addSymbol: eachSection name) asUInt32;
+                type: eachSection elfSectionType;
+                flags: eachSection elfSectionFlags asUInt64;
+                size: eachSection size asUInt64;
+                addrAlign: eachSection alignment asUInt64;
+                yourself.
+            sectionHeaders add: sectionHeader.
+            sectionDataElements add: eachSection.
+        }.
+
+        ## String table.
+        {
+            stringTable finish.
+            sectionHeaders add: (Elf64::SectionHeader new
+                name: (sectionNameStringTable addString: ".strtab") asUInt32;
+                type: Elf::SectionHeaderType::Strtab;
+                size: stringTable size asUInt64;
+                addrAlign: 1sz;
+                yourself).
+            sectionDataElements add: sectionNameStringTable.
+        }.
+
+        ## Section name string table.
+        {
+            header sectionNameStringStringTableIndex: sectionHeaders size asUInt16.
+            let sectionNameStringTableHeader := Elf64::SectionHeader new
+                name: (sectionNameStringTable addString: ".shstrtab") asUInt32;
+                type: Elf::SectionHeaderType::Strtab;
+                addrAlign: 1sz;
+                yourself.
+            sectionNameStringTable finish.
+            sectionNameStringTableHeader size: sectionNameStringTable size asUInt64.
+            sectionHeaders add: sectionNameStringTableHeader.
+            sectionDataElements add: sectionNameStringTable.
+        }.
+
+        let sectionsHeadersLabel := ByteStreamEncodingLabel new.
+        fileLayout
+            add: sectionsHeadersLabel;
+            addAll: sectionHeaders;
+            computeOffsetsOfEncodedElementsInByteStream.
+
+        sectionDataElements doWithIndex: {:dataElement :(Size)index :: Void |
+            dataElement ifNotNil: {
+                (sectionHeaders at: index)
+                    offset: dataElement offsetOfEncodedElementInByteStream asUInt64
+            }.
+        }.
+
+        header
+            sectionHeaderOffset: sectionsHeadersLabel offsetOfEncodedElementInByteStream asUInt64;
+            sectionHeaderEntryNumber: sectionHeaders size asUInt16.
 
         fileLayout encodedElementsInByteArray
     }.

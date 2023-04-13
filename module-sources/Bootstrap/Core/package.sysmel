@@ -6,3 +6,4 @@ loadSourceNamed: "FixedArray.sysmel".
 loadSourceNamed: "Enum.sysmel".
 loadSourceNamed: "Struct.sysmel".
 loadSourceNamed: "Math.sysmel".
+loadSourceNamed: "Utility.sysmel".

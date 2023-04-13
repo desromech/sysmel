@@ -1650,6 +1650,7 @@ Type
 AnyValue
     withSelector: #sizeOfByteEncoding addMethod: {:self :: Size | self __type__ alignedValueSize };
     withSelector: #canEncodeInBytes addMethod: {:self :: Boolean | self __type__ canEncodeValueInBytes };
+    withSelector: #offsetOfEncodedElementInByteStream: addMethod: {:self :(Size)offset :: Void | };
     withSelector: #encodeInBytes:atOffset: addMethod: {:self :(ByteArray)bytes :(Size)offset :: Void |
         self __type__ encodeValue: self inBytes: bytes atOffset: offset
     };
@@ -1855,14 +1856,17 @@ Boolean class
     withSelector: #defaultValue addMethod: {:(Boolean class)self :: Boolean | false }.
 
 SequenceableCollection
-    withSelector: #encodedElementsInByteArray addMethod: {:(SequenceableCollection)self :: ByteArray |
+    withSelector: #computeOffsetsOfEncodedElementsInByteStream addMethod: {:(SequenceableCollection)self :: Size |
         let: #offset mutableWith: 0sz.
         self do: {:each :: Void |
+            each offsetOfEncodedElementInByteStream: offset.
             offset := offset + each sizeOfByteEncoding
         }.
-
-        let: #result with: (ByteArray new: offset).
-        offset := 0sz.
+        offset
+    };
+    withSelector: #encodedElementsInByteArray addMethod: {:(SequenceableCollection)self :: ByteArray |
+        let: #result with: (ByteArray new: self computeOffsetsOfEncodedElementsInByteStream).
+        let: #offset mutableWith: 0sz.
         self do: {:each :: Void |
             each encodeInBytes: result atOffset: offset.
             offset := offset + each sizeOfByteEncoding

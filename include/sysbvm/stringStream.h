@@ -40,6 +40,11 @@ SYSBVM_API void sysbvm_stringStream_nextPutStringWithSize(sysbvm_context_t *cont
 SYSBVM_API void sysbvm_stringStream_nextPutCString(sysbvm_context_t *context, sysbvm_tuple_t stringStream, const char *cstring);
 
 /**
+ * Construct a byte array with the contents from the string stream.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_stringStream_asByteArray(sysbvm_context_t *context, sysbvm_tuple_t stringStream);
+
+/**
  * Construct the final string from the string stream.
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_stringStream_asString(sysbvm_context_t *context, sysbvm_tuple_t stringStream);

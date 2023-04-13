@@ -177,6 +177,11 @@ public final class AsmLabelEnd superclass: AsmStreamElement; definition: {
 public final class AsmSectionDirective superclass: AsmStreamElement; definition: {
     public field name => Symbol.
 
+    public field executable => Boolean.
+    public field writeable => Boolean.
+    public field readable => Boolean.
+    public field loaded => Boolean.
+
     public override method isFormattedWithIndentation => Boolean := false.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
@@ -184,7 +189,11 @@ public final class AsmSectionDirective superclass: AsmStreamElement; definition:
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
-        stream enterSectionNamed: name
+        (stream enterSectionNamed: name)
+            addExecutable: executable;
+            addWriteable: writeable;
+            addReadable: readable;
+            addLoaded: loaded
     }.
 }.
 
@@ -358,21 +367,31 @@ public final class AsmStreamBuilder superclass: Object; definition: {
     public method textSection ::=> AsmSectionDirective
         := self addElement: (AsmSectionDirective new
             name: #".text";
+            loaded: true;
+            executable: true;
+            readable: true;
             yourself).
 
     public method dataSection ::=> AsmSectionDirective
         := self addElement: (AsmSectionDirective new
             name: #".data";
+            loaded: true;
+            readable: true;
+            writeable: true;
             yourself).
 
     public method rodataSection ::=> AsmSectionDirective
         := self addElement: (AsmSectionDirective new
             name: #".rodata";
+            loaded: true;
+            readable: true;
             yourself).
 
     public method bssSection ::=> AsmSectionDirective
         := self addElement: (AsmSectionDirective new
             name: #".bss";
+            readable: true;
+            writeable: true;
             yourself).
 
     public method byte: (value: UInt8) ::=> AsmByteDirective
