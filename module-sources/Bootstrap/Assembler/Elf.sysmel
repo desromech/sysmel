@@ -52,6 +52,16 @@ public global Elf::SectionHeaderFlag::Write := 1u32.
 public global Elf::SectionHeaderFlag::Alloc := 2u32.
 public global Elf::SectionHeaderFlag::ExecInstr := 4u32.
 
+public global Elf::SymbolTableBind::Local := 0u8.
+public global Elf::SymbolTableBind::Global := 1u8.
+public global Elf::SymbolTableBind::Weak := 2u8.
+
+public global Elf::SymbolTableType::Notype := 0u8.
+public global Elf::SymbolTableType::Object := 1u8.
+public global Elf::SymbolTableType::Func := 2u8.
+public global Elf::SymbolTableType::Section := 3u8.
+public global Elf::SymbolTableType::File := 4u8.
+
 public global Elf::Type::None := 0u16.
 public global Elf::Type::Rel := 1u16.
 public global Elf::Type::Exec := 2u16.
@@ -155,6 +165,14 @@ public struct Elf64::Symbol definition: {
     public field sectionHeaderIndex => Elf64::Half.
     public field value => Elf64::Addr.
     public field size => Elf64::Xword.
+
+    public method bind: (bind: UInt8) type: (type: UInt8) ::=> Void := {
+        info := (bind << 4u8) | type
+    }.
+
+    public method makeSectionSymbol => Void := {
+        self bind: Elf::SymbolTableBind::Local type: Elf::SymbolTableType::Section
+    }.
 }.
 
 public struct Elf64::Rel definition: {
@@ -166,6 +184,66 @@ public struct Elf64::Rela definition: {
     public field offset => Elf64::Addr.
     public field info => Elf64::Xword.
     public field addend => Elf64::Sxword.
+}.
+
+let elfSymbolVisibilityMap := #{
+    AsmSymbol::Visibility::Private : Elf::SymbolTableBind::Local.
+    AsmSymbol::Visibility::Public : Elf::SymbolTableBind::Global.
+    AsmSymbol::Visibility::Weak : Elf::SymbolTableBind::Weak.
+}.
+
+let elfSymbolTypeMap := #{
+    AsmSymbol::Type::None : Elf::SymbolTableType::Notype.
+    AsmSymbol::Type::Function : Elf::SymbolTableType::Func.
+    AsmSymbol::Type::Variable : Elf::SymbolTableType::Notype.
+}.
+
+public final class Elf64::SymbolTable superclass: Object; definition: {
+    public field stringTable => AsmObjectCodeCStringTable.
+    public field privateSymbols => ArrayList.
+    public field publicSymbols => ArrayList.
+    protected field sectionIndexTable => Dictionary.
+
+    public method initialize => Void := {
+        publicSymbols := ArrayList new.
+        privateSymbols := ArrayList new.
+        sectionIndexTable := Dictionary new.
+        privateSymbols add: Elf64::Symbol new.
+    }.
+
+    public method addSection: (section: AsmObjectCodeSection) index: (sectionIndex: Size) ::=> Void := {
+        privateSymbols add: (Elf64::Symbol new
+            sectionHeaderIndex: sectionIndex asUInt16;
+            makeSectionSymbol;
+            yourself).
+        sectionIndexTable at: section put: sectionIndex.
+    }.
+
+    public method addSymbol: (symbol: AsmSymbol) ::=> Void := {
+        let elfSymbol := Elf64::Symbol new
+            bind: (elfSymbolVisibilityMap at: symbol visibility) type: (elfSymbolTypeMap at: symbol type);
+            value: symbol value asUInt64;
+            size: symbol size asUInt64;
+            yourself.
+
+        symbol name ifNotNil: {:name :: Void |
+            elfSymbol name: (stringTable addSymbol: name) asUInt32.
+        }.
+
+        symbol section ifNotNil: {:section :: Void |
+            elfSymbol sectionHeaderIndex: (sectionIndexTable at: section) asUInt16
+        }.
+
+        symbol isPublic 
+            ifTrue: (publicSymbols add: elfSymbol)
+            ifFalse: (privateSymbols add: elfSymbol).
+    }.
+
+    public method totalSymbolCount => Size
+        := privateSymbols size + publicSymbols size.
+
+    public method sectionSize => Size
+        := self totalSymbolCount * Elf64::Symbol validInstanceSize.
 }.
 
 AsmObjectCodeSection extend: {
@@ -197,13 +275,17 @@ AsmObjectCode extend: {
 
         let stringTable := AsmObjectCodeCStringTable new.
         let sectionNameStringTable := AsmObjectCodeCStringTable new.
-        fileLayout add: sectionNameStringTable.
 
+        let symbolTable := Elf64::SymbolTable new.
+        symbolTable stringTable: stringTable.
+
+        ## Section headers with their corresponding data elements.
         let sectionHeaders := ArrayList new.
         let sectionDataElements := ArrayList new.
         sectionHeaders add: Elf64::SectionHeader new. ## Null section
         sectionDataElements add: nil.
 
+        ## Emit the sections.
         sections do: {:(AsmObjectCodeSection)eachSection :: Void |
             let sectionHeader := Elf64::SectionHeader new
                 name: (sectionNameStringTable addSymbol: eachSection name) asUInt32;
@@ -212,9 +294,38 @@ AsmObjectCode extend: {
                 size: eachSection size asUInt64;
                 addrAlign: eachSection alignment asUInt64;
                 yourself.
+            symbolTable addSection: eachSection index: sectionHeaders size.
             sectionHeaders add: sectionHeader.
             sectionDataElements add: eachSection.
         }.
+
+        ## Convert the symbols.
+        symbols do: {:(AsmSymbol)eachSymbol :: Void |
+            symbolTable addSymbol: eachSymbol
+        }.
+
+        ## Symbol table.
+        {
+            let tableLabel := ByteStreamEncodingLabel new.
+            fileLayout
+                add: tableLabel;
+                addAll: symbolTable privateSymbols;
+                addAll: symbolTable publicSymbols.
+            sectionHeaders add: (Elf64::SectionHeader new
+                name: (sectionNameStringTable addString: ".symtab") asUInt32;
+                type: Elf::SectionHeaderType::Symtab;
+                size: symbolTable sectionSize;
+                addrAlign: 1u64;
+                entrySize: Elf64::Symbol validInstanceSize asUInt64;
+                info: symbolTable privateSymbols size asUInt32;
+                link: sectionHeaders size asUInt32 + 1u32;
+                yourself).
+            sectionDataElements add: tableLabel.            
+        }.
+
+        fileLayout
+            add: stringTable;
+            add: sectionNameStringTable.
 
         ## String table.
         {
@@ -223,9 +334,9 @@ AsmObjectCode extend: {
                 name: (sectionNameStringTable addString: ".strtab") asUInt32;
                 type: Elf::SectionHeaderType::Strtab;
                 size: stringTable size asUInt64;
-                addrAlign: 1sz;
+                addrAlign: 1u64;
                 yourself).
-            sectionDataElements add: sectionNameStringTable.
+            sectionDataElements add: stringTable.
         }.
 
         ## Section name string table.
@@ -234,7 +345,7 @@ AsmObjectCode extend: {
             let sectionNameStringTableHeader := Elf64::SectionHeader new
                 name: (sectionNameStringTable addString: ".shstrtab") asUInt32;
                 type: Elf::SectionHeaderType::Strtab;
-                addrAlign: 1sz;
+                addrAlign: 1u64;
                 yourself.
             sectionNameStringTable finish.
             sectionNameStringTableHeader size: sectionNameStringTable size asUInt64.

@@ -189,18 +189,31 @@ public final class AsmObjectCodeCStringTable superclass: Object; definition: {
     }.
 }.
 
+public global AsmSymbol::Visibility::Private := 0u8.
+public global AsmSymbol::Visibility::Public := 1u8.
+public global AsmSymbol::Visibility::Weak := 2u8.
+
+public global AsmSymbol::Type::None := 0u8.
+public global AsmSymbol::Type::Function := 1u8.
+public global AsmSymbol::Type::Variable := 2u8.
+
 AsmSymbol definition: {
     public field name => Symbol.
     public field section => AsmObjectCodeSection.
     public field value => UInt64.
-    public field endValue => UInt64.
+    public field size => UInt64.
+    public field visibility => UInt8.
+    public field type => UInt8.
 
     public method makePublic => Void := {
-
+        visibility := AsmSymbol::Visibility::Public.
     }.
 
-    public method makeFunction => Void := {
+    public method isPublic => Boolean
+        := visibility = AsmSymbol::Visibility::Public.
 
+    public method makeFunction => Void := {
+        type := AsmSymbol::Type::Function.
     }.
 
     public method printOn: (stream: Stream) ::=> Void := {
@@ -221,6 +234,11 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
         sections := ArrayList new.
         sectionNameTable := Dictionary new.
         symbols := ArrayList new.
+    }.
+
+    public method recordSymbol: (symbol: AsmSymbol) ::=> Void := {
+        ## Filter the symbols by using a set.
+        symbols add: symbol
     }.
 
     public method getOrCreateSectionNamed: (name: Symbol) ::=> AsmObjectCodeSection
@@ -360,13 +378,14 @@ AsmObjectCodeSizeStream definition: {
     }.
 
     public override method recordSymbol: (symbol: AsmSymbol) ::=> Void := {
+        objectCodeBuilder recordSymbol: symbol.
         symbol
             section: activeSection;
             value: activeSection size asUInt64.
     }.
 
     public override method recordSymbolEnd: (symbol: AsmSymbol) ::=> Void := {
-        symbol endValue: activeSection size asUInt64.
+        symbol size: activeSection size asUInt64 - symbol value.
     }.
 }.
 
@@ -419,9 +438,13 @@ AsmObjectCodeWriteStream definition: {
         activeSection nextPutAll: bytes
     }.
 
-    public abstract method recordSymbol: (symbol: AsmSymbol) ::=> Void
-        := void.
+    public abstract method recordSymbol: (symbol: AsmSymbol) ::=> Void := {
+        symbol
+            section: activeSection;
+            value: activeSection writeOffset asUInt64.
+    }.
 
-    public abstract method recordSymbolEnd: (symbol: AsmSymbol) ::=> Void
-        := void.
+    public abstract method recordSymbolEnd: (symbol: AsmSymbol) ::=> Void := {
+        symbol size: activeSection size asUInt64 - symbol value.
+    }.
 }.

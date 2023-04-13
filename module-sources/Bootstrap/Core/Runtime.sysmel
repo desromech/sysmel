@@ -2398,9 +2398,6 @@ Type
     withSelector: #valueSize addMethod: {:(Type)self :: Size |
         UIntPointer instanceSize
     };
-    withSelector: #valueAlignment addMethod: {:(Type)self :: Size |
-        UIntPointer instanceAlignment
-    };
     withSelector: #alignedValueSize addMethod: {:(Type)self :: Size |
         self valueSize alignedTo: self valueAlignment
     }.
@@ -2410,7 +2407,7 @@ ValueType
         self validInstanceSize
     };
     withSelector: #valueAlignment addMethod: {:(ValueType)self :: Size |
-        self validInstanceSize
+        self validInstanceAlignment
     }.
 
 Environment

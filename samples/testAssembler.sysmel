@@ -8,8 +8,8 @@ let code := (AsmStream buildWith: {:builder |
                 x86::push: X86::RBP;
                 x86::mov: X86::RBP src: X86::RSP;
 
-                x86::pop: X86::RBP;
                 x86::mov: X86::RSP src: X86::RBP;
+                x86::pop: X86::RBP;
                 x86::ret
         }.
 }).
