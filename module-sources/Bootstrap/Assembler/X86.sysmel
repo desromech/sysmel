@@ -2,6 +2,17 @@ public class AsmX86Instruction superclass: AsmStreamElement.
 
 AsmInstructionOperand extend: {
     public virtual method isX86WordRegister => Boolean := false.
+
+    public virtual method x86::valueLow => UInt8
+        := self error: "Not a x86 register.".
+
+    public virtual method x86::rexRegBit => UInt8 := 0u8.
+    public virtual method x86::rexBaseBit => UInt8 := 0u8.
+    public virtual method x86::rexIndexBit => UInt8 := 0u8.
+
+    public virtual method x86::encodeModRMWithReg: (reg: AsmInstructionOperand) immediateSize: (immediateSize: Size)
+        longMode: (longMode: Boolean) into: (codeStream: AsmObjectCodeStream) ::=> Void
+        := self subclassResponsibility.
 }.
 
 public class AsmX86Register superclass: AsmRegister; definition: {
@@ -11,18 +22,34 @@ public class AsmX86Register superclass: AsmRegister; definition: {
     __Meta__ definition: {
         public method name: (name: Symbol) value: (value: UInt8) ::=> self
             := self new name: name; value: value; yourself.
-
     }.
 
     public method initialize => Void := {
         value := 0u8
     }.
 
-    public method valueLow => UInt8
+    public override method x86::valueLow => UInt8
         := value & 7u8.
+
+    public method isHighRegister => Boolean
+        := value >= 8u8.
+
+    public method isLowRegister => Boolean
+        := value < 8u8.
+
+    public override method x86::rexRegBit => UInt8
+        := if: self isHighRegister then: 1u8 else: 0u8.
+
+    public override method x86::rexBaseBit => UInt8
+        := if: self isHighRegister then: 1u8 else: 0u8.
 
     public method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: name
+    }.
+
+    public override method x86::encodeModRMWithReg: (reg: AsmInstructionOperand) immediateSize: (immediateSize: Size)
+        longMode: (longMode: Boolean) into: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        codeStream nextPut: ((3u8 << 6u8) | (reg x86::valueLow << 3u8)) | self x86::valueLow
     }.
 }.
 
@@ -109,59 +136,40 @@ public final class AsmX86InstructionTemplate superclass: Object; definition: {
 
 AsmObjectCodeStream definition: {
     public method nextPutX86RexSize: (operandSize: Size) rm: (rm: AsmInstructionOperand) reg: (reg: AsmInstructionOperand) ::=> Void := {
-        #*
-        | wbit rbit xbit bbit lowBits |
-        wbit := (size = 8) asBit.
-        rbit := 0.
-        xbit := 0.
-        bbit := 0.
-        first isRegisterOrRegisterAddress  ifTrue: [ 
-            first isRegister ifTrue: [
-                bbit := first isHighRegister asBit
-            ] ifFalse: [
-                bbit := (first base isNotNil and: [ first base isHighRegister ]) asBit.
-                xbit := (first index isNotNil and: [ first index isHighRegister ]) asBit.
-            ]
-        ].
+        let wBit := if: operandSize = 8sz then: 1u8 else: 0u8.
+        let regBit := reg x86::rexRegBit.
+        let baseBit := rm x86::rexBaseBit.
+        let indexBit := rm x86::rexIndexBit.
 
-        (second isInteger not and: [ second isRegister ]) ifTrue: [
-            rbit := second isHighRegister asBit.
-        ].
-
-        lowBits := (wbit << 3) | (rbit << 2) | (xbit << 1) | (bbit).
-        lowBits ~= 0 ifTrue: [ 
-            self assert: writer isLongMode.
-            writer nextPutC8: 16r40 | lowBits
-        ]
-        *#
+        let lowBits := ((wBit << 3u8) | (regBit << 2u8)) | ((indexBit << 1u8) | (baseBit)).
+        lowBits ~= 0 ifTrue: { 
+            self assert: self isInX86LongMode.
+            self nextPut: 16r40 u8 | lowBits
+        }
     }.
 
     public method nextPutX86RexRM: (rm: AsmInstructionOperand) ::=> Void := {
-        #*
-        | bbit xbit lowBits |
-        rm isRegister ifTrue: [ 
-            bbit := rm isHighRegister asBit.
-            xbit := 0.
-        ] ifFalse: [ 
-            bbit := (rm base isNotNil and: [ rm base isHighRegister ]) asBit.
-            xbit := (rm index isNotNil and: [ rm index isHighRegister ]) asBit.
-        ].
-        lowBits := (xbit << 1) | (bbit).
-        
-        lowBits ~= 0 ifTrue: [ 
-            self assert: writer isLongMode.
-            writer nextPutC8: 16r40 | lowBits
-        ]
-        *#
+        let baseBit := rm x86::rexBaseBit.
+        let indexBit := rm x86::rexIndexBit.
+        let lowBits := (indexBit << 1u8) | baseBit.
+
+        lowBits ~= 0 ifTrue: {
+            self assert: self isInX86LongMode.
+            self nextPut: 16r40 u8 | lowBits
+        }
     }.
 
     public method nextPutX86Opcode: (opcode: UInt8) plusRegister: (register: AsmX86Register) ::=> Void := {
-        self nextPut: opcode + register valueLow
+        self nextPut: opcode + register x86::valueLow
     }.
 
-    public method nextPutX86ModRM: (rm: AsmInstructionOperand) reg: (register: AsmInstructionOperand) ::=> Void := {
-
+    public method nextPutX86ModRM: (rm: AsmInstructionOperand) reg: (register: AsmInstructionOperand) immediateSize: (immediateSize: Size) ::=> Void := {
+        rm x86::encodeModRMWithReg: register immediateSize: immediateSize longMode: self isInX86LongMode into: self
     }.
+
+    public method nextPutX86ModRM: (rm: AsmInstructionOperand) reg: (register: AsmInstructionOperand) ::=> Void
+        := self nextPutX86ModRM: rm reg: register immediateSize: 0sz.
+
 }.
 
 AsmX86Instruction definition: {
@@ -377,7 +385,7 @@ let instructionDefinitionTable := #(
     )
 
     (ret () "Return from function."
-        (Op #[] #[16rF3])
+        (Op #[] #[16rC3])
     )
 
     (sub (dst src) "Integer subtraction."
