@@ -30,6 +30,8 @@ public class AsmStreamElement superclass: Object; definition: {
 }.
 
 AsmInstructionOperand definition: {
+    public method isImmediate => Boolean := false.
+
     public method isRegister => Boolean := false.
     public method isRegisterOrRegisterAddress => Boolean := false.
 
@@ -443,6 +445,28 @@ public final class AsmStreamBuilder superclass: Object; definition: {
         := self addElement: (AsmDoubleDirective new
             value: value;
             yourself).
+}.
+
+AsmObjectCodeStream extend: {
+    public abstract method nextPutIPRelativeI32: (operand: AsmInstructionOperand) extraOffset: (extraOffset: Int32) ::=> Void
+        := self subclassResponsibility.
+
+    public method nextPutIPRelativeI32: (operand: AsmInstructionOperand) ::=> Void := {
+        self nextPutIPRelativeI32: operand extraOffset: 4i32
+    }.
+}.
+
+AsmObjectCodeSizeStream extend: {
+    public override method nextPutIPRelativeI32: (operand: AsmInstructionOperand) extraOffset: (extraOffset: Int32) ::=> Void := {
+        activeSection increaseSizeBy: 4sz
+    }.
+}.
+
+AsmObjectCodeWriteStream extend: {
+    public override method nextPutIPRelativeI32: (operand: AsmInstructionOperand) extraOffset: (extraOffset: Int32) ::=> Void := {
+        ## TODO: Implement this in a proper way.
+        self nextPutUInt32: 0u32
+    }.
 }.
 
 AsmStream extend: {

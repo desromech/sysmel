@@ -13,6 +13,10 @@ AsmInstructionOperand extend: {
     public virtual method x86::encodeModRMWithReg: (reg: AsmInstructionOperand) immediateSize: (immediateSize: Size)
         longMode: (longMode: Boolean) into: (codeStream: AsmObjectCodeStream) ::=> Void
         := self subclassResponsibility.
+
+    public virtual method x86::encodeModRMWithRegOpcode: (opcode: UInt8) immediateSize: (immediateSize: Size)
+        longMode: (longMode: Boolean) into: (codeStream: AsmObjectCodeStream) ::=> Void
+        := self subclassResponsibility.
 }.
 
 public class AsmX86Register superclass: AsmRegister; definition: {
@@ -50,6 +54,11 @@ public class AsmX86Register superclass: AsmRegister; definition: {
     public override method x86::encodeModRMWithReg: (reg: AsmInstructionOperand) immediateSize: (immediateSize: Size)
         longMode: (longMode: Boolean) into: (codeStream: AsmObjectCodeStream) ::=> Void := {
         codeStream nextPut: ((3u8 << 6u8) | (reg x86::valueLow << 3u8)) | self x86::valueLow
+    }.
+
+    public override method x86::encodeModRMWithRegOpcode: (opcode: UInt8) immediateSize: (immediateSize: Size)
+        longMode: (longMode: Boolean) into: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        codeStream nextPut: ((3u8 << 6u8) | (opcode << 3u8)) | self x86::valueLow
     }.
 }.
 
@@ -121,7 +130,7 @@ public final class AsmX86InstructionTemplate superclass: Object; definition: {
     public method parseDescription: (description: Array) ::=> Void := {
         mandatoryPrefix := description second.
         opcode := description third.
-        description size >= 4sz ifTrue: (registerOpcode := description fourth asUInt8).
+        description size >= 4sz ifTrue: (registerOpcode := description fourth u8).
     }.
 
     public method canWriteInstruction: (instruction: AsmX86Instruction) ::=> Boolean
@@ -142,6 +151,18 @@ AsmObjectCodeStream definition: {
         let indexBit := rm x86::rexIndexBit.
 
         let lowBits := ((wBit << 3u8) | (regBit << 2u8)) | ((indexBit << 1u8) | (baseBit)).
+        lowBits ~= 0 ifTrue: { 
+            self assert: self isInX86LongMode.
+            self nextPut: 16r40 u8 | lowBits
+        }
+    }.
+
+    public method nextPutX86RexSize: (operandSize: Size) rm: (rm: AsmInstructionOperand) ::=> Void := {
+        let wBit := if: operandSize = 8sz then: 1u8 else: 0u8.
+        let baseBit := rm x86::rexBaseBit.
+        let indexBit := rm x86::rexIndexBit.
+
+        let lowBits := (wBit << 3u8) | ((indexBit << 1u8) | (baseBit)).
         lowBits ~= 0 ifTrue: { 
             self assert: self isInX86LongMode.
             self nextPut: 16r40 u8 | lowBits
@@ -169,6 +190,13 @@ AsmObjectCodeStream definition: {
 
     public method nextPutX86ModRM: (rm: AsmInstructionOperand) reg: (register: AsmInstructionOperand) ::=> Void
         := self nextPutX86ModRM: rm reg: register immediateSize: 0sz.
+
+    public method nextPutX86ModRM: (rm: AsmInstructionOperand) regOpcode: (opcode: UInt8) immediateSize: (immediateSize: Size) ::=> Void := {
+        rm x86::encodeModRMWithRegOpcode: opcode immediateSize: immediateSize longMode: self isInX86LongMode into: self
+    }.
+
+    public method nextPutX86ModRM: (rm: AsmInstructionOperand) regOpcode: (opcode: UInt8) ::=> Void
+        := self nextPutX86ModRM: rm regOpcode: opcode immediateSize: 0sz.
 
 }.
 
@@ -289,6 +317,15 @@ let instructionTemplateTable := #{
             stream nextPutAll: templ mandatoryPrefix; nextPutAll: templ opcode.
         };
         yourself).
+    OpBranch32: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
+            (instruction operandCount = 1sz) && instruction firstOperand isImmediate
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            stream nextPutAll: templ mandatoryPrefix; nextPutAll: templ opcode.
+            stream nextPutIPRelativeI32: instruction firstOperand
+        };
+        yourself).
     OppR: (AsmX86InstructionTemplate new
         when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
             (instruction operandCount = 1sz) && instruction firstOperand isX86WordRegister
@@ -337,6 +374,22 @@ let instructionTemplateTable := #{
                 nextPutX86ModRM: registerAddress reg: register
         };
         yourself).
+
+    OpRm: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
+            (instruction operandCount = 1sz) &&
+                instruction firstOperand isRegisterOrRegisterAddress
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let registerAddress := instruction firstOperand.
+            let operandSize := registerAddress size.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86RexRM: registerAddress;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode
+        };
+        yourself).
 }.
 
 let instructionDefinitionTable := #(
@@ -344,6 +397,8 @@ let instructionDefinitionTable := #(
     )
 
     (call (target) "Call the function in the specified address."
+        (OpBranch32 #[] #[16rE8])
+        (OpRm #[] #[16rFF] 2)
     )
 
     (cmp (dst src) "Compares by subtracting the specified values."
@@ -358,6 +413,7 @@ let instructionDefinitionTable := #(
     )
 
     (lea (dst src) "Load effective address."
+        (OpRwRmw #[] #[16r8D])
     )
 
     (mov (dst src) "Move values."
@@ -366,6 +422,8 @@ let instructionDefinitionTable := #(
     )
 
     (jmp (target) "Jumps into the specified address."
+        (OpBranch32 #[] #[16rE9])
+        (OpRm #[] #[16rFF] 4)
     )
 
     (int (number) "Software interruption."
