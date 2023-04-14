@@ -110,8 +110,12 @@ public final class AsmImmediateSymbolWithAddend superclass: AsmImmediate; defini
     }.
 
     public override method nextPutIPRelativeI32WithExtraOffset: (extraOffset: Int32) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
-        codeStream nextPutUInt32: 0u32
-        ## TODO: Record the required relocation.
+        codeStream
+            recordRelocation: (AsmObjectCodeRelocationRelativeInt32 new
+                symbol: symbol;
+                addend: addend asInt32 + extraOffset;
+                yourself);
+            nextPutUInt32: 0u32
     }.
 }.
 

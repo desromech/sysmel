@@ -2,6 +2,7 @@ public final class AsmObjectCodeSection superclass: Object.
 public abstract class AsmObjectCodeStream superclass: Object.
 public final class AsmObjectCodeSizeStream superclass: AsmObjectCodeStream.
 public final class AsmObjectCodeWriteStream superclass: AsmObjectCodeStream.
+public abstract class AsmObjectCodeRelocation superclass: Object.
 public final class AsmSymbol superclass: Object.
 
 AsmObjectCodeSection definition: {
@@ -19,6 +20,7 @@ AsmObjectCodeSection definition: {
     public field relocations => Array.
 
     public field offsetOfEncodedElementInByteStream => Size.
+    public field newRelocations => ArrayList.
 
     public method initialize => Void := {
         data := #[].
@@ -126,7 +128,13 @@ AsmObjectCodeSection definition: {
 
     public method allocateMemoryForWriting => Void := {
         data := ByteArray new: size.
+        newRelocations := ArrayList new.
         writeOffset := 0sz.
+    }.
+
+    public method finishWriting => Void := {
+        relocations := newRelocations asArray.
+        newRelocations := nil.
     }.
 
     public method sizeOfByteEncoding => Size := data size.
@@ -253,11 +261,16 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
             newSection
         }.
 
-    public method finish => AsmObjectCode 
-        := AsmObjectCode new
+    public method finish => AsmObjectCode := {
+        sections do: {:(AsmObjectCodeSection)each :: Void |
+            each finishWriting
+        }.
+
+        AsmObjectCode new
             sections: sections asArray;
             symbols: symbols asArray;
-            yourself.
+            yourself
+    }.
 
     public method newSizeStream => AsmObjectCodeSizeStream
         := AsmObjectCodeSizeStream new
@@ -274,6 +287,43 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
         := AsmObjectCodeWriteStream new
             objectCodeBuilder: self;
             yourself.
+}.
+
+AsmObjectCodeRelocation definition: {
+    public field symbol => AsmSymbol.
+    public field offset => Size.
+}.
+
+public final class AsmObjectCodeRelocationAbsoluteInt8 superclass: AsmObjectCodeRelocation; definition: {
+    public field addend => Int8.
+}.
+
+public final class AsmObjectCodeRelocationAbsoluteInt16 superclass: AsmObjectCodeRelocation; definition: {
+    public field addend => Int16.
+}.
+
+public final class AsmObjectCodeRelocationAbsoluteInt32 superclass: AsmObjectCodeRelocation; definition: {
+    public field addend => Int32.
+}.
+
+public final class AsmObjectCodeRelocationAbsoluteInt64 superclass: AsmObjectCodeRelocation; definition: {
+    public field addend => Int64.
+}.
+
+public final class AsmObjectCodeRelocationRelativeInt8 superclass: AsmObjectCodeRelocation; definition: {
+    public field addend => Int8.
+}.
+
+public final class AsmObjectCodeRelocationRelativeInt16 superclass: AsmObjectCodeRelocation; definition: {
+    public field addend => Int16.
+}.
+
+public final class AsmObjectCodeRelocationRelativeInt32 superclass: AsmObjectCodeRelocation; definition: {
+    public field addend => Int32.
+}.
+
+public final class AsmObjectCodeRelocationRelativeInt64 superclass: AsmObjectCodeRelocation; definition: {
+    public field addend => Int64.
 }.
 
 AsmObjectCodeStream definition: {
@@ -328,6 +378,9 @@ AsmObjectCodeStream definition: {
         := self subclassResponsibility.
 
     public abstract method recordSymbolEnd: (symbol: AsmSymbol) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method recordRelocation: (relocation: AsmObjectCodeRelocation) ::=> Void
         := self subclassResponsibility.
 }.
 
@@ -390,6 +443,8 @@ AsmObjectCodeSizeStream definition: {
     public override method recordSymbolEnd: (symbol: AsmSymbol) ::=> Void := {
         symbol size: activeSection size asUInt64 - symbol value.
     }.
+
+    public override method recordRelocation: (relocation: AsmObjectCodeRelocation) ::=> Void := {}
 }.
 
 AsmObjectCodeWriteStream definition: {
@@ -441,13 +496,18 @@ AsmObjectCodeWriteStream definition: {
         activeSection nextPutAll: bytes
     }.
 
-    public abstract method recordSymbol: (symbol: AsmSymbol) ::=> Void := {
+    public override method recordSymbol: (symbol: AsmSymbol) ::=> Void := {
         symbol
             section: activeSection;
             value: activeSection writeOffset asUInt64.
     }.
 
-    public abstract method recordSymbolEnd: (symbol: AsmSymbol) ::=> Void := {
+    public override method recordSymbolEnd: (symbol: AsmSymbol) ::=> Void := {
         symbol size: activeSection size asUInt64 - symbol value.
+    }.
+
+    public override method recordRelocation: (relocation: AsmObjectCodeRelocation) ::=> Void := {
+        relocation offset: activeSection writeOffset.
+        activeSection newRelocations add: relocation
     }.
 }.

@@ -68,6 +68,19 @@ public global Elf::Type::Exec := 2u16.
 public global Elf::Type::Dyn := 3u16.
 public global Elf::Type::Core := 4u16.
 
+public global Elf::X86_64::Rel::None := 0u32.
+public global Elf::X86_64::Rel::A64 := 1u32.
+public global Elf::X86_64::Rel::PC32 := 2u32.
+public global Elf::X86_64::Rel::GOT32 := 3u32.
+public global Elf::X86_64::Rel::PLT32 := 4u32.
+public global Elf::X86_64::Rel::GOTPCREL := 9u32.
+public global Elf::X86_64::Rel::A32 := 10u32.
+public global Elf::X86_64::Rel::A32S := 11u32.
+public global Elf::X86_64::Rel::A16 := 12u32.
+public global Elf::X86_64::Rel::PC16 := 13u32.
+public global Elf::X86_64::Rel::A8 := 14u32.
+public global Elf::X86_64::Rel::PC8 := 15u32.
+
 public struct Elf32::Header definition: {
     public field ident => UInt8[Elf::Ident::NIdent].
     public field type => Elf32::Half.
@@ -184,6 +197,10 @@ public struct Elf64::Rela definition: {
     public field offset => Elf64::Addr.
     public field info => Elf64::Xword.
     public field addend => Elf64::Sxword.
+
+    public method symbol: (symbol: UInt32) type: (type: UInt32) ::=> Void := {
+        info := (symbol asUInt64 << 32u64) | type asUInt64
+    }.
 }.
 
 let elfSymbolVisibilityMap := #{
@@ -202,11 +219,15 @@ public final class Elf64::SymbolTable superclass: Object; definition: {
     public field stringTable => AsmObjectCodeCStringTable.
     public field privateSymbols => ArrayList.
     public field publicSymbols => ArrayList.
+    protected field privateSymbolDictionary => Dictionary.
+    protected field publicSymbolDictionary => Dictionary.
     protected field sectionIndexTable => Dictionary.
 
     public method initialize => Void := {
         publicSymbols := ArrayList new.
         privateSymbols := ArrayList new.
+        privateSymbolDictionary := Dictionary new.
+        publicSymbolDictionary := Dictionary new.
         sectionIndexTable := Dictionary new.
         privateSymbols add: Elf64::Symbol new.
     }.
@@ -234,10 +255,19 @@ public final class Elf64::SymbolTable superclass: Object; definition: {
             elfSymbol sectionHeaderIndex: (sectionIndexTable at: section) asUInt16
         }.
 
-        symbol isPublic 
-            ifTrue: (publicSymbols add: elfSymbol)
-            ifFalse: (privateSymbols add: elfSymbol).
+        symbol isPublic ifTrue: {
+            publicSymbolDictionary at: symbol put: publicSymbols size asUInt32.
+            publicSymbols add: elfSymbol
+        } ifFalse: {
+            privateSymbols add: elfSymbol.
+            privateSymbolDictionary at: symbol put: privateSymbols size asUInt32
+        }.
     }.
+
+    public method indexOfSymbol: (symbol: AsmSymbol) ::=> UInt32
+        := symbol isPublic
+            ifTrue: ((publicSymbolDictionary at: symbol) + privateSymbols size asUInt32)
+            ifFalse: (privateSymbolDictionary at: symbol).
 
     public method totalSymbolCount => Size
         := privateSymbols size + publicSymbols size.
@@ -259,6 +289,20 @@ AsmObjectCodeSection extend: {
         executable ifTrue: (elfFlags := elfFlags | Elf::SectionHeaderFlag::ExecInstr).
         elfFlags
     }.
+}.
+
+AsmObjectCodeRelocation extend: {
+    public abstract method asElf64RelaWithSymbolTable: (symbolTable: Elf64::SymbolTable) ::=> Elf64::Rela
+        := self subclassResponsibility.
+}.
+
+AsmObjectCodeRelocationRelativeInt32 extend: {
+    public override method asElf64RelaWithSymbolTable: (symbolTable: Elf64::SymbolTable) ::=> Elf64::Rela
+        := Elf64::Rela new
+            offset: offset;
+            symbol: (symbolTable indexOfSymbol: symbol) type: Elf::X86_64::Rel::PC32;
+            addend: addend asInt64;
+            yourself.
 }.
 
 AsmObjectCode extend: {
@@ -305,11 +349,29 @@ AsmObjectCode extend: {
         }.
 
         ## Emit the relocations.
+        let relaSectionHeaders := ArrayList new.
+
         sections doWithIndex: {:(AsmObjectCodeSection)eachSection :(Size)index :: Void |
-            let sectionHeader := sectionHeaders at: index + 1sz.
+            let sectionHeaderIndex := index + 1sz.
+            let sectionHeader := sectionHeaders at: sectionHeaderIndex.
             let relocations := eachSection relocations.
             relocations size > 0sz ifTrue: {
-                printLine("TODO: Convert relocations ", relocations)
+                let relaLabel := ByteStreamEncodingLabel new.
+                fileLayout add: relaLabel;
+                    addAll: (relocations collect: {:(AsmObjectCodeRelocation)each | each asElf64RelaWithSymbolTable: symbolTable}).
+
+                let relaSectionHeader := Elf64::SectionHeader new
+                    name: (sectionNameStringTable addString: eachSection name asString -- ".rela") asUInt32;
+                    type: Elf::SectionHeaderType::Rela;
+                    size: (relocations size * Elf64::Rela alignedValueSize) asUInt64;
+                    addrAlign: 1u64;
+                    entrySize: Elf64::Rela validInstanceSize asUInt64;
+                    info: sectionHeaderIndex asUInt32;
+                    yourself.
+
+                relaSectionHeaders add: relaSectionHeader.
+                sectionHeaders add: relaSectionHeader.
+                sectionDataElements add: relaLabel
             }.
         }.
 
@@ -320,6 +382,10 @@ AsmObjectCode extend: {
                 add: tableLabel;
                 addAll: symbolTable privateSymbols;
                 addAll: symbolTable publicSymbols.
+            let symbolTableIndex := sectionHeaders size asUInt32.
+            relaSectionHeaders do: {:(Elf64::SectionHeader)each :: Void |
+                each link: symbolTableIndex 
+            }.
             sectionHeaders add: (Elf64::SectionHeader new
                 name: (sectionNameStringTable addString: ".symtab") asUInt32;
                 type: Elf::SectionHeaderType::Symtab;
