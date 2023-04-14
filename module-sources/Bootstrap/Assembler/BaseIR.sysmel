@@ -113,7 +113,7 @@ public final class AsmImmediateSymbolWithAddend superclass: AsmImmediate; defini
         codeStream
             recordRelocation: (AsmObjectCodeRelocationRelativeInt32 new
                 symbol: symbol;
-                addend: addend asInt32 + extraOffset;
+                addend: addend asInt32 - extraOffset;
                 yourself);
             nextPutUInt32: 0u32
     }.
