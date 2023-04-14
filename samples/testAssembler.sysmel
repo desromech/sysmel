@@ -33,6 +33,7 @@ let codeX86_64 := (AsmStream for: AsmCompilationTarget x86_64 useElf buildWith: 
 
 printLine(codeX86_64 fullPrintString).
 ##printLine(code assemble fullPrintString).
+printLine(codeX86_64 compilationTarget).
 codeX86_64 assemble writeObjectToFileNamed: "test.x86_64.elf64".
 
 let codeArm := (AsmStream for: AsmCompilationTarget armv6k useElf buildWith: {:builder |
@@ -45,4 +46,4 @@ let codeArm := (AsmStream for: AsmCompilationTarget armv6k useElf buildWith: {:b
         }.
 }).
 printLine(codeArm fullPrintString).
-##codeArm assemble writeElf32ToFileNamed: "test.arm.elf32".
+codeArm assemble writeObjectToFileNamed: "test.arm.elf32".

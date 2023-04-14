@@ -456,17 +456,20 @@ public final class AsmObjectElf32FileWriter superclass: AsmObjectFileWriter; def
 }.
 
 AsmCompilationTarget extend: {
-    public method useElf => Void := {
+    public method useElf => self __type__ := {
         self pointerSize = 8sz
             ifTrue: (self useElf64)
-            ifFalse: (self useElf32)
+            ifFalse: (self useElf32).
+        self
     }.
 
-    public method useElf32 => Void := {
-        objectFileWriter := AsmObjectElf32FileWriter new
+    public method useElf32 => self __type__ := {
+        objectFileWriter := AsmObjectElf32FileWriter new.
+        self
     }.
 
-    public method useElf64 => Void := {
-        objectFileWriter := AsmObjectElf64FileWriter new
+    public method useElf64 => self __type__ := {
+        objectFileWriter := AsmObjectElf64FileWriter new.
+        self
     }.
 }.

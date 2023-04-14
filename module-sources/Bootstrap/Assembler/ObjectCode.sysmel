@@ -227,12 +227,12 @@ public final class AsmObjectCode superclass: Object; definition: {
         := compilationTarget objectFileWriter encodeObjectCode: self.
 
     public method writeObjectToFileNamed: (fileName: String) ::=> Void
-        := .compilationTarget objectFileWriter writeObjectCode: self toFileNamed: fileName.
+        := compilationTarget objectFileWriter writeObjectCode: self toFileNamed: fileName.
 }.
 
-AsmObjectFileWriter extend: {
+AsmObjectFileWriter definition: {
     public abstract method encodeObjectCode: (objectCode: AsmObjectCode) ::=> ByteArray
-        := self subclassResponsibility
+        := self subclassResponsibility.
 
     public method writeObjectCode: (objectCode: AsmObjectCode) toFileNamed: (fileName: String) ::=> Void := {
         IO::saveWholeFileNamed(fileName, self encodeObjectCode: objectCode).

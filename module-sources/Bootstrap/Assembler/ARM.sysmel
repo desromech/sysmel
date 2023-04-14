@@ -1,6 +1,18 @@
 AsmInstructionOperand extend: {
 }.
 
+public final class AsmARMCompilationTarget superclass: AsmCompilationTarget; definition: {
+    public override method pointerSize => Size
+        := 4    sz.
+}.
+
+AsmCompilationTarget extend: {
+    __Meta__ extend: {
+        public method armv6k => AsmARMCompilationTarget
+            := AsmARMCompilationTarget new.
+    }.
+}.
+
 public final class AsmARMRegister superclass: AsmRegister; definition: {
     public field name => Symbol.
     public field value => UInt8.

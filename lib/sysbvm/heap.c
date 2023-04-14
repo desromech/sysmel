@@ -74,7 +74,7 @@ static void *sysbvm_heap_allocateSystemMemory(size_t sizeToAllocate)
 
 static void *sysbvm_heap_allocateSystemMemoryForCode(size_t sizeToAllocate)
 {
-    void *result = mmap(0, sizeToAllocate, PROT_READ | PROT_EXEC, MAP_PRIVATE | MAP_ANON | MAP_EXECUTABLE, -1, 0);
+    void *result = mmap(0, sizeToAllocate, PROT_READ | PROT_EXEC, MAP_PRIVATE | MAP_ANON, -1, 0);
     if(result == MAP_FAILED)
         return 0;
 

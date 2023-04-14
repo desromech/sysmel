@@ -2,11 +2,13 @@ public class AsmX86Instruction superclass: AsmStreamElement.
 public final class AsmX86RegisterAddress superclass: AsmRegisterAddress.
 
 public final class AsmX86CompilationTarget superclass: AsmCompilationTarget; definition: {
-
+    public override method pointerSize => Size
+        := 4sz.
 }.
 
 public final class AsmX86_64CompilationTarget superclass: AsmCompilationTarget; definition: {
-
+    public override method pointerSize => Size
+        := 8sz.
 }.
 
 AsmCompilationTarget extend: {
