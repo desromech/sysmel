@@ -605,9 +605,10 @@ let instructionTemplateTable := #{
         yourself).
     OppRwIww: (AsmX86InstructionTemplate new
         when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
-            ((instruction operandCount = 2sz) &&
+            (((instruction operandCount = 2sz) &&
             instruction firstOperand x86::isWordRegister) &&
-            instruction secondOperand isImmediate
+            instruction secondOperand isImmediate) &&
+            (instruction firstOperand size = instruction secondOperand size)
         };
         writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
             let register := instruction firstOperand.

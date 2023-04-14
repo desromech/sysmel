@@ -37,8 +37,11 @@ AsmInstructionOperand definition: {
     public method isImmediate64 => Boolean := self isImmediate && (self size = 8sz).
     public method isImmediate128 => Boolean := self isImmediate && (self size = 16sz).
 
+    public method isImmediateSymbolWithAddend => Boolean := false.
+
     public method isImmediateSigned8 => Boolean := false.
     public method isImmediateSigned32 => Boolean := false.
+    public method isImmediateSigned64 => Boolean := false.
 
     public method isImmediateConstantChar8 => Boolean := false.
     public method isImmediateConstantUInt8 => Boolean := false.
@@ -65,6 +68,9 @@ AsmInstructionOperand definition: {
     public abstract method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void
         := self subclassResponsibility.
 
+    public abstract method nextPutIPRelativeI32WithExtraOffset: (extraOffset: Int32) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void
+        := self subclassResponsibility.
+
     public abstract method size => Size := self subclassResponsibility.
 }.
 
@@ -80,6 +86,53 @@ public class AsmRegisterAddress superclass: AsmInstructionOperand; definition: {
 
 public class AsmImmediate superclass: AsmInstructionOperand; definition: {
     public method isImmediate => Boolean := true.
+}.
+
+public final class AsmImmediateSymbolWithAddend superclass: AsmImmediate; definition: {
+    public field symbol => AsmSymbol.
+    public field size => Size.
+    public field addend => Int64.
+
+    public method isImmediateSymbolWithAddend => Boolean := true.
+
+    public method isImmediateSigned8 => Boolean := size = 1sz.
+    public method isImmediateSigned32 => Boolean := size = 2sz.
+    public method isImmediateSigned64 => Boolean := size = 4sz.
+
+    public method + (extraAddend: Int64) ::=> SelfType
+        := self copy
+            addend: addend + extraAddend;
+            yourself.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream print: symbol.
+        addend ~= 0 ifTrue: (stream nextPutAll: " + "; print: addend).
+    }.
+
+    public override method nextPutIPRelativeI32WithExtraOffset: (extraOffset: Int32) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        codeStream nextPutUInt32: 0u32
+        ## TODO: Record the required relocation.
+    }.
+}.
+
+AsmSymbol extend: {
+    public method immediate: (immediateSize: Size) ::=> AsmImmediateSymbolWithAddend
+        := AsmImmediateSymbolWithAddend new
+            symbol: self;
+            size: immediateSize;
+            yourself.
+
+    public method byte => AsmImmediateSymbolWithAddend
+        := self immediate: 1sz.
+
+    public method word => AsmImmediateSymbolWithAddend
+        := self immediate: 2sz.
+
+    public method dword => AsmImmediateSymbolWithAddend
+        := self immediate: 4sz.
+
+    public method qword => AsmImmediateSymbolWithAddend
+        := self immediate: 8sz.
 }.
 
 public class AsmImmediateConstant superclass: AsmImmediate; definition: {
@@ -801,8 +854,7 @@ AsmObjectCodeWriteStream extend: {
     }.
 
     public override method nextPutIPRelativeI32: (operand: AsmInstructionOperand) extraOffset: (extraOffset: Int32) ::=> Void := {
-        ## TODO: Implement this in a proper way.
-        self nextPutUInt32: 0u32
+        operand nextPutIPRelativeI32WithExtraOffset: extraOffset onCodeStream: self
     }.
 }.
 
