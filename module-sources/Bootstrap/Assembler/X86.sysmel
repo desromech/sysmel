@@ -1,7 +1,8 @@
 public class AsmX86Instruction superclass: AsmStreamElement.
 
 AsmInstructionOperand extend: {
-    public virtual method isX86WordRegister => Boolean := false.
+    public virtual method x86::isByteRegister => Boolean := false.
+    public virtual method x86::isWordRegister => Boolean := false.
 
     public virtual method x86::valueLow => UInt8
         := self error: "Not a x86 register.".
@@ -63,11 +64,12 @@ public class AsmX86Register superclass: AsmRegister; definition: {
 }.
 
 public class AsmX86IntRegister superclass: AsmX86Register; definition: {
-    public override method isX86WordRegister => Boolean := true.
+    public override method x86::isWordRegister => Boolean := true.
 }.
 
 public class AsmX86Int8Register superclass: AsmX86IntRegister; definition: {
-    public override method isX86WordRegister => Boolean := false.
+    public override method x86::isByteRegister => Boolean := true.
+    public override method x86::isWordRegister => Boolean := false.
 
     public override method size => Size := 1sz.
 }.
@@ -180,7 +182,7 @@ AsmObjectCodeStream definition: {
         }
     }.
 
-    public method nextPutX86Opcode: (opcode: UInt8) plusRegister: (register: AsmX86Register) ::=> Void := {
+    public method nextPutX86Opcode: (opcode: UInt8) plusRegister: (register: AsmInstructionOperand) ::=> Void := {
         self nextPut: opcode + register x86::valueLow
     }.
 
@@ -197,6 +199,11 @@ AsmObjectCodeStream definition: {
 
     public method nextPutX86ModRM: (rm: AsmInstructionOperand) regOpcode: (opcode: UInt8) ::=> Void
         := self nextPutX86ModRM: rm regOpcode: opcode immediateSize: 0sz.
+
+    public method nextPutX86ImmediateWord: (immediate: AsmInstructionOperand) ::=> Void := {
+        self assert: immediate size <= 4sz.
+        self nextPutImmediate: immediate
+    }.
 
 }.
 
@@ -226,6 +233,10 @@ AsmX86Instruction definition: {
         }.
 
         activeAlternative := longAlternative.
+        activeAlternative ifNil: {
+            self error: "Failed to select encoding alternative for: " -- self fullPrintString
+        }
+
         ## TODO: Add support for the different spanning options.
     }.
 
@@ -326,16 +337,104 @@ let instructionTemplateTable := #{
             stream nextPutIPRelativeI32: instruction firstOperand
         };
         yourself).
-    OppR: (AsmX86InstructionTemplate new
+    OpS8: (AsmX86InstructionTemplate new
         when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
-            (instruction operandCount = 1sz) && instruction firstOperand isX86WordRegister
+            (instruction operandCount = 1sz) && instruction firstOperand isImmediateSigned8
         };
         writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
-            let register := instruction firstOperand downCastTo: AsmX86Register.
+            stream nextPutAll: templ mandatoryPrefix; nextPutAll: templ opcode; nextPutImmediate: instruction firstOperand
+        };
+        yourself).
+    OpIw: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
+            (instruction operandCount = 1sz) && instruction firstOperand isImmediate
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            stream nextPutAll: templ mandatoryPrefix; nextPutAll: templ opcode; nextPutX86ImmediateWord: instruction firstOperand
+        };
+        yourself).
+    OppR: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
+            (instruction operandCount = 1sz) && instruction firstOperand x86::isWordRegister
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let register := instruction firstOperand.
             stream 
                 nextPutAll: templ mandatoryPrefix;
                 nextPutX86RexRM: register;
                 nextPutX86Opcode: templ opcode first plusRegister: register.
+        };
+        yourself).
+    OppRwIww: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
+            ((instruction operandCount = 2sz) &&
+            instruction firstOperand x86::isWordRegister) &&
+            instruction secondOperand isImmediate
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let register := instruction firstOperand.
+            let immediate := instruction secondOperand.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86RexSize: register size rm: register;
+                nextPutX86Opcode: templ opcode first plusRegister: register;
+                nextPutImmediate: immediate
+        };
+        yourself).
+
+    OpRmwS8: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
+            (instruction operandCount = 2sz) &&
+                (instruction firstOperand isRegisterOrRegisterAddress && 
+                instruction secondOperand isImmediateSigned8)
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let registerAddress := instruction firstOperand.
+            let immediate := instruction secondOperand.
+            let operandSize := registerAddress size.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86RexSize: operandSize rm: registerAddress;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode immediateSize: immediate size;
+                nextPutImmediate: immediate
+        };
+        yourself).
+    OpRmwIw: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
+            (instruction operandCount = 2sz) &&
+                (instruction firstOperand isRegisterOrRegisterAddress && 
+                instruction secondOperand isImmediate32)
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let registerAddress := instruction firstOperand.
+            let immediate := instruction secondOperand.
+            let operandSize := registerAddress size.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86RexSize: operandSize rm: registerAddress;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode immediateSize: immediate size;
+                nextPutX86ImmediateWord: immediate
+        };
+        yourself).
+    OpRmqIsd: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
+            (instruction operandCount = 2sz) &&
+                ((instruction firstOperand isRegisterOrRegisterAddress && 
+                (instruction firstOperand size = 8sz)) &&
+                instruction secondOperand isImmediateSigned32)
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let registerAddress := instruction firstOperand.
+            let immediate := instruction secondOperand.
+            let operandSize := registerAddress size.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86RexSize: operandSize rm: registerAddress;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode immediateSize: immediate size;
+                nextPutImmediate: immediate
         };
         yourself).
 
@@ -393,7 +492,12 @@ let instructionTemplateTable := #{
 }.
 
 let instructionDefinitionTable := #(
-    (add (dst src) "Integer addition."
+    (add (dst with) "Integer addition."
+        (OpRmwS8 #[] #[16r83] 0)
+        (OpRmwIw #[] #[16r81] 0)
+
+		(OpRmwRw #[] #[16r01])
+		(OpRwRmw #[] #[16r03])
     )
 
     (call (target) "Call the function in the specified address."
@@ -402,6 +506,11 @@ let instructionDefinitionTable := #(
     )
 
     (cmp (dst src) "Compares by subtracting the specified values."
+        (OpRmwS8 #[] #[16r83] 7)
+        (OpRmwIw #[] #[16r81] 7)
+
+		(OpRmwRw #[] #[16r39])
+		(OpRwRmw #[] #[16r3B])
     )
 
     (endbr32 () "Ends indirect branch in 32 mode"
@@ -416,7 +525,15 @@ let instructionDefinitionTable := #(
         (OpRwRmw #[] #[16r8D])
     )
 
+	(lock () "Lock prefix"
+		(Op #[] #[16rF0])
+	)
+
     (mov (dst src) "Move values."
+		(OpRmqIsd #[] #[16rC7] 0)
+		(OppRwIww #[] #[16rB8])
+		(OpRmwIw #[] #[16rC7] 0)
+
         (OpRmwRw #[] #[16r89])
         (OpRwRmw #[] #[16r8B])
     )
@@ -440,13 +557,25 @@ let instructionDefinitionTable := #(
 
     (push (src) "Pushes a value onto the stack"
         (OppR #[] #[16r50])
+        (OpRm #[] #[16rFF] 6)
+		(OpS8 #[] #[16r6A])
+		(OpIw #[] #[16r68])
     )
+
+	(rep () "Rep prefix"
+		(Op #[] #[16rF3])
+	)
 
     (ret () "Return from function."
         (Op #[] #[16rC3])
     )
 
-    (sub (dst src) "Integer subtraction."
+    (sub (dst with) "Integer subtraction."
+        (OpRmwS8 #[] #[16r83] 5)
+        (OpRmwIw #[] #[16r81] 5)
+
+		(OpRmwRw #[] #[16r29])
+		(OpRwRmw #[] #[16r2B])
     )
 ).
 
