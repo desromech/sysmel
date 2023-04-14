@@ -6,7 +6,7 @@ let code := (AsmStream buildWith: {:builder |
 
     builder
         textSection;
-        align: 16sz;
+        align: 16sz unreachable: true;
         blockNamed: addFunctionSymbol with: {:builder |
             builder
                 x86::endbr64;
@@ -14,6 +14,7 @@ let code := (AsmStream buildWith: {:builder |
                 x86::add: X86::RAX with: X86::RSI;
                 x86::ret
         };
+        align: 16sz unreachable: true;
         blockNamed: ((builder symbolNamed: #main) makeFunction; makePublic; yourself) with: {:builder |
             builder
                 x86::endbr64;

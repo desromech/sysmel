@@ -768,7 +768,11 @@ let instructionDefinitionTable := #(
 		(Op #[] #[16rF0])
 	)
 
-    (mov (dst src) "Move values."
+    (nop () "No operation"
+        (Op #[] #[16r90])
+    )
+
+    (mov (dst src) "Move values"
 		(OpRmqIsd #[] #[16rC7] 0)
 		(OppRwIww #[] #[16rB8])
 		(OpRmwIw #[] #[16rC7] 0)
@@ -777,16 +781,16 @@ let instructionDefinitionTable := #(
         (OpRwRmw #[] #[16r8B])
     )
 
-    (jmp (target) "Jumps into the specified address."
+    (jmp (target) "Jumps into the specified address"
         (OpBranch32 #[] #[16rE9])
         (OpRm #[] #[16rFF] 4)
     )
 
-    (int (number) "Software interruption."
+    (int (number) "Software interruption"
         ##(OpI8 #[] #[16rCD])
     )
 
-    (int3 () "Software interruption 3 (Breakpoint)."
+    (int3 () "Software interruption 3 (Breakpoint)"
         (Op #[] #[16rCC])
     )
 
@@ -805,11 +809,11 @@ let instructionDefinitionTable := #(
 		(Op #[] #[16rF3])
 	)
 
-    (ret () "Return from function."
+    (ret () "Return from function"
         (Op #[] #[16rC3])
     )
 
-    (sub (dst with) "Integer subtraction."
+    (sub (dst with) "Integer subtraction"
         (OpRmwS8 #[] #[16r83] 5)
         (OpRmwIw #[] #[16r81] 5)
 

@@ -499,6 +499,7 @@ public final class AsmStream superclass: Object; definition: {
 
 public final class AsmAlignDirective superclass: AsmStreamElement; definition: {
     public field alignment => Size.
+    public field unreachable => Boolean.
 
     public override method isFormattedWithIndentation => Boolean := false.
 
@@ -507,7 +508,7 @@ public final class AsmAlignDirective superclass: AsmStreamElement; definition: {
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
-        stream alignTo: alignment
+        stream alignTo: alignment unreachable: unreachable
     }.
 }.
 
@@ -727,6 +728,12 @@ public final class AsmStreamBuilder superclass: Object; definition: {
     public method align: (alignment: Size) ::=> AsmAlignDirective
         := self addElement: (AsmAlignDirective new
             alignment: alignment;
+            yourself).
+
+    public method align: (alignment: Size) unreachable: (unreachable: Boolean)::=> AsmAlignDirective
+        := self addElement: (AsmAlignDirective new
+            alignment: alignment;
+            unreachable: unreachable;
             yourself).
 
     public method textSection ::=> AsmSectionDirective

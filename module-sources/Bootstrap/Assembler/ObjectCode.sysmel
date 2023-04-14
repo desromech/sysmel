@@ -39,8 +39,53 @@ AsmObjectCodeSection definition: {
         size := size alignedTo: requiredAlignment.
     }.
 
-    public method alignWriteOffsetTo: (requiredAlignment: Size) ::=> Void := {
-        writeOffset := writeOffset alignedTo: requiredAlignment.
+    let X86NopPatterns := #(
+        #[16r90]
+        #[16r66 16r90]                        ##2 - xchg ax ax (o16 nop)
+        #[16r0f 16r1f 16r00]                         ##3 - nop(3)
+        #[16r0f 16r1f 16r40 16r00]                   ##4 - nop(4)
+        #[16r0f 16r1f 16r44 16r00 16r00]             ##5 - nop(5)
+        #[16r66 16r0f 16r1f 16r44 16r00 16r00]       ##6 - nop(6)
+        #[16r0f 16r1f 16r80 16r00 16r00 16r00 16r00] ##7 - nop(7)
+        #[16r0f 16r1f 16r84 16r00 16r00 16r00 16r00  ##8 - nop(8)
+         16r00]
+        #[16r66 16r0f 16r1f 16r84 16r00 16r00 16r00  ##9 - nop(9)
+         16r00 16r00]
+        #[16r66 16r2e 16r0f 16r1f 16r84 16r00 16r00  ##10 - o16 cs nop
+         16r00 16r00 16r00]
+        #[16r66 16r66 16r2e 16r0f 16r1f 16r84 16r00  ##11 - 2x o16 cs nop
+         16r00 16r00 16r00 16r00]
+        #[16r66 16r66 16r66 16r2e 16r0f 16r1f 16r84  ##12 - 3x o16 cs nop
+         16r00 16r00 16r00 16r00 16r00]
+        #[16r66 16r66 16r66 16r66 16r2e 16r0f 16r1f  ##13 - 4x o16 cs nop
+         16r84 16r00 16r00 16r00 16r00 16r00]
+        #[16r66 16r66 16r66 16r66 16r66 16r2e 16r0f  ##14 - 5x o16 cs nop
+         16r1f 16r84 16r00 16r00 16r00 16r00 16r00]
+        #[16r66 16r66 16r66 16r66 16r66 16r66 16r2e  ##15 - 6x o16 cs nop
+         16r0f 16r1f 16r84 16r00 16r00 16r00 16r00 16r00]
+    ).
+
+    public method alignWriteOffsetTo: (requiredAlignment: Size) unreachable: (unreachable: Boolean) ::=> Void := {
+        ## FIXME: Delegate this onto the target machine.
+        let newWriteOffset := writeOffset alignedTo: requiredAlignment.
+        executable ifTrue: {
+            unreachable ifTrue: {
+                while: writeOffset < newWriteOffset do: (
+                    data at: writeOffset put: 16rCC u8 ## X86: Int3
+                ) continueWith: (writeOffset := writeOffset + 1sz).
+
+            } ifFalse: {
+                let paddingSize mutable := newWriteOffset - writeOffset.
+
+                while: (paddingSize > 0sz) do: {
+                    let paddingPattern => ByteArray := X86NopPatterns at: (paddingSize min: X86NopPatterns size) - 1sz.
+                    self nextPutAll: paddingPattern.
+                    paddingSize := paddingSize - paddingPattern size
+                }.
+            }.
+        } ifFalse: {
+            writeOffset := newWriteOffset.
+        }.
     }.
 
     public method addExecutable: (flag: Boolean) ::=> Boolean := {
@@ -127,12 +172,14 @@ AsmObjectCodeSection definition: {
     }.
 
     public method allocateMemoryForWriting => Void := {
+        size := size alignedTo: alignment.
         data := ByteArray new: size.
         newRelocations := ArrayList new.
         writeOffset := 0sz.
     }.
 
     public method finishWriting => Void := {
+        self alignWriteOffsetTo: alignment unreachable: true.
         relocations := newRelocations asArray.
         newRelocations := nil.
     }.
@@ -333,7 +380,7 @@ AsmObjectCodeStream definition: {
     public method isInX86LongMode => Boolean
         := true.
 
-    public abstract method alignTo: (requiredAlignment: Size) ::=> Void
+    public abstract method alignTo: (requiredAlignment: Size) unreachable: (unreachable: Boolean) ::=> Void
         := self subclassResponsibility.
 
     public method enterSectionNamed: (name: Symbol) ::=> AsmObjectCodeSection := {
@@ -385,7 +432,7 @@ AsmObjectCodeStream definition: {
 }.
 
 AsmObjectCodeSizeStream definition: {
-    public override method alignTo: (requiredAlignment: Size) ::=> Void := {
+    public override method alignTo: (requiredAlignment: Size) unreachable: (unreachable: Boolean) ::=> Void := {
         activeSection alignSizeTo: requiredAlignment.
     }.
 
@@ -448,8 +495,8 @@ AsmObjectCodeSizeStream definition: {
 }.
 
 AsmObjectCodeWriteStream definition: {
-    public override method alignTo: (requiredAlignment: Size) ::=> Void := {
-        activeSection alignWriteOffsetTo: requiredAlignment.
+    public override method alignTo: (requiredAlignment: Size) unreachable: (unreachable: Boolean) ::=> Void := {
+        activeSection alignWriteOffsetTo: requiredAlignment unreachable: unreachable.
     }.
 
     public override method nextPut: (value: UInt8) ::=> Void := {
