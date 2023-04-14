@@ -407,6 +407,8 @@ public final class AsmImmediateConstantFloat64 superclass: AsmImmediateConstant;
 }.
 
 public final class AsmStream superclass: Object; definition: {
+    public field compilationTarget => AsmCompilationTarget.
+
     public field firstElement => AsmStreamElement.
     public field lastElement => AsmStreamElement.
 
@@ -477,7 +479,9 @@ public final class AsmStream superclass: Object; definition: {
     }.
 
     public method assemble => AsmObjectCode := {
-        let objectCodeBuilder := AsmObjectCodeBuilder new.
+        let objectCodeBuilder := AsmObjectCodeBuilder new
+            compilationTarget: compilationTarget;
+            yourself.
         self
             selectElementsEncodingAlternatives.
 
@@ -871,13 +875,18 @@ AsmObjectCodeWriteStream extend: {
 
 AsmStream extend: {
     __Meta__ extend: {
-        public method buildWith: (aBlock: (AsmStreamBuilder => Void)) ::=> self := {
-            let result := self new.
+        public method for: (compilationTarget: AsmCompilationTarget) buildWith: (aBlock: (AsmStreamBuilder => Void)) ::=> self := {
+            let result := self new
+                compilationTarget: compilationTarget;
+                yourself.
             let builder := AsmStreamBuilder new
                 stream: result;
                 yourself.
             aBlock(builder).
             result
-        }
+        }.
+
+        public method buildWith: (aBlock: (AsmStreamBuilder => Void)) ::=> self
+            := self for: AsmCompilationTarget default buildWith: aBlock.
     }
 }

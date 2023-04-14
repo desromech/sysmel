@@ -305,8 +305,8 @@ AsmObjectCodeRelocationRelativeInt32 extend: {
             yourself.
 }.
 
-AsmObjectCode extend: {
-    public method encodeAsElf64 => ByteArray := {
+public final class AsmObjectElf64FileWriter superclass: AsmObjectFileWriter; definition: {
+    public override method encodeObjectCode: (objectCode: AsmObjectCode) ::=> ByteArray := {
         let header := Elf64::Header new
             type: Elf::Type::Rel;
             machine: Elf::Machine::X86_64;
@@ -315,7 +315,7 @@ AsmObjectCode extend: {
         let fileLayout := ArrayList new.
         fileLayout
             add: header;
-            addAll: sections.
+            addAll: objectCode sections.
 
         let stringTable := AsmObjectCodeCStringTable new.
         let sectionNameStringTable := AsmObjectCodeCStringTable new.
@@ -330,7 +330,7 @@ AsmObjectCode extend: {
         sectionDataElements add: nil.
 
         ## Emit the sections.
-        sections do: {:(AsmObjectCodeSection)eachSection :: Void |
+        objectCode sections do: {:(AsmObjectCodeSection)eachSection :: Void |
             let sectionHeader := Elf64::SectionHeader new
                 name: (sectionNameStringTable addSymbol: eachSection name) asUInt32;
                 type: eachSection elfSectionType;
@@ -344,14 +344,14 @@ AsmObjectCode extend: {
         }.
 
         ## Convert the symbols.
-        symbols do: {:(AsmSymbol)eachSymbol :: Void |
+        objectCode symbols do: {:(AsmSymbol)eachSymbol :: Void |
             symbolTable addSymbol: eachSymbol
         }.
 
         ## Emit the relocations.
         let relaSectionHeaders := ArrayList new.
 
-        sections doWithIndex: {:(AsmObjectCodeSection)eachSection :(Size)index :: Void |
+        objectCode sections doWithIndex: {:(AsmObjectCodeSection)eachSection :(Size)index :: Void |
             let sectionHeaderIndex := index + 1sz.
             let sectionHeader := sectionHeaders at: sectionHeaderIndex.
             let relocations := eachSection relocations.
@@ -447,7 +447,26 @@ AsmObjectCode extend: {
 
         fileLayout encodedElementsInByteArray
     }.
+}.
 
-    public method writeElf64ToFileNamed: (fileName: String) ::=> Void
-        := IO::saveWholeFileNamed(fileName, self encodeAsElf64).
+public final class AsmObjectElf32FileWriter superclass: AsmObjectFileWriter; definition: {
+    public override method encodeObjectCode: (objectCode: AsmObjectCode) ::=> ByteArray := {
+        #[]
+    }
+}.
+
+AsmCompilationTarget extend: {
+    public method useElf => Void := {
+        self pointerSize = 8sz
+            ifTrue: (self useElf64)
+            ifFalse: (self useElf32)
+    }.
+
+    public method useElf32 => Void := {
+        objectFileWriter := AsmObjectElf32FileWriter new
+    }.
+
+    public method useElf64 => Void := {
+        objectFileWriter := AsmObjectElf64FileWriter new
+    }.
 }.

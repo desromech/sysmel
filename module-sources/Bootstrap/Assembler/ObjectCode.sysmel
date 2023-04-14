@@ -3,7 +3,23 @@ public abstract class AsmObjectCodeStream superclass: Object.
 public final class AsmObjectCodeSizeStream superclass: AsmObjectCodeStream.
 public final class AsmObjectCodeWriteStream superclass: AsmObjectCodeStream.
 public abstract class AsmObjectCodeRelocation superclass: Object.
+public abstract class AsmObjectFileWriter superclass: Object.
 public final class AsmSymbol superclass: Object.
+
+public abstract class AsmCompilationTarget superclass: Object; definition: {
+    public field operatingSystemName => Symbol.
+    public field executable => Boolean.
+    public field objectFileWriter => AsmObjectFileWriter.
+
+    public virtual method hasPositionIndependentCode => Boolean
+        := false.
+
+    public abstract method pointerSize => Size
+        := self subclassResponsibility.
+
+    public virtual method pointerAlignment => Size
+        := self pointerSize.
+}.
 
 AsmObjectCodeSection definition: {
     public field name => Symbol.
@@ -193,6 +209,8 @@ AsmObjectCodeSection definition: {
 }.
 
 public final class AsmObjectCode superclass: Object; definition: {
+    public field compilationTarget => AsmCompilationTarget.
+
     public field sections => Array.
     public field symbols => Array.
 
@@ -203,6 +221,21 @@ public final class AsmObjectCode superclass: Object; definition: {
         symbols do: {:(AsmSymbol)each :: Void |
             stream fullPrint: each
         }.
+    }.
+
+    public method encodeAsObjectFile ::=> ByteArray
+        := compilationTarget objectFileWriter encodeObjectCode: self.
+
+    public method writeObjectToFileNamed: (fileName: String) ::=> Void
+        := .compilationTarget objectFileWriter writeObjectCode: self toFileNamed: fileName.
+}.
+
+AsmObjectFileWriter extend: {
+    public abstract method encodeObjectCode: (objectCode: AsmObjectCode) ::=> ByteArray
+        := self subclassResponsibility
+
+    public method writeObjectCode: (objectCode: AsmObjectCode) toFileNamed: (fileName: String) ::=> Void := {
+        IO::saveWholeFileNamed(fileName, self encodeObjectCode: objectCode).
     }.
 }.
 
@@ -284,6 +317,8 @@ AsmSymbol definition: {
 }.
 
 public final class AsmObjectCodeBuilder superclass: Object; definition: {
+    public field compilationTarget => AsmCompilationTarget.
+
     public field sections => ArrayList.
     public field sectionNameTable => Dictionary.
     public field symbols => ArrayList.
@@ -314,6 +349,7 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
         }.
 
         AsmObjectCode new
+            compilationTarget: compilationTarget;
             sections: sections asArray;
             symbols: symbols asArray;
             yourself
