@@ -9,7 +9,7 @@ let code := (AsmStream buildWith: {:builder |
                 x86::mov: X86::RBP src: X86::RSP;
 
                 x86::sub: X86::RSP with: 8i8 asAsmImmediate;
-                x86::mov: X86::RBP src: 42u64 asAsmImmediate;
+                x86::mov: X86::RBP x86::qword + -8i8 asAsmImmediate  src: 42u32 asAsmImmediate;
 
                 x86::mov: X86::RSP src: X86::RBP;
                 x86::pop: X86::RBP;
@@ -20,4 +20,3 @@ let code := (AsmStream buildWith: {:builder |
 printLine(code fullPrintString).
 ##printLine(code assemble fullPrintString).
 code assemble writeElf64ToFileNamed: "test.elf64".
-

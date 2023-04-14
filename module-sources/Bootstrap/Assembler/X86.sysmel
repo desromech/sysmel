@@ -1,8 +1,10 @@
 public class AsmX86Instruction superclass: AsmStreamElement.
+public final class AsmX86RegisterAddress superclass: AsmRegisterAddress.
 
 AsmInstructionOperand extend: {
     public virtual method x86::isByteRegister => Boolean := false.
     public virtual method x86::isWordRegister => Boolean := false.
+    public virtual method x86::isRegisterAddress => Boolean := false.
 
     public virtual method x86::valueLow => UInt8
         := self error: "Not a x86 register.".
@@ -11,13 +13,14 @@ AsmInstructionOperand extend: {
     public virtual method x86::rexBaseBit => UInt8 := 0u8.
     public virtual method x86::rexIndexBit => UInt8 := 0u8.
 
-    public virtual method x86::encodeModRMWithReg: (reg: AsmInstructionOperand) immediateSize: (immediateSize: Size)
-        longMode: (longMode: Boolean) into: (codeStream: AsmObjectCodeStream) ::=> Void
-        := self subclassResponsibility.
-
     public virtual method x86::encodeModRMWithRegOpcode: (opcode: UInt8) immediateSize: (immediateSize: Size)
         longMode: (longMode: Boolean) into: (codeStream: AsmObjectCodeStream) ::=> Void
         := self subclassResponsibility.
+
+    public method x86::encodeModRMWithReg: (reg: AsmInstructionOperand) immediateSize: (immediateSize: Size)
+        longMode: (longMode: Boolean) into: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        self x86::encodeModRMWithRegOpcode: reg x86::valueLow immediateSize: immediateSize longMode: longMode into: codeStream
+    }.
 }.
 
 public class AsmX86Register superclass: AsmRegister; definition: {
@@ -52,19 +55,177 @@ public class AsmX86Register superclass: AsmRegister; definition: {
         stream nextPutAll: name
     }.
 
-    public override method x86::encodeModRMWithReg: (reg: AsmInstructionOperand) immediateSize: (immediateSize: Size)
-        longMode: (longMode: Boolean) into: (codeStream: AsmObjectCodeStream) ::=> Void := {
-        codeStream nextPut: ((3u8 << 6u8) | (reg x86::valueLow << 3u8)) | self x86::valueLow
-    }.
-
     public override method x86::encodeModRMWithRegOpcode: (opcode: UInt8) immediateSize: (immediateSize: Size)
         longMode: (longMode: Boolean) into: (codeStream: AsmObjectCodeStream) ::=> Void := {
         codeStream nextPut: ((3u8 << 6u8) | (opcode << 3u8)) | self x86::valueLow
+    }.
+
+    public method * (scale: UInt8) ::=> AsmX86RegisterAddress
+        := AsmX86RegisterAddress new
+            index: self;
+            scale: scale;
+            yourself.
+}.
+
+AsmX86RegisterAddress definition: {
+    public field scaleShift => UInt8.
+    public field size => UInt8.
+
+    public field base => AsmX86Register.
+    public field index => AsmX86Register.
+    public field displacement => AsmImmediate.
+
+    public override method x86::isRegisterAddress => Boolean
+        := true.
+
+    public override method x86::rexBaseBit => UInt8
+        := base ifNil: 0u8 ifNotNil: base x86::rexRegBit.
+
+    public override method x86::rexIndexBit => UInt8
+        := index ifNil: 0u8 ifNotNil: index x86::rexRegBit.
+
+    __Meta__ definition: {
+        public method base: (base: AsmX86Register) size: (size: UInt8) ::=> self
+            := self new base: base; size: size; yourself.
+    }.
+
+    let sizeNameTable := #{
+        1u8 : "byte ptr".
+        2u8 : "word ptr".
+        4u8 : "dword ptr".
+        8u8 : "qword ptr".
+        16u8 : "oword ptr".
+    }.
+
+    public method scale => UInt8
+        := 1u8 << scaleShift.
+
+    public method scale: (scale: UInt8) ::=> Void := {
+        scale = 1u8 ifTrue: (scaleShift := 0u8).
+        scale = 2u8 ifTrue: (scaleShift := 1u8).
+        scale = 4u8 ifTrue: (scaleShift := 2u8).
+    }.
+
+    public method needsSibByte => Boolean
+        := (base isNotNil && (base x86::valueLow = #* ESP *# 4u8)) || index isNotNil.
+
+    public method hasSmallDisplacement => Boolean
+        := displacement isNil || displacement isImmediateSigned8.
+
+    public override method x86::encodeModRMWithRegOpcode: (opcode: UInt8) immediateSize: (immediateSize: Size)
+        longMode: (longMode: Boolean) into: (codeStream: AsmObjectCodeStream) ::=> Void := {
+
+        let needsSib := self needsSibByte.
+        let sibByte mutable := 0u8.
+
+        needsSib ifTrue: {
+            let baseValue := base ifNil: (5u8) ifNotNil: (base x86::valueLow).
+            let indexValue := index ifNil: (4u8) ifNotNil: (index x86::valueLow).
+            sibByte := ((scaleShift << 6u8) | (indexValue << 3u8)) | baseValue.
+        }.
+
+        let hasDisplacement mutable => Boolean := false.
+        let hasSmallDisplacement mutable => Boolean := false.
+        let modBaseValue mutable := 0u8.
+        let mod mutable := 0u8.
+
+        needsSib && (base x86::valueLow = #* EBP *# 5u8) ifTrue: {
+            hasDisplacement := true.
+            hasSmallDisplacement := self hasSmallDisplacement.
+            mod := hasSmallDisplacement ifTrue: 1u8 ifFalse: 2u8
+        } ifFalse: {
+            displacement isNil && (base x86::valueLow ~= 5u8) ifTrue: {
+                mod := 0u8
+            } ifFalse: {
+                hasDisplacement := true.
+                hasSmallDisplacement := self hasSmallDisplacement.
+                mod := hasSmallDisplacement ifTrue: 1u8 ifFalse: 2u8.
+                (base isNil && hasSmallDisplacement not) && needsSib not ifTrue: (mod := 0u8)
+            }
+        }.
+
+        needsSib ifTrue: {
+            modBaseValue := 4u8
+        } ifFalse: {
+            base ifNotNil: {
+                modBaseValue := base x86::valueLow
+            } ifNil: {
+                hasSmallDisplacement := false.
+                self assert: displacement isNotNil.
+                modBaseValue := 5u8
+            }
+        }.
+
+        codeStream nextPut: ((mod << 6u8) | (opcode << 3u8)) | modBaseValue.
+        needsSib ifTrue: (codeStream nextPut: sibByte).
+
+        hasDisplacement ifTrue: {
+            hasSmallDisplacement ifTrue: {
+                displacement ifNil: {
+                    codeStream nextPut: 0u8
+                } ifNotNil: {
+                    codeStream nextPutImmediate8: displacement
+                }.
+            } ifFalse: {
+                (mod = 0u8) && longMode ifTrue: {
+                    codeStream nextPutIPRelativeI32: displacement extraOffset: immediateSize asInt32 + 4i32
+                } ifFalse: {
+                    codeStream nextPutImmediate32: displacement
+                }
+            }
+        }.
+    }.
+
+    public method + (nextComponent: AsmInstructionOperand) ::=> SelfType := {
+        nextComponent x86::isRegisterAddress ifTrue: {
+            let nextRegisterAddress := nextComponent downCastTo: AsmX86RegisterAddress.
+            self copy
+                index: nextRegisterAddress index;
+                scaleShift: nextRegisterAddress scaleShift;
+                displacement: nextRegisterAddress displacement;
+                yourself
+        } ifFalse: {
+            self copy
+                displacement: (nextComponent downCastTo: AsmImmediate);
+                yourself
+        }
+    }.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: (sizeNameTable at: size); nextPutAll: " [".
+        let hasPrevious mutable => Boolean := false.
+        base ifNotNil: {
+            stream print: base.
+            hasPrevious := true.
+        }.
+        index ifNotNil: {
+            hasPrevious ifTrue: (stream nextPutAll: " + ").
+            stream print: index; nextPut: '*'; print: self scale.
+            hasPrevious := true.
+        }.
+        displacement ifNotNil: {
+            hasPrevious ifTrue: (stream nextPutAll: " + ").
+            stream print: displacement.
+        }.
+
+        stream nextPutAll: "]".
     }.
 }.
 
 public class AsmX86IntRegister superclass: AsmX86Register; definition: {
     public override method x86::isWordRegister => Boolean := true.
+
+    public method x86::byte => AsmX86RegisterAddress
+        := AsmX86RegisterAddress base: self size: 1u8.
+
+    public method x86::word => AsmX86RegisterAddress
+        := AsmX86RegisterAddress base: self size: 2u8.
+
+    public method x86::dword => AsmX86RegisterAddress
+        := AsmX86RegisterAddress base: self size: 4u8.
+
+    public method x86::qword => AsmX86RegisterAddress
+        := AsmX86RegisterAddress base: self size: 8u8.
 }.
 
 public class AsmX86Int8Register superclass: AsmX86IntRegister; definition: {
@@ -90,6 +251,66 @@ public class AsmX86VectorRegister superclass: AsmX86IntRegister; definition: {
     public override method size => Size := 16sz.
 }.
 
+public global X86::AL := AsmX86Int8Register name: #AL value: 0u8.
+public global X86::CL := AsmX86Int8Register name: #CL value: 1u8.
+public global X86::DL := AsmX86Int8Register name: #DL value: 2u8.
+public global X86::BL := AsmX86Int8Register name: #BL value: 3u8.
+public global X86::AH := AsmX86Int8Register name: #AH value: 4u8.
+public global X86::CH := AsmX86Int8Register name: #CH value: 5u8.
+public global X86::DH := AsmX86Int8Register name: #DH value: 6u8.
+public global X86::BH := AsmX86Int8Register name: #BH value: 7u8.
+
+public global X86::RAXB := AsmX86Int8Register name: #RAXB value: 0u8.
+public global X86::RCXB := AsmX86Int8Register name: #RCXB value: 1u8.
+public global X86::RDXB := AsmX86Int8Register name: #RDXB value: 2u8.
+public global X86::RBXB := AsmX86Int8Register name: #RBXB value: 3u8.
+public global X86::RSPB := AsmX86Int8Register name: #RSPB value: 4u8.
+public global X86::RBPB := AsmX86Int8Register name: #RBPB value: 5u8.
+public global X86::RSIB := AsmX86Int8Register name: #RSIB value: 6u8.
+public global X86::RDIB := AsmX86Int8Register name: #RDIB value: 7u8.
+public global X86::R8B := AsmX86Int8Register name: #R8B value: 8u8.
+public global X86::R9B := AsmX86Int8Register name: #R9B value: 9u8.
+public global X86::R10B := AsmX86Int8Register name: #R10B value: 10u8.
+public global X86::R11B := AsmX86Int8Register name: #R11B value: 11u8.
+public global X86::R12B := AsmX86Int8Register name: #R12B value: 12u8.
+public global X86::R13B := AsmX86Int8Register name: #R13B value: 13u8.
+public global X86::R14B := AsmX86Int8Register name: #R14B value: 14u8.
+public global X86::R15B := AsmX86Int8Register name: #R15B value: 15u8.
+
+public global X86::AX := AsmX86Int16Register name: #AX value: 0u8.
+public global X86::CX := AsmX86Int16Register name: #CX value: 1u8.
+public global X86::DX := AsmX86Int16Register name: #DX value: 2u8.
+public global X86::BX := AsmX86Int16Register name: #BX value: 3u8.
+public global X86::SP := AsmX86Int16Register name: #SP value: 4u8.
+public global X86::BP := AsmX86Int16Register name: #BP value: 5u8.
+public global X86::SI := AsmX86Int16Register name: #SI value: 6u8.
+public global X86::DI := AsmX86Int16Register name: #DI value: 7u8.
+public global X86::R8W := AsmX86Int16Register name: #R8W value: 8u8.
+public global X86::R9W := AsmX86Int16Register name: #R9W value: 9u8.
+public global X86::R10W := AsmX86Int16Register name: #R10W value: 10u8.
+public global X86::R11W := AsmX86Int16Register name: #R11W value: 11u8.
+public global X86::R12W := AsmX86Int16Register name: #R12W value: 12u8.
+public global X86::R13W := AsmX86Int16Register name: #R13W value: 13u8.
+public global X86::R14W := AsmX86Int16Register name: #R14W value: 14u8.
+public global X86::R15W := AsmX86Int16Register name: #R15W value: 15u8.
+
+public global X86::EAX := AsmX86Int32Register name: #EAX value: 0u8.
+public global X86::ECX := AsmX86Int32Register name: #ECX value: 1u8.
+public global X86::EDX := AsmX86Int32Register name: #EDX value: 2u8.
+public global X86::EBX := AsmX86Int32Register name: #EBX value: 3u8.
+public global X86::ESP := AsmX86Int32Register name: #ESP value: 4u8.
+public global X86::EBP := AsmX86Int32Register name: #EBP value: 5u8.
+public global X86::ESI := AsmX86Int32Register name: #ESI value: 6u8.
+public global X86::EDI := AsmX86Int32Register name: #EDI value: 7u8.
+public global X86::R8D := AsmX86Int32Register name: #R8D value: 8u8.
+public global X86::R9D := AsmX86Int32Register name: #R9D value: 9u8.
+public global X86::R10D := AsmX86Int32Register name: #R10D value: 10u8.
+public global X86::R11D := AsmX86Int32Register name: #R11D value: 11u8.
+public global X86::R12D := AsmX86Int32Register name: #R12D value: 12u8.
+public global X86::R13D := AsmX86Int32Register name: #R13D value: 13u8.
+public global X86::R14D := AsmX86Int32Register name: #R14D value: 14u8.
+public global X86::R15D := AsmX86Int32Register name: #R15D value: 15u8.
+
 public global X86::RAX := AsmX86Int64Register name: #RAX value: 0u8.
 public global X86::RCX := AsmX86Int64Register name: #RCX value: 1u8.
 public global X86::RDX := AsmX86Int64Register name: #RDX value: 2u8.
@@ -106,6 +327,23 @@ public global X86::R12 := AsmX86Int64Register name: #R12 value: 12u8.
 public global X86::R13 := AsmX86Int64Register name: #R13 value: 13u8.
 public global X86::R14 := AsmX86Int64Register name: #R14 value: 14u8.
 public global X86::R15 := AsmX86Int64Register name: #R15 value: 15u8.
+
+public global X86::XMM0 := AsmX86VectorRegister name: #XMM0 value: 0u8.
+public global X86::XMM1 := AsmX86VectorRegister name: #XMM1 value: 1u8.
+public global X86::XMM2 := AsmX86VectorRegister name: #XMM2 value: 2u8.
+public global X86::XMM3 := AsmX86VectorRegister name: #XMM3 value: 3u8.
+public global X86::XMM4 := AsmX86VectorRegister name: #XMM4 value: 4u8.
+public global X86::XMM5 := AsmX86VectorRegister name: #XMM5 value: 5u8.
+public global X86::XMM6 := AsmX86VectorRegister name: #XMM6 value: 6u8.
+public global X86::XMM7 := AsmX86VectorRegister name: #XMM7 value: 7u8.
+public global X86::XMM8 := AsmX86VectorRegister name: #XMM8 value: 8u8.
+public global X86::XMM9 := AsmX86VectorRegister name: #XMM9 value: 9u8.
+public global X86::XMM10 := AsmX86VectorRegister name: #XMM10 value: 10u8.
+public global X86::XMM11 := AsmX86VectorRegister name: #XMM11 value: 11u8.
+public global X86::XMM12 := AsmX86VectorRegister name: #XMM12 value: 12u8.
+public global X86::XMM13 := AsmX86VectorRegister name: #XMM13 value: 13u8.
+public global X86::XMM14 := AsmX86VectorRegister name: #XMM14 value: 14u8.
+public global X86::XMM15 := AsmX86VectorRegister name: #XMM15 value: 15u8.
 
 public final class AsmX86InstructionDefinition superclass: Object; definition: {
     public field mnemonic => Symbol.

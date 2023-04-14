@@ -60,6 +60,7 @@ AsmInstructionOperand definition: {
 
     public method isRegister => Boolean := false.
     public method isRegisterOrRegisterAddress => Boolean := false.
+    public method isRegisterAddress => Boolean := false.
 
     public abstract method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void
         := self subclassResponsibility.
@@ -69,6 +70,11 @@ AsmInstructionOperand definition: {
 
 public class AsmRegister superclass: AsmInstructionOperand; definition: {
     public method isRegister => Boolean := true.
+    public method isRegisterOrRegisterAddress => Boolean := true.
+}.
+
+public class AsmRegisterAddress superclass: AsmInstructionOperand; definition: {
+    public method isRegisterAddress => Boolean := true.
     public method isRegisterOrRegisterAddress => Boolean := true.
 }.
 
@@ -753,6 +759,26 @@ AsmObjectCodeStream extend: {
 
     public abstract method nextPutImmediate: (operand: AsmInstructionOperand) ::=> Void
         := self subclassResponsibility.
+
+    public method nextPutImmediate8: (operand: AsmInstructionOperand) ::=> Void := {
+        self assert: operand isImmediate8.
+        self nextPutImmediate: operand
+    }.
+
+    public method nextPutImmediate16: (operand: AsmInstructionOperand) ::=> Void := {
+        self assert: operand isImmediate16.
+        self nextPutImmediate: operand
+    }.
+
+    public method nextPutImmediate32: (operand: AsmInstructionOperand) ::=> Void := {
+        self assert: operand isImmediate32.
+        self nextPutImmediate: operand
+    }.
+
+    public method nextPutImmediate64: (operand: AsmInstructionOperand) ::=> Void := {
+        self assert: operand isImmediate64.
+        self nextPutImmediate: operand
+    }.
 
     public method nextPutIPRelativeI32: (operand: AsmInstructionOperand) ::=> Void := {
         self nextPutIPRelativeI32: operand extraOffset: 4i32
