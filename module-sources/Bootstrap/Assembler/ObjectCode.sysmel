@@ -503,7 +503,7 @@ AsmObjectCodeWriteStream definition: {
     }.
 
     public override method recordSymbolEnd: (symbol: AsmSymbol) ::=> Void := {
-        symbol size: activeSection size asUInt64 - symbol value.
+        symbol size: activeSection writeOffset asUInt64 - symbol value.
     }.
 
     public override method recordRelocation: (relocation: AsmObjectCodeRelocation) ::=> Void := {
