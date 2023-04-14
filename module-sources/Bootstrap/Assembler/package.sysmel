@@ -2,3 +2,4 @@ loadSourceNamed: "ObjectCode.sysmel".
 loadSourceNamed: "BaseIR.sysmel".
 loadSourceNamed: "Elf.sysmel".
 loadSourceNamed: "X86.sysmel".
+loadSourceNamed: "ARM.sysmel".

@@ -32,10 +32,6 @@ public class AsmX86Register superclass: AsmRegister; definition: {
             := self new name: name; value: value; yourself.
     }.
 
-    public method initialize => Void := {
-        value := 0u8
-    }.
-
     public override method x86::valueLow => UInt8
         := value & 7u8.
 
