@@ -2,13 +2,28 @@ public class AsmX86Instruction superclass: AsmStreamElement.
 public final class AsmX86RegisterAddress superclass: AsmRegisterAddress.
 
 public final class AsmX86CompilationTarget superclass: AsmCompilationTarget; definition: {
+    public override method elfMachine => UInt16
+        := Elf::Machine::I386.
+
+    public override method usesElfRelStyleRelocations => Boolean
+        := true.
+
     public override method pointerSize => Size
         := 4sz.
 }.
 
 public final class AsmX86_64CompilationTarget superclass: AsmCompilationTarget; definition: {
+    public override method elfMachine => UInt16
+        := Elf::Machine::X86_64.
+
+    public override method usesElfRelStyleRelocations => Boolean
+        := false.
+
     public override method pointerSize => Size
         := 8sz.
+
+    public override method convertRelocationIntoElf64Rela: (relocation: AsmObjectCodeRelocation) withSymbolTable: (symbolTable: Elf64::SymbolTable) ::=> Elf64::Rela
+        := relocation convertIntoX86_64RelaWithSymbolTable: symbolTable.
 }.
 
 AsmCompilationTarget extend: {
@@ -747,6 +762,20 @@ let instructionTemplateTable := #{
                 nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode
         };
         yourself).
+}.
+
+AsmObjectCodeRelocation extend: {
+    public virtual method convertIntoX86_64RelaWithSymbolTable: (symbolTable: Elf64::SymbolTable) ::=> Elf64::Rela
+        := self subclassResponsibility.
+}.
+
+AsmObjectCodeRelocationRelativeInt32 extend: {
+    public override method convertIntoX86_64RelaWithSymbolTable: (symbolTable: Elf64::SymbolTable) ::=> Elf64::Rela
+        := Elf64::Rela new
+            offset: offset;
+            symbol: (symbolTable indexOfSymbol: symbol) type: Elf::X86_64::Rel::PC32;
+            addend: addend asInt64;
+            yourself.
 }.
 
 let instructionDefinitionTable := #(

@@ -33,6 +33,7 @@ public global Elf::Ident::CurrentVersion := 1u8.
 public global Elf::CurrentVersion := 1u32.
 
 public global Elf::Machine::I386 := 3u16.
+public global Elf::Machine::ARM := 40u16.
 public global Elf::Machine::X86_64 := 62u16.
 
 public global Elf::SectionHeaderType::Null := 0u32.
@@ -171,6 +172,23 @@ public struct Elf64::SectionHeader definition: {
     public field entrySize => Elf64::Xword.
 }.
 
+public struct Elf32::Symbol definition: {
+    public field name => Elf32::Word.
+    public field value => Elf32::Addr.
+    public field size => Elf32::Word.
+    public field info => UInt8.
+    public field other => UInt8.
+    public field sectionHeaderIndex => Elf32::Half.
+
+    public method bind: (bind: UInt8) type: (type: UInt8) ::=> Void := {
+        info := (bind << 4u8) | type
+    }.
+
+    public method makeSectionSymbol => Void := {
+        self bind: Elf::SymbolTableBind::Local type: Elf::SymbolTableType::Section
+    }.
+}.
+
 public struct Elf64::Symbol definition: {
     public field name => Elf64::Word.
     public field info => UInt8.
@@ -188,9 +206,24 @@ public struct Elf64::Symbol definition: {
     }.
 }.
 
+public struct Elf32::Rel definition: {
+    public field offset => Elf32::Addr.
+    public field info => Elf32::Word.
+}.
+
 public struct Elf64::Rel definition: {
     public field offset => Elf64::Addr.
     public field info => Elf64::Xword.
+}.
+
+public struct Elf32::Rela definition: {
+    public field offset => Elf32::Addr.
+    public field info => Elf32::Word.
+    public field addend => Elf32::Sword.
+
+    public method symbol: (symbol: UInt32) type: (type: UInt32) ::=> Void := {
+        info := (symbol << 8u32) | type
+    }.
 }.
 
 public struct Elf64::Rela definition: {
@@ -213,6 +246,67 @@ let elfSymbolTypeMap := #{
     AsmSymbol::Type::None : Elf::SymbolTableType::Notype.
     AsmSymbol::Type::Function : Elf::SymbolTableType::Func.
     AsmSymbol::Type::Variable : Elf::SymbolTableType::Notype.
+}.
+
+public final class Elf32::SymbolTable superclass: Object; definition: {
+    public field stringTable => AsmObjectCodeCStringTable.
+    public field privateSymbols => ArrayList.
+    public field publicSymbols => ArrayList.
+    protected field privateSymbolDictionary => Dictionary.
+    protected field publicSymbolDictionary => Dictionary.
+    protected field sectionIndexTable => Dictionary.
+
+    public method initialize => Void := {
+        publicSymbols := ArrayList new.
+        privateSymbols := ArrayList new.
+        privateSymbolDictionary := Dictionary new.
+        publicSymbolDictionary := Dictionary new.
+        sectionIndexTable := Dictionary new.
+        privateSymbols add: Elf32::Symbol new.
+    }.
+
+    public method addSection: (section: AsmObjectCodeSection) index: (sectionIndex: Size) ::=> Void := {
+        privateSymbols add: (Elf32::Symbol new
+            sectionHeaderIndex: sectionIndex asUInt16;
+            makeSectionSymbol;
+            yourself).
+        sectionIndexTable at: section put: sectionIndex.
+    }.
+
+    public method addSymbol: (symbol: AsmSymbol) ::=> Void := {
+        let elfSymbol := Elf32::Symbol new
+            bind: (elfSymbolVisibilityMap at: symbol visibility) type: (elfSymbolTypeMap at: symbol type);
+            value: symbol value asUInt32;
+            size: symbol size asUInt32;
+            yourself.
+
+        symbol name ifNotNil: {:name :: Void |
+            elfSymbol name: (stringTable addSymbol: name) asUInt32.
+        }.
+
+        symbol section ifNotNil: {:section :: Void |
+            elfSymbol sectionHeaderIndex: (sectionIndexTable at: section) asUInt16
+        }.
+
+        symbol isPublic ifTrue: {
+            publicSymbolDictionary at: symbol put: publicSymbols size asUInt32.
+            publicSymbols add: elfSymbol
+        } ifFalse: {
+            privateSymbols add: elfSymbol.
+            privateSymbolDictionary at: symbol put: privateSymbols size asUInt32
+        }.
+    }.
+
+    public method indexOfSymbol: (symbol: AsmSymbol) ::=> UInt32
+        := symbol isPublic
+            ifTrue: ((publicSymbolDictionary at: symbol) + privateSymbols size asUInt32)
+            ifFalse: (privateSymbolDictionary at: symbol).
+
+    public method totalSymbolCount => Size
+        := privateSymbols size + publicSymbols size.
+
+    public method sectionSize => Size
+        := self totalSymbolCount * Elf32::Symbol validInstanceSize.
 }.
 
 public final class Elf64::SymbolTable superclass: Object; definition: {
@@ -291,25 +385,185 @@ AsmObjectCodeSection extend: {
     }.
 }.
 
-AsmObjectCodeRelocation extend: {
-    public abstract method asElf64RelaWithSymbolTable: (symbolTable: Elf64::SymbolTable) ::=> Elf64::Rela
-        := self subclassResponsibility.
-}.
+public final class AsmObjectElf32FileWriter superclass: AsmObjectFileWriter; definition: {
+    public override method encodeObjectCode: (objectCode: AsmObjectCode) ::=> ByteArray := {
+        let compilationTarget := objectCode compilationTarget.
 
-AsmObjectCodeRelocationRelativeInt32 extend: {
-    public override method asElf64RelaWithSymbolTable: (symbolTable: Elf64::SymbolTable) ::=> Elf64::Rela
-        := Elf64::Rela new
-            offset: offset;
-            symbol: (symbolTable indexOfSymbol: symbol) type: Elf::X86_64::Rel::PC32;
-            addend: addend asInt64;
+        let header := Elf32::Header new
+            type: Elf::Type::Rel;
+            machine: compilationTarget elfMachine;
             yourself.
+
+        let fileLayout := ArrayList new.
+        fileLayout
+            add: header;
+            addAll: objectCode sections.
+
+        let stringTable := AsmObjectCodeCStringTable new.
+        let sectionNameStringTable := AsmObjectCodeCStringTable new.
+
+        let symbolTable := Elf32::SymbolTable new.
+        symbolTable stringTable: stringTable.
+
+        ## Section headers with their corresponding data elements.
+        let sectionHeaders := ArrayList new.
+        let sectionDataElements := ArrayList new.
+        sectionHeaders add: Elf32::SectionHeader new. ## Null section
+        sectionDataElements add: nil.
+
+        ## Emit the sections.
+        objectCode sections do: {:(AsmObjectCodeSection)eachSection :: Void |
+            let sectionHeader := Elf32::SectionHeader new
+                name: (sectionNameStringTable addSymbol: eachSection name) asUInt32;
+                type: eachSection elfSectionType;
+                flags: eachSection elfSectionFlags;
+                size: eachSection size asUInt32;
+                addrAlign: eachSection alignment asUInt32;
+                yourself.
+            symbolTable addSection: eachSection index: sectionHeaders size.
+            sectionHeaders add: sectionHeader.
+            sectionDataElements add: eachSection.
+        }.
+
+        ## Convert the symbols.
+        objectCode symbols do: {:(AsmSymbol)eachSymbol :: Void |
+            symbolTable addSymbol: eachSymbol
+        }.
+
+        ## Emit the relocations.
+        let relSectionHeaders := ArrayList new.
+
+        objectCode sections doWithIndex: {:(AsmObjectCodeSection)eachSection :(Size)index :: Void |
+            let sectionHeaderIndex := index + 1sz.
+            let sectionHeader := sectionHeaders at: sectionHeaderIndex.
+            let relocations := eachSection relocations.
+            relocations size > 0sz ifTrue: {
+                objectCode compilationTarget usesElfRelStyleRelocations ifTrue: {
+                    let relLabel := ByteStreamEncodingLabel new.
+                    fileLayout add: relLabel;
+                        addAll: (relocations collect: {:(AsmObjectCodeRelocation)each |
+                            compilationTarget convertRelocationIntoElf32Rel: each withSymbolTable: symbolTable.
+                            each applyAddendInTargetSection: eachSection
+                        }).
+
+                    let relSectionHeader := Elf32::SectionHeader new
+                        name: (sectionNameStringTable addString: eachSection name asString -- ".rel") asUInt32;
+                        type: Elf::SectionHeaderType::Rel;
+                        size: (relocations size * Elf32::Rel alignedValueSize) asUInt32;
+                        addrAlign: 1u32;
+                        entrySize: Elf32::Rel validInstanceSize asUInt32;
+                        info: sectionHeaderIndex asUInt32;
+                        yourself.
+
+                    relSectionHeaders add: relSectionHeader.
+                    sectionHeaders add: relSectionHeader.
+                    sectionDataElements add: relLabel
+
+                } ifFalse: {
+                    let relaLabel := ByteStreamEncodingLabel new.
+                    fileLayout add: relaLabel;
+                        addAll: (relocations collect: {:(AsmObjectCodeRelocation)each |
+                            compilationTarget convertRelocationIntoElf32Rela: each withSymbolTable: symbolTable
+                        }).
+
+                    let relaSectionHeader := Elf32::SectionHeader new
+                        name: (sectionNameStringTable addString: eachSection name asString -- ".rela") asUInt32;
+                        type: Elf::SectionHeaderType::Rela;
+                        size: (relocations size * Elf32::Rela alignedValueSize) asUInt32;
+                        addrAlign: 1u32;
+                        entrySize: Elf32::Rela validInstanceSize asUInt32;
+                        info: sectionHeaderIndex asUInt32;
+                        yourself.
+
+                    relSectionHeaders add: relaSectionHeader.
+                    sectionHeaders add: relaSectionHeader.
+                    sectionDataElements add: relaLabel
+                }.
+
+            }.
+        }.
+
+        ## Symbol table.
+        {
+            let tableLabel := ByteStreamEncodingLabel new.
+            fileLayout
+                add: tableLabel;
+                addAll: symbolTable privateSymbols;
+                addAll: symbolTable publicSymbols.
+            let symbolTableIndex := sectionHeaders size asUInt32.
+            relSectionHeaders do: {:(Elf32::SectionHeader)each :: Void |
+                each link: symbolTableIndex 
+            }.
+            sectionHeaders add: (Elf32::SectionHeader new
+                name: (sectionNameStringTable addString: ".symtab") asUInt32;
+                type: Elf::SectionHeaderType::Symtab;
+                size: symbolTable sectionSize asUInt32;
+                addrAlign: 1u32;
+                entrySize: Elf32::Symbol validInstanceSize asUInt32;
+                info: symbolTable privateSymbols size asUInt32;
+                link: sectionHeaders size asUInt32 + 1u32;
+                yourself).
+            sectionDataElements add: tableLabel.            
+        }.
+
+        fileLayout
+            add: stringTable;
+            add: sectionNameStringTable.
+
+        ## String table.
+        {
+            stringTable finish.
+            sectionHeaders add: (Elf32::SectionHeader new
+                name: (sectionNameStringTable addString: ".strtab") asUInt32;
+                type: Elf::SectionHeaderType::Strtab;
+                size: stringTable size asUInt32;
+                addrAlign: 1u32;
+                yourself).
+            sectionDataElements add: stringTable.
+        }.
+
+        ## Section name string table.
+        {
+            header sectionNameStringStringTableIndex: sectionHeaders size asUInt16.
+            let sectionNameStringTableHeader := Elf32::SectionHeader new
+                name: (sectionNameStringTable addString: ".shstrtab") asUInt32;
+                type: Elf::SectionHeaderType::Strtab;
+                addrAlign: 1u32;
+                yourself.
+            sectionNameStringTable finish.
+            sectionNameStringTableHeader size: sectionNameStringTable size asUInt32.
+            sectionHeaders add: sectionNameStringTableHeader.
+            sectionDataElements add: sectionNameStringTable.
+        }.
+
+        let sectionsHeadersLabel := ByteStreamEncodingLabel new.
+        fileLayout
+            add: sectionsHeadersLabel;
+            addAll: sectionHeaders;
+            computeOffsetsOfEncodedElementsInByteStream.
+
+        sectionDataElements doWithIndex: {:dataElement :(Size)index :: Void |
+            dataElement ifNotNil: {
+                (sectionHeaders at: index)
+                    offset: dataElement offsetOfEncodedElementInByteStream asUInt64
+            }.
+        }.
+
+        header
+            sectionHeaderOffset: sectionsHeadersLabel offsetOfEncodedElementInByteStream asUInt32;
+            sectionHeaderEntryNumber: sectionHeaders size asUInt16.
+
+        fileLayout encodedElementsInByteArray
+    }.
 }.
 
 public final class AsmObjectElf64FileWriter superclass: AsmObjectFileWriter; definition: {
     public override method encodeObjectCode: (objectCode: AsmObjectCode) ::=> ByteArray := {
+        let compilationTarget := objectCode compilationTarget.
+
         let header := Elf64::Header new
             type: Elf::Type::Rel;
-            machine: Elf::Machine::X86_64;
+            machine: compilationTarget elfMachine;
             yourself.
 
         let fileLayout := ArrayList new.
@@ -349,29 +603,55 @@ public final class AsmObjectElf64FileWriter superclass: AsmObjectFileWriter; def
         }.
 
         ## Emit the relocations.
-        let relaSectionHeaders := ArrayList new.
+        let relSectionHeaders := ArrayList new.
 
         objectCode sections doWithIndex: {:(AsmObjectCodeSection)eachSection :(Size)index :: Void |
             let sectionHeaderIndex := index + 1sz.
             let sectionHeader := sectionHeaders at: sectionHeaderIndex.
             let relocations := eachSection relocations.
             relocations size > 0sz ifTrue: {
-                let relaLabel := ByteStreamEncodingLabel new.
-                fileLayout add: relaLabel;
-                    addAll: (relocations collect: {:(AsmObjectCodeRelocation)each | each asElf64RelaWithSymbolTable: symbolTable}).
+                objectCode compilationTarget usesElfRelStyleRelocations ifTrue: {
+                    let relLabel := ByteStreamEncodingLabel new.
+                    fileLayout add: relLabel;
+                        addAll: (relocations collect: {:(AsmObjectCodeRelocation)each |
+                            compilationTarget convertRelocationIntoElf64Rel: each withSymbolTable: symbolTable.
+                            each applyAddendInTargetSection: eachSection
+                        }).
 
-                let relaSectionHeader := Elf64::SectionHeader new
-                    name: (sectionNameStringTable addString: eachSection name asString -- ".rela") asUInt32;
-                    type: Elf::SectionHeaderType::Rela;
-                    size: (relocations size * Elf64::Rela alignedValueSize) asUInt64;
-                    addrAlign: 1u64;
-                    entrySize: Elf64::Rela validInstanceSize asUInt64;
-                    info: sectionHeaderIndex asUInt32;
-                    yourself.
+                    let relSectionHeader := Elf64::SectionHeader new
+                        name: (sectionNameStringTable addString: eachSection name asString -- ".rel") asUInt32;
+                        type: Elf::SectionHeaderType::Rel;
+                        size: (relocations size * Elf64::Rel alignedValueSize) asUInt64;
+                        addrAlign: 1u64;
+                        entrySize: Elf64::Rel validInstanceSize asUInt64;
+                        info: sectionHeaderIndex asUInt32;
+                        yourself.
 
-                relaSectionHeaders add: relaSectionHeader.
-                sectionHeaders add: relaSectionHeader.
-                sectionDataElements add: relaLabel
+                    relSectionHeaders add: relSectionHeader.
+                    sectionHeaders add: relSectionHeader.
+                    sectionDataElements add: relLabel
+
+                } ifFalse: {
+                    let relaLabel := ByteStreamEncodingLabel new.
+                    fileLayout add: relaLabel;
+                        addAll: (relocations collect: {:(AsmObjectCodeRelocation)each |
+                            compilationTarget convertRelocationIntoElf64Rela: each withSymbolTable: symbolTable
+                        }).
+
+                    let relaSectionHeader := Elf64::SectionHeader new
+                        name: (sectionNameStringTable addString: eachSection name asString -- ".rela") asUInt32;
+                        type: Elf::SectionHeaderType::Rela;
+                        size: (relocations size * Elf64::Rela alignedValueSize) asUInt64;
+                        addrAlign: 1u64;
+                        entrySize: Elf64::Rela validInstanceSize asUInt64;
+                        info: sectionHeaderIndex asUInt32;
+                        yourself.
+
+                    relSectionHeaders add: relaSectionHeader.
+                    sectionHeaders add: relaSectionHeader.
+                    sectionDataElements add: relaLabel
+                }.
+
             }.
         }.
 
@@ -383,7 +663,7 @@ public final class AsmObjectElf64FileWriter superclass: AsmObjectFileWriter; def
                 addAll: symbolTable privateSymbols;
                 addAll: symbolTable publicSymbols.
             let symbolTableIndex := sectionHeaders size asUInt32.
-            relaSectionHeaders do: {:(Elf64::SectionHeader)each :: Void |
+            relSectionHeaders do: {:(Elf64::SectionHeader)each :: Void |
                 each link: symbolTableIndex 
             }.
             sectionHeaders add: (Elf64::SectionHeader new
@@ -449,13 +729,16 @@ public final class AsmObjectElf64FileWriter superclass: AsmObjectFileWriter; def
     }.
 }.
 
-public final class AsmObjectElf32FileWriter superclass: AsmObjectFileWriter; definition: {
-    public override method encodeObjectCode: (objectCode: AsmObjectCode) ::=> ByteArray := {
-        #[]
-    }
-}.
-
 AsmCompilationTarget extend: {
+    public virtual method usesElfRelStyleRelocations => Boolean
+        := false.
+
+    public abstract method elfMachine => UInt16
+        := 0u16.
+
+    public method usesElfRelaStyleRelocations => Boolean
+        := self usesElfRelStyleRelocations not.
+
     public method useElf => self __type__ := {
         self pointerSize = 8sz
             ifTrue: (self useElf64)
@@ -472,4 +755,16 @@ AsmCompilationTarget extend: {
         objectFileWriter := AsmObjectElf64FileWriter new.
         self
     }.
+
+    public abstract method convertRelocationIntoElf32Rel: (relocation: AsmObjectCodeRelocation) withSymbolTable: (symbolTable: Elf32::SymbolTable) ::=> Elf32::Rel
+        := self subclassResponsibility.
+
+    public abstract method convertRelocationIntoElf32Rela: (relocation: AsmObjectCodeRelocation) withSymbolTable: (symbolTable: Elf32::SymbolTable) ::=> Elf32::Rela
+        := self subclassResponsibility.
+
+    public abstract method convertRelocationIntoElf64Rel: (relocation: AsmObjectCodeRelocation) withSymbolTable: (symbolTable: Elf64::SymbolTable) ::=> Elf64::Rel
+        := self subclassResponsibility.
+
+    public abstract method convertRelocationIntoElf64Rela: (relocation: AsmObjectCodeRelocation) withSymbolTable: (symbolTable: Elf64::SymbolTable) ::=> Elf64::Rela
+        := self subclassResponsibility.
 }.

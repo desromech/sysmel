@@ -2,8 +2,11 @@ AsmInstructionOperand extend: {
 }.
 
 public final class AsmARMCompilationTarget superclass: AsmCompilationTarget; definition: {
+    public override method elfMachine => UInt16
+        := Elf::Machine::ARM.
+
     public override method pointerSize => Size
-        := 4    sz.
+        := 4sz.
 }.
 
 AsmCompilationTarget extend: {

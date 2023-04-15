@@ -375,6 +375,9 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
 AsmObjectCodeRelocation definition: {
     public field symbol => AsmSymbol.
     public field offset => Size.
+
+    public abstract method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) ::=> Void
+        := self subclassResponsibility.
 }.
 
 public final class AsmObjectCodeRelocationAbsoluteInt8 superclass: AsmObjectCodeRelocation; definition: {
@@ -403,6 +406,9 @@ public final class AsmObjectCodeRelocationRelativeInt16 superclass: AsmObjectCod
 
 public final class AsmObjectCodeRelocationRelativeInt32 superclass: AsmObjectCodeRelocation; definition: {
     public field addend => Int32.
+
+    public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) ::=> Void
+        := targetSection data int32At: offset put: addend.
 }.
 
 public final class AsmObjectCodeRelocationRelativeInt64 superclass: AsmObjectCodeRelocation; definition: {
@@ -414,7 +420,7 @@ AsmObjectCodeStream definition: {
     public field activeSection => AsmObjectCodeSection.
 
     public method isInX86LongMode => Boolean
-        := true.
+        := objectCodeBuilder compilationTarget pointerSize = 8sz.
 
     public abstract method alignTo: (requiredAlignment: Size) unreachable: (unreachable: Boolean) ::=> Void
         := self subclassResponsibility.
