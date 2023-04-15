@@ -1,7 +1,56 @@
 public class AsmX86Instruction superclass: AsmStreamElement.
 public final class AsmX86RegisterAddress superclass: AsmRegisterAddress.
 
-public final class AsmX86CompilationTarget superclass: AsmCompilationTarget; definition: {
+let X86NopPatterns := #(
+    #[16r90]
+    #[16r66 16r90]                        ##2 - xchg ax ax (o16 nop)
+    #[16r0f 16r1f 16r00]                         ##3 - nop(3)
+    #[16r0f 16r1f 16r40 16r00]                   ##4 - nop(4)
+    #[16r0f 16r1f 16r44 16r00 16r00]             ##5 - nop(5)
+    #[16r66 16r0f 16r1f 16r44 16r00 16r00]       ##6 - nop(6)
+    #[16r0f 16r1f 16r80 16r00 16r00 16r00 16r00] ##7 - nop(7)
+    #[16r0f 16r1f 16r84 16r00 16r00 16r00 16r00  ##8 - nop(8)
+        16r00]
+    #[16r66 16r0f 16r1f 16r84 16r00 16r00 16r00  ##9 - nop(9)
+        16r00 16r00]
+    #[16r66 16r2e 16r0f 16r1f 16r84 16r00 16r00  ##10 - o16 cs nop
+        16r00 16r00 16r00]
+    #[16r66 16r66 16r2e 16r0f 16r1f 16r84 16r00  ##11 - 2x o16 cs nop
+        16r00 16r00 16r00 16r00]
+    #[16r66 16r66 16r66 16r2e 16r0f 16r1f 16r84  ##12 - 3x o16 cs nop
+        16r00 16r00 16r00 16r00 16r00]
+    #[16r66 16r66 16r66 16r66 16r2e 16r0f 16r1f  ##13 - 4x o16 cs nop
+        16r84 16r00 16r00 16r00 16r00 16r00]
+    #[16r66 16r66 16r66 16r66 16r66 16r2e 16r0f  ##14 - 5x o16 cs nop
+        16r1f 16r84 16r00 16r00 16r00 16r00 16r00]
+    #[16r66 16r66 16r66 16r66 16r66 16r66 16r2e  ##15 - 6x o16 cs nop
+        16r0f 16r1f 16r84 16r00 16r00 16r00 16r00 16r00]
+).
+
+public abstract class AsmAbstractX86CompilationTarget superclass: AsmCompilationTarget; definition: {
+    public override method padCodeSectionData: (data: ByteArray) at: (offset: Size) size: (size: Size) unreachable: (unreachable: Boolean) ::=> Void := {
+        let writeOffset mutable := offset.
+        let endWriteOffset := writeOffset + size.
+
+        unreachable ifTrue: {
+            while: writeOffset < endWriteOffset do: (
+                data at: writeOffset put: 16rCC u8 ## X86: Int3
+            ) continueWith: (writeOffset := writeOffset + 1sz).
+
+        } ifFalse: {
+            let remainingSize mutable := size.
+            while: (remainingSize > 0sz) do: {
+                let paddingPattern => ByteArray := X86NopPatterns at: (remainingSize min: X86NopPatterns size) - 1sz.
+                let paddingPatternSize := paddingPattern size.
+                data replaceFrom: writeOffset until: writeOffset + paddingPatternSize with: paddingPattern.
+                remainingSize := remainingSize - paddingPatternSize.
+                writeOffset := writeOffset + paddingPatternSize
+            }.
+        }.
+    }.
+}.
+
+public final class AsmX86CompilationTarget superclass: AsmAbstractX86CompilationTarget; definition: {
     public override method elfMachine => UInt16
         := Elf::Machine::I386.
 
@@ -10,9 +59,12 @@ public final class AsmX86CompilationTarget superclass: AsmCompilationTarget; def
 
     public override method pointerSize => Size
         := 4sz.
+
+    public override method convertRelocationIntoElf32Rel: (relocation: AsmObjectCodeRelocation) withSymbolTable: (symbolTable: Elf32::SymbolTable) ::=> Elf32::Rel
+        := relocation convertIntoX86RelWithSymbolTable: symbolTable.
 }.
 
-public final class AsmX86_64CompilationTarget superclass: AsmCompilationTarget; definition: {
+public final class AsmX86_64CompilationTarget superclass: AsmAbstractX86CompilationTarget; definition: {
     public override method elfMachine => UInt16
         := Elf::Machine::X86_64.
 
@@ -155,7 +207,7 @@ AsmX86RegisterAddress definition: {
         needsSib ifTrue: {
             let baseValue := base ifNil: (5u8) ifNotNil: (base x86::valueLow).
             let indexValue := index ifNil: (4u8) ifNotNil: (index x86::valueLow).
-            sibByte := ((scaleShift << 6u8) | (indexValue << 3u8)) | baseValue.
+            sibByte := (scaleShift << 6u8) | (indexValue << 3u8) | baseValue.
         }.
 
         let hasDisplacement mutable => Boolean := false.
@@ -174,7 +226,7 @@ AsmX86RegisterAddress definition: {
                 hasDisplacement := true.
                 hasSmallDisplacement := self hasSmallDisplacement.
                 mod := hasSmallDisplacement ifTrue: 1u8 ifFalse: 2u8.
-                (base isNil && hasSmallDisplacement not) && needsSib not ifTrue: (mod := 0u8)
+                base isNil && hasSmallDisplacement not && needsSib not ifTrue: (mod := 0u8)
             }
         }.
 
@@ -190,7 +242,7 @@ AsmX86RegisterAddress definition: {
             }
         }.
 
-        codeStream nextPut: ((mod << 6u8) | (opcode << 3u8)) | modBaseValue.
+        codeStream nextPut: (mod << 6u8) | (opcode << 3u8) | modBaseValue.
         needsSib ifTrue: (codeStream nextPut: sibByte).
 
         hasDisplacement ifTrue: {
@@ -639,9 +691,9 @@ let instructionTemplateTable := #{
         yourself).
     OppRwIww: (AsmX86InstructionTemplate new
         when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
-            (((instruction operandCount = 2sz) &&
-            instruction firstOperand x86::isWordRegister) &&
-            instruction secondOperand isImmediate) &&
+            (instruction operandCount = 2sz) &&
+            instruction firstOperand x86::isWordRegister &&
+            instruction secondOperand isImmediate &&
             (instruction firstOperand size = instruction secondOperand size)
         };
         writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
@@ -658,8 +710,8 @@ let instructionTemplateTable := #{
     OpRmwS8: (AsmX86InstructionTemplate new
         when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
             (instruction operandCount = 2sz) &&
-                (instruction firstOperand isRegisterOrRegisterAddress && 
-                instruction secondOperand isImmediateSigned8)
+                instruction firstOperand isRegisterOrRegisterAddress && 
+                instruction secondOperand isImmediateSigned8
         };
         writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
             let registerAddress := instruction firstOperand.
@@ -676,8 +728,8 @@ let instructionTemplateTable := #{
     OpRmwIw: (AsmX86InstructionTemplate new
         when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
             (instruction operandCount = 2sz) &&
-                (instruction firstOperand isRegisterOrRegisterAddress && 
-                instruction secondOperand isImmediate32)
+                instruction firstOperand isRegisterOrRegisterAddress && 
+                instruction secondOperand isImmediate32
         };
         writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
             let registerAddress := instruction firstOperand.
@@ -694,9 +746,9 @@ let instructionTemplateTable := #{
     OpRmqIsd: (AsmX86InstructionTemplate new
         when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
             (instruction operandCount = 2sz) &&
-                ((instruction firstOperand isRegisterOrRegisterAddress && 
-                (instruction firstOperand size = 8sz)) &&
-                instruction secondOperand isImmediateSigned32)
+                instruction firstOperand isRegisterOrRegisterAddress && 
+                (instruction firstOperand size = 8sz) &&
+                instruction secondOperand isImmediateSigned32
         };
         writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
             let registerAddress := instruction firstOperand.
@@ -714,8 +766,8 @@ let instructionTemplateTable := #{
     OpRmwRw: (AsmX86InstructionTemplate new
         when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
             (instruction operandCount = 2sz) &&
-                (instruction firstOperand isRegisterOrRegisterAddress && 
-                instruction secondOperand isRegister)
+                instruction firstOperand isRegisterOrRegisterAddress && 
+                instruction secondOperand isRegister
         };
         writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
             let registerAddress := instruction firstOperand.
@@ -732,8 +784,8 @@ let instructionTemplateTable := #{
     OpRwRmw: (AsmX86InstructionTemplate new
         when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
             (instruction operandCount = 2sz) &&
-                (instruction firstOperand isRegister && 
-                instruction secondOperand isRegisterOrRegisterAddress)
+                instruction firstOperand isRegister && 
+                instruction secondOperand isRegisterOrRegisterAddress
         };
         writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
             let register := instruction firstOperand.
@@ -765,11 +817,20 @@ let instructionTemplateTable := #{
 }.
 
 AsmObjectCodeRelocation extend: {
+    public virtual method convertIntoX86RelWithSymbolTable: (symbolTable: Elf32::SymbolTable) ::=> Elf32::Rel
+        := self subclassResponsibility.
+
     public virtual method convertIntoX86_64RelaWithSymbolTable: (symbolTable: Elf64::SymbolTable) ::=> Elf64::Rela
         := self subclassResponsibility.
 }.
 
 AsmObjectCodeRelocationRelativeInt32 extend: {
+    public override method convertIntoX86RelWithSymbolTable: (symbolTable: Elf32::SymbolTable) ::=> Elf32::Rela
+        := Elf32::Rela new
+            offset: offset asUInt32;
+            symbol: (symbolTable indexOfSymbol: symbol) type: Elf::I386::Rel::PC32;
+            yourself.
+
     public override method convertIntoX86_64RelaWithSymbolTable: (symbolTable: Elf64::SymbolTable) ::=> Elf64::Rela
         := Elf64::Rela new
             offset: offset;

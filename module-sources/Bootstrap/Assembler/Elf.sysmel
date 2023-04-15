@@ -69,6 +69,10 @@ public global Elf::Type::Exec := 2u16.
 public global Elf::Type::Dyn := 3u16.
 public global Elf::Type::Core := 4u16.
 
+public global Elf::I386::Rel::None := 0u32.
+public global Elf::I386::Rel::A32 := 1u32.
+public global Elf::I386::Rel::PC32 := 2u32.
+
 public global Elf::X86_64::Rel::None := 0u32.
 public global Elf::X86_64::Rel::A64 := 1u32.
 public global Elf::X86_64::Rel::PC32 := 2u32.
@@ -442,8 +446,8 @@ public final class AsmObjectElf32FileWriter superclass: AsmObjectFileWriter; def
                     let relLabel := ByteStreamEncodingLabel new.
                     fileLayout add: relLabel;
                         addAll: (relocations collect: {:(AsmObjectCodeRelocation)each |
-                            compilationTarget convertRelocationIntoElf32Rel: each withSymbolTable: symbolTable.
-                            each applyAddendInTargetSection: eachSection
+                            each applyAddendInTargetSection: eachSection.
+                            compilationTarget convertRelocationIntoElf32Rel: each withSymbolTable: symbolTable
                         }).
 
                     let relSectionHeader := Elf32::SectionHeader new
@@ -614,8 +618,8 @@ public final class AsmObjectElf64FileWriter superclass: AsmObjectFileWriter; def
                     let relLabel := ByteStreamEncodingLabel new.
                     fileLayout add: relLabel;
                         addAll: (relocations collect: {:(AsmObjectCodeRelocation)each |
-                            compilationTarget convertRelocationIntoElf64Rel: each withSymbolTable: symbolTable.
-                            each applyAddendInTargetSection: eachSection
+                            each applyAddendInTargetSection: eachSection.
+                            compilationTarget convertRelocationIntoElf64Rel: each withSymbolTable: symbolTable
                         }).
 
                     let relSectionHeader := Elf64::SectionHeader new

@@ -25,6 +25,35 @@ ASTArgumentNode
     }.
 
 ASTBinaryExpressionSequenceNode
+    withSelector: #asExpandedNodeWithEnvironment: addMethod: {:(ASTBinaryExpressionSequenceNode)self :(Environment)environment :: ASTNode |
+        ## TODO: perform proper operator precedence parsing.
+        let: #operands mutableWith: self operands.
+        let: #receiver mutableWith: operands first.
+        let: #nextOperandIndex mutableWith: 1sz.
+        self operators do: {:(ASTNode)operator :: Void |
+            let: #nextOperand with: (operands at: nextOperandIndex).
+            nextOperandIndex := nextOperandIndex + 1sz.
+            receiver := ASTMessageSendNode new
+                sourcePosition: operator sourcePosition;
+                receiver: receiver;
+                selector: operator;
+                arguments: (Array with: nextOperand);
+                yourself
+        }.
+
+        receiver
+    };
+    withSelector: #analyzeWithEnvironment: addMethod: {:(ASTBinaryExpressionSequenceNode)self :(Environment)environment |
+        (self asExpandedNodeWithEnvironment: environment) analyzeWithEnvironment: environment
+    };
+    withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTBinaryExpressionSequenceNode)self :(Environment)environment |
+        (self asExpandedNodeWithEnvironment: environment) analyzeAndEvaluateWithEnvironment: environment
+    };
+    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTBinaryExpressionSequenceNode)self :(Environment)environment |
+        self error: "This node should be expanded." 
+    };
+
+
     withSelector: #childrenDo: addMethod: {:(ASTBinaryExpressionSequenceNode)self :aBlock :: Void |
         self operands do: aBlock.
         self operators do: aBlock.

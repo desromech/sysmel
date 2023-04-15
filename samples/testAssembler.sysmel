@@ -32,9 +32,46 @@ let codeX86_64 := (AsmStream for: AsmCompilationTarget x86_64 useElf buildWith: 
 }).
 
 printLine(codeX86_64 fullPrintString).
-##printLine(code assemble fullPrintString).
 printLine(codeX86_64 compilationTarget).
 codeX86_64 assemble writeObjectToFileNamed: "test.x86_64.elf64".
+
+let codeI386 := (AsmStream for: AsmCompilationTarget x86 useElf buildWith: {:builder |
+    let addFunctionSymbol := (builder symbolNamed: #add)
+        makeFunction;
+        makePublic;
+        yourself.
+
+    builder
+        textSection;
+        align: 16sz unreachable: true;
+        blockNamed: addFunctionSymbol with: {:builder |
+            builder
+                x86::endbr32;
+                x86::mov: X86::EAX src: X86::ESP x86::dword + 8i8 asAsmImmediate;
+                x86::add: X86::EAX with: X86::ESP x86::dword + 4i8 asAsmImmediate;
+                x86::ret
+        };
+        align: 16sz unreachable: true;
+        blockNamed: ((builder symbolNamed: #main) makeFunction; makePublic; yourself) with: {:builder |
+            builder
+                x86::endbr32;
+                x86::push: X86::EBP;
+                x86::mov: X86::EBP src: X86::ESP;
+
+                x86::push: 2i32 asAsmImmediate;
+                x86::push: 3i32 asAsmImmediate;
+                x86::call: addFunctionSymbol dword;
+                x86::add: X86::ESP with: 8i8 asAsmImmediate;
+
+                x86::mov: X86::ESP src: X86::EBP;
+                x86::pop: X86::EBP;
+                x86::ret
+        }.
+}).
+
+printLine(codeI386 fullPrintString).
+printLine(codeI386 compilationTarget).
+codeI386 assemble writeObjectToFileNamed: "test.i386.elf32".
 
 let codeArm := (AsmStream for: AsmCompilationTarget armv6k useElf buildWith: {:builder |
     builder
@@ -42,7 +79,8 @@ let codeArm := (AsmStream for: AsmCompilationTarget armv6k useElf buildWith: {:b
         align: 16sz unreachable: true;
         blockNamed: ((builder symbolNamed: #main) makeFunction; makePublic; yourself) with: {:builder |
             builder
-                arm::swi: 0u32.
+                arm::bkpt: 45u16;
+                arm::swi: 42u32
         }.
 }).
 printLine(codeArm fullPrintString).

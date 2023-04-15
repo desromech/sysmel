@@ -1,12 +1,26 @@
 AsmInstructionOperand extend: {
 }.
 
+let ARM::Bkpt := 2r1110_00010010_0000_0000_0000_0111_0000 u32.
+
 public final class AsmARMCompilationTarget superclass: AsmCompilationTarget; definition: {
     public override method elfMachine => UInt16
         := Elf::Machine::ARM.
 
     public override method pointerSize => Size
         := 4sz.
+
+    public override method padCodeSectionData: (data: ByteArray) at: (offset: Size) size: (size: Size) unreachable: (unreachable: Boolean) ::=> Void := {
+        self assert: (offset % 4sz) == 0sz.
+        self assert: (size % 4sz) == 0sz.
+
+        let writeOffset mutable := offset.
+        let endWriteOffset := offset + size.
+        while: (writeOffset < endWriteOffset) do: (
+            data uint32At: writeOffset put: (unreachable ifTrue: ARM::Bkpt ifFalse: 16rE1A00000 u32)
+        ) continueWith: (writeOffset := writeOffset + 4sz)
+    }.
+
 }.
 
 AsmCompilationTarget extend: {
@@ -26,6 +40,7 @@ public final class AsmARMRegister superclass: AsmRegister; definition: {
     }.
 
     public method size => Size := 4sz.
+    public method value32 => UInt32 := value asUInt32.
 
     public method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: name
@@ -72,6 +87,10 @@ public class AsmARMInstruction superclass: AsmStreamElement; definition: {
     public field condition => UInt8.
 
     public method size => Size := 4sz.
+
+    public method initialize => Void := {
+        condition := ARM::Condition::AL
+    }
 }.
 
 public class AsmARMBranchInstruction superclass: AsmARMInstruction; definition: {
@@ -79,18 +98,169 @@ public class AsmARMBranchInstruction superclass: AsmARMInstruction; definition: 
     public field destination => AsmInstructionOperand.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
-        ## TODO: Add the destination.
+        ## TODO: Add the destination value and relocation.
         stream nextPutUInt32:
-            (((condition asUInt32) << 28u32) | (2r111 u32 << 25u32)) | ((link ifTrue: 1u32 ifFalse: 0u32) << 24u32)
+            (condition asUInt32 << 28u32) | (2r111 u32 << 25u32) | ((link ifTrue: 1u32 ifFalse: 0u32) << 24u32)
     }.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream nextPut: 'b'.
+        link ifTrue: (stream nextPut: 'l').
+        stream space; print: destination
+    }
+}.
+
+public class AsmARMDataProcessingInstruction superclass: AsmARMInstruction; definition: {
+    public field opcode => UInt8.
+    public field S => Boolean.
+    public field Rn => AsmARMRegister.
+    public field Rd => AsmARMRegister.
+    public field Rm => AsmARMRegister.
+    public field shift => UInt8.
+
+    public method initialize => Void := {
+        super initialize.
+        Rn := ARM::R0.
+        Rd := ARM::R0.
+        Rm := ARM::R0.
+    }.
+
+    public method setForAnd => Void := {
+        mnemonic := #and.
+        opcode := 2r0000 u8.
+    }.
+
+    public method setForEOr => Void := {
+        mnemonic := #eor.
+        opcode := 2r0001 u8.
+    }.
+
+    public method setForSub => Void := {
+        mnemonic := #sub.
+        opcode := 2r0010 u8.
+    }.
+
+    public method setForRsb => Void := {
+        mnemonic := #rsb.
+        opcode := 2r0011 u8.
+    }.
+
+    public method setForAdd => Void := {
+        mnemonic := #add.
+        opcode := 2r0100 u8.
+    }.
+
+    public method setForAdc => Void := {
+        mnemonic := #adc.
+        opcode := 2r0101 u8.
+    }.
+
+    public method setForSbc => Void := {
+        mnemonic := #adc.
+        opcode := 2r0110 u8.
+    }.
+
+    public method setForRsc => Void := {
+        mnemonic := #rsc.
+        opcode := 2r0111 u8.
+    }.
+
+    public method setForTst => Void := {
+        mnemonic := #tst.
+        opcode := 2r1000 u8.
+    }.
+
+    public method setForTeq => Void := {
+        mnemonic := #teq.
+        opcode := 2r1001 u8.
+    }.
+
+    public method setForCmp => Void := {
+        mnemonic := #cmp.
+        opcode := 2r1010 u8.
+    }.
+
+    public method setForCmn => Void := {
+        mnemonic := #cmn.
+        opcode := 2r1011 u8.
+    }.
+
+    public method setForOrr => Void := {
+        mnemonic := #orr.
+        opcode := 2r1100 u8.
+    }.
+
+    public method setForMov => Void := {
+        mnemonic := #mov.
+        opcode := 2r1101 u8.
+    }.
+
+    public method setForBic => Void := {
+        mnemonic := #bic.
+        opcode := 2r1110 u8.
+    }.
+
+    public method setForMvn => Void := {
+        mnemonic := #mvn.
+        opcode := 2r1111 u8.
+    }.
+}.
+
+public final class AsmARMDataProcessingImmediateShiftInstruction superclass: AsmARMDataProcessingInstruction; definition: {
+    public field immediate => UInt8.
+    public field shift => UInt8.
+
+    public method setForNop => Void := {
+        mnemonic := #nop.
+        opcode := 2r1101 u8.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutUInt32:
+            (condition asUInt32 << 28u32) | (opcode asUInt32 << 21u32) | (S ifTrue: (1u32 << 20u32) ifFalse: 0u32)
+            | (Rn value32 << 16u32) | (Rd value32 << 12u32)
+            | (immediate asUInt32 << 7u32) | (shift asUInt32 << 5u32)
+            | Rm value32.
+    }.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: mnemonic;
+            space; print: Rd;
+            nextPutAll: ", "; print: Rm;
+            nextPutAll: ", "; print: Rn;
+            nextPutAll: ", "; print: immediate; nextPutAll: " << "; print: shift
+    }
+}.
+
+public final class AsmARMBreakpointInstruction superclass: AsmARMDataProcessingInstruction; definition: {
+    public field number => UInt16.
+    public method initialize => Void := {
+        super initialize.
+        mnemonic := #bkpt
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutUInt32:
+            (condition asUInt32 << 28u32)
+                | (2r0001_0010 u32 << 20u32) | ((number asUInt32 >> 4u32) << 8u32)
+                | (2r0111 u32 << 4u32 ) | (number asUInt32 & 2r1111 u32).
+    }.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: mnemonic; space; print: number
+    }
 }.
 
 public class AsmARMSoftwareInterruptInstruction superclass: AsmARMInstruction; definition: {
     public field number => UInt32.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
-        stream nextPutUInt32: (((condition asUInt32) << 28u32) | (2r1111 u32 << 24u32)) | number
+        stream nextPutUInt32: (condition asUInt32 << 28u32) | (2r1111 u32 << 24u32) | number
     }.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: "swi"; space; print: number
+    }
 }.
 
 AsmStreamBuilder extend: {
@@ -104,6 +274,14 @@ AsmStreamBuilder extend: {
     public method arm::b: (destination: AsmInstructionOperand) ::=> AsmARMBranchInstruction
         := self arm::b: destination when: ARM::Condition::AL.
 
+    public method arm::bkpt: (number: UInt16) ::=> AsmARMBreakpointInstruction
+        := self addElement: (AsmARMBreakpointInstruction new
+            number: number;
+            yourself).
+
+    public method arm::bkpt ::=> AsmARMBreakpointInstruction
+        := self arm::bkpt: 0u16.
+
     public method arm::bl: (destination: AsmInstructionOperand) when: (condition: UInt8) ::=> AsmARMBranchInstruction
         := self addElement: (AsmARMBranchInstruction new
             mnemonic: #bl;
@@ -114,6 +292,11 @@ AsmStreamBuilder extend: {
 
     public method arm::bl: (destination: AsmInstructionOperand) ::=> AsmARMBranchInstruction
         := self arm::bl: destination when: ARM::Condition::AL.
+
+    public method arm::nop ::=> AsmARMDataProcessingInstruction
+        := self addElement: (AsmARMDataProcessingImmediateShiftInstruction new
+            setForNop;
+            yourself).
 
     public method arm::swi: (number: UInt32) ::=> AsmARMSoftwareInterruptInstruction
         := self addElement: (AsmARMSoftwareInterruptInstruction new
