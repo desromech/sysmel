@@ -70,7 +70,7 @@ let codeI386 := (AsmStream for: AsmCompilationTarget x86 useElf buildWith: {:bui
 }).
 
 printLine(codeI386 fullPrintString).
-printLine(codeI386 compilationTarget).
+##printLine(codeI386 compilationTarget).
 codeI386 assemble writeObjectToFileNamed: "test.i386.elf32".
 
 let codeArm := (AsmStream for: AsmCompilationTarget armv6k useElf buildWith: {:builder |

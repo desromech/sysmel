@@ -1,0 +1,9 @@
+let module := TACModule new.
+let function := module build: #main function: {:(TACFunctionBuilder)functionBuilder :: Void |
+    functionBuilder basicBlock: #entry build: {:(TACBlockBuilder)asm :: Void |
+        asm
+            return: 0u32 asTacImmediate
+    }
+}.
+
+printLine(function fullPrintString).

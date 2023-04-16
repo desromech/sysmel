@@ -1,0 +1,293 @@
+public abstract class TACValue superclass: Object; definition: {
+
+}.
+
+public final class TACBasicBlock.
+
+public abstract class TACProgramEntity superclass: Object; definition: {
+    public field name => Symbol.
+}.
+
+public abstract class TACVariable superclass: TACProgramEntity; definition: {
+}.
+
+public final class TACArgumentVariable superclass: TACVariable; definition: {
+}.
+
+public final class TACCaptureVariable superclass: TACVariable; definition: {
+}.
+
+public final class TACLocalVariable superclass: TACVariable; definition: {
+}.
+
+public final class TACGlobalVariable superclass: TACVariable; definition: {
+}.
+
+public abstract class TACImmediate superclass: TACValue; definition: {
+
+}.
+
+public final class TACImmediateUInt32 superclass: TACImmediate; definition: {
+    public field value => UInt32.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream print: value; nextPutAll: "u32"
+    }.
+
+    UInt32 extend: {
+        public method asTacImmediate => TACImmediateUInt32
+            := TACImmediateUInt32 new value: self; yourself
+    }
+}.
+
+public final class TACOperation superclass: Object; definition: {
+    public field name => Symbol.
+
+    __Meta__ definition: {
+        public method named: (name: Symbol) ::=> self
+            := self new name: name; yourself.
+    }.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: name
+    }.
+}.
+
+public final class TACInstruction superclass: TACValue; definition: {
+    public field previous => TACInstruction.
+    public field next => TACInstruction.
+
+    public field operation => TACOperation.
+    public field result => TACValue.
+    public field operands => Array.
+
+    public method initialize => Void := {
+        super initialize.
+        operands := #().
+    }.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        result ifNotNil: (stream print: result; nextPutAll: " := ").
+        stream print: operation.
+        operands doWithIndex: {:(TACValue)eachOperand :(Size)index :: Void |
+            index = 0sz
+                ifTrue: (stream space)
+                ifFalse: (stream nextPutAll: ", ").
+            stream print: eachOperand
+        }.
+    }.
+}.
+
+public global TAC::Operation::Branch := TACOperation named: #branch.
+public global TAC::Operation::ConditionalBranch := TACOperation named: #condBranch.
+public global TAC::Operation::Move := TACOperation named: #move.
+public global TAC::Operation::Return := TACOperation named: #return.
+
+TACBasicBlock definition: {
+    public field name => Symbol.
+    public field index => Size.
+
+    public field previous => TACBasicBlock.
+    public field next => TACBasicBlock.
+
+    public field firstInstruction => TACInstruction.
+    public field lastInstruction => TACInstruction.
+
+    public method addInstruction: (instruction: TACInstruction) before: (position: TACInstruction) ::=> Void := {
+        let before := position ifNotNil: position previous ifNil: lastInstruction.
+        let after := position.
+
+        before ifNotNil: {
+            before next: instruction.
+            instruction previous: before.
+        } ifNil: {
+            firstInstruction := instruction
+        }.
+
+        after ifNotNil: {
+            after previous: instruction.
+            instruction next: after
+        } ifNil: {
+            lastInstruction := instruction
+        }.
+    }.
+
+    public method addInstruction: (instruction: TACInstruction) ::=> Void := {
+        self addInstruction: instruction before: nil
+    }.
+
+    public method instructionsDo: aBlock ::=> Void := {
+        let position mutable := firstInstruction.
+        while: (position isNotNil) do: {
+            let nextPosition := position next.
+            aBlock(position).
+            position := nextPosition
+        }
+    }.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream nextPut: '@'; print: index.
+        name ifNotNil: (stream nextPut: ':'; nextPutAll: name)
+    }.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream print: self; nextPut: ':'; nl.
+        self instructionsDo: {:(TACBasicBlock)each :: Void |
+            stream nextPutAll: "    "; fullPrint: each; nl
+        }.
+    }.
+}.
+
+public final class TACFunction superclass: TACProgramEntity; definition: {
+    public field arguments => Array.
+    public field captures => Array.
+    public field localVariables => ArrayList.
+
+    public field firstBasicBlock => TACBasicBlock.
+    public field lastBasicBlock => TACBasicBlock.
+
+    public method initialize => Void := {
+        arguments := #().
+        captures := #().
+        localVariables := ArrayList new
+    }.
+
+    public method addBasicBlock: (basicBlock: TACBasicBlock) before: (position: TACBasicBlock) ::=> Void := {
+        let before := position ifNotNil: position previous ifNil: lastBasicBlock.
+        let after := position.
+
+        before ifNotNil: {
+            before next: basicBlock.
+            basicBlock previous: before.
+        } ifNil: {
+            firstBasicBlock := basicBlock
+        }.
+
+        after ifNotNil: {
+            after previous: basicBlock.
+            basicBlock next: after
+        } ifNil: {
+            lastBasicBlock := basicBlock
+        }.
+    }.
+
+    public method addBasicBlock: (basicBlock: TACBasicBlock) ::=> Void := {
+        self addBasicBlock: basicBlock before: nil
+    }.
+
+    public method basicBlocksDo: (aBlock: (TACBasicBlock) => Void) ::=> Void := {
+        let position mutable := firstBasicBlock.
+        while: (position isNotNil) do: {
+            let nextPosition := position next.
+            aBlock(position).
+            position := nextPosition
+        }
+    }.
+
+    public method enumerateBlocks => Void := {
+        let index mutable := 0sz.
+        self basicBlocksDo: {:(TACBasicBlock)each :: Void |
+            each index: index.
+            index := index + 1sz.
+        }.
+    }.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: "function ".
+        name ifNotNil: (stream nextPutAll: name; space).
+        stream nextPut: '{'; nl.
+        self enumerateBlocks.
+        self basicBlocksDo: {:(TACBasicBlock)each :: Void |
+            stream fullPrint: each
+        }.
+        stream nextPut: '}'; nl.
+    }.
+}.
+
+public final class TACBlockBuilder superclass: Object; definition: {
+    public field block => TACBasicBlock.
+
+    public method addInstruction: (instruction: TACInstruction) ::=> TACInstruction := {
+        block addInstruction: instruction.
+        instruction
+    }.
+
+    public method operation: (operation: TACOperation) ::=> TACInstruction
+        := self addInstruction: (TACInstruction new operation: operation; yourself).
+
+    public method operation: (operation: TACOperation) with: (operand: TACValue) ::=> TACInstruction
+        := self addInstruction: (TACInstruction new operation: operation; operands: (Array with: operand); yourself).
+
+    public method operation: (operation: TACOperation) with: (operand: TACValue) result: (result: TACValue)::=> TACInstruction
+        := self addInstruction: (TACInstruction new operation: operation; result: result; operands: (Array with: operand); yourself).
+
+    public method operation: (operation: TACOperation) with: (firstOperand: TACValue) with: (secondOperand: TACValue) ::=> TACInstruction
+        := self addInstruction: (TACInstruction new operation: operation; operands: (Array with: firstOperand with: secondOperand); yourself).
+
+    public method operation: (operation: TACOperation) with: (firstOperand: TACValue) with: (secondOperand: TACValue) result: (result: TACValue) ::=> TACInstruction
+        := self addInstruction: (TACInstruction new operation: operation; result: result; operands: (Array with: firstOperand with: secondOperand); yourself).
+
+    public method operation: (operation: TACOperation) with: (firstOperand: TACValue) with: (secondOperand: TACValue) with: (thirdOperand: TACValue) ::=> TACInstruction
+        := self addInstruction: (TACInstruction new operation: operation; operands: (Array with: firstOperand with: secondOperand with: thirdOperand); yourself).
+
+    public method operation: (operation: TACOperation) with: (operand: TACValue) result: (result: TACValue) ::=> TACInstruction
+        := self addInstruction: (TACInstruction new operation: operation; result: result; operands: (Array with: operand); yourself).
+
+    public method branch: (destination: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::Branch with: destination.
+
+    public method when: (condition: TACValue) branchIfTrue: (trueDestination: TACValue) branchIfFalse: (falseDestination: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::ConditionalBranch with: condition with: trueDestination with: falseDestination.
+
+    public method move: (source: TACValue) into: (destination: TACValue) branchIfFalse: (falseDestination: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::Move with: source result: destination.
+
+    public method return: (value: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::Return with: value.
+}.
+
+public final class TACFunctionBuilder superclass: Object; definition: {
+    public field function => TACFunction.
+
+    public method basicBlock: (name: Symbol) build: (aBlock: (TACBlockBuilder) => Void) ::=> Void := {
+        let block := TACBasicBlock new name: name; yourself.
+        function addBasicBlock: block.
+
+        let blockBuilder := TACBlockBuilder new block: block; yourself.
+        aBlock(blockBuilder).
+        block.
+    }.
+}.
+
+public final class TACModule superclass: TACProgramEntity; definition: {
+    public field programEntitites => ArrayList.
+
+    public method initialize => Void := {
+        super initialize.
+        programEntitites := ArrayList new.
+    }.
+
+    public method addProgramEntity: (programEntity: TACProgramEntity) ::=> Void := {
+        programEntitites add: programEntity
+    }.
+
+    public method build: (name: Symbol) function: (aBlock: (TACFunctionBuilder) => Void) ::=> TACFunction := {
+        let function := TACFunction new
+            name: name;
+            yourself.
+
+        let builder := TACFunctionBuilder new
+            function: function;
+            yourself.
+
+        aBlock(builder).
+
+        function
+    }.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        self programEntitites do: {:(TACProgramEntity)each :: Void |
+            stream fullPrint: each; nl
+        }
+    }.
+}.
