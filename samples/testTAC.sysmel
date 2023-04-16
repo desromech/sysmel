@@ -11,3 +11,4 @@ let function := module build: #main function: {:(TACFunctionBuilder)functionBuil
 printLine(function fullPrintString).
 let targetAssembly := module asTargetIR.
 printLine(targetAssembly fullPrintString).
+targetAssembly assemble writeObjectToFileNamed: "testTAC.x86_64.elf64".

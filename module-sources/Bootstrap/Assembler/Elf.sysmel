@@ -346,6 +346,7 @@ public final class Elf64::SymbolTable superclass: Object; definition: {
     }.
 
     public method addSymbol: (symbol: AsmSymbol) ::=> Void := {
+        symbol isPrivate ifTrue: (return: void).
         let elfSymbol := Elf64::Symbol new
             bind: (elfSymbolVisibilityMap at: symbol visibility) type: (elfSymbolTypeMap at: symbol type);
             value: symbol value asUInt64;
