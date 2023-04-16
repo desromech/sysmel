@@ -1,4 +1,6 @@
-let module := TACModule new.
+let module := TACModule new
+    compilationTarget: AsmCompilationTarget x86_64 useElf asTacCompilationTarget;
+    yourself.
 let function := module build: #main function: {:(TACFunctionBuilder)functionBuilder :: Void |
     functionBuilder basicBlock: #entry build: {:(TACBlockBuilder)asm :: Void |
         asm
@@ -7,3 +9,5 @@ let function := module build: #main function: {:(TACFunctionBuilder)functionBuil
 }.
 
 printLine(function fullPrintString).
+let targetAssembly := module asTargetIR.
+printLine(targetAssembly fullPrintString).

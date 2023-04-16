@@ -278,6 +278,8 @@ public final class Elf32::SymbolTable superclass: Object; definition: {
     }.
 
     public method addSymbol: (symbol: AsmSymbol) ::=> Void := {
+        symbol isPrivate ifTrue: (return: void).
+
         let elfSymbol := Elf32::Symbol new
             bind: (elfSymbolVisibilityMap at: symbol visibility) type: (elfSymbolTypeMap at: symbol type);
             value: symbol value asUInt32;
@@ -301,10 +303,15 @@ public final class Elf32::SymbolTable superclass: Object; definition: {
         }.
     }.
 
-    public method indexOfSymbol: (symbol: AsmSymbol) ::=> UInt32
-        := symbol isPublic
-            ifTrue: ((publicSymbolDictionary at: symbol) + privateSymbols size asUInt32)
-            ifFalse: (privateSymbolDictionary at: symbol).
+    public method indexOfSymbol: (symbol: AsmSymbol) ::=> UInt32 := {
+        symbol isPrivate ifTrue: {
+            sectionIndexTable at: symbol section
+        } ifFalse: {
+            symbol isInternal
+                ifTrue: (privateSymbolDictionary at: symbol)
+                ifFalse: ((publicSymbolDictionary at: symbol) + privateSymbols size asUInt32)
+        }.
+    }.
 
     public method totalSymbolCount => Size
         := privateSymbols size + publicSymbols size.
@@ -362,10 +369,15 @@ public final class Elf64::SymbolTable superclass: Object; definition: {
         }.
     }.
 
-    public method indexOfSymbol: (symbol: AsmSymbol) ::=> UInt32
-        := symbol isPublic
-            ifTrue: ((publicSymbolDictionary at: symbol) + privateSymbols size asUInt32)
-            ifFalse: (privateSymbolDictionary at: symbol).
+    public method indexOfSymbol: (symbol: AsmSymbol) ::=> UInt32 := {
+        symbol isPrivate ifTrue: {
+            sectionIndexTable at: symbol section
+        } ifFalse: {
+            symbol isInternal
+                ifTrue: (privateSymbolDictionary at: symbol)
+                ifFalse: ((publicSymbolDictionary at: symbol) + privateSymbols size asUInt32)
+        }.
+    }.
 
     public method totalSymbolCount => Size
         := privateSymbols size + publicSymbols size.

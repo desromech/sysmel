@@ -20,6 +20,15 @@ public abstract class AsmCompilationTarget superclass: Object; definition: {
     public virtual method pointerAlignment => Size
         := self pointerSize.
 
+    public virtual method indirectBranchTargetAlignment => Size
+        := 1sz.
+
+    public virtual method directBranchTargetAlignment => Size
+        := 1sz.
+
+    public virtual method functionEntryPointAlignment => Size
+        := self indirectBranchTargetAlignment.
+
     public abstract method padCodeSectionData: (data: ByteArray) at: (writeOffset: Size) size: (size: Size) unreachable: (unreachable: Boolean) ::=> Void
         := self subclassResponsibility.
 }.
@@ -246,8 +255,9 @@ public final class AsmObjectCodeCStringTable superclass: Object; definition: {
 }.
 
 public global AsmSymbol::Visibility::Private := 0u8.
-public global AsmSymbol::Visibility::Public := 1u8.
-public global AsmSymbol::Visibility::Weak := 2u8.
+public global AsmSymbol::Visibility::Internal := 1u8.
+public global AsmSymbol::Visibility::Public := 2u8.
+public global AsmSymbol::Visibility::Weak := 3u8.
 
 public global AsmSymbol::Type::None := 0u8.
 public global AsmSymbol::Type::Function := 1u8.
@@ -261,6 +271,20 @@ AsmSymbol definition: {
     public field visibility => UInt8.
     public field type => UInt8.
 
+    public method makePrivate => Void := {
+        visibility := AsmSymbol::Visibility::Private.
+    }.
+
+    public method isPrivate => Boolean
+        := visibility = AsmSymbol::Visibility::Private.
+
+    public method makeInternal => Void := {
+        visibility := AsmSymbol::Visibility::Internal.
+    }.
+
+    public method isInternal => Boolean
+        := visibility = AsmSymbol::Visibility::Internal.
+
     public method makePublic => Void := {
         visibility := AsmSymbol::Visibility::Public.
     }.
@@ -273,6 +297,7 @@ AsmSymbol definition: {
     }.
 
     public method printOn: (stream: Stream) ::=> Void := {
+        self isPrivate ifTrue: (stream nextPut: '.').
         name ifNotNil: {
             stream nextPutAll: name.
         } ifNil: {

@@ -3,3 +3,6 @@ loadSourceNamed: "BaseIR.sysmel".
 loadSourceNamed: "Elf.sysmel".
 loadSourceNamed: "X86.sysmel".
 loadSourceNamed: "ARM.sysmel".
+
+loadSourceNamed: "TAC.sysmel".
+loadSourceNamed: "X86TAC.sysmel".

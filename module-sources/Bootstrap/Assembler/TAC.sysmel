@@ -1,0 +1,196 @@
+public abstract class TACAsmCompilationTarget superclass: TACCompilationTarget; definition: {
+    public field asmCompilationTarget => AsmCompilationTarget.
+
+    public virtual method architectureName => Symbol
+        := self subclassResponsibility.
+
+    public override method pointerSize => Size
+        := asmCompilationTarget pointerSize.
+
+    public override method pointerAlignment => Size
+        := asmCompilationTarget pointerSize.
+
+    public override method generateTargetIRForTACModule: (module: TACModule) ::=> AnyValue := {
+        let codeGenerator := TACModuleAsmCodeGenerator new
+            target: self;
+            asmTarget: asmCompilationTarget;
+            targetModule: (AsmProgramEntity new
+                compilationTarget: asmCompilationTarget;
+                yourself);
+            compileModule: module;
+            targetModule
+    }.
+}.
+
+public final class TACModuleAsmCodeGenerator superclass: Object; definition: {
+    public field target => TACAsmCompilationTarget.
+    public field targetModule => AsmProgramEntity.
+    public field asmTarget => AsmCompilationTarget.
+    public field programEntitySymbolMap => Dictionary.
+    public field compiledProgramEntitySymbolMap => Dictionary.
+
+    public method initialize => Void := {
+        programEntitySymbolMap := Dictionary new.
+        compiledProgramEntitySymbolMap := Dictionary new.
+    }.
+
+    public method symbolForProgramEntity: (programEntity: TACProgramEntity) ::=> AsmSymbol := {
+        programEntitySymbolMap at: programEntity ifAbsentPut: {:: AsmSymbol |
+            programEntity generateAssemblySymbolWith: self
+        }
+    }.
+
+    public method compileProgramEntity: (programEntity: TACProgramEntity) ::=> AsmSymbol := {
+        compiledProgramEntitySymbolMap at: programEntity ifAbsent: {:: AsmSymbol |
+            let symbol := self symbolForProgramEntity: programEntity.
+            compiledProgramEntitySymbolMap at: programEntity put: symbol.
+            programEntity generateAssemblyWith: self symbol: symbol.
+            symbol
+        }
+    }.
+
+    public method compileModule: (module: TACModule) ::=> Void := {
+        module programEntities do: {:(TACProgramEntity)eachProgramEntity :: Void |
+            self compileProgramEntity: eachProgramEntity
+        }
+    }.
+}.
+
+public final class TACFunctionAsmCodeGenerator superclass: Object; definition: {
+    public field moduleGenerator => TACModuleAsmCodeGenerator.
+    public field function => TACFunction.
+    public field asmFunction => AsmProgramEntity.
+    private field basicBlockSymbolDictionary => IdentityDictionary.
+
+    protected field textSection => AsmStreamBuilder.
+    public method textSection => AsmStreamBuilder
+        := textSection ifNil: (textSection := asmFunction newStreamBuilder
+            textSection;
+            yourself).
+
+    protected field rodataSection => AsmStreamBuilder.
+    public method rodataSection => AsmStreamBuilder
+        := rodataSection ifNil: (rodataSection := asmFunction newStreamBuilder
+            rodataSection;
+            yourself).
+
+    public method generateFunction: (functionToGenerate: TACFunction) withSymbol: (symbol: AsmSymbol) ::=> Void := {
+        function := functionToGenerate.
+        asmFunction := moduleGenerator targetModule newProgramEntity.
+        self prepareToGenerateFunction.
+
+        self textSection
+            align: moduleGenerator asmTarget indirectBranchTargetAlignment unreachable: true;
+            label: symbol;
+            yourself.
+        self
+            emitPrologue;
+            emitStackFrameConstruction.
+
+        function basicBlocksDo: {:(TACBasicBlock)basicBlock :: Void |
+            self generateBasicBlock: basicBlock
+        }.
+
+        self textSection endLabel: symbol.
+    }.
+
+    TACAsmCompilationTarget extend: {
+        public abstract method emitFunctionPrologueWith: (generator: TACFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
+        public abstract method emitFunctionEpilogueWith: (generator: TACFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+        
+        public virtual method emitInstruction: (instruction: TACInstruction) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
+            := instruction operation generate: instruction for: self with: generator.
+    }.
+
+    public method prepareToGenerateFunction => Void := {
+        ## Generate a private label per basic block.
+        basicBlockSymbolDictionary := IdentityDictionary new.
+        function basicBlocksDo: {:(TACBasicBlock)basicBlock :: Void |
+            basicBlockSymbolDictionary at: basicBlock put: (AsmSymbol new
+                name: basicBlock name;
+                makePrivate;
+                yourself).
+        }.
+
+        ## TODO: Compute the stack frame layout.
+    }.
+
+    public method emitPrologue => Void := {
+        moduleGenerator target emitFunctionPrologueWith: self
+    }.
+
+    public method emitEpilogue => Void := {
+        moduleGenerator target emitFunctionEpilogueWith: self
+    }.
+
+    public method emitStackFrameConstruction => Void := {
+
+    }.
+
+    public method generateBasicBlock: (basicBlock: TACBasicBlock) ::=> Void := {
+        let blockSymbol := basicBlockSymbolDictionary at: basicBlock.
+        self textSection label: blockSymbol.
+        basicBlock instructionsDo: {:(TACInstruction)eachInstruction :: Void |
+            self generateInstruction: eachInstruction
+        }.
+
+        self textSection endLabel: blockSymbol.
+    }.
+
+    public method generateInstruction: (instruction: TACInstruction) ::=> Void := {
+        moduleGenerator target emitInstruction: instruction with: self
+    }.
+}.
+
+TACOperation extend: {
+    public method forTarget: (target: Symbol) generateWith: (codeGenerationBlock: (TACFunctionAsmCodeGenerator, TACInstruction) => Void) ::=> Void := {
+        perTargetCodeGenerators ifNil: (perTargetCodeGenerators := IdentityDictionary new).
+        perTargetCodeGenerators at: target put: codeGenerationBlock
+    }.
+    
+    public method forTargets: (targets: Array) generateWith: (codeGenerationBlock: (TACFunctionAsmCodeGenerator, TACInstruction) => Void) ::=> Void := {
+        targets do: {:(Symbol)eachTarget :: Void |
+            self forTarget: eachTarget generateWith: codeGenerationBlock
+        }
+    }.
+
+    public method generate: (instruction: TACInstruction) for: (target: TACAsmCompilationTarget) with: (functionGenerator: TACFunctionAsmCodeGenerator) ::=> Void := {
+        perTargetCodeGenerators ifNil: (perTargetCodeGenerators := IdentityDictionary new).
+
+        let architectureName := target architectureName.
+        (perTargetCodeGenerators at: architectureName ifAbsent: {|
+            self error: "Missing code generation for TAC operation '" -- name printString -- "' in " -- architectureName -- "."
+        }) (functionGenerator, TACInstruction).
+    }.
+}.
+
+TACProgramEntity definition: {
+    public virtual method generateAssemblySymbolWith: (moduleGenerator: TACModuleAsmCodeGenerator) ::=> AsmSymbol := {
+        let symbol := AsmSymbol new
+            name: name;
+            yourself.
+        ## TODO: Select a much more appropriate visibility.
+        name ifNotNil: (symbol makePublic).
+        symbol
+    }.
+
+    public abstract method generateAssemblyWith: (moduleGenerator: TACModuleAsmCodeGenerator) symbol: (symbol: AsmSymbol) ::=> Void
+        := self subclassResponsibility.
+}.
+
+TACFunction definition: {
+    public override method generateAssemblySymbolWith: (moduleGenerator: TACModuleAsmCodeGenerator) ::=> AsmSymbol := {
+        (super generateAssemblySymbolWith: moduleGenerator)
+            makeFunction;
+            yourself
+    }.
+
+    public override method generateAssemblyWith: (moduleGenerator: TACModuleAsmCodeGenerator) symbol: (symbol: AsmSymbol) ::=> Void := {
+        TACFunctionAsmCodeGenerator new
+            moduleGenerator: moduleGenerator;
+            generateFunction: self withSymbol: symbol
+    }.
+}.

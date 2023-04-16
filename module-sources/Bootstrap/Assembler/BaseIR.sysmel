@@ -478,24 +478,33 @@ public final class AsmStream superclass: Object; definition: {
         }
     }.
 
-    public method assemble => AsmObjectCode := {
-        let objectCodeBuilder := AsmObjectCodeBuilder new
-            compilationTarget: compilationTarget;
-            yourself.
-        self
-            selectElementsEncodingAlternatives.
+    public method prepareToAssemble => Void := {
+        self selectElementsEncodingAlternatives.
+    }.
 
-        ## Compute sizes.
+    public method assembleFirstPassWith: (objectCodeBuilder: AsmObjectCodeBuilder) ::=> Void := {
         let sizeStream := objectCodeBuilder newSizeStream.
         self elementsDo: {:(AsmStreamElement)each :: Void |
             each writeOnObjectCodeStream: sizeStream.
         }.
+    }.
 
-        objectCodeBuilder allocateMemoryForWriting.
+    public method assembleSecondPassWith: (objectCodeBuilder: AsmObjectCodeBuilder) ::=> Void := {
         let writeStream := objectCodeBuilder newWriteStream.
         self elementsDo: {:(AsmStreamElement)each :: Void |
             each writeOnObjectCodeStream: writeStream.
         }.
+    }.
+
+    public method assemble => AsmObjectCode := {
+        let objectCodeBuilder := AsmObjectCodeBuilder new
+            compilationTarget: compilationTarget;
+            yourself.
+
+        self prepareToAssemble.
+        self assembleFirstPassWith: objectCodeBuilder.
+        objectCodeBuilder allocateMemoryForWriting.
+        self assembleSecondPassWith: objectCodeBuilder.
 
         objectCodeBuilder finish
     }.
@@ -819,6 +828,90 @@ public final class AsmStreamBuilder superclass: Object; definition: {
         := self addElement: (AsmDoubleDirective new
             value: value;
             yourself).
+}.
+
+public final class AsmProgramEntity superclass: Object; definition: {
+    public field compilationTarget => AsmCompilationTarget.
+
+    public field name => Symbol.
+    public field streams => ArrayList.
+    public field children => ArrayList.
+
+    public method initialize => Void := {
+        streams := ArrayList new.
+        children := ArrayList new.
+    }.
+
+    public method newStreamBuilder => AsmStreamBuilder := {
+        let stream := AsmStream new
+            compilationTarget: compilationTarget;
+            yourself.
+        streams add: stream.
+        AsmStreamBuilder new
+            stream: stream;
+            yourself
+    }.
+
+    public method newProgramEntity => AsmProgramEntity := {
+        let entity := AsmProgramEntity new
+            compilationTarget: compilationTarget;
+            yourself.
+        children add: entity.
+        entity
+    }.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        streams do: {:(AsmStream)eachStream :: Void |
+            stream fullPrint: eachStream
+        }.
+
+        children do: {:(AsmProgramEntity)eachChild :: Void |
+            stream fullPrint: eachChild
+        }.
+    }.
+
+    public method prepareToAssemble => Void := {
+        streams do: {:(AsmStream)eachStream :: Void |
+            eachStream prepareToAssemble
+        }.
+
+        children do: {:(AsmProgramEntity)eachChild :: Void |
+            eachChild prepareToAssemble
+        }.
+    }.
+
+    public method assembleFirstPassWith: (objectCodeBuilder: AsmObjectCodeBuilder) ::=> Void := {
+        streams do: {:(AsmStream)eachStream :: Void |
+            eachStream assembleFirstPassWith: objectCodeBuilder
+        }.
+
+        children do: {:(AsmProgramEntity)eachChild :: Void |
+            eachChild assembleFirstPassWith: objectCodeBuilder
+        }.
+    }.
+
+    public method assembleSecondPassWith: (objectCodeBuilder: AsmObjectCodeBuilder) ::=> Void := {
+        streams do: {:(AsmStream)eachStream :: Void |
+            eachStream assembleSecondPassWith: objectCodeBuilder
+        }.
+
+        children do: {:(AsmProgramEntity)eachChild :: Void |
+            eachChild assembleSecondPassWith: objectCodeBuilder
+        }.
+    }.
+
+    public method assemble => AsmObjectCode := {
+        let objectCodeBuilder := AsmObjectCodeBuilder new
+            compilationTarget: compilationTarget;
+            yourself.
+
+        self prepareToAssemble.
+        self assembleFirstPassWith: objectCodeBuilder.
+        objectCodeBuilder allocateMemoryForWriting.
+        self assembleSecondPassWith: objectCodeBuilder.
+
+        objectCodeBuilder finish
+    }.
 }.
 
 AsmObjectCodeStream extend: {

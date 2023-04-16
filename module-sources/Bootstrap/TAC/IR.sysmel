@@ -1,5 +1,9 @@
-public abstract class TACValue superclass: Object; definition: {
+public abstract class TACCompilationTarget superclass: Object.
 
+public abstract class TACValue superclass: Object; definition: {
+    public field debugSourcePosition => SourcePosition.
+    public field debugSourceNode => ASTNode.
+    public field debugSourceEnvironment => Environment.
 }.
 
 public final class TACBasicBlock.
@@ -42,6 +46,7 @@ public final class TACImmediateUInt32 superclass: TACImmediate; definition: {
 
 public final class TACOperation superclass: Object; definition: {
     public field name => Symbol.
+    protected field perTargetCodeGenerators => IdentityDictionary.
 
     __Meta__ definition: {
         public method named: (name: Symbol) ::=> self
@@ -207,8 +212,17 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
 public final class TACBlockBuilder superclass: Object; definition: {
     public field block => TACBasicBlock.
 
+    ## Debugging information
+    public field debugSourcePosition => SourcePosition.
+    public field debugSourceNode => ASTNode.
+    public field debugSourceEnvironment => Environment.
+
     public method addInstruction: (instruction: TACInstruction) ::=> TACInstruction := {
         block addInstruction: instruction.
+        instruction
+            debugSourcePosition: debugSourcePosition;
+            debugSourceNode: debugSourceNode;
+            debugSourceEnvironment: debugSourceEnvironment.
         instruction
     }.
 
@@ -260,21 +274,23 @@ public final class TACFunctionBuilder superclass: Object; definition: {
 }.
 
 public final class TACModule superclass: TACProgramEntity; definition: {
-    public field programEntitites => ArrayList.
+    public field compilationTarget => TACCompilationTarget.
+    public field programEntities => ArrayList.
 
     public method initialize => Void := {
         super initialize.
-        programEntitites := ArrayList new.
+        programEntities := ArrayList new.
     }.
 
     public method addProgramEntity: (programEntity: TACProgramEntity) ::=> Void := {
-        programEntitites add: programEntity
+        programEntities add: programEntity
     }.
 
     public method build: (name: Symbol) function: (aBlock: (TACFunctionBuilder) => Void) ::=> TACFunction := {
         let function := TACFunction new
             name: name;
             yourself.
+        self addProgramEntity: function.
 
         let builder := TACFunctionBuilder new
             function: function;
@@ -286,8 +302,22 @@ public final class TACModule superclass: TACProgramEntity; definition: {
     }.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
-        self programEntitites do: {:(TACProgramEntity)each :: Void |
+        self programEntities do: {:(TACProgramEntity)each :: Void |
             stream fullPrint: each; nl
         }
     }.
+
+    public method asTargetIR => AnyValue
+        := compilationTarget generateTargetIRForTACModule: self
+}.
+
+TACCompilationTarget definition: {
+    public abstract method pointerSize => Size
+        := self subclassResponsibility.
+
+    public abstract method pointerAlignment => Size
+        := self subclassResponsibility.
+
+    public abstract method generateTargetIRForTACModule: (module: TACModule) ::=> AnyValue
+        := self subclassResponsibility.
 }.

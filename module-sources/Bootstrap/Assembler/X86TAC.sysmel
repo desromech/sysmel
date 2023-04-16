@@ -1,0 +1,50 @@
+public final class TACX86CompilationTarget superclass: TACAsmCompilationTarget; definition: {
+    public override method architectureName => Symbol
+        := #x86.
+
+    public override method emitFunctionPrologueWith: (generator: TACFunctionAsmCodeGenerator) ::=> Void := {
+        generator textSection
+            x86::endbr32;
+            x86::push: X86::EBP;
+            x86::mov: X86::EBP src: X86::ESP
+    }.
+
+    public override method emitFunctionEpilogueWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection
+            x86::mov: X86::ESP src: X86::EBP;
+            x86::pop: X86::EBP.
+    }.
+}.
+
+public final class TACX86_64CompilationTarget superclass: TACAsmCompilationTarget; definition: {
+    public override method architectureName => Symbol
+        := #x86_64.
+
+    public override method emitFunctionPrologueWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection
+            x86::endbr64;
+            x86::push: X86::RBP;
+            x86::mov: X86::RBP src: X86::RSP
+    }.
+
+    public override method emitFunctionEpilogueWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection
+            x86::mov: X86::RSP src: X86::RBP;
+            x86::pop: X86::RBP.
+    }.
+}.
+
+TAC::Operation::Return forTargets: #(x86 x86_64) generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+    codegen emitEpilogue.
+    codegen textSection x86::ret
+}.
+
+AsmX86CompilationTarget extend: {
+    public method asTacCompilationTarget => TACX86CompilationTarget
+        := TACX86CompilationTarget new asmCompilationTarget: self; yourself
+}.
+
+AsmX86_64CompilationTarget extend: {
+    public method asTacCompilationTarget => TACX86_64CompilationTarget
+        := TACX86_64CompilationTarget new asmCompilationTarget: self; yourself.
+}.

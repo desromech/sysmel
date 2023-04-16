@@ -51,28 +51,34 @@ public abstract class AsmAbstractX86CompilationTarget superclass: AsmCompilation
 }.
 
 public final class AsmX86CompilationTarget superclass: AsmAbstractX86CompilationTarget; definition: {
+    public override method pointerSize => Size
+        := 4sz.
+
+    public override method indirectBranchTargetAlignment => Size
+        := 16sz.
+
     public override method elfMachine => UInt16
         := Elf::Machine::I386.
 
     public override method usesElfRelStyleRelocations => Boolean
         := true.
 
-    public override method pointerSize => Size
-        := 4sz.
-
     public override method convertRelocationIntoElf32Rel: (relocation: AsmObjectCodeRelocation) withSymbolTable: (symbolTable: Elf32::SymbolTable) ::=> Elf32::Rel
         := relocation convertIntoX86RelWithSymbolTable: symbolTable.
 }.
 
 public final class AsmX86_64CompilationTarget superclass: AsmAbstractX86CompilationTarget; definition: {
+    public override method pointerSize => Size
+        := 8sz.
+
+    public override method indirectBranchTargetAlignment => Size
+        := 16sz.
+
     public override method elfMachine => UInt16
         := Elf::Machine::X86_64.
 
     public override method usesElfRelStyleRelocations => Boolean
         := false.
-
-    public override method pointerSize => Size
-        := 8sz.
 
     public override method convertRelocationIntoElf64Rela: (relocation: AsmObjectCodeRelocation) withSymbolTable: (symbolTable: Elf64::SymbolTable) ::=> Elf64::Rela
         := relocation convertIntoX86_64RelaWithSymbolTable: symbolTable.
