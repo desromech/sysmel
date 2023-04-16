@@ -4,53 +4,142 @@ public abstract class TACValue superclass: Object; definition: {
     public field debugSourcePosition => SourcePosition.
     public field debugSourceNode => ASTNode.
     public field debugSourceEnvironment => Environment.
+
+    public virtual method type => Type
+        := self subclassResponsibility.
+
+    public virtual method isProgramEntity => Boolean := false.
+    public virtual method isFunction => Boolean := false.
+    public virtual method isLocalVariable => Boolean := false.
+
+    public virtual method isVariable => Boolean := false.
+    public virtual method isArgumentVariable => Boolean := false.
+    public virtual method isCaptureVariable => Boolean := false.
+    public virtual method isTemporaryVariable => Boolean := false.
+    public virtual method isGlobalVariable => Boolean := false.
+
+    public virtual method isConstant => Boolean := false.
+    public virtual method isConstantInt32 => Boolean := false.
+    public virtual method isConstantUInt32 => Boolean := false.
+
+    public virtual method markUsageAt: (usageIndex: UInt32) ::=> Void := {}.
+    public virtual method markWriteAt: (writeIndex: UInt32) ::=> Void := {}.
 }.
 
 public final class TACBasicBlock.
 
 public abstract class TACProgramEntity superclass: Object; definition: {
     public field name => Symbol.
+
+    public override method isProgramEntity => Boolean := true.
 }.
 
 public abstract class TACVariable superclass: TACProgramEntity; definition: {
-}.
+    public field type => Type.
+    public field size => Size.
+    public field alignment => Size.
 
-public final class TACArgumentVariable superclass: TACVariable; definition: {
-}.
-
-public final class TACCaptureVariable superclass: TACVariable; definition: {
+    public override method isVariable => Boolean := true.
 }.
 
 public final class TACLocalVariable superclass: TACVariable; definition: {
+    public field offset => Size.
+    public field index => UInt32.
+    public field firstUsageIndex => Int32.
+    public field lastUsageIndex => Int32.
+    public field firstWriteIndex => Int32.
+    public field lastWriteIndex => Int32.
+
+    public override method isLocalVariable => Boolean := true.
+
+    public method resetLiveRange => Void := {
+        firstUsageIndex := -1i32.
+        lastUsageIndex := -1i32.
+        firstWriteIndex := -1i32.
+        lastWriteIndex := -1i32.
+    }.
+
+    public virtual method markUsageAt: (usageIndex: UInt32) ::=> Void := {
+        firstUsageIndex < 0i32 ifTrue: (firstWriteIndex := usageIndex asInt32).
+        lastUsageIndex := usageIndex asInt32
+    }.
+
+    public virtual method markWriteAt: (writeIndex: UInt32) ::=> Void := {
+        firstWriteIndex < 0i32 ifTrue: (firstWriteIndex := writeIndex asInt32).
+        lastWriteIndex := writeIndex asInt32
+    }.
+}.
+
+public final class TACArgumentVariable superclass: TACLocalVariable; definition: {
+    public override method isArgumentVariable => Boolean := true.
+}.
+
+public final class TACCaptureVariable superclass: TACLocalVariable; definition: {
+    public override method isCaptureVariable => Boolean := true.
+}.
+
+public final class TACTemporaryVariable superclass: TACLocalVariable; definition: {
+    public override method isTemporaryVariable => Boolean := true.
 }.
 
 public final class TACGlobalVariable superclass: TACVariable; definition: {
+    public override method isGlobalVariable => Boolean := true.
 }.
 
-public abstract class TACImmediate superclass: TACValue; definition: {
-
+public abstract class TACConstant superclass: TACValue; definition: {
+    public override method isConstant => Boolean := true.
 }.
 
-public final class TACImmediateUInt32 superclass: TACImmediate; definition: {
+public final class TACConstantInt32 superclass: TACConstant; definition: {
+    public field value => Int32.
+
+    public override method isConstantInt32 => Boolean := true.
+
+    public override method type => Type := Int32.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream print: value; nextPutAll: "i32"
+    }.
+
+    Int32 extend: {
+        public method asTacConstant => TACConstantInt32
+            := TACConstantInt32 new value: self; yourself
+    }
+}.
+
+public final class TACConstantUInt32 superclass: TACConstant; definition: {
     public field value => UInt32.
+
+    public override method isConstantUInt32 => Boolean := true.
+
+    public override method type => Type := UInt32.
 
     public method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "u32"
     }.
 
     UInt32 extend: {
-        public method asTacImmediate => TACImmediateUInt32
-            := TACImmediateUInt32 new value: self; yourself
+        public method asTacConstant => TACConstantUInt32
+            := TACConstantUInt32 new value: self; yourself
     }
 }.
 
 public final class TACOperation superclass: Object; definition: {
     public field name => Symbol.
+    public field isTerminator => Boolean.
+
     protected field perTargetCodeGenerators => IdentityDictionary.
 
     __Meta__ definition: {
         public method named: (name: Symbol) ::=> self
             := self new name: name; yourself.
+
+        public method terminatorNamed: (name: Symbol) ::=> self
+            := self new name: name; isTerminator: true; yourself.
+    }.
+
+    public method initialize => Void := {
+        perTargetCodeGenerators := IdentityDictionary new.
     }.
 
     public method printOn: (stream: Stream) ::=> Void := {
@@ -62,6 +151,8 @@ public final class TACInstruction superclass: TACValue; definition: {
     public field previous => TACInstruction.
     public field next => TACInstruction.
 
+    public field index => UInt32.
+
     public field operation => TACOperation.
     public field result => TACValue.
     public field operands => Array.
@@ -70,6 +161,9 @@ public final class TACInstruction superclass: TACValue; definition: {
         super initialize.
         operands := #().
     }.
+
+    public method isTerminator => Boolean
+        := operation isTerminator.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         result ifNotNil: (stream print: result; nextPutAll: " := ").
@@ -81,16 +175,24 @@ public final class TACInstruction superclass: TACValue; definition: {
             stream print: eachOperand
         }.
     }.
+
+    public method markLiveRange => Void := {
+        result ifNotNil: (result markWriteAt: index).
+        operands do: {:(TACValue)value :: Void |
+            value markUsageAt: index
+        }
+    }.
 }.
 
-public global TAC::Operation::Branch := TACOperation named: #branch.
-public global TAC::Operation::ConditionalBranch := TACOperation named: #condBranch.
+public global TAC::Operation::Branch := TACOperation terminatorNamed: #branch.
+public global TAC::Operation::ConditionalBranch := TACOperation terminatorNamed: #condBranch.
 public global TAC::Operation::Move := TACOperation named: #move.
-public global TAC::Operation::Return := TACOperation named: #return.
+public global TAC::Operation::Return := TACOperation terminatorNamed: #return.
+public global TAC::Operation::Trap := TACOperation terminatorNamed: #trap.
 
 TACBasicBlock definition: {
     public field name => Symbol.
-    public field index => Size.
+    public field index => UInt32.
 
     public field previous => TACBasicBlock.
     public field next => TACBasicBlock.
@@ -101,6 +203,9 @@ TACBasicBlock definition: {
     public method addInstruction: (instruction: TACInstruction) before: (position: TACInstruction) ::=> Void := {
         let before := position ifNotNil: position previous ifNil: lastInstruction.
         let after := position.
+
+        ## Do not add instructions after a terminator.
+        before isNotNil && before isTerminator ifTrue: (return: void).
 
         before ifNotNil: {
             before next: instruction.
@@ -146,15 +251,17 @@ TACBasicBlock definition: {
 public final class TACFunction superclass: TACProgramEntity; definition: {
     public field arguments => Array.
     public field captures => Array.
-    public field localVariables => ArrayList.
+    public field temporaries => ArrayList.
 
     public field firstBasicBlock => TACBasicBlock.
     public field lastBasicBlock => TACBasicBlock.
 
+    public override method isFunction => Boolean := true.
+
     public method initialize => Void := {
         arguments := #().
         captures := #().
-        localVariables := ArrayList new
+        temporaries := ArrayList new
     }.
 
     public method addBasicBlock: (basicBlock: TACBasicBlock) before: (position: TACBasicBlock) ::=> Void := {
@@ -190,10 +297,48 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
     }.
 
     public method enumerateBlocks => Void := {
-        let index mutable := 0sz.
+        let index mutable := 0u32.
         self basicBlocksDo: {:(TACBasicBlock)each :: Void |
             each index: index.
-            index := index + 1sz.
+            index := index + 1u32.
+        }.
+    }.
+
+    public method instructionsDo: (aBlock: (TACInstruction) => Void) ::=> Void := {
+        self basicBlocksDo: {:(TACBasicBlock)each :: Void |
+            each instructionsDo: aBlock
+        }.
+    }.
+
+    public method enumerateInstructions => Void := {
+        let index mutable := 1u32.
+        self instructionsDo: {:(TACInstruction)each :: Void |
+            each index: index.
+            index := index + 1u32
+        }
+    }.
+
+    public method allLocalVariablesDo: (aBlock: (TACLocalVariable) => Void) ::=> Void := {
+        arguments do: aBlock.
+        captures do: aBlock.
+        temporaries do: aBlock.
+    }.
+
+    public method enumerateLocals => Void := {
+        let index mutable := 0u32.
+        self allLocalVariablesDo: {:(TACLocalVariable)each :: Void |
+            each index: index.
+            index := index + 1u32
+        }
+    }.
+
+    public method computeLiveRanges => Void := {
+        self enumerateInstructions.
+        self allLocalVariablesDo: {:(TACLocalVariable)eachLocal :: Void |
+            eachLocal resetLiveRange
+        }.
+        self instructionsDo: {:(TACInstruction)eachInstruction :: Void |
+            eachInstruction markLiveRange
         }.
     }.
 
@@ -201,7 +346,7 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
         stream nextPutAll: "function ".
         name ifNotNil: (stream nextPutAll: name; space).
         stream nextPut: '{'; nl.
-        self enumerateBlocks.
+        self enumerateBlocks; enumerateLocals.
         self basicBlocksDo: {:(TACBasicBlock)each :: Void |
             stream fullPrint: each
         }.
@@ -256,8 +401,14 @@ public final class TACBlockBuilder superclass: Object; definition: {
     public method move: (source: TACValue) into: (destination: TACValue) branchIfFalse: (falseDestination: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::Move with: source result: destination.
 
+    public method return ::=> TACInstruction
+        := self operation: TAC::Operation::Return.
+
     public method return: (value: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::Return with: value.
+
+    public method trap ::=> TACInstruction
+        := self operation: TAC::Operation::Trap.
 }.
 
 public final class TACFunctionBuilder superclass: Object; definition: {

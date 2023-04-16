@@ -56,11 +56,16 @@ public final class TACModuleAsmCodeGenerator superclass: Object; definition: {
     }.
 }.
 
+public final class TACFunctionStackFrameLayout superclass: Object; definition: {
+
+}.
+
 public final class TACFunctionAsmCodeGenerator superclass: Object; definition: {
     public field moduleGenerator => TACModuleAsmCodeGenerator.
     public field function => TACFunction.
     public field asmFunction => AsmProgramEntity.
     private field basicBlockSymbolDictionary => IdentityDictionary.
+    public field stackFrameLayout => TACFunctionStackFrameLayout.
 
     protected field textSection => AsmStreamBuilder.
     public method textSection => AsmStreamBuilder
@@ -98,6 +103,9 @@ public final class TACFunctionAsmCodeGenerator superclass: Object; definition: {
         public abstract method emitFunctionPrologueWith: (generator: TACFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
+        public abstract method emitStackFrameConstructionWith: (generator: TACFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
         public abstract method emitFunctionEpilogueWith: (generator: TACFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
         
@@ -105,7 +113,19 @@ public final class TACFunctionAsmCodeGenerator superclass: Object; definition: {
             := instruction operation generate: instruction for: self with: generator.
     }.
 
+    public method performRegisterAllocation => Void := {
+        function computeLiveRanges.
+    }.
+
+    public method buildStackFrameLayout => Void := {
+        stackFrameLayout := TACFunctionStackFrameLayout new.
+    }.
+
     public method prepareToGenerateFunction => Void := {
+        self
+            performRegisterAllocation;
+            buildStackFrameLayout.
+
         ## Generate a private label per basic block.
         basicBlockSymbolDictionary := IdentityDictionary new.
         function basicBlocksDo: {:(TACBasicBlock)basicBlock :: Void |
@@ -114,8 +134,6 @@ public final class TACFunctionAsmCodeGenerator superclass: Object; definition: {
                 makePrivate;
                 yourself).
         }.
-
-        ## TODO: Compute the stack frame layout.
     }.
 
     public method emitPrologue => Void := {
@@ -127,7 +145,7 @@ public final class TACFunctionAsmCodeGenerator superclass: Object; definition: {
     }.
 
     public method emitStackFrameConstruction => Void := {
-
+        moduleGenerator target emitStackFrameConstructionWith: self
     }.
 
     public method generateBasicBlock: (basicBlock: TACBasicBlock) ::=> Void := {
@@ -147,7 +165,6 @@ public final class TACFunctionAsmCodeGenerator superclass: Object; definition: {
 
 TACOperation extend: {
     public method forTarget: (target: Symbol) generateWith: (codeGenerationBlock: (TACFunctionAsmCodeGenerator, TACInstruction) => Void) ::=> Void := {
-        perTargetCodeGenerators ifNil: (perTargetCodeGenerators := IdentityDictionary new).
         perTargetCodeGenerators at: target put: codeGenerationBlock
     }.
     
@@ -158,8 +175,6 @@ TACOperation extend: {
     }.
 
     public method generate: (instruction: TACInstruction) for: (target: TACAsmCompilationTarget) with: (functionGenerator: TACFunctionAsmCodeGenerator) ::=> Void := {
-        perTargetCodeGenerators ifNil: (perTargetCodeGenerators := IdentityDictionary new).
-
         let architectureName := target architectureName.
         (perTargetCodeGenerators at: architectureName ifAbsent: {|
             self error: "Missing code generation for TAC operation '" -- name printString -- "' in " -- architectureName -- "."

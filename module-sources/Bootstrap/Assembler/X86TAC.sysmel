@@ -9,6 +9,10 @@ public final class TACX86CompilationTarget superclass: TACAsmCompilationTarget; 
             x86::mov: X86::EBP src: X86::ESP
     }.
 
+    public override method emitStackFrameConstructionWith: (generator: TACFunctionAsmCodeGenerator) ::=> Void := {
+
+    }.
+
     public override method emitFunctionEpilogueWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection
             x86::mov: X86::ESP src: X86::EBP;
@@ -25,6 +29,10 @@ public final class TACX86_64CompilationTarget superclass: TACAsmCompilationTarge
             x86::endbr64;
             x86::push: X86::RBP;
             x86::mov: X86::RBP src: X86::RSP
+    }.
+
+    public override method emitStackFrameConstructionWith: (generator: TACFunctionAsmCodeGenerator) ::=> Void := {
+
     }.
 
     public override method emitFunctionEpilogueWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
