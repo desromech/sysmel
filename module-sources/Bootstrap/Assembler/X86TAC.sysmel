@@ -46,6 +46,10 @@ TAC::Operation::Return forTargets: #(x86 x86_64) generateWith: {:(TACFunctionAsm
     codegen emitEpilogue.
     codegen textSection x86::ret
 }.
+TAC::Operation::ReturnVoid forTargets: #(x86 x86_64) generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+    codegen emitEpilogue.
+    codegen textSection x86::ret
+}.
 
 AsmX86CompilationTarget extend: {
     public method asTacCompilationTarget => TACX86CompilationTarget

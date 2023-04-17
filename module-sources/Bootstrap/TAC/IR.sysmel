@@ -188,6 +188,8 @@ public global TAC::Operation::Branch := TACOperation terminatorNamed: #branch.
 public global TAC::Operation::ConditionalBranch := TACOperation terminatorNamed: #condBranch.
 public global TAC::Operation::Move := TACOperation named: #move.
 public global TAC::Operation::Return := TACOperation terminatorNamed: #return.
+public global TAC::Operation::ReturnFloat := TACOperation terminatorNamed: #returnFloat.
+public global TAC::Operation::ReturnVoid := TACOperation terminatorNamed: #returnVoid.
 public global TAC::Operation::Trap := TACOperation terminatorNamed: #trap.
 
 TACBasicBlock definition: {
@@ -402,10 +404,13 @@ public final class TACBlockBuilder superclass: Object; definition: {
         := self operation: TAC::Operation::Move with: source result: destination.
 
     public method return ::=> TACInstruction
-        := self operation: TAC::Operation::Return.
+        := self operation: TAC::Operation::ReturnVoid.
 
     public method return: (value: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::Return with: value.
+
+    public method returnFloat: (value: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::ReturnFloat with: value.
 
     public method trap ::=> TACInstruction
         := self operation: TAC::Operation::Trap.
