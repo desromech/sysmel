@@ -1,3 +1,18 @@
+public final class TACX86IntegerRegister superclass: TACPhysicalRegister; definition: {
+    public field int8 => AsmX86Int8Register.
+    public field int16 => AsmX86Int16Register.
+    public field int32 => AsmX86Int32Register.
+
+    __Meta__ definition: {
+        public method int8: (int8: AsmX86Int8Register) int16: (int16: AsmX86Int16Register) int32: (int32: AsmX86Int32Register) ::=> self
+            := self new int8: int8; int16: int16; int32: int32; yourself.
+    }.
+}.
+
+public final class TACX86VectorRegister superclass: TACPhysicalRegister; definition: {
+    public field register => AsmX86VectorRegister.
+}.
+
 public final class TACX86CompilationTarget superclass: TACAsmCompilationTarget; definition: {
     public override method architectureName => Symbol
         := #x86.
@@ -17,6 +32,18 @@ public final class TACX86CompilationTarget superclass: TACAsmCompilationTarget; 
         codegen textSection
             x86::mov: X86::ESP src: X86::EBP;
             x86::pop: X86::EBP.
+    }.
+}.
+
+public final class TACX86_64IntegerRegister superclass: TACPhysicalRegister; definition: {
+    public field int8 => AsmX86Int8Register.
+    public field int16 => AsmX86Int16Register.
+    public field int32 => AsmX86Int32Register.
+    public field int64 => AsmX86Int64Register.
+
+    __Meta__ definition: {
+        public method int8: (int8: AsmX86Int8Register) int16: (int16: AsmX86Int16Register) int32: (int32: AsmX86Int32Register) int64: (int64: AsmX86Int64Register) ::=> self
+            := self new int8: int8; int16: int16; int32: int32; int64: int64; yourself.
     }.
 }.
 
@@ -46,6 +73,7 @@ TAC::Operation::Return forTargets: #(x86 x86_64) generateWith: {:(TACFunctionAsm
     codegen emitEpilogue.
     codegen textSection x86::ret
 }.
+
 TAC::Operation::ReturnVoid forTargets: #(x86 x86_64) generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
     codegen emitEpilogue.
     codegen textSection x86::ret

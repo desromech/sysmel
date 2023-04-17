@@ -1,1 +1,3 @@
 loadSourceNamed: "IR.sysmel".
+loadSourceNamed: "RegisterAllocation.sysmel".
+loadSourceNamed: "StackFrameLayout.sysmel".

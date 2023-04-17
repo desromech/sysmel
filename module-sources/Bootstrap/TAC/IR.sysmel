@@ -1,5 +1,7 @@
 public abstract class TACCompilationTarget superclass: Object.
 
+public class TACPhysicalRegister superclass: Object.
+
 public abstract class TACValue superclass: Object; definition: {
     public field debugSourcePosition => SourcePosition.
     public field debugSourceNode => ASTNode.
@@ -45,6 +47,8 @@ public abstract class TACVariable superclass: TACProgramEntity; definition: {
 public final class TACLocalVariable superclass: TACVariable; definition: {
     public field offset => Size.
     public field index => UInt32.
+
+    public field needsSpilling => Boolean.
     public field firstUsageIndex => Int32.
     public field lastUsageIndex => Int32.
     public field firstWriteIndex => Int32.
@@ -156,6 +160,10 @@ public final class TACInstruction superclass: TACValue; definition: {
     public field operation => TACOperation.
     public field result => TACValue.
     public field operands => Array.
+
+    public field resultRegister => TACPhysicalRegister.
+    public field operandRegisters => Array.
+    public field scratchRegisters => Array.
 
     public method initialize => Void := {
         super initialize.

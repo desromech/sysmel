@@ -1,0 +1,15 @@
+public abstract class TACRegisterAllocator superclass: Object; definition: {
+    public abstract method allocateRegistersIn: (function: TACFunction) withTarget: (target: TACCompilationTarget) ::=> Void
+        := self subclassResponsibility.
+}.
+
+public final class TACTrivialRegisterAllocator superclass: TACRegisterAllocator; definition: {
+    public override method allocateRegistersIn: (function: TACFunction) withTarget: (target: TACCompilationTarget) ::=> Void := {
+        function instructionsDo: {:(TACInstruction)instruction :: Void |
+            self allocateInstructionRegisters: instruction
+        }
+    }.
+
+    public method allocateInstructionRegisters: (instruction: TACInstruction) ::=> Void := {
+    }.
+}.

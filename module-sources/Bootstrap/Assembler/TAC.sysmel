@@ -56,16 +56,12 @@ public final class TACModuleAsmCodeGenerator superclass: Object; definition: {
     }.
 }.
 
-public final class TACFunctionStackFrameLayout superclass: Object; definition: {
-
-}.
-
 public final class TACFunctionAsmCodeGenerator superclass: Object; definition: {
     public field moduleGenerator => TACModuleAsmCodeGenerator.
     public field function => TACFunction.
     public field asmFunction => AsmProgramEntity.
     private field basicBlockSymbolDictionary => IdentityDictionary.
-    public field stackFrameLayout => TACFunctionStackFrameLayout.
+    public field stackFrameLayout => TACStackFrameLayout.
 
     protected field textSection => AsmStreamBuilder.
     public method textSection => AsmStreamBuilder
@@ -114,11 +110,10 @@ public final class TACFunctionAsmCodeGenerator superclass: Object; definition: {
     }.
 
     public method performRegisterAllocation => Void := {
-        function computeLiveRanges.
     }.
 
     public method buildStackFrameLayout => Void := {
-        stackFrameLayout := TACFunctionStackFrameLayout new.
+        stackFrameLayout := TACStackFrameLayout new.
     }.
 
     public method prepareToGenerateFunction => Void := {
