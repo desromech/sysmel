@@ -243,14 +243,32 @@ public final class TACInstruction superclass: TACValue; definition: {
         operandRegisters := operands size > 0sz ifTrue: (Array new: operands size) ifFalse: #().
         scratchRegisters := #().
     }.
+
+    public method firstOperandRegister => TACPhysicalRegister := operandRegisters first.
+    public method secondOperandRegister => TACPhysicalRegister := operandRegisters second.
+    public method thirdOperandRegister => TACPhysicalRegister := operandRegisters third.
+
+    public method firstScratchRegister => TACPhysicalRegister := scratchRegisters first.
+    public method secondScratchRegister => TACPhysicalRegister := scratchRegisters first.
 }.
 
 public global TAC::Operation::Branch := TACOperation terminatorNamed: #branch.
 public global TAC::Operation::ConditionalBranch := TACOperation terminatorNamed: #condBranch.
+
 public global TAC::Operation::Move := TACOperation named: #move.
-public global TAC::Operation::Return := TACOperation terminatorNamed: #return.
-public global TAC::Operation::ReturnFloat := TACOperation terminatorNamed: #returnFloat.
+
+public global TAC::Operation::ReturnUInt8 := TACOperation terminatorNamed: #returnUInt8.
+public global TAC::Operation::ReturnInt8 := TACOperation terminatorNamed: #returnInt8.
+public global TAC::Operation::ReturnUInt16 := TACOperation terminatorNamed: #returnUInt16.
+public global TAC::Operation::ReturnInt16 := TACOperation terminatorNamed: #returnInt16.
+public global TAC::Operation::ReturnUInt32 := TACOperation terminatorNamed: #returnUInt32.
+public global TAC::Operation::ReturnInt32 := TACOperation terminatorNamed: #returnInt32.
+public global TAC::Operation::ReturnUInt64 := TACOperation terminatorNamed: #returnUInt64.
+public global TAC::Operation::ReturnInt64 := TACOperation terminatorNamed: #returnInt64.
+public global TAC::Operation::ReturnFloat32 := TACOperation terminatorNamed: #returnFloat32.
+public global TAC::Operation::ReturnFloat64 := TACOperation terminatorNamed: #returnFloat64.
 public global TAC::Operation::ReturnVoid := TACOperation terminatorNamed: #returnVoid.
+
 public global TAC::Operation::Trap := TACOperation terminatorNamed: #trap.
 
 TACBasicBlock definition: {
@@ -464,14 +482,38 @@ public final class TACBlockBuilder superclass: Object; definition: {
     public method move: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::Move with: source result: destination.
 
-    public method return ::=> TACInstruction
+    public method returnVoid ::=> TACInstruction
         := self operation: TAC::Operation::ReturnVoid.
 
-    public method return: (value: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::Return with: value.
+    public method returnUInt8: (value: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::ReturnUInt8 with: value.
 
-    public method returnFloat: (value: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::ReturnFloat with: value.
+    public method returnInt8: (value: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::ReturnInt8 with: value.
+
+    public method returnUInt16: (value: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::ReturnUInt16 with: value.
+
+    public method returnInt16: (value: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::ReturnInt16 with: value.
+
+    public method returnUInt32: (value: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::ReturnUInt32 with: value.
+
+    public method returnInt32: (value: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::ReturnInt32 with: value.
+
+    public method returnUInt64: (value: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::ReturnUInt64 with: value.
+
+    public method returnInt64: (value: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::ReturnInt64 with: value.
+
+    public method returnFloat32: (value: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::ReturnFloat32 with: value.
+
+    public method returnFloat64: (value: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::ReturnFloat64 with: value.
 
     public method trap ::=> TACInstruction
         := self operation: TAC::Operation::Trap.

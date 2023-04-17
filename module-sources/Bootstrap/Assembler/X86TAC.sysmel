@@ -46,6 +46,11 @@ public final class TACX86_64IntegerRegister superclass: TACPhysicalIntegerRegist
 
 public final class TACX86VectorRegister superclass: TACPhysicalRegister; definition: {
     public field register => AsmX86VectorRegister.
+
+    __Meta__ definition: {
+        public method register: (reg: AsmX86VectorRegister) ::=> self
+            := self new register: reg; yourself.
+    }.
 }.
 
 public global TAC::X86::EAX => TACX86IntegerRegister := TACX86IntegerRegister int8: X86::AL int16: X86::AX int32: X86::EAX.
@@ -57,8 +62,20 @@ public global TAC::X86::EBP => TACX86IntegerRegister := TACX86IntegerRegister in
 public global TAC::X86::ESI => TACX86IntegerRegister := TACX86IntegerRegister int8: nil int16: X86::SI int32: X86::ESI.
 public global TAC::X86::EDI => TACX86IntegerRegister := TACX86IntegerRegister int8: nil int16: X86::DI int32: X86::EDI.
 
+public global TAC::X86::XMM0 => TACX86VectorRegister := TACX86VectorRegister register: X86::XMM0.
+public global TAC::X86::XMM1 => TACX86VectorRegister := TACX86VectorRegister register: X86::XMM1.
+public global TAC::X86::XMM2 => TACX86VectorRegister := TACX86VectorRegister register: X86::XMM2.
+public global TAC::X86::XMM3 => TACX86VectorRegister := TACX86VectorRegister register: X86::XMM3.
+public global TAC::X86::XMM4 => TACX86VectorRegister := TACX86VectorRegister register: X86::XMM4.
+public global TAC::X86::XMM5 => TACX86VectorRegister := TACX86VectorRegister register: X86::XMM5.
+public global TAC::X86::XMM6 => TACX86VectorRegister := TACX86VectorRegister register: X86::XMM6.
+public global TAC::X86::XMM7 => TACX86VectorRegister := TACX86VectorRegister register: X86::XMM7.
+
 public global TAC::X86::IntegerRegisters => Array := (TAC::X86::EAX, TAC::X86::ECX, TAC::X86::EDX, TAC::X86::EBX, TAC::X86::ESP, TAC::X86::EBP, TAC::X86::ESI, TAC::X86::EDI).
 public global TAC::X86::AllocableIntegerRegisters => Array := (TAC::X86::EAX, TAC::X86::ECX, TAC::X86::EDX, TAC::X86::EBX, TAC::X86::ESI, TAC::X86::EDI).
+
+public global TAC::X86::VectorRegisters => Array := (TAC::X86::XMM0, TAC::X86::XMM1, TAC::X86::XMM2, TAC::X86::XMM3, TAC::X86::XMM4, TAC::X86::XMM5, TAC::X86::XMM6, TAC::X86::XMM7).
+public global TAC::X86::AllocableVectorRegisters => Array := TAC::X86::VectorRegisters.
 
 public global TAC::X86_64::RAX => TACX86_64IntegerRegister := TACX86_64IntegerRegister int8: X86::RAXB int16: X86::AX int32: X86::EAX int64: X86::RAX.
 public global TAC::X86_64::RCX => TACX86_64IntegerRegister := TACX86_64IntegerRegister int8: X86::RCXB int16: X86::CX int32: X86::ECX int64: X86::RCX.
@@ -76,6 +93,22 @@ public global TAC::X86_64::R12 => TACX86_64IntegerRegister := TACX86_64IntegerRe
 public global TAC::X86_64::R13 => TACX86_64IntegerRegister := TACX86_64IntegerRegister int8: X86::R13B int16: X86::R13W int32: X86::R13D int64: X86::R13.
 public global TAC::X86_64::R14 => TACX86_64IntegerRegister := TACX86_64IntegerRegister int8: X86::R14B int16: X86::R14W int32: X86::R14D int64: X86::R14.
 public global TAC::X86_64::R15 => TACX86_64IntegerRegister := TACX86_64IntegerRegister int8: X86::R15B int16: X86::R15W int32: X86::R15D int64: X86::R15.
+
+public global TAC::X86_64::XMM8 => TACX86VectorRegister := TACX86VectorRegister register: X86::XMM8.
+public global TAC::X86_64::XMM9 => TACX86VectorRegister := TACX86VectorRegister register: X86::XMM9.
+public global TAC::X86_64::XMM10 => TACX86VectorRegister := TACX86VectorRegister register: X86::XMM10.
+public global TAC::X86_64::XMM11 => TACX86VectorRegister := TACX86VectorRegister register: X86::XMM11.
+public global TAC::X86_64::XMM12 => TACX86VectorRegister := TACX86VectorRegister register: X86::XMM12.
+public global TAC::X86_64::XMM13 => TACX86VectorRegister := TACX86VectorRegister register: X86::XMM13.
+public global TAC::X86_64::XMM14 => TACX86VectorRegister := TACX86VectorRegister register: X86::XMM14.
+public global TAC::X86_64::XMM15 => TACX86VectorRegister := TACX86VectorRegister register: X86::XMM15.
+
+public global TAC::X86_64::VectorRegisters => Array := (
+    TAC::X86::XMM0, TAC::X86::XMM1, TAC::X86::XMM2, TAC::X86::XMM3,
+    TAC::X86::XMM4, TAC::X86::XMM5, TAC::X86::XMM6, TAC::X86::XMM7,
+    TAC::X86_64::XMM8, TAC::X86_64::XMM9, TAC::X86_64::XMM10, TAC::X86_64::XMM11,
+    TAC::X86_64::XMM12, TAC::X86_64::XMM13, TAC::X86_64::XMM14, TAC::X86_64::XMM15).
+public global TAC::X86_64::AllocableVectorRegisters => Array := TAC::X86_64::VectorRegisters.
 
 public global TAC::X86_64::IntegerRegisters => Array := (
     TAC::X86_64::RAX, TAC::X86_64::RCX, TAC::X86_64::RDX, TAC::X86_64::RBX,
@@ -100,6 +133,12 @@ public final class TACX86CompilationTarget superclass: TACAsmCompilationTarget; 
 
     public override method allocableIntegerRegisters => Array
         := TAC::X86::AllocableIntegerRegisters.
+
+    public override method allVectorRegisters => Array
+        := TAC::X86::VectorRegisters.
+
+    public override method allocableVectorRegisters => Array
+        := TAC::X86::AllocableVectorRegisters.
 
     public override method emitFunctionPrologueWith: (generator: TACFunctionAsmCodeGenerator) ::=> Void := {
         generator textSection
@@ -136,6 +175,12 @@ public final class TACX86_64CompilationTarget superclass: TACAsmCompilationTarge
 
     public override method allocableIntegerRegisters => Array
         := TAC::X86_64::AllocableIntegerRegisters.
+
+    public override method allVectorRegisters => Array
+        := TAC::X86::VectorRegisters.
+
+    public override method allocableVectorRegisters => Array
+        := TAC::X86::AllocableVectorRegisters.
 
     public override method emitFunctionPrologueWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection
@@ -206,14 +251,97 @@ TACConstantUInt64 extend: {
     }.
 }.
 
-TAC::Operation::Return
-    forTarget: #x86 assignRegistersWith: {:(TACRegisterAllocator)allocator :(TACInstruction)instruction :: Void |
-        allocator allocateRegister: TAC::X86::EAX forInstruction: instruction operandAt: 0sz
-    };
+TAC::Operation::ReturnUInt8
     forTarget: #x86_64 assignRegistersWith: {:(TACRegisterAllocator)allocator :(TACInstruction)instruction :: Void |
         allocator allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz
     };
-    forTargets: #(x86 x86_64) generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+    forTarget: #x86_64 generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+        codegen textSection x86::movzx: instruction firstOperandRegister x86::int64 src: instruction firstOperandRegister x86::int8.
+        codegen emitEpilogue.
+        codegen textSection x86::ret
+    }.
+
+TAC::Operation::ReturnInt8
+    forTarget: #x86_64 assignRegistersWith: {:(TACRegisterAllocator)allocator :(TACInstruction)instruction :: Void |
+        allocator allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz
+    };
+    forTarget: #x86_64 generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+        codegen textSection x86::movsx: instruction firstOperandRegister x86::int64 src: instruction firstOperandRegister x86::int8.
+        codegen emitEpilogue.
+        codegen textSection x86::ret
+    }.
+
+TAC::Operation::ReturnUInt16
+    forTarget: #x86_64 assignRegistersWith: {:(TACRegisterAllocator)allocator :(TACInstruction)instruction :: Void |
+        allocator allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz
+    };
+    forTarget: #x86_64 generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+        codegen textSection x86::movzx: instruction firstOperandRegister x86::int64 src: instruction firstOperandRegister x86::int16.
+        codegen emitEpilogue.
+        codegen textSection x86::ret
+    }.
+
+TAC::Operation::ReturnInt16
+    forTarget: #x86_64 assignRegistersWith: {:(TACRegisterAllocator)allocator :(TACInstruction)instruction :: Void |
+        allocator allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz
+    };
+    forTarget: #x86_64 generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+        codegen textSection x86::movsx: instruction firstOperandRegister x86::int64 src: instruction firstOperandRegister x86::int16.
+        codegen emitEpilogue.
+        codegen textSection x86::ret
+    }.
+
+TAC::Operation::ReturnUInt32
+    forTarget: #x86_64 assignRegistersWith: {:(TACRegisterAllocator)allocator :(TACInstruction)instruction :: Void |
+        allocator allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz
+    };
+    forTarget: #x86_64 generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+        codegen emitEpilogue.
+        codegen textSection x86::ret
+    }.
+
+TAC::Operation::ReturnInt32
+    forTarget: #x86_64 assignRegistersWith: {:(TACRegisterAllocator)allocator :(TACInstruction)instruction :: Void |
+        allocator allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz
+    };
+    forTarget: #x86_64 generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+        codegen textSection x86::movsxd: instruction firstOperandRegister x86::int64 src: instruction firstOperandRegister x86::int32.
+        codegen emitEpilogue.
+        codegen textSection x86::ret
+    }.
+
+TAC::Operation::ReturnUInt64
+    forTarget: #x86_64 assignRegistersWith: {:(TACRegisterAllocator)allocator :(TACInstruction)instruction :: Void |
+        allocator allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz
+    };
+    forTarget: #x86_64 generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+        codegen emitEpilogue.
+        codegen textSection x86::ret
+    }.
+
+TAC::Operation::ReturnInt64
+    forTarget: #x86_64 assignRegistersWith: {:(TACRegisterAllocator)allocator :(TACInstruction)instruction :: Void |
+        allocator allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz
+    };
+    forTarget: #x86_64 generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+        codegen emitEpilogue.
+        codegen textSection x86::ret
+    }.
+
+TAC::Operation::ReturnFloat32
+    forTarget: #x86_64 assignRegistersWith: {:(TACRegisterAllocator)allocator :(TACInstruction)instruction :: Void |
+        allocator allocateRegister: TAC::X86::XMM0 forInstruction: instruction operandAt: 0sz
+    };
+    forTarget: #x86_64 generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+        codegen emitEpilogue.
+        codegen textSection x86::ret
+    }.
+
+TAC::Operation::ReturnFloat32
+    forTarget: #x86_64 assignRegistersWith: {:(TACRegisterAllocator)allocator :(TACInstruction)instruction :: Void |
+        allocator allocateRegister: TAC::X86::XMM1 forInstruction: instruction operandAt: 0sz
+    };
+    forTarget: #x86_64 generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
         codegen emitEpilogue.
         codegen textSection x86::ret
     }.

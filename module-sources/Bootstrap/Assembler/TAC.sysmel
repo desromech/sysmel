@@ -204,7 +204,7 @@ TACOperation extend: {
         let name := target name.
         (perTargetCodeGenerators at: name ifAbsent: {|
             self error: "Missing code generation for TAC operation '" -- name printString -- "' in " -- name -- "."
-        }) (functionGenerator, TACInstruction).
+        }) (functionGenerator, instruction).
     }.
 }.
 

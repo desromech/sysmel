@@ -896,6 +896,18 @@ let instructionDefinitionTable := #(
         (OpRwRmw #[] #[16r8B])
     )
 
+    (movsx (dst src) "Move with sign extension"
+		##(OpRwRmb #[] #[16r0F 16rBE])
+		(OpRwRmw #[] #[16r0F 16rBF])
+    )
+    (movsxd (dst src) "Move with sign extension into double-word"
+		(OpRwRmw #[] #[16r63])
+    )
+    (movzx (dst src) "Move with zero extension"
+		##(OpRwRmb #[] #[16r0F 16rB6])
+		(OpRwRmw #[] #[16r0F 16rB7])
+    )
+
     (jmp (target) "Jumps into the specified address"
         (OpBranch32 #[] #[16rE9])
         (OpRm #[] #[16rFF] 4)
