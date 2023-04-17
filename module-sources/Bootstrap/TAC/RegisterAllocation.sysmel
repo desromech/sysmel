@@ -5,8 +5,68 @@ public abstract class TACRegisterAllocator superclass: Object; definition: {
     public abstract method allocateRegistersIn: (function: TACFunction) withTarget: (target: TACCompilationTarget) ::=> Void
         := self subclassResponsibility.
 
-    public abstract method allocateRegister: (register: TACPhysicalRegister) forInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void
+    public abstract method allocateRegister: (register: TACPhysicalLocation) forInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void
         := self subclassResponsibility.
+
+    public abstract method allocateIntegerRegister ::=> TACPhysicalLocation
+        := self subclassResponsibility.
+
+    public abstract method allocateFloatRegister ::=> TACPhysicalLocation
+        := self subclassResponsibility.
+
+    public abstract method allocateVectorRegister ::=> TACPhysicalLocation
+        := self subclassResponsibility.
+
+    public method markActiveRegister: (register: TACPhysicalLocation) ::=> Void := {
+        register markActiveWithRegisterAllocator: self
+    }.
+
+    public abstract method markActiveIntegerRegister: (register: TACPhysicalIntegerRegister) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method markActiveFloatRegister: (register: TACPhysicalFloatRegister) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method markActiveVectorRegister: (register: TACPhysicalVectorRegister) ::=> Void
+        := self subclassResponsibility.
+}.
+
+TACPhysicalLocation extend: {
+    __Meta__ extend: {
+        public method allocateRegisterWith: (registerAllocator: TACRegisterAllocator) ::=> TACPhysicalLocation
+            := registerAllocator allocateIntegerRegister.
+    }.
+
+    public abstract method markActiveWithRegisterAllocator: (registerAllocator: TACRegisterAllocator) ::=> Void
+        := self subclassResponsibility.
+}.
+
+TACPhysicalIntegerRegister extend: {
+    public override method markActiveWithRegisterAllocator: (registerAllocator: TACRegisterAllocator) ::=> Void := {
+        registerAllocator markActiveIntegerRegister: self
+    }.
+}.
+
+TACPhysicalFloatRegister extend: {
+    __Meta__ extend: {
+        public method allocateRegisterWith: (registerAllocator: TACRegisterAllocator) ::=> TACPhysicalLocation
+            := registerAllocator allocateFloatRegister.
+    }.
+
+    public override method markActiveWithRegisterAllocator: (registerAllocator: TACRegisterAllocator) ::=> Void := {
+        registerAllocator markActiveFloatRegister: self
+    }.
+}.
+
+TACPhysicalVectorRegister extend: {
+    __Meta__ extend: {
+        public method allocateRegisterWith: (registerAllocator: TACRegisterAllocator) ::=> TACPhysicalLocation
+            := registerAllocator allocateVectorRegister.
+    }.
+
+    public override method markActiveWithRegisterAllocator: (registerAllocator: TACRegisterAllocator) ::=> Void := {
+        registerAllocator markActiveVectorRegister: self
+    }.
 }.
 
 TACOperation extend: {
@@ -22,9 +82,58 @@ TACOperation extend: {
     }.
 }.
 
+public final class TACRegisterAllocationFile superclass: Object; definition: {
+    public field registers => Array.
+    public field usedRegisters => Array.
+    public field activeRegisters => Array.
+
+    __Meta__ definition: {
+        public method for: (registers: Array) ::=> self
+            := self new
+                registers: registers;
+                usedRegisters: ((Array new: registers size)
+                    atAllPut: false;
+                    yourself);
+                activeRegisters: ((Array new: registers size)
+                    atAllPut: false;
+                    yourself);
+                yourself
+
+    }.
+
+    public method reset => Void := {
+        activeRegisters atAllPut: false
+    }.
+
+    public method markActiveRegister: (usedRegister: TACPhysicalLocation) ::=> Void := {
+        let foundIndex := registers indexOf: usedRegister.
+        self assert: foundIndex >= 0iptr.
+        
+        let index := foundIndex asSize.
+        activeRegisters at: index put: true.
+        usedRegisters at: index put: true.
+    }.
+
+    public method allocate => TACPhysicalLocation := {
+        let nextRegisterIndex := usedRegisters indexOf: false.
+        self assert: nextRegisterIndex >= 0iptr.
+
+        let index := nextRegisterIndex asSize.
+        activeRegisters at: index put: true.
+        usedRegisters at: index put: true.
+        registers at: index
+    }.
+}.
+
 public final class TACTrivialRegisterAllocator superclass: TACRegisterAllocator; definition: {
+    protected field integerRegisterFile => TACRegisterAllocationFile.
+    protected field floatRegisterFile => TACRegisterAllocationFile.
+    protected field vectorRegisterFile => TACRegisterAllocationFile.
+
     public override method allocateRegistersIn: (function: TACFunction) withTarget: (target: TACCompilationTarget) ::=> Void := {
         compilationTarget := target.
+
+        integerRegisterFile := TACRegisterAllocationFile for: target allocableIntegerRegisters.
 
         function instructionsDo: {:(TACInstruction)instruction :: Void |
             self allocateInstructionRegisters: instruction
@@ -35,7 +144,14 @@ public final class TACTrivialRegisterAllocator superclass: TACRegisterAllocator;
         instruction resetRegisterAllocation.
         instruction operation assignSpecificRegistersTo: instruction with: self.
         
+        ## Mark the already assigned registers.
+        instruction resultRegister ifNotNil: (self markActiveRegister: instruction resultRegister).
+        instruction operandRegisters do: {:each :: Void |
+            each ifNotNil: (self markActiveRegister: each)
+        }.
+        
         let operandRegisters := instruction operandRegisters.
+
         instruction operands doWithIndex: {:(TACValue)operand :(Size)index :: Void |
             let assignedRegister := operandRegisters at: index.
             assignedRegister ifNil: {
@@ -44,16 +160,39 @@ public final class TACTrivialRegisterAllocator superclass: TACRegisterAllocator;
         }.
 
         instruction result isNotNil && instruction resultRegister isNil ifTrue: {
-            instruction resultRegister: (self allocateRegisterForOperand: instruction result)
+            operandRegisters size > 0sz &&
+            instruction result physicalLocationClass == instruction operands first physicalLocationClass
+                ifTrue: (instruction resultRegister: operandRegisters first)
+                ifFalse: (instruction resultRegister: (self allocateRegisterForOperand: instruction result))
         }.
     }.
 
-    public override method allocateRegister: (register: TACPhysicalRegister) forInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+    public override method allocateRegister: (register: TACPhysicalLocation) forInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void := {
         instruction operandRegisters at: operandIndex put: register
     }.
 
-    public method allocateRegisterForOperand: (instruction: TACValue) ::=> TACPhysicalRegister := {
-        printLine("TODO: Allocate register for ", instruction).
-        nil
+    public method allocateRegisterForOperand: (operand: TACValue) ::=> TACPhysicalLocation := {
+        operand physicalLocationClass allocateRegisterWith: self
+    }.
+
+    public override method allocateIntegerRegister ::=> TACPhysicalLocation
+        := integerRegisterFile allocate.
+
+    public override method markActiveIntegerRegister: (register: TACPhysicalIntegerRegister) ::=> Void := {
+        integerRegisterFile markActiveRegister: register
+    }.
+
+    public override method allocateFloatRegister ::=> TACPhysicalLocation
+        := floatRegisterFile allocate.
+
+    public override method markActiveFloatRegister: (register: TACPhysicalFloatRegister) ::=> Void := {
+        floatRegisterFile markActiveRegister: register
+    }.
+
+    public override method allocateVectorRegister ::=> TACPhysicalLocation
+        := vectorRegisterFile allocate.
+
+    public override method markActiveVectorRegister: (register: TACPhysicalVectorRegister) ::=> Void := {
+        vectorRegisterFile markActiveRegister: register
     }.
 }.

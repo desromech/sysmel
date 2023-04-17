@@ -1053,12 +1053,19 @@ SequenceableCollection
             at: 3sz put: fourth;
             yourself
     };
-    withSelector: #at: addMethod: {:(Collection)self :(Size)index  |
+    withSelector: #at: addMethod: {:(SequenceableCollection)self :(Size)index  |
         self subclassResponsibility
     } makeAbstract;
-    withSelector: #at:put: addMethod: {:(Collection)self :(Size)index :value  |
+    withSelector: #at:put: addMethod: {:(SequenceableCollection)self :(Size)index :value :: Void |
         self subclassResponsibility
     } makeAbstract;
+    withSelector: #atAllPut: addMethod: {:(SequenceableCollection)self :value :: Void |
+        let: #i mutableWith: 0sz.
+        let: #size with: self size.
+        while: (i < size) do: (
+            self at: i put: value
+        ) continueWith: (i := i + 1sz)
+    };
     withSelector: #anySatisfy: addMethod: {:(SequenceableCollection)self :aBlock :: Boolean |
         let: #i mutableWith: 0sz.
         let: #size with: self size.
@@ -1079,6 +1086,16 @@ SequenceableCollection
         ) continueWith: (i := i + 1sz).
         everythingIsFine
     } makeFinal;
+    withSelector: #indexOf: addMethod: {:(SequenceableCollection)self :value :: IntPointer |
+        let: #i mutableWith: 0sz.
+        let: #size with: self size.
+        let: #hasFoundIt type: Boolean mutableWith: false.
+        while: (i < size) do: (
+            if: value = (self at: i) then: (return: i asIntPointer)
+        ) continueWith: (i := i + 1sz).
+
+        -1iptr
+    };
     withSelector: #includes: addMethod: {:(SequenceableCollection)self :element :: Boolean |
         let: #i mutableWith: 0sz.
         let: #size with: self size.

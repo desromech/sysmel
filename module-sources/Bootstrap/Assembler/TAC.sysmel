@@ -17,12 +17,6 @@ public abstract class TACAsmCompilationTarget superclass: TACCompilationTarget; 
             compileModule: module;
             targetModule
     }.
-
-    public abstract method allIntegerRegisters => Array
-        := self subclassResponsibility.
-
-    public abstract method allocableIntegerRegisters => Array
-        := self subclassResponsibility.
 }.
 
 public final class TACModuleAsmCodeGenerator superclass: Object; definition: {
@@ -111,10 +105,10 @@ public final class TACFunctionAsmCodeGenerator superclass: Object; definition: {
         public virtual method emitInstruction: (instruction: TACInstruction) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
             := instruction operation generate: instruction for: self with: generator.
         
-        public abstract method emitMoveValue: (value: TACValue) intoRegister: (register: TACPhysicalRegister) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
+        public abstract method emitMoveValue: (value: TACValue) intoRegister: (register: TACPhysicalLocation) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
-        public abstract method emitMoveRegister: (register: TACPhysicalRegister) intoValue: (value: TACValue) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
+        public abstract method emitMoveRegister: (register: TACPhysicalLocation) intoValue: (value: TACValue) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
     }.
 
@@ -180,11 +174,11 @@ public final class TACFunctionAsmCodeGenerator superclass: Object; definition: {
         }
     }.
 
-    public method emitMoveValue: (value: TACValue) intoRegister: (register: TACPhysicalRegister) ::=> Void := {
+    public method emitMoveValue: (value: TACValue) intoRegister: (register: TACPhysicalLocation) ::=> Void := {
         moduleGenerator target emitMoveValue: value intoRegister: register with: self.
     }.
 
-    public method emitRegister: (register: TACPhysicalRegister) intoValue: (value: TACValue) ::=> Void := {
+    public method emitRegister: (register: TACPhysicalLocation) intoValue: (value: TACValue) ::=> Void := {
         moduleGenerator target emitMoveRegister: register intoValue: value with: self.
     }.
 }.

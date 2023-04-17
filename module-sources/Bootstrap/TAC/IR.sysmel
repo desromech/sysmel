@@ -1,16 +1,41 @@
 public abstract class TACCompilationTarget superclass: Object.
 
-public abstract class TACPhysicalRegister superclass: Object; definition: {
+public abstract class TACPhysicalLocation superclass: Object; definition: {
+    public virtual method isMemory => Boolean := false.
     public virtual method isIntegerRegister => Boolean := false.
+    public virtual method isFloatRegister => Boolean := false.
     public virtual method isVectorRegister => Boolean := false.
 }.
 
-public abstract class TACPhysicalIntegerRegister superclass: TACPhysicalRegister; definition: {
+public abstract class TACPhysicalMemoryLocation superclass: TACPhysicalLocation; definition: {
+    public virtual method isMemory => Boolean := true.
+}.
+
+public abstract class TACPhysicalIntegerRegister superclass: TACPhysicalLocation; definition: {
     public virtual method isIntegerRegister => Boolean := true.
 }.
 
-public abstract class TACPhysicalVectorRegister superclass: TACPhysicalRegister; definition: {
+public abstract class TACPhysicalFloatRegister superclass: TACPhysicalLocation; definition: {
+    public virtual method isFloatRegister => Boolean := true.
+}.
+
+public abstract class TACPhysicalVectorRegister superclass: TACPhysicalLocation; definition: {
     public virtual method isVectorRegister => Boolean := true.
+}.
+
+Type extend: {
+    public method valueTacPhysicalLocationClass => TACPhysicalLocation class
+        := TACPhysicalIntegerRegister.
+}.
+
+Float32 extend: {
+    public method valueTacPhysicalLocationClass => TACPhysicalLocation class
+        := TACPhysicalFloatRegister.
+}.
+
+Float64 extend: {
+    public method valueTacPhysicalLocationClass => TACPhysicalLocation class
+        := TACPhysicalFloatRegister.
 }.
 
 public abstract class TACValue superclass: Object; definition: {
@@ -19,6 +44,9 @@ public abstract class TACValue superclass: Object; definition: {
     public field debugSourceEnvironment => Environment.
 
     public virtual method type => Type
+        := self subclassResponsibility.
+
+    public virtual method physicalLocationClass => TACPhysicalLocation class
         := self subclassResponsibility.
 
     public virtual method isProgramEntity => Boolean := false.
@@ -41,7 +69,7 @@ public abstract class TACValue superclass: Object; definition: {
 
 public final class TACBasicBlock.
 
-public abstract class TACProgramEntity superclass: Object; definition: {
+public abstract class TACProgramEntity superclass: TACValue; definition: {
     public field name => Symbol.
 
     public override method isProgramEntity => Boolean := true.
@@ -51,6 +79,7 @@ public abstract class TACVariable superclass: TACProgramEntity; definition: {
     public field type => Type.
     public field size => Size.
     public field alignment => Size.
+    public field physicalLocationClass => TACPhysicalLocation class.
 
     public override method isVariable => Boolean := true.
 }.
@@ -87,14 +116,29 @@ public final class TACLocalVariable superclass: TACVariable; definition: {
 
 public final class TACArgumentVariable superclass: TACLocalVariable; definition: {
     public override method isArgumentVariable => Boolean := true.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream nextPut: 'a'; print: index.
+        name ifNotNil: (stream space; nextPutAll: name)
+    }.
 }.
 
 public final class TACCaptureVariable superclass: TACLocalVariable; definition: {
     public override method isCaptureVariable => Boolean := true.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream nextPut: 'c'; print: index.
+        name ifNotNil: (stream space; nextPutAll: name)
+    }.
 }.
 
 public final class TACTemporaryVariable superclass: TACLocalVariable; definition: {
     public override method isTemporaryVariable => Boolean := true.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream nextPut: 't'; print: index.
+        name ifNotNil: (stream space; nextPutAll: name)
+    }.
 }.
 
 public final class TACGlobalVariable superclass: TACVariable; definition: {
@@ -105,7 +149,14 @@ public abstract class TACConstant superclass: TACValue; definition: {
     public override method isConstant => Boolean := true.
 }.
 
-public final class TACConstantInt8 superclass: TACConstant; definition: {
+public abstract class TACConstantInteger superclass: TACValue; definition: {
+    public override method isConstant => Boolean := true.
+
+    public override method physicalLocationClass => TACPhysicalLocation class
+        := TACPhysicalIntegerRegister.
+}.
+
+public final class TACConstantInt8 superclass: TACConstantInteger; definition: {
     public field value => Int8.
 
     public override method isConstantInt8 => Boolean := true.
@@ -122,7 +173,7 @@ public final class TACConstantInt8 superclass: TACConstant; definition: {
     }
 }.
 
-public final class TACConstantUInt8 superclass: TACConstant; definition: {
+public final class TACConstantUInt8 superclass: TACConstantInteger; definition: {
     public field value => UInt8.
 
     public override method isConstantUInt8 => Boolean := true.
@@ -139,7 +190,7 @@ public final class TACConstantUInt8 superclass: TACConstant; definition: {
     }
 }.
 
-public final class TACConstantInt16 superclass: TACConstant; definition: {
+public final class TACConstantInt16 superclass: TACConstantInteger; definition: {
     public field value => Int16.
 
     public override method isConstantInt16 => Boolean := true.
@@ -156,7 +207,7 @@ public final class TACConstantInt16 superclass: TACConstant; definition: {
     }
 }.
 
-public final class TACConstantUInt16 superclass: TACConstant; definition: {
+public final class TACConstantUInt16 superclass: TACConstantInteger; definition: {
     public field value => UInt16.
 
     public override method isConstantUInt16 => Boolean := true.
@@ -173,7 +224,7 @@ public final class TACConstantUInt16 superclass: TACConstant; definition: {
     }
 }.
 
-public final class TACConstantInt32 superclass: TACConstant; definition: {
+public final class TACConstantInt32 superclass: TACConstantInteger; definition: {
     public field value => Int32.
 
     public override method isConstantInt32 => Boolean := true.
@@ -190,7 +241,7 @@ public final class TACConstantInt32 superclass: TACConstant; definition: {
     }
 }.
 
-public final class TACConstantUInt32 superclass: TACConstant; definition: {
+public final class TACConstantUInt32 superclass: TACConstantInteger; definition: {
     public field value => UInt32.
 
     public override method isConstantUInt32 => Boolean := true.
@@ -207,7 +258,7 @@ public final class TACConstantUInt32 superclass: TACConstant; definition: {
     }
 }.
 
-public final class TACConstantInt64 superclass: TACConstant; definition: {
+public final class TACConstantInt64 superclass: TACConstantInteger; definition: {
     public field value => Int64.
 
     public override method isConstantInt64 => Boolean := true.
@@ -224,7 +275,7 @@ public final class TACConstantInt64 superclass: TACConstant; definition: {
     }
 }.
 
-public final class TACConstantUInt64 superclass: TACConstant; definition: {
+public final class TACConstantUInt64 superclass: TACConstantInteger; definition: {
     public field value => UInt64.
 
     public override method isConstantUInt64 => Boolean := true.
@@ -276,7 +327,7 @@ public final class TACInstruction superclass: TACValue; definition: {
     public field result => TACValue.
     public field operands => Array.
 
-    public field resultRegister => TACPhysicalRegister.
+    public field resultRegister => TACPhysicalLocation.
     public field operandRegisters => Array.
     public field scratchRegisters => Array.
 
@@ -312,12 +363,12 @@ public final class TACInstruction superclass: TACValue; definition: {
         scratchRegisters := #().
     }.
 
-    public method firstOperandRegister => TACPhysicalRegister := operandRegisters first.
-    public method secondOperandRegister => TACPhysicalRegister := operandRegisters second.
-    public method thirdOperandRegister => TACPhysicalRegister := operandRegisters third.
+    public method firstOperandRegister => TACPhysicalLocation := operandRegisters first.
+    public method secondOperandRegister => TACPhysicalLocation := operandRegisters second.
+    public method thirdOperandRegister => TACPhysicalLocation := operandRegisters third.
 
-    public method firstScratchRegister => TACPhysicalRegister := scratchRegisters first.
-    public method secondScratchRegister => TACPhysicalRegister := scratchRegisters first.
+    public method firstScratchRegister => TACPhysicalLocation := scratchRegisters first.
+    public method secondScratchRegister => TACPhysicalLocation := scratchRegisters first.
 }.
 
 public global TAC::Operation::Branch := TACOperation terminatorNamed: #branch.
@@ -325,17 +376,16 @@ public global TAC::Operation::ConditionalBranch := TACOperation terminatorNamed:
 
 public global TAC::Operation::Move := TACOperation named: #move.
 
-public global TAC::Operation::ReturnUInt8 := TACOperation terminatorNamed: #returnUInt8.
-public global TAC::Operation::ReturnInt8 := TACOperation terminatorNamed: #returnInt8.
-public global TAC::Operation::ReturnUInt16 := TACOperation terminatorNamed: #returnUInt16.
-public global TAC::Operation::ReturnInt16 := TACOperation terminatorNamed: #returnInt16.
-public global TAC::Operation::ReturnUInt32 := TACOperation terminatorNamed: #returnUInt32.
 public global TAC::Operation::ReturnInt32 := TACOperation terminatorNamed: #returnInt32.
-public global TAC::Operation::ReturnUInt64 := TACOperation terminatorNamed: #returnUInt64.
 public global TAC::Operation::ReturnInt64 := TACOperation terminatorNamed: #returnInt64.
 public global TAC::Operation::ReturnFloat32 := TACOperation terminatorNamed: #returnFloat32.
 public global TAC::Operation::ReturnFloat64 := TACOperation terminatorNamed: #returnFloat64.
 public global TAC::Operation::ReturnVoid := TACOperation terminatorNamed: #returnVoid.
+
+public global TAC::Operation::AddInt8 := TACOperation named: #addInt8.
+public global TAC::Operation::AddInt16 := TACOperation named: #addInt16.
+public global TAC::Operation::AddInt32 := TACOperation named: #addInt32.
+public global TAC::Operation::AddInt64 := TACOperation named: #addInt64.
 
 public global TAC::Operation::Trap := TACOperation terminatorNamed: #trap.
 
@@ -412,6 +462,49 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
         captures := #().
         temporaries := ArrayList new
     }.
+
+    public method addTemporary: (temporary: TACTemporaryVariable) ::=> TACTemporaryVariable := {
+        temporaries add: temporary.
+        temporary
+    }.
+
+    public method newTemporaryWithType: (type: Type) ::=> TACTemporaryVariable
+        := self addTemporary: (TACTemporaryVariable new
+            type: type;
+            size: type valueSize;
+            alignment: type valueAlignment;
+            physicalLocationClass: type valueTacPhysicalLocationClass;
+            yourself).
+
+    public method newTemporaryUInt8 => TACTemporaryVariable
+        := self newTemporaryWithType: UInt8.
+
+    public method newTemporaryInt8 => TACTemporaryVariable
+        := self newTemporaryWithType: Int8.
+
+    public method newTemporaryUInt16 => TACTemporaryVariable
+        := self newTemporaryWithType: UInt16.
+
+    public method newTemporaryInt16 => TACTemporaryVariable
+        := self newTemporaryWithType: Int8.
+
+    public method newTemporaryUInt32 => TACTemporaryVariable
+        := self newTemporaryWithType: UInt32.
+
+    public method newTemporaryInt32 => TACTemporaryVariable
+        := self newTemporaryWithType: Int32.
+
+    public method newTemporaryUInt64 => TACTemporaryVariable
+        := self newTemporaryWithType: UInt64.
+
+    public method newTemporaryInt64 => TACTemporaryVariable
+        := self newTemporaryWithType: Int64.
+
+    public method newTemporaryFloat32 => TACTemporaryVariable
+        := self newTemporaryWithType: Float32.
+
+    public method newTemporaryFloat64 => TACTemporaryVariable
+        := self newTemporaryWithType: Float64.
 
     public method addBasicBlock: (basicBlock: TACBasicBlock) before: (position: TACBasicBlock) ::=> Void := {
         let before := position ifNotNil: position previous ifNil: lastBasicBlock.
@@ -505,6 +598,7 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
 
 public final class TACBlockBuilder superclass: Object; definition: {
     public field block => TACBasicBlock.
+    public field function => TACFunction.
 
     ## Debugging information
     public field debugSourcePosition => SourcePosition.
@@ -519,6 +613,17 @@ public final class TACBlockBuilder superclass: Object; definition: {
             debugSourceEnvironment: debugSourceEnvironment.
         instruction
     }.
+
+    public method temporaryUInt8 => TACTemporaryVariable := function newTemporaryUInt8.
+    public method temporaryInt8 => TACTemporaryVariable := function newTemporaryInt8.
+    public method temporaryUInt16 => TACTemporaryVariable := function newTemporaryUInt16.
+    public method temporaryInt16 => TACTemporaryVariable := function newTemporaryInt16.
+    public method temporaryUInt32 => TACTemporaryVariable := function newTemporaryUInt32.
+    public method temporaryInt32 => TACTemporaryVariable := function newTemporaryInt32.
+    public method temporaryUInt64 => TACTemporaryVariable := function newTemporaryUInt64.
+    public method temporaryInt64 => TACTemporaryVariable := function newTemporaryInt64.
+    public method temporaryFloat32 => TACTemporaryVariable := function newTemporaryFloat32.
+    public method temporaryFloat64 => TACTemporaryVariable := function newTemporaryFloat64.
 
     public method operation: (operation: TACOperation) ::=> TACInstruction
         := self addInstruction: (TACInstruction new operation: operation; yourself).
@@ -550,29 +655,23 @@ public final class TACBlockBuilder superclass: Object; definition: {
     public method move: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::Move with: source result: destination.
 
+    public method addInt8: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::AddInt8 with: left with: right result: result.
+
+    public method addInt16: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::AddInt16 with: left with: right result: result.
+
+    public method addInt32: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::AddInt32 with: left with: right result: result.
+
+    public method addInt64: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::AddInt64 with: left with: right result: result.
+
     public method returnVoid ::=> TACInstruction
         := self operation: TAC::Operation::ReturnVoid.
 
-    public method returnUInt8: (value: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::ReturnUInt8 with: value.
-
-    public method returnInt8: (value: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::ReturnInt8 with: value.
-
-    public method returnUInt16: (value: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::ReturnUInt16 with: value.
-
-    public method returnInt16: (value: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::ReturnInt16 with: value.
-
-    public method returnUInt32: (value: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::ReturnUInt32 with: value.
-
     public method returnInt32: (value: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::ReturnInt32 with: value.
-
-    public method returnUInt64: (value: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::ReturnUInt64 with: value.
 
     public method returnInt64: (value: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::ReturnInt64 with: value.
@@ -588,13 +687,17 @@ public final class TACBlockBuilder superclass: Object; definition: {
 }.
 
 public final class TACFunctionBuilder superclass: Object; definition: {
+    public field compilationTarget => TACCompilationTarget.
     public field function => TACFunction.
 
     public method basicBlock: (name: Symbol) build: (aBlock: (TACBlockBuilder) => Void) ::=> Void := {
         let block := TACBasicBlock new name: name; yourself.
         function addBasicBlock: block.
 
-        let blockBuilder := TACBlockBuilder new block: block; yourself.
+        let blockBuilder := TACBlockBuilder new
+            block: block;
+            function: function;
+            yourself.
         aBlock(blockBuilder).
         block.
     }.
@@ -646,6 +749,24 @@ TACCompilationTarget definition: {
         := self subclassResponsibility.
 
     public abstract method pointerAlignment => Size
+        := self subclassResponsibility.
+
+    public abstract method allIntegerRegisters => Array
+        := self subclassResponsibility.
+
+    public abstract method allocableIntegerRegisters => Array
+        := self subclassResponsibility.
+
+    public abstract method allFloatRegisters => Array
+        := self subclassResponsibility.
+
+    public abstract method allocableFloatRegisters => Array
+        := self subclassResponsibility.
+
+    public abstract method allVectorRegisters => Array
+        := self subclassResponsibility.
+
+    public abstract method allocableVectorRegisters => Array
         := self subclassResponsibility.
 
     public abstract method generateTargetIRForTACModule: (module: TACModule) ::=> AnyValue

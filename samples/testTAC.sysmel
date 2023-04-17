@@ -1,7 +1,16 @@
 let module := TACModule new
     compilationTarget: AsmCompilationTarget x86_64 useElf asTacCompilationTarget;
     yourself.
-let function := module build: #main function: {:(TACFunctionBuilder)functionBuilder :: Void |
+let addFunction := module build: #add function: {:(TACFunctionBuilder)functionBuilder :: Void |
+    functionBuilder basicBlock: #entry build: {:(TACBlockBuilder)asm :: Void |
+        let result := asm temporaryInt32.
+        asm
+            addInt32: 2i32 asTacConstant with: 3i32 asTacConstant into: result;
+            returnInt32: result
+    }
+}.
+
+module build: #main function: {:(TACFunctionBuilder)functionBuilder :: Void |
     functionBuilder basicBlock: #entry build: {:(TACBlockBuilder)asm :: Void |
         asm
             returnInt32: 42i32 asTacConstant
@@ -9,7 +18,7 @@ let function := module build: #main function: {:(TACFunctionBuilder)functionBuil
     }
 }.
 
-printLine(function fullPrintString).
+printLine(module fullPrintString).
 let targetAssembly := module asTargetIR.
 printLine(targetAssembly fullPrintString).
 targetAssembly assemble writeObjectToFileNamed: "testTAC.x86_64.elf64".
