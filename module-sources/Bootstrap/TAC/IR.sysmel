@@ -1,6 +1,17 @@
 public abstract class TACCompilationTarget superclass: Object.
 
-public class TACPhysicalRegister superclass: Object.
+public abstract class TACPhysicalRegister superclass: Object; definition: {
+    public virtual method isIntegerRegister => Boolean := false.
+    public virtual method isVectorRegister => Boolean := false.
+}.
+
+public abstract class TACPhysicalIntegerRegister superclass: TACPhysicalRegister; definition: {
+    public virtual method isIntegerRegister => Boolean := true.
+}.
+
+public abstract class TACPhysicalVectorRegister superclass: TACPhysicalRegister; definition: {
+    public virtual method isVectorRegister => Boolean := true.
+}.
 
 public abstract class TACValue superclass: Object; definition: {
     public field debugSourcePosition => SourcePosition.
@@ -128,11 +139,46 @@ public final class TACConstantUInt32 superclass: TACConstant; definition: {
     }
 }.
 
+public final class TACConstantInt64 superclass: TACConstant; definition: {
+    public field value => Int64.
+
+    public override method isConstantInt64 => Boolean := true.
+
+    public override method type => Type := Int64.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream print: value; nextPutAll: "i64"
+    }.
+
+    Int64 extend: {
+        public method asTacConstant => TACConstantInt64
+            := TACConstantInt64 new value: self; yourself
+    }
+}.
+
+public final class TACConstantUInt64 superclass: TACConstant; definition: {
+    public field value => UInt64.
+
+    public override method isConstantUInt64 => Boolean := true.
+
+    public override method type => Type := UInt64.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream print: value; nextPutAll: "u64"
+    }.
+
+    UInt64 extend: {
+        public method asTacConstant => TACConstantUInt64
+            := TACConstantUInt64 new value: self; yourself
+    }.
+}.
+
 public final class TACOperation superclass: Object; definition: {
     public field name => Symbol.
     public field isTerminator => Boolean.
 
     protected field perTargetCodeGenerators => IdentityDictionary.
+    protected field perTargetSpecificRegisterAssignments => IdentityDictionary.
 
     __Meta__ definition: {
         public method named: (name: Symbol) ::=> self
@@ -144,6 +190,7 @@ public final class TACOperation superclass: Object; definition: {
 
     public method initialize => Void := {
         perTargetCodeGenerators := IdentityDictionary new.
+        perTargetSpecificRegisterAssignments := IdentityDictionary new.
     }.
 
     public method printOn: (stream: Stream) ::=> Void := {
@@ -189,6 +236,12 @@ public final class TACInstruction superclass: TACValue; definition: {
         operands do: {:(TACValue)value :: Void |
             value markUsageAt: index
         }
+    }.
+
+    public method resetRegisterAllocation => Void := {
+        resultRegister := nil.
+        operandRegisters := operands size > 0sz ifTrue: (Array new: operands size) ifFalse: #().
+        scratchRegisters := #().
     }.
 }.
 
@@ -408,7 +461,7 @@ public final class TACBlockBuilder superclass: Object; definition: {
     public method when: (condition: TACValue) branchIfTrue: (trueDestination: TACValue) branchIfFalse: (falseDestination: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::ConditionalBranch with: condition with: trueDestination with: falseDestination.
 
-    public method move: (source: TACValue) into: (destination: TACValue) branchIfFalse: (falseDestination: TACValue) ::=> TACInstruction
+    public method move: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::Move with: source result: destination.
 
     public method return ::=> TACInstruction
@@ -476,6 +529,9 @@ public final class TACModule superclass: TACProgramEntity; definition: {
 }.
 
 TACCompilationTarget definition: {
+    public abstract method name => Symbol
+        := self subclassResponsibility.
+
     public abstract method pointerSize => Size
         := self subclassResponsibility.
 

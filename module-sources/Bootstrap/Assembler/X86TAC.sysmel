@@ -1,11 +1,46 @@
-public final class TACX86IntegerRegister superclass: TACPhysicalRegister; definition: {
+TACPhysicalRegister extend: {
+    public virtual method x86::int8 => AsmX86Int8Register
+        := self error: "Not a x86 register with int8 section.".
+
+    public virtual method x86::int16 => AsmX86Int16Register
+        := self error: "Not a x86 register with int16 section.".
+
+    public virtual method x86::int32 => AsmX86Int32Register
+        := self error: "Not a x86 register with int32 section.".
+
+    public virtual method x86::int64 => AsmX86Int64Register
+        := self error: "Not a x86 register with int32 section.".
+}.
+
+public final class TACX86IntegerRegister superclass: TACPhysicalIntegerRegister; definition: {
     public field int8 => AsmX86Int8Register.
     public field int16 => AsmX86Int16Register.
     public field int32 => AsmX86Int32Register.
 
+    public override method x86::int8 => AsmX86Int8Register := int8.
+    public override method x86::int16 => AsmX86Int16Register := int16.
+    public override method x86::int32 => AsmX86Int32Register := int32.
+    
     __Meta__ definition: {
         public method int8: (int8: AsmX86Int8Register) int16: (int16: AsmX86Int16Register) int32: (int32: AsmX86Int32Register) ::=> self
             := self new int8: int8; int16: int16; int32: int32; yourself.
+    }.
+}.
+
+public final class TACX86_64IntegerRegister superclass: TACPhysicalIntegerRegister; definition: {
+    public field int8 => AsmX86Int8Register.
+    public field int16 => AsmX86Int16Register.
+    public field int32 => AsmX86Int32Register.
+    public field int64 => AsmX86Int64Register.
+
+    public override method x86::int8 => AsmX86Int8Register := int8.
+    public override method x86::int16 => AsmX86Int16Register := int16.
+    public override method x86::int32 => AsmX86Int32Register := int32.
+    public override method x86::int64 => AsmX86Int64Register := int64.
+
+    __Meta__ definition: {
+        public method int8: (int8: AsmX86Int8Register) int16: (int16: AsmX86Int16Register) int32: (int32: AsmX86Int32Register) int64: (int64: AsmX86Int64Register) ::=> self
+            := self new int8: int8; int16: int16; int32: int32; int64: int64; yourself.
     }.
 }.
 
@@ -13,9 +48,58 @@ public final class TACX86VectorRegister superclass: TACPhysicalRegister; definit
     public field register => AsmX86VectorRegister.
 }.
 
+public global TAC::X86::EAX => TACX86IntegerRegister := TACX86IntegerRegister int8: X86::AL int16: X86::AX int32: X86::EAX.
+public global TAC::X86::ECX => TACX86IntegerRegister := TACX86IntegerRegister int8: X86::CL int16: X86::CX int32: X86::ECX.
+public global TAC::X86::EDX => TACX86IntegerRegister := TACX86IntegerRegister int8: X86::DL int16: X86::DX int32: X86::EDX.
+public global TAC::X86::EBX => TACX86IntegerRegister := TACX86IntegerRegister int8: X86::BL int16: X86::BX int32: X86::EBX.
+public global TAC::X86::ESP => TACX86IntegerRegister := TACX86IntegerRegister int8: nil int16: X86::SP int32: X86::ESP.
+public global TAC::X86::EBP => TACX86IntegerRegister := TACX86IntegerRegister int8: nil int16: X86::BP int32: X86::EBP.
+public global TAC::X86::ESI => TACX86IntegerRegister := TACX86IntegerRegister int8: nil int16: X86::SI int32: X86::ESI.
+public global TAC::X86::EDI => TACX86IntegerRegister := TACX86IntegerRegister int8: nil int16: X86::DI int32: X86::EDI.
+
+public global TAC::X86::IntegerRegisters => Array := (TAC::X86::EAX, TAC::X86::ECX, TAC::X86::EDX, TAC::X86::EBX, TAC::X86::ESP, TAC::X86::EBP, TAC::X86::ESI, TAC::X86::EDI).
+public global TAC::X86::AllocableIntegerRegisters => Array := (TAC::X86::EAX, TAC::X86::ECX, TAC::X86::EDX, TAC::X86::EBX, TAC::X86::ESI, TAC::X86::EDI).
+
+public global TAC::X86_64::RAX => TACX86_64IntegerRegister := TACX86_64IntegerRegister int8: X86::RAXB int16: X86::AX int32: X86::EAX int64: X86::RAX.
+public global TAC::X86_64::RCX => TACX86_64IntegerRegister := TACX86_64IntegerRegister int8: X86::RCXB int16: X86::CX int32: X86::ECX int64: X86::RCX.
+public global TAC::X86_64::RDX => TACX86_64IntegerRegister := TACX86_64IntegerRegister int8: X86::RDXB int16: X86::DX int32: X86::EDX int64: X86::RDX.
+public global TAC::X86_64::RBX => TACX86_64IntegerRegister := TACX86_64IntegerRegister int8: X86::RBXB int16: X86::BX int32: X86::EBX int64: X86::RBX.
+public global TAC::X86_64::RSP => TACX86_64IntegerRegister := TACX86_64IntegerRegister int8: X86::RSPB int16: X86::SP int32: X86::ESP int64: X86::RSP.
+public global TAC::X86_64::RBP => TACX86_64IntegerRegister := TACX86_64IntegerRegister int8: X86::RBPB int16: X86::BP int32: X86::EBP int64: X86::RBP.
+public global TAC::X86_64::RSI => TACX86_64IntegerRegister := TACX86_64IntegerRegister int8: X86::RSIB int16: X86::SI int32: X86::ESI int64: X86::RSI.
+public global TAC::X86_64::RDI => TACX86_64IntegerRegister := TACX86_64IntegerRegister int8: X86::RDIB int16: X86::DI int32: X86::EDI int64: X86::RDI.
+public global TAC::X86_64::R8 => TACX86_64IntegerRegister := TACX86_64IntegerRegister int8: X86::R8B int16: X86::R8W int32: X86::R8D int64: X86::R8.
+public global TAC::X86_64::R9 => TACX86_64IntegerRegister := TACX86_64IntegerRegister int8: X86::R9B int16: X86::R9W int32: X86::R9D int64: X86::R9.
+public global TAC::X86_64::R10 => TACX86_64IntegerRegister := TACX86_64IntegerRegister int8: X86::R10B int16: X86::R10W int32: X86::R10D int64: X86::R10.
+public global TAC::X86_64::R11 => TACX86_64IntegerRegister := TACX86_64IntegerRegister int8: X86::R11B int16: X86::R11W int32: X86::R11D int64: X86::R11.
+public global TAC::X86_64::R12 => TACX86_64IntegerRegister := TACX86_64IntegerRegister int8: X86::R12B int16: X86::R12W int32: X86::R12D int64: X86::R12.
+public global TAC::X86_64::R13 => TACX86_64IntegerRegister := TACX86_64IntegerRegister int8: X86::R13B int16: X86::R13W int32: X86::R13D int64: X86::R13.
+public global TAC::X86_64::R14 => TACX86_64IntegerRegister := TACX86_64IntegerRegister int8: X86::R14B int16: X86::R14W int32: X86::R14D int64: X86::R14.
+public global TAC::X86_64::R15 => TACX86_64IntegerRegister := TACX86_64IntegerRegister int8: X86::R15B int16: X86::R15W int32: X86::R15D int64: X86::R15.
+
+public global TAC::X86_64::IntegerRegisters => Array := (
+    TAC::X86_64::RAX, TAC::X86_64::RCX, TAC::X86_64::RDX, TAC::X86_64::RBX,
+    TAC::X86_64::RSP, TAC::X86_64::RBP, TAC::X86_64::RSI, TAC::X86_64::RDI,
+    TAC::X86_64::R8, TAC::X86_64::R9, TAC::X86_64::R10, TAC::X86_64::R11,
+    TAC::X86_64::R12, TAC::X86_64::R13, TAC::X86_64::R14, TAC::X86_64::R15
+).
+
+public global TAC::X86_64::AllocableIntegerRegisters => Array := (
+    TAC::X86_64::RAX, TAC::X86_64::RCX, TAC::X86_64::RDX, TAC::X86_64::RBX,
+    TAC::X86_64::RSI, TAC::X86_64::RDI,
+    TAC::X86_64::R8, TAC::X86_64::R9, TAC::X86_64::R10, TAC::X86_64::R11,
+    TAC::X86_64::R12, TAC::X86_64::R13, TAC::X86_64::R14, TAC::X86_64::R15
+).
+
 public final class TACX86CompilationTarget superclass: TACAsmCompilationTarget; definition: {
-    public override method architectureName => Symbol
+    public override method name => Symbol
         := #x86.
+
+    public override method allIntegerRegisters => Array
+        := TAC::X86::IntegerRegisters.
+
+    public override method allocableIntegerRegisters => Array
+        := TAC::X86::AllocableIntegerRegisters.
 
     public override method emitFunctionPrologueWith: (generator: TACFunctionAsmCodeGenerator) ::=> Void := {
         generator textSection
@@ -33,23 +117,25 @@ public final class TACX86CompilationTarget superclass: TACAsmCompilationTarget; 
             x86::mov: X86::ESP src: X86::EBP;
             x86::pop: X86::EBP.
     }.
-}.
 
-public final class TACX86_64IntegerRegister superclass: TACPhysicalRegister; definition: {
-    public field int8 => AsmX86Int8Register.
-    public field int16 => AsmX86Int16Register.
-    public field int32 => AsmX86Int32Register.
-    public field int64 => AsmX86Int64Register.
+    public override method emitMoveValue: (value: TACValue) intoRegister: (register: TACPhysicalRegister) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        value x86::moveIntoRegister: register with: codegen
+    }.
 
-    __Meta__ definition: {
-        public method int8: (int8: AsmX86Int8Register) int16: (int16: AsmX86Int16Register) int32: (int32: AsmX86Int32Register) int64: (int64: AsmX86Int64Register) ::=> self
-            := self new int8: int8; int16: int16; int32: int32; int64: int64; yourself.
+    public override method emitMoveRegister: (register: TACPhysicalRegister) intoValue: (value: TACValue) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        value x86::moveFromRegister: register with: codegen
     }.
 }.
 
 public final class TACX86_64CompilationTarget superclass: TACAsmCompilationTarget; definition: {
-    public override method architectureName => Symbol
+    public override method name => Symbol
         := #x86_64.
+
+    public override method allIntegerRegisters => Array
+        := TAC::X86_64::IntegerRegisters.
+
+    public override method allocableIntegerRegisters => Array
+        := TAC::X86_64::AllocableIntegerRegisters.
 
     public override method emitFunctionPrologueWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection
@@ -67,12 +153,70 @@ public final class TACX86_64CompilationTarget superclass: TACAsmCompilationTarge
             x86::mov: X86::RSP src: X86::RBP;
             x86::pop: X86::RBP.
     }.
+
+    public override method emitMoveValue: (value: TACValue) intoRegister: (register: TACPhysicalRegister) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        value x86_64::moveIntoRegister: register with: codegen
+    }.
+
+    public override method emitMoveRegister: (register: TACPhysicalRegister) intoValue: (value: TACValue) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        value x86_64::moveFromRegister: register with: codegen
+    }.
 }.
 
-TAC::Operation::Return forTargets: #(x86 x86_64) generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
-    codegen emitEpilogue.
-    codegen textSection x86::ret
+TACValue extend: {
+    public abstract method x86::moveIntoRegister: (register: TACPhysicalRegister) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method x86::moveFromRegister: (register: TACPhysicalRegister) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method x86_64::moveIntoRegister: (register: TACPhysicalRegister) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+        := self x86::moveIntoRegister: register with: codegen.
+
+    public abstract method x86_64::moveFromRegister: (register: TACPhysicalRegister) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+        := self x86::moveFromRegister: register with: codegen.
 }.
+
+TACConstant extend: {
+    public override method x86_64::moveFromRegister: (register: TACPhysicalRegister) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+        := self error: "Cannot move into constant.".
+}.
+
+TACConstantInt32 extend: {
+    public override method x86::moveIntoRegister: (register: TACPhysicalRegister) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: register x86::int32 src: value asAsmImmediate.
+    }.
+}.
+
+TACConstantUInt32 extend: {
+    public override method x86::moveIntoRegister: (register: TACPhysicalRegister) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: register x86::int32 src: value asAsmImmediate.
+    }.
+}.
+
+TACConstantInt64 extend: {
+    public override method x86_64::moveIntoRegister: (register: TACPhysicalRegister) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: register x86::int64 src: value asAsmImmediate.
+    }.
+}.
+
+TACConstantUInt64 extend: {
+    public override method x86_64::moveIntoRegister: (register: TACPhysicalRegister) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: register x86::int64 src: value asAsmImmediate.
+    }.
+}.
+
+TAC::Operation::Return
+    forTarget: #x86 assignRegistersWith: {:(TACRegisterAllocator)allocator :(TACInstruction)instruction :: Void |
+        allocator allocateRegister: TAC::X86::EAX forInstruction: instruction operandAt: 0sz
+    };
+    forTarget: #x86_64 assignRegistersWith: {:(TACRegisterAllocator)allocator :(TACInstruction)instruction :: Void |
+        allocator allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+        codegen emitEpilogue.
+        codegen textSection x86::ret
+    }.
 
 TAC::Operation::ReturnVoid forTargets: #(x86 x86_64) generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
     codegen emitEpilogue.

@@ -1,9 +1,6 @@
 public abstract class TACAsmCompilationTarget superclass: TACCompilationTarget; definition: {
     public field asmCompilationTarget => AsmCompilationTarget.
 
-    public virtual method architectureName => Symbol
-        := self subclassResponsibility.
-
     public override method pointerSize => Size
         := asmCompilationTarget pointerSize.
 
@@ -20,6 +17,12 @@ public abstract class TACAsmCompilationTarget superclass: TACCompilationTarget; 
             compileModule: module;
             targetModule
     }.
+
+    public abstract method allIntegerRegisters => Array
+        := self subclassResponsibility.
+
+    public abstract method allocableIntegerRegisters => Array
+        := self subclassResponsibility.
 }.
 
 public final class TACModuleAsmCodeGenerator superclass: Object; definition: {
@@ -107,9 +110,16 @@ public final class TACFunctionAsmCodeGenerator superclass: Object; definition: {
         
         public virtual method emitInstruction: (instruction: TACInstruction) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
             := instruction operation generate: instruction for: self with: generator.
+        
+        public abstract method emitMoveValue: (value: TACValue) intoRegister: (register: TACPhysicalRegister) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
+        public abstract method emitMoveRegister: (register: TACPhysicalRegister) intoValue: (value: TACValue) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
     }.
 
     public method performRegisterAllocation => Void := {
+        TACTrivialRegisterAllocator new allocateRegistersIn: function withTarget: moduleGenerator target.
     }.
 
     public method buildStackFrameLayout => Void := {
@@ -154,7 +164,28 @@ public final class TACFunctionAsmCodeGenerator superclass: Object; definition: {
     }.
 
     public method generateInstruction: (instruction: TACInstruction) ::=> Void := {
-        moduleGenerator target emitInstruction: instruction with: self
+        self emitMoveValues: instruction operands intoRegisters: instruction operandRegisters.
+
+        moduleGenerator target emitInstruction: instruction with: self.
+
+        ## Do we need to support multiple result values?
+        instruction resultRegister isNotNil && instruction result isNotNil ifTrue: {
+            self emitRegister: instruction resultRegister intoValue: instruction result
+        }.
+    }.
+
+    public method emitMoveValues: (values: Array) intoRegisters: (registers: Array) ::=> Void := {
+        values doWithIndex: {:(TACValue)eachValue :(Size)valueIndex :: Void |
+            self emitMoveValue: eachValue intoRegister: (registers at: valueIndex)
+        }
+    }.
+
+    public method emitMoveValue: (value: TACValue) intoRegister: (register: TACPhysicalRegister) ::=> Void := {
+        moduleGenerator target emitMoveValue: value intoRegister: register with: self.
+    }.
+
+    public method emitRegister: (register: TACPhysicalRegister) intoValue: (value: TACValue) ::=> Void := {
+        moduleGenerator target emitMoveRegister: register intoValue: value with: self.
     }.
 }.
 
@@ -170,9 +201,9 @@ TACOperation extend: {
     }.
 
     public method generate: (instruction: TACInstruction) for: (target: TACAsmCompilationTarget) with: (functionGenerator: TACFunctionAsmCodeGenerator) ::=> Void := {
-        let architectureName := target architectureName.
-        (perTargetCodeGenerators at: architectureName ifAbsent: {|
-            self error: "Missing code generation for TAC operation '" -- name printString -- "' in " -- architectureName -- "."
+        let name := target name.
+        (perTargetCodeGenerators at: name ifAbsent: {|
+            self error: "Missing code generation for TAC operation '" -- name printString -- "' in " -- name -- "."
         }) (functionGenerator, TACInstruction).
     }.
 }.

@@ -1,15 +1,59 @@
+   
 public abstract class TACRegisterAllocator superclass: Object; definition: {
+    public field compilationTarget => TACCompilationTarget.
+
     public abstract method allocateRegistersIn: (function: TACFunction) withTarget: (target: TACCompilationTarget) ::=> Void
         := self subclassResponsibility.
+
+    public abstract method allocateRegister: (register: TACPhysicalRegister) forInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void
+        := self subclassResponsibility.
+}.
+
+TACOperation extend: {
+    public method forTarget: (target: Symbol) assignRegistersWith: (registerAssignmentBlock: (TACRegisterAllocator, TACInstruction) => Void) ::=> Void := {
+        perTargetSpecificRegisterAssignments at: target put: registerAssignmentBlock
+    }.
+
+    public method assignSpecificRegistersTo: (instruction: TACInstruction) with: (registerAllocator: TACRegisterAllocator) ::=> Void := {
+        perTargetSpecificRegisterAssignments at: registerAllocator compilationTarget name
+            ifPresent: {:((TACRegisterAllocator, TACInstruction) => Void)assignmentBlock :: Void |
+            assignmentBlock(registerAllocator, instruction)
+        }
+    }.
 }.
 
 public final class TACTrivialRegisterAllocator superclass: TACRegisterAllocator; definition: {
     public override method allocateRegistersIn: (function: TACFunction) withTarget: (target: TACCompilationTarget) ::=> Void := {
+        compilationTarget := target.
+
         function instructionsDo: {:(TACInstruction)instruction :: Void |
             self allocateInstructionRegisters: instruction
         }
     }.
 
     public method allocateInstructionRegisters: (instruction: TACInstruction) ::=> Void := {
+        instruction resetRegisterAllocation.
+        instruction operation assignSpecificRegistersTo: instruction with: self.
+        
+        let operandRegisters := instruction operandRegisters.
+        instruction operands doWithIndex: {:(TACValue)operand :(Size)index :: Void |
+            let assignedRegister := operandRegisters at: index.
+            assignedRegister ifNil: {
+                operandRegisters at: index put: (self allocateRegisterForOperand: operand)
+            }
+        }.
+
+        instruction result isNotNil && instruction resultRegister isNil ifTrue: {
+            instruction resultRegister: (self allocateRegisterForOperand: instruction result)
+        }.
+    }.
+
+    public override method allocateRegister: (register: TACPhysicalRegister) forInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        instruction operandRegisters at: operandIndex put: register
+    }.
+
+    public method allocateRegisterForOperand: (instruction: TACValue) ::=> TACPhysicalRegister := {
+        printLine("TODO: Allocate register for ", instruction).
+        nil
     }.
 }.
