@@ -105,6 +105,74 @@ public abstract class TACConstant superclass: TACValue; definition: {
     public override method isConstant => Boolean := true.
 }.
 
+public final class TACConstantInt8 superclass: TACConstant; definition: {
+    public field value => Int8.
+
+    public override method isConstantInt8 => Boolean := true.
+
+    public override method type => Type := Int8.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream print: value; nextPutAll: "i8"
+    }.
+
+    Int8 extend: {
+        public method asTacConstant => TACConstantInt8
+            := TACConstantInt8 new value: self; yourself
+    }
+}.
+
+public final class TACConstantUInt8 superclass: TACConstant; definition: {
+    public field value => UInt8.
+
+    public override method isConstantUInt8 => Boolean := true.
+
+    public override method type => Type := UInt8.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream print: value; nextPutAll: "u8"
+    }.
+
+    UInt8 extend: {
+        public method asTacConstant => TACConstantUInt8
+            := TACConstantUInt8 new value: self; yourself
+    }
+}.
+
+public final class TACConstantInt16 superclass: TACConstant; definition: {
+    public field value => Int16.
+
+    public override method isConstantInt16 => Boolean := true.
+
+    public override method type => Type := Int16.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream print: value; nextPutAll: "i16"
+    }.
+
+    Int16 extend: {
+        public method asTacConstant => TACConstantInt16
+            := TACConstantInt16 new value: self; yourself
+    }
+}.
+
+public final class TACConstantUInt16 superclass: TACConstant; definition: {
+    public field value => UInt16.
+
+    public override method isConstantUInt16 => Boolean := true.
+
+    public override method type => Type := UInt16.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream print: value; nextPutAll: "u16"
+    }.
+
+    UInt16 extend: {
+        public method asTacConstant => TACConstantUInt16
+            := TACConstantUInt16 new value: self; yourself
+    }
+}.
+
 public final class TACConstantInt32 superclass: TACConstant; definition: {
     public field value => Int32.
 

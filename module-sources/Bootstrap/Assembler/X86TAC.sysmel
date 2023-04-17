@@ -227,6 +227,30 @@ TACConstant extend: {
         := self error: "Cannot move into constant.".
 }.
 
+TACConstantInt8 extend: {
+    public override method x86::moveIntoRegister: (register: TACPhysicalRegister) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: register x86::int32 src: value asUInt32 asAsmImmediate.
+    }.
+}.
+
+TACConstantUInt8 extend: {
+    public override method x86::moveIntoRegister: (register: TACPhysicalRegister) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: register x86::int32 src: value asUInt32 asAsmImmediate.
+    }.
+}.
+
+TACConstantInt16 extend: {
+    public override method x86::moveIntoRegister: (register: TACPhysicalRegister) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: register x86::int32 src: value asUInt32 asAsmImmediate.
+    }.
+}.
+
+TACConstantUInt16 extend: {
+    public override method x86::moveIntoRegister: (register: TACPhysicalRegister) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: register x86::int32 src: value asUInt32 asAsmImmediate.
+    }.
+}.
+
 TACConstantInt32 extend: {
     public override method x86::moveIntoRegister: (register: TACPhysicalRegister) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::mov: register x86::int32 src: value asAsmImmediate.
