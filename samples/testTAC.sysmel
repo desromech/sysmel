@@ -15,7 +15,7 @@ module build: #main function: {:(TACFunctionBuilder)functionBuilder :: Void |
         let result := asm temporaryInt32.
 
         asm
-            call: addFunction arguments: #() result: result;
+            callInt32: addFunction arguments: #() result: result;
             returnInt32: result
     }
 }.

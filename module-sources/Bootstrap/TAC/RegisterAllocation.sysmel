@@ -116,6 +116,26 @@ TACOperation extend: {
     }.
 }.
 
+TACCallingConvention extend: {
+    public abstract method registerConstraintsOfCallInt32: (instruction: TACInstruction) with: (registerAllocator: TACRegisterAllocator) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method registerConstraintsOfCallInt64: (instruction: TACInstruction) with: (registerAllocator: TACRegisterAllocator) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method registerConstraintsOfCallFloat32: (instruction: TACInstruction) with: (registerAllocator: TACRegisterAllocator) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method registerConstraintsOfCallFloat64: (instruction: TACInstruction) with: (registerAllocator: TACRegisterAllocator) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method registerConstraintsOfCallStruct: (instruction: TACInstruction) with: (registerAllocator: TACRegisterAllocator) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method registerConstraintsOfCallVoid: (instruction: TACInstruction) with: (registerAllocator: TACRegisterAllocator) ::=> Void
+        := self subclassResponsibility.
+}.
+
 public final class TACRegisterAllocationFile superclass: Object; definition: {
     public field registers => Array.
     public field usedRegisters => Array.

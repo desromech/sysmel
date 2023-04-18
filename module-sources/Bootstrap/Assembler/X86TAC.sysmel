@@ -222,6 +222,24 @@ public global TAC::X86_64::AllocableIntegerRegisters => Array := (
     TAC::X86_64::R12, TAC::X86_64::R13, TAC::X86_64::R14, TAC::X86_64::R15
 ).
 
+public abstract class TACSX86StackBasedCallingConvention superclass: TACCallingConvention; definition: {
+    public override method computeRegisterConstraintsOf: (instruction: TACInstruction) with: (allocator: TACRegisterAllocator) ::=> Void := {
+        allocator
+            allocateRegister: TAC::X86_64::RAX forInstructionResult: instruction;
+            allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz
+    }.
+
+    public override method asm::generateCall: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection
+            x86::call: (instruction firstOperandRegister x86::rel32OrInt32For: codegen)
+    }.
+}.
+
+public final class TACSX86CDeclCallingConvention superclass: TACSX86StackBasedCallingConvention; definition: {
+}.
+
+public global TAC::X86::CDeclCallingConvention := TACSX86CDeclCallingConvention new.
+
 public final class TACX86CompilationTarget superclass: TACAsmCompilationTarget; definition: {
     public override method name => Symbol
         := #x86.
@@ -237,6 +255,9 @@ public final class TACX86CompilationTarget superclass: TACAsmCompilationTarget; 
 
     public override method allocableVectorRegisters => Array
         := TAC::X86::AllocableVectorRegisters.
+
+    public override method defaultCallingConvention => TACCallingConvention
+        := TAC::X86::CDeclCallingConvention.
 
     public override method emitFunctionPrologueWith: (generator: TACFunctionAsmCodeGenerator) ::=> Void := {
         generator textSection
@@ -264,12 +285,69 @@ public final class TACX86CompilationTarget superclass: TACAsmCompilationTarget; 
     }.
 }.
 
-public final class  TACSysVX86_64CallingConvention superclass: TACCallingConvention; definition: {
+public final class TACSysVX86_64CallingConvention superclass: TACCallingConvention; definition: {
+    public method registerConstraintsOfCall: (instruction: TACInstruction) with: (allocator: TACRegisterAllocator) ::=> Void := {
+        allocator allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz
+    }.
 
+    public override method registerConstraintsOfCallInt32: (instruction: TACInstruction) with: (allocator: TACRegisterAllocator) ::=> Void := {
+        allocator allocateRegister: TAC::X86_64::RAX forInstructionResult: instruction.
+        self registerConstraintsOfCall: instruction with: allocator
+    }.
+
+    public override method registerConstraintsOfCallInt64: (instruction: TACInstruction) with: (allocator: TACRegisterAllocator) ::=> Void := {
+        allocator allocateRegister: TAC::X86_64::RAX forInstructionResult: instruction.
+        self registerConstraintsOfCall: instruction with: allocator
+    }.
+
+    public override method registerConstraintsOfCallFloat32: (instruction: TACInstruction) with: (allocator: TACRegisterAllocator) ::=> Void := {
+        allocator allocateRegister: TAC::X86::XMM0 forInstructionResult: instruction.
+        self registerConstraintsOfCall: instruction with: allocator
+    }.
+
+    public override method registerConstraintsOfCallFloat64: (instruction: TACInstruction) with: (allocator: TACRegisterAllocator) ::=> Void := {
+        allocator allocateRegister: TAC::X86::XMM0 forInstructionResult: instruction.
+        self registerConstraintsOfCall: instruction with: allocator
+    }.
+
+    public override method registerConstraintsOfCallStruct: (instruction: TACInstruction) with: (allocator: TACRegisterAllocator) ::=> Void := {
+        self registerConstraintsOfCall: instruction with: allocator
+    }.
+
+    public override method registerConstraintsOfCallVoid: (instruction: TACInstruction) with: (allocator: TACRegisterAllocator) ::=> Void := {
+        self registerConstraintsOfCall: instruction with: allocator
+    }.
+
+    public method asm::generateCall: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::call: (instruction firstOperandRegister x86::rel32OrInt64For: codegen)
+    }.
+
+    public override method asm::generateCallInt32: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        self asm::generateCall: instruction with: codegen
+    }.
+
+    public override method asm::generateCallInt64: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        self asm::generateCall: instruction with: codegen
+    }.
+
+    public override method asm::generateCallFloat32: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        self asm::generateCall: instruction with: codegen
+    }.
+
+    public override method asm::generateCallFloat64: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        self asm::generateCall: instruction with: codegen
+    }.
+
+    public override method asm::generateCallStruct: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        self asm::generateCall: instruction with: codegen
+    }.
+
+    public override method asm::generateCallVoid: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        self asm::generateCall: instruction with: codegen
+    }.
 }.
 
 public global TAC::X86_64::SysVCallingConvention := TACSysVX86_64CallingConvention new.
-
 
 public final class TACX86_64CompilationTarget superclass: TACAsmCompilationTarget; definition: {
     public override method name => Symbol
@@ -449,19 +527,52 @@ TAC::Operation::Branch
         codegen textSection x86::jmp: (instruction firstOperandRegister x86::rel32OrInt64For: codegen)
     }.
 
-TAC::Operation::Call
-    forTarget: #x86 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
-        codegen textSection x86::call: (instruction firstOperandRegister x86::rel32OrInt32For: codegen)
+TAC::Operation::CallInt32
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        instruction callingConvention registerConstraintsOfCallInt32: instruction with: allocator
     };
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        instruction callingConvention asm::generateCallInt32: instruction with: codegen
+    }.
 
-    forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
-        ## TODO: Delegate to the calling convention as much as possible.
-        allocator
-            allocateRegister: TAC::X86_64::RAX forInstructionResult: instruction;
-            allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz
+TAC::Operation::CallInt64
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        instruction callingConvention registerConstraintsOfCallInt64: instruction with: allocator
     };
-    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
-        codegen textSection x86::call: (instruction firstOperandRegister x86::rel32OrInt64For: codegen)
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        instruction callingConvention asm::generateCallInt64: instruction with: codegen
+    }.
+
+TAC::Operation::CallFloat32
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        instruction callingConvention registerConstraintsOfCallFloat32: instruction with: allocator
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        instruction callingConvention asm::generateCallFloat32: instruction with: codegen
+    }.
+
+TAC::Operation::CallFloat64
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        instruction callingConvention registerConstraintsOfCallFloat64: instruction with: allocator
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        instruction callingConvention asm::generateCallFloat64: instruction with: codegen
+    }.
+
+TAC::Operation::CallFloat64
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        instruction callingConvention registerConstraintsOfCallStruct: instruction with: allocator
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        instruction callingConvention asm::generateCallStruct: instruction with: codegen
+    }.
+
+TAC::Operation::CallVoid
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        instruction callingConvention registerConstraintsOfCallVoid: instruction with: allocator
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        instruction callingConvention asm::generateCallVoid: instruction with: codegen
     }.
 
 TAC::Operation::ReturnInt32

@@ -124,6 +124,26 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
             := self subclassResponsibility.
     }.
 
+    TACCallingConvention extend: {
+        public abstract method asm::generateCallInt32: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
+        public abstract method asm::generateCallInt64: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
+        public abstract method asm::generateCallFloat32: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
+        public abstract method asm::generateCallFloat64: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
+        public abstract method asm::generateCallStruct: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
+        public abstract method asm::generateCallVoid: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+    }.
+
     public method performRegisterAllocation => Void := {
         registerAllocator := TACTrivialRegisterAllocator new.
         registerAllocator allocateRegistersIn: function withTarget: moduleGenerator target.
@@ -219,9 +239,9 @@ TACOperation extend: {
     }.
 
     public method generate: (instruction: TACInstruction) for: (target: TACAsmCompilationTarget) with: (functionGenerator: TACFunctionAsmCodeGenerator) ::=> Void := {
-        let name := target name.
-        (perTargetCodeGenerators at: name ifAbsent: {|
-            self error: "Missing code generation for TAC operation '" -- name printString -- "' in " -- name -- "."
+        let targetName := target name.
+        (perTargetCodeGenerators at: targetName ifAbsent: {|
+            self error: "Missing code generation for TAC operation '" -- name printString -- "' in " -- targetName -- "."
         }) (instruction, functionGenerator).
     }.
 }.
