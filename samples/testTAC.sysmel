@@ -12,9 +12,11 @@ let addFunction := module build: #add function: {:(TACFunctionBuilder)functionBu
 
 module build: #main function: {:(TACFunctionBuilder)functionBuilder :: Void |
     functionBuilder basicBlock: #entry build: {:(TACBlockBuilder)asm :: Void |
+        let result := asm temporaryInt32.
+
         asm
-            returnInt32: 42i32 asTacConstant
-            ##returnUInt64: 42u64 asTacConstant
+            call: addFunction arguments: #() result: result;
+            returnInt32: result
     }
 }.
 

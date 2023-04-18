@@ -307,6 +307,9 @@ AsmSymbol definition: {
             stream nextPutAll: "anon".
         }
     }.
+
+    public method privateAddend => Int64
+        := self isPrivate ifTrue: (value asInt64) ifFalse: (0i64).
 }.
 
 public final class AsmObjectCodeBuilder superclass: Object; definition: {

@@ -1,4 +1,5 @@
 public abstract class TACCompilationTarget superclass: Object.
+public abstract class TACCallingConvention superclass: Object.
 
 public abstract class TACPhysicalLocation superclass: Object; definition: {
     public virtual method isMemory => Boolean := false.
@@ -94,6 +95,9 @@ public abstract class TACProgramEntity superclass: TACValue; definition: {
     public field name => Symbol.
 
     public override method isProgramEntity => Boolean := true.
+
+    public override method physicalLocationClass => TACPhysicalLocation class
+        := TACPhysicalMemoryLocation.
 }.
 
 public abstract class TACVariable superclass: TACProgramEntity; definition: {
@@ -396,6 +400,8 @@ public final class TACInstruction superclass: TACValue; definition: {
     public field operandRegisters => Array.
     public field scratchRegisters => Array.
 
+    public field callingConvention => TACCallingConvention.
+
     public method initialize => Void := {
         super initialize.
         operands := #().
@@ -441,6 +447,8 @@ public global TAC::Operation::ConditionalBranch := TACOperation terminatorNamed:
 
 public global TAC::Operation::Move := TACOperation named: #move.
 
+public global TAC::Operation::Call := TACOperation named: #call.
+
 public global TAC::Operation::ReturnInt32 := TACOperation terminatorNamed: #returnInt32.
 public global TAC::Operation::ReturnInt64 := TACOperation terminatorNamed: #returnInt64.
 public global TAC::Operation::ReturnFloat32 := TACOperation terminatorNamed: #returnFloat32.
@@ -451,6 +459,11 @@ public global TAC::Operation::AddInt8 := TACOperation named: #addInt8.
 public global TAC::Operation::AddInt16 := TACOperation named: #addInt16.
 public global TAC::Operation::AddInt32 := TACOperation named: #addInt32.
 public global TAC::Operation::AddInt64 := TACOperation named: #addInt64.
+
+public global TAC::Operation::SubInt8 := TACOperation named: #addInt8.
+public global TAC::Operation::SubInt16 := TACOperation named: #addInt16.
+public global TAC::Operation::SubInt32 := TACOperation named: #addInt32.
+public global TAC::Operation::SubInt64 := TACOperation named: #addInt64.
 
 public global TAC::Operation::Trap := TACOperation terminatorNamed: #trap.
 
@@ -513,6 +526,8 @@ TACBasicBlock definition: {
 }.
 
 public final class TACFunction superclass: TACProgramEntity; definition: {
+    public field callingConvention => TACCallingConvention.
+
     public field arguments => Array.
     public field captures => Array.
     public field temporaries => ArrayList.
@@ -662,6 +677,7 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
 }.
 
 public final class TACBlockBuilder superclass: Object; definition: {
+    public field compilationTarget => TACCompilationTarget.
     public field block => TACBasicBlock.
     public field function => TACFunction.
 
@@ -720,17 +736,19 @@ public final class TACBlockBuilder superclass: Object; definition: {
     public method move: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::Move with: source result: destination.
 
-    public method addInt8: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::AddInt8 with: left with: right result: result.
+    public method call: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+        := self addInstruction: (TACInstruction new
+            operation: TAC::Operation::Call;
+            operands: (Array with: function) -- arguments;
+            callingConvention: callingConvention;
+            result: result;
+            yourself).
 
-    public method addInt16: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::AddInt16 with: left with: right result: result.
+    public method call: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+        := self call: function convention: compilationTarget defaultCallingConvention arguments: arguments result: result.
 
-    public method addInt32: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::AddInt32 with: left with: right result: result.
-
-    public method addInt64: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::AddInt64 with: left with: right result: result.
+    public method call: (function: TACValue) arguments: (arguments: Array) ::=> TACInstruction
+        := self call: function arguments: arguments result: nil.
 
     public method returnVoid ::=> TACInstruction
         := self operation: TAC::Operation::ReturnVoid.
@@ -749,6 +767,30 @@ public final class TACBlockBuilder superclass: Object; definition: {
 
     public method trap ::=> TACInstruction
         := self operation: TAC::Operation::Trap.
+
+    public method addInt8: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::AddInt8 with: left with: right result: result.
+
+    public method addInt16: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::AddInt16 with: left with: right result: result.
+
+    public method addInt32: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::AddInt32 with: left with: right result: result.
+
+    public method addInt64: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::AddInt64 with: left with: right result: result.
+
+    public method subInt8: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::SubInt8 with: left with: right result: result.
+
+    public method subInt16: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::SubInt16 with: left with: right result: result.
+
+    public method subInt32: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::SubInt32 with: left with: right result: result.
+
+    public method subInt64: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::SubInt64 with: left with: right result: result.
 }.
 
 public final class TACFunctionBuilder superclass: Object; definition: {
@@ -760,6 +802,7 @@ public final class TACFunctionBuilder superclass: Object; definition: {
         function addBasicBlock: block.
 
         let blockBuilder := TACBlockBuilder new
+            compilationTarget: compilationTarget;
             block: block;
             function: function;
             yourself.
@@ -788,11 +831,10 @@ public final class TACModule superclass: TACProgramEntity; definition: {
         self addProgramEntity: function.
 
         let builder := TACFunctionBuilder new
+            compilationTarget: compilationTarget;
             function: function;
             yourself.
-
         aBlock(builder).
-
         function
     }.
 
@@ -804,6 +846,9 @@ public final class TACModule superclass: TACProgramEntity; definition: {
 
     public method asTargetIR => AnyValue
         := compilationTarget generateTargetIRForTACModule: self
+}.
+
+TACCallingConvention definition: {
 }.
 
 TACCompilationTarget definition: {
@@ -838,5 +883,8 @@ TACCompilationTarget definition: {
         := self subclassResponsibility.
 
     public abstract method generateTargetIRForTACModule: (module: TACModule) ::=> AnyValue
+        := self subclassResponsibility.
+
+    public abstract method defaultCallingConvention => TACCallingConvention
         := self subclassResponsibility.
 }.

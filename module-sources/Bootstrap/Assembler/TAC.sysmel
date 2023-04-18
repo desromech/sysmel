@@ -110,7 +110,7 @@ public final class TACFunctionAsmCodeGenerator superclass: Object; definition: {
         public virtual method emitInstruction: (instruction: TACInstruction) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
             := instruction operation generate: instruction for: self with: generator.
         
-        public abstract method emitMoveValue: (value: TACValue) intoRegister: (register: TACPhysicalLocation) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
+        public abstract method emitMoveValue: (value: TACValue) intoLocation: (register: TACPhysicalLocation) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
         public abstract method emitMoveRegister: (register: TACPhysicalLocation) intoValue: (value: TACValue) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
@@ -177,16 +177,22 @@ public final class TACFunctionAsmCodeGenerator superclass: Object; definition: {
 
     public method emitMoveValues: (values: Array) intoRegisters: (registers: Array) ::=> Void := {
         values doWithIndex: {:(TACValue)eachValue :(Size)valueIndex :: Void |
-            self emitMoveValue: eachValue intoRegister: (registers at: valueIndex)
+            self emitMoveValue: eachValue intoLocation: (registers at: valueIndex)
         }
     }.
 
-    public method emitMoveValue: (value: TACValue) intoRegister: (register: TACPhysicalLocation) ::=> Void := {
-        moduleGenerator target emitMoveValue: value intoRegister: register with: self.
+    public method emitMoveValue: (value: TACValue) intoLocation: (register: TACPhysicalLocation) ::=> Void := {
+        moduleGenerator target emitMoveValue: value intoLocation: register with: self.
     }.
 
     public method emitRegister: (register: TACPhysicalLocation) intoValue: (value: TACValue) ::=> Void := {
         moduleGenerator target emitMoveRegister: register intoValue: value with: self.
+    }.
+
+    public method symbolForProgramEntity: (programEntity: TACProgramEntity) ::=> AsmSymbol := {
+        basicBlockSymbolDictionary at: programEntity ifAbsent: {|
+            moduleGenerator symbolForProgramEntity: programEntity
+        }
     }.
 }.
 

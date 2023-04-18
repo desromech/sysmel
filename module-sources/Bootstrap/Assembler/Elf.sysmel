@@ -213,11 +213,19 @@ public struct Elf64::Symbol definition: {
 public struct Elf32::Rel definition: {
     public field offset => Elf32::Addr.
     public field info => Elf32::Word.
+
+    public method symbol: (symbol: UInt32) type: (type: UInt32) ::=> Void := {
+        info := (symbol << 8u32) | type
+    }.
 }.
 
 public struct Elf64::Rel definition: {
     public field offset => Elf64::Addr.
     public field info => Elf64::Xword.
+
+    public method symbol: (symbol: UInt32) type: (type: UInt32) ::=> Void := {
+        info := (symbol asUInt64 << 32u64) | type asUInt64
+    }.
 }.
 
 public struct Elf32::Rela definition: {

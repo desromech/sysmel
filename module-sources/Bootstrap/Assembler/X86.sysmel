@@ -168,12 +168,18 @@ AsmX86RegisterAddress definition: {
     public field displacement => AsmImmediate.
 
     __Meta__ definition: {
+        public method size: (size: UInt8) displacement: (displacement: AsmImmediate) ::=> self
+            := self new
+                size: size;
+                displacement: displacement;
+                yourself.
+
         public method base: (base: AsmX86Register) size: (size: UInt8) displacement: (displacement: AsmImmediate) ::=> self
             := self new
                 base: base;
                 size: size;
                 displacement: displacement;
-                yourself
+                yourself.
     }.
 
     public override method x86::isRegisterAddress => Boolean
@@ -311,6 +317,20 @@ AsmX86RegisterAddress definition: {
 
         stream nextPutAll: "]".
     }.
+}.
+
+AsmSymbol extend: {
+    public method x86::bytePtr => AsmRegisterAddress
+        := AsmX86RegisterAddress size: 1u8 displacement: self dword.
+
+    public method x86::wordPtr => AsmRegisterAddress
+        := AsmX86RegisterAddress size: 2u8 displacement: self dword.
+
+    public method x86::dwordPtr => AsmRegisterAddress
+        := AsmX86RegisterAddress size: 4u8 displacement: self dword.
+
+    public method x86::qwordPtr => AsmRegisterAddress
+        := AsmX86RegisterAddress size: 8u8 displacement: self dword.
 }.
 
 public class AsmX86IntRegister superclass: AsmX86Register; definition: {
@@ -840,8 +860,8 @@ AsmObjectCodeRelocation extend: {
 }.
 
 AsmObjectCodeRelocationRelativeInt32 extend: {
-    public override method convertIntoX86RelWithSymbolTable: (symbolTable: Elf32::SymbolTable) ::=> Elf32::Rela
-        := Elf32::Rela new
+    public override method convertIntoX86RelWithSymbolTable: (symbolTable: Elf32::SymbolTable) ::=> Elf32::Rel
+        := Elf32::Rel new
             offset: offset asUInt32;
             symbol: (symbolTable indexOfSymbol: symbol) type: Elf::I386::Rel::PC32;
             yourself.
@@ -850,7 +870,16 @@ AsmObjectCodeRelocationRelativeInt32 extend: {
         := Elf64::Rela new
             offset: offset;
             symbol: (symbolTable indexOfSymbol: symbol) type: Elf::X86_64::Rel::PC32;
-            addend: addend asInt64;
+            addend: addend asInt64 + symbol privateAddend;
+            yourself.
+}.
+
+AsmObjectCodeRelocationAbsoluteInt64 extend: {
+    public override method convertIntoX86_64RelaWithSymbolTable: (symbolTable: Elf64::SymbolTable) ::=> Elf64::Rela
+        := Elf64::Rela new
+            offset: offset;
+            symbol: (symbolTable indexOfSymbol: symbol) type: Elf::X86_64::Rel::A64;
+            addend: addend asInt64 + symbol privateAddend;
             yourself.
 }.
 

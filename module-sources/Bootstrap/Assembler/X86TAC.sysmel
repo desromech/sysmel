@@ -221,7 +221,7 @@ public final class TACX86CompilationTarget superclass: TACAsmCompilationTarget; 
             x86::pop: X86::EBP.
     }.
 
-    public override method emitMoveValue: (value: TACValue) intoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+    public override method emitMoveValue: (value: TACValue) intoLocation: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         value x86::moveIntoRegister: register with: codegen
     }.
 
@@ -229,6 +229,13 @@ public final class TACX86CompilationTarget superclass: TACAsmCompilationTarget; 
         value x86::moveFromRegister: register with: codegen
     }.
 }.
+
+public final class  TACSysVX86_64CallingConvention superclass: TACCallingConvention; definition: {
+
+}.
+
+public global TAC::X86_64::SysVCallingConvention := TACSysVX86_64CallingConvention new.
+
 
 public final class TACX86_64CompilationTarget superclass: TACAsmCompilationTarget; definition: {
     public override method name => Symbol
@@ -245,6 +252,9 @@ public final class TACX86_64CompilationTarget superclass: TACAsmCompilationTarge
 
     public override method allocableVectorRegisters => Array
         := TAC::X86::AllocableVectorRegisters.
+
+    public override method defaultCallingConvention => TACCallingConvention
+        := TAC::X86_64::SysVCallingConvention.
 
     public override method emitFunctionPrologueWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::endbr64.
@@ -275,7 +285,7 @@ public final class TACX86_64CompilationTarget superclass: TACAsmCompilationTarge
         }.
     }.
 
-    public override method emitMoveValue: (value: TACValue) intoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+    public override method emitMoveValue: (value: TACValue) intoLocation: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         value x86_64::moveIntoRegister: register with: codegen
     }.
 
@@ -296,6 +306,17 @@ TACValue extend: {
 
     public abstract method x86_64::moveFromRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
         := self x86::moveFromRegister: register with: codegen.
+}.
+
+TACProgramEntity extend: {
+    public override method x86::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection
+            x86::mov: register x86::int32 src: (codegen symbolForProgramEntity: self) dword
+    }.
+
+    public override method x86_64::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::lea: register x86::int64 src: (codegen symbolForProgramEntity: self) x86::qwordPtr
+    }.
 }.
 
 TACLocalVariable extend: {
@@ -374,6 +395,14 @@ TAC::Operation::AddInt32
         codegen textSection
             x86::mov: instruction resultRegister x86::int32 src: instruction firstOperandRegister x86::int32;
             x86::add: instruction resultRegister x86::int32 with: instruction secondOperandRegister x86::int32
+    }.
+
+TAC::Operation::Call
+    forTarget: #x86 generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+        codegen textSection x86::call: instruction firstOperandRegister x86::int32
+    };
+    forTarget: #x86_64 generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+        codegen textSection x86::call: instruction firstOperandRegister x86::int64
     }.
 
 TAC::Operation::ReturnInt32
