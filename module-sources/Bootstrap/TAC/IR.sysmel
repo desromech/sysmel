@@ -366,7 +366,7 @@ public final class TACOperation superclass: Object; definition: {
     public field isTerminator => Boolean.
 
     protected field perTargetCodeGenerators => IdentityDictionary.
-    protected field perTargetSpecificRegisterAssignments => IdentityDictionary.
+    protected field perTargetRegisterConstraints => IdentityDictionary.
 
     __Meta__ definition: {
         public method named: (name: Symbol) ::=> self
@@ -378,7 +378,7 @@ public final class TACOperation superclass: Object; definition: {
 
     public method initialize => Void := {
         perTargetCodeGenerators := IdentityDictionary new.
-        perTargetSpecificRegisterAssignments := IdentityDictionary new.
+        perTargetRegisterConstraints := IdentityDictionary new.
     }.
 
     public method printOn: (stream: Stream) ::=> Void := {

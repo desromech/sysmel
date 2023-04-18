@@ -390,61 +390,89 @@ TACConstantUInt64 extend: {
     }.
 }.
 
+let x86::integerAluInt32RegisterConstraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+    allocator
+        allocateRegisterForInstructionResult: instruction;
+        allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
+        allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 1sz
+}.
+
 TAC::Operation::AddInt32
-    forTargets: #(x86 x86_64) generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerAluInt32RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
             x86::mov: instruction resultRegister x86::int32 src: instruction firstOperandRegister x86::int32;
             x86::add: instruction resultRegister x86::int32 with: instruction secondOperandRegister x86::int32
     }.
 
+TAC::Operation::Branch
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz
+    };
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::jmp: instruction firstOperandRegister x86::int32
+    };
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::jmp: instruction firstOperandRegister x86::int64
+    }.
+
 TAC::Operation::Call
-    forTarget: #x86 generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+    forTarget: #x86 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection x86::call: instruction firstOperandRegister x86::int32
     };
-    forTarget: #x86_64 generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+
+    forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        ## TODO: Delegate to the calling convention as much as possible.
+        allocator
+            allocateRegister: TAC::X86_64::RAX forInstructionResult: instruction;
+            allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz
+    };
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection x86::call: instruction firstOperandRegister x86::int64
     }.
 
 TAC::Operation::ReturnInt32
-    forTarget: #x86_64 assignRegistersWith: {:(TACRegisterAllocator)allocator :(TACInstruction)instruction :: Void |
+    forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
         allocator allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz
     };
-    forTarget: #x86_64 generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
         codegen textSection x86::ret
     }.
 
 TAC::Operation::ReturnInt64
-    forTarget: #x86_64 assignRegistersWith: {:(TACRegisterAllocator)allocator :(TACInstruction)instruction :: Void |
+    forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
         allocator allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz
     };
-    forTarget: #x86_64 generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
         codegen textSection x86::ret
     }.
 
 TAC::Operation::ReturnFloat32
-    forTarget: #x86_64 assignRegistersWith: {:(TACRegisterAllocator)allocator :(TACInstruction)instruction :: Void |
+    forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
         allocator allocateRegister: TAC::X86::XMM0 forInstruction: instruction operandAt: 0sz
     };
-    forTarget: #x86_64 generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
         codegen textSection x86::ret
     }.
 
-TAC::Operation::ReturnFloat32
-    forTarget: #x86_64 assignRegistersWith: {:(TACRegisterAllocator)allocator :(TACInstruction)instruction :: Void |
-        allocator allocateRegister: TAC::X86::XMM1 forInstruction: instruction operandAt: 0sz
+TAC::Operation::ReturnFloat64
+    forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator allocateRegister: TAC::X86::XMM0 forInstruction: instruction operandAt: 0sz
     };
-    forTarget: #x86_64 generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
         codegen textSection x86::ret
     }.
 
-TAC::Operation::ReturnVoid forTargets: #(x86 x86_64) generateWith: {:(TACFunctionAsmCodeGenerator)codegen :(TACInstruction)instruction :: Void |
-    codegen emitEpilogue.
-    codegen textSection x86::ret
-}.
+TAC::Operation::ReturnVoid
+    forTarget: #(x86 x86_64) registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void | };
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen emitEpilogue.
+        codegen textSection x86::ret
+    }.
 
 AsmX86CompilationTarget extend: {
     public method asTacCompilationTarget => TACX86CompilationTarget

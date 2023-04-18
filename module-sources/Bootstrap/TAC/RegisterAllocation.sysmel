@@ -5,8 +5,23 @@ public abstract class TACRegisterAllocator superclass: Object; definition: {
     public abstract method allocateRegistersIn: (function: TACFunction) withTarget: (target: TACCompilationTarget) ::=> Void
         := self subclassResponsibility.
 
+    public abstract method allocateRegister: (register: TACPhysicalLocation) forInstructionResult: (instruction: TACInstruction) ::=> Void
+        := self subclassResponsibility.
+
     public abstract method allocateRegister: (register: TACPhysicalLocation) forInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void
         := self subclassResponsibility.
+
+    public abstract method allocateRegisterForInstructionResult: (instruction: TACInstruction) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method allocateRegisterForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void
+        := self subclassResponsibility.
+
+    public virtual method allocateRegisterOrImmediate32ForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void
+        := self allocateRegisterForInstruction: instruction operandAt: operandIndex.
+
+    public virtual method allocateRegisterOrRelativeImmediate32ForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void
+        := self allocateRegisterForInstruction: instruction operandAt: operandIndex.
 
     public abstract method allocateIntegerRegister ::=> TACPhysicalLocation
         := self subclassResponsibility.
@@ -70,15 +85,22 @@ TACPhysicalVectorRegister extend: {
 }.
 
 TACOperation extend: {
-    public method forTarget: (target: Symbol) assignRegistersWith: (registerAssignmentBlock: (TACRegisterAllocator, TACInstruction) => Void) ::=> Void := {
-        perTargetSpecificRegisterAssignments at: target put: registerAssignmentBlock
+    public method forTarget: (target: Symbol) registerConstraintsWith: (registerAssignmentBlock: (TACInstruction, TACRegisterAllocator) => Void) ::=> Void := {
+        perTargetRegisterConstraints at: target put: registerAssignmentBlock
     }.
 
-    public method assignSpecificRegistersTo: (instruction: TACInstruction) with: (registerAllocator: TACRegisterAllocator) ::=> Void := {
-        perTargetSpecificRegisterAssignments at: registerAllocator compilationTarget name
-            ifPresent: {:((TACRegisterAllocator, TACInstruction) => Void)assignmentBlock :: Void |
-            assignmentBlock(registerAllocator, instruction)
+    public method forTargets: (targets: Array) registerConstraintsWith: (registerAssignmentBlock: (TACInstruction, TACRegisterAllocator) => Void) ::=> Void := {
+        targets do: {:(Symbol)eachTarget :: Void |
+            self forTarget: eachTarget registerConstraintsWith: registerAssignmentBlock
         }
+    }.
+
+    public method computeRegisterConstraintsOf: (instruction: TACInstruction) with: (registerAllocator: TACRegisterAllocator) ::=> Void := {
+        let targetName := registerAllocator compilationTarget name.
+        (perTargetRegisterConstraints at: targetName
+            ifAbsent: {:: Void |
+            self error: "Missing register constraints for TAC operation '" -- name printString -- "' in " -- targetName -- "."
+        }) (instruction, registerAllocator)
     }.
 }.
 
@@ -142,35 +164,35 @@ public final class TACTrivialRegisterAllocator superclass: TACRegisterAllocator;
 
     public method allocateInstructionRegisters: (instruction: TACInstruction) ::=> Void := {
         instruction resetRegisterAllocation.
-        instruction operation assignSpecificRegistersTo: instruction with: self.
-        
-        ## Mark the already assigned registers.
-        instruction resultRegister ifNotNil: (self markActiveRegister: instruction resultRegister).
-        instruction operandRegisters do: {:each :: Void |
-            each ifNotNil: (self markActiveRegister: each)
-        }.
-        
-        let operandRegisters := instruction operandRegisters.
+        instruction operation computeRegisterConstraintsOf: instruction with: self
+    }.
 
-        instruction operands doWithIndex: {:(TACValue)operand :(Size)index :: Void |
-            let assignedRegister := operandRegisters at: index.
-            assignedRegister ifNil: {
-                operandRegisters at: index put: (self allocateRegisterForOperand: operand)
-            }
-        }.
+    public override method allocateRegisterForInstructionResult: (instruction: TACInstruction) ::=> Void := {
+        instruction result ifNotNil: {
+            instruction resultRegister: (self allocateRegisterForOperand: instruction result)
+        }
+    }.
 
-        instruction result isNotNil && instruction resultRegister isNil ifTrue: {
-            operandRegisters size > 0sz &&
-            instruction result physicalLocationClass == instruction operands first physicalLocationClass
-                ifTrue: (instruction resultRegister: operandRegisters first)
-                ifFalse: (instruction resultRegister: (self allocateRegisterForOperand: instruction result))
-        }.
+    public override method allocateRegister: (register: TACPhysicalLocation) forInstructionResult: (instruction: TACInstruction) ::=> Void := {
+        instruction resultRegister: register.
+        register markActiveWithRegisterAllocator: self.
     }.
 
     public override method allocateRegister: (register: TACPhysicalLocation) forInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void := {
-        instruction operandRegisters at: operandIndex put: register
+        instruction operandRegisters at: operandIndex put: register.
+        register markActiveWithRegisterAllocator: self.
     }.
 
+    public override method allocateRegisterForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        let register :=
+            (operandIndex == 0sz) &&
+            (instruction resultRegister isNotNil) &&
+            (instruction result physicalLocationClass == instruction operands first physicalLocationClass)
+            ifTrue: (instruction resultRegister)
+            ifFalse: (self allocateRegisterForOperand: (instruction operands at: operandIndex)).
+        instruction operandRegisters at: operandIndex put: register
+    }.
+    
     public method allocateRegisterForOperand: (operand: TACValue) ::=> TACPhysicalLocation := {
         operand physicalLocationClass allocateRegisterWith: self
     }.

@@ -197,11 +197,11 @@ public final class TACFunctionAsmCodeGenerator superclass: Object; definition: {
 }.
 
 TACOperation extend: {
-    public method forTarget: (target: Symbol) generateWith: (codeGenerationBlock: (TACFunctionAsmCodeGenerator, TACInstruction) => Void) ::=> Void := {
+    public method forTarget: (target: Symbol) generateWith: (codeGenerationBlock: (TACInstruction, TACFunctionAsmCodeGenerator) => Void) ::=> Void := {
         perTargetCodeGenerators at: target put: codeGenerationBlock
     }.
     
-    public method forTargets: (targets: Array) generateWith: (codeGenerationBlock: (TACFunctionAsmCodeGenerator, TACInstruction) => Void) ::=> Void := {
+    public method forTargets: (targets: Array) generateWith: (codeGenerationBlock: (TACInstruction, TACFunctionAsmCodeGenerator) => Void) ::=> Void := {
         targets do: {:(Symbol)eachTarget :: Void |
             self forTarget: eachTarget generateWith: codeGenerationBlock
         }
@@ -211,7 +211,7 @@ TACOperation extend: {
         let name := target name.
         (perTargetCodeGenerators at: name ifAbsent: {|
             self error: "Missing code generation for TAC operation '" -- name printString -- "' in " -- name -- "."
-        }) (functionGenerator, instruction).
+        }) (instruction, functionGenerator).
     }.
 }.
 

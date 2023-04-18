@@ -637,43 +637,63 @@ public final class AsmX86InstructionWithTwoOperands superclass: AsmX86Instructio
 AsmX86InstructionDefinition definition: {
     public method generateStreamBuilderMethod => Void := {
         let selectorBuilder := StringStream new.
+        let directSelectorBuilder := StringStream new.
         selectorBuilder nextPutAll: "x86::"; nextPutAll: mnemonic.
+        directSelectorBuilder nextPutAll: "x86::direct::"; nextPutAll: mnemonic.
         operandNames doWithIndex: {:(Symbol)operandName :(Size)index :: Void |
-            if: index ~= 0sz then: (selectorBuilder nextPutAll: operandName).
-            selectorBuilder nextPut: ':'
+            if: index ~= 0sz then: {
+                selectorBuilder nextPutAll: operandName.
+                directSelectorBuilder nextPutAll: operandName.
+            }.
+
+            selectorBuilder nextPut: ':'.
+            directSelectorBuilder nextPut: ':'.
         }.
 
         let selector := selectorBuilder asSymbol.
+        let directSelector := directSelectorBuilder asSymbol.
         let operandCount := operandNames size.
 
         ## Zero operand case.
         if: operandCount = 0sz then: {
-            AsmStreamBuilder withSelector: selector addMethod: {:(AsmStreamBuilder)builder :: AsmX86InstructionWithoutOperands |
+            let method := {:(AsmStreamBuilder)builder :: AsmX86InstructionWithoutOperands |
                 builder addElement: (AsmX86InstructionWithoutOperands new
                     definition: self;
                     yourself)
-            }. 
+            }.
+
+            AsmStreamBuilder
+                withSelector: directSelector addMethod: method;
+                withSelector: selector addMethod: method
         }.
 
         ## Single operand case.
         if: operandCount = 1sz then: {
-            AsmStreamBuilder withSelector: selector addMethod: {:(AsmStreamBuilder)builder :(AsmInstructionOperand)operand :: AsmX86InstructionWithSingleOperand |
+            let method := {:(AsmStreamBuilder)builder :(AsmInstructionOperand)operand :: AsmX86InstructionWithSingleOperand |
                 builder addElement: (AsmX86InstructionWithSingleOperand new
                     definition: self;
                     firstOperand: operand;
                     yourself)
-            }. 
+            }.
+
+            AsmStreamBuilder
+                withSelector: directSelector addMethod: method;
+                withSelector: selector addMethod: method.
         }.
 
         ## Two operand case.
         if: operandCount = 2sz then: {
-            AsmStreamBuilder withSelector: selector addMethod: {:(AsmStreamBuilder)builder :(AsmInstructionOperand)firstOperand :(AsmInstructionOperand)secondOperand :: AsmX86InstructionWithTwoOperands |
+            let method := {:(AsmStreamBuilder)builder :(AsmInstructionOperand)firstOperand :(AsmInstructionOperand)secondOperand :: AsmX86InstructionWithTwoOperands |
                 builder addElement: (AsmX86InstructionWithTwoOperands new
                     definition: self;
                     firstOperand: firstOperand;
                     secondOperand: secondOperand;
                     yourself)
-            }. 
+            }..
+
+            AsmStreamBuilder
+                withSelector: directSelector addMethod: method;
+                withSelector: selector addMethod: method.
         }.
     }.
 }.
@@ -1010,4 +1030,12 @@ instructionDefinitionTable do: {:instructionDescription :: Void |
 
     definition generateStreamBuilderMethod.
     AsmX86InstructionDefinition::Table at: definition mnemonic put: definition.
+}.
+
+AsmStreamBuilder extend: {
+    public method x86::mov: (destination: AsmInstructionOperand) src: (source: AsmInstructionOperand) ::=> AsmX86InstructionWithTwoOperands := {
+        destination ~= source
+            ifTrue: (self x86::direct::mov: destination src: source)
+            ifFalse: (nil)        
+    }.
 }.
