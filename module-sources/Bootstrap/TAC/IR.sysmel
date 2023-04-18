@@ -26,6 +26,24 @@ public abstract class TACPhysicalVectorRegister superclass: TACPhysicalLocation;
 Type extend: {
     public method valueTacPhysicalLocationClass => TACPhysicalLocation class
         := TACPhysicalIntegerRegister.
+
+    public method valueIsSignedExtended => Boolean := false.
+}.
+
+Int8 extend: {
+    public method valueIsSignedExtended => Boolean := true.
+}.
+
+Int16 extend: {
+    public method valueIsSignedExtended => Boolean := true.
+}.
+
+Int32 extend: {
+    public method valueIsSignedExtended => Boolean := true.
+}.
+
+Int64 extend: {
+    public method valueIsSignedExtended => Boolean := true.
 }.
 
 Float32 extend: {
@@ -48,6 +66,9 @@ public abstract class TACValue superclass: Object; definition: {
 
     public virtual method physicalLocationClass => TACPhysicalLocation class
         := self subclassResponsibility.
+    
+    public virtual method isSignedExtended => Boolean := false.
+    public virtual method isFloatingPoint => Boolean := false.
 
     public virtual method isProgramEntity => Boolean := false.
     public virtual method isFunction => Boolean := false.
@@ -77,15 +98,16 @@ public abstract class TACProgramEntity superclass: TACValue; definition: {
 
 public abstract class TACVariable superclass: TACProgramEntity; definition: {
     public field type => Type.
-    public field size => Size.
-    public field alignment => Size.
+    public field size => UInt64.
+    public field alignment => UInt64.
     public field physicalLocationClass => TACPhysicalLocation class.
+    public field isSignedExtended => Boolean.
 
     public override method isVariable => Boolean := true.
 }.
 
 public final class TACLocalVariable superclass: TACVariable; definition: {
-    public field offset => Size.
+    public field offset => Int64.
     public field index => UInt32.
 
     public field needsSpilling => Boolean.
@@ -159,6 +181,7 @@ public abstract class TACConstantInteger superclass: TACValue; definition: {
 public final class TACConstantInt8 superclass: TACConstantInteger; definition: {
     public field value => Int8.
 
+    public override method isSignedExtended => Boolean := true.
     public override method isConstantInt8 => Boolean := true.
 
     public override method type => Type := Int8.
@@ -193,6 +216,7 @@ public final class TACConstantUInt8 superclass: TACConstantInteger; definition: 
 public final class TACConstantInt16 superclass: TACConstantInteger; definition: {
     public field value => Int16.
 
+    public override method isSignedExtended => Boolean := true.
     public override method isConstantInt16 => Boolean := true.
 
     public override method type => Type := Int16.
@@ -227,6 +251,7 @@ public final class TACConstantUInt16 superclass: TACConstantInteger; definition:
 public final class TACConstantInt32 superclass: TACConstantInteger; definition: {
     public field value => Int32.
 
+    public override method isSignedExtended => Boolean := true.
     public override method isConstantInt32 => Boolean := true.
 
     public override method type => Type := Int32.
@@ -261,6 +286,7 @@ public final class TACConstantUInt32 superclass: TACConstantInteger; definition:
 public final class TACConstantInt64 superclass: TACConstantInteger; definition: {
     public field value => Int64.
 
+    public override method isSignedExtended => Boolean := true.
     public override method isConstantInt64 => Boolean := true.
 
     public override method type => Type := Int64.
@@ -289,6 +315,45 @@ public final class TACConstantUInt64 superclass: TACConstantInteger; definition:
     UInt64 extend: {
         public method asTacConstant => TACConstantUInt64
             := TACConstantUInt64 new value: self; yourself
+    }.
+}.
+
+public final class TACConstantFloatingPoint superclass: TACConstant; definition: {
+    public override method isFloatingPoint => Boolean := true.
+    public override method isConstantFloat => Boolean := true.
+}.
+
+public final class TACConstantFloat32 superclass: TACConstantFloatingPoint; definition: {
+    public field value => Float32.
+
+    public override method isConstantFloat32 => Boolean := true.
+
+    public override method type => Type := Float32.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream print: value; nextPutAll: "f32"
+    }.
+
+    Float32 extend: {
+        public method asTacConstant => TACConstantFloat32
+            := TACConstantFloat32 new value: self; yourself
+    }.
+}.
+
+public final class TACConstantFloat64 superclass: TACConstantFloatingPoint; definition: {
+    public field value => Float64.
+
+    public override method isConstantFloat64 => Boolean := true.
+
+    public override method type => Type := Float64.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream print: value; nextPutAll: "f64"
+    }.
+
+    Float64 extend: {
+        public method asTacConstant => TACConstantFloat64
+            := TACConstantFloat64 new value: self; yourself
     }.
 }.
 
@@ -471,8 +536,8 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
     public method newTemporaryWithType: (type: Type) ::=> TACTemporaryVariable
         := self addTemporary: (TACTemporaryVariable new
             type: type;
-            size: type valueSize;
-            alignment: type valueAlignment;
+            size: type valueSize asUInt64;
+            alignment: type valueAlignment asUInt64;
             physicalLocationClass: type valueTacPhysicalLocationClass;
             yourself).
 
@@ -749,6 +814,9 @@ TACCompilationTarget definition: {
         := self subclassResponsibility.
 
     public abstract method pointerAlignment => Size
+        := self subclassResponsibility.
+
+    public abstract method stackFrameAlignment => Size
         := self subclassResponsibility.
 
     public abstract method allIntegerRegisters => Array

@@ -7,6 +7,9 @@ public abstract class TACAsmCompilationTarget superclass: TACCompilationTarget; 
     public override method pointerAlignment => Size
         := asmCompilationTarget pointerSize.
 
+    public override method stackFrameAlignment => Size
+        := asmCompilationTarget stackFrameAlignment.
+
     public override method generateTargetIRForTACModule: (module: TACModule) ::=> AnyValue := {
         let codeGenerator := TACModuleAsmCodeGenerator new
             target: self;
@@ -58,6 +61,8 @@ public final class TACFunctionAsmCodeGenerator superclass: Object; definition: {
     public field function => TACFunction.
     public field asmFunction => AsmProgramEntity.
     private field basicBlockSymbolDictionary => IdentityDictionary.
+
+    public field registerAllocator => TACRegisterAllocator.
     public field stackFrameLayout => TACStackFrameLayout.
 
     protected field textSection => AsmStreamBuilder.
@@ -113,11 +118,13 @@ public final class TACFunctionAsmCodeGenerator superclass: Object; definition: {
     }.
 
     public method performRegisterAllocation => Void := {
-        TACTrivialRegisterAllocator new allocateRegistersIn: function withTarget: moduleGenerator target.
+        registerAllocator := TACTrivialRegisterAllocator new.
+        registerAllocator allocateRegistersIn: function withTarget: moduleGenerator target.
     }.
 
     public method buildStackFrameLayout => Void := {
         stackFrameLayout := TACStackFrameLayout new.
+        stackFrameLayout buildLayoutForFunction: function registerAllocator: registerAllocator withTarget: moduleGenerator target
     }.
 
     public method prepareToGenerateFunction => Void := {

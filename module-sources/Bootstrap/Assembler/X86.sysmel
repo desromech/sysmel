@@ -167,6 +167,15 @@ AsmX86RegisterAddress definition: {
     public field index => AsmX86Register.
     public field displacement => AsmImmediate.
 
+    __Meta__ definition: {
+        public method base: (base: AsmX86Register) size: (size: UInt8) displacement: (displacement: AsmImmediate) ::=> self
+            := self new
+                base: base;
+                size: size;
+                displacement: displacement;
+                yourself
+    }.
+
     public override method x86::isRegisterAddress => Boolean
         := true.
 

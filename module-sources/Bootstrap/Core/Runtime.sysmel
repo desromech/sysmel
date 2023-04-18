@@ -149,6 +149,7 @@ Object
         if: condition then: void else: error("Assertion failure.")
     } withEagerAnalysis;
     withSelector: #subclassResponsibility addMethod: {:(Object)self :: Unwinds | self error: self __type__ printString -- " Subclass responsibility." } withEagerAnalysis;
+    withSelector: #shouldBeImplemented addMethod: {:(Object)self :: Unwinds | self error: "Should be implemented." } withEagerAnalysis;
     withSelector: #doesNotUnderstand: addMethod: {:(AnyValue)self :(Message)message |
         error((self class printString -- " doesNotUnderstand: ") -- message selector printString)
     } withEagerAnalysis.
@@ -2370,15 +2371,49 @@ Class
         self subclass: name classSlots: () slots: instanceSlots
     }.
 
-Size
-    withSelector: #min: addMethod: {:(Size)a :(Size)b :: Size |
+
+UInt32
+    withSelector: #min: addMethod: {:(UInt32)a :(UInt32)b :: UInt32 |
         if: a <= b then: a else: b
     };
-    withSelector: #max: addMethod: {:(Size)a :(Size)b :: Size |
+    withSelector: #max: addMethod: {:(UInt32)a :(UInt32)b :: UInt32 |
         if: a >= b then: a else: b
     };
-    withSelector: #alignedTo: addMethod: {:(Size)value :(Size)alignment :: Size |
-        ((value + alignment) - 1sz) & alignment negated.
+    withSelector: #alignedTo: addMethod: {:(UInt32)value :(UInt32)alignment :: UInt32 |
+        ((value + alignment) - 1u32) & alignment negated.
+    }.
+
+Int32
+    withSelector: #min: addMethod: {:(Int32)a :(Int32)b :: Int32 |
+        if: a <= b then: a else: b
+    };
+    withSelector: #max: addMethod: {:(Int32)a :(Int32)b :: Int32 |
+        if: a >= b then: a else: b
+    };
+    withSelector: #alignedTo: addMethod: {:(Int32)value :(Int32)alignment :: Int32 |
+        ((value + alignment) - 1i32) & alignment negated.
+    }.
+
+UInt64
+    withSelector: #min: addMethod: {:(UInt64)a :(UInt64)b :: UInt64 |
+        if: a <= b then: a else: b
+    };
+    withSelector: #max: addMethod: {:(UInt64)a :(UInt64)b :: UInt64 |
+        if: a >= b then: a else: b
+    };
+    withSelector: #alignedTo: addMethod: {:(UInt64)value :(UInt64)alignment :: UInt64 |
+        ((value + alignment) - 1u64) & alignment negated.
+    }.
+
+Int64
+    withSelector: #min: addMethod: {:(Int64)a :(Int64)b :: Int64 |
+        if: a <= b then: a else: b
+    };
+    withSelector: #max: addMethod: {:(Int64)a :(Int64)b :: Int64 |
+        if: a >= b then: a else: b
+    };
+    withSelector: #alignedTo: addMethod: {:(Int64)value :(Int64)alignment :: Int64 |
+        ((value + alignment) - 1i64) & alignment negated.
     }.
 
 TypeSlot

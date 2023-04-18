@@ -20,6 +20,9 @@ public abstract class AsmCompilationTarget superclass: Object; definition: {
     public virtual method pointerAlignment => Size
         := self pointerSize.
 
+    public virtual method stackFrameAlignment => Size
+        := 16sz.
+
     public virtual method indirectBranchTargetAlignment => Size
         := 1sz.
 
