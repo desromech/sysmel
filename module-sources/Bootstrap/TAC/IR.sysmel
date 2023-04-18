@@ -1,27 +1,45 @@
 public abstract class TACCompilationTarget superclass: Object.
 public abstract class TACCallingConvention superclass: Object.
+public abstract class TACValue superclass: Object.
 
 public abstract class TACPhysicalLocation superclass: Object; definition: {
     public virtual method isMemory => Boolean := false.
+    public virtual method isImmediate => Boolean := false.
+    public virtual method isRegister => Boolean := false.
     public virtual method isIntegerRegister => Boolean := false.
     public virtual method isFloatRegister => Boolean := false.
     public virtual method isVectorRegister => Boolean := false.
 }.
 
-public abstract class TACPhysicalMemoryLocation superclass: TACPhysicalLocation; definition: {
+public abstract class TACPhysicalLocationMemory superclass: TACPhysicalLocation; definition: {
     public virtual method isMemory => Boolean := true.
 }.
 
-public abstract class TACPhysicalIntegerRegister superclass: TACPhysicalLocation; definition: {
+public abstract class TACPhysicalLocationRegister superclass: TACPhysicalLocation; definition: {
+    public virtual method isRegister => Boolean := true.
+}.
+
+public abstract class TACPhysicalIntegerRegister superclass: TACPhysicalLocationRegister; definition: {
     public virtual method isIntegerRegister => Boolean := true.
 }.
 
-public abstract class TACPhysicalFloatRegister superclass: TACPhysicalLocation; definition: {
+public abstract class TACPhysicalFloatRegister superclass: TACPhysicalLocationRegister; definition: {
     public virtual method isFloatRegister => Boolean := true.
 }.
 
-public abstract class TACPhysicalVectorRegister superclass: TACPhysicalLocation; definition: {
+public abstract class TACPhysicalVectorRegister superclass: TACPhysicalLocationRegister; definition: {
     public virtual method isVectorRegister => Boolean := true.
+}.
+
+public class TACPhysicalLocationImmediate superclass: TACPhysicalLocation; definition: {
+    public field value => TACValue.
+
+    __Meta__ definition: {
+        public method for: (value: TACValue) ::=> self
+            := self new value: value; yourself
+    }.
+
+    public virtual method isImmediate => Boolean := true.
 }.
 
 Type extend: {
@@ -31,33 +49,33 @@ Type extend: {
     public method valueIsSignedExtended => Boolean := false.
 }.
 
-Int8 extend: {
+Int8 class extend: {
     public method valueIsSignedExtended => Boolean := true.
 }.
 
-Int16 extend: {
+Int16 class extend: {
     public method valueIsSignedExtended => Boolean := true.
 }.
 
-Int32 extend: {
+Int32 class extend: {
     public method valueIsSignedExtended => Boolean := true.
 }.
 
-Int64 extend: {
+Int64 class extend: {
     public method valueIsSignedExtended => Boolean := true.
 }.
 
-Float32 extend: {
+Float32 class extend: {
     public method valueTacPhysicalLocationClass => TACPhysicalLocation class
         := TACPhysicalFloatRegister.
 }.
 
-Float64 extend: {
+Float64 class extend: {
     public method valueTacPhysicalLocationClass => TACPhysicalLocation class
         := TACPhysicalFloatRegister.
 }.
 
-public abstract class TACValue superclass: Object; definition: {
+TACValue definition: {
     public field debugSourcePosition => SourcePosition.
     public field debugSourceNode => ASTNode.
     public field debugSourceEnvironment => Environment.
@@ -85,6 +103,10 @@ public abstract class TACValue superclass: Object; definition: {
     public virtual method isConstantInt32 => Boolean := false.
     public virtual method isConstantUInt32 => Boolean := false.
 
+    public virtual method isImmediate32 => Boolean := false.
+    public virtual method isImmediate64 => Boolean := self isImmediate32.
+    public virtual method isRelativeImmediate32 => Boolean := false.
+
     public virtual method markUsageAt: (usageIndex: UInt32) ::=> Void := {}.
     public virtual method markWriteAt: (writeIndex: UInt32) ::=> Void := {}.
 }.
@@ -95,9 +117,6 @@ public abstract class TACProgramEntity superclass: TACValue; definition: {
     public field name => Symbol.
 
     public override method isProgramEntity => Boolean := true.
-
-    public override method physicalLocationClass => TACPhysicalLocation class
-        := TACPhysicalMemoryLocation.
 }.
 
 public abstract class TACVariable superclass: TACProgramEntity; definition: {
@@ -187,6 +206,7 @@ public final class TACConstantInt8 superclass: TACConstantInteger; definition: {
 
     public override method isSignedExtended => Boolean := true.
     public override method isConstantInt8 => Boolean := true.
+    public override method isImmediate32 => Boolean := true.
 
     public override method type => Type := Int8.
 
@@ -204,6 +224,7 @@ public final class TACConstantUInt8 superclass: TACConstantInteger; definition: 
     public field value => UInt8.
 
     public override method isConstantUInt8 => Boolean := true.
+    public override method isImmediate32 => Boolean := true.
 
     public override method type => Type := UInt8.
 
@@ -222,6 +243,7 @@ public final class TACConstantInt16 superclass: TACConstantInteger; definition: 
 
     public override method isSignedExtended => Boolean := true.
     public override method isConstantInt16 => Boolean := true.
+    public override method isImmediate32 => Boolean := true.
 
     public override method type => Type := Int16.
 
@@ -239,6 +261,7 @@ public final class TACConstantUInt16 superclass: TACConstantInteger; definition:
     public field value => UInt16.
 
     public override method isConstantUInt16 => Boolean := true.
+    public override method isImmediate32 => Boolean := true.
 
     public override method type => Type := UInt16.
 
@@ -257,6 +280,7 @@ public final class TACConstantInt32 superclass: TACConstantInteger; definition: 
 
     public override method isSignedExtended => Boolean := true.
     public override method isConstantInt32 => Boolean := true.
+    public override method isImmediate32 => Boolean := true.
 
     public override method type => Type := Int32.
 
@@ -274,6 +298,7 @@ public final class TACConstantUInt32 superclass: TACConstantInteger; definition:
     public field value => UInt32.
 
     public override method isConstantUInt32 => Boolean := true.
+    public override method isImmediate32 => Boolean := true.
 
     public override method type => Type := UInt32.
 
@@ -292,6 +317,7 @@ public final class TACConstantInt64 superclass: TACConstantInteger; definition: 
 
     public override method isSignedExtended => Boolean := true.
     public override method isConstantInt64 => Boolean := true.
+    public override method isImmediate32 => Boolean := true.
 
     public override method type => Type := Int64.
 
@@ -309,6 +335,7 @@ public final class TACConstantUInt64 superclass: TACConstantInteger; definition:
     public field value => UInt64.
 
     public override method isConstantUInt64 => Boolean := true.
+    public override method isImmediate64 => Boolean := true.
 
     public override method type => Type := UInt64.
 
@@ -331,6 +358,7 @@ public final class TACConstantFloat32 superclass: TACConstantFloatingPoint; defi
     public field value => Float32.
 
     public override method isConstantFloat32 => Boolean := true.
+    public override method isImmediate32 => Boolean := true.
 
     public override method type => Type := Float32.
 
@@ -348,6 +376,7 @@ public final class TACConstantFloat64 superclass: TACConstantFloatingPoint; defi
     public field value => Float64.
 
     public override method isConstantFloat64 => Boolean := true.
+    public override method isImmediate64 => Boolean := true.
 
     public override method type => Type := Float64.
 
@@ -477,6 +506,12 @@ TACBasicBlock definition: {
     public field firstInstruction => TACInstruction.
     public field lastInstruction => TACInstruction.
 
+    public override method physicalLocationClass => TACPhysicalLocation class
+        := TACPhysicalIntegerRegister.
+
+    public override method isRelativeImmediate32 => Boolean := true.
+
+
     public method addInstruction: (instruction: TACInstruction) before: (position: TACInstruction) ::=> Void := {
         let before := position ifNotNil: position previous ifNil: lastInstruction.
         let after := position.
@@ -536,6 +571,11 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
     public field lastBasicBlock => TACBasicBlock.
 
     public override method isFunction => Boolean := true.
+
+    public override method physicalLocationClass => TACPhysicalLocation class
+        := TACPhysicalIntegerRegister.
+
+    public override method isRelativeImmediate32 => Boolean := true.
 
     public method initialize => Void := {
         arguments := #().

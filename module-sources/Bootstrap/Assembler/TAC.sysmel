@@ -1,3 +1,4 @@
+
 public abstract class TACAsmCompilationTarget superclass: TACCompilationTarget; definition: {
     public field asmCompilationTarget => AsmCompilationTarget.
 
@@ -22,8 +23,14 @@ public abstract class TACAsmCompilationTarget superclass: TACCompilationTarget; 
     }.
 }.
 
-public final class TACModuleAsmCodeGenerator superclass: Object; definition: {
+public abstract class TACAsmCodeGenerator superclass: Object; definition: {
     public field target => TACAsmCompilationTarget.
+
+    public abstract method symbolForProgramEntity: (programEntity: TACProgramEntity) ::=> AsmSymbol
+        := self subclassResponsibility.
+}.
+
+public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; definition: {
     public field targetModule => AsmProgramEntity.
     public field asmTarget => AsmCompilationTarget.
     public field programEntitySymbolMap => Dictionary.
@@ -34,7 +41,7 @@ public final class TACModuleAsmCodeGenerator superclass: Object; definition: {
         compiledProgramEntitySymbolMap := Dictionary new.
     }.
 
-    public method symbolForProgramEntity: (programEntity: TACProgramEntity) ::=> AsmSymbol := {
+    public override method symbolForProgramEntity: (programEntity: TACProgramEntity) ::=> AsmSymbol := {
         programEntitySymbolMap at: programEntity ifAbsentPut: {:: AsmSymbol |
             programEntity generateAssemblySymbolWith: self
         }
@@ -56,7 +63,7 @@ public final class TACModuleAsmCodeGenerator superclass: Object; definition: {
     }.
 }.
 
-public final class TACFunctionAsmCodeGenerator superclass: Object; definition: {
+public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; definition: {
     public field moduleGenerator => TACModuleAsmCodeGenerator.
     public field function => TACFunction.
     public field asmFunction => AsmProgramEntity.
@@ -181,12 +188,16 @@ public final class TACFunctionAsmCodeGenerator superclass: Object; definition: {
         }
     }.
 
-    public method emitMoveValue: (value: TACValue) intoLocation: (register: TACPhysicalLocation) ::=> Void := {
-        moduleGenerator target emitMoveValue: value intoLocation: register with: self.
+    public method emitMoveValue: (value: TACValue) intoLocation: (location: TACPhysicalLocation) ::=> Void := {
+        location isRegister ifTrue: {
+            moduleGenerator target emitMoveValue: value intoLocation: location with: self.
+        }
     }.
 
-    public method emitRegister: (register: TACPhysicalLocation) intoValue: (value: TACValue) ::=> Void := {
-        moduleGenerator target emitMoveRegister: register intoValue: value with: self.
+    public method emitRegister: (location: TACPhysicalLocation) intoValue: (value: TACValue) ::=> Void := {
+        location isRegister ifTrue: {
+            moduleGenerator target emitMoveRegister: location intoValue: value with: self.
+        }
     }.
 
     public method symbolForProgramEntity: (programEntity: TACProgramEntity) ::=> AsmSymbol := {
@@ -215,6 +226,20 @@ TACOperation extend: {
     }.
 }.
 
+TACValue definition: {
+    public virtual method asm::immediate8For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := self error: "Not an immediate 8 value.".
+
+    public virtual method asm::immediate16For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := self error: "Not an immediate 16 value.".
+
+    public virtual method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := self error: "Not an immediate 32 value.".
+
+    public virtual method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := self error: "Not an immediate 64 value.".
+}.
+
 TACProgramEntity definition: {
     public virtual method generateAssemblySymbolWith: (moduleGenerator: TACModuleAsmCodeGenerator) ::=> AsmSymbol := {
         let symbol := AsmSymbol new
@@ -227,6 +252,12 @@ TACProgramEntity definition: {
 
     public abstract method generateAssemblyWith: (moduleGenerator: TACModuleAsmCodeGenerator) symbol: (symbol: AsmSymbol) ::=> Void
         := self subclassResponsibility.
+
+    public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := (codegen symbolForProgramEntity: self) dword.
+
+    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := (codegen symbolForProgramEntity: self) qword.
 }.
 
 TACFunction definition: {
@@ -238,7 +269,24 @@ TACFunction definition: {
 
     public override method generateAssemblyWith: (moduleGenerator: TACModuleAsmCodeGenerator) symbol: (symbol: AsmSymbol) ::=> Void := {
         TACFunctionAsmCodeGenerator new
+            target: moduleGenerator target;
             moduleGenerator: moduleGenerator;
             generateFunction: self withSymbol: symbol
     }.
+}.
+
+TACConstantUInt32 definition: {
+    public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := value asAsmImmediate.
+
+    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := value asUInt64 asAsmImmediate.
+}.
+
+TACConstantInt32 definition: {
+    public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := value asAsmImmediate.
+
+    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := value asInt64 asAsmImmediate.
 }.
