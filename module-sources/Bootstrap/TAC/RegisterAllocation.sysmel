@@ -208,29 +208,35 @@ public final class TACTrivialRegisterAllocator superclass: TACRegisterAllocator;
     }.
 
     public override method allocateRegisterForInstructionResult: (instruction: TACInstruction) ::=> Void := {
-        instruction result ifNotNil: {
-            instruction resultRegister: (self allocateRegisterForOperand: instruction result)
+        let result := instruction result.
+        result ifNotNil: {
+            instruction resultRegister: (self allocateRegisterForOperand: result).
+            result markSpillingRequired
         }
     }.
 
     public override method allocateRegister: (register: TACPhysicalLocation) forInstructionResult: (instruction: TACInstruction) ::=> Void := {
         instruction resultRegister: register.
+        instruction result markSpillingRequired.
         register markActiveWithRegisterAllocator: self.
     }.
 
     public override method allocateRegister: (register: TACPhysicalLocation) forInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void := {
         instruction operandRegisters at: operandIndex put: register.
+        (instruction operands at: operandIndex) markSpillingRequired.
         register markActiveWithRegisterAllocator: self.
     }.
 
     public override method allocateRegisterForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        let operand := instruction operands at: operandIndex.
         let register :=
             (operandIndex == 0sz) &&
             (instruction resultRegister isNotNil) &&
             (instruction result physicalLocationClass == instruction operands first physicalLocationClass)
             ifTrue: (instruction resultRegister)
-            ifFalse: (self allocateRegisterForOperand: (instruction operands at: operandIndex)).
-        instruction operandRegisters at: operandIndex put: register
+            ifFalse: (self allocateRegisterForOperand: operand).
+        instruction operandRegisters at: operandIndex put: register.
+        operand markSpillingRequired.
     }.
     
     public method allocateRegisterForOperand: (operand: TACValue) ::=> TACPhysicalLocation := {

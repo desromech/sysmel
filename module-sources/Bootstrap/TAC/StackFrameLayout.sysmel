@@ -15,13 +15,24 @@ public final class TACStackFrameLayout superclass: Object; definition: {
 
         stackFrameAlignment := compilationTarget stackFrameAlignment asUInt64.
 
+        ## We might need to assign a local offset in case the argument is passed through a register and we need to spill it.
+        function arguments do: {:(TACArgumentVariable)eachArgument :: Void |
+            eachArgument offset = 0u64 ifTrue: (self assignNextLocationToLocalVariable: eachArgument).
+        }.
+
         function temporaries do: {:(TACTemporaryVariable)eachLocal :: Void |
-            let localAlignment := eachLocal alignment.
-            stackFrameSize := stackFrameSize + eachLocal size alignedTo: localAlignment.
-            stackFrameAlignment := stackFrameAlignment max: localAlignment.
-            eachLocal offset: stackFrameSize asInt64 negated.
+            self assignNextLocationToLocalVariable: eachLocal
         }.
 
         stackFrameSize := stackFrameSize alignedTo: stackFrameAlignment
+    }.
+
+    public method assignNextLocationToLocalVariable: (localVariable: TACLocalVariable) ::=> Void := {
+        localVariable needsStackAllocation ifFalse: (return: void).
+
+        let localAlignment := localVariable alignment.
+        stackFrameSize := stackFrameSize + localVariable size alignedTo: localAlignment.
+        stackFrameAlignment := stackFrameAlignment max: localAlignment.
+        localVariable offset: stackFrameSize asInt64 negated.
     }.
 }.

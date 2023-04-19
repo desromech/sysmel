@@ -100,6 +100,7 @@ TACValue definition: {
 
     public virtual method isSignedExtended => Boolean := false.
     public virtual method isFloatingPoint => Boolean := false.
+    public virtual method isVector => Boolean := false.
 
     public virtual method isProgramEntity => Boolean := false.
     public virtual method isFunction => Boolean := false.
@@ -121,6 +122,7 @@ TACValue definition: {
 
     public virtual method markUsageAt: (usageIndex: UInt32) ::=> Void := {}.
     public virtual method markWriteAt: (writeIndex: UInt32) ::=> Void := {}.
+    public virtual method markSpillingRequired ::=> Void := {}.
 }.
 
 public final class TACBasicBlock.
@@ -144,12 +146,20 @@ public abstract class TACVariable superclass: TACProgramEntity; definition: {
 public final class TACLocalVariable superclass: TACVariable; definition: {
     public field offset => Int64.
     public field index => UInt32.
+    public field registerAssignment => TACPhysicalLocation.
 
     public field needsSpilling => Boolean.
     public field firstUsageIndex => Int32.
     public field lastUsageIndex => Int32.
     public field firstWriteIndex => Int32.
     public field lastWriteIndex => Int32.
+
+    public override method markSpillingRequired ::=> Void := {
+        needsSpilling := true.
+    }.
+
+    public method needsStackAllocation => Boolean
+        := needsSpilling || registerAssignment isNil.
 
     public override method isLocalVariable => Boolean := true.
 

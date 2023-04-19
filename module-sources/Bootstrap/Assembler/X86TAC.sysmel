@@ -289,11 +289,62 @@ public final class TACX86CompilationTarget superclass: TACAsmCompilationTarget; 
     }.
 }.
 
+public global X86_64::SysV::IntegerArgumentRegisters := (
+    TAC::X86_64::RDI, TAC::X86_64::RSI, TAC::X86_64::RDX, TAC::X86_64::RCX, TAC::X86_64::R8, TAC::X86_64::R9
+).
+
+public global X86_64::SysV::VectorArgumentRegisters := (
+    TAC::X86::XMM0, TAC::X86::XMM1, TAC::X86::XMM2, TAC::X86::XMM3, TAC::X86::XMM4, TAC::X86::XMM5, TAC::X86::XMM6, TAC::X86::XMM7
+).
+
+public final class TACSysVX86_64RegisterAssignmentState superclass: Object; definition: {
+    public field usedIntegerRegisterCount => Size.
+    public field usedVectorRegisterCount => Size.
+
+    public method allocateIntegerRegister => TACPhysicalLocation := {
+        usedIntegerRegisterCount < X86_64::SysV::IntegerArgumentRegisters size ifTrue: {
+            let register := X86_64::SysV::IntegerArgumentRegisters at: usedIntegerRegisterCount.
+            usedIntegerRegisterCount := usedIntegerRegisterCount + 1sz.
+            register
+        } ifFalse: {
+            nil
+        }
+    }.
+
+    public method allocateVectorRegister => TACPhysicalLocation := {
+        usedVectorRegisterCount < X86_64::SysV::IntegerArgumentRegisters size ifTrue: {
+            let register := X86_64::SysV::VectorArgumentRegisters at: usedVectorRegisterCount.
+            usedVectorRegisterCount := usedVectorRegisterCount + 1sz.
+            register
+        } ifFalse: {
+            nil
+        }
+    }.
+
+    public method allocateIntegerOfSize: (size: Size) alignment: (alignment: Size) ::=> TACPhysicalLocation
+        := size <= 8sz ifTrue: (self allocateIntegerRegister) ifFalse: nil.
+
+    public method allocateVectorOfSize: (size: Size) alignment: (alignment: Size) ::=> TACPhysicalLocation
+        := size <= 16sz ifTrue: (self allocateVectorRegister) ifFalse: nil.
+
+    public method assignRegisterToValue: (value: TACValue) ::=> TACPhysicalLocation := {
+        (value isFloatingPoint || value isVector)
+            ifTrue: (self allocateVectorOfSize: value size alignment: value alignment)
+            ifFalse: (self allocateIntegerOfSize: value size alignment: value alignment).
+    }.
+}.
+
 public final class TACSysVX86_64CallingConvention superclass: TACCallingConvention; definition: {
     public method registerConstraintsOfCall: (instruction: TACInstruction) with: (allocator: TACRegisterAllocator) ::=> Void := {
         allocator allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz.
+        
+        let registerAssignmentState := TACSysVX86_64RegisterAssignmentState new.
         1sz until: instruction operands size do: {:(Size)operandIndex :: Void |
-            allocator allocateMemoryForInstruction: instruction operandAt: operandIndex
+            let operand := instruction operands at: operandIndex.
+            let register := registerAssignmentState assignRegisterToValue: operand.
+            register
+                ifNotNil: (allocator allocateRegister: register forInstruction: instruction operandAt: operandIndex)
+                ifNil: (allocator allocateMemoryForInstruction: instruction operandAt: operandIndex)
         }.
     }.
 
