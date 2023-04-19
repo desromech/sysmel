@@ -2478,6 +2478,14 @@ ValueType
     }.
 
 Environment
-    withSelector: #setSymbol:value: addMethod: {:(Environment)self :(Symbol)selector :value :: value __type__ | self setSymbol: selector bindingWithValue: value. value };
-    withSelector: #setPublicSymbol:value: addMethod: {:(Environment)self :(Symbol)selector :value :: value __type__ | self setSymbol: selector bindingWithValue: value. value };
-    withSelector: #withSelector:addMethod: addMethod: {:(Environment)self :(Symbol)selector :method :: Void | self setSymbol: selector bindingWithValue: method }.
+    withSelector: #setSymbol:value: addMethod: {:(Environment)self :(Symbol)symbol :value :: value __type__ |
+        self setSymbol: symbol bindingWithValue: value.
+        value recordBindingWithOwner: self andName: symbol.
+        value
+    };
+    withSelector: #setPublicSymbol:value: addMethod: {:(Environment)self :(Symbol)symbol :value :: value __type__ |
+        self setSymbol: symbol value: value
+    };
+    withSelector: #withSelector:addMethod: addMethod: {:(Environment)self :(Symbol)symbol :method :: Void |
+        self setSymbol: symbol value: method
+    }.

@@ -1,0 +1,45 @@
+public abstract class SSATACCodeGenerator superclass: Object; definition: {
+
+}.
+
+public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; definition: {
+    public field compilationTarget => TACCompilationTarget.
+    public field targetModule => TACModule.
+    public field globalValueDictionary => Dictionary.
+
+    public method initializeWithTarget: (theCompilationTarget: TACCompilationTarget) ::=> Void := {
+        compilationTarget := theCompilationTarget.
+        targetModule := TACModule new
+            compilationTarget: compilationTarget;
+            yourself.
+        globalValueDictionary := Dictionary new.
+    }.
+
+    public method compileSSAFunction: (function: SSAFunction) ::=> TACValue
+        := globalValueDictionary at: function ifAbsent: {|
+                SSAFunctionTACCodeGenerator new
+                    moduleCodeGenerator: self;
+                    compileSSAFunction: function
+            }.
+
+    public method finish => TACModule
+        := targetModule.
+}.
+
+public final class SSAFunctionTACCodeGenerator superclass: SSATACCodeGenerator; definition: {
+    public field moduleCodeGenerator => SSAModuleTACCodeGenerator.
+
+    public method compileSSAFunction: (ssaFunction: SSAFunction) ::=> TACValue := {
+        moduleCodeGenerator targetModule build: ssaFunction name function: {:(TACFunctionBuilder)functionBuilder :: Void |
+            moduleCodeGenerator globalValueDictionary at: ssaFunction put: functionBuilder function.
+        }.
+    }.
+}.
+
+SSAFunction extend: {
+    public method asTACModuleFor: (target: TACCompilationTarget) ::=> TACModule
+        := SSAModuleTACCodeGenerator new
+            initializeWithTarget: target;
+            compileSSAFunction: self;
+            finish
+}.

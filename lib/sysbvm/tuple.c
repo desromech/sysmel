@@ -326,6 +326,14 @@ static sysbvm_tuple_t sysbvm_tuple_primitive_nextInstanceWithSameType(sysbvm_con
     return (sysbvm_tuple_t)sysbvm_heapIterator_get(&iterator);
 }
 
+static sysbvm_tuple_t sysbvm_tuple_primitive_recordBindingWithOwnerAndName(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
+
+    return SYSBVM_VOID_TUPLE;
+}
+
 void sysbvm_tuple_registerPrimitives(void)
 {
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_getType, "RawTuple::type");
@@ -340,6 +348,7 @@ void sysbvm_tuple_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_markWeak, "RawTuple::markWeak");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_firstInstanceWithType, "RawTuple::firstInstanceWithType");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_nextInstanceWithSameType, "RawTuple::nextInstanceWithSameType");
+    sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_recordBindingWithOwnerAndName, "RawTuple::recordBindingWithOwnerAndName");
 }
 
 void sysbvm_tuple_setupPrimitives(sysbvm_context_t *context)
@@ -356,4 +365,6 @@ void sysbvm_tuple_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::markWeak", context->roots.anyValueType, "__markWeak__", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_markWeak);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "RawTuple::firstInstanceWithType", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_firstInstanceWithType);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "RawTuple::nextInstanceWithSameType", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_nextInstanceWithSameType);
+
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::recordBindingWithOwnerAndName", context->roots.anyValueType, "recordBindingWithOwner:andName:", 3, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_tuple_primitive_recordBindingWithOwnerAndName);
 }

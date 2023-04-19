@@ -190,6 +190,19 @@ SYSBVM_API sysbvm_functionEntryPoint_t sysbvm_function_getNumberedPrimitiveEntry
     return NULL;
 }
 
+SYSBVM_API void sysbvm_function_recordBindingWithOwnerAndName(sysbvm_context_t *context, sysbvm_tuple_t function, sysbvm_tuple_t owner, sysbvm_tuple_t name)
+{
+    (void)context;
+    if(!sysbvm_tuple_isFunction(context, function)) return;
+
+    sysbvm_function_t *functionObject = (sysbvm_function_t*)function;
+    if(!functionObject->owner && !functionObject->name)
+    {
+        functionObject->owner = owner;
+        functionObject->name = name;
+    }
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_ordinaryFunction_directApply(sysbvm_context_t *context, sysbvm_tuple_t function, size_t argumentCount, sysbvm_tuple_t *arguments, sysbvm_bitflags_t applicationFlags)
 {
     sysbvm_function_t *functionObject = (sysbvm_function_t*)function;
@@ -484,7 +497,7 @@ static sysbvm_tuple_t sysbvm_function_primitive_adoptDefinitionOf(sysbvm_context
 static sysbvm_tuple_t sysbvm_function_primitive_recompileAndOptimize(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)closure;
-    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(2, argumentCount);
+    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
 
     sysbvm_tuple_t *function = &arguments[0];
     if(!sysbvm_tuple_isFunction(context, *function)) sysbvm_error("Expected a function.");
@@ -494,6 +507,15 @@ static sysbvm_tuple_t sysbvm_function_primitive_recompileAndOptimize(sysbvm_cont
         return sysbvm_interpreter_recompileAndOptimizeFunction(context, functionObject);
     
     return *function;
+}
+
+static sysbvm_tuple_t sysbvm_function_primitive_recordBindingWithOwnerAndName(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
+
+    sysbvm_function_recordBindingWithOwnerAndName(context, arguments[0], arguments[1], arguments[2]);
+    return SYSBVM_VOID_TUPLE;
 }
 
 bool sysbvm_function_shouldOptimizeLookup(sysbvm_context_t *context, sysbvm_tuple_t function, sysbvm_tuple_t receiverType, bool hasLiteralReceiver)
@@ -511,6 +533,7 @@ void sysbvm_function_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_function_primitive_adoptDefinitionOf, "Function::adoptDefinitionOf");
     sysbvm_primitiveTable_registerFunction(sysbvm_function_primitive_isCorePrimitive, "Function::isCorePrimitive");
     sysbvm_primitiveTable_registerFunction(sysbvm_function_primitive_recompileAndOptimize, "Function::recompileAndOptimize");
+    sysbvm_primitiveTable_registerFunction(sysbvm_function_primitive_recordBindingWithOwnerAndName, "Function::recordBindingWithOwnerAndName");
 }
 
 void sysbvm_function_setupPrimitives(sysbvm_context_t *context)
@@ -519,6 +542,7 @@ void sysbvm_function_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::adoptDefinitionOf:", context->roots.functionType, "adoptDefinitionOf:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_function_primitive_adoptDefinitionOf);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::isCorePrimitive", context->roots.functionType, "isCorePrimitive", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_function_primitive_isCorePrimitive);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::recompileAndOptimize", context->roots.functionType, "recompileAndOptimize", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_function_primitive_recompileAndOptimize);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::recordBindingWithOwnerAndName", context->roots.functionType, "recordBindingWithOwner:andName:", 3, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_function_primitive_recordBindingWithOwnerAndName);
 
     // Export the function. This is used by the bootstraping algorithm for creating the accessors.
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Function::Layout::flags", sysbvm_tuple_integer_encodeSmall(SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_function_t, flags)));

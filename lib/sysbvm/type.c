@@ -616,16 +616,7 @@ SYSBVM_API void sysbvm_type_setMethodWithSelector(sysbvm_context_t *context, sys
     if(!typeObject->methodDictionary)
         typeObject->methodDictionary = sysbvm_methodDictionary_create(context);
     sysbvm_methodDictionary_atPut(context, typeObject->methodDictionary, selector, method);
-
-    if(sysbvm_tuple_isFunction(context, method))
-    {
-        sysbvm_function_t *functionObject = (sysbvm_function_t*)method;
-        if(!functionObject->owner && !functionObject->name)
-        {
-            functionObject->owner = type;
-            functionObject->name = selector;
-        }
-    }
+    sysbvm_function_recordBindingWithOwnerAndName(context, method, type, selector);
 }
 
 SYSBVM_API void sysbvm_type_buildSlotDictionary(sysbvm_context_t *context, sysbvm_tuple_t type)

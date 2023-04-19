@@ -4,9 +4,6 @@ public final class TACStackFrameLayout superclass: Object; definition: {
     public field stackFrameSize => UInt64.
     public field stackFrameAlignment => UInt64.
 
-    public method initialize => Void := {
-    }.
-
     public method isRequired => Boolean
         := stackFrameSize > 0u64.
 

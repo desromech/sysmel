@@ -361,4 +361,9 @@ SYSBVM_API bool sysbvm_function_shouldOptimizeLookup(sysbvm_context_t *context, 
  */
 SYSBVM_API sysbvm_functionEntryPoint_t sysbvm_function_getNumberedPrimitiveEntryPoint(sysbvm_context_t *context, uint32_t primitiveNumber);
 
+/**
+ * Records a specific function binding with its owner and its name.
+ */
+SYSBVM_API void sysbvm_function_recordBindingWithOwnerAndName(sysbvm_context_t *context, sysbvm_tuple_t function, sysbvm_tuple_t owner, sysbvm_tuple_t name);
+
 #endif //SYSBVM_FUNCTION_H
