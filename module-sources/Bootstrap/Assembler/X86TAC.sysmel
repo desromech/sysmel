@@ -348,6 +348,27 @@ public final class TACSysVX86_64CallingConvention superclass: TACCallingConventi
         }.
     }.
 
+    public override method computeArgumentPassingLayoutOf: (function: TACFunction) ::=> Void := {
+        let registerAssignmentState := TACSysVX86_64RegisterAssignmentState new.
+        let stackSize mutable := 0u64.
+        let argumentBaseOffset := 16u64.
+        let stackArgumentAlignment := 8u64.
+
+        function arguments do: {:(TACArgumentVariable)argument :: Void |
+            let register := registerAssignmentState assignRegisterToValue: argument.
+            register ifNotNil: {
+                argument passingRegister: register
+            } ifNil: {
+                let argumentAlignment := argument alignment max: stackArgumentAlignment.
+                let argumentSize := argument size alignedTo: argumentAlignment.
+                let argumentOffset := stackSize alignedTo: argumentAlignment.
+
+                argument offset: (stackSize + argumentBaseOffset) asInt64.
+                stackSize := argumentOffset + argumentSize
+            }
+        }
+    }.
+
     public override method registerConstraintsOfCallInt32: (instruction: TACInstruction) with: (allocator: TACRegisterAllocator) ::=> Void := {
         self registerConstraintsOfCall: instruction with: allocator.
         allocator allocateRegister: TAC::X86_64::RAX forInstructionResult: instruction.
@@ -484,6 +505,8 @@ public final class TACX86_64CompilationTarget superclass: TACAsmCompilationTarge
             codegen textSection
                 x86::sub: X86::RSP with: codegen stackFrameLayout temporaryFrameSize asInt32 asAsmImmediate
         }.
+        
+        codegen emitSpillRegisterArgumentsInStackFrame.
     }.
 
     public override method emitFunctionEpilogueWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {

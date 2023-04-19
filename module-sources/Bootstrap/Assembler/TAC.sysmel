@@ -147,6 +147,11 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
             := self subclassResponsibility.
     }.
 
+    public method computeArgumentPassingLayout => Void := {
+        printLine(function callingConvention).
+        function callingConvention computeArgumentPassingLayoutOf: function
+    }.
+
     public method performRegisterAllocation => Void := {
         registerAllocator := TACTrivialRegisterAllocator new.
         registerAllocator allocateRegistersIn: function withTarget: moduleGenerator target.
@@ -159,6 +164,7 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
 
     public method prepareToGenerateFunction => Void := {
         self
+            computeArgumentPassingLayout;
             performRegisterAllocation;
             buildStackFrameLayout.
 
@@ -184,6 +190,15 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
         moduleGenerator target emitStackFrameConstructionWith: self
     }.
 
+    public method emitSpillRegisterArgumentsInStackFrame => Void := {
+        function arguments do: {:(TACArgumentVariable)eachArgument :: Void |
+            let passingRegister := eachArgument passingRegister.
+            (passingRegister isNotNil && eachArgument needsStackAllocation) ifTrue: {
+                self emitMoveRegister: passingRegister intoValue: eachArgument
+            }.
+        }.
+    }.
+
     public method generateBasicBlock: (basicBlock: TACBasicBlock) ::=> Void := {
         let blockSymbol := basicBlockSymbolDictionary at: basicBlock.
         self textSection label: blockSymbol.
@@ -201,7 +216,7 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
 
         ## Do we need to support multiple result values?
         instruction resultRegister isNotNil && instruction result isNotNil ifTrue: {
-            self emitRegister: instruction resultRegister intoValue: instruction result
+            self emitMoveRegister: instruction resultRegister intoValue: instruction result
         }.
     }.
 
@@ -217,7 +232,7 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
         }
     }.
 
-    public method emitRegister: (location: TACPhysicalLocation) intoValue: (value: TACValue) ::=> Void := {
+    public method emitMoveRegister: (location: TACPhysicalLocation) intoValue: (value: TACValue) ::=> Void := {
         location isRegister ifTrue: {
             moduleGenerator target emitMoveRegister: location intoValue: value with: self.
         }

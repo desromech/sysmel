@@ -182,6 +182,8 @@ public final class TACLocalVariable superclass: TACVariable; definition: {
 }.
 
 public final class TACArgumentVariable superclass: TACLocalVariable; definition: {
+    public field passingRegister => TACPhysicalLocation.
+
     public override method isArgumentVariable => Boolean := true.
 
     public method printOn: (stream: Stream) ::=> Void := {
@@ -962,6 +964,7 @@ public final class TACModule superclass: TACProgramEntity; definition: {
 
     public method build: (name: Symbol) function: (aBlock: (TACFunctionBuilder) => Void) ::=> TACFunction := {
         let function := TACFunction new
+            callingConvention: compilationTarget defaultCallingConvention;
             name: name;
             yourself.
         self addProgramEntity: function.
@@ -985,6 +988,8 @@ public final class TACModule superclass: TACProgramEntity; definition: {
 }.
 
 TACCallingConvention definition: {
+    public abstract method computeArgumentPassingLayoutOf: (function: TACFunction) ::=> Void
+        := self subclassResponsibility.
 }.
 
 TACCompilationTarget definition: {
