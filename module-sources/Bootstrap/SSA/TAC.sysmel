@@ -51,6 +51,7 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
     public field functionBuilder => TACFunctionBuilder.
     public field blockBuilder => TACBlockBuilder.
     protected field valueDictionary => Dictionary.
+    public field functionArgument => TACValue.
     
     public method initialize => Void := {
         valueDictionary := Dictionary new.
@@ -70,8 +71,36 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
     }.
 
     public method compileDefinition => Void := {
-        self declareValues.
-        self compileBasicBlocks.
+        self
+            declareArguments;
+            declareCaptures;
+            declareValues;
+            compileBasicBlocks.
+    }.
+
+    public method declareArguments => Void := {
+        let tacArguments := ArrayList new.
+        functionArgument := tacFunction newArgument: #closure withType: Function.
+        tacArguments add: functionArgument.
+        
+        ssaFunctionDefinition arguments do: {:(SSAFunctionArgument)argument :: Void |
+            let tacArgument := tacFunction newArgument: argument name withType: argument type.
+            valueDictionary at: argument put: tacArgument.
+            tacArguments add: tacArgument.
+        }.
+
+        tacFunction arguments: tacArguments asArray.
+    }.
+
+    public method declareCaptures => Void := {
+        let tacCaptures := ArrayList new.
+        ssaFunctionDefinition captures do: {:(SSAFunctionCapture)capture :: Void |
+            let tacCapture := tacFunction newCapture: capture name withType: capture type.
+            valueDictionary at: capture put: tacCapture.
+            tacCaptures add: tacCapture.
+        }.
+
+        tacFunction captures: tacCaptures asArray.
     }.
 
     public method declareValues => Void := {

@@ -148,7 +148,6 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
     }.
 
     public method computeArgumentPassingLayout => Void := {
-        printLine(function callingConvention).
         function callingConvention computeArgumentPassingLayoutOf: function
     }.
 

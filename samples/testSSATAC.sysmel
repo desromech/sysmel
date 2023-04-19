@@ -1,9 +1,9 @@
 let compilationTarget := AsmCompilationTarget x86_64 useElf asTacCompilationTarget.
 
-public global testFunction := {:: Int32 | 42i32 }.
-printLine(testFunction name).
+public global myAddFunction := {:(Int32)x :(Int32)y :: Int32 | x }.
+printLine(myAddFunction name).
 
-let ssaFunction := testFunction asSSAFunction.
+let ssaFunction := myAddFunction asSSAFunction.
 printLine(ssaFunction fullPrintString).
 
 let tacModule := ssaFunction asTACModuleFor: compilationTarget.
