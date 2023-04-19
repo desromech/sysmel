@@ -838,9 +838,9 @@ static void sysbvm_jit_makeDictionary(sysbvm_bytecodeJit_t *jit, int16_t resultO
 
     for(size_t i = 0; i < elementCount; ++i)
     {
-        sysbvm_jit_x86_jitLoadContextInRegister(jit, SYSBVM_X86_WIN64_ARG0);
-        sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_WIN64_ARG1, resultOperand);
-        sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_WIN64_ARG2, elementOperands[i]);
+        sysbvm_jit_x86_jitLoadContextInRegister(jit, SYSBVM_X86_64_ARG0);
+        sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_64_ARG1, resultOperand);
+        sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_64_ARG2, elementOperands[i]);
         sysbvm_jit_x86_call(jit, &sysbvm_dictionary_add);
     }
     sysbvm_jit_x86_addImmediate32(jit, SYSBVM_X86_RSP, SYSBVM_X86_64_CALL_SHADOW_SPACE);
