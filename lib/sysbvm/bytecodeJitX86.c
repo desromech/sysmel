@@ -258,7 +258,7 @@ static void sysbvm_jit_x86_movImmediate32(sysbvm_bytecodeJit_t *jit, sysbvm_x86_
 static void sysbvm_jit_x86_leaRegisterWithOffset(sysbvm_bytecodeJit_t *jit, sysbvm_x86_register_t destination, sysbvm_x86_register_t source, int32_t offset)
 {
     uint8_t instruction[] = {
-        sysbvm_jit_x86_rex(true, source > SYSBVM_X86_REG_HALF_MASK, false, destination > SYSBVM_X86_REG_HALF_MASK),
+        sysbvm_jit_x86_rex(true, destination > SYSBVM_X86_REG_HALF_MASK, false, source > SYSBVM_X86_REG_HALF_MASK),
         0x8D,
         sysbvm_jit_x86_modRM(source, destination, 2),
         offset & 0xFF, (offset >> 8) & 0xFF, (offset >> 16) & 0xFF, (offset >> 24) & 0xFF,
@@ -321,7 +321,7 @@ static void sysbvm_jit_x86_mov64IntoMemoryWithOffset(sysbvm_bytecodeJit_t *jit, 
 static void sysbvm_jit_x86_logicalShiftRightImmediate(sysbvm_bytecodeJit_t *jit, sysbvm_x86_register_t destination, uint8_t shiftAmount)
 {
     uint8_t instruction[] = {
-        sysbvm_jit_x86_rex(true, destination > SYSBVM_X86_REG_HALF_MASK, false, false),
+        sysbvm_jit_x86_rex(true, false, false, destination > SYSBVM_X86_REG_HALF_MASK),
         0xC1,
         sysbvm_jit_x86_modRMRegister(destination, 5),
         shiftAmount
@@ -372,7 +372,7 @@ static void sysbvm_jit_x86_movImmediateI32IntoMemory64WithOffset(sysbvm_bytecode
 static void sysbvm_jit_x86_xorRegister(sysbvm_bytecodeJit_t *jit, sysbvm_x86_register_t destination, sysbvm_x86_register_t source)
 {
     uint8_t instruction[] = {
-        sysbvm_jit_x86_rex(true, destination > SYSBVM_X86_REG_HALF_MASK, false, destination > SYSBVM_X86_REG_HALF_MASK),
+        sysbvm_jit_x86_rex(true, destination > SYSBVM_X86_REG_HALF_MASK, false, source > SYSBVM_X86_REG_HALF_MASK),
         0x33,
         sysbvm_jit_x86_modRMRegister(source, destination),
     };
@@ -797,8 +797,8 @@ static void sysbvm_jit_makeArray(sysbvm_bytecodeJit_t *jit, int16_t resultOperan
 
     for(size_t i = 0; i < elementCount; ++i)
     {
-        sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_RSI, elementOperands[i]);
-        sysbvm_jit_x86_mov64IntoMemoryWithOffset(jit, SYSBVM_X86_RAX, (int32_t)(sizeof(sysbvm_tuple_header_t) + i * sizeof(void*)), SYSBVM_X86_RSI);
+        sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_64_ARG2, elementOperands[i]);
+        sysbvm_jit_x86_mov64IntoMemoryWithOffset(jit, SYSBVM_X86_RAX, (int32_t)(sizeof(sysbvm_tuple_header_t) + i * sizeof(void*)), SYSBVM_X86_64_ARG2);
     }
 
     sysbvm_jit_moveRegisterToOperand(jit, resultOperand, SYSBVM_X86_RAX);
@@ -809,7 +809,7 @@ static void sysbvm_jit_makeByteArray(sysbvm_bytecodeJit_t *jit, int16_t resultOp
     if(resultOperand < 0)
         return;
 
-    sysbvm_jit_x86_jitLoadContextInRegister(jit, SYSBVM_X86_WIN64_ARG0);
+    sysbvm_jit_x86_jitLoadContextInRegister(jit, SYSBVM_X86_64_ARG0);
     sysbvm_jit_x86_movImmediate32(jit, SYSBVM_X86_64_ARG1, (int32_t)elementCount);
     sysbvm_jit_x86_subImmediate32(jit, SYSBVM_X86_RSP, SYSBVM_X86_64_CALL_SHADOW_SPACE);
     sysbvm_jit_x86_call(jit, &sysbvm_byteArray_create);
@@ -817,9 +817,9 @@ static void sysbvm_jit_makeByteArray(sysbvm_bytecodeJit_t *jit, int16_t resultOp
 
     for(size_t i = 0; i < elementCount; ++i)
     {
-        sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_RSI, elementOperands[i]);
-        sysbvm_jit_x86_logicalShiftRightImmediate(jit, SYSBVM_X86_RSI, SYSBVM_TUPLE_TAG_BIT_COUNT);
-        sysbvm_jit_x86_mov8IntoMemoryWithOffset(jit, SYSBVM_X86_RAX, (int32_t) (sizeof(sysbvm_tuple_header_t) + i), SYSBVM_X86_RSI);
+        sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_64_ARG2, elementOperands[i]);
+        sysbvm_jit_x86_logicalShiftRightImmediate(jit, SYSBVM_X86_64_ARG2, SYSBVM_TUPLE_TAG_BIT_COUNT);
+        sysbvm_jit_x86_mov8IntoMemoryWithOffset(jit, SYSBVM_X86_RAX, (int32_t) (sizeof(sysbvm_tuple_header_t) + i), SYSBVM_X86_64_ARG2);
     }
 
     sysbvm_jit_moveRegisterToOperand(jit, resultOperand, SYSBVM_X86_RAX);
@@ -861,7 +861,7 @@ static void sysbvm_jit_makeClosureWithCaptures(sysbvm_bytecodeJit_t *jit, int16_
     for(size_t i = 0; i < captureCount; ++i)
     {
         sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_64_ARG1, elementOperands[i]);
-        sysbvm_jit_x86_mov64IntoMemoryWithOffset(jit, SYSBVM_X86_64_ARG2, (int32_t) (sizeof(sysbvm_tuple_header_t) + i * sizeof(void*)), SYSBVM_X86_WIN64_ARG1);
+        sysbvm_jit_x86_mov64IntoMemoryWithOffset(jit, SYSBVM_X86_64_ARG2, (int32_t) (sizeof(sysbvm_tuple_header_t) + i * sizeof(void*)), SYSBVM_X86_64_ARG1);
     }
 
     // Now construct the actual closure
