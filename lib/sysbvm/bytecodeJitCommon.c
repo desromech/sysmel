@@ -174,9 +174,9 @@ static bool sysbvm_bytecodeJit_getLiteralValueForOperand(sysbvm_bytecodeJit_t *j
     return false;   
 }
 
-#if defined(__x86_64__)
+#if defined(SYSBVM_ARCH_X86_64)
 #   include "bytecodeJitX86.c"
-#elif defined(__aarch64__)
+#elif defined(SYSBVM_ARCH_AARCH64)
 // CHECK Properly for ARMv8
 #   include "bytecodeJitArmArch64.c"
 #endif
@@ -214,7 +214,7 @@ static void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functionByt
     size_t instructionsSize = sysbvm_tuple_getSizeInBytes(functionBytecode->instructions);
     uint8_t *instructions = SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(functionBytecode->instructions)->bytes;
 
-    int16_t decodedOperands[SYSBVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE] = {};
+    int16_t decodedOperands[SYSBVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE] = {0};
     jit.argumentCount = sysbvm_tuple_size_decode(functionBytecode->argumentCount);
     jit.captureVectorSize = sysbvm_tuple_size_decode(functionBytecode->captureVectorSize);
     jit.literalCount = sysbvm_tuple_getSizeInSlots(functionBytecode->literalVector);
@@ -229,7 +229,7 @@ static void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functionByt
     while(pc < instructionsSize)
     {
         jit.pcDestinations[pc] = jit.instructionsSize;
-        sysbvm_jit_storePC(&jit, pc);
+        sysbvm_jit_storePC(&jit, (int32_t)pc);
 
         uint8_t opcode = instructions[pc++];
 

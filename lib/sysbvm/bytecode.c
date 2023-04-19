@@ -19,7 +19,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(__x86_64__) && !defined(_WIN32)
+#if defined(__x86_64__) || defined(_M_X64)
+#   define SYSBVM_ARCH_X86_64 1
+#endif
+
+#if defined(__aarch64__)
+#   define SYSBVM_ARCH_AARCH64 1
+#endif
+
+#if defined(SYSBVM_ARCH_X86_64) && !defined(_WIN32)
 #   define SYSBVM_JIT_SUPPORTED
 #endif
 
