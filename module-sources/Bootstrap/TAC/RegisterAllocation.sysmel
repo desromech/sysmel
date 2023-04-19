@@ -35,6 +35,14 @@ public abstract class TACRegisterAllocator superclass: Object; definition: {
         }
     }.
 
+    public virtual method allocateMemoryForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        instruction operandRegisters at: operandIndex put: TACPhysicalLocationMemory uniqueInstance
+    }.
+
+    public virtual method allocateMemoryForInstructionResult: (instruction: TACInstruction) ::=> Void := {
+        instruction resultRegister: TACPhysicalLocationMemory uniqueInstance
+    }.
+
     public abstract method allocateIntegerRegister ::=> TACPhysicalLocation
         := self subclassResponsibility.
 

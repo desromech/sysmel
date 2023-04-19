@@ -1,0 +1,8 @@
+Size extend: {
+    public method until: (stop: SelfType) do: (aBlock: SelfType => Void) ::=> Void := {
+        let i mutable := self.
+        while: (i < stop) do: (
+            aBlock(i)
+        ) continueWith: (i := i + SelfType one)
+    }.
+}.

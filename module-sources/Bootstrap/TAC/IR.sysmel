@@ -13,6 +13,12 @@ public abstract class TACPhysicalLocation superclass: Object; definition: {
 
 public abstract class TACPhysicalLocationMemory superclass: TACPhysicalLocation; definition: {
     public virtual method isMemory => Boolean := true.
+
+    __Meta__ definition: {
+        let singleton := TACPhysicalLocationMemory new.
+        public method uniqueInstance => TACPhysicalLocationMemory
+            := singleton.
+    }
 }.
 
 public abstract class TACPhysicalLocationRegister superclass: TACPhysicalLocation; definition: {
@@ -85,7 +91,13 @@ TACValue definition: {
 
     public virtual method physicalLocationClass => TACPhysicalLocation class
         := self subclassResponsibility.
-    
+
+    public virtual method size => UInt64
+        := self subclassResponsibility.
+
+    public virtual method alignment => UInt64
+        := self subclassResponsibility.
+
     public virtual method isSignedExtended => Boolean := false.
     public virtual method isFloatingPoint => Boolean := false.
 
@@ -215,6 +227,8 @@ public final class TACConstantInt8 superclass: TACConstantInteger; definition: {
     public override method isImmediate32 => Boolean := true.
 
     public override method type => Type := Int8.
+    public override method size => UInt64 := 1u64.
+    public override method alignment => UInt64 := 1u64.
 
     public method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "i8"
@@ -233,7 +247,9 @@ public final class TACConstantUInt8 superclass: TACConstantInteger; definition: 
     public override method isImmediate32 => Boolean := true.
 
     public override method type => Type := UInt8.
-
+    public override method size => UInt64 := 1u64.
+    public override method alignment => UInt64 := 1u64.
+    
     public method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "u8"
     }.
@@ -252,6 +268,8 @@ public final class TACConstantInt16 superclass: TACConstantInteger; definition: 
     public override method isImmediate32 => Boolean := true.
 
     public override method type => Type := Int16.
+    public override method size => UInt64 := 2u64.
+    public override method alignment => UInt64 := 2u64.
 
     public method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "i16"
@@ -270,6 +288,8 @@ public final class TACConstantUInt16 superclass: TACConstantInteger; definition:
     public override method isImmediate32 => Boolean := true.
 
     public override method type => Type := UInt16.
+    public override method size => UInt64 := 2u64.
+    public override method alignment => UInt64 := 2u64.
 
     public method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "u16"
@@ -289,6 +309,8 @@ public final class TACConstantInt32 superclass: TACConstantInteger; definition: 
     public override method isImmediate32 => Boolean := true.
 
     public override method type => Type := Int32.
+    public override method size => UInt64 := 4u64.
+    public override method alignment => UInt64 := 4u64.
 
     public method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "i32"
@@ -307,6 +329,8 @@ public final class TACConstantUInt32 superclass: TACConstantInteger; definition:
     public override method isImmediate32 => Boolean := true.
 
     public override method type => Type := UInt32.
+    public override method size => UInt64 := 4u64.
+    public override method alignment => UInt64 := 4u64.
 
     public method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "u32"
@@ -326,7 +350,9 @@ public final class TACConstantInt64 superclass: TACConstantInteger; definition: 
     public override method isImmediate32 => Boolean := true.
 
     public override method type => Type := Int64.
-
+    public override method alignment => UInt64 := 8u64.
+    public override method size => UInt64 := 8u64.
+    
     public method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "i64"
     }.
@@ -344,6 +370,8 @@ public final class TACConstantUInt64 superclass: TACConstantInteger; definition:
     public override method isImmediate64 => Boolean := true.
 
     public override method type => Type := UInt64.
+    public override method alignment => UInt64 := 8u64.
+    public override method size => UInt64 := 8u64.
 
     public method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "u64"
@@ -367,6 +395,8 @@ public final class TACConstantFloat32 superclass: TACConstantFloatingPoint; defi
     public override method isImmediate32 => Boolean := true.
 
     public override method type => Type := Float32.
+    public override method alignment => UInt64 := 4u64.
+    public override method size => UInt64 := 4u64.
 
     public method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "f32"
@@ -385,6 +415,8 @@ public final class TACConstantFloat64 superclass: TACConstantFloatingPoint; defi
     public override method isImmediate64 => Boolean := true.
 
     public override method type => Type := Float64.
+    public override method alignment => UInt64 := 8u64.
+    public override method size => UInt64 := 8u64.
 
     public method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "f64"
@@ -600,13 +632,41 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
         temporary
     }.
 
-    public method newTemporaryWithType: (type: Type) ::=> TACTemporaryVariable
+    public method newArgument: (name: Symbol) withType: (type: Type) ::=> TACArgumentVariable
+        := TACArgumentVariable new
+            name: name;
+            type: type;
+            size: type valueSize asUInt64;
+            alignment: type valueAlignment asUInt64;
+            physicalLocationClass: type valueTacPhysicalLocationClass;
+            yourself.
+
+    public method newArgumentWithType: (type: Type) ::=> TACArgumentVariable
+        := self newArgument: nil withType: type.
+
+    public method newCapture: (name: Symbol) withType: (type: Type) ::=> TACCaptureVariable
+        := TACCaptureVariable new
+            name: name;
+            type: type;
+            size: type valueSize asUInt64;
+            alignment: type valueAlignment asUInt64;
+            physicalLocationClass: type valueTacPhysicalLocationClass;
+            yourself.
+
+    public method newCaptureWithType: (type: Type) ::=> TACCaptureVariable
+        := self newCapture: nil withType: type.
+
+    public method newTemporary: (name: Symbol) withType: (type: Type) ::=> TACTemporaryVariable
         := self addTemporary: (TACTemporaryVariable new
+            name: name;
             type: type;
             size: type valueSize asUInt64;
             alignment: type valueAlignment asUInt64;
             physicalLocationClass: type valueTacPhysicalLocationClass;
             yourself).
+
+    public method newTemporaryWithType: (type: Type) ::=> TACTemporaryVariable
+        := self newTemporary: nil withType: type.
 
     public method newTemporaryUInt8 => TACTemporaryVariable
         := self newTemporaryWithType: UInt8.

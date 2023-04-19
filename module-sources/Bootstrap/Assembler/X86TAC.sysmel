@@ -226,7 +226,11 @@ public abstract class TACSX86StackBasedCallingConvention superclass: TACCallingC
     public override method computeRegisterConstraintsOf: (instruction: TACInstruction) with: (allocator: TACRegisterAllocator) ::=> Void := {
         allocator
             allocateRegister: TAC::X86_64::RAX forInstructionResult: instruction;
-            allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz
+            allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz.
+        1sz until: instruction operands size do: {:(Size)operandIndex :: Void |
+            allocator
+                allocateMemoryForInstruction: instruction operandAt: operandIndex
+        }.
     }.
 
     public override method asm::generateCall: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
@@ -287,31 +291,35 @@ public final class TACX86CompilationTarget superclass: TACAsmCompilationTarget; 
 
 public final class TACSysVX86_64CallingConvention superclass: TACCallingConvention; definition: {
     public method registerConstraintsOfCall: (instruction: TACInstruction) with: (allocator: TACRegisterAllocator) ::=> Void := {
-        allocator allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz
+        allocator allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz.
+        1sz until: instruction operands size do: {:(Size)operandIndex :: Void |
+            allocator allocateMemoryForInstruction: instruction operandAt: operandIndex
+        }.
     }.
 
     public override method registerConstraintsOfCallInt32: (instruction: TACInstruction) with: (allocator: TACRegisterAllocator) ::=> Void := {
+        self registerConstraintsOfCall: instruction with: allocator.
         allocator allocateRegister: TAC::X86_64::RAX forInstructionResult: instruction.
-        self registerConstraintsOfCall: instruction with: allocator
     }.
 
     public override method registerConstraintsOfCallInt64: (instruction: TACInstruction) with: (allocator: TACRegisterAllocator) ::=> Void := {
+        self registerConstraintsOfCall: instruction with: allocator.
         allocator allocateRegister: TAC::X86_64::RAX forInstructionResult: instruction.
-        self registerConstraintsOfCall: instruction with: allocator
     }.
 
     public override method registerConstraintsOfCallFloat32: (instruction: TACInstruction) with: (allocator: TACRegisterAllocator) ::=> Void := {
+        self registerConstraintsOfCall: instruction with: allocator.
         allocator allocateRegister: TAC::X86::XMM0 forInstructionResult: instruction.
-        self registerConstraintsOfCall: instruction with: allocator
     }.
 
     public override method registerConstraintsOfCallFloat64: (instruction: TACInstruction) with: (allocator: TACRegisterAllocator) ::=> Void := {
+        self registerConstraintsOfCall: instruction with: allocator.
         allocator allocateRegister: TAC::X86::XMM0 forInstructionResult: instruction.
-        self registerConstraintsOfCall: instruction with: allocator
     }.
 
     public override method registerConstraintsOfCallStruct: (instruction: TACInstruction) with: (allocator: TACRegisterAllocator) ::=> Void := {
-        self registerConstraintsOfCall: instruction with: allocator
+        self registerConstraintsOfCall: instruction with: allocator.
+        allocator allocateMemoryForInstructionResult: instruction.
     }.
 
     public override method registerConstraintsOfCallVoid: (instruction: TACInstruction) with: (allocator: TACRegisterAllocator) ::=> Void := {
@@ -319,7 +327,46 @@ public final class TACSysVX86_64CallingConvention superclass: TACCallingConventi
     }.
 
     public method asm::generateCall: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        codegen textSection x86::call: (instruction firstOperandRegister x86::rel32OrInt64For: codegen)
+        let stackArguments := ArrayList new.
+        let stackArgumentAlignment := 8u64.
+        let stackSize mutable := 0u64.
+        let stackAlignment mutable := 16u64.
+
+        ## Select the arguments that are passed through the stack.
+        1sz until: instruction operands size do: {:(Size)operandIndex :: Void |
+            let argument => TACValue := instruction operands at: operandIndex.
+            let register => TACPhysicalLocation := instruction operandRegisters at: operandIndex.
+            register isMemory ifTrue: {
+                let operandAlignment := argument alignment max: stackArgumentAlignment.
+                let operandSize := argument size alignedTo: operandAlignment.
+                let argumentOffset := stackSize alignedTo: operandAlignment.
+
+                stackSize := argumentOffset + operandSize.
+                stackAlignment := stackAlignment max: operandAlignment.
+                
+                stackArguments add: argument
+            }.
+        }.
+
+        ## Compute the required argument padding.
+        let alignedStackSize := stackSize alignedTo: stackAlignment.
+        let stackPadding := alignedStackSize - stackSize.
+        stackPadding > 0u64 ifTrue: {
+            codegen textSection x86::sub: X86::RSP with: stackPadding asInt32 asAsmImmediate
+        }.
+
+        ## Push the arguments onto the stack.
+        stackArguments reverseDo: {:(TACValue)argument :: Void |
+            argument x86_64::pushWith: codegen
+        }.
+
+        ## Perform the call.
+        codegen textSection x86::call: (instruction firstOperandRegister x86::rel32OrInt64For: codegen).
+
+        ## Clear the stack arguments.
+        alignedStackSize > 0u64 ifTrue: {
+            codegen textSection x86::add: X86::RSP with: alignedStackSize asInt32 asAsmImmediate
+        }.
     }.
 
     public override method asm::generateCallInt32: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
@@ -413,11 +460,17 @@ TACValue extend: {
     public abstract method x86::moveFromRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
         := self subclassResponsibility.
 
+    public abstract method x86::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+        := self subclassResponsibility.
+
     public abstract method x86_64::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
         := self x86::moveIntoRegister: register with: codegen.
 
     public abstract method x86_64::moveFromRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
         := self x86::moveFromRegister: register with: codegen.
+
+    public abstract method x86_64::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+        := self x86::pushWith: codegen.
 }.
 
 TACProgramEntity extend: {
@@ -457,11 +510,19 @@ TACConstantInt8 extend: {
     public override method x86::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::mov: (register x86::int32For: codegen) src: value asUInt32 asAsmImmediate.
     }.
+
+    public override method x86_64::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::push: value asInt32 asAsmImmediate
+    }.
 }.
 
 TACConstantUInt8 extend: {
     public override method x86::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::mov: (register x86::int32For: codegen) src: value asUInt32 asAsmImmediate.
+    }.
+
+    public override method x86_64::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::push: value asInt32 asAsmImmediate
     }.
 }.
 
@@ -469,11 +530,19 @@ TACConstantInt16 extend: {
     public override method x86::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::mov: (register x86::int32For: codegen) src: value asUInt32 asAsmImmediate.
     }.
+
+    public override method x86_64::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::push: value asInt32 asAsmImmediate
+    }.
 }.
 
 TACConstantUInt16 extend: {
     public override method x86::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::mov: (register x86::int32For: codegen) src: value asUInt32 asAsmImmediate.
+    }.
+
+    public override method x86_64::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::push: value asInt32 asAsmImmediate
     }.
 }.
 
@@ -481,11 +550,19 @@ TACConstantInt32 extend: {
     public override method x86::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::mov: (register x86::int32For: codegen) src: value asAsmImmediate.
     }.
+
+    public override method x86_64::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::push: value asAsmImmediate
+    }.
 }.
 
 TACConstantUInt32 extend: {
     public override method x86::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::mov: (register x86::int32For: codegen) src: value asAsmImmediate.
+    }.
+
+    public override method x86_64::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::push: value asAsmImmediate
     }.
 }.
 
@@ -498,6 +575,12 @@ TACConstantInt64 extend: {
 TACConstantUInt64 extend: {
     public override method x86_64::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::mov: (register x86::int64For: codegen) src: value asAsmImmediate.
+    }.
+}.
+
+TACConstantFloat32 extend: {
+    public override method x86_64::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::push: value asIEEEFloat32Encoding asAsmImmediate
     }.
 }.
 

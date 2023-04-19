@@ -1182,6 +1182,14 @@ SequenceableCollection
             aBlock(self at: i, self at: i + 1sz)
         } continueWith: (i := i + 2sz)
     };
+    withSelector: #reverseDo: addMethod: {:(SequenceableCollection)self :aBlock :: Void |
+        let: #i mutableWith: 0sz.
+        let: #size with: self size.
+
+        while: i < self size do: (
+            aBlock(self at: size - i - 1sz)
+        ) continueWith: (i := i + 1sz)
+    };
     withSelector: #-- addMethod: {:(SequenceableCollection)self :(SequenceableCollection)other :: self species |
         let: #size with: self size.
         let: #otherSize with: other size.

@@ -2,10 +2,15 @@ let module := TACModule new
     compilationTarget: AsmCompilationTarget x86_64 useElf asTacCompilationTarget;
     yourself.
 let addFunction := module build: #add function: {:(TACFunctionBuilder)functionBuilder :: Void |
+    let function := functionBuilder function.
+    let x := function newArgument: #x withType: Int32.
+    let y := function newArgument: #y withType: Int32.
+    function arguments: (x, y).
+
     functionBuilder basicBlock: #entry build: {:(TACBlockBuilder)asm :: Void |
         let result := asm temporaryInt32.
         asm
-            addInt32: 2i32 asTacConstant with: 3i32 asTacConstant into: result;
+            addInt32: x with: y into: result;
             returnInt32: result
     }
 }.
@@ -15,7 +20,7 @@ module build: #main function: {:(TACFunctionBuilder)functionBuilder :: Void |
         let result := asm temporaryInt32.
 
         asm
-            callInt32: addFunction arguments: #() result: result;
+            callInt32: addFunction arguments: (42i32 asTacConstant, -5i32 asTacConstant) result: result;
             returnInt32: result
     }
 }.
