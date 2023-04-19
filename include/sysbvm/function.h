@@ -60,6 +60,9 @@ typedef struct sysbvm_function_s
 typedef struct sysbvm_functionDefinition_s
 {
     sysbvm_tuple_header_t header;
+    sysbvm_tuple_t name;
+    sysbvm_tuple_t owner;
+    
     sysbvm_tuple_t flags;
     sysbvm_tuple_t argumentCount;
     sysbvm_tuple_t sourcePosition;

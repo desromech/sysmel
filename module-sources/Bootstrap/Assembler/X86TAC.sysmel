@@ -612,7 +612,7 @@ TAC::Operation::ReturnFloat64
     }.
 
 TAC::Operation::ReturnVoid
-    forTarget: #(x86 x86_64) registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void | };
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void | };
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
         codegen textSection x86::ret

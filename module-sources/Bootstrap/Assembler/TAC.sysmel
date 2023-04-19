@@ -8,6 +8,9 @@ public abstract class TACAsmCompilationTarget superclass: TACCompilationTarget; 
     public override method pointerAlignment => Size
         := asmCompilationTarget pointerSize.
 
+    public override method uintPointerType => Type
+        := asmCompilationTarget uintPointerType.
+
     public override method stackFrameAlignment => Size
         := asmCompilationTarget stackFrameAlignment.
 

@@ -17,22 +17,256 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
 
     public method compileSSAFunction: (function: SSAFunction) ::=> TACValue
         := globalValueDictionary at: function ifAbsent: {|
-                SSAFunctionTACCodeGenerator new
+                ## TODO: Create a more adequate value for this.
+                self compileSSAFunctionDefinition: function definition
+            }.
+
+    public method compileSSAFunctionDefinition: (functionDefinition: SSAFunctionDefinition) ::=> TACValue
+        := globalValueDictionary at: functionDefinition ifAbsent: {|
+                SSAFunctionDefinitionTACCodeGenerator new
                     moduleCodeGenerator: self;
-                    compileSSAFunction: function
+                    compileSSAFunctionDefinition: functionDefinition
             }.
 
     public method finish => TACModule
         := targetModule.
+
+    public method translateValue: (value: SSAValue) ::=> TACValue
+        := globalValueDictionary at: value ifAbsent: {|
+        value translateIntoTacValueWith: self
+    }.
+
+    public method translateGenericObjectPointer: object ::=> TACValue
+        := TACGenericObjectPointerConstant new
+            size: compilationTarget pointerSize;
+            object: object;
+            type: compilationTarget uintPointerType;
+            yourself.
 }.
 
-public final class SSAFunctionTACCodeGenerator superclass: SSATACCodeGenerator; definition: {
+public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeGenerator; definition: {
     public field moduleCodeGenerator => SSAModuleTACCodeGenerator.
+    public field ssaFunctionDefinition => SSAFunctionDefinition.
+    public field tacFunction => TACFunction.
+    public field functionBuilder => TACFunctionBuilder.
+    public field blockBuilder => TACBlockBuilder.
+    protected field valueDictionary => Dictionary.
+    
+    public method initialize => Void := {
+        valueDictionary := Dictionary new.
+    }.
 
-    public method compileSSAFunction: (ssaFunction: SSAFunction) ::=> TACValue := {
-        moduleCodeGenerator targetModule build: ssaFunction name function: {:(TACFunctionBuilder)functionBuilder :: Void |
-            moduleCodeGenerator globalValueDictionary at: ssaFunction put: functionBuilder function.
+    public method compileSSAFunctionDefinition: (ssaFunctionDefinition: SSAFunctionDefinition) ::=> TACValue := {
+        self ssaFunctionDefinition: ssaFunctionDefinition.
+        moduleCodeGenerator targetModule build: ssaFunctionDefinition name function: {:(TACFunctionBuilder)functionBuilder :: Void |
+            tacFunction := functionBuilder function.
+            self functionBuilder: functionBuilder.
+            moduleCodeGenerator globalValueDictionary at: ssaFunctionDefinition put: tacFunction.
+
+            self compileDefinition.
+
+            tacFunction
         }.
+    }.
+
+    public method compileDefinition => Void := {
+        self declareValues.
+        self compileBasicBlocks.
+    }.
+
+    public method declareValues => Void := {
+        ssaFunctionDefinition basicBlocksDo: {:(SSABasicBlock)eachBlock :: Void |
+            let tacBlock := TACBasicBlock new
+                name: eachBlock name;
+                yourself.
+
+            tacFunction addBasicBlock: tacBlock.
+            valueDictionary at: eachBlock put: tacBlock.
+
+            eachBlock instructionsDo: {:(SSAInstruction)each :: Void |
+                let tacValue := each makeTacValueForResultWith: self.
+                valueDictionary at: each put: tacValue.
+            }
+        }
+    }.
+
+    public method compileBasicBlocks => Void := {
+        ssaFunctionDefinition basicBlocksDo: {:(SSABasicBlock)eachBlock :: Void |
+            let tacBlock := valueDictionary at: eachBlock.
+            self compileBasicBlock: eachBlock into: tacBlock
+        }.
+    }.
+
+    public method compileBasicBlock: (ssaBasicBlock: SSABasicBlock) into: (tacBlock: TACBasicBlock) ::=> Void := {
+        blockBuilder := TACBlockBuilder new
+            compilationTarget: moduleCodeGenerator targetModule compilationTarget;
+            block: tacBlock;
+            function: tacFunction;
+            yourself.
+        ssaBasicBlock instructionsDo: {:(SSAInstruction)eachInstruction :: Void |
+            eachInstruction compileIntoTacValue: (valueDictionary at: eachInstruction) with: self
+        }
+    }.
+
+    public method translateValue: (value: SSAValue) ::=> TACValue
+        := valueDictionary at: value ifAbsent: {|
+            moduleCodeGenerator translateValue: value
+        }
+}.
+
+Type extend: {
+    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder returnPointer: value.
+    }.
+
+    public virtual method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := codegen translateGenericObjectPointer: constant value.
+}.
+
+Char8 __type__ extend: {
+    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder returnInt32: value
+    }.
+
+    public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := constant value asUInt8 asTacConstant.
+}.
+
+Int8 __type__ extend: {
+    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder returnInt32: value
+    }.
+
+    public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := constant value asTacConstant.
+}.
+
+UInt8 __type__ extend: {
+    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder returnInt32: value
+    }.
+
+    public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := constant value asTacConstant.
+}.
+
+Char16 __type__ extend: {
+    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder returnInt32: value
+    }.
+
+    public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := constant value asUInt16 asTacConstant.
+}.
+
+Int16 __type__ extend: {
+    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder returnInt32: value
+    }.
+
+    public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := constant value asTacConstant.
+}.
+
+UInt16 __type__ extend: {
+    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder returnInt32: value
+    }.
+
+    public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := constant value asTacConstant.
+}.
+
+Char32 __type__ extend: {
+    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder returnInt32: value
+    }.
+
+    public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := constant value asUInt32 asTacConstant.
+}.
+
+Int32 __type__ extend: {
+    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder returnInt32: value
+    }.
+
+    public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := constant value asTacConstant.
+}.
+
+UInt32 __type__ extend: {
+    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder returnInt32: value
+    }.
+
+    public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := constant value asTacConstant.
+}.
+
+Int64 __type__ extend: {
+    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder returnInt64: value
+    }.
+
+    public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := constant value asTacConstant.
+}.
+
+UInt64 __type__ extend: {
+    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder returnInt64: value
+    }.
+
+    public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := constant value asTacConstant.
+}.
+
+Float32 __type__ extend: {
+    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder returnFloat32: value
+    }.
+
+    public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := constant value asTacConstant.
+}.
+
+Float64 __type__ extend: {
+    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder returnFloat64: value
+    }.
+
+    public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := constant value asTacConstant.
+}.
+
+Void __type__ extend: {
+    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder returnVoid
+    }.
+}.
+
+SSAValue extend: {
+    public abstract method translateIntoTacValueWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := self subclassResponsibility.
+}.
+
+SSALiteralConstant extend: {
+    public override method translateIntoTacValueWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := type translateSSALiteralConstant: self intoTacWith: codegen.
+}.
+
+SSAInstruction extend: {
+    public virtual method makeTacValueForResultWith: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue
+        := nil.
+
+    public abstract method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void
+        := self subclassResponsibility.
+}.
+
+SSAReturnInstruction extend: {
+    public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        self value type emitTacReturn: (codegen translateValue: self value) withBlockBuilder: codegen blockBuilder
     }.
 }.
 

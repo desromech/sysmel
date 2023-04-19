@@ -43,7 +43,9 @@ public final class SSAFunctionCompilationContext superclass: Object; definition:
     }.
 
     public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> SSAFunctionDefinition := {
-        let ssaFunction := SSAFunctionDefinition new.
+        let ssaFunction := SSAFunctionDefinition new
+            name: functionDefinition name;
+            yourself.
         functionDefinition ensureAnalysis.
         self functionDefinition: functionDefinition.
         self ssaFunction: ssaFunction.

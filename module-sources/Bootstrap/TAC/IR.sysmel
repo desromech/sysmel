@@ -201,6 +201,12 @@ public abstract class TACConstantInteger superclass: TACValue; definition: {
         := TACPhysicalIntegerRegister.
 }.
 
+public abstract class TACGenericObjectPointerConstant superclass: TACConstant; definition: {
+    public field object => Untyped.
+    public field size => Size.
+    public field type => Type.
+}.
+
 public final class TACConstantInt8 superclass: TACConstantInteger; definition: {
     public field value => Int8.
 
@@ -752,6 +758,15 @@ public final class TACBlockBuilder superclass: Object; definition: {
     public method temporaryFloat32 => TACTemporaryVariable := function newTemporaryFloat32.
     public method temporaryFloat64 => TACTemporaryVariable := function newTemporaryFloat64.
 
+    public method pointerSize => Size
+        := compilationTarget pointerSize.
+
+    public method uintPointerType => Type
+        := compilationTarget uintPointerType.
+
+    public method has64BitsPointers => Boolean
+        := self pointerSize = 8sz.
+
     public method operation: (operation: TACOperation) ::=> TACInstruction
         := self addInstruction: (TACInstruction new operation: operation; yourself).
 
@@ -804,6 +819,11 @@ public final class TACBlockBuilder superclass: Object; definition: {
 
     public method returnInt64: (value: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::ReturnInt64 with: value.
+
+    public method returnPointer: (value: TACValue) ::=> TACInstruction
+        := self has64BitsPointers
+            ifTrue: (self returnInt32: value)
+            ifFalse: (self returnInt64: value).
 
     public method returnFloat32: (value: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::ReturnFloat32 with: value.
@@ -905,6 +925,9 @@ TACCompilationTarget definition: {
         := self subclassResponsibility.
 
     public abstract method pointerAlignment => Size
+        := self subclassResponsibility.
+
+    public abstract method uintPointerType => Type
         := self subclassResponsibility.
 
     public abstract method stackFrameAlignment => Size

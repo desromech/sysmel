@@ -106,7 +106,7 @@ public final class SSALiteralConstant superclass: SSAConstant; definition: {
 }.
 
 SSAFunction definition: {
-    public field name.
+    public field name => Symbol.
     public field captures => Array.
     public field definition => SSAFunctionDefinition.
 
@@ -141,7 +141,7 @@ SSAFunction definition: {
 }.
 
 SSAFunctionDefinition definition: {
-    public field name.
+    public field name => Symbol.
     public field arguments => Array.
     public field captures => Array.
 
@@ -341,6 +341,7 @@ SSAFunctionDefinition definition: {
         }.
 
         self sourcePosition ifNotNil: {:sourcePosition :: Void |
+            self name ifNotNil: (stream space).
             stream nextPutAll: "at "; print: sourcePosition
         }.
     }.

@@ -10,6 +10,9 @@ public final class AsmARMCompilationTarget superclass: AsmCompilationTarget; def
     public override method pointerSize => Size
         := 4sz.
 
+    public override method uintPointerType => Type
+        := UInt32.
+
     public override method padCodeSectionData: (data: ByteArray) at: (offset: Size) size: (size: Size) unreachable: (unreachable: Boolean) ::=> Void := {
         self assert: (offset % 4sz) == 0sz.
         self assert: (size % 4sz) == 0sz.

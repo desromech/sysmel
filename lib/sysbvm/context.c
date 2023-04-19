@@ -687,8 +687,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionType, "Function", SYSBVM_NULL_TUPLE,
-        "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
-        "owner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
+        "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
+        "owner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.programEntityType,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         "argumentCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "captureVector", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
@@ -701,6 +701,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "memoizationTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.weakValueDictionaryType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionDefinitionType, "FunctionDefinition", SYSBVM_NULL_TUPLE,
+        "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
+        "owner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.programEntityType,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         "argumentCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
