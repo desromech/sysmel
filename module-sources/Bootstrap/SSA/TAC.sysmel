@@ -6,6 +6,8 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
     public field compilationTarget => TACCompilationTarget.
     public field targetModule => TACModule.
     public field globalValueDictionary => Dictionary.
+    private field uncheckedFunctionEntryPointTrampoline => TACValue.
+    private field checkedFunctionEntryPointTrampoline => TACValue.
 
     public method initializeWithTarget: (theCompilationTarget: TACCompilationTarget) ::=> Void := {
         compilationTarget := theCompilationTarget.
@@ -36,9 +38,36 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
         value translateIntoTacValueWith: self
     }.
 
+    public method validUncheckedFunctionEntryPointTrampoline => TACValue := {
+        uncheckedFunctionEntryPointTrampoline ifNil: {
+            uncheckedFunctionEntryPointTrampoline := targetModule build: #uncheckedFunctionEntryPointTrampoline function: {:(TACFunctionBuilder)functionBuilder :: Void |
+            }
+        }.
+
+        uncheckedFunctionEntryPointTrampoline
+    }.
+
+    public method validCheckedFunctionEntryPointTrampoline => TACValue := {
+        checkedFunctionEntryPointTrampoline ifNil: {
+            checkedFunctionEntryPointTrampoline := targetModule build: #checkedFunctionEntryPointTrampoline function: {:(TACFunctionBuilder)functionBuilder :: Void |
+            }
+        }.
+
+        checkedFunctionEntryPointTrampoline
+    }.
+
+    public method translateUncheckedFunctionEntryPoint: (value: SSAValue) ::=> TACValue := {
+        self validUncheckedFunctionEntryPointTrampoline
+    }.
+
+    public method translateCheckedFunctionEntryPoint: (value: SSAValue) ::=> TACValue := {
+        self validCheckedFunctionEntryPointTrampoline
+    }.
+
     public method translateGenericObjectPointer: object ::=> TACValue
         := TACGenericObjectPointerConstant new
             size: compilationTarget pointerSize;
+            alignment: compilationTarget pointerAlignment;
             object: object;
             type: compilationTarget uintPointerType;
             yourself.
@@ -71,6 +100,9 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
     }.
 
     public method compileDefinition => Void := {
+        ## SSA must be destroyed before compiling.
+        SSADestroySSAFunctionPass runIn: ssaFunctionDefinition.
+
         self
             declareArguments;
             declareCaptures;
@@ -128,11 +160,11 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
 
     public method compileBasicBlock: (ssaBasicBlock: SSABasicBlock) into: (tacBlock: TACBasicBlock) ::=> Void := {
         blockBuilder := TACBlockBuilder new
-            compilationTarget: moduleCodeGenerator targetModule compilationTarget;
             block: tacBlock;
             function: tacFunction;
             yourself.
         ssaBasicBlock instructionsDo: {:(SSAInstruction)eachInstruction :: Void |
+            blockBuilder useDebugInfoOfSSAValue: eachInstruction.
             eachInstruction compileIntoTacValue: (valueDictionary at: eachInstruction) with: self
         }
     }.
@@ -140,7 +172,25 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
     public method translateValue: (value: SSAValue) ::=> TACValue
         := valueDictionary at: value ifAbsent: {|
             moduleCodeGenerator translateValue: value
-        }
+        }.
+    
+    public method translateBoxedValue: (value: SSAValue) ::=> TACValue
+        := self translateValue: value.
+
+    public method translateUncheckedFunctionEntryPoint: (value: SSAValue) ::=> TACValue
+        := moduleCodeGenerator translateUncheckedFunctionEntryPoint: value.
+
+    public method translateCheckedFunctionEntryPoint: (value: SSAValue) ::=> TACValue
+        := moduleCodeGenerator translateCheckedFunctionEntryPoint: value.
+
+}.
+
+TACBlockBuilder extend: {
+    public method useDebugInfoOfSSAValue: (value: SSAValue) ::=> Void := {
+        debugSourcePosition := value sourcePosition.
+        debugSourceNode := value sourceASTNode.
+        debugSourceEnvironment := value sourceEnvironment.
+    }
 }.
 
 Type extend: {
@@ -148,12 +198,19 @@ Type extend: {
         builder returnPointer: value.
     }.
 
+    public virtual method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder callPointer: function convention: callingConvention arguments: arguments result: result
+    }.
+
+    public virtual method makeTacTemporaryValueNamed: (name: Symbol) withFunctionBuilder: (functionBuilder: TACFunctionBuilder) ::=> TACValue
+        := functionBuilder function newTemporary: name withType: self.
+
     public virtual method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := codegen translateGenericObjectPointer: constant value.
 }.
 
 Char8 __type__ extend: {
-    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+    public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
     }.
 
@@ -162,7 +219,7 @@ Char8 __type__ extend: {
 }.
 
 Int8 __type__ extend: {
-    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+    public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
     }.
 
@@ -171,7 +228,7 @@ Int8 __type__ extend: {
 }.
 
 UInt8 __type__ extend: {
-    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+    public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
     }.
 
@@ -180,7 +237,7 @@ UInt8 __type__ extend: {
 }.
 
 Char16 __type__ extend: {
-    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+    public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
     }.
 
@@ -189,7 +246,7 @@ Char16 __type__ extend: {
 }.
 
 Int16 __type__ extend: {
-    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+    public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
     }.
 
@@ -198,7 +255,7 @@ Int16 __type__ extend: {
 }.
 
 UInt16 __type__ extend: {
-    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+    public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
     }.
 
@@ -207,7 +264,7 @@ UInt16 __type__ extend: {
 }.
 
 Char32 __type__ extend: {
-    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+    public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
     }.
 
@@ -216,7 +273,7 @@ Char32 __type__ extend: {
 }.
 
 Int32 __type__ extend: {
-    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+    public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
     }.
 
@@ -225,7 +282,7 @@ Int32 __type__ extend: {
 }.
 
 UInt32 __type__ extend: {
-    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+    public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
     }.
 
@@ -234,7 +291,7 @@ UInt32 __type__ extend: {
 }.
 
 Int64 __type__ extend: {
-    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+    public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt64: value
     }.
 
@@ -243,7 +300,7 @@ Int64 __type__ extend: {
 }.
 
 UInt64 __type__ extend: {
-    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+    public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt64: value
     }.
 
@@ -252,7 +309,7 @@ UInt64 __type__ extend: {
 }.
 
 Float32 __type__ extend: {
-    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+    public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnFloat32: value
     }.
 
@@ -261,7 +318,7 @@ Float32 __type__ extend: {
 }.
 
 Float64 __type__ extend: {
-    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+    public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnFloat64: value
     }.
 
@@ -270,9 +327,12 @@ Float64 __type__ extend: {
 }.
 
 Void __type__ extend: {
-    public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+    public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnVoid
     }.
+
+    public override method makeTacTemporaryValueNamed: (name: Symbol) withFunctionBuilder: (functionBuilder: TACFunctionBuilder) ::=> TACValue
+        := nil.
 }.
 
 SSAValue extend: {
@@ -287,10 +347,32 @@ SSALiteralConstant extend: {
 
 SSAInstruction extend: {
     public virtual method makeTacValueForResultWith: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue
-        := nil.
+        := type makeTacTemporaryValueNamed: self name withFunctionBuilder: codegen functionBuilder.
 
     public abstract method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void
         := self subclassResponsibility.
+}.
+
+SSACallInstruction extend: {
+    public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        isUnchecked ifTrue: {
+            let tacCalledFunction := codegen translateValue: calledFunction.
+            let entryPoint := codegen translateUncheckedFunctionEntryPoint: calledFunction.
+            let tacArguments := arguments collect: {:(SSAValue)eachArgument :: TACValue | codegen translateValue: eachArgument}.
+            self type
+                emitTacCall: entryPoint convention: codegen tacFunction compilationTarget defaultCallingConvention
+                withArguments: (Array with: tacCalledFunction) -- tacArguments into: tacValue
+                withBlockBuilder: codegen blockBuilder
+        } ifFalse: {
+            let tacCalledFunction := codegen translateBoxedValue: calledFunction.
+            let entryPoint := codegen translateCheckedFunctionEntryPoint: calledFunction.
+            let tacArguments := arguments collect: {:(SSAValue)eachArgument :: TACValue | codegen translateBoxedValue: eachArgument}.
+            AnyValue
+                emitTacCall: entryPoint convention: codegen tacFunction compilationTarget defaultCallingConvention
+                withArguments: (Array with: tacCalledFunction) -- tacArguments into: tacValue
+                withBlockBuilder: codegen blockBuilder
+        }.
+    }.
 }.
 
 SSAReturnInstruction extend: {

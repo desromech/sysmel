@@ -658,6 +658,23 @@ TACConstantFloat32 extend: {
     }.
 }.
 
+TACGenericObjectPointerConstant extend: {
+    public override method x86::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: (register x86::int64For: codegen) src: (codegen x86::pointerForGCRootObjectTableEntryFor: object).
+    }.
+
+    public override method x86::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::push: (codegen x86::pointerForGCRootObjectTableEntryFor: object)
+    }.
+}.
+
+TACFunctionAsmCodeGenerator extend: {
+    public method x86::pointerForGCRootObjectTableEntryFor: (object: Untyped) ::=> AsmInstructionOperand := {
+        let offset := moduleGenerator offsetOfGCRootObjectTableEntryFor: object.
+        AsmX86RegisterAddress size: target pointerSize asUInt8 displacement: moduleGenerator gcRootObjectTableSymbol dword + offset asInt64
+    }.
+}.
+
 let x86::integerAluInt32RegisterConstraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterForInstructionResult: instruction;

@@ -380,7 +380,7 @@ public final class Elf64::SymbolTable superclass: Object; definition: {
 
     public method indexOfSymbol: (symbol: AsmSymbol) ::=> UInt32 := {
         symbol isPrivate ifTrue: {
-            sectionIndexTable at: symbol section
+            (sectionIndexTable at: symbol section) asUInt32
         } ifFalse: {
             symbol isInternal
                 ifTrue: (privateSymbolDictionary at: symbol)

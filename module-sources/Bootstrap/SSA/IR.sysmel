@@ -748,6 +748,7 @@ public final class SSABranchInstruction superclass: SSAInstruction; definition: 
 public final class SSACallInstruction superclass: SSAInstruction; definition: {
     public field calledFunction => SSAValue.
     public field arguments => Array.
+    public field isUnchecked => Boolean.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream
@@ -1217,6 +1218,7 @@ SSAInstructionBuilder definition: {
 
     public method return: (value: SSAValue) ::=> SSAReturnInstruction
         := self addInstruction: (SSAReturnInstruction new
+            type: Void;
             value: value;
             registerInUsedValues;
             yourself).

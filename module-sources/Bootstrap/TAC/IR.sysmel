@@ -49,10 +49,25 @@ public class TACPhysicalLocationImmediate superclass: TACPhysicalLocation; defin
 }.
 
 Type extend: {
+    public method valueSizeForTacTarget: (target: TACCompilationTarget) ::=> Size
+        := target pointerSize.
+
+    public method valueAlignmentForTacTarget: (target: TACCompilationTarget) ::=> Size
+        := target pointerAlignment.
+
     public method valueTacPhysicalLocationClass => TACPhysicalLocation class
         := TACPhysicalIntegerRegister.
 
     public method valueIsSignedExtended => Boolean := false.
+}.
+
+ValueType extend: {
+    public method valueSizeForTacTarget: (target: TACCompilationTarget) ::=> Size
+        := self valueSize.
+
+    public method valueAlignmentForTacTarget: (target: TACCompilationTarget) ::=> Size
+        := self valueAlignment.
+
 }.
 
 Int8 class extend: {
@@ -129,6 +144,7 @@ public final class TACBasicBlock.
 
 public abstract class TACProgramEntity superclass: TACValue; definition: {
     public field name => Symbol.
+    public field compilationTarget => TACCompilationTarget.
 
     public override method isProgramEntity => Boolean := true.
 }.
@@ -228,6 +244,7 @@ public abstract class TACConstantInteger superclass: TACValue; definition: {
 public abstract class TACGenericObjectPointerConstant superclass: TACConstant; definition: {
     public field object => Untyped.
     public field size => Size.
+    public field alignment => Size.
     public field type => Type.
 }.
 
@@ -648,8 +665,8 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
         := TACArgumentVariable new
             name: name;
             type: type;
-            size: type valueSize asUInt64;
-            alignment: type valueAlignment asUInt64;
+            size: (type valueSizeForTacTarget: compilationTarget) asUInt64;
+            alignment: (type valueAlignmentForTacTarget: compilationTarget) asUInt64;
             physicalLocationClass: type valueTacPhysicalLocationClass;
             yourself.
 
@@ -660,8 +677,8 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
         := TACCaptureVariable new
             name: name;
             type: type;
-            size: type valueSize asUInt64;
-            alignment: type valueAlignment asUInt64;
+            size: (type valueSizeForTacTarget: compilationTarget) asUInt64;
+            alignment: (type valueAlignmentForTacTarget: compilationTarget) asUInt64;
             physicalLocationClass: type valueTacPhysicalLocationClass;
             yourself.
 
@@ -672,8 +689,8 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
         := self addTemporary: (TACTemporaryVariable new
             name: name;
             type: type;
-            size: type valueSize asUInt64;
-            alignment: type valueAlignment asUInt64;
+            size: (type valueSizeForTacTarget: compilationTarget) asUInt64;
+            alignment: (type valueAlignmentForTacTarget: compilationTarget) asUInt64;
             physicalLocationClass: type valueTacPhysicalLocationClass;
             yourself).
 
@@ -703,6 +720,16 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
 
     public method newTemporaryInt64 => TACTemporaryVariable
         := self newTemporaryWithType: Int64.
+
+    public method newTemporaryUIntPointer => TACTemporaryVariable
+        := compilationTarget pointerSize = 8sz
+            ifTrue: (self newTemporaryUInt64)
+            ifFalse: (self newTemporaryUInt32).
+
+    public method newTemporaryIntPointer => TACTemporaryVariable
+        := compilationTarget pointerSize = 8sz
+            ifTrue: (self newTemporaryInt64)
+            ifFalse: (self newTemporaryInt32).
 
     public method newTemporaryFloat32 => TACTemporaryVariable
         := self newTemporaryWithType: Float32.
@@ -801,7 +828,6 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
 }.
 
 public final class TACBlockBuilder superclass: Object; definition: {
-    public field compilationTarget => TACCompilationTarget.
     public field block => TACBasicBlock.
     public field function => TACFunction.
 
@@ -827,17 +853,14 @@ public final class TACBlockBuilder superclass: Object; definition: {
     public method temporaryInt32 => TACTemporaryVariable := function newTemporaryInt32.
     public method temporaryUInt64 => TACTemporaryVariable := function newTemporaryUInt64.
     public method temporaryInt64 => TACTemporaryVariable := function newTemporaryInt64.
+    public method temporaryUIntPointer => TACTemporaryVariable := function newTemporaryUIntPointer.
     public method temporaryFloat32 => TACTemporaryVariable := function newTemporaryFloat32.
     public method temporaryFloat64 => TACTemporaryVariable := function newTemporaryFloat64.
 
-    public method pointerSize => Size
-        := compilationTarget pointerSize.
-
-    public method uintPointerType => Type
-        := compilationTarget uintPointerType.
-
-    public method has64BitsPointers => Boolean
-        := self pointerSize = 8sz.
+    public method compilationTarget => TACCompilationTarget := function compilationTarget.
+    public method pointerSize => Size := function compilationTarget pointerSize.
+    public method uintPointerType => Type := function compilationTarget uintPointerType.
+    public method has64BitsPointers => Boolean := self pointerSize = 8sz.
 
     public method operation: (operation: TACOperation) ::=> TACInstruction
         := self addInstruction: (TACInstruction new operation: operation; yourself).
@@ -878,10 +901,42 @@ public final class TACBlockBuilder superclass: Object; definition: {
             yourself).
 
     public method callInt32: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
-        := self call: function operation: TAC::Operation::CallInt32 convention: compilationTarget defaultCallingConvention arguments: arguments result: result.
+        := self call: function operation: TAC::Operation::CallInt32 convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
 
     public method callInt32: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
-        := self callInt32: function convention: compilationTarget defaultCallingConvention arguments: arguments result: result.
+        := self callInt32: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
+
+    public method callInt64: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+        := self call: function operation: TAC::Operation::CallInt64 convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
+
+    public method callInt64: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+        := self callInt64: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
+
+    public method callPointer: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+        := self call: function
+            operation: (self has64BitsPointers ifTrue: (TAC::Operation::CallInt64) ifFalse: (TAC::Operation::CallInt32))
+            convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
+
+    public method callPointer: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+        := self callPointer: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
+
+    public method callFloat32: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+        := self call: function operation: TAC::Operation::CallFloat32 convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
+
+    public method callFloat32: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+        := self callFloat32: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
+
+    public method callFloat64: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+        := self call: function operation: TAC::Operation::CallFloat64 convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
+
+    public method callFloat64: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+        := self callFloat64: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
+
+    public method callVoid: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) ::=> TACInstruction
+        := self call: function operation: TAC::Operation::CallInt64 convention: self compilationTarget defaultCallingConvention arguments: arguments result: nil.
+
+    public method callVoid: (function: TACValue) arguments: (arguments: Array) ::=> TACInstruction
+        := self callVoid: function convention: self compilationTarget defaultCallingConvention arguments: arguments.
 
     public method returnVoid ::=> TACInstruction
         := self operation: TAC::Operation::ReturnVoid.
@@ -932,7 +987,6 @@ public final class TACBlockBuilder superclass: Object; definition: {
 }.
 
 public final class TACFunctionBuilder superclass: Object; definition: {
-    public field compilationTarget => TACCompilationTarget.
     public field function => TACFunction.
 
     public method basicBlock: (name: Symbol) build: (aBlock: (TACBlockBuilder) => Void) ::=> Void := {
@@ -940,7 +994,6 @@ public final class TACFunctionBuilder superclass: Object; definition: {
         function addBasicBlock: block.
 
         let blockBuilder := TACBlockBuilder new
-            compilationTarget: compilationTarget;
             block: block;
             function: function;
             yourself.
@@ -964,13 +1017,13 @@ public final class TACModule superclass: TACProgramEntity; definition: {
 
     public method build: (name: Symbol) function: (aBlock: (TACFunctionBuilder) => Void) ::=> TACFunction := {
         let function := TACFunction new
+            compilationTarget: compilationTarget;
             callingConvention: compilationTarget defaultCallingConvention;
             name: name;
             yourself.
         self addProgramEntity: function.
 
         let builder := TACFunctionBuilder new
-            compilationTarget: compilationTarget;
             function: function;
             yourself.
         aBlock(builder).

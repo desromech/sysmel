@@ -671,7 +671,7 @@ public final class AsmQWordDirective superclass: AsmStreamElement; definition: {
     public field value => UInt64.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: ".word "; print: value.
+        stream nextPutAll: ".qword "; print: value.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {

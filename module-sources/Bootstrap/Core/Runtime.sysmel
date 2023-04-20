@@ -997,6 +997,19 @@ Dictionary
             entry value
         }
     };
+    withSelector: #untypedAt:ifAbsentPut: addMethod: {:(Dictionary)self :(Untyped)key :ifAbsentBlock |
+        self ensureStorage.
+        let: #entryIndex with: (self scanFor: key) asSize.
+        let: #storage with: self storage.
+        let: #entry with: (storage at: entryIndex).
+        if: entry == nil then: {
+            let: #value with: ifAbsentBlock().
+            self at: key put: value.
+            value
+        } else: {
+            entry value
+        }
+    };
     withSelector: #at:ifPresent: addMethod: {:(Dictionary)self :key :ifPresentBlock :: Void |
         self ensureStorage.
         let: #entryIndex with: (self scanFor: key) asSize.
