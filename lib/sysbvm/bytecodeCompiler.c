@@ -1,6 +1,6 @@
 #include "sysbvm/bytecodeCompiler.h"
 #include "sysbvm/array.h"
-#include "sysbvm/arrayList.h"
+#include "sysbvm/orderedCollection.h"
 #include "sysbvm/ast.h"
 #include "sysbvm/dictionary.h"
 #include "sysbvm/environment.h"
@@ -43,9 +43,9 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_create(sysbvm_context_t *conte
     sysbvm_bytecodeCompiler_t *result = (sysbvm_bytecodeCompiler_t*)sysbvm_context_allocatePointerTuple(context, context->roots.bytecodeCompilerType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_bytecodeCompiler_t));
     result->arguments = sysbvm_array_create(context, 0);
     result->captures = sysbvm_array_create(context, 0);
-    result->literals = sysbvm_arrayList_create(context);
+    result->literals = sysbvm_orderedCollection_create(context);
     result->literalDictionary = sysbvm_identityDictionary_create(context);
-    result->temporaries = sysbvm_arrayList_create(context);
+    result->temporaries = sysbvm_orderedCollection_create(context);
     result->usedTemporaryCount = sysbvm_tuple_size_encode(context, 0);
     result->bindingDictionary = sysbvm_identityDictionary_create(context);
     return (sysbvm_tuple_t)result;
@@ -82,9 +82,9 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_addLiteral(sysbvm_context_t *c
     if(sysbvm_identityDictionary_find(compilerObject->literalDictionary, literalValue, &existent))
         return existent;
 
-    size_t literalIndex = sysbvm_arrayList_getSize(compilerObject->literals);
+    size_t literalIndex = sysbvm_orderedCollection_getSize(compilerObject->literals);
     sysbvm_tuple_t newLiteralOperand = sysbvm_bytecodeCompilerInstructionVectorOperand_create(context, SYSBVM_OPERAND_VECTOR_LITERAL, (int16_t)literalIndex);
-    sysbvm_arrayList_add(context, compilerObject->literals, literalValue);
+    sysbvm_orderedCollection_add(context, compilerObject->literals, literalValue);
     sysbvm_identityDictionary_atPut(context, compilerObject->literalDictionary, literalValue, newLiteralOperand);
     return newLiteralOperand;
 }
@@ -222,9 +222,9 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_getBindingValue(sysbvm_context
 SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_newTemporary(sysbvm_context_t *context, sysbvm_tuple_t compiler)
 {
     sysbvm_bytecodeCompiler_t *compilerObject = (sysbvm_bytecodeCompiler_t*)compiler;
-    size_t temporaryIndex = sysbvm_arrayList_getSize(compilerObject->temporaries);
+    size_t temporaryIndex = sysbvm_orderedCollection_getSize(compilerObject->temporaries);
     sysbvm_tuple_t temporaryOperand = sysbvm_bytecodeCompilerInstructionVectorOperand_create(context, SYSBVM_OPERAND_VECTOR_LOCAL, (int16_t)temporaryIndex);
-    sysbvm_arrayList_add(context, compilerObject->temporaries, temporaryOperand);
+    sysbvm_orderedCollection_add(context, compilerObject->temporaries, temporaryOperand);
     return temporaryOperand;
 }
 
@@ -730,10 +730,10 @@ static void sysbvm_bytecodeCompiler_optimizeLocalOnlyAllocaAndSlotReferences(sys
 static void sysbvm_bytecodeCompiler_optimizeTemporaries(sysbvm_context_t *context, sysbvm_bytecodeCompiler_t *compiler)
 {
     // Clear the temporaries usage flags.
-    size_t temporaryCount = sysbvm_arrayList_getSize(compiler->temporaries);
+    size_t temporaryCount = sysbvm_orderedCollection_getSize(compiler->temporaries);
     for(size_t i = 0; i < temporaryCount; ++i)
     {
-        sysbvm_bytecodeCompilerInstructionVectorOperand_t *temporary = (sysbvm_bytecodeCompilerInstructionVectorOperand_t*)sysbvm_arrayList_at(compiler->temporaries, i);
+        sysbvm_bytecodeCompilerInstructionVectorOperand_t *temporary = (sysbvm_bytecodeCompilerInstructionVectorOperand_t*)sysbvm_orderedCollection_at(compiler->temporaries, i);
         temporary->hasAllocaDestination = SYSBVM_FALSE_TUPLE;
         temporary->hasNonAllocaDestination = SYSBVM_FALSE_TUPLE;
         temporary->hasLoadStoreUsage = SYSBVM_FALSE_TUPLE;
@@ -823,19 +823,19 @@ SYSBVM_API void sysbvm_bytecodeCompiler_compileFunctionDefinition(sysbvm_context
     sysbvm_bytecodeCompiler_optimizeTemporaries(context, gcFrame.compiler);
     
     // Assemble the instructions.
-    gcFrame.compiler->usedTemporaryCount = sysbvm_tuple_size_encode(context, sysbvm_arrayList_getSize(gcFrame.compiler->temporaries));
+    gcFrame.compiler->usedTemporaryCount = sysbvm_tuple_size_encode(context, sysbvm_orderedCollection_getSize(gcFrame.compiler->temporaries));
 
     gcFrame.bytecode = (sysbvm_functionBytecode_t*)sysbvm_context_allocatePointerTuple(context, context->roots.functionBytecodeType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_functionBytecode_t));
     gcFrame.bytecode->argumentCount = sysbvm_tuple_size_encode(context, sysbvm_array_getSize(gcFrame.compiler->arguments));
     gcFrame.bytecode->captureVectorSize = sysbvm_tuple_size_encode(context, sysbvm_array_getSize(gcFrame.compiler->captures));
     gcFrame.bytecode->localVectorSize = gcFrame.compiler->usedTemporaryCount;
-    gcFrame.bytecode->literalVector = sysbvm_arrayList_asArray(context, gcFrame.compiler->literals);
+    gcFrame.bytecode->literalVector = sysbvm_orderedCollection_asArray(context, gcFrame.compiler->literals);
 
     // Tables for the debug information.
-    gcFrame.pcToDebugListTable = sysbvm_arrayList_create(context);
-    gcFrame.debugSourceASTNodes = sysbvm_arrayList_create(context);
-    gcFrame.debugSourcePositions = sysbvm_arrayList_create(context);
-    gcFrame.debugSourceEnvironments = sysbvm_arrayList_create(context);
+    gcFrame.pcToDebugListTable = sysbvm_orderedCollection_create(context);
+    gcFrame.debugSourceASTNodes = sysbvm_orderedCollection_create(context);
+    gcFrame.debugSourcePositions = sysbvm_orderedCollection_create(context);
+    gcFrame.debugSourceEnvironments = sysbvm_orderedCollection_create(context);
     gcFrame.debugListsDictionary = sysbvm_dictionary_create(context);
 
     // Assemble the instructions.
@@ -854,19 +854,19 @@ SYSBVM_API void sysbvm_bytecodeCompiler_compileFunctionDefinition(sysbvm_context
         sysbvm_array_atPut(gcFrame.debugSourceTuple, 2, gcFrame.instruction->sourceEnvironment);
         if(!sysbvm_dictionary_find(context, gcFrame.debugListsDictionary, gcFrame.debugSourceTuple, &gcFrame.tableEntry))
         {
-            gcFrame.tableEntry = sysbvm_tuple_size_encode(context, sysbvm_arrayList_getSize(gcFrame.debugSourceASTNodes));
+            gcFrame.tableEntry = sysbvm_tuple_size_encode(context, sysbvm_orderedCollection_getSize(gcFrame.debugSourceASTNodes));
             sysbvm_dictionary_atPut(context, gcFrame.debugListsDictionary, gcFrame.debugSourceTuple, gcFrame.tableEntry);
 
-            sysbvm_arrayList_add(context, gcFrame.debugSourceASTNodes, gcFrame.instruction->sourceASTNode);
-            sysbvm_arrayList_add(context, gcFrame.debugSourcePositions, gcFrame.instruction->sourcePosition);
-            sysbvm_arrayList_add(context, gcFrame.debugSourceEnvironments, gcFrame.instruction->sourceEnvironment);
+            sysbvm_orderedCollection_add(context, gcFrame.debugSourceASTNodes, gcFrame.instruction->sourceASTNode);
+            sysbvm_orderedCollection_add(context, gcFrame.debugSourcePositions, gcFrame.instruction->sourcePosition);
+            sysbvm_orderedCollection_add(context, gcFrame.debugSourceEnvironments, gcFrame.instruction->sourceEnvironment);
         }
 
         gcFrame.debugPC = sysbvm_tuple_size_encode(context, pc);
         if(gcFrame.debugPC != gcFrame.lastDebugPC || gcFrame.tableEntry != gcFrame.lastTableEntity)
         {
-            sysbvm_arrayList_add(context, gcFrame.pcToDebugListTable, gcFrame.debugPC);
-            sysbvm_arrayList_add(context, gcFrame.pcToDebugListTable, gcFrame.tableEntry);
+            sysbvm_orderedCollection_add(context, gcFrame.pcToDebugListTable, gcFrame.debugPC);
+            sysbvm_orderedCollection_add(context, gcFrame.pcToDebugListTable, gcFrame.tableEntry);
         }
 
         gcFrame.lastDebugPC = gcFrame.debugPC;
@@ -882,10 +882,10 @@ SYSBVM_API void sysbvm_bytecodeCompiler_compileFunctionDefinition(sysbvm_context
     // Finish by installing it on the definition.
     gcFrame.definition->bytecode = (sysbvm_tuple_t)gcFrame.bytecode;
 
-    gcFrame.bytecode->pcToDebugListTable = sysbvm_arrayList_asArray(context, gcFrame.pcToDebugListTable);
-    gcFrame.bytecode->debugSourceASTNodes = sysbvm_arrayList_asArray(context, gcFrame.debugSourceASTNodes);
-    gcFrame.bytecode->debugSourcePositions = sysbvm_arrayList_asArray(context, gcFrame.debugSourcePositions);
-    gcFrame.bytecode->debugSourceEnvironments = sysbvm_arrayList_asArray(context, gcFrame.debugSourceEnvironments);
+    gcFrame.bytecode->pcToDebugListTable = sysbvm_orderedCollection_asArray(context, gcFrame.pcToDebugListTable);
+    gcFrame.bytecode->debugSourceASTNodes = sysbvm_orderedCollection_asArray(context, gcFrame.debugSourceASTNodes);
+    gcFrame.bytecode->debugSourcePositions = sysbvm_orderedCollection_asArray(context, gcFrame.debugSourcePositions);
+    gcFrame.bytecode->debugSourceEnvironments = sysbvm_orderedCollection_asArray(context, gcFrame.debugSourceEnvironments);
 }
 
 static sysbvm_tuple_t sysbvm_astBreakNode_primitiveCompileIntoBytecode(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -1035,10 +1035,10 @@ static sysbvm_tuple_t sysbvm_bytecodeCompiler_getLiteralFunctionPrimitiveName(sy
     int16_t index = sysbvm_tuple_int16_decode(vectorOperand->index);
     int16_t vectorType = sysbvm_tuple_int16_decode(vectorOperand->vectorType);
     sysbvm_bytecodeCompiler_t *compilerObject = (sysbvm_bytecodeCompiler_t*)compiler;
-    if(vectorType != SYSBVM_OPERAND_VECTOR_LITERAL || index < 0 || (size_t)index >= sysbvm_arrayList_getSize(compilerObject->literals))
+    if(vectorType != SYSBVM_OPERAND_VECTOR_LITERAL || index < 0 || (size_t)index >= sysbvm_orderedCollection_getSize(compilerObject->literals))
         return SYSBVM_NULL_TUPLE;
 
-    sysbvm_tuple_t literal = sysbvm_arrayList_at(compilerObject->literals, index);
+    sysbvm_tuple_t literal = sysbvm_orderedCollection_at(compilerObject->literals, index);
     if(!sysbvm_tuple_isFunction(context, literal))
         return SYSBVM_NULL_TUPLE;
 

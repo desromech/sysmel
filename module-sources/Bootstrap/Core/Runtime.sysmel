@@ -403,7 +403,7 @@ Type
     } withEagerAnalysis;
     withSelector: #addTypeSlot: addMethod: {:(Type)self :(TypeSlot)extraSlot :: Void |
         if: self totalSlotCount ~~ nil then: (self error: "Cannot add type slot when the total slot count has already been computed").
-        if: self pendingSlots == nil then: (self pendingSlots: ArrayList new).
+        if: self pendingSlots == nil then: (self pendingSlots: OrderedCollection new).
 
         self invalidateLayout.
         self pendingSlots add: extraSlot.
@@ -890,14 +890,14 @@ Collection
     };
 
     withSelector: #select: addMethod: {:(Collection)self :aBlock :: Collection |
-        let: #result with: ArrayList new.
+        let: #result with: OrderedCollection new.
         self do: {:each :: Void |
             if: aBlock(each) then: (result add: each)
         }.
         result
     };
     withSelector: #reject: addMethod: {:(Collection)self :aBlock :: Collection |
-        let: #result with: ArrayList new.
+        let: #result with: OrderedCollection new.
         self do: {:each :: Void |
             if: aBlock(each) not then: (result add: each)
         }.
@@ -1384,40 +1384,40 @@ SequenceableCollection
         self sorted: {:a :b :: Boolean | a < b }
     }.
 
-ArrayList
-    withSelector: #arrayType addClassMethod: {:(ArrayList class)self :: Array class |
+OrderedCollection
+    withSelector: #arrayType addClassMethod: {:(OrderedCollection class)self :: Array class |
         Array
     };
-    withSelector: #new: addClassMethod: {:(ArrayList class)self :(Size)initialSize :: self |
+    withSelector: #new: addClassMethod: {:(OrderedCollection class)self :(Size)initialSize :: self |
         self basicNew initializeWithSize: initialSize; yourself
     } makeFinal;
-    withSelector: #initialize addMethod: {:(ArrayList)self :: Void |
+    withSelector: #initialize addMethod: {:(OrderedCollection)self :: Void |
         self size: 0sz
     };
-    withSelector: #initializeWithSize: addMethod: {:(ArrayList)self :(Size)initialSize :: Void |
+    withSelector: #initializeWithSize: addMethod: {:(OrderedCollection)self :(Size)initialSize :: Void |
         self size: initialSize.
         self storage: (self class arrayType new: initialSize).
     };
-    withSelector: #addAll: addMethod: {:(ArrayList)self :(Collection)elements |
+    withSelector: #addAll: addMethod: {:(OrderedCollection)self :(Collection)elements |
         elements do: {:each :: Void |
             self add: each
         }
     };
-    withSelector: #at: addMethod: {:(ArrayList)self :(Size)index |
+    withSelector: #at: addMethod: {:(OrderedCollection)self :(Size)index |
         if: index < self size then: {
             self storage at: index
         } else: {
             error("Index out of bounds.")
         }
     };
-    withSelector: #at:put: addMethod: {:(ArrayList)self :(Size)index :value :: Void |
+    withSelector: #at:put: addMethod: {:(OrderedCollection)self :(Size)index :value :: Void |
         if: index < self size then: {
             self storage at: index put: value
         } else: {
             error("Index out of bounds.")
         }
     };
-    withSelector: #removeAllThat: addMethod: {:(ArrayList)self :aPredicate :: Void |
+    withSelector: #removeAllThat: addMethod: {:(OrderedCollection)self :aPredicate :: Void |
         let: #size with: self size.
         let: #storage with: self storage.
         let: #newSize mutableWith: 0sz.
@@ -1433,7 +1433,7 @@ ArrayList
 
         self size: newSize
     };
-    withSelector: #removeAllOcurrencesOf: addMethod: {:(ArrayList)self :value :: Void |
+    withSelector: #removeAllOcurrencesOf: addMethod: {:(OrderedCollection)self :value :: Void |
         let: #size with: self size.
         let: #storage with: self storage.
         let: #newSize mutableWith: 0sz.
@@ -1450,8 +1450,8 @@ ArrayList
         self size: newSize
     }.
 
-WeakArrayList
-    withSelector: #arrayType addClassMethod: {:(ArrayList class)self :: Array class |
+WeakOrderedCollection
+    withSelector: #arrayType addClassMethod: {:(OrderedCollection class)self :: Array class |
         WeakArray
     }.
     
@@ -1950,7 +1950,7 @@ Type
     withSelector: #validSlotsWithBasicInitialization addMethod: {:(Type)self :: Array |
         if: self slotsWithBasicInitialization == nil then: {
             let: #supertype with: self supertype.
-            let: #result with: ArrayList new.
+            let: #result with: OrderedCollection new.
             if: supertype ~~ nil then: (result addAll: supertype validSlotsWithBasicInitialization).
 
             self validSlots do: {:(TypeSlot)typeSlot :: Void |
@@ -1965,7 +1965,7 @@ Type
     }.
 
 Array validSlotsWithBasicInitialization.
-ArrayList validSlotsWithBasicInitialization.
+OrderedCollection validSlotsWithBasicInitialization.
 
 Type
     withSelector: #basicInitializeInstance: addMethod: {:(Type)self :(AnyValue)instance :: Void |
@@ -1976,8 +1976,8 @@ Type
             (validSlots at: i) basicInitializeInstance: instance
         ) continueWith: (i := i + 1sz)
     } withEagerAnalysis;
-    withSelector: #validSubtypeList addMethod: {:(Type)self :: WeakArrayList |
-        if: self subtypes == nil then: (self subtypes: WeakArrayList new).
+    withSelector: #validSubtypeList addMethod: {:(Type)self :: WeakOrderedCollection |
+        if: self subtypes == nil then: (self subtypes: WeakOrderedCollection new).
         self subtypes
     };
     withSelector: #addSubtype: addMethod: {:(Type)self :(Type)aSubtype :: Void |
@@ -2011,15 +2011,15 @@ Type
         self allSubtypesDo: aBlock
     };
 
-    withSelector: #allSubtypes addMethod: {:(Type)self :: ArrayList |
-        let: #result with: ArrayList new.
+    withSelector: #allSubtypes addMethod: {:(Type)self :: OrderedCollection |
+        let: #result with: OrderedCollection new.
         self allSubtypesDo: {:(Type)each :: Void |
             result add: each
         }.
         result
     };
-    withSelector: #withAllSubtypes addMethod: {:(Type)self :: ArrayList |
-        let: #result with: ArrayList new.
+    withSelector: #withAllSubtypes addMethod: {:(Type)self :: OrderedCollection |
+        let: #result with: OrderedCollection new.
         self withAllSubtypesDo: {:(Type)each :: Void |
             result add: each
         }.
@@ -2033,7 +2033,7 @@ Type
         })
     };
     withSelector: #selectors addMethod: {:(Type)self :: Array |
-        let: #selectors with: ArrayList new.
+        let: #selectors with: OrderedCollection new.
 
         self selectorsDo: {:each :: Void |
             selectors add: each
@@ -2063,7 +2063,7 @@ Type
     };
     withSelector: #allInstances addMethod: {:(Type)self :: Array |
         let: #instance mutableWith: RawTuple::firstInstanceWithType(self).
-        let: #result with: ArrayList new.
+        let: #result with: OrderedCollection new.
         while: instance ~~ nil do: (
             result add: instance
         ) continueWith: (instance := RawTuple::nextInstanceWithSameType(instance)).

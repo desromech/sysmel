@@ -1,6 +1,6 @@
 #include "sysbvm/environment.h"
 #include "sysbvm/array.h"
-#include "sysbvm/arrayList.h"
+#include "sysbvm/orderedCollection.h"
 #include "sysbvm/assert.h"
 #include "sysbvm/association.h"
 #include "sysbvm/dictionary.h"
@@ -281,11 +281,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionAnalysisEnvironment_create(sysbvm_conte
     result->super.super.parent = parent;
     result->functionDefinition = functionDefinition;
     result->captureBindingTable = sysbvm_identityDictionary_create(context);
-    result->captureBindingList = sysbvm_arrayList_create(context);
-    result->argumentBindingList = sysbvm_arrayList_create(context);
-    result->localBindingList = sysbvm_arrayList_create(context);
-    result->innerFunctionList = sysbvm_arrayList_create(context);
-    result->pragmaList = sysbvm_arrayList_create(context);
+    result->captureBindingList = sysbvm_orderedCollection_create(context);
+    result->argumentBindingList = sysbvm_orderedCollection_create(context);
+    result->localBindingList = sysbvm_orderedCollection_create(context);
+    result->innerFunctionList = sysbvm_orderedCollection_create(context);
+    result->pragmaList = sysbvm_orderedCollection_create(context);
     result->hasBreakTarget = SYSBVM_FALSE_TUPLE;
     result->hasContinueTarget = SYSBVM_FALSE_TUPLE;
     return (sysbvm_tuple_t)result;
@@ -559,8 +559,8 @@ SYSBVM_API void sysbvm_analysisAndEvaluationEnvironment_addUseTupleWithNamedSlot
 
     sysbvm_analysisAndEvaluationEnvironment_t *environmentObject = (sysbvm_analysisAndEvaluationEnvironment_t*)environment;
     if(!environmentObject->usedTuplesWithNamedSlots)
-        environmentObject->usedTuplesWithNamedSlots = sysbvm_arrayList_create(context);
-    sysbvm_arrayList_add(context, environmentObject->usedTuplesWithNamedSlots, binding);
+        environmentObject->usedTuplesWithNamedSlots = sysbvm_orderedCollection_create(context);
+    sysbvm_orderedCollection_add(context, environmentObject->usedTuplesWithNamedSlots, binding);
 }
 
 SYSBVM_API bool sysbvm_environment_isAnalysisAndEvaluationEnvironment(sysbvm_context_t *context, sysbvm_tuple_t environment)
@@ -601,10 +601,10 @@ SYSBVM_API bool sysbvm_analysisEnvironment_lookSymbolRecursively(sysbvm_context_
         sysbvm_analysisAndEvaluationEnvironment_t *analyzeAndEvalEnvironment = (sysbvm_analysisAndEvaluationEnvironment_t*)environment;
         if(analyzeAndEvalEnvironment->usedTuplesWithNamedSlots)
         {
-            size_t usedObjectCount = sysbvm_arrayList_getSize(analyzeAndEvalEnvironment->usedTuplesWithNamedSlots);
+            size_t usedObjectCount = sysbvm_orderedCollection_getSize(analyzeAndEvalEnvironment->usedTuplesWithNamedSlots);
             for(size_t i = 0; i < usedObjectCount; ++i)
             {
-                sysbvm_tuple_t binding = sysbvm_arrayList_at(analyzeAndEvalEnvironment->usedTuplesWithNamedSlots, i);
+                sysbvm_tuple_t binding = sysbvm_orderedCollection_at(analyzeAndEvalEnvironment->usedTuplesWithNamedSlots, i);
                 sysbvm_tuple_t bindingType = sysbvm_symbolBinding_getType(binding);
                 sysbvm_tuple_t foundSlot = sysbvm_type_lookupSlot(context, bindingType, symbol);
                 if(foundSlot)
@@ -632,9 +632,9 @@ SYSBVM_API bool sysbvm_analysisEnvironment_lookSymbolRecursively(sysbvm_context_
         if(sysbvm_symbolBinding_isAnalysisBinding(context, parentSymbol))
         {
             // Create the capture and store it.
-            sysbvm_tuple_t captureBinding = sysbvm_symbolCaptureBinding_create(context, parentSymbol, functionAnalysisEnvironment->functionDefinition, sysbvm_arrayList_getSize(functionAnalysisEnvironment->captureBindingList));
+            sysbvm_tuple_t captureBinding = sysbvm_symbolCaptureBinding_create(context, parentSymbol, functionAnalysisEnvironment->functionDefinition, sysbvm_orderedCollection_getSize(functionAnalysisEnvironment->captureBindingList));
             sysbvm_identityDictionary_atPut(context, functionAnalysisEnvironment->captureBindingTable, symbol, captureBinding);
-            sysbvm_arrayList_add(context, functionAnalysisEnvironment->captureBindingList, captureBinding);
+            sysbvm_orderedCollection_add(context, functionAnalysisEnvironment->captureBindingList, captureBinding);
             *outBinding = captureBinding;
             return true;
         }
@@ -653,9 +653,9 @@ SYSBVM_API sysbvm_tuple_t sysbvm_analysisEnvironment_setNewSymbolArgumentBinding
         sysbvm_error("A function analysis environment is required here.");
 
     sysbvm_functionAnalysisEnvironment_t *functionAnalysisEnvironmentObject = (sysbvm_functionAnalysisEnvironment_t*)functionAnalysisEnvironment;
-    sysbvm_tuple_t binding = sysbvm_symbolArgumentBinding_create(context, sourcePosition, name, type, functionAnalysisEnvironmentObject->functionDefinition, sysbvm_arrayList_getSize(functionAnalysisEnvironmentObject->argumentBindingList));
+    sysbvm_tuple_t binding = sysbvm_symbolArgumentBinding_create(context, sourcePosition, name, type, functionAnalysisEnvironmentObject->functionDefinition, sysbvm_orderedCollection_getSize(functionAnalysisEnvironmentObject->argumentBindingList));
     sysbvm_environment_setNewBinding(context, environment, binding);
-    sysbvm_arrayList_add(context, functionAnalysisEnvironmentObject->argumentBindingList, binding);
+    sysbvm_orderedCollection_add(context, functionAnalysisEnvironmentObject->argumentBindingList, binding);
     return binding;
 }
 
@@ -666,10 +666,10 @@ SYSBVM_API sysbvm_tuple_t sysbvm_analysisEnvironment_setNewSymbolLocalBinding(sy
         sysbvm_error("A function analysis environment is required here.");
 
     sysbvm_functionAnalysisEnvironment_t *functionAnalysisEnvironmentObject = (sysbvm_functionAnalysisEnvironment_t*)functionAnalysisEnvironment;
-    sysbvm_tuple_t binding = sysbvm_symbolLocalBinding_create(context, sourcePosition, name, type, functionAnalysisEnvironmentObject->functionDefinition, sysbvm_arrayList_getSize(functionAnalysisEnvironmentObject->localBindingList));
+    sysbvm_tuple_t binding = sysbvm_symbolLocalBinding_create(context, sourcePosition, name, type, functionAnalysisEnvironmentObject->functionDefinition, sysbvm_orderedCollection_getSize(functionAnalysisEnvironmentObject->localBindingList));
     if(name)
         sysbvm_environment_setNewBinding(context, environment, binding);
-    sysbvm_arrayList_add(context, functionAnalysisEnvironmentObject->localBindingList, binding);
+    sysbvm_orderedCollection_add(context, functionAnalysisEnvironmentObject->localBindingList, binding);
     return binding;
 }
 
@@ -681,7 +681,7 @@ SYSBVM_API void sysbvm_analysisEnvironment_addPragma(sysbvm_context_t *context, 
 
     sysbvm_functionAnalysisEnvironment_t *functionAnalysisEnvironmentObject = (sysbvm_functionAnalysisEnvironment_t*)functionAnalysisEnvironment;
     sysbvm_pragma_t *pragmaObject = (sysbvm_pragma_t*)pragma;
-    sysbvm_arrayList_add(context, functionAnalysisEnvironmentObject->pragmaList, pragma);
+    sysbvm_orderedCollection_add(context, functionAnalysisEnvironmentObject->pragmaList, pragma);
 
     if(pragmaObject->selector == context->roots.primitiveNamedSelector && !functionAnalysisEnvironmentObject->primitiveName)
         functionAnalysisEnvironmentObject->primitiveName = sysbvm_array_at(pragmaObject->arguments, 0);
@@ -694,7 +694,7 @@ SYSBVM_API void sysbvm_analysisEnvironment_addInnerFunction(sysbvm_context_t *co
         sysbvm_error("A function analysis environment is required here.");
 
     sysbvm_functionAnalysisEnvironment_t *functionAnalysisEnvironmentObject = (sysbvm_functionAnalysisEnvironment_t*)functionAnalysisEnvironment;
-    sysbvm_arrayList_add(context, functionAnalysisEnvironmentObject->innerFunctionList, innerFunction);
+    sysbvm_orderedCollection_add(context, functionAnalysisEnvironmentObject->innerFunctionList, innerFunction);
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_environment_setNewMacroValueBinding(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t name, sysbvm_tuple_t expansion)

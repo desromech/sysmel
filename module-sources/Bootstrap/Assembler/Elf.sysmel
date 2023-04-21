@@ -262,15 +262,15 @@ let elfSymbolTypeMap := #{
 
 public final class Elf32::SymbolTable superclass: Object; definition: {
     public field stringTable => AsmObjectCodeCStringTable.
-    public field privateSymbols => ArrayList.
-    public field publicSymbols => ArrayList.
+    public field privateSymbols => OrderedCollection.
+    public field publicSymbols => OrderedCollection.
     protected field privateSymbolDictionary => Dictionary.
     protected field publicSymbolDictionary => Dictionary.
     protected field sectionIndexTable => Dictionary.
 
     public method initialize => Void := {
-        publicSymbols := ArrayList new.
-        privateSymbols := ArrayList new.
+        publicSymbols := OrderedCollection new.
+        privateSymbols := OrderedCollection new.
         privateSymbolDictionary := Dictionary new.
         publicSymbolDictionary := Dictionary new.
         sectionIndexTable := Dictionary new.
@@ -330,15 +330,15 @@ public final class Elf32::SymbolTable superclass: Object; definition: {
 
 public final class Elf64::SymbolTable superclass: Object; definition: {
     public field stringTable => AsmObjectCodeCStringTable.
-    public field privateSymbols => ArrayList.
-    public field publicSymbols => ArrayList.
+    public field privateSymbols => OrderedCollection.
+    public field publicSymbols => OrderedCollection.
     protected field privateSymbolDictionary => Dictionary.
     protected field publicSymbolDictionary => Dictionary.
     protected field sectionIndexTable => Dictionary.
 
     public method initialize => Void := {
-        publicSymbols := ArrayList new.
-        privateSymbols := ArrayList new.
+        publicSymbols := OrderedCollection new.
+        privateSymbols := OrderedCollection new.
         privateSymbolDictionary := Dictionary new.
         publicSymbolDictionary := Dictionary new.
         sectionIndexTable := Dictionary new.
@@ -419,7 +419,7 @@ public final class AsmObjectElf32FileWriter superclass: AsmObjectFileWriter; def
             machine: compilationTarget elfMachine;
             yourself.
 
-        let fileLayout := ArrayList new.
+        let fileLayout := OrderedCollection new.
         fileLayout
             add: header;
             addAll: objectCode sections.
@@ -431,8 +431,8 @@ public final class AsmObjectElf32FileWriter superclass: AsmObjectFileWriter; def
         symbolTable stringTable: stringTable.
 
         ## Section headers with their corresponding data elements.
-        let sectionHeaders := ArrayList new.
-        let sectionDataElements := ArrayList new.
+        let sectionHeaders := OrderedCollection new.
+        let sectionDataElements := OrderedCollection new.
         sectionHeaders add: Elf32::SectionHeader new. ## Null section
         sectionDataElements add: nil.
 
@@ -456,7 +456,7 @@ public final class AsmObjectElf32FileWriter superclass: AsmObjectFileWriter; def
         }.
 
         ## Emit the relocations.
-        let relSectionHeaders := ArrayList new.
+        let relSectionHeaders := OrderedCollection new.
 
         objectCode sections doWithIndex: {:(AsmObjectCodeSection)eachSection :(Size)index :: Void |
             let sectionHeaderIndex := index + 1sz.
@@ -591,7 +591,7 @@ public final class AsmObjectElf64FileWriter superclass: AsmObjectFileWriter; def
             machine: compilationTarget elfMachine;
             yourself.
 
-        let fileLayout := ArrayList new.
+        let fileLayout := OrderedCollection new.
         fileLayout
             add: header;
             addAll: objectCode sections.
@@ -603,8 +603,8 @@ public final class AsmObjectElf64FileWriter superclass: AsmObjectFileWriter; def
         symbolTable stringTable: stringTable.
 
         ## Section headers with their corresponding data elements.
-        let sectionHeaders := ArrayList new.
-        let sectionDataElements := ArrayList new.
+        let sectionHeaders := OrderedCollection new.
+        let sectionDataElements := OrderedCollection new.
         sectionHeaders add: Elf64::SectionHeader new. ## Null section
         sectionDataElements add: nil.
 
@@ -628,7 +628,7 @@ public final class AsmObjectElf64FileWriter superclass: AsmObjectFileWriter; def
         }.
 
         ## Emit the relocations.
-        let relSectionHeaders := ArrayList new.
+        let relSectionHeaders := OrderedCollection new.
 
         objectCode sections doWithIndex: {:(AsmObjectCodeSection)eachSection :(Size)index :: Void |
             let sectionHeaderIndex := index + 1sz.

@@ -1,7 +1,7 @@
 #include "sysbvm/sysmelParser.h"
 #include "sysbvm/ast.h"
 #include "sysbvm/array.h"
-#include "sysbvm/arrayList.h"
+#include "sysbvm/orderedCollection.h"
 #include "sysbvm/arraySlice.h"
 #include "sysbvm/function.h"
 #include "sysbvm/gc.h"
@@ -265,11 +265,11 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseBlockExpression(sysbvm_context_t 
 
         if(!hasArguments)
         {
-            argumentList = sysbvm_arrayList_create(context);
+            argumentList = sysbvm_orderedCollection_create(context);
             hasArguments = true;
         }
 
-        sysbvm_arrayList_add(context, argumentList, argument);
+        sysbvm_orderedCollection_add(context, argumentList, argument);
     }
 
     if(hasArguments && sysbvm_sysmelParser_lookKindAt(state, 0) == SYSBVM_TOKEN_KIND_ELLIPSIS)
@@ -308,11 +308,11 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseBlockExpression(sysbvm_context_t 
     if(isLambda)
     {
         if(!argumentList)
-            argumentList = sysbvm_arrayList_create(context);
+            argumentList = sysbvm_orderedCollection_create(context);
 
         sysbvm_tuple_t flags = sysbvm_tuple_bitflags_encode(hasEllipsis ? SYSBVM_FUNCTION_FLAGS_VARIADIC : SYSBVM_FUNCTION_FLAGS_NONE);
         return sysbvm_astLambdaNode_create(context, sourcePosition, flags,
-            sysbvm_arrayList_asArray(context, argumentList),
+            sysbvm_orderedCollection_asArray(context, argumentList),
             resultTypeExpression, sequenceNode);
     }
     else
@@ -365,7 +365,7 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseLiteralByteArrayExpression(sysbvm
     size_t startPosition = state->tokenPosition;
     ++state->tokenPosition;
 
-    sysbvm_tuple_t elements = sysbvm_arrayList_create(context);
+    sysbvm_tuple_t elements = sysbvm_orderedCollection_create(context);
     while(sysbvm_sysmelParser_lookKindAt(state, 0) >= 0
         && sysbvm_sysmelParser_lookKindAt(state, 0) != SYSBVM_TOKEN_KIND_RBRACKET)
     {
@@ -379,7 +379,7 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseLiteralByteArrayExpression(sysbvm
             sysbvm_tuple_t element = sysbvm_sysmelParser_parseLiteralTokenValue(context, state);
             if(!element)
                 break;
-            sysbvm_arrayList_add(context, elements, element);
+            sysbvm_orderedCollection_add(context, elements, element);
         }
         else
         {
@@ -394,7 +394,7 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseLiteralByteArrayExpression(sysbvm
     size_t endPosition = state->tokenPosition;
     return sysbvm_astMakeByteArrayNode_create(context,
         sysbvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition),
-        sysbvm_arrayList_asArray(context, elements));
+        sysbvm_orderedCollection_asArray(context, elements));
 }
 
 static sysbvm_tuple_t sysbvm_sysmelParser_parseLiteralArrayExpression(sysbvm_context_t *context, sysbvm_sysmelParser_state_t *state)
@@ -405,7 +405,7 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseLiteralArrayExpression(sysbvm_con
     size_t startPosition = state->tokenPosition;
     ++state->tokenPosition;
 
-    sysbvm_tuple_t elements = sysbvm_arrayList_create(context);
+    sysbvm_tuple_t elements = sysbvm_orderedCollection_create(context);
     while(sysbvm_sysmelParser_lookKindAt(state, 0) >= 0
         && sysbvm_sysmelParser_lookKindAt(state, 0) != SYSBVM_TOKEN_KIND_RPARENT)
     {
@@ -413,7 +413,7 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseLiteralArrayExpression(sysbvm_con
         if(!element)
             break;
         
-        sysbvm_arrayList_add(context, elements, element);
+        sysbvm_orderedCollection_add(context, elements, element);
     }
 
     if(sysbvm_sysmelParser_lookKindAt(state, 0) != SYSBVM_TOKEN_KIND_RPARENT)
@@ -423,7 +423,7 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseLiteralArrayExpression(sysbvm_con
     size_t endPosition = state->tokenPosition;
     return sysbvm_astMakeArrayNode_create(context,
         sysbvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition),
-        sysbvm_arrayList_asArray(context, elements));
+        sysbvm_orderedCollection_asArray(context, elements));
 }
 
 static sysbvm_tuple_t sysbvm_sysmelParser_parseByteArrayExpression(sysbvm_context_t *context, sysbvm_sysmelParser_state_t *state)
@@ -488,14 +488,14 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseDictionaryElements(sysbvm_context
     while(sysbvm_sysmelParser_lookKindAt(state, 0) == SYSBVM_TOKEN_KIND_DOT)
         ++state->tokenPosition;
 
-    sysbvm_tuple_t associations = sysbvm_arrayList_create(context);
+    sysbvm_tuple_t associations = sysbvm_orderedCollection_create(context);
     while(sysbvm_sysmelParser_lookKindAt(state, 0) != SYSBVM_TOKEN_KIND_RCBRACKET)
     {
         sysbvm_tuple_t association = sysbvm_sysmelParser_parseDictionaryElement(context, state);
         if(!association)
             break;
 
-        sysbvm_arrayList_add(context, associations, association);
+        sysbvm_orderedCollection_add(context, associations, association);
         if(sysbvm_sysmelParser_lookKindAt(state, 0) != SYSBVM_TOKEN_KIND_DOT || sysbvm_astNode_isErrorNode(context, association))
             break;
         
@@ -503,7 +503,7 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseDictionaryElements(sysbvm_context
             ++state->tokenPosition;
     }
 
-    return sysbvm_arrayList_asArray(context, associations);
+    return sysbvm_orderedCollection_asArray(context, associations);
 }
 
 static sysbvm_tuple_t sysbvm_sysmelParser_parseDictionaryExpression(sysbvm_context_t *context, sysbvm_sysmelParser_state_t *state)
@@ -584,22 +584,22 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseCallExpressionWithReceiver(sysbvm
     ++state->tokenPosition;
 
     // Optional arguments.
-    sysbvm_tuple_t argumentArrayList = sysbvm_arrayList_create(context);
-    sysbvm_arrayList_add(context, argumentArrayList, receiver);
+    sysbvm_tuple_t argumentOrderedCollection = sysbvm_orderedCollection_create(context);
+    sysbvm_orderedCollection_add(context, argumentOrderedCollection, receiver);
     if(sysbvm_sysmelParser_lookKindAt(state, 0) >= 0 && sysbvm_sysmelParser_lookKindAt(state, 0) != SYSBVM_TOKEN_KIND_RPARENT)
     {
         sysbvm_tuple_t argument = sysbvm_sysmelParser_parseCommaExpressionElement(context, state);
-        sysbvm_arrayList_add(context, argumentArrayList, argument);
+        sysbvm_orderedCollection_add(context, argumentOrderedCollection, argument);
 
         while(sysbvm_sysmelParser_lookKindAt(state, 0) == SYSBVM_TOKEN_KIND_COMMA)
         {
             ++state->tokenPosition;
             argument = sysbvm_sysmelParser_parseCommaExpressionElement(context, state);
-            sysbvm_arrayList_add(context, argumentArrayList, argument);
+            sysbvm_orderedCollection_add(context, argumentOrderedCollection, argument);
         }
     }
 
-    sysbvm_tuple_t arguments = sysbvm_arrayList_asArray(context, argumentArrayList);
+    sysbvm_tuple_t arguments = sysbvm_orderedCollection_asArray(context, argumentOrderedCollection);
     if(sysbvm_sysmelParser_lookKindAt(state, 0) != SYSBVM_TOKEN_KIND_RPARENT)
         return sysbvm_astErrorNode_createWithCString(context, sysbvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a right parenthesis.");
     ++state->tokenPosition;
@@ -720,32 +720,32 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseBinaryExpression(sysbvm_context_t
     sysbvm_tuple_t firstOperand = sysbvm_sysmelParser_parseUnaryExpression(context, state);
     if(sysbvm_sysmelParser_isBinaryExpressionOperator(sysbvm_sysmelParser_lookKindAt(state, 0)))
     {
-        sysbvm_tuple_t operands = sysbvm_arrayList_create(context);
-        sysbvm_tuple_t operators = sysbvm_arrayList_create(context);
-        sysbvm_arrayList_add(context, operands, firstOperand);
+        sysbvm_tuple_t operands = sysbvm_orderedCollection_create(context);
+        sysbvm_tuple_t operators = sysbvm_orderedCollection_create(context);
+        sysbvm_orderedCollection_add(context, operands, firstOperand);
 
         while(sysbvm_sysmelParser_isBinaryExpressionOperator(sysbvm_sysmelParser_lookKindAt(state, 0)))
         {
             sysbvm_tuple_t binaryOperator = sysbvm_sysmelParser_parseLiteralTokenValue(context, state);
-            sysbvm_arrayList_add(context, operators, binaryOperator);
+            sysbvm_orderedCollection_add(context, operators, binaryOperator);
 
             sysbvm_tuple_t nextOperand = sysbvm_sysmelParser_parseUnaryExpression(context, state);
-            sysbvm_arrayList_add(context, operands, nextOperand);
+            sysbvm_orderedCollection_add(context, operands, nextOperand);
         }
 
         size_t endPosition = state->tokenPosition;
         sysbvm_tuple_t sourcePosition = sysbvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition);
 
         // Collapse single binary operation into a message send here.
-        if(sysbvm_arrayList_getSize(operators) == 1)
+        if(sysbvm_orderedCollection_getSize(operators) == 1)
         {
-            sysbvm_tuple_t receiver = sysbvm_arrayList_at(operands, 0);
-            sysbvm_tuple_t selector = sysbvm_arrayList_at(operators, 0);
-            sysbvm_tuple_t argument = sysbvm_arrayList_at(operands, 1);
+            sysbvm_tuple_t receiver = sysbvm_orderedCollection_at(operands, 0);
+            sysbvm_tuple_t selector = sysbvm_orderedCollection_at(operators, 0);
+            sysbvm_tuple_t argument = sysbvm_orderedCollection_at(operands, 1);
             return sysbvm_sysmelParser_makeBinaryMessageSend(context, sourcePosition, receiver, selector, argument);
         }
 
-        return sysbvm_astBinaryExpressionSequenceNode_create(context, sourcePosition, sysbvm_arrayList_asArray(context, operands), sysbvm_arrayList_asArray(context, operators));
+        return sysbvm_astBinaryExpressionSequenceNode_create(context, sourcePosition, sysbvm_orderedCollection_asArray(context, operands), sysbvm_orderedCollection_asArray(context, operators));
     }
     else
     {
@@ -761,7 +761,7 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseMessageWithoutReceiver(sysbvm_con
     size_t startPosition = state->tokenPosition;
     size_t keywordEndPosition = state->tokenPosition;
     sysbvm_tuple_t selectorBuilder = sysbvm_stringStream_create(context);
-    sysbvm_tuple_t argumentArrayList = sysbvm_arrayList_create(context);
+    sysbvm_tuple_t argumentOrderedCollection = sysbvm_orderedCollection_create(context);
     while(sysbvm_sysmelParser_lookKindAt(state, 0) == SYSBVM_TOKEN_KIND_KEYWORD)
     {
         sysbvm_stringStream_nextPutString(context, selectorBuilder, sysbvm_token_getValue(sysbvm_sysmelParser_lookAt(state, 0)));
@@ -769,7 +769,7 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseMessageWithoutReceiver(sysbvm_con
         keywordEndPosition = state->tokenPosition;
 
         sysbvm_tuple_t argument = sysbvm_sysmelParser_parseBinaryExpression(context, state);
-        sysbvm_arrayList_add(context, argumentArrayList, argument);
+        sysbvm_orderedCollection_add(context, argumentOrderedCollection, argument);
     }
 
     sysbvm_tuple_t keywordSourcePosition = sysbvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, keywordEndPosition);
@@ -777,7 +777,7 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseMessageWithoutReceiver(sysbvm_con
 
     size_t endPosition = state->tokenPosition;
     sysbvm_tuple_t sourcePosition = sysbvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition);
-    return sysbvm_astUnexpandedApplicationNode_create(context, sourcePosition, functionExpression, sysbvm_arrayList_asArray(context, argumentArrayList));
+    return sysbvm_astUnexpandedApplicationNode_create(context, sourcePosition, functionExpression, sysbvm_orderedCollection_asArray(context, argumentOrderedCollection));
 }
 
 static void sysbvm_sysmelParser_parseKeywordMessageParts(sysbvm_context_t *context, sysbvm_sysmelParser_state_t *state, sysbvm_tuple_t *outSelector, sysbvm_tuple_t *outArguments)
@@ -785,7 +785,7 @@ static void sysbvm_sysmelParser_parseKeywordMessageParts(sysbvm_context_t *conte
     size_t keywordStartPosition = state->tokenPosition;
     size_t keywordEndPosition = state->tokenPosition;
     sysbvm_tuple_t selectorBuilder = sysbvm_stringStream_create(context);
-    sysbvm_tuple_t argumentArrayList = sysbvm_arrayList_create(context);
+    sysbvm_tuple_t argumentOrderedCollection = sysbvm_orderedCollection_create(context);
     while(sysbvm_sysmelParser_lookKindAt(state, 0) == SYSBVM_TOKEN_KIND_KEYWORD)
     {
         sysbvm_stringStream_nextPutString(context, selectorBuilder, sysbvm_token_getValue(sysbvm_sysmelParser_lookAt(state, 0)));
@@ -793,18 +793,18 @@ static void sysbvm_sysmelParser_parseKeywordMessageParts(sysbvm_context_t *conte
         keywordEndPosition = state->tokenPosition;
 
         sysbvm_tuple_t argument = sysbvm_sysmelParser_parseBinaryExpression(context, state);
-        sysbvm_arrayList_add(context, argumentArrayList, argument);
+        sysbvm_orderedCollection_add(context, argumentOrderedCollection, argument);
     }
 
     sysbvm_tuple_t keywordSourcePosition = sysbvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, keywordStartPosition, keywordEndPosition);
     *outSelector = sysbvm_astLiteralNode_create(context, keywordSourcePosition, sysbvm_stringStream_asSymbol(context, selectorBuilder));
-    *outArguments = sysbvm_arrayList_asArray(context, argumentArrayList);
+    *outArguments = sysbvm_orderedCollection_asArray(context, argumentOrderedCollection);
 }
 
 static sysbvm_tuple_t sysbvm_sysmelParser_parseMessageChainList(sysbvm_context_t *context, sysbvm_sysmelParser_state_t *state, size_t startPosition, sysbvm_tuple_t receiver, sysbvm_tuple_t firstChainedMessage)
 {
-    sysbvm_tuple_t chainedMessageList = sysbvm_arrayList_create(context);
-    sysbvm_arrayList_add(context, chainedMessageList, firstChainedMessage);
+    sysbvm_tuple_t chainedMessageList = sysbvm_orderedCollection_create(context);
+    sysbvm_orderedCollection_add(context, chainedMessageList, firstChainedMessage);
 
     while(sysbvm_sysmelParser_lookKindAt(state, 0) == SYSBVM_TOKEN_KIND_SEMICOLON)
     {
@@ -819,7 +819,7 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseMessageChainList(sysbvm_context_t
 
                 sysbvm_sysmelParser_parseKeywordMessageParts(context, state, &selector, &arguments);
                 sysbvm_tuple_t chainedSourcePosition = sysbvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, chainedStartPosition, state->tokenPosition);
-                sysbvm_arrayList_add(context, chainedMessageList, sysbvm_astMessageChainMessageNode_create(context, chainedSourcePosition, selector, arguments));
+                sysbvm_orderedCollection_add(context, chainedMessageList, sysbvm_astMessageChainMessageNode_create(context, chainedSourcePosition, selector, arguments));
             }
             break;
         
@@ -836,7 +836,7 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseMessageChainList(sysbvm_context_t
 
                 sysbvm_tuple_t arguments = sysbvm_array_create(context, 1);
                 sysbvm_array_atPut(arguments, 0, argument);
-                sysbvm_arrayList_add(context, chainedMessageList, sysbvm_astMessageChainMessageNode_create(context, chainedSourcePosition, selector, arguments));
+                sysbvm_orderedCollection_add(context, chainedMessageList, sysbvm_astMessageChainMessageNode_create(context, chainedSourcePosition, selector, arguments));
             }
             break;
         case SYSBVM_TOKEN_KIND_IDENTIFIER:
@@ -845,11 +845,11 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseMessageChainList(sysbvm_context_t
                 sysbvm_tuple_t selector = sysbvm_sysmelParser_parseLiteralTokenValue(context, state);
                 sysbvm_tuple_t arguments = sysbvm_array_create(context, 0);
                 sysbvm_tuple_t chainedSourcePosition = sysbvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, chainedStartPosition, state->tokenPosition);
-                sysbvm_arrayList_add(context, chainedMessageList, sysbvm_astMessageChainMessageNode_create(context, chainedSourcePosition, selector, arguments));
+                sysbvm_orderedCollection_add(context, chainedMessageList, sysbvm_astMessageChainMessageNode_create(context, chainedSourcePosition, selector, arguments));
             }
             break;
         default:
-            sysbvm_arrayList_add(context, chainedMessageList, sysbvm_astErrorNode_createWithCString(context, sysbvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a chained message."));
+            sysbvm_orderedCollection_add(context, chainedMessageList, sysbvm_astErrorNode_createWithCString(context, sysbvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a chained message."));
             ++state->tokenPosition;
             break;
         }
@@ -857,7 +857,7 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseMessageChainList(sysbvm_context_t
 
     size_t endPosition = state->tokenPosition;
     sysbvm_tuple_t sourcePosition = sysbvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition);
-    return sysbvm_astMessageChainNode_create(context, sourcePosition, receiver, sysbvm_arrayList_asArray(context, chainedMessageList));
+    return sysbvm_astMessageChainNode_create(context, sourcePosition, receiver, sysbvm_orderedCollection_asArray(context, chainedMessageList));
 }
 
 static sysbvm_tuple_t sysbvm_sysmelParser_parseChainExpression(sysbvm_context_t *context, sysbvm_sysmelParser_state_t *state)
@@ -868,19 +868,19 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseChainExpression(sysbvm_context_t 
         sysbvm_tuple_t messageWithoutReceiver = sysbvm_sysmelParser_parseMessageWithoutReceiver(context, state);
         if(sysbvm_sysmelParser_lookKindAt(state, 0) == SYSBVM_TOKEN_KIND_SEMICOLON)
         {
-            sysbvm_tuple_t messages = sysbvm_arrayList_create(context);
-            sysbvm_arrayList_add(context, messages, messageWithoutReceiver);
+            sysbvm_tuple_t messages = sysbvm_orderedCollection_create(context);
+            sysbvm_orderedCollection_add(context, messages, messageWithoutReceiver);
             while(sysbvm_sysmelParser_lookKindAt(state, 0) == SYSBVM_TOKEN_KIND_SEMICOLON)
             {
                 ++state->tokenPosition;
                 messageWithoutReceiver = sysbvm_sysmelParser_parseMessageWithoutReceiver(context, state);
-                sysbvm_arrayList_add(context, messages, messageWithoutReceiver);
+                sysbvm_orderedCollection_add(context, messages, messageWithoutReceiver);
             }
 
             size_t endPosition = state->tokenPosition;
             sysbvm_tuple_t sourcePosition = sysbvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition);
             sysbvm_tuple_t pragmas = sysbvm_array_create(context, 0);
-            return sysbvm_astSequenceNode_create(context, sourcePosition, pragmas, sysbvm_arrayList_asArray(context, messages));
+            return sysbvm_astSequenceNode_create(context, sourcePosition, pragmas, sysbvm_orderedCollection_asArray(context, messages));
         }
         else
         {
@@ -968,8 +968,8 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseCommaExpression(sysbvm_context_t 
     sysbvm_tuple_t firstElement = sysbvm_sysmelParser_parseCommaExpressionElement(context, state);
     if(sysbvm_sysmelParser_lookKindAt(state, 0) == SYSBVM_TOKEN_KIND_COMMA)
     {
-        sysbvm_tuple_t elements = sysbvm_arrayList_create(context);
-        sysbvm_arrayList_add(context, elements, firstElement);
+        sysbvm_tuple_t elements = sysbvm_orderedCollection_create(context);
+        sysbvm_orderedCollection_add(context, elements, firstElement);
 
         while(sysbvm_sysmelParser_lookKindAt(state, 0) == SYSBVM_TOKEN_KIND_COMMA)
         {
@@ -981,13 +981,13 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseCommaExpression(sysbvm_context_t 
                 *state = savedState;
                 break;
             }
-            sysbvm_arrayList_add(context, elements, nextElement);
+            sysbvm_orderedCollection_add(context, elements, nextElement);
         }
 
         size_t endPosition = state->tokenPosition;
         return sysbvm_astMakeArrayNode_create(context,
             sysbvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, startPosition, endPosition),
-            sysbvm_arrayList_asArray(context, elements));
+            sysbvm_orderedCollection_asArray(context, elements));
     }
     else
     {
@@ -1002,7 +1002,7 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseExpression(sysbvm_context_t *cont
 
 static sysbvm_tuple_t sysbvm_sysmelParser_parseExpressionList(sysbvm_context_t *context, sysbvm_sysmelParser_state_t *state)
 {
-    sysbvm_tuple_t expressionArrayList = sysbvm_arrayList_create(context);
+    sysbvm_tuple_t expressionOrderedCollection = sysbvm_orderedCollection_create(context);
 
     // Parse the expressions on the sequence.
     while(sysbvm_sysmelParser_lookKindAt(state, 0) >= 0)
@@ -1015,7 +1015,7 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseExpressionList(sysbvm_context_t *
         if(SYSBVM_NULL_TUPLE == expression)
             break;
 
-        sysbvm_arrayList_add(context, expressionArrayList, expression);
+        sysbvm_orderedCollection_add(context, expressionOrderedCollection, expression);
 
         // We need at least a single dot before the next expression.
         if(sysbvm_sysmelParser_lookKindAt(state, 0) != SYSBVM_TOKEN_KIND_DOT)
@@ -1026,7 +1026,7 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseExpressionList(sysbvm_context_t *
             ++state->tokenPosition;
     }
 
-    return sysbvm_arrayList_asArray(context, expressionArrayList);
+    return sysbvm_orderedCollection_asArray(context, expressionOrderedCollection);
 }
 
 static sysbvm_tuple_t sysbvm_sysmelParser_parsePragma(sysbvm_context_t *context, sysbvm_sysmelParser_state_t *state)
@@ -1050,19 +1050,19 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parsePragma(sysbvm_context_t *context,
             size_t keywordStartPosition = state->tokenPosition;
             size_t keywordEndPosition = keywordStartPosition;
             sysbvm_tuple_t selectorBuilder = sysbvm_stringStream_create(context);
-            sysbvm_tuple_t argumentArrayList = sysbvm_arrayList_create(context);
+            sysbvm_tuple_t argumentOrderedCollection = sysbvm_orderedCollection_create(context);
             while(sysbvm_sysmelParser_lookKindAt(state, 0) == SYSBVM_TOKEN_KIND_KEYWORD)
             {
                 sysbvm_stringStream_nextPutString(context, selectorBuilder, sysbvm_token_getValue(sysbvm_sysmelParser_lookAt(state, 0)));
                 ++state->tokenPosition;
 
                 sysbvm_tuple_t argument = sysbvm_sysmelParser_parseUnaryExpression(context, state);
-                sysbvm_arrayList_add(context, argumentArrayList, argument);
+                sysbvm_orderedCollection_add(context, argumentOrderedCollection, argument);
             }
 
             sysbvm_tuple_t selectorSourcePosition = sysbvm_sysmelParser_makeSourcePositionForTokenRange(context, state->sourceCode, state->tokenSequence, keywordStartPosition, keywordEndPosition);
             selector = sysbvm_astLiteralNode_create(context, selectorSourcePosition, sysbvm_stringStream_asSymbol(context, selectorBuilder));
-            arguments = sysbvm_arrayList_asArray(context, argumentArrayList);
+            arguments = sysbvm_orderedCollection_asArray(context, argumentOrderedCollection);
         }
         break;
     default:
@@ -1082,14 +1082,14 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parsePragmaList(sysbvm_context_t *cont
     if(sysbvm_sysmelParser_lookKindAt(state, 0) != SYSBVM_TOKEN_KIND_LESS_THAN)
         return sysbvm_array_create(context, 0);
 
-    sysbvm_tuple_t list = sysbvm_arrayList_create(context);
+    sysbvm_tuple_t list = sysbvm_orderedCollection_create(context);
     while(sysbvm_sysmelParser_lookKindAt(state, 0) == SYSBVM_TOKEN_KIND_LESS_THAN)
     {
         sysbvm_tuple_t pragma = sysbvm_sysmelParser_parsePragma(context, state);
-        sysbvm_arrayList_add(context, list, pragma);
+        sysbvm_orderedCollection_add(context, list, pragma);
     }
 
-    return sysbvm_arrayList_asArray(context, list);
+    return sysbvm_orderedCollection_asArray(context, list);
 }
 
 static sysbvm_tuple_t sysbvm_sysmelParser_parseSequence(sysbvm_context_t *context, sysbvm_sysmelParser_state_t *state)
@@ -1105,7 +1105,7 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseSequence(sysbvm_context_t *contex
 
 static sysbvm_tuple_t sysbvm_sysmelParser_parseExpressionListUntil(sysbvm_context_t *context, sysbvm_sysmelParser_state_t *state, sysbvm_tokenKind_t delimiter)
 {
-    sysbvm_tuple_t expressionArrayList = sysbvm_arrayList_create(context);
+    sysbvm_tuple_t expressionOrderedCollection = sysbvm_orderedCollection_create(context);
 
     // Parse the expressions on the sequence.
     while(sysbvm_sysmelParser_lookKindAt(state, 0) >= 0 && sysbvm_sysmelParser_lookKindAt(state, 0) != (int)delimiter)
@@ -1118,7 +1118,7 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseExpressionListUntil(sysbvm_contex
         if(SYSBVM_NULL_TUPLE == expression)
             break;
 
-        sysbvm_arrayList_add(context, expressionArrayList, expression);
+        sysbvm_orderedCollection_add(context, expressionOrderedCollection, expression);
 
         // We need at least a single dot before the next expression.
         if(sysbvm_sysmelParser_lookKindAt(state, 0) != SYSBVM_TOKEN_KIND_DOT)
@@ -1129,7 +1129,7 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseExpressionListUntil(sysbvm_contex
             ++state->tokenPosition;
     }
 
-    return sysbvm_arrayList_asArray(context, expressionArrayList);
+    return sysbvm_orderedCollection_asArray(context, expressionOrderedCollection);
 }
 
 static sysbvm_tuple_t sysbvm_sysmelParser_parseSequenceUntil(sysbvm_context_t *context, sysbvm_sysmelParser_state_t *state, sysbvm_tokenKind_t delimiter)

@@ -1,7 +1,7 @@
 #include "sysbvm/parser.h"
 #include "sysbvm/ast.h"
 #include "sysbvm/array.h"
-#include "sysbvm/arrayList.h"
+#include "sysbvm/orderedCollection.h"
 #include "sysbvm/arraySlice.h"
 #include "sysbvm/gc.h"
 #include "sysbvm/token.h"
@@ -141,9 +141,9 @@ static sysbvm_tuple_t sysbvm_parser_parseUnexpandedSExpression(sysbvm_context_t 
 
 
     // Elements.
-    sysbvm_tuple_t elementList = sysbvm_arrayList_create(context);
+    sysbvm_tuple_t elementList = sysbvm_orderedCollection_create(context);
     while(sysbvm_parser_lookKindAt(state, 0) >= 0 && sysbvm_parser_lookKindAt(state, 0) != (int)closingToken)
-        sysbvm_arrayList_add(context, elementList, sysbvm_parser_parseExpression(context, state));
+        sysbvm_orderedCollection_add(context, elementList, sysbvm_parser_parseExpression(context, state));
 
     // Right closing parenthesis.
     if(sysbvm_parser_lookKindAt(state, 0) != (int)closingToken)
@@ -153,7 +153,7 @@ static sysbvm_tuple_t sysbvm_parser_parseUnexpandedSExpression(sysbvm_context_t 
     size_t endPosition = state->tokenPosition;
 
     sysbvm_tuple_t sourcePosition = sysbvm_parser_makeSourcePositionForTokenRange(context, state->tokenSequence, startPosition, endPosition);
-    sysbvm_tuple_t elementsArray = sysbvm_arrayList_asArray(context, elementList);
+    sysbvm_tuple_t elementsArray = sysbvm_orderedCollection_asArray(context, elementList);
     return sysbvm_astUnexpandedSExpressionNode_create(context, sourcePosition, elementsArray);
 }
 
@@ -243,7 +243,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_parser_parseTokens(sysbvm_context_t *context, s
         .tokenSequenceSize = sysbvm_arraySlice_getSize(tokenSequence),
     };
 
-    sysbvm_tuple_t expressionArrayList = sysbvm_arrayList_create(context);
+    sysbvm_tuple_t expressionOrderedCollection = sysbvm_orderedCollection_create(context);
 
     // Parse the expressions on the sequence.
     while(sysbvm_parser_lookKindAt(&parserState, 0) >= 0)
@@ -252,10 +252,10 @@ SYSBVM_API sysbvm_tuple_t sysbvm_parser_parseTokens(sysbvm_context_t *context, s
         if(SYSBVM_NULL_TUPLE == expression)
             break;
 
-        sysbvm_arrayList_add(context, expressionArrayList, expression);
+        sysbvm_orderedCollection_add(context, expressionOrderedCollection, expression);
     }
 
-    sysbvm_tuple_t expressionsArray = sysbvm_arrayList_asArray(context, expressionArrayList);
+    sysbvm_tuple_t expressionsArray = sysbvm_orderedCollection_asArray(context, expressionOrderedCollection);
     size_t expressionsCount = sysbvm_array_getSize(expressionsArray);
 
     sysbvm_tuple_t sourcePosition = (expressionsCount > 0)

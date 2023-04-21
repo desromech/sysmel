@@ -399,7 +399,7 @@ public final class TACSysVX86_64CallingConvention superclass: TACCallingConventi
     }.
 
     public method asm::generateCall: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        let stackArguments := ArrayList new.
+        let stackArguments := OrderedCollection new.
         let stackArgumentAlignment := 8u64.
         let stackSize mutable := 0u64.
         let stackAlignment mutable := 16u64.

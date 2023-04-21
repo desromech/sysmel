@@ -1,7 +1,7 @@
 #include "sysbvm/interpreter.h"
 #include "sysbvm/environment.h"
 #include "sysbvm/array.h"
-#include "sysbvm/arrayList.h"
+#include "sysbvm/orderedCollection.h"
 #include "sysbvm/ast.h"
 #include "sysbvm/assert.h"
 #include "sysbvm/association.h"
@@ -649,7 +649,7 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_parseArgumentsNodes(sysbvm_context_t 
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     gcFrame.argumentsNode = unsafeArgumentsNode;
-    gcFrame.argumentList = sysbvm_arrayList_create(context);
+    gcFrame.argumentList = sysbvm_orderedCollection_create(context);
     size_t argumentNodeCount = sysbvm_array_getSize(gcFrame.argumentsNode);
     *hasVariadicArguments = false;
     for(size_t i = 0; i < argumentNodeCount; ++i)
@@ -678,10 +678,10 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_parseArgumentsNodes(sysbvm_context_t 
             sysbvm_error("Invalid argument definition node.");
         }
 
-        sysbvm_arrayList_add(context, gcFrame.argumentList, sysbvm_astArgumentNode_create(context, sysbvm_astNode_getSourcePosition(gcFrame.unparsedArgumentNode), gcFrame.isForAll, gcFrame.nameExpression, gcFrame.typeExpression));
+        sysbvm_orderedCollection_add(context, gcFrame.argumentList, sysbvm_astArgumentNode_create(context, sysbvm_astNode_getSourcePosition(gcFrame.unparsedArgumentNode), gcFrame.isForAll, gcFrame.nameExpression, gcFrame.typeExpression));
     }
 
-    sysbvm_tuple_t result = sysbvm_arrayList_asArray(context, gcFrame.argumentList);
+    sysbvm_tuple_t result = sysbvm_orderedCollection_asArray(context, gcFrame.argumentList);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return result;
 }
@@ -1141,9 +1141,9 @@ static void sysbvm_functionDefinition_analyzeType(sysbvm_context_t *context, sys
     bool isVariadic = (sysbvm_tuple_bitflags_decode((*functionDefinition)->flags) & SYSBVM_FUNCTION_FLAGS_VARIADIC) != 0;
     gcFrame.analyzedType = sysbvm_type_createDependentFunctionType(context, gcFrame.analyzedArgumentsNode, isVariadic, gcFrame.analyzedResultTypeNode,
         gcFrame.analysisEnvironment,
-        sysbvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->captureBindingList),
-        sysbvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->argumentBindingList),
-        sysbvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->localBindingList)
+        sysbvm_orderedCollection_asArray(context, gcFrame.analysisEnvironmentObject->captureBindingList),
+        sysbvm_orderedCollection_asArray(context, gcFrame.analysisEnvironmentObject->argumentBindingList),
+        sysbvm_orderedCollection_asArray(context, gcFrame.analysisEnvironmentObject->localBindingList)
     );
     gcFrame.analyzedType = sysbvm_type_canonicalizeFunctionType(context, gcFrame.analyzedType);
 
@@ -1176,11 +1176,11 @@ static void sysbvm_functionDefinition_analyze(sysbvm_context_t *context, sysbvm_
 
     gcFrame.analyzedBodyNode = sysbvm_interpreter_analyzeASTWithExpectedTypeExpressionWithEnvironmentAt(context, (*functionDefinition)->definitionBodyNode, (*functionDefinition)->analyzedResultTypeNode, gcFrame.analysisEnvironment, (*functionDefinition)->sourcePosition, NULL);
 
-    (*functionDefinition)->analyzedCaptures = sysbvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->captureBindingList);
-    (*functionDefinition)->analyzedArguments = sysbvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->argumentBindingList);
-    (*functionDefinition)->analyzedLocals = sysbvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->localBindingList);
-    (*functionDefinition)->analyzedPragmas = sysbvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->pragmaList);
-    (*functionDefinition)->analyzedInnerFunctions = sysbvm_arrayList_asArray(context, gcFrame.analysisEnvironmentObject->innerFunctionList);
+    (*functionDefinition)->analyzedCaptures = sysbvm_orderedCollection_asArray(context, gcFrame.analysisEnvironmentObject->captureBindingList);
+    (*functionDefinition)->analyzedArguments = sysbvm_orderedCollection_asArray(context, gcFrame.analysisEnvironmentObject->argumentBindingList);
+    (*functionDefinition)->analyzedLocals = sysbvm_orderedCollection_asArray(context, gcFrame.analysisEnvironmentObject->localBindingList);
+    (*functionDefinition)->analyzedPragmas = sysbvm_orderedCollection_asArray(context, gcFrame.analysisEnvironmentObject->pragmaList);
+    (*functionDefinition)->analyzedInnerFunctions = sysbvm_orderedCollection_asArray(context, gcFrame.analysisEnvironmentObject->innerFunctionList);
     (*functionDefinition)->analyzedPrimitiveName = gcFrame.analysisEnvironmentObject->primitiveName;
 
     (*functionDefinition)->analyzedBodyNode = gcFrame.analyzedBodyNode;

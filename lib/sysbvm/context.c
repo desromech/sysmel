@@ -1,7 +1,7 @@
 #include "internal/context.h"
 #include "sysbvm/type.h"
 #include "sysbvm/array.h"
-#include "sysbvm/arrayList.h"
+#include "sysbvm/orderedCollection.h"
 #include "sysbvm/environment.h"
 #include "sysbvm/gc.h"
 #include "sysbvm/stackFrame.h"
@@ -16,7 +16,7 @@
 static bool sysbvm_context_default_jitEnabled = true;
 
 extern void sysbvm_array_registerPrimitives(void);
-extern void sysbvm_arrayList_registerPrimitives(void);
+extern void sysbvm_orderedCollection_registerPrimitives(void);
 extern void sysbvm_astInterpreter_registerPrimitives(void);
 extern void sysbvm_boolean_registerPrimitives(void);
 extern void sysbvm_bytecode_registerPrimitives(void);
@@ -37,7 +37,7 @@ extern void sysbvm_tuple_registerPrimitives(void);
 extern void sysbvm_type_registerPrimitives(void);
 
 extern void sysbvm_array_setupPrimitives(sysbvm_context_t *context);
-extern void sysbvm_arrayList_setupPrimitives(sysbvm_context_t *context);
+extern void sysbvm_orderedCollection_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_astInterpreter_setupASTInterpreter(sysbvm_context_t *context);
 extern void sysbvm_boolean_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_bytecode_setupPrimitives(sysbvm_context_t *context);
@@ -66,7 +66,7 @@ void sysbvm_context_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_string_primitive_hash, "String::hash");
 
     sysbvm_array_registerPrimitives();
-    sysbvm_arrayList_registerPrimitives();
+    sysbvm_orderedCollection_registerPrimitives();
     sysbvm_astInterpreter_registerPrimitives();
     sysbvm_boolean_registerPrimitives();
     sysbvm_bytecode_registerPrimitives();
@@ -93,7 +93,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_context_createIntrinsicClass(sysbvm_context_t *
     sysbvm_tuple_t type = sysbvm_type_createAnonymousClassAndMetaclass(context, supertype);
     sysbvm_type_setName(type, nameSymbol);
     sysbvm_environment_setNewSymbolBindingWithValue(context, context->roots.globalNamespace, nameSymbol, type);
-    sysbvm_arrayList_add(context, context->roots.intrinsicTypes, type);
+    sysbvm_orderedCollection_add(context, context->roots.intrinsicTypes, type);
 
     // First pass: count the arguments.
     size_t slotNameCount = 0;
@@ -139,7 +139,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_context_createIntrinsicPrimitiveValueType(sysbv
     sysbvm_tuple_t type = sysbvm_type_createAnonymousPrimitiveValueTypeAndValueMetatype(context, supertype);
     sysbvm_type_setName(type, nameSymbol);
     sysbvm_environment_setNewSymbolBindingWithValue(context, context->roots.globalNamespace, nameSymbol, type);
-    sysbvm_arrayList_add(context, context->roots.intrinsicTypes, type);
+    sysbvm_orderedCollection_add(context, context->roots.intrinsicTypes, type);
 
     sysbvm_type_setSlots(type, sysbvm_array_create(context, 0));
     sysbvm_type_setTotalSlotCount(context, type, 0);
@@ -155,7 +155,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_context_createIntrinsicType(sysbvm_context_t *c
     if(supertype)
         sysbvm_type_setSupertype(type, supertype);
     sysbvm_environment_setNewSymbolBindingWithValue(context, context->roots.globalNamespace, nameSymbol, type);
-    sysbvm_arrayList_add(context, context->roots.intrinsicTypes, type);
+    sysbvm_orderedCollection_add(context, context->roots.intrinsicTypes, type);
 
     // First pass: count the arguments.
     size_t slotNameCount = 0;
@@ -202,7 +202,7 @@ static void sysbvm_context_setIntrinsicTypeMetadata(sysbvm_context_t *context, s
     if(supertype)
         sysbvm_type_setSupertype(type, supertype);
     sysbvm_environment_setNewSymbolBindingWithValue(context, context->roots.globalNamespace, nameSymbol, type);
-    sysbvm_arrayList_add(context, context->roots.intrinsicTypes, type);
+    sysbvm_orderedCollection_add(context, context->roots.intrinsicTypes, type);
 
     // First pass: count the arguments.
     size_t slotNameCount = 0;
@@ -396,16 +396,16 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.weakIdentitySetType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.weakSetType);
 
     context->roots.arrayType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
-    context->roots.arrayListType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.sequenceableCollectionType);
+    context->roots.orderedCollectionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.sequenceableCollectionType);
     context->roots.weakArrayType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayType);
-    context->roots.weakArrayListType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayListType);
+    context->roots.weakOrderedCollectionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.orderedCollectionType);
 
     context->roots.internedSymbolSet = sysbvm_identitySet_create(context);
     context->roots.sessionToken = sysbvm_tuple_systemHandle_encode(context, 1);
 
     // Create the intrinsic built-in environment
     context->roots.globalNamespace = sysbvm_environment_create(context, SYSBVM_NULL_TUPLE);
-    context->roots.intrinsicTypes = sysbvm_arrayList_create(context);
+    context->roots.intrinsicTypes = sysbvm_orderedCollection_create(context);
 
     context->roots.equalsSelector = sysbvm_symbol_internWithCString(context, "=");
     context->roots.hashSelector = sysbvm_symbol_internWithCString(context, "hash");
@@ -630,7 +630,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.namespaceType, "Namespace", SYSBVM_NULL_TUPLE,
         NULL);
     context->roots.analysisAndEvaluationEnvironmentType = sysbvm_context_createIntrinsicClass(context, "AnalysisAndEvaluationEnvironment", context->roots.environmentType,
-        "usedTuplesWithNamedSlots", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
+        "usedTuplesWithNamedSlots", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
         "analyzerToken", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.objectType,
         "expectedType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         "returnTarget", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
@@ -650,11 +650,11 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.functionAnalysisEnvironmentType = sysbvm_context_createIntrinsicClass(context, "FunctionAnalysisEnvironment", context->roots.analysisEnvironmentType,
         "functionDefinition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
         "captureBindingTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.identityDictionaryType,
-        "captureBindingList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
-        "argumentBindingList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
-        "localBindingList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
-        "innerFunctionList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
-        "pragmaList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
+        "captureBindingList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
+        "argumentBindingList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
+        "localBindingList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
+        "innerFunctionList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
+        "pragmaList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
         "hasBreakTarget", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "hasContinueTarget", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         NULL);
@@ -786,16 +786,16 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
 
     // 
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.arrayType, "Array", SYSBVM_NULL_TUPLE, NULL);
-    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.arrayListType, "ArrayList", SYSBVM_NULL_TUPLE,
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.orderedCollectionType, "OrderedCollection", SYSBVM_NULL_TUPLE,
         "size", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "storage", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.weakArrayType, "WeakArray", SYSBVM_NULL_TUPLE, NULL);
-    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.weakArrayListType, "WeakArrayList", SYSBVM_NULL_TUPLE, NULL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.weakOrderedCollectionType, "WeakOrderedCollection", SYSBVM_NULL_TUPLE, NULL);
     sysbvm_typeAndMetatype_setFlags(context, context->roots.arrayType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);
-    sysbvm_typeAndMetatype_setFlags(context, context->roots.arrayListType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_NONE);
+    sysbvm_typeAndMetatype_setFlags(context, context->roots.orderedCollectionType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_NONE);
     sysbvm_typeAndMetatype_setFlags(context, context->roots.weakArrayType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL | SYSBVM_TYPE_FLAGS_WEAK, SYSBVM_TYPE_FLAGS_FINAL);
-    sysbvm_typeAndMetatype_setFlags(context, context->roots.weakArrayListType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);
+    sysbvm_typeAndMetatype_setFlags(context, context->roots.weakOrderedCollectionType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);
 
     // Create other root basic types.
     context->roots.arraySliceType = sysbvm_context_createIntrinsicClass(context, "ArraySlice", context->roots.sequenceableCollectionType,
@@ -1086,9 +1086,9 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.bytecodeCompilerType = sysbvm_context_createIntrinsicClass(context, "BootstrapBytecodeCompiler", context->roots.objectType,
         "arguments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "captures", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
-        "literals", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
+        "literals", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
         "literalDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.identityDictionaryType,
-        "temporaries", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayListType,
+        "temporaries", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
         "usedTemporaryCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
 
         "firstInstruction", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bytecodeCompilerInstructionType,
@@ -1143,7 +1143,7 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_create(void)
     sysbvm_context_createBasicTypes(context);
     
     sysbvm_array_setupPrimitives(context);
-    sysbvm_arrayList_setupPrimitives(context);
+    sysbvm_orderedCollection_setupPrimitives(context);
     sysbvm_astInterpreter_setupASTInterpreter(context);
     sysbvm_boolean_setupPrimitives(context);
     sysbvm_bytecode_setupPrimitives(context);

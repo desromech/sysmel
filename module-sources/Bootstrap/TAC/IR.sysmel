@@ -638,7 +638,7 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
 
     public field arguments => Array.
     public field captures => Array.
-    public field temporaries => ArrayList.
+    public field temporaries => OrderedCollection.
 
     public field firstBasicBlock => TACBasicBlock.
     public field lastBasicBlock => TACBasicBlock.
@@ -653,7 +653,7 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
     public method initialize => Void := {
         arguments := #().
         captures := #().
-        temporaries := ArrayList new
+        temporaries := OrderedCollection new
     }.
 
     public method addTemporary: (temporary: TACTemporaryVariable) ::=> TACTemporaryVariable := {
@@ -1004,11 +1004,11 @@ public final class TACFunctionBuilder superclass: Object; definition: {
 
 public final class TACModule superclass: TACProgramEntity; definition: {
     public field compilationTarget => TACCompilationTarget.
-    public field programEntities => ArrayList.
+    public field programEntities => OrderedCollection.
 
     public method initialize => Void := {
         super initialize.
-        programEntities := ArrayList new.
+        programEntities := OrderedCollection new.
     }.
 
     public method addProgramEntity: (programEntity: TACProgramEntity) ::=> Void := {

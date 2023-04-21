@@ -225,9 +225,9 @@ public final class FunctionBytecodeAssemblerInstruction superclass: FunctionByte
 FunctionBytecodeAssembler definition: {
     public field arguments => Array.
     public field captures => Array.
-    public field literals => ArrayList.
+    public field literals => OrderedCollection.
     public field literalDictionary => IdentityDictionary.
-    public field temporaries => ArrayList.
+    public field temporaries => OrderedCollection.
     public field usedTemporaryCount => Size.
 
     public field firstInstruction => FunctionBytecodeAssemblerAbstractInstruction.
@@ -240,9 +240,9 @@ FunctionBytecodeAssembler definition: {
     public method initialize => Void := {
         self arguments: #().
         self captures: #().
-        self literals: ArrayList new.
+        self literals: OrderedCollection new.
         self literalDictionary: IdentityDictionary new.
-        self temporaries: ArrayList new.
+        self temporaries: OrderedCollection new.
         self usedTemporaryCount: 0sz.
     }.
 
@@ -582,10 +582,10 @@ FunctionBytecodeAssembler definition: {
             localVectorSize: self usedTemporaryCount;
             yourself.
 
-        let pcToDebugListTable := ArrayList new.
-        let debugSourceASTNodes := ArrayList new.
-        let debugSourcePositions := ArrayList new.
-        let debugSourceEnvironments := ArrayList new.
+        let pcToDebugListTable := OrderedCollection new.
+        let debugSourceASTNodes := OrderedCollection new.
+        let debugSourcePositions := OrderedCollection new.
+        let debugSourceEnvironments := OrderedCollection new.
         let debugListsDictionary := Dictionary new.
 
         ## Compute the instruction stream size, and the pc of each instruction. Also construct the debug information.

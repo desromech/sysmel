@@ -1,4 +1,4 @@
-TEST_SUITE_NAME(ArrayList)
+TEST_SUITE_NAME(OrderedCollection)
 TEST_SUITE_NAME(Immediate)
 TEST_SUITE_NAME(Integer)
 TEST_SUITE_NAME(String)

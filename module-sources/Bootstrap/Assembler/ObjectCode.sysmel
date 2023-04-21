@@ -54,7 +54,7 @@ AsmObjectCodeSection definition: {
     public field relocations => Array.
 
     public field offsetOfEncodedElementInByteStream => Size.
-    public field newRelocations => ArrayList.
+    public field newRelocations => OrderedCollection.
 
     public method initialize => Void := {
         data := #[].
@@ -170,7 +170,7 @@ AsmObjectCodeSection definition: {
     public method allocateMemoryForWriting => Void := {
         size := size alignedTo: alignment.
         data := ByteArray new: size.
-        newRelocations := ArrayList new.
+        newRelocations := OrderedCollection new.
         writeOffset := 0sz.
     }.
 
@@ -318,14 +318,14 @@ AsmSymbol definition: {
 public final class AsmObjectCodeBuilder superclass: Object; definition: {
     public field compilationTarget => AsmCompilationTarget.
 
-    public field sections => ArrayList.
+    public field sections => OrderedCollection.
     public field sectionNameTable => Dictionary.
-    public field symbols => ArrayList.
+    public field symbols => OrderedCollection.
 
     public method initialize => Void := {
-        sections := ArrayList new.
+        sections := OrderedCollection new.
         sectionNameTable := Dictionary new.
-        symbols := ArrayList new.
+        symbols := OrderedCollection new.
     }.
 
     public method recordSymbol: (symbol: AsmSymbol) ::=> Void := {

@@ -360,7 +360,7 @@ ASTUnexpandedSExpressionNode
     }.
 
 ASTNode
-    withSelector: #analyzeQuasiQuoteWithEnvironment:parameterList: addMethod: {:(ASTNode)self :(Environment)environment :(ArrayList)parameterList :: ASTNode |
+    withSelector: #analyzeQuasiQuoteWithEnvironment:parameterList: addMethod: {:(ASTNode)self :(Environment)environment :(OrderedCollection)parameterList :: ASTNode |
         self transformedWith: {:child | child analyzeQuasiQuoteWithEnvironment: environment parameterList: parameterList }
     };
     withSelector: #analyzeAndEvaluateQuasiQuoteWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment :: ASTNode |
@@ -376,7 +376,7 @@ let: #expandASTTemplateWithParameters with: {:(ASTNode)templateNode :(Array)temp
 
 ASTQuasiQuoteNode
     withSelector: #analyzeWithEnvironment: addMethod: {:(ASTQuasiQuoteNode)self :(Environment)environment |
-        let: #parameterList with: ArrayList new.
+        let: #parameterList with: OrderedCollection new.
         let: #analyzedTemplate with: (self node analyzeQuasiQuoteWithEnvironment: environment parameterList: parameterList).
         let: #analyzedParameterList with: (ASTMakeArrayNode new
             sourcePosition: self sourcePosition;
@@ -412,7 +412,7 @@ ASTQuasiQuoteNode
     }.
 
 ASTQuasiUnquoteNode
-    withSelector: #analyzeQuasiQuoteWithEnvironment:parameterList: addMethod: {:(ASTQuasiUnquoteNode)self :(Environment)environment :(ArrayList)parameterList :: ASTNode |
+    withSelector: #analyzeQuasiQuoteWithEnvironment:parameterList: addMethod: {:(ASTQuasiUnquoteNode)self :(Environment)environment :(OrderedCollection)parameterList :: ASTNode |
         let: #astTemplateParameterIndex with: parameterList size.
         parameterList add: self expression.
         self copy
@@ -460,7 +460,7 @@ ASTSpliceNode
         if: (self expression) then: (self expression: aBlock(self expression))
     };
 
-    withSelector: #analyzeQuasiQuoteWithEnvironment:parameterList: addMethod: {:(ASTSpliceNode)self :(Environment)environment :(ArrayList)parameterList | self invalidLocationError };
+    withSelector: #analyzeQuasiQuoteWithEnvironment:parameterList: addMethod: {:(ASTSpliceNode)self :(Environment)environment :(OrderedCollection)parameterList | self invalidLocationError };
     withSelector: #analyzeAndEvaluateQuasiQuoteWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError };
     withSelector: #evaluateQuasiQuoteWithParameters: addMethod: {:(ASTSpliceNode)self :(Array)parameters | self invalidLocationError };
 

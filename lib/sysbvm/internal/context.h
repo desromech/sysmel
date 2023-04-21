@@ -104,7 +104,7 @@ typedef struct sysbvm_context_roots_s
 
     sysbvm_tuple_t arrayType;
     sysbvm_tuple_t arraySliceType;
-    sysbvm_tuple_t arrayListType;
+    sysbvm_tuple_t orderedCollectionType;
     sysbvm_tuple_t arrayedCollectionType;
     sysbvm_tuple_t associationType;
     sysbvm_tuple_t booleanType;
@@ -175,7 +175,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t valueMetatypeType;
     sysbvm_tuple_t voidType;
     sysbvm_tuple_t weakArrayType;
-    sysbvm_tuple_t weakArrayListType;
+    sysbvm_tuple_t weakOrderedCollectionType;
     sysbvm_tuple_t weakSetType;
     sysbvm_tuple_t weakIdentitySetType;
     sysbvm_tuple_t weakKeyDictionaryType;

@@ -40,13 +40,13 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
     public field compiledProgramEntitySymbolMap => Dictionary.
 
     protected field gcRootObjectTableSymbol => AsmSymbol.
-    protected field gcObjectList => ArrayList.
+    protected field gcObjectList => OrderedCollection.
     protected field gcObjectOffsetTable => IdentityDictionary.
 
     public method initialize => Void := {
         programEntitySymbolMap := Dictionary new.
         compiledProgramEntitySymbolMap := Dictionary new.
-        gcObjectList := ArrayList new.
+        gcObjectList := OrderedCollection new.
         gcObjectOffsetTable := IdentityDictionary new.
     }.
 

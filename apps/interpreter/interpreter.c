@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include <sysbvm/arrayList.h>
+#include <sysbvm/orderedCollection.h>
 #include <sysbvm/context.h>
 #include <sysbvm/environment.h>
 #include <sysbvm/filesystem.h>
@@ -33,15 +33,15 @@ int doMain(int startArgumentIndex, int argc, const char *argv[])
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     // Parse the command line.
-    gcFrame.filesToProcess = sysbvm_arrayList_create(context);
-    gcFrame.remainingArgs = sysbvm_arrayList_create(context);
+    gcFrame.filesToProcess = sysbvm_orderedCollection_create(context);
+    gcFrame.remainingArgs = sysbvm_orderedCollection_create(context);
     bool isParsingRemainingArgs = false;
     for(int i = startArgumentIndex; i < argc; ++i)
     {
         const char *arg = argv[i];
         if(isParsingRemainingArgs)
         {
-            sysbvm_arrayList_add(context, gcFrame.remainingArgs, sysbvm_string_createWithCString(context, arg));
+            sysbvm_orderedCollection_add(context, gcFrame.remainingArgs, sysbvm_string_createWithCString(context, arg));
             continue;
         }
         
@@ -70,14 +70,14 @@ int doMain(int startArgumentIndex, int argc, const char *argv[])
         else
         {
             gcFrame.inputFileName = sysbvm_string_createWithCString(context, arg);
-            sysbvm_arrayList_add(context, gcFrame.filesToProcess, gcFrame.inputFileName);
+            sysbvm_orderedCollection_add(context, gcFrame.filesToProcess, gcFrame.inputFileName);
         }
     }
 
-    size_t inputFileSize = sysbvm_arrayList_getSize(gcFrame.filesToProcess);
+    size_t inputFileSize = sysbvm_orderedCollection_getSize(gcFrame.filesToProcess);
     for(size_t i = 0; i < inputFileSize; ++i)
     {
-        gcFrame.inputFileName = sysbvm_arrayList_at(gcFrame.filesToProcess, i);
+        gcFrame.inputFileName = sysbvm_orderedCollection_at(gcFrame.filesToProcess, i);
         gcFrame.inputFileName = sysbvm_filesystem_absolute(context, gcFrame.inputFileName);
         sysbvm_interpreter_loadSourceNamedWithSolvedPath(context, gcFrame.inputFileName);
     }

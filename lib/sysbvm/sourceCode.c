@@ -1,7 +1,7 @@
 #include "sysbvm/sourceCode.h"
 #include "sysbvm/string.h"
 #include "sysbvm/array.h"
-#include "sysbvm/arrayList.h"
+#include "sysbvm/orderedCollection.h"
 #include "internal/context.h"
 
 SYSBVM_API sysbvm_tuple_t sysbvm_sourceCode_create(sysbvm_context_t *context, sysbvm_tuple_t text, sysbvm_tuple_t directory, sysbvm_tuple_t name, sysbvm_tuple_t language)
@@ -32,18 +32,18 @@ static sysbvm_tuple_t sysbvm_sourceCode_ensureLineStartIndexTableIsBuilt(sysbvm_
     if(sourceCodeObject->lineStartIndexTable)
         return sourceCodeObject->lineStartIndexTable;
 
-    sysbvm_tuple_t arrayList = sysbvm_arrayList_create(context);
+    sysbvm_tuple_t orderedCollection = sysbvm_orderedCollection_create(context);
     size_t sourceCodeTextSize = sysbvm_tuple_getSizeInBytes(sourceCodeObject->text);
     uint8_t *sourceCodeData = SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(sourceCodeObject->text)->bytes;
 
-    sysbvm_arrayList_add(context, arrayList, sysbvm_tuple_size_encode(context, 0));
+    sysbvm_orderedCollection_add(context, orderedCollection, sysbvm_tuple_size_encode(context, 0));
     for(size_t i = 0; i < sourceCodeTextSize; ++i)
     {
         if(sourceCodeData[i] == '\n')
-            sysbvm_arrayList_add(context, arrayList, sysbvm_tuple_size_encode(context, i + 1));
+            sysbvm_orderedCollection_add(context, orderedCollection, sysbvm_tuple_size_encode(context, i + 1));
     }
 
-    sourceCodeObject->lineStartIndexTable = sysbvm_arrayList_asArray(context, arrayList);
+    sourceCodeObject->lineStartIndexTable = sysbvm_orderedCollection_asArray(context, orderedCollection);
     return sourceCodeObject->lineStartIndexTable;
 }
 

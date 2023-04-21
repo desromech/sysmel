@@ -1,5 +1,5 @@
 #include "sysbvm/scanner.h"
-#include "sysbvm/arrayList.h"
+#include "sysbvm/orderedCollection.h"
 #include "sysbvm/assert.h"
 #include "sysbvm/gc.h"
 #include "sysbvm/integer.h"
@@ -220,7 +220,7 @@ static void sysbvm_scanner_emitTokenForStateRange(sysbvm_context_t *context, sys
     sysbvm_tuple_t sourcePosition = sysbvm_sourcePosition_createWithIndices(context, startState->sourceCode, startState->position, endState->position);
     sysbvm_tuple_t value = tokenConversionFunction(context, endState->position - startState->position, startState->text + startState->position);
     sysbvm_tuple_t token = sysbvm_token_createWithKind(context, kind, sourcePosition, value);
-    sysbvm_arrayList_add(context, outTokenList, token);
+    sysbvm_orderedCollection_add(context, outTokenList, token);
 }
 
 static void sysbvm_scanner_skipWhite(sysbvm_scannerState_t *state)
@@ -769,7 +769,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_scanner_scan(sysbvm_context_t *context, sysbvm_
 
     sysbvm_gc_lock(context);
 
-    gcFrame.tokenList = sysbvm_arrayList_create(context);
+    gcFrame.tokenList = sysbvm_orderedCollection_create(context);
 
     if(sysbvm_tuple_isNonNullPointer(sourceCode))
     {
@@ -791,7 +791,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_scanner_scan(sysbvm_context_t *context, sysbvm_
         }
     }
 
-    gcFrame.result = sysbvm_arrayList_asArraySlice(context, gcFrame.tokenList);
+    gcFrame.result = sysbvm_orderedCollection_asArraySlice(context, gcFrame.tokenList);
     sysbvm_gc_unlock(context);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;

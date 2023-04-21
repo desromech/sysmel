@@ -22,7 +22,7 @@ public abstract class TestCase superclass: TestAsserter; definition: {
         }.
 
         public method testSelectors => Array := {
-            let: #selectors with: ArrayList new.
+            let: #selectors with: OrderedCollection new.
             self withAllSubtypesDo: {:subtype :: Void |
                 subtype selectorsDo: {:(Symbol)each :: Void |
                     printLine("TODO: Implement this part.")

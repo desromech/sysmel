@@ -16,7 +16,7 @@ SSAValue definition: {
     public field sourcePosition => SourcePosition.
     public field sourceASTNode => ASTNode.
     public field sourceEnvironment => Environment.
-    private field users => WeakArrayList.
+    private field users => WeakOrderedCollection.
 
     public method isConstant => Boolean := false.
     public method isLiteralConstant => Boolean := false.
@@ -61,7 +61,7 @@ SSAValue definition: {
 
     public method registerUser: (user: SSAValue) ::=> Void := {
         users ifNil: {
-            users := WeakArrayList new
+            users := WeakOrderedCollection new
         }.
 
         users add: user
@@ -225,7 +225,7 @@ SSAFunctionDefinition definition: {
     }.
 
     public method allLocalValues ::=> Array := {
-        let result := ArrayList new.
+        let result := OrderedCollection new.
         self localValuesDo: {:(SSAFunctionLocalValue)localValue :: Void |
             result add: localValue
         }.
@@ -413,8 +413,8 @@ SSABasicBlock definition: {
     public field lastInstruction => SSAInstruction.
 
     public field traversalColor => UInt8.
-    public field predecessors => ArrayList.
-    public field predecessorKinds => ArrayList.
+    public field predecessors => OrderedCollection.
+    public field predecessorKinds => OrderedCollection.
     public field successors => Array.
 
     public method isBasicBlock => Boolean := true.
@@ -438,8 +438,8 @@ SSABasicBlock definition: {
     public method isBlack => Boolean := self traversalColor == 2u8.
 
     public method resetPredecessors => Void := {
-        self predecessors: ArrayList new.
-        self predecessorKinds: ArrayList new.
+        self predecessors: OrderedCollection new.
+        self predecessorKinds: OrderedCollection new.
     }.
 
     public method addPredecessor: (predecessor: SSABasicBlock) isBackEdge: (isBackEdge: Boolean) ::=> Void := {
@@ -1061,10 +1061,10 @@ public final class SSAUnreachableInstruction superclass: SSAInstruction; definit
 }.
 
 public final class SSAModule superclass: Object; definition: {
-    public field globalValues => ArrayList.
+    public field globalValues => OrderedCollection.
 
     public method initialize => Void := {
-        globalValues := ArrayList new.
+        globalValues := OrderedCollection new.
     }.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {

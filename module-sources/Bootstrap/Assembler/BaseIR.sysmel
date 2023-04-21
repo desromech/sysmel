@@ -854,12 +854,12 @@ public final class AsmProgramEntity superclass: Object; definition: {
     public field compilationTarget => AsmCompilationTarget.
 
     public field name => Symbol.
-    public field streams => ArrayList.
-    public field children => ArrayList.
+    public field streams => OrderedCollection.
+    public field children => OrderedCollection.
 
     public method initialize => Void := {
-        streams := ArrayList new.
-        children := ArrayList new.
+        streams := OrderedCollection new.
+        children := OrderedCollection new.
     }.
 
     public method newStreamBuilder => AsmStreamBuilder := {

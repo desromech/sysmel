@@ -1,6 +1,6 @@
 set(sysbvm_sources
     array.c
-    arrayList.c
+    orderedCollection.c
     arraySlice.c
     assert.c
     association.c

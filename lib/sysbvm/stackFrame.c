@@ -1,6 +1,6 @@
 #include "sysbvm/stackFrame.h"
 #include "sysbvm/array.h"
-#include "sysbvm/arrayList.h"
+#include "sysbvm/orderedCollection.h"
 #include "sysbvm/assert.h"
 #include "sysbvm/bytecode.h"
 #include "sysbvm/errors.h"
@@ -297,7 +297,7 @@ SYSBVM_API void sysbvm_stackFrame_continueInto(sysbvm_stackFrameRecord_t *target
 SYSBVM_API sysbvm_tuple_t sysbvm_stackFrame_buildStackTraceUpTo(sysbvm_stackFrameRecord_t *targetRecord)
 {
     sysbvm_context_t *context = sysbvm_stackFrame_activeContext;
-    sysbvm_tuple_t arrayList = sysbvm_arrayList_create(context);
+    sysbvm_tuple_t orderedCollection = sysbvm_orderedCollection_create(context);
     
     sysbvm_stackFrameRecord_t *stackFrameRecord = sysbvm_stackFrame_activeRecord;
     //sysbvm_tuple_t currentFunction = SYSBVM_NULL_TUPLE;
@@ -313,7 +313,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_stackFrame_buildStackTraceUpTo(sysbvm_stackFram
         {
             if(currentSourcePosition)
             {
-                sysbvm_arrayList_add(context, arrayList, currentSourcePosition);
+                sysbvm_orderedCollection_add(context, orderedCollection, currentSourcePosition);
                 currentSourcePosition = SYSBVM_NULL_TUPLE;
             }
             //currentFunction = ((sysbvm_stackFrameFunctionActivationRecord_t*)stackFrameRecord)->function;
@@ -321,19 +321,19 @@ SYSBVM_API sysbvm_tuple_t sysbvm_stackFrame_buildStackTraceUpTo(sysbvm_stackFram
         else if(stackFrameRecord->type == SYSBVM_STACK_FRAME_RECORD_TYPE_BYTECODE_FUNCTION_ACTIVATION)
         {
             if(currentSourcePosition)
-                sysbvm_arrayList_add(context, arrayList, currentSourcePosition);
+                sysbvm_orderedCollection_add(context, orderedCollection, currentSourcePosition);
             currentSourcePosition = sysbvm_bytecodeInterpreter_getSourcePositionForActivationRecord(context, (sysbvm_stackFrameBytecodeFunctionActivationRecord_t*)stackFrameRecord);
             if(currentSourcePosition)
-                sysbvm_arrayList_add(context, arrayList, currentSourcePosition);
+                sysbvm_orderedCollection_add(context, orderedCollection, currentSourcePosition);
             currentSourcePosition = SYSBVM_NULL_TUPLE;
         }
         else if(stackFrameRecord->type == SYSBVM_STACK_FRAME_RECORD_TYPE_BYTECODE_JIT_FUNCTION_ACTIVATION)
         {
             if(currentSourcePosition)
-                sysbvm_arrayList_add(context, arrayList, currentSourcePosition);
+                sysbvm_orderedCollection_add(context, orderedCollection, currentSourcePosition);
             currentSourcePosition = sysbvm_bytecodeInterpreter_getSourcePositionForJitActivationRecord(context, (sysbvm_stackFrameBytecodeFunctionJitActivationRecord_t*)stackFrameRecord);
             if(currentSourcePosition)
-                sysbvm_arrayList_add(context, arrayList, currentSourcePosition);
+                sysbvm_orderedCollection_add(context, orderedCollection, currentSourcePosition);
             currentSourcePosition = SYSBVM_NULL_TUPLE;
         }
 
@@ -341,9 +341,9 @@ SYSBVM_API sysbvm_tuple_t sysbvm_stackFrame_buildStackTraceUpTo(sysbvm_stackFram
     }
 
     if(currentSourcePosition)
-        sysbvm_arrayList_add(context, arrayList, currentSourcePosition);
+        sysbvm_orderedCollection_add(context, orderedCollection, currentSourcePosition);
 
-    return sysbvm_arrayList_asArray(context, arrayList);
+    return sysbvm_orderedCollection_asArray(context, orderedCollection);
 }
 
 SYSBVM_API void sysbvm_stackFrame_printStackTrace(sysbvm_context_t *context, sysbvm_tuple_t stackTrace)
