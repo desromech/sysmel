@@ -1129,23 +1129,23 @@ static void sysbvm_jit_storePC(sysbvm_bytecodeJit_t *jit, uint16_t pc)
 static void sysbvm_jit_finish(sysbvm_bytecodeJit_t *jit)
 {
     // Apply the PC target relative relocations.
-    for(size_t i = 0; i < jit->pcRelocationsSize; ++i)
+    for(size_t i = 0; i < jit->pcRelocations.size; ++i)
     {
-        sysbvm_bytecodeJitPCRelocation_t *relocation = jit->pcRelocations + i;
-        *((int32_t*)(jit->instructions + relocation->offset)) = (int32_t)(jit->pcDestinations[relocation->targetPC] - (intptr_t)relocation->offset + relocation->addend);
+        sysbvm_bytecodeJitPCRelocation_t *relocation = sysbvm_dynarray_entryOfTypeAt(jit->pcRelocations, sysbvm_bytecodeJitPCRelocation_t, i);
+        *((int32_t*)(jit->instructions.data + relocation->offset)) = (int32_t)(jit->pcDestinations[relocation->targetPC] - (intptr_t)relocation->offset + relocation->addend);
     }
 }
 
 static void sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *codeZonePointer)
 {
-    memcpy(codeZonePointer, jit->instructions, jit->instructionsSize);
-    size_t constantsOffset = sizeAlignedTo(jit->instructionsSize, 16);
+    memcpy(codeZonePointer, jit->instructions.data, jit->instructions.size);
+    size_t constantsOffset = sizeAlignedTo(jit->instructions.size, 16);
     uint8_t *constantZonePointer = codeZonePointer + constantsOffset;
-    memcpy(constantZonePointer, jit->constants, jit->constantsSize);
+    memcpy(constantZonePointer, jit->constants.data, jit->constants.size);
 
-    for(size_t i = 0; i < jit->relocationsSize; ++i)
+    for(size_t i = 0; i < jit->relocations.size; ++i)
     {
-        sysbvm_bytecodeJitRelocation_t *relocation = jit->relocations + i;
+        sysbvm_bytecodeJitRelocation_t *relocation = sysbvm_dynarray_entryOfTypeAt(jit->relocations, sysbvm_bytecodeJitRelocation_t, i);
         uint8_t *relocationTarget = codeZonePointer + relocation->offset;
         intptr_t relocationTargetAddress = (intptr_t)relocationTarget;
 

@@ -1,4 +1,5 @@
 set(sysbvm_sources
+    internal/dynarray.c
     array.c
     orderedCollection.c
     arraySlice.c

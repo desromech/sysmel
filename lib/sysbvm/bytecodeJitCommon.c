@@ -1,4 +1,5 @@
 #include "internal/context.h"
+#include "internal/dynarray.h"
 
 typedef sysbvm_tuple_t (*sysbvm_bytecodeJit_entryPoint) (sysbvm_context_t *context, sysbvm_tuple_t function, size_t argumentCount, sysbvm_tuple_t *arguments);
 
@@ -39,21 +40,10 @@ typedef struct sysbvm_bytecodeJit_s
     int32_t pcOffset;
     int32_t stackFrameRecordOffset;
 
-    size_t instructionsCapacity;
-    size_t instructionsSize;
-    uint8_t *instructions;
-
-    size_t constantsCapacity;
-    size_t constantsSize;
-    uint8_t *constants;
-
-    size_t relocationsCapacity;
-    size_t relocationsSize;
-    sysbvm_bytecodeJitRelocation_t *relocations;
-
-    size_t pcRelocationsCapacity;
-    size_t pcRelocationsSize;
-    sysbvm_bytecodeJitPCRelocation_t *pcRelocations;
+    sysbvm_dynarray_t instructions;
+    sysbvm_dynarray_t constants;
+    sysbvm_dynarray_t relocations;
+    sysbvm_dynarray_t pcRelocations;
 
     intptr_t *pcDestinations;
 
@@ -65,95 +55,49 @@ static size_t sizeAlignedTo(size_t pointer, size_t alignment)
     return (pointer + alignment - 1) & (~(alignment - 1));
 }
 
+static void sysbvm_bytecodeJit_initialize(sysbvm_bytecodeJit_t *jit, sysbvm_context_t *context)
+{
+    memset(jit, 0, sizeof(sysbvm_bytecodeJit_t));
+    jit->context = context;
+    sysbvm_dynarray_initialize(&jit->instructions, 1, 1024);
+    sysbvm_dynarray_initialize(&jit->constants, 1, 1024);
+    sysbvm_dynarray_initialize(&jit->relocations, sizeof(sysbvm_bytecodeJitRelocation_t), 0);
+    sysbvm_dynarray_initialize(&jit->pcRelocations, sizeof(sysbvm_bytecodeJitPCRelocation_t), 0);
+}
+
 static size_t sysbvm_bytecodeJit_addBytes(sysbvm_bytecodeJit_t *jit, size_t byteCount, uint8_t *bytes)
 {
-    if(jit->instructionsSize + byteCount > jit->instructionsCapacity)
-    {
-        size_t newCapacity = jit->instructionsCapacity * 2;
-        if(newCapacity < 1024)
-            newCapacity = 1024;
-
-        uint8_t *newInstructions = (uint8_t*)malloc(newCapacity);
-        memcpy(newInstructions, jit->instructions, jit->instructionsSize);
-        free(jit->instructions);
-        jit->instructions = newInstructions;
-        jit->instructionsCapacity = newCapacity;
-    }
-
-    memcpy(jit->instructions + jit->instructionsSize, bytes, byteCount);
-    jit->instructionsSize += byteCount;
-    return jit->instructionsSize;
+    return sysbvm_dynarray_addAll(&jit->instructions, byteCount, bytes);
 }
 
 static size_t sysbvm_bytecodeJit_addByte(sysbvm_bytecodeJit_t *jit, uint8_t byte)
 {
-    sysbvm_bytecodeJit_addBytes(jit, 1, &byte);
-    return jit->instructionsSize;
+    return sysbvm_bytecodeJit_addBytes(jit, 1, &byte);
 }
 
 static size_t sysbvm_bytecodeJit_addConstantsBytes(sysbvm_bytecodeJit_t *jit, size_t byteCount, uint8_t *bytes)
 {
-    if(jit->constantsSize + byteCount > jit->constantsCapacity)
-    {
-        size_t newCapacity = jit->constantsCapacity * 2;
-        if(newCapacity < 1024)
-            newCapacity = 1024;
-
-        uint8_t *newInstructions = (uint8_t*)malloc(newCapacity);
-        memcpy(newInstructions, jit->constants, jit->constantsSize);
-        free(jit->constants);
-        jit->constants = newInstructions;
-        jit->constantsCapacity = newCapacity;
-    }
-
-    size_t constantOffset = jit->constantsSize;
-    memcpy(jit->constants + jit->constantsSize, bytes, byteCount);
-    jit->constantsSize += byteCount;
-    return constantOffset;
+    size_t offset = jit->constants.size;
+    sysbvm_dynarray_addAll(&jit->constants, byteCount, bytes);
+    return offset;
 }
 
 static void sysbvm_bytecodeJit_addPCRelocation(sysbvm_bytecodeJit_t *jit, sysbvm_bytecodeJitPCRelocation_t relocation)
 {
-    if(jit->pcRelocationsSize >= jit->pcRelocationsCapacity)
-    {
-        size_t newCapacity = jit->pcRelocationsCapacity * 2;
-        if(newCapacity < 16)
-            newCapacity = 16;
-
-        sysbvm_bytecodeJitPCRelocation_t *newRelocations = (sysbvm_bytecodeJitPCRelocation_t*)malloc(newCapacity*sizeof(sysbvm_bytecodeJitPCRelocation_t));
-        memcpy(newRelocations, jit->pcRelocations, jit->pcRelocationsSize * sizeof(sysbvm_bytecodeJitPCRelocation_t));
-        free(jit->pcRelocations);
-        jit->pcRelocations = newRelocations;
-        jit->pcRelocationsCapacity = newCapacity;
-    }
-
-    jit->pcRelocations[jit->pcRelocationsSize++] = relocation;
+    sysbvm_dynarray_add(&jit->pcRelocations, &relocation);
 }
 
 static void sysbvm_bytecodeJit_addRelocation(sysbvm_bytecodeJit_t *jit, sysbvm_bytecodeJitRelocation_t relocation)
 {
-    if(jit->relocationsSize >= jit->relocationsCapacity)
-    {
-        size_t newCapacity = jit->relocationsCapacity * 2;
-        if(newCapacity < 16)
-            newCapacity = 16;
-
-        sysbvm_bytecodeJitRelocation_t *newRelocations = (sysbvm_bytecodeJitRelocation_t*)malloc(newCapacity*sizeof(sysbvm_bytecodeJitRelocation_t));
-        memcpy(newRelocations, jit->relocations, jit->relocationsSize * sizeof(sysbvm_bytecodeJitRelocation_t));
-        free(jit->relocations);
-        jit->relocations = newRelocations;
-        jit->relocationsCapacity = newCapacity;
-    }
-
-    jit->relocations[jit->relocationsSize++] = relocation;
+    sysbvm_dynarray_add(&jit->relocations, &relocation);
 }
 
 static void sysbvm_bytecodeJit_jitFree(sysbvm_bytecodeJit_t *jit)
 {
-    free(jit->instructions);
-    free(jit->constants);
-    free(jit->relocations);
-    free(jit->pcRelocations);
+    sysbvm_dynarray_destroy(&jit->instructions);
+    sysbvm_dynarray_destroy(&jit->constants);
+    sysbvm_dynarray_destroy(&jit->relocations);
+    sysbvm_dynarray_destroy(&jit->pcRelocations);
     free(jit->pcDestinations);
 }
 
@@ -204,9 +148,8 @@ static void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functionByt
     (void)context;
     sysbvm_bytecodeInterpreter_ensureTablesAreFilled();
 
-    sysbvm_bytecodeJit_t jit = {
-        .context = context,
-    };
+    sysbvm_bytecodeJit_t jit;
+    sysbvm_bytecodeJit_initialize(&jit, context);
 
     jit.literalVectorGCRoot = sysbvm_heap_allocateGCRootTableEntry(&context->heap);
     *jit.literalVectorGCRoot = functionBytecode->literalVector;
@@ -228,7 +171,7 @@ static void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functionByt
     size_t pc = 0;
     while(pc < instructionsSize)
     {
-        jit.pcDestinations[pc] = jit.instructionsSize;
+        jit.pcDestinations[pc] = jit.instructions.size;
         sysbvm_jit_storePC(&jit, (int32_t)pc);
 
         uint8_t opcode = instructions[pc++];
@@ -403,7 +346,7 @@ static void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functionByt
 
     sysbvm_jit_finish(&jit);
 
-    size_t requiredCodeSize = sizeAlignedTo(jit.instructionsSize, 16) + sizeAlignedTo(jit.constantsSize, 16);
+    size_t requiredCodeSize = sizeAlignedTo(jit.instructions.size, 16) + sizeAlignedTo(jit.constants.size, 16);
     uint8_t *codeZonePointer = sysbvm_heap_allocateAndLockCodeZone(&context->heap, requiredCodeSize, 16);
     memset(codeZonePointer, 0xcc, requiredCodeSize); // int3;
     sysbvm_jit_installIn(&jit, codeZonePointer);
