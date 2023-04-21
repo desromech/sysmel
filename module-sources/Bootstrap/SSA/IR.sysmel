@@ -1,7 +1,8 @@
 public class SSAValue superclass: Object.
 public class SSAConstant superclass: SSAValue.
-public class SSAFunction superclass: SSAConstant.
-public class SSAFunctionDefinition superclass: SSAConstant.
+public class SSAGlobalValue superclass: SSAConstant.
+public class SSAFunction superclass: SSAGlobalValue.
+public class SSAFunctionDefinition superclass: SSAGlobalValue.
 public class SSAFunctionLocalValue superclass: SSAValue.
 public final class SSAFunctionArgument superclass: SSAFunctionLocalValue.
 public final class SSAFunctionCapture superclass: SSAFunctionLocalValue.
@@ -105,8 +106,11 @@ public final class SSALiteralConstant superclass: SSAConstant; definition: {
         := stream nextPutAll: "Literal("; print: self value; nextPutAll: " => "; print: self type; nextPut: ')'.
 }.
 
-SSAFunction definition: {
+SSAGlobalValue definition: {
     public field name => Symbol.
+}.
+
+SSAFunction definition: {
     public field captures => Array.
     public field definition => SSAFunctionDefinition.
 
@@ -1054,6 +1058,20 @@ public final class SSAUnreachableInstruction superclass: SSAInstruction; definit
 
     public method fullPrintOn: (stream: Stream) ::=> Void
         := stream nextPutAll: "unreachable".
+}.
+
+public final class SSAModule superclass: Object; definition: {
+    public field globalValues => ArrayList.
+
+    public method initialize => Void := {
+        globalValues := ArrayList new.
+    }.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        globalValues do: {:(SSAGlobalValue)eachValue :: Void |
+            stream fullPrint: eachValue
+        }
+    }.
 }.
 
 SSAInstructionBuilder definition: {

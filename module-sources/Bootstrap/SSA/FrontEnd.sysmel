@@ -1,3 +1,6 @@
+public final class SSAModuleCompilationContext superclass: Object; definition: {
+}.
+
 public final class SSAFunctionCompilationContext superclass: Object; definition: {
     public field functionDefinition => FunctionDefinition.
     public field ssaFunction => SSAFunctionDefinition.
@@ -436,18 +439,18 @@ ASTReturnNode extend: {
         := context builder return: (self expression generateSSAValueWith: context)
 }.
 
+FunctionDefinition extend: {
+    public method asSSAFunctionDefinition => SSAFunctionDefinition := {
+        SSAFunctionCompilationContext new
+            compileFunctionDefinition: self
+    }.
+}.
+
 Function extend: {
     public method asSSAFunction => SSAFunction := {
         SSAFunction new
             name: self name;
             definition: self definition asSSAFunctionDefinition;
             yourself
-    }.
-}.
-
-FunctionDefinition extend: {
-    public method asSSAFunctionDefinition => SSAFunctionDefinition := {
-        SSAFunctionCompilationContext new
-            compileFunctionDefinition: self
     }.
 }.
