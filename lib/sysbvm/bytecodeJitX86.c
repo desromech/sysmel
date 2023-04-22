@@ -970,6 +970,7 @@ static void sysbvm_jit_cfi_storeStackInFramePointer(sysbvm_bytecodeJit_t *jit)
 static void sysbvm_jit_cfi_subtract(sysbvm_bytecodeJit_t *jit, size_t subtractionAmount)
 {
     (void)jit;
+    (void)subtractionAmount;
 }
 
 #endif
@@ -979,18 +980,18 @@ static void sysbvm_jit_cfi_pushImmediate(sysbvm_bytecodeJit_t *jit)
     sysbvm_jit_cfi_subtract(jit, sizeof(void*));
 }
 
-static sysbvm_jit_cfi_pushArg(sysbvm_bytecodeJit_t *jit, int index)
+static void sysbvm_jit_cfi_pushArg(sysbvm_bytecodeJit_t *jit, int index)
 {
     (void)index;
     sysbvm_jit_cfi_pushImmediate(jit);
 }
 
-static sysbvm_jit_cfi_pushCaptureVectorPointer(sysbvm_bytecodeJit_t *jit)
+static void sysbvm_jit_cfi_pushCaptureVectorPointer(sysbvm_bytecodeJit_t *jit)
 {
     sysbvm_jit_cfi_pushImmediate(jit);
 }
 
-static sysbvm_jit_cfi_pushLiteralVectorPointer(sysbvm_bytecodeJit_t *jit)
+static void sysbvm_jit_cfi_pushLiteralVectorPointer(sysbvm_bytecodeJit_t *jit)
 {
     sysbvm_jit_cfi_pushImmediate(jit);
 }
@@ -1224,6 +1225,9 @@ static void sysbvm_jit_emitUnwindInfo(sysbvm_bytecodeJit_t *jit)
     sysbvm_bytecodeJit_addUnwindInfoByte(jit, (uint8_t)(jit->unwindInfoBytecode.size/2));
     sysbvm_bytecodeJit_addUnwindInfoByte(jit, (/* Frame register RBP */ 5) | (/* Frame register offset. */ 0 << 4));
     sysbvm_dynarray_addAll(&jit->unwindInfo, jit->unwindInfoBytecode.size, jit->unwindInfoBytecode.data);
+#else
+    // TODO: Implement this for linux and mac.
+    (void)jit;
 #endif
 }
 
