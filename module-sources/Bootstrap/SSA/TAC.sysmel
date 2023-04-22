@@ -353,8 +353,39 @@ SSAInstruction extend: {
         := self subclassResponsibility.
 }.
 
+let translateBinaryPrimitiveInto := {:(TACOperation)operation :: ((SSACallInstruction, TACValue, SSAFunctionDefinitionTACCodeGenerator) => Boolean) |
+    {:(SSACallInstruction)call :(TACValue)result :(SSAFunctionDefinitionTACCodeGenerator)codegen :: Boolean |
+        let left := codegen translateValue: call arguments first.
+        let right := codegen translateValue: call arguments second.
+        codegen blockBuilder operation: operation with: left with: right result: result.
+        true
+    }
+}.
+
+public global SSATacPrimitiveCallGenerationTable := #{
+    #UInt32::+ : translateBinaryPrimitiveInto(TAC::Operation::AddInt32).
+    #UInt32::- : translateBinaryPrimitiveInto(TAC::Operation::SubInt32).
+    #UInt32::* : translateBinaryPrimitiveInto(TAC::Operation::MulInt32).
+    #UInt32::/ : translateBinaryPrimitiveInto(TAC::Operation::UDivInt32).
+    #UInt32::% : translateBinaryPrimitiveInto(TAC::Operation::URemInt32).
+
+    #Int32::+ : translateBinaryPrimitiveInto(TAC::Operation::AddInt32).
+    #Int32::- : translateBinaryPrimitiveInto(TAC::Operation::SubInt32).
+    #Int32::* : translateBinaryPrimitiveInto(TAC::Operation::MulInt32).
+    #Int32::/ : translateBinaryPrimitiveInto(TAC::Operation::SDivInt32).
+    #Int32::% : translateBinaryPrimitiveInto(TAC::Operation::SRemInt32).
+}.
+
 SSACallInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        ## Attempt to use the primitive generator first.
+        let primitiveGenerator := SSATacPrimitiveCallGenerationTable atOrNil: calledFunction primitiveName.
+        primitiveGenerator ifNotNil: {
+            primitiveGenerator(self, tacValue, codegen) ifTrue: {
+                return: void
+            }
+        }.
+
         isUnchecked ifTrue: {
             let tacCalledFunction := codegen translateValue: calledFunction.
             let entryPoint := codegen translateUncheckedFunctionEntryPoint: calledFunction.

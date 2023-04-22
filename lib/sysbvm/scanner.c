@@ -541,9 +541,19 @@ static bool sysbvm_scanner_scanNextTokenInto(sysbvm_context_t *context, sysbvm_s
             // Chop the scope resolutions.
             while(':' == sysbvm_scanner_lookAt(state, 0) &&
                 ':' == sysbvm_scanner_lookAt(state, 1) &&
-                sysbvm_scanner_isIdentifierStart(sysbvm_scanner_lookAt(state, 2)))
+                (sysbvm_scanner_isIdentifierStart(sysbvm_scanner_lookAt(state, 2))
+                || sysbvm_scanner_isOperatorCharacter(sysbvm_scanner_lookAt(state, 2)))
+                )
             {
-                state->position += 3;
+                state->position += 2;
+                if(sysbvm_scanner_isOperatorCharacter(sysbvm_scanner_lookAt(state, 0)))
+                {
+                    while(sysbvm_scanner_isOperatorCharacter(sysbvm_scanner_lookAt(state, 0)))
+                        ++state->position;
+                    sysbvm_scanner_emitTokenForStateRange(context, &tokenStartState, state, SYSBVM_TOKEN_KIND_SYMBOL, sysbvm_scanner_tokenAsSymbolWithoutPrefix, outTokenList);
+                    return true;
+                }
+
                 while(sysbvm_scanner_isIdentifierMiddle(sysbvm_scanner_lookAt(state, 0)))
                     ++state->position;
             }

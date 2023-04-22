@@ -120,12 +120,28 @@ TEST_SUITE(Scanner)
         TEST_ASSERT_EQUALS(sysbvm_symbol_internWithCString(sysbvm_test_context, "helloWorld1234"), sysbvm_token_getValue(sysbvm_arraySlice_at(tokenList, 0)));
     }
 
+    TEST_CASE_WITH_FIXTURE(IdentifierSymbol2, TuuvmCore)
+    {
+        sysbvm_tuple_t tokenList = sysbvm_scanner_scanCString(sysbvm_test_context, "#Scope::helloWorld1234", "test", "tlisp");
+        TEST_ASSERT_EQUALS(1, sysbvm_arraySlice_getSize(tokenList));
+        TEST_ASSERT_EQUALS(SYSBVM_TOKEN_KIND_SYMBOL, sysbvm_token_getKind(sysbvm_arraySlice_at(tokenList, 0)));
+        TEST_ASSERT_EQUALS(sysbvm_symbol_internWithCString(sysbvm_test_context, "Scope::helloWorld1234"), sysbvm_token_getValue(sysbvm_arraySlice_at(tokenList, 0)));
+    }
+
     TEST_CASE_WITH_FIXTURE(OperatorSymbol, TuuvmCore)
     {
         sysbvm_tuple_t tokenList = sysbvm_scanner_scanCString(sysbvm_test_context, "#+", "test", "tlisp");
         TEST_ASSERT_EQUALS(1, sysbvm_arraySlice_getSize(tokenList));
         TEST_ASSERT_EQUALS(SYSBVM_TOKEN_KIND_SYMBOL, sysbvm_token_getKind(sysbvm_arraySlice_at(tokenList, 0)));
         TEST_ASSERT_EQUALS(sysbvm_symbol_internWithCString(sysbvm_test_context, "+"), sysbvm_token_getValue(sysbvm_arraySlice_at(tokenList, 0)));
+    }
+
+    TEST_CASE_WITH_FIXTURE(OperatorSymbol2, TuuvmCore)
+    {
+        sysbvm_tuple_t tokenList = sysbvm_scanner_scanCString(sysbvm_test_context, "#Scope::+", "test", "tlisp");
+        TEST_ASSERT_EQUALS(1, sysbvm_arraySlice_getSize(tokenList));
+        TEST_ASSERT_EQUALS(SYSBVM_TOKEN_KIND_SYMBOL, sysbvm_token_getKind(sysbvm_arraySlice_at(tokenList, 0)));
+        TEST_ASSERT_EQUALS(sysbvm_symbol_internWithCString(sysbvm_test_context, "Scope::+"), sysbvm_token_getValue(sysbvm_arraySlice_at(tokenList, 0)));
     }
 
     TEST_CASE_WITH_FIXTURE(Integer, TuuvmCore)
