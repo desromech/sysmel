@@ -1,0 +1,21 @@
+Char8 extend: {
+    public method asLowercase => Char8 := {
+        if: ('A'asChar8 <= self) && (self <= 'Z'asChar8)
+        then: self + 'a'asChar8 - 'A'asChar8
+        else: self
+    }.
+
+    public method asUppercase => Char8 := {
+        if: ('a'asChar8 <= self) && (self <= 'z'asChar8)
+        then: self + 'A'asChar8 - 'z'asChar8
+        else: self
+    }.
+}.
+
+String extend: {
+    public method asLowercase => String
+        := self collect: {:(Char8)c :: Char8 | c asLowercase }.
+
+    public method asUppercase => String
+        := self collect: {:(Char8)c :: Char8 | c asUppercase }.
+}

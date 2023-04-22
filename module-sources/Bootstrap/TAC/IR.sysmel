@@ -557,41 +557,6 @@ public global TAC::Operation::ReturnFloat64 := TACOperation terminatorNamed: #re
 public global TAC::Operation::ReturnStruct := TACOperation terminatorNamed: #returnStruct.
 public global TAC::Operation::ReturnVoid := TACOperation terminatorNamed: #returnVoid.
 
-public global TAC::Operation::AddInt8 := TACOperation named: #addInt8.
-public global TAC::Operation::AddInt16 := TACOperation named: #addInt16.
-public global TAC::Operation::AddInt32 := TACOperation named: #addInt32.
-public global TAC::Operation::AddInt64 := TACOperation named: #addInt64.
-
-public global TAC::Operation::SubInt8 := TACOperation named: #addInt8.
-public global TAC::Operation::SubInt16 := TACOperation named: #addInt16.
-public global TAC::Operation::SubInt32 := TACOperation named: #addInt32.
-public global TAC::Operation::SubInt64 := TACOperation named: #addInt64.
-
-public global TAC::Operation::MulInt8 := TACOperation named: #mulInt8.
-public global TAC::Operation::MulInt16 := TACOperation named: #mulInt16.
-public global TAC::Operation::MulInt32 := TACOperation named: #mulInt32.
-public global TAC::Operation::MulInt64 := TACOperation named: #mulInt64.
-
-public global TAC::Operation::SDivInt8 := TACOperation named: #sdivInt8.
-public global TAC::Operation::SDivInt16 := TACOperation named: #sdivInt16.
-public global TAC::Operation::SDivInt32 := TACOperation named: #sdivInt32.
-public global TAC::Operation::SDivInt64 := TACOperation named: #sdivInt64.
-
-public global TAC::Operation::SRemInt8 := TACOperation named: #sremInt8.
-public global TAC::Operation::SRemInt16 := TACOperation named: #sremInt16.
-public global TAC::Operation::SRemInt32 := TACOperation named: #sremInt32.
-public global TAC::Operation::SRemInt64 := TACOperation named: #sremInt64.
-
-public global TAC::Operation::UDivInt8 := TACOperation named: #udivInt8.
-public global TAC::Operation::UDivInt16 := TACOperation named: #udivInt16.
-public global TAC::Operation::UDivInt32 := TACOperation named: #udivInt32.
-public global TAC::Operation::UDivInt64 := TACOperation named: #udivInt64.
-
-public global TAC::Operation::URemInt8 := TACOperation named: #uremInt8.
-public global TAC::Operation::URemInt16 := TACOperation named: #uremInt16.
-public global TAC::Operation::URemInt32 := TACOperation named: #uremInt32.
-public global TAC::Operation::URemInt64 := TACOperation named: #uremInt64.
-
 public global TAC::Operation::Trap := TACOperation terminatorNamed: #trap.
 
 TACBasicBlock definition: {
@@ -985,30 +950,6 @@ public final class TACBlockBuilder superclass: Object; definition: {
 
     public method trap ::=> TACInstruction
         := self operation: TAC::Operation::Trap.
-
-    public method addInt8: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::AddInt8 with: left with: right result: result.
-
-    public method addInt16: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::AddInt16 with: left with: right result: result.
-
-    public method addInt32: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::AddInt32 with: left with: right result: result.
-
-    public method addInt64: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::AddInt64 with: left with: right result: result.
-
-    public method subInt8: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::SubInt8 with: left with: right result: result.
-
-    public method subInt16: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::SubInt16 with: left with: right result: result.
-
-    public method subInt32: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::SubInt32 with: left with: right result: result.
-
-    public method subInt64: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::SubInt64 with: left with: right result: result.
 }.
 
 public final class TACFunctionBuilder superclass: Object; definition: {
@@ -1025,6 +966,35 @@ public final class TACFunctionBuilder superclass: Object; definition: {
         aBlock(blockBuilder).
         block.
     }.
+}.
+
+#(
+    AddInt8 AddInt16 AddInt32 AddInt64
+    SubInt8 SubInt16 SubInt32 SubInt64
+    MulInt8 MulInt16 MulInt32 MulInt64
+    SDivInt8 SDivInt16 SDivInt32 SDivInt64
+    UDivInt8 UDivInt16 UDivInt32 UDivInt64
+    SRemInt8 SRemInt16 SRemInt32 SRemInt64
+    URemInt8 URemInt16 URemInt32 URemInt64
+
+    BitAndInt8 BitAndInt16 BitAndInt32 BitAndInt64
+    BitOrInt8 BitOrInt16 BitOrInt32 BitOrInt64
+    BitXorInt8 BitXorInt16 BitXorInt32 BitXorInt64
+    ArithmeticShiftRightInt8 ArithmeticShiftRightInt16 ArithmeticShiftRightInt32 ArithmeticShiftRightInt64
+    LogicalShiftLeftInt8 LogicalShiftLeftInt16 LogicalShiftLeftInt32 LogicalShiftLeftInt64
+    LogicalShiftRightInt8 LogicalShiftRightInt16 LogicalShiftRightInt32 LogicalShiftRightInt64
+) do: {:(Symbol)operationName :: Void |
+    let operationNameString := operationName asString.
+    let lowerOperationNameString := operationNameString first asLowercase asString -- operationNameString allButFirst.
+    let lowerOperationName := lowerOperationNameString asSymbol.
+    let operation := TACOperation named: lowerOperationName.
+    let globalName := ("TAC::Operation::" -- operationNameString) asSymbol.
+
+    TACBlockBuilder
+        withSelector: (lowerOperationNameString -- ":with:into:") asSymbol addMethod: {:(TACBlockBuilder)self :(TACValue)left :(TACValue)right :(TACValue)result :: TACInstruction |
+            self operation: operation with: left with: right result: result.
+        }.
+    __OwnerProgramEntity__ setPublicSymbol: globalName value: operation
 }.
 
 public final class TACModule superclass: TACProgramEntity; definition: {

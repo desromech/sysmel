@@ -56,9 +56,18 @@ static sysbvm_tuple_t sysbvm_primitiveInteger_unsigned_printString(sysbvm_contex
     return sysbvm_string_createWithReversedString(context, bufferSize, buffer);
 }
 
+static sysbvm_tuple_t sysbvm_primitiveInteger_character_printString(sysbvm_context_t *context, uint32_t character)
+{
+    // TODO: implement this in a proper way by generating the UTF-8 encoding.
+    char c = (char)character;
+    return sysbvm_string_createWithString(context, 1, &c);
+}
+
+
 #define integer_t char
 #define primitiveInteger_decode sysbvm_tuple_char8_decode
 #define primitiveInteger_encode sysbvm_tuple_char8_encode
+#define IS_CHARACTER true
 #define IS_SIGNED false
 #define FUNCTION_PREFIX sysbvm_char8
 #define INTEGER_TYPE_NAME "Char8"
@@ -69,6 +78,7 @@ static sysbvm_tuple_t sysbvm_primitiveInteger_unsigned_printString(sysbvm_contex
 #define integer_t uint8_t
 #define primitiveInteger_decode sysbvm_tuple_uint8_decode
 #define primitiveInteger_encode sysbvm_tuple_uint8_encode
+#define IS_CHARACTER false
 #define IS_SIGNED false
 #define FUNCTION_PREFIX sysbvm_uint8
 #define INTEGER_TYPE_NAME "UInt8"
@@ -79,6 +89,7 @@ static sysbvm_tuple_t sysbvm_primitiveInteger_unsigned_printString(sysbvm_contex
 #define integer_t int8_t
 #define primitiveInteger_decode sysbvm_tuple_int8_decode
 #define primitiveInteger_encode sysbvm_tuple_int8_encode
+#define IS_CHARACTER false
 #define IS_SIGNED true
 #define FUNCTION_PREFIX sysbvm_int8
 #define INTEGER_TYPE_NAME "Int8"
@@ -89,6 +100,7 @@ static sysbvm_tuple_t sysbvm_primitiveInteger_unsigned_printString(sysbvm_contex
 #define integer_t uint16_t
 #define primitiveInteger_decode sysbvm_tuple_char16_decode
 #define primitiveInteger_encode sysbvm_tuple_char16_encode
+#define IS_CHARACTER true
 #define IS_SIGNED false
 #define FUNCTION_PREFIX sysbvm_char16
 #define INTEGER_TYPE_NAME "Char16"
@@ -99,6 +111,7 @@ static sysbvm_tuple_t sysbvm_primitiveInteger_unsigned_printString(sysbvm_contex
 #define integer_t uint16_t
 #define primitiveInteger_decode sysbvm_tuple_uint16_decode
 #define primitiveInteger_encode sysbvm_tuple_uint16_encode
+#define IS_CHARACTER false
 #define IS_SIGNED false
 #define FUNCTION_PREFIX sysbvm_uint16
 #define INTEGER_TYPE_NAME "UInt16"
@@ -109,6 +122,7 @@ static sysbvm_tuple_t sysbvm_primitiveInteger_unsigned_printString(sysbvm_contex
 #define integer_t int16_t
 #define primitiveInteger_decode sysbvm_tuple_int16_decode
 #define primitiveInteger_encode sysbvm_tuple_int16_encode
+#define IS_CHARACTER false
 #define IS_SIGNED true
 #define FUNCTION_PREFIX sysbvm_int16
 #define INTEGER_TYPE_NAME "Int16"
@@ -119,6 +133,7 @@ static sysbvm_tuple_t sysbvm_primitiveInteger_unsigned_printString(sysbvm_contex
 #define integer_t uint32_t
 #define primitiveInteger_decode sysbvm_tuple_char32_decode
 #define primitiveInteger_encode(v) sysbvm_tuple_char32_encode(context, v)
+#define IS_CHARACTER true
 #define IS_SIGNED false
 #define FUNCTION_PREFIX sysbvm_char32
 #define INTEGER_TYPE_NAME "Char32"
@@ -129,6 +144,7 @@ static sysbvm_tuple_t sysbvm_primitiveInteger_unsigned_printString(sysbvm_contex
 #define integer_t uint32_t
 #define primitiveInteger_decode sysbvm_tuple_uint32_decode
 #define primitiveInteger_encode(v) sysbvm_tuple_uint32_encode(context, v)
+#define IS_CHARACTER false
 #define IS_SIGNED false
 #define FUNCTION_PREFIX sysbvm_uint32
 #define INTEGER_TYPE_NAME "UInt32"
@@ -139,6 +155,7 @@ static sysbvm_tuple_t sysbvm_primitiveInteger_unsigned_printString(sysbvm_contex
 #define integer_t int32_t
 #define primitiveInteger_decode sysbvm_tuple_int32_decode
 #define primitiveInteger_encode(v) sysbvm_tuple_int32_encode(context, v)
+#define IS_CHARACTER false
 #define IS_SIGNED true
 #define FUNCTION_PREFIX sysbvm_int32
 #define INTEGER_TYPE_NAME "Int32"
@@ -149,6 +166,7 @@ static sysbvm_tuple_t sysbvm_primitiveInteger_unsigned_printString(sysbvm_contex
 #define integer_t uint64_t
 #define primitiveInteger_decode sysbvm_tuple_uint64_decode
 #define primitiveInteger_encode(v) sysbvm_tuple_uint64_encode(context, v)
+#define IS_CHARACTER false
 #define IS_SIGNED false
 #define FUNCTION_PREFIX sysbvm_uint64
 #define INTEGER_TYPE_NAME "UInt64"
@@ -159,6 +177,7 @@ static sysbvm_tuple_t sysbvm_primitiveInteger_unsigned_printString(sysbvm_contex
 #define integer_t int64_t
 #define primitiveInteger_decode sysbvm_tuple_int64_decode
 #define primitiveInteger_encode(v) sysbvm_tuple_int64_encode(context, v)
+#define IS_CHARACTER false
 #define IS_SIGNED true
 #define FUNCTION_PREFIX sysbvm_int64
 #define INTEGER_TYPE_NAME "Int64"

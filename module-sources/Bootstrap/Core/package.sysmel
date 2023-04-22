@@ -8,3 +8,4 @@ loadSourceNamed: "Struct.sysmel".
 loadSourceNamed: "Interval.sysmel".
 loadSourceNamed: "Math.sysmel".
 loadSourceNamed: "Utility.sysmel".
+loadSourceNamed: "String.sysmel".

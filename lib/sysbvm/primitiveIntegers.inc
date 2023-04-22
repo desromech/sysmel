@@ -4,7 +4,9 @@ static sysbvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_printString)(sysbvm_c
     (void)closure;
     if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
 
-#if IS_SIGNED
+#if IS_CHARACTER
+    return sysbvm_primitiveInteger_character_printString(context, primitiveInteger_decode(arguments[0]));
+#elif IS_SIGNED
     return sysbvm_primitiveInteger_signed_printString(context, primitiveInteger_decode(arguments[0]));
 #else
     return sysbvm_primitiveInteger_unsigned_printString(context, primitiveInteger_decode(arguments[0]));
@@ -456,6 +458,7 @@ static void PRIMITIVE_INTEGER_FUNCTION(setupPrimitives)(sysbvm_context_t *contex
 #undef integer_t
 #undef primitiveInteger_decode
 #undef primitiveInteger_encode
+#undef IS_CHARACTER
 #undef IS_SIGNED
 #undef FUNCTION_PREFIX
 #undef INTEGER_TYPE_NAME
