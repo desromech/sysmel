@@ -1,6 +1,12 @@
 #include "internal/context.h"
 #include "internal/dynarray.h"
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN 
+#define NOMINMAX
+#include <windows.h>
+#endif
+
 typedef sysbvm_tuple_t (*sysbvm_bytecodeJit_entryPoint) (sysbvm_context_t *context, sysbvm_tuple_t function, size_t argumentCount, sysbvm_tuple_t *arguments);
 
 typedef enum sysbvm_bytecodeJitRelocationType_e
@@ -44,6 +50,9 @@ typedef struct sysbvm_bytecodeJit_s
     sysbvm_dynarray_t constants;
     sysbvm_dynarray_t relocations;
     sysbvm_dynarray_t pcRelocations;
+    sysbvm_dynarray_t unwindInfo;
+    sysbvm_dynarray_t unwindInfoBytecode;
+    size_t prologueSize;
 
     intptr_t *pcDestinations;
 
@@ -63,6 +72,8 @@ static void sysbvm_bytecodeJit_initialize(sysbvm_bytecodeJit_t *jit, sysbvm_cont
     sysbvm_dynarray_initialize(&jit->constants, 1, 1024);
     sysbvm_dynarray_initialize(&jit->relocations, sizeof(sysbvm_bytecodeJitRelocation_t), 0);
     sysbvm_dynarray_initialize(&jit->pcRelocations, sizeof(sysbvm_bytecodeJitPCRelocation_t), 0);
+    sysbvm_dynarray_initialize(&jit->unwindInfo, 1, 64);
+    sysbvm_dynarray_initialize(&jit->unwindInfoBytecode, 1, 64);
 }
 
 static size_t sysbvm_bytecodeJit_addBytes(sysbvm_bytecodeJit_t *jit, size_t byteCount, uint8_t *bytes)
@@ -82,6 +93,54 @@ static size_t sysbvm_bytecodeJit_addConstantsBytes(sysbvm_bytecodeJit_t *jit, si
     return offset;
 }
 
+static size_t sysbvm_bytecodeJit_addUnwindInfoBytes(sysbvm_bytecodeJit_t *jit, size_t byteCount, uint8_t *bytes)
+{
+    size_t offset = jit->unwindInfo.size;
+    sysbvm_dynarray_addAll(&jit->unwindInfo, byteCount, bytes);
+    return offset;
+}
+
+static size_t sysbvm_bytecodeJit_addUnwindInfoByte(sysbvm_bytecodeJit_t *jit, uint8_t byte)
+{
+    return sysbvm_bytecodeJit_addUnwindInfoBytes(jit, 1, &byte);
+}
+
+#ifdef _WIN32
+static void sysbvm_bytecodeJit_uwop(sysbvm_bytecodeJit_t *jit, uint8_t opcode, uint8_t operationInfo)
+{
+    uint8_t prologueOffset = (uint8_t)jit->instructions.size;
+    uint8_t operation = (opcode << 4) | operation;
+    sysbvm_dynarray_add(&jit->unwindInfoBytecode, &prologueOffset);
+    sysbvm_dynarray_add(&jit->unwindInfoBytecode, &operation);
+}
+
+static void sysbvm_bytecodeJit_uwop_pushNonVol(sysbvm_bytecodeJit_t *jit, uint8_t reg)
+{
+    sysbvm_bytecodeJit_uwop(jit, /*UWOP_PUSH_NONVOL */0 , reg);
+}
+
+static void sysbvm_bytecodeJit_uwop_setFPReg(sysbvm_bytecodeJit_t *jit, uint8_t offset)
+{
+    sysbvm_bytecodeJit_uwop(jit, /* UWOP_SET_FPREG */3, offset);
+}
+
+static void sysbvm_bytecodeJit_uwop_alloc(sysbvm_bytecodeJit_t *jit, size_t amount)
+{
+    if(amount == 0) return;
+
+    if(amount <= 128)
+    {
+        SYSBVM_ASSERT((amount % 8) == 0);
+        sysbvm_bytecodeJit_uwop(jit, /* UWOP_ALLOC_SMALL */2, (uint8_t)((amount - 8) / 8));
+    }
+    else
+    {
+        abort();
+    }
+}
+
+#endif
+
 static void sysbvm_bytecodeJit_addPCRelocation(sysbvm_bytecodeJit_t *jit, sysbvm_bytecodeJitPCRelocation_t relocation)
 {
     sysbvm_dynarray_add(&jit->pcRelocations, &relocation);
@@ -99,6 +158,8 @@ static void sysbvm_bytecodeJit_jitFree(sysbvm_bytecodeJit_t *jit)
     sysbvm_dynarray_destroy(&jit->relocations);
     sysbvm_dynarray_destroy(&jit->pcRelocations);
     free(jit->pcDestinations);
+    sysbvm_dynarray_destroy(&jit->unwindInfo);
+    sysbvm_dynarray_destroy(&jit->unwindInfoBytecode);
 }
 
 static bool sysbvm_bytecodeJit_getLiteralValueForOperand(sysbvm_bytecodeJit_t *jit, int16_t operand, sysbvm_tuple_t *outLiteralValue)
@@ -346,9 +407,13 @@ static void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functionByt
 
     sysbvm_jit_finish(&jit);
 
-    size_t requiredCodeSize = sizeAlignedTo(jit.instructions.size, 16) + sizeAlignedTo(jit.constants.size, 16);
+    size_t textSectionSize = sizeAlignedTo(jit.instructions.size, 16);
+    size_t rodataSectionSize = sizeAlignedTo(jit.constants.size, 16) + sizeAlignedTo(jit.unwindInfo.size, 16);
+
+    size_t requiredCodeSize = textSectionSize + rodataSectionSize;
     uint8_t *codeZonePointer = sysbvm_heap_allocateAndLockCodeZone(&context->heap, requiredCodeSize, 16);
-    memset(codeZonePointer, 0xcc, requiredCodeSize); // int3;
+    memset(codeZonePointer, 0xcc, textSectionSize); // int3;
+    memset(codeZonePointer + textSectionSize, 0, rodataSectionSize); // int3;
     sysbvm_jit_installIn(&jit, codeZonePointer);
     sysbvm_heap_unlockCodeZone(&context->heap, codeZonePointer, requiredCodeSize);
 

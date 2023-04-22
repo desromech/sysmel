@@ -834,6 +834,7 @@ static void sysbvm_jit_makeDictionary(sysbvm_bytecodeJit_t *jit, int16_t resultO
     sysbvm_jit_x86_movImmediate32(jit, SYSBVM_X86_64_ARG1, (int32_t)elementCount);
     sysbvm_jit_x86_subImmediate32(jit, SYSBVM_X86_RSP, SYSBVM_X86_64_CALL_SHADOW_SPACE);
     sysbvm_jit_x86_call(jit, &sysbvm_dictionary_createWithCapacity);
+    sysbvm_jit_x86_addImmediate32(jit, SYSBVM_X86_RSP, SYSBVM_X86_64_CALL_SHADOW_SPACE);
     sysbvm_jit_moveRegisterToOperand(jit, resultOperand, SYSBVM_X86_RAX);
 
     for(size_t i = 0; i < elementCount; ++i)
@@ -841,9 +842,10 @@ static void sysbvm_jit_makeDictionary(sysbvm_bytecodeJit_t *jit, int16_t resultO
         sysbvm_jit_x86_jitLoadContextInRegister(jit, SYSBVM_X86_64_ARG0);
         sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_64_ARG1, resultOperand);
         sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_64_ARG2, elementOperands[i]);
+        sysbvm_jit_x86_subImmediate32(jit, SYSBVM_X86_RSP, SYSBVM_X86_64_CALL_SHADOW_SPACE);
         sysbvm_jit_x86_call(jit, &sysbvm_dictionary_add);
+        sysbvm_jit_x86_addImmediate32(jit, SYSBVM_X86_RSP, SYSBVM_X86_64_CALL_SHADOW_SPACE);
     }
-    sysbvm_jit_x86_addImmediate32(jit, SYSBVM_X86_RSP, SYSBVM_X86_64_CALL_SHADOW_SPACE);
 }
 
 static void sysbvm_jit_makeClosureWithCaptures(sysbvm_bytecodeJit_t *jit, int16_t resultOperand, int16_t functionDefinitionOperand, size_t captureCount, int16_t *elementOperands)
@@ -856,6 +858,7 @@ static void sysbvm_jit_makeClosureWithCaptures(sysbvm_bytecodeJit_t *jit, int16_
     sysbvm_jit_x86_movImmediate32(jit, SYSBVM_X86_64_ARG1, (int32_t)captureCount);
     sysbvm_jit_x86_subImmediate32(jit, SYSBVM_X86_RSP, SYSBVM_X86_64_CALL_SHADOW_SPACE);
     sysbvm_jit_x86_call(jit, &sysbvm_array_create);
+    sysbvm_jit_x86_addImmediate32(jit, SYSBVM_X86_RSP, SYSBVM_X86_64_CALL_SHADOW_SPACE);
 
     sysbvm_jit_x86_mov64Register(jit, SYSBVM_X86_64_ARG2, SYSBVM_X86_RAX);
     for(size_t i = 0; i < captureCount; ++i)
@@ -867,6 +870,7 @@ static void sysbvm_jit_makeClosureWithCaptures(sysbvm_bytecodeJit_t *jit, int16_
     // Now construct the actual closure
     sysbvm_jit_x86_jitLoadContextInRegister(jit, SYSBVM_X86_64_ARG0);
     sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_64_ARG1, functionDefinitionOperand);
+    sysbvm_jit_x86_subImmediate32(jit, SYSBVM_X86_RSP, SYSBVM_X86_64_CALL_SHADOW_SPACE);
     sysbvm_jit_x86_call(jit, &sysbvm_function_createClosureWithCaptureVector);
     sysbvm_jit_x86_addImmediate32(jit, SYSBVM_X86_RSP, SYSBVM_X86_64_CALL_SHADOW_SPACE);
     sysbvm_jit_moveRegisterToOperand(jit, resultOperand, SYSBVM_X86_RAX);
@@ -936,11 +940,76 @@ static void sysbvm_jit_jumpRelativeIfFalse(sysbvm_bytecodeJit_t *jit, int16_t co
     sysbvm_bytecodeJit_addPCRelocation(jit, relocation);
 }
 
+#ifdef _WIN32
+static void sysbvm_jit_cfi_pushRBP(sysbvm_bytecodeJit_t *jit)
+{
+    sysbvm_bytecodeJit_uwop_pushNonVol(jit, 5);
+}
+
+static void sysbvm_jit_cfi_storeStackInFramePointer(sysbvm_bytecodeJit_t *jit)
+{
+    sysbvm_bytecodeJit_uwop_setFPReg(jit, 0);
+}
+
+static void sysbvm_jit_cfi_subtract(sysbvm_bytecodeJit_t *jit, size_t subtractionAmount)
+{
+    sysbvm_bytecodeJit_uwop_alloc(jit, subtractionAmount);
+}
+
+#else
+static void sysbvm_jit_cfi_pushRBP(sysbvm_bytecodeJit_t *jit)
+{
+    (void)jit;
+}
+
+static void sysbvm_jit_cfi_storeStackInFramePointer(sysbvm_bytecodeJit_t *jit)
+{
+    (void)jit;
+}
+
+static void sysbvm_jit_cfi_subtract(sysbvm_bytecodeJit_t *jit, size_t subtractionAmount)
+{
+    (void)jit;
+}
+
+#endif
+
+static void sysbvm_jit_cfi_pushImmediate(sysbvm_bytecodeJit_t *jit)
+{
+    sysbvm_jit_cfi_subtract(jit, sizeof(void*));
+}
+
+static sysbvm_jit_cfi_pushArg(sysbvm_bytecodeJit_t *jit, int index)
+{
+    (void)index;
+    sysbvm_jit_cfi_pushImmediate(jit);
+}
+
+static sysbvm_jit_cfi_pushCaptureVectorPointer(sysbvm_bytecodeJit_t *jit)
+{
+    sysbvm_jit_cfi_pushImmediate(jit);
+}
+
+static sysbvm_jit_cfi_pushLiteralVectorPointer(sysbvm_bytecodeJit_t *jit)
+{
+    sysbvm_jit_cfi_pushImmediate(jit);
+}
+
+static void sysbvm_jit_cfi_endPrologue(sysbvm_bytecodeJit_t *jit)
+{
+    jit->prologueSize = jit->instructions.size;
+}
+
 static void sysbvm_jit_prologue(sysbvm_bytecodeJit_t *jit)
 {
+#ifndef _WIN32
     sysbvm_jit_x86_endbr64(jit);
+#endif
     sysbvm_jit_x86_pushRegister(jit, SYSBVM_X86_RBP);
+    sysbvm_jit_cfi_pushRBP(jit);
+
     sysbvm_jit_x86_mov64Register(jit, SYSBVM_X86_RBP, SYSBVM_X86_RSP);
+    sysbvm_jit_cfi_storeStackInFramePointer(jit);
 
     //(sysbvm_context_t *context, sysbvm_tuple_t function, size_t argumentCount, sysbvm_tuple_t *arguments)
 
@@ -951,6 +1020,7 @@ static void sysbvm_jit_prologue(sysbvm_bytecodeJit_t *jit)
     // Push the context.
     intptr_t stackFrameIndex = 0;
     sysbvm_jit_x86_pushRegister(jit, SYSBVM_X86_64_ARG0); // Context
+    sysbvm_jit_cfi_pushArg(jit, 0);
     --stackFrameIndex;
 
     // Make space for the locals.
@@ -959,53 +1029,67 @@ static void sysbvm_jit_prologue(sysbvm_bytecodeJit_t *jit)
         for(size_t i = 0; i < jit->localVectorSize; ++i)
         {
             sysbvm_jit_x86_pushImmediate32(jit, 0);
+            sysbvm_jit_cfi_pushImmediate(jit);
             --stackFrameIndex;
         }
     }
 
     jit->localVectorOffset = (int32_t) (stackFrameIndex * sizeof(sysbvm_tuple_t));
     sysbvm_jit_x86_pushImmediate32(jit, (int32_t)jit->localVectorSize); // LocalSize
+    sysbvm_jit_cfi_pushImmediate(jit);
     --stackFrameIndex;
 
     // Push the argument vector.
     sysbvm_jit_x86_pushRegister(jit, SYSBVM_X86_64_ARG3); // Arguments
+    sysbvm_jit_cfi_pushArg(jit, 3);
     --stackFrameIndex;
     jit->argumentVectorOffset = (int32_t)(stackFrameIndex * sizeof(sysbvm_tuple_t));
 
     sysbvm_jit_x86_pushRegister(jit, SYSBVM_X86_64_ARG2); // Argument Count
+    sysbvm_jit_cfi_pushArg(jit, 2);
     --stackFrameIndex;
 
     // Push the function.
     sysbvm_jit_x86_pushRegister(jit, SYSBVM_X86_64_ARG1); // Function
+    sysbvm_jit_cfi_pushArg(jit, 1);
     --stackFrameIndex;
 
     // Push the capture vector.
     sysbvm_jit_x86_pushFromMemoryWithOffset(jit, SYSBVM_X86_64_ARG1, offsetof(sysbvm_function_t, captureVector));
+    sysbvm_jit_cfi_pushCaptureVectorPointer(jit);
     --stackFrameIndex;
     jit->captureVectorOffset = (int32_t)(stackFrameIndex*sizeof(sysbvm_tuple_t));
 
     // Push the literal vector.
     sysbvm_jit_x86_mov64Absolute(jit, SYSBVM_X86_RAX, (uintptr_t)jit->literalVectorGCRoot); // Pointer to GC root with the literal vector.
     sysbvm_jit_x86_pushFromMemoryWithOffset(jit, SYSBVM_X86_RAX, 0);
+    sysbvm_jit_cfi_pushLiteralVectorPointer(jit);
     --stackFrameIndex;
     jit->literalVectorOffset = (int32_t)(stackFrameIndex*sizeof(sysbvm_tuple_t));
 
     // Push the PC
     sysbvm_jit_x86_pushImmediate32(jit, 0);
+    sysbvm_jit_cfi_pushImmediate(jit);
     --stackFrameIndex;
     jit->pcOffset = (int32_t)(stackFrameIndex*sizeof(sysbvm_tuple_t));
 
     // Type and the next record pointer.
     sysbvm_jit_x86_pushImmediate32(jit, SYSBVM_STACK_FRAME_RECORD_TYPE_BYTECODE_JIT_FUNCTION_ACTIVATION);
+    sysbvm_jit_cfi_pushImmediate(jit);
     --stackFrameIndex;
     sysbvm_jit_x86_pushImmediate32(jit, 0);
+    sysbvm_jit_cfi_pushImmediate(jit);
     --stackFrameIndex;
     jit->stackFrameRecordOffset = (int32_t)(stackFrameIndex*sizeof(sysbvm_tuple_t));
     
-    // Connect with the stack unwinder.
+    // Finish building the stack frame.
     sysbvm_jit_x86_mov64Register(jit, SYSBVM_X86_64_ARG0, SYSBVM_X86_RSP);
-    sysbvm_jit_x86_subImmediate32(jit, SYSBVM_X86_RSP, (int32_t)(paddingRequired + SYSBVM_X86_64_CALL_SHADOW_SPACE));
+    sysbvm_jit_x86_subImmediate32(jit, SYSBVM_X86_RSP, (int32_t)paddingRequired);
+    sysbvm_jit_cfi_subtract(jit, paddingRequired);
+    sysbvm_jit_cfi_endPrologue(jit);
 
+    // Connect with the stack unwinder.
+    sysbvm_jit_x86_subImmediate32(jit, SYSBVM_X86_RSP, SYSBVM_X86_64_CALL_SHADOW_SPACE);
     sysbvm_jit_x86_call(jit, &sysbvm_stackFrame_pushRecord);
     sysbvm_jit_x86_addImmediate32(jit, SYSBVM_X86_RSP, SYSBVM_X86_64_CALL_SHADOW_SPACE);
 }
@@ -1126,6 +1210,23 @@ static void sysbvm_jit_storePC(sysbvm_bytecodeJit_t *jit, uint16_t pc)
     sysbvm_jit_x86_movImmediateI32IntoMemory64WithOffset(jit, SYSBVM_X86_RBP, jit->pcOffset, pc);
 }
 
+static void sysbvm_jit_emitUnwindInfo(sysbvm_bytecodeJit_t *jit)
+{
+#ifdef _WIN32
+    RUNTIME_FUNCTION runtimeFunction = {0};
+    runtimeFunction.BeginAddress = 0;
+    runtimeFunction.EndAddress = (DWORD)jit->instructions.size;
+    sysbvm_bytecodeJit_addUnwindInfoBytes(jit, sizeof(runtimeFunction), (uint8_t*)&runtimeFunction);
+
+    // Unwind_info
+    sysbvm_bytecodeJit_addUnwindInfoByte(jit, /*Version*/1  | (/* Flags*/0 << 3));
+    sysbvm_bytecodeJit_addUnwindInfoByte(jit, (uint8_t)jit->prologueSize);
+    sysbvm_bytecodeJit_addUnwindInfoByte(jit, (uint8_t)(jit->unwindInfoBytecode.size/2));
+    sysbvm_bytecodeJit_addUnwindInfoByte(jit, (/* Frame register RBP */ 5) | (/* Frame register offset. */ 0 << 4));
+    sysbvm_dynarray_addAll(&jit->unwindInfo, jit->unwindInfoBytecode.size, jit->unwindInfoBytecode.data);
+#endif
+}
+
 static void sysbvm_jit_finish(sysbvm_bytecodeJit_t *jit)
 {
     // Apply the PC target relative relocations.
@@ -1134,12 +1235,17 @@ static void sysbvm_jit_finish(sysbvm_bytecodeJit_t *jit)
         sysbvm_bytecodeJitPCRelocation_t *relocation = sysbvm_dynarray_entryOfTypeAt(jit->pcRelocations, sysbvm_bytecodeJitPCRelocation_t, i);
         *((int32_t*)(jit->instructions.data + relocation->offset)) = (int32_t)(jit->pcDestinations[relocation->targetPC] - (intptr_t)relocation->offset + relocation->addend);
     }
+
+    sysbvm_jit_emitUnwindInfo(jit);
 }
 
 static void sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *codeZonePointer)
 {
     memcpy(codeZonePointer, jit->instructions.data, jit->instructions.size);
+
     size_t constantsOffset = sizeAlignedTo(jit->instructions.size, 16);
+    size_t unwindInfoOffset = constantsOffset + sizeAlignedTo(jit->constants.size, 16);
+
     uint8_t *constantZonePointer = codeZonePointer + constantsOffset;
     memcpy(constantZonePointer, jit->constants.data, jit->constants.size);
 
@@ -1160,4 +1266,16 @@ static void sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *codeZonePoi
             break;
         }
     }
+
+    uint8_t *unwindInfoZonePointer = codeZonePointer + unwindInfoOffset;
+    memcpy(unwindInfoZonePointer, jit->unwindInfo.data, jit->unwindInfo.size);
+
+#ifdef _WIN32
+    RUNTIME_FUNCTION *runtimeFunction = (RUNTIME_FUNCTION*)unwindInfoZonePointer;
+    runtimeFunction->UnwindInfoAddress = (DWORD)(sizeof(RUNTIME_FUNCTION) + unwindInfoZonePointer - codeZonePointer);
+    if(RtlAddFunctionTable(runtimeFunction, 1, (DWORD64)(uintptr_t)unwindInfoZonePointer))
+    {
+        // Store the handle in the context for cleanup.
+    }
+#endif
 }
