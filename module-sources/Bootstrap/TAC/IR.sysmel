@@ -971,6 +971,9 @@ public final class TACFunctionBuilder superclass: Object; definition: {
 #(
     Int8BitNot Int16BitNot Int32BitNot Int64BitNot
     Int8Negate Int16Negate Int32Negate Int64Negate
+
+    Float32Negate Float64Negate
+    Float32Sqrt Float64Sqrt
 ) do: {:(Symbol)operationName :: Void |
     let operationNameString := operationName asString.
     let lowerOperationNameString := operationNameString first asLowercase asString -- operationNameString allButFirst.
@@ -1010,12 +1013,23 @@ public final class TACFunctionBuilder superclass: Object; definition: {
     Int8GreaterThan Int16GreaterThan Int32GreaterThan Int64GreaterThan
     Int8GreaterOrEquals Int16GreaterOrEquals Int32GreaterOrEquals Int64GreaterOrEquals
 
-    UInt8Compare UInt16Compare UInt32Compare UInt64Compare
     UInt8LessThan UInt16LessThan UInt32LessThan UInt64LessThan
     UInt8LessOrEquals UInt16LessOrEquals UInt32LessOrEquals UInt64LessOrEquals
     UInt8GreaterThan UInt16GreaterThan UInt32GreaterThan UInt64GreaterThan
     UInt8GreaterOrEquals UInt16GreaterOrEquals UInt32GreaterOrEquals UInt64GreaterOrEquals
 
+    Float32Add Float64Add
+    Float32Sub Float64Sub
+    Float32Mul Float64Mul
+    Float32Div Float64Div
+
+    Float32UnorderedEquals Float64UnorderedEquals
+    Float32UnorderedNotEquals Float64UnorderedNotEquals
+    Float32UnorderedCompare Float64UnorderedCompare
+    Float32UnorderedLessThan Float64UnorderedLessThan
+    Float32UnorderedLessOrEquals Float64UnorderedLessOrEquals
+    Float32UnorderedGreaterThan Float64UnorderedGreaterThan
+    Float32UnorderedGreaterOrEquals Float64UnorderedGreaterOrEquals
 ) do: {:(Symbol)operationName :: Void |
     let operationNameString := operationName asString.
     let lowerOperationNameString := operationNameString first asLowercase asString -- operationNameString allButFirst.
