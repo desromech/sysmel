@@ -371,19 +371,22 @@ let translateBinaryPrimitiveInto := {:(TACOperation)operation :: ((SSACallInstru
 }.
 
 public global SSATacPrimitiveCallGenerationTable := #{
-    #UInt32::+ : translateBinaryPrimitiveInto(TAC::Operation::AddInt32).
-    #UInt32::- : translateBinaryPrimitiveInto(TAC::Operation::SubInt32).
-    #UInt32::* : translateBinaryPrimitiveInto(TAC::Operation::MulInt32).
-    #UInt32::/ : translateBinaryPrimitiveInto(TAC::Operation::UDivInt32).
-    #UInt32::% : translateBinaryPrimitiveInto(TAC::Operation::URemInt32).
+    ## UInt32 primitives
+    #UInt32::negated : translateBinaryPrimitiveInto(TAC::Operation::Int32Negate).
+    #UInt32::bitInvert : translateBinaryPrimitiveInto(TAC::Operation::Int32BitNot).
 
-    #UInt32::& : translateBinaryPrimitiveInto(TAC::Operation::BitAndInt32).
-    #UInt32::| : translateBinaryPrimitiveInto(TAC::Operation::BitOrInt32).
-    #UInt32::^ : translateBinaryPrimitiveInto(TAC::Operation::BitXorInt32).
-    #UInt32::<< : translateBinaryPrimitiveInto(TAC::Operation::LogicalShiftLeftInt32).
-    #UInt32::>> : translateBinaryPrimitiveInto(TAC::Operation::LogicalShiftRightInt32).
+    #UInt32::+ : translateBinaryPrimitiveInto(TAC::Operation::Int32Add).
+    #UInt32::- : translateBinaryPrimitiveInto(TAC::Operation::Int32Sub).
+    #UInt32::* : translateBinaryPrimitiveInto(TAC::Operation::Int32Mul).
+    #UInt32::/ : translateBinaryPrimitiveInto(TAC::Operation::Int32UDiv).
+    #UInt32::% : translateBinaryPrimitiveInto(TAC::Operation::Int32URem).
 
-    #*
+    #UInt32::& : translateBinaryPrimitiveInto(TAC::Operation::Int32BitAnd).
+    #UInt32::| : translateBinaryPrimitiveInto(TAC::Operation::Int32BitOr).
+    #UInt32::^ : translateBinaryPrimitiveInto(TAC::Operation::Int32BitXor).
+    #UInt32::<< : translateBinaryPrimitiveInto(TAC::Operation::Int32LogicalShiftLeft).
+    #UInt32::>> : translateBinaryPrimitiveInto(TAC::Operation::Int32LogicalShiftRight).
+
     #UInt32::= : translateBinaryPrimitiveInto(TAC::Operation::Int32Equals).
     #UInt32::~= : translateBinaryPrimitiveInto(TAC::Operation::Int32NotEquals).
     #UInt32::<=> : translateBinaryPrimitiveInto(TAC::Operation::UInt32Compare).
@@ -391,19 +394,30 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #UInt32::<= : translateBinaryPrimitiveInto(TAC::Operation::UInt32LessOrEquals).
     #UInt32::> : translateBinaryPrimitiveInto(TAC::Operation::UInt32GreaterThan).
     #UInt32::>= : translateBinaryPrimitiveInto(TAC::Operation::UInt32GreaterOrEquals).
-    *#
 
-    #Int32::+ : translateBinaryPrimitiveInto(TAC::Operation::AddInt32).
-    #Int32::- : translateBinaryPrimitiveInto(TAC::Operation::SubInt32).
-    #Int32::* : translateBinaryPrimitiveInto(TAC::Operation::MulInt32).
-    #Int32::/ : translateBinaryPrimitiveInto(TAC::Operation::SDivInt32).
-    #Int32::% : translateBinaryPrimitiveInto(TAC::Operation::SRemInt32).
+    ## Int32 primitives
+    #Int32::negated : translateBinaryPrimitiveInto(TAC::Operation::Int32Negate).
+    #Int32::bitInvert : translateBinaryPrimitiveInto(TAC::Operation::Int32BitNot).
 
-    #Int32::& : translateBinaryPrimitiveInto(TAC::Operation::BitAndInt32).
-    #Int32::| : translateBinaryPrimitiveInto(TAC::Operation::BitOrInt32).
-    #Int32::^ : translateBinaryPrimitiveInto(TAC::Operation::BitXorInt32).
-    #Int32::<< : translateBinaryPrimitiveInto(TAC::Operation::LogicalShiftLeftInt32).
-    #Int32::>> : translateBinaryPrimitiveInto(TAC::Operation::ArithmeticShiftRightInt32).
+    #Int32::+ : translateBinaryPrimitiveInto(TAC::Operation::Int32Add).
+    #Int32::- : translateBinaryPrimitiveInto(TAC::Operation::Int32Sub).
+    #Int32::* : translateBinaryPrimitiveInto(TAC::Operation::Int32Mul).
+    #Int32::/ : translateBinaryPrimitiveInto(TAC::Operation::Int32SDiv).
+    #Int32::% : translateBinaryPrimitiveInto(TAC::Operation::Int32SRem).
+
+    #Int32::& : translateBinaryPrimitiveInto(TAC::Operation::Int32BitAnd).
+    #Int32::| : translateBinaryPrimitiveInto(TAC::Operation::Int32BitOr).
+    #Int32::^ : translateBinaryPrimitiveInto(TAC::Operation::Int32BitXor).
+    #Int32::<< : translateBinaryPrimitiveInto(TAC::Operation::Int32LogicalShiftLeft).
+    #Int32::>> : translateBinaryPrimitiveInto(TAC::Operation::Int32ArithmeticShiftRight).
+
+    #Int32::= : translateBinaryPrimitiveInto(TAC::Operation::Int32Equals).
+    #Int32::~= : translateBinaryPrimitiveInto(TAC::Operation::Int32NotEquals).
+    #Int32::<=> : translateBinaryPrimitiveInto(TAC::Operation::UInt32Compare).
+    #Int32::< : translateBinaryPrimitiveInto(TAC::Operation::Int32LessThan).
+    #Int32::<= : translateBinaryPrimitiveInto(TAC::Operation::Int32LessOrEquals).
+    #Int32::> : translateBinaryPrimitiveInto(TAC::Operation::Int32GreaterThan).
+    #Int32::>= : translateBinaryPrimitiveInto(TAC::Operation::Int32GreaterOrEquals).
 }.
 
 SSACallInstruction extend: {

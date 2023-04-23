@@ -969,20 +969,53 @@ public final class TACFunctionBuilder superclass: Object; definition: {
 }.
 
 #(
-    AddInt8 AddInt16 AddInt32 AddInt64
-    SubInt8 SubInt16 SubInt32 SubInt64
-    MulInt8 MulInt16 MulInt32 MulInt64
-    SDivInt8 SDivInt16 SDivInt32 SDivInt64
-    UDivInt8 UDivInt16 UDivInt32 UDivInt64
-    SRemInt8 SRemInt16 SRemInt32 SRemInt64
-    URemInt8 URemInt16 URemInt32 URemInt64
+    Int8BitNot Int16BitNot Int32BitNot Int64BitNot
+    Int8Negate Int16Negate Int32Negate Int64Negate
+) do: {:(Symbol)operationName :: Void |
+    let operationNameString := operationName asString.
+    let lowerOperationNameString := operationNameString first asLowercase asString -- operationNameString allButFirst.
+    let lowerOperationName := lowerOperationNameString asSymbol.
+    let operation := TACOperation named: lowerOperationName.
+    let globalName := ("TAC::Operation::" -- operationNameString) asSymbol.
 
-    BitAndInt8 BitAndInt16 BitAndInt32 BitAndInt64
-    BitOrInt8 BitOrInt16 BitOrInt32 BitOrInt64
-    BitXorInt8 BitXorInt16 BitXorInt32 BitXorInt64
-    ArithmeticShiftRightInt8 ArithmeticShiftRightInt16 ArithmeticShiftRightInt32 ArithmeticShiftRightInt64
-    LogicalShiftLeftInt8 LogicalShiftLeftInt16 LogicalShiftLeftInt32 LogicalShiftLeftInt64
-    LogicalShiftRightInt8 LogicalShiftRightInt16 LogicalShiftRightInt32 LogicalShiftRightInt64
+    TACBlockBuilder
+        withSelector: (lowerOperationNameString -- ":into:") asSymbol addMethod: {:(TACBlockBuilder)self :(TACValue)operand :(TACValue)result :: TACInstruction |
+            self operation: operation with: operand result: result.
+        }.
+    __OwnerProgramEntity__ setPublicSymbol: globalName value: operation
+}.
+
+#(
+    Int8Add Int16Add Int32Add Int64Add
+    Int8Sub Int16Sub Int32Sub Int64Sub
+    Int8Mul Int16Mul Int32Mul Int64Mul
+    Int8SDiv Int16SDiv Int32SDiv Int64SDiv
+    Int8UDiv Int16UDiv Int32UDiv Int64UDiv
+    Int8SRem Int16SRem Int32SRem Int64SRem
+    Int8URem Int16URem Int32URem Int64URem
+
+    Int8BitAnd Int16BitAnd Int32BitAnd Int64BitAnd
+    Int8BitOr Int16BitOr Int32BitOr Int64BitOr
+    Int8BitXor Int16BitXor Int32BitXor Int64BitXor
+    Int8ArithmeticShiftRight Int16ArithmeticShiftRight Int32ArithmeticShiftRight Int64ArithmeticShiftRight
+    Int8LogicalShiftLeft Int16LogicalShiftLeft Int32LogicalShiftLeft Int64LogicalShiftLeft
+    Int8LogicalShiftRight Int16LogicalShiftRight Int32LogicalShiftRight Int64LogicalShiftRight
+
+    Int8Equals Int16Equals Int32Equals Int64Equals
+    Int8NotEquals Int16NotEquals Int32NotEquals Int64NotEquals
+
+    Int8Compare Int16Compare Int32Compare Int64Compare
+    Int8LessThan Int16LessThan Int32LessThan Int64LessThan
+    Int8LessOrEquals Int16LessOrEquals Int32LessOrEquals Int64LessOrEquals
+    Int8GreaterThan Int16GreaterThan Int32GreaterThan Int64GreaterThan
+    Int8GreaterOrEquals Int16GreaterOrEquals Int32GreaterOrEquals Int64GreaterOrEquals
+
+    UInt8Compare UInt16Compare UInt32Compare UInt64Compare
+    UInt8LessThan UInt16LessThan UInt32LessThan UInt64LessThan
+    UInt8LessOrEquals UInt16LessOrEquals UInt32LessOrEquals UInt64LessOrEquals
+    UInt8GreaterThan UInt16GreaterThan UInt32GreaterThan UInt64GreaterThan
+    UInt8GreaterOrEquals UInt16GreaterOrEquals UInt32GreaterOrEquals UInt64GreaterOrEquals
+
 ) do: {:(Symbol)operationName :: Void |
     let operationNameString := operationName asString.
     let lowerOperationNameString := operationNameString first asLowercase asString -- operationNameString allButFirst.

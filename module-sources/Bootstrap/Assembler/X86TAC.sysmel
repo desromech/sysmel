@@ -682,7 +682,7 @@ let x86::integerAluInt32RegisterConstraints := {:(TACInstruction)instruction :(T
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 1sz
 }.
 
-TAC::Operation::AddInt32
+TAC::Operation::Int32Add
     forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerAluInt32RegisterConstraints;
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
