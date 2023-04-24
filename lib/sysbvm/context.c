@@ -562,7 +562,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.objectType, "Object", SYSBVM_NULL_TUPLE, NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.programEntityType, "ProgramEntity", SYSBVM_NULL_TUPLE,
         "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
-        "owner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
+        "owner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.programEntityType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.typeType, "Type", SYSBVM_NULL_TUPLE,
         "supertype", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
