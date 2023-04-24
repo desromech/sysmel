@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "tuple.h"
+#include "programEntity.h"
 
 typedef struct sysbvm_context_s sysbvm_context_t;
 
@@ -23,7 +23,7 @@ typedef struct sysbvm_analysisQueue_s
 
 typedef struct sysbvm_environment_s
 {
-    sysbvm_tuple_header_t header;
+    sysbvm_programEntity_t super;
     sysbvm_tuple_t parent;
     sysbvm_tuple_t analysisQueue;
     sysbvm_tuple_t symbolTable;

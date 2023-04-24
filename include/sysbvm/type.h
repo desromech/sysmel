@@ -3,15 +3,13 @@
 
 #pragma once
 
-#include "tuple.h"
+#include "programEntity.h"
 
 typedef struct sysbvm_context_s sysbvm_context_t;
 
 typedef struct sysbvm_type_tuple_s
 {
-    sysbvm_tuple_header_t header;
-    sysbvm_tuple_t name;
-    sysbvm_tuple_t owner;
+    sysbvm_programEntity_t super;
     sysbvm_tuple_t supertype;
     sysbvm_tuple_t slots;
     sysbvm_tuple_t slotsWithBasicInitialization;
@@ -391,7 +389,7 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_type_getName(sysbvm_tuple_t type)
 {
     if(!sysbvm_tuple_isNonNullPointer(type)) return SYSBVM_NULL_TUPLE;
     if(sysbvm_tuple_isDummyValue(type)) return SYSBVM_NULL_TUPLE;
-    return ((sysbvm_type_tuple_t*)type)->name;
+    return ((sysbvm_type_tuple_t*)type)->super.name;
 }
 
 /**
@@ -401,7 +399,7 @@ SYSBVM_INLINE void sysbvm_type_setName(sysbvm_tuple_t type, sysbvm_tuple_t name)
 {
     if(!sysbvm_tuple_isNonNullPointer(type)) return;
     if(sysbvm_tuple_isDummyValue(type)) return;
-    ((sysbvm_type_tuple_t*)type)->name = name;
+    ((sysbvm_type_tuple_t*)type)->super.name = name;
 }
 
 /**

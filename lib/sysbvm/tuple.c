@@ -328,6 +328,8 @@ static sysbvm_tuple_t sysbvm_tuple_primitive_nextInstanceWithSameType(sysbvm_con
 
 static sysbvm_tuple_t sysbvm_tuple_primitive_recordBindingWithOwnerAndName(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
+    (void)arguments;
+    (void)context;
     (void)closure;
     if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
 

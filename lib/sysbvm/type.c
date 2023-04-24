@@ -1200,8 +1200,8 @@ void sysbvm_type_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Type::flushFallbackLookupSelector:", context->roots.typeType, "flushFallbackLookupSelector:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_type_primitive_flushFallbackLookupSelector);
 
     // Export the type layout. This is used by the bootstraping algorithm for creating the accessors.
-    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::name", sysbvm_tuple_integer_encodeSmall(SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_type_tuple_t, name)));
-    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::owner", sysbvm_tuple_integer_encodeSmall(SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_type_tuple_t, owner)));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::name", sysbvm_tuple_integer_encodeSmall(SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_type_tuple_t, super.name)));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::owner", sysbvm_tuple_integer_encodeSmall(SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_type_tuple_t, super.owner)));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::supertype", sysbvm_tuple_integer_encodeSmall(SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_type_tuple_t, supertype)));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::slots", sysbvm_tuple_integer_encodeSmall(SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_type_tuple_t, slots)));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::totalSlotCount", sysbvm_tuple_integer_encodeSmall(SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_type_tuple_t, totalSlotCount)));

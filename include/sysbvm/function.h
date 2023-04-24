@@ -4,6 +4,7 @@
 #pragma once
 
 #include "type.h"
+#include "programEntity.h"
 
 typedef struct sysbvm_context_s sysbvm_context_t;
 
@@ -42,9 +43,7 @@ typedef enum sysbvm_functionApplicationFlags_e
 
 typedef struct sysbvm_function_s
 {
-    sysbvm_tuple_header_t header;
-    sysbvm_tuple_t name;
-    sysbvm_tuple_t owner;
+    sysbvm_programEntity_t super;
     sysbvm_tuple_t flags;
     sysbvm_tuple_t argumentCount;
     sysbvm_tuple_t captureVector;
@@ -59,9 +58,7 @@ typedef struct sysbvm_function_s
 
 typedef struct sysbvm_functionDefinition_s
 {
-    sysbvm_tuple_header_t header;
-    sysbvm_tuple_t name;
-    sysbvm_tuple_t owner;
+    sysbvm_programEntity_t super;
     
     sysbvm_tuple_t flags;
     sysbvm_tuple_t argumentCount;

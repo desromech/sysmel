@@ -25,6 +25,7 @@ set(sysbvm_sources
     message.c
     parser.c
     pragma.c
+    programEntity.c
     primitiveIntegers.c
     scanner.c
     set.c

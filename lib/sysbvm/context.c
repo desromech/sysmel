@@ -30,6 +30,7 @@ extern void sysbvm_function_registerPrimitives(void);
 extern void sysbvm_integer_registerPrimitives(void);
 extern void sysbvm_io_registerPrimitives(void);
 extern void sysbvm_primitiveInteger_registerPrimitives(void);
+extern void sysbvm_programEntity_registerPrimitives(void);
 extern void sysbvm_string_registerPrimitives(void);
 extern void sysbvm_stringStream_registerPrimitives(void);
 extern void sysbvm_time_registerPrimitives(void);
@@ -51,6 +52,7 @@ extern void sysbvm_function_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_integer_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_io_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_primitiveInteger_setupPrimitives(sysbvm_context_t *context);
+extern void sysbvm_programEntity_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_string_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_stringStream_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_time_setupPrimitives(sysbvm_context_t *context);
@@ -80,6 +82,7 @@ void sysbvm_context_registerPrimitives(void)
     sysbvm_integer_registerPrimitives();
     sysbvm_io_registerPrimitives();
     sysbvm_primitiveInteger_registerPrimitives();
+    sysbvm_programEntity_registerPrimitives();
     sysbvm_string_registerPrimitives();
     sysbvm_stringStream_registerPrimitives();
     sysbvm_time_registerPrimitives();
@@ -245,11 +248,9 @@ SYSBVM_API void sysbvm_context_setIntrinsicSymbolBindingValue(sysbvm_context_t *
     sysbvm_environment_setNewSymbolBindingWithValue(context, context->roots.globalNamespace, symbol, value);
 
     if(sysbvm_tuple_isFunction(context, value))
-    {
-        sysbvm_function_t *functionObject = (sysbvm_function_t*)value;
-        if(!functionObject->owner && !functionObject->name)
-            functionObject->name = symbol;
-    }
+        sysbvm_function_recordBindingWithOwnerAndName(context, value, context->roots.globalNamespace, symbol);
+    else
+        sysbvm_programEntity_recordBindingWithOwnerAndName(context, value, context->roots.globalNamespace, symbol);
 }
 
 SYSBVM_API void sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(sysbvm_context_t *context, const char *symbolName, sysbvm_tuple_t binding)
@@ -345,9 +346,9 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.typeSlotType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.typeSlotType);
 
     // Create the function class.
-    context->roots.functionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.functionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.programEntityType);
     sysbvm_type_setFlags(context, context->roots.functionType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FUNCTION);
-    context->roots.functionDefinitionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.functionDefinitionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.programEntityType);
     context->roots.functionBytecodeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
 
     // Create the function type classes.
@@ -559,10 +560,11 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.untypedType, "Untyped", SYSBVM_NULL_TUPLE, NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.anyValueType, "AnyValue", SYSBVM_NULL_TUPLE, NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.objectType, "Object", SYSBVM_NULL_TUPLE, NULL);
-    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.programEntityType, "ProgramEntity", SYSBVM_NULL_TUPLE, NULL);
-    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.typeType, "Type", SYSBVM_NULL_TUPLE,
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.programEntityType, "ProgramEntity", SYSBVM_NULL_TUPLE,
         "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
         "owner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
+        NULL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.typeType, "Type", SYSBVM_NULL_TUPLE,
         "supertype", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         "slots", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "slotsWithBasicInitialization", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
@@ -687,8 +689,6 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionType, "Function", SYSBVM_NULL_TUPLE,
-        "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
-        "owner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.programEntityType,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         "argumentCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "captureVector", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
@@ -701,8 +701,6 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "memoizationTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.weakValueDictionaryType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionDefinitionType, "FunctionDefinition", SYSBVM_NULL_TUPLE,
-        "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
-        "owner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.programEntityType,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         "argumentCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
@@ -1157,6 +1155,7 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_create(void)
     sysbvm_integer_setupPrimitives(context);
     sysbvm_io_setupPrimitives(context);
     sysbvm_primitiveInteger_setupPrimitives(context);
+    sysbvm_programEntity_setupPrimitives(context);
     sysbvm_string_setupPrimitives(context);
     sysbvm_stringStream_setupPrimitives(context);
     sysbvm_time_setupPrimitives(context);

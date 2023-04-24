@@ -9,6 +9,7 @@
 #   endif
 #endif
 
+#include "internal/dynarray.c"
 #include "array.c"
 #include "orderedCollection.c"
 #include "arraySlice.c"
@@ -35,6 +36,7 @@
 #include "parser.c"
 #include "pragma.c"
 #include "primitiveIntegers.c"
+#include "programEntity.c"
 #include "scanner.c"
 #include "set.c"
 #include "sourceCode.c"

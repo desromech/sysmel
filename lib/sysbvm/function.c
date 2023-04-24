@@ -196,22 +196,11 @@ SYSBVM_API void sysbvm_function_recordBindingWithOwnerAndName(sysbvm_context_t *
     if(!sysbvm_tuple_isFunction(context, function)) return;
 
     sysbvm_function_t *functionObject = (sysbvm_function_t*)function;
-    if(!functionObject->owner && !functionObject->name)
-    {
-        functionObject->owner = owner;
-        functionObject->name = name;
-    }
+    sysbvm_programEntity_recordBindingWithOwnerAndName(context, function, owner, name);
 
     // Record the owner also in the definition.
     if(functionObject->definition)
-    {
-        sysbvm_functionDefinition_t *functionDefinitionObject = (sysbvm_functionDefinition_t*)functionObject->definition;
-        if(!functionDefinitionObject->owner && !functionDefinitionObject->name)
-        {
-            functionDefinitionObject->owner = owner;
-            functionDefinitionObject->name = name;
-        }
-    }
+        sysbvm_programEntity_recordBindingWithOwnerAndName(context, functionObject->definition, owner, name);
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_ordinaryFunction_directApply(sysbvm_context_t *context, sysbvm_tuple_t function, size_t argumentCount, sysbvm_tuple_t *arguments, sysbvm_bitflags_t applicationFlags)
