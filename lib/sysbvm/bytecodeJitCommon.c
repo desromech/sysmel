@@ -46,6 +46,8 @@ typedef struct sysbvm_bytecodeJit_s
     int32_t captureVectorOffset;
     int32_t pcOffset;
     int32_t stackFrameRecordOffset;
+    int32_t callArgumentVectorSizeOffset;
+    int32_t callArgumentVectorOffset;
     int32_t stackFrameSize;
 
     sysbvm_dynarray_t instructions;

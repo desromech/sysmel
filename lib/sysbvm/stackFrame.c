@@ -106,6 +106,9 @@ SYSBVM_API void sysbvm_stackFrame_iterateGCRootsInRecordWith(sysbvm_stackFrameRe
             for(size_t i = 0; i < functionRecord->argumentCount; ++i)
                 iterationFunction(userdata, functionRecord->arguments + i);
 
+            for(size_t i = 0; i < functionRecord->callArgumentVectorSize; ++i)
+                iterationFunction(userdata, functionRecord->callArgumentVector + i);
+
             for(size_t i = 0; i < functionRecord->inlineLocalVectorSize; ++i)
                 iterationFunction(userdata, functionRecord->inlineLocalVector + i);
         }   

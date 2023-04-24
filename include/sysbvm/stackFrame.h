@@ -47,6 +47,7 @@ typedef struct sysbvm_stackFrameFunctionActivationRecord_s
 } sysbvm_stackFrameFunctionActivationRecord_t;
 
 #define SYSBVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE 20
+#define SYSBVM_BYTECODE_FUNCTION_MAX_CALL_ARGUMENTS 16
 
 typedef struct sysbvm_stackFrameBytecodeFunctionActivationRecord_s
 {
@@ -86,6 +87,9 @@ typedef struct sysbvm_stackFrameBytecodeFunctionJitActivationRecord_s
     sysbvm_tuple_t function;
     size_t argumentCount;
     sysbvm_tuple_t *arguments;
+
+    size_t callArgumentVectorSize;
+    sysbvm_tuple_t callArgumentVector[SYSBVM_BYTECODE_FUNCTION_MAX_CALL_ARGUMENTS];
 
     size_t inlineLocalVectorSize;
     sysbvm_tuple_t inlineLocalVector[];
