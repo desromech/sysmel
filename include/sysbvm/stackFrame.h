@@ -79,6 +79,7 @@ typedef struct sysbvm_stackFrameBytecodeFunctionJitActivationRecord_s
     sysbvm_stackFrameRecordType_t type;
 
     size_t pc;
+    sysbvm_context_t *context;
 
     sysbvm_tuple_t literalVector;
     sysbvm_tuple_t captureVector;

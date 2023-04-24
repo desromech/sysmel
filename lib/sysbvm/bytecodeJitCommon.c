@@ -39,12 +39,14 @@ typedef struct sysbvm_bytecodeJit_s
     size_t literalCount;
     size_t localVectorSize;
 
+    int32_t contextPointerOffset;
     int32_t localVectorOffset;
     int32_t argumentVectorOffset;
     int32_t literalVectorOffset;
     int32_t captureVectorOffset;
     int32_t pcOffset;
     int32_t stackFrameRecordOffset;
+    int32_t stackFrameSize;
 
     sysbvm_dynarray_t instructions;
     sysbvm_dynarray_t constants;
