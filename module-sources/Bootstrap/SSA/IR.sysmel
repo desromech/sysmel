@@ -1,3 +1,5 @@
+public abstract class SSACompilationTarget superclass: Object.
+
 public class SSAValue superclass: Object.
 public class SSAConstant superclass: SSAValue.
 public class SSAGlobalValue superclass: SSAConstant.
@@ -111,8 +113,10 @@ SSAGlobalValue definition: {
 }.
 
 SSAFunction definition: {
+    public field sourceObject => Function.
     public field captures => Array.
     public field definition => SSAFunctionDefinition.
+    public field primitiveName => Symbol.
 
     public method initialize => Void := {
         super initialize.
@@ -139,12 +143,13 @@ SSAFunction definition: {
         stream nextPut: ']'.
         definition ifNotNil: {:(SSAValue)definition :: Void |
             stream nextPutAll: " definition ".
-            stream fullPrint: definition
+            stream print: definition
         }
     }.
 }.
 
 SSAFunctionDefinition definition: {
+    public field sourceObject => FunctionDefinition.
     public field name => Symbol.
     public field arguments => Array.
     public field captures => Array.
@@ -1067,9 +1072,13 @@ public final class SSAModule superclass: Object; definition: {
         globalValues := OrderedCollection new.
     }.
 
+    public method addGlobalValue: (globalValue: SSAGlobalValue) ::=> Void := {
+        globalValues add: globalValue
+    }.
+
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         globalValues do: {:(SSAGlobalValue)eachValue :: Void |
-            stream fullPrint: eachValue
+            stream fullPrint: eachValue; nl
         }
     }.
 }.
@@ -1275,3 +1284,11 @@ SSAInstructionBuilder definition: {
             ifNil: false
             ifNotNil: {:instruction :: Boolean | instruction isTerminatorInstruction }.
 }.
+
+public class SSATupleVMCompilationTarget superclass: SSACompilationTarget; definition: {
+
+    SSACompilationTarget class extend: {
+        public method default => self := SSATupleVMCompilationTarget new.
+    }
+}.
+

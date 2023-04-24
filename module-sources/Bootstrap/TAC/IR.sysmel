@@ -228,6 +228,15 @@ public final class TACTemporaryVariable superclass: TACLocalVariable; definition
 
 public final class TACGlobalVariable superclass: TACVariable; definition: {
     public override method isGlobalVariable => Boolean := true.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: "global".
+        name ifNotNil: (stream space; nextPutAll: name).
+    }.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream print: self; nextPutAll: " => "; print: type.
+    }.
 }.
 
 public abstract class TACConstant superclass: TACValue; definition: {
@@ -241,11 +250,15 @@ public abstract class TACConstantInteger superclass: TACValue; definition: {
         := TACPhysicalIntegerRegister.
 }.
 
-public abstract class TACGenericObjectPointerConstant superclass: TACConstant; definition: {
+public final class TACGenericObjectPointerConstant superclass: TACConstant; definition: {
     public field object => Untyped.
     public field size => Size.
     public field alignment => Size.
     public field type => Type.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: "genericObjectPointerConstant("; print: object; nextPut: ')'
+    }.
 }.
 
 public final class TACConstantInt8 superclass: TACConstantInteger; definition: {
@@ -805,10 +818,13 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
         }.
     }.
 
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: "function".
+        name ifNotNil: (stream space; nextPutAll: name).
+    }.
+
     public method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: "function ".
-        name ifNotNil: (stream nextPutAll: name; space).
-        stream nextPut: '{'; nl.
+        stream print: self; nextPutAll: " {"; nl.
         self enumerateBlocks; enumerateLocals.
         self basicBlocksDo: {:(TACBasicBlock)each :: Void |
             stream fullPrint: each

@@ -291,6 +291,26 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
     }.
 }.
 
+public final class TACGlobalDataAsmCodeGenerator superclass: TACAsmCodeGenerator; definition: {
+    public field moduleGenerator => TACModuleAsmCodeGenerator.
+    public field asmVariable => AsmProgramEntity.
+    public field dataStream => AsmStreamBuilder.
+
+    public method generateGlobalVariable: (globalToGenerate: TACGlobalVariable) withSymbol: (symbol: AsmSymbol) ::=> Void := {
+        asmVariable := moduleGenerator targetModule newProgramEntity.
+
+        dataStream := asmVariable newStreamBuilder.
+        self selectDataSection.
+        dataStream label: symbol.
+
+        dataStream endLabel: symbol.
+    }.
+
+    public method selectDataSection => Void := {
+        dataStream dataSection.
+    }
+}.
+
 TACOperation extend: {
     public method forTarget: (target: Symbol) generateWith: (codeGenerationBlock: (TACInstruction, TACFunctionAsmCodeGenerator) => Void) ::=> Void := {
         perTargetCodeGenerators at: target put: codeGenerationBlock
@@ -356,6 +376,15 @@ TACFunction definition: {
             target: moduleGenerator target;
             moduleGenerator: moduleGenerator;
             generateFunction: self withSymbol: symbol
+    }.
+}.
+
+TACGlobalVariable definition: {
+    public override method generateAssemblyWith: (moduleGenerator: TACModuleAsmCodeGenerator) symbol: (symbol: AsmSymbol) ::=> Void := {
+        TACGlobalDataAsmCodeGenerator new
+            target: moduleGenerator target;
+            moduleGenerator: moduleGenerator;
+            generateGlobalVariable: self withSymbol: symbol
     }.
 }.
 

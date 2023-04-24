@@ -1,7 +1,68 @@
 public final class SSAModuleCompilationContext superclass: Object; definition: {
+    public field compilationTarget => SSACompilationTarget.
+    public field ssaModule => SSAModule.
+    protected field translatedValueDictionary => IdentityDictionary.
+
+    __Meta__ extend: {
+        public method forTarget: (compilationTarget: SSACompilationTarget) ::=> self
+            := self new
+                initializeWithTarget: compilationTarget;
+                yourself.
+
+        public method forDefaultTarget => self
+            := self forTarget: SSACompilationTarget default.
+    }.
+
+    public method initializeWithTarget: (theCompilationTarget: SSACompilationTarget) ::=> Void := {
+        compilationTarget := theCompilationTarget.
+        ssaModule := SSAModule new.
+        translatedValueDictionary := IdentityDictionary new.
+    }.
+
+    public method translateFunction: (function: Function) ::=> SSAValue := {
+        translatedValueDictionary at: function ifAbsent: { :: SSAValue |
+            let translatedValue := SSAFunction new
+                sourceObject: function;
+                name: function name;
+                primitiveName: function primitiveName;
+                yourself.
+
+            ssaModule addGlobalValue: translatedValue.
+            translatedValueDictionary at: function put: translatedValue.
+
+            function definition ifNotNil: {
+                translatedValue definition: (self translateFunctionDefinition: function definition).
+            }.
+
+            translatedValue
+        }
+    }.
+
+    public method translateFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> SSAFunctionDefinition := {
+        translatedValueDictionary at: functionDefinition ifAbsent: { :: SSAValue |
+            let translatedValue := SSAFunctionDefinition new
+                sourceObject: functionDefinition;
+                name: functionDefinition name;
+                yourself.
+
+            ssaModule addGlobalValue: translatedValue.
+            translatedValueDictionary at: functionDefinition put: translatedValue.
+
+            SSAFunctionCompilationContext new
+                moduleCompilationContext: self;
+                compileFunctionDefinition: functionDefinition into: translatedValue.
+
+            translatedValue
+        }
+    }.
+
+    public method finish => SSAModule := {
+        ssaModule
+    }.
 }.
 
 public final class SSAFunctionCompilationContext superclass: Object; definition: {
+    public field moduleCompilationContext => SSAModuleCompilationContext.
     public field functionDefinition => FunctionDefinition.
     public field ssaFunction => SSAFunctionDefinition.
     public field builder => SSAInstructionBuilder.
@@ -49,6 +110,13 @@ public final class SSAFunctionCompilationContext superclass: Object; definition:
         let ssaFunction := SSAFunctionDefinition new
             name: functionDefinition name;
             yourself.
+
+        self compileFunctionDefinition: functionDefinition into: ssaFunction.
+
+        ssaFunction
+    }.
+
+    public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) into: (ssaFunction: SSAFunctionDefinition) ::=> Void := {
         functionDefinition ensureAnalysis.
         self functionDefinition: functionDefinition.
         self ssaFunction: ssaFunction.
@@ -72,8 +140,6 @@ public final class SSAFunctionCompilationContext superclass: Object; definition:
             let resultValue := bodyNode generateSSAValueWith: self.
             self builder isLastTerminator ifFalse: (self builder return: resultValue).
         }.
-
-        ssaFunction
     }.
 
     public method getValueForLocalBinding: (localBinding: SymbolAnalysisBinding) ::=> SSAValue
@@ -174,9 +240,24 @@ ASTLexicalBlockNode extend: {
         := context builder withSourceEnvironment: self bodyEnvironment do: {:: SSAValue | self body generateSSAValueWith: context }.
 }.
 
+Type extend: {
+    public virtual method translateASTLiteralNode: (literalNode: ASTLiteralNode) intoSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context builder literal: literalNode value type: literalNode analyzedType.
+}.
+
+FunctionType extend: {
+    public override method translateASTLiteralNode: (literalNode: ASTLiteralNode) intoSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context moduleCompilationContext translateFunction: literalNode value.
+}.
+
+FunctionDefinition class extend: {
+    public override method translateASTLiteralNode: (literalNode: ASTLiteralNode) intoSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context moduleCompilationContext translateFunctionDefinition: literalNode value.
+}.
+
 ASTLiteralNode extend: {
     public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := context builder literal: self value type: self analyzedType.
+        := self analyzedType translateASTLiteralNode: self intoSSAValueWith: context.
 }.
 
 ASTLambdaNode extend: {
@@ -440,17 +521,15 @@ ASTReturnNode extend: {
 }.
 
 FunctionDefinition extend: {
-    public method asSSAFunctionDefinition => SSAFunctionDefinition := {
-        SSAFunctionCompilationContext new
-            compileFunctionDefinition: self
-    }.
+    public method asSSAModule => SSAModule
+        := SSAModuleCompilationContext forDefaultTarget
+            translateFunctionDefinition: self;
+            finish.
 }.
 
 Function extend: {
-    public method asSSAFunction => SSAFunction := {
-        SSAFunction new
-            name: self name;
-            definition: self definition asSSAFunctionDefinition;
-            yourself
-    }.
+    public method asSSAModule => SSAModule
+        := SSAModuleCompilationContext forDefaultTarget
+            translateFunction: self;
+            finish.
 }.

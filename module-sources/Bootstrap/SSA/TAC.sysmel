@@ -1,3 +1,7 @@
+public class SSATACCompilerationTarget superclass: Object; definition: {
+    public field tacCompilationTarget => TACCompilationTarget.
+}.
+
 public abstract class SSATACCodeGenerator superclass: Object; definition: {
 
 }.
@@ -6,6 +10,9 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
     public field compilationTarget => TACCompilationTarget.
     public field targetModule => TACModule.
     public field globalValueDictionary => Dictionary.
+    public field uncheckedEntryPointDictionary => Dictionary.
+    public field checkedEntryPointDictionary => Dictionary.
+
     private field uncheckedFunctionEntryPointTrampoline => TACValue.
     private field checkedFunctionEntryPointTrampoline => TACValue.
 
@@ -15,20 +22,27 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
             compilationTarget: compilationTarget;
             yourself.
         globalValueDictionary := Dictionary new.
+        uncheckedEntryPointDictionary := Dictionary new.
+        checkedEntryPointDictionary := Dictionary new.
     }.
 
-    public method compileSSAFunction: (function: SSAFunction) ::=> TACValue
-        := globalValueDictionary at: function ifAbsent: {|
-                ## TODO: Create a more adequate value for this.
-                self compileSSAFunctionDefinition: function definition
-            }.
+    public method compileSSAModule: (module: SSAModule) ::=> TACModule := {
+        ## Declare the values.
+        module globalValues do: {:(SSAGlobalValue)each :: Void |
+            each declareTacValueTranslationWith: self
+        }.
 
-    public method compileSSAFunctionDefinition: (functionDefinition: SSAFunctionDefinition) ::=> TACValue
-        := globalValueDictionary at: functionDefinition ifAbsent: {|
-                SSAFunctionDefinitionTACCodeGenerator new
-                    moduleCodeGenerator: self;
-                    compileSSAFunctionDefinition: functionDefinition
+        ## Compile the values.
+        module globalValues do: {:(SSAGlobalValue)each :: Void |
+            let valueTranslation := globalValueDictionary atOrNil: each.
+            valueTranslation ifNotNil: {
+                each compileTacTranslationInto: valueTranslation with: self
             }.
+        }.
+
+        ## Return the target module.
+        targetModule
+    }.
 
     public method finish => TACModule
         := targetModule.
@@ -36,6 +50,51 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
     public method translateValue: (value: SSAValue) ::=> TACValue
         := globalValueDictionary at: value ifAbsent: {|
         value translateIntoTacValueWith: self
+    }.
+
+    public method translateFunction: (function: SSAFunction) ::=> TACValue
+        := globalValueDictionary at: function ifAbsentPut: {|
+            self declareFunction: function
+        }.
+
+    public method translateFunctionDefinition: (functionDefinition: SSAFunctionDefinition) ::=> TACValue
+        := globalValueDictionary at: functionDefinition ifAbsentPut: {|
+            self declareFunctionDefinition: functionDefinition
+        }.
+
+    public method declareFunction: (function: SSAFunction) ::=> TACValue := {
+        let functionObject := TACGlobalVariable new
+            type: Function;
+            name: function name;
+            yourself.
+        targetModule addProgramEntity: functionObject.
+        globalValueDictionary at: function put: functionObject.
+        functionObject
+    }.
+
+    public method compileFunction: (function: SSAFunction) into: (tacValue: TACValue) ::=> Void := {
+
+    }.
+
+    public method declareFunctionDefinition: (functionDefinition: SSAFunctionDefinition) ::=> Void := {
+        let functionDefinitionObject := TACGlobalVariable new
+            type: FunctionDefinition;
+            name: functionDefinition name;
+            yourself.
+        targetModule addProgramEntity: functionDefinitionObject.
+        globalValueDictionary at: functionDefinition put: functionDefinitionObject.
+        functionDefinitionObject
+    }.
+
+    public method compileFunctionDefinition: (functionDefinition: SSAFunctionDefinition) into: (tacValue: TACValue) ::=> Void := {
+        SSAFunctionDefinitionTACCodeGenerator new
+            moduleCodeGenerator: self;
+            compileSSAFunctionDefinition: functionDefinition into: tacValue
+    }.
+
+    public method setValue: (value: SSAValue) translationInto: (tacValue: TACValue) ::=> TACValue := {
+        globalValueDictionary at: value put: tacValue.
+        tacValue
     }.
 
     public method validUncheckedFunctionEntryPointTrampoline => TACValue := {
@@ -86,7 +145,7 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
         valueDictionary := Dictionary new.
     }.
 
-    public method compileSSAFunctionDefinition: (ssaFunctionDefinition: SSAFunctionDefinition) ::=> TACValue := {
+    public method compileSSAFunctionDefinition: (ssaFunctionDefinition: SSAFunctionDefinition) into: (tacFunctionDefinition: TACValue) ::=> TACValue := {
         self ssaFunctionDefinition: ssaFunctionDefinition.
         moduleCodeGenerator targetModule build: ssaFunctionDefinition name function: {:(TACFunctionBuilder)functionBuilder :: Void |
             tacFunction := functionBuilder function.
@@ -342,8 +401,36 @@ SSAValue extend: {
 
 SSALiteralConstant extend: {
     public override method translateIntoTacValueWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
-        := type translateSSALiteralConstant: self intoTacWith: codegen.
+        := codegen setValue: self translationInto: (type translateSSALiteralConstant: self intoTacWith: codegen).
 }.
+
+SSAGlobalValue extend: {
+    public virtual method declareTacValueTranslationWith: (codegen: SSAModuleTACCodeGenerator) ::=> Void := {}.
+    public virtual method compileTacTranslationInto: (value: TACValue) with: (codegen: SSAModuleTACCodeGenerator) ::=> Void := {}.
+}.
+
+SSAFunction extend: {
+    public override method translateIntoTacValueWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := codegen translateFunction: self.
+
+    public override method declareTacValueTranslationWith: (codegen: SSAModuleTACCodeGenerator) ::=> Void
+        := codegen declareFunction: self.
+
+    public override method compileTacTranslationInto: (value: TACValue) with: (codegen: SSAModuleTACCodeGenerator) ::=> Void
+        := codegen compileFunction: self into: value.
+}.
+
+SSAFunctionDefinition extend: {
+    public override method translateIntoTacValueWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := codegen translateFunctionDefinition: self.
+
+    public override method declareTacValueTranslationWith: (codegen: SSAModuleTACCodeGenerator) ::=> Void
+        := codegen declareFunctionDefinition: self.
+    
+    public override method compileTacTranslationInto: (value: TACValue) with: (codegen: SSAModuleTACCodeGenerator) ::=> Void
+        := codegen compileFunctionDefinition: self into: value.
+}.
+
 
 SSAInstruction extend: {
     public virtual method makeTacValueForResultWith: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue
@@ -706,10 +793,10 @@ SSAReturnInstruction extend: {
     }.
 }.
 
-SSAFunction extend: {
+SSAModule extend: {
     public method asTACModuleFor: (target: TACCompilationTarget) ::=> TACModule
         := SSAModuleTACCodeGenerator new
             initializeWithTarget: target;
-            compileSSAFunction: self;
+            compileSSAModule: self;
             finish
 }.
