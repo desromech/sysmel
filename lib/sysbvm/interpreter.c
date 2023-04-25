@@ -5492,6 +5492,30 @@ SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_applyClosureASTFunction(sysbvm_cont
     return functionActivationRecord.result;
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_evaluateScript(sysbvm_context_t *context, sysbvm_tuple_t script, sysbvm_tuple_t name, sysbvm_tuple_t language)
+{
+    struct {
+        sysbvm_tuple_t script;
+        sysbvm_tuple_t name;
+        sysbvm_tuple_t language;
+        sysbvm_tuple_t sourceLanguage;
+        sysbvm_tuple_t sourceCode;
+        sysbvm_tuple_t sourceEnvironment;
+        sysbvm_tuple_t result;
+    } gcFrame = {
+        .script = script,
+        .name = name,
+        .language = language
+    };
+
+    SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    gcFrame.sourceCode = sysbvm_sourceCode_create(context, gcFrame.script, SYSBVM_NULL_TUPLE, gcFrame.name, gcFrame.language);
+    gcFrame.sourceEnvironment = sysbvm_environment_createDefaultForSourceCodeEvaluation(context, gcFrame.sourceCode);
+    gcFrame.result = sysbvm_interpreter_validateThenAnalyzeAndEvaluateSourceCodeWithEnvironment(context, gcFrame.sourceEnvironment, gcFrame.sourceCode);
+    SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.result;
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_loadSourceNamedWithSolvedPath(sysbvm_context_t *context, sysbvm_tuple_t filename)
 {
     struct {

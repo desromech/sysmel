@@ -1992,6 +1992,11 @@ Type
         if: supertype ~~ nil then: (supertype addSubtype: self).
         self __type__ registerInSuperMetatype
     };
+    withSelector: #withSupertypesDo: addMethod: {:(Type)self :aBlock :: Void |
+        aBlock(self).
+        let: #supertype with: self supertype.
+        if: supertype ~~ nil then: (supertype withSupertypesDo: aBlock).
+    };
     withSelector: #subtypesDo: addMethod: {:(Type)self :aBlock :: Void |
         let: #subtypes with: self subtypes.
         if: subtypes ~~ nil then: (subtypes doWithoutTombstones: aBlock)

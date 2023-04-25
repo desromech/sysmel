@@ -58,4 +58,9 @@ SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_applyClosureASTFunction(sysbvm_cont
  */ 
 SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_loadSourceNamedWithSolvedPath(sysbvm_context_t *context, sysbvm_tuple_t filename);
 
+/**
+ * Evaluates the specified script.
+ */ 
+SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_evaluateScript(sysbvm_context_t *context, sysbvm_tuple_t script, sysbvm_tuple_t name, sysbvm_tuple_t language);
+
 #endif //SYSBVM_INTERPRETER_H

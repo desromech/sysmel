@@ -23,13 +23,12 @@ public abstract class TestCase superclass: TestAsserter; definition: {
 
         public method testSelectors => Array := {
             let: #selectors with: OrderedCollection new.
-            self withAllSubtypesDo: {:subtype :: Void |
+            self withSupertypesDo: {:subtype :: Void |
                 subtype selectorsDo: {:(Symbol)each :: Void |
-                    printLine("TODO: Implement this part.")
-                    #*if: (each beginsWith: "test") && (each numSelectorArgs = 0sz) then: {
+                    let symbolString := each asString.
+                    if: (symbolString beginsWith: "test") && (symbolString numSelectorArgs = 0sz) then: {
                         selectors add: each
                     }
-                    *#
                 }
             }.
 

@@ -29,12 +29,15 @@ int doMain(int startArgumentIndex, int argc, const char *argv[])
         sysbvm_tuple_t filesToProcess;
         sysbvm_tuple_t remainingArgs;
         sysbvm_tuple_t inputFileName;
+        sysbvm_tuple_t inlineScriptToRun;
+        sysbvm_tuple_t inlineScriptsToRun;
     } gcFrame = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     // Parse the command line.
     gcFrame.filesToProcess = sysbvm_orderedCollection_create(context);
     gcFrame.remainingArgs = sysbvm_orderedCollection_create(context);
+    gcFrame.inlineScriptsToRun = sysbvm_orderedCollection_create(context);
     bool isParsingRemainingArgs = false;
     for(int i = startArgumentIndex; i < argc; ++i)
     {
@@ -62,6 +65,12 @@ int doMain(int startArgumentIndex, int argc, const char *argv[])
                 arg = argv[++i];
                 destinationImageFilename = arg;
             }
+            else if(!strcmp(arg, "-e"))
+            {
+                arg = argv[++i];
+                gcFrame.inlineScriptToRun = sysbvm_string_createWithCString(context, arg);
+                sysbvm_orderedCollection_add(context, gcFrame.inlineScriptsToRun, gcFrame.inlineScriptToRun);
+            }
             else if(!strcmp(arg, "--"))
             {
                 isParsingRemainingArgs = true;
@@ -74,15 +83,28 @@ int doMain(int startArgumentIndex, int argc, const char *argv[])
         }
     }
 
-    size_t inputFileSize = sysbvm_orderedCollection_getSize(gcFrame.filesToProcess);
-    for(size_t i = 0; i < inputFileSize; ++i)
     {
-        gcFrame.inputFileName = sysbvm_orderedCollection_at(gcFrame.filesToProcess, i);
-        gcFrame.inputFileName = sysbvm_filesystem_absolute(context, gcFrame.inputFileName);
-        sysbvm_interpreter_loadSourceNamedWithSolvedPath(context, gcFrame.inputFileName);
+        size_t inputFileSize = sysbvm_orderedCollection_getSize(gcFrame.filesToProcess);
+        for(size_t i = 0; i < inputFileSize; ++i)
+        {
+            gcFrame.inputFileName = sysbvm_orderedCollection_at(gcFrame.filesToProcess, i);
+            gcFrame.inputFileName = sysbvm_filesystem_absolute(context, gcFrame.inputFileName);
+            sysbvm_interpreter_loadSourceNamedWithSolvedPath(context, gcFrame.inputFileName);
+        }
+
+        sysbvm_analysisQueue_waitPendingAnalysis(context, sysbvm_analysisQueue_getDefault(context));
     }
 
-    sysbvm_analysisQueue_waitPendingAnalysis(context, sysbvm_analysisQueue_getDefault(context));
+    {
+        size_t inlineScriptToRunCount = sysbvm_orderedCollection_getSize(gcFrame.inlineScriptsToRun);
+        for(size_t i = 0; i < inlineScriptToRunCount; ++i)
+        {
+            gcFrame.inlineScriptsToRun = sysbvm_orderedCollection_at(gcFrame.inlineScriptsToRun, i);
+            sysbvm_interpreter_evaluateScript(context, gcFrame.inlineScriptsToRun, sysbvm_string_createWithCString(context, "commandLine"), sysbvm_symbol_internWithCString(context, "sysmel"));
+        }
+
+        sysbvm_analysisQueue_waitPendingAnalysis(context, sysbvm_analysisQueue_getDefault(context));
+    }
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return 0;
