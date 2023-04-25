@@ -27,7 +27,7 @@
 #   define SYSBVM_ARCH_AARCH64 1
 #endif
 
-#if defined(SYSBVM_ARCH_X86_64) && !defined(_WIN32)
+#if defined(SYSBVM_ARCH_X86_64)
 #   define SYSBVM_JIT_SUPPORTED
 #endif
 

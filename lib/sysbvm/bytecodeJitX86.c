@@ -572,13 +572,17 @@ static void sysbvm_jit_functionApplyVia(sysbvm_bytecodeJit_t *jit, int16_t resul
 {
     // Move the arguments into the call vector.
     for(size_t i = 0; i < argumentCount; ++i)
-        sysbvm_jit_moveOperandToCallArgumentVector(jit, argumentOperands[i], i);
+        sysbvm_jit_moveOperandToCallArgumentVector(jit, argumentOperands[i], (int32_t)i);
 
     sysbvm_jit_x86_jitLoadContextInRegister(jit, SYSBVM_X86_64_ARG0);
     sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_64_ARG1, functionOperand);
-    sysbvm_jit_x86_movImmediate32(jit, SYSBVM_X86_64_ARG2, argumentCount);
+    sysbvm_jit_x86_movImmediate32(jit, SYSBVM_X86_64_ARG2, (int32_t)argumentCount);
     sysbvm_jit_x86_leaRegisterWithOffset(jit, SYSBVM_X86_64_ARG3, SYSBVM_X86_RBP, jit->callArgumentVectorOffset);
+#ifdef _WIN32
+    sysbvm_jit_x86_movS32IntoMemoryWithOffset(jit, SYSBVM_X86_RSP, 4*sizeof(void*), applicationFlags);
+#else
     sysbvm_jit_x86_movImmediate32(jit, SYSBVM_X86_SYSV_ARG4, applicationFlags);
+#endif
     sysbvm_jit_x86_call(jit, calledFunctionPointer);
 
     sysbvm_jit_moveRegisterToOperand(jit, resultOperand, SYSBVM_X86_RAX);
@@ -589,7 +593,7 @@ static void sysbvm_jit_functionApplyDirectVia(sysbvm_bytecodeJit_t *jit, int16_t
 {
     // Move the arguments into the call vector.
     for(size_t i = 0; i < argumentCount; ++i)
-        sysbvm_jit_moveOperandToCallArgumentVector(jit, argumentOperands[i], i);
+        sysbvm_jit_moveOperandToCallArgumentVector(jit, argumentOperands[i], (int32_t)i);
 
     sysbvm_jit_x86_jitLoadContextInRegister(jit, SYSBVM_X86_64_ARG0);
     sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_64_ARG1, functionOperand);
@@ -605,8 +609,8 @@ static void sysbvm_jit_functionApplyDirectWithArgumentsRecord(sysbvm_bytecodeJit
 {
     // Move the arguments into the call vector.
     for(size_t i = 0; i < argumentCount; ++i)
-        sysbvm_jit_moveOperandToCallArgumentVector(jit, argumentOperands[i], i);
-    sysbvm_jit_x86_movS32IntoMemoryWithOffset(jit, SYSBVM_X86_RBP, jit->callArgumentVectorSizeOffset, argumentCount);
+        sysbvm_jit_moveOperandToCallArgumentVector(jit, argumentOperands[i], (int32_t)i);
+    sysbvm_jit_x86_movS32IntoMemoryWithOffset(jit, SYSBVM_X86_RBP, jit->callArgumentVectorSizeOffset, (int32_t)argumentCount);
 
     sysbvm_jit_x86_jitLoadContextInRegister(jit, SYSBVM_X86_64_ARG0);
     sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_64_ARG1, functionOperand);
@@ -722,13 +726,18 @@ static void sysbvm_jit_send(sysbvm_bytecodeJit_t *jit, int16_t resultOperand, in
 {
     // Move the arguments into the call vector.
     for(size_t i = 0; i < argumentCount + 1; ++i)
-        sysbvm_jit_moveOperandToCallArgumentVector(jit, argumentOperands[i], i);
+        sysbvm_jit_moveOperandToCallArgumentVector(jit, argumentOperands[i], (int32_t)i);
 
     sysbvm_jit_x86_jitLoadContextInRegister(jit, SYSBVM_X86_64_ARG0);
     sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_64_ARG1, selectorOperand);
-    sysbvm_jit_x86_movImmediate32(jit, SYSBVM_X86_64_ARG2, argumentCount);
+    sysbvm_jit_x86_movImmediate32(jit, SYSBVM_X86_64_ARG2, (int32_t)argumentCount);
     sysbvm_jit_x86_leaRegisterWithOffset(jit, SYSBVM_X86_64_ARG3, SYSBVM_X86_RBP, jit->callArgumentVectorOffset);
+
+#ifdef _WIN32
+    sysbvm_jit_x86_movS32IntoMemoryWithOffset(jit, SYSBVM_X86_RSP, 4*sizeof(void*), applicationFlags);
+#else
     sysbvm_jit_x86_movImmediate32(jit, SYSBVM_X86_SYSV_ARG4, applicationFlags);
+#endif
     sysbvm_jit_x86_call(jit, &sysbvm_bytecodeInterpreter_interpretSendNoCopyArguments);
 
     sysbvm_jit_moveRegisterToOperand(jit, resultOperand, SYSBVM_X86_RAX);
@@ -738,14 +747,20 @@ static void sysbvm_jit_sendWithReceiverType(sysbvm_bytecodeJit_t *jit, int16_t r
 {
     // Push all of the arguments in the stack.
     for(size_t i = 0; i < argumentCount + 1; ++i)
-        sysbvm_jit_moveOperandToCallArgumentVector(jit, argumentOperands[i], i);
+        sysbvm_jit_moveOperandToCallArgumentVector(jit, argumentOperands[i], (int32_t)i);
 
     sysbvm_jit_x86_jitLoadContextInRegister(jit, SYSBVM_X86_64_ARG0);
     sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_64_ARG1, receiverTypeOperand);
     sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_64_ARG2, selectorOperand);
-    sysbvm_jit_x86_movImmediate32(jit, SYSBVM_X86_64_ARG3, argumentCount);
+    sysbvm_jit_x86_movImmediate32(jit, SYSBVM_X86_64_ARG3, (int32_t)argumentCount);
+#ifdef _WIN32
+    sysbvm_jit_x86_leaRegisterWithOffset(jit, SYSBVM_X86_RAX, SYSBVM_X86_RBP, jit->callArgumentVectorOffset);
+    sysbvm_jit_x86_mov64IntoMemoryWithOffset(jit, SYSBVM_X86_RSP, 4*sizeof(void*), SYSBVM_X86_RAX);
+    sysbvm_jit_x86_movS32IntoMemoryWithOffset(jit, SYSBVM_X86_RSP, 5*sizeof(void*), applicationFlags);
+#else
     sysbvm_jit_x86_leaRegisterWithOffset(jit, SYSBVM_X86_SYSV_ARG4, SYSBVM_X86_RBP, jit->callArgumentVectorOffset);
     sysbvm_jit_x86_movImmediate32(jit, SYSBVM_X86_SYSV_ARG5, applicationFlags);
+#endif
     sysbvm_jit_x86_call(jit, &sysbvm_bytecodeInterpreter_interpretSendWithReceiverTypeNoCopyArguments);
 
     sysbvm_jit_moveRegisterToOperand(jit, resultOperand, SYSBVM_X86_RAX);
@@ -978,49 +993,55 @@ static void sysbvm_jit_prologue(sysbvm_bytecodeJit_t *jit)
     sysbvm_jit_x86_mov64Register(jit, SYSBVM_X86_RBP, SYSBVM_X86_RSP);
     sysbvm_jit_cfi_storeStackInFramePointer(jit);
 
+#ifdef _WIN32
+    jit->stackCallReservationSize = SYSBVM_X86_64_CALL_SHADOW_SPACE + 16;
+    sysbvm_jit_x86_subImmediate32(jit, SYSBVM_X86_RSP, jit->stackCallReservationSize);
+    sysbvm_jit_cfi_subtract(jit, jit->stackCallReservationSize);
+#endif
+
     sysbvm_jit_cfi_endPrologue(jit);
 
     // Build the stack frame record.
     {
         sysbvm_jit_x86_movS32IntoMemoryWithOffset(jit,
-            SYSBVM_X86_RSP, jit->stackFrameRecordOffset + offsetof(sysbvm_stackFrameBytecodeFunctionJitActivationRecord_t, previous),
+            SYSBVM_X86_RBP, jit->stackFrameRecordOffset + offsetof(sysbvm_stackFrameBytecodeFunctionJitActivationRecord_t, previous),
             0);
         sysbvm_jit_x86_movS32IntoMemoryWithOffset(jit,
-            SYSBVM_X86_RSP, jit->stackFrameRecordOffset + offsetof(sysbvm_stackFrameBytecodeFunctionJitActivationRecord_t, type),
+            SYSBVM_X86_RBP, jit->stackFrameRecordOffset + offsetof(sysbvm_stackFrameBytecodeFunctionJitActivationRecord_t, type),
             SYSBVM_STACK_FRAME_RECORD_TYPE_BYTECODE_JIT_FUNCTION_ACTIVATION);
 
         jit->pcOffset = jit->stackFrameRecordOffset + offsetof(sysbvm_stackFrameBytecodeFunctionJitActivationRecord_t, pc);
-        sysbvm_jit_x86_movS32IntoMemoryWithOffset(jit, SYSBVM_X86_RSP, jit->pcOffset, 0);
+        sysbvm_jit_x86_movS32IntoMemoryWithOffset(jit, SYSBVM_X86_RBP, jit->pcOffset, 0);
 
         jit->contextPointerOffset = jit->stackFrameRecordOffset + offsetof(sysbvm_stackFrameBytecodeFunctionJitActivationRecord_t, context);
-        sysbvm_jit_x86_mov64IntoMemoryWithOffset(jit, SYSBVM_X86_RSP, jit->contextPointerOffset, SYSBVM_X86_64_ARG0);
+        sysbvm_jit_x86_mov64IntoMemoryWithOffset(jit, SYSBVM_X86_RBP, jit->contextPointerOffset, SYSBVM_X86_64_ARG0);
 
         sysbvm_jit_x86_mov64Absolute(jit, SYSBVM_X86_RAX, (uintptr_t)jit->literalVectorGCRoot); // Pointer to GC root with the literal vector.
         sysbvm_jit_x86_mov64FromMemoryWithOffset(jit, SYSBVM_X86_RAX, 0, SYSBVM_X86_RAX);
         jit->literalVectorOffset = jit->stackFrameRecordOffset + offsetof(sysbvm_stackFrameBytecodeFunctionJitActivationRecord_t, literalVector);
-        sysbvm_jit_x86_mov64IntoMemoryWithOffset(jit, SYSBVM_X86_RSP, jit->literalVectorOffset, SYSBVM_X86_RAX);
+        sysbvm_jit_x86_mov64IntoMemoryWithOffset(jit, SYSBVM_X86_RBP, jit->literalVectorOffset, SYSBVM_X86_RAX);
 
         sysbvm_jit_x86_mov64FromMemoryWithOffset(jit, SYSBVM_X86_RAX, SYSBVM_X86_64_ARG1, offsetof(sysbvm_function_t, captureVector));
         jit->captureVectorOffset = jit->stackFrameRecordOffset + offsetof(sysbvm_stackFrameBytecodeFunctionJitActivationRecord_t, captureVector);
-        sysbvm_jit_x86_mov64IntoMemoryWithOffset(jit, SYSBVM_X86_RSP, jit->captureVectorOffset, SYSBVM_X86_RAX);
+        sysbvm_jit_x86_mov64IntoMemoryWithOffset(jit, SYSBVM_X86_RBP, jit->captureVectorOffset, SYSBVM_X86_RAX);
 
         size_t functionOffset = jit->stackFrameRecordOffset + offsetof(sysbvm_stackFrameBytecodeFunctionJitActivationRecord_t, function);
-        sysbvm_jit_x86_mov64IntoMemoryWithOffset(jit, SYSBVM_X86_RSP, functionOffset, SYSBVM_X86_64_ARG1);
+        sysbvm_jit_x86_mov64IntoMemoryWithOffset(jit, SYSBVM_X86_RBP, (int32_t)functionOffset, SYSBVM_X86_64_ARG1);
 
         size_t argumentCountOffset = jit->stackFrameRecordOffset + offsetof(sysbvm_stackFrameBytecodeFunctionJitActivationRecord_t, argumentCount);
-        sysbvm_jit_x86_mov64IntoMemoryWithOffset(jit, SYSBVM_X86_RSP, argumentCountOffset, SYSBVM_X86_64_ARG2);
+        sysbvm_jit_x86_mov64IntoMemoryWithOffset(jit, SYSBVM_X86_RBP, (int32_t)argumentCountOffset, SYSBVM_X86_64_ARG2);
 
         jit->callArgumentVectorSizeOffset = jit->stackFrameRecordOffset + offsetof(sysbvm_stackFrameBytecodeFunctionJitActivationRecord_t, callArgumentVectorSize);
-        sysbvm_jit_x86_movS32IntoMemoryWithOffset(jit, SYSBVM_X86_RSP, jit->callArgumentVectorSizeOffset, 0);
+        sysbvm_jit_x86_movS32IntoMemoryWithOffset(jit, SYSBVM_X86_RBP, jit->callArgumentVectorSizeOffset, 0);
 
         jit->callArgumentVectorOffset = jit->stackFrameRecordOffset + offsetof(sysbvm_stackFrameBytecodeFunctionJitActivationRecord_t, callArgumentVector);
         // This is not needed to be cleared.
 
         jit->argumentVectorOffset = jit->stackFrameRecordOffset + offsetof(sysbvm_stackFrameBytecodeFunctionJitActivationRecord_t, arguments);
-        sysbvm_jit_x86_mov64IntoMemoryWithOffset(jit, SYSBVM_X86_RSP, jit->argumentVectorOffset, SYSBVM_X86_64_ARG3);
+        sysbvm_jit_x86_mov64IntoMemoryWithOffset(jit, SYSBVM_X86_RBP, jit->argumentVectorOffset, SYSBVM_X86_64_ARG3);
 
         size_t inlineLocalVectorSizeOffset = jit->stackFrameRecordOffset + offsetof(sysbvm_stackFrameBytecodeFunctionJitActivationRecord_t, inlineLocalVectorSize);
-        sysbvm_jit_x86_movS32IntoMemoryWithOffset(jit, SYSBVM_X86_RSP, inlineLocalVectorSizeOffset, jit->localVectorSize);
+        sysbvm_jit_x86_movS32IntoMemoryWithOffset(jit, SYSBVM_X86_RBP, (int32_t)inlineLocalVectorSizeOffset, (int32_t)jit->localVectorSize);
 
         jit->localVectorOffset = jit->stackFrameRecordOffset + offsetof(sysbvm_stackFrameBytecodeFunctionJitActivationRecord_t, inlineLocalVector);
 
@@ -1031,12 +1052,12 @@ static void sysbvm_jit_prologue(sysbvm_bytecodeJit_t *jit)
             for(size_t i = 0; i < jit->localVectorSize; ++i)
             {
                 size_t localOffset = jit->localVectorOffset + i*sizeof(void*);
-                sysbvm_jit_x86_mov64IntoMemoryWithOffset(jit, SYSBVM_X86_RSP, localOffset, SYSBVM_X86_RAX);
+                sysbvm_jit_x86_mov64IntoMemoryWithOffset(jit, SYSBVM_X86_RBP, (int32_t)localOffset, SYSBVM_X86_RAX);
             }
         }
 
         // Connect with the stack unwinder.
-        sysbvm_jit_x86_leaRegisterWithOffset(jit, SYSBVM_X86_64_ARG0, SYSBVM_X86_RSP, jit->stackFrameRecordOffset);
+        sysbvm_jit_x86_leaRegisterWithOffset(jit, SYSBVM_X86_64_ARG0, SYSBVM_X86_RBP, jit->stackFrameRecordOffset);
         sysbvm_jit_x86_call(jit, &sysbvm_stackFrame_pushRecord);
     }
 }
@@ -1203,6 +1224,7 @@ static void sysbvm_jit_emitUnwindInfo(sysbvm_bytecodeJit_t *jit)
     sysbvm_bytecodeJit_addUnwindInfoByte(jit, (uint8_t)jit->prologueSize);
     sysbvm_bytecodeJit_addUnwindInfoByte(jit, (uint8_t)(jit->unwindInfoBytecode.size/2));
     sysbvm_bytecodeJit_addUnwindInfoByte(jit, (/* Frame register RBP */ 5) | (/* Frame register offset. */ 0 << 4));
+    //sysbvm_bytecodeJit_addUnwindInfoByte(jit, 0);
     sysbvm_dynarray_addAll(&jit->unwindInfo, jit->unwindInfoBytecode.size, jit->unwindInfoBytecode.data);
 #else
     // TODO: Implement this for linux and mac.

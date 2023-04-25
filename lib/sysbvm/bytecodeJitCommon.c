@@ -49,6 +49,7 @@ typedef struct sysbvm_bytecodeJit_s
     int32_t callArgumentVectorSizeOffset;
     int32_t callArgumentVectorOffset;
     int32_t stackFrameSize;
+    int32_t stackCallReservationSize;
 
     sysbvm_dynarray_t instructions;
     sysbvm_dynarray_t constants;
@@ -132,10 +133,18 @@ static void sysbvm_bytecodeJit_uwop_alloc(sysbvm_bytecodeJit_t *jit, size_t amou
 {
     if(amount == 0) return;
 
+    SYSBVM_ASSERT((amount % 8) == 0);
     if(amount <= 128)
     {
-        SYSBVM_ASSERT((amount % 8) == 0);
         sysbvm_bytecodeJit_uwop(jit, /* UWOP_ALLOC_SMALL */2, (uint8_t)((amount - 8) / 8));
+    }
+    else if(amount <= 512*1024)
+    {
+        size_t encodedAmount = (amount - 8) / 8;
+        SYSBVM_ASSERT(encodedAmount <= 0xFFFF);
+        sysbvm_bytecodeJit_uwop(jit, /* UWOP_ALLOC_LARGE */3, 0);
+        uint16_t encodedAmountU16 = (uint16_t)encodedAmount;
+        sysbvm_bytecodeJit_addUnwindInfoBytes(jit, 2, (uint8_t*)&encodedAmountU16);
     }
     else
     {
