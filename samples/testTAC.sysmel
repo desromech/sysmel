@@ -10,7 +10,7 @@ let addFunction := module build: #add function: {:(TACFunctionBuilder)functionBu
     functionBuilder basicBlock: #entry build: {:(TACBlockBuilder)asm :: Void |
         let result := asm temporaryInt32.
         asm
-            addInt32: x with: y into: result;
+            int32Add: x with: y into: result;
             returnInt32: result
     }
 }.
