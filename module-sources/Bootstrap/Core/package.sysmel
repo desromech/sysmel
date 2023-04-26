@@ -7,5 +7,6 @@ loadSourceNamed: "Enum.sysmel".
 loadSourceNamed: "Struct.sysmel".
 loadSourceNamed: "Interval.sysmel".
 loadSourceNamed: "Math.sysmel".
+loadSourceNamed: "ProgramEntity.sysmel".
 loadSourceNamed: "Utility.sysmel".
 loadSourceNamed: "String.sysmel".

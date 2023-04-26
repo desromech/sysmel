@@ -18,4 +18,62 @@ String extend: {
 
     public method asUppercase => String
         := self collect: {:(Char8)c :: Char8 | c asUppercase }.
-}
+}.
+
+UInt8 extend: {
+    public method printHexDigitOn: (stream: Stream) ::=> Void := {
+        (0u8 <= self) && (self <= 9u8)
+            ifTrue: (stream nextPut: self asChar8 + '0'asChar8)
+            ifFalse: (stream nextPut: self asChar8 + 'A'asChar8 - 10c8).
+    }.
+
+    public method printHexOn: (stream: Stream) ::=> Void := {
+        self >> 4u8 printHexDigitOn: stream.
+        self & 16rF u8 printHexDigitOn: stream.
+    }.
+}.
+
+UInt16 extend: {
+    public method printHexOn: (stream: Stream) ::=> Void := {
+        (self >> 8u16) asUInt8 printHexOn: stream.
+        self asUInt8 printHexOn: stream.
+    }.
+}.
+
+UInt32 extend: {
+    public method printHexOn: (stream: Stream) ::=> Void := {
+        (self >> 16u32) asUInt16 printHexOn: stream.
+        self asUInt16 printHexOn: stream.
+    }.
+}.
+
+UInt64 extend: {
+    public method printHexOn: (stream: Stream) ::=> Void := {
+        (self >> 32u64) asUInt32 printHexOn: stream.
+        self asUInt32 printHexOn: stream.
+    }.
+}.
+
+Int8 extend: {
+    public method printHexOn: (stream: Stream) ::=> Void := {
+        self asUInt8 printHexOn: stream.
+    }.
+}.
+
+Int16 extend: {
+    public method printHexOn: (stream: Stream) ::=> Void := {
+        self asUInt16 printHexOn: stream.
+    }.
+}.
+
+Int32 extend: {
+    public method printHexOn: (stream: Stream) ::=> Void := {
+        self asUInt32 printHexOn: stream.
+    }.
+}.
+
+Int64 extend: {
+    public method printHexOn: (stream: Stream) ::=> Void := {
+        self asUInt64 printHexOn: stream.
+    }.
+}.

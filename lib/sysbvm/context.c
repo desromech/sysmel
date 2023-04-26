@@ -381,7 +381,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.stringEqualsFunction = sysbvm_function_createPrimitive(context, 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_string_primitive_equals);
     context->roots.stringHashFunction = sysbvm_function_createPrimitive(context, 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_string_primitive_hash);
 
-    context->roots.symbolType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
+    context->roots.symbolType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.stringSymbolType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolType);
     sysbvm_type_setFlags(context, context->roots.stringSymbolType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_BYTES);
 
@@ -405,7 +405,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.sessionToken = sysbvm_tuple_systemHandle_encode(context, 1);
 
     // Create the intrinsic built-in environment
-    context->roots.globalNamespace = sysbvm_environment_create(context, SYSBVM_NULL_TUPLE);
+    context->roots.globalNamespace = sysbvm_namespace_create(context, SYSBVM_NULL_TUPLE);
     context->roots.intrinsicTypes = sysbvm_orderedCollection_create(context);
 
     context->roots.equalsSelector = sysbvm_symbol_internWithCString(context, "=");

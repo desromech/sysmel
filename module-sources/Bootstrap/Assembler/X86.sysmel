@@ -150,7 +150,7 @@ public class AsmX86Register superclass: AsmRegister; definition: {
         := if: self isHighRegister then: 1u8 else: 0u8.
 
     public method printOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: name
+        stream string: name
     }.
 
     public override method x86::encodeModRMWithRegOpcode: (opcode: UInt8) immediateSize: (immediateSize: Size)

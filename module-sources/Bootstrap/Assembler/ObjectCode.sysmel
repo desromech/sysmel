@@ -305,7 +305,7 @@ AsmSymbol definition: {
     public method printOn: (stream: Stream) ::=> Void := {
         self isPrivate ifTrue: (stream nextPut: '.').
         name ifNotNil: {
-            stream nextPutAll: name.
+            stream string: name.
         } ifNil: {
             stream nextPutAll: "anon".
         }

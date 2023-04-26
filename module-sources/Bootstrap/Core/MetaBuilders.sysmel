@@ -1,4 +1,5 @@
 __Global__
+    name: #__Global__;
     setSymbol: #__OwnerProgramEntity__ value: __Global__;
     setSymbol: #public:with: value: {:macroContext :(ASTNode)symbol :(ASTNode)value :: ASTNode |
         ``(__OwnerProgramEntity__ setPublicSymbol: `,symbol value: `,value)

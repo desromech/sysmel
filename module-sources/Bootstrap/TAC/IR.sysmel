@@ -204,7 +204,7 @@ public final class TACArgumentVariable superclass: TACLocalVariable; definition:
 
     public method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: 'a'; print: index.
-        name ifNotNil: (stream space; nextPutAll: name)
+        name ifNotNil: (stream space; string: name)
     }.
 }.
 
@@ -213,7 +213,7 @@ public final class TACCaptureVariable superclass: TACLocalVariable; definition: 
 
     public method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: 'c'; print: index.
-        name ifNotNil: (stream space; nextPutAll: name)
+        name ifNotNil: (stream space; string: name)
     }.
 }.
 
@@ -222,7 +222,7 @@ public final class TACTemporaryVariable superclass: TACLocalVariable; definition
 
     public method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: 't'; print: index.
-        name ifNotNil: (stream space; nextPutAll: name)
+        name ifNotNil: (stream space; string: name)
     }.
 }.
 
@@ -231,7 +231,7 @@ public final class TACGlobalVariable superclass: TACVariable; definition: {
 
     public method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "global".
-        name ifNotNil: (stream space; nextPutAll: name).
+        name ifNotNil: (stream space; string: name).
     }.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
@@ -491,7 +491,7 @@ public final class TACOperation superclass: Object; definition: {
     }.
 
     public method printOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: name
+        stream string: name
     }.
 }.
 
@@ -625,7 +625,7 @@ TACBasicBlock definition: {
 
     public method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: '@'; print: index.
-        name ifNotNil: (stream nextPut: ':'; nextPutAll: name)
+        name ifNotNil: (stream nextPut: ':'; string: name)
     }.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
@@ -820,7 +820,7 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
 
     public method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "function".
-        name ifNotNil: (stream space; nextPutAll: name).
+        name ifNotNil: (stream space; string: name).
     }.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {

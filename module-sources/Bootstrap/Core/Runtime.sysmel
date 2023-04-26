@@ -685,6 +685,12 @@ Stream
     withSelector: #print: addMethod: {:(Stream)self :value :: Void | 
         value printOn: self
     };
+    withSelector: #store: addMethod: {:(Stream)self :value :: Void | 
+        value storeOn: self
+    };
+    withSelector: #string: addMethod: {:(Stream)self :value :: Void | 
+        value stringOn: self
+    };
     withSelector: #fullPrint: addMethod: {:(Stream)self :value :: Void | 
         value fullPrintOn: self
     };
@@ -713,6 +719,12 @@ AnyValue
     withSelector: #printOn: addMethod: {:(AnyValue)self :(Stream)stream :: Void |
         stream nextPutAll: "a " ; print: self __type__
     };
+    withSelector: #storeOn: addMethod: {:(AnyValue)self :(Stream)stream :: Void |
+        self printOn: stream
+    };
+    withSelector: #stringOn: addMethod: {:(AnyValue)self :(Stream)stream :: Void |
+        self printOn: stream
+    };
     withSelector: #fullPrintString addMethod: {:(AnyValue)self :: String | 
         let: #stream with: StringStream new.
         self fullPrintOn: stream.
@@ -726,7 +738,7 @@ Type
     withSelector: #printOn: addMethod: {:(Type)self :(Stream)stream :: Void |
         let: #name with: self name.
         if: name ~~ nil
-            then: (stream nextPutAll: name)
+            then: (stream string: name)
             else: (stream nextPutAll: "a Type")
     }.
 
@@ -753,6 +765,9 @@ True
     withSelector: #printOn: addMethod: {:(True)self :(Stream)stream :: Void | stream nextPutAll: "true" }.
 
 String
+    withSelector: #stringOn: addMethod: {:(String)self :(Stream)stream :: Void |
+        stream nextPutAll: self
+    };
     withSelector: #printOn: addMethod: {:(String)self :(Stream)stream :: Void |
         ## TODO: Implement this part properly.
         stream nextPut: '"'.
@@ -761,6 +776,9 @@ String
     }.
 
 StringSymbol
+    withSelector: #stringOn: addMethod: {:(String)self :(Stream)stream :: Void |
+        stream nextPutAll: self
+    };
     withSelector: #printOn: addMethod: {:(StringSymbol)self :(Stream)stream :: Void |
         ## TODO: Implement this part properly.
         stream nextPut: '#'; nextPutAll: self

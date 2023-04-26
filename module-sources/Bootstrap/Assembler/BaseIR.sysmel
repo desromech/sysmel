@@ -584,7 +584,7 @@ public final class AsmSectionDirective superclass: AsmStreamElement; definition:
     public override method isFormattedWithIndentation => Boolean := false.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: ".section "; nextPutAll: name.
+        stream nextPutAll: ".section "; string: name.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {

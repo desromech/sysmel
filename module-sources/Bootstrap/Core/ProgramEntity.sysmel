@@ -1,0 +1,60 @@
+public final class ProgramEntityQualifiedNameSymbol superclass: Symbol; definition: {
+    public field programEntity => ProgramEntity.
+
+    __Meta__ definition:{
+        public method for: (programEntity: ProgramEntity) ::=> self
+            := self new programEntity: programEntity; yourself.
+    }.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        programEntity printQualifiedSymbolNameOn: stream.
+    }.
+}.
+
+ProgramEntity definition: {
+    public method programEntityKindName => Symbol
+        := self class name.
+
+    public method printSymbolNameOn: (stream: Stream) ::=> Void := {
+        name ifNotNil: (stream string: name).
+        stream nextPut: '#'; string: self programEntityKindName.
+        stream nextPut: '_'.
+        self identityHash printHexOn: stream.
+    }.
+
+    public method printQualifiedSymbolNameOn: (stream: Stream) ::=> Void := {
+        owner ifNotNil: {
+            owner printQualifiedSymbolNameOn: stream.
+            stream nextPut: '.'.
+        }.
+
+        self printSymbolNameOn: stream
+    }.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        self printQualifiedSymbolNameOn: stream
+    }.
+
+    public method programEntityQualifiedNameSymbol => ProgramEntityQualifiedNameSymbol
+        := ProgramEntityQualifiedNameSymbol for: self.
+}.
+
+Type definition: {
+    public method programEntityKindName => Symbol
+        := #T.
+}.
+
+Namespace definition: {
+    public method programEntityKindName => Symbol
+        := #N.
+}.
+
+Function definition: {
+    public method programEntityKindName => Symbol
+        := #C.
+}.
+
+FunctionDefinition definition: {
+    public method programEntityKindName => Symbol
+        := #F.
+}.

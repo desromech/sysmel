@@ -23,7 +23,7 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
         translatedValueDictionary at: function ifAbsent: { :: SSAValue |
             let translatedValue := SSAFunction new
                 sourceObject: function;
-                name: function name;
+                name: function programEntityQualifiedNameSymbol;
                 primitiveName: function primitiveName;
                 yourself.
 
@@ -42,7 +42,7 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
         translatedValueDictionary at: functionDefinition ifAbsent: { :: SSAValue |
             let translatedValue := SSAFunctionDefinition new
                 sourceObject: functionDefinition;
-                name: functionDefinition name;
+                name: functionDefinition programEntityQualifiedNameSymbol;
                 yourself.
 
             ssaModule addGlobalValue: translatedValue.
@@ -104,16 +104,6 @@ public final class SSAFunctionCompilationContext superclass: Object; definition:
     public method setValue: (value: SSAValue) forBinding: (binding: SymbolBinding) ::=> Void := {
         self assert: binding isNotNil.
         bindingDictionary at: binding put: value
-    }.
-
-    public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> SSAFunctionDefinition := {
-        let ssaFunction := SSAFunctionDefinition new
-            name: functionDefinition name;
-            yourself.
-
-        self compileFunctionDefinition: functionDefinition into: ssaFunction.
-
-        ssaFunction
     }.
 
     public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) into: (ssaFunction: SSAFunctionDefinition) ::=> Void := {

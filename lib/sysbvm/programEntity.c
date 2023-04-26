@@ -7,6 +7,7 @@ SYSBVM_API void sysbvm_programEntity_recordBindingWithOwnerAndName(sysbvm_contex
 {
     (void)context;
     if(!sysbvm_tuple_isKindOf(context, programEntity, context->roots.programEntityType)) return;
+    if(owner == programEntity) return;
 
     sysbvm_programEntity_t *programEntityObject = (sysbvm_programEntity_t*)programEntity;
     if(!programEntityObject->owner && !programEntityObject->name)

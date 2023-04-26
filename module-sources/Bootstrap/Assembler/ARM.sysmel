@@ -46,7 +46,7 @@ public final class AsmARMRegister superclass: AsmRegister; definition: {
     public method value32 => UInt32 := value asUInt32.
 
     public method printOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: name
+        stream string: name
     }.
 }.
 
