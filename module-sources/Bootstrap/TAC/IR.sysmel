@@ -971,6 +971,15 @@ public final class TACBlockBuilder superclass: Object; definition: {
 public final class TACFunctionBuilder superclass: Object; definition: {
     public field function => TACFunction.
 
+    TACFunction extend: {
+        public method build: (aBlock: (TACFunctionBuilder) => Void) ::=> Void := {
+            let builder := TACFunctionBuilder new
+                function: self;
+                yourself.
+            aBlock(builder).
+        }.
+    }.
+
     public method basicBlock: (name: Symbol) build: (aBlock: (TACBlockBuilder) => Void) ::=> Void := {
         let block := TACBasicBlock new name: name; yourself.
         function addBasicBlock: block.
@@ -1080,12 +1089,7 @@ public final class TACModule superclass: TACProgramEntity; definition: {
             name: name;
             yourself.
         self addProgramEntity: function.
-
-        let builder := TACFunctionBuilder new
-            function: function;
-            yourself.
-        aBlock(builder).
-        function
+        function build: aBlock; yourself
     }.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {

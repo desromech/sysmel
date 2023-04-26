@@ -1,3 +1,11 @@
+Symbol extend: {
+    public method asCheckedEntryPointNameSymbol => Symbol
+        := self error: "Not a function name symbol".
+
+    public method asUncheckedEntryPointNameSymbol => Symbol
+        := self error: "Not a function name symbol".
+}.
+
 public final class ProgramEntityQualifiedNameSymbol superclass: Symbol; definition: {
     public field programEntity => ProgramEntity.
 
@@ -8,6 +16,40 @@ public final class ProgramEntityQualifiedNameSymbol superclass: Symbol; definiti
 
     public method printOn: (stream: Stream) ::=> Void := {
         programEntity printQualifiedSymbolNameOn: stream.
+    }.
+
+    public method asCheckedEntryPointNameSymbol => Symbol
+        := programEntity checkedEntryPointNameSymbol.
+
+    public method asUncheckedEntryPointNameSymbol => Symbol
+        := programEntity uncheckedEntryPointNameSymbol.
+}.
+
+public final class FunctionCheckedEntryPointSymbol superclass: Symbol; definition: {
+    public field function => FunctionDefinition.
+
+    __Meta__ definition:{
+        public method for: (function: FunctionDefinition) ::=> self
+            := self new function: function; yourself.
+    }.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        function printQualifiedSymbolNameOn: stream.
+        stream nextPutAll: ".checked".
+    }.
+}.
+
+public final class FunctionUncheckedEntryPointSymbol superclass: Symbol; definition: {
+    public field function => FunctionDefinition.
+
+    __Meta__ definition:{
+        public method for: (function: FunctionDefinition) ::=> self
+            := self new function: function; yourself.
+    }.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        function printQualifiedSymbolNameOn: stream.
+        stream nextPutAll: ".unchecked".
     }.
 }.
 
@@ -37,6 +79,12 @@ ProgramEntity definition: {
 
     public method programEntityQualifiedNameSymbol => ProgramEntityQualifiedNameSymbol
         := ProgramEntityQualifiedNameSymbol for: self.
+
+    public method checkedEntryPointNameSymbol => FunctionCheckedEntryPointSymbol
+        := self error: "Not a function definition".
+
+    public method uncheckedEntryPointNameSymbol => FunctionUncheckedEntryPointSymbol
+        := self error: "Not a function definition".
 }.
 
 Type definition: {
@@ -57,4 +105,10 @@ Function definition: {
 FunctionDefinition definition: {
     public method programEntityKindName => Symbol
         := #F.
+
+    public method checkedEntryPointNameSymbol => FunctionCheckedEntryPointSymbol
+        := FunctionCheckedEntryPointSymbol for: self.
+
+    public method uncheckedEntryPointNameSymbol => FunctionUncheckedEntryPointSymbol
+        := FunctionUncheckedEntryPointSymbol for: self.
 }.

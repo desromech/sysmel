@@ -123,6 +123,8 @@ SSAFunction definition: {
         captures := #().
     }.
 
+    public method asSSAFunctionDefinitionOrNil => SSAFunctionDefinition := definition.
+
     public method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: '@'.
         name ifNil: {
@@ -158,6 +160,12 @@ SSAFunctionDefinition definition: {
     public field lastBasicBlock => SSABasicBlock.
 
     public method isFunction => Boolean := true.
+
+    SSAValue extend: {
+        public method asSSAFunctionDefinitionOrNil => SSAFunctionDefinition := nil
+    }.
+
+    public method asSSAFunctionDefinitionOrNil => SSAFunctionDefinition := self.
 
     public method addBasicBlock: (basicBlock: SSABasicBlock) before: (position: SSABasicBlock) ::=> Void := {
         self assert: basicBlock parent isNil.
