@@ -198,11 +198,11 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
             tacArgument
         }.
 
-        checkedEntryPoint arguments: uncheckedArguments asArray.
+        checkedEntryPoint arguments: tacArguments asArray.
 
         functionBuilder basicBlock: #wrapper build: {:(TACBlockBuilder)asm :: Void |
             let checkedAndConvertedArguments := ssaFunctionDefinition arguments collectWithIndex: {:(SSAFunctionArgument)argument :(Size)index :: TACValue |
-                let tacArgument => TACValue := tacArguments at: index.
+                let tacArgument => TACValue := tacArguments at: index + 1sz.
                 argument type emitTacCheckAndUnbox: tacArgument withBlockBuilder: asm
             }.
 

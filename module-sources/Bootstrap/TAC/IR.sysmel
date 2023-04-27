@@ -155,6 +155,7 @@ public abstract class TACVariable superclass: TACProgramEntity; definition: {
     public field alignment => UInt64.
     public field physicalLocationClass => TACPhysicalLocation class.
     public field isSignedExtended => Boolean.
+    public field isGCRoot => Boolean.
 
     public override method isVariable => Boolean := true.
 }.
@@ -670,6 +671,7 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
             type: type;
             size: (type valueSizeForTacTarget: compilationTarget) asUInt64;
             alignment: (type valueAlignmentForTacTarget: compilationTarget) asUInt64;
+            isGCRoot: type isGarbageCollectedPointerType;
             physicalLocationClass: type valueTacPhysicalLocationClass;
             yourself.
 
@@ -682,6 +684,7 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
             type: type;
             size: (type valueSizeForTacTarget: compilationTarget) asUInt64;
             alignment: (type valueAlignmentForTacTarget: compilationTarget) asUInt64;
+            isGCRoot: type isGarbageCollectedPointerType;
             physicalLocationClass: type valueTacPhysicalLocationClass;
             yourself.
 
@@ -694,6 +697,7 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
             type: type;
             size: (type valueSizeForTacTarget: compilationTarget) asUInt64;
             alignment: (type valueAlignmentForTacTarget: compilationTarget) asUInt64;
+            isGCRoot: type isGarbageCollectedPointerType;
             physicalLocationClass: type valueTacPhysicalLocationClass;
             yourself).
 

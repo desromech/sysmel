@@ -2520,7 +2520,9 @@ Type
     };
     withSelector: #alignedValueSize addMethod: {:(Type)self :: Size |
         self valueSize alignedTo: self valueAlignment
-    }.
+    };
+    withSelector: #isGarbageCollectedPointerType addMethod: {:(Type)self :: Boolean | true };
+    withSelector: #isValueType addMethod: {:(Type)self :: Boolean | false }.
 
 ValueType
     withSelector: #valueSize addMethod: {:(ValueType)self :: Size |
@@ -2528,7 +2530,9 @@ ValueType
     };
     withSelector: #valueAlignment addMethod: {:(ValueType)self :: Size |
         self validInstanceAlignment
-    }.
+    };
+    withSelector: #isGarbageCollectedPointerType addMethod: {:(Type)self :: Boolean | false };
+    withSelector: #isValueType addMethod: {:(Type)self :: Boolean | true }.
 
 Environment
     withSelector: #setSymbol:value: addMethod: {:(Environment)self :(Symbol)symbol :value :: value __type__ |

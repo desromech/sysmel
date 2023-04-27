@@ -132,7 +132,7 @@ public final class TACX86_64IntegerRegister superclass: TACPhysicalIntegerRegist
     public override method x86_64::storeInLocal: (local: TACLocalVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         let localSize := local size.
         self assert: (localSize = 1u64) || (localSize = 2u64) || (localSize = 4u64) || (localSize = 8u64).
-        
+
         ## TODO: Support the lambda captures.
         let localPointer := AsmX86RegisterAddress base: X86::RBP size: localSize asUInt8 displacement: local offset asInt32 asAsmImmediate.
         localSize = 1u64 ifTrue: (codegen textSection x86::mov: localPointer src: self x86::int8).
