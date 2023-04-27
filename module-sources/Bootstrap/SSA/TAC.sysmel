@@ -507,18 +507,18 @@ SSAInstruction extend: {
         := self subclassResponsibility.
 }.
 
-let translateUnaryPrimitiveInto := {:(TACOperation)operation :: ((SSACallInstruction, TACValue, SSAFunctionDefinitionTACCodeGenerator) => Boolean) |
-    {:(SSACallInstruction)call :(TACValue)result :(SSAFunctionDefinitionTACCodeGenerator)codegen :: Boolean |
-        let operand := codegen translateValue: call arguments first.
+let translateUnaryPrimitiveInto := {:(TACOperation)operation :: ((Array, TACValue, SSAFunctionDefinitionTACCodeGenerator) => Boolean) |
+    {:(Array)arguments :(TACValue)result :(SSAFunctionDefinitionTACCodeGenerator)codegen :: Boolean |
+        let operand := codegen translateValue: arguments first.
         codegen blockBuilder operation: operation with: operand.
         true
     }
 }.
 
-let translateBinaryPrimitiveInto := {:(TACOperation)operation :: ((SSACallInstruction, TACValue, SSAFunctionDefinitionTACCodeGenerator) => Boolean) |
-    {:(SSACallInstruction)call :(TACValue)result :(SSAFunctionDefinitionTACCodeGenerator)codegen :: Boolean |
-        let left := codegen translateValue: call arguments first.
-        let right := codegen translateValue: call arguments second.
+let translateBinaryPrimitiveInto := {:(TACOperation)operation :: ((Array, TACValue, SSAFunctionDefinitionTACCodeGenerator) => Boolean) |
+    {:(Array)arguments :(TACValue)result :(SSAFunctionDefinitionTACCodeGenerator)codegen :: Boolean |
+        let left := codegen translateValue: arguments first.
+        let right := codegen translateValue: arguments second.
         codegen blockBuilder operation: operation with: left with: right result: result.
         true
     }
@@ -829,7 +829,7 @@ SSACallInstruction extend: {
         ## Attempt to use the primitive generator first.
         let primitiveGenerator := SSATacPrimitiveCallGenerationTable atOrNil: calledFunction primitiveName.
         primitiveGenerator ifNotNil: {
-            primitiveGenerator(self, tacValue, codegen) ifTrue: {
+            primitiveGenerator(self arguments, tacValue, codegen) ifTrue: {
                 return: void
             }
         }.
