@@ -188,7 +188,32 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
     }.
 
     public method compile: (ssaFunctionDefinition: SSAFunctionDefinition) checkedEntryPoint: (checkedEntryPoint: TACFunction) into: (uncheckedEntryPoint: TACFunction) ::=> Void := {
+        let tacArguments := OrderedCollection new.
+        functionArgument := checkedEntryPoint newArgument: #closure withType: Function.
+        tacArguments add: functionArgument.
 
+        let uncheckedArguments := ssaFunctionDefinition arguments collect: {:(SSAFunctionArgument)argument :: TACValue |
+            let tacArgument := checkedEntryPoint newArgument: argument name withType: Untyped.
+            tacArguments add: tacArgument.
+            tacArgument
+        }.
+
+        checkedEntryPoint arguments: uncheckedArguments asArray.
+
+        functionBuilder basicBlock: #wrapper build: {:(TACBlockBuilder)asm :: Void |
+            let checkedAndConvertedArguments := ssaFunctionDefinition arguments collectWithIndex: {:(SSAFunctionArgument)argument :(Size)index :: TACValue |
+                let tacArgument => TACValue := tacArguments at: index.
+                argument type emitTacCheckAndUnbox: tacArgument withBlockBuilder: asm
+            }.
+
+            let canonicalResultType := ssaFunctionDefinition functionType canonicalResultType.
+            let result := canonicalResultType makeTacTemporaryValueNamed: #result withFunctionBuilder: functionBuilder.
+            canonicalResultType emitTacCall: uncheckedEntryPoint convention: uncheckedEntryPoint callingConvention
+                withArguments: (Array with: functionArgument) -- checkedAndConvertedArguments into: result withBlockBuilder: asm.
+
+            let boxedResult := canonicalResultType emitTacBox: result withBlockBuilder: asm.
+            asm returnPointer: boxedResult
+        }.
     }.
 
     public method compileDefinition => Void := {
@@ -286,6 +311,15 @@ TACBlockBuilder extend: {
 }.
 
 Type extend: {
+    public virtual method emitTacCheckAndUnbox: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> TACValue := {
+        ## TODO: Emit a type check call.
+        value
+    }.
+
+    public virtual method emitTacBox: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> TACValue := {
+        value
+    }.
+
     public virtual method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnPointer: value.
     }.

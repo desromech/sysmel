@@ -39,10 +39,12 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
     }.
 
     public method translateFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> SSAFunctionDefinition := {
+        functionDefinition ensureAnalysis.
         translatedValueDictionary at: functionDefinition ifAbsent: { :: SSAValue |
             let translatedValue := SSAFunctionDefinition new
                 sourceObject: functionDefinition;
                 name: functionDefinition programEntityQualifiedNameSymbol;
+                functionType: functionDefinition analyzedType;
                 yourself.
 
             ssaModule addGlobalValue: translatedValue.
@@ -218,9 +220,11 @@ ASTFunctionApplicationNode extend: {
         primitiveGenerator ifNotNil: {
             primitiveGenerator(self, context)
         } ifNil: {
-            context builder call: functionExpression
+            (context builder call: functionExpression
                 arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
-                resultType: self analyzedType
+                resultType: self analyzedType)
+                isUnchecked: self isNoTypechecked;
+                yourself
         }.
     }.
 }.

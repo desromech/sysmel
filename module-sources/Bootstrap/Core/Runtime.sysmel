@@ -2211,12 +2211,21 @@ PointerType
         }.
     }.
 
+FunctionType
+    withSelector: #canonicalResultType addMethod: {:(FunctionType)self :: Type |
+        self subclassResponsibility
+    }.
+
 DependentFunctionType
     withSelector: #printOn: addMethod: {:(DependentFunctionType)self :(Stream)stream :: Void |
         stream nextPutAll: "DependentFunctionType at "; print: self sourcePosition
     }.
 
 SimpleFunctionType
+    withSelector: #canonicalResultType addMethod: {:(SimpleFunctionType)self :: Type |
+        let: #resultType with: self resultType.
+        if: resultType == nil then: Untyped else: resultType.
+    };
     withSelector: #printOn: addMethod: {:(SimpleFunctionType)self :(Stream)stream :: Void |
         stream nextPut: '('.
         self argumentTypes doWithIndex: {:(Type)argumentType :(Size)index :: Void |

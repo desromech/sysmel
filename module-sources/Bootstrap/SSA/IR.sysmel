@@ -155,6 +155,7 @@ SSAFunctionDefinition definition: {
     public field name => Symbol.
     public field arguments => Array.
     public field captures => Array.
+    public field functionType => FunctionType.
 
     public field firstBasicBlock => SSABasicBlock.
     public field lastBasicBlock => SSABasicBlock.
