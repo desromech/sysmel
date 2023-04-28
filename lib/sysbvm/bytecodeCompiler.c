@@ -1219,6 +1219,9 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveCompileIntoBytecode(sysbvm_c
 
     sysbvm_tuple_t result = sysbvm_bytecodeCompiler_newTemporary(context, *compiler);
     sysbvm_bytecodeCompiler_makeClosureWithCaptures(context, *compiler, result, functionDefinitionOperand, captureVector);
+
+    if((*lambdaNode)->binding)
+        sysbvm_bytecodeCompiler_setBindingValue(context, *compiler, (*lambdaNode)->binding, result);
     return result;
 }
 

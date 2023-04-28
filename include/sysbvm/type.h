@@ -720,6 +720,26 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_getAnalyzeConcreteMetaValueWithEnvironment
 SYSBVM_API void sysbvm_type_setAnalyzeConcreteMetaValueWithEnvironmentFunction(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t function);
 
 /**
+ * Gets the analyzeAndEvaluateUnexpandedApplicationNodeOfWithEnvironmentSelector with environment function function of a type.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_type_getAnalyzeAndEvaluateUnexpandedApplicationNodeOfWithEnvironmentFunction(sysbvm_context_t *context, sysbvm_tuple_t type);
+
+/**
+ * Sets the analyzeAndEvaluateUnexpandedApplicationNodeOfWithEnvironmentSelector with environment function function of a type.
+ */
+SYSBVM_API void sysbvm_type_setAnalyzeAndEvaluateUnexpandedApplicationNodeOfWithEnvironmentFunction(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t function);
+
+/**
+ * Gets the analyzeUnexpandedApplicationNodeWithEnvironmentSelector with environment function function of a type.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_type_getAnalyzeUnexpandedApplicationNodeWithEnvironmentFunction(sysbvm_context_t *context, sysbvm_tuple_t type);
+
+/**
+ * Sets the analyzeUnexpandedApplicationNodeWithEnvironmentSelector with environment function function of a type.
+ */
+SYSBVM_API void sysbvm_type_setAnalyzeUnexpandedApplicationNodeWithEnvironmentFunction(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t function);
+
+/**
  * Gets the coerceValueFunction function of a type.
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_type_getCoerceValueFunction(sysbvm_context_t *context, sysbvm_tuple_t type);

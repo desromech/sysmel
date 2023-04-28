@@ -772,6 +772,27 @@ SYSBVM_API void sysbvm_type_setAnalyzeConcreteMetaValueWithEnvironmentFunction(s
 {
     sysbvm_type_setMethodWithSelector(context, type, context->roots.analyzeConcreteMetaValueWithEnvironmentSelector, function);
 }
+
+SYSBVM_API sysbvm_tuple_t sysbvm_type_getAnalyzeAndEvaluateUnexpandedApplicationNodeOfWithEnvironmentFunction(sysbvm_context_t *context, sysbvm_tuple_t type)
+{
+    return sysbvm_type_lookupSelector(context, type, context->roots.analyzeAndEvaluateUnexpandedApplicationNodeOfWithEnvironmentSelector);
+}
+
+SYSBVM_API void sysbvm_type_setAnalyzeAndEvaluateUnexpandedApplicationNodeOfWithEnvironmentFunction(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t function)
+{
+    sysbvm_type_setMethodWithSelector(context, type, context->roots.analyzeAndEvaluateUnexpandedApplicationNodeOfWithEnvironmentSelector, function);
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_type_getAnalyzeUnexpandedApplicationNodeWithEnvironmentFunction(sysbvm_context_t *context, sysbvm_tuple_t type)
+{
+    return sysbvm_type_lookupSelector(context, type, context->roots.analyzeUnexpandedApplicationNodeWithEnvironmentSelector);
+}
+
+SYSBVM_API void sysbvm_type_setAnalyzeUnexpandedApplicationNodeWithEnvironmentFunction(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t function)
+{
+    sysbvm_type_setMethodWithSelector(context, type, context->roots.analyzeUnexpandedApplicationNodeWithEnvironmentSelector, function);
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_type_getCoerceValueFunction(sysbvm_context_t *context, sysbvm_tuple_t type)
 {
     return sysbvm_type_lookupSelector(context, type, context->roots.coerceValueSelector);

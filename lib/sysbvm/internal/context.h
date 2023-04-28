@@ -82,6 +82,8 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t analyzeMessageChainNodeWithEnvironmentSelector;
     sysbvm_tuple_t analyzeAndEvaluateConcreteMetaValueWithEnvironmentSelector;
     sysbvm_tuple_t analyzeConcreteMetaValueWithEnvironmentSelector;
+    sysbvm_tuple_t analyzeAndEvaluateUnexpandedApplicationNodeOfWithEnvironmentSelector;
+    sysbvm_tuple_t analyzeUnexpandedApplicationNodeWithEnvironmentSelector;
 
     sysbvm_tuple_t genericAddressSpaceName;
     sysbvm_tuple_t functionLocalAddressSpaceName;

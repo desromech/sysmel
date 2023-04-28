@@ -432,6 +432,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.analyzeMessageChainNodeWithEnvironmentSelector = sysbvm_symbol_internWithCString(context, "analyzeMessageChainNode:withEnvironment:");
     context->roots.analyzeAndEvaluateConcreteMetaValueWithEnvironmentSelector = sysbvm_symbol_internWithCString(context, "analyzeAndEvaluateConcreteMetaValue:withEnvironment:");
     context->roots.analyzeConcreteMetaValueWithEnvironmentSelector = sysbvm_symbol_internWithCString(context, "analyzeConcreteMetaValue:withEnvironment:");
+    context->roots.analyzeAndEvaluateUnexpandedApplicationNodeOfWithEnvironmentSelector = sysbvm_symbol_internWithCString(context, "analyzeAndEvaluateUnexpandedApplicationNode:of:withEnvironment:");
+    context->roots.analyzeUnexpandedApplicationNodeWithEnvironmentSelector = sysbvm_symbol_internWithCString(context, "analyzeUnexpandedApplicationNode:withEnvironment:");
 
     context->roots.coerceASTNodeWithEnvironmentSelector = sysbvm_symbol_internWithCString(context, "coerceASTNode:withEnvironment:");
     context->roots.analyzeAndTypeCheckFunctionApplicationNodeWithEnvironmentSelector = sysbvm_symbol_internWithCString(context, "analyzeAndTypeCheckFunctionApplicationNode:withEnvironment:");
@@ -926,8 +928,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "applicationFlags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         NULL);
     context->roots.astLambdaNodeType = sysbvm_context_createIntrinsicClass(context, "ASTLambdaNode", context->roots.astNodeType,
-        "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
         "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         "arguments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "resultType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "body", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,

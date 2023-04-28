@@ -1304,17 +1304,29 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveAnalyze(sysbvm_context_t *co
 
     struct {
         sysbvm_astLambdaNode_t *lambdaNode;
+        sysbvm_tuple_t analyzedNameExpression;
         sysbvm_tuple_t argumentNode;
         sysbvm_tuple_t argumentCount;
         sysbvm_functionDefinition_t *functionDefinition;
         sysbvm_tuple_t capturelessFunction;
         sysbvm_tuple_t capturelessLiteral;
+        sysbvm_tuple_t localBinding;
+        sysbvm_tuple_t name;
     } gcFrame = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     gcFrame.lambdaNode = (sysbvm_astLambdaNode_t*)sysbvm_context_shallowCopy(context, *node);
     gcFrame.lambdaNode->super.analyzerToken = sysbvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
     SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.lambdaNode->super.sourcePosition);
+
+    if(gcFrame.lambdaNode->name)
+    {
+        gcFrame.analyzedNameExpression = sysbvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.lambdaNode->name, context->roots.symbolType, *environment);
+        gcFrame.lambdaNode->name = gcFrame.analyzedNameExpression;
+        if(!sysbvm_astNode_isLiteralNode(context, gcFrame.analyzedNameExpression))
+            sysbvm_error("Local lambda analyzed name must be a literal node.");
+        gcFrame.name = sysbvm_astLiteralNode_getValue(gcFrame.analyzedNameExpression);
+    }
 
     // Count the actual argument count.
     size_t lambdaArgumentCount = 0;
@@ -1347,9 +1359,18 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveAnalyze(sysbvm_context_t *co
     {
         gcFrame.capturelessFunction = sysbvm_function_createClosureWithCaptureVector(context, (sysbvm_tuple_t)gcFrame.functionDefinition, sysbvm_array_create(context, 0));
         gcFrame.capturelessLiteral = sysbvm_astLiteralNode_create(context, gcFrame.lambdaNode->super.sourcePosition, gcFrame.capturelessFunction);
+        if(gcFrame.name)
+            gcFrame.localBinding = sysbvm_analysisEnvironment_setNewValueBinding(context, *environment, gcFrame.lambdaNode->super.sourcePosition, gcFrame.name, gcFrame.capturelessFunction);
+
         SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
         SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
         return gcFrame.capturelessLiteral;
+    }
+
+    if(gcFrame.name)
+    {
+        gcFrame.localBinding = sysbvm_analysisEnvironment_setNewSymbolLocalBinding(context, *environment, gcFrame.lambdaNode->super.sourcePosition, gcFrame.name, gcFrame.lambdaNode->super.analyzedType);
+        gcFrame.lambdaNode->binding = gcFrame.localBinding;
     }
 
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
@@ -1377,7 +1398,10 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveEvaluate(sysbvm_context_t *c
         sysbvm_array_atPut(captureVector, i, captureValue);
     }
 
-    return sysbvm_function_createClosureWithCaptureVector(context, (*lambdaNode)->functionDefinition, captureVector);
+    sysbvm_tuple_t lambdaClosure = sysbvm_function_createClosureWithCaptureVector(context, (*lambdaNode)->functionDefinition, captureVector);
+    if((*lambdaNode)->binding)
+        sysbvm_functionActivationEnvironment_setBindingActivationValue(context, *environment, (*lambdaNode)->binding, lambdaClosure, (*lambdaNode)->super.sourcePosition);
+    return lambdaClosure;
 }
 
 static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveAnalyzeAndEvaluate(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -1397,6 +1421,7 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveAnalyzeAndEvaluate(sysbvm_co
         sysbvm_tuple_t captureBinding;
         sysbvm_tuple_t captureValue;
         sysbvm_tuple_t closure;
+        sysbvm_tuple_t name;
     } gcFrame = {0};
 
     sysbvm_astLambdaNode_t **lambdaNode = (sysbvm_astLambdaNode_t**)node;
@@ -1439,6 +1464,13 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveAnalyzeAndEvaluate(sysbvm_co
         sysbvm_functionDefinition_ensureTypeAnalysis(context, &gcFrame.functionDefinition);
         gcFrame.closure = sysbvm_function_createClosureWithCaptureEnvironment(context, (sysbvm_tuple_t)gcFrame.functionDefinition, *environment);
         sysbvm_environment_enqueuePendingAnalysis(context, *environment, gcFrame.closure);
+    }
+
+    if((*lambdaNode)->name)
+    {
+        gcFrame.name = sysbvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*lambdaNode)->name, *environment);
+        if(gcFrame.name)
+            sysbvm_environment_setNewSymbolBindingWithValueAtSourcePosition(context, *environment, gcFrame.name, gcFrame.closure, (*lambdaNode)->super.sourcePosition);
     }
 
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
@@ -2161,14 +2193,30 @@ static sysbvm_tuple_t sysbvm_astUnexpandedApplicationNode_primitiveAnalyze(sysbv
 
     struct {
         sysbvm_tuple_t macro;
+        sysbvm_astUnexpandedApplicationNode_t *unexpandedNode;
         sysbvm_tuple_t functionOrMacroExpression;
+        sysbvm_tuple_t functionOrMacroExpressionType;
+        sysbvm_tuple_t analysisFunction;
         sysbvm_tuple_t expansionResult;
         sysbvm_tuple_t applicationNode;
+        sysbvm_tuple_t result;
     } gcFrame = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*unexpandedNode)->super.sourcePosition);
 
     gcFrame.functionOrMacroExpression = sysbvm_interpreter_analyzeASTWithDirectTypeWithEnvironment(context, (*unexpandedNode)->functionOrMacroExpression, *environment);
+    gcFrame.functionOrMacroExpressionType = sysbvm_astNode_getAnalyzedType(gcFrame.functionOrMacroExpression);
+    gcFrame.analysisFunction = sysbvm_type_getAnalyzeUnexpandedApplicationNodeWithEnvironmentFunction(context, sysbvm_tuple_getType(context, gcFrame.functionOrMacroExpressionType));
+    if(gcFrame.analysisFunction)
+    {
+        gcFrame.unexpandedNode = (sysbvm_astUnexpandedApplicationNode_t*)sysbvm_context_shallowCopy(context, (sysbvm_tuple_t)*unexpandedNode);
+        gcFrame.unexpandedNode->functionOrMacroExpression = gcFrame.functionOrMacroExpression;
+
+        gcFrame.result = sysbvm_function_apply3(context, gcFrame.analysisFunction, gcFrame.functionOrMacroExpressionType, (sysbvm_tuple_t)gcFrame.unexpandedNode, *environment);
+        SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+        SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return gcFrame.result;
+    }
 
     // Is this a macro?
     bool isMacro = sysbvm_astNode_isMacroExpression(context, gcFrame.functionOrMacroExpression);
@@ -2202,16 +2250,28 @@ static sysbvm_tuple_t sysbvm_astUnexpandedApplicationNode_primitiveAnalyzeAndEva
 
     struct {
         sysbvm_tuple_t functionOrMacro;
+        sysbvm_tuple_t functionOrMacroExpressionType;
+        sysbvm_tuple_t analysisFunction;
         sysbvm_tuple_t expansionResult;
         sysbvm_tuple_t argumentNode;
         sysbvm_tuple_t argument;
+        sysbvm_tuple_t result;
     } gcFrame = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*unexpandedNode)->super.sourcePosition);
 
     gcFrame.functionOrMacro = sysbvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*unexpandedNode)->functionOrMacroExpression, *environment);
-    bool isMacro = sysbvm_function_isMacro(context, gcFrame.functionOrMacro);
+    gcFrame.functionOrMacroExpressionType = sysbvm_tuple_getType(context, gcFrame.functionOrMacro);
+    gcFrame.analysisFunction = sysbvm_type_getAnalyzeAndEvaluateUnexpandedApplicationNodeOfWithEnvironmentFunction(context, sysbvm_tuple_getType(context, gcFrame.functionOrMacroExpressionType));
+    if(gcFrame.analysisFunction)
+    {
+        gcFrame.result = sysbvm_function_apply4(context, gcFrame.analysisFunction, gcFrame.functionOrMacroExpressionType, (sysbvm_tuple_t)*unexpandedNode, gcFrame.functionOrMacro, *environment);
+        SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+        SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return gcFrame.result;
+    }
 
+    bool isMacro = sysbvm_function_isMacro(context, gcFrame.functionOrMacro);
     if(isMacro)
     {
         gcFrame.expansionResult = sysbvm_astUnexpandedApplicationNode_expandNodeWithMacro(context, node, &gcFrame.functionOrMacro, environment);

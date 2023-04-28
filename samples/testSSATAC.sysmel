@@ -1,10 +1,10 @@
 let compilationTarget := AsmCompilationTarget x86_64 useElf asTacCompilationTarget.
 
-public global myAddFunction := {:(Int32)x :(Int32)y :: Int32 | x + y }.
+public function myAddFunction(x: Int32, y: Int32) => Int32
+    := x + y.
 
-public global main := {:: Int32 |
-    myAddFunction(2i32, 3i32)
-}.
+public function main() => Int32
+    := myAddFunction(2i32, 3i32).
 
 let ssaModule := main asSSAModule.
 printLine(ssaModule fullPrintString).
