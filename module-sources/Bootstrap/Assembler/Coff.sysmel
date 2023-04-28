@@ -1,0 +1,42 @@
+public global Coff::ImageFileMachine::AMD64 := 16r8664 u16.
+public global Coff::ImageFileMachine::I386 := 16r14c u16.
+
+## TODO: Use packed structs here!!!
+public struct Coff::Header definition: {
+    public field machine => UInt16.
+    public field numberOfSections => UInt16.
+    public field timestamp => UInt32.
+    public field pointerToSymbol => UInt32.
+    public field numberOfSymbols => UInt32.
+    public field optionalHeaderSize => UInt16.
+    public field characteristics => UInt16.
+}.
+
+
+public struct Coff::SectionHeader definition: {
+    ##public field name => Char[8].
+    public field virtualSize => UInt32.
+    public field virtualAddress => UInt32.
+    public field sizeOfRawData => UInt32.
+    public field pointerToRawData => UInt32.
+    public field pointerToRelocations => UInt32.
+    public field pointerToLinenumbers => UInt32.
+    public field numberOfRelocations => UInt16.
+    public field numberOfLinenumbers => UInt16.
+    public field characteristics => UInt32.
+}.
+
+public struct Coff::Symbol definition: {
+    ##public field name => Char[8].
+    public field value => UInt32.
+    public field sectionNumber => UInt16.
+    public field type => UInt16.
+    public field storageClass => UInt8.
+    public field numberOfAuxSymbols => UInt8.
+}.
+
+public struct Coff::Relocation definition: {
+    public field virtualAddress => UInt32.
+    public field symbolTableIndex => UInt32.
+    public field type => UInt16.
+}.
