@@ -88,10 +88,15 @@ public class AsmImmediate superclass: AsmInstructionOperand; definition: {
     public method isImmediate => Boolean := true.
 }.
 
+public global AsmSymbol::PICMode::None := 0u8.
+public global AsmSymbol::PICMode::GOT := 1u8.
+public global AsmSymbol::PICMode::PLT := 2u8.
+
 public final class AsmImmediateSymbolWithAddend superclass: AsmImmediate; definition: {
     public field symbol => AsmSymbol.
     public field size => Size.
     public field addend => Int64.
+    public field picMode => UInt8.
 
     public method isImmediateSymbolWithAddend => Boolean := true.
 
@@ -130,12 +135,41 @@ public final class AsmImmediateSymbolWithAddend superclass: AsmImmediate; defini
     }.
 
     public override method nextPutIPRelativeI32WithExtraOffset: (extraOffset: Int32) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
-        codeStream
-            recordRelocation: (AsmObjectCodeRelocationRelativeInt32 new
+        self isAtPLT ifTrue: {
+            codeStream recordRelocation: (AsmObjectCodeRelocationRelativeInt32AtPLT new
                 symbol: symbol;
                 addend: addend asInt32 - extraOffset;
-                yourself);
-            nextPutUInt32: 0u32
+                yourself)
+        } ifFalse: {
+            self isAtGOT ifTrue: {
+                codeStream recordRelocation: (AsmObjectCodeRelocationRelativeInt32AtGOT new
+                    symbol: symbol;
+                    addend: addend asInt32 - extraOffset;
+                    yourself)
+            } ifFalse: {
+                codeStream recordRelocation: (AsmObjectCodeRelocationRelativeInt32 new
+                    symbol: symbol;
+                    addend: addend asInt32 - extraOffset;
+                    yourself)
+            }.
+        }.
+
+        codeStream nextPutUInt32: 0u32
+
+    }.
+
+    public method isAtGOT => Boolean
+        := picMode = AsmSymbol::PICMode::GOT.
+
+    public method makeAtGOT => Void :={
+        picMode := AsmSymbol::PICMode::GOT
+    }.
+
+    public method isAtPLT => Boolean
+        :=  picMode = AsmSymbol::PICMode::PLT.
+
+    public method makeAtPLT => Void :={
+        picMode := AsmSymbol::PICMode::PLT
     }.
 }.
 

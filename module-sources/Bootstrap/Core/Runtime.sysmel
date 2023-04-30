@@ -2189,6 +2189,9 @@ Type
     } makePure;
     withSelector: #pointer addMethod: {:(Type)self :: PointerType |
         self pointerFor: AnyValue
+    } makePure;
+    withSelector: #const addMethod: {:(Type)self :: Type |
+        self
     } makePure.
 
 ReferenceType

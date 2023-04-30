@@ -17,6 +17,12 @@ TACPhysicalLocation extend: {
     public virtual method x86::rel32OrInt64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 relative32 immediate or int64 register".
 
+    public virtual method x86::relCall32OrInt32For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := self error: "Not a x86 relativeCall32 immediate or int32 register".
+
+    public virtual method x86::relCall32OrInt64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := self error: "Not a x86 relativeCall32 immediate or int64 register".
+
     public virtual method x86::loadFromLocal: (local: TACLocalVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
         := self shouldBeImplemented.
 
@@ -42,6 +48,12 @@ TACPhysicalLocationImmediate extend: {
 
     public override method x86::rel32OrInt64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
         := value asm::immediate32For: codegen.
+
+    public override method x86::relCall32OrInt32For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := value asm::immediateCall32For: codegen.
+
+    public override method x86::relCall32OrInt64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := value asm::immediateCall32For: codegen.
 }.
 
 public final class TACX86IntegerRegister superclass: TACPhysicalIntegerRegister; definition: {
@@ -107,6 +119,10 @@ public final class TACX86_64IntegerRegister superclass: TACPhysicalIntegerRegist
     public override method x86::int64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand := int64.
 
     public override method x86::rel32OrInt64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := int64.
+    public override method x86::relCall32OrInt32For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := int32.
+    public override method x86::relCall32OrInt64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
         := int64.
 
     __Meta__ definition: {
@@ -433,7 +449,7 @@ public final class TACSysVX86_64CallingConvention superclass: TACCallingConventi
         }.
 
         ## Perform the call.
-        codegen textSection x86::call: (instruction firstOperandRegister x86::rel32OrInt64For: codegen).
+        codegen textSection x86::call: (instruction firstOperandRegister x86::relCall32OrInt64For: codegen).
 
         ## Clear the stack arguments.
         alignedStackSize > 0u64 ifTrue: {
@@ -694,11 +710,11 @@ TAC::Operation::Branch
     forTargets: #(x86 x86_64) registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
         allocator allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz
     };
-    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
-        codegen textSection x86::jmp: (instruction firstOperandRegister x86::rel32OrInt32For: codegen)
+    forTarget: #x86 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::jmp: (instruction firstOperandRegister x86::relCall32OrInt32For: codegen)
     };
     forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
-        codegen textSection x86::jmp: (instruction firstOperandRegister x86::rel32OrInt64For: codegen)
+        codegen textSection x86::jmp: (instruction firstOperandRegister x86::relCall32OrInt64For: codegen)
     }.
 
 TAC::Operation::CallInt32

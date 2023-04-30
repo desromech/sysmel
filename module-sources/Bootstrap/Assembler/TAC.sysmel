@@ -340,6 +340,9 @@ TACValue definition: {
     public virtual method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not an immediate 32 value.".
 
+    public virtual method asm::immediateCall32For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := self asm::immediate32For: codegen.
+
     public virtual method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not an immediate 64 value.".
 }.
@@ -368,6 +371,9 @@ TACImportedProgramEntity definition: {
     public override method generateAssemblyWith: (moduleGenerator: TACModuleAsmCodeGenerator) symbol: (symbol: AsmSymbol) ::=> Void := {
         moduleGenerator targetModule addImportedSymbol: symbol
     }.
+
+    public virtual method asm::immediateCall32For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := (codegen symbolForProgramEntity: self) dword makeAtPLT; yourself.
 }.
 
 

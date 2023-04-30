@@ -414,6 +414,20 @@ public final class AsmObjectCodeRelocationRelativeInt32 superclass: AsmObjectCod
         := targetSection data int32At: offset put: addend.
 }.
 
+public final class AsmObjectCodeRelocationRelativeInt32AtPLT superclass: AsmObjectCodeRelocation; definition: {
+    public field addend => Int32.
+
+    public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) ::=> Void
+        := targetSection data int32At: offset put: addend.
+}.
+
+public final class AsmObjectCodeRelocationRelativeInt32AtGOT superclass: AsmObjectCodeRelocation; definition: {
+    public field addend => Int32.
+
+    public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) ::=> Void
+        := targetSection data int32At: offset put: addend.
+}.
+
 public final class AsmObjectCodeRelocationRelativeInt64 superclass: AsmObjectCodeRelocation; definition: {
     public field addend => Int64.
 }.

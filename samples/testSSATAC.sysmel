@@ -1,5 +1,9 @@
 let compilationTarget := AsmCompilationTarget x86_64 useElf asTacCompilationTarget.
 
+public function write(fd: Int32, buf: Void const pointer, count: Size)
+    := error("Cannot call external function.").
+write importWithSymbol: #write.
+
 public function malloc(size: Size) => Void pointer
     := error("Cannot call external function.").
 
