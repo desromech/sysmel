@@ -856,10 +856,12 @@ public final class AsmProgramEntity superclass: Object; definition: {
     public field name => Symbol.
     public field streams => OrderedCollection.
     public field children => OrderedCollection.
+    public field importedSymbols => OrderedCollection.
 
     public method initialize => Void := {
         streams := OrderedCollection new.
         children := OrderedCollection new.
+        importedSymbols := OrderedCollection new.
     }.
 
     public method newStreamBuilder => AsmStreamBuilder := {
@@ -878,6 +880,10 @@ public final class AsmProgramEntity superclass: Object; definition: {
             yourself.
         children add: entity.
         entity
+    }.
+
+    public method addImportedSymbol: (symbol: AsmSymbol) ::=> Void := {
+        importedSymbols add: symbol
     }.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
@@ -923,6 +929,7 @@ public final class AsmProgramEntity superclass: Object; definition: {
     public method assemble => AsmObjectCode := {
         let objectCodeBuilder := AsmObjectCodeBuilder new
             compilationTarget: compilationTarget;
+            addImportedSymbols: importedSymbols;
             yourself.
 
         self prepareToAssemble.

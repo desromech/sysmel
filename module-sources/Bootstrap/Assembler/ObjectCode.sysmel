@@ -328,6 +328,10 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
         symbols := OrderedCollection new.
     }.
 
+    public method addImportedSymbols: (importedSymbols: Collection) ::=> Void := {
+        symbols addAll: importedSymbols
+    }.
+
     public method recordSymbol: (symbol: AsmSymbol) ::=> Void := {
         ## Filter the symbols by using a set.
         symbols add: symbol

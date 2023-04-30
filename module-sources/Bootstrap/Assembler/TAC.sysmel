@@ -364,6 +364,13 @@ TACProgramEntity definition: {
         := (codegen symbolForProgramEntity: self) qword.
 }.
 
+TACImportedProgramEntity definition: {
+    public override method generateAssemblyWith: (moduleGenerator: TACModuleAsmCodeGenerator) symbol: (symbol: AsmSymbol) ::=> Void := {
+        moduleGenerator targetModule addImportedSymbol: symbol
+    }.
+}.
+
+
 TACFunction definition: {
     public override method generateAssemblySymbolWith: (moduleGenerator: TACModuleAsmCodeGenerator) ::=> AsmSymbol := {
         (super generateAssemblySymbolWith: moduleGenerator)

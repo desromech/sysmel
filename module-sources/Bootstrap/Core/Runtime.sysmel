@@ -2184,10 +2184,10 @@ Type
     withSelector: #ref addMethod: {:(Type)self :: ReferenceType |
         self refFor: AnyValue
     } makePure;
-    withSelector: #pointerFor: addMethod: {:(Type)self :addressSpace :: ReferenceType |
+    withSelector: #pointerFor: addMethod: {:(Type)self :addressSpace :: PointerType |
         PointerTypeTemplate(self, addressSpace)
     } makePure;
-    withSelector: #pointer addMethod: {:(Type)self :addressSpace :: ReferenceType |
+    withSelector: #pointer addMethod: {:(Type)self :: PointerType |
         self pointerFor: AnyValue
     } makePure.
 
@@ -2363,10 +2363,10 @@ FunctionDefinition
         let: #annotations with: self annotations.
         if: annotations == nil then: nil else: (annotations atOrNil: key)
     };
-    withSelector: #importSymbol: addMethod: {:(FunctionDefinition)self :(Symbol)symbol :: Void |
+    withSelector: #importWithSymbol: addMethod: {:(FunctionDefinition)self :(Symbol)symbol :: Void |
         (self annotationAt: #importedSymbols ifAbsentPut: {| OrderedCollection new }) add: symbol
     };
-    withSelector: #importedSymbolAlternatives addMethod: {:(FunctionDefinition)self :: SequenceableCollection |
+    withSelector: #importedSymbols addMethod: {:(FunctionDefinition)self :: SequenceableCollection |
         self annotationAt: #importedSymbols ifAbsent: {| #() }.
     }.
 
@@ -2397,6 +2397,9 @@ Function
     withSelector: #annotationAtOrNil: addMethod: {:(Function)self :key |
         let: #annotations with: self annotations.
         if: annotations == nil then: nil else: (annotations atOrNil: key)
+    };
+    withSelector: #importWithSymbol: addMethod: {:(Function)self :(Symbol)symbol :: Void |
+        self definition importWithSymbol: symbol
     };
     withSelector: #exportWithSymbol: addMethod: {:(Function)self :(Symbol)symbol :: Void |
         (self annotationAt: #exportedSymbols ifAbsentPut: {| OrderedCollection new }) add: symbol
@@ -2591,6 +2594,12 @@ Type
     };
     withSelector: #isGarbageCollectedPointerType addMethod: {:(Type)self :: Boolean | true };
     withSelector: #isValueType addMethod: {:(Type)self :: Boolean | false }.
+
+PointerLikeType
+    withSelector: #computeLayout addMethod: {:(Type)self :: Void |
+        self instanceSize: UIntPointer valueSize.
+        self instanceAlignment: UIntPointer valueAlignment.
+    }.
 
 ValueType
     withSelector: #valueSize addMethod: {:(ValueType)self :: Size |

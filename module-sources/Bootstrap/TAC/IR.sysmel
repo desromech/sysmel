@@ -149,6 +149,27 @@ public abstract class TACProgramEntity superclass: TACValue; definition: {
     public override method isProgramEntity => Boolean := true.
 }.
 
+public abstract class TACImportedProgramEntity superclass: TACProgramEntity; definition: {
+    public field alternativeSymbols => Array.
+
+    public override method physicalLocationClass => TACPhysicalLocation class
+        := TACPhysicalIntegerRegister.
+}.
+
+public final class TACImportedVariable superclass: TACImportedProgramEntity; definition: {
+    public field type => Type.
+    public field size => UInt64.
+    public field alignment => UInt64.
+    public field physicalLocationClass => TACPhysicalLocation class.
+}.
+
+public final class TACImportedFunction superclass: TACImportedProgramEntity; definition: {
+    public override method physicalLocationClass => TACPhysicalLocation class
+        := TACPhysicalIntegerRegister.
+
+    public override method isRelativeImmediate32 => Boolean := true.
+}.
+
 public abstract class TACVariable superclass: TACProgramEntity; definition: {
     public field type => Type.
     public field size => UInt64.
@@ -943,7 +964,7 @@ public final class TACBlockBuilder superclass: Object; definition: {
         := self callFloat64: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
 
     public method callVoid: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) ::=> TACInstruction
-        := self call: function operation: TAC::Operation::CallInt64 convention: self compilationTarget defaultCallingConvention arguments: arguments result: nil.
+        := self call: function operation: TAC::Operation::CallVoid convention: self compilationTarget defaultCallingConvention arguments: arguments result: nil.
 
     public method callVoid: (function: TACValue) arguments: (arguments: Array) ::=> TACInstruction
         := self callVoid: function convention: self compilationTarget defaultCallingConvention arguments: arguments.

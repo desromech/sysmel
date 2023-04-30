@@ -322,6 +322,8 @@ static sysbvm_tuple_t sysbvm_type_doCreatePointerType(sysbvm_context_t *context,
     gcFrame.result->super.super.super.flags = sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_POINTER_TYPE_FLAGS);
     gcFrame.result->super.super.super.totalSlotCount = sysbvm_tuple_size_encode(context, 0);
     gcFrame.result->super.super.super.supertype = context->roots.anyPointerType;
+    gcFrame.result->super.super.super.instanceAlignment = sysbvm_tuple_size_encode(context, context->targetWordSize);
+    gcFrame.result->super.super.super.instanceSize = sysbvm_tuple_size_encode(context, context->targetWordSize);
     gcFrame.result->super.baseType = gcFrame.baseType;
     gcFrame.result->super.addressSpace = gcFrame.addressSpace;
 
@@ -359,6 +361,8 @@ static sysbvm_tuple_t sysbvm_type_doCreateReferenceType(sysbvm_context_t *contex
     gcFrame.result->super.super.super.flags = sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_REFERENCE_TYPE_FLAGS);
     gcFrame.result->super.super.super.totalSlotCount = sysbvm_tuple_size_encode(context, 0);
     gcFrame.result->super.super.super.supertype = context->roots.anyReferenceType;
+    gcFrame.result->super.super.super.instanceAlignment = sysbvm_tuple_size_encode(context, context->targetWordSize);
+    gcFrame.result->super.super.super.instanceSize = sysbvm_tuple_size_encode(context, context->targetWordSize);
     gcFrame.result->super.baseType = gcFrame.baseType;
     gcFrame.result->super.addressSpace = gcFrame.addressSpace;
 

@@ -163,6 +163,16 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
             object: object;
             type: compilationTarget uintPointerType;
             yourself.
+
+    public method importProgramEntityWithSymbols: (importedSymbolAlternatives: Array) ::=> TACImportedProgramEntity := {
+        let importedEntity := TACImportedFunction new
+            name: importedSymbolAlternatives first;
+            compilationTarget: compilationTarget;
+            alternativeSymbols: importedSymbolAlternatives;
+            yourself.
+        targetModule addProgramEntity: importedEntity.
+        importedEntity
+    }.
 }.
 
 public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeGenerator; definition: {
@@ -251,7 +261,29 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
         }.
     }.
 
+    public method compileImportedDefinition => Void := {
+        self declareArguments.
+        
+        let importedFunction := moduleCodeGenerator importProgramEntityWithSymbols: ssaFunctionDefinition importedSymbols.
+        let passedArguments := tacFunction arguments allButFirst.
+        functionBuilder basicBlock: #ffiCall build: {:(TACBlockBuilder)asm :: Void |
+            let callArguments := tacFunction arguments allButFirst.
+
+            let canonicalResultType := ssaFunctionDefinition functionType canonicalResultType.
+            let result := canonicalResultType makeTacTemporaryValueNamed: #result withFunctionBuilder: functionBuilder.
+            canonicalResultType emitTacCall: importedFunction convention: moduleCodeGenerator compilationTarget defaultCallingConvention
+                withArguments: callArguments into: result withBlockBuilder: asm.
+
+            canonicalResultType emitTacReturn: result withBlockBuilder: asm
+        }.
+    }.
+
     public method compileDefinition => Void := {
+        ssaFunctionDefinition importedSymbols size > 0sz ifTrue: {
+            self compileImportedDefinition.
+            return: void.
+        }.
+
         ## SSA must be destroyed before compiling.
         SSADestroySSAFunctionPass runIn: ssaFunctionDefinition.
 
@@ -371,6 +403,10 @@ Type extend: {
 }.
 
 Char8 __type__ extend: {
+    public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder callInt32: function convention: callingConvention arguments: arguments result: result
+    }.
+
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
     }.
@@ -380,6 +416,10 @@ Char8 __type__ extend: {
 }.
 
 Int8 __type__ extend: {
+    public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder callInt32: function convention: callingConvention arguments: arguments result: result
+    }.
+
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
     }.
@@ -389,6 +429,10 @@ Int8 __type__ extend: {
 }.
 
 UInt8 __type__ extend: {
+    public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder callInt32: function convention: callingConvention arguments: arguments result: result
+    }.
+
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
     }.
@@ -398,6 +442,10 @@ UInt8 __type__ extend: {
 }.
 
 Char16 __type__ extend: {
+    public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder callInt32: function convention: callingConvention arguments: arguments result: result
+    }.
+
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
     }.
@@ -407,6 +455,10 @@ Char16 __type__ extend: {
 }.
 
 Int16 __type__ extend: {
+    public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder callInt32: function convention: callingConvention arguments: arguments result: result
+    }.
+
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
     }.
@@ -416,6 +468,10 @@ Int16 __type__ extend: {
 }.
 
 UInt16 __type__ extend: {
+    public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder callInt32: function convention: callingConvention arguments: arguments result: result
+    }.
+
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
     }.
@@ -425,6 +481,10 @@ UInt16 __type__ extend: {
 }.
 
 Char32 __type__ extend: {
+    public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder callInt32: function convention: callingConvention arguments: arguments result: result
+    }.
+
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
     }.
@@ -434,6 +494,10 @@ Char32 __type__ extend: {
 }.
 
 Int32 __type__ extend: {
+    public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder callInt32: function convention: callingConvention arguments: arguments result: result
+    }.
+
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
     }.
@@ -443,6 +507,10 @@ Int32 __type__ extend: {
 }.
 
 UInt32 __type__ extend: {
+    public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder callInt32: function convention: callingConvention arguments: arguments result: result
+    }.
+
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
     }.
@@ -452,6 +520,10 @@ UInt32 __type__ extend: {
 }.
 
 Int64 __type__ extend: {
+    public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder callInt64: function convention: callingConvention arguments: arguments result: result
+    }.
+
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt64: value
     }.
@@ -461,6 +533,10 @@ Int64 __type__ extend: {
 }.
 
 UInt64 __type__ extend: {
+    public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder callInt64: function convention: callingConvention arguments: arguments result: result
+    }.
+
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt64: value
     }.
@@ -470,6 +546,10 @@ UInt64 __type__ extend: {
 }.
 
 Float32 __type__ extend: {
+    public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder callFloat32: function convention: callingConvention arguments: arguments result: result
+    }.
+
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnFloat32: value
     }.
@@ -479,6 +559,10 @@ Float32 __type__ extend: {
 }.
 
 Float64 __type__ extend: {
+    public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder callFloat64: function convention: callingConvention arguments: arguments result: result
+    }.
+
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnFloat64: value
     }.
@@ -488,6 +572,10 @@ Float64 __type__ extend: {
 }.
 
 Void __type__ extend: {
+    public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder callVoid: function convention: callingConvention arguments: arguments
+    }.
+
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnVoid
     }.

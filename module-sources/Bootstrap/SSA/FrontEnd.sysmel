@@ -46,11 +46,13 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
                 sourceObject: functionDefinition;
                 name: functionDefinition programEntityQualifiedNameSymbol;
                 functionType: functionDefinition analyzedType;
+                importedSymbols: functionDefinition importedSymbols asArray;
                 yourself.
 
             ssaModule addGlobalValue: translatedValue.
             translatedValueDictionary at: functionDefinition put: translatedValue.
 
+            ## TODO: Add options for controlling this.
             SSAFunctionCompilationContext new
                 moduleCompilationContext: self;
                 compileFunctionDefinition: functionDefinition into: translatedValue.
@@ -123,15 +125,17 @@ public final class SSAFunctionCompilationContext superclass: Object; definition:
                 self generateCaptureForBinding: captureBinding
             }) asArray.
 
-        functionDefinition analyzedBodyNode ifNotNil: {:bodyNode |
-            self builder: (SSAInstructionBuilder new
-                sourcePosition: bodyNode sourcePosition;
-                function: ssaFunction;
-                beginBasicBlockNamed: #entry;
-                yourself).
-            
-            let resultValue := bodyNode generateSSAValueWith: self.
-            self builder isLastTerminator ifFalse: (self builder return: resultValue).
+        functionDefinition importedSymbols size = 0sz ifTrue: {
+            functionDefinition analyzedBodyNode ifNotNil: {:bodyNode |
+                self builder: (SSAInstructionBuilder new
+                    sourcePosition: bodyNode sourcePosition;
+                    function: ssaFunction;
+                    beginBasicBlockNamed: #entry;
+                    yourself).
+                
+                let resultValue := bodyNode generateSSAValueWith: self.
+                self builder isLastTerminator ifFalse: (self builder return: resultValue).
+            }.
         }.
     }.
 
