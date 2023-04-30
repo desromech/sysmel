@@ -6,6 +6,8 @@ public function myAddFunction(x: Int32, y: Int32) => Int32
 public function main() => Int32
     := myAddFunction(2i32, 3i32).
 
+main exportWithSymbol: #main.
+
 let ssaModule := main asSSAModule.
 printLine(ssaModule fullPrintString).
 

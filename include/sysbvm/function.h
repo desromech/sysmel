@@ -51,9 +51,8 @@ typedef struct sysbvm_function_s
     sysbvm_tuple_t definition;
     sysbvm_tuple_t primitiveTableIndex;
     sysbvm_tuple_t primitiveName;
-    sysbvm_tuple_t nativeUserdata;
-    sysbvm_tuple_t nativeEntryPoint;
     sysbvm_tuple_t memoizationTable;
+    sysbvm_tuple_t annotations;
 } sysbvm_function_t;
 
 typedef struct sysbvm_functionDefinition_s
@@ -84,6 +83,9 @@ typedef struct sysbvm_functionDefinition_s
     sysbvm_tuple_t analyzedBodyNode;
 
     sysbvm_tuple_t bytecode;
+    sysbvm_tuple_t uncheckedEntryPoint;
+    sysbvm_tuple_t checkedEntryPoint;
+    sysbvm_tuple_t annotations;
 } sysbvm_functionDefinition_t;
 
 #define SYSBVM_MAX_FUNCTION_ARGUMENTS 16

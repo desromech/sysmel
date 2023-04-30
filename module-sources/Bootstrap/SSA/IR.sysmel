@@ -117,10 +117,12 @@ SSAFunction definition: {
     public field captures => Array.
     public field definition => SSAFunctionDefinition.
     public field primitiveName => Symbol.
+    public field exportedSymbols => Array.
 
     public method initialize => Void := {
         super initialize.
         captures := #().
+        exportedSymbols := #().
     }.
 
     public method asSSAFunctionDefinitionOrNil => SSAFunctionDefinition := definition.

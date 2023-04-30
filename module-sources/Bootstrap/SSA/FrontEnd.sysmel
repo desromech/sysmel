@@ -25,6 +25,7 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
                 sourceObject: function;
                 name: function programEntityQualifiedNameSymbol;
                 primitiveName: function primitiveName;
+                exportedSymbols: function exportedSymbols asArray;
                 yourself.
 
             ssaModule addGlobalValue: translatedValue.

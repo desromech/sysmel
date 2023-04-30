@@ -17,7 +17,6 @@
 
 static bool sysbvm_primitiveTableIsComputed = false;
 static uint32_t sysbvm_primitiveTableSize = 0;
-static bool sysbvm_checkPrimitivesArePresentInTable = true;
 static bool sysbvm_function_useBytecodeInterpreter = true;
 
 typedef struct sysbvm_primitiveTableEntry_s
@@ -94,12 +93,6 @@ SYSBVM_API sysbvm_tuple_t sysbvm_function_createPrimitive(sysbvm_context_t *cont
         const char *primitiveName = sysbvm_primitiveTable[primitiveEntryIndex].name;
         if(primitiveName)
             result->primitiveName = sysbvm_symbol_internWithCString(context, primitiveName);
-    }
-    else
-    {
-        SYSBVM_ASSERT(!sysbvm_checkPrimitivesArePresentInTable);
-        result->nativeUserdata = sysbvm_tuple_systemHandle_encode(context, (intptr_t)userdata);
-        result->nativeEntryPoint = sysbvm_tuple_systemHandle_encode(context, (intptr_t)entryPoint);
     }
     return (sysbvm_tuple_t)result;
 }
@@ -215,9 +208,6 @@ SYSBVM_API sysbvm_tuple_t sysbvm_ordinaryFunction_directApply(sysbvm_context_t *
         if(primitiveNumber > 0 && primitiveNumber <= sysbvm_primitiveTableSize)
             return sysbvm_ordinaryFunction_nativeApply(context, function, sysbvm_primitiveTable[primitiveNumber - 1].entryPoint, argumentCount, arguments, applicationFlags);
     }
-
-    if(functionObject->nativeEntryPoint)
-        return sysbvm_ordinaryFunction_nativeApply(context, function, (sysbvm_functionEntryPoint_t)(uintptr_t)sysbvm_tuple_systemHandle_decode(functionObject->nativeEntryPoint), argumentCount, arguments, applicationFlags);
     
     if(!functionObject->definition)
         sysbvm_error("Cannot apply a function without a proper definition.");

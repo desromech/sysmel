@@ -698,9 +698,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "definition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
         "primitiveTableIndex", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
         "primitiveName", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
-        "nativeUserdata", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
-        "nativeEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
         "memoizationTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.weakValueDictionaryType,
+        "annotations", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.dictionaryType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionDefinitionType, "FunctionDefinition", SYSBVM_NULL_TUPLE,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
@@ -727,6 +726,9 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "analyzedBodyNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
 
         "bytecode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionBytecodeType,
+        "uncheckedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
+        "checkedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
+        "annotations", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.dictionaryType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionBytecodeType, "FunctionBytecode", SYSBVM_NULL_TUPLE,
         "argumentCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,

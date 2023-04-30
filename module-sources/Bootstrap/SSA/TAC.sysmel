@@ -73,7 +73,19 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
     }.
 
     public method compileFunction: (function: SSAFunction) into: (tacValue: TACValue) ::=> Void := {
+        function exportedSymbols do: {:(Symbol)eachExportedSymbol :: Void |
+            let uncheckedEntryPoint := self translateUncheckedFunctionEntryPoint: function.
+            let exportedEntryPoint := TACFunction new
+                compilationTarget: compilationTarget;
+                callingConvention: compilationTarget defaultCallingConvention;
+                name: eachExportedSymbol;
+                yourself.
+            targetModule addProgramEntity: exportedEntryPoint.
 
+            SSAFunctionDefinitionTACCodeGenerator new
+                moduleCodeGenerator: self;
+                compileFunction: function exportedEntryPoint: exportedEntryPoint into: uncheckedEntryPoint
+        }
     }.
 
     public method declareFunctionDefinition: (functionDefinition: SSAFunctionDefinition) ::=> Void := {
@@ -184,6 +196,29 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
             self compileDefinition.
 
             tacFunction
+        }.
+    }.
+
+    public method compileFunction: (ssaFunction: SSAFunction) exportedEntryPoint: (exportedEntryPoint: TACFunction) into: (uncheckedEntryPoint: TACValue) ::=> Void := {
+        let arguments := ssaFunction definition arguments collect: {:(SSAFunctionArgument)argument :: TACValue |
+            exportedEntryPoint newArgument: argument name withType: argument type.
+        }.
+
+        exportedEntryPoint arguments: arguments.
+
+        exportedEntryPoint build: {:(TACFunctionBuilder)functionBuilder :: Void |
+            self functionBuilder: functionBuilder.
+            functionBuilder basicBlock: #trampoline build: {:(TACBlockBuilder)asm :: Void |
+                let closure := self translateValue: ssaFunction.
+                let callArguments := (Array with: closure) -- arguments.
+
+                let canonicalResultType := ssaFunction definition functionType canonicalResultType.
+                let result := canonicalResultType makeTacTemporaryValueNamed: #result withFunctionBuilder: functionBuilder.
+                canonicalResultType emitTacCall: uncheckedEntryPoint convention: moduleCodeGenerator compilationTarget defaultCallingConvention
+                    withArguments: callArguments into: result withBlockBuilder: asm.
+
+                canonicalResultType emitTacReturn: result withBlockBuilder: asm
+            }.
         }.
     }.
 

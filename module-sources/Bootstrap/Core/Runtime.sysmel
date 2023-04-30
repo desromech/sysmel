@@ -2335,7 +2335,75 @@ SimpleFunctionType
 (Float64 >> #asIEEEFloat64Encoding) __type__: (Float64 => UInt64).
 (UInt64 >> #asIEEEFloat64Decoded) __type__: (UInt64 => Float64).
 
+FunctionDefinition
+    withSelector: #validAnnotations addMethod: {:(FunctionDefinition)self :: Dictionary |
+        let: #annotations with: self annotations.
+        if: annotations == nil then: {
+            self annotations: Dictionary new.
+            self annotations
+        } else: {
+            annotations
+        }
+    };
+    withSelector: #annotationAt:put: addMethod: {:(FunctionDefinition)self :key :value :: Void |
+        self validAnnotations at: key put: value.
+    };
+    withSelector: #annotationAt:ifAbsent: addMethod: {:(FunctionDefinition)self :key :ifAbsentBlock |
+        let: #annotations with: self annotations.
+        if: annotations == nil then: {
+            ifAbsentBlock()
+        } else: {
+            annotations at: key ifAbsent: ifAbsentBlock
+        }
+    };
+    withSelector: #annotationAt:ifAbsentPut: addMethod: {:(FunctionDefinition)self :key :ifAbsentBlock |
+        self validAnnotations at: key ifAbsentPut: ifAbsentBlock.
+    };
+    withSelector: #annotationAtOrNil: addMethod: {:(FunctionDefinition)self :key |
+        let: #annotations with: self annotations.
+        if: annotations == nil then: nil else: (annotations atOrNil: key)
+    };
+    withSelector: #importSymbol: addMethod: {:(FunctionDefinition)self :(Symbol)symbol :: Void |
+        (self annotationAt: #importedSymbols ifAbsentPut: {| OrderedCollection new }) add: symbol
+    };
+    withSelector: #importedSymbolAlternatives addMethod: {:(FunctionDefinition)self :: SequenceableCollection |
+        self annotationAt: #importedSymbols ifAbsent: {| #() }.
+    }.
+
 Function
+    withSelector: #validAnnotations addMethod: {:(Function)self :: Dictionary |
+        let: #annotations with: self annotations.
+        if: annotations == nil then: {
+            self annotations: Dictionary new.
+            self annotations
+        } else: {
+            annotations
+        }
+    };
+    withSelector: #annotationAt:put: addMethod: {:(Function)self :key :value :: Void |
+        self validAnnotations at: key put: value.
+    };
+    withSelector: #annotationAt:ifAbsent: addMethod: {:(Function)self :key :ifAbsentBlock |
+        let: #annotations with: self annotations.
+        if: annotations == nil then: {
+            ifAbsentBlock()
+        } else: {
+            annotations at: key ifAbsent: ifAbsentBlock
+        }
+    };
+    withSelector: #annotationAt:ifAbsentPut: addMethod: {:(Function)self :key :ifAbsentBlock |
+        self validAnnotations at: key ifAbsentPut: ifAbsentBlock.
+    };
+    withSelector: #annotationAtOrNil: addMethod: {:(Function)self :key |
+        let: #annotations with: self annotations.
+        if: annotations == nil then: nil else: (annotations atOrNil: key)
+    };
+    withSelector: #exportWithSymbol: addMethod: {:(Function)self :(Symbol)symbol :: Void |
+        (self annotationAt: #exportedSymbols ifAbsentPut: {| OrderedCollection new }) add: symbol
+    };
+    withSelector: #exportedSymbols addMethod: {:(Function)self :: SequenceableCollection |
+        self annotationAt: #exportedSymbols ifAbsent: {| #() }.
+    };
     withSelector: #timeToRunInNanoseconds addMethod: {:(Function)self :: Int64 |
         let: #startTime with: Time::Timestamp::nanosecondsNow().
         self().
