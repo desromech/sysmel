@@ -39,6 +39,9 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
     public field programEntitySymbolMap => Dictionary.
     public field compiledProgramEntitySymbolMap => Dictionary.
 
+    protected field stringTableList => OrderedCollection.
+    protected field stringTableDictionary => Dictionary.
+
     protected field gcRootObjectTableSymbol => AsmSymbol.
     protected field gcObjectList => OrderedCollection.
     protected field gcObjectOffsetTable => IdentityDictionary.
@@ -48,11 +51,25 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
         compiledProgramEntitySymbolMap := Dictionary new.
         gcObjectList := OrderedCollection new.
         gcObjectOffsetTable := IdentityDictionary new.
+        stringTableList := OrderedCollection new.
+        stringTableDictionary := Dictionary new.
     }.
 
     public override method symbolForProgramEntity: (programEntity: TACProgramEntity) ::=> AsmSymbol := {
         programEntitySymbolMap at: programEntity ifAbsentPut: {:: AsmSymbol |
             programEntity generateAssemblySymbolWith: self
+        }
+    }.
+
+    public method symbolOfStringLiteral: (string: String) nullTerminated: (nullTerminated: Boolean) ::=> AsmSymbol := {
+        let key := Array with: string with: nullTerminated.
+        stringTableDictionary at: key ifAbsentPut: {:: AsmSymbol |
+            let stringSymbol := AsmSymbol new
+                makePrivate;
+                yourself.
+
+            stringTableList add: (Array with: stringSymbol with: key).
+            stringSymbol
         }
     }.
 
@@ -70,7 +87,9 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
             self compileProgramEntity: eachProgramEntity
         }.
 
-        self buildGCObjectDataSection
+        self
+            buildStringLiterals;
+            buildGCObjectDataSection
     }.
 
     public method offsetOfGCRootObjectTableEntryFor: (object: Untyped) ::=> UInt64 := {
@@ -86,6 +105,25 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
             name: #gcRootObjectTable;
             makePrivate;
             yourself)
+    }.
+
+    public method buildStringLiterals => Void := {
+        stringTableList size = 0sz ifTrue: (return: void).
+
+        let stringTable := targetModule newProgramEntity.
+        let stringTableSection := stringTable newStreamBuilder
+            rodataSection;
+            yourself.
+
+        stringTableList do: {:(Array)each :: Void |
+            let symbol := each first.
+            let string => String := each second first.
+            let nullTerminated => Boolean := each second second.
+            stringTableSection
+                label: symbol;
+                string: string nullTerminated: nullTerminated;
+                endLabel: symbol.
+        }
     }.
 
     public method buildGCObjectDataSection => Void := {
@@ -289,6 +327,9 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
             moduleGenerator symbolForProgramEntity: programEntity
         }
     }.
+
+    public method symbolOfStringLiteral: (string: String) nullTerminated: (nullTerminated: Boolean) ::=> AsmSymbol
+        := moduleGenerator symbolOfStringLiteral: string nullTerminated: nullTerminated.
 }.
 
 public final class TACGlobalDataAsmCodeGenerator superclass: TACAsmCodeGenerator; definition: {

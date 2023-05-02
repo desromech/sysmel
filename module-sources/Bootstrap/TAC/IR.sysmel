@@ -283,6 +283,18 @@ public final class TACGenericObjectPointerConstant superclass: TACConstant; defi
     }.
 }.
 
+public final class TACStringLiteralPointerConstant superclass: TACConstant; definition: {
+    public field string => String.
+    public field size => Size.
+    public field alignment => Size.
+    public field type => Type.
+    public field nullTerminated => Boolean.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: "stringLiteralPointerConstant("; print: string; nextPut: ')'
+    }.
+}.
+
 public final class TACConstantInt8 superclass: TACConstantInteger; definition: {
     public field value => Int8.
 

@@ -675,12 +675,22 @@ TACConstantFloat32 extend: {
 }.
 
 TACGenericObjectPointerConstant extend: {
-    public override method x86::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        codegen textSection x86::mov: (register x86::int64For: codegen) src: (codegen x86::pointerForGCRootObjectTableEntryFor: object).
+    public override method x86_64::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: (register x86::int64For: codegen) src: (codegen x86_64::pointerForGCRootObjectTableEntryFor: object).
     }.
 
     public override method x86::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        codegen textSection x86::push: (codegen x86::pointerForGCRootObjectTableEntryFor: object)
+        codegen textSection x86::push: (codegen x86_64::pointerForGCRootObjectTableEntryFor: object)
+    }.
+}.
+
+TACStringLiteralPointerConstant extend: {
+    public override method x86_64::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::lea: (register x86::int64For: codegen) src: (codegen symbolOfStringLiteral: string nullTerminated: nullTerminated) x86::qwordPtr
+    }.
+
+    public override method x86::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::push: (codegen symbolOfStringLiteral: string nullTerminated: nullTerminated) dword
     }.
 }.
 
@@ -688,6 +698,11 @@ TACFunctionAsmCodeGenerator extend: {
     public method x86::pointerForGCRootObjectTableEntryFor: (object: Untyped) ::=> AsmInstructionOperand := {
         let offset := moduleGenerator offsetOfGCRootObjectTableEntryFor: object.
         AsmX86RegisterAddress size: target pointerSize asUInt8 displacement: moduleGenerator gcRootObjectTableSymbol dword + offset asInt64
+    }.
+
+    public method x86_64::pointerForGCRootObjectTableEntryFor: (object: Untyped) ::=> AsmInstructionOperand := {
+        let offset := moduleGenerator offsetOfGCRootObjectTableEntryFor: object.
+        AsmX86RegisterAddress size: target pointerSize asUInt8 displacement: moduleGenerator gcRootObjectTableSymbol qword + offset asInt64
     }.
 }.
 

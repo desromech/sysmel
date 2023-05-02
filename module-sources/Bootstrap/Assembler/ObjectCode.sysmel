@@ -105,6 +105,15 @@ AsmObjectCodeSection definition: {
         writeOffset := writeOffset + 1sz.
     }.
 
+    public method nextPutString: (string: String) ::=> Void := {
+        let i mutable := 0sz.
+        let byteCount := string size.
+        while: i < byteCount do: (
+            data at: writeOffset + i put: (string at: i) asUInt8
+        ) continueWith: (i := i + 1sz).
+        writeOffset := writeOffset + byteCount.
+    }.
+
     public method nextPutAll: (bytes: ByteArray) ::=> Void := {
         let i mutable := 0sz.
         let byteCount := bytes size.
@@ -480,6 +489,9 @@ AsmObjectCodeStream definition: {
     public abstract method nextPutFloat64: (value: Float64) ::=> Void
         := self subclassResponsibility.
 
+    public abstract method nextPutString: (string: String) ::=> Void
+        := self subclassResponsibility.
+
     public abstract method recordSymbol: (symbol: AsmSymbol) ::=> Void
         := self subclassResponsibility.
 
@@ -539,6 +551,10 @@ AsmObjectCodeSizeStream definition: {
         activeSection increaseSizeBy: 8sz
     }.
 
+    public override method nextPutString: (string: String) ::=> Void := {
+        activeSection increaseSizeBy: string size
+    }.
+
     public override method recordSymbol: (symbol: AsmSymbol) ::=> Void := {
         objectCodeBuilder recordSymbol: symbol.
         symbol
@@ -596,6 +612,10 @@ AsmObjectCodeWriteStream definition: {
 
     public override method nextPutFloat64: (value: Float64) ::=> Void := {
         activeSection nextPutFloat64: value
+    }.
+
+    public override method nextPutString: (string: String) ::=> Void := {
+        activeSection nextPutString: string
     }.
 
     public override method nextPutAll: (bytes: ByteArray) ::=> Void := {

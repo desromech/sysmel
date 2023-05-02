@@ -1,15 +1,12 @@
-let compilationTarget := AsmCompilationTarget x86_64 useElf asTacCompilationTarget.
 
-public externC function write(fd: Int32, buf: Void const pointer, count: Size).
-public externC function malloc(size: Size) => Void pointer.
-
-public function myAddFunction(x: Int32, y: Int32) => Int32
-    := x + y.
+public externC function puts(string: Char8 const pointer) => Int32.
 
 public externC function main() => Int32 := {
-    malloc(3sz).
-    myAddFunction(2i32, 3i32).
+    puts("Hello World" asLiteralCString).
+    0i32
 }.
+
+let compilationTarget := AsmCompilationTarget x86_64 useElf asTacCompilationTarget.
 
 let ssaModule := main asSSAModule.
 printLine(ssaModule fullPrintString).

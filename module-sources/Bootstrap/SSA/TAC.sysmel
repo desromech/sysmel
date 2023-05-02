@@ -164,6 +164,15 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
             type: compilationTarget uintPointerType;
             yourself.
 
+    public method translateCStringConstant: (string: String) ::=> TACValue
+        := TACStringLiteralPointerConstant new
+            size: compilationTarget pointerSize;
+            alignment: compilationTarget pointerAlignment;
+            string: string;
+            type: compilationTarget uintPointerType;
+            nullTerminated: true;
+            yourself.
+
     public method importProgramEntityWithSymbols: (importedSymbolAlternatives: Array) ::=> TACImportedProgramEntity := {
         let importedEntity := TACImportedFunction new
             name: importedSymbolAlternatives first;
@@ -400,6 +409,44 @@ Type extend: {
 
     public virtual method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := codegen translateGenericObjectPointer: constant value.
+
+    public virtual method translateSSALiteralConstant: (constant: SSALiteralConstant) pointerType: (pointerType: PointerLikeType) storage: storage base: base offset: (offset: IntPointer) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := codegen translateGenericObjectPointer: constant value.
+}.
+
+String class extend: {
+    public override method translateSSALiteralConstant: (constant: SSALiteralConstant) pointerType: (pointerType: PointerLikeType) storage: storage base: base offset: (offset: IntPointer) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue := {
+        if: (pointerType baseType == Char8 const) && (base == nil) && (offset = 0iptr) then: {
+            codegen translateCStringConstant: storage
+        } else: {
+            super translateSSALiteralConstant: constant pointerType: pointerType storage: storage base: base offset: offset intoTacWith: codegen
+        }.
+    }.
+}.
+
+PointerLikeType extend: {
+    public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue := {
+        let value => Untyped := constant value.
+        let isBytes := RawTuple::isBytes(value).
+        let pointerSize => Size := RawTuple::size(value).
+
+        if: isBytes then: {
+            self error: "TODO: Translate pointer integer value."
+        } else: {
+            let storage := (if: pointerSize >= 1sz then: (RawTuple::slotAt:)(value, 0sz) else: nil).
+            let base := (if: pointerSize >= 2sz then: (RawTuple::slotAt:)(value, 1sz) else: nil).
+            let offset := (if: pointerSize >= 3sz then: (RawTuple::slotAt:)(value, 2sz) else: 0iptr).
+            storage __type__ translateSSALiteralConstant: constant pointerType: self storage: storage base: base offset: offset intoTacWith: codegen
+        }
+    }.
+
+    public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder callPointer: function convention: callingConvention arguments: arguments result: result
+    }.
+
+    public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder returnPointer: value
+    }.
 }.
 
 Char8 __type__ extend: {

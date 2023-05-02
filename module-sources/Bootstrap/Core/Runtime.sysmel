@@ -2182,13 +2182,13 @@ Type
         ReferenceTypeTemplate(self, addressSpace)
     } makePure;
     withSelector: #ref addMethod: {:(Type)self :: ReferenceType |
-        self refFor: AnyValue
+        self refFor: nil
     } makePure;
     withSelector: #pointerFor: addMethod: {:(Type)self :addressSpace :: PointerType |
         PointerTypeTemplate(self, addressSpace)
     } makePure;
     withSelector: #pointer addMethod: {:(Type)self :: PointerType |
-        self pointerFor: AnyValue
+        self pointerFor: nil
     } makePure;
     withSelector: #const addMethod: {:(Type)self :: Type |
         self
@@ -2602,6 +2602,12 @@ PointerLikeType
     withSelector: #computeLayout addMethod: {:(Type)self :: Void |
         self instanceSize: UIntPointer valueSize.
         self instanceAlignment: UIntPointer valueAlignment.
+    };
+    withSelector: #withStorage: addMethod: {:(Type)self :storage :: self |
+        let: #result with: (RawTuple::new(1sz)).
+        (RawTuple::slotAt:put:)(result, 0sz, storage).
+        (RawTuple::type:)(result, self).
+        result
     }.
 
 ValueType

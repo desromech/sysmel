@@ -186,8 +186,7 @@ ASTCoerceValueNode extend: {
         let type := self typeExpression generateSSAValueWith: context.
         let value := self valueExpression generateSSAValueWith: context.
         context builder coerceValue: value into: type type: self analyzedType
-    }.
-        
+    }.        
 }.
 
 ASTContinueNode extend: {
@@ -196,6 +195,14 @@ ASTContinueNode extend: {
         context builder branch: context continueDestination.
         context builder literal: void
     }.
+}.
+
+ASTDownCastNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let type := self typeExpression generateSSAValueWith: context.
+        let value := self valueExpression generateSSAValueWith: context.
+        context builder downCast: value into: type type: self analyzedType
+    }.        
 }.
 
 let primitiveFunctionGenerators := #{

@@ -18,6 +18,9 @@ String extend: {
 
     public method asUppercase => String
         := self collect: {:(Char8)c :: Char8 | c asUppercase }.
+
+    public pure method asLiteralCString => Char8 const pointer
+        := Char8 const pointer withStorage: self.
 }.
 
 UInt8 extend: {

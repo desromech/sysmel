@@ -30,6 +30,7 @@ SSAValue definition: {
     
     public method isInstruction => Boolean := false.
     public method isAllocaInstruction => Boolean := false.
+    public method isDownCastInstruction => Boolean := false.
     public method isPhiInstruction => Boolean := false.
     public method isLoadInstruction => Boolean := false.
     public method isStoreInstruction => Boolean := false.
@@ -864,6 +865,32 @@ public final class SSAConditionalBranchInstruction superclass: SSAInstruction; d
     }.
 }.
 
+public final class SSADownCastInstruction superclass: SSAInstruction; definition: {
+    public field targetType => SSAValue.
+    public field value => SSAValue.
+
+    public method isDownCastInstruction => Boolean := true.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream print: self; nextPutAll: " := downcast "; print: value; nextPutAll: " into "; print: targetType
+    }.
+
+    public method usedValuesDo: aBlock ::=> Void := {
+        aBlock(targetType).
+        aBlock(value).
+    }.
+
+    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        if: targetType = replacedValue then: (targetType := replacement).
+        if: value = replacedValue then: (value := replacement).
+    }.
+
+    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+        replacementDictionary at: self targetType ifPresent: {:(SSAValue)replacement :: Void | self targetType: replacement}.
+        replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
+    }.
+}.
+
 public final class SSALoadInstruction superclass: SSAInstruction; definition: {
     public field storage => SSAValue.
 
@@ -1225,6 +1252,19 @@ SSAInstructionBuilder definition: {
             type: Void;
             registerInUsedValues;
             yourself).
+
+    public method downCast: (value: SSAValue) into: (targetType: SSAValue) type: (type: Type) ::=> SSAValue := {
+        (targetType == nil) || (targetType isLiteralConstant && (value type == (targetType downCastTo: SSALiteralConstant) value)) ifTrue: {
+            value
+        } ifFalse: {
+            self addInstruction: (SSADownCastInstruction new
+                value: value;
+                targetType: targetType;
+                type: type;
+            registerInUsedValues;
+                yourself)
+        }.
+    }.
 
     public method literal: value type: (type: Type) ::=> SSALiteralConstant
         := SSALiteralConstant new

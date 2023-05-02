@@ -749,6 +749,20 @@ public final class AsmDoubleDirective superclass: AsmStreamElement; definition: 
     }.
 }.
 
+public final class AsmStringDirective superclass: AsmStreamElement; definition: {
+    public field value => String.
+    public field nullTerminated => Boolean.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: (nullTerminated ifTrue: ".cstring " ifFalse: ".string "); print: value.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutString: value.
+        nullTerminated ifTrue: (stream nextPut: 0u8).
+    }.
+}.
+
 public final class AsmStreamBuilder superclass: Object; definition: {
     public field stream => AsmStream.
 
@@ -881,6 +895,12 @@ public final class AsmStreamBuilder superclass: Object; definition: {
     public method double: (value: Float64) ::=> AsmDoubleDirective
         := self addElement: (AsmDoubleDirective new
             value: value;
+            yourself).
+
+    public method string: (string: String) nullTerminated: (nullTerminated: Boolean) ::=> AsmStringDirective
+        := self addElement: (AsmStringDirective new
+            value: string;
+            nullTerminated: nullTerminated;
             yourself).
 }.
 
