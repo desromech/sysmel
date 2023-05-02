@@ -559,6 +559,10 @@ void sysbvm_function_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::GetterFlags", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_GETTER_FLAGS));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::SetterFlags", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_SETTER_FLAGS));
 
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::ExternC", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_EXTERN_C));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::DLLImport", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_DLLIMPORT));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::DLLExport", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_DLLEXPORT));
+
     // Export the function application flags.
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionApplicationFlags::None", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_APPLICATION_FLAGS_NONE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionApplicationFlags::NoTypecheck", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK));

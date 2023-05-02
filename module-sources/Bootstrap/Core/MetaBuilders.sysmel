@@ -482,6 +482,8 @@ NamedMetaBuilder publicSubclass: #FunctionMetaBuilder slots: (
     TypeSlot publicNamed: #arguments type: Array
 ).
 
+public: #noFFIAvailableError with: {:: Unwinds | error("FFI is not available for external call. ")}.
+
 FunctionMetaBuilder
     withSelector: #expandUnexpandedApplicationNode: addMethod: {:self :(ASTUnexpandedApplicationNode)unexpandedApplicationNode :: ASTNode |
         if: self arguments == nil then: {
@@ -494,6 +496,9 @@ FunctionMetaBuilder
     };
     withSelector: #addFunctionFlags: addMethod: {:self :(Bitflags)flags :: Void |
         self functionFlags: self functionFlags | flags
+    };
+    withSelector: #isExternC addMethod: {:self :: Boolean |
+        (self functionFlags & FunctionFlags::ExternC) ~= 0bflgs
     };
     withSelector: #":=" addMethod: {:self :(ASTNode)bodyNode :: ASTNode |
         <metaBuilder>
@@ -522,25 +527,41 @@ FunctionMetaBuilder
             resultType: self resultType;
             yourself
     };
+    withSelector: #expansionBody addMethod: {:self  :: ASTNode |
+        let: #body with: self body.
+        if: body ~~ nil then: {
+            body
+        } else: {
+            if: self isExternC
+                then: `'(noFFIAvailableError())
+                else: nil
+        }
+    };
     withSelector: #finishFunctionExpansion addMethod: {:self :: ASTNode |
         ASTLambdaNode new
             sourcePosition: self sourcePosition;
             flags: self functionFlags;
             name: self name;
             arguments: self arguments;
-            body: self body;
+            body: self expansionBody;
             resultType: self resultType;
             yourself
     };
     withSelector: #finishExpansionWithEnvironment: addMethod: {:self :(Environment)environment :: ASTNode |
+        let: #name with: self name.
         let: #functionNode with: (if: self isMacro
             then: self finishMacroFunction
             else: self finishFunctionExpansion).
-            
-        if: self isPublic then: {
-            ``(public: `,(self name) with: `,functionNode)
+        let: #exportNode with: (if: self isPublic
+            then: ``(public: `,(self name) with: `,functionNode)
+            else: functionNode).
+
+        if: (name ~~ nil) && self isExternC then: {
+            if: self body == nil
+                then: ``(`,exportNode importWithSymbol: `,name; yourself)
+                else: ``(`,exportNode exportWithSymbol: `,name; yourself)
         } else: {
-            functionNode
+            exportNode
         }
     }.
 
@@ -758,6 +779,21 @@ FlagMetaBuilder
     withSelector: #readonly addMethod: {:self :: ASTNode |
         <metaBuilder>
         self addFieldFlags: TypeSlotFlags::ReadOnly.
+        self continueExpansion
+    };
+    withSelector: #externC addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self addMethodFlags: FunctionFlags::ExternC.
+        self continueExpansion
+    };
+    withSelector: #dllImport addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self addMethodFlags: FunctionFlags::DLLImport.
+        self continueExpansion
+    };
+    withSelector: #dllExport addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self addMethodFlags: FunctionFlags::DLLExport.
         self continueExpansion
     };
     withSelector: #method addMethod: {:self :: ASTNode |

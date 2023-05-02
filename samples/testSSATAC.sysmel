@@ -1,23 +1,15 @@
 let compilationTarget := AsmCompilationTarget x86_64 useElf asTacCompilationTarget.
 
-public function write(fd: Int32, buf: Void const pointer, count: Size)
-    := error("Cannot call external function.").
-write importWithSymbol: #write.
-
-public function malloc(size: Size) => Void pointer
-    := error("Cannot call external function.").
-
-malloc importWithSymbol: #malloc.
+public externC function write(fd: Int32, buf: Void const pointer, count: Size).
+public externC function malloc(size: Size) => Void pointer.
 
 public function myAddFunction(x: Int32, y: Int32) => Int32
     := x + y.
 
-public function main() => Int32 := {
+public externC function main() => Int32 := {
     malloc(3sz).
     myAddFunction(2i32, 3i32).
 }.
-
-main exportWithSymbol: #main.
 
 let ssaModule := main asSSAModule.
 printLine(ssaModule fullPrintString).
