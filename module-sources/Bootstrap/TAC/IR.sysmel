@@ -149,6 +149,9 @@ public abstract class TACProgramEntity superclass: TACValue; definition: {
 
     public override method isProgramEntity => Boolean := true.
 
+    public method callingConvention => TACCallingConvention
+        := self error: "Not a function with a defined calling convention.".
+
     public method initialize => Void := {
         exportedSymbols := #().
     }.
@@ -159,6 +162,7 @@ public abstract class TACProgramEntity superclass: TACValue; definition: {
 }.
 
 public abstract class TACImportedProgramEntity superclass: TACProgramEntity; definition: {
+    public field callingConvention => TACCallingConvention.
     public field alternativeSymbols => Array.
 
     public override method physicalLocationClass => TACPhysicalLocation class

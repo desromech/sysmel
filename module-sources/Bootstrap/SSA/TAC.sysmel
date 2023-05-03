@@ -149,6 +149,14 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
         targetModule addProgramEntity: entryPoint.
         checkedEntryPointDictionary at: functionDefinition put: entryPoint.
 
+        SSAFunctionDefinitionTACCodeGenerator new
+            moduleCodeGenerator: self;
+            compileSSAFunctionDefinition: functionDefinition checkedEntryPoint: entryPoint
+            into: (functionDefinition isCaptureless
+                ifTrue: (self translateCapturelessUncheckedFunctionEntryPoint: functionDefinition)
+                ifFalse: (self translateUncheckedFunctionEntryPoint: functionDefinition))
+            isCaptureless: functionDefinition isCaptureless.
+
         entryPoint
     }.
 
@@ -186,7 +194,7 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
         }
     }.
 
-    public method translateUncheckedFunctionEntryPoint: (value: SSAValue) ::=> TACValue := {
+    public method translateUncheckedFunctionEntryPoint: (value: SSAValue) ::=> TACProgramEntity := {
         let functionDefinition := value asSSAFunctionDefinitionOrNil.
         (self shouldCompileFunctionDefinition: functionDefinition) ifTrue: {
             uncheckedEntryPointDictionary at: functionDefinition ifAbsent: {:: TACValue |
@@ -197,8 +205,13 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
         }
     }.
 
-    public method translateCheckedFunctionEntryPoint: (value: SSAValue) ::=> TACValue := {
-        checkedEntryPointDictionary at: value asSSAFunctionDefinitionOrNil ifAbsent: {:: TACValue |
+    public method translateCheckedFunctionEntryPoint: (value: SSAValue) ::=> TACProgramEntity := {
+        let functionDefinition := value asSSAFunctionDefinitionOrNil.
+        (self shouldCompileFunctionDefinition: functionDefinition) ifTrue: {
+            checkedEntryPointDictionary at: functionDefinition ifAbsent: {:: TACValue |
+                self compileCheckedFunctionEntryPoint: functionDefinition
+            }
+        } ifFalse: {
             self validCheckedFunctionEntryPointTrampoline
         }
     }.
@@ -288,7 +301,7 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
         }.
     }.
 
-    public method compile: (ssaFunctionDefinition: SSAFunctionDefinition) checkedEntryPoint: (checkedEntryPoint: TACFunction) into: (uncheckedEntryPoint: TACFunction) ::=> Void := {
+    public method compileSSAFunctionDefinition: (ssaFunctionDefinition: SSAFunctionDefinition) checkedEntryPoint: (checkedEntryPoint: TACFunction) into: (uncheckedEntryPoint: TACProgramEntity) isCaptureless: (isCaptureless: Boolean) ::=> Void := {
         let tacArguments := OrderedCollection new.
         functionArgument := checkedEntryPoint newArgument: #closure withType: Function.
         tacArguments add: functionArgument.
@@ -309,8 +322,13 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
 
             let canonicalResultType := ssaFunctionDefinition functionType canonicalResultType.
             let result := canonicalResultType makeTacTemporaryValueNamed: #result withFunctionBuilder: functionBuilder.
-            canonicalResultType emitTacCall: uncheckedEntryPoint convention: uncheckedEntryPoint callingConvention
-                withArguments: (Array with: functionArgument) -- checkedAndConvertedArguments into: result withBlockBuilder: asm.
+            isCaptureless ifTrue: {
+                canonicalResultType emitTacCall: uncheckedEntryPoint convention: uncheckedEntryPoint callingConvention
+                    withArguments: checkedAndConvertedArguments into: result withBlockBuilder: asm.
+            } ifFalse: {
+                canonicalResultType emitTacCall: uncheckedEntryPoint convention: uncheckedEntryPoint callingConvention
+                    withArguments: (Array with: functionArgument) -- checkedAndConvertedArguments into: result withBlockBuilder: asm.
+            }.
 
             let boxedResult := canonicalResultType emitTacBox: result withBlockBuilder: asm.
             asm returnPointer: boxedResult
