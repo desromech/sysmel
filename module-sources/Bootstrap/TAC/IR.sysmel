@@ -145,8 +145,17 @@ public final class TACBasicBlock.
 public abstract class TACProgramEntity superclass: TACValue; definition: {
     public field name => Symbol.
     public field compilationTarget => TACCompilationTarget.
+    public field exportedSymbols => Array.
 
     public override method isProgramEntity => Boolean := true.
+
+    public method initialize => Void := {
+        exportedSymbols := #().
+    }.
+
+    public method addExportedSymbols: (extraSymbols: Array) ::=> Void := {
+        exportedSymbols := exportedSymbols -- extraSymbols
+    }.
 }.
 
 public abstract class TACImportedProgramEntity superclass: TACProgramEntity; definition: {
@@ -168,6 +177,20 @@ public final class TACImportedFunction superclass: TACImportedProgramEntity; def
         := TACPhysicalIntegerRegister.
 
     public override method isRelativeImmediate32 => Boolean := true.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: "importedFunction".
+        name ifNotNil: (stream space; string: name).
+    }.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream print: self; nextPutAll: " [".
+        alternativeSymbols doWithIndex: {:each :(Size)index :: Void |
+            index > 0sz ifTrue: (stream nextPutAll: ", ").
+            stream string: each.
+        }.
+        stream nextPut: ']'.
+    }.
 }.
 
 public abstract class TACVariable superclass: TACProgramEntity; definition: {
@@ -688,6 +711,7 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
     public override method isRelativeImmediate32 => Boolean := true.
 
     public method initialize => Void := {
+        super initialize.
         arguments := #().
         captures := #().
         temporaries := OrderedCollection new

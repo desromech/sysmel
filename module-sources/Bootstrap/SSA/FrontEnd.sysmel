@@ -527,6 +527,11 @@ ASTReturnNode extend: {
 }.
 
 FunctionDefinition extend: {
+    public method asSSAModuleForTarget: (compilationTarget: SSACompilationTarget) ::=> SSAModule
+        := (SSAModuleCompilationContext forTarget: compilationTarget)
+            translateFunctionDefinition: self;
+            finish.
+
     public method asSSAModule => SSAModule
         := SSAModuleCompilationContext forDefaultTarget
             translateFunctionDefinition: self;
@@ -534,6 +539,11 @@ FunctionDefinition extend: {
 }.
 
 Function extend: {
+    public method asSSAModuleForTarget: (compilationTarget: SSACompilationTarget) ::=> SSAModule
+        := (SSAModuleCompilationContext forTarget: compilationTarget)
+            translateFunction: self;
+            finish.
+
     public method asSSAModule => SSAModule
         := SSAModuleCompilationContext forDefaultTarget
             translateFunction: self;

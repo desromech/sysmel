@@ -4,6 +4,9 @@ Symbol extend: {
 
     public method asUncheckedEntryPointNameSymbol => Symbol
         := self error: "Not a function name symbol".
+
+    public method asCapturelessUncheckedEntryPointNameSymbol => Symbol
+        := self error: "Not a function name symbol".
 }.
 
 public final class ProgramEntityQualifiedNameSymbol superclass: Symbol; definition: {
@@ -17,6 +20,9 @@ public final class ProgramEntityQualifiedNameSymbol superclass: Symbol; definiti
     public method printOn: (stream: Stream) ::=> Void := {
         programEntity printQualifiedSymbolNameOn: stream.
     }.
+
+    public method asCapturelessUncheckedEntryPointNameSymbol => Symbol
+        := programEntity capturelessUncheckedEntryPointNameSymbol.
 
     public method asCheckedEntryPointNameSymbol => Symbol
         := programEntity checkedEntryPointNameSymbol.
@@ -36,6 +42,20 @@ public final class FunctionCheckedEntryPointSymbol superclass: Symbol; definitio
     public method printOn: (stream: Stream) ::=> Void := {
         function printQualifiedSymbolNameOn: stream.
         stream nextPutAll: ".checked".
+    }.
+}.
+
+public final class FunctionCapturelessUncheckedEntryPointSymbol superclass: Symbol; definition: {
+    public field function => FunctionDefinition.
+
+    __Meta__ definition:{
+        public method for: (function: FunctionDefinition) ::=> self
+            := self new function: function; yourself.
+    }.
+
+    public method printOn: (stream: Stream) ::=> Void := {
+        function printQualifiedSymbolNameOn: stream.
+        stream nextPutAll: ".captureless".
     }.
 }.
 
@@ -80,6 +100,9 @@ ProgramEntity definition: {
     public method programEntityQualifiedNameSymbol => ProgramEntityQualifiedNameSymbol
         := ProgramEntityQualifiedNameSymbol for: self.
 
+    public method capturelessUncheckedEntryPointNameSymbol => FunctionCapturelessUncheckedEntryPointSymbol
+        := self error: "Not a function definition".
+
     public method checkedEntryPointNameSymbol => FunctionCheckedEntryPointSymbol
         := self error: "Not a function definition".
 
@@ -111,4 +134,7 @@ FunctionDefinition definition: {
 
     public method uncheckedEntryPointNameSymbol => FunctionUncheckedEntryPointSymbol
         := FunctionUncheckedEntryPointSymbol for: self.
+
+    public method capturelessUncheckedEntryPointNameSymbol => Symbol
+        := FunctionCapturelessUncheckedEntryPointSymbol for: self.
 }.

@@ -726,6 +726,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "analyzedBodyNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
 
         "bytecode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionBytecodeType,
+        "capturelessUncheckedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
         "uncheckedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
         "checkedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
         "annotations", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.dictionaryType,

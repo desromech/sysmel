@@ -14,7 +14,7 @@ public struct Coff::Header definition: {
 
 
 public struct Coff::SectionHeader definition: {
-    ##public field name => Char[8].
+    public field name => Char8[8sz].
     public field virtualSize => UInt32.
     public field virtualAddress => UInt32.
     public field sizeOfRawData => UInt32.
@@ -27,7 +27,7 @@ public struct Coff::SectionHeader definition: {
 }.
 
 public struct Coff::Symbol definition: {
-    ##public field name => Char[8].
+    public field name => Char8[8sz].
     public field value => UInt32.
     public field sectionNumber => UInt16.
     public field type => UInt16.

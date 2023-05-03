@@ -24,6 +24,8 @@ SSAValue definition: {
     public method isLiteralConstant => Boolean := false.
     public method isUndefinedConstant => Boolean := false.
 
+    public method isCaptureless => Boolean := false.
+
     public method isFunction => Boolean := false.
     public method isFunctionLocalValue => Boolean := false.
     public method isBasicBlock => Boolean := false.
@@ -126,6 +128,8 @@ SSAFunction definition: {
         exportedSymbols := #().
     }.
 
+    public method isCaptureless => Boolean := captures isEmpty.
+
     public method asSSAFunctionDefinitionOrNil => SSAFunctionDefinition := definition.
 
     public method printOn: (stream: Stream) ::=> Void := {
@@ -166,15 +170,17 @@ SSAFunctionDefinition definition: {
 
     public method isFunction => Boolean := true.
 
+    public method initialize => Void := {
+        importedSymbols := #().
+    }.
+
     SSAValue extend: {
         public method asSSAFunctionDefinitionOrNil => SSAFunctionDefinition := nil
     }.
 
     public method asSSAFunctionDefinitionOrNil => SSAFunctionDefinition := self.
 
-    public method initialize => Void := {
-        importedSymbols := #().
-    }.
+    public method isCaptureless => Boolean := captures isEmpty.
 
     public method addBasicBlock: (basicBlock: SSABasicBlock) before: (position: SSABasicBlock) ::=> Void := {
         self assert: basicBlock parent isNil.

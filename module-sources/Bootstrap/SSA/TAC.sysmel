@@ -10,6 +10,7 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
     public field compilationTarget => TACCompilationTarget.
     public field targetModule => TACModule.
     public field globalValueDictionary => Dictionary.
+    public field capturelessUncheckedEntryPointDictionary => Dictionary.
     public field uncheckedEntryPointDictionary => Dictionary.
     public field checkedEntryPointDictionary => Dictionary.
 
@@ -22,6 +23,7 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
             compilationTarget: compilationTarget;
             yourself.
         globalValueDictionary := Dictionary new.
+        capturelessUncheckedEntryPointDictionary := Dictionary new.
         uncheckedEntryPointDictionary := Dictionary new.
         checkedEntryPointDictionary := Dictionary new.
     }.
@@ -29,15 +31,7 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
     public method compileSSAModule: (module: SSAModule) ::=> TACModule := {
         ## Declare the values.
         module globalValues do: {:(SSAGlobalValue)each :: Void |
-            each declareTacValueTranslationWith: self
-        }.
-
-        ## Compile the values.
-        module globalValues do: {:(SSAGlobalValue)each :: Void |
-            let valueTranslation := globalValueDictionary atOrNil: each.
-            valueTranslation ifNotNil: {
-                each compileTacTranslationInto: valueTranslation with: self
-            }.
+            each compileDirectTacTranslationWith: self
         }.
 
         ## Return the target module.
@@ -47,6 +41,23 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
     public method finish => TACModule
         := targetModule.
 
+    public method compileDirectFunction: (function: SSAFunction) ::=> Void := {
+        function isCaptureless && function definition isNotNil ifTrue: {
+            (self translateCapturelessUncheckedFunctionEntryPoint: function definition)
+                addExportedSymbols: function exportedSymbols
+        } ifFalse: {
+            self error: "TODO: Compile non-captureless function."
+        }.
+    }.
+
+    public method compileDirectFunctionDefinition: (functionDefinition: SSAFunctionDefinition) ::=> Void := {
+        functionDefinition isCaptureless ifTrue: {
+            self translateCapturelessUncheckedFunctionEntryPoint: functionDefinition
+        } ifFalse: {
+            self translateUncheckedFunctionEntryPoint: functionDefinition
+        }
+    }.
+
     public method translateValue: (value: SSAValue) ::=> TACValue
         := globalValueDictionary at: value ifAbsent: {|
         value translateIntoTacValueWith: self
@@ -54,41 +65,26 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
 
     public method translateFunction: (function: SSAFunction) ::=> TACValue
         := globalValueDictionary at: function ifAbsentPut: {|
-            self declareFunction: function
+            self compileFunction: function
         }.
 
     public method translateFunctionDefinition: (functionDefinition: SSAFunctionDefinition) ::=> TACValue
         := globalValueDictionary at: functionDefinition ifAbsentPut: {|
-            self declareFunctionDefinition: functionDefinition
+            self compileFunctionDefinition: functionDefinition
         }.
 
-    public method declareFunction: (function: SSAFunction) ::=> TACValue := {
+    public method compileFunction: (function: SSAFunction) ::=> TACValue := {
         let functionObject := TACGlobalVariable new
             type: Function;
             name: function name;
             yourself.
         targetModule addProgramEntity: functionObject.
         globalValueDictionary at: function put: functionObject.
+
         functionObject
     }.
 
-    public method compileFunction: (function: SSAFunction) into: (tacValue: TACValue) ::=> Void := {
-        function exportedSymbols do: {:(Symbol)eachExportedSymbol :: Void |
-            let uncheckedEntryPoint := self translateUncheckedFunctionEntryPoint: function.
-            let exportedEntryPoint := TACFunction new
-                compilationTarget: compilationTarget;
-                callingConvention: compilationTarget defaultCallingConvention;
-                name: eachExportedSymbol;
-                yourself.
-            targetModule addProgramEntity: exportedEntryPoint.
-
-            SSAFunctionDefinitionTACCodeGenerator new
-                moduleCodeGenerator: self;
-                compileFunction: function exportedEntryPoint: exportedEntryPoint into: uncheckedEntryPoint
-        }
-    }.
-
-    public method declareFunctionDefinition: (functionDefinition: SSAFunctionDefinition) ::=> Void := {
+    public method compileFunctionDefinition: (functionDefinition: SSAFunctionDefinition) ::=> TACValue := {
         let functionDefinitionObject := TACGlobalVariable new
             type: FunctionDefinition;
             name: functionDefinition name;
@@ -96,29 +92,64 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
         targetModule addProgramEntity: functionDefinitionObject.
         globalValueDictionary at: functionDefinition put: functionDefinitionObject.
 
-        let checkedEntryPoint := TACFunction new
-            compilationTarget: compilationTarget;
-            callingConvention: compilationTarget defaultCallingConvention;
-            name: functionDefinition name asCheckedEntryPointNameSymbol;
-            yourself.
-        targetModule addProgramEntity: checkedEntryPoint.
-        checkedEntryPointDictionary at: functionDefinition put: checkedEntryPoint.
+        functionDefinitionObject
+    }.
 
-        let uncheckedEntryPoint := TACFunction new
+    public method compileCapturelessUncheckedFunctionEntryPoint: (functionDefinition: SSAFunctionDefinition) ::=> TACProgramEntity := {
+        let importedSymbols := functionDefinition importedSymbols.
+        importedSymbols isEmpty ifTrue: {
+            let entryPoint := TACFunction new
+                compilationTarget: compilationTarget;
+                callingConvention: compilationTarget defaultCallingConvention;
+                name: functionDefinition name asCapturelessUncheckedEntryPointNameSymbol;
+                yourself.
+            targetModule addProgramEntity: entryPoint.
+            capturelessUncheckedEntryPointDictionary at: functionDefinition put: entryPoint.
+
+            SSAFunctionDefinitionTACCodeGenerator new
+                moduleCodeGenerator: self;
+                compileSSAFunctionDefinition: functionDefinition intoCapturelessEntryPoint: entryPoint.
+
+            entryPoint
+        } ifFalse: {
+            let importedEntity := TACImportedFunction new
+                name: importedSymbols first;
+                compilationTarget: compilationTarget;
+                alternativeSymbols: importedSymbols;
+                yourself.
+            targetModule addProgramEntity: importedEntity.
+            capturelessUncheckedEntryPointDictionary at: functionDefinition put: importedEntity.
+
+            importedEntity
+        }.
+    }.
+
+    public method compileUncheckedFunctionEntryPoint: (functionDefinition: SSAFunctionDefinition) ::=> TACProgramEntity := {
+        let entryPoint := TACFunction new
             compilationTarget: compilationTarget;
             callingConvention: compilationTarget defaultCallingConvention;
             name: functionDefinition name asUncheckedEntryPointNameSymbol;
             yourself.
-        targetModule addProgramEntity: uncheckedEntryPoint.
-        uncheckedEntryPointDictionary at: functionDefinition put: uncheckedEntryPoint.
+        targetModule addProgramEntity: entryPoint.
+        uncheckedEntryPointDictionary at: functionDefinition put: entryPoint.
 
-        functionDefinitionObject
-    }.
-
-    public method compileFunctionDefinition: (functionDefinition: SSAFunctionDefinition) into: (tacValue: TACValue) ::=> Void := {
         SSAFunctionDefinitionTACCodeGenerator new
             moduleCodeGenerator: self;
-            compileSSAFunctionDefinition: functionDefinition into: tacValue
+            compileSSAFunctionDefinition: functionDefinition intoUncheckedEntryPoint: entryPoint.
+
+        entryPoint
+    }.
+
+    public method compileCheckedFunctionEntryPoint: (functionDefinition: SSAFunctionDefinition) ::=> TACProgramEntity := {
+        let entryPoint := TACFunction new
+            compilationTarget: compilationTarget;
+            callingConvention: compilationTarget defaultCallingConvention;
+            name: functionDefinition name asCheckedEntryPointNameSymbol;
+            yourself.
+        targetModule addProgramEntity: entryPoint.
+        checkedEntryPointDictionary at: functionDefinition put: entryPoint.
+
+        entryPoint
     }.
 
     public method setValue: (value: SSAValue) translationInto: (tacValue: TACValue) ::=> TACValue := {
@@ -144,8 +175,24 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
         checkedFunctionEntryPointTrampoline
     }.
 
+    public method shouldCompileFunctionDefinition: (definition: SSAFunctionDefinition) ::=> Boolean
+        := definition ~~ nil.
+
+    public method translateCapturelessUncheckedFunctionEntryPoint: (value: SSAValue) ::=> TACProgramEntity := {
+        let functionDefinition := value asSSAFunctionDefinitionOrNil.
+        self assert: functionDefinition ~~ nil.
+        capturelessUncheckedEntryPointDictionary at: functionDefinition ifAbsent: {:: TACProgramEntity |
+            self compileCapturelessUncheckedFunctionEntryPoint: functionDefinition
+        }
+    }.
+
     public method translateUncheckedFunctionEntryPoint: (value: SSAValue) ::=> TACValue := {
-        uncheckedEntryPointDictionary at: value asSSAFunctionDefinitionOrNil ifAbsent: {:: TACValue |
+        let functionDefinition := value asSSAFunctionDefinitionOrNil.
+        (self shouldCompileFunctionDefinition: functionDefinition) ifTrue: {
+            uncheckedEntryPointDictionary at: functionDefinition ifAbsent: {:: TACValue |
+                self compileUncheckedFunctionEntryPoint: functionDefinition
+            }
+        } ifFalse: {
             self validUncheckedFunctionEntryPointTrampoline
         }
     }.
@@ -172,16 +219,6 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
             type: compilationTarget uintPointerType;
             nullTerminated: true;
             yourself.
-
-    public method importProgramEntityWithSymbols: (importedSymbolAlternatives: Array) ::=> TACImportedProgramEntity := {
-        let importedEntity := TACImportedFunction new
-            name: importedSymbolAlternatives first;
-            compilationTarget: compilationTarget;
-            alternativeSymbols: importedSymbolAlternatives;
-            yourself.
-        targetModule addProgramEntity: importedEntity.
-        importedEntity
-    }.
 }.
 
 public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeGenerator; definition: {
@@ -190,6 +227,7 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
     public field tacFunction => TACFunction.
     public field functionBuilder => TACFunctionBuilder.
     public field blockBuilder => TACBlockBuilder.
+    protected field isCapturelessEntryPoint => Boolean.
     protected field valueDictionary => Dictionary.
     public field functionArgument => TACValue.
     
@@ -197,17 +235,26 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
         valueDictionary := Dictionary new.
     }.
 
-    public method compileSSAFunctionDefinition: (ssaFunctionDefinition: SSAFunctionDefinition) into: (tacFunctionDefinition: TACValue) ::=> Void := {
+    public method compileSSAFunctionDefinition: (ssaFunctionDefinition: SSAFunctionDefinition) intoCapturelessEntryPoint: (entryPoint: TACFunction) ::=> Void := {
         self ssaFunctionDefinition: ssaFunctionDefinition.
-        let checkedEntryPoint => TACFunction := moduleCodeGenerator checkedEntryPointDictionary at: ssaFunctionDefinition.
-        let uncheckedEntryPoint => TACFunction := moduleCodeGenerator uncheckedEntryPointDictionary at: ssaFunctionDefinition.
+        isCapturelessEntryPoint := true.
 
-        checkedEntryPoint build: {:(TACFunctionBuilder)functionBuilder :: Void |
+        entryPoint build: {:(TACFunctionBuilder)functionBuilder :: Void |
+            tacFunction := functionBuilder function.
             self functionBuilder: functionBuilder.
-            self compile: ssaFunctionDefinition checkedEntryPoint: checkedEntryPoint into: uncheckedEntryPoint
-        }.
+            moduleCodeGenerator uncheckedEntryPointDictionary at: ssaFunctionDefinition put: tacFunction.
 
-        uncheckedEntryPoint build: {:(TACFunctionBuilder)functionBuilder :: Void |
+            self compileDefinition.
+
+            tacFunction
+        }.
+    }.
+
+    public method compileSSAFunctionDefinition: (ssaFunctionDefinition: SSAFunctionDefinition) intoUncheckedEntryPoint: (entryPoint: TACFunction) ::=> Void := {
+        self ssaFunctionDefinition: ssaFunctionDefinition.
+        isCapturelessEntryPoint := false.
+
+        entryPoint build: {:(TACFunctionBuilder)functionBuilder :: Void |
             tacFunction := functionBuilder function.
             self functionBuilder: functionBuilder.
             moduleCodeGenerator uncheckedEntryPointDictionary at: ssaFunctionDefinition put: tacFunction.
@@ -270,10 +317,11 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
         }.
     }.
 
+    
     public method compileImportedDefinition => Void := {
+        #*
         self declareArguments.
         
-        let importedFunction := moduleCodeGenerator importProgramEntityWithSymbols: ssaFunctionDefinition importedSymbols.
         let passedArguments := tacFunction arguments allButFirst.
         functionBuilder basicBlock: #ffiCall build: {:(TACBlockBuilder)asm :: Void |
             let callArguments := tacFunction arguments allButFirst.
@@ -285,6 +333,7 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
 
             canonicalResultType emitTacReturn: result withBlockBuilder: asm
         }.
+        *#
     }.
 
     public method compileDefinition => Void := {
@@ -305,8 +354,10 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
 
     public method declareArguments => Void := {
         let tacArguments := OrderedCollection new.
-        functionArgument := tacFunction newArgument: #closure withType: Function.
-        tacArguments add: functionArgument.
+        isCapturelessEntryPoint ifFalse: {
+            functionArgument := tacFunction newArgument: #closure withType: Function.
+            tacArguments add: functionArgument.
+        }.
         
         ssaFunctionDefinition arguments do: {:(SSAFunctionArgument)argument :: Void |
             let tacArgument := tacFunction newArgument: argument name withType: argument type.
@@ -369,6 +420,9 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
     
     public method translateBoxedValue: (value: SSAValue) ::=> TACValue
         := self translateValue: value.
+
+    public method translateCapturelessUncheckedFunctionEntryPoint: (value: SSAValue) ::=> TACValue
+        := moduleCodeGenerator translateCapturelessUncheckedFunctionEntryPoint: value.
 
     public method translateUncheckedFunctionEntryPoint: (value: SSAValue) ::=> TACValue
         := moduleCodeGenerator translateUncheckedFunctionEntryPoint: value.
@@ -642,32 +696,20 @@ SSALiteralConstant extend: {
 }.
 
 SSAGlobalValue extend: {
-    public virtual method declareTacValueTranslationWith: (codegen: SSAModuleTACCodeGenerator) ::=> Void := {}.
-    public virtual method compileTacTranslationInto: (value: TACValue) with: (codegen: SSAModuleTACCodeGenerator) ::=> Void := {}.
+    public virtual method compileDirectTacTranslationWith: (codegen: SSAModuleTACCodeGenerator) ::=> Void := {}.
 }.
 
 SSAFunction extend: {
-    public override method translateIntoTacValueWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
-        := codegen translateFunction: self.
-
-    public override method declareTacValueTranslationWith: (codegen: SSAModuleTACCodeGenerator) ::=> Void
-        := codegen declareFunction: self.
-
-    public override method compileTacTranslationInto: (value: TACValue) with: (codegen: SSAModuleTACCodeGenerator) ::=> Void
-        := codegen compileFunction: self into: value.
+    public override method compileDirectTacTranslationWith: (codegen: SSAModuleTACCodeGenerator) ::=> Void := {
+        codegen compileDirectFunction: self
+    }.
 }.
 
 SSAFunctionDefinition extend: {
-    public override method translateIntoTacValueWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
-        := codegen translateFunctionDefinition: self.
-
-    public override method declareTacValueTranslationWith: (codegen: SSAModuleTACCodeGenerator) ::=> Void
-        := codegen declareFunctionDefinition: self.
-    
-    public override method compileTacTranslationInto: (value: TACValue) with: (codegen: SSAModuleTACCodeGenerator) ::=> Void
-        := codegen compileFunctionDefinition: self into: value.
+    public override method compileDirectTacTranslationWith: (codegen: SSAModuleTACCodeGenerator) ::=> Void := {
+        codegen compileDirectFunctionDefinition: self
+    }.
 }.
-
 
 SSAInstruction extend: {
     public virtual method makeTacValueForResultWith: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue
@@ -1005,13 +1047,23 @@ SSACallInstruction extend: {
         }.
 
         isUnchecked ifTrue: {
-            let tacCalledFunction := codegen translateValue: calledFunction.
-            let entryPoint := codegen translateUncheckedFunctionEntryPoint: calledFunction.
-            let tacArguments := arguments collect: {:(SSAValue)eachArgument :: TACValue | codegen translateValue: eachArgument}.
-            self type
-                emitTacCall: entryPoint convention: codegen tacFunction compilationTarget defaultCallingConvention
-                withArguments: (Array with: tacCalledFunction) -- tacArguments into: tacValue
-                withBlockBuilder: codegen blockBuilder
+            calledFunction isCaptureless ifTrue: {
+                let entryPoint := codegen translateCapturelessUncheckedFunctionEntryPoint: calledFunction.
+                let tacArguments := arguments collect: {:(SSAValue)eachArgument :: TACValue | codegen translateValue: eachArgument}.
+                self type
+                    emitTacCall: entryPoint convention: codegen tacFunction compilationTarget defaultCallingConvention
+                    withArguments: tacArguments into: tacValue
+                    withBlockBuilder: codegen blockBuilder
+
+            } ifFalse: {
+                let tacCalledFunction := codegen translateValue: calledFunction.
+                let entryPoint := codegen translateUncheckedFunctionEntryPoint: calledFunction.
+                let tacArguments := arguments collect: {:(SSAValue)eachArgument :: TACValue | codegen translateValue: eachArgument}.
+                self type
+                    emitTacCall: entryPoint convention: codegen tacFunction compilationTarget defaultCallingConvention
+                    withArguments: (Array with: tacCalledFunction) -- tacArguments into: tacValue
+                    withBlockBuilder: codegen blockBuilder
+            }.
         } ifFalse: {
             let tacCalledFunction := codegen translateBoxedValue: calledFunction.
             let entryPoint := codegen translateCheckedFunctionEntryPoint: calledFunction.
