@@ -49,6 +49,15 @@ error __type__: (SimpleFunctionTypeTemplate((String,), false, Unwinds)).
     UInt64::> __type__: comparisonFunctionType.
 }.
 
+{
+    let: #booleanFunctionType with: SimpleFunctionTypeTemplate((Untyped,), false, Boolean).
+    let: #sizeFunctionType with: SimpleFunctionTypeTemplate((Untyped,), false, Size).
+
+    (RawTuple::isBytes) __type__: booleanFunctionType.
+    (RawTuple::size) __type__: sizeFunctionType.
+    (RawTuple::byteSize) __type__: sizeFunctionType.
+}.
+
 Function
     withSelector: #withEagerAnalysis addMethod: {:(Function)self :: Function |
         self ensureAnalysis.

@@ -137,7 +137,7 @@ StructMetaBuilder
         ifNotNil: ``(`,structValueExpression definition: `,definitionExpression)
     }.
 
-public: #struct with: (MetaBuilderFactory for: StructMetaBuilder).
+public global struct := MetaBuilderFactory for: StructMetaBuilder.
 
 FlagMetaBuilder
     withSelector: #struct addMethod: {:self :: ASTNode |

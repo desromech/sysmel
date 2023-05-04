@@ -84,7 +84,8 @@
     (if:then:else: isCorePrimitive
         (Function::adoptDefinitionOf: existentMethod method)
         (MethodDictionary::at:put: methodDict selector method))
-    (Type::flushLookupSelector: type selector))
+    (Type::flushLookupSelector: type selector)
+    (ProgramEntity::recordBindingWithOwnerAndName method type selector))
 
 ## Type::validMacroMethodDictionary
 (define (Type::validMacroMethodDictionary type)
@@ -100,7 +101,8 @@
 (define (Type::withSelector:addMacroMethod: type selector method)
     (define methodDict (Type::validMacroMethodDictionary type))
     (MethodDictionary::at:put: methodDict selector method)
-    (Type::flushMacroLookupSelector: type selector))
+    (Type::flushMacroLookupSelector: type selector)
+    (ProgramEntity::recordBindingWithOwnerAndName method type selector))
 
 ## Type::validFallbackMethodDictionary
 (define (Type::validFallbackMethodDictionary type)
@@ -116,7 +118,8 @@
 (define (Type::withSelector:addFallbackMethod: type selector method)
     (define methodDict (Type::validFallbackMethodDictionary type))
     (MethodDictionary::at:put: methodDict selector method)
-    (Type::flushFallbackLookupSelector: type selector))
+    (Type::flushFallbackLookupSelector: type selector)
+    (ProgramEntity::recordBindingWithOwnerAndName method type selector))
 
 (Type::withSelector:addMethod: SourcePosition #printString (lambda (sourcePosition)
     (define sourceDirectory (SourceCode::directory (SourcePosition::sourceCode sourcePosition)))

@@ -5,6 +5,7 @@ loadSourceNamed: "MetaBuilders.sysmel".
 loadSourceNamed: "FixedArray.sysmel".
 loadSourceNamed: "Enum.sysmel".
 loadSourceNamed: "Struct.sysmel".
+loadSourceNamed: "ObjectModel.sysmel".
 loadSourceNamed: "Interval.sysmel".
 loadSourceNamed: "Math.sysmel".
 loadSourceNamed: "ProgramEntity.sysmel".

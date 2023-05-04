@@ -721,6 +721,18 @@ TAC::Operation::Int32Add
             x86::add: (instruction resultRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen)
     }.
 
+let x86::integerConversionRegisterConstraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+    allocator
+        allocateRegisterForInstructionResult: instruction;
+        allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz
+}.
+
+TAC::Operation::TruncateInt64ToInt32
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerConversionRegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen)
+    }.
+
 TAC::Operation::Branch
     forTargets: #(x86 x86_64) registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
         allocator allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz

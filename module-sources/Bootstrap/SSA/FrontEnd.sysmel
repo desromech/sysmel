@@ -508,6 +508,11 @@ ASTMessageSendNode extend: {
             resultType: self analyzedType
 }.
 
+ASTReturnNode extend: {
+    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context builder return: (self expression generateSSAValueWith: context)
+}.
+
 ASTSequenceNode extend: {
     public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
         let result mutable => SSAValue := context builder literal: void.
@@ -521,9 +526,10 @@ ASTSequenceNode extend: {
     }
 }.
 
-ASTReturnNode extend: {
+ASTUseNamedSlotsOfNode extend: {
     public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := context builder return: (self expression generateSSAValueWith: context)
+        := context builder literal: void.
+
 }.
 
 FunctionDefinition extend: {

@@ -79,7 +79,7 @@ EnumMetaBuilder
         ifNotNil: ``(`,structValueExpression definition: `,definitionExpression)
     }.
 
-public: #enum with: (MetaBuilderFactory for: EnumMetaBuilder).
+public global enum := MetaBuilderFactory for: EnumMetaBuilder.
 
 FlagMetaBuilder
     withSelector: #enum addMethod: {:self :: ASTNode |

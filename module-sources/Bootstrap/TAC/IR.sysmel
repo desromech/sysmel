@@ -1064,6 +1064,11 @@ public final class TACFunctionBuilder superclass: Object; definition: {
 
     Float32Negate Float64Negate
     Float32Sqrt Float64Sqrt
+
+    TruncateInt64ToInt32 TruncateInt64ToInt16 TruncateInt64ToInt8
+    TruncateInt32ToInt16 TruncateInt32ToInt8
+    TruncateInt16ToInt8
+    
 ) do: {:(Symbol)operationName :: Void |
     let operationNameString := operationName asString.
     let lowerOperationNameString := operationNameString first asLowercase asString -- operationNameString allButFirst.
