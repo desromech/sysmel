@@ -1200,7 +1200,6 @@ SequenceableCollection
     };
     withSelector: #do: addMethod: {:(SequenceableCollection)self :aBlock :: Void |
         let: #i mutableWith: 0sz.
-        let: #size with: self size.
 
         while: i < self size do: (
             aBlock(self at: i)

@@ -42,15 +42,22 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
     protected field stringTableList => OrderedCollection.
     protected field stringTableDictionary => Dictionary.
 
-    protected field gcRootObjectTableSymbol => AsmSymbol.
+    protected field gcObjectSectionSymbol => AsmSymbol.
+    protected field gcObjectSectionEndSymbol => AsmSymbol.
     protected field gcObjectList => OrderedCollection.
-    protected field gcObjectOffsetTable => IdentityDictionary.
+    protected field gcObjectIndexTable => IdentityDictionary.
+
+    protected field gcRootObjectTableSymbol => AsmSymbol.
+    protected field gcRootObjectList => OrderedCollection.
+    protected field gcRootOffsetTable => IdentityDictionary.
 
     public method initialize => Void := {
         programEntitySymbolMap := Dictionary new.
         compiledProgramEntitySymbolMap := Dictionary new.
         gcObjectList := OrderedCollection new.
-        gcObjectOffsetTable := IdentityDictionary new.
+        gcObjectIndexTable := IdentityDictionary new.
+        gcRootObjectList := OrderedCollection new.
+        gcRootOffsetTable := IdentityDictionary new.
         stringTableList := OrderedCollection new.
         stringTableDictionary := Dictionary new.
     }.
@@ -89,13 +96,25 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
 
         self
             buildStringLiterals;
-            buildGCObjectDataSection
+            buildGCObjectDataSection;
+            buildGCObjectRootTable
+    }.
+
+    public method indexOfGCObjectEntryFor: (object: Untyped) ::=> UInt64 := {
+        gcObjectIndexTable untypedAt: object ifAbsentPut: { :: UInt64 |
+            let tableOffset := (gcObjectList size * asmTarget pointerSize) asUInt64.
+            gcObjectList add: object.
+            tableOffset
+        }.
     }.
 
     public method offsetOfGCRootObjectTableEntryFor: (object: Untyped) ::=> UInt64 := {
-        gcObjectOffsetTable untypedAt: object ifAbsentPut: { :: UInt64 |
-            let tableOffset := (gcObjectList size * asmTarget pointerSize) asUInt64.
-            gcObjectList add: object.
+        gcRootOffsetTable untypedAt: object ifAbsentPut: { :: UInt64 |
+            ## Make sure the object is registered the gc section.
+            self indexOfGCObjectEntryFor: object.
+
+            let tableOffset := (gcRootObjectList size * asmTarget pointerSize) asUInt64.
+            gcRootObjectList add: object.
             tableOffset
         }.
     }.
@@ -103,6 +122,20 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
     public method gcRootObjectTableSymbol ::=> AsmSymbol := {
         gcRootObjectTableSymbol ifNil: (gcRootObjectTableSymbol := AsmSymbol new
             name: #gcRootObjectTable;
+            makePrivate;
+            yourself)
+    }.
+
+    public method gcObjectSectionSymbol ::=> AsmSymbol := {
+        gcObjectSectionSymbol ifNil: (gcObjectSectionSymbol := AsmSymbol new
+            name: #gcObjectSection;
+            makePrivate;
+            yourself)
+    }.
+
+    public method gcObjectSectionEndSymbol ::=> AsmSymbol := {
+        gcObjectSectionEndSymbol ifNil: (gcObjectSectionEndSymbol := AsmSymbol new
+            name: #gcObjectSectionEnd;
             makePrivate;
             yourself)
     }.
@@ -127,21 +160,37 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
     }.
 
     public method buildGCObjectDataSection => Void := {
-        gcRootObjectTableSymbol ifNil: (return: void).
+        gcObjectList isEmpty ifTrue: (return: void).
 
         let gcObjectDataProgramEntity := targetModule newProgramEntity.
-        let rootTableSection := gcObjectDataProgramEntity newStreamBuilder
+        let objectSection := gcObjectDataProgramEntity newStreamBuilder
+            dataSection;
+            align: 16sz;
+            label: self gcObjectSectionSymbol;
+            yourself.
+
+        objectSection
+            endLabel: self gcObjectSectionSymbol;
+            label: self gcObjectSectionEndSymbol;
+            endLabel: self gcObjectSectionEndSymbol.
+    }.
+
+    public method buildGCObjectRootTable => Void := {
+        gcRootObjectTableSymbol ifNil: (return: void).
+
+        let gcRootTableProgramEntity := targetModule newProgramEntity.
+        let rootTableSection := gcRootTableProgramEntity newStreamBuilder
             dataSection;
             align: asmTarget pointerAlignment;
             label: gcRootObjectTableSymbol;
             yourself.
 
         asmTarget pointerSize = 8sz ifTrue: {
-            gcObjectList doWithIndex: {:(Untyped)gcObject :(Size)index :: Void |
+            gcRootObjectList doWithIndex: {:(Untyped)gcObject :(Size)index :: Void |
                 rootTableSection qword: 0u64
             }.
         } ifFalse: {
-            gcObjectList doWithIndex: {:(Untyped)gcObject :(Size)index :: Void |
+            gcRootObjectList doWithIndex: {:(Untyped)gcObject :(Size)index :: Void |
                 rootTableSection dword: 0u32
             }.
         }.
