@@ -1,0 +1,119 @@
+public final class AsmObjectHeap definition: {
+    public field compilationTarget => AsmCompilationTarget.
+
+    protected field objectSectionSymbol => AsmSymbol.
+    protected field objectSectionEndSymbol => AsmSymbol.
+    protected field objectList => OrderedCollection.
+    protected field objectIndexTable => IdentityDictionary.
+
+    protected field rootObjectTableSymbol => AsmSymbol.
+    public field rootObjectList => OrderedCollection.
+    protected field rootOffsetTable => IdentityDictionary.
+
+    public method initialize => Void := {
+        objectList := OrderedCollection new.
+        objectIndexTable := IdentityDictionary new.
+
+        rootObjectList := OrderedCollection new.
+        rootOffsetTable := IdentityDictionary new.
+    }.
+
+    public method buildIn: (targetModule: AsmProgramEntity) ::=> Void := {
+        self
+            buildGCObjectDataSectionIn: targetModule;
+            buildGCObjectRootTableIn: targetModule.
+    }.
+
+    public method indexOfGCObjectEntryFor: (object: Untyped) ::=> UInt64 := {
+        objectIndexTable untypedAt: object ifAbsentPut: { :: UInt64 |
+            let tableIndex := objectList size asUInt64.
+            objectList add: object.
+            tableIndex
+        }.
+    }.
+
+    public method offsetOfGCRootObjectTableEntryFor: (object: Untyped) ::=> UInt64 := {
+        rootOffsetTable untypedAt: object ifAbsentPut: { :: UInt64 |
+            let tableOffset := (rootObjectList size * compilationTarget pointerSize) asUInt64.
+            rootObjectList add: (self indexOfGCObjectEntryFor: object).
+            tableOffset
+        }.
+    }.
+
+    public method rootObjectTableSymbol ::=> AsmSymbol := {
+        rootObjectTableSymbol ifNil: (rootObjectTableSymbol := AsmSymbol new
+            name: #rootObjectTable;
+            makePrivate;
+            yourself)
+    }.
+
+    public method objectSectionSymbol ::=> AsmSymbol := {
+        objectSectionSymbol ifNil: (objectSectionSymbol := AsmSymbol new
+            name: #objectSection;
+            makePrivate;
+            yourself)
+    }.
+
+    public method objectSectionEndSymbol ::=> AsmSymbol := {
+        objectSectionEndSymbol ifNil: (objectSectionEndSymbol := AsmSymbol new
+            name: #objectSectionEnd;
+            makePrivate;
+            yourself)
+    }.
+
+    public method buildGCObjectDataSectionIn: (targetModule: AsmProgramEntity) ::=> Void := {
+        objectList isEmpty ifTrue: (return: void).
+
+        let objectDataProgramEntity := targetModule newProgramEntity.
+        let objectSection := objectDataProgramEntity newStreamBuilder
+            dataSection;
+            align: 16sz;
+            label: self objectSectionSymbol;
+            addElement: (AsmObjectSectionDirective new
+                heap: self;
+                yourself);
+            endLabel: self objectSectionSymbol;
+            label: self objectSectionEndSymbol;
+            endLabel: self objectSectionEndSymbol.
+    }.
+
+    public method buildGCObjectRootTableIn: (targetModule: AsmProgramEntity) ::=> Void := {
+        rootObjectTableSymbol ifNil: (return: void).
+
+        let rootTableProgramEntity := targetModule newProgramEntity.
+        let rootTableSection := rootTableProgramEntity newStreamBuilder
+            dataSection;
+            align: compilationTarget pointerAlignment;
+            label: rootObjectTableSymbol;
+            addElement: (AsmRootObjectPointerTableDirective new
+                heap: self;
+                yourself);
+            endLabel: rootObjectTableSymbol
+    }.
+}.
+
+public final class AsmObjectSectionDirective superclass: AsmStreamElement; definition: {
+    public field heap => AsmObjectHeap.
+
+    public method tableSize => Size := heap rootObjectList size.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".objectSection".
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+    }.
+}.
+
+public final class AsmRootObjectPointerTableDirective superclass: AsmStreamElement; definition: {
+    public field heap => AsmObjectHeap.
+
+    public method tableSize => Size := heap rootObjectList size.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".rootObjectPointerTable "; print: self tableSize.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+    }.
+}.

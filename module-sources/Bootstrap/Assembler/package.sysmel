@@ -1,5 +1,6 @@
 loadSourceNamed: "ObjectCode.sysmel".
 loadSourceNamed: "BaseIR.sysmel".
+loadSourceNamed: "ObjectHeap.sysmel".
 loadSourceNamed: "Coff.sysmel".
 loadSourceNamed: "Elf.sysmel".
 loadSourceNamed: "X86.sysmel".

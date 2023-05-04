@@ -35,31 +35,27 @@ public abstract class TACAsmCodeGenerator superclass: Object; definition: {
 
 public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; definition: {
     public field targetModule => AsmProgramEntity.
-    public field asmTarget => AsmCompilationTarget.
+    protected field asmTarget => AsmCompilationTarget.
     public field programEntitySymbolMap => Dictionary.
     public field compiledProgramEntitySymbolMap => Dictionary.
 
     protected field stringTableList => OrderedCollection.
     protected field stringTableDictionary => Dictionary.
 
-    protected field gcObjectSectionSymbol => AsmSymbol.
-    protected field gcObjectSectionEndSymbol => AsmSymbol.
-    protected field gcObjectList => OrderedCollection.
-    protected field gcObjectIndexTable => IdentityDictionary.
-
-    protected field gcRootObjectTableSymbol => AsmSymbol.
-    protected field gcRootObjectList => OrderedCollection.
-    protected field gcRootOffsetTable => IdentityDictionary.
+    protected field objectHeap => AsmObjectHeap.
 
     public method initialize => Void := {
         programEntitySymbolMap := Dictionary new.
         compiledProgramEntitySymbolMap := Dictionary new.
-        gcObjectList := OrderedCollection new.
-        gcObjectIndexTable := IdentityDictionary new.
-        gcRootObjectList := OrderedCollection new.
-        gcRootOffsetTable := IdentityDictionary new.
+        objectHeap := AsmObjectHeap new.
         stringTableList := OrderedCollection new.
         stringTableDictionary := Dictionary new.
+    }.
+
+    public method asmTarget => AsmCompilationTarget := asmTarget.
+    public method asmTarget: (target: AsmCompilationTarget) ::=> Void := {
+        asmTarget := target.
+        objectHeap compilationTarget: target.
     }.
 
     public override method symbolForProgramEntity: (programEntity: TACProgramEntity) ::=> AsmSymbol := {
@@ -94,51 +90,15 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
             self compileProgramEntity: eachProgramEntity
         }.
 
-        self
-            buildStringLiterals;
-            buildGCObjectDataSection;
-            buildGCObjectRootTable
+        self buildStringLiterals.
+        objectHeap buildIn: targetModule.
     }.
 
-    public method indexOfGCObjectEntryFor: (object: Untyped) ::=> UInt64 := {
-        gcObjectIndexTable untypedAt: object ifAbsentPut: { :: UInt64 |
-            let tableOffset := (gcObjectList size * asmTarget pointerSize) asUInt64.
-            gcObjectList add: object.
-            tableOffset
-        }.
-    }.
+    public method offsetOfGCRootObjectTableEntryFor: (object: Untyped) ::=> UInt64
+        := objectHeap offsetOfGCRootObjectTableEntryFor: object.
 
-    public method offsetOfGCRootObjectTableEntryFor: (object: Untyped) ::=> UInt64 := {
-        gcRootOffsetTable untypedAt: object ifAbsentPut: { :: UInt64 |
-            ## Make sure the object is registered the gc section.
-            self indexOfGCObjectEntryFor: object.
-
-            let tableOffset := (gcRootObjectList size * asmTarget pointerSize) asUInt64.
-            gcRootObjectList add: object.
-            tableOffset
-        }.
-    }.
-
-    public method gcRootObjectTableSymbol ::=> AsmSymbol := {
-        gcRootObjectTableSymbol ifNil: (gcRootObjectTableSymbol := AsmSymbol new
-            name: #gcRootObjectTable;
-            makePrivate;
-            yourself)
-    }.
-
-    public method gcObjectSectionSymbol ::=> AsmSymbol := {
-        gcObjectSectionSymbol ifNil: (gcObjectSectionSymbol := AsmSymbol new
-            name: #gcObjectSection;
-            makePrivate;
-            yourself)
-    }.
-
-    public method gcObjectSectionEndSymbol ::=> AsmSymbol := {
-        gcObjectSectionEndSymbol ifNil: (gcObjectSectionEndSymbol := AsmSymbol new
-            name: #gcObjectSectionEnd;
-            makePrivate;
-            yourself)
-    }.
+    public method gcRootObjectTableSymbol ::=> AsmSymbol
+        := objectHeap rootObjectTableSymbol.
 
     public method buildStringLiterals => Void := {
         stringTableList size = 0sz ifTrue: (return: void).
@@ -157,46 +117,6 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
                 string: string nullTerminated: nullTerminated;
                 endLabel: symbol.
         }
-    }.
-
-    public method buildGCObjectDataSection => Void := {
-        gcObjectList isEmpty ifTrue: (return: void).
-
-        let gcObjectDataProgramEntity := targetModule newProgramEntity.
-        let objectSection := gcObjectDataProgramEntity newStreamBuilder
-            dataSection;
-            align: 16sz;
-            label: self gcObjectSectionSymbol;
-            yourself.
-
-        objectSection
-            endLabel: self gcObjectSectionSymbol;
-            label: self gcObjectSectionEndSymbol;
-            endLabel: self gcObjectSectionEndSymbol.
-    }.
-
-    public method buildGCObjectRootTable => Void := {
-        gcRootObjectTableSymbol ifNil: (return: void).
-
-        let gcRootTableProgramEntity := targetModule newProgramEntity.
-        let rootTableSection := gcRootTableProgramEntity newStreamBuilder
-            dataSection;
-            align: asmTarget pointerAlignment;
-            label: gcRootObjectTableSymbol;
-            yourself.
-
-        asmTarget pointerSize = 8sz ifTrue: {
-            gcRootObjectList doWithIndex: {:(Untyped)gcObject :(Size)index :: Void |
-                rootTableSection qword: 0u64
-            }.
-        } ifFalse: {
-            gcRootObjectList doWithIndex: {:(Untyped)gcObject :(Size)index :: Void |
-                rootTableSection dword: 0u32
-            }.
-        }.
-
-        rootTableSection
-            endLabel: gcRootObjectTableSymbol
     }.
 }.
 
