@@ -126,10 +126,10 @@ typedef enum sysbvm_tuple_immediate_trivial_index_e
  */
 typedef struct sysbvm_tuple_header_s
 {
-    sysbvm_tuple_t forwardingPointer; // Used by the moving GC
-    uintptr_t identityHashAndFlags;
     uintptr_t typePointerAndFlags;
+    uintptr_t identityHashAndFlags;
     uintptr_t objectSize;
+    sysbvm_tuple_t forwardingPointer; // Used by the moving GC
 } sysbvm_tuple_header_t;
 
 /**

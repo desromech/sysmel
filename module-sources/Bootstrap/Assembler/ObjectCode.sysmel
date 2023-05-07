@@ -23,6 +23,9 @@ public abstract class AsmCompilationTarget superclass: Object; definition: {
     public abstract method uintPointerType => Type
         := self subclassResponsibility.
 
+    public virtual method objectModel => ObjectModelVariant
+        := self pointerSize = 4sz ifTrue: ObjectModelVariant32 uniqueInstance ifFalse: ObjectModelVariant64 uniqueInstance.
+
     public virtual method stackFrameAlignment => Size
         := 16sz.
 
@@ -500,6 +503,9 @@ AsmObjectCodeStream definition: {
 
     public abstract method recordRelocation: (relocation: AsmObjectCodeRelocation) ::=> Void
         := self subclassResponsibility.
+
+    public abstract method recordRelocations: (relocations: Collection) ::=> Void
+        := self subclassResponsibility.
 }.
 
 AsmObjectCodeSizeStream definition: {
@@ -566,7 +572,9 @@ AsmObjectCodeSizeStream definition: {
         symbol size: activeSection size asUInt64 - symbol value.
     }.
 
-    public override method recordRelocation: (relocation: AsmObjectCodeRelocation) ::=> Void := {}
+    public override method recordRelocation: (relocation: AsmObjectCodeRelocation) ::=> Void := {}.
+    public override method recordRelocations: (relocations: Collection) ::=> Void := {}.
+
 }.
 
 AsmObjectCodeWriteStream definition: {
@@ -635,5 +643,11 @@ AsmObjectCodeWriteStream definition: {
     public override method recordRelocation: (relocation: AsmObjectCodeRelocation) ::=> Void := {
         relocation offset: activeSection writeOffset.
         activeSection newRelocations add: relocation
+    }.
+
+    public override method recordRelocations: (relocations: Collection) ::=> Void := {
+        relocations do: {:(AsmObjectCodeRelocation)eachRelocation :: Void |
+            self recordRelocation: eachRelocation copy
+        }
     }.
 }.

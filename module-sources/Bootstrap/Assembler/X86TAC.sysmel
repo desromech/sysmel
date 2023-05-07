@@ -676,11 +676,11 @@ TACConstantFloat32 extend: {
 
 TACGenericObjectPointerConstant extend: {
     public override method x86_64::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        codegen textSection x86::mov: (register x86::int64For: codegen) src: (codegen x86_64::pointerForGCRootObjectTableEntryFor: object).
+        codegen textSection x86::mov: (register x86::int64For: codegen) src: (codegen x86_64::pointerForGCRootObjectTableEntryFor: self object).
     }.
 
     public override method x86::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        codegen textSection x86::push: (codegen x86_64::pointerForGCRootObjectTableEntryFor: object)
+        codegen textSection x86::push: (codegen x86_64::pointerForGCRootObjectTableEntryFor: self object)
     }.
 }.
 

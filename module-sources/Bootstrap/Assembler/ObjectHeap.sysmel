@@ -5,6 +5,13 @@ public final class AsmObjectHeap definition: {
     protected field objectSectionEndSymbol => AsmSymbol.
     protected field objectList => OrderedCollection.
     protected field objectIndexTable => IdentityDictionary.
+    protected field objectOffsetList => Array.
+
+    public field serializedObjectData => ByteArray.
+    public field serializedObjectDataRelocations => OrderedCollection.
+
+    public field serializedRootTable => ByteArray.
+    public field serializedRootTableRelocations => OrderedCollection.
 
     protected field rootObjectTableSymbol => AsmSymbol.
     public field rootObjectList => OrderedCollection.
@@ -20,8 +27,60 @@ public final class AsmObjectHeap definition: {
 
     public method buildIn: (targetModule: AsmProgramEntity) ::=> Void := {
         self
+            traceObjectSet;
+            serializeObjects;
+            serializeRootTable;
             buildGCObjectDataSectionIn: targetModule;
             buildGCObjectRootTableIn: targetModule.
+    }.
+
+    public method traceObjectSet => Void := {
+        let objectModel := compilationTarget objectModel.
+
+        objectList do: {:(Untyped)eachObject :: Void |
+            objectModel traceReferencesOfObject: eachObject forAsmHeap: self
+        }.
+    }.
+
+    public method traceReference: (reference: Untyped) ::=> Void := {
+
+    }.
+
+    public method traceType: (type: Type) ::=> Void := {
+
+    }.
+
+    public method serializeObjects => Void := {
+        let objectModel := compilationTarget objectModel.
+
+        let heapSize mutable := 0u64.
+        let heapAlignment mutable := objectModel minimalObjectAlignment.
+
+        objectOffsetList := Array new: objectList size.
+        objectList doWithIndex: {:(Untyped)eachObject :(Size)index :: Void |
+            let objectSize := objectModel computeSizeOfObjectInstance: eachObject.
+            let objectAlignment := objectModel computeAlignmentOfObjectInstance: eachObject.
+
+            heapSize := heapSize alignedTo: objectAlignment.
+            heapAlignment := heapAlignment max: objectAlignment.
+            objectOffsetList at: index put: heapSize.
+
+            heapSize := heapSize + objectSize.
+        }.
+
+        heapSize := heapSize alignedTo: heapAlignment.
+        serializedObjectData := ByteArray new: heapSize.
+        serializedObjectDataRelocations := OrderedCollection new.
+
+        objectList doWithIndex: {:(Untyped)eachObject :(Size)index :: Void |
+            let offset => UInt64 := objectOffsetList at: index.
+            objectModel serializeObject: eachObject inAsmHeap: self at: offset
+        }.
+    }.
+
+    public method serializeRootTable => Void := {
+        serializedRootTable := ByteArray new: rootObjectList size * compilationTarget pointerSize.
+        serializedRootTableRelocations := OrderedCollection new.
     }.
 
     public method indexOfGCObjectEntryFor: (object: Untyped) ::=> UInt64 := {
@@ -92,16 +151,89 @@ public final class AsmObjectHeap definition: {
     }.
 }.
 
+Type extend: {
+
+}.
+
+TypeSlot extend: {
+    public method traceReferenceOfObject: (object: Untyped) forAsmHeap: (heap: AsmObjectHeap) ::=> Void := {
+        
+    }.
+}.
+
+ObjectModelVariant extend: {
+    public virtual method traceLayoutReferencesOfObject: (object: Untyped) forAsmHeap: (heap: AsmObjectHeap) ::=> Size := {
+        let type => Type := RawTuple::type(object).
+        type ifNil: {
+            0sz
+        } ifNotNil: {
+            type allSlotsDo: {:(TypeSlot)eachSlot :: Void |
+                eachSlot traceReferenceOfObject: object forAsmHeap: heap
+            }.
+            type totalSlotCount
+        }
+    }.
+
+    public virtual method traceReferencesOfObject: (object: Untyped) forAsmHeap: (heap: AsmObjectHeap) ::=> Void := {
+        heap traceType: RawTuple::type(object).
+        let isBytes := RawTuple::isBytes(object).
+        isBytes ifFalse: {
+            let slotCount := RawTuple::size(object).
+            let lastLayoutSlotIndex := self traceLayoutReferencesOfObject: object forAsmHeap: heap.
+
+            ## Trace the variant references.
+            let i mutable := 0sz.
+            while: (i < slotCount) do: {
+                heap traceReference: (RawTuple::slotAt:)(object, i)
+            } continueWith: (i := i + 1sz)
+        }.
+    }.
+
+    public abstract method serializeObject: (object: Untyped) inAsmHeap: (heap: AsmObjectHeap) at: (offset: Size) ::=> Void
+        := self subclassResponsibility.
+}.
+
+ObjectModelVariant64 extend: {
+    public override method serializeObject: (object: Untyped) inAsmHeap: (heap: AsmObjectHeap) at: (offset: Size) ::=> Void := {
+        let type := RawTuple::type(object).
+        let isBytes := RawTuple::isBytes(object).
+        let isWeak := RawTuple::isWeak(object).
+        let headerSize := ObjectModel::TupleHeader64 valueSize.
+        let destination := heap serializedObjectData.
+
+        let header := ObjectModel::TupleHeader64 new
+            isBytes: isBytes;
+            isWeak: isWeak;
+            identityHash: identityHash(object) asUInt64;
+            objectSize: (self computeSizeOfObjectInstanceContent: object);
+            yourself.
+        header encodeInBytes: destination atOffset: offset.
+
+        isBytes ifTrue: {
+            let byteSize := RawTuple::byteSize(object).
+            let i mutable := 0sz.
+            while: i < byteSize do: {
+                destination at: offset + headerSize + i put: (RawTuple::slotAt:)(object, i).
+            } continueWith: (i := i + 1sz).
+        } ifFalse: {
+            printLine("TODO: implement this case ", object).
+        }.
+    }.
+}.
+
 public final class AsmObjectSectionDirective superclass: AsmStreamElement; definition: {
     public field heap => AsmObjectHeap.
 
-    public method tableSize => Size := heap rootObjectList size.
+    public method sectionSize => Size := heap serializedObjectData size.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: ".objectSection".
+        stream nextPutAll: ".objectSection "; print: self sectionSize.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream
+            recordRelocations: heap serializedObjectDataRelocations;
+            nextPutAll: heap serializedObjectData.
     }.
 }.
 
@@ -115,5 +247,8 @@ public final class AsmRootObjectPointerTableDirective superclass: AsmStreamEleme
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream
+            recordRelocations: heap serializedRootTableRelocations;
+            nextPutAll: heap serializedRootTable.
     }.
 }.

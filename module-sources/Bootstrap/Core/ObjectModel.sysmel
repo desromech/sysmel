@@ -23,24 +23,124 @@ public global ObjectModel::Tag::Float64 := 14u8.
 
 public global ObjectModel::Tag::Trivial := 15u8.
 
-public struct ObjectModel::TupleHeader32 definition: {
-    public field forwardingPointer => UInt32.
-    public field identityHashAndFlags => UInt32.
+public global ObjectModel::TypePointerFlag::GCColorMask := 3uptr.
+public global ObjectModel::TypePointerFlag::Bytes := 4uptr.
+public global ObjectModel::TypePointerFlag::Weak := 8uptr.
+
+public global ObjectModel::IdentityHashFlag::Immutable := 1uptr.
+public global ObjectModel::IdentityHashFlag::NeedsFinalization := 2uptr.
+public global ObjectModel::IdentityHashFlag::DummyValue := 4uptr.
+
+public final struct ObjectModel::TupleHeader32 definition: {
     public field typePointerAndFlags => UInt32.
+    public field identityHashAndFlags => UInt32.
     public field objectSize => UInt32.
+    public field forwardingPointer => UInt32.
 }.
 
-public struct ObjectModel::TupleHeader64 definition: {
-    public field forwardingPointer => UInt64.
-    public field identityHashAndFlags => UInt64.
+public final struct ObjectModel::TupleHeader64 definition: {
     public field typePointerAndFlags => UInt64.
+    public field identityHashAndFlags => UInt64.
     public field objectSize => UInt64.
+    public field forwardingPointer => UInt64.
+
+    public method gcColor => UInt8
+        := (typePointerAndFlags & ObjectModel::TypePointerFlag::GCColorMask asUInt64) asUInt8.
+
+    public method gcColor: (newColor: UInt8) ::=> Void := {
+        typePointerAndFlags := (typePointerAndFlags & ObjectModel::TypePointerFlag::GCColorMask asUInt64 bitInvert) | newColor asUInt64
+    }.
+
+    public method isBytes => Boolean
+        := (typePointerAndFlags & ObjectModel::TypePointerFlag::Bytes asUInt64) ~= 0u64.
+
+    public method isBytes: (flag: Boolean) ::=> Void := {
+        flag
+            ifTrue: (typePointerAndFlags := identityHashAndFlags & ObjectModel::TypePointerFlag::Bytes asUInt64 bitInvert)
+            ifFalse: (typePointerAndFlags := identityHashAndFlags | ObjectModel::TypePointerFlag::Bytes asUInt64).
+    }.
+
+    public method isWeak => Boolean
+        := (typePointerAndFlags & ObjectModel::TypePointerFlag::Weak asUInt64) ~= 0u64.
+
+    public method isWeak: (flag: Boolean) ::=> Void := {
+        flag
+            ifTrue: (typePointerAndFlags := identityHashAndFlags & ObjectModel::TypePointerFlag::Weak asUInt64 bitInvert)
+            ifFalse: (typePointerAndFlags := identityHashAndFlags | ObjectModel::TypePointerFlag::Weak asUInt64).
+    }.
+
+    public method identityHash ::=> UInt64
+        := identityHashAndFlags >> 4u64.
+
+    public method identityHash: (identityHash: UInt64) ::=> Void := {
+        identityHashAndFlags := (identityHash << 4u64) | (identityHashAndFlags & 15u64)
+    }.
+}.
+
+public abstract class ObjectModelVariant superclass: Object; definition: {
+    public abstract method pointerSize => UInt64 := self subclassResponsibility.
+
+    public virtual method minimalObjectAlignment => UInt64 := 16u64.
+
+    public virtual method computeSizeOfObjectInstanceContent: (object: Untyped) ::=> UInt64 := {
+        let isBytes := RawTuple::isBytes(object).
+        isBytes ifTrue: {
+            let byteSize := RawTuple::byteSize(object).
+            byteSize asUInt64
+        } ifFalse: {
+            let slotCount := RawTuple::size(object).
+            self error: "TODO: Implement this part."
+        }
+    }.
+
+    public abstract method computeSizeOfObjectInstance: (object: Untyped) ::=> UInt64
+        := self subclassResponsibility.
+
+    public override method computeAlignmentOfObjectInstance: (object: Untyped) ::=> UInt64
+        := RawTuple::type(object) validInstanceAlignment asUInt64.
+}.
+
+public final class ObjectModelVariant32 superclass: ObjectModelVariant; definition: {
+    public override method pointerSize => UInt64 := 4u64.
+
+    let singleton := SelfType new.
+
+    __Meta__ definition: {
+        public method uniqueInstance => ObjectModelVariant32
+            := singleton.
+    }.
+}.
+
+public final class ObjectModelVariant64 superclass: ObjectModelVariant; definition: {
+    public override method pointerSize => UInt64 := 8u64.
+
+    public override method computeSizeOfObjectInstance: (object: Untyped) ::=> UInt64
+        := ObjectModel::TupleHeader64 valueSize asUInt64 + (self computeSizeOfObjectInstanceContent: object).
+
+    let singleton := SelfType new.
+    __Meta__ definition: {
+        public method uniqueInstance => ObjectModelVariant64
+            := singleton.
+    }.
 }.
 
 public global ObjectModel::TupleHeader := if: UIntPointer valueSize = 4sz
     then: ObjectModel::TupleHeader32
     else: ObjectModel::TupleHeader64.
 
+RawTuple::isBytes adoptDefinitionOf: {:(Untyped)self :: Boolean |
+    false
+}.
+
+RawTuple::size adoptDefinitionOf: {:(Untyped)self :: Size |
+    0sz
+}.
+
+RawTuple::byteSize adoptDefinitionOf: {:(Untyped)self :: Size |
+    0sz
+}.
+
+#*
 AnyValue extend: {
     public method __isBytes__ => Boolean := {
         false
@@ -54,3 +154,4 @@ AnyValue extend: {
         0sz
     }.
 }.
+*#
