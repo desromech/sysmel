@@ -757,6 +757,9 @@ let translateBinaryPrimitiveInto := {:(TACOperation)operation :: ((Array, TACVal
 }.
 
 public global SSATacPrimitiveCallGenerationTable := #{
+    ## Pointer primitive
+    #PointerLikeType::reinterpretCast : translateUnaryPrimitiveInto(TAC::Operation::Move).
+
     ## Char8 primitives
     #Char8::negated : translateBinaryPrimitiveInto(TAC::Operation::Int8Negate).
     #Char8::bitInvert : translateBinaryPrimitiveInto(TAC::Operation::Int8BitNot).
@@ -1061,6 +1064,7 @@ public global SSATacPrimitiveCallGenerationTable := #{
 SSACallInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
         ## Attempt to use the primitive generator first.
+        printLine("calledFunction primitiveName ", calledFunction primitiveName).
         let primitiveGenerator := SSATacPrimitiveCallGenerationTable atOrNil: calledFunction primitiveName.
         primitiveGenerator ifNotNil: {
             primitiveGenerator(self arguments, tacValue, codegen) ifTrue: {

@@ -128,6 +128,13 @@ public global ObjectModel::TupleHeader := if: UIntPointer valueSize = 4sz
     then: ObjectModel::TupleHeader32
     else: ObjectModel::TupleHeader64.
 
+public global ObjectModel::getTupleHeaderPointerOf := {:(Untyped)object :: ObjectModel::TupleHeader pointer |
+    <primitive: #PointerLikeType::reinterpretCast>
+    nil
+}.
+
+##printLine("ObjectModel::getTupleHeaderPointerOf ", ObjectModel::getTupleHeaderPointerOf primitiveName).
+
 RawTuple::isBytes adoptDefinitionOf: {:(Untyped)self :: Boolean |
     false
 }.
@@ -137,21 +144,6 @@ RawTuple::size adoptDefinitionOf: {:(Untyped)self :: Size |
 }.
 
 RawTuple::byteSize adoptDefinitionOf: {:(Untyped)self :: Size |
+    ##let header := ObjectModel::getTupleHeaderPointerOf(self).
     0sz
 }.
-
-#*
-AnyValue extend: {
-    public method __isBytes__ => Boolean := {
-        false
-    }.
-
-    public method __size__ => Size := {
-        0sz
-    }.
-
-    public method __byteSize__ => Size := {
-        0sz
-    }.
-}.
-*#
