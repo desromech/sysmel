@@ -21,6 +21,7 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
 
     public method translateFunction: (function: Function) ::=> SSAValue := {
         translatedValueDictionary at: function ifAbsent: { :: SSAValue |
+            function ensureAnalysis.
             let translatedValue := SSAFunction new
                 sourceObject: function;
                 name: function programEntityQualifiedNameSymbol;
@@ -47,6 +48,7 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
                 name: functionDefinition programEntityQualifiedNameSymbol;
                 functionType: functionDefinition analyzedType;
                 importedSymbols: functionDefinition importedSymbols asArray;
+                primitiveName: functionDefinition analyzedPrimitiveName;
                 yourself.
 
             ssaModule addGlobalValue: translatedValue.

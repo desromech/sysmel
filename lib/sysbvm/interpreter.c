@@ -1259,6 +1259,8 @@ SYSBVM_API void sysbvm_function_ensureAnalysis(sysbvm_context_t *context, sysbvm
 
     (*function)->captureVector = gcFrame.captureVector;
     (*function)->captureEnvironment = SYSBVM_NULL_TUPLE;
+    if(!(*function)->primitiveName)
+        (*function)->primitiveName = gcFrame.functionDefinition->analyzedPrimitiveName;
     sysbvm_tuple_setType((sysbvm_object_tuple_t*)*function, gcFrame.functionDefinition->analyzedType);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);

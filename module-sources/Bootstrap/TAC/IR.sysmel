@@ -615,7 +615,13 @@ public final class TACInstruction superclass: TACValue; definition: {
 public global TAC::Operation::Branch := TACOperation terminatorNamed: #branch.
 public global TAC::Operation::ConditionalBranch := TACOperation terminatorNamed: #condBranch.
 
-public global TAC::Operation::Move := TACOperation named: #move.
+public global TAC::Operation::MoveInt8 := TACOperation named: #moveInt8.
+public global TAC::Operation::MoveInt16 := TACOperation named: #moveInt16.
+public global TAC::Operation::MoveInt32 := TACOperation named: #moveInt32.
+public global TAC::Operation::MoveInt64 := TACOperation named: #moveInt64.
+public global TAC::Operation::MoveFloat32 := TACOperation named: #moveFloat32.
+public global TAC::Operation::MoveFloat64 := TACOperation named: #moveFloat64.
+public global TAC::Operation::MoveStruct := TACOperation named: #moveStruct.
 
 public global TAC::Operation::CallInt32 := TACOperation named: #callInt32.
 public global TAC::Operation::CallInt64 := TACOperation named: #callInt64.
@@ -960,9 +966,6 @@ public final class TACBlockBuilder superclass: Object; definition: {
     public method when: (condition: TACValue) branchIfTrue: (trueDestination: TACValue) branchIfFalse: (falseDestination: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::ConditionalBranch with: condition with: trueDestination with: falseDestination.
 
-    public method move: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::Move with: source result: destination.
-
     public method call: (function: TACValue) operation: (callOperation: TACOperation) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
         := self addInstruction: (TACInstruction new
             operation: callOperation;
@@ -1008,6 +1011,28 @@ public final class TACBlockBuilder superclass: Object; definition: {
 
     public method callVoid: (function: TACValue) arguments: (arguments: Array) ::=> TACInstruction
         := self callVoid: function convention: self compilationTarget defaultCallingConvention arguments: arguments.
+
+    public method moveInt8: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::MoveInt8 with: source result: destination.
+
+    public method moveInt16: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::MoveInt16 with: source result: destination.
+
+    public method moveInt32: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::MoveInt32 with: source result: destination.
+
+    public method moveInt64: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::MoveInt64 with: source result: destination.
+
+    public method movePointer: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
+        := self operation: (self has64BitsPointers ifTrue: (TAC::Operation::MoveInt64) ifFalse: (TAC::Operation::MoveInt32))
+            with: source result: destination.
+
+    public method moveFloat32: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::MoveFloat32 with: source result: destination.
+
+    public method moveFloat64: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::MoveFloat64 with: source result: destination.
 
     public method returnVoid ::=> TACInstruction
         := self operation: TAC::Operation::ReturnVoid.

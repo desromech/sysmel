@@ -133,8 +133,6 @@ public global ObjectModel::getTupleHeaderPointerOf := {:(Untyped)object :: Objec
     nil
 }.
 
-##printLine("ObjectModel::getTupleHeaderPointerOf ", ObjectModel::getTupleHeaderPointerOf primitiveName).
-
 RawTuple::isBytes adoptDefinitionOf: {:(Untyped)self :: Boolean |
     false
 }.
@@ -144,6 +142,6 @@ RawTuple::size adoptDefinitionOf: {:(Untyped)self :: Size |
 }.
 
 RawTuple::byteSize adoptDefinitionOf: {:(Untyped)self :: Size |
-    ##let header := ObjectModel::getTupleHeaderPointerOf(self).
+    let header := ObjectModel::getTupleHeaderPointerOf(self).
     0sz
 }.

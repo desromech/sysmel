@@ -365,11 +365,14 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
         ## SSA must be destroyed before compiling.
         SSADestroySSAFunctionPass runIn: ssaFunctionDefinition.
 
-        self
-            declareArguments;
-            declareCaptures;
-            declareValues;
-            compileBasicBlocks.
+        self declareArguments.
+
+        self compilePrimitiveFunctionBody ifFalse: {
+            self
+                declareCaptures;
+                declareValues;
+                compileBasicBlocks.
+        }.
     }.
 
     public method declareArguments => Void := {
@@ -387,6 +390,11 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
 
         tacFunction arguments: tacArguments asArray.
     }.
+
+    public method directArguments => Array
+        := isCapturelessEntryPoint
+            ifTrue: tacFunction arguments
+            ifFalse: tacFunction arguments allButFirst.
 
     public method declareCaptures => Void := {
         let tacCaptures := OrderedCollection new.
@@ -758,7 +766,10 @@ let translateBinaryPrimitiveInto := {:(TACOperation)operation :: ((Array, TACVal
 
 public global SSATacPrimitiveCallGenerationTable := #{
     ## Pointer primitive
-    #PointerLikeType::reinterpretCast : translateUnaryPrimitiveInto(TAC::Operation::Move).
+    #PointerLikeType::reinterpretCast : {:(Array)arguments :(TACValue)result :(SSAFunctionDefinitionTACCodeGenerator)codegen :: Boolean |
+        codegen blockBuilder movePointer: (codegen translateValue: arguments first) into: result.
+        true
+    }.
 
     ## Char8 primitives
     #Char8::negated : translateBinaryPrimitiveInto(TAC::Operation::Int8Negate).
@@ -1061,10 +1072,28 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #Float64::>= : translateBinaryPrimitiveInto(TAC::Operation::Float64UnorderedGreaterOrEquals).
 }.
 
+SSAFunctionDefinitionTACCodeGenerator extend: {
+    public method compilePrimitiveFunctionBody => Boolean := {
+        ## Attempt to use the primitive generator first.
+        let primitiveGenerator := SSATacPrimitiveCallGenerationTable atOrNil: ssaFunctionDefinition primitiveName.
+        let hasGeneratedPrimitive mutable => Boolean := false.
+        primitiveGenerator ifNotNil: {
+            functionBuilder basicBlock: #primitive build: {:(TACBlockBuilder)asm :: Void |
+                self blockBuilder: asm.
+                let canonicalResultType := ssaFunctionDefinition functionType canonicalResultType.
+                let result := canonicalResultType makeTacTemporaryValueNamed: #result withFunctionBuilder: functionBuilder.
+                hasGeneratedPrimitive := primitiveGenerator(ssaFunctionDefinition arguments, result, self).
+                canonicalResultType emitTacReturn: result withBlockBuilder: asm
+            }.
+        }.
+
+        hasGeneratedPrimitive
+    }.
+}.
+
 SSACallInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
         ## Attempt to use the primitive generator first.
-        printLine("calledFunction primitiveName ", calledFunction primitiveName).
         let primitiveGenerator := SSATacPrimitiveCallGenerationTable atOrNil: calledFunction primitiveName.
         primitiveGenerator ifNotNil: {
             primitiveGenerator(self arguments, tacValue, codegen) ifTrue: {
