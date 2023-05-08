@@ -641,7 +641,7 @@ AsmObjectCodeWriteStream definition: {
     }.
 
     public override method recordRelocation: (relocation: AsmObjectCodeRelocation) ::=> Void := {
-        relocation offset: activeSection writeOffset.
+        relocation offset: relocation offset + activeSection writeOffset.
         activeSection newRelocations add: relocation
     }.
 
