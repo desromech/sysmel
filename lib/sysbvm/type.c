@@ -1,6 +1,7 @@
 #include "sysbvm/type.h"
 #include "sysbvm/array.h"
 #include "sysbvm/assert.h"
+#include "sysbvm/association.h"
 #include "sysbvm/ast.h"
 #include "sysbvm/dictionary.h"
 #include "sysbvm/errors.h"
@@ -188,11 +189,13 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createWithName(sysbvm_context_t *context, 
     return result;
 }
 
-static sysbvm_tuple_t sysbvm_type_doCreateSimpleFunctionType(sysbvm_context_t *context, sysbvm_tuple_t argumentTypes, sysbvm_tuple_t isVariadic, sysbvm_tuple_t resultType)
+static sysbvm_tuple_t sysbvm_type_doCreateSimpleFunctionType(sysbvm_context_t *context, sysbvm_tuple_t templateResult, sysbvm_tuple_t argumentTypes, sysbvm_tuple_t isVariadic, sysbvm_tuple_t resultType)
 {
     sysbvm_type_tuple_t *supertype = (sysbvm_type_tuple_t*)context->roots.functionType;
     
     sysbvm_simpleFunctionType_t* result = (sysbvm_simpleFunctionType_t*)sysbvm_context_allocatePointerTuple(context, context->roots.simpleFunctionTypeType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_simpleFunctionType_t));
+    sysbvm_association_setValue(templateResult, (sysbvm_tuple_t)result);
+
     result->super.supertype = (sysbvm_tuple_t)supertype;
     result->super.flags = sysbvm_tuple_bitflags_encode(sysbvm_tuple_bitflags_decode(supertype->flags) | SYSBVM_TYPE_FLAGS_FUNCTION);
     result->super.totalSlotCount = supertype->totalSlotCount;
@@ -303,7 +306,7 @@ static sysbvm_tuple_t sysbvm_pointerLikeType_createPointerLikeStoreFunction(sysb
     return gcFrame.function;
 }
 
-static sysbvm_tuple_t sysbvm_type_doCreatePointerType(sysbvm_context_t *context, sysbvm_tuple_t baseType_, sysbvm_tuple_t addressSpace_)
+static sysbvm_tuple_t sysbvm_type_doCreatePointerType(sysbvm_context_t *context, sysbvm_tuple_t templateResult_, sysbvm_tuple_t baseType_, sysbvm_tuple_t addressSpace_)
 {
     struct {
         sysbvm_tuple_t baseType;
@@ -319,6 +322,7 @@ static sysbvm_tuple_t sysbvm_type_doCreatePointerType(sysbvm_context_t *context,
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     gcFrame.result = (sysbvm_pointerType_t*)sysbvm_context_allocatePointerTuple(context, context->roots.pointerType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_pointerType_t));
+    sysbvm_association_setValue(templateResult_, (sysbvm_tuple_t)gcFrame.result);
     gcFrame.result->super.super.super.flags = sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_POINTER_TYPE_FLAGS);
     gcFrame.result->super.super.super.totalSlotCount = sysbvm_tuple_size_encode(context, 0);
     gcFrame.result->super.super.super.supertype = context->roots.anyPointerType;
@@ -342,7 +346,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createPointerType(sysbvm_context_t *contex
     return sysbvm_function_apply2(context, context->roots.pointerTypeTemplate, baseType, addressSpace);
 }
 
-static sysbvm_tuple_t sysbvm_type_doCreateReferenceType(sysbvm_context_t *context, sysbvm_tuple_t baseType_, sysbvm_tuple_t addressSpace_)
+static sysbvm_tuple_t sysbvm_type_doCreateReferenceType(sysbvm_context_t *context, sysbvm_tuple_t templateResult_, sysbvm_tuple_t baseType_, sysbvm_tuple_t addressSpace_)
 {
     struct {
         sysbvm_tuple_t baseType;
@@ -358,6 +362,7 @@ static sysbvm_tuple_t sysbvm_type_doCreateReferenceType(sysbvm_context_t *contex
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     gcFrame.result = (sysbvm_referenceType_t*)sysbvm_context_allocatePointerTuple(context, context->roots.referenceType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_referenceType_t));
+    sysbvm_association_setValue(templateResult_, (sysbvm_tuple_t)gcFrame.result);
     gcFrame.result->super.super.super.flags = sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_REFERENCE_TYPE_FLAGS);
     gcFrame.result->super.super.super.totalSlotCount = sysbvm_tuple_size_encode(context, 0);
     gcFrame.result->super.super.super.supertype = context->roots.anyReferenceType;
@@ -1072,9 +1077,9 @@ static sysbvm_tuple_t sysbvm_type_primitive_createSimpleFunctionType(sysbvm_cont
     (void)context;
     (void)closure;
     (void)arguments;
-    if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
+    if(argumentCount != 4) sysbvm_error_argumentCountMismatch(4, argumentCount);
 
-    return sysbvm_type_doCreateSimpleFunctionType(context, arguments[0], arguments[1], arguments[2]);
+    return sysbvm_type_doCreateSimpleFunctionType(context, arguments[0], arguments[1], arguments[2], arguments[3]);
 }
 
 static sysbvm_tuple_t sysbvm_type_primitive_createPointerType(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -1082,9 +1087,9 @@ static sysbvm_tuple_t sysbvm_type_primitive_createPointerType(sysbvm_context_t *
     (void)context;
     (void)closure;
     (void)arguments;
-    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+    if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
 
-    return sysbvm_type_doCreatePointerType(context, arguments[0], arguments[1]);
+    return sysbvm_type_doCreatePointerType(context, arguments[0], arguments[1], arguments[2]);
 }
 
 static sysbvm_tuple_t sysbvm_type_primitive_createReferenceType(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -1092,9 +1097,9 @@ static sysbvm_tuple_t sysbvm_type_primitive_createReferenceType(sysbvm_context_t
     (void)context;
     (void)closure;
     (void)arguments;
-    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+    if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
 
-    return sysbvm_type_doCreateReferenceType(context, arguments[0], arguments[1]);
+    return sysbvm_type_doCreateReferenceType(context, arguments[0], arguments[1], arguments[2]);
 }
 
 static sysbvm_tuple_t sysbvm_type_primitive_pointerLikeLoad(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -1208,9 +1213,9 @@ void sysbvm_type_registerPrimitives(void)
 
 void sysbvm_type_setupPrimitives(sysbvm_context_t *context)
 {
-    context->roots.simpleFunctionTypeTemplate = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "SimpleFunctionTypeTemplate", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_MEMOIZED | SYSBVM_FUNCTION_FLAGS_TEMPLATE, NULL, sysbvm_type_primitive_createSimpleFunctionType);
-    context->roots.pointerTypeTemplate = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "PointerTypeTemplate", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_MEMOIZED | SYSBVM_FUNCTION_FLAGS_TEMPLATE, NULL, sysbvm_type_primitive_createPointerType);
-    context->roots.referenceTypeTemplate = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "ReferenceTypeTemplate", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_MEMOIZED | SYSBVM_FUNCTION_FLAGS_TEMPLATE, NULL, sysbvm_type_primitive_createReferenceType);
+    context->roots.simpleFunctionTypeTemplate = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "SimpleFunctionTypeTemplate", 4, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_MEMOIZED | SYSBVM_FUNCTION_FLAGS_TEMPLATE, NULL, sysbvm_type_primitive_createSimpleFunctionType);
+    context->roots.pointerTypeTemplate = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "PointerTypeTemplate", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_MEMOIZED | SYSBVM_FUNCTION_FLAGS_TEMPLATE, NULL, sysbvm_type_primitive_createPointerType);
+    context->roots.referenceTypeTemplate = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "ReferenceTypeTemplate", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_MEMOIZED | SYSBVM_FUNCTION_FLAGS_TEMPLATE, NULL, sysbvm_type_primitive_createReferenceType);
     context->roots.pointerLikeLoadPrimitive = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "PointerLikeType::load", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_type_primitive_pointerLikeLoad);
     context->roots.pointerLikeStorePrimitive = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "PointerLikeType::store:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_type_primitive_pointerLikeStore);
     

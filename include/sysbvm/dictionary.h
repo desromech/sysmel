@@ -57,6 +57,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_weakValueDictionary_create(sysbvm_context_t *co
 SYSBVM_API bool sysbvm_weakValueDictionary_find(sysbvm_context_t *context, sysbvm_tuple_t dictionary, sysbvm_tuple_t key, sysbvm_tuple_t *outValue);
 
 /**
+ * Finds an association in the dictionary.
+ */ 
+SYSBVM_API bool sysbvm_weakValueDictionary_findAssociation(sysbvm_context_t *context, sysbvm_tuple_t dictionary, sysbvm_tuple_t key, sysbvm_tuple_t *outAssociation);
+
+/**
  * Inserts an element in the dictionary.
  */ 
 SYSBVM_API void sysbvm_weakValueDictionary_atPut(sysbvm_context_t *context, sysbvm_tuple_t dictionary, sysbvm_tuple_t key, sysbvm_tuple_t value);

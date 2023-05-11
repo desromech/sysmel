@@ -98,6 +98,7 @@ typedef struct sysbvm_functionDefinition_s
 typedef struct sysbvm_functionCallFrameStack_s
 {
     bool isVariadic;
+    bool isMemoizedTemplate;
     size_t expectedArgumentCount;
     size_t variadicArgumentIndex;
     size_t argumentIndex;
@@ -196,6 +197,22 @@ SYSBVM_INLINE bool sysbvm_function_isPure(sysbvm_context_t *context, sysbvm_tupl
 SYSBVM_INLINE bool sysbvm_function_isMemoized(sysbvm_context_t *context, sysbvm_tuple_t function)
 {
     return (sysbvm_function_getFlags(context, function) & SYSBVM_FUNCTION_FLAGS_MEMOIZED) != 0;
+}
+
+/**
+ * Is this a template function?
+ */
+SYSBVM_INLINE bool sysbvm_function_isTemplate(sysbvm_context_t *context, sysbvm_tuple_t function)
+{
+    return (sysbvm_function_getFlags(context, function) & SYSBVM_FUNCTION_FLAGS_TEMPLATE) != 0;
+}
+
+/**
+ * Is this a memoized template function?
+ */
+SYSBVM_INLINE bool sysbvm_function_isMemoizedTemplate(sysbvm_context_t *context, sysbvm_tuple_t function)
+{
+    return (sysbvm_function_getFlags(context, function) & (SYSBVM_FUNCTION_FLAGS_MEMOIZED | SYSBVM_FUNCTION_FLAGS_TEMPLATE)) == (SYSBVM_FUNCTION_FLAGS_MEMOIZED | SYSBVM_FUNCTION_FLAGS_TEMPLATE);
 }
 
 /**

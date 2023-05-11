@@ -1,6 +1,7 @@
 #include "sysbvm/function.h"
 #include "sysbvm/array.h"
 #include "sysbvm/assert.h"
+#include "sysbvm/association.h"
 #include "sysbvm/bytecode.h"
 #include "sysbvm/bytecodeCompiler.h"
 #include "sysbvm/dictionary.h"
@@ -225,6 +226,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_ordinaryFunction_memoizedApply(sysbvm_context_t
     struct {
         sysbvm_tuple_t function;
         sysbvm_tuple_t memoizationKey;
+        sysbvm_tuple_t memoizationAssociation;
         sysbvm_tuple_t result;
     } gcFrame = {
         .function = function_
@@ -253,33 +255,44 @@ SYSBVM_API sysbvm_tuple_t sysbvm_ordinaryFunction_memoizedApply(sysbvm_context_t
     }
 
     // Find the result in the memoization table
-    if((*functionObject)->memoizationTable)
-    {
-        if(sysbvm_weakValueDictionary_find(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, &gcFrame.result))
-        {
-            if(gcFrame.result == SYSBVM_PENDING_MEMOIZATION_VALUE)
-                sysbvm_error("Computing cyclic memoized value.");
+    if(!(*functionObject)->memoizationTable)
+        (*functionObject)->memoizationTable = sysbvm_weakValueDictionary_create(context);
 
-            sysbvm_stackFrame_popRecord((sysbvm_stackFrameRecord_t*)&argumentsRecord);
-            SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-            return gcFrame.result;
-        }
-        else
-        {
-            sysbvm_weakValueDictionary_atPut(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, SYSBVM_PENDING_MEMOIZATION_VALUE);
-        }
+    if(sysbvm_weakValueDictionary_find(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, &gcFrame.result))
+    {
+        if(gcFrame.result == SYSBVM_PENDING_MEMOIZATION_VALUE)
+            sysbvm_error("Computing cyclic memoized value.");
+
+        sysbvm_stackFrame_popRecord((sysbvm_stackFrameRecord_t*)&argumentsRecord);
+        SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return gcFrame.result;
     }
     else
     {
-        (*functionObject)->memoizationTable = sysbvm_weakValueDictionary_create(context);
+        sysbvm_weakValueDictionary_atPut(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, SYSBVM_PENDING_MEMOIZATION_VALUE);
+        sysbvm_weakValueDictionary_findAssociation(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, &gcFrame.memoizationAssociation);
     }
 
     // Apply the actual function.
     sysbvm_stackFrame_popRecord((sysbvm_stackFrameRecord_t*)&argumentsRecord);
-    gcFrame.result = sysbvm_ordinaryFunction_directApply(context, gcFrame.function, argumentCount, arguments, applicationFlags);
+
+    if(sysbvm_function_isTemplate(context, gcFrame.function))
+    {
+        SYSBVM_ASSERT(argumentCount + 1 <= SYSBVM_MAX_FUNCTION_ARGUMENTS);
+        sysbvm_tuple_t templateArguments[SYSBVM_MAX_FUNCTION_ARGUMENTS];
+        templateArguments[0] = gcFrame.memoizationAssociation;
+        for(size_t i = 0; i < argumentCount; ++i)
+            templateArguments[i + 1] = arguments[i];
+
+        gcFrame.result = sysbvm_ordinaryFunction_directApply(context, gcFrame.function, argumentCount + 1, templateArguments, applicationFlags);
+    }
+    else
+    {
+        gcFrame.result = sysbvm_ordinaryFunction_directApply(context, gcFrame.function, argumentCount, arguments, applicationFlags);
+    }
 
     // Store the result
-    sysbvm_weakValueDictionary_atPut(context, (*functionObject)->memoizationTable, gcFrame.memoizationKey, gcFrame.result);
+    sysbvm_association_setValue(gcFrame.memoizationAssociation, gcFrame.result);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
 }
@@ -368,11 +381,20 @@ SYSBVM_API void sysbvm_functionCallFrameStack_begin(sysbvm_context_t *context, s
 {
     callFrameStack->gcRoots.function = function;
     callFrameStack->isVariadic = sysbvm_function_isVariadic(context, callFrameStack->gcRoots.function);
+    callFrameStack->isMemoizedTemplate = sysbvm_function_isMemoizedTemplate(context, callFrameStack->gcRoots.function);
     callFrameStack->expectedArgumentCount = sysbvm_function_getArgumentCount(context, callFrameStack->gcRoots.function);
     callFrameStack->argumentIndex = 0;
     callFrameStack->variadicArgumentIndex = 0;
 
     size_t requiredArgumentCount = callFrameStack->expectedArgumentCount;
+    if(callFrameStack->isMemoizedTemplate)
+    {
+        if(callFrameStack->expectedArgumentCount == 0)
+            sysbvm_error("Memoized template function requires at least a single argument.");
+        --callFrameStack->expectedArgumentCount;
+        --requiredArgumentCount;
+    }
+
     if(callFrameStack->isVariadic)
     {
         if(requiredArgumentCount == 0)

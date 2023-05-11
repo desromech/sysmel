@@ -288,6 +288,42 @@ SYSBVM_API bool sysbvm_weakValueDictionary_find(sysbvm_context_t *context, sysbv
     return true;
 }
 
+SYSBVM_API bool sysbvm_weakValueDictionary_findAssociation(sysbvm_context_t *context, sysbvm_tuple_t dictionary, sysbvm_tuple_t key, sysbvm_tuple_t *outAssociation)
+{
+    if(!sysbvm_tuple_isNonNullPointer(dictionary))
+        return false;
+
+    struct {
+        sysbvm_weakValueDictionary_t *dictionary;
+        sysbvm_tuple_t key;
+        sysbvm_weakValueAssociation_t *association;
+    } gcFrame = {
+        .dictionary = (sysbvm_weakValueDictionary_t*)dictionary,
+        .key = key
+    };
+    SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    intptr_t elementIndex = sysbvm_dictionary_scanFor(context, &gcFrame.dictionary, &gcFrame.key);
+    if(elementIndex < 0)
+    {
+        SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return false;
+    }
+
+    sysbvm_dictionary_t *dictionaryObject = (sysbvm_dictionary_t*)dictionary;
+    sysbvm_array_t *storage = (sysbvm_array_t*)dictionaryObject->storage;
+    gcFrame.association = (sysbvm_weakValueAssociation_t*)storage->elements[elementIndex];
+    if(!gcFrame.association || gcFrame.association->value == SYSBVM_TOMBSTONE_TUPLE)
+    {
+        SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+        return false;
+    }
+
+    *outAssociation = gcFrame.association;
+    SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return true;
+}
+
 static void sysbvm_weakValueDictionary_increaseCapacity(sysbvm_context_t *context, sysbvm_weakValueDictionary_t **dictionary)
 {
     struct {
