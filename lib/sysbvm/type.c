@@ -189,7 +189,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createWithName(sysbvm_context_t *context, 
     return result;
 }
 
-static sysbvm_tuple_t sysbvm_type_doCreateSimpleFunctionType(sysbvm_context_t *context, sysbvm_tuple_t templateResult, sysbvm_tuple_t argumentTypes, sysbvm_tuple_t isVariadic, sysbvm_tuple_t resultType)
+static sysbvm_tuple_t sysbvm_type_doCreateSimpleFunctionType(sysbvm_context_t *context, sysbvm_tuple_t templateResult, sysbvm_tuple_t argumentTypes, sysbvm_tuple_t flags, sysbvm_tuple_t resultType)
 {
     sysbvm_type_tuple_t *supertype = (sysbvm_type_tuple_t*)context->roots.functionType;
     
@@ -202,14 +202,14 @@ static sysbvm_tuple_t sysbvm_type_doCreateSimpleFunctionType(sysbvm_context_t *c
     result->super.instanceSize = sysbvm_tuple_size_encode(context, 0);
     result->super.instanceAlignment = sysbvm_tuple_size_encode(context, 0);
     result->argumentTypes = argumentTypes;
-    result->isVariadic = isVariadic;
+    result->functionFlags = flags;
     result->resultType = resultType;
     return (sysbvm_tuple_t)result;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_type_createSimpleFunctionType(sysbvm_context_t *context, sysbvm_tuple_t argumentTypes, bool isVariadic, sysbvm_tuple_t resultType)
+SYSBVM_API sysbvm_tuple_t sysbvm_type_createSimpleFunctionType(sysbvm_context_t *context, sysbvm_tuple_t argumentTypes, sysbvm_bitflags_t flags, sysbvm_tuple_t resultType)
 {
-    return sysbvm_function_apply3(context, context->roots.simpleFunctionTypeTemplate, argumentTypes, sysbvm_tuple_boolean_encode(isVariadic), resultType);
+    return sysbvm_function_apply3(context, context->roots.simpleFunctionTypeTemplate, argumentTypes, sysbvm_tuple_bitflags_encode(flags), resultType);
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_type_createSimpleFunctionTypeWithArguments0(sysbvm_context_t *context, sysbvm_tuple_t resultType)
@@ -221,7 +221,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createSimpleFunctionTypeWithArguments0(sys
 
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     gcFrame.arguments = sysbvm_array_create(context, 0);
-    gcFrame.result = sysbvm_type_createSimpleFunctionType(context, gcFrame.arguments, false, resultType);
+    gcFrame.result = sysbvm_type_createSimpleFunctionType(context, gcFrame.arguments, 0, resultType);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
@@ -238,7 +238,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createSimpleFunctionTypeWithArguments1(sys
     gcFrame.arguments = sysbvm_array_create(context, 1);
     sysbvm_array_atPut(gcFrame.arguments, 0, argument);
 
-    gcFrame.result = sysbvm_type_createSimpleFunctionType(context, gcFrame.arguments, false, resultType);
+    gcFrame.result = sysbvm_type_createSimpleFunctionType(context, gcFrame.arguments, 0, resultType);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
 }
@@ -255,7 +255,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createSimpleFunctionTypeWithArguments2(sys
     sysbvm_array_atPut(gcFrame.arguments, 0, argument0);
     sysbvm_array_atPut(gcFrame.arguments, 1, argument1);
 
-    gcFrame.result = sysbvm_type_createSimpleFunctionType(context, gcFrame.arguments, false, resultType);
+    gcFrame.result = sysbvm_type_createSimpleFunctionType(context, gcFrame.arguments, 0, resultType);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
 }
@@ -441,7 +441,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_referenceType_withTupleAndTypeSlot(sysbvm_conte
     return (sysbvm_tuple_t)reference;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_type_createDependentFunctionType(sysbvm_context_t *context, sysbvm_tuple_t argumentNodes, bool isVariadic, sysbvm_tuple_t resultTypeNode,
+SYSBVM_API sysbvm_tuple_t sysbvm_type_createDependentFunctionType(sysbvm_context_t *context, sysbvm_tuple_t argumentNodes, sysbvm_bitflags_t flags, sysbvm_tuple_t resultTypeNode,
     sysbvm_tuple_t environment, sysbvm_tuple_t captureBindings, sysbvm_tuple_t argumentBindings, sysbvm_tuple_t localBindings)
 {
     sysbvm_type_tuple_t *supertype = (sysbvm_type_tuple_t*)context->roots.functionType;
@@ -451,7 +451,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createDependentFunctionType(sysbvm_context
     result->super.flags = sysbvm_tuple_bitflags_encode(sysbvm_tuple_bitflags_decode(supertype->flags) | SYSBVM_TYPE_FLAGS_FUNCTION);
     result->super.totalSlotCount = supertype->totalSlotCount;
     result->argumentNodes = argumentNodes;
-    result->isVariadic = sysbvm_tuple_boolean_encode(isVariadic);
+    result->functionFlags = sysbvm_tuple_bitflags_encode(flags);
     result->resultTypeNode = resultTypeNode;
 
     result->environment = environment;

@@ -1,10 +1,10 @@
 ## We use these for the different implementations of Size
-error __type__: (SimpleFunctionTypeTemplate((String,), false, Unwinds)).
+error __type__: (SimpleFunctionTypeTemplate((String,), 0bflgs, Unwinds)).
     
 {
-    let: #binaryFunctionType with: SimpleFunctionTypeTemplate((UInt32, UInt32), false, UInt32).
-    let: #equalityComparisonFunctionType with: SimpleFunctionTypeTemplate((UInt32, AnyValue), false, Boolean).
-    let: #comparisonFunctionType with: SimpleFunctionTypeTemplate((UInt32, UInt32), false, Boolean).
+    let: #binaryFunctionType with: SimpleFunctionTypeTemplate((UInt32, UInt32), 0bflgs, UInt32).
+    let: #equalityComparisonFunctionType with: SimpleFunctionTypeTemplate((UInt32, AnyValue), 0bflgs, Boolean).
+    let: #comparisonFunctionType with: SimpleFunctionTypeTemplate((UInt32, UInt32), 0bflgs, Boolean).
 
     UInt32::+ __type__: binaryFunctionType.
     UInt32::- __type__: binaryFunctionType.
@@ -26,9 +26,9 @@ error __type__: (SimpleFunctionTypeTemplate((String,), false, Unwinds)).
 }.
 
 {
-    let: #binaryFunctionType with: SimpleFunctionTypeTemplate((UInt64, UInt64), false, UInt64).
-    let: #equalityComparisonFunctionType with: SimpleFunctionTypeTemplate((UInt64, AnyValue), false, Boolean).
-    let: #comparisonFunctionType with: SimpleFunctionTypeTemplate((UInt64, UInt64), false, Boolean).
+    let: #binaryFunctionType with: SimpleFunctionTypeTemplate((UInt64, UInt64), 0bflgs, UInt64).
+    let: #equalityComparisonFunctionType with: SimpleFunctionTypeTemplate((UInt64, AnyValue), 0bflgs, Boolean).
+    let: #comparisonFunctionType with: SimpleFunctionTypeTemplate((UInt64, UInt64), 0bflgs, Boolean).
 
     UInt64::+ __type__: binaryFunctionType.
     UInt64::- __type__: binaryFunctionType.
@@ -50,8 +50,8 @@ error __type__: (SimpleFunctionTypeTemplate((String,), false, Unwinds)).
 }.
 
 {
-    let: #booleanFunctionType with: SimpleFunctionTypeTemplate((Untyped,), false, Boolean).
-    let: #sizeFunctionType with: SimpleFunctionTypeTemplate((Untyped,), false, Size).
+    let: #booleanFunctionType with: SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Boolean).
+    let: #sizeFunctionType with: SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Size).
 
     (RawTuple::isBytes) __type__: booleanFunctionType.
     (RawTuple::size) __type__: sizeFunctionType.
@@ -62,10 +62,21 @@ Function
     withSelector: #withEagerAnalysis addMethod: {:(Function)self :: Function |
         self ensureAnalysis.
         self
-    };
-    withSelector: #addFlags: addMethod: {:(Function)self :(Bitflags)flag :: Void |
+    }.
+
+FunctionDefinition
+    withSelector: #addFlags: addMethod: {:(FunctionDefinition)self :(Bitflags)flag :: Void |
         self flags: self flags | flag
-    } withEagerAnalysis;
+    } withEagerAnalysis.
+
+Function
+    withSelector: #addFlags: addMethod: {:(Function)self :(Bitflags)flag :: Void |
+        self flags: self flags | flag.
+        let: #definition with: self definition.
+        if: definition ~~ nil then: (definition addFlags: flag).
+    } withEagerAnalysis.
+
+Function
     withSelector: #makeMacro addMethod: {:(Function)self :: Function |
         self addFlags: FunctionFlags::Macro.
         self
@@ -106,7 +117,7 @@ Function
 
 Type
     withSelector: #=> addMethod: {:(Type)self :(Type)resultType :: SimpleFunctionType |
-        SimpleFunctionTypeTemplate((self,), false, resultType)
+        SimpleFunctionTypeTemplate((self,), 0bflgs, resultType)
     } makePure makeFinal withEagerAnalysis.
 
 ValueBox
@@ -962,7 +973,7 @@ Collection
 
 SequenceableCollection
     withSelector: #=> addMethod: {:(SequenceableCollection)self :(Type)resultType :: SimpleFunctionType |
-        SimpleFunctionTypeTemplate(self asArray, false, resultType)
+        SimpleFunctionTypeTemplate(self asArray, 0bflgs, resultType)
     } makePure makeFinal.
 
 Association
@@ -2236,6 +2247,12 @@ SimpleFunctionType
     withSelector: #canonicalResultType addMethod: {:(SimpleFunctionType)self :: Type |
         let: #resultType with: self resultType.
         if: resultType == nil then: Untyped else: resultType.
+    };
+    withSelector: #hasFunctionFlag: addMethod: {:(SimpleFunctionType)self :(Bitflags)flag :: Boolean |
+        (self functionFlags & flag) ~= 0bflgs
+    };
+    withSelector: #isVariadic addMethod: {:(SimpleFunctionType)self :: Boolean |
+        self hasFunctionFlag: FunctionFlags::Variadic
     };
     withSelector: #printOn: addMethod: {:(SimpleFunctionType)self :(Stream)stream :: Void |
         stream nextPut: '('.

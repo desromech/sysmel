@@ -1105,8 +1105,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_canonicalizeFunctionType(sysbvm_context_t 
     if(dependentFunctionType->resultTypeNode)
         resultType = sysbvm_astLiteralNode_getValue(dependentFunctionType->resultTypeNode);
 
-    bool isVariadic = sysbvm_tuple_boolean_decode(dependentFunctionType->isVariadic);
-    return sysbvm_type_createSimpleFunctionType(context, argumentTypes, isVariadic, resultType);
+    sysbvm_bitflags_t flags = sysbvm_tuple_bitflags_decode(dependentFunctionType->functionFlags);
+    return sysbvm_type_createSimpleFunctionType(context, argumentTypes, flags, resultType);
 }
 
 static void sysbvm_functionDefinition_analyzeType(sysbvm_context_t *context, sysbvm_functionDefinition_t **functionDefinition)
@@ -1138,8 +1138,8 @@ static void sysbvm_functionDefinition_analyzeType(sysbvm_context_t *context, sys
     if((*functionDefinition)->definitionResultTypeNode)
         gcFrame.analyzedResultTypeNode = sysbvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, (*functionDefinition)->definitionResultTypeNode, context->roots.typeType, gcFrame.analysisEnvironment);
 
-    bool isVariadic = (sysbvm_tuple_bitflags_decode((*functionDefinition)->flags) & SYSBVM_FUNCTION_FLAGS_VARIADIC) != 0;
-    gcFrame.analyzedType = sysbvm_type_createDependentFunctionType(context, gcFrame.analyzedArgumentsNode, isVariadic, gcFrame.analyzedResultTypeNode,
+    sysbvm_bitflags_t flags = sysbvm_tuple_bitflags_decode((*functionDefinition)->flags) & SYSBVM_FUNCTION_TYPE_FLAGS;
+    gcFrame.analyzedType = sysbvm_type_createDependentFunctionType(context, gcFrame.analyzedArgumentsNode, flags, gcFrame.analyzedResultTypeNode,
         gcFrame.analysisEnvironment,
         sysbvm_orderedCollection_asArray(context, gcFrame.analysisEnvironmentObject->captureBindingList),
         sysbvm_orderedCollection_asArray(context, gcFrame.analysisEnvironmentObject->argumentBindingList),
@@ -5251,22 +5251,35 @@ static sysbvm_tuple_t sysbvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckFunc
 
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    bool isVariadic = sysbvm_tuple_boolean_decode((*simpleFunctionType)->isVariadic);
+    sysbvm_bitflags_t flags = sysbvm_tuple_bitflags_decode((*simpleFunctionType)->functionFlags);
+    bool isVariadic = (flags & SYSBVM_FUNCTION_FLAGS_VARIADIC) != 0;
+    bool isMemoizedTemplate = (flags & SYSBVM_FUNCTION_FLAGS_MEMOIZED_TEMPLATE) == SYSBVM_FUNCTION_FLAGS_MEMOIZED_TEMPLATE;
+
     size_t typeArgumentCount = sysbvm_array_getSize((*simpleFunctionType)->argumentTypes);
+    size_t expectedArgumentCount = typeArgumentCount;
     size_t applicationArgumentCount = sysbvm_array_getSize((*functionApplicationNode)->arguments);
+    size_t startingArgumentIndex = isMemoizedTemplate ? 1 : 0;
     if(isVariadic && typeArgumentCount == 0)
         sysbvm_error("Variadic applications require at least a single argument.");
 
     size_t directApplicationArgumentCount = isVariadic ? typeArgumentCount - 1 : typeArgumentCount;
+    if(isMemoizedTemplate)
+    {
+        if(expectedArgumentCount == 0)
+            sysbvm_error("Memoized template requires at least a single argument.");
+        --expectedArgumentCount;
+        --directApplicationArgumentCount;
+    }
+
     if(isVariadic && applicationArgumentCount < directApplicationArgumentCount)
         sysbvm_error("Missing required arguments.");
-    else if(!isVariadic && applicationArgumentCount != typeArgumentCount)
+    else if(!isVariadic && applicationArgumentCount != expectedArgumentCount)
         sysbvm_error("Expected number of arguments is mismatching.");
 
     gcFrame.analyzedArguments = sysbvm_array_create(context, applicationArgumentCount);
     for(size_t i = 0; i < directApplicationArgumentCount; ++i)
     {
-        gcFrame.expectedArgumentType = sysbvm_array_at((*simpleFunctionType)->argumentTypes, i);
+        gcFrame.expectedArgumentType = sysbvm_array_at((*simpleFunctionType)->argumentTypes, startingArgumentIndex + i);
         gcFrame.argumentNode = sysbvm_array_at((*functionApplicationNode)->arguments, i);
         gcFrame.analyzedArgument = sysbvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.argumentNode, gcFrame.expectedArgumentType, *environment);
         sysbvm_array_atPut(gcFrame.analyzedArguments, i, gcFrame.analyzedArgument);
@@ -5353,7 +5366,8 @@ static sysbvm_tuple_t sysbvm_dependentFunctionType_primitiveAnalyzeAndTypeCheckF
     gcFrame.applicationEnvironment = sysbvm_functionActivationEnvironment_createForDependentFunctionType(context, SYSBVM_NULL_TUPLE, (sysbvm_tuple_t)*dependentFunctionType);
 
     size_t argumentNodeCount = sysbvm_array_getSize((*dependentFunctionType)->argumentNodes);
-    bool isVariadic = sysbvm_tuple_boolean_decode((*dependentFunctionType)->isVariadic);
+    sysbvm_bitflags_t flags = sysbvm_tuple_bitflags_decode((*dependentFunctionType)->functionFlags);
+    bool isVariadic = (flags & SYSBVM_FUNCTION_FLAGS_VARIADIC) != 0;
     if(isVariadic && argumentNodeCount == 0)
         sysbvm_error("Variadic functions at least one extra argument node.");
     

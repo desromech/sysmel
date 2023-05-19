@@ -567,6 +567,32 @@ FunctionMetaBuilder
 
 public: #function with: (MetaBuilderFactory for: FunctionMetaBuilder).
 
+FunctionMetaBuilder publicSubclass: #TemplateMetaBuilder slots: (
+).
+
+TemplateMetaBuilder
+    withSelector: #initialize addMethod: {:self :: Void |
+        (tuple: self withLookupStartingFrom: TemplateMetaBuilder supertype) initialize.
+        self functionFlags: FunctionFlags::Memoized | FunctionFlags::Template.
+    };
+    withSelector: #finishFunctionExpansion addMethod: {:self :: ASTNode |
+        let: #templateResultArgument with: (ASTArgumentNode new
+            sourcePosition: self sourcePosition;
+            isForAll: false;
+            name: `'#__templateResult__;
+            type: `'WeakValueAssociation;
+            yourself).
+
+        ASTLambdaNode new
+            sourcePosition: self sourcePosition;
+            flags: self functionFlags;
+            name: self name;
+            arguments: (Array with: templateResultArgument) -- self arguments;
+            body: self expansionBody;
+            resultType: self resultType;
+            yourself
+    }.
+
 MacroMetaBuilder publicSubclass: #MethodMetaBuilder slots: (
     TypeSlot publicNamed: #methodFlags type: Bitflags ,
     TypeSlot publicNamed: #isMacro type: Boolean ,
@@ -825,6 +851,13 @@ FlagMetaBuilder
     withSelector: #global addMethod: {:self :: ASTNode |
         <metaBuilder>
         self delegateToMetaBuilder: (GlobalMetaBuilder new
+            isPublic: self isPublic;
+            yourself)
+    };
+    withSelector: #template addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self delegateToMetaBuilder: (TemplateMetaBuilder new
+            addFunctionFlags: self methodFlags;
             isPublic: self isPublic;
             yourself)
     }.

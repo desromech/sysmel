@@ -93,13 +93,13 @@ public class FixedArrayType superclass: ValueType; definition: {
     }.
 }.
 
-public global FixedArrayTypeTemplate := {:(WeakValueAssociation)templateResult :(Type)elementType :(Size)size :: FixedArrayType |
+public template FixedArrayTypeTemplate(elementType: Type, size: Size) => FixedArrayType := {
     let result := FixedArrayType basicNew.
-    templateResult value: result.
+    __templateResult__ value: result.
     result
         initializeWithElementType: elementType size: size;
         yourself.
-} makeMemoized makeTemplate.
+}.
 
 Type extend: {
     public pure final method fixedArray: (size: Size) ::=> FixedArrayType

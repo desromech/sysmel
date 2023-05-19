@@ -134,7 +134,7 @@ typedef struct sysbvm_simpleFunctionType_s
 {
     sysbvm_type_tuple_t super;
     sysbvm_tuple_t argumentTypes;
-    sysbvm_tuple_t isVariadic;
+    sysbvm_tuple_t functionFlags;
     sysbvm_tuple_t resultType;
 } sysbvm_simpleFunctionType_t;
 
@@ -144,7 +144,7 @@ typedef struct sysbvm_dependentFunctionType_s
     sysbvm_tuple_t sourcePosition;
 
     sysbvm_tuple_t argumentNodes;
-    sysbvm_tuple_t isVariadic;
+    sysbvm_tuple_t functionFlags;
     sysbvm_tuple_t resultTypeNode;
 
     sysbvm_tuple_t environment;
@@ -239,13 +239,13 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createWithName(sysbvm_context_t *context, 
 /**
  * Creates a dependent function type.
  */
-SYSBVM_API sysbvm_tuple_t sysbvm_type_createDependentFunctionType(sysbvm_context_t *context, sysbvm_tuple_t argumentNodes, bool isVariadic, sysbvm_tuple_t resultTypeNode,
+SYSBVM_API sysbvm_tuple_t sysbvm_type_createDependentFunctionType(sysbvm_context_t *context, sysbvm_tuple_t argumentNodes, sysbvm_bitflags_t flags, sysbvm_tuple_t resultTypeNode,
     sysbvm_tuple_t environment, sysbvm_tuple_t captureBindings, sysbvm_tuple_t argumentBindings, sysbvm_tuple_t localBindings);
 
 /**
  * Creates a simple function type.
  */
-SYSBVM_API sysbvm_tuple_t sysbvm_type_createSimpleFunctionType(sysbvm_context_t *context, sysbvm_tuple_t argumentTypes, bool isVariadic, sysbvm_tuple_t resultType);
+SYSBVM_API sysbvm_tuple_t sysbvm_type_createSimpleFunctionType(sysbvm_context_t *context, sysbvm_tuple_t argumentTypes, sysbvm_bitflags_t flags, sysbvm_tuple_t resultType);
 
 /**
  * Creates a simple function type with no arguments.
