@@ -225,15 +225,36 @@ let primitiveFunctionGenerators := #{
     #yourself : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
         self arguments first generateSSAValueWith: context
     }.
+    #RawTuple::typeSlotAt: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+        self arguments second isLiteralNode ifTrue: {
+            let tuple := self arguments first generateSSAValueWith: context.
+            let typeSlot => TypeSlot := self arguments second value.
+            
+            context builder tuple: tuple typedSlotAt: typeSlot.
+        } ifFalse: {
+            nil
+        }.
+    }.
+    #RawTuple::typeSlotAt:put: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+        self arguments second isLiteralNode ifTrue: {
+            let tuple := self arguments first generateSSAValueWith: context.
+            let typeSlot => TypeSlot := self arguments second value.
+            let value := self arguments third generateSSAValueWith: context.
+            
+            context builder tuple: tuple typedSlotAt: typeSlot put: value.
+        } ifFalse: {
+            nil
+        }.
+    }.
 }.
 
 ASTFunctionApplicationNode extend: {
     public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
         let functionExpression := self functionExpression generateSSAValueWith: context.
         let primitiveGenerator := primitiveFunctionGenerators atOrNil: functionExpression primitiveName.
-        primitiveGenerator ifNotNil: {
+        (primitiveGenerator ifNotNil: {
             primitiveGenerator(self, context)
-        } ifNil: {
+        }) ifNil: {
             (context builder call: functionExpression
                 arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
                 resultType: self analyzedType)

@@ -898,6 +898,81 @@ public final class SSADownCastInstruction superclass: SSAInstruction; definition
     }.
 }.
 
+public final class SSATypeSlotAtInstruction superclass: SSAInstruction; definition: {
+    public field tuple => SSAValue.
+    public field typeSlot => TypeSlot.
+
+    public method isTypeSlotAtInstruction => Boolean := true.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream print: self; nextPutAll: " := typedSlotOf "; print: self tuple; nextPutAll: " at "; print: self typeSlot
+    }.
+
+    public method usedValuesDo: aBlock ::=> Void := {
+        aBlock(self tuple).
+    }.
+
+    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        if: self tuple = replacedValue then: (self tuple: replacement).
+    }.
+
+    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+        replacementDictionary at: self tuple ifPresent: {:(SSAValue)replacement :: Void | self tuple: replacement}.
+    }.
+}.
+
+public final class SSATypeSlotReferenceAtInstruction superclass: SSAInstruction; definition: {
+    public field tuple => SSAValue.
+    public field typeSlot => TypeSlot.
+
+    public method isTypeSlotAtInstruction => Boolean := true.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream print: self; nextPutAll: " := typedSlotOf "; print: self tuple; nextPutAll: " referenceAt "; print: self typeSlot
+    }.
+
+    public method usedValuesDo: aBlock ::=> Void := {
+        aBlock(self tuple).
+    }.
+
+    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        if: self tuple = replacedValue then: (self tuple: replacement).
+    }.
+
+    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+        replacementDictionary at: self tuple ifPresent: {:(SSAValue)replacement :: Void | self tuple: replacement}.
+    }.
+}.
+
+public final class SSATypeSlotAtPutInstruction superclass: SSAInstruction; definition: {
+    public field tuple => SSAValue.
+    public field value => SSAValue.
+    public field typeSlot => TypeSlot.
+
+    public method isTypeSlotAtInstruction => Boolean := true.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream print: self; nextPutAll: "typedSlotOf "; print: self tuple;
+            nextPutAll: " at "; print: self typeSlot;
+            nextPutAll: " put "; print: self value
+    }.
+
+    public method usedValuesDo: aBlock ::=> Void := {
+        aBlock(self tuple).
+        aBlock(self value).
+    }.
+
+    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        if: self tuple = replacedValue then: (self tuple: replacement).
+        if: self value = replacedValue then: (self value: replacement).
+    }.
+
+    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+        replacementDictionary at: self tuple ifPresent: {:(SSAValue)replacement :: Void | self tuple: replacement}.
+        replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
+    }.
+}.
+
 public final class SSALoadInstruction superclass: SSAInstruction; definition: {
     public field storage => SSAValue.
 
@@ -1336,6 +1411,31 @@ SSAInstructionBuilder definition: {
         := self addInstruction: (SSAStoreInstruction new
             value: value;
             storage: storage;
+            registerInUsedValues;
+            yourself).
+
+    public method tuple: (tuple: SSAValue) typedSlotAt: (typeSlot: TypeSlot) ::=> SSATypeSlotAtInstruction
+        := self addInstruction: (SSATypeSlotAtInstruction new
+            tuple: tuple;
+            typeSlot: typeSlot;
+            type: typeSlot type;
+            registerInUsedValues;
+            yourself).
+
+    public method tuple: (tuple: SSAValue) typedSlotReferenceAt: (typeSlot: TypeSlot) ::=> SSATypeSlotReferenceAtInstruction
+        := self addInstruction: (SSATypeSlotReferenceAtInstruction new
+            tuple: tuple;
+            typeSlot: typeSlot;
+            type: typeSlot referenceType;
+            registerInUsedValues;
+            yourself).
+
+    public method tuple: (tuple: SSAValue) typedSlotAt: (typeSlot: TypeSlot) put: (value: SSAValue) ::=> SSATypeSlotAtPutInstruction
+        := self addInstruction: (SSATypeSlotAtPutInstruction new
+            tuple: tuple;
+            typeSlot: typeSlot;
+            value: value;
+            type: Void;
             registerInUsedValues;
             yourself).
 
