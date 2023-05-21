@@ -52,9 +52,11 @@ typedef struct sysbvm_context_roots_s
 
     sysbvm_tuple_t assignmentSelector;
     sysbvm_tuple_t underscoreSelector;
+    sysbvm_tuple_t addressSelector;
 
     sysbvm_tuple_t pointerLikeLoadPrimitive;
     sysbvm_tuple_t pointerLikeStorePrimitive;
+    sysbvm_tuple_t pointerLikeReinterpretCast;
     sysbvm_tuple_t pointerTypeTemplate;
     sysbvm_tuple_t referenceTypeTemplate;
     sysbvm_tuple_t simpleFunctionTypeTemplate;

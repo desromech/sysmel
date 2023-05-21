@@ -306,14 +306,39 @@ static sysbvm_tuple_t sysbvm_pointerLikeType_createPointerLikeStoreFunction(sysb
     return gcFrame.function;
 }
 
+static sysbvm_tuple_t sysbvm_pointerLikeType_createPointerLikeReinterpretCast(sysbvm_context_t *context, sysbvm_tuple_t sourcePointerLikeType_, sysbvm_tuple_t targetPointerLikeType_, sysbvm_bitflags_t extraFlags)
+{
+    struct {
+        sysbvm_tuple_t sourcePointerLikeType;
+        sysbvm_tuple_t targetPointerLikeType;
+        sysbvm_tuple_t function;
+        sysbvm_tuple_t functionType;
+    } gcFrame = {
+        .sourcePointerLikeType = sourcePointerLikeType_,
+        .targetPointerLikeType = targetPointerLikeType_,
+    };
+    SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    gcFrame.function = sysbvm_context_shallowCopy(context, context->roots.pointerLikeReinterpretCast);
+    sysbvm_function_addFlags(context, gcFrame.function, extraFlags);
+
+    gcFrame.functionType = sysbvm_type_createSimpleFunctionTypeWithArguments1(context, gcFrame.sourcePointerLikeType, gcFrame.targetPointerLikeType);
+    sysbvm_tuple_setType((sysbvm_object_tuple_t*)gcFrame.function, gcFrame.functionType);
+
+    SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.function;
+}
+
 static sysbvm_tuple_t sysbvm_type_doCreatePointerType(sysbvm_context_t *context, sysbvm_tuple_t templateResult_, sysbvm_tuple_t baseType_, sysbvm_tuple_t addressSpace_)
 {
     struct {
         sysbvm_tuple_t baseType;
         sysbvm_tuple_t addressSpace;
+        sysbvm_tuple_t referenceType;
         sysbvm_pointerType_t* result;
         sysbvm_tuple_t storeFunction;
         sysbvm_tuple_t loadFunction;
+        sysbvm_tuple_t pointerToReferenceFunction;
 
     } gcFrame = {
         .baseType = baseType_,
@@ -337,6 +362,10 @@ static sysbvm_tuple_t sysbvm_type_doCreatePointerType(sysbvm_context_t *context,
     gcFrame.loadFunction = sysbvm_pointerLikeType_createPointerLikeLoadFunction(context, (sysbvm_tuple_t)gcFrame.result, gcFrame.baseType, 0);
     gcFrame.result->super.loadValueFunction = gcFrame.loadFunction;
 
+    gcFrame.referenceType = sysbvm_type_createReferenceType(context, gcFrame.baseType, gcFrame.addressSpace);
+    gcFrame.pointerToReferenceFunction = sysbvm_pointerLikeType_createPointerLikeReinterpretCast(context, (sysbvm_tuple_t)gcFrame.result, gcFrame.referenceType, 0);
+    sysbvm_type_setMethodWithSelector(context, (sysbvm_tuple_t)gcFrame.result, context->roots.underscoreSelector, gcFrame.pointerToReferenceFunction);
+
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return (sysbvm_tuple_t)gcFrame.result;
 }
@@ -352,6 +381,8 @@ static sysbvm_tuple_t sysbvm_type_doCreateReferenceType(sysbvm_context_t *contex
         sysbvm_tuple_t baseType;
         sysbvm_tuple_t addressSpace;
         sysbvm_referenceType_t* result;
+        sysbvm_tuple_t pointerType;
+        sysbvm_tuple_t referenceToPointerFunction;
         sysbvm_tuple_t storeFunction;
         sysbvm_tuple_t loadFunction;
 
@@ -377,6 +408,10 @@ static sysbvm_tuple_t sysbvm_type_doCreateReferenceType(sysbvm_context_t *contex
 
     gcFrame.loadFunction = sysbvm_pointerLikeType_createPointerLikeLoadFunction(context, (sysbvm_tuple_t)gcFrame.result, gcFrame.baseType, SYSBVM_FUNCTION_FLAGS_ALLOW_REFERENCE_IN_RECEIVER);
     gcFrame.result->super.loadValueFunction = gcFrame.loadFunction;
+
+    gcFrame.pointerType = sysbvm_type_createPointerType(context, gcFrame.baseType, gcFrame.addressSpace);
+    gcFrame.referenceToPointerFunction = sysbvm_pointerLikeType_createPointerLikeReinterpretCast(context, (sysbvm_tuple_t)gcFrame.result, gcFrame.pointerType, 0);
+    sysbvm_type_setMethodWithSelector(context, (sysbvm_tuple_t)gcFrame.result, context->roots.addressSelector, gcFrame.referenceToPointerFunction);
 
     return (sysbvm_tuple_t)gcFrame.result;
 }
@@ -1117,9 +1152,24 @@ static sysbvm_tuple_t sysbvm_type_primitive_pointerLikeStore(sysbvm_context_t *c
     (void)context;
     (void)closure;
     (void)arguments;
-    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(1, argumentCount);
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     return sysbvm_pointerLikeType_store(context, arguments[0], arguments[1]);
+}
+
+static sysbvm_tuple_t sysbvm_type_primitive_pointerLikeTypeReinterpretCast(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    (void)arguments;
+    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
+
+    sysbvm_tuple_t closureType = sysbvm_tuple_getType(context, closure);
+    sysbvm_tuple_t resultType = ((sysbvm_simpleFunctionType_t*)closureType)->resultType;
+    
+    sysbvm_tuple_t result = sysbvm_context_shallowCopy(context, arguments[0]);
+    sysbvm_tuple_setType((sysbvm_object_tuple_t*)result, resultType);
+    return arguments[0];
 }
 
 static sysbvm_tuple_t sysbvm_void_primitive_anyValueToVoid(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -1199,6 +1249,7 @@ void sysbvm_type_registerPrimitives(void)
 
     sysbvm_primitiveTable_registerFunction(sysbvm_type_primitive_pointerLikeLoad, "PointerLikeType::load");
     sysbvm_primitiveTable_registerFunction(sysbvm_type_primitive_pointerLikeStore, "PointerLikeType::store:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_type_primitive_pointerLikeTypeReinterpretCast, "PointerLikeType::reinterpretCast");
     
     sysbvm_primitiveTable_registerFunction(sysbvm_void_primitive_anyValueToVoid, "Void::fromAnyValue");
     sysbvm_primitiveTable_registerFunction(sysbvm_void_primitive_coerceASTNodeWithEnvironment, "Void::coerceASTNode:withEnvironment:");
@@ -1218,6 +1269,7 @@ void sysbvm_type_setupPrimitives(sysbvm_context_t *context)
     context->roots.referenceTypeTemplate = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "ReferenceTypeTemplate", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_MEMOIZED | SYSBVM_FUNCTION_FLAGS_TEMPLATE, NULL, sysbvm_type_primitive_createReferenceType);
     context->roots.pointerLikeLoadPrimitive = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "PointerLikeType::load", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_type_primitive_pointerLikeLoad);
     context->roots.pointerLikeStorePrimitive = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "PointerLikeType::store:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_type_primitive_pointerLikeStore);
+    context->roots.pointerLikeReinterpretCast = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "PointerLikeType::reinterpretCast", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_type_primitive_pointerLikeTypeReinterpretCast);
     
     context->roots.anyValueToVoidPrimitive = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "Void::fromAnyValue", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_NO_TYPECHECK_ARGUMENTS, NULL, sysbvm_void_primitive_anyValueToVoid);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Void::coerceASTNode:withEnvironment:", sysbvm_tuple_getType(context, context->roots.voidType), "coerceASTNode:withEnvironment:", 3, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_void_primitive_coerceASTNodeWithEnvironment);

@@ -418,6 +418,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.storeInAtOffsetWithTypeSelector = sysbvm_symbol_internWithCString(context, "store:in:atOffset:withType:");
     context->roots.assignmentSelector = sysbvm_symbol_internWithCString(context, ":=");
     context->roots.underscoreSelector = sysbvm_symbol_internWithCString(context, "_");
+    context->roots.addressSelector = sysbvm_symbol_internWithCString(context, "address");
 
     context->roots.astNodeAnalysisSelector = sysbvm_symbol_internWithCString(context, "analyzeWithEnvironment:");
     context->roots.astNodeEvaluationSelector = sysbvm_symbol_internWithCString(context, "evaluateWithEnvironment:");
