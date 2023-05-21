@@ -21,6 +21,7 @@ SYSBVM_API void sysbvm_error_modifyImmutableTuple();
 SYSBVM_API void sysbvm_error_argumentCountMismatch(size_t expected, size_t gotten);
 SYSBVM_API void sysbvm_error_outOfBoundsSlotAccess();
 SYSBVM_API void sysbvm_error_trap();
+SYSBVM_API void sysbvm_error_nullArgument();
 SYSBVM_API void sysbvm_error_unexpectedType(sysbvm_tuple_t expectedType, sysbvm_tuple_t value);
 
 #endif //SYSBVM_ERRORS_H

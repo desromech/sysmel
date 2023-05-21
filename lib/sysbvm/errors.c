@@ -66,6 +66,11 @@ SYSBVM_API void sysbvm_error_trap()
     sysbvm_error("Trap instruction.");
 }
 
+SYSBVM_API void sysbvm_error_nullArgument()
+{
+    sysbvm_error("Null argument.");
+}
+
 SYSBVM_API void sysbvm_error_unexpectedType(sysbvm_tuple_t expectedType, sysbvm_tuple_t value)
 {
     (void)expectedType;

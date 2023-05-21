@@ -261,18 +261,19 @@ TypeSlot
         if: typeSlot isPublic then: {
             let: #slotType with: typeSlot type.
             let: #getterName with: typeSlot name.
-            let: #setterName with: (typeSlot name asString -- ":") asSymbol.
 
             ## Getter.
             type withSelector: getterName addMethod: {:(type)self :: slotType |
                 ## TODO: Perform direct access via the AST node.
-                (RawTuple::slotAt:)(self, typeSlot index)
+                (RawTuple::typeSlotAt:)(self, typeSlot)
             } makePure makeFinal recompileAndOptimize.
 
             ## Setter
             if: typeSlot isReadonly not then: {
+                let: #setterName with: (typeSlot name asString -- ":") asSymbol.
+
                 type withSelector: setterName addMethod: {:(type)self :(slotType)value :: Void |
-                    RawTuple::slotAt:put:(self, typeSlot index, value)
+                    RawTuple::typeSlotAt:put:(self, typeSlot, value)
                 } makeFinal recompileAndOptimize.
             }
         }

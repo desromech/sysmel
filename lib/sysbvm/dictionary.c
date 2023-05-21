@@ -319,7 +319,7 @@ SYSBVM_API bool sysbvm_weakValueDictionary_findAssociation(sysbvm_context_t *con
         return false;
     }
 
-    *outAssociation = gcFrame.association;
+    *outAssociation = (sysbvm_tuple_t)gcFrame.association;
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return true;
 }

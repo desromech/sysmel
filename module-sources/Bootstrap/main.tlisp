@@ -51,7 +51,6 @@
         0
         (RawTuple::slotAt: supertype Type::Layout::totalSlotCount)))
     (until:do: slotCount (lambda (localSlotIndex)
-        (define slotIndex (Size::+ supertypeSlotCount localSlotIndex))
         (define slot (RawTuple::slotAt: slots localSlotIndex))
         (define slotName (RawTuple::slotAt: slot TypeSlot::Layout::name))
         (define slotFlags (RawTuple::slotAt: slot TypeSlot::Layout::flags))
@@ -60,12 +59,12 @@
         ## Getter
         (exportAndBindInstanceMethod slotName
             (setupGetter (lambda (self)
-                (RawTuple::slotAt: self slotIndex))))
+                (RawTuple::typeSlotAt: self slot))))
 
         ## Setter
         (exportAndBindInstanceMethod (StringSymbol::intern (String::concat: (asString slotName) ":"))
             (setupSetter (lambda (self value)
-                (RawTuple::slotAt:put: self slotIndex value)))
+                (RawTuple::typeSlotAt:put: self slot value)))
         ))))
 
 (define intrinsicTypeCount (RawTuple::slotAt: BootstrapEnv::IntrinsicTypes 0))
