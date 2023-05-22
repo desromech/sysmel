@@ -4,6 +4,7 @@ loadSourceNamed: "RuntimeMacros.sysmel".
 loadSourceNamed: "MetaBuilders.sysmel".
 loadSourceNamed: "FixedArray.sysmel".
 loadSourceNamed: "Enum.sysmel".
+loadSourceNamed: "ByteSerializableObject.sysmel".
 loadSourceNamed: "Struct.sysmel".
 loadSourceNamed: "ObjectModel.sysmel".
 loadSourceNamed: "Interval.sysmel".

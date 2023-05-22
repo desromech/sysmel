@@ -1,0 +1,26 @@
+public class ByteSerializableObject superclass: Object; definition: {
+    __Meta__ extend: {
+        public method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
+            self ensureLayoutIsComputed.
+
+            self allSlotsDo: {:(TypeSlot)eachSlot :: Void |
+                eachSlot type encodeValue: (RawTuple::typeSlotAt:)(value, eachSlot) inBytes: bytes atOffset: offset + eachSlot offset
+            }
+        }.
+        public method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> self := {
+            let result := self basicAllocate.
+            self ensureLayoutIsComputed.
+
+            self allSlotsDo: {:(TypeSlot)eachSlot :: Void |
+                (RawTuple::typeSlotAt:put:)(result, eachSlot,
+                    eachSlot type decodeValueFromBytes: bytes atOffset: offset + eachSlot offset
+                )
+            }.
+
+            result
+        }.
+    }.
+
+    public method sizeOfByteEncoding => Size := self __type__ validInstanceSize. 
+    public method canEncodeInBytes => Boolean := true.
+}.

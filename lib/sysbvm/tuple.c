@@ -197,6 +197,16 @@ static sysbvm_tuple_t sysbvm_tuple_primitive_typeSlotAt(sysbvm_context_t *contex
     return sysbvm_tuple_slotAt(context, arguments[0], sysbvm_typeSlot_getIndex(arguments[1]));
 }
 
+static sysbvm_tuple_t sysbvm_tuple_primitive_refTypeSlotAt(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+    if(!sysbvm_tuple_isNonNullPointer(arguments[1])) sysbvm_error_nullArgument();
+
+    return sysbvm_tuple_slotAt(context, sysbvm_pointerLikeType_load(context, arguments[0]), sysbvm_typeSlot_getIndex(arguments[1]));
+}
+
 SYSBVM_API void sysbvm_tuple_slotAtPut(sysbvm_context_t *context, sysbvm_tuple_t tuple, size_t slotIndex, sysbvm_tuple_t value)
 {
     (void)context;
@@ -257,6 +267,17 @@ static sysbvm_tuple_t sysbvm_tuple_primitive_typeSlotAtPut(sysbvm_context_t *con
     if(!sysbvm_tuple_isNonNullPointer(arguments[1])) sysbvm_error_nullArgument();
 
     sysbvm_tuple_slotAtPut(context, arguments[0], sysbvm_typeSlot_getIndex(arguments[1]), arguments[2]);
+    return SYSBVM_VOID_TUPLE;
+}
+
+static sysbvm_tuple_t sysbvm_tuple_primitive_refTypeSlotAtPut(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
+    if(!sysbvm_tuple_isNonNullPointer(arguments[1])) sysbvm_error_nullArgument();
+
+    sysbvm_tuple_slotAtPut(context, sysbvm_pointerLikeType_load(context, arguments[0]), sysbvm_typeSlot_getIndex(arguments[1]), arguments[2]);
     return SYSBVM_VOID_TUPLE;
 }
 
@@ -383,6 +404,8 @@ void sysbvm_tuple_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_slotAtPut, "RawTuple::slotAt:put:");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_typeSlotAt, "RawTuple::typeSlotAt:");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_typeSlotAtPut, "RawTuple::typeSlotAt:put:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_refTypeSlotAt, "RawTuple::refTypeSlotAt:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_refTypeSlotAtPut, "RawTuple::refTypeSlotAt:put:");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_new, "RawTuple::new");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_byteNew, "RawTuple::byteNew");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_isBytes, "RawTuple::isBytes");
@@ -404,6 +427,8 @@ void sysbvm_tuple_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::slotAt:put:", context->roots.anyValueType, "__slotAt__:put:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_slotAtPut);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::typeSlotAt:", context->roots.anyValueType, "__typeSlotAt__:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_typeSlotAt);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::typeSlotAt:put:", context->roots.anyValueType, "__typeSlotAt__:put:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_typeSlotAtPut);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::refTypeSlotAt:", context->roots.anyValueType, "__refTypeSlotAt__:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_refTypeSlotAt);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::refTypeSlotAt:put:", context->roots.anyValueType, "__refTypeSlotAt__:put:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_refTypeSlotAtPut);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "RawTuple::new", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_new);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "RawTuple::byteNew", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_byteNew);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::isBytes", context->roots.anyValueType, "__isBytes__", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_isBytes);

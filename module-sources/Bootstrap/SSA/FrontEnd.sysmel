@@ -246,6 +246,27 @@ let primitiveFunctionGenerators := #{
             nil
         }.
     }.
+    #RawTuple::refTypeSlotAt: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+        self arguments second isLiteralNode ifTrue: {
+            let tuple := self arguments first generateSSAValueWith: context.
+            let typeSlot => TypeSlot := self arguments second value.
+            
+            context builder tuple: tuple typedSlotAt: typeSlot.
+        } ifFalse: {
+            nil
+        }.
+    }.
+    #RawTuple::refTypeSlotAt:put: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+        self arguments second isLiteralNode ifTrue: {
+            let tuple := self arguments first generateSSAValueWith: context.
+            let typeSlot => TypeSlot := self arguments second value.
+            let value := self arguments third generateSSAValueWith: context.
+            
+            context builder tuple: tuple typedSlotAt: typeSlot put: value.
+        } ifFalse: {
+            nil
+        }.
+    }.
 }.
 
 ASTFunctionApplicationNode extend: {

@@ -273,12 +273,12 @@ ObjectModelVariant64 extend: {
         let headerSize := ObjectModel::TupleHeader64 valueSize.
         let destination := heap serializedObjectData.
 
-        let header := ObjectModel::TupleHeader64 new
+        let header mutable => ObjectModel::TupleHeader64 := ObjectModel::TupleHeader64 new.
+        header
             isBytes: isBytes;
             isWeak: isWeak;
             identityHash: identityHash(object) asUInt64;
-            objectSize: (self computeSizeOfObjectInstanceContent: object);
-            yourself.
+            objectSize: (self computeSizeOfObjectInstanceContent: object).
         header encodeInBytes: destination atOffset: offset.
 
         isBytes ifTrue: {

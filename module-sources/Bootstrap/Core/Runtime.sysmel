@@ -1,6 +1,11 @@
 ## We use these for the different implementations of Size
 error __type__: (SimpleFunctionTypeTemplate((String,), 0bflgs, Unwinds)).
-    
+
+##(RawTuple::slotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size), 0bflgs, Untyped)).
+##(RawTuple::slotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size, Untyped), 0bflgs, Void)).
+(RawTuple::refTypeSlotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, TypeSlot), 0bflgs, Untyped)).
+(RawTuple::refTypeSlotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, TypeSlot, Untyped), 0bflgs, Void)).
+
 {
     let: #binaryFunctionType with: SimpleFunctionTypeTemplate((UInt32, UInt32), 0bflgs, UInt32).
     let: #equalityComparisonFunctionType with: SimpleFunctionTypeTemplate((UInt32, AnyValue), 0bflgs, Boolean).
@@ -205,6 +210,9 @@ Type
     withSelector: #isWeak addMethod: {:(Type)self :: Boolean |
         self hasFlag: TypeFlags::Weak.
     } withEagerAnalysis;
+    withSelector: #isPointerLikeType addMethod: {:(Type)self :: Boolean |
+        self hasFlag: TypeFlags::PointerValue | TypeFlags::ReferenceValue.
+    } withEagerAnalysis;
     withSelector: #basicAllocate addMethod: {:(Type)self :: self |
         let: #result with: (if: self isBytes
             then: RawTuple::byteNew(0sz)
@@ -266,20 +274,35 @@ TypeSlot
             let: #getterName with: typeSlot name.
             let: #receiverType with: type asReceiverType.
 
-            ## Getter.
-            type withSelector: getterName addMethod: {:(receiverType)self :: slotType |
-                ## TODO: Perform direct access via the AST node.
-                (RawTuple::typeSlotAt:)(self, typeSlot)
-            } makePure makeFinal recompileAndOptimize.
+            if: receiverType isPointerLikeType then: {
+                ## Getter.
+                type withSelector: getterName addMethod: {:(receiverType)self :: slotType |
+                    (RawTuple::refTypeSlotAt:)(self, typeSlot)
+                } makePure makeFinal recompileAndOptimize.
 
-            ## Setter
-            if: typeSlot isReadonly not then: {
-                let: #setterName with: (typeSlot name asString -- ":") asSymbol.
+                ## Setter
+                if: typeSlot isReadonly not then: {
+                    let: #setterName with: (typeSlot name asString -- ":") asSymbol.
 
-                type withSelector: setterName addMethod: {:(receiverType)self :(slotType)value :: Void |
-                    RawTuple::typeSlotAt:put:(self, typeSlot, value)
-                } makeFinal recompileAndOptimize.
-            }
+                    type withSelector: setterName addMethod: {:(receiverType)self :(slotType)value :: Void |
+                        (RawTuple::refTypeSlotAt:put:)(self, typeSlot, value)
+                    } makeFinal recompileAndOptimize.
+                }
+            } else: {
+                ## Getter.
+                type withSelector: getterName addMethod: {:(receiverType)self :: slotType |
+                    (RawTuple::typeSlotAt:)(self, typeSlot)
+                } makePure makeFinal recompileAndOptimize.
+
+                ## Setter
+                if: typeSlot isReadonly not then: {
+                    let: #setterName with: (typeSlot name asString -- ":") asSymbol.
+
+                    type withSelector: setterName addMethod: {:(receiverType)self :(slotType)value :: Void |
+                        (RawTuple::typeSlotAt:put:)(self, typeSlot, value)
+                    } makeFinal recompileAndOptimize.
+                }
+            }.
         }
     } withEagerAnalysis.
 
@@ -2635,7 +2658,7 @@ ValueType
     };
     withSelector: #isGarbageCollectedPointerType addMethod: {:(Type)self :: Boolean | false };
     withSelector: #isValueType addMethod: {:(Type)self :: Boolean | true };
-    withSelector: #asReceiverType addMethod: {:(Type)self :: Type | self }.
+    withSelector: #asReceiverType addMethod: {:(Type)self :: Type | self ref }.
 
 PrimitiveValueType
     withSelector: #asReceiverType addMethod: {:(Type)self :: Type | self }.

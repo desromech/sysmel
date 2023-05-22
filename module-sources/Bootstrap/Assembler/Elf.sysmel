@@ -86,7 +86,7 @@ public global Elf::X86_64::Rel::PC16 := 13u32.
 public global Elf::X86_64::Rel::A8 := 14u32.
 public global Elf::X86_64::Rel::PC8 := 15u32.
 
-public struct Elf32::Header definition: {
+public final class Elf32::Header superclass: ByteSerializableObject; definition: {
     public field ident => UInt8[Elf::Ident::NIdent].
     public field type => Elf32::Half.
     public field machine => Elf32::Half.
@@ -118,7 +118,7 @@ public struct Elf32::Header definition: {
     }.
 }.
 
-public struct Elf64::Header definition: {
+public final class Elf64::Header superclass: ByteSerializableObject; definition: {
     public field ident => UInt8[Elf::Ident::NIdent].
     public field type => Elf64::Half.
     public field machine => Elf64::Half.
@@ -150,7 +150,7 @@ public struct Elf64::Header definition: {
     }.
 }.
 
-public struct Elf32::SectionHeader definition: {
+public final class Elf32::SectionHeader superclass: ByteSerializableObject; definition: {
     public field name => Elf32::Word.
     public field type => Elf32::Word.
     public field flags => Elf32::Word.
@@ -163,7 +163,7 @@ public struct Elf32::SectionHeader definition: {
     public field entrySize => Elf32::Word.
 }.
 
-public struct Elf64::SectionHeader definition: {
+public final class Elf64::SectionHeader superclass: ByteSerializableObject; definition: {
     public field name => Elf64::Word.
     public field type => Elf64::Word.
     public field flags => Elf64::Xword.
@@ -176,7 +176,7 @@ public struct Elf64::SectionHeader definition: {
     public field entrySize => Elf64::Xword.
 }.
 
-public struct Elf32::Symbol definition: {
+public final class Elf32::Symbol superclass: ByteSerializableObject; definition: {
     public field name => Elf32::Word.
     public field value => Elf32::Addr.
     public field size => Elf32::Word.
@@ -193,7 +193,7 @@ public struct Elf32::Symbol definition: {
     }.
 }.
 
-public struct Elf64::Symbol definition: {
+public final class Elf64::Symbol superclass: ByteSerializableObject; definition: {
     public field name => Elf64::Word.
     public field info => UInt8.
     public field other => UInt8.
@@ -210,7 +210,7 @@ public struct Elf64::Symbol definition: {
     }.
 }.
 
-public struct Elf32::Rel definition: {
+public final class Elf32::Rel superclass: ByteSerializableObject; definition: {
     public field offset => Elf32::Addr.
     public field info => Elf32::Word.
 
@@ -219,7 +219,7 @@ public struct Elf32::Rel definition: {
     }.
 }.
 
-public struct Elf64::Rel definition: {
+public final class Elf64::Rel superclass: ByteSerializableObject; definition: {
     public field offset => Elf64::Addr.
     public field info => Elf64::Xword.
 
@@ -228,7 +228,7 @@ public struct Elf64::Rel definition: {
     }.
 }.
 
-public struct Elf32::Rela definition: {
+public final class Elf32::Rela superclass: ByteSerializableObject; definition: {
     public field offset => Elf32::Addr.
     public field info => Elf32::Word.
     public field addend => Elf32::Sword.
@@ -238,7 +238,7 @@ public struct Elf32::Rela definition: {
     }.
 }.
 
-public struct Elf64::Rela definition: {
+public final class Elf64::Rela superclass: ByteSerializableObject; definition: {
     public field offset => Elf64::Addr.
     public field info => Elf64::Xword.
     public field addend => Elf64::Sxword.
