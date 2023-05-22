@@ -3571,6 +3571,7 @@ static sysbvm_tuple_t sysbvm_astMessageSendNode_primitiveAnalyze(sysbvm_context_
 
         sysbvm_tuple_t receiverType;
         sysbvm_tuple_t receiverMetaType;
+        sysbvm_tuple_t methodOwner;
         sysbvm_tuple_t selector;
         sysbvm_tuple_t method;
         sysbvm_tuple_t methodType;
@@ -3637,15 +3638,27 @@ static sysbvm_tuple_t sysbvm_astMessageSendNode_primitiveAnalyze(sysbvm_context_
             if(sysbvm_astNode_isLiteralNode(context, gcFrame.sendNode->selector))
             {
                 gcFrame.selector = sysbvm_astLiteralNode_getValue(gcFrame.sendNode->selector);
+                gcFrame.methodOwner = gcFrame.receiverType;
                 gcFrame.method = sysbvm_type_lookupMacroSelector(context, gcFrame.receiverType, gcFrame.selector);
                 if(!gcFrame.method)
                     gcFrame.method = sysbvm_type_lookupSelector(context, gcFrame.receiverType, gcFrame.selector);
                 if(!gcFrame.method)
                     gcFrame.method = sysbvm_type_lookupFallbackSelector(context, gcFrame.receiverType, gcFrame.selector);
 
+                if(!gcFrame.method && sysbvm_type_isReferenceType(gcFrame.receiverType))
+                {
+                    gcFrame.methodOwner = sysbvm_type_decay(context, gcFrame.receiverType);
+                    gcFrame.method = sysbvm_type_lookupMacroSelector(context, gcFrame.methodOwner, gcFrame.selector);
+                    if(!gcFrame.method)
+                        gcFrame.method = sysbvm_type_lookupSelector(context, gcFrame.methodOwner, gcFrame.selector);
+                    if(!gcFrame.method)
+                        gcFrame.method = sysbvm_type_lookupFallbackSelector(context, gcFrame.methodOwner, gcFrame.selector);
+                }
+
                 // does not understand macro?
                 if(!gcFrame.method)
                 {
+                    gcFrame.methodOwner = gcFrame.receiverType;
                     if(!gcFrame.method)
                         gcFrame.method = sysbvm_type_lookupMacroSelector(context, gcFrame.receiverType, context->roots.doesNotUnderstandSelector);
                     if(!gcFrame.method)
@@ -3691,7 +3704,7 @@ static sysbvm_tuple_t sysbvm_astMessageSendNode_primitiveAnalyze(sysbvm_context_
 
     // Turn this node onto an unexpanded application.
     bool hasExplicitSolvedLookupType = sysbvm_astNode_isLiteralNode(context, gcFrame.sendNode->receiverLookupType);
-    if(gcFrame.method && (hasExplicitSolvedLookupType || sysbvm_function_shouldOptimizeLookup(context, gcFrame.method, gcFrame.receiverType, sysbvm_astNode_isLiteralNode(context, gcFrame.sendNode->receiver))))
+    if(gcFrame.method && (hasExplicitSolvedLookupType || sysbvm_function_shouldOptimizeLookup(context, gcFrame.method, gcFrame.methodOwner, sysbvm_astNode_isLiteralNode(context, gcFrame.sendNode->receiver))))
     {
         size_t applicationArgumentCount = sysbvm_array_getSize(gcFrame.sendNode->arguments);
         gcFrame.newMethodNode = sysbvm_astLiteralNode_create(context, gcFrame.sendNode->super.sourcePosition, gcFrame.method);
@@ -3720,9 +3733,12 @@ static sysbvm_tuple_t sysbvm_astMessageSendNode_primitiveAnalyze(sysbvm_context_
     }
     else
     {
-        if(!sysbvm_tuple_boolean_decode(gcFrame.sendNode->isDynamic) && !sysbvm_type_isDynamic(gcFrame.receiverType))
+        if(!sysbvm_tuple_boolean_decode(gcFrame.sendNode->isDynamic) && !sysbvm_type_isDynamic(sysbvm_type_decay(context, gcFrame.receiverType)))
             sysbvm_error("Cannot send undeclared message to receiver without a dynamic type.");
     }
+
+    gcFrame.analyzedReceiver = sysbvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.analyzedReceiver, *environment);
+    gcFrame.sendNode->receiver = gcFrame.analyzedReceiver;
 
     size_t applicationArgumentCount = sysbvm_array_getSize(gcFrame.sendNode->arguments);
     gcFrame.analyzedArguments = sysbvm_array_create(context, applicationArgumentCount);

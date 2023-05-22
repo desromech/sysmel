@@ -220,6 +220,9 @@ Type
     } withEagerAnalysis;
     withSelector: #new addMethod: {:(Type)self :: self |
         self basicNew initialize; yourself
+    } withEagerAnalysis;
+    withSelector: #asReceiverType addMethod: {:(Type)self :: Type |
+        self
     } withEagerAnalysis.
 
 ASTDownCastNode __type__
@@ -261,9 +264,10 @@ TypeSlot
         if: typeSlot isPublic then: {
             let: #slotType with: typeSlot type.
             let: #getterName with: typeSlot name.
+            let: #receiverType with: type asReceiverType.
 
             ## Getter.
-            type withSelector: getterName addMethod: {:(type)self :: slotType |
+            type withSelector: getterName addMethod: {:(receiverType)self :: slotType |
                 ## TODO: Perform direct access via the AST node.
                 (RawTuple::typeSlotAt:)(self, typeSlot)
             } makePure makeFinal recompileAndOptimize.
@@ -272,7 +276,7 @@ TypeSlot
             if: typeSlot isReadonly not then: {
                 let: #setterName with: (typeSlot name asString -- ":") asSymbol.
 
-                type withSelector: setterName addMethod: {:(type)self :(slotType)value :: Void |
+                type withSelector: setterName addMethod: {:(receiverType)self :(slotType)value :: Void |
                     RawTuple::typeSlotAt:put:(self, typeSlot, value)
                 } makeFinal recompileAndOptimize.
             }
@@ -681,20 +685,6 @@ ASTNode
         (tuple: self withLookupStartingFrom: ASTNode supertype) postCopy.
         self analyzerToken: nil.
     }.
-
-AnyReference
-    withSelector: #doesNotUnderstand: addFallbackMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTMessageSendNode)messageSend :: ASTNode |
-        messageSend copy
-            receiver: (ASTFunctionApplicationNode new
-                sourcePosition: self sourcePosition;
-                functionExpression: (ASTLiteralNode new
-                    sourcePosition: self sourcePosition;
-                    value: self analyzedType loadValueFunction;
-                    yourself);
-                arguments: (self,);
-                yourself);
-            yourself
-    } makeMacro.
 
 Stream
     withSelector: #nextPut: addMethod: {:(Stream)self :element :: Void | 
@@ -2644,7 +2634,11 @@ ValueType
         self validInstanceAlignment
     };
     withSelector: #isGarbageCollectedPointerType addMethod: {:(Type)self :: Boolean | false };
-    withSelector: #isValueType addMethod: {:(Type)self :: Boolean | true }.
+    withSelector: #isValueType addMethod: {:(Type)self :: Boolean | true };
+    withSelector: #asReceiverType addMethod: {:(Type)self :: Type | self }.
+
+PrimitiveValueType
+    withSelector: #asReceiverType addMethod: {:(Type)self :: Type | self }.
 
 Environment
     withSelector: #setSymbol:value: addMethod: {:(Environment)self :(Symbol)symbol :value :: value __type__ |

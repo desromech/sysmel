@@ -1,4 +1,3 @@
-
 public externC function puts(string: Char8 const pointer) => Int32.
 ##public externC function write(fd: Int32, buf: Void const pointer, count: Size) => IntPointer.
 

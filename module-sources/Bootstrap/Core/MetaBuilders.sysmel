@@ -657,7 +657,7 @@ MethodMetaBuilder
             sourcePosition: self sourcePosition;
             isForAll: false;
             name: `'#self;
-            type: `'SelfType;
+            type: `'ASTNode;
             yourself).
         let: #arguments with: (Array with: macroContextArgument with: selfArgument) -- self arguments.
         let: #methodNode with: (ASTLambdaNode new
@@ -678,7 +678,7 @@ MethodMetaBuilder
             sourcePosition: self sourcePosition;
             isForAll: false;
             name: `'#self;
-            type: `'SelfType;
+            type: `'ReceiverType;
             yourself).
         let: #arguments with: (Array with: selfArgument) -- self arguments.
         let: #methodNode with: (ASTLambdaNode new
@@ -886,6 +886,7 @@ public: #private with: (MetaBuilderFactory for: PrivateMetaBuilder).
     let: #typeExtendMacro with: {:macroContext :self :extensionBlock :: ASTNode |
             ``{
                 let: #SelfType with: `,self.
+                let: #ReceiverType with: SelfType asReceiverType.
                 let: #SuperType with: SelfType supertype.
                 let: #__Meta__ with: SelfType __type__.
                 let: #__OwnerProgramEntity__ with: SelfType.
