@@ -456,6 +456,7 @@ Type
         self invalidateLayout.
         self pendingSlots add: extraSlot.
         self addSlotToDictionary: extraSlot.
+        extraSlot owner: self.
         extraSlot generateAccessorsOn: self.
     } withEagerAnalysis;
     withSelector: #basicAllocate addMethod: {:(Type)self :: self |
@@ -1995,7 +1996,12 @@ TypeSlot
                 (RawTuple::slotAt:put:)(instance, self index, type defaultValue)
             }.
         }
-    } withEagerAnalysis.
+    } withEagerAnalysis;
+    withSelector: #validOffset addMethod: {:(TypeSlot)self :: Size |
+        let: #owner with: self owner.
+        if: owner ~~ nil then: (owner ensureLayoutIsComputed).
+        self offset.
+    }.
 
 Type
     withSelector: #validSlotsWithBasicInitialization addMethod: {:(Type)self :: Array |

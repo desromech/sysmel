@@ -494,6 +494,14 @@ Type extend: {
 
     public virtual method translateSSALiteralConstant: (constant: SSALiteralConstant) pointerType: (pointerType: PointerLikeType) storage: storage base: base offset: (offset: IntPointer) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := codegen translateGenericObjectPointer: constant value.
+
+    public virtual method emitTacLoadFromPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder loadPointer: pointer constantOffset: constantOffset into: result
+    }.
+
+    public virtual method emitTacStore: (value: TACValue) intoPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder storePointer: value into: pointer constantOffset: constantOffset
+    }.
 }.
 
 String class extend: {
@@ -540,6 +548,14 @@ Char8 __type__ extend: {
         builder returnInt32: value
     }.
 
+    public override method emitTacLoadFromPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder loadUInt8: pointer constantOffset: constantOffset into: result
+    }.
+
+    public override method emitTacStore: (value: TACValue) intoPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder storeInt8: value into: pointer constantOffset: constantOffset
+    }.
+
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := constant value asUInt8 asTacConstant.
 }.
@@ -551,6 +567,14 @@ Int8 __type__ extend: {
 
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
+    }.
+
+    public override method emitTacLoadFromPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder loadInt8: pointer constantOffset: constantOffset into: result
+    }.
+
+    public override method emitTacStore: (value: TACValue) intoPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder storeInt8: value into: pointer constantOffset: constantOffset
     }.
 
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
@@ -566,6 +590,14 @@ UInt8 __type__ extend: {
         builder returnInt32: value
     }.
 
+    public override method emitTacLoadFromPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder loadUInt8: pointer constantOffset: constantOffset into: result
+    }.
+
+    public override method emitTacStore: (value: TACValue) intoPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder storeInt8: value into: pointer constantOffset: constantOffset
+    }.
+
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := constant value asTacConstant.
 }.
@@ -577,6 +609,14 @@ Char16 __type__ extend: {
 
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
+    }.
+
+    public override method emitTacLoadFromPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder loadUInt16: pointer constantOffset: constantOffset into: result
+    }.
+
+    public override method emitTacStore: (value: TACValue) intoPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder storeInt16: value into: pointer constantOffset: constantOffset
     }.
 
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
@@ -592,6 +632,14 @@ Int16 __type__ extend: {
         builder returnInt32: value
     }.
 
+    public override method emitTacLoadFromPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder loadInt16: pointer constantOffset: constantOffset into: result
+    }.
+
+    public override method emitTacStore: (value: TACValue) intoPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder storeInt16: value into: pointer constantOffset: constantOffset
+    }.
+
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := constant value asTacConstant.
 }.
@@ -603,6 +651,14 @@ UInt16 __type__ extend: {
 
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
+    }.
+
+    public override method emitTacLoadFromPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder loadUInt16: pointer constantOffset: constantOffset into: result
+    }.
+
+    public override method emitTacStore: (value: TACValue) intoPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder storeInt16: value into: pointer constantOffset: constantOffset
     }.
 
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
@@ -618,6 +674,14 @@ Char32 __type__ extend: {
         builder returnInt32: value
     }.
 
+    public override method emitTacLoadFromPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder loadUInt32: pointer constantOffset: constantOffset into: result
+    }.
+
+    public override method emitTacStore: (value: TACValue) intoPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder storeInt32: value into: pointer constantOffset: constantOffset
+    }.
+
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := constant value asUInt32 asTacConstant.
 }.
@@ -629,6 +693,14 @@ Int32 __type__ extend: {
 
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt32: value
+    }.
+
+    public override method emitTacLoadFromPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder loadInt32: pointer constantOffset: constantOffset into: result
+    }.
+
+    public override method emitTacStore: (value: TACValue) intoPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder storeInt32: value into: pointer constantOffset: constantOffset
     }.
 
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
@@ -644,6 +716,14 @@ UInt32 __type__ extend: {
         builder returnInt32: value
     }.
 
+    public override method emitTacLoadFromPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder loadUInt32: pointer constantOffset: constantOffset into: result
+    }.
+
+    public override method emitTacStore: (value: TACValue) intoPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder storeInt32: value into: pointer constantOffset: constantOffset
+    }.
+
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := constant value asTacConstant.
 }.
@@ -655,6 +735,14 @@ Int64 __type__ extend: {
 
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnInt64: value
+    }.
+
+    public override method emitTacLoadFromPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder loadInt64: pointer constantOffset: constantOffset into: result
+    }.
+
+    public override method emitTacStore: (value: TACValue) intoPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder storeInt64: value into: pointer constantOffset: constantOffset
     }.
 
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
@@ -670,6 +758,14 @@ UInt64 __type__ extend: {
         builder returnInt64: value
     }.
 
+    public override method emitTacLoadFromPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder loadUInt64: pointer constantOffset: constantOffset into: result
+    }.
+
+    public override method emitTacStore: (value: TACValue) intoPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder storeInt64: value into: pointer constantOffset: constantOffset
+    }.
+
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := constant value asTacConstant.
 }.
@@ -683,6 +779,14 @@ Float32 __type__ extend: {
         builder returnFloat32: value
     }.
 
+    public override method emitTacLoadFromPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder loadFloat32: pointer constantOffset: constantOffset into: result
+    }.
+
+    public override method emitTacStore: (value: TACValue) intoPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder storeFloat32: value into: pointer constantOffset: constantOffset
+    }.
+
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := constant value asTacConstant.
 }.
@@ -694,6 +798,14 @@ Float64 __type__ extend: {
 
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder returnFloat64: value
+    }.
+
+    public override method emitTacLoadFromPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder loadFloat64: pointer constantOffset: constantOffset into: result
+    }.
+
+    public override method emitTacStore: (value: TACValue) intoPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder storeFloat64: value into: pointer constantOffset: constantOffset
     }.
 
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
@@ -1128,6 +1240,12 @@ SSACallInstruction extend: {
                 withArguments: (Array with: tacCalledFunction) -- tacArguments into: tacValue
                 withBlockBuilder: codegen blockBuilder
         }.
+    }.
+}.
+
+SSATypeSlotAtInstruction extend: {
+    public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        self type emitTacLoadFromPointer: (codegen translateValue: self tuple) constantOffset: self typeSlot validOffset asInt64 into: tacValue withBlockBuilder: codegen blockBuilder
     }.
 }.
 

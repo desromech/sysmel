@@ -623,6 +623,26 @@ public global TAC::Operation::MoveFloat32 := TACOperation named: #moveFloat32.
 public global TAC::Operation::MoveFloat64 := TACOperation named: #moveFloat64.
 public global TAC::Operation::MoveStruct := TACOperation named: #moveStruct.
 
+public global TAC::Operation::LoadInt8 := TACOperation named: #loadInt8.
+public global TAC::Operation::LoadInt16 := TACOperation named: #loadInt16.
+public global TAC::Operation::LoadInt32 := TACOperation named: #loadInt32.
+public global TAC::Operation::LoadInt64 := TACOperation named: #loadInt64.
+public global TAC::Operation::LoadUInt8 := TACOperation named: #loadUInt8.
+public global TAC::Operation::LoadUInt16 := TACOperation named: #loadUInt16.
+public global TAC::Operation::LoadUInt32 := TACOperation named: #loadUInt32.
+public global TAC::Operation::LoadUInt64 := TACOperation named: #loadUInt64.
+public global TAC::Operation::LoadFloat32 := TACOperation named: #loadFloat32.
+public global TAC::Operation::LoadFloat64 := TACOperation named: #loadFloat64.
+public global TAC::Operation::LoadStruct := TACOperation named: #loadStruct.
+
+public global TAC::Operation::StoreInt8 := TACOperation named: #storeInt8.
+public global TAC::Operation::StoreInt16 := TACOperation named: #storeInt16.
+public global TAC::Operation::StoreInt32 := TACOperation named: #storeInt32.
+public global TAC::Operation::StoreInt64 := TACOperation named: #storeInt64.
+public global TAC::Operation::StoreFloat32 := TACOperation named: #storeFloat32.
+public global TAC::Operation::StoreFloat64 := TACOperation named: #storeFloat64.
+public global TAC::Operation::StoreStruct := TACOperation named: #storeStruct.
+
 public global TAC::Operation::CallInt32 := TACOperation named: #callInt32.
 public global TAC::Operation::CallInt64 := TACOperation named: #callInt64.
 public global TAC::Operation::CallFloat32 := TACOperation named: #callFloat32.
@@ -1033,6 +1053,75 @@ public final class TACBlockBuilder superclass: Object; definition: {
 
     public method moveFloat64: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::MoveFloat64 with: source result: destination.
+
+    public method constantOffsetImmediateFor: (constantOffset: Int64) ::=> TACValue
+        := self has64BitsPointers && (constantOffset asInt32 asInt64 ~= constantOffset)
+            ifTrue: (constantOffset asTacConstant)
+            ifFalse: (constantOffset asInt32 asTacConstant).
+
+    public method loadInt8: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::LoadInt8 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+
+    public method loadInt16: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::LoadInt16 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+
+    public method loadInt32: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::LoadInt32 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+
+    public method loadInt64: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::LoadInt64 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+
+    public method loadUInt8: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::LoadUInt8 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+
+    public method loadUInt16: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::LoadUInt16 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+
+    public method loadUInt32: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::LoadUInt32 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+
+    public method loadUInt64: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::LoadUInt64 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+
+    public method loadFloat32: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::LoadFloat32 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+
+    public method loadFloat64: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::LoadFloat64 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+
+    public method loadPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
+        := self has64BitsPointers
+            ifTrue: (self loadUInt32: pointer constantOffset: constantOffset into: destination)
+            ifFalse: (self loadUInt64: pointer constantOffset: constantOffset into: destination).
+
+    public method loadStruct: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::LoadStruct with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+
+    public method storeInt8: (value: TACValue) into: (pointer: TACValue) constantOffset: (constantOffset: Int64) ::=> TACInstruction
+        := self operation: TAC::Operation::StoreInt8 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
+
+    public method storeInt16: (value: TACValue) into: (pointer: TACValue) constantOffset: (constantOffset: Int64) ::=> TACInstruction
+        := self operation: TAC::Operation::StoreInt16 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
+
+    public method storeInt32: (value: TACValue) into: (pointer: TACValue) constantOffset: (constantOffset: Int64) ::=> TACInstruction
+        := self operation: TAC::Operation::StoreInt32 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
+
+    public method storeInt64: (value: TACValue) into: (pointer: TACValue) constantOffset: (constantOffset: Int64) ::=> TACInstruction
+        := self operation: TAC::Operation::StoreInt64 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
+
+    public method storePointer: (value: TACValue) into: (pointer: TACValue) constantOffset: (constantOffset: Int64) ::=> TACInstruction
+        := self has64BitsPointers
+            ifTrue: (self storeInt32: value into: pointer constantOffset: constantOffset)
+            ifFalse: (self storeInt64: value into: pointer constantOffset: constantOffset).
+
+    public method storeFloat32: (value: TACValue) into: (pointer: TACValue) constantOffset: (constantOffset: Int64) ::=> TACInstruction
+        := self operation: TAC::Operation::StoreFloat32 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
+
+    public method storeFloat64: (value: TACValue) into: (pointer: TACValue) constantOffset: (constantOffset: Int64) ::=> TACInstruction
+        := self operation: TAC::Operation::StoreFloat64 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
+
+    public method storeStruct: (value: TACValue) into: (pointer: TACValue) constantOffset: (constantOffset: Int64) ::=> TACInstruction
+        := self operation: TAC::Operation::StoreStruct with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
 
     public method returnVoid ::=> TACInstruction
         := self operation: TAC::Operation::ReturnVoid.

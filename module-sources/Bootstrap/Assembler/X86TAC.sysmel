@@ -11,6 +11,21 @@ TACPhysicalLocation extend: {
     public virtual method x86::int64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 register with int64 section.".
 
+    public virtual method x86::int8PointerWithOffset: (offset: TACPhysicalLocation) for: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := self error: "Not a x86 pointer.".
+
+    public virtual method x86::int16PointerWithOffset: (offset: TACPhysicalLocation) for: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := self error: "Not a x86 pointer.".
+
+    public virtual method x86::int32PointerWithOffset: (offset: TACPhysicalLocation) for: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := self error: "Not a x86 pointer.".
+
+    public virtual method x86::int64PointerWithOffset: (offset: TACPhysicalLocation) for: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := self error: "Not a x86 pointer.".
+
+    public virtual method x86::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := self error: "Not an immediate 32".
+
     public virtual method x86::rel32OrInt32For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 relative32 immediate or int32 register".
 
@@ -38,6 +53,9 @@ TACPhysicalLocation extend: {
 
 TACPhysicalLocationImmediate extend: {
     public override method x86::int32For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := value asm::immediate32For: codegen.
+
+    public override method x86::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
         := value asm::immediate32For: codegen.
 
     public override method x86::int64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
@@ -117,6 +135,18 @@ public final class TACX86_64IntegerRegister superclass: TACPhysicalIntegerRegist
     public override method x86::int16For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand := int16.
     public override method x86::int32For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand := int32.
     public override method x86::int64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand := int64.
+
+    public override method x86::int8PointerWithOffset: (offset: TACPhysicalLocation) for: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := AsmX86RegisterAddress base: int64 size: 1u8 displacement: (offset x86::immediate32For: codegen).
+
+    public override method x86::int16PointerWithOffset: (offset: TACPhysicalLocation) for: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := AsmX86RegisterAddress base: int64 size: 2u8 displacement: (offset x86::immediate32For: codegen).
+
+    public override method x86::int32PointerWithOffset: (offset: TACPhysicalLocation) for: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := AsmX86RegisterAddress base: int64 size: 4u8 displacement: (offset x86::immediate32For: codegen).
+
+    public override method x86::int64PointerWithOffset: (offset: TACPhysicalLocation) for: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := AsmX86RegisterAddress base: int64 size: 8u8 displacement: (offset x86::immediate32For: codegen).
 
     public override method x86::rel32OrInt64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
         := int64.
@@ -737,6 +767,61 @@ TAC::Operation::MoveInt64
     forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegisterConstraints;
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen)
+    }.
+
+let x86::loadPointerRegisterContraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+    allocator
+        allocateRegisterForInstructionResult: instruction;
+        allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
+        allocateImmediate32ForInstruction: instruction operandAt: 1sz
+}.
+
+TAC::Operation::LoadInt8
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::loadPointerRegisterContraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::movsx: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int8PointerWithOffset: instruction secondOperandRegister for: codegen)
+    }.
+
+TAC::Operation::LoadUInt8
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::loadPointerRegisterContraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::movzx: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int8PointerWithOffset: instruction secondOperandRegister for: codegen)
+    }.
+
+TAC::Operation::LoadInt16
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::loadPointerRegisterContraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::movsx: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int16PointerWithOffset: instruction secondOperandRegister for: codegen)
+    }.
+
+TAC::Operation::LoadUInt16
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::loadPointerRegisterContraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::movzx: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int16PointerWithOffset: instruction secondOperandRegister for: codegen)
+    }.
+
+TAC::Operation::LoadInt32
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::loadPointerRegisterContraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32PointerWithOffset: instruction secondOperandRegister for: codegen)
+    }.
+
+TAC::Operation::LoadUInt32
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::loadPointerRegisterContraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32PointerWithOffset: instruction secondOperandRegister for: codegen)
+    }.
+
+TAC::Operation::LoadInt64
+    forTarget: #x86_64 registerConstraintsWith: x86::loadPointerRegisterContraints;
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64PointerWithOffset: instruction secondOperandRegister for: codegen)
+    }.
+
+TAC::Operation::LoadUInt64
+    forTarget: #x86_64 registerConstraintsWith: x86::loadPointerRegisterContraints;
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64PointerWithOffset: instruction secondOperandRegister for: codegen)
     }.
 
 TAC::Operation::TruncateInt64ToInt32

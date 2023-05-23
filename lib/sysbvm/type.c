@@ -13,10 +13,11 @@
 #include "internal/context.h"
 #include <string.h>
 
-SYSBVM_API sysbvm_tuple_t sysbvm_typeSlot_create(sysbvm_context_t *context, sysbvm_tuple_t name, sysbvm_tuple_t flags, sysbvm_tuple_t type, size_t localIndex, size_t index)
+SYSBVM_API sysbvm_tuple_t sysbvm_typeSlot_create(sysbvm_context_t *context, sysbvm_tuple_t owner, sysbvm_tuple_t name, sysbvm_tuple_t flags, sysbvm_tuple_t type, size_t localIndex, size_t index)
 {
     sysbvm_typeSlot_t* result = (sysbvm_typeSlot_t*)sysbvm_context_allocatePointerTuple(context, context->roots.typeSlotType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_typeSlot_t));
     result->flags = flags;
+    result->owner = owner;
     result->name = name;
     result->type = type;
     result->localIndex = sysbvm_tuple_size_encode(context, localIndex);

@@ -26,6 +26,15 @@ public abstract class TACRegisterAllocator superclass: Object; definition: {
         }
     }.
 
+    public virtual method allocateImmediate32ForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        let operand := instruction operands at: operandIndex.
+        operand isImmediate32 ifTrue: {
+            instruction operandRegisters at: operandIndex put: (TACPhysicalLocationImmediate for: operand)
+        } ifFalse: {
+            self error: "An immediate32 operand is required here."
+        }
+    }.
+
     public virtual method allocateRegisterOrRelativeImmediate32ForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void := {
         let operand := instruction operands at: operandIndex.
         operand isRelativeImmediate32 ifTrue: {

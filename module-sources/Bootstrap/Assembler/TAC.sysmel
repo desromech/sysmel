@@ -356,19 +356,19 @@ TACOperation extend: {
 }.
 
 TACValue definition: {
-    public virtual method asm::immediate8For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method asm::immediate8For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
         := self error: "Not an immediate 8 value.".
 
-    public virtual method asm::immediate16For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method asm::immediate16For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
         := self error: "Not an immediate 16 value.".
 
-    public virtual method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
         := self error: "Not an immediate 32 value.".
 
-    public virtual method asm::immediateCall32For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method asm::immediateCall32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
         := self asm::immediate32For: codegen.
 
-    public virtual method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
         := self error: "Not an immediate 64 value.".
 }.
 
@@ -385,10 +385,10 @@ TACProgramEntity definition: {
     public abstract method generateAssemblyWith: (moduleGenerator: TACModuleAsmCodeGenerator) symbol: (symbol: AsmSymbol) ::=> Void
         := self subclassResponsibility.
 
-    public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+    public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
         := (codegen symbolForProgramEntity: self) dword.
 
-    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
         := (codegen symbolForProgramEntity: self) qword.
 }.
 
@@ -397,7 +397,7 @@ TACImportedProgramEntity definition: {
         moduleGenerator targetModule addImportedSymbol: symbol
     }.
 
-    public virtual method asm::immediateCall32For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method asm::immediateCall32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
         := (codegen symbolForProgramEntity: self) dword makeAtPLT; yourself.
 }.
 
@@ -427,17 +427,17 @@ TACGlobalVariable definition: {
 }.
 
 TACConstantUInt32 definition: {
-    public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+    public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
         := value asAsmImmediate.
 
-    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
         := value asUInt64 asAsmImmediate.
 }.
 
 TACConstantInt32 definition: {
-    public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+    public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
         := value asAsmImmediate.
 
-    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
         := value asInt64 asAsmImmediate.
 }.

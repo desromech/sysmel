@@ -115,6 +115,7 @@ typedef struct sysbvm_valueMetatype_s
 typedef struct sysbvm_typeSlot_s
 {
     sysbvm_tuple_header_t header;
+    sysbvm_tuple_t owner;
     sysbvm_tuple_t name;
     sysbvm_tuple_t flags;
     sysbvm_tuple_t type;
@@ -166,7 +167,7 @@ typedef struct sysbvm_polymorphicInlineLookupCache_s sysbvm_polymorphicInlineLoo
 /**
  * Creates a type slot
  */
-SYSBVM_API sysbvm_tuple_t sysbvm_typeSlot_create(sysbvm_context_t *context, sysbvm_tuple_t name, sysbvm_tuple_t flags, sysbvm_tuple_t type, size_t localIndex, size_t index);
+SYSBVM_API sysbvm_tuple_t sysbvm_typeSlot_create(sysbvm_context_t *context, sysbvm_tuple_t owner, sysbvm_tuple_t name, sysbvm_tuple_t flags, sysbvm_tuple_t type, size_t localIndex, size_t index);
 
 /**
  * Gets the type from type slot.
