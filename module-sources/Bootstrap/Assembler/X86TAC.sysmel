@@ -786,6 +786,31 @@ TAC::Operation::Int64Sub
             x86::sub: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::immediateS32OrInt64For: codegen)
     }.
 
+let x86::integerMul32RegisterConstraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+    allocator
+        allocateRegisterForInstructionResult: instruction;
+        allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
+        allocateRegisterForInstruction: instruction operandAt: 1sz
+}.
+
+let x86::integerMul64RegisterConstraints := x86::integerMul32RegisterConstraints.
+
+TAC::Operation::Int32Mul
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerMul32RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen);
+            x86::imul: (instruction resultRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen)
+    }.
+
+TAC::Operation::Int64Mul
+    forTarget: #x86_64 registerConstraintsWith: x86::integerMul64RegisterConstraints;
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen);
+            x86::imul: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::int64For: codegen)
+    }.
+
 let x86::moveIntegerRegisterConstraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterForInstructionResult: instruction;
