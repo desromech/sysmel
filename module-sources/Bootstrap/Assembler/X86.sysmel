@@ -277,7 +277,7 @@ AsmX86RegisterAddress definition: {
                 displacement ifNil: {
                     codeStream nextPut: 0u8
                 } ifNotNil: {
-                    codeStream nextPutImmediate8: displacement
+                    codeStream nextPutInt8: displacement asImmediateSigned8Value
                 }.
             } ifFalse: {
                 (mod = 0u8) && longMode ifTrue: {
@@ -727,7 +727,7 @@ let instructionTemplateTable := #{
             (instruction operandCount = 1sz) && instruction firstOperand isImmediateSigned8
         };
         writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
-            stream nextPutAll: templ mandatoryPrefix; nextPutAll: templ opcode; nextPutImmediate: instruction firstOperand
+            stream nextPutAll: templ mandatoryPrefix; nextPutAll: templ opcode; nextPutInt8: instruction firstOperand asImmediateSigned8Value
         };
         yourself).
     OpIw: (AsmX86InstructionTemplate new
@@ -776,14 +776,14 @@ let instructionTemplateTable := #{
         };
         writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
             let registerAddress := instruction firstOperand.
-            let immediate := instruction secondOperand.
+            let immediate := instruction secondOperand asImmediateSigned8Value.
             let operandSize := registerAddress size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
                 nextPutX86RexSize: operandSize rm: registerAddress;
                 nextPutAll: templ opcode;
-                nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode immediateSize: immediate size;
-                nextPutImmediate: immediate
+                nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode immediateSize: 1sz;
+                nextPutInt8: immediate
         };
         yourself).
     OpRmwIw: (AsmX86InstructionTemplate new

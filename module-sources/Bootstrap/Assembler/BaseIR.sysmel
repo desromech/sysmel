@@ -43,6 +43,8 @@ AsmInstructionOperand definition: {
     public method isImmediateSigned32 => Boolean := false.
     public method isImmediateSigned64 => Boolean := false.
 
+    public method asImmediateSigned8Value => Int8 := self error: "Not an immediate signed 8".
+
     public method isImmediateConstantChar8 => Boolean := false.
     public method isImmediateConstantUInt8 => Boolean := false.
     public method isImmediateConstantInt8 => Boolean := false.
@@ -243,6 +245,8 @@ public final class AsmImmediateConstantInt8 superclass: AsmImmediateConstant; de
     public override method isImmediateSigned8 => Boolean := true.
     public override method isImmediateConstantInt8 => Boolean := true.
 
+    public override method asImmediateSigned8Value => Int8 := value.
+
     public override method size => Size := 1sz.
 
     public override method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
@@ -365,6 +369,9 @@ public final class AsmImmediateConstantInt32 superclass: AsmImmediateConstant; d
     public override method isImmediateSigned32 => Boolean := true.
     public override method isImmediateConstantInt32 => Boolean := true.
     public override method size => Size := 4sz.
+
+    public override method isImmediateSigned8 => Boolean := value asInt8 asInt32 = value.
+    public override method asImmediateSigned8Value => Int8 := value asInt8.
 
     public override method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
         codeStream nextPutInt32: value
