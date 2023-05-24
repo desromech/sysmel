@@ -35,6 +35,7 @@ SSAValue definition: {
     public method isDownCastInstruction => Boolean := false.
     public method isPhiInstruction => Boolean := false.
     public method isLoadInstruction => Boolean := false.
+    public method isLoadOrStoreInstruction => Boolean := false.
     public method isMakeClosureInstruction => Boolean := false.
     public method isStoreInstruction => Boolean := false.
     public method isTerminatorInstruction => Boolean := false.
@@ -740,6 +741,9 @@ public final class SSAAllocaInstruction superclass: SSAInstruction; definition: 
 
     public method isAllocaInstruction => Boolean := true.
 
+    public method isLocalOnlyAlloca => Boolean
+        := users isNil || (users allSatisfy: {:(SSAValue)each :: Boolean | each isLoadOrStoreInstruction }).
+
     public method fullPrintOn: (stream: Stream) ::=> Void
         := stream print: self; nextPutAll: " := alloca: "; print: self valueType.
 
@@ -1033,6 +1037,7 @@ public final class SSALoadInstruction superclass: SSAInstruction; definition: {
     public field storage => SSAValue.
 
     public method isLoadInstruction => Boolean := true.
+    public method isLoadOrStoreInstruction => Boolean := true.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := load "; print: self storage
@@ -1215,6 +1220,7 @@ public final class SSAStoreInstruction superclass: SSAInstruction; definition: {
     public field value => SSAValue.
 
     public method isStoreInstruction => Boolean := true.
+    public method isLoadOrStoreInstruction => Boolean := true.
 
     public method initialize => Void := {
         super initialize.
