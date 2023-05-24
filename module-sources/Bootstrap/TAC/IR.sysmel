@@ -143,7 +143,7 @@ TACValue definition: {
     public virtual method markSpillingRequired ::=> Void := {}.
 }.
 
-public final class TACBasicBlock.
+public final class TACBasicBlock superclass: TACValue.
 
 public abstract class TACProgramEntity superclass: TACValue; definition: {
     public field name => Symbol.

@@ -957,6 +957,22 @@ SSAAllocaInstruction extend: {
     }.
 }.
 
+SSABranchInstruction extend: {
+    public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        let destination := codegen translateValue: self destination.
+        codegen blockBuilder branch: destination
+    }.
+}.
+
+SSAConditionalBranchInstruction extend: {
+    public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        let condition := codegen translateValue: self condition.
+        let trueDestination := codegen translateValue: self trueDestination.
+        let falseDestination := codegen translateValue: self falseDestination.
+        codegen blockBuilder when: condition branchIfTrue: trueDestination branchIfFalse: falseDestination
+    }.
+}.
+
 let translateUnaryPrimitiveInto := {:(TACOperation)operation :: ((Array, TACValue, SSAFunctionDefinitionTACCodeGenerator) => Boolean) |
     {:(Array)arguments :(TACValue)result :(SSAFunctionDefinitionTACCodeGenerator)codegen :: Boolean |
         let operand := codegen translateValue: arguments first.
@@ -1558,6 +1574,12 @@ SSATypeSlotAtPutInstruction extend: {
 SSAReturnInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
         self value type emitTacReturn: (codegen translateValue: self value) withBlockBuilder: codegen blockBuilder
+    }.
+}.
+
+SSAUnreachableInstruction extend: {
+    public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        codegen blockBuilder trap
     }.
 }.
 

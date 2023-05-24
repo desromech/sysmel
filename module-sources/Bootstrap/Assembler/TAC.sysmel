@@ -31,6 +31,9 @@ public abstract class TACAsmCodeGenerator superclass: Object; definition: {
 
     public abstract method symbolForProgramEntity: (programEntity: TACProgramEntity) ::=> AsmSymbol
         := self subclassResponsibility.
+
+    public abstract method symbolForBasicBlock: (basicBlock: TACBasicBlock) ::=> AsmSymbol
+        := self subclassResponsibility.
 }.
 
 public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; definition: {
@@ -312,6 +315,9 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
         }
     }.
 
+    public method symbolForBasicBlock: (basicBlock: TACBasicBlock) ::=> AsmSymbol
+        := basicBlockSymbolDictionary at: basicBlock.
+
     public method symbolOfStringLiteral: (string: String) nullTerminated: (nullTerminated: Boolean) ::=> AsmSymbol
         := moduleGenerator symbolOfStringLiteral: string nullTerminated: nullTerminated.
 }.
@@ -397,10 +403,14 @@ TACImportedProgramEntity definition: {
         moduleGenerator targetModule addImportedSymbol: symbol
     }.
 
-    public virtual method asm::immediateCall32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediateCall32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
         := (codegen symbolForProgramEntity: self) dword makeAtPLT; yourself.
 }.
 
+TACBasicBlock definition: {
+    public override method asm::immediateCall32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := (codegen symbolForBasicBlock: self) dword.
+}.
 
 TACFunction definition: {
     public override method generateAssemblySymbolWith: (moduleGenerator: TACModuleAsmCodeGenerator) ::=> AsmSymbol := {

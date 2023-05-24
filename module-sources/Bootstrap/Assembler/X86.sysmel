@@ -115,6 +115,8 @@ AsmInstructionOperand extend: {
     public virtual method x86::rexBaseBit => UInt8 := 0u8.
     public virtual method x86::rexIndexBit => UInt8 := 0u8.
 
+    public virtual method x86::rexByteRequired => Boolean := false.
+
     public virtual method x86::encodeModRMWithRegOpcode: (opcode: UInt8) immediateSize: (immediateSize: Size)
         longMode: (longMode: Boolean) into: (codeStream: AsmObjectCodeStream) ::=> Void
         := self subclassResponsibility.
@@ -362,6 +364,11 @@ public class AsmX86Int8Register superclass: AsmX86IntRegister; definition: {
     public override method size => Size := 1sz.
 }.
 
+public class AsmX86Int8RexRegister superclass: AsmX86Int8Register; definition: {
+    public override method x86::rexByteRequired => Boolean
+        := value >= 4u8.
+}.
+
 public class AsmX86Int16Register superclass: AsmX86IntRegister; definition: {
     public override method size => Size := 2sz.
 }.
@@ -387,22 +394,22 @@ public global X86::CH := AsmX86Int8Register name: #CH value: 5u8.
 public global X86::DH := AsmX86Int8Register name: #DH value: 6u8.
 public global X86::BH := AsmX86Int8Register name: #BH value: 7u8.
 
-public global X86::RAXB := AsmX86Int8Register name: #RAXB value: 0u8.
-public global X86::RCXB := AsmX86Int8Register name: #RCXB value: 1u8.
-public global X86::RDXB := AsmX86Int8Register name: #RDXB value: 2u8.
-public global X86::RBXB := AsmX86Int8Register name: #RBXB value: 3u8.
-public global X86::RSPB := AsmX86Int8Register name: #RSPB value: 4u8.
-public global X86::RBPB := AsmX86Int8Register name: #RBPB value: 5u8.
-public global X86::RSIB := AsmX86Int8Register name: #RSIB value: 6u8.
-public global X86::RDIB := AsmX86Int8Register name: #RDIB value: 7u8.
-public global X86::R8B := AsmX86Int8Register name: #R8B value: 8u8.
-public global X86::R9B := AsmX86Int8Register name: #R9B value: 9u8.
-public global X86::R10B := AsmX86Int8Register name: #R10B value: 10u8.
-public global X86::R11B := AsmX86Int8Register name: #R11B value: 11u8.
-public global X86::R12B := AsmX86Int8Register name: #R12B value: 12u8.
-public global X86::R13B := AsmX86Int8Register name: #R13B value: 13u8.
-public global X86::R14B := AsmX86Int8Register name: #R14B value: 14u8.
-public global X86::R15B := AsmX86Int8Register name: #R15B value: 15u8.
+public global X86::RAXB := AsmX86Int8RexRegister name: #RAXB value: 0u8.
+public global X86::RCXB := AsmX86Int8RexRegister name: #RCXB value: 1u8.
+public global X86::RDXB := AsmX86Int8RexRegister name: #RDXB value: 2u8.
+public global X86::RBXB := AsmX86Int8RexRegister name: #RBXB value: 3u8.
+public global X86::RSPB := AsmX86Int8RexRegister name: #RSPB value: 4u8.
+public global X86::RBPB := AsmX86Int8RexRegister name: #RBPB value: 5u8.
+public global X86::RSIB := AsmX86Int8RexRegister name: #RSIB value: 6u8.
+public global X86::RDIB := AsmX86Int8RexRegister name: #RDIB value: 7u8.
+public global X86::R8B := AsmX86Int8RexRegister name: #R8B value: 8u8.
+public global X86::R9B := AsmX86Int8RexRegister name: #R9B value: 9u8.
+public global X86::R10B := AsmX86Int8RexRegister name: #R10B value: 10u8.
+public global X86::R11B := AsmX86Int8RexRegister name: #R11B value: 11u8.
+public global X86::R12B := AsmX86Int8RexRegister name: #R12B value: 12u8.
+public global X86::R13B := AsmX86Int8RexRegister name: #R13B value: 13u8.
+public global X86::R14B := AsmX86Int8RexRegister name: #R14B value: 14u8.
+public global X86::R15B := AsmX86Int8RexRegister name: #R15B value: 15u8.
 
 public global X86::AX := AsmX86Int16Register name: #AX value: 0u8.
 public global X86::CX := AsmX86Int16Register name: #CX value: 1u8.
@@ -518,7 +525,7 @@ AsmObjectCodeStream definition: {
         let indexBit := rm x86::rexIndexBit.
 
         let lowBits := ((wBit << 3u8) | (regBit << 2u8)) | ((indexBit << 1u8) | (baseBit)).
-        (lowBits ~= 0) || (operandSize = 1sz && self isInX86LongMode) ifTrue: { 
+        (lowBits ~= 0) || ((operandSize = 1sz) && self isInX86LongMode && (reg x86::rexByteRequired || rm x86::rexByteRequired)) ifTrue: { 
             self assert: self isInX86LongMode.
             self nextPut: 16r40 u8 | lowBits
         }
@@ -530,7 +537,7 @@ AsmObjectCodeStream definition: {
         let indexBit := rm x86::rexIndexBit.
 
         let lowBits := (wBit << 3u8) | ((indexBit << 1u8) | (baseBit)).
-        (lowBits ~= 0) || (operandSize = 1sz && self isInX86LongMode)  ifTrue: { 
+        (lowBits ~= 0) || ((operandSize = 1sz) && self isInX86LongMode && rm x86::rexByteRequired)  ifTrue: { 
             self assert: self isInX86LongMode.
             self nextPut: 16r40 u8 | lowBits
         }
@@ -547,7 +554,7 @@ AsmObjectCodeStream definition: {
         let indexBit := rm x86::rexIndexBit.
         let lowBits := (indexBit << 1u8) | baseBit.
 
-        lowBits ~= 0 ifTrue: {
+        lowBits ~= 0 || (self isInX86LongMode && rm x86::rexByteRequired) ifTrue: {
             self assert: self isInX86LongMode.
             self nextPut: 16r40 u8 | lowBits
         }
@@ -775,6 +782,26 @@ let instructionTemplateTable := #{
         };
         yourself).
 
+    OpRmbIb: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
+            (instruction operandCount = 2sz) &&
+            instruction firstOperand isRegisterOrRegisterAddress && 
+            (instruction firstOperand size = 1sz) && 
+            instruction secondOperand isImmediate8
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let registerAddress := instruction firstOperand.
+            let immediate := instruction secondOperand.
+            let operandSize := registerAddress size.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86RexSize: operandSize rm: registerAddress;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode immediateSize: 1sz;
+                nextPutImmediate: immediate
+        };
+        yourself).
+
     OpRmwS8: (AsmX86InstructionTemplate new
         when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
             (instruction operandCount = 2sz) &&
@@ -794,11 +821,43 @@ let instructionTemplateTable := #{
                 nextPutInt8: immediate
         };
         yourself).
+    OpRmbOp: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
+            (instruction operandCount = 1sz) &&
+            instruction firstOperand isRegisterOrRegisterAddress &&
+            (instruction firstOperand size = 1sz)
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let registerAddress := instruction firstOperand.
+            let operandSize := registerAddress size.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86RexSize: operandSize rm: registerAddress;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode.
+        };
+        yourself).
+    OpRmwOp: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
+            (instruction operandCount = 1sz) &&
+            instruction firstOperand isRegisterOrRegisterAddress
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let registerAddress := instruction firstOperand.
+            let operandSize := registerAddress size.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86SizeOverride: operandSize;
+                nextPutX86RexSize: operandSize rm: registerAddress;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode.
+        };
+        yourself).
     OpRmwIw: (AsmX86InstructionTemplate new
         when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
             (instruction operandCount = 2sz) &&
-                instruction firstOperand isRegisterOrRegisterAddress && 
-                instruction secondOperand isImmediate32
+            instruction firstOperand isRegisterOrRegisterAddress && 
+            instruction secondOperand isImmediate32
         };
         writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
             let registerAddress := instruction firstOperand.
@@ -816,9 +875,9 @@ let instructionTemplateTable := #{
     OpRmqIsd: (AsmX86InstructionTemplate new
         when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
             (instruction operandCount = 2sz) &&
-                instruction firstOperand isRegisterOrRegisterAddress && 
-                (instruction firstOperand size = 8sz) &&
-                instruction secondOperand isImmediateSigned32
+            instruction firstOperand isRegisterOrRegisterAddress && 
+            (instruction firstOperand size = 8sz) &&
+            instruction secondOperand isImmediateSigned32
         };
         writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
             let registerAddress := instruction firstOperand.
@@ -833,11 +892,31 @@ let instructionTemplateTable := #{
         };
         yourself).
 
+    OpRmbRb: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
+            (instruction operandCount = 2sz) &&
+            instruction firstOperand isRegisterOrRegisterAddress && 
+            (instruction firstOperand size = 1sz) &&
+            instruction secondOperand isRegister &&
+            (instruction secondOperand size = 1sz)
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let registerAddress := instruction firstOperand.
+            let register := instruction secondOperand.
+            let operandSize := register size.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86RexSize: operandSize rm: registerAddress reg: register;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress reg: register
+        };
+        yourself).
+
     OpRmwRw: (AsmX86InstructionTemplate new
         when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
             (instruction operandCount = 2sz) &&
-                instruction firstOperand isRegisterOrRegisterAddress && 
-                instruction secondOperand isRegister
+            instruction firstOperand isRegisterOrRegisterAddress && 
+            instruction secondOperand isRegister
         };
         writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
             let registerAddress := instruction firstOperand.
@@ -846,6 +925,45 @@ let instructionTemplateTable := #{
             stream 
                 nextPutAll: templ mandatoryPrefix;
                 nextPutX86SizeOverride: operandSize;
+                nextPutX86RexSize: operandSize rm: registerAddress reg: register;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress reg: register
+        };
+        yourself).
+
+    OpRbRmb: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
+            (instruction operandCount = 2sz) &&
+            instruction firstOperand isRegister && 
+            (instruction firstOperand size = 1sz) &&
+            instruction secondOperand isRegisterOrRegisterAddress &&
+            (instruction secondOperand size = 1sz)
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let register := instruction firstOperand.
+            let registerAddress := instruction secondOperand.
+            let operandSize := register size.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86RexSize: operandSize rm: registerAddress reg: register;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress reg: register
+        };
+        yourself).
+
+    OpRwRmb: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
+            (instruction operandCount = 2sz) &&
+            instruction firstOperand isRegister && 
+            instruction secondOperand isRegisterOrRegisterAddress &&
+            (instruction secondOperand size = 1sz)
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let register := instruction firstOperand.
+            let registerAddress := instruction secondOperand.
+            let operandSize := register size.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
                 nextPutX86RexSize: operandSize rm: registerAddress reg: register;
                 nextPutAll: templ opcode;
                 nextPutX86ModRM: registerAddress reg: register
@@ -953,12 +1071,17 @@ let instructionDefinitionTable := #(
         (OpRm #[] #[16rFF] 2)
     )
 
-    (cmp (dst src) "Compares by subtracting the specified values."
+    (cmp (op with) "Compares by subtracting the specified values."
         (OpRmwS8 #[] #[16r83] 7)
         (OpRmwIw #[] #[16r81] 7)
 
 		(OpRmwRw #[] #[16r39])
 		(OpRwRmw #[] #[16r3B])
+    )
+
+    (div (div) "Unsigned integer division"
+		(OpRmbOp #[] #[16rF6] 6)
+        (OpRmwOp #[] #[16rF7] 6)
     )
 
     (endbr32 () "Ends indirect branch in 32 mode"
@@ -967,6 +1090,11 @@ let instructionDefinitionTable := #(
 
     (endbr64 () "Ends indirect branch in 64 mode"
         (Op #[] #[16rF3 16r0F 16r1E 16rFA])
+    )
+
+    (idiv (div) "Signed integer division"
+		(OpRmbOp #[] #[16rF6] 7)
+        (OpRmwOp #[] #[16rF7] 7)
     )
 
     (imul (dst with) "Integer multiplication"
@@ -990,25 +1118,35 @@ let instructionDefinitionTable := #(
 		(OppRwIww #[] #[16rB8])
 		(OpRmwIw #[] #[16rC7] 0)
 
+        (OpRmbRb #[] #[16r88])
         (OpRmwRw #[] #[16r89])
+        (OpRbRmb #[] #[16r8A])
         (OpRwRmw #[] #[16r8B])
     )
 
     (movsx (dst src) "Move with sign extension"
-		##(OpRwRmb #[] #[16r0F 16rBE])
+		(OpRwRmb #[] #[16r0F 16rBE])
 		(OpRwRmw #[] #[16r0F 16rBF])
     )
     (movsxd (dst src) "Move with sign extension into double-word"
 		(OpRwRmw #[] #[16r63])
     )
     (movzx (dst src) "Move with zero extension"
-		##(OpRwRmb #[] #[16r0F 16rB6])
+		(OpRwRmb #[] #[16r0F 16rB6])
 		(OpRwRmw #[] #[16r0F 16rB7])
     )
 
     (jmp (target) "Jumps into the specified address"
         (OpBranch32 #[] #[16rE9])
         (OpRm #[] #[16rFF] 4)
+    )
+
+    (jz (target) "Jumps into the specified address, if zero"
+        (OpBranch32 #[] #[16r0F 16r84])
+    )
+
+    (jnz (target) "Jumps into the specified address, if not zero"
+        (OpBranch32 #[] #[16r0F 16r85])
     )
 
     (int (number) "Software interruption"
@@ -1038,12 +1176,51 @@ let instructionDefinitionTable := #(
         (Op #[] #[16rC3])
     )
 
+    (sete (dst) "Set byte on equals"
+        (OpRm #[] #[16r0F 16r94])
+    )
+    (setne (dst) "Set byte on not equals"
+        (OpRm #[] #[16r0F 16r95])
+    )
+    (setg (dst) "Set byte on greater than"
+        (OpRm #[] #[16r0F 16r9F])
+    )
+    (setge (dst) "Set byte on greater equals"
+        (OpRm #[] #[16r0F 16r9D])
+    )
+    (setl (dst) "Set byte on less than"
+        (OpRm #[] #[16r0F 16r9C])
+    )
+    (setle (dst) "Set byte on less equals"
+        (OpRm #[] #[16r0F 16r9E])
+    )
+    (seta (dst) "Set byte on above"
+        (OpRm #[] #[16r0F 16r97])
+    )
+    (setae (dst) "Set byte on above equals"
+        (OpRm #[] #[16r0F 16r93])
+    )
+    (setb (dst) "Set byte on below"
+        (OpRm #[] #[16r0F 16r92])
+    )
+    (setbe (dst) "Set byte on below equals"
+        (OpRm #[] #[16r0F 16r96])
+    )
+
     (sub (dst with) "Integer subtraction"
         (OpRmwS8 #[] #[16r83] 5)
         (OpRmwIw #[] #[16r81] 5)
 
 		(OpRmwRw #[] #[16r29])
 		(OpRwRmw #[] #[16r2B])
+    )
+
+    (test (op with) "Compares with a bitwise and"
+		(OpRmbIb #[] #[16rF6] 0)
+		(OpRmwIw #[] #[16rF7] 0)
+
+        (OpRmbRb #[] #[16r84])
+        (OpRmwRw #[] #[16r85])
     )
 ).
 

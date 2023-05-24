@@ -21,16 +21,11 @@ public externC function main(argc: Int32, argv: Char8 const pointer pointer) => 
     "Hello World\n" writeOntoStdout.
 
     let i mutable := 0i32.
-    let arg := argv[i asIntPointer].
-    write(1i32, arg reinterpretCastTo: Void const pointer, strlen(arg)).
-    "\n" writeOntoStdout.
-
-    #*
     while: (i < argc) do: {
         let arg := argv[i asIntPointer].
-        write(1i32, arg reinterpretCastTo: Void const pointer, strlen(arg))
+        write(1i32, arg reinterpretCastTo: Void const pointer, strlen(arg)).
+        "\n" writeOntoStdout.
     } continueWith: (i := i + 1i32).
-    *#
 
     0i32
 }.

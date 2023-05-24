@@ -173,7 +173,7 @@ public final class TACRegisterAllocationFile superclass: Object; definition: {
     }.
 
     public method reset => Void := {
-        activeRegisters atAllPut: false
+        activeRegisters atAllPut: false.
     }.
 
     public method markActiveRegister: (usedRegister: TACPhysicalLocation) ::=> Void := {
@@ -186,7 +186,7 @@ public final class TACRegisterAllocationFile superclass: Object; definition: {
     }.
 
     public method allocate => TACPhysicalLocation := {
-        let nextRegisterIndex := usedRegisters indexOf: false.
+        let nextRegisterIndex := activeRegisters indexOf: false.
         self assert: nextRegisterIndex >= 0iptr.
 
         let index := nextRegisterIndex asSize.
@@ -207,8 +207,15 @@ public final class TACTrivialRegisterAllocator superclass: TACRegisterAllocator;
         integerRegisterFile := TACRegisterAllocationFile for: target allocableIntegerRegisters.
 
         function instructionsDo: {:(TACInstruction)instruction :: Void |
+            self resetRegisterFiles.
             self allocateInstructionRegisters: instruction
         }
+    }.
+
+    public method resetRegisterFiles => Void := {
+        integerRegisterFile reset.
+        ##floatRegisterFile reset.
+        ##vectorRegisterFile reset.
     }.
 
     public method allocateInstructionRegisters: (instruction: TACInstruction) ::=> Void := {
