@@ -2358,6 +2358,10 @@ SimpleFunctionType
     setConversionTypeFunction((SelfType >> #asUInt64), UInt64).
     setConversionTypeFunction((SelfType >> #asInt64), Int64).
 
+    setConversionTypeFunction((SelfType >> #asSize), Size).
+    setConversionTypeFunction((SelfType >> #asIntPointer), IntPointer).
+    setConversionTypeFunction((SelfType >> #asUIntPointer), UIntPointer).
+
     setConversionTypeFunction((SelfType >> #asFloat32), Float32).
     setConversionTypeFunction((SelfType >> #asFloat64), Float64).
 }.

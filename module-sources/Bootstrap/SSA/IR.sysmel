@@ -35,6 +35,7 @@ SSAValue definition: {
     public method isDownCastInstruction => Boolean := false.
     public method isPhiInstruction => Boolean := false.
     public method isLoadInstruction => Boolean := false.
+    public method isMakeClosureInstruction => Boolean := false.
     public method isStoreInstruction => Boolean := false.
     public method isTerminatorInstruction => Boolean := false.
 
@@ -710,6 +711,11 @@ SSAInstruction definition: {
 
     public method isInstruction => Boolean := true.
 
+    public method isCapturedInClosure => Boolean
+        := users isNotNil && (users anySatisfy: {:(SSAValue)user :: Boolean |
+            user isMakeClosureInstruction && ((user downCastTo: SSAMakeClosureInstruction) captures includes: self)
+        }).
+
     public method postCopy => Void := {
         super postCopy.
         parent := nil.
@@ -1048,6 +1054,8 @@ public final class SSALoadInstruction superclass: SSAInstruction; definition: {
 public final class SSAMakeClosureInstruction superclass: SSAInstruction; definition: {
     public field functionDefinition => SSAValue.
     public field captures => Array.
+
+    public method isMakeClosureInstruction => Boolean := true.
 
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := makeClosure "; print: self functionDefinition.

@@ -911,6 +911,20 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #Char8::> : translateBinaryPrimitiveInto(TAC::Operation::UInt8GreaterThan).
     #Char8::>= : translateBinaryPrimitiveInto(TAC::Operation::UInt8GreaterOrEquals).
 
+    #Char8::asChar8 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt8).
+    #Char8::asInt8 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt8).
+    #Char8::asUInt8 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt8).
+    #Char8::asChar16 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt16).
+    #Char8::asInt16 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt16).
+    #Char8::asUInt16 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt16).
+    #Char8::asChar32 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt32).
+    #Char8::asInt32 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt32).
+    #Char8::asUInt32 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt32).
+    #Char8::asInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt64).
+    #Char8::asUInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt64).
+    #Char8::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::Int8ToFloat32).
+    #Char8::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::Int8ToFloat64).
+
     ## UInt8 primitives
     #UInt8::negated : translateBinaryPrimitiveInto(TAC::Operation::Int8Negate).
     #UInt8::bitInvert : translateBinaryPrimitiveInto(TAC::Operation::Int8BitNot).
@@ -934,6 +948,20 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #UInt8::<= : translateBinaryPrimitiveInto(TAC::Operation::UInt8LessOrEquals).
     #UInt8::> : translateBinaryPrimitiveInto(TAC::Operation::UInt8GreaterThan).
     #UInt8::>= : translateBinaryPrimitiveInto(TAC::Operation::UInt8GreaterOrEquals).
+
+    #UInt8::asChar8 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt8).
+    #UInt8::asInt8 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt8).
+    #UInt8::asUInt8 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt8).
+    #UInt8::asChar16 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt16).
+    #UInt8::asInt16 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt16).
+    #UInt8::asUInt16 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt16).
+    #UInt8::asChar32 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt32).
+    #UInt8::asInt32 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt32).
+    #UInt8::asUInt32 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt32).
+    #UInt8::asInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt64).
+    #UInt8::asUInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt64).
+    #UInt8::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::Int8ToFloat32).
+    #UInt8::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::Int8ToFloat64).
 
     ## Int8 primitives
     #Int8::negated : translateBinaryPrimitiveInto(TAC::Operation::Int8Negate).
@@ -959,29 +987,19 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #Int8::> : translateBinaryPrimitiveInto(TAC::Operation::Int8GreaterThan).
     #Int8::>= : translateBinaryPrimitiveInto(TAC::Operation::Int8GreaterOrEquals).
 
-    ## Char16 primitives
-    #Char16::negated : translateBinaryPrimitiveInto(TAC::Operation::Int16Negate).
-    #Char16::bitInvert : translateBinaryPrimitiveInto(TAC::Operation::Int16BitNot).
-
-    #Char16::+ : translateBinaryPrimitiveInto(TAC::Operation::Int16Add).
-    #Char16::- : translateBinaryPrimitiveInto(TAC::Operation::Int16Sub).
-    #Char16::* : translateBinaryPrimitiveInto(TAC::Operation::Int16Mul).
-    #Char16::/ : translateBinaryPrimitiveInto(TAC::Operation::Int16UDiv).
-    #Char16::% : translateBinaryPrimitiveInto(TAC::Operation::Int16URem).
-
-    #Char16::& : translateBinaryPrimitiveInto(TAC::Operation::Int16BitAnd).
-    #Char16::| : translateBinaryPrimitiveInto(TAC::Operation::Int16BitOr).
-    #Char16::^ : translateBinaryPrimitiveInto(TAC::Operation::Int16BitXor).
-    #Char16::<< : translateBinaryPrimitiveInto(TAC::Operation::Int16LogicalShiftLeft).
-    #Char16::>> : translateBinaryPrimitiveInto(TAC::Operation::Int16LogicalShiftRight).
-
-    #Char16::= : translateBinaryPrimitiveInto(TAC::Operation::Int16Equals).
-    #Char16::~= : translateBinaryPrimitiveInto(TAC::Operation::Int16NotEquals).
-    #Char16::<=> : translateBinaryPrimitiveInto(TAC::Operation::Int16Compare).
-    #Char16::< : translateBinaryPrimitiveInto(TAC::Operation::UInt16LessThan).
-    #Char16::<= : translateBinaryPrimitiveInto(TAC::Operation::UInt16LessOrEquals).
-    #Char16::> : translateBinaryPrimitiveInto(TAC::Operation::UInt16GreaterThan).
-    #Char16::>= : translateBinaryPrimitiveInto(TAC::Operation::UInt16GreaterOrEquals).
+    #Int8::asChar8 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt8).
+    #Int8::asInt8 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt8).
+    #Int8::asUInt8 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt8).
+    #Int8::asChar16 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt16).
+    #Int8::asInt16 : translateUnaryPrimitiveInto(TAC::Operation::SignExtendInt8ToInt16).
+    #Int8::asUInt16 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt16).
+    #Int8::asChar32 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt32).
+    #Int8::asInt32 : translateUnaryPrimitiveInto(TAC::Operation::SignExtendInt8ToInt32).
+    #Int8::asUInt32 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt32).
+    #Int8::asInt64 : translateUnaryPrimitiveInto(TAC::Operation::SignExtendInt8ToInt64).
+    #Int8::asUInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt64).
+    #Int8::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::Int8ToFloat32).
+    #Int8::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::Int8ToFloat64).
 
     ## Char16 primitives
     #Char16::negated : translateBinaryPrimitiveInto(TAC::Operation::Int16Negate).
@@ -1006,6 +1024,20 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #Char16::<= : translateBinaryPrimitiveInto(TAC::Operation::UInt16LessOrEquals).
     #Char16::> : translateBinaryPrimitiveInto(TAC::Operation::UInt16GreaterThan).
     #Char16::>= : translateBinaryPrimitiveInto(TAC::Operation::UInt16GreaterOrEquals).
+
+    #Char16::asChar8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt16ToInt8).
+    #Char16::asInt8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt16ToInt8).
+    #Char16::asUInt8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt16ToInt8).
+    #Char16::asChar16 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt16).
+    #Char16::asInt16 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt16).
+    #Char16::asUInt16 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt16).
+    #Char16::asChar32 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt16ToInt32).
+    #Char16::asInt32 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt16ToInt32).
+    #Char16::asUInt32 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt16ToInt32).
+    #Char16::asInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt16ToInt64).
+    #Char16::asUInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt16ToInt64).
+    #Char16::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::Int16ToFloat32).
+    #Char16::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::Int16ToFloat64).
 
     ## UInt16 primitives
     #UInt16::negated : translateBinaryPrimitiveInto(TAC::Operation::Int16Negate).
@@ -1031,6 +1063,20 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #UInt16::> : translateBinaryPrimitiveInto(TAC::Operation::UInt16GreaterThan).
     #UInt16::>= : translateBinaryPrimitiveInto(TAC::Operation::UInt16GreaterOrEquals).
 
+    #UInt16::asChar8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt16ToInt8).
+    #UInt16::asInt8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt16ToInt8).
+    #UInt16::asUInt8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt16ToInt8).
+    #UInt16::asChar16 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt16).
+    #UInt16::asInt16 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt16).
+    #UInt16::asUInt16 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt16).
+    #UInt16::asChar32 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt16ToInt32).
+    #UInt16::asInt32 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt16ToInt32).
+    #UInt16::asUInt32 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt16ToInt32).
+    #UInt16::asInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt16ToInt64).
+    #UInt16::asUInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt16ToInt64).
+    #UInt16::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::Int16ToFloat32).
+    #UInt16::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::Int16ToFloat64).
+
     ## Int16 primitives
     #Int16::negated : translateBinaryPrimitiveInto(TAC::Operation::Int16Negate).
     #Int16::bitInvert : translateBinaryPrimitiveInto(TAC::Operation::Int16BitNot).
@@ -1054,6 +1100,20 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #Int16::<= : translateBinaryPrimitiveInto(TAC::Operation::Int16LessOrEquals).
     #Int16::> : translateBinaryPrimitiveInto(TAC::Operation::Int16GreaterThan).
     #Int16::>= : translateBinaryPrimitiveInto(TAC::Operation::Int16GreaterOrEquals).
+
+    #Int16::asChar8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt16ToInt8).
+    #Int16::asInt8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt16ToInt8).
+    #Int16::asUInt8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt16ToInt8).
+    #Int16::asChar16 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt16).
+    #Int16::asInt16 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt16).
+    #Int16::asUInt16 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt16).
+    #Int16::asChar32 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt16ToInt32).
+    #Int16::asInt32 : translateUnaryPrimitiveInto(TAC::Operation::SignExtendInt16ToInt32).
+    #Int16::asUInt32 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt16ToInt32).
+    #Int16::asInt64 : translateUnaryPrimitiveInto(TAC::Operation::SignExtendInt16ToInt64).
+    #Int16::asUInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt16ToInt64).
+    #Int16::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::Int16ToFloat32).
+    #Int16::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::Int16ToFloat64).
 
     ## Char32 primitives
     #Char32::negated : translateBinaryPrimitiveInto(TAC::Operation::Int32Negate).
@@ -1079,6 +1139,20 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #Char32::> : translateBinaryPrimitiveInto(TAC::Operation::UInt32GreaterThan).
     #Char32::>= : translateBinaryPrimitiveInto(TAC::Operation::UInt32GreaterOrEquals).
 
+    #Char32::asChar8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt32ToInt8).
+    #Char32::asInt8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt32ToInt8).
+    #Char32::asUInt8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt32ToInt8).
+    #Char32::asChar16 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt32ToInt16).
+    #Char32::asInt16 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt32ToInt16).
+    #Char32::asUInt16 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt32ToInt16).
+    #Char32::asChar32 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt32).
+    #Char32::asInt32 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt32).
+    #Char32::asUInt32 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt32).
+    #Char32::asInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt32ToInt64).
+    #Char32::asUInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt32ToInt64).
+    #Char32::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::Int32ToFloat32).
+    #Char32::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::Int32ToFloat64).
+
     ## UInt32 primitives
     #UInt32::negated : translateBinaryPrimitiveInto(TAC::Operation::Int32Negate).
     #UInt32::bitInvert : translateBinaryPrimitiveInto(TAC::Operation::Int32BitNot).
@@ -1102,6 +1176,20 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #UInt32::<= : translateBinaryPrimitiveInto(TAC::Operation::UInt32LessOrEquals).
     #UInt32::> : translateBinaryPrimitiveInto(TAC::Operation::UInt32GreaterThan).
     #UInt32::>= : translateBinaryPrimitiveInto(TAC::Operation::UInt32GreaterOrEquals).
+
+    #UInt32::asChar8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt32ToInt8).
+    #UInt32::asInt8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt32ToInt8).
+    #UInt32::asUInt8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt32ToInt8).
+    #UInt32::asChar16 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt32ToInt16).
+    #UInt32::asInt16 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt32ToInt16).
+    #UInt32::asUInt16 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt32ToInt16).
+    #UInt32::asChar32 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt32).
+    #UInt32::asInt32 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt32).
+    #UInt32::asUInt32 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt32).
+    #UInt32::asInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt32ToInt64).
+    #UInt32::asUInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt32ToInt64).
+    #UInt32::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::Int32ToFloat32).
+    #UInt32::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::Int32ToFloat64).
 
     ## Int32 primitives
     #Int32::negated : translateBinaryPrimitiveInto(TAC::Operation::Int32Negate).
@@ -1127,6 +1215,58 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #Int32::> : translateBinaryPrimitiveInto(TAC::Operation::Int32GreaterThan).
     #Int32::>= : translateBinaryPrimitiveInto(TAC::Operation::Int32GreaterOrEquals).
 
+    #Int32::asChar8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt32ToInt8).
+    #Int32::asInt8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt32ToInt8).
+    #Int32::asUInt8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt32ToInt8).
+    #Int32::asChar16 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt32ToInt16).
+    #Int32::asInt16 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt32ToInt16).
+    #Int32::asUInt16 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt32ToInt16).
+    #Int32::asChar32 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt32).
+    #Int32::asInt32 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt32).
+    #Int32::asUInt32 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt32).
+    #Int32::asInt64 : translateUnaryPrimitiveInto(TAC::Operation::SignExtendInt32ToInt64).
+    #Int32::asUInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt32ToInt64).
+    #Int32::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::Int32ToFloat32).
+    #Int32::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::Int32ToFloat64).
+
+    ## Int64 primitives
+    #Int64::negated : translateBinaryPrimitiveInto(TAC::Operation::Int64Negate).
+    #Int64::bitInvert : translateBinaryPrimitiveInto(TAC::Operation::Int64BitNot).
+
+    #Int64::+ : translateBinaryPrimitiveInto(TAC::Operation::Int64Add).
+    #Int64::- : translateBinaryPrimitiveInto(TAC::Operation::Int64Sub).
+    #Int64::* : translateBinaryPrimitiveInto(TAC::Operation::Int64Mul).
+    #Int64::/ : translateBinaryPrimitiveInto(TAC::Operation::Int64UDiv).
+    #Int64::% : translateBinaryPrimitiveInto(TAC::Operation::Int64URem).
+
+    #Int64::& : translateBinaryPrimitiveInto(TAC::Operation::Int64BitAnd).
+    #Int64::| : translateBinaryPrimitiveInto(TAC::Operation::Int64BitOr).
+    #Int64::^ : translateBinaryPrimitiveInto(TAC::Operation::Int64BitXor).
+    #Int64::<< : translateBinaryPrimitiveInto(TAC::Operation::Int64LogicalShiftLeft).
+    #Int64::>> : translateBinaryPrimitiveInto(TAC::Operation::Int64ArithmeticShiftRight).
+
+    #Int64::= : translateBinaryPrimitiveInto(TAC::Operation::Int64Equals).
+    #Int64::~= : translateBinaryPrimitiveInto(TAC::Operation::Int64NotEquals).
+    #Int64::<=> : translateBinaryPrimitiveInto(TAC::Operation::Int64Compare).
+    #Int64::< : translateBinaryPrimitiveInto(TAC::Operation::Int64LessThan).
+    #Int64::<= : translateBinaryPrimitiveInto(TAC::Operation::Int64LessOrEquals).
+    #Int64::> : translateBinaryPrimitiveInto(TAC::Operation::Int64GreaterThan).
+    #Int64::>= : translateBinaryPrimitiveInto(TAC::Operation::Int64GreaterOrEquals).
+
+    #Int64::asChar8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt64ToInt8).
+    #Int64::asInt8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt64ToInt8).
+    #Int64::asUInt8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt64ToInt8).
+    #Int64::asChar16 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt64ToInt16).
+    #Int64::asInt16 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt64ToInt16).
+    #Int64::asUInt16 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt64ToInt16).
+    #Int64::asChar32 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt64ToInt32).
+    #Int64::asInt32 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt64ToInt32).
+    #Int64::asUInt32 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt64ToInt32).
+    #Int64::asInt64 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt64).
+    #Int64::asUInt64 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt64).
+    #Int64::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::Int64ToFloat32).
+    #Int64::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::Int64ToFloat64).
+
     ## UInt64 primitives
     #UInt64::negated : translateBinaryPrimitiveInto(TAC::Operation::Int64Negate).
     #UInt64::bitInvert : translateBinaryPrimitiveInto(TAC::Operation::Int64BitNot).
@@ -1151,7 +1291,19 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #UInt64::> : translateBinaryPrimitiveInto(TAC::Operation::UInt64GreaterThan).
     #UInt64::>= : translateBinaryPrimitiveInto(TAC::Operation::UInt64GreaterOrEquals).
 
+    #UInt64::asChar8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt64ToInt8).
+    #UInt64::asInt8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt64ToInt8).
+    #UInt64::asUInt8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt64ToInt8).
+    #UInt64::asChar16 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt64ToInt16).
+    #UInt64::asInt16 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt64ToInt16).
+    #UInt64::asUInt16 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt64ToInt16).
+    #UInt64::asChar32 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt64ToInt32).
     #UInt64::asInt32 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt64ToInt32).
+    #UInt64::asUInt32 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt64ToInt32).
+    #UInt64::asInt64 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt64).
+    #UInt64::asUInt64 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt64).
+    #UInt64::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::UInt64ToFloat32).
+    #UInt64::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::UInt64ToFloat64).
 
     ## Float32 primitives
     #Float32::negated : translateBinaryPrimitiveInto(TAC::Operation::Float32Negate).

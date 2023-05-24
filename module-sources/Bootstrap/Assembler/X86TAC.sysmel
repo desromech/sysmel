@@ -792,6 +792,12 @@ let x86::moveIntegerRegisterConstraints := {:(TACInstruction)instruction :(TACRe
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz
 }.
 
+let x86::moveIntegerRegister8Constraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+    allocator
+        allocateRegisterForInstructionResult: instruction;
+        allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz
+}.
+
 TAC::Operation::MoveInt32
     forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegisterConstraints;
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
@@ -891,9 +897,111 @@ TAC::Operation::StoreInt64
     }.
 
 TAC::Operation::TruncateInt64ToInt32
+    forTarget: #x86_64 registerConstraintsWith: x86::moveIntegerRegisterConstraints;
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen)
+    }.
+
+TAC::Operation::TruncateInt64ToInt16
+    forTarget: #x86_64 registerConstraintsWith: x86::moveIntegerRegisterConstraints;
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction resultRegister x86::int16For: codegen) src: (instruction firstOperandRegister x86::int16For: codegen)
+    }.
+
+TAC::Operation::TruncateInt64ToInt8
+    forTarget: #x86_64 registerConstraintsWith: x86::moveIntegerRegister8Constraints;
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction resultRegister x86::int8For: codegen) src: (instruction firstOperandRegister x86::int8For: codegen)
+    }.
+
+TAC::Operation::TruncateInt32ToInt16
     forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegisterConstraints;
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
-        codegen textSection x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen)
+        codegen textSection x86::mov: (instruction resultRegister x86::int16For: codegen) src: (instruction firstOperandRegister x86::int16For: codegen)
+    }.
+
+TAC::Operation::TruncateInt32ToInt8
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegister8Constraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction resultRegister x86::int8For: codegen) src: (instruction firstOperandRegister x86::int8For: codegen)
+    }.
+
+TAC::Operation::TruncateInt16ToInt8
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegister8Constraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction resultRegister x86::int16For: codegen) src: (instruction firstOperandRegister x86::int16For: codegen)
+    }.
+
+TAC::Operation::SignExtendInt32ToInt64
+    forTarget: #x86_64 registerConstraintsWith: x86::moveIntegerRegisterConstraints;
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::movsxd: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen)
+    }.
+
+TAC::Operation::SignExtendInt16ToInt64
+    forTarget: #x86_64 registerConstraintsWith: x86::moveIntegerRegisterConstraints;
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::movsx: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int16For: codegen)
+    }.
+
+TAC::Operation::SignExtendInt8ToInt64
+    forTarget: #x86_64 registerConstraintsWith: x86::moveIntegerRegister8Constraints;
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::movsx: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int16For: codegen)
+    }.
+
+TAC::Operation::SignExtendInt16ToInt32
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::movsx: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen)
+    }.
+
+TAC::Operation::SignExtendInt8ToInt32
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegister8Constraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::movsx: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int8For: codegen)
+    }.
+
+TAC::Operation::SignExtendInt8ToInt16
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegister8Constraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::movsx: (instruction resultRegister x86::int16For: codegen) src: (instruction firstOperandRegister x86::int8For: codegen)
+    }.
+
+TAC::Operation::ZeroExtendInt32ToInt64
+    forTarget: #x86_64 registerConstraintsWith: x86::moveIntegerRegisterConstraints;
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::direct::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen)
+    }.
+
+TAC::Operation::ZeroExtendInt16ToInt64
+    forTarget: #x86_64 registerConstraintsWith: x86::moveIntegerRegisterConstraints;
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::movzx: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int16For: codegen)
+    }.
+
+TAC::Operation::ZeroExtendInt8ToInt64
+    forTarget: #x86_64 registerConstraintsWith: x86::moveIntegerRegister8Constraints;
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::movzx: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int16For: codegen)
+    }.
+
+TAC::Operation::ZeroExtendInt16ToInt32
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::movsx: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen)
+    }.
+
+TAC::Operation::ZeroExtendInt8ToInt32
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegister8Constraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::movzx: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int8For: codegen)
+    }.
+
+TAC::Operation::ZeroExtendInt8ToInt16
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegister8Constraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::movzx: (instruction resultRegister x86::int16For: codegen) src: (instruction firstOperandRegister x86::int8For: codegen)
     }.
 
 TAC::Operation::Branch
