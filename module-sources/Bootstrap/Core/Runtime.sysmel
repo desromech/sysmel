@@ -472,6 +472,7 @@ Type
             then: RawTuple::byteNew(variableSize)
             else: RawTuple::new(self validTotalSlotCount + variableSize)).
         (RawTuple::type:)(result, self).
+        if: self isWeak then: RawTuple::markWeak(result).
         result
     } withEagerAnalysis;
     withSelector: #basicNew addMethod: {:(Type)self :: self |
@@ -1989,11 +1990,11 @@ TypeSlot
         let: #initialValueBlock with: self initialValueBlock.
         if: initialValueBlock ~~ nil then: {
             let: #initialValue with: initialValueBlock(instance).
-            (RawTuple::slotAt:put:)(instance, self index, initialValue)
+            (RawTuple::typeSlotAt:put:)(instance, self, initialValue)
         } else: {
             let: #type with: self type.
             if: type ~~ nil then: {
-                (RawTuple::slotAt:put:)(instance, self index, type defaultValue)
+                (RawTuple::typeSlotAt:put:)(instance, self, type defaultValue)
             }.
         }
     } withEagerAnalysis;
@@ -2642,6 +2643,22 @@ Type
     };
     withSelector: #isGarbageCollectedPointerType addMethod: {:(Type)self :: Boolean | true };
     withSelector: #isValueType addMethod: {:(Type)self :: Boolean | false }.
+
+Type
+    validInstanceAlignment;
+    validInstanceSize;
+    withSelector: #basicAllocate addMethod: {:(Type)self :: self |
+        (RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:)(
+            self, self validInstanceSize, self validInstanceAlignment, self validTotalSlotCount, 0sz,
+            self isBytes, self isWeak
+        )
+    } withEagerAnalysis;
+    withSelector: #basicAllocate: addMethod: {:(Type)self :(Size)variableSize :: self |
+        (RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:)(
+            self, self validInstanceSize, self validInstanceAlignment, self validTotalSlotCount, variableSize,
+            self isBytes, self isWeak
+        )
+    } withEagerAnalysis.
 
 PointerLikeType
     withSelector: #computeLayout addMethod: {:(Type)self :: Void |

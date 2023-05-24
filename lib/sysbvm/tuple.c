@@ -299,6 +299,30 @@ static sysbvm_tuple_t sysbvm_tuple_primitive_byteNew(sysbvm_context_t *context, 
     return (sysbvm_tuple_t)sysbvm_context_allocateByteTuple(context, SYSBVM_NULL_TUPLE, sysbvm_tuple_anySize_decode(arguments[0]));
 }
 
+static sysbvm_tuple_t sysbvm_tuple_primitive_basicAllocateWithTypeInstanceSizeAlignmentSlotCountIsBytesIsWeak(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 7) sysbvm_error_argumentCountMismatch(7, argumentCount);
+
+    sysbvm_tuple_t *type = arguments + 0;
+    size_t instanceSize = sysbvm_tuple_anySize_decode(arguments[1]);
+    //sysbvm_tuple_t *instanceAlignment = arguments + 2;
+    size_t slotCount = sysbvm_tuple_anySize_decode(arguments[3]);
+    size_t variableSize = sysbvm_tuple_anySize_decode(arguments[4]);
+    bool isBytes = sysbvm_tuple_boolean_decode(arguments[5]);
+    bool isWeak = sysbvm_tuple_boolean_decode(arguments[6]);
+
+    sysbvm_tuple_t result = isBytes
+        ? (sysbvm_tuple_t)sysbvm_context_allocateByteTuple(context, *type, instanceSize + variableSize)
+        : (sysbvm_tuple_t)sysbvm_context_allocatePointerTuple(context, *type, slotCount + variableSize);
+
+    if(isWeak)
+        sysbvm_tuple_markWeakObject(result);
+    
+    return result;
+}
+
 static sysbvm_tuple_t sysbvm_tuple_primitive_size(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
@@ -408,6 +432,7 @@ void sysbvm_tuple_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_refTypeSlotAtPut, "RawTuple::refTypeSlotAt:put:");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_new, "RawTuple::new");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_byteNew, "RawTuple::byteNew");
+    sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_basicAllocateWithTypeInstanceSizeAlignmentSlotCountIsBytesIsWeak, "RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_isBytes, "RawTuple::isBytes");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_isWeak, "RawTuple::isWeak");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_size, "RawTuple::size");
@@ -431,6 +456,7 @@ void sysbvm_tuple_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::refTypeSlotAt:put:", context->roots.anyValueType, "__refTypeSlotAt__:put:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_refTypeSlotAtPut);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "RawTuple::new", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_new);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "RawTuple::byteNew", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_byteNew);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:", 7, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_basicAllocateWithTypeInstanceSizeAlignmentSlotCountIsBytesIsWeak);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::isBytes", context->roots.anyValueType, "__isBytes__", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_isBytes);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::isWeak", context->roots.anyValueType, "__isWeak__", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_isWeak);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::size", context->roots.anyValueType, "__size__", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_size);
