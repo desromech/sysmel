@@ -1108,10 +1108,15 @@ public final class TACBlockBuilder superclass: Object; definition: {
     public method loadFloat64: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::LoadFloat64 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
 
-    public method addPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
-        := self has64BitsPointers
-            ifTrue: (self int64Add: pointer with: (self constantOffsetImmediateFor: constantOffset) into: destination)
-            ifFalse: (self int32Add: pointer with: (self constantOffsetImmediateFor: constantOffset) into: destination).
+    public method addPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction := {
+        constantOffset = 0i64 ifTrue: {
+            self movePointer: pointer into: destination
+        } ifFalse: {
+            self has64BitsPointers
+                ifTrue: (self int64Add: pointer with: (self constantOffsetImmediateFor: constantOffset) into: destination)
+                ifFalse: (self int32Add: pointer with: (self constantOffsetImmediateFor: constantOffset) into: destination)
+        }
+    }.
 
     public method loadPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
         := self has64BitsPointers
@@ -1150,11 +1155,7 @@ public final class TACBlockBuilder superclass: Object; definition: {
     public method loadEffectiveAddress: (basePointer: TACValue) index: (indexValue: TACValue) constantScale: (constantScale: Int64) into: (result: TACValue) ::=> TACInstruction := {
         indexValue isImmediate64 ifTrue: {
             let constantOffset := indexValue getConstantValue64 * constantScale.
-            constantOffset = 0i64 ifTrue: {
-                self movePointer: basePointer into: result
-            } ifFalse: {
-                self addPointer: basePointer constantOffset: constantOffset into: result
-            }
+            self addPointer: basePointer constantOffset: constantOffset into: result
         } ifFalse: {
             self error: "TODO: Implement load effective address with non constant offset."
         }.

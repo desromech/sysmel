@@ -1026,6 +1026,8 @@ sysbvm_tuple_t sysbvm_interpreter_recompileAndOptimizeFunction(sysbvm_context_t 
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     gcFrame.optimizedFunctionDefinition = (sysbvm_functionDefinition_t*)sysbvm_context_shallowCopy(context, (sysbvm_tuple_t)gcFrame.functionDefinition);
+    gcFrame.optimizedFunctionDefinition->super.owner = SYSBVM_NULL_TUPLE;
+    gcFrame.optimizedFunctionDefinition->super.name = SYSBVM_NULL_TUPLE;
 
     // Construct the closure environment by reading the capture vector.
     gcFrame.optimizedDefinitionEnvironment = sysbvm_analysisAndEvaluationEnvironment_create(context, gcFrame.optimizedFunctionDefinition->definitionEnvironment);

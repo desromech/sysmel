@@ -859,6 +859,37 @@ TAC::Operation::LoadUInt64
         codegen textSection x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64PointerWithOffset: instruction secondOperandRegister for: codegen)
     }.
 
+let x86::storePointerRegisterContraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+    allocator
+        allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
+        allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 1sz;
+        allocateImmediate32ForInstruction: instruction operandAt: 2sz
+}.
+
+TAC::Operation::StoreInt8
+    forTarget: #(x86 x86_64) registerConstraintsWith: x86::storePointerRegisterContraints;
+    forTarget: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction secondOperandRegister x86::int8PointerWithOffset: instruction thirdOperandRegister for: codegen) src: (instruction firstOperandRegister x86::int8For: codegen)
+    }.
+
+TAC::Operation::StoreInt16
+    forTarget: #(x86 x86_64) registerConstraintsWith: x86::storePointerRegisterContraints;
+    forTarget: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction secondOperandRegister x86::int16PointerWithOffset: instruction thirdOperandRegister for: codegen) src: (instruction firstOperandRegister x86::int16For: codegen)
+    }.
+
+TAC::Operation::StoreInt32
+    forTarget: #(x86 x86_64) registerConstraintsWith: x86::storePointerRegisterContraints;
+    forTarget: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction secondOperandRegister x86::int32PointerWithOffset: instruction thirdOperandRegister for: codegen) src: (instruction firstOperandRegister x86::int32For: codegen)
+    }.
+
+TAC::Operation::StoreInt64
+    forTarget: #x86_64 registerConstraintsWith: x86::storePointerRegisterContraints;
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction secondOperandRegister x86::int64PointerWithOffset: instruction thirdOperandRegister for: codegen) src: (instruction firstOperandRegister x86::int64For: codegen)
+    }.
+
 TAC::Operation::TruncateInt64ToInt32
     forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegisterConstraints;
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
