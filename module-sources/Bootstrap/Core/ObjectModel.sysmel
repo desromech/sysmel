@@ -134,14 +134,13 @@ public global ObjectModel::getTupleHeaderPointerOf := {:(Untyped)object :: Objec
 }.
 
 RawTuple::isBytes adoptDefinitionOf: {:(Untyped)self :: Boolean |
-    false
+    ObjectModel::getTupleHeaderPointerOf(self) _ isBytes
 }.
 
 RawTuple::size adoptDefinitionOf: {:(Untyped)self :: Size |
-    0sz
+    ObjectModel::getTupleHeaderPointerOf(self) _ objectSize / UIntPointer valueSize
 }.
 
 RawTuple::byteSize adoptDefinitionOf: {:(Untyped)self :: Size |
-    ObjectModel::getTupleHeaderPointerOf(self) _ objectSize.
-    0sz
+    ObjectModel::getTupleHeaderPointerOf(self) _ objectSize
 }.

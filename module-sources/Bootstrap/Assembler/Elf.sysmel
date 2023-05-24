@@ -474,7 +474,7 @@ public final class AsmObjectElf32FileWriter superclass: AsmObjectFileWriter; def
                     let relSectionHeader := Elf32::SectionHeader new
                         name: (sectionNameStringTable addString: eachSection name asString -- ".rel") asUInt32;
                         type: Elf::SectionHeaderType::Rel;
-                        size: (relocations size * Elf32::Rel alignedValueSize) asUInt32;
+                        size: (relocations size * Elf32::Rel validInstanceSize) asUInt32;
                         addrAlign: 1u32;
                         entrySize: Elf32::Rel validInstanceSize asUInt32;
                         info: sectionHeaderIndex asUInt32;
@@ -494,7 +494,7 @@ public final class AsmObjectElf32FileWriter superclass: AsmObjectFileWriter; def
                     let relaSectionHeader := Elf32::SectionHeader new
                         name: (sectionNameStringTable addString: eachSection name asString -- ".rela") asUInt32;
                         type: Elf::SectionHeaderType::Rela;
-                        size: (relocations size * Elf32::Rela alignedValueSize) asUInt32;
+                        size: (relocations size * Elf32::Rela validInstanceSize) asUInt32;
                         addrAlign: 1u32;
                         entrySize: Elf32::Rela validInstanceSize asUInt32;
                         info: sectionHeaderIndex asUInt32;
@@ -646,7 +646,7 @@ public final class AsmObjectElf64FileWriter superclass: AsmObjectFileWriter; def
                     let relSectionHeader := Elf64::SectionHeader new
                         name: (sectionNameStringTable addString: eachSection name asString -- ".rel") asUInt32;
                         type: Elf::SectionHeaderType::Rel;
-                        size: (relocations size * Elf64::Rel alignedValueSize) asUInt64;
+                        size: (relocations size * Elf64::Rel validInstanceSize) asUInt64;
                         addrAlign: 1u64;
                         entrySize: Elf64::Rel validInstanceSize asUInt64;
                         info: sectionHeaderIndex asUInt32;
@@ -666,7 +666,7 @@ public final class AsmObjectElf64FileWriter superclass: AsmObjectFileWriter; def
                     let relaSectionHeader := Elf64::SectionHeader new
                         name: (sectionNameStringTable addString: eachSection name asString -- ".rela") asUInt32;
                         type: Elf::SectionHeaderType::Rela;
-                        size: (relocations size * Elf64::Rela alignedValueSize) asUInt64;
+                        size: (relocations size * Elf64::Rela validInstanceSize) asUInt64;
                         addrAlign: 1u64;
                         entrySize: Elf64::Rela validInstanceSize asUInt64;
                         info: sectionHeaderIndex asUInt32;
