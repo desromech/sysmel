@@ -2,12 +2,27 @@
 public externC function write(fd: Int32, buf: Void const pointer, count: Size) => IntPointer.
 public externC function strlen(str: Char8 const pointer) => Size.
 
+String extend: {
+    public final method writeOntoStdout => Void := {
+        write(1i32, self __rawContentsPointer__, self size).
+    }.
+}.
+
+let myPrint := {:(Array)elements... :: Void |
+    elements do: {:each :: Void | each asString writeOntoStdout}
+}.
+
+let myPrintLine := {:(Array)elements... :: Void |
+    elements do: {:each :: Void | each asString writeOntoStdout}.
+    "\n" writeOntoStdout
+}.
+
 public externC function main(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
-    let string := "Hello World\n".
-    write(1i32, string __rawContentsPointer__, string size).
+    "Hello World\n" writeOntoStdout.
 
     let arg := argv[0 iptr].
     write(1i32, arg reinterpretCastTo: Void const pointer, strlen(arg)).
+    "\n" writeOntoStdout.
 
     #*
     let i mutable := 0i32.
