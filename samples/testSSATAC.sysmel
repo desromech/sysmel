@@ -1,11 +1,10 @@
-public externC function puts(string: Char8 const pointer) => Int32.
-##public externC function write(fd: Int32, buf: Void const pointer, count: Size) => IntPointer.
+##public externC function puts(string: Char8 const pointer) => Int32.
+public externC function write(fd: Int32, buf: Void const pointer, count: Size) => IntPointer.
 
 public externC function main() => Int32 := {
-    let string := "Hello World".
-    ##puts("Hello World" asLiteralCString).
-    ##0i32
-    string size asInt32
+    let string := "Hello World\n".
+    write(0i32, string __rawContentsPointer__, string size).
+    0i32
 }.
 
 let compilationTarget := AsmCompilationTarget x86_64 useElf asTacCompilationTarget.

@@ -135,6 +135,9 @@ TACValue definition: {
     public virtual method isImmediate64 => Boolean := self isImmediate32.
     public virtual method isRelativeImmediate32 => Boolean := false.
 
+    public virtual method getConstantValue64 => Int64
+        := self error: "Not an immediate 64 constant".
+
     public virtual method markUsageAt: (usageIndex: UInt32) ::=> Void := {}.
     public virtual method markWriteAt: (writeIndex: UInt32) ::=> Void := {}.
     public virtual method markSpillingRequired ::=> Void := {}.
@@ -333,6 +336,8 @@ public final class TACConstantInt8 superclass: TACConstantInteger; definition: {
     public override method size => UInt64 := 1u64.
     public override method alignment => UInt64 := 1u64.
 
+    public override method getConstantValue64 => Int64 := value asInt64.
+
     public method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "i8"
     }.
@@ -353,6 +358,8 @@ public final class TACConstantUInt8 superclass: TACConstantInteger; definition: 
     public override method size => UInt64 := 1u64.
     public override method alignment => UInt64 := 1u64.
     
+    public override method getConstantValue64 => Int64 := value asInt64.
+
     public method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "u8"
     }.
@@ -374,6 +381,8 @@ public final class TACConstantInt16 superclass: TACConstantInteger; definition: 
     public override method size => UInt64 := 2u64.
     public override method alignment => UInt64 := 2u64.
 
+    public override method getConstantValue64 => Int64 := value asInt64.
+
     public method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "i16"
     }.
@@ -393,6 +402,8 @@ public final class TACConstantUInt16 superclass: TACConstantInteger; definition:
     public override method type => Type := UInt16.
     public override method size => UInt64 := 2u64.
     public override method alignment => UInt64 := 2u64.
+
+    public override method getConstantValue64 => Int64 := value asInt64.
 
     public method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "u16"
@@ -415,6 +426,8 @@ public final class TACConstantInt32 superclass: TACConstantInteger; definition: 
     public override method size => UInt64 := 4u64.
     public override method alignment => UInt64 := 4u64.
 
+    public override method getConstantValue64 => Int64 := value asInt64.
+
     public method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "i32"
     }.
@@ -434,6 +447,8 @@ public final class TACConstantUInt32 superclass: TACConstantInteger; definition:
     public override method type => Type := UInt32.
     public override method size => UInt64 := 4u64.
     public override method alignment => UInt64 := 4u64.
+
+    public override method getConstantValue64 => Int64 := value asInt64.
 
     public method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "u32"
@@ -456,6 +471,8 @@ public final class TACConstantInt64 superclass: TACConstantInteger; definition: 
     public override method alignment => UInt64 := 8u64.
     public override method size => UInt64 := 8u64.
     
+    public override method getConstantValue64 => Int64 := value.
+
     public method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "i64"
     }.
@@ -471,6 +488,8 @@ public final class TACConstantUInt64 superclass: TACConstantInteger; definition:
 
     public override method isConstantUInt64 => Boolean := true.
     public override method isImmediate64 => Boolean := true.
+
+    public override method getConstantValue64 => Int64 := value asInt64.
 
     public override method type => Type := UInt64.
     public override method alignment => UInt64 := 8u64.
@@ -1089,6 +1108,11 @@ public final class TACBlockBuilder superclass: Object; definition: {
     public method loadFloat64: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::LoadFloat64 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
 
+    public method addPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
+        := self has64BitsPointers
+            ifTrue: (self int64Add: pointer with: (self constantOffsetImmediateFor: constantOffset) into: destination)
+            ifFalse: (self int32Add: pointer with: (self constantOffsetImmediateFor: constantOffset) into: destination).
+
     public method loadPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
         := self has64BitsPointers
             ifTrue: (self loadUInt32: pointer constantOffset: constantOffset into: destination)
@@ -1122,6 +1146,19 @@ public final class TACBlockBuilder superclass: Object; definition: {
 
     public method storeStruct: (value: TACValue) into: (pointer: TACValue) constantOffset: (constantOffset: Int64) ::=> TACInstruction
         := self operation: TAC::Operation::StoreStruct with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
+
+    public method loadEffectiveAddress: (basePointer: TACValue) index: (indexValue: TACValue) constantScale: (constantScale: Int64) into: (result: TACValue) ::=> TACInstruction := {
+        indexValue isImmediate64 ifTrue: {
+            let constantOffset := indexValue getConstantValue64 * constantScale.
+            constantOffset = 0i64 ifTrue: {
+                self movePointer: basePointer into: result
+            } ifFalse: {
+                self addPointer: basePointer constantOffset: constantOffset into: result
+            }
+        } ifFalse: {
+            self error: "TODO: Implement load effective address with non constant offset."
+        }.
+    }.
 
     public method returnVoid ::=> TACInstruction
         := self operation: TAC::Operation::ReturnVoid.

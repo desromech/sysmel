@@ -133,6 +133,16 @@ public global ObjectModel::getTupleHeaderPointerOf := {:(Untyped)object :: Objec
     nil
 }.
 
+(PointerType::reinterpretCastTo:) adoptDefinitionOf: {:(AnyPointer)self :(Type)targetPointerType :: targetPointerType |
+    <primitive: #PointerType::reinterpretCastTo>
+    nil
+}.
+
+AnyValue extend: {
+    public final method __rawContentsPointer__ => Void pointer
+        := ObjectModel::getTupleHeaderPointerOf(self) + 1iptr reinterpretCastTo: Void pointer.
+}.
+
 RawTuple::isBytes adoptDefinitionOf: {:(Untyped)self :: Boolean |
     ObjectModel::getTupleHeaderPointerOf(self) _ isBytes
 }.

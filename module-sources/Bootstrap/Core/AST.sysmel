@@ -158,7 +158,7 @@ ASTLiteralNode
 
     withSelector: #literalFunctionPrimitiveName addMethod: {:(ASTLiteralNode)self :: Symbol |
         if: (self value __type__ lookupSelector: #primitiveName) ~~ nil
-            then: self value primitiveName
+            then: (self value ensureAnalysis; primitiveName)
             else: nil
     };
     withSelector: #fullPrintOn: addMethod: {:(ASTLiteralNode)self :(Stream)stream :: Void |

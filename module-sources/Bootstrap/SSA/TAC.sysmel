@@ -882,6 +882,10 @@ public global SSATacPrimitiveCallGenerationTable := #{
         codegen blockBuilder movePointer: (codegen translateValue: arguments first) into: result.
         true
     }.
+    #PointerLikeType::reinterpretCastTo: : {:(Array)arguments :(TACValue)result :(SSAFunctionDefinitionTACCodeGenerator)codegen :: Boolean |
+        codegen blockBuilder movePointer: (codegen translateValue: arguments first) into: result.
+        true
+    }.
 
     ## Char8 primitives
     #Char8::negated : translateBinaryPrimitiveInto(TAC::Operation::Int8Negate).
@@ -1240,6 +1244,22 @@ SSACallInstruction extend: {
                 withArguments: (Array with: tacCalledFunction) -- tacArguments into: tacValue
                 withBlockBuilder: codegen blockBuilder
         }.
+    }.
+}.
+
+SSABitcastInstruction extend: {
+    public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        ## FIXME: Add support for non-pointer values.
+        codegen blockBuilder movePointer: (codegen translateValue: self value) into: tacValue
+    }.
+}.
+
+SSAPointerElementAtInstruction extend: {
+    public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        let pointerValue := codegen translateValue: self pointer.
+        let indexValue := codegen translateValue: self index.
+        let elementSize := (self pointer type downCastTo: PointerLikeType) baseType alignedValueSize.
+        codegen blockBuilder loadEffectiveAddress: pointerValue index: indexValue constantScale: elementSize asInt64 into: tacValue
     }.
 }.
 

@@ -809,6 +809,30 @@ public final class SSACallInstruction superclass: SSAInstruction; definition: {
     }.
 }.
 
+public final class SSABitcastInstruction superclass: SSAInstruction; definition: {
+    public field value => SSAValue.
+    public field targetType => SSAValue.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void
+        := stream print: self; nextPutAll: " := bitcast: "; print: self value;
+            nextPut: ' '; print: self targetType.
+
+    public method usedValuesDo: aBlock ::=> Void := {
+        aBlock(self value).
+        aBlock(self targetType).
+    }.
+
+    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        if: self value = replacedValue then: (self value: replacement).
+        if: self targetType = replacedValue then: (self targetType: replacement).
+    }.
+
+    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+        replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
+        replacementDictionary at: self targetType ifPresent: {:(SSAValue)replacement :: Void | self targetType: replacement}.
+    }.
+}.
+
 public final class SSACoerceValueInstruction superclass: SSAInstruction; definition: {
     public field value => SSAValue.
     public field targetType => SSAValue.
@@ -895,6 +919,32 @@ public final class SSADownCastInstruction superclass: SSAInstruction; definition
     public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         replacementDictionary at: self targetType ifPresent: {:(SSAValue)replacement :: Void | self targetType: replacement}.
         replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
+    }.
+}.
+
+public final class SSAPointerElementAtInstruction superclass: SSAInstruction; definition: {
+    public field pointer => SSAValue.
+    public field index => SSAValue.
+
+    public method isPointerElementAtInstruction => Boolean := true.
+
+    public method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream print: self; nextPutAll: " := pointer "; print: self pointer; nextPutAll: " elementAt "; print: self index
+    }.
+
+    public method usedValuesDo: aBlock ::=> Void := {
+        aBlock(self pointer).
+        aBlock(self index).
+    }.
+
+    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        if: self pointer = replacedValue then: (self pointer: replacement).
+        if: self index = replacedValue then: (self index: replacement).
+    }.
+
+    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+        replacementDictionary at: self pointer ifPresent: {:(SSAValue)replacement :: Void | self pointer: replacement}.
+        replacementDictionary at: self index ifPresent: {:(SSAValue)replacement :: Void | self index: replacement}.
     }.
 }.
 
@@ -1313,6 +1363,19 @@ SSAInstructionBuilder definition: {
     public method call: (receiver: SSAValue) arguments: (arguments: Array) ::=> SSACallInstruction
         := self call: receiver arguments: arguments resultType: nil.
 
+    public method bitcast: (value: SSAValue) into: (targetType: SSAValue) type: (type: Type) ::=> SSAValue := {
+        (targetType == nil) || (targetType isLiteralConstant && (value type == (targetType downCastTo: SSALiteralConstant) value)) ifTrue: {
+            value
+        } ifFalse: {
+            self addInstruction: (SSABitcastInstruction new
+                value: value;
+                targetType: targetType;
+                type: type;
+                registerInUsedValues;
+                yourself)
+        }.
+    }.
+
     public method coerceValue: (value: SSAValue) into: (targetType: SSAValue) type: (type: Type) ::=> SSAValue := {
         (targetType == nil) || (targetType isLiteralConstant && (value type == (targetType downCastTo: SSALiteralConstant) value)) ifTrue: {
             value
@@ -1321,7 +1384,7 @@ SSAInstructionBuilder definition: {
                 value: value;
                 targetType: targetType;
                 type: type;
-            registerInUsedValues;
+                registerInUsedValues;
                 yourself)
         }.
     }.
@@ -1411,6 +1474,14 @@ SSAInstructionBuilder definition: {
         := self addInstruction: (SSAStoreInstruction new
             value: value;
             storage: storage;
+            registerInUsedValues;
+            yourself).
+
+    public method pointer: (pointer: SSAValue) elementAt: (index: SSAValue) type: (type: Type) ::=> SSAPointerElementAtInstruction
+        := self addInstruction: (SSAPointerElementAtInstruction new
+            pointer: pointer;
+            index: index;
+            type: type;
             registerInUsedValues;
             yourself).
 
