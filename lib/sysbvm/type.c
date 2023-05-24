@@ -396,7 +396,7 @@ static sysbvm_tuple_t sysbvm_type_doCreatePointerType(sysbvm_context_t *context,
     sysbvm_type_setMethodWithSelector(context, (sysbvm_tuple_t)gcFrame.result, context->roots.plusSelector, gcFrame.additionFunction);
 
     gcFrame.subscriptFunction = sysbvm_pointerLikeType_createAddition(context, (sysbvm_tuple_t)gcFrame.result, gcFrame.referenceType, 0);
-    sysbvm_type_setMethodWithSelector(context, (sysbvm_tuple_t)gcFrame.result, context->roots.subscriptSelector, gcFrame.additionFunction);
+    sysbvm_type_setMethodWithSelector(context, (sysbvm_tuple_t)gcFrame.result, context->roots.subscriptSelector, gcFrame.subscriptFunction);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return (sysbvm_tuple_t)gcFrame.result;

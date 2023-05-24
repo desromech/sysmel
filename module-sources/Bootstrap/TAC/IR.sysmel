@@ -1120,8 +1120,8 @@ public final class TACBlockBuilder superclass: Object; definition: {
 
     public method loadPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
         := self has64BitsPointers
-            ifTrue: (self loadUInt32: pointer constantOffset: constantOffset into: destination)
-            ifFalse: (self loadUInt64: pointer constantOffset: constantOffset into: destination).
+            ifTrue: (self loadUInt64: pointer constantOffset: constantOffset into: destination)
+            ifFalse: (self loadUInt32: pointer constantOffset: constantOffset into: destination).
 
     public method loadStruct: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::LoadStruct with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.

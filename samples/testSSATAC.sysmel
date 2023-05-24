@@ -1,9 +1,22 @@
 ##public externC function puts(string: Char8 const pointer) => Int32.
 public externC function write(fd: Int32, buf: Void const pointer, count: Size) => IntPointer.
+public externC function strlen(str: Char8 const pointer) => Size.
 
-public externC function main() => Int32 := {
+public externC function main(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
     let string := "Hello World\n".
     write(1i32, string __rawContentsPointer__, string size).
+
+    let arg := argv[0 iptr].
+    write(1i32, arg reinterpretCastTo: Void const pointer, strlen(arg)).
+
+    #*
+    let i mutable := 0i32.
+    while: (i < argc) do: {
+        let arg := argv[i asIntPointer].
+        write(1i32, arg reinterpretCastTo: Void const pointer, strlen(arg))
+    } continueWith: (i := i + 1i32).
+    *#
+
     0i32
 }.
 

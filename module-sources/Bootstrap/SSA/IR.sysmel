@@ -1208,6 +1208,11 @@ public final class SSAStoreInstruction superclass: SSAInstruction; definition: {
 
     public method isStoreInstruction => Boolean := true.
 
+    public method initialize => Void := {
+        super initialize.
+        type := Void
+    }.
+
     public method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "store "; print: self value; nextPutAll: " in "; print: self storage
     }.
