@@ -256,9 +256,11 @@ Type extend: {
 
 TypeSlot extend: {
     public method traceReferenceOfObject: (object: Untyped) forAsmHeap: (heap: AsmObjectHeap) ::=> Void := {
-        (type isNil || type isValueType not) && (self isMinRTTIExcluded not || heap hasFullRTTI) ifTrue: {
-            let referenceValue => Untyped := (RawTuple::typeSlotAt:)(object, self).
-            heap traceReference: referenceValue
+        self isMinRTTIExcluded not || heap hasFullRTTI ifTrue: {
+            type isNil || type isValueType not ifTrue: {
+                let referenceValue => Untyped := (RawTuple::typeSlotAt:)(object, self).
+                heap traceReference: referenceValue
+            }
         }
     }.
 
@@ -269,8 +271,7 @@ TypeSlot extend: {
             type isNil || type isValueType not ifTrue: {
                 heap writeReference64: slotValue at: objectBaseOffset + offset.
             } ifFalse: {
-                ##printLine(self owner, " ", self type, " slot value ", slotValue).
-                ##type encodeValue: slotValue inBytes: heap serializedObjectData atOffset: objectBaseOffset + offset
+                type encodeValue: slotValue inBytes: heap serializedObjectData atOffset: objectBaseOffset + offset
             }
         }
     }.
@@ -295,10 +296,10 @@ ObjectModelVariant extend: {
         let isBytes := RawTuple::isBytes(object).
         isBytes ifFalse: {
             let slotCount := RawTuple::size(object).
-            let lastLayoutSlotIndex := self traceLayoutReferencesOfObject: object forAsmHeap: heap.
+            let fixedLayoutSlotCount := self traceLayoutReferencesOfObject: object forAsmHeap: heap.
 
             ## Trace the variant references.
-            let i mutable := lastLayoutSlotIndex.
+            let i mutable := fixedLayoutSlotCount.
             while: (i < slotCount) do: {
                 heap traceReference: (RawTuple::slotAt:)(object, i)
             } continueWith: (i := i + 1sz)

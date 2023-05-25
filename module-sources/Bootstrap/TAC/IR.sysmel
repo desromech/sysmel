@@ -1397,4 +1397,7 @@ TACCompilationTarget definition: {
 
     public abstract method defaultCallingConvention => TACCallingConvention
         := self subclassResponsibility.
+
+    public virtual method objectModel => ObjectModelVariant
+        := self pointerSize = 4sz ifTrue: ObjectModelVariant32 uniqueInstance ifFalse: ObjectModelVariant64 uniqueInstance.
 }.

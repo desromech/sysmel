@@ -79,6 +79,9 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionDefinition_create(sysbvm_context_t *con
     result->definitionArgumentNodes = argumentNodes;
     result->definitionResultTypeNode = resultTypeNode;
     result->definitionBodyNode = body;
+    result->checkedEntryPoint = sysbvm_tuple_systemHandle_encode(context, 0);
+    result->uncheckedEntryPoint = sysbvm_tuple_systemHandle_encode(context, 0);
+    result->capturelessUncheckedEntryPoint = sysbvm_tuple_systemHandle_encode(context, 0);
     return (sysbvm_tuple_t)result;
 }
 
@@ -87,6 +90,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_function_createPrimitive(sysbvm_context_t *cont
     sysbvm_function_t *result = (sysbvm_function_t*)sysbvm_context_allocatePointerTuple(context, context->roots.functionType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_function_t));
     result->argumentCount = sysbvm_tuple_size_encode(context, argumentCount);
     result->flags = sysbvm_tuple_bitflags_encode(flags);
+    result->primitiveTableIndex = sysbvm_tuple_uint32_encode(context, 0);
     uint32_t primitiveEntryIndex = 0;
     if(!userdata && sysbvm_primitiveTable_findEntryFor(entryPoint, &primitiveEntryIndex))
     {
@@ -112,6 +116,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_function_createClosureWithCaptureVector(sysbvm_
     result->captureVector = captureVector;
     result->definition = functionDefinition;
     result->primitiveName = functionDefinitionObject->analyzedPrimitiveName;
+    result->primitiveTableIndex = sysbvm_tuple_uint32_encode(context, 0);
     return (sysbvm_tuple_t)result;
 }
 
