@@ -209,8 +209,44 @@ AsmObjectHeap definition: {
             endLabel: rootObjectTableSymbol
     }.
 
-    public method writeReference: (value: Untyped) at: (offset: Size) ::=> Void := {
+    public method writeReference32: (value: Untyped) at: (offset: Size) extraAddend: (extraAddend: UInt32) ::=> Void := {
+        let objectModel := compilationTarget objectModel.
+        (objectModel isImmediateReference: value) ifTrue: {
+            let immediateValue := RawTuple::type(value) encodeImmediateReference32: value.
+            serializedObjectData uint32At: offset put: immediateValue
+        } ifFalse: {
+            let objectIndex => Size := objectIndexTable at: value.
+            let objectOffset => UInt64 := objectOffsetList at: objectIndex.
+            serializedObjectDataRelocations add: (AsmObjectCodeRelocationAbsoluteInt32 new
+                symbol: self objectSectionSymbol;
+                offset: offset;
+                addend: objectOffset asInt32 + extraAddend asInt32;
+                yourself)
+        }
+    }.
 
+    public method writeReference64: (value: Untyped) at: (offset: Size) ::=> Void := {
+        self writeReference64: value at: offset extraAddend: 0u64
+    }.
+
+    public method writeReference64: (value: Untyped) at: (offset: Size) extraAddend: (extraAddend: UInt64) ::=> Void := {
+        let objectModel := compilationTarget objectModel.
+        (objectModel isImmediateReference: value) ifTrue: {
+            let immediateValue := RawTuple::type(value) encodeImmediateReference64: value.
+            serializedObjectData uint64At: offset put: immediateValue
+        } ifFalse: {
+            let objectIndex => Size := objectIndexTable at: value.
+            let objectOffset => UInt64 := objectOffsetList at: objectIndex.
+            serializedObjectDataRelocations add: (AsmObjectCodeRelocationAbsoluteInt64 new
+                symbol: self objectSectionSymbol;
+                offset: offset;
+                addend: objectOffset asInt64 + extraAddend asInt64;
+                yourself)
+        }
+    }.
+
+    public method writeReference64: (value: Untyped) at: (offset: Size) ::=> Void := {
+        self writeReference64: value at: offset extraAddend: 0u64
     }.
 }.
 
@@ -225,6 +261,20 @@ TypeSlot extend: {
             heap traceReference: referenceValue
         }
     }.
+
+    public method writeReference64OrValueOf: (object: Untyped) inAsmHeap: (heap: AsmObjectHeap) at: (objectBaseOffset: Size) ::=> Void := {
+        self isMinRTTIExcluded not || heap hasFullRTTI ifTrue: {
+            let slotValue => Untyped := (RawTuple::typeSlotAt:)(object, self).
+
+            type isNil || type isValueType not ifTrue: {
+                heap writeReference64: slotValue at: objectBaseOffset + offset.
+            } ifFalse: {
+                ##printLine(self owner, " ", self type, " slot value ", slotValue).
+                ##type encodeValue: slotValue inBytes: heap serializedObjectData atOffset: objectBaseOffset + offset
+            }
+        }
+    }.
+
 }.
 
 ObjectModelVariant extend: {
@@ -264,11 +314,20 @@ ObjectModelVariant extend: {
 
 ObjectModelVariant64 extend: {
     public method saveLayoutDataOfObject: (object: Untyped) inAsmHeap: (heap: AsmObjectHeap) at: (offset: Size) ::=> Size := {
-        0sz
+        let type => Type := RawTuple::type(object).
+        type ifNil: {
+            0sz
+        } ifNotNil: {
+            type allSlotsDo: {:(TypeSlot)eachSlot :: Void |
+                eachSlot writeReference64OrValueOf: object inAsmHeap: heap at: offset
+            }.
+            type totalSlotCount
+        }
     }.
 
     public method fixedInstanceSizeOfObject: (object: Untyped) ::=> Size := {
-        0sz
+        let type => Type := RawTuple::type(object).
+        type ifNil: (0sz) ifNotNil: (type validInstanceSize)
     }.
 
     public override method serializeObject: (object: Untyped) inAsmHeap: (heap: AsmObjectHeap) at: (offset: Size) ::=> Void := {
@@ -284,6 +343,13 @@ ObjectModelVariant64 extend: {
             isWeak: isWeak;
             identityHash: identityHash(object) asUInt64;
             objectSize: (self computeSizeOfObjectInstanceContent: object).
+
+        type ifNotNil: {
+            let typePointerFlags := header typePointerAndFlags.
+            header typePointerAndFlags: 0u64.
+            heap writeReference64: type at: offset.
+        }.
+
         header encodeInBytes: destination atOffset: offset.
 
         isBytes ifTrue: {
@@ -295,11 +361,11 @@ ObjectModelVariant64 extend: {
         } ifFalse: {
             let slotCount := RawTuple::size(object).
             let i mutable := self saveLayoutDataOfObject: object inAsmHeap: heap at: offset + headerSize.
-            let slotOffset mutable := headerSize + (self fixedInstanceSizeOfObject: object).
+            let slotOffset mutable := offset + headerSize + (self fixedInstanceSizeOfObject: object).
 
             while: i < slotCount do: {
                 let value => Untyped := (RawTuple::slotAt:) (object, i).
-                heap writeReference: value at: slotOffset.
+                heap writeReference64: value at: slotOffset.
                 slotOffset := slotOffset + 8sz.
             } continueWith: (i := i + 1sz)
         }.
