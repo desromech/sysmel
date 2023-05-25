@@ -259,7 +259,7 @@ Untyped __type__
     } withEagerAnalysis.
     
 TypeSlot
-    withSelector: #hasFlag: addMethod: {:(TypeSlot)self :(Size)flag :: Boolean |
+    withSelector: #hasFlag: addMethod: {:(TypeSlot)self :(Bitflags)flag :: Boolean |
         (self flags & flag) ~= 0bflgs
     } withEagerAnalysis;
     withSelector: #isPublic addMethod: {:(TypeSlot)self :: Boolean |

@@ -133,7 +133,7 @@ typedef struct sysbvm_functionType_s
 
 typedef struct sysbvm_simpleFunctionType_s
 {
-    sysbvm_type_tuple_t super;
+    sysbvm_functionType_t super;
     sysbvm_tuple_t argumentTypes;
     sysbvm_tuple_t functionFlags;
     sysbvm_tuple_t resultType;
@@ -141,7 +141,7 @@ typedef struct sysbvm_simpleFunctionType_s
 
 typedef struct sysbvm_dependentFunctionType_s
 {
-    sysbvm_type_tuple_t super;
+    sysbvm_functionType_t super;
     sysbvm_tuple_t sourcePosition;
 
     sysbvm_tuple_t argumentNodes;

@@ -121,7 +121,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_context_createIntrinsicClass(sysbvm_context_t *
     for(size_t i = 0; i < slotNameCount; ++i)
     {
         sysbvm_tuple_t name = sysbvm_symbol_internWithCString(context, va_arg(valist, const char *));
-        sysbvm_tuple_t flags = sysbvm_tuple_integer_encodeSmall(va_arg(valist, int));
+        sysbvm_tuple_t flags = sysbvm_tuple_bitflags_encode(va_arg(valist, int));
         sysbvm_tuple_t type = va_arg(valist, sysbvm_tuple_t);
         if(!type)
             type = context->roots.anyValueType;
@@ -183,7 +183,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_context_createIntrinsicType(sysbvm_context_t *c
     for(size_t i = 0; i < slotNameCount; ++i)
     {
         sysbvm_tuple_t name = sysbvm_symbol_internWithCString(context, va_arg(valist, const char *));
-        sysbvm_tuple_t flags = sysbvm_tuple_integer_encodeSmall(va_arg(valist, int));
+        sysbvm_tuple_t flags = sysbvm_tuple_bitflags_encode(va_arg(valist, int));
         sysbvm_tuple_t type = va_arg(valist, sysbvm_tuple_t);
         if(!type)
             type = context->roots.anyValueType;
@@ -230,7 +230,7 @@ static void sysbvm_context_setIntrinsicTypeMetadata(sysbvm_context_t *context, s
     for(size_t i = 0; i < slotNameCount; ++i)
     {
         sysbvm_tuple_t name = sysbvm_symbol_internWithCString(context, va_arg(valist, const char *));
-        sysbvm_tuple_t flags = sysbvm_tuple_integer_encodeSmall(va_arg(valist, int));
+        sysbvm_tuple_t flags = sysbvm_tuple_bitflags_encode(va_arg(valist, int));
         sysbvm_tuple_t type = va_arg(valist, sysbvm_tuple_t);
         if(!type)
             type = context->roots.anyValueType;
@@ -461,6 +461,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "void"), SYSBVM_VOID_TUPLE);
     sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "__hashtableEmptyElement__"), SYSBVM_HASHTABLE_EMPTY_ELEMENT_TUPLE);
     sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "__tombstone__"), SYSBVM_TOMBSTONE_TUPLE);
+    sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "__pendingMemoizationValue__"), SYSBVM_PENDING_MEMOIZATION_VALUE);
 
     sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "__Global__"), context->roots.globalNamespace);
     sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "BootstrapEnv::IntrinsicTypes"), context->roots.intrinsicTypes);
@@ -571,14 +572,14 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.typeType, "Type", SYSBVM_NULL_TUPLE,
         "supertype", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
-        "slots", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
-        "slotsWithBasicInitialization", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "slots", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
+        "slotsWithBasicInitialization", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
         "totalSlotCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anyValueType,
         "instanceSize", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "instanceAlignment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
 
-        "slotDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.methodDictionaryType,
+        "slotDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.methodDictionaryType,
 
         "macroMethodDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.methodDictionaryType,
         "methodDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.methodDictionaryType,
@@ -697,7 +698,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionType, "Function", SYSBVM_NULL_TUPLE,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         "argumentCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
-        "captureVector", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "captureVector", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
         "captureEnvironment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.environmentType,
         "definition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
         "primitiveTableIndex", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
@@ -757,20 +758,20 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionTypeType, "FunctionType", SYSBVM_NULL_TUPLE,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.dependentFunctionTypeType, "DependentFunctionType", SYSBVM_NULL_TUPLE,
-        "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
-        "argumentNodes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, SYSBVM_NULL_TUPLE,
+        "argumentNodes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
         "functionFlags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
-        "resultTypeNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "resultTypeNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.astNodeType,
 
-        "environment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
-        "captureBindings", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
-        "argumentBindings", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
-        "localBindings", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "environment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.environmentType,
+        "captureBindings", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
+        "argumentBindings", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
+        "localBindings", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.simpleFunctionTypeType, "SimpleFunctionType", SYSBVM_NULL_TUPLE,
-        "argumentTypes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
-        "functionFlags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
-        "resultType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
+        "argumentTypes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
+        "functionFlags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.bitflagsType,
+        "resultType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.typeType,
         NULL);
 
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolType, "Symbol", SYSBVM_NULL_TUPLE, NULL);

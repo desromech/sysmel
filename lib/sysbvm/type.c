@@ -197,11 +197,11 @@ static sysbvm_tuple_t sysbvm_type_doCreateSimpleFunctionType(sysbvm_context_t *c
     sysbvm_simpleFunctionType_t* result = (sysbvm_simpleFunctionType_t*)sysbvm_context_allocatePointerTuple(context, context->roots.simpleFunctionTypeType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_simpleFunctionType_t));
     sysbvm_association_setValue(templateResult, (sysbvm_tuple_t)result);
 
-    result->super.supertype = (sysbvm_tuple_t)supertype;
-    result->super.flags = sysbvm_tuple_bitflags_encode(sysbvm_tuple_bitflags_decode(supertype->flags) | SYSBVM_TYPE_FLAGS_FUNCTION);
-    result->super.totalSlotCount = supertype->totalSlotCount;
-    result->super.instanceSize = sysbvm_tuple_size_encode(context, 0);
-    result->super.instanceAlignment = sysbvm_tuple_size_encode(context, 0);
+    result->super.super.supertype = (sysbvm_tuple_t)supertype;
+    result->super.super.flags = sysbvm_tuple_bitflags_encode(sysbvm_tuple_bitflags_decode(supertype->flags) | SYSBVM_TYPE_FLAGS_FUNCTION);
+    result->super.super.totalSlotCount = supertype->totalSlotCount;
+    result->super.super.instanceSize = sysbvm_tuple_size_encode(context, 0);
+    result->super.super.instanceAlignment = sysbvm_tuple_size_encode(context, 0);
     result->argumentTypes = argumentTypes;
     result->functionFlags = flags;
     result->resultType = resultType;
@@ -514,9 +514,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createDependentFunctionType(sysbvm_context
     sysbvm_type_tuple_t *supertype = (sysbvm_type_tuple_t*)context->roots.functionType;
 
     sysbvm_dependentFunctionType_t* result = (sysbvm_dependentFunctionType_t*)sysbvm_context_allocatePointerTuple(context, context->roots.dependentFunctionTypeType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_dependentFunctionType_t));
-    result->super.supertype = (sysbvm_tuple_t)supertype;
-    result->super.flags = sysbvm_tuple_bitflags_encode(sysbvm_tuple_bitflags_decode(supertype->flags) | SYSBVM_TYPE_FLAGS_FUNCTION);
-    result->super.totalSlotCount = supertype->totalSlotCount;
+    result->super.super.supertype = (sysbvm_tuple_t)supertype;
+    result->super.super.flags = sysbvm_tuple_bitflags_encode(sysbvm_tuple_bitflags_decode(supertype->flags) | SYSBVM_TYPE_FLAGS_FUNCTION);
+    result->super.super.totalSlotCount = supertype->totalSlotCount;
+    result->super.super.instanceSize = sysbvm_tuple_size_encode(context, 0);
+    result->super.super.instanceAlignment = sysbvm_tuple_size_encode(context, 0);
     result->argumentNodes = argumentNodes;
     result->functionFlags = sysbvm_tuple_bitflags_encode(flags);
     result->resultTypeNode = resultTypeNode;

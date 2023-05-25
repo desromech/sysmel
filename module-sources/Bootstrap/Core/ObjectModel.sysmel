@@ -1,3 +1,5 @@
+public global ObjectModel::Tag::Bits := 4u8.
+
 public global ObjectModel::Tag::Pointer := 0u8.
 public global ObjectModel::Tag::Nil := 0u8.
 
@@ -22,6 +24,25 @@ public global ObjectModel::Tag::Float32 := 13u8.
 public global ObjectModel::Tag::Float64 := 14u8.
 
 public global ObjectModel::Tag::Trivial := 15u8.
+
+public global ObjectModel32::Immediate::Bits := 32u32 - ObjectModel::Tag::Bits asUInt32.
+public global ObjectModel32::Immediate::UInt::Min := 0u32.
+public global ObjectModel32::Immediate::UInt::Max := (1u32 << ObjectModel32::Immediate::Bits) - 1u32.
+public global ObjectModel32::Immediate::Int::Min := (1i32 << (ObjectModel32::Immediate::Bits - 1u32) asInt32) negated.
+public global ObjectModel32::Immediate::Int::Max := (1i32 << (ObjectModel32::Immediate::Bits - 1u32) asInt32) - 1i32.
+
+public global ObjectModel64::Immediate::Bits := 64u64 - ObjectModel::Tag::Bits asUInt64.
+public global ObjectModel64::Immediate::UInt::Min := 0u64.
+public global ObjectModel64::Immediate::UInt::Max := (1u64 << ObjectModel64::Immediate::Bits) - 1u64.
+public global ObjectModel64::Immediate::Int::Min := (1i64 << (ObjectModel64::Immediate::Bits - 1u64) asInt64) negated.
+public global ObjectModel64::Immediate::Int::Max := (1i64 << (ObjectModel64::Immediate::Bits - 1u64) asInt64) - 1i64.
+
+public global ObjectModel::ImmediateTrivialIndex::False := 0u32.
+public global ObjectModel::ImmediateTrivialIndex::True := 1u32.
+public global ObjectModel::ImmediateTrivialIndex::Void := 2u32.
+public global ObjectModel::ImmediateTrivialIndex::HashtableEmptyElement := 3u32.
+public global ObjectModel::ImmediateTrivialIndex::Tombstone := 4u32.
+public global ObjectModel::ImmediateTrivialIndex::PendingMemoizationValue := 5u32.
 
 public global ObjectModel::TypePointerFlag::GCColorMask := 3uptr.
 public global ObjectModel::TypePointerFlag::Bytes := 4uptr.
@@ -82,14 +103,31 @@ public abstract class ObjectModelVariant superclass: Object; definition: {
 
     public virtual method minimalObjectAlignment => UInt64 := 16u64.
 
+    public virtual method isImmediateReference: (reference: Untyped) ::=> Boolean
+        := self subclassResponsibility.
+
+    public virtual method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := {
+        let type => Type := RawTuple::type(reference).
+        type encodeImmediateReference32: reference
+    }.
+
+    public virtual method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := {
+        let type => Type := RawTuple::type(reference).
+        type encodeImmediateReference64: reference
+    }.
+
     public virtual method computeSizeOfObjectInstanceContent: (object: Untyped) ::=> UInt64 := {
         let isBytes := RawTuple::isBytes(object).
         isBytes ifTrue: {
             let byteSize := RawTuple::byteSize(object).
             byteSize asUInt64
         } ifFalse: {
-            let slotCount := RawTuple::size(object).
-            self error: "TODO: Implement this part."
+            let totalSlotCount := RawTuple::size(object).
+            let type := RawTuple::type(object).
+            let typeSlotCount := type ifNil: (0sz) ifNotNil: (type totalSlotCount).
+            let variantSlotCount := totalSlotCount - typeSlotCount.
+            let fixedInstanceSize := type ifNil: (0sz) ifNotNil: (type validInstanceSize).
+            fixedInstanceSize asUInt64 + (variantSlotCount asUInt64 * self pointerSize)
         }
     }.
 
@@ -97,13 +135,20 @@ public abstract class ObjectModelVariant superclass: Object; definition: {
         := self subclassResponsibility.
 
     public override method computeAlignmentOfObjectInstance: (object: Untyped) ::=> UInt64
-        := RawTuple::type(object) validInstanceAlignment asUInt64.
+        := RawTuple::type(object)
+            ifNil: {self minimalObjectAlignment}
+            ifNotNil: {:(Type)type :: UInt64 | type validInstanceAlignment asUInt64}.
 }.
 
 public final class ObjectModelVariant32 superclass: ObjectModelVariant; definition: {
     public override method pointerSize => UInt64 := 4u64.
 
     let singleton := SelfType new.
+
+    public override method isImmediateReference: (reference: Untyped) ::=> Boolean := {
+        let type => Type := RawTuple::type(reference).
+        type isNotNil && (type isImmediateReference32: reference)
+    }.
 
     __Meta__ definition: {
         public method uniqueInstance => ObjectModelVariant32
@@ -117,11 +162,197 @@ public final class ObjectModelVariant64 superclass: ObjectModelVariant; definiti
     public override method computeSizeOfObjectInstance: (object: Untyped) ::=> UInt64
         := ObjectModel::TupleHeader64 valueSize asUInt64 + (self computeSizeOfObjectInstanceContent: object).
 
+    public override method isImmediateReference: (reference: Untyped) ::=> Boolean := {
+        let type => Type := RawTuple::type(reference).
+        type isNotNil && (type isImmediateReference64: reference)
+    }.
+
     let singleton := SelfType new.
     __Meta__ definition: {
         public method uniqueInstance => ObjectModelVariant64
             := singleton.
     }.
+}.
+
+Type extend: {
+    public virtual method isImmediateReference32: (reference: Untyped) ::=> Boolean := false.
+    public virtual method isImmediateReference64: (reference: Untyped) ::=> Boolean := false.
+
+    public virtual method encodeImmediateReference32: (reference: Untyped) ::=> UInt32
+        := self error: "Cannot encode 32 bits immediate reference.".
+
+    public virtual method encodeImmediateReference64: (reference: Untyped) ::=> UInt64
+        := self error: "Cannot encode 64 bits immediate reference.".
+}.
+
+Char8 __type__ extend: {
+    public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := true.
+    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := true.
+
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Char8 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Char8 asUInt64.
+}.
+
+UInt8 __type__ extend: {
+    public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := true.
+    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := true.
+
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::UInt8 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::UInt8 asUInt64.
+}.
+
+Int8 __type__ extend: {
+    public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := true.
+    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := true.
+
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Int8 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Int8 asUInt64.
+}.
+
+Char16 __type__ extend: {
+    public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := true.
+    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := true.
+
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Char16 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Char16 asUInt64.
+}.
+
+UInt16 __type__ extend: {
+    public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := true.
+    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := true.
+
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::UInt16 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::UInt16 asUInt64.
+}.
+
+Int16 __type__ extend: {
+    public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := true.
+    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := true.
+
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Int16 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Int16 asUInt64.
+}.
+
+Char32 __type__ extend: {
+    public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := {
+        let value := reference asUInt32.
+        (ObjectModel32::Immediate::UInt::Min <= value) && (value <= ObjectModel32::Immediate::UInt::Max)
+    }.
+
+    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := true.
+
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Char32 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Char32 asUInt64.
+}.
+
+UInt32 __type__ extend: {
+    public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := {
+        let value := reference asUInt32.
+        (ObjectModel32::Immediate::UInt::Min <= value) && (value <= ObjectModel32::Immediate::UInt::Max)
+    }.
+
+    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := true.
+
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::UInt32 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::UInt32 asUInt64.
+}.
+
+Int32 __type__ extend: {
+    public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := {
+        let value := reference asInt32.
+        (ObjectModel32::Immediate::Int::Min <= value) && (value <= ObjectModel32::Immediate::Int::Max)
+    }.
+
+    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := true.
+
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Int32 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Int32 asUInt64.
+}.
+
+UInt64 __type__ extend: {
+    public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := {
+        let value := reference asUInt64.
+        (ObjectModel32::Immediate::UInt::Min asUInt64 <= value) && (value <= ObjectModel32::Immediate::UInt::Max asUInt64)
+    }.
+
+    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := {
+        let value := reference asUInt64.
+        (ObjectModel64::Immediate::UInt::Min <= value) && (value <= ObjectModel64::Immediate::UInt::Max)
+    }.
+
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::UInt64 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::UInt64 asUInt64.
+}.
+
+Int64 __type__ extend: {
+    public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := {
+        let value := reference asInt64.
+        (ObjectModel32::Immediate::Int::Min asUInt64 <= value) && (value <= ObjectModel32::Immediate::Int::Max asUInt64)
+    }.
+
+    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := {
+        let value := reference asInt64.
+        (ObjectModel64::Immediate::Int::Min <= value) && (value <= ObjectModel64::Immediate::Int::Max)
+    }.
+
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Int64 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Int64 asUInt64.
+}.
+
+UndefinedObject __type__ extend: {
+    public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := nil == reference.
+    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := nil == reference.
+
+    public virtual method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := 0u32.
+    public virtual method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := 0u64.
+}.
+
+False __type__ extend: {
+    public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := false == reference.
+    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := false == reference.
+
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (ObjectModel::ImmediateTrivialIndex::False << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Trivial asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (ObjectModel::ImmediateTrivialIndex::False asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Trivial asUInt64.
+}.
+
+True __type__ extend: {
+    public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := false == reference.
+    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := false == reference.
+
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (ObjectModel::ImmediateTrivialIndex::True << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Trivial asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (ObjectModel::ImmediateTrivialIndex::True asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Trivial asUInt64.
+}.
+
+Void __type__ extend: {
+    public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := void == reference.
+    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := void == reference.
+
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (ObjectModel::ImmediateTrivialIndex::Void << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Trivial asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (ObjectModel::ImmediateTrivialIndex::Void asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Trivial asUInt64.
+}.
+
+HashtableEmpty __type__ extend: {
+    public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := __hashtableEmptyElement__ == reference.
+    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := __hashtableEmptyElement__ == reference.
+
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (ObjectModel::ImmediateTrivialIndex::HashtableEmptyElement << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Trivial asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (ObjectModel::ImmediateTrivialIndex::HashtableEmptyElement asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Trivial asUInt64.
+}.
+
+ObjectTombstone __type__ extend: {
+    public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := __tombstone__ == reference.
+    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := __tombstone__ == reference.
+
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (ObjectModel::ImmediateTrivialIndex::Tombstone << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Trivial asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (ObjectModel::ImmediateTrivialIndex::Tombstone asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Trivial asUInt64.
+}.
+
+PendingMemoizationValue __type__ extend: {
+    public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := __pendingMemoizationValue__ == reference.
+    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := __pendingMemoizationValue__ == reference.
+
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (ObjectModel::ImmediateTrivialIndex::PendingMemoizationValue << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Trivial asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (ObjectModel::ImmediateTrivialIndex::PendingMemoizationValue asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Trivial asUInt64.
 }.
 
 public global ObjectModel::TupleHeader := if: UIntPointer valueSize = 4sz

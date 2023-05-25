@@ -94,7 +94,9 @@ AsmObjectHeap definition: {
     }.
 
     public method traceReference: (reference: Untyped) ::=> Void := {
-
+        (compilationTarget objectModel isImmediateReference: reference) ifFalse: {
+            self indexOfGCObjectEntryFor: reference
+        }
     }.
 
     public method traceType: (type: Type) ::=> Void := {
@@ -218,7 +220,10 @@ Type extend: {
 
 TypeSlot extend: {
     public method traceReferenceOfObject: (object: Untyped) forAsmHeap: (heap: AsmObjectHeap) ::=> Void := {
-        
+        (type isNil || type isValueType not) && (self isMinRTTIExcluded not || heap hasFullRTTI) ifTrue: {
+            let referenceValue => Untyped := (RawTuple::typeSlotAt:)(object, self).
+            heap traceReference: referenceValue
+        }
     }.
 }.
 
@@ -243,7 +248,7 @@ ObjectModelVariant extend: {
             let lastLayoutSlotIndex := self traceLayoutReferencesOfObject: object forAsmHeap: heap.
 
             ## Trace the variant references.
-            let i mutable := 0sz.
+            let i mutable := lastLayoutSlotIndex.
             while: (i < slotCount) do: {
                 heap traceReference: (RawTuple::slotAt:)(object, i)
             } continueWith: (i := i + 1sz)
