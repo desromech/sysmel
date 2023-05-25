@@ -84,19 +84,37 @@
     (makeTypeAccessors intrinsicType)
     ))
 
+## Type::lookupLocalSelector
+(define (Type::lookupLocalSelector type selector)
+    (define existingMethodDictionary (RawTuple::slotAt: type Type::Layout::methodDictionary))
+    (if:then:else: (== existingMethodDictionary nil)
+        nil
+        (MethodDictionary::atOrNil: existingMethodDictionary selector)))
+
+## Type::checkNoOverridenSelector
+(define (Type::checkNoOverridenSelector type selector)
+    (if:then: (~~ nil type)
+        (begin
+            (define existingMethod (Type::lookupLocalSelector type selector))
+            (if:then:else: (== existingMethod nil)
+                (Type::checkNoOverridenSelector (Type::supertype type) selector)
+                void##(error (String::concat: "Overriding non-virtual method with selector " (printString selector)))
+                )))
+)
 
 ## Type::withSelector:addMethod:
 (define (Type::withSelector:addMethod: type selector method)
     (define methodDict (Type::validMethodDictionary type))
     (define existentMethod (MethodDictionary::atOrNil: methodDict selector))
     (define isCorePrimitive (Function::isCorePrimitive existentMethod))
-    (define hasVirtualDispatch (Function::hasVirtualDispatch existentMethod))
+    (define hasVirtualDispatch (Function::hasVirtualDispatch method))
     (if:then:else: isCorePrimitive
         (Function::adoptDefinitionOf: existentMethod method)
         (MethodDictionary::at:put: methodDict selector method))
     (Type::flushLookupSelector: type selector)
-    (if:then: hasVirtualDispatch
-        (MethodDictionary::at:put: (Type::validVirtualMethodDictionary type) selector method))
+    (if:then:else: hasVirtualDispatch
+        (MethodDictionary::at:put: (Type::validVirtualMethodDictionary type) selector method)
+        (Type::checkNoOverridenSelector (Type::supertype type) selector))
 
     (ProgramEntity::recordBindingWithOwnerAndName method type selector))
 
@@ -134,7 +152,11 @@
     (Type::flushFallbackLookupSelector: type selector)
     (ProgramEntity::recordBindingWithOwnerAndName method type selector))
 
-(Type::withSelector:addMethod: SourcePosition #printString (lambda (sourcePosition)
+(define (Function::makeOverride function)
+    (Function::flags: function FunctionFlags::Override)
+    function)
+
+(Type::withSelector:addMethod: SourcePosition #printString (Function::makeOverride (lambda (sourcePosition)
     (define sourceDirectory (SourceCode::directory (SourcePosition::sourceCode sourcePosition)))
     (define sourceName (SourceCode::name (SourcePosition::sourceCode sourcePosition)))
     (define sourcePath (FileSystem::joinPath: sourceDirectory sourceName))
@@ -149,8 +171,7 @@
 
     (String::concat: (String::concat: (String::concat: sourcePath ":") startString)
         (String::concat: "-" endString))
-    ))
-
+    )))
 
 (exportInstrinsicBuiltInBinding #Type::withSelector:addMacroMethod: Type::withSelector:addMacroMethod:)
 (exportInstrinsicBuiltInBinding #Type::validMacroMethodDictionary Type::validMacroMethodDictionary)

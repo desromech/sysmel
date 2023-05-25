@@ -116,7 +116,7 @@ MetaBuilderFactory
             receiver: metaBuilderInstanceNode;
             yourself).
         metaBuilderInstance analyzeAndEvaluateMessageSendNode: messageWithMetaBuilderInstance withEnvironment: environment
-    };
+    } makeOverride;
     withSelector: #analyzeMessageSendNode:withEnvironment: addMethod: {:self :(ASTMessageSendNode)messageSendNode :(Environment)environment |
         let: #metaBuilderInstance with: self metaBuilderClass new.
         let: #metaBuilderInstanceNode with: (ASTLiteralNode new
@@ -127,7 +127,7 @@ MetaBuilderFactory
             receiver: metaBuilderInstanceNode;
             yourself).
         metaBuilderInstance analyzeMessageSendNode: messageWithMetaBuilderInstance withEnvironment: environment
-    };
+    } makeOverride;
     withSelector: #analyzeUnexpandedApplicationNode:withEnvironment: addMethod: {:self :(ASTUnexpandedApplicationNode)unexpandedApplicationNode :(Environment)environment |
         let: #metaBuilderInstance with: self metaBuilderClass new.
         let: #metaBuilderInstanceNode with: (ASTLiteralNode new
@@ -138,7 +138,7 @@ MetaBuilderFactory
             functionOrMacroExpression: metaBuilderInstanceNode;
             yourself).
         metaBuilderInstance analyzeUnexpandedApplicationNode: unexpandedApplicationNodeWithInstance withEnvironment: environment
-    }.
+    } makeOverride.
 
 MetaBuilder publicSubclass: #MacroMetaBuilder slots: (
     TypeSlot publicNamed: #environment type: Environment ,
@@ -149,35 +149,35 @@ MetaBuilder publicSubclass: #MacroMetaBuilder slots: (
 MacroMetaBuilder
     withSelector: #analyzeAndEvaluateMessageSendNode:withEnvironment: addMethod: {:self :(ASTMessageSendNode)messageSendNode :(Environment)environment |
         (self expandMessageSendNode: messageSendNode withEnvironment: environment) analyzeAndEvaluateWithEnvironment: environment
-    };
+    } makeOverride;
     withSelector: #analyzeMessageSendNode:withEnvironment: addMethod: {:self :(ASTMessageSendNode)messageSendNode :(Environment)environment |
         (self expandMessageSendNode: messageSendNode withEnvironment: environment) analyzeWithEnvironment: environment
-    };
+    } makeOverride;
     withSelector: #analyzeAndEvaluateUnexpandedApplicationNode:withEnvironment: addMethod: {:self :(ASTUnexpandedApplicationNode)unexpandedApplicationNode :(Environment)environment |
         (self expandUnexpandedApplicationNode: unexpandedApplicationNode withEnvironment: environment) analyzeAndEvaluateWithEnvironment: environment
-    };
+    } makeOverride;
     withSelector: #analyzeUnexpandedApplicationNode:withEnvironment: addMethod: {:self :(ASTUnexpandedApplicationNode)unexpandedApplicationNode :(Environment)environment |
         (self expandUnexpandedApplicationNode: unexpandedApplicationNode withEnvironment: environment) analyzeWithEnvironment: environment
-    };
+    } makeOverride;
     withSelector: #expandMessageSendNode:withEnvironment: addMethod: {:self :(ASTMessageSendNode)messageSendNode :(Environment)environment :: ASTNode |
         self
             environment: environment;
             sourcePosition: messageSendNode sourcePosition;
             continueExpansion: messageSendNode receiver;
             expandMessageSendNode: messageSendNode
-    };
+    } makeOverride;
     withSelector: #expandUnexpandedApplicationNode:withEnvironment: addMethod: {:self :(ASTUnexpandedApplicationNode)unexpandedApplicationNode :(Environment)environment :: ASTNode |
         self
             environment: environment;
             sourcePosition: unexpandedApplicationNode sourcePosition;
             continueExpansion: unexpandedApplicationNode functionOrMacroExpression;
             expandUnexpandedApplicationNode: unexpandedApplicationNode
-    };
+    } makeOverride;
     withSelector: #analyzeAndEvaluateConcreteMetaValueWithEnvironment: addMethod: {:self :(Environment)environment |
         (self
             environment: environment;
             finishExpansion) analyzeAndEvaluateWithEnvironment: environment
-    };
+    } makeOverride;
     withSelector: #analyzeConcreteMetaValue:withEnvironment: addMethod: {:self :metaBuilderLiteralNode :(Environment)environment |
         self
             environment: environment;

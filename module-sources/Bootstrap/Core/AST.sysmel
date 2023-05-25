@@ -1,5 +1,5 @@
 ASTNode
-    withSelector: #analyzeWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment | self subclassResponsibility };
+    withSelector: #analyzeWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment | self subclassResponsibility } makeVirtual;
     withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment | self subclassResponsibility };
     withSelector: #evaluateWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment | self subclassResponsibility };
 
@@ -18,11 +18,11 @@ ASTArgumentNode
     withSelector: #childrenDo: addMethod: {:(ASTArgumentNode)self :aBlock :: Void |
         if: (self name isNotNil) then: aBlock(self name).
         if: (self type isNotNil) then: aBlock(self type).
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTArgumentNode)self :aBlock :: Void |
         if: (self name isNotNil) then: (self name: aBlock(self name)).
         if: (self type isNotNil) then: (self type: aBlock(self type)).
-    }.
+    } makeOverride.
 
 ASTBinaryExpressionSequenceNode
     withSelector: #asExpandedNodeWithEnvironment: addMethod: {:(ASTBinaryExpressionSequenceNode)self :(Environment)environment :: ASTNode |
@@ -45,55 +45,54 @@ ASTBinaryExpressionSequenceNode
     };
     withSelector: #analyzeWithEnvironment: addMethod: {:(ASTBinaryExpressionSequenceNode)self :(Environment)environment |
         (self asExpandedNodeWithEnvironment: environment) analyzeWithEnvironment: environment
-    };
+    } makeOverride;
     withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTBinaryExpressionSequenceNode)self :(Environment)environment |
         (self asExpandedNodeWithEnvironment: environment) analyzeAndEvaluateWithEnvironment: environment
-    };
+    } makeOverride;
     withSelector: #evaluateWithEnvironment: addMethod: {:(ASTBinaryExpressionSequenceNode)self :(Environment)environment |
         self error: "This node should be expanded." 
-    };
-
+    } makeOverride;
 
     withSelector: #childrenDo: addMethod: {:(ASTBinaryExpressionSequenceNode)self :aBlock :: Void |
         self operands do: aBlock.
         self operators do: aBlock.
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTBinaryExpressionSequenceNode)self :aBlock :: Void |
         self operands: (self operands collect: aBlock).
         self operators: (self operators collect: aBlock).
-    }.
+    } makeOverride.
 
 ASTCoerceValueNode
     withSelector: #childrenDo: addMethod: {:(ASTCoerceValueNode)self :aBlock :: Void |
         if: (self typeExpression isNotNil) then: aBlock(self typeExpression).
         if: (self valueExpression isNotNil) then: aBlock(self valueExpression).
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTCoerceValueNode)self :aBlock :: Void |
         if: (self typeExpression isNotNil) then: (self typeExpression: aBlock(self typeExpression)).
         if: (self valueExpression isNotNil) then: (self valueExpression: aBlock(self valueExpression)).
-    }.
+    } makeOverride.
 
 ASTDoWhileContinueWithNode
     withSelector: #childrenDo: addMethod: {:(ASTDoWhileContinueWithNode)self :aBlock :: Void |
         if: (self bodyExpression isNotNil) then: aBlock(self bodyExpression).
         if: (self conditionExpression isNotNil) then: aBlock(self conditionExpression).
         if: (self continueExpression isNotNil) then: aBlock(self continueExpression).
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTDoWhileContinueWithNode)self :aBlock :: Void |
         if: (self bodyExpression isNotNil) then: (self bodyExpression: aBlock(self bodyExpression)).
         if: (self conditionExpression isNotNil) then: (self conditionExpression: aBlock(self conditionExpression)).
         if: (self continueExpression isNotNil) then: (self continueExpression: aBlock(self continueExpression)).
-    }.
+    } makeOverride.
 
 ASTErrorNode
     withSelector: #transformWith: addMethod: {:(ASTErrorNode)self :aBlock :: Void |
-    }.
+    } makeOverride.
 
 ASTFunctionApplicationNode
     withSelector: #initialize addMethod: {:(ASTFunctionApplicationNode)self :: Void |
         (tuple: self withLookupStartingFrom: ASTFunctionApplicationNode supertype) initialize.
         self applicationFlags: 0sz
-    };
+    } makeOverride;
     withSelector: #hasApplicationFlag: addMethod: {:(ASTFunctionApplicationNode)self :(Bitflags)flag :: Boolean |
         (self applicationFlags & flag) ~= 0bflgs
     };
@@ -103,147 +102,147 @@ ASTFunctionApplicationNode
     withSelector: #childrenDo: addMethod: {:(ASTFunctionApplicationNode)self :aBlock :: Void |
         if: (self functionExpression isNotNil) then: aBlock(self functionExpression).
         self arguments do: aBlock.
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTFunctionApplicationNode)self :aBlock :: Void |
         if: (self functionExpression isNotNil) then: (self functionExpression: aBlock(self functionExpression)).
         self arguments: (self arguments collect: aBlock).
-    };
+    } makeOverride;
     withSelector: #fullPrintOn: addMethod: {:(ASTFunctionApplicationNode)self :(Stream)stream :: Void |
         stream print: self class; 
             nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
             nextPutAll: " functionExpression: ("; fullPrint: self functionExpression;
             nextPutAll: ") arguments: "; fullPrint: self arguments;
             nextPutAll: " applicationFlags: "; print: self applicationFlags
-    }.
+    } makeOverride.
 
 ASTLambdaNode
     withSelector: #childrenDo: addMethod: {:(ASTLambdaNode)self :aBlock :: Void |
         self arguments do: aBlock.
         if: (self resultType isNotNil) then: aBlock(self resultType).
         if: (self body isNotNil) then: aBlock(self body).
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTLambdaNode)self :aBlock :: Void |
         self arguments: (self arguments collect: aBlock).
         if: (self resultType isNotNil) then: (self resultType: aBlock(self resultType)).
         if: (self body isNotNil) then: (self body: aBlock(self body)).
-    }.
+    } makeOverride.
 
 ASTLexicalBlockNode
     withSelector: #hasPragmaNamed: addMethod: {:(ASTLexicalBlockNode)self :selector :: Boolean |
         self body hasPragmaNamed: selector
-    };
+    } makeOverride;
     withSelector: #childrenDo: addMethod: {:(ASTLexicalBlockNode)self :aBlock :: Void |
         if: (self body isNotNil) then: aBlock(self body).
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTLexicalBlockNode)self :aBlock :: Void |
         if: (self body isNotNil) then: (self body: aBlock(self body)).
-    };
+    } makeOverride;
     withSelector: #fullPrintOn: addMethod: {:(ASTLexicalBlockNode)self :(Stream)stream :: Void |
         stream print: self class; 
             nextPutAll: " body: ("; fullPrint: self body; nextPut: ')'
-    }.
+    } makeOverride.
 
 ASTLiteralNode
-    withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTLiteralNode)self :(Environment)environment | self value };
-    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTLiteralNode)self :(Environment)environment | self value };
-    withSelector: #isLiteralNode addMethod: {:(ASTLiteralNode)self :: Boolean | true };
-    withSelector: #hasLiteralValueEqualTo: addMethod: {:(ASTLiteralNode)self :expectedValue :: Boolean | self value = expectedValue };
+    withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTLiteralNode)self :(Environment)environment | self value } makeOverride;
+    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTLiteralNode)self :(Environment)environment | self value } makeOverride;
+    withSelector: #isLiteralNode addMethod: {:(ASTLiteralNode)self :: Boolean | true } makeOverride;
+    withSelector: #hasLiteralValueEqualTo: addMethod: {:(ASTLiteralNode)self :expectedValue :: Boolean | self value = expectedValue } makeOverride;
 
     withSelector: #hasPragmaNamed: addMethod: {:(ASTLiteralNode)self :selector :: Boolean |
         (self analyzedType == Pragma) && (self value selector == selector)
-    };
+    } makeOverride;
 
-    withSelector: #childrenDo: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | };
-    withSelector: #transformWith: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | };
+    withSelector: #childrenDo: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | } makeOverride;
+    withSelector: #transformWith: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | } makeOverride;
 
     withSelector: #literalFunctionPrimitiveName addMethod: {:(ASTLiteralNode)self :: Symbol |
         if: (self value __type__ lookupSelector: #primitiveName) ~~ nil
             then: (self value ensureAnalysis; primitiveName)
             else: nil
-    };
+    } makeOverride;
     withSelector: #fullPrintOn: addMethod: {:(ASTLiteralNode)self :(Stream)stream :: Void |
         stream print: self class; 
             nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
             nextPutAll: " value: "; fullPrint: self value
-    }.
+    } makeOverride.
 
 ASTLocalDefinitionNode
     withSelector: #childrenDo: addMethod: {:(ASTLocalDefinitionNode)self :aBlock :: Void |
         if: (self nameExpression isNotNil) then: aBlock(self nameExpression).
         if: (self valueExpression isNotNil) then: aBlock(self valueExpression).
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTLocalDefinitionNode)self :aBlock :: Void |
         if: (self nameExpression isNotNil) then: (self nameExpression: aBlock(self nameExpression)).
         if: (self valueExpression isNotNil) then: (self valueExpression: aBlock(self valueExpression)).
-    };
+    } makeOverride;
     withSelector: #fullPrintOn: addMethod: {:(ASTLocalDefinitionNode)self :(Stream)stream :: Void |
         stream print: self class; 
             nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
             nextPutAll: " nameExpression: ("; fullPrint: self nameExpression;
             nextPutAll: ") valueExpression: ("; fullPrint: self valueExpression; nextPut: ')'
-    }.
+    } makeOverride.
 
 ASTIdentifierReferenceNode
-    withSelector: #childrenDo: addMethod: {:(ASTIdentifierReferenceNode)self :aBlock :: Void | };
-    withSelector: #transformWith: addMethod: {:(ASTIdentifierReferenceNode)self :aBlock :: Void | };
+    withSelector: #childrenDo: addMethod: {:(ASTIdentifierReferenceNode)self :aBlock :: Void | } makeOverride;
+    withSelector: #transformWith: addMethod: {:(ASTIdentifierReferenceNode)self :aBlock :: Void | } makeOverride;
     withSelector: #asLiteralNode addMethod: {:(ASTIdentifierReferenceNode)self :: ASTLiteralNode |
         ASTLiteralNode new
             sourcePosition: self sourcePosition;
             value: self value;
             yourself
-    };
+    } makeOverride;
     withSelector: #fullPrintOn: addMethod: {:(ASTIdentifierReferenceNode)self :(Stream)stream :: Void |
         stream print: self class; 
             nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
             nextPutAll: " value: ("; fullPrint: self value;
             nextPutAll: ") binding: ("; fullPrint: self binding; nextPut: ')'
-    }.
+    } makeOverride.
 
 ASTIfNode
     withSelector: #childrenDo: addMethod: {:(ASTIfNode)self :aBlock :: Void |
         if: (self conditionExpression isNotNil) then: aBlock(self conditionExpression).
         if: (self trueExpression isNotNil) then: aBlock(self trueExpression).
         if: (self falseExpression isNotNil) then: aBlock(self falseExpression).
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTIfNode)self :aBlock :: Void |
         if: (self conditionExpression isNotNil) then: (self conditionExpression: aBlock(self conditionExpression)).
         if: (self trueExpression isNotNil) then: (self trueExpression: aBlock(self trueExpression)).
         if: (self falseExpression isNotNil) then: (self falseExpression: aBlock(self falseExpression)).
-    }.
+    } makeOverride.
 
 ASTMakeAssociationNode
     withSelector: #childrenDo: addMethod: {:(ASTMakeAssociationNode)self :aBlock :: Void |
         if: (self key isNotNil) then: aBlock(self key).
         if: (self value isNotNil) then: aBlock(self value).
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTMakeAssociationNode)self :aBlock :: Void |
         if: (self key isNotNil) then: (self key: aBlock(self key)).
         if: (self value isNotNil) then: (self value: aBlock(self value)).
-    }.
+    } makeOverride.
 
 ASTMakeByteArrayNode
     withSelector: #childrenDo: addMethod: {:(ASTMakeByteArrayNode)self :aBlock :: Void |
         self elements do: aBlock
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTMakeByteArrayNode)self :aBlock :: Void |
         self elements: (self elements collect: aBlock)
-    }.
+    } makeOverride.
 
 ASTMakeDictionaryNode
     withSelector: #childrenDo: addMethod: {:(ASTMakeDictionaryNode)self :aBlock :: Void |
         self elements do: aBlock
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTMakeDictionaryNode)self :aBlock :: Void |
         self elements: (self elements collect: aBlock)
-    }.
+    } makeOverride.
 
 ASTMakeArrayNode
     withSelector: #childrenDo: addMethod: {:(ASTMakeArrayNode)self :aBlock :: Void |
         self elements do: aBlock
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTMakeArrayNode)self :aBlock :: Void |
         self elements: (self elements collect: aBlock)
-    }.
+    } makeOverride.
 
 ASTMessageSendNode
     withSelector: #childrenDo: addMethod: {:(ASTMessageSendNode)self :aBlock :: Void |
@@ -251,32 +250,32 @@ ASTMessageSendNode
         if: (self receiverLookupType isNotNil) then: aBlock(self receiverLookupType).
         if: (self selector isNotNil) then: aBlock(self selector).
         self arguments do: aBlock
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTMessageSendNode)self :aBlock :: Void |
         if: (self receiver isNotNil) then: (self receiver: aBlock(self receiver)).
         if: (self receiverLookupType isNotNil) then: (self receiverLookupType: aBlock(self receiverLookupType)).
         if: (self selector isNotNil) then: (self selector: aBlock(self selector)).
         self arguments: (self arguments collect: aBlock)
-    };
+    } makeOverride;
     withSelector: #fullPrintOn: addMethod: {:(ASTMessageSendNode)self :(Stream)stream :: Void |
         stream print: self class; 
             nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
             nextPutAll: " receiver: ("; fullPrint: self receiver;
             nextPutAll: ") selector: ("; fullPrint: self selector;
             nextPutAll: ") arguments: "; fullPrint: self arguments
-    }.
+    } makeOverride.
 
 ASTMessageChainNode
     withSelector: #childrenDo: addMethod: {:(ASTMessageChainNode)self :aBlock :: Void |
         if: (self receiver isNotNil) then: aBlock(self receiver).
         if: (self receiverLookupType isNotNil) then: aBlock(self receiverLookupType).
         self messages do: aBlock
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTMessageChainNode)self :aBlock :: Void |
         if: (self receiver isNotNil) then: (self receiver: aBlock(self receiver)).
         if: (self receiverLookupType isNotNil) then: (self receiverLookupType: aBlock(self receiverLookupType)).
         self messages: (self messages collect: aBlock)
-    }.
+    } makeOverride.
 
 ASTMessageChainMessageNode
     withSelector: #asMessageSendNodeWithReceiver: addMethod: {:(ASTMessageChainMessageNode)self :(ASTNode)receiver :: ASTMessageSendNode |
@@ -286,25 +285,25 @@ ASTMessageChainMessageNode
             selector: self selector;
             arguments: self arguments;
             yourself
-    };
+    } makeOverride;
     withSelector: #childrenDo: addMethod: {:(ASTMessageChainMessageNode)self :aBlock :: Void |
         if: (self selector isNotNil) then: aBlock(self selector).
         self arguments do: aBlock
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTMessageChainMessageNode)self :aBlock :: Void |
         if: (self selector isNotNil) then: (self selector: aBlock(self selector)).
         self arguments: (self arguments collect: aBlock)
-    }.
+    } makeOverride.
 
 ASTTupleWithLookupStartingFromNode
     withSelector: #childrenDo: addMethod: {:(ASTTupleWithLookupStartingFromNode)self :aBlock :: Void |
         if: (self tupleExpression isNotNil) then: aBlock(self tupleExpression).
         if: (self typeExpression isNotNil) then: aBlock(self typeExpression).
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTTupleWithLookupStartingFromNode)self :aBlock :: Void |
         if: (self tupleExpression isNotNil) then: (self tupleExpression: aBlock(self tupleExpression)).
         if: (self typeExpression isNotNil) then: (self typeExpression: aBlock(self typeExpression)).
-    }.
+    } makeOverride.
 
 ASTPragmaNode
     withSelector: #hasPragmaNamed: addMethod: {:(ASTPragmaNode)self :expectedSelector :: Boolean |
@@ -312,63 +311,63 @@ ASTPragmaNode
         if: selector isNotNil
             then: (selector hasLiteralValueEqualTo: expectedSelector)
             else: false
-    };
+    } makeOverride;
     withSelector: #childrenDo: addMethod: {:(ASTPragmaNode)self :aBlock :: Void |
         if: (self selector isNotNil) then: aBlock(self selector).
         self arguments do: aBlock
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTPragmaNode)self :aBlock :: Void |
         if: (self selector isNotNil) then: (self selector: aBlock(self selector)).
         self arguments: (self arguments collect: aBlock)
-    }.
+    } makeOverride.
 
 ASTSequenceNode
     withSelector: #hasPragmaNamed: addMethod: {:(ASTSequenceNode)self :selector :: Boolean |
         self pragmas anySatisfy: {:pragma :: Boolean | pragma hasPragmaNamed: selector}
-    };
+    } makeOverride;
     withSelector: #childrenDo: addMethod: {:(ASTSequenceNode)self :aBlock :: Void |
         self pragmas do: aBlock.
         self expressions do: aBlock.
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTSequenceNode)self :aBlock :: Void |
         self pragmas: (self pragmas collect: aBlock).
         self expressions: (self expressions collect: aBlock)
-    };
+    } makeOverride;
     withSelector: #fullPrintOn: addMethod: {:(ASTSequenceNode)self :(Stream)stream :: Void |
         stream print: self class; 
             nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
             nextPutAll: " pragmas: "; fullPrint: self pragmas;
             nextPutAll: " expressions: "; fullPrint: self expressions
-    }.
+    } makeOverride.
 
 ASTUnexpandedApplicationNode
     withSelector: #childrenDo: addMethod: {:(ASTUnexpandedApplicationNode)self :aBlock :: Void |
         if: (self functionOrMacroExpression isNotNil) then: aBlock(self functionOrMacroExpression).
         self arguments do: aBlock
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTUnexpandedApplicationNode)self :aBlock :: Void |
         if: (self functionOrMacroExpression isNotNil) then: (self functionOrMacroExpression: aBlock(self functionOrMacroExpression)).
         self arguments: (self arguments collect: aBlock)
-    }.
+    } makeOverride.
 
 ASTUnexpandedSExpressionNode
     withSelector: #childrenDo: addMethod: {:(ASTUnexpandedSExpressionNode)self :aBlock :: Void |
         self elements do: aBlock
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTUnexpandedSExpressionNode)self :aBlock :: Void |
         self elements: (self elements collect: aBlock)
-    }.
+    } makeOverride.
 
 ASTNode
     withSelector: #analyzeQuasiQuoteWithEnvironment:parameterList: addMethod: {:(ASTNode)self :(Environment)environment :(OrderedCollection)parameterList :: ASTNode |
         self transformedWith: {:child | child analyzeQuasiQuoteWithEnvironment: environment parameterList: parameterList }
-    };
+    } makeVirtual;
     withSelector: #analyzeAndEvaluateQuasiQuoteWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment :: ASTNode |
         self transformedWith: {:child | child analyzeAndEvaluateQuasiQuoteWithEnvironment: environment }
-    };
+    } makeVirtual;
     withSelector: #evaluateQuasiQuoteWithParameters: addMethod: {:(ASTNode)self :(Array)parameters :: ASTNode |
         self transformedWith: {:child | child evaluateQuasiQuoteWithParameters: parameters }
-    }.
+    } makeVirtual.
 
 let: #expandASTTemplateWithParameters with: {:(ASTNode)templateNode :(Array)templateParameters :: ASTNode |
     templateNode evaluateQuasiQuoteWithParameters: templateParameters
@@ -397,19 +396,19 @@ ASTQuasiQuoteNode
                 yourself);
             arguments: (Array with: analyzedTemplateNode with: analyzedParameterList);
             yourself) analyzeWithEnvironment: environment
-    };
+    } makeOverride;
     withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTQuasiQuoteNode)self :(Environment)environment |
         self node analyzeAndEvaluateQuasiQuoteWithEnvironment: environment
-    };
+    } makeOverride;
     withSelector: #evaluateWithEnvironment: addMethod: {:(ASTQuasiQuoteNode)self :(Environment)environment |
         self node evaluateQuasiQuoteWithEnvironment: environment
-    };
+    } makeOverride;
     withSelector: #childrenDo: addMethod: {:(ASTQuasiQuoteNode)self :aBlock :: Void |
         if: (self node isNotNil) then: aBlock(self node)
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTQuasiQuoteNode)self :aBlock :: Void |
         if: (self node isNotNil) then: (self node: aBlock(self node))
-    }.
+    } makeOverride.
 
 ASTQuasiUnquoteNode
     withSelector: #analyzeQuasiQuoteWithEnvironment:parameterList: addMethod: {:(ASTQuasiUnquoteNode)self :(Environment)environment :(OrderedCollection)parameterList :: ASTNode |
@@ -418,19 +417,19 @@ ASTQuasiUnquoteNode
         self copy
             astTemplateParameterIndex: astTemplateParameterIndex;
             yourself
-    };
+    } makeOverride;
     withSelector: #analyzeAndEvaluateQuasiQuoteWithEnvironment: addMethod: {:(ASTQuasiUnquoteNode)self :(Environment)environment |
         self expression analyzeAndEvaluateWithEnvironment: environment
-    };
+    } makeOverride;
     withSelector: #evaluateQuasiQuoteWithParameters: addMethod: {:(ASTQuasiUnquoteNode)self :(Array)parameters :: ASTNode |
         parameters at: self astTemplateParameterIndex
-    };
+    } makeOverride;
     withSelector: #childrenDo: addMethod: {:(ASTQuasiUnquoteNode)self :aBlock :: Void |
         if: (self expression) then: aBlock(self expression)
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTQuasiUnquoteNode)self :aBlock :: Void |
         if: (self expression) then: (self expression: aBlock(self expression))
-    }.
+    } makeOverride.
 
 ASTQuoteNode
     withSelector: #analyzeWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment |
@@ -439,49 +438,49 @@ ASTQuoteNode
             value: self node;
             analyzedType: self node __type__;
             yourself
-    };
-    withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment | self node};
-    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment | self node};
+    } makeOverride;
+    withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment | self node} makeOverride;
+    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment | self node} makeOverride;
     withSelector: #childrenDo: addMethod: {:(ASTQuoteNode)self :aBlock :: Void |
         if: (self node) then: aBlock(self node)
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTQuoteNode)self :aBlock :: Void |
         if: (self node) then: (self node: aBlock(self node))
-    }.
+    } makeOverride.
 
 ASTSpliceNode
-    withSelector: #analyzeWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError };
-    withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError };
-    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError };
+    withSelector: #analyzeWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError } makeOverride;
+    withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError } makeOverride;
+    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError } makeOverride;
     withSelector: #childrenDo: addMethod: {:(ASTSpliceNode)self :aBlock :: Void |
         if: (self expression) then: aBlock(self expression)
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTSpliceNode)self :aBlock :: Void |
         if: (self expression) then: (self expression: aBlock(self expression))
-    };
+    } makeOverride;
 
-    withSelector: #analyzeQuasiQuoteWithEnvironment:parameterList: addMethod: {:(ASTSpliceNode)self :(Environment)environment :(OrderedCollection)parameterList | self invalidLocationError };
-    withSelector: #analyzeAndEvaluateQuasiQuoteWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError };
-    withSelector: #evaluateQuasiQuoteWithParameters: addMethod: {:(ASTSpliceNode)self :(Array)parameters | self invalidLocationError };
+    withSelector: #analyzeQuasiQuoteWithEnvironment:parameterList: addMethod: {:(ASTSpliceNode)self :(Environment)environment :(OrderedCollection)parameterList | self invalidLocationError } makeOverride;
+    withSelector: #analyzeAndEvaluateQuasiQuoteWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError } makeOverride;
+    withSelector: #evaluateQuasiQuoteWithParameters: addMethod: {:(ASTSpliceNode)self :(Array)parameters | self invalidLocationError } makeOverride;
 
     withSelector: #invalidLocationError addMethod: {:(ASTSpliceNode)self |
         self error: "Invalid location for a splice expression."
-    }.
+    } makeOverride.
 
 ASTWhileContinueWithNode
     withSelector: #childrenDo: addMethod: {:(ASTWhileContinueWithNode)self :aBlock :: Void |
         if: (self conditionExpression isNotNil) then: aBlock(self conditionExpression).
         if: (self bodyExpression isNotNil) then: aBlock(self bodyExpression).
         if: (self continueExpression isNotNil) then: aBlock(self bodyExpression).
-    };
+    } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTWhileContinueWithNode)self :aBlock :: Void |
         if: (self conditionExpression isNotNil) then: (self conditionExpression: aBlock(self conditionExpression)).
         if: (self bodyExpression isNotNil) then: (self bodyExpression: aBlock(self bodyExpression)).
         if: (self continueExpression isNotNil) then: (self continueExpression: aBlock(self continueExpression)).
-    };
+    } makeOverride;
     withSelector: #fullPrintOn: addMethod: {:(ASTWhileContinueWithNode)self :(Stream)stream :: Void |
         stream print: self class; 
             nextPutAll: " conditionExpression: ("; fullPrint: self conditionExpression;
             nextPutAll: ") bodyExpression: ("; fullPrint: self bodyExpression;
             nextPutAll: ") continueExpression: ("; fullPrint: self continueExpression; nextPut: ')'
-    }.
+    } makeOverride.

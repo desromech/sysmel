@@ -480,8 +480,7 @@ static sysbvm_tuple_t sysbvm_function_primitive_isCorePrimitive(sysbvm_context_t
     if(!sysbvm_tuple_isFunction(context, *function))
         return SYSBVM_FALSE_TUPLE;
     
-    sysbvm_function_t *functionObject = (sysbvm_function_t*)*function;
-    size_t flags = sysbvm_tuple_bitflags_decode(functionObject->flags);
+    size_t flags = sysbvm_function_getFlags(context, *function);
     return sysbvm_tuple_boolean_encode((flags & SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE) != 0);
 }
 
@@ -491,11 +490,7 @@ static sysbvm_tuple_t sysbvm_function_primitive_hasVirtualDispatch(sysbvm_contex
     if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
 
     sysbvm_tuple_t *function = &arguments[0];
-    if(!sysbvm_tuple_isFunction(context, *function))
-        return SYSBVM_FALSE_TUPLE;
-    
-    sysbvm_function_t *functionObject = (sysbvm_function_t*)*function;
-    size_t flags = sysbvm_tuple_bitflags_decode(functionObject->flags);
+    size_t flags = sysbvm_function_getFlags(context, *function);
     return sysbvm_tuple_boolean_encode((flags & SYSBVM_FUNCTION_FLAGS_VIRTUAL_DISPATCH_FLAGS) != 0);
 }
 

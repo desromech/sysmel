@@ -15,7 +15,7 @@ MacroContext
 ASTNode
     withSelector: #cullExpressionWith:at: addMethod: {:(ASTNode)self :(ASTNode)argument :(SourcePosition)sourcePosition :: ASTNode |
         self
-    }.
+    } makeVirtual.
 
 ASTLambdaNode
     withSelector: #cullExpressionWithArguments:at: addMethod: {:(ASTLambdaNode)self :(Array)arguments :(SourcePosition)sourcePosition :: ASTNode |
@@ -50,7 +50,7 @@ ASTLambdaNode
     };
     withSelector: #cullExpressionWith:at: addMethod: {:(ASTLambdaNode)self :(ASTNode)argument :(SourcePosition)sourcePosition :: ASTNode |
         self cullExpressionWithArguments: (Array with: argument) at: sourcePosition
-    }.
+    } makeOverride.
     
 AnyValue
     withSelector: #ifNil: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)nilExpression :: ASTNode |

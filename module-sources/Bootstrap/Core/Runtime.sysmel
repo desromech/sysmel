@@ -151,7 +151,7 @@ AnyValue
         self
     } makePure makeFinal withEagerAnalysis;
 
-    withSelector: #postCopy addMethod: {:(AnyValue)self :: Void | } withEagerAnalysis;
+    withSelector: #postCopy addMethod: {:(AnyValue)self :: Void | } makeVirtual withEagerAnalysis;
     withSelector: #shallowCopy addMethod: {:(AnyValue)self :: self __type__ | RawTuple::shallowCopy(self) } makeFinal withEagerAnalysis;
     withSelector: #copy addMethod: {:(AnyValue)self :: self __type__ | self shallowCopy postCopy; yourself } withEagerAnalysis;
 
@@ -177,7 +177,7 @@ Object
     withSelector: #shouldBeImplemented addMethod: {:(Object)self :: Unwinds | self error: "Should be implemented." } withEagerAnalysis;
     withSelector: #doesNotUnderstand: addMethod: {:(AnyValue)self :(Message)message |
         error((self class printString -- " doesNotUnderstand: ") -- message selector printString)
-    } withEagerAnalysis.
+    } makeVirtual withEagerAnalysis.
 
 Type
     withSelector: #isSubtypeOf: addMethod: {:(Type)self :(Type)expectedParent :: Boolean |
@@ -528,17 +528,17 @@ Type
 ControlFlowEscapeType class
     withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(Type)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
         astNode
-    }.
+    } makeOverride.
 
 UndefinedObject class
     withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(Type)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
         if: targetType isNullable
         then: astNode
         else: error("Cannot coerce nil into non-nullable type " -- targetType printString)
-    }.
+    } makeOverride.
 
 ReferenceType
-    withSelector: #isReferenceType addMethod: {:(ReferenceType)self :: Boolean | true } makePure;
+    withSelector: #isReferenceType addMethod: {:(ReferenceType)self :: Boolean | true } makeOverride makePure;
     withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(ReferenceType)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
 
         if: targetType isReferenceType then: {
@@ -563,7 +563,7 @@ ReferenceType
                     yourself)
                 withEnvironment: environment
         }.
-    }.
+    } makeOverride.
 
 AnyValue
     withSelector: #isNil addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :: ASTMessageSendNode |
@@ -712,7 +712,7 @@ ASTNode
     withSelector: #postCopy addMethod: {:(ASTNode)self :: Void |
         (tuple: self withLookupStartingFrom: ASTNode supertype) postCopy.
         self analyzerToken: nil.
-    }.
+    } makeOverride.
 
 Stream
     withSelector: #nextPut: addMethod: {:(Stream)self :element :: Void | 
@@ -754,24 +754,24 @@ AnyValue
         let: #stream with: StringStream new.
         self printOn: stream.
         stream asString.
-    };
+    } makeVirtual;
     withSelector: #printOn: addMethod: {:(AnyValue)self :(Stream)stream :: Void |
         stream nextPutAll: "a " ; print: self __type__
-    };
+    } makeVirtual;
     withSelector: #storeOn: addMethod: {:(AnyValue)self :(Stream)stream :: Void |
         self printOn: stream
-    };
+    } makeVirtual;
     withSelector: #stringOn: addMethod: {:(AnyValue)self :(Stream)stream :: Void |
         self printOn: stream
-    };
+    } makeVirtual;
     withSelector: #fullPrintString addMethod: {:(AnyValue)self :: String | 
         let: #stream with: StringStream new.
         self fullPrintOn: stream.
         stream asString.
-    };
+    } makeVirtual;
     withSelector: #fullPrintOn: addMethod: {:(AnyValue)self :(Stream)stream :: Void |
         self printOn: stream
-    }.
+    } makeVirtual.
 
 Type
     withSelector: #printOn: addMethod: {:(Type)self :(Stream)stream :: Void |
@@ -779,53 +779,53 @@ Type
         if: name ~~ nil
             then: (stream string: name)
             else: (stream nextPutAll: "a Type")
-    }.
+    } makeOverride.
 
 Void class
     withSelector: #coerceValue: addMethod: {:(Void class)self :value :: Void | void }.
 Void
-    withSelector: #printString addMethod: {:(Void)self :: String | "void" };
-    withSelector: #printOn: addMethod: {:(Void)self :(Stream)stream :: Void | stream nextPutAll: "void" }.
+    withSelector: #printString addMethod: {:(Void)self :: String | "void" } makeOverride;
+    withSelector: #printOn: addMethod: {:(Void)self :(Stream)stream :: Void | stream nextPutAll: "void" } makeOverride.
 
 UndefinedObject
     withSelector: #doesNotUnderstand: addMethod: {:(UndefinedObject)self :(Message)message |
         self error: message selector printString -- " was sent to nil."
-    };
+    } makeOverride;
 
-    withSelector: #printString addMethod: {:(UndefinedObject)self :: String | "nil" };
-    withSelector: #printOn: addMethod: {:(UndefinedObject)self :(Stream)stream :: Void | stream nextPutAll: "nil" }.
+    withSelector: #printString addMethod: {:(UndefinedObject)self :: String | "nil" } makeOverride;
+    withSelector: #printOn: addMethod: {:(UndefinedObject)self :(Stream)stream :: Void | stream nextPutAll: "nil" } makeOverride.
 
 False
-    withSelector: #printString addMethod: {:(False)self :: String | "false" };
-    withSelector: #printOn: addMethod: {:(False)self :(Stream)stream :: Void | stream nextPutAll: "false" }.
+    withSelector: #printString addMethod: {:(False)self :: String | "false" } makeOverride;
+    withSelector: #printOn: addMethod: {:(False)self :(Stream)stream :: Void | stream nextPutAll: "false" } makeOverride.
 
 True
-    withSelector: #printString addMethod: {:(True)self :: String | "true" };
-    withSelector: #printOn: addMethod: {:(True)self :(Stream)stream :: Void | stream nextPutAll: "true" }.
+    withSelector: #printString addMethod: {:(True)self :: String | "true" } makeOverride;
+    withSelector: #printOn: addMethod: {:(True)self :(Stream)stream :: Void | stream nextPutAll: "true" } makeOverride.
 
 String
     withSelector: #stringOn: addMethod: {:(String)self :(Stream)stream :: Void |
         stream nextPutAll: self
-    };
+    } makeOverride;
     withSelector: #printOn: addMethod: {:(String)self :(Stream)stream :: Void |
         ## TODO: Implement this part properly.
         stream nextPut: '"'.
         stream nextPutAll: self.
         stream nextPut: '"'.
-    }.
+    } makeOverride.
 
 StringSymbol
     withSelector: #stringOn: addMethod: {:(String)self :(Stream)stream :: Void |
         stream nextPutAll: self
-    };
+    } makeOverride;
     withSelector: #printOn: addMethod: {:(StringSymbol)self :(Stream)stream :: Void |
         ## TODO: Implement this part properly.
         stream nextPut: '#'; nextPutAll: self
-    };
+    } makeOverride;
     withSelector: #fullPrintOn: addMethod: {:(StringSymbol)self :(Stream)stream :: Void |
         ## TODO: Implement this part properly.
         stream nextPut: '#'; nextPutAll: self
-    }.
+    } makeOverride.
 
 
 Class
@@ -905,7 +905,7 @@ Function
         }.
 
         stream nextPut: ')'
-    }.
+    } makeOverride.
 
 ValueBox
     withSelector: #with: addClassMethod: {:(ValueBox class)self :value :: self |
@@ -970,7 +970,7 @@ Collection
         }.
 
         stream nextPutAll: ")"
-    };
+    } makeOverride;
     withSelector: #fullPrintOn: addMethod: {:(Collection)self :(Stream)stream :: Void |
         stream print: self class; nextPutAll: "(".
         self doWithIndex: {:element :(Size)index :: Void |
@@ -980,7 +980,7 @@ Collection
         }.
 
         stream nextPutAll: ")"
-    };
+    } makeOverride;
     withSelector: #asArray addMethod: {:(Collection)self :: Array |
         let: #array with: (Array new: self size).
         self doWithIndex: {:element :(Size)index :: Void |
@@ -988,7 +988,7 @@ Collection
         }.
 
         array
-    }.
+    } makeVirtual.
 
 SequenceableCollection
     withSelector: #=> addMethod: {:(SequenceableCollection)self :(Type)resultType :: SimpleFunctionType |
@@ -1001,7 +1001,7 @@ Association
     };
     withSelector: #printOn: addMethod: {:(Association)self :(Stream)stream :: Void |
         stream print: self key; nextPutAll: " -> "; print: self value
-    }.
+    } makeOverride.
 Object
     withSelector:#-> addMethod: {:(Object)self :value :: Association |
         Association key: self value: value
@@ -1016,7 +1016,7 @@ WeakValueAssociation
     } makePure; makeFinal;
     withSelector: #printOn: addMethod: {:(WeakValueAssociation)self :(Stream)stream :: Void |
         stream print: self key; nextPutAll: " -> "; print: self value
-    }.
+    } makeOverride.
 
 Dictionary
     withSelector: #do: addMethod: {:(Dictionary)self :aBlock :: Void |
@@ -1026,7 +1026,7 @@ Dictionary
                 if: element ~~ nil then: aBlock(element).
             }
         }
-    };
+    } makeOverride;
     withSelector: #ensureStorage addMethod: {:(Dictionary)self :: Void |
         if: self storage == nil then: (self storage: (Array new: 16sz)).
     };
@@ -1085,7 +1085,7 @@ Set
                 if: __hashtableEmptyElement__ ~~ element then: aBlock(element).
             }
         }
-    }.
+    } makeOverride.
 
 WeakSet
     withSelector: #do: addMethod: {:(WeakSet)self :aBlock :: Void |
@@ -1095,7 +1095,7 @@ WeakSet
                 if: (__hashtableEmptyElement__ ~~ element) && (__tombstone__ ~~ element) then: aBlock(element).
             }
         }
-    }.
+    } makeOverride.
 
 SequenceableCollection
     withSelector: #with: addClassMethod: {:(SequenceableCollection class)self :value :: self |
@@ -1234,7 +1234,7 @@ SequenceableCollection
         while: i < self size do: (
             aBlock(self at: i)
         ) continueWith: (i := i + 1sz)
-    };
+    } makeOverride;
     withSelector: #doWithIndex: addMethod: {:(SequenceableCollection)self :aBlock :: Void |
         let: #i mutableWith: 0sz.
         let: #size with: self size.
@@ -1242,7 +1242,7 @@ SequenceableCollection
         while: i < self size do: {
             aBlock(self at: i, i)
         } continueWith: (i := i + 1sz)
-    };
+    } makeOverride;
     withSelector: #pairsDo: addMethod: {:(SequenceableCollection)self :aBlock :: Void |
         let: #i mutableWith: 0sz.
         let: #size with: self size.
@@ -1446,10 +1446,10 @@ OrderedCollection
     };
     withSelector: #new: addClassMethod: {:(OrderedCollection class)self :(Size)initialSize :: self |
         self basicNew initializeWithSize: initialSize; yourself
-    } makeFinal;
+    } makeOverride makeFinal;
     withSelector: #initialize addMethod: {:(OrderedCollection)self :: Void |
         self size: 0sz
-    };
+    } makeOverride;
     withSelector: #initializeWithSize: addMethod: {:(OrderedCollection)self :(Size)initialSize :: Void |
         self size: initialSize.
         self storage: (self class arrayType new: initialSize).
@@ -1465,14 +1465,14 @@ OrderedCollection
         } else: {
             error("Index out of bounds.")
         }
-    };
+    } makeOverride;
     withSelector: #at:put: addMethod: {:(OrderedCollection)self :(Size)index :value :: Void |
         if: index < self size then: {
             self storage at: index put: value
         } else: {
             error("Index out of bounds.")
         }
-    };
+    } makeOverride;
     withSelector: #removeAllThat: addMethod: {:(OrderedCollection)self :aPredicate :: Void |
         let: #size with: self size.
         let: #storage with: self storage.
@@ -1509,39 +1509,39 @@ OrderedCollection
 WeakOrderedCollection
     withSelector: #arrayType addClassMethod: {:(OrderedCollection class)self :: Array class |
         WeakArray
-    }.
+    } makeOverride.
     
 StringStream
     withSelector: #initialize addMethod: {:(StringStream)self :: Void |
         self size: 0
-    }.
+    } makeOverride.
 
 Array
     withSelector: #new: addClassMethod: {:(Array class)self :(Size)initialSize :: self |
         self basicNew: initialSize
-    } makeFinal;
-    withSelector: #asArray addMethod: {:(Array)self :: Array | self };
+    } makeOverride makeFinal;
+    withSelector: #asArray addMethod: {:(Array)self :: Array | self } makeOverride;
     withSelector: #asArraySlice addMethod: {:(Array)self :: ArraySlice |
         ArraySlice basicNew
             elements: self;
             offset: 0sz;
             size: self size;
             yourself
-    }.
+    } makeOverride.
 
 ByteArray
     withSelector: #new: addClassMethod: {:(ByteArray class)self :(Size)initialSize :: self |
         self basicNew: initialSize
-    } makeFinal;
+    } makeOverride makeFinal;
     withSelector: #at: addMethod: {:(ByteArray)self :(Size)index :: UInt8 |
         self __slotAt__: index
-    };
+    } makeOverride;
     withSelector: #at:put: addMethod: {:(ByteArray)self :(Size)index :(UInt8)value :: Void |
         self __slotAt__: index put: value
-    };
+    } makeOverride;
     withSelector: #size addMethod: {:(ByteArray)self :: Size |
         self __byteSize__
-    };
+    } makeOverride;
 
     withSelector: #uint8At: addMethod: {:(ByteArray)self :(Size)index :: UInt8 |
         self at: index
@@ -1661,21 +1661,21 @@ ByteArray
         }.
 
         stream nextPutAll: "]"
-    }.
+    } makeOverride.
 
 String
     withSelector: #new: addClassMethod: {:(String class)self :(Size)initialSize :: self |
         self basicNew: initialSize
-    } makeFinal;
+    } makeOverride makeFinal;
     withSelector: #at: addMethod: {:(String)self :(Size)index :: Char8 |
         (self __slotAt__: index) asChar8
-    };
+    } makeOverride;
     withSelector: #at:put: addMethod: {:(String)self :(Size)index :(Char8)value :: Void |
         self __slotAt__: index put: value
-    };
+    } makeOverride;
     withSelector: #size addMethod: {:(String)self :: Size |
         self __byteSize__
-    };
+    } makeOverride;
     withSelector: #padLeft:with: addMethod: {:(String)self :(Size)requiredLength :(Char8)paddingCharacter :: self species |
         let: #size with: self size.
         if: size >= requiredLength then: self
@@ -1706,21 +1706,21 @@ ArraySlice
             offset: 0sz;
             size: size;
             yourself
-    };
+    } makeOverride;
     withSelector: #at: addMethod: {:(ArraySlice)self :(Size)index |
         if: index < self size then: {
             self elements at: index + self offset
         } else: {
             error("Index out of bounds.")
         }
-    };
+    } makeOverride;
     withSelector: #at:put: addMethod: {:(ArraySlice)self :(Size)index :value :: Void |
         if: index < self size then: {
             self elements at: index + self offset put: value
         } else: {
             error("Index out of bounds.")
         }
-    }.
+    } makeOverride.
 
 MethodDictionary
     withSelector: #keysAndValuesDo: addMethod: {:(MethodDictionary)self :aBlock :: Void |
@@ -1735,7 +1735,7 @@ MethodDictionary
         self keysAndValuesDo: {:selector :method :: Void |
             aBlock(Association key: selector value: method)
         }
-    }.
+    } makeOverride.
 
 ## Byte encoding
 Type
@@ -1772,198 +1772,198 @@ AnyValue
 
 ## Primitive numbers meta methods.
 Char8 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(Char8 class)self :: Boolean | true };
+    withSelector: #canEncodeValueInBytes addMethod: {:(Char8 class)self :: Boolean | true } makeOverride;
     withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Char8 class)self :(Char8)value :(ByteArray)bytes :(Size)offset :: Void |
         bytes char8At: offset put: value
-    };
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Char8 class)self :: Boolean | true };
+    } makeOverride;
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Char8 class)self :: Boolean | true } makeOverride;
     withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Char8 class)self :(ByteArray)bytes :(Size)offset :: Char8 |
         bytes char8At: offset
-    };
+    } makeOverride;
 
-    withSelector: #defaultValue addMethod: {:(Char8 class)self :: Char8 | 0c8 };
-    withSelector: #zero addMethod: {:(Char8 class)self :: Char8 | 0c8 };
-    withSelector: #one addMethod: {:(Char8 class)self :: Char8 | 1c8 }.
+    withSelector: #defaultValue addMethod: {:(Char8 class)self :: Char8 | 0c8 } makeOverride;
+    withSelector: #zero addMethod: {:(Char8 class)self :: Char8 | 0c8 } makeOverride;
+    withSelector: #one addMethod: {:(Char8 class)self :: Char8 | 1c8 } makeOverride.
 
 UInt8 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(UInt8 class)self :: Boolean | true };
+    withSelector: #canEncodeValueInBytes addMethod: {:(UInt8 class)self :: Boolean | true } makeOverride;
     withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(UInt8 class)self :(UInt8)value :(ByteArray)bytes :(Size)offset :: Void |
         bytes uint8At: offset put: value
-    };
-    withSelector: #canDecodeValueFromBytes addMethod: {:(UInt8 class)self :: Boolean | true };
+    } makeOverride;
+    withSelector: #canDecodeValueFromBytes addMethod: {:(UInt8 class)self :: Boolean | true } makeOverride;
     withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(UInt8 class)self :(ByteArray)bytes :(Size)offset :: UInt8 |
         bytes uint8At: offset
-    };
+    } makeOverride;
 
-    withSelector: #defaultValue addMethod: {:(UInt8 class)self :: UInt8 | 0u8 };
-    withSelector: #zero addMethod: {:(UInt8 class)self :: UInt8 | 0u8 };
-    withSelector: #one addMethod: {:(UInt8 class)self :: UInt8 | 1u8 }.
+    withSelector: #defaultValue addMethod: {:(UInt8 class)self :: UInt8 | 0u8 } makeOverride;
+    withSelector: #zero addMethod: {:(UInt8 class)self :: UInt8 | 0u8 } makeOverride;
+    withSelector: #one addMethod: {:(UInt8 class)self :: UInt8 | 1u8 } makeOverride.
 
 Int8 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(Int8 class)self :: Boolean | true };
+    withSelector: #canEncodeValueInBytes addMethod: {:(Int8 class)self :: Boolean | true } makeOverride;
     withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Int8 class)self :(Int8)value :(ByteArray)bytes :(Size)offset :: Void |
         bytes int8At: offset put: value
-    };
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Int8 class)self :: Boolean | true };
+    } makeOverride;
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Int8 class)self :: Boolean | true } makeOverride;
     withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Int8 class)self :(ByteArray)bytes :(Size)offset :: Int8 |
         bytes int8At: offset
-    };
+    } makeOverride;
 
-    withSelector: #defaultValue addMethod: {:(Int8 class)self :: Int8 | 0i8 };
-    withSelector: #zero addMethod: {:(Int8 class)self :: Int8 | 0i8 };
-    withSelector: #one addMethod: {:(Int8 class)self :: Int8 | 1i8 }.
+    withSelector: #defaultValue addMethod: {:(Int8 class)self :: Int8 | 0i8 } makeOverride;
+    withSelector: #zero addMethod: {:(Int8 class)self :: Int8 | 0i8 } makeOverride;
+    withSelector: #one addMethod: {:(Int8 class)self :: Int8 | 1i8 } makeOverride.
 
 Char16 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(Char16 class)self :: Boolean | true };
+    withSelector: #canEncodeValueInBytes addMethod: {:(Char16 class)self :: Boolean | true } makeOverride;
     withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Char16 class)self :(Char16)value :(ByteArray)bytes :(Size)offset :: Void |
         bytes char16At: offset put: value
-    };
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Char16 class)self :: Boolean | true };
+    } makeOverride;
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Char16 class)self :: Boolean | true } makeOverride;
     withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Char16 class)self :(ByteArray)bytes :(Size)offset :: Char16 |
         bytes char16At: offset
-    };
+    } makeOverride;
 
-    withSelector: #defaultValue addMethod: {:(Char16 class)self :: Char16 | 0c16 };
-    withSelector: #zero addMethod: {:(Char16 class)self :: Char16 | 0c16 };
-    withSelector: #one addMethod: {:(Char16 class)self :: Char16 | 1c16 }.
+    withSelector: #defaultValue addMethod: {:(Char16 class)self :: Char16 | 0c16 } makeOverride;
+    withSelector: #zero addMethod: {:(Char16 class)self :: Char16 | 0c16 } makeOverride;
+    withSelector: #one addMethod: {:(Char16 class)self :: Char16 | 1c16 } makeOverride.
 
 UInt16 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(UInt16 class)self :: Boolean | true };
+    withSelector: #canEncodeValueInBytes addMethod: {:(UInt16 class)self :: Boolean | true } makeOverride;
     withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(UInt16 class)self :(UInt16)value :(ByteArray)bytes :(Size)offset :: Void |
         bytes uint16At: offset put: value
-    };
-    withSelector: #canDecodeValueFromBytes addMethod: {:(UInt16 class)self :: Boolean | true };
+    } makeOverride;
+    withSelector: #canDecodeValueFromBytes addMethod: {:(UInt16 class)self :: Boolean | true } makeOverride;
     withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(UInt16 class)self :(ByteArray)bytes :(Size)offset :: UInt16 |
         bytes uint16At: offset
-    };
+    } makeOverride;
 
-    withSelector: #defaultValue addMethod: {:(UInt16 class)self :: UInt16 | 0u16 };
-    withSelector: #zero addMethod: {:(UInt16 class)self :: UInt16 | 0u16 };
-    withSelector: #one addMethod: {:(UInt16 class)self :: UInt16 | 1u16 }.
+    withSelector: #defaultValue addMethod: {:(UInt16 class)self :: UInt16 | 0u16 } makeOverride;
+    withSelector: #zero addMethod: {:(UInt16 class)self :: UInt16 | 0u16 } makeOverride;
+    withSelector: #one addMethod: {:(UInt16 class)self :: UInt16 | 1u16 } makeOverride.
 
 Int16 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(Int16 class)self :: Boolean | true };
+    withSelector: #canEncodeValueInBytes addMethod: {:(Int16 class)self :: Boolean | true } makeOverride;
     withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Int16 class)self :(Int16)value :(ByteArray)bytes :(Size)offset :: Void |
         bytes int16At: offset put: value
-    };
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Int16 class)self :: Boolean | true };
+    } makeOverride;
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Int16 class)self :: Boolean | true } makeOverride;
     withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Int16 class)self :(ByteArray)bytes :(Size)offset :: Int16 |
         bytes int16At: offset
-    };
+    } makeOverride;
 
-    withSelector: #defaultValue addMethod: {:(Int16 class)self :: Int16 | 0i16 };
-    withSelector: #zero addMethod: {:(Int16 class)self :: Int16 | 0i16 };
-    withSelector: #one addMethod: {:(Int16 class)self :: Int16 | 1i16 }.
+    withSelector: #defaultValue addMethod: {:(Int16 class)self :: Int16 | 0i16 } makeOverride;
+    withSelector: #zero addMethod: {:(Int16 class)self :: Int16 | 0i16 } makeOverride;
+    withSelector: #one addMethod: {:(Int16 class)self :: Int16 | 1i16 } makeOverride.
 
 Char32 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(Char32 class)self :: Boolean | true };
+    withSelector: #canEncodeValueInBytes addMethod: {:(Char32 class)self :: Boolean | true } makeOverride;
     withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Char32 class)self :(Char32)value :(ByteArray)bytes :(Size)offset :: Void |
         bytes char32At: offset put: value
-    };
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Char32 class)self :: Boolean | true };
+    } makeOverride;
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Char32 class)self :: Boolean | true } makeOverride;
     withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Char32 class)self :(ByteArray)bytes :(Size)offset :: Char32 |
         bytes char32At: offset
-    };
+    } makeOverride;
 
-    withSelector: #defaultValue addMethod: {:(Char32 class)self :: Char32 | 0c32 };
-    withSelector: #zero addMethod: {:(Char32 class)self :: Char32 | 0c32 };
-    withSelector: #one addMethod: {:(Char32 class)self :: Char32 | 1c32 }.
+    withSelector: #defaultValue addMethod: {:(Char32 class)self :: Char32 | 0c32 } makeOverride;
+    withSelector: #zero addMethod: {:(Char32 class)self :: Char32 | 0c32 } makeOverride;
+    withSelector: #one addMethod: {:(Char32 class)self :: Char32 | 1c32 } makeOverride.
 
 UInt32 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(UInt32 class)self :: Boolean | true };
+    withSelector: #canEncodeValueInBytes addMethod: {:(UInt32 class)self :: Boolean | true } makeOverride;
     withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(UInt32 class)self :(UInt32)value :(ByteArray)bytes :(Size)offset :: Void |
         bytes uint32At: offset put: value
-    };
-    withSelector: #canDecodeValueFromBytes addMethod: {:(UInt32 class)self :: Boolean | true };
+    } makeOverride;
+    withSelector: #canDecodeValueFromBytes addMethod: {:(UInt32 class)self :: Boolean | true } makeOverride;
     withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(UInt32 class)self :(ByteArray)bytes :(Size)offset :: UInt32 |
         bytes uint32At: offset
-    };
+    } makeOverride;
 
-    withSelector: #defaultValue addMethod: {:(UInt32 class)self :: UInt32 | 0u32 };
-    withSelector: #zero addMethod: {:(UInt32 class)self :: UInt32 | 0u32 };
-    withSelector: #one addMethod: {:(UInt32 class)self :: UInt32 | 1u32 }.
+    withSelector: #defaultValue addMethod: {:(UInt32 class)self :: UInt32 | 0u32 } makeOverride;
+    withSelector: #zero addMethod: {:(UInt32 class)self :: UInt32 | 0u32 } makeOverride;
+    withSelector: #one addMethod: {:(UInt32 class)self :: UInt32 | 1u32 } makeOverride.
 
 Int32 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(Int32 class)self :: Boolean | true };
+    withSelector: #canEncodeValueInBytes addMethod: {:(Int32 class)self :: Boolean | true } makeOverride;
     withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Int32 class)self :(Int32)value :(ByteArray)bytes :(Size)offset :: Void |
         bytes int32At: offset put: value
-    };
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Int32 class)self :: Boolean | true };
+    } makeOverride;
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Int32 class)self :: Boolean | true } makeOverride;
     withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Int32 class)self :(ByteArray)bytes :(Size)offset :: Int32 |
         bytes int32At: offset
-    };
+    } makeOverride;
 
-    withSelector: #defaultValue addMethod: {:(Int32 class)self :: Int32 | 0i32 };
-    withSelector: #zero addMethod: {:(Int32 class)self :: Int32 | 0i32 };
-    withSelector: #one addMethod: {:(Int32 class)self :: Int32 | 1i32 }.
+    withSelector: #defaultValue addMethod: {:(Int32 class)self :: Int32 | 0i32 } makeOverride;
+    withSelector: #zero addMethod: {:(Int32 class)self :: Int32 | 0i32 } makeOverride;
+    withSelector: #one addMethod: {:(Int32 class)self :: Int32 | 1i32 } makeOverride.
 
 Int64 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(Int64 class)self :: Boolean | true };
+    withSelector: #canEncodeValueInBytes addMethod: {:(Int64 class)self :: Boolean | true } makeOverride;
     withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Int64 class)self :(Int64)value :(ByteArray)bytes :(Size)offset :: Void |
         bytes int64At: offset put: value
-    };
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Int64 class)self :: Boolean | true };
+    } makeOverride;
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Int64 class)self :: Boolean | true } makeOverride;
     withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Int64 class)self :(ByteArray)bytes :(Size)offset :: Int64 |
         bytes int64At: offset
-    };
+    } makeOverride;
 
-    withSelector: #defaultValue addMethod: {:(Int64 class)self :: Int64 | 0i64 };
-    withSelector: #zero addMethod: {:(Int64 class)self :: Int64 | 0i64 };
-    withSelector: #one addMethod: {:(Int64 class)self :: Int64 | 1i64 }.
+    withSelector: #defaultValue addMethod: {:(Int64 class)self :: Int64 | 0i64 } makeOverride;
+    withSelector: #zero addMethod: {:(Int64 class)self :: Int64 | 0i64 } makeOverride;
+    withSelector: #one addMethod: {:(Int64 class)self :: Int64 | 1i64 } makeOverride.
 
 UInt64 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(UInt64 class)self :: Boolean | true };
+    withSelector: #canEncodeValueInBytes addMethod: {:(UInt64 class)self :: Boolean | true } makeOverride;
     withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(UInt64 class)self :(UInt64)value :(ByteArray)bytes :(Size)offset :: Void |
         bytes uint64At: offset put: value
-    };
-    withSelector: #canDecodeValueFromBytes addMethod: {:(UInt64 class)self :: Boolean | true };
+    } makeOverride;
+    withSelector: #canDecodeValueFromBytes addMethod: {:(UInt64 class)self :: Boolean | true } makeOverride;
     withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(UInt64 class)self :(ByteArray)bytes :(Size)offset :: UInt64 |
         bytes uint64At: offset
-    };
+    } makeOverride;
 
-    withSelector: #defaultValue addMethod: {:(UInt64 class)self :: UInt64 | 0u64 };
-    withSelector: #zero addMethod: {:(UInt64 class)self :: UInt64 | 0u64 };
-    withSelector: #one addMethod: {:(UInt64 class)self :: UInt64 | 1u64 }.
+    withSelector: #defaultValue addMethod: {:(UInt64 class)self :: UInt64 | 0u64 } makeOverride;
+    withSelector: #zero addMethod: {:(UInt64 class)self :: UInt64 | 0u64 } makeOverride;
+    withSelector: #one addMethod: {:(UInt64 class)self :: UInt64 | 1u64 } makeOverride.
 
 Float32 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(Float32 class)self :: Boolean | true };
+    withSelector: #canEncodeValueInBytes addMethod: {:(Float32 class)self :: Boolean | true } makeOverride;
     withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Float32 class)self :(Float32)value :(ByteArray)bytes :(Size)offset :: Void |
         bytes float32At: offset put: value
-    };
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Float32 class)self :: Boolean | true };
+    } makeOverride;
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Float32 class)self :: Boolean | true } makeOverride;
     withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Float32 class)self :(ByteArray)bytes :(Size)offset :: Float32 |
         bytes float32At: offset
-    };
+    } makeOverride;
 
-    withSelector: #defaultValue addMethod: {:(Float32 class)self :: Float32 | 0.0f32 };
-    withSelector: #zero addMethod: {:(Float32 class)self :: Float32 | 0.0f32 };
-    withSelector: #one addMethod: {:(Float32 class)self :: Float32 | 1.0f32 }.
+    withSelector: #defaultValue addMethod: {:(Float32 class)self :: Float32 | 0.0f32 } makeOverride;
+    withSelector: #zero addMethod: {:(Float32 class)self :: Float32 | 0.0f32 } makeOverride;
+    withSelector: #one addMethod: {:(Float32 class)self :: Float32 | 1.0f32 } makeOverride.
 
 Float64 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(Float64 class)self :: Boolean | true };
+    withSelector: #canEncodeValueInBytes addMethod: {:(Float64 class)self :: Boolean | true } makeOverride;
     withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Float64 class)self :(Float64)value :(ByteArray)bytes :(Size)offset :: Void |
         bytes float64At: offset put: value
-    };
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Float64 class)self :: Boolean | true };
+    } makeOverride;
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Float64 class)self :: Boolean | true } makeOverride;
     withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Float64 class)self :(ByteArray)bytes :(Size)offset :: Float64 |
         bytes float64At: offset
-    };
+    } makeOverride;
 
-    withSelector: #defaultValue addMethod: {:(Float64 class)self :: Float64 | 0.0 };
-    withSelector: #zero addMethod: {:(Float64 class)self :: Float64 | 0.0 };
-    withSelector: #one addMethod: {:(Float64 class)self :: Float64 | 1.0 }.
+    withSelector: #defaultValue addMethod: {:(Float64 class)self :: Float64 | 0.0 } makeOverride;
+    withSelector: #zero addMethod: {:(Float64 class)self :: Float64 | 0.0 } makeOverride;
+    withSelector: #one addMethod: {:(Float64 class)self :: Float64 | 1.0 } makeOverride.
 
 Boolean class
-    withSelector: #canEncodeValueInBytes addMethod: {:(Boolean class)self :: Boolean | true };
+    withSelector: #canEncodeValueInBytes addMethod: {:(Boolean class)self :: Boolean | true } makeOverride;
     withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Boolean class)self :(Boolean)value :(ByteArray)bytes :(Size)offset :: Void |
         bytes at: offset put: (if: value then: 1u8 else: 0u8)
-    };
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Boolean class)self :: Boolean | true };
+    } makeOverride;
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Boolean class)self :: Boolean | true } makeOverride;
     withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Boolean class)self :(ByteArray)bytes :(Size)offset :: Boolean |
         (bytes at: offset) ~= 0u8
-    };
+    } makeOverride;
 
-    withSelector: #defaultValue addMethod: {:(Boolean class)self :: Boolean | false }.
+    withSelector: #defaultValue addMethod: {:(Boolean class)self :: Boolean | false } makeOverride.
 
 SequenceableCollection
     withSelector: #computeOffsetsOfEncodedElementsInByteStream addMethod: {:(SequenceableCollection)self :: Size |
@@ -2145,7 +2145,7 @@ Type
 Metatype
     withSelector: #registerInSuperMetatype addMethod: {:(Type)self :: Void |
         self registerInSupertype
-    }.
+    } makeOverride.
 
 ## Construct the subtype links
 BootstrapEnv::IntrinsicTypes do: {:(Type)each :: Void |
@@ -2208,7 +2208,7 @@ Metatype
         if: thisType ~~ nil
         then: (stream print: thisType; nextPutAll: " __type__")
         else: (stream nextPutAll: "a "; print: self __type__)
-    }.
+    } makeOverride.
 
 Metaclass
     withSelector: #thisClass addMethod: {:(Metaclass)self :: Type | self thisType };
@@ -2218,7 +2218,7 @@ Metaclass
         if: thisClass ~~ nil
         then: (stream print: thisClass; nextPutAll: " class")
         else: (stream nextPutAll: "a "; print: self __type__)
-    }.
+    } makeOverride.
 
 Type
     withSelector: #refFor: addMethod: {:(Type)self :addressSpace :: ReferenceType |
@@ -2245,7 +2245,7 @@ ReferenceType
         } else: {
             stream nextPutAll: " refFor: "; print: self addressSpace
         }.
-    }.
+    } makeOverride.
 
 PointerType
     withSelector: #printOn: addMethod: {:(ReferenceType)self :(Stream)stream :: Void |
@@ -2255,23 +2255,23 @@ PointerType
         } else: {
             stream nextPutAll: " pointerFor: "; print: self addressSpace
         }.
-    }.
+    } makeOverride.
 
 FunctionType
     withSelector: #canonicalResultType addMethod: {:(FunctionType)self :: Type |
         self subclassResponsibility
-    }.
+    } makeVirtual.
 
 DependentFunctionType
     withSelector: #printOn: addMethod: {:(DependentFunctionType)self :(Stream)stream :: Void |
         stream nextPutAll: "DependentFunctionType at "; print: self sourcePosition
-    }.
+    } makeOverride.
 
 SimpleFunctionType
     withSelector: #canonicalResultType addMethod: {:(SimpleFunctionType)self :: Type |
         let: #resultType with: self resultType.
         if: resultType == nil then: Untyped else: resultType.
-    };
+    } makeOverride;
     withSelector: #hasFunctionFlag: addMethod: {:(SimpleFunctionType)self :(Bitflags)flag :: Boolean |
         (self functionFlags & flag) ~= 0bflgs
     };
@@ -2290,7 +2290,7 @@ SimpleFunctionType
                 ifFalse: (stream nextPutAll: "...")
         }.
         stream nextPutAll: ") => "; print: self resultType.
-    }.
+    } makeOverride.
 
 ## Primitive values printString and primitive function types
 (
@@ -2340,7 +2340,7 @@ SimpleFunctionType
     SelfType
         withSelector: #printOn: addMethod: {:(SelfType)self :(Stream)stream :: Void |
             stream nextPutAll: self printString
-        } makeFinal recompileAndOptimize.
+        } makeOverride makeFinal recompileAndOptimize.
 
     let: #setConversionTypeFunction with: {:method :targetType :: Void |
         if: method ~~ nil then: (method __type__: (SelfType => targetType))
@@ -2497,15 +2497,15 @@ SourcePosition
             print: self endLine;
             nextPut: '.';
             print: self endColumn
-    }.
+    } makeOverride.
 
 GeneratedSymbol
     withSelector: #printOn: addMethod: {:(GeneratedSymbol)self :(Stream)stream :: Void |
         stream print: self class; nextPut: '('; print: self value; nextPut: ')'
-    };
+    } makeOverride;
     withSelector: #fullPrintOn: addMethod: {:(GeneratedSymbol)self :(Stream)stream :: Void |
         stream print: self class; nextPut: '('; print: self value; nextPut: ')'
-    }.
+    } makeOverride.
 
 Metaclass class
     withSelector: #getOrCreateDependentApplicationValueForNode: addMethod: {:(Metaclass class)self :(ASTNode)astNode |
@@ -2671,7 +2671,7 @@ PointerLikeType
     withSelector: #computeLayout addMethod: {:(Type)self :: Void |
         self instanceSize: UIntPointer valueSize.
         self instanceAlignment: UIntPointer valueAlignment.
-    };
+    } makeOverride;
     withSelector: #withStorage: addMethod: {:(Type)self :storage :: self |
         let: #result with: (RawTuple::new(1sz)).
         (RawTuple::slotAt:put:)(result, 0sz, storage).
@@ -2682,16 +2682,16 @@ PointerLikeType
 ValueType
     withSelector: #valueSize addMethod: {:(ValueType)self :: Size |
         self validInstanceSize
-    };
+    } makeOverride;
     withSelector: #valueAlignment addMethod: {:(ValueType)self :: Size |
         self validInstanceAlignment
-    };
-    withSelector: #isGarbageCollectedPointerType addMethod: {:(Type)self :: Boolean | false };
-    withSelector: #isValueType addMethod: {:(Type)self :: Boolean | true };
-    withSelector: #asReceiverType addMethod: {:(Type)self :: Type | self ref }.
+    } makeOverride;
+    withSelector: #isGarbageCollectedPointerType addMethod: {:(Type)self :: Boolean | false } makeOverride;
+    withSelector: #isValueType addMethod: {:(Type)self :: Boolean | true } makeOverride;
+    withSelector: #asReceiverType addMethod: {:(Type)self :: Type | self ref } makeOverride.
 
 PrimitiveValueType
-    withSelector: #asReceiverType addMethod: {:(Type)self :: Type | self }.
+    withSelector: #asReceiverType addMethod: {:(Type)self :: Type | self } makeOverride.
 
 Environment
     withSelector: #setSymbol:value: addMethod: {:(Environment)self :(Symbol)symbol :value :: value __type__ |
