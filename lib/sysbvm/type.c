@@ -695,6 +695,13 @@ SYSBVM_API void sysbvm_type_setMethodWithSelector(sysbvm_context_t *context, sys
         typeObject->methodDictionary = sysbvm_methodDictionary_create(context);
     sysbvm_methodDictionary_atPut(context, typeObject->methodDictionary, selector, method);
     sysbvm_function_recordBindingWithOwnerAndName(context, method, type, selector);
+
+    if((sysbvm_function_getFlags(context, method) & SYSBVM_FUNCTION_FLAGS_VIRTUAL_DISPATCH_FLAGS) != 0)
+    {
+        if(!typeObject->virtualMethodDictionary)
+            typeObject->virtualMethodDictionary = sysbvm_methodDictionary_create(context);
+        sysbvm_methodDictionary_atPut(context, typeObject->virtualMethodDictionary, selector, method);
+    }
 }
 
 SYSBVM_API void sysbvm_type_buildSlotDictionary(sysbvm_context_t *context, sysbvm_tuple_t type)
@@ -1357,6 +1364,7 @@ void sysbvm_type_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::flags", sysbvm_tuple_integer_encodeSmall(SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_type_tuple_t, flags)));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::macroMethodDictionary", sysbvm_tuple_integer_encodeSmall(SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_type_tuple_t, macroMethodDictionary)));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::methodDictionary", sysbvm_tuple_integer_encodeSmall(SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_type_tuple_t, methodDictionary)));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::virtualMethodDictionary", sysbvm_tuple_integer_encodeSmall(SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_type_tuple_t, virtualMethodDictionary)));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::fallbackMethodDictionary", sysbvm_tuple_integer_encodeSmall(SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_type_tuple_t, fallbackMethodDictionary)));
 
     // Export the type slot layout. This is used by the bootstraping algorithm for creating the accessors.

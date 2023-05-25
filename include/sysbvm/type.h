@@ -22,6 +22,7 @@ typedef struct sysbvm_type_tuple_s
 
     sysbvm_tuple_t macroMethodDictionary;
     sysbvm_tuple_t methodDictionary;
+    sysbvm_tuple_t virtualMethodDictionary;
     sysbvm_tuple_t fallbackMethodDictionary;
 
     sysbvm_tuple_t pendingSlots;

@@ -485,6 +485,20 @@ static sysbvm_tuple_t sysbvm_function_primitive_isCorePrimitive(sysbvm_context_t
     return sysbvm_tuple_boolean_encode((flags & SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE) != 0);
 }
 
+static sysbvm_tuple_t sysbvm_function_primitive_hasVirtualDispatch(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
+
+    sysbvm_tuple_t *function = &arguments[0];
+    if(!sysbvm_tuple_isFunction(context, *function))
+        return SYSBVM_FALSE_TUPLE;
+    
+    sysbvm_function_t *functionObject = (sysbvm_function_t*)*function;
+    size_t flags = sysbvm_tuple_bitflags_decode(functionObject->flags);
+    return sysbvm_tuple_boolean_encode((flags & SYSBVM_FUNCTION_FLAGS_VIRTUAL_DISPATCH_FLAGS) != 0);
+}
+
 static sysbvm_tuple_t sysbvm_function_primitive_adoptDefinitionOf(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)closure;
@@ -546,6 +560,7 @@ void sysbvm_function_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_function_primitive_apply, "Function::apply");
     sysbvm_primitiveTable_registerFunction(sysbvm_function_primitive_adoptDefinitionOf, "Function::adoptDefinitionOf");
     sysbvm_primitiveTable_registerFunction(sysbvm_function_primitive_isCorePrimitive, "Function::isCorePrimitive");
+    sysbvm_primitiveTable_registerFunction(sysbvm_function_primitive_hasVirtualDispatch, "Function::hasVirtualDispatch");
     sysbvm_primitiveTable_registerFunction(sysbvm_function_primitive_recompileAndOptimize, "Function::recompileAndOptimize");
     sysbvm_primitiveTable_registerFunction(sysbvm_function_primitive_recordBindingWithOwnerAndName, "Function::recordBindingWithOwnerAndName");
 }
@@ -555,6 +570,7 @@ void sysbvm_function_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "apply", context->roots.functionType, "applyWithArguments:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_VARIADIC | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_function_primitive_apply);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::adoptDefinitionOf:", context->roots.functionType, "adoptDefinitionOf:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_function_primitive_adoptDefinitionOf);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::isCorePrimitive", context->roots.functionType, "isCorePrimitive", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_function_primitive_isCorePrimitive);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::hasVirtualDispatch", context->roots.functionType, "hasVirtualDispatch", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_function_primitive_hasVirtualDispatch);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::recompileAndOptimize", context->roots.functionType, "recompileAndOptimize", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_function_primitive_recompileAndOptimize);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::recordBindingWithOwnerAndName", context->roots.functionType, "recordBindingWithOwner:andName:", 3, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_function_primitive_recordBindingWithOwnerAndName);
 
@@ -572,6 +588,7 @@ void sysbvm_function_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::Virtual", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_VIRTUAL));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::Abstract", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_ABSTRACT));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::Override", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_OVERRIDE));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::VirtualDispatchFlags", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_VIRTUAL_DISPATCH_FLAGS));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::Static", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_STATIC));
 
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::Memoized", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_MEMOIZED));

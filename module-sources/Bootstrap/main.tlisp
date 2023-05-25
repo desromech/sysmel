@@ -25,6 +25,16 @@
             newMethodDictionary)
         existingMethodDictionary))
 
+## Type::validVirtualMethodDictionary
+(define (Type::validVirtualMethodDictionary type)
+    (define existingMethodDictionary (RawTuple::slotAt: type Type::Layout::virtualMethodDictionary))
+    (if:then:else: (== existingMethodDictionary nil)
+        (begin
+            (define newMethodDictionary (MethodDictionary::new))
+            (RawTuple::slotAt:put: type Type::Layout::virtualMethodDictionary newMethodDictionary)
+            newMethodDictionary)
+        existingMethodDictionary))
+
 ## Setup a getter method.
 (define (setupGetter getter)
     (RawTuple::slotAt:put: getter Function::Layout::flags FunctionFlags::GetterFlags)
@@ -80,10 +90,14 @@
     (define methodDict (Type::validMethodDictionary type))
     (define existentMethod (MethodDictionary::atOrNil: methodDict selector))
     (define isCorePrimitive (Function::isCorePrimitive existentMethod))
+    (define hasVirtualDispatch (Function::hasVirtualDispatch existentMethod))
     (if:then:else: isCorePrimitive
         (Function::adoptDefinitionOf: existentMethod method)
         (MethodDictionary::at:put: methodDict selector method))
     (Type::flushLookupSelector: type selector)
+    (if:then: hasVirtualDispatch
+        (MethodDictionary::at:put: (Type::validVirtualMethodDictionary type) selector method))
+
     (ProgramEntity::recordBindingWithOwnerAndName method type selector))
 
 ## Type::validMacroMethodDictionary
