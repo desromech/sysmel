@@ -268,6 +268,9 @@ TypeSlot
     withSelector: #isReadonly addMethod: {:(TypeSlot)self :: Boolean |
         self hasFlag: TypeSlotFlags::ReadOnly
     } withEagerAnalysis;
+    withSelector: #isMinRTTIExcluded addMethod: {:(TypeSlot)self :: Boolean |
+        self hasFlag: TypeSlotFlags::MinRTTIExcluded
+    } withEagerAnalysis;
     withSelector: #generateAccessorsOn: addMethod: {:(TypeSlot)typeSlot :(Type)type :: Void |
         if: typeSlot isPublic then: {
             let: #slotType with: typeSlot type.

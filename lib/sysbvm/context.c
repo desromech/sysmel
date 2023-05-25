@@ -567,7 +567,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.objectType, "Object", SYSBVM_NULL_TUPLE, NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.programEntityType, "ProgramEntity", SYSBVM_NULL_TUPLE,
         "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
-        "owner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.programEntityType,
+        "owner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.programEntityType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.typeType, "Type", SYSBVM_NULL_TUPLE,
         "supertype", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
@@ -580,12 +580,12 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
 
         "slotDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.methodDictionaryType,
 
-        "macroMethodDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.methodDictionaryType,
+        "macroMethodDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.methodDictionaryType,
         "methodDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.methodDictionaryType,
-        "fallbackMethodDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.methodDictionaryType,
+        "fallbackMethodDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.methodDictionaryType,
 
-        "pendingSlots", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
-        "subtypes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
+        "pendingSlots", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, SYSBVM_NULL_TUPLE,
+        "subtypes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, SYSBVM_NULL_TUPLE,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.classType, "Class", SYSBVM_NULL_TUPLE, NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.metatypeType, "Metatype", SYSBVM_NULL_TUPLE,
@@ -594,7 +594,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.metaclassType, "Metaclass", SYSBVM_NULL_TUPLE,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.typeSlotType, "TypeSlot", SYSBVM_NULL_TUPLE,
-        "owner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.programEntityType,
+        "owner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.programEntityType,
         "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         "type", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
@@ -698,7 +698,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         "argumentCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "captureVector", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
-        "captureEnvironment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
+        "captureEnvironment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.environmentType,
         "definition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
         "primitiveTableIndex", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
         "primitiveName", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
@@ -708,28 +708,28 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionDefinitionType, "FunctionDefinition", SYSBVM_NULL_TUPLE,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         "argumentCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
-        "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
+        "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, SYSBVM_NULL_TUPLE,
 
-        "definitionEnvironment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
-        "definitionArgumentNodes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
-        "definitionResultTypeNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
-        "definitionBodyNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "definitionEnvironment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.environmentType,
+        "definitionArgumentNodes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
+        "definitionResultTypeNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.astNodeType,
+        "definitionBodyNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.astNodeType,
 
-        "analyzedType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionTypeType,
+        "analyzedType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.functionTypeType,
 
-        "analysisEnvironment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
-        "analyzedCaptures", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
-        "analyzedArguments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
-        "analyzedLocals", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
-        "analyzedPragmas", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
-        "analyzedInnerFunctions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
-        "analyzedPrimitiveName", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "analysisEnvironment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.environmentType,
+        "analyzedCaptures", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
+        "analyzedArguments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
+        "analyzedLocals", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
+        "analyzedPragmas", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
+        "analyzedInnerFunctions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
+        "analyzedPrimitiveName", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
 
-        "analyzedArgumentNodes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
-        "analyzedResultTypeNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
-        "analyzedBodyNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "analyzedArgumentNodes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
+        "analyzedResultTypeNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.astNodeType,
+        "analyzedBodyNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.astNodeType,
 
-        "bytecode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionBytecodeType,
+        "bytecode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.functionBytecodeType,
         "capturelessUncheckedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
         "uncheckedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
         "checkedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
