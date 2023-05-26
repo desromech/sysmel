@@ -2117,8 +2117,30 @@ static sysbvm_tuple_t sysbvm_astIfNode_primitiveAnalyze(sysbvm_context_t *contex
     {
         gcFrame.analyzedTrueExpressionType = sysbvm_astNode_getAnalyzedType(gcFrame.analyzedTrueExpression);
         gcFrame.analyzedFalseExpressionType = sysbvm_astNode_getAnalyzedType(gcFrame.analyzedFalseExpression);
-        if(gcFrame.analyzedTrueExpressionType == gcFrame.analyzedFalseExpressionType)
+        bool trueExpressionIsControlFlowEscape = sysbvm_type_isDirectSubtypeOf(gcFrame.analyzedTrueExpressionType, context->roots.controlFlowEscapeType);
+        bool trueExpressionIsUndefinedType = gcFrame.analyzedTrueExpressionType == context->roots.undefinedObjectType;
+
+        bool falseExpressionIsControlFlowEscape = sysbvm_type_isDirectSubtypeOf(gcFrame.analyzedFalseExpressionType, context->roots.controlFlowEscapeType);
+        bool falseExpressionIsUndefinedType = gcFrame.analyzedFalseExpressionType == context->roots.undefinedObjectType;
+
+        if(trueExpressionIsControlFlowEscape || trueExpressionIsUndefinedType)
+        {
+            gcFrame.ifNode->super.analyzedType = gcFrame.analyzedFalseExpressionType;
+        }
+        else if(falseExpressionIsControlFlowEscape || falseExpressionIsUndefinedType)
+        {
             gcFrame.ifNode->super.analyzedType = gcFrame.analyzedTrueExpressionType;
+        }
+        else
+        {
+            gcFrame.ifNode->super.analyzedType = sysbvm_type_computeLCA(gcFrame.analyzedTrueExpressionType, gcFrame.analyzedFalseExpressionType);
+            if(!gcFrame.ifNode->super.analyzedType)
+                gcFrame.ifNode->super.analyzedType = context->roots.anyValueType;
+        }
+    }
+    else if(!gcFrame.ifNode->trueExpression || !gcFrame.ifNode->trueExpression)
+    {
+        gcFrame.ifNode->super.analyzedType = context->roots.voidType;
     }
 
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);

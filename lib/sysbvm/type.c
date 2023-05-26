@@ -1099,6 +1099,44 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_getDefaultValue(sysbvm_context_t *context,
     return sysbvm_tuple_send0(context, context->roots.defaultValueSelector, type);
 }
 
+SYSBVM_API int sysbvm_type_computeDepth(sysbvm_tuple_t type)
+{
+    if(!type)
+        return -1;
+
+    return sysbvm_type_computeDepth(sysbvm_type_getSupertype(type)) + 1;
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_type_computeLCA(sysbvm_tuple_t leftType, sysbvm_tuple_t rightType)
+{
+    // Bring them onto the same depth.
+    int leftDepth = sysbvm_type_computeDepth(leftType);
+    int rightDepth = sysbvm_type_computeDepth(rightType);
+    while(leftDepth > rightDepth)
+    {
+        leftType = sysbvm_type_getSupertype(leftType);
+        --leftDepth;
+    }
+
+    while(rightDepth > leftDepth)
+    {
+        rightType = sysbvm_type_getSupertype(rightType);
+        --rightDepth;
+    }
+
+    // Move up until they are the same.
+    while(leftType != rightType)
+    {
+        leftType = sysbvm_type_getSupertype(leftType);
+        --leftDepth;
+
+        rightType = sysbvm_type_getSupertype(rightType);
+        --rightDepth;
+    }
+    
+    return leftType;
+}
+
 static sysbvm_tuple_t sysbvm_type_primitive_flushLookupSelector(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)closure;

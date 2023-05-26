@@ -813,4 +813,9 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_canonicalizeDependentResultType(sysbvm_con
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_type_getDefaultValue(sysbvm_context_t *context, sysbvm_tuple_t type);
 
+/**
+ * Computes the LCA between two types
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_type_computeLCA(sysbvm_tuple_t leftType, sysbvm_tuple_t rightType);
+
 #endif //SYSBVM_TYPE_H
