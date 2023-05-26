@@ -820,6 +820,21 @@ FlagMetaBuilder
         self addMethodFlags: FunctionFlags::DLLExport.
         self continueExpansion
     };
+    withSelector: #inline addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self addMethodFlags: FunctionFlags::Inline.
+        self continueExpansion
+    };
+    withSelector: #alwaysInline addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self addMethodFlags: FunctionFlags::AlwaysInline.
+        self continueExpansion
+    };
+    withSelector: #neverInline addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self addMethodFlags: FunctionFlags::NeverInline.
+        self continueExpansion
+    };
     withSelector: #method addMethod: {:self :: ASTNode |
         <metaBuilder>
         self delegateToMetaBuilder: (MethodMetaBuilder new

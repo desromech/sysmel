@@ -121,7 +121,34 @@ Function
     withSelector: #makeTemplate addMethod: {:(Function)self :: Function |
         self addFlags: FunctionFlags::Template.
         self
+    } withEagerAnalysis;
+
+    withSelector: #makeExternC addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::ExternC.
+        self
+    } withEagerAnalysis;
+    withSelector: #makeDLLExport addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::DLLExport.
+        self
+    } withEagerAnalysis;
+    withSelector: #makeDLLImport addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::DLLExport.
+        self
+    } withEagerAnalysis;
+
+    withSelector: #makeInline addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::Inline.
+        self
+    } withEagerAnalysis;
+    withSelector: #makeAlwaysInline addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::AlwaysInline.
+        self
+    } withEagerAnalysis;
+    withSelector: #makeNeverInline addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::NeverInline.
+        self
     } withEagerAnalysis.
+
 
 Type
     withSelector: #=> addMethod: {:(Type)self :(Type)resultType :: SimpleFunctionType |
@@ -323,7 +350,7 @@ TypeSlot
                 ## Getter.
                 let: #getterMethod with: ({:(receiverType)self :: slotType |
                     (RawTuple::refTypeSlotAt:)(self, typeSlot)
-                } makePure makeFinal recompileAndOptimize).
+                } makePure makeFinal makeAlwaysInline recompileAndOptimize).
 
                 if: type supertype isNotNil then: (if: (type supertype lookupSelector: getterName) isNotNil then: (getterMethod makeOverride)).
                 type withSelector: getterName addMethod: getterMethod.
@@ -332,7 +359,7 @@ TypeSlot
                 if: typeSlot isReadonly not then: {
                     let: #setterMethod with: ({:(receiverType)self :(slotType)value :: Void |
                         (RawTuple::refTypeSlotAt:put:)(self, typeSlot, value)
-                    } makeFinal recompileAndOptimize).
+                    } makeFinal makeAlwaysInline recompileAndOptimize).
 
                     let: #setterName with: (typeSlot name asString -- ":") asSymbol.
                     if: type supertype isNotNil then: (if: (type supertype lookupSelector: setterName) isNotNil then: (setterMethod makeOverride)).
@@ -343,7 +370,7 @@ TypeSlot
                 ## Getter.
                 let: #getterMethod with: ({:(receiverType)self :: slotType |
                     (RawTuple::typeSlotAt:)(self, typeSlot)
-                } makePure makeFinal recompileAndOptimize).
+                } makePure makeFinal makeAlwaysInline recompileAndOptimize).
 
                 if: type supertype isNotNil then: (if: (type supertype lookupSelector: getterName) isNotNil then: (getterMethod makeOverride)).
                 type withSelector: getterName addMethod: getterMethod.
@@ -352,7 +379,7 @@ TypeSlot
                 if: typeSlot isReadonly not then: {
                     let: #setterMethod with: ({:(receiverType)self :(slotType)value :: Void |
                         (RawTuple::typeSlotAt:put:)(self, typeSlot, value)
-                    } makeFinal recompileAndOptimize).
+                    } makeFinal makeAlwaysInline recompileAndOptimize).
                     let: #setterName with: (typeSlot name asString -- ":") asSymbol.
 
                     if: type supertype isNotNil then: (if: (type supertype lookupSelector: setterName) isNotNil then: (setterMethod makeOverride)).
@@ -924,6 +951,21 @@ Function
     };
     withSelector: #isStatic addMethod: {:(Function)self :: Boolean |
         self hasFlag: FunctionFlags::Static
+    };
+    withSelector: #isMemoized addMethod: {:(Function)self :: Boolean |
+        self hasFlag: FunctionFlags::Memoized
+    };
+    withSelector: #isTemplate addMethod: {:(Function)self :: Boolean |
+        self hasFlag: FunctionFlags::Template
+    };
+    withSelector: #isInline addMethod: {:(Function)self :: Boolean |
+        self hasFlag: FunctionFlags::Inline
+    };
+    withSelector: #isAlwaysInline addMethod: {:(Function)self :: Boolean |
+        self hasFlag: FunctionFlags::AlwaysInline
+    };
+    withSelector: #isNeverInline addMethod: {:(Function)self :: Boolean |
+        self hasFlag: FunctionFlags::NeverInline
     };
 
     withSelector: #hasPragmaNamed: addMethod: {:(Function)self :selector :: Boolean |
