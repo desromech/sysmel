@@ -43,7 +43,7 @@ public final class AsmARMRegister superclass: AsmRegister; definition: {
     }.
 
     public override method size => Size := 4sz.
-    public override method value32 => UInt32 := value asUInt32.
+    public method value32 => UInt32 := value asUInt32.
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream string: name
@@ -211,7 +211,6 @@ public class AsmARMDataProcessingInstruction superclass: AsmARMInstruction; defi
 
 public final class AsmARMDataProcessingImmediateShiftInstruction superclass: AsmARMDataProcessingInstruction; definition: {
     public field immediate => UInt8.
-    public field shift => UInt8.
 
     public method setForNop => Void := {
         mnemonic := #nop.

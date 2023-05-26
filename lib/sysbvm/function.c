@@ -499,6 +499,16 @@ static sysbvm_tuple_t sysbvm_function_primitive_hasVirtualDispatch(sysbvm_contex
     return sysbvm_tuple_boolean_encode((flags & SYSBVM_FUNCTION_FLAGS_VIRTUAL_DISPATCH_FLAGS) != 0);
 }
 
+static sysbvm_tuple_t sysbvm_function_primitive_hasOverrideDispatch(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
+
+    sysbvm_tuple_t *function = &arguments[0];
+    size_t flags = sysbvm_function_getFlags(context, *function);
+    return sysbvm_tuple_boolean_encode((flags & SYSBVM_FUNCTION_FLAGS_OVERRIDE) != 0);
+}
+
 static sysbvm_tuple_t sysbvm_function_primitive_adoptDefinitionOf(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)closure;
@@ -561,6 +571,7 @@ void sysbvm_function_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_function_primitive_adoptDefinitionOf, "Function::adoptDefinitionOf");
     sysbvm_primitiveTable_registerFunction(sysbvm_function_primitive_isCorePrimitive, "Function::isCorePrimitive");
     sysbvm_primitiveTable_registerFunction(sysbvm_function_primitive_hasVirtualDispatch, "Function::hasVirtualDispatch");
+    sysbvm_primitiveTable_registerFunction(sysbvm_function_primitive_hasOverrideDispatch, "Function::hasOverrideDispatch");
     sysbvm_primitiveTable_registerFunction(sysbvm_function_primitive_recompileAndOptimize, "Function::recompileAndOptimize");
     sysbvm_primitiveTable_registerFunction(sysbvm_function_primitive_recordBindingWithOwnerAndName, "Function::recordBindingWithOwnerAndName");
 }
@@ -571,6 +582,7 @@ void sysbvm_function_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::adoptDefinitionOf:", context->roots.functionType, "adoptDefinitionOf:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_function_primitive_adoptDefinitionOf);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::isCorePrimitive", context->roots.functionType, "isCorePrimitive", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_function_primitive_isCorePrimitive);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::hasVirtualDispatch", context->roots.functionType, "hasVirtualDispatch", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_function_primitive_hasVirtualDispatch);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::hasOverrideDispatch", context->roots.functionType, "hasVirtualDispatch", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_function_primitive_hasOverrideDispatch);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::recompileAndOptimize", context->roots.functionType, "recompileAndOptimize", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_function_primitive_recompileAndOptimize);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::recordBindingWithOwnerAndName", context->roots.functionType, "recordBindingWithOwner:andName:", 3, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_function_primitive_recordBindingWithOwnerAndName);
 

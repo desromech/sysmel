@@ -20,35 +20,38 @@ SSAValue definition: {
     public field sourceEnvironment => Environment.
     private field users => WeakOrderedCollection.
 
-    public method isConstant => Boolean := false.
-    public method isLiteralConstant => Boolean := false.
-    public method isUndefinedConstant => Boolean := false.
+    public virtual method isConstant => Boolean := false.
+    public virtual method isLiteralConstant => Boolean := false.
+    public virtual method isUndefinedConstant => Boolean := false.
 
-    public method isCaptureless => Boolean := false.
+    public virtual method isCaptureless => Boolean := false.
 
-    public method isFunction => Boolean := false.
-    public method isFunctionLocalValue => Boolean := false.
-    public method isBasicBlock => Boolean := false.
+    public virtual method isFunction => Boolean := false.
+    public virtual method isFunctionLocalValue => Boolean := false.
+    public virtual method isBasicBlock => Boolean := false.
     
-    public method isInstruction => Boolean := false.
-    public method isAllocaInstruction => Boolean := false.
-    public method isDownCastInstruction => Boolean := false.
-    public method isPhiInstruction => Boolean := false.
-    public method isLoadInstruction => Boolean := false.
-    public method isLoadOrStoreInstruction => Boolean := false.
-    public method isMakeClosureInstruction => Boolean := false.
-    public method isStoreInstruction => Boolean := false.
-    public method isTerminatorInstruction => Boolean := false.
+    public virtual method isInstruction => Boolean := false.
+    public virtual method isAllocaInstruction => Boolean := false.
+    public virtual method isDownCastInstruction => Boolean := false.
+    public virtual method isPhiInstruction => Boolean := false.
+    public virtual method isPointerElementAtInstruction => Boolean := false.
+    public virtual method isLoadInstruction => Boolean := false.
+    public virtual method isLoadOrStoreInstruction => Boolean := false.
+    public virtual method isMakeClosureInstruction => Boolean := false.
+    public virtual method isStoreInstruction => Boolean := false.
+    public virtual method isTypeSlotAtInstruction => Boolean := false.
+    public virtual method isTerminatorInstruction => Boolean := false.
+    public virtual method isUnreachableInstruction => Boolean := false.
 
-    public method primitiveName => Symbol := nil.
+    public virtual method primitiveName => Symbol := nil.
 
-    public method usedValuesDo: aBlock ::=> Void := {}.
+    public virtual method usedValuesDo: aBlock ::=> Void := {}.
 
     public method usersDo: aBlock ::=> Void := {
         users ifNotNil: {:users | users do: aBlock }
     }.
 
-    public method replaceWith: (replacement: SSAValue) ::=> Void := {
+    public virtual method replaceWith: (replacement: SSAValue) ::=> Void := {
         users do: {:(SSAValue)user :: Void |
             user replaceUsedValue: self with: replacement.
             replacement registerUser: user
@@ -59,8 +62,8 @@ SSAValue definition: {
         }.
     }.
 
-    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {}.
-    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {}.
+    public virtual method replaceUsedValue: replacedValue with: replacement ::=> Void := {}.
+    public virtual method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {}.
 
     public method registerInUsedValues => Void := {
         self usedValuesDo: {:(SSAValue)each :: Void | each registerUser: self }
@@ -133,8 +136,6 @@ SSAFunction definition: {
 
     public override method isCaptureless => Boolean := captures isEmpty.
 
-    public override method asSSAFunctionDefinitionOrNil => SSAFunctionDefinition := definition.
-
     public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: '@'.
         name ifNil: {
@@ -162,7 +163,6 @@ SSAFunction definition: {
 
 SSAFunctionDefinition definition: {
     public field sourceObject => FunctionDefinition.
-    public field name => Symbol.
     public field arguments => Array.
     public field captures => Array.
     public field functionType => FunctionType.
@@ -179,7 +179,11 @@ SSAFunctionDefinition definition: {
     }.
 
     SSAValue extend: {
-        public method asSSAFunctionDefinitionOrNil => SSAFunctionDefinition := nil
+        public virtual method asSSAFunctionDefinitionOrNil => SSAFunctionDefinition := nil
+    }.
+
+    SSAFunction extend: {
+        public override method asSSAFunctionDefinitionOrNil => SSAFunctionDefinition := definition.
     }.
 
     public override method asSSAFunctionDefinitionOrNil => SSAFunctionDefinition := self.
@@ -730,7 +734,7 @@ SSAInstruction definition: {
         parent ifNotNil: {parent removeInstruction: self }
     }.
 
-    public override method replaceDestination: (oldDestination: SSABasicBlock) with: (newDestination: SSABasicBlock) ::=> Void
+    public virtual method replaceDestination: (oldDestination: SSABasicBlock) with: (newDestination: SSABasicBlock) ::=> Void
         := self error: "Not a branch instruction.".
 
     public virtual method successors => Array
@@ -742,7 +746,7 @@ public final class SSAAllocaInstruction superclass: SSAInstruction; definition: 
 
     public override method isAllocaInstruction => Boolean := true.
 
-    public override method isLocalOnlyAlloca => Boolean
+    public method isLocalOnlyAlloca => Boolean
         := users isNil || (users allSatisfy: {:(SSAValue)each :: Boolean | each isLoadOrStoreInstruction }).
 
     public override method fullPrintOn: (stream: Stream) ::=> Void
@@ -1139,7 +1143,7 @@ SSAPhiInstruction definition: {
         }
     }.
 
-    public override method replaceIncomingBlock: (oldIncomingBlock: SSABasicBlock) with: (newIncomingBlock: SSABasicBlock) ::=> Void := {
+    public method replaceIncomingBlock: (oldIncomingBlock: SSABasicBlock) with: (newIncomingBlock: SSABasicBlock) ::=> Void := {
         self incomingBlocksAndValues do: {:(Association)association :: Void |
             if: association key = oldIncomingBlock then: (association key: newIncomingBlock).
         }

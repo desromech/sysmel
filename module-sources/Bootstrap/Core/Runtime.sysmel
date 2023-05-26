@@ -145,7 +145,7 @@ TypeSlot
 
 AnyValue
     withSelector: #basicInitialize addMethod: {:(AnyValue)self :: Void | self __type__ basicInitializeInstance: self } withEagerAnalysis;
-    withSelector: #initialize addMethod: {:(AnyValue)self :: Void | } withEagerAnalysis;
+    withSelector: #initialize addMethod: {:(AnyValue)self :: Void | } makeVirtual withEagerAnalysis;
     withSelector: #yourself addMethod: {:(AnyValue)self :: self __type__ |
         <primitive: #yourself>
         self
@@ -225,13 +225,13 @@ Type
         self basicAllocate
     } withEagerAnalysis;
     withSelector: #basicInitializeInstance: addMethod: {:(TypeSlot)self :(AnyValue)instance :: Void |
-    } withEagerAnalysis;
+    } makeVirtual withEagerAnalysis;
     withSelector: #new addMethod: {:(Type)self :: self |
         self basicNew initialize; yourself
     } withEagerAnalysis;
     withSelector: #asReceiverType addMethod: {:(Type)self :: Type |
         self
-    } withEagerAnalysis;
+    } makeVirtual withEagerAnalysis;
     withSelector: #>> addMethod: {:(Type)self :(Symbol)selector |
         let: #methodDictionary with: self methodDictionary.
         if: methodDictionary ~~ nil
@@ -248,7 +248,24 @@ Type
                 then: (supertype lookupSelector: selector)
                 else: (nil)
         }
-    } withEagerAnalysis.
+    } withEagerAnalysis;
+    withSelector: #lookupLocalVirtualSelector: addMethod: {:(Type)self :(Symbol)selector |
+        let: #methodDictionary with: self virtualMethodDictionary.
+        if: methodDictionary ~~ nil
+            then: (methodDictionary atOrNil: selector)
+            else: nil
+    } makeFinal;
+    withSelector: #lookupVirtualSelector: addMethod: {:(Type)self :(Symbol)selector |
+        let: #method with: (self lookupLocalVirtualSelector: selector).
+        if: method ~~ nil
+        then: method
+        else: {
+            let: #supertype with: self supertype.
+            if: supertype ~~ nil
+                then: (supertype lookupVirtualSelector: selector)
+                else: (nil)
+        }
+    } makeFinal.
 
 ASTDownCastNode __type__
     withSelector: #makeForASTNode:targetType: addMethod: {:(ASTDownCastNode __type__)self :(ASTNode)astNode :(Type)targetType :: self |
@@ -298,40 +315,40 @@ TypeSlot
                 ## Getter.
                 let: #getterMethod with: ({:(receiverType)self :: slotType |
                     (RawTuple::refTypeSlotAt:)(self, typeSlot)
-                } makePure makeFinal).
+                } makePure makeFinal recompileAndOptimize).
 
-                if: type supertype isNotNil then: (if: (type lookupSelector: getterName) isNotNil then: (getterMethod makeOverride)).
-                type withSelector: getterName addMethod: getterMethod recompileAndOptimize.
+                if: type supertype isNotNil then: (if: (type supertype lookupSelector: getterName) isNotNil then: (getterMethod makeOverride)).
+                type withSelector: getterName addMethod: getterMethod.
 
                 ## Setter
                 if: typeSlot isReadonly not then: {
                     let: #setterMethod with: ({:(receiverType)self :(slotType)value :: Void |
                         (RawTuple::refTypeSlotAt:put:)(self, typeSlot, value)
-                    } makeFinal).
+                    } makeFinal recompileAndOptimize).
 
                     let: #setterName with: (typeSlot name asString -- ":") asSymbol.
-                    if: type supertype isNotNil then: (if: (type lookupSelector: setterName) isNotNil then: (setterMethod makeOverride)).
+                    if: type supertype isNotNil then: (if: (type supertype lookupSelector: setterName) isNotNil then: (setterMethod makeOverride)).
 
-                    type withSelector: setterName addMethod: setterMethod recompileAndOptimize.
+                    type withSelector: setterName addMethod: setterMethod.
                 }
             } else: {
                 ## Getter.
                 let: #getterMethod with: ({:(receiverType)self :: slotType |
                     (RawTuple::typeSlotAt:)(self, typeSlot)
-                } makePure makeFinal).
+                } makePure makeFinal recompileAndOptimize).
 
-                if: type supertype isNotNil then: (if: (type lookupSelector: getterName) isNotNil then: (getterMethod makeOverride)).
-                type withSelector: getterName addMethod: getterMethod recompileAndOptimize.
+                if: type supertype isNotNil then: (if: (type supertype lookupSelector: getterName) isNotNil then: (getterMethod makeOverride)).
+                type withSelector: getterName addMethod: getterMethod.
 
                 ## Setter
                 if: typeSlot isReadonly not then: {
                     let: #setterMethod with: ({:(receiverType)self :(slotType)value :: Void |
                         (RawTuple::typeSlotAt:put:)(self, typeSlot, value)
-                    } makeFinal).
+                    } makeFinal recompileAndOptimize).
                     let: #setterName with: (typeSlot name asString -- ":") asSymbol.
 
-                    if: type supertype isNotNil then: (if: (type lookupSelector: setterName) isNotNil then: (setterMethod makeOverride)).
-                    type withSelector: setterName addMethod: setterMethod recompileAndOptimize.
+                    if: type supertype isNotNil then: (if: (type supertype lookupSelector: setterName) isNotNil then: (setterMethod makeOverride)).
+                    type withSelector: setterName addMethod: setterMethod.
                 }
             }.
         }
@@ -361,14 +378,14 @@ Type
                 error((("Cannot coerce node from type " -- self printString) -- " into type ") -- targetType printString)
             }
         }
-    } withEagerAnalysis;
+    } makeVirtual withEagerAnalysis;
     withSelector: #coerceASTNode:withEnvironment: addMethod: {:(Type)self :(ASTNode)astNode :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
         let: #sourceType with: astNode analyzedType.
         if: (if: sourceType ~~ nil then: sourceType ~= self else: false)
         then: (sourceType coerceASTNode: astNode into: self withEnvironment: environment)
         else: astNode
-    } withEagerAnalysis;
-    withSelector: #isReferenceType addMethod: {:(Type)self :: Boolean | false } makePure withEagerAnalysis;
+    } makeVirtual withEagerAnalysis;
+    withSelector: #isReferenceType addMethod: {:(Type)self :: Boolean | false } makeVirtual makePure withEagerAnalysis;
 
     withSelector: #addFlags: addMethod: {:(Type)self :(Bitflags)flag :: Void |
         self flags: self flags | flag
@@ -420,7 +437,7 @@ Type
         if: self isNullable
             then: nil
             else: (self error: "A proper default value must be defined for " -- self printString).
-    } withEagerAnalysis;
+    } makeVirtual withEagerAnalysis;
 
     withSelector: #validSlotDictionary addMethod: {:(Type)self :: MethodDictionary |
         if: self slotDictionary == nil then: (self slotDictionary: MethodDictionary new).
@@ -497,7 +514,7 @@ Type
         (RawTuple::type:)(result, self).
         if: self isWeak then: RawTuple::markWeak(result).
         result
-    } withEagerAnalysis;
+    } makeVirtual withEagerAnalysis;
     withSelector: #basicAllocate: addMethod: {:(Type)self :(Size)variableSize :: self |
         let: #result with: (if: self isBytes
             then: RawTuple::byteNew(variableSize)
@@ -505,19 +522,19 @@ Type
         (RawTuple::type:)(result, self).
         if: self isWeak then: RawTuple::markWeak(result).
         result
-    } withEagerAnalysis;
+    } makeVirtual withEagerAnalysis;
     withSelector: #basicNew addMethod: {:(Type)self :: self |
         self basicAllocate basicInitialize; yourself
-    } withEagerAnalysis;
+    } makeVirtual withEagerAnalysis;
     withSelector: #basicNew: addMethod: {:(Type)self :(Size)variableSlotCount :: self |
         (self basicAllocate: variableSlotCount) basicInitialize; yourself
-    } withEagerAnalysis;
+    } makeVirtual withEagerAnalysis;
     withSelector: #new addMethod: {:(Type)self :: self |
         self basicNew initialize; yourself
-    } withEagerAnalysis;
+    } makeVirtual withEagerAnalysis;
     withSelector: #new: addMethod: {:(Type)self :(Size)variableSlotCount :: self |
         (self basicNew: variableSlotCount) initialize; yourself
-    } withEagerAnalysis;
+    } makeVirtual withEagerAnalysis;
     withSelector: #localSlotNamed: addMethod: {:(Type)self :(Symbol)name |
         let: #slotDictionary with: self slotDictionary.
         if: slotDictionary ~~ nil
@@ -955,7 +972,7 @@ Collection
             aBlock(element, i).
             i := 1sz + i
         }
-    };
+    } makeVirtual;
 
     withSelector: #select: addMethod: {:(Collection)self :aBlock :: Collection |
         let: #result with: OrderedCollection new.
@@ -1454,7 +1471,7 @@ SequenceableCollection
 OrderedCollection
     withSelector: #arrayType addClassMethod: {:(OrderedCollection class)self :: Array class |
         Array
-    };
+    } makeVirtual;
     withSelector: #new: addClassMethod: {:(OrderedCollection class)self :(Size)initialSize :: self |
         self basicNew initializeWithSize: initialSize; yourself
     } makeOverride makeFinal;
@@ -1538,7 +1555,7 @@ Array
             offset: 0sz;
             size: self size;
             yourself
-    } makeOverride.
+    }.
 
 ByteArray
     withSelector: #new: addClassMethod: {:(ByteArray class)self :(Size)initialSize :: self |
@@ -1750,36 +1767,36 @@ MethodDictionary
 
 ## Byte encoding
 Type
-    withSelector: #canEncodeValueInBytes addMethod: {:(Type)self :: Boolean | false };
+    withSelector: #canEncodeValueInBytes addMethod: {:(Type)self :: Boolean | false } makeVirtual;
     withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Type)self :value :(ByteArray)bytes :(Size)offset :: Void |
         self subclassResponsibility
-    };
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Type)self :: Boolean | false };
+    } makeAbstract;
+    withSelector: #canDecodeValueFromBytes addMethod: {:(Type)self :: Boolean | false } makeVirtual;
     withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Type)self :(ByteArray)bytes :(Size)offset :: self |
         self subclassResponsibility
-    };
+    } makeAbstract;
     
     withSelector: #encodeValueAsByteArray: addMethod: {:(Type)self :value :: ByteArray |
         let result := ByteArray new: self alignedValueSize.
         self encodeValue: value inBytes: result atOffset: 0sz.
         result
-    };
+    } makeVirtual;
     withSelector: #decodeValueFromByteArray: addMethod: {:(Type)self :(ByteArray)bytes :: self |
         self decodeValueFromBytes: bytes atOffset: 0sz
-    }.
+    } makeVirtual.
 
 AnyValue
-    withSelector: #sizeOfByteEncoding addMethod: {:self :: Size | self __type__ alignedValueSize };
-    withSelector: #canEncodeInBytes addMethod: {:self :: Boolean | self __type__ canEncodeValueInBytes };
-    withSelector: #offsetOfEncodedElementInByteStream: addMethod: {:self :(Size)offset :: Void | };
+    withSelector: #sizeOfByteEncoding addMethod: {:self :: Size | self __type__ alignedValueSize } makeVirtual;
+    withSelector: #canEncodeInBytes addMethod: {:self :: Boolean | self __type__ canEncodeValueInBytes } makeVirtual;
+    withSelector: #offsetOfEncodedElementInByteStream: addMethod: {:self :(Size)offset :: Void | } makeVirtual;
     withSelector: #encodeInBytes:atOffset: addMethod: {:self :(ByteArray)bytes :(Size)offset :: Void |
         self __type__ encodeValue: self inBytes: bytes atOffset: offset
-    };
+    } makeVirtual;
     withSelector: #encodedInByteArray addMethod: {:self :: ByteArray |
         let result := ByteArray new: self sizeOfByteEncoding.
         self encodeInBytes: result atOffset: 0sz.
         result
-    }.
+    } makeVirtual.
 
 ## Primitive numbers meta methods.
 Char8 class
@@ -1793,8 +1810,8 @@ Char8 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(Char8 class)self :: Char8 | 0c8 } makeOverride;
-    withSelector: #zero addMethod: {:(Char8 class)self :: Char8 | 0c8 } makeOverride;
-    withSelector: #one addMethod: {:(Char8 class)self :: Char8 | 1c8 } makeOverride.
+    withSelector: #zero addMethod: {:(Char8 class)self :: Char8 | 0c8 };
+    withSelector: #one addMethod: {:(Char8 class)self :: Char8 | 1c8 }.
 
 UInt8 class
     withSelector: #canEncodeValueInBytes addMethod: {:(UInt8 class)self :: Boolean | true } makeOverride;
@@ -1807,8 +1824,8 @@ UInt8 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(UInt8 class)self :: UInt8 | 0u8 } makeOverride;
-    withSelector: #zero addMethod: {:(UInt8 class)self :: UInt8 | 0u8 } makeOverride;
-    withSelector: #one addMethod: {:(UInt8 class)self :: UInt8 | 1u8 } makeOverride.
+    withSelector: #zero addMethod: {:(UInt8 class)self :: UInt8 | 0u8 };
+    withSelector: #one addMethod: {:(UInt8 class)self :: UInt8 | 1u8 }.
 
 Int8 class
     withSelector: #canEncodeValueInBytes addMethod: {:(Int8 class)self :: Boolean | true } makeOverride;
@@ -1821,8 +1838,8 @@ Int8 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(Int8 class)self :: Int8 | 0i8 } makeOverride;
-    withSelector: #zero addMethod: {:(Int8 class)self :: Int8 | 0i8 } makeOverride;
-    withSelector: #one addMethod: {:(Int8 class)self :: Int8 | 1i8 } makeOverride.
+    withSelector: #zero addMethod: {:(Int8 class)self :: Int8 | 0i8 };
+    withSelector: #one addMethod: {:(Int8 class)self :: Int8 | 1i8 }.
 
 Char16 class
     withSelector: #canEncodeValueInBytes addMethod: {:(Char16 class)self :: Boolean | true } makeOverride;
@@ -1835,8 +1852,8 @@ Char16 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(Char16 class)self :: Char16 | 0c16 } makeOverride;
-    withSelector: #zero addMethod: {:(Char16 class)self :: Char16 | 0c16 } makeOverride;
-    withSelector: #one addMethod: {:(Char16 class)self :: Char16 | 1c16 } makeOverride.
+    withSelector: #zero addMethod: {:(Char16 class)self :: Char16 | 0c16 };
+    withSelector: #one addMethod: {:(Char16 class)self :: Char16 | 1c16 }.
 
 UInt16 class
     withSelector: #canEncodeValueInBytes addMethod: {:(UInt16 class)self :: Boolean | true } makeOverride;
@@ -1849,8 +1866,8 @@ UInt16 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(UInt16 class)self :: UInt16 | 0u16 } makeOverride;
-    withSelector: #zero addMethod: {:(UInt16 class)self :: UInt16 | 0u16 } makeOverride;
-    withSelector: #one addMethod: {:(UInt16 class)self :: UInt16 | 1u16 } makeOverride.
+    withSelector: #zero addMethod: {:(UInt16 class)self :: UInt16 | 0u16 };
+    withSelector: #one addMethod: {:(UInt16 class)self :: UInt16 | 1u16 }.
 
 Int16 class
     withSelector: #canEncodeValueInBytes addMethod: {:(Int16 class)self :: Boolean | true } makeOverride;
@@ -1863,8 +1880,8 @@ Int16 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(Int16 class)self :: Int16 | 0i16 } makeOverride;
-    withSelector: #zero addMethod: {:(Int16 class)self :: Int16 | 0i16 } makeOverride;
-    withSelector: #one addMethod: {:(Int16 class)self :: Int16 | 1i16 } makeOverride.
+    withSelector: #zero addMethod: {:(Int16 class)self :: Int16 | 0i16 };
+    withSelector: #one addMethod: {:(Int16 class)self :: Int16 | 1i16 }.
 
 Char32 class
     withSelector: #canEncodeValueInBytes addMethod: {:(Char32 class)self :: Boolean | true } makeOverride;
@@ -1877,8 +1894,8 @@ Char32 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(Char32 class)self :: Char32 | 0c32 } makeOverride;
-    withSelector: #zero addMethod: {:(Char32 class)self :: Char32 | 0c32 } makeOverride;
-    withSelector: #one addMethod: {:(Char32 class)self :: Char32 | 1c32 } makeOverride.
+    withSelector: #zero addMethod: {:(Char32 class)self :: Char32 | 0c32 };
+    withSelector: #one addMethod: {:(Char32 class)self :: Char32 | 1c32 }.
 
 UInt32 class
     withSelector: #canEncodeValueInBytes addMethod: {:(UInt32 class)self :: Boolean | true } makeOverride;
@@ -1891,8 +1908,8 @@ UInt32 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(UInt32 class)self :: UInt32 | 0u32 } makeOverride;
-    withSelector: #zero addMethod: {:(UInt32 class)self :: UInt32 | 0u32 } makeOverride;
-    withSelector: #one addMethod: {:(UInt32 class)self :: UInt32 | 1u32 } makeOverride.
+    withSelector: #zero addMethod: {:(UInt32 class)self :: UInt32 | 0u32 };
+    withSelector: #one addMethod: {:(UInt32 class)self :: UInt32 | 1u32 }.
 
 Int32 class
     withSelector: #canEncodeValueInBytes addMethod: {:(Int32 class)self :: Boolean | true } makeOverride;
@@ -1905,8 +1922,8 @@ Int32 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(Int32 class)self :: Int32 | 0i32 } makeOverride;
-    withSelector: #zero addMethod: {:(Int32 class)self :: Int32 | 0i32 } makeOverride;
-    withSelector: #one addMethod: {:(Int32 class)self :: Int32 | 1i32 } makeOverride.
+    withSelector: #zero addMethod: {:(Int32 class)self :: Int32 | 0i32 };
+    withSelector: #one addMethod: {:(Int32 class)self :: Int32 | 1i32 }.
 
 Int64 class
     withSelector: #canEncodeValueInBytes addMethod: {:(Int64 class)self :: Boolean | true } makeOverride;
@@ -1919,8 +1936,8 @@ Int64 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(Int64 class)self :: Int64 | 0i64 } makeOverride;
-    withSelector: #zero addMethod: {:(Int64 class)self :: Int64 | 0i64 } makeOverride;
-    withSelector: #one addMethod: {:(Int64 class)self :: Int64 | 1i64 } makeOverride.
+    withSelector: #zero addMethod: {:(Int64 class)self :: Int64 | 0i64 };
+    withSelector: #one addMethod: {:(Int64 class)self :: Int64 | 1i64 }.
 
 UInt64 class
     withSelector: #canEncodeValueInBytes addMethod: {:(UInt64 class)self :: Boolean | true } makeOverride;
@@ -1933,8 +1950,8 @@ UInt64 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(UInt64 class)self :: UInt64 | 0u64 } makeOverride;
-    withSelector: #zero addMethod: {:(UInt64 class)self :: UInt64 | 0u64 } makeOverride;
-    withSelector: #one addMethod: {:(UInt64 class)self :: UInt64 | 1u64 } makeOverride.
+    withSelector: #zero addMethod: {:(UInt64 class)self :: UInt64 | 0u64 };
+    withSelector: #one addMethod: {:(UInt64 class)self :: UInt64 | 1u64 }.
 
 Float32 class
     withSelector: #canEncodeValueInBytes addMethod: {:(Float32 class)self :: Boolean | true } makeOverride;
@@ -1947,8 +1964,8 @@ Float32 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(Float32 class)self :: Float32 | 0.0f32 } makeOverride;
-    withSelector: #zero addMethod: {:(Float32 class)self :: Float32 | 0.0f32 } makeOverride;
-    withSelector: #one addMethod: {:(Float32 class)self :: Float32 | 1.0f32 } makeOverride.
+    withSelector: #zero addMethod: {:(Float32 class)self :: Float32 | 0.0f32 };
+    withSelector: #one addMethod: {:(Float32 class)self :: Float32 | 1.0f32 }.
 
 Float64 class
     withSelector: #canEncodeValueInBytes addMethod: {:(Float64 class)self :: Boolean | true } makeOverride;
@@ -1961,8 +1978,8 @@ Float64 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(Float64 class)self :: Float64 | 0.0 } makeOverride;
-    withSelector: #zero addMethod: {:(Float64 class)self :: Float64 | 0.0 } makeOverride;
-    withSelector: #one addMethod: {:(Float64 class)self :: Float64 | 1.0 } makeOverride.
+    withSelector: #zero addMethod: {:(Float64 class)self :: Float64 | 0.0 };
+    withSelector: #one addMethod: {:(Float64 class)self :: Float64 | 1.0 }.
 
 Boolean class
     withSelector: #canEncodeValueInBytes addMethod: {:(Boolean class)self :: Boolean | true } makeOverride;
@@ -2047,7 +2064,7 @@ Type
         while: (i < slotCount) do: (
             (validSlots at: i) basicInitializeInstance: instance
         ) continueWith: (i := i + 1sz)
-    } withEagerAnalysis;
+    } makeVirtual withEagerAnalysis;
     withSelector: #validSubtypeList addMethod: {:(Type)self :: WeakOrderedCollection |
         if: self subtypes == nil then: (self subtypes: WeakOrderedCollection new).
         self subtypes
@@ -2058,7 +2075,7 @@ Type
     };
     withSelector: #registerInSuperMetatype addMethod: {:(Type)self :: Void |
         ## By default do nothing
-    };
+    } makeVirtual;
     withSelector: #registerInSupertype addMethod: {:(Type)self :: Void |
         let: #supertype with: self supertype.
         if: supertype ~~ nil then: (supertype addSubtype: self).
@@ -2211,7 +2228,7 @@ Type
             slot index: slotIndex.
             slot generateAccessorsOn: self
         }.
-    }.
+    } makeVirtual.
 
 Metatype
     withSelector: #printOn: addMethod: {:(Metatype)self :(Stream)stream :: Void |
@@ -2641,7 +2658,7 @@ Type
         }.
 
         self instanceSize: (self instanceSize alignedTo: self instanceAlignment).
-    };
+    } makeVirtual;
     withSelector: #validInstanceSize addMethod: {:(Type)self :: Size |
         if: self instanceAlignment = 0sz then: (self ensureLayoutIsComputed).
         self instanceSize
@@ -2652,15 +2669,15 @@ Type
     };
     withSelector: #valueAlignment addMethod: {:(Type)self :: Size |
         UIntPointer instanceAlignment
-    };
+    } makeVirtual;
     withSelector: #valueSize addMethod: {:(Type)self :: Size |
         UIntPointer instanceSize
-    };
+    } makeVirtual;
     withSelector: #alignedValueSize addMethod: {:(Type)self :: Size |
         self valueSize alignedTo: self valueAlignment
     };
-    withSelector: #isGarbageCollectedPointerType addMethod: {:(Type)self :: Boolean | true };
-    withSelector: #isValueType addMethod: {:(Type)self :: Boolean | false }.
+    withSelector: #isGarbageCollectedPointerType addMethod: {:(Type)self :: Boolean | true } makeVirtual;
+    withSelector: #isValueType addMethod: {:(Type)self :: Boolean | false } makeVirtual.
 
 Type
     validInstanceAlignment;
@@ -2670,13 +2687,13 @@ Type
             self, self validInstanceSize, self validInstanceAlignment, self validTotalSlotCount, 0sz,
             self isBytes, self isWeak
         )
-    } withEagerAnalysis;
+    } makeVirtual withEagerAnalysis;
     withSelector: #basicAllocate: addMethod: {:(Type)self :(Size)variableSize :: self |
         (RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:)(
             self, self validInstanceSize, self validInstanceAlignment, self validTotalSlotCount, variableSize,
             self isBytes, self isWeak
         )
-    } withEagerAnalysis.
+    } makeVirtual withEagerAnalysis.
 
 PointerLikeType
     withSelector: #computeLayout addMethod: {:(Type)self :: Void |

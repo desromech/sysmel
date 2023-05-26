@@ -1,18 +1,18 @@
 ASTNode
-    withSelector: #analyzeWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment | self subclassResponsibility } makeVirtual;
-    withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment | self subclassResponsibility };
-    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment | self subclassResponsibility };
+    withSelector: #analyzeWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment | self subclassResponsibility } makeAbstract;
+    withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment | self subclassResponsibility } makeAbstract;
+    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment | self subclassResponsibility } makeAbstract;
 
-    withSelector: #childrenDo: addMethod: {:(ASTNode)self :aBlock :: Void | self subclassResponsibility };
+    withSelector: #childrenDo: addMethod: {:(ASTNode)self :aBlock :: Void | self subclassResponsibility } makeAbstract;
 
-    withSelector: #transformWith: addMethod: {:(ASTNode)self :aBlock :: Void | self subclassResponsibility };
+    withSelector: #transformWith: addMethod: {:(ASTNode)self :aBlock :: Void | self subclassResponsibility } makeAbstract;
     withSelector: #transformedWith: addMethod: {:(ASTNode)self :aBlock :: self class | self copy transformWith: aBlock; yourself };
     
-    withSelector: #hasPragmaNamed: addMethod: {:(ASTNode)self :selector :: Boolean | false };
-    withSelector: #hasLiteralValueEqualTo: addMethod: {:(ASTNode)self :expectedValue :: Boolean | false };
+    withSelector: #hasPragmaNamed: addMethod: {:(ASTNode)self :selector :: Boolean | false } makeVirtual;
+    withSelector: #hasLiteralValueEqualTo: addMethod: {:(ASTNode)self :expectedValue :: Boolean | false } makeVirtual;
 
-    withSelector: #isLiteralNode addMethod: {:(ASTNode)self :: Boolean | false };
-    withSelector: #literalFunctionPrimitiveName addMethod: {:(ASTNode)self :: Symbol | nil }.
+    withSelector: #isLiteralNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
+    withSelector: #literalFunctionPrimitiveName addMethod: {:(ASTNode)self :: Symbol | nil } makeVirtual.
 
 ASTArgumentNode
     withSelector: #childrenDo: addMethod: {:(ASTArgumentNode)self :aBlock :: Void |
@@ -190,7 +190,7 @@ ASTIdentifierReferenceNode
             sourcePosition: self sourcePosition;
             value: self value;
             yourself
-    } makeOverride;
+    };
     withSelector: #fullPrintOn: addMethod: {:(ASTIdentifierReferenceNode)self :(Stream)stream :: Void |
         stream print: self class; 
             nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
@@ -285,7 +285,7 @@ ASTMessageChainMessageNode
             selector: self selector;
             arguments: self arguments;
             yourself
-    } makeOverride;
+    };
     withSelector: #childrenDo: addMethod: {:(ASTMessageChainMessageNode)self :aBlock :: Void |
         if: (self selector isNotNil) then: aBlock(self selector).
         self arguments do: aBlock
@@ -465,7 +465,7 @@ ASTSpliceNode
 
     withSelector: #invalidLocationError addMethod: {:(ASTSpliceNode)self |
         self error: "Invalid location for a splice expression."
-    } makeOverride.
+    }.
 
 ASTWhileContinueWithNode
     withSelector: #childrenDo: addMethod: {:(ASTWhileContinueWithNode)self :aBlock :: Void |

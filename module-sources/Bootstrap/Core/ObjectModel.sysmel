@@ -134,7 +134,7 @@ public abstract class ObjectModelVariant superclass: Object; definition: {
     public abstract method computeSizeOfObjectInstance: (object: Untyped) ::=> UInt64
         := self subclassResponsibility.
 
-    public override method computeAlignmentOfObjectInstance: (object: Untyped) ::=> UInt64
+    public virtual method computeAlignmentOfObjectInstance: (object: Untyped) ::=> UInt64
         := RawTuple::type(object)
             ifNil: {self minimalObjectAlignment}
             ifNotNil: {:(Type)type :: UInt64 | type validInstanceAlignment asUInt64}.

@@ -13,7 +13,7 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
             := self forTarget: SSACompilationTarget default.
     }.
 
-    public override method initializeWithTarget: (theCompilationTarget: SSACompilationTarget) ::=> Void := {
+    public method initializeWithTarget: (theCompilationTarget: SSACompilationTarget) ::=> Void := {
         compilationTarget := theCompilationTarget.
         ssaModule := SSAModule new.
         translatedValueDictionary := IdentityDictionary new.
@@ -362,7 +362,7 @@ ASTLocalDefinitionNode extend: {
 }.
 
 SymbolAnalysisBinding extend: {
-    public override method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+    public method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
         := context getValueForLocalBinding: self.
 }.
 

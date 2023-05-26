@@ -99,8 +99,18 @@
             (if:then:else: (== existingMethod nil)
                 (Type::checkNoOverridenSelector (Type::supertype type) selector)
                 (error (String::concat: "Overriding non-virtual method with selector " (printString selector)))
-                )))
-)
+                ))))
+
+## Type::checkNoOverridenSelector
+(define (Type::checkVirtualDispatchSelectorExistence type selector)
+    (if:then:else: (~~ nil type)
+        (begin
+            (define existingMethod (Type::lookupLocalSelector type selector))
+            (if:then:else: (== existingMethod nil)
+                (Type::checkVirtualDispatchSelectorExistence (Type::supertype type) selector)
+                (if:then: (Boolean::not (Function::hasVirtualDispatch existingMethod))
+                    (error (String::concat: "Overriding method declaration does not have virtual dispatch supertype with selector " (printString selector))))))
+        (error (String::concat: "Overriding method does not have declaration in supertype with selector " (printString selector)))))
 
 ## Type::withSelector:addMethod:
 (define (Type::withSelector:addMethod: type selector method)
@@ -113,7 +123,11 @@
         (MethodDictionary::at:put: methodDict selector method))
     (Type::flushLookupSelector: type selector)
     (if:then:else: hasVirtualDispatch
-        (MethodDictionary::at:put: (Type::validVirtualMethodDictionary type) selector method)
+        (begin
+            (if:then: (Function::hasOverrideDispatch method)
+                (Type::checkVirtualDispatchSelectorExistence (Type::supertype type) selector))
+            (MethodDictionary::at:put: (Type::validVirtualMethodDictionary type) selector method)
+        )
         (Type::checkNoOverridenSelector (Type::supertype type) selector))
 
     (ProgramEntity::recordBindingWithOwnerAndName method type selector))

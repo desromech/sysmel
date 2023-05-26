@@ -171,7 +171,7 @@ ASTLocalDefinitionNode extend: {
 }.
 
 SymbolAnalysisBinding extend: {
-    public override method compileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand
+    public method compileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand
         := compiler getValueForLocalBinding: self.
 }.
 

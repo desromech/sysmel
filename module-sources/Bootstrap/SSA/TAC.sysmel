@@ -17,7 +17,7 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
     private field uncheckedFunctionEntryPointTrampoline => TACValue.
     private field checkedFunctionEntryPointTrampoline => TACValue.
 
-    public override method initializeWithTarget: (theCompilationTarget: TACCompilationTarget) ::=> Void := {
+    public method initializeWithTarget: (theCompilationTarget: TACCompilationTarget) ::=> Void := {
         compilationTarget := theCompilationTarget.
         targetModule := TACModule new
             compilationTarget: compilationTarget;

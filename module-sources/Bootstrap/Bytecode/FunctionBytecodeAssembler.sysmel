@@ -1,4 +1,4 @@
-public class FunctionBytecodeAssemblerAbstractOperand superclass: Object; definition.
+public class FunctionBytecodeAssemblerAbstractOperand superclass: Object.
 public class FunctionBytecodeAssemblerAbstractInstruction superclass: FunctionBytecodeAssemblerAbstractOperand.
 public final class FunctionBytecodeAssembler superclass: Object.
 
@@ -58,24 +58,24 @@ FunctionBytecodeAssemblerAbstractInstruction definition: {
         self pc: 0sz
     }.
 
-    public method endPC => Size
+    public virtual method endPC => Size
         := self pc.
 
     public override method encodedValueForInstruction: (instruction: FunctionBytecodeAssemblerAbstractInstruction) ::=> Int16
         := (self pc - instruction endPC) asInt16.
 
-    public method assembledSize => Size := 0sz.
+    public virtual method assembledSize => Size := 0sz.
 
-    public method assembleIn: (instructionStream: ByteArray) ::=> Void := {}.
+    public virtual method assembleIn: (instructionStream: ByteArray) ::=> Void := {}.
 
-    public method isBranchInstruction => Boolean
+    public virtual method isBranchInstruction => Boolean
         := false.
 
-    public method destinationInstruction => FunctionBytecodeAssemblerAbstractInstruction
+    public virtual method destinationInstruction => FunctionBytecodeAssemblerAbstractInstruction
         := nil.
 
-    public method markOperandUsages => Void := {}.
-    public method optimizeLocalOnlyAllocasWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {}.
+    public virtual method markOperandUsages => Void := {}.
+    public virtual method optimizeLocalOnlyAllocasWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {}.
 }.
 
 public final class FunctionBytecodeAssemblerLabel superclass: FunctionBytecodeAssemblerAbstractInstruction; definition: {

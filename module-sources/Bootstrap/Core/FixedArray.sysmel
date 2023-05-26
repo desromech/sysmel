@@ -2,7 +2,7 @@ public class FixedArrayType superclass: ValueType; definition: {
     public field elementType => Type.
     public field size => Size.
 
-    public override method initializeWithElementType: (initialElementType: Type) size: (initialSize: Size) ::=> Void := {
+    public method initializeWithElementType: (initialElementType: Type) size: (initialSize: Size) ::=> Void := {
         elementType := initialElementType.
         size := initialSize.
 

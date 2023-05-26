@@ -79,22 +79,22 @@ MetaBuilder
     };
     withSelector: #analyzeAndEvaluateMessageSendNode:withEnvironment: addMethod: {:self :(ASTMessageSendNode)messageSendNode :(Environment)environment |
         self subclassResponsibility
-    };
+    } makeAbstract;
     withSelector: #analyzeMessageSendNode:withEnvironment: addMethod: {:self :(ASTMessageSendNode)messageSendNode :(Environment)environment |
         self subclassResponsibility
-    };
+    } makeAbstract;
     withSelector: #analyzeAndEvaluateUnexpandedApplicationNode:withEnvironment: addMethod: {:self :(ASTUnexpandedApplicationNode)node :(Environment)environment |
         self subclassResponsibility
-    };
+    } makeAbstract;
     withSelector: #analyzeUnexpandedApplicationNode:withEnvironment: addMethod: {:self :(ASTMessageSendNode)messageSendNode :(Environment)environment |
         self subclassResponsibility
-    };
+    } makeAbstract;
     withSelector: #analyzeAndEvaluateConcreteMetaValueWithEnvironment: addMethod: {:self :(Environment)environment |
         self
-    };
+    } makeVirtual;
     withSelector: #analyzeConcreteMetaValue:withEnvironment: addMethod: {:self :metaBuilderLiteralNode :(Environment)environment |
         metaBuilderLiteralNode
-    }.
+    } makeVirtual.
 
 MetaBuilder publicSubclass: #MetaBuilderFactory slots: (
     TypeSlot publicNamed: #metaBuilderClass type: Class,
@@ -165,14 +165,14 @@ MacroMetaBuilder
             sourcePosition: messageSendNode sourcePosition;
             continueExpansion: messageSendNode receiver;
             expandMessageSendNode: messageSendNode
-    } makeOverride;
+    };
     withSelector: #expandUnexpandedApplicationNode:withEnvironment: addMethod: {:self :(ASTUnexpandedApplicationNode)unexpandedApplicationNode :(Environment)environment :: ASTNode |
         self
             environment: environment;
             sourcePosition: unexpandedApplicationNode sourcePosition;
             continueExpansion: unexpandedApplicationNode functionOrMacroExpression;
             expandUnexpandedApplicationNode: unexpandedApplicationNode
-    } makeOverride;
+    };
     withSelector: #analyzeAndEvaluateConcreteMetaValueWithEnvironment: addMethod: {:self :(Environment)environment |
         (self
             environment: environment;
@@ -186,10 +186,10 @@ MacroMetaBuilder
     } makeOverride;
     withSelector: #expandMessageSendNode: addMethod: {:self :(ASTMessageSendNode)messageSendNode :: ASTNode |
         self expandMessageSendNodeWithMetaBuilderMethod: messageSendNode
-    };
+    } makeVirtual;
     withSelector: #expandUnexpandedApplicationNode: addMethod: {:self :(ASTUnexpandedApplicationNode)unexpandedApplicationNode :: ASTNode |
         self finishExpansion
-    };
+    } makeVirtual;
     withSelector: #expandMessageSendNodeWithMetaBuilderMethod: addMethod: {:self :(ASTMessageSendNode)messageSendNode :: ASTNode |
         let: #metaBuilderMethod with: (
             if: messageSendNode selector isLiteralNode
@@ -211,7 +211,7 @@ MacroMetaBuilder
     };
     withSelector: #finishExpansionWithEnvironment: addMethod: {:self :(Environment)environment :: ASTNode |
         self subclassResponsibility
-    };
+    } makeAbstract;
     withSelector: #finishExpansion addMethod: {:self :: ASTNode |
         self finishExpansionWithEnvironment: self environment
     };
@@ -347,8 +347,6 @@ VariableMetaBuilder
 
 VariableMetaBuilder publicSubclass: #LetMetaBuilder slots: (
     TypeSlot publicNamed: #isMutable type: Boolean ,
-    TypeSlot publicNamed: #typeExpression type: ASTNode ,
-    TypeSlot publicNamed: #initialValue type: ASTNode ,
 ).
 
 LetMetaBuilder
@@ -546,7 +544,7 @@ FunctionMetaBuilder
             body: self expansionBody;
             resultType: self resultType;
             yourself
-    };
+    } makeVirtual;
     withSelector: #finishExpansionWithEnvironment: addMethod: {:self :(Environment)environment :: ASTNode |
         let: #name with: self name.
         let: #functionNode with: (if: self isMacro

@@ -85,9 +85,9 @@ public final class TACX86IntegerRegister superclass: TACPhysicalIntegerRegister;
     public field int16 => AsmX86Int16Register.
     public field int32 => AsmX86Int32Register.
 
-    public override method x86::int8 => AsmX86Int8Register := int8.
-    public override method x86::int16 => AsmX86Int16Register := int16.
-    public override method x86::int32 => AsmX86Int32Register := int32.
+    public method x86::int8 => AsmX86Int8Register := int8.
+    public method x86::int16 => AsmX86Int16Register := int16.
+    public method x86::int32 => AsmX86Int32Register := int32.
     
     public override method x86::int8For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand := int8.
     public override method x86::int16For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand := int16.
@@ -132,10 +132,10 @@ public final class TACX86_64IntegerRegister superclass: TACPhysicalIntegerRegist
     public field int32 => AsmX86Int32Register.
     public field int64 => AsmX86Int64Register.
 
-    public override method x86::int8 => AsmX86Int8Register := int8.
-    public override method x86::int16 => AsmX86Int16Register := int16.
-    public override method x86::int32 => AsmX86Int32Register := int32.
-    public override method x86::int64 => AsmX86Int64Register := int64.
+    public method x86::int8 => AsmX86Int8Register := int8.
+    public method x86::int16 => AsmX86Int16Register := int16.
+    public method x86::int32 => AsmX86Int32Register := int32.
+    public method x86::int64 => AsmX86Int64Register := int64.
 
     public override method x86::int8For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand := int8.
     public override method x86::int16For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand := int16.
@@ -278,17 +278,7 @@ public global TAC::X86_64::AllocableIntegerRegisters => Array := (
 ).
 
 public abstract class TACSX86StackBasedCallingConvention superclass: TACCallingConvention; definition: {
-    public override method computeRegisterConstraintsOf: (instruction: TACInstruction) with: (allocator: TACRegisterAllocator) ::=> Void := {
-        allocator
-            allocateRegister: TAC::X86_64::RAX forInstructionResult: instruction;
-            allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz.
-        1sz until: instruction operands size do: {:(Size)operandIndex :: Void |
-            allocator
-                allocateMemoryForInstruction: instruction operandAt: operandIndex
-        }.
-    }.
-
-    public override method asm::generateCall: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+    public method asm::generateCall: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection
             x86::call: (instruction firstOperandRegister x86::rel32OrInt32For: codegen)
     }.

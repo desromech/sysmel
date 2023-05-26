@@ -461,7 +461,7 @@ AsmObjectCodeStream definition: {
     public abstract method nextPut: (value: UInt8) ::=> Void
         := self subclassResponsibility.
 
-    public method nextPutAll: (bytes: ByteArray) ::=> Void := {
+    public virtual method nextPutAll: (bytes: ByteArray) ::=> Void := {
         bytes do: {:(UInt8)each :: Void | self nextPut: each}
     }.
 

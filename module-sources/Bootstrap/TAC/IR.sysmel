@@ -128,8 +128,17 @@ TACValue definition: {
     public virtual method isGlobalVariable => Boolean := false.
 
     public virtual method isConstant => Boolean := false.
+    public virtual method isConstantInt8 => Boolean := false.
+    public virtual method isConstantUInt8 => Boolean := false.
+    public virtual method isConstantInt16 => Boolean := false.
+    public virtual method isConstantUInt16 => Boolean := false.
     public virtual method isConstantInt32 => Boolean := false.
     public virtual method isConstantUInt32 => Boolean := false.
+    public virtual method isConstantInt64 => Boolean := false.
+    public virtual method isConstantUInt64 => Boolean := false.
+    public virtual method isConstantFloat => Boolean := false.
+    public virtual method isConstantFloat32 => Boolean := false.
+    public virtual method isConstantFloat64 => Boolean := false.
 
     public virtual method isImmediate32 => Boolean := false.
     public virtual method isImmediate64 => Boolean := self isImmediate32.
@@ -152,7 +161,7 @@ public abstract class TACProgramEntity superclass: TACValue; definition: {
 
     public override method isProgramEntity => Boolean := true.
 
-    public method callingConvention => TACCallingConvention
+    public virtual method callingConvention => TACCallingConvention
         := self error: "Not a function with a defined calling convention.".
 
     public override method initialize => Void := {
@@ -1321,7 +1330,6 @@ public final class TACFunctionBuilder superclass: Object; definition: {
 }.
 
 public final class TACModule superclass: TACProgramEntity; definition: {
-    public field compilationTarget => TACCompilationTarget.
     public field programEntities => OrderedCollection.
 
     public override method initialize => Void := {
