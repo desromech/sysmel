@@ -141,6 +141,7 @@ TACValue definition: {
     public virtual method isConstantFloat64 => Boolean := false.
 
     public virtual method isImmediate32 => Boolean := false.
+    public virtual method isImmediateS32 => Boolean := false.
     public virtual method isImmediate64 => Boolean := self isImmediate32.
     public virtual method isRelativeImmediate32 => Boolean := false.
 
@@ -430,6 +431,7 @@ public final class TACConstantInt32 superclass: TACConstantInteger; definition: 
     public override method isSignedExtended => Boolean := true.
     public override method isConstantInt32 => Boolean := true.
     public override method isImmediate32 => Boolean := true.
+    public override method isImmediateS32 => Boolean := true.
 
     public override method type => Type := Int32.
     public override method size => UInt64 := 4u64.
@@ -452,6 +454,7 @@ public final class TACConstantUInt32 superclass: TACConstantInteger; definition:
 
     public override method isConstantUInt32 => Boolean := true.
     public override method isImmediate32 => Boolean := true.
+    public override method isImmediateS32 => Boolean := value <= 16r7FFFFFFF u32.
 
     public override method type => Type := UInt32.
     public override method size => UInt64 := 4u64.
@@ -474,7 +477,8 @@ public final class TACConstantInt64 superclass: TACConstantInteger; definition: 
 
     public override method isSignedExtended => Boolean := true.
     public override method isConstantInt64 => Boolean := true.
-    public override method isImmediate32 => Boolean := true.
+    public override method isImmediate64 => Boolean := true.
+    public override method isImmediateS32 => Boolean := value asInt32 asInt64 = value.
 
     public override method type => Type := Int64.
     public override method alignment => UInt64 := 8u64.
@@ -496,6 +500,7 @@ public final class TACConstantUInt64 superclass: TACConstantInteger; definition:
     public field value => UInt64.
 
     public override method isConstantUInt64 => Boolean := true.
+    public override method isImmediateS32 => Boolean := value asInt32 asInt64 asUInt64 = value.
     public override method isImmediate64 => Boolean := true.
 
     public override method getConstantValue64 => Int64 := value asInt64.
@@ -1140,13 +1145,13 @@ public final class TACBlockBuilder superclass: Object; definition: {
 
     public method pointerEquals: (left: TACValue) with: (right: TACValue) into: (destination: TACValue) ::=> TACInstruction
         := self has64BitsPointers
-            ifTrue: (self int32Equals: left with: right into: destination)
-            ifFalse: (self int64Equals: left with: right into: destination).
+            ifTrue: (self int64Equals: left with: right into: destination)
+            ifFalse: (self int32Equals: left with: right into: destination).
 
     public method pointerNotEquals: (left: TACValue) with: (right: TACValue) into: (destination: TACValue) ::=> TACInstruction
         := self has64BitsPointers
-            ifTrue: (self int32NotEquals: left with: right into: destination)
-            ifFalse: (self int64NotEquals: left with: right into: destination).
+            ifTrue: (self int64NotEquals: left with: right into: destination)
+            ifFalse: (self int32NotEquals: left with: right into: destination).
 
     public method loadPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
         := self has64BitsPointers
@@ -1170,8 +1175,8 @@ public final class TACBlockBuilder superclass: Object; definition: {
 
     public method storePointer: (value: TACValue) into: (pointer: TACValue) constantOffset: (constantOffset: Int64) ::=> TACInstruction
         := self has64BitsPointers
-            ifTrue: (self storeInt32: value into: pointer constantOffset: constantOffset)
-            ifFalse: (self storeInt64: value into: pointer constantOffset: constantOffset).
+            ifTrue: (self storeInt64: value into: pointer constantOffset: constantOffset)
+            ifFalse: (self storeInt32: value into: pointer constantOffset: constantOffset).
 
     public method storeFloat32: (value: TACValue) into: (pointer: TACValue) constantOffset: (constantOffset: Int64) ::=> TACInstruction
         := self operation: TAC::Operation::StoreFloat32 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
@@ -1207,8 +1212,8 @@ public final class TACBlockBuilder superclass: Object; definition: {
 
     public method returnPointer: (value: TACValue) ::=> TACInstruction
         := self has64BitsPointers
-            ifTrue: (self returnInt32: value)
-            ifFalse: (self returnInt64: value).
+            ifTrue: (self returnInt64: value)
+            ifFalse: (self returnInt32: value).
 
     public method returnFloat32: (value: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::ReturnFloat32 with: value.

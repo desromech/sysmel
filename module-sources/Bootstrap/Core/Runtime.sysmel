@@ -1,8 +1,8 @@
 ## We use these for the different implementations of Size
 error __type__: (SimpleFunctionTypeTemplate((String,), 0bflgs, Unwinds)).
 
-##(RawTuple::slotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size), 0bflgs, Untyped)).
-##(RawTuple::slotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size, Untyped), 0bflgs, Void)).
+(RawTuple::slotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size), 0bflgs, Untyped)).
+(RawTuple::slotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size, Untyped), 0bflgs, Void)).
 (RawTuple::refTypeSlotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, TypeSlot), 0bflgs, Untyped)).
 (RawTuple::refTypeSlotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, TypeSlot, Untyped), 0bflgs, Void)).
 (==) __type__: (SimpleFunctionTypeTemplate((AnyValue, AnyValue), 0bflgs, Boolean)).
@@ -365,13 +365,13 @@ TypeSlot
 Array
     withSelector: #at: addMethod: {:(Array)self :(Size)index |
         self __slotAt__: index
-    } makeVirtual withEagerAnalysis;
+    } makeVirtual makeFinal withEagerAnalysis;
     withSelector: #at:put: addMethod: {:(Array)self :(Size)index :value :: Void |
         self __slotAt__: index put: value
-    } makeVirtual withEagerAnalysis;
+    } makeVirtual makeFinal withEagerAnalysis;
     withSelector: #size addMethod: {:(Array)self :: Size |
         self __size__
-    } makeVirtual withEagerAnalysis;
+    } makeVirtual makeFinal withEagerAnalysis;
     withSelector: #doWithIndex: addMethod: {:(Array)self :aBlock :: Void |
         let: #i mutableWith: 0sz.
         let: #size with: self size.

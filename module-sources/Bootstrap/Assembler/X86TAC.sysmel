@@ -62,7 +62,7 @@ TACPhysicalLocationImmediate extend: {
         := value asm::immediate32For: codegen.
 
     public override method x86::immediateS32OrInt64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
-        := value asm::immediate32For: codegen.
+        := value asm::immediateS32For: codegen.
 
     public override method x86::int64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
         := value asm::immediate64For: codegen.
@@ -899,14 +899,19 @@ TAC::Operation::UInt32GreaterOrEquals
     }.
 
 ## Int64 comparisons
-let x86::integerComparisonInt64RegisterConstraints := x86::integerComparisonInt32RegisterConstraints.
+let x86::integerComparisonInt64RegisterConstraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+    allocator
+        allocateRegisterForInstructionResult: instruction;
+        allocateRegisterOrImmediate64ForInstruction: instruction operandAt: 0sz;
+        allocateRegisterOrImmediateS32ForInstruction: instruction operandAt: 1sz
+}.
 
 TAC::Operation::Int64Equals
     forTarget: #x86_64 registerConstraintsWith: x86::integerComparisonInt64RegisterConstraints;
     forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
             x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen);
-            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::int64For: codegen);
+            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::immediateS32OrInt64For: codegen);
             x86::sete: (instruction resultRegister x86::int8For: codegen)
     }.
 
@@ -915,7 +920,7 @@ TAC::Operation::Int64NotEquals
     forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
             x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen);
-            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::int64For: codegen);
+            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::immediateS32OrInt64For: codegen);
             x86::setne: (instruction resultRegister x86::int8For: codegen)
     }.
 
@@ -924,7 +929,7 @@ TAC::Operation::Int64LessThan
     forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
             x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen);
-            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::int64For: codegen);
+            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::immediateS32OrInt64For: codegen);
             x86::setl: (instruction resultRegister x86::int8For: codegen)
     }.
 
@@ -933,7 +938,7 @@ TAC::Operation::Int64LessOrEquals
     forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
             x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen);
-            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::int64For: codegen);
+            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::immediateS32OrInt64For: codegen);
             x86::setle: (instruction resultRegister x86::int8For: codegen)
     }.
 
@@ -942,7 +947,7 @@ TAC::Operation::Int64GreaterThan
     forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
             x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen);
-            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::int64For: codegen);
+            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::immediateS32OrInt64For: codegen);
             x86::setg: (instruction resultRegister x86::int8For: codegen)
     }.
 
@@ -951,7 +956,7 @@ TAC::Operation::Int64GreaterOrEquals
     forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
             x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen);
-            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::int64For: codegen);
+            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::immediateS32OrInt64For: codegen);
             x86::setge: (instruction resultRegister x86::int8For: codegen)
     }.
 
@@ -960,7 +965,7 @@ TAC::Operation::UInt64LessThan
     forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
             x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen);
-            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::int64For: codegen);
+            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::immediateS32OrInt64For: codegen);
             x86::setb: (instruction resultRegister x86::int8For: codegen)
     }.
 
@@ -969,7 +974,7 @@ TAC::Operation::UInt64LessOrEquals
     forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
             x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen);
-            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::int64For: codegen);
+            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::immediateS32OrInt64For: codegen);
             x86::setbe: (instruction resultRegister x86::int8For: codegen)
     }.
 
@@ -978,7 +983,7 @@ TAC::Operation::UInt64GreaterThan
     forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
             x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen);
-            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::int64For: codegen);
+            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::immediateS32OrInt64For: codegen);
             x86::seta: (instruction resultRegister x86::int8For: codegen)
     }.
 
@@ -987,7 +992,7 @@ TAC::Operation::UInt64GreaterOrEquals
     forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
             x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen);
-            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::int64For: codegen);
+            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::immediateS32OrInt64For: codegen);
             x86::setae: (instruction resultRegister x86::int8For: codegen)
     }.
 

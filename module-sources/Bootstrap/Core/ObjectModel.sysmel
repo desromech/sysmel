@@ -103,6 +103,9 @@ public abstract class ObjectModelVariant superclass: Object; definition: {
 
     public virtual method minimalObjectAlignment => UInt64 := 16u64.
 
+    public abstract method objectHeaderSize => UInt64
+        := self subclassResponsibility.
+
     public virtual method isImmediateReference: (reference: Untyped) ::=> Boolean
         := self subclassResponsibility.
 
@@ -131,8 +134,8 @@ public abstract class ObjectModelVariant superclass: Object; definition: {
         }
     }.
 
-    public abstract method computeSizeOfObjectInstance: (object: Untyped) ::=> UInt64
-        := self subclassResponsibility.
+    public virtual method computeSizeOfObjectInstance: (object: Untyped) ::=> UInt64
+        := self objectHeaderSize + (self computeSizeOfObjectInstanceContent: object).
 
     public virtual method computeAlignmentOfObjectInstance: (object: Untyped) ::=> UInt64
         := RawTuple::type(object)
@@ -159,8 +162,8 @@ public final class ObjectModelVariant32 superclass: ObjectModelVariant; definiti
 public final class ObjectModelVariant64 superclass: ObjectModelVariant; definition: {
     public override method pointerSize => UInt64 := 8u64.
 
-    public override method computeSizeOfObjectInstance: (object: Untyped) ::=> UInt64
-        := ObjectModel::TupleHeader64 valueSize asUInt64 + (self computeSizeOfObjectInstanceContent: object).
+    public override method objectHeaderSize => UInt64
+        := ObjectModel::TupleHeader64 valueSize asUInt64.
 
     public override method isImmediateReference: (reference: Untyped) ::=> Boolean := {
         let type => Type := RawTuple::type(reference).
@@ -183,6 +186,14 @@ Type extend: {
 
     public virtual method encodeImmediateReference64: (reference: Untyped) ::=> UInt64
         := self error: "Cannot encode 64 bits immediate reference.".
+
+    public virtual method objectHeaderSizeForObjectModel: (objectModel: ObjectModelVariant) ::=> UInt64
+        := objectModel objectHeaderSize.
+}.
+
+PointerLikeType extend: {
+    public override method objectHeaderSizeForObjectModel: (objectModel: ObjectModelVariant) ::=> Size
+        := 0u64.
 }.
 
 Char8 __type__ extend: {
@@ -355,9 +366,16 @@ PendingMemoizationValue __type__ extend: {
     public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (ObjectModel::ImmediateTrivialIndex::PendingMemoizationValue asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Trivial asUInt64.
 }.
 
-public global ObjectModel::TupleHeader := if: UIntPointer valueSize = 4sz
+public global ObjectModel::PointerSize := UIntPointer valueSize.
+
+public global ObjectModel::TupleHeader := if: ObjectModel::PointerSize = 4sz
     then: ObjectModel::TupleHeader32
     else: ObjectModel::TupleHeader64.
+
+public global ObjectModel::getTuplePointerUIntValue := {:(Untyped)object :: UIntPointer |
+    <primitive: #PointerLikeType::reinterpretCast>
+    0uptr
+}.
 
 public global ObjectModel::getTupleHeaderPointerOf := {:(Untyped)object :: ObjectModel::TupleHeader pointer |
     <primitive: #PointerLikeType::reinterpretCast>
@@ -374,12 +392,24 @@ AnyValue extend: {
         := ObjectModel::getTupleHeaderPointerOf(self) + 1iptr reinterpretCastTo: Void pointer.
 }.
 
+identityHash adoptDefinitionOf: {:(Untyped)self :: Size |
+    ObjectModel::getTupleHeaderPointerOf(self) _ identityHashAndFlags >> 4uptr
+}.
+
 RawTuple::isBytes adoptDefinitionOf: {:(Untyped)self :: Boolean |
     ObjectModel::getTupleHeaderPointerOf(self) _ isBytes
 }.
 
 RawTuple::size adoptDefinitionOf: {:(Untyped)self :: Size |
-    ObjectModel::getTupleHeaderPointerOf(self) _ objectSize / UIntPointer valueSize
+    ObjectModel::getTupleHeaderPointerOf(self) _ objectSize / ObjectModel::PointerSize
+}.
+
+(RawTuple::slotAt:) adoptDefinitionOf: {:(Untyped)self :(Size)index :: Untyped |
+    (ObjectModel::getTupleHeaderPointerOf(self) + 1iptr reinterpretCastTo: Untyped pointer)[index asIntPointer]
+}.
+
+(RawTuple::slotAt:put:) adoptDefinitionOf: {:(Untyped)self :(Size)index :(Untyped)value :: Void |
+    (ObjectModel::getTupleHeaderPointerOf(self) + 1iptr reinterpretCastTo: Untyped pointer)[index asIntPointer] := value
 }.
 
 RawTuple::byteSize adoptDefinitionOf: {:(Untyped)self :: Size |

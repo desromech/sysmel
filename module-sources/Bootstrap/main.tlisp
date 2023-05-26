@@ -52,6 +52,7 @@
     (define (exportAndBindInstanceMethod selector method)
         (define exportedName (StringSymbol::intern (String::concat: typeName (String::concat: "::" (asString selector)))))
         (MethodDictionary::at:put: (Type::validMethodDictionary type) selector method)
+        (send #recordBindingWithOwner:andName: method type selector)
         (exportInstrinsicBuiltInBinding exportedName method))
 
     (define slots (RawTuple::slotAt: type Type::Layout::slots))

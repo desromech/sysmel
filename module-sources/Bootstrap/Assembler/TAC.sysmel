@@ -371,11 +371,14 @@ TACValue definition: {
     public virtual method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
         := self error: "Not an immediate 32 value.".
 
+    public virtual method asm::immediateS32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := self error: "Not an immediate signed 32 value.".
+
     public virtual method asm::immediateCall32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
         := self asm::immediate32For: codegen.
 
     public virtual method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
-        := self error: "Not an immediate 64 value.".
+        := self error: self printString -- " is not an immediate 64 value.".
 }.
 
 TACProgramEntity definition: {
@@ -448,6 +451,29 @@ TACConstantInt32 definition: {
     public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
         := value asAsmImmediate.
 
+    public override method asm::immediateS32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := value asAsmImmediate.
+
     public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
         := value asInt64 asAsmImmediate.
+}.
+
+TACConstantUInt64 definition: {
+    public override method asm::immediateS32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate := {
+        self assert: value asInt32 asInt64 asUInt64 = value.
+        value asInt32 asAsmImmediate
+    }.
+
+    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := value asAsmImmediate.
+}.
+
+TACConstantInt64 definition: {
+    public override method asm::immediateS32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate := {
+        self assert: value asInt32 asInt64 = value.
+        value asInt32 asAsmImmediate
+    }.
+
+    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := value asAsmImmediate.
 }.

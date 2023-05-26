@@ -1,0 +1,39 @@
+MethodDictionary definition: {
+    public final method scanFor: key ::=> IntPointer := {
+        let storage := self storage.
+        storage ifNil: { return: -1iptr }.
+
+        let capacity := storage size / 2sz.
+        let naturalIndex := key identityHash % capacity.
+
+        #*
+        let i mutable := naturalIndex.
+        while: (i < capacity) do: {
+            let storageKey := storage at: i*2sz.
+            if: (storageKey == key) || storageKey isNil then: {
+                return: i asIntPointer
+            }
+        } continueWith: (i := i + 1sz).
+
+        i := 0sz.
+        while: (i < naturalIndex) do: {
+            let storageKey := storage at: i*2sz.
+            if: (storageKey == key) || storageKey isNil then: {
+                return: i asIntPointer
+            }
+        } continueWith: (i := i + 1sz).
+        *#
+
+        -1iptr
+    }.
+
+    public final method atOrNil: selector := {
+        let index := self scanFor: selector.
+        index >= 0iptr ifTrue: {
+            let methodIndex := index *2iptr + 1iptr.
+            self storage at: methodIndex asSize
+        } ifFalse: {
+            nil
+        }
+    }.
+}.

@@ -254,11 +254,14 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
     protected field valueDictionary => Dictionary.
     public field localOnlyAllocaDictionary => Dictionary.
     public field functionArgument => TACValue.
-    
+
     public override method initialize => Void := {
         valueDictionary := Dictionary new.
         localOnlyAllocaDictionary := Dictionary new.
     }.
+
+    public method compilationTarget => TACCompilationTarget
+        := moduleCodeGenerator compilationTarget.
 
     public method compileSSAFunctionDefinition: (ssaFunctionDefinition: SSAFunctionDefinition) intoCapturelessEntryPoint: (entryPoint: TACFunction) ::=> Void := {
         self ssaFunctionDefinition: ssaFunctionDefinition.
@@ -1584,23 +1587,23 @@ SSAPointerElementAtInstruction extend: {
 
 SSATypeSlotReferenceAtInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
-        ## FIXME: Add the object header offset.
         let pointerValue := codegen translateValue: self tuple.
-        codegen blockBuilder addPointer: pointerValue constantOffset: self typeSlot validOffset asInt64 into: tacValue
+        let headerSize := (self tuple type ifNil: AnyValue) objectHeaderSizeForObjectModel: codegen compilationTarget objectModel.
+        codegen blockBuilder addPointer: pointerValue constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 into: tacValue
     }.
 }.
 
 SSATypeSlotAtInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
-        ## FIXME: Add the object header offset.
-        self type emitTacLoadFromPointer: (codegen translateValue: self tuple) constantOffset: self typeSlot validOffset asInt64 into: tacValue withBlockBuilder: codegen blockBuilder
+        let headerSize := (self tuple type ifNil: AnyValue) objectHeaderSizeForObjectModel: codegen compilationTarget objectModel.
+        self type emitTacLoadFromPointer: (codegen translateValue: self tuple) constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 into: tacValue withBlockBuilder: codegen blockBuilder
     }.
 }.
 
 SSATypeSlotAtPutInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
-        ## FIXME: Add the object header offset.
-        self value type emitTacStore: (codegen translateValue: self value) intoPointer: (codegen translateValue: self tuple) constantOffset: self typeSlot validOffset asInt64 withBlockBuilder: codegen blockBuilder
+        let headerSize := (self tuple type ifNil: AnyValue) objectHeaderSizeForObjectModel: codegen compilationTarget objectModel.
+        self value type emitTacStore: (codegen translateValue: self value) intoPointer: (codegen translateValue: self tuple) constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 withBlockBuilder: codegen blockBuilder
     }.
 }.
 

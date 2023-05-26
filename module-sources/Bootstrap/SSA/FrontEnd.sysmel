@@ -433,8 +433,10 @@ ASTIfNode extend: {
         }.
 
         ## Merge
-        trueResultIsTerminator ifFalse: {
-            builder beginBasicBlock: mergeBlock.
+        builder beginBasicBlock: mergeBlock.
+        if: trueResultIsTerminator && falseResultIsTerminator then: {
+            builder literal: void
+        } else: {
             trueResultIsTerminator ifTrue: (
                 falseResult
             ) ifFalse: (
@@ -447,9 +449,7 @@ ASTIfNode extend: {
                         yourself
                 )
             ).
-        } ifTrue: {
-            builder literal: void
-        }.
+        }
     }
 }.
 
