@@ -29,7 +29,7 @@ MetaBuilder
     };
     withSelector: #analyzeMessageSendNode:withEnvironment: addClassMethod: {:self :(ASTMessageSendNode)messageSendNode :(Environment)environment |
         ## FIXME: Guard against non-literal functionOrMacroExpression here.
-        messageSendNode receiver value analyzeMessageSendNode: messageSendNode withEnvironment: environment
+        (messageSendNode receiver downCastTo: ASTLiteralNode) value analyzeMessageSendNode: messageSendNode withEnvironment: environment
     };
     withSelector: #analyzeAndEvaluateUnexpandedApplicationNode:of:withEnvironment: addClassMethod: {:self :(ASTUnexpandedApplicationNode)unexpandedApplicationNode :(Untyped)functional :(Environment)environment |
         let: #selfReceiver with: (ASTLiteralNode new
@@ -44,7 +44,7 @@ MetaBuilder
     };
     withSelector: #analyzeUnexpandedApplicationNode:withEnvironment: addClassMethod: {:self :(ASTUnexpandedApplicationNode)unexpandedApplicationNode :(Environment)environment |
         ## FIXME: Guard against non-literal functionOrMacroExpression here.
-        unexpandedApplicationNode functionOrMacroExpression value analyzeUnexpandedApplicationNode: unexpandedApplicationNode withEnvironment: environment
+        (unexpandedApplicationNode functionOrMacroExpression downCastTo: ASTLiteralNode) value analyzeUnexpandedApplicationNode: unexpandedApplicationNode withEnvironment: environment
     };
     withSelector: #analyzeAndEvaluateMessageChainNode:forReceiver:withEnvironment: addClassMethod: {:self :messageChainNode :(Untyped)receiver :(Environment)environment :: Untyped |
         let: #selfReceiver with: (ASTLiteralNode new
@@ -193,7 +193,7 @@ MacroMetaBuilder
     withSelector: #expandMessageSendNodeWithMetaBuilderMethod: addMethod: {:self :(ASTMessageSendNode)messageSendNode :: ASTNode |
         let: #metaBuilderMethod with: (
             if: messageSendNode selector isLiteralNode
-                then: (self class lookupSelector: messageSendNode selector value)
+                then: (self class lookupSelector: (messageSendNode selector downCastTo: ASTLiteralNode) value)
                 else: (nil)
         ).
 
@@ -750,7 +750,7 @@ FlagMetaBuilder
     } makeOverride;
     withSelector: #expandMessageSendNode: addMethod: {:self :(ASTMessageSendNode)messageSendNode :: ASTNode |
         let: #selector with: messageSendNode selector.
-        if: (selector isLiteralNode && selector value) == #class then: {
+        if: (selector isLiteralNode && (selector downCastTo: ASTLiteralNode) value) == #class then: {
             self delegateToMetaBuilder: (ClassMetaBuilder new
                 isPublic: self isPublic;
                 typeFlags: self typeFlags;

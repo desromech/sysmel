@@ -190,7 +190,10 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
 
     public method translateCapturelessUncheckedFunctionEntryPoint: (value: SSAValue) ::=> TACProgramEntity := {
         let functionDefinition := value asSSAFunctionDefinitionOrNil.
-        self assert: functionDefinition ~~ nil.
+        functionDefinition ifNil: {
+            self error: "Cannot generate captureless unchecked entry point for function without a definition " -- value printString
+        }.
+
         capturelessUncheckedEntryPointDictionary at: functionDefinition ifAbsent: {:: TACProgramEntity |
             self compileCapturelessUncheckedFunctionEntryPoint: functionDefinition
         }
@@ -1018,6 +1021,16 @@ public global SSATacPrimitiveCallGenerationTable := #{
     }.
     #PointerLikeType::reinterpretCastTo: : {:(Array)arguments :(TACValue)result :(SSAFunctionDefinitionTACCodeGenerator)codegen :: Boolean |
         codegen blockBuilder movePointer: (codegen translateValue: arguments first) into: result.
+        true
+    }.
+
+    ## Identity equals/not-equals
+    #== : {:(Array)arguments :(TACValue)result :(SSAFunctionDefinitionTACCodeGenerator)codegen :: Boolean |
+        codegen blockBuilder pointerEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second) into: result.
+        true
+    }.
+    #~~ : {:(Array)arguments :(TACValue)result :(SSAFunctionDefinitionTACCodeGenerator)codegen :: Boolean |
+        codegen blockBuilder pointerNotEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second) into: result.
         true
     }.
 

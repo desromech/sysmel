@@ -946,8 +946,8 @@ void sysbvm_dictionary_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "WeakValueDictionary::at:", context->roots.weakValueDictionaryType, "at:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_weakValueDictionary_primitive_at);
 
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "MethodDictionary::new", 0, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_methodDictionary_primitive_new);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "MethodDictionary::atOrNil:", context->roots.methodDictionaryType, "atOrNil:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_methodDictionary_primitive_atOrNil);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "MethodDictionary::at:", context->roots.methodDictionaryType, "at:put:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_methodDictionary_primitive_at);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "MethodDictionary::at:put:", context->roots.methodDictionaryType, "at:put:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_methodDictionary_primitive_atPut);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "MethodDictionary::scanFor:", context->roots.methodDictionaryType, "scanFor:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_methodDictionary_primitive_scanFor);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "MethodDictionary::atOrNil:", context->roots.methodDictionaryType, "atOrNil:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_TYPE_FLAGS_FINAL, NULL, sysbvm_methodDictionary_primitive_atOrNil);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "MethodDictionary::at:", context->roots.methodDictionaryType, "at:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_TYPE_FLAGS_FINAL, NULL, sysbvm_methodDictionary_primitive_at);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "MethodDictionary::at:put:", context->roots.methodDictionaryType, "at:put:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_TYPE_FLAGS_FINAL, NULL, sysbvm_methodDictionary_primitive_atPut);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "MethodDictionary::scanFor:", context->roots.methodDictionaryType, "scanFor:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_TYPE_FLAGS_FINAL, NULL, sysbvm_methodDictionary_primitive_scanFor);
 }

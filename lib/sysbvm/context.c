@@ -379,12 +379,6 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.stringSymbolType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolType);
     sysbvm_type_setFlags(context, context->roots.stringSymbolType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_BYTES);
 
-    context->roots.identityEqualsFunction = sysbvm_function_createPrimitive(context, 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_identityEquals);
-    context->roots.identityNotEqualsFunction = sysbvm_function_createPrimitive(context, 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_identityNotEquals);
-    context->roots.identityHashFunction = sysbvm_function_createPrimitive(context, 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_identityHash);
-    context->roots.stringEqualsFunction = sysbvm_function_createPrimitive(context, 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_string_primitive_equals);
-    context->roots.stringHashFunction = sysbvm_function_createPrimitive(context, 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_string_primitive_hash);
-
     context->roots.dictionaryType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.hashedCollectionType);
     context->roots.weakKeyDictionaryType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.dictionaryType);
     context->roots.weakValueDictionaryType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.dictionaryType);
@@ -403,6 +397,12 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
 
     context->roots.internedSymbolSet = sysbvm_identitySet_create(context);
     context->roots.sessionToken = sysbvm_tuple_systemHandle_encode(context, 1);
+
+    context->roots.identityEqualsFunction = sysbvm_function_createPrimitive(context, 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_identityEquals);
+    context->roots.identityNotEqualsFunction = sysbvm_function_createPrimitive(context, 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_identityNotEquals);
+    context->roots.identityHashFunction = sysbvm_function_createPrimitive(context, 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_identityHash);
+    context->roots.stringEqualsFunction = sysbvm_function_createPrimitive(context, 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_string_primitive_equals);
+    context->roots.stringHashFunction = sysbvm_function_createPrimitive(context, 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_string_primitive_hash);
 
     // Create the intrinsic built-in environment
     context->roots.globalNamespace = sysbvm_namespace_create(context, SYSBVM_NULL_TUPLE);
@@ -596,7 +596,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.metaclassType, "Metaclass", SYSBVM_NULL_TUPLE,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.typeSlotType, "TypeSlot", SYSBVM_NULL_TUPLE,
-        "owner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.programEntityType,
+        "owner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.typeType,
         "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         "type", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
@@ -725,7 +725,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "analyzedLocals", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
         "analyzedPragmas", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
         "analyzedInnerFunctions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
-        "analyzedPrimitiveName", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
+        "analyzedPrimitiveName", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.symbolType,
 
         "analyzedArgumentNodes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
         "analyzedResultTypeNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.astNodeType,
@@ -1011,7 +1011,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "expression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     context->roots.astSequenceNodeType = sysbvm_context_createIntrinsicClass(context, "ASTSequenceNode", context->roots.astNodeType,
-        "pragmas", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "pragmas", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "expressions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     context->roots.astTupleSlotNamedAtNodeType = sysbvm_context_createIntrinsicClass(context, "ASTTupleSlotNamedAtNode", context->roots.astNodeType,

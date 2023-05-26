@@ -68,12 +68,12 @@
 
         ## Getter
         (exportAndBindInstanceMethod slotName
-            (setupGetter (lambda (self)
+            (setupGetter (lambda ((self type) => slotType)
                 (RawTuple::typeSlotAt: self slot))))
 
         ## Setter
         (exportAndBindInstanceMethod (StringSymbol::intern (String::concat: (asString slotName) ":"))
-            (setupSetter (lambda (self value)
+            (setupSetter (lambda ((self type) (value slotType) => Void)
                 (RawTuple::typeSlotAt:put: self slot value)))
         ))))
 

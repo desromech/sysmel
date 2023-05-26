@@ -328,6 +328,12 @@ SYSBVM_API bool sysbvm_astIdentifierReferenceNode_isEllipsis(sysbvm_tuple_t node
     return sysbvm_string_equalsCString(((sysbvm_astIdentifierReferenceNode_t*)node)->value, "...");
 }
 
+SYSBVM_API bool sysbvm_astIdentifierReferenceNode_isArrow(sysbvm_tuple_t node)
+{
+    if(!sysbvm_tuple_isNonNullPointer(node)) return false;
+    return sysbvm_string_equalsCString(((sysbvm_astIdentifierReferenceNode_t*)node)->value, "=>");
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_astIfNode_create(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t conditionExpression, sysbvm_tuple_t trueExpression, sysbvm_tuple_t falseExpression)
 {
     sysbvm_astIfNode_t *result = (sysbvm_astIfNode_t*)sysbvm_context_allocatePointerTuple(context, context->roots.astIfNodeType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_astIfNode_t));

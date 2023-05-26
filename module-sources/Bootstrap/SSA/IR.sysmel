@@ -1113,6 +1113,8 @@ SSAPhiInstruction definition: {
 
     public method addValue: (value: SSAValue) incomingFrom: (block: SSABasicBlock) ::=> Void := {
         self incomingBlocksAndValues: self incomingBlocksAndValues -- (Array with: block -> value).
+        value registerUser: self.
+        block registerUser: self.
     }.
 
     public method findIncomingBlockAndValueFor: (expectedBlock: SSABasicBlock) ::=> Association

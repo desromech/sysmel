@@ -183,6 +183,9 @@ Object
     } makeVirtual withEagerAnalysis.
 
 Type
+    withSelector: #ensureAnalysisOfMethodWithSelector: addMethod: {:(Type)self :(Symbol)selector :: Void |
+        (self methodDictionary at: selector) ensureAnalysis
+    } withEagerAnalysis;
     withSelector: #isSubtypeOf: addMethod: {:(Type)self :(Type)expectedParent :: Boolean |
         if: self == expectedParent
         then: true
@@ -192,7 +195,8 @@ Type
                 then: (supertype isSubtypeOf: expectedParent )
                 else: false
         }
-    } makePure withEagerAnalysis.
+    } makePure;
+    ensureAnalysisOfMethodWithSelector: #isSubtypeOf:.
 
 AnyValue
     withSelector: #isKindOf: addMethod: {:(AnyValue)self :(Type)expectedType :: Boolean |
@@ -223,10 +227,10 @@ Type
         (RawTuple::type:)(result, self).
         if: self isWeak then: RawTuple::markWeak(result).
         result
-    } withEagerAnalysis;
+    } makeVirtual withEagerAnalysis;
     withSelector: #basicNew addMethod: {:(Type)self :: self |
         self basicAllocate
-    } withEagerAnalysis;
+    } makeVirtual withEagerAnalysis;
     withSelector: #basicInitializeInstance: addMethod: {:(TypeSlot)self :(AnyValue)instance :: Void |
     } makeVirtual withEagerAnalysis;
     withSelector: #new addMethod: {:(Type)self :: self |
@@ -251,7 +255,8 @@ Type
                 then: (supertype lookupSelector: selector)
                 else: (nil)
         }
-    } withEagerAnalysis;
+    };
+    ensureAnalysisOfMethodWithSelector: #lookupSelector:;
     withSelector: #lookupLocalVirtualSelector: addMethod: {:(Type)self :(Symbol)selector |
         let: #methodDictionary with: self virtualMethodDictionary.
         if: methodDictionary ~~ nil
@@ -360,13 +365,21 @@ TypeSlot
 Array
     withSelector: #at: addMethod: {:(Array)self :(Size)index |
         self __slotAt__: index
-    } withEagerAnalysis;
+    } makeVirtual withEagerAnalysis;
     withSelector: #at:put: addMethod: {:(Array)self :(Size)index :value :: Void |
         self __slotAt__: index put: value
-    } withEagerAnalysis;
+    } makeVirtual withEagerAnalysis;
     withSelector: #size addMethod: {:(Array)self :: Size |
         self __size__
-    } withEagerAnalysis.
+    } makeVirtual withEagerAnalysis;
+    withSelector: #doWithIndex: addMethod: {:(Array)self :aBlock :: Void |
+        let: #i mutableWith: 0sz.
+        let: #size with: self size.
+
+        while: i < self size do: {
+            aBlock(self at: i, i)
+        } continueWith: (i := i + 1sz)
+    } makeVirtual makeFinal.
 
 Type
     withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(Type)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
@@ -594,7 +607,9 @@ ReferenceType
                     yourself)
                 withEnvironment: environment
         }.
-    } makeOverride.
+    } makeOverride withEagerAnalysis.
+
+Array ensureAnalysisOfMethodWithSelector: #doWithIndex:.
 
 AnyValue
     withSelector: #isNil addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :: ASTMessageSendNode |
@@ -1544,8 +1559,8 @@ WeakOrderedCollection
     
 StringStream
     withSelector: #initialize addMethod: {:(StringStream)self :: Void |
-        self size: 0
-    } makeOverride.
+        self size: 0sz
+    } makeOverride withEagerAnalysis.
 
 Array
     withSelector: #new: addClassMethod: {:(Array class)self :(Size)initialSize :: self |

@@ -1138,6 +1138,16 @@ public final class TACBlockBuilder superclass: Object; definition: {
         }
     }.
 
+    public method pointerEquals: (left: TACValue) with: (right: TACValue) into: (destination: TACValue) ::=> TACInstruction
+        := self has64BitsPointers
+            ifTrue: (self int32Equals: left with: right into: destination)
+            ifFalse: (self int64Equals: left with: right into: destination).
+
+    public method pointerNotEquals: (left: TACValue) with: (right: TACValue) into: (destination: TACValue) ::=> TACInstruction
+        := self has64BitsPointers
+            ifTrue: (self int32NotEquals: left with: right into: destination)
+            ifFalse: (self int64NotEquals: left with: right into: destination).
+
     public method loadPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
         := self has64BitsPointers
             ifTrue: (self loadUInt64: pointer constantOffset: constantOffset into: destination)

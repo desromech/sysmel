@@ -609,6 +609,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_astIdentifierReferenceNode_getValue(sysbvm_tupl
 SYSBVM_API bool sysbvm_astIdentifierReferenceNode_isEllipsis(sysbvm_tuple_t node);
 
 /**
+ * Is this an arrow identifier?
+ */
+SYSBVM_API bool sysbvm_astIdentifierReferenceNode_isArrow(sysbvm_tuple_t node);
+
+/**
  * Creates an if node.
  */ 
 SYSBVM_API sysbvm_tuple_t sysbvm_astIfNode_create(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t conditionExpression, sysbvm_tuple_t trueExpression, sysbvm_tuple_t falseExpression);

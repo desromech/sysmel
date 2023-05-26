@@ -323,7 +323,7 @@ ASTPragmaNode
 
 ASTSequenceNode
     withSelector: #hasPragmaNamed: addMethod: {:(ASTSequenceNode)self :selector :: Boolean |
-        self pragmas anySatisfy: {:pragma :: Boolean | pragma hasPragmaNamed: selector}
+        self pragmas anySatisfy: {:(ASTNode)pragma :: Boolean | pragma hasPragmaNamed: selector}
     } makeOverride;
     withSelector: #childrenDo: addMethod: {:(ASTSequenceNode)self :aBlock :: Void |
         self pragmas do: aBlock.
@@ -367,7 +367,10 @@ ASTNode
     } makeVirtual;
     withSelector: #evaluateQuasiQuoteWithParameters: addMethod: {:(ASTNode)self :(Array)parameters :: ASTNode |
         self transformedWith: {:child | child evaluateQuasiQuoteWithParameters: parameters }
-    } makeVirtual.
+    } makeVirtual;
+    withSelector: #evaluateQuasiQuoteWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment :: ASTNode |
+        self subclassResponsibility
+    } makeAbstract.
 
 let: #expandASTTemplateWithParameters with: {:(ASTNode)templateNode :(Array)templateParameters :: ASTNode |
     templateNode evaluateQuasiQuoteWithParameters: templateParameters
@@ -425,10 +428,10 @@ ASTQuasiUnquoteNode
         parameters at: self astTemplateParameterIndex
     } makeOverride;
     withSelector: #childrenDo: addMethod: {:(ASTQuasiUnquoteNode)self :aBlock :: Void |
-        if: (self expression) then: aBlock(self expression)
+        if: (self expression isNotNil) then: aBlock(self expression)
     } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTQuasiUnquoteNode)self :aBlock :: Void |
-        if: (self expression) then: (self expression: aBlock(self expression))
+        if: (self expression isNotNil) then: (self expression: aBlock(self expression))
     } makeOverride.
 
 ASTQuoteNode
@@ -442,10 +445,10 @@ ASTQuoteNode
     withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment | self node} makeOverride;
     withSelector: #evaluateWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment | self node} makeOverride;
     withSelector: #childrenDo: addMethod: {:(ASTQuoteNode)self :aBlock :: Void |
-        if: (self node) then: aBlock(self node)
+        if: (self node isNotNil) then: aBlock(self node)
     } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTQuoteNode)self :aBlock :: Void |
-        if: (self node) then: (self node: aBlock(self node))
+        if: (self node isNotNil) then: (self node: aBlock(self node))
     } makeOverride.
 
 ASTSpliceNode
@@ -453,10 +456,10 @@ ASTSpliceNode
     withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError } makeOverride;
     withSelector: #evaluateWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError } makeOverride;
     withSelector: #childrenDo: addMethod: {:(ASTSpliceNode)self :aBlock :: Void |
-        if: (self expression) then: aBlock(self expression)
+        if: (self expression isNotNil) then: aBlock(self expression)
     } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTSpliceNode)self :aBlock :: Void |
-        if: (self expression) then: (self expression: aBlock(self expression))
+        if: (self expression isNotNil) then: (self expression: aBlock(self expression))
     } makeOverride;
 
     withSelector: #analyzeQuasiQuoteWithEnvironment:parameterList: addMethod: {:(ASTSpliceNode)self :(Environment)environment :(OrderedCollection)parameterList | self invalidLocationError } makeOverride;
