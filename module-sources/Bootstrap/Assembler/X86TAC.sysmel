@@ -55,6 +55,12 @@ TACPhysicalLocation extend: {
 }.
 
 TACPhysicalLocationImmediate extend: {
+    public override method x86::int8For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := value asm::immediate8For: codegen.
+
+    public override method x86::int16For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
+        := value asm::immediate16For: codegen.
+
     public override method x86::int32For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
         := value asm::immediate32For: codegen.
 
@@ -776,6 +782,7 @@ TAC::Operation::Int64Sub
             x86::sub: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::immediateS32OrInt64For: codegen)
     }.
 
+
 let x86::integerMul32RegisterConstraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterForInstructionResult: instruction;
@@ -799,6 +806,230 @@ TAC::Operation::Int64Mul
         codegen textSection
             x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen);
             x86::imul: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::int64For: codegen)
+    }.
+
+TAC::Operation::Int16UDiv
+    forTarget: #x86 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegister: TAC::X86::EAX forInstruction: instruction operandAt: 0sz;
+            allocateRegister: TAC::X86::EAX forInstructionResult: instruction;
+            allocateRegister: TAC::X86::EDX forInstruction: instruction scratchAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 1sz
+    };
+    forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz;
+            allocateRegister: TAC::X86_64::RAX forInstructionResult: instruction;
+            allocateRegister: TAC::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 1sz
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::xor: X86::DX with: X86::DX;
+            x86::div: (instruction secondOperandRegister x86::int16For: codegen)
+    }.
+
+TAC::Operation::Int16URem
+    forTarget: #x86 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegister: TAC::X86::EAX forInstruction: instruction operandAt: 0sz;
+            allocateRegister: TAC::X86::EDX forInstructionResult: instruction;
+            allocateRegister: TAC::X86::EDX forInstruction: instruction scratchAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 1sz
+    };
+    forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz;
+            allocateRegister: TAC::X86_64::RDX forInstructionResult: instruction;
+            allocateRegister: TAC::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 1sz
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::xor: X86::DX with: X86::DX;
+            x86::div: (instruction secondOperandRegister x86::int16For: codegen)
+    }.
+
+TAC::Operation::Int16SDiv
+    forTarget: #x86 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegister: TAC::X86::EAX forInstruction: instruction operandAt: 0sz;
+            allocateRegister: TAC::X86::EAX forInstructionResult: instruction;
+            allocateRegister: TAC::X86::EDX forInstruction: instruction scratchAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 1sz
+    };
+    forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz;
+            allocateRegister: TAC::X86_64::RAX forInstructionResult: instruction;
+            allocateRegister: TAC::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 1sz
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cwd;
+            x86::div: (instruction secondOperandRegister x86::int16For: codegen)
+    }.
+
+TAC::Operation::Int16SRem
+    forTarget: #x86 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegister: TAC::X86::EAX forInstruction: instruction operandAt: 0sz;
+            allocateRegister: TAC::X86::EDX forInstructionResult: instruction;
+            allocateRegister: TAC::X86::EDX forInstruction: instruction scratchAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 1sz
+    };
+    forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz;
+            allocateRegister: TAC::X86_64::RDX forInstructionResult: instruction;
+            allocateRegister: TAC::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 1sz
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cwd;
+            x86::div: (instruction secondOperandRegister x86::int16For: codegen)
+    }.
+
+TAC::Operation::Int32UDiv
+    forTarget: #x86 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegister: TAC::X86::EAX forInstruction: instruction operandAt: 0sz;
+            allocateRegister: TAC::X86::EAX forInstructionResult: instruction;
+            allocateRegister: TAC::X86::EDX forInstruction: instruction scratchAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 1sz
+    };
+    forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz;
+            allocateRegister: TAC::X86_64::RAX forInstructionResult: instruction;
+            allocateRegister: TAC::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 1sz
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::xor: X86::EDX with: X86::EDX;
+            x86::div: (instruction secondOperandRegister x86::int32For: codegen)
+    }.
+
+TAC::Operation::Int32URem
+    forTarget: #x86 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegister: TAC::X86::EAX forInstruction: instruction operandAt: 0sz;
+            allocateRegister: TAC::X86::EDX forInstructionResult: instruction;
+            allocateRegister: TAC::X86::EDX forInstruction: instruction scratchAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 1sz
+    };
+    forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz;
+            allocateRegister: TAC::X86_64::RDX forInstructionResult: instruction;
+            allocateRegister: TAC::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 1sz
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::xor: X86::EDX with: X86::EDX;
+            x86::div: (instruction secondOperandRegister x86::int32For: codegen)
+    }.
+
+TAC::Operation::Int32SDiv
+    forTarget: #x86 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegister: TAC::X86::EAX forInstruction: instruction operandAt: 0sz;
+            allocateRegister: TAC::X86::EAX forInstructionResult: instruction;
+            allocateRegister: TAC::X86::EDX forInstruction: instruction scratchAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 1sz
+    };
+    forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz;
+            allocateRegister: TAC::X86_64::RAX forInstructionResult: instruction;
+            allocateRegister: TAC::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 1sz
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cdq;
+            x86::idiv: (instruction secondOperandRegister x86::int32For: codegen)
+    }.
+
+TAC::Operation::Int32SRem
+    forTarget: #x86 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegister: TAC::X86::EAX forInstruction: instruction operandAt: 0sz;
+            allocateRegister: TAC::X86::EDX forInstructionResult: instruction;
+            allocateRegister: TAC::X86::EDX forInstruction: instruction scratchAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 1sz
+    };
+    forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz;
+            allocateRegister: TAC::X86_64::RDX forInstructionResult: instruction;
+            allocateRegister: TAC::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 1sz
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cdq;
+            x86::idiv: (instruction secondOperandRegister x86::int32For: codegen)
+    }.
+
+TAC::Operation::Int64UDiv
+    forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz;
+            allocateRegister: TAC::X86_64::RAX forInstructionResult: instruction;
+            allocateRegister: TAC::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 1sz
+    };
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::xor: X86::RDX with: X86::RDX;
+            x86::div: (instruction secondOperandRegister x86::int64For: codegen)
+    }.
+
+TAC::Operation::Int64URem
+    forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz;
+            allocateRegister: TAC::X86_64::RDX forInstructionResult: instruction;
+            allocateRegister: TAC::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 1sz
+    };
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::xor: X86::RDX with: X86::RDX;
+            x86::div: (instruction secondOperandRegister x86::int64For: codegen)
+    }.
+
+TAC::Operation::Int64SDiv
+    forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz;
+            allocateRegister: TAC::X86_64::RAX forInstructionResult: instruction;
+            allocateRegister: TAC::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 1sz
+    };
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cqo;
+            x86::idiv: (instruction secondOperandRegister x86::int64For: codegen)
+    }.
+
+TAC::Operation::Int64SRem
+    forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegister: TAC::X86_64::RAX forInstruction: instruction operandAt: 0sz;
+            allocateRegister: TAC::X86_64::RDX forInstructionResult: instruction;
+            allocateRegister: TAC::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 1sz
+    };
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cqo;
+            x86::idiv: (instruction secondOperandRegister x86::int64For: codegen)
     }.
 
 let x86::integerComparisonInt32RegisterConstraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
@@ -1002,11 +1233,29 @@ let x86::moveIntegerRegisterConstraints := {:(TACInstruction)instruction :(TACRe
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz
 }.
 
+let x86::moveIntegerRegister16Constraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+    allocator
+        allocateRegisterForInstructionResult: instruction;
+        allocateRegisterOrImmediate16ForInstruction: instruction operandAt: 0sz
+}.
+
 let x86::moveIntegerRegister8Constraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterForInstructionResult: instruction;
-        allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz
+        allocateRegisterOrImmediate8ForInstruction: instruction operandAt: 0sz
 }.
+
+TAC::Operation::MoveInt8
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen)
+    }.
+
+TAC::Operation::MoveInt16
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen)
+    }.
 
 TAC::Operation::MoveInt32
     forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegisterConstraints;

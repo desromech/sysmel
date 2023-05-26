@@ -18,6 +18,87 @@ let myPrintLine := {:(Array)elements... :: Void |
 }.
 
 public externC function main(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
+    ## Int16 division
+    #*
+    {
+        let a mutable := 12u16.
+        let b mutable := 4u16.
+        a / b.
+    }.
+
+    {
+        let a mutable := 12u16.
+        let b mutable := 4u16.
+        a % b.
+    }.
+
+    {
+        let a mutable := 12i16.
+        let b mutable := 4i16.
+        a / b.
+    }.
+
+    {
+        let a mutable := 12i16.
+        let b mutable := 4i16.
+        a % b.
+    }.
+    *#
+
+    ## Int32 division
+    #*
+    {
+        let a mutable := 12u32.
+        let b mutable := 4u32.
+        a / b.
+    }.
+
+    {
+        let a mutable := 12u32.
+        let b mutable := 4u32.
+        a % b.
+    }.
+
+    {
+        let a mutable := 12i32.
+        let b mutable := 4i32.
+        a / b.
+    }.
+
+    {
+        let a mutable := 12i32.
+        let b mutable := 4i32.
+        a % b.
+    }.
+    *#
+
+    ## Int64 division
+    #*
+    {
+        let a mutable := 12u64.
+        let b mutable := 4u64.
+        a / b.
+    }.
+
+    {
+        let a mutable := 12u64.
+        let b mutable := 4u64.
+        a % b.
+    }.
+
+    {
+        let a mutable := 12i64.
+        let b mutable := 4i64.
+        a / b.
+    }.
+
+    {
+        let a mutable := 12i64.
+        let b mutable := 4i64.
+        a % b.
+    }.
+    *#
+
     "Hello World\n" writeOntoStdout.
 
     ##let initialize := Object lookupVirtualSelector: #initialize.

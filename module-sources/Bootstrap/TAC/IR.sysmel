@@ -140,6 +140,8 @@ TACValue definition: {
     public virtual method isConstantFloat32 => Boolean := false.
     public virtual method isConstantFloat64 => Boolean := false.
 
+    public virtual method isImmediate8 => Boolean := false.
+    public virtual method isImmediate16 => Boolean := false.
     public virtual method isImmediate32 => Boolean := false.
     public virtual method isImmediateS32 => Boolean := false.
     public virtual method isImmediate64 => Boolean := self isImmediate32.
@@ -340,6 +342,8 @@ public final class TACConstantInt8 superclass: TACConstantInteger; definition: {
 
     public override method isSignedExtended => Boolean := true.
     public override method isConstantInt8 => Boolean := true.
+    public override method isImmediate8 => Boolean := true.
+    public override method isImmediate16 => Boolean := true.
     public override method isImmediate32 => Boolean := true.
 
     public override method type => Type := Int8.
@@ -362,6 +366,8 @@ public final class TACConstantUInt8 superclass: TACConstantInteger; definition: 
     public field value => UInt8.
 
     public override method isConstantUInt8 => Boolean := true.
+    public override method isImmediate8 => Boolean := true.
+    public override method isImmediate16 => Boolean := true.
     public override method isImmediate32 => Boolean := true.
 
     public override method type => Type := UInt8.
@@ -385,6 +391,7 @@ public final class TACConstantInt16 superclass: TACConstantInteger; definition: 
 
     public override method isSignedExtended => Boolean := true.
     public override method isConstantInt16 => Boolean := true.
+    public override method isImmediate16 => Boolean := true.
     public override method isImmediate32 => Boolean := true.
 
     public override method type => Type := Int16.
@@ -407,6 +414,7 @@ public final class TACConstantUInt16 superclass: TACConstantInteger; definition:
     public field value => UInt16.
 
     public override method isConstantUInt16 => Boolean := true.
+    public override method isImmediate16 => Boolean := true.
     public override method isImmediate32 => Boolean := true.
 
     public override method type => Type := UInt16.

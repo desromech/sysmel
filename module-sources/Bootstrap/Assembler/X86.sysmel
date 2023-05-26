@@ -108,6 +108,9 @@ AsmInstructionOperand extend: {
     public virtual method x86::isWordRegister => Boolean := false.
     public virtual method x86::isRegisterAddress => Boolean := false.
 
+    public virtual method x86::isRegisterAL => Boolean := false.
+    public virtual method x86::isRegisterAX => Boolean := false.
+
     public virtual method x86::valueLow => UInt8
         := self error: "Not a x86 register.".
 
@@ -344,6 +347,9 @@ AsmSymbol extend: {
 public class AsmX86IntRegister superclass: AsmX86Register; definition: {
     public override method x86::isWordRegister => Boolean := true.
 
+    public override method x86::isRegisterAL => Boolean := (self size = 1sz) && (value = 0u8).
+    public override method x86::isRegisterAX => Boolean := (self size ~= 1sz) && (value = 0u8).
+
     public method x86::byte => AsmX86RegisterAddress
         := AsmX86RegisterAddress base: self size: 1u8.
 
@@ -526,6 +532,15 @@ AsmObjectCodeStream definition: {
 
         let lowBits := ((wBit << 3u8) | (regBit << 2u8)) | ((indexBit << 1u8) | (baseBit)).
         (lowBits ~= 0) || ((operandSize = 1sz) && self isInX86LongMode && (reg x86::rexByteRequired || rm x86::rexByteRequired)) ifTrue: { 
+            self assert: self isInX86LongMode.
+            self nextPut: 16r40 u8 | lowBits
+        }
+    }.
+
+    public method nextPutX86RexSize: (operandSize: Size) ::=> Void := {
+        let wBit := if: operandSize = 8sz then: 1u8 else: 0u8.
+        let lowBits := (wBit << 3u8).
+        (lowBits ~= 0) ifTrue: { 
             self assert: self isInX86LongMode.
             self nextPut: 16r40 u8 | lowBits
         }
@@ -726,6 +741,34 @@ let instructionTemplateTable := #{
             stream nextPutAll: templ mandatoryPrefix; nextPutAll: templ opcode.
         };
         yourself).
+    OpALI8: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
+            (instruction operandCount = 2sz) &&
+            instruction firstOperand x86::isRegisterAL &&
+            instruction secondOperand isImmediate
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            stream nextPutAll: templ mandatoryPrefix; nextPutAll: templ opcode; nextPutImmediate: instruction secondOperand.
+        };
+        yourself).
+
+    OpAXIw: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
+            (instruction operandCount = 2sz) &&
+            instruction firstOperand x86::isRegisterAX &&
+            instruction secondOperand isImmediate
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let register := instruction firstOperand.
+            stream
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86SizeOverride: register size;
+                nextPutX86RexSize: register size;
+                nextPutAll: templ opcode;
+                nextPutX86ImmediateWord: instruction secondOperand.
+        };
+        yourself).
+
     OpBranch32: (AsmX86InstructionTemplate new
         when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
             (instruction operandCount = 1sz) && instruction firstOperand isImmediate
@@ -1058,12 +1101,49 @@ AsmObjectCodeRelocationAbsoluteInt64 extend: {
 }.
 
 let instructionDefinitionTable := #(
+    (adc (dst with) "Integer addition with carry."
+        (OpALI8 #[] #[16r14])
+        (OpAXIw #[] #[16r15])
+
+        (OpRmbIb #[] #[16r80] 2)
+
+        (OpRmwS8 #[] #[16r83] 2)
+        (OpRmwIw #[] #[16r81] 2)
+
+		(OpRmbRb #[] #[16r10])
+		(OpRmwRw #[] #[16r11])
+		(OpRbRmb #[] #[16r12])
+		(OpRwRmw #[] #[16r13])
+    )
+
     (add (dst with) "Integer addition."
+        (OpALI8 #[] #[16r04])
+        (OpAXIw #[] #[16r05])
+
+        (OpRmbIb #[] #[16r80] 0)
+
         (OpRmwS8 #[] #[16r83] 0)
         (OpRmwIw #[] #[16r81] 0)
 
+		(OpRmbRb #[] #[16r00])
 		(OpRmwRw #[] #[16r01])
+		(OpRbRmb #[] #[16r02])
 		(OpRwRmw #[] #[16r03])
+    )
+
+    (and (dst with) "Integer bitwise and."
+        (OpALI8 #[] #[16r24])
+        (OpAXIw #[] #[16r25])
+
+        (OpRmbIb #[] #[16r80] 4)
+
+        (OpRmwS8 #[] #[16r83] 4)
+        (OpRmwIw #[] #[16r81] 4)
+
+		(OpRmbRb #[] #[16r20])
+		(OpRmwRw #[] #[16r21])
+		(OpRbRmb #[] #[16r22])
+		(OpRwRmw #[] #[16r23])
     )
 
     (call (target) "Call the function in the specified address."
@@ -1071,11 +1151,30 @@ let instructionDefinitionTable := #(
         (OpRm #[] #[16rFF] 2)
     )
 
+    (cwd () "Sign extend AX into DX."
+        (Op #[] #[16r66 16r99])
+    )
+
+    (cdq () "Sign extend EAX into EDX."
+        (Op #[] #[16r99])
+    )
+
+    (cqo () "Sign extend RAX into RDX."
+        (Op #[] #[16r48 16r99])
+    )
+
     (cmp (op with) "Compares by subtracting the specified values."
+        (OpALI8 #[] #[16r3C])
+        (OpAXIw #[] #[16r3D])
+
+        (OpRmbIb #[] #[16r80] 7)
+
         (OpRmwS8 #[] #[16r83] 7)
         (OpRmwIw #[] #[16r81] 7)
 
+		(OpRmbRb #[] #[16r38])
 		(OpRmwRw #[] #[16r39])
+		(OpRbRmb #[] #[16r3A])
 		(OpRwRmw #[] #[16r3B])
     )
 
@@ -1108,6 +1207,16 @@ let instructionDefinitionTable := #(
 	(lock () "Lock prefix"
 		(Op #[] #[16rF0])
 	)
+
+    (neg () "Two complement negation"
+        (OpRmbOp #[] #[16rF6] 3)
+        (OpRmwOp #[] #[16rF7] 3)
+    )
+
+    (not () "Bitwise not"
+        (OpRmbOp #[] #[16rF6] 2)
+        (OpRmwOp #[] #[16rF7] 2)
+    )
 
     (nop () "No operation"
         (Op #[] #[16r90])
@@ -1153,8 +1262,27 @@ let instructionDefinitionTable := #(
         ##(OpI8 #[] #[16rCD])
     )
 
+	(lock () "Lock prefix"
+		(Op #[] #[16rF0])
+	)
+
     (int3 () "Software interruption 3 (Breakpoint)"
         (Op #[] #[16rCC])
+    )
+
+    (or (dst with) "Integer bitwise or."
+        (OpALI8 #[] #[16r0C])
+        (OpAXIw #[] #[16r0D])
+
+        (OpRmbIb #[] #[16r80] 1)
+
+        (OpRmwS8 #[] #[16r83] 1)
+        (OpRmwIw #[] #[16r81] 1)
+
+		(OpRmbRb #[] #[16r08])
+		(OpRmwRw #[] #[16r09])
+		(OpRbRmb #[] #[16r0A])
+		(OpRwRmw #[] #[16r0B])
     )
 
     (pop (dst) "Pops a value from the stack"
@@ -1207,20 +1335,74 @@ let instructionDefinitionTable := #(
         (OpRm #[] #[16r0F 16r96])
     )
 
+    (sbb (dst with) "Integer subtraction with borrow"
+        (OpALI8 #[] #[16r1C])
+        (OpAXIw #[] #[16r1D])
+
+        (OpRmbIb #[] #[16r80] 3)
+
+        (OpRmwS8 #[] #[16r83] 3)
+        (OpRmwIw #[] #[16r81] 3)
+
+		(OpRmbRb #[] #[16r18])
+		(OpRmwRw #[] #[16r19])
+		(OpRbRmb #[] #[16r1A])
+		(OpRwRmw #[] #[16r1B])
+    )
+
     (sub (dst with) "Integer subtraction"
+        (OpALI8 #[] #[16r2C])
+        (OpAXIw #[] #[16r2D])
+
+        (OpRmbIb #[] #[16r80] 5)
+
         (OpRmwS8 #[] #[16r83] 5)
         (OpRmwIw #[] #[16r81] 5)
 
+		(OpRmbRb #[] #[16r28])
 		(OpRmwRw #[] #[16r29])
+		(OpRbRmb #[] #[16r2A])
 		(OpRwRmw #[] #[16r2B])
     )
 
     (test (op with) "Compares with a bitwise and"
+        (OpALI8 #[] #[16rA8])
+        (OpAXIw #[] #[16rA9])
+
 		(OpRmbIb #[] #[16rF6] 0)
 		(OpRmwIw #[] #[16rF7] 0)
 
         (OpRmbRb #[] #[16r84])
         (OpRmwRw #[] #[16r85])
+        (OpRbRmb #[] #[16r84])
+        (OpRwRmw #[] #[16r85])
+    )
+
+    (xadd (dst with) "Exchange and add"
+		(OpRmbRb #[] #[16r0F 16rC0])
+		(OpRmwRw #[] #[16r0F 16rC1])
+    )
+
+    (xchg (dst with) "Exchange"
+		(OppR #[] #[16r90])
+		(OpRmbRb #[] #[16r86])
+		(OpRmwRw #[] #[16r87])
+
+		(OpRbRmb #[] #[16r86])
+		(OpRwRmw #[] #[16r87])
+    )
+
+    (xor (dst with) "Integer exclusive or."
+        (OpALI8 #[] #[16r34])
+        (OpAXIw #[] #[16r35])
+
+        (OpRmwS8 #[] #[16r83] 6)
+        (OpRmwIw #[] #[16r81] 6)
+
+		(OpRmbRb #[] #[16r30])
+		(OpRmwRw #[] #[16r31])
+		(OpRbRmb #[] #[16r32])
+		(OpRwRmw #[] #[16r33])
     )
 ).
 

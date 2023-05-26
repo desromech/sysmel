@@ -1386,8 +1386,8 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #Int64::+ : translateBinaryPrimitiveInto(TAC::Operation::Int64Add).
     #Int64::- : translateBinaryPrimitiveInto(TAC::Operation::Int64Sub).
     #Int64::* : translateBinaryPrimitiveInto(TAC::Operation::Int64Mul).
-    #Int64::/ : translateBinaryPrimitiveInto(TAC::Operation::Int64UDiv).
-    #Int64::% : translateBinaryPrimitiveInto(TAC::Operation::Int64URem).
+    #Int64::/ : translateBinaryPrimitiveInto(TAC::Operation::Int64SDiv).
+    #Int64::% : translateBinaryPrimitiveInto(TAC::Operation::Int64SRem).
 
     #Int64::& : translateBinaryPrimitiveInto(TAC::Operation::Int64BitAnd).
     #Int64::| : translateBinaryPrimitiveInto(TAC::Operation::Int64BitOr).

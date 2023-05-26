@@ -11,11 +11,32 @@ public abstract class TACRegisterAllocator superclass: Object; definition: {
     public abstract method allocateRegister: (register: TACPhysicalLocation) forInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void
         := self subclassResponsibility.
 
+    public abstract method allocateRegister: (register: TACPhysicalLocation) forInstruction: (instruction: TACInstruction) scratchAt: (operandIndex: Size) ::=> Void
+        := self subclassResponsibility.
+
     public abstract method allocateRegisterForInstructionResult: (instruction: TACInstruction) ::=> Void
         := self subclassResponsibility.
 
     public abstract method allocateRegisterForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void
         := self subclassResponsibility.
+
+    public virtual method allocateRegisterOrImmediate8ForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        let operand := instruction operands at: operandIndex.
+        operand isImmediate8 ifTrue: {
+            instruction operandRegisters at: operandIndex put: (TACPhysicalLocationImmediate for: operand)
+        } ifFalse: {
+            self allocateRegisterForInstruction: instruction operandAt: operandIndex
+        }
+    }.
+
+    public virtual method allocateRegisterOrImmediate16ForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        let operand := instruction operands at: operandIndex.
+        operand isImmediate16 ifTrue: {
+            instruction operandRegisters at: operandIndex put: (TACPhysicalLocationImmediate for: operand)
+        } ifFalse: {
+            self allocateRegisterForInstruction: instruction operandAt: operandIndex
+        }
+    }.
 
     public virtual method allocateRegisterOrImmediate32ForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void := {
         let operand := instruction operands at: operandIndex.
@@ -258,6 +279,12 @@ public final class TACTrivialRegisterAllocator superclass: TACRegisterAllocator;
     public override method allocateRegister: (register: TACPhysicalLocation) forInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void := {
         instruction operandRegisters at: operandIndex put: register.
         (instruction operands at: operandIndex) markSpillingRequired.
+        register markActiveWithRegisterAllocator: self.
+    }.
+
+    public override method allocateRegister: (register: TACPhysicalLocation) forInstruction: (instruction: TACInstruction) scratchAt: (scratchIndex: Size) ::=> Void := {
+        ##instruction scratchRegisters at: operandIndex put: register.
+        ##(instruction operands at: operandIndex) markSpillingRequired.
         register markActiveWithRegisterAllocator: self.
     }.
 

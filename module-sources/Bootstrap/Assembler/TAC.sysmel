@@ -439,6 +439,68 @@ TACGlobalVariable definition: {
     }.
 }.
 
+TACConstantUInt8 definition: {
+    public override method asm::immediate8For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := value asAsmImmediate.
+
+    public override method asm::immediate16For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := value asUInt16 asAsmImmediate.
+
+    public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := value asUInt32 asAsmImmediate.
+
+    public override method asm::immediateS32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := value asInt32 asAsmImmediate.
+
+    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := value asUInt64 asAsmImmediate.
+}.
+
+TACConstantInt8 definition: {
+    public override method asm::immediate8For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := value asAsmImmediate.
+
+    public override method asm::immediate16For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := value asInt16 asAsmImmediate.
+
+    public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := value asInt32 asAsmImmediate.
+
+    public override method asm::immediateS32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := value asInt32 asAsmImmediate.
+
+    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := value asInt64 asAsmImmediate.
+}.
+
+TACConstantUInt16 definition: {
+    public override method asm::immediate16For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := value asAsmImmediate.
+
+    public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := value asUInt32 asAsmImmediate.
+
+    public override method asm::immediateS32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := value asInt32 asAsmImmediate.
+
+    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := value asUInt64 asAsmImmediate.
+}.
+
+TACConstantInt16 definition: {
+    public override method asm::immediate16For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := value asAsmImmediate.
+
+    public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := value asInt32 asAsmImmediate.
+
+    public override method asm::immediateS32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := value asInt32 asAsmImmediate.
+
+    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+        := value asInt64 asAsmImmediate.
+}.
+
 TACConstantUInt32 definition: {
     public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
         := value asAsmImmediate.
