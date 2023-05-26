@@ -130,7 +130,7 @@
         )
         (Type::checkNoOverridenSelector (Type::supertype type) selector))
 
-    (ProgramEntity::recordBindingWithOwnerAndName method type selector))
+    (send #recordBindingWithOwner:andName: method type selector))
 
 ## Type::validMacroMethodDictionary
 (define (Type::validMacroMethodDictionary type)
@@ -147,7 +147,7 @@
     (define methodDict (Type::validMacroMethodDictionary type))
     (MethodDictionary::at:put: methodDict selector method)
     (Type::flushMacroLookupSelector: type selector)
-    (ProgramEntity::recordBindingWithOwnerAndName method type selector))
+    (send #recordBindingWithOwner:andName: method type selector))
 
 ## Type::validFallbackMethodDictionary
 (define (Type::validFallbackMethodDictionary type)
@@ -164,7 +164,7 @@
     (define methodDict (Type::validFallbackMethodDictionary type))
     (MethodDictionary::at:put: methodDict selector method)
     (Type::flushFallbackLookupSelector: type selector)
-    (ProgramEntity::recordBindingWithOwnerAndName method type selector))
+    (send #recordBindingWithOwner:andName: method type selector))
 
 (define (Function::makeOverride function)
     (Function::flags: function FunctionFlags::Override)
