@@ -5,6 +5,9 @@ error __type__: (SimpleFunctionTypeTemplate((String,), 0bflgs, Unwinds)).
 ##(RawTuple::slotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size, Untyped), 0bflgs, Void)).
 (RawTuple::refTypeSlotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, TypeSlot), 0bflgs, Untyped)).
 (RawTuple::refTypeSlotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, TypeSlot, Untyped), 0bflgs, Void)).
+(==) __type__: (SimpleFunctionTypeTemplate((AnyValue, AnyValue), 0bflgs, Boolean)).
+(~~) __type__: (SimpleFunctionTypeTemplate((AnyValue, AnyValue), 0bflgs, Boolean)).
+identityHash __type__: (SimpleFunctionTypeTemplate((AnyValue,), 0bflgs, Size)).
 
 {
     let: #binaryFunctionType with: SimpleFunctionTypeTemplate((UInt32, UInt32), 0bflgs, UInt32).

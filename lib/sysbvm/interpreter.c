@@ -1061,6 +1061,7 @@ sysbvm_tuple_t sysbvm_interpreter_recompileAndOptimizeFunction(sysbvm_context_t 
     sysbvm_functionDefinition_ensureAnalysis(context, &gcFrame.optimizedFunctionDefinition);
     SYSBVM_ASSERT(sysbvm_array_getSize(gcFrame.optimizedFunctionDefinition->analyzedCaptures) == 0);
     gcFrame.optimizedFunction = sysbvm_function_createClosureWithCaptureVector(context, (sysbvm_tuple_t)gcFrame.optimizedFunctionDefinition, sysbvm_array_create(context, 0));
+    ((sysbvm_function_t*)gcFrame.optimizedFunction)->flags = (*functionObject)->flags;
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.optimizedFunction;
 }

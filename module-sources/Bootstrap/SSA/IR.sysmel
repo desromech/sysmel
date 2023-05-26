@@ -52,9 +52,11 @@ SSAValue definition: {
     }.
 
     public virtual method replaceWith: (replacement: SSAValue) ::=> Void := {
-        users do: {:(SSAValue)user :: Void |
-            user replaceUsedValue: self with: replacement.
-            replacement registerUser: user
+        users ifNotNil: {
+            users do: {:(SSAValue)user :: Void |
+                user replaceUsedValue: self with: replacement.
+                replacement registerUser: user
+            }.
         }.
 
         self usedValuesDo: {:(SSAValue)usedValue :: Void |

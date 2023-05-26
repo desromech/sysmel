@@ -375,15 +375,15 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.arrayedCollectionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.sequenceableCollectionType);
 
     // Create the basic hash functions.
+    context->roots.symbolType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.stringSymbolType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolType);
+    sysbvm_type_setFlags(context, context->roots.stringSymbolType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_BYTES);
+
     context->roots.identityEqualsFunction = sysbvm_function_createPrimitive(context, 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_identityEquals);
     context->roots.identityNotEqualsFunction = sysbvm_function_createPrimitive(context, 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_identityNotEquals);
     context->roots.identityHashFunction = sysbvm_function_createPrimitive(context, 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_identityHash);
     context->roots.stringEqualsFunction = sysbvm_function_createPrimitive(context, 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_string_primitive_equals);
     context->roots.stringHashFunction = sysbvm_function_createPrimitive(context, 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_string_primitive_hash);
-
-    context->roots.symbolType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
-    context->roots.stringSymbolType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolType);
-    sysbvm_type_setFlags(context, context->roots.stringSymbolType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_BYTES);
 
     context->roots.dictionaryType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.hashedCollectionType);
     context->roots.weakKeyDictionaryType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.dictionaryType);
