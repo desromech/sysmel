@@ -696,6 +696,8 @@ public global TAC::Operation::StoreFloat32 := TACOperation named: #storeFloat32.
 public global TAC::Operation::StoreFloat64 := TACOperation named: #storeFloat64.
 public global TAC::Operation::StoreStruct := TACOperation named: #storeStruct.
 
+public global TAC::Operation::CallInt8 := TACOperation named: #callInt8.
+public global TAC::Operation::CallInt16 := TACOperation named: #callInt16.
 public global TAC::Operation::CallInt32 := TACOperation named: #callInt32.
 public global TAC::Operation::CallInt64 := TACOperation named: #callInt64.
 public global TAC::Operation::CallFloat32 := TACOperation named: #callFloat32.
@@ -703,6 +705,8 @@ public global TAC::Operation::CallFloat64 := TACOperation named: #callFloat64.
 public global TAC::Operation::CallStruct := TACOperation named: #callStruct.
 public global TAC::Operation::CallVoid := TACOperation named: #callVoid.
 
+public global TAC::Operation::ReturnInt8 := TACOperation terminatorNamed: #returnInt8.
+public global TAC::Operation::ReturnInt16 := TACOperation terminatorNamed: #returnInt16.
 public global TAC::Operation::ReturnInt32 := TACOperation terminatorNamed: #returnInt32.
 public global TAC::Operation::ReturnInt64 := TACOperation terminatorNamed: #returnInt64.
 public global TAC::Operation::ReturnFloat32 := TACOperation terminatorNamed: #returnFloat32.
@@ -1047,14 +1051,26 @@ public final class TACBlockBuilder superclass: Object; definition: {
             result: result;
             yourself).
 
+    public method callInt8: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+        := self call: function operation: TAC::Operation::CallInt8 convention: callingConvention arguments: arguments result: result.
+
+    public method callInt8: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+        := self callInt8: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
+
+    public method callInt16: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+        := self call: function operation: TAC::Operation::CallInt16 convention: callingConvention arguments: arguments result: result.
+
+    public method callInt16: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+        := self callInt16: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
+
     public method callInt32: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
-        := self call: function operation: TAC::Operation::CallInt32 convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
+        := self call: function operation: TAC::Operation::CallInt32 convention: callingConvention arguments: arguments result: result.
 
     public method callInt32: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
         := self callInt32: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
 
     public method callInt64: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
-        := self call: function operation: TAC::Operation::CallInt64 convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
+        := self call: function operation: TAC::Operation::CallInt64 convention: callingConvention arguments: arguments result: result.
 
     public method callInt64: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
         := self callInt64: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
@@ -1068,19 +1084,19 @@ public final class TACBlockBuilder superclass: Object; definition: {
         := self callPointer: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
 
     public method callFloat32: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
-        := self call: function operation: TAC::Operation::CallFloat32 convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
+        := self call: function operation: TAC::Operation::CallFloat32 convention: callingConvention arguments: arguments result: result.
 
     public method callFloat32: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
         := self callFloat32: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
 
     public method callFloat64: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
-        := self call: function operation: TAC::Operation::CallFloat64 convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
+        := self call: function operation: TAC::Operation::CallFloat64 convention: callingConvention arguments: arguments result: result.
 
     public method callFloat64: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
         := self callFloat64: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
 
     public method callVoid: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) ::=> TACInstruction
-        := self call: function operation: TAC::Operation::CallVoid convention: self compilationTarget defaultCallingConvention arguments: arguments result: nil.
+        := self call: function operation: TAC::Operation::CallVoid convention: callingConvention arguments: arguments result: nil.
 
     public method callVoid: (function: TACValue) arguments: (arguments: Array) ::=> TACInstruction
         := self callVoid: function convention: self compilationTarget defaultCallingConvention arguments: arguments.
@@ -1223,6 +1239,12 @@ public final class TACBlockBuilder superclass: Object; definition: {
 
     public method returnVoid ::=> TACInstruction
         := self operation: TAC::Operation::ReturnVoid.
+
+    public method returnInt8: (value: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::ReturnInt8 with: value.
+
+    public method returnInt16: (value: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::ReturnInt16 with: value.
 
     public method returnInt32: (value: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::ReturnInt32 with: value.

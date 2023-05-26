@@ -200,6 +200,12 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
     }.
 
     TACCallingConvention extend: {
+        public abstract method asm::generateCallInt8: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
+        public abstract method asm::generateCallInt16: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
         public abstract method asm::generateCallInt32: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 

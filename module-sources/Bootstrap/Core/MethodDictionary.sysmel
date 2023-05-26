@@ -6,7 +6,6 @@ MethodDictionary definition: {
         let capacity := storage size / 2sz.
         let naturalIndex := key identityHash % capacity.
 
-        #*
         let i mutable := naturalIndex.
         while: (i < capacity) do: {
             let storageKey := storage at: i*2sz.
@@ -22,7 +21,6 @@ MethodDictionary definition: {
                 return: i asIntPointer
             }
         } continueWith: (i := i + 1sz).
-        *#
 
         -1iptr
     }.

@@ -610,11 +610,11 @@ Char8 __type__ extend: {
 
 Int8 __type__ extend: {
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
-        builder callInt32: function convention: callingConvention arguments: arguments result: result
+        builder callInt8: function convention: callingConvention arguments: arguments result: result
     }.
 
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
-        builder returnInt32: value
+        builder returnInt8: value
     }.
 
     public override method emitTacMove: (sourceValue: TACValue) into: (targetValue: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
@@ -635,11 +635,11 @@ Int8 __type__ extend: {
 
 UInt8 __type__ extend: {
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
-        builder callInt32: function convention: callingConvention arguments: arguments result: result
+        builder callInt8: function convention: callingConvention arguments: arguments result: result
     }.
 
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
-        builder returnInt32: value
+        builder returnInt8: value
     }.
 
     public override method emitTacMove: (sourceValue: TACValue) into: (targetValue: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
@@ -658,13 +658,45 @@ UInt8 __type__ extend: {
         := constant value asTacConstant.
 }.
 
-Char16 __type__ extend: {
+Boolean __type__ extend: {
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
-        builder callInt32: function convention: callingConvention arguments: arguments result: result
+        builder callInt8: function convention: callingConvention arguments: arguments result: result
     }.
 
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
-        builder returnInt32: value
+        builder returnInt8: value
+    }.
+
+    public override method emitTacMove: (sourceValue: TACValue) into: (targetValue: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder moveInt8: sourceValue into: targetValue
+    }.
+
+    public override method emitTacLoadFromPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder loadUInt8: pointer constantOffset: constantOffset into: result
+    }.
+
+    public override method emitTacStore: (value: TACValue) intoPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder storeInt8: value into: pointer constantOffset: constantOffset
+    }.
+}.
+
+False __type__ extend: {
+    public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := 0u8 asTacConstant.
+}.
+
+True __type__ extend: {
+    public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := 1u8 asTacConstant.
+}.
+
+Char16 __type__ extend: {
+    public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder callInt16: function convention: callingConvention arguments: arguments result: result
+    }.
+
+    public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder returnInt16: value
     }.
 
     public override method emitTacMove: (sourceValue: TACValue) into: (targetValue: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
@@ -685,11 +717,11 @@ Char16 __type__ extend: {
 
 Int16 __type__ extend: {
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
-        builder callInt32: function convention: callingConvention arguments: arguments result: result
+        builder callInt16: function convention: callingConvention arguments: arguments result: result
     }.
 
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
-        builder returnInt32: value
+        builder returnInt16: value
     }.
 
     public override method emitTacMove: (sourceValue: TACValue) into: (targetValue: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
@@ -710,11 +742,11 @@ Int16 __type__ extend: {
 
 UInt16 __type__ extend: {
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
-        builder callInt32: function convention: callingConvention arguments: arguments result: result
+        builder callInt16: function convention: callingConvention arguments: arguments result: result
     }.
 
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
-        builder returnInt32: value
+        builder returnInt16: value
     }.
 
     public override method emitTacMove: (sourceValue: TACValue) into: (targetValue: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {

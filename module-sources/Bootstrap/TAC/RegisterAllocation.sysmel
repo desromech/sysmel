@@ -182,6 +182,12 @@ TACOperation extend: {
 }.
 
 TACCallingConvention extend: {
+    public abstract method registerConstraintsOfCallInt8: (instruction: TACInstruction) with: (registerAllocator: TACRegisterAllocator) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method registerConstraintsOfCallInt16: (instruction: TACInstruction) with: (registerAllocator: TACRegisterAllocator) ::=> Void
+        := self subclassResponsibility.
+
     public abstract method registerConstraintsOfCallInt32: (instruction: TACInstruction) with: (registerAllocator: TACRegisterAllocator) ::=> Void
         := self subclassResponsibility.
 
