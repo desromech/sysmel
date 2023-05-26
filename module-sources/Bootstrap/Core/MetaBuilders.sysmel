@@ -183,7 +183,7 @@ MacroMetaBuilder
             environment: environment;
             sourcePosition: metaBuilderLiteralNode sourcePosition;
             finishExpansion
-    };
+    } makeOverride;
     withSelector: #expandMessageSendNode: addMethod: {:self :(ASTMessageSendNode)messageSendNode :: ASTNode |
         self expandMessageSendNodeWithMetaBuilderMethod: messageSendNode
     };
@@ -235,7 +235,7 @@ NamedMetaBuilder
         } else: {
             self expandMessageSendNodeWithMetaBuilderMethod: messageSendNode
         }.
-    }.
+    } makeOverride.
 
 NamedMetaBuilder publicSubclass: #TypeMetaBuilder slots: (
     TypeSlot publicNamed: #isPublic type: Boolean ,
@@ -250,7 +250,7 @@ TypeMetaBuilder
         (tuple: self withLookupStartingFrom: TypeMetaBuilder supertype) initialize.
         self isPublic: false.
         self typeFlags: TypeFlags::None
-    };
+    } makeOverride;
     withSelector: #metaSlots: addMethod: {:self :(ASTNode)metaSlotsExpression :: ASTNode |
         <metaBuilder>
         self metaSlotsExpression: metaSlotsExpression.
@@ -319,7 +319,7 @@ ClassMetaBuilder
         definitionExpression
         ifNil: classValueExpression
         ifNotNil: ``(`,classValueExpression definition: `,definitionExpression)
-    }.
+    } makeOverride.
 
 public: #class with: (MetaBuilderFactory for: ClassMetaBuilder).
 
@@ -355,7 +355,7 @@ LetMetaBuilder
     withSelector: #initialize addMethod: {:self :: Void |
         (tuple: self withLookupStartingFrom: TypeMetaBuilder supertype) initialize.
         self isMutable: false
-    };
+    } makeOverride;
     withSelector: #mutable addMethod: {:self :: ASTNode |
         <metaBuilder>
         self isMutable: true.
@@ -369,7 +369,7 @@ LetMetaBuilder
             valueExpression: self initialValue;
             isMutable: self isMutable;
             yourself
-    }.
+    } makeOverride.
 
 public: #let with: (MetaBuilderFactory for: LetMetaBuilder).
 
@@ -393,7 +393,7 @@ GlobalMetaBuilder
         } else: {
             localDefinitionNode
         }
-    }.
+    } makeOverride.
 
 VariableMetaBuilder publicSubclass: #FieldMetaBuilder slots: (
     TypeSlot publicNamed: #fieldFlags type: Bitflags ,
@@ -404,7 +404,7 @@ FieldMetaBuilder
     withSelector: #initialize addMethod: {:self :: Void |
         (tuple: self withLookupStartingFrom: FieldMetaBuilder supertype) initialize.
         self fieldFlags: TypeSlotFlags::None
-    };
+    } makeOverride;
     withSelector: #addFieldFlags: addMethod: {:self :(Bitflags)flags :: Void |
         self fieldFlags: self fieldFlags | flags
     };
@@ -432,15 +432,15 @@ FieldMetaBuilder
                     ifNil: ``(__OwnerProgramEntity__ addTypeSlot: (TypeSlot named: `,(self name) flags: `,flagsExpression) initialValueBlock: `,initialValueBlock)
                     ifNotNil: ``(__OwnerProgramEntity__ addTypeSlot: (TypeSlot named: `,(self name) type: `,typeExpression flags: `,flagsExpression) initialValueBlock: `,initialValueBlock)
             )
-    }.
+    } makeOverride.
 
 ASTNode
     withSelector: #parseAsArgumentNode addMethod: {:self :: ASTArgumentNode |
         self error: self asString -- " is not a valid argument expression."
-    }.
+    } makeVirtual.
 
 ASTArgumentNode
-    withSelector: #parseAsArgumentNode addMethod: {:self :: ASTArgumentNode | self }.
+    withSelector: #parseAsArgumentNode addMethod: {:self :: ASTArgumentNode | self } makeOverride.
 
 ASTIdentifierReferenceNode
     withSelector: #parseKeywordAsLiteralWithoutColon addMethod: {:self :: ASTLiteralNode |
@@ -458,7 +458,7 @@ ASTIdentifierReferenceNode
                 value: self value;
                 yourself);
             yourself
-    }.
+    } makeOverride.
 
 ASTUnexpandedApplicationNode
     withSelector: #parseAsArgumentNode addMethod: {:self :: ASTArgumentNode |
@@ -471,7 +471,7 @@ ASTUnexpandedApplicationNode
             name: name;
             type: type;
             yourself
-    }.
+    } makeOverride.
 
 NamedMetaBuilder publicSubclass: #FunctionMetaBuilder slots: (
     TypeSlot publicNamed: #functionFlags type: Bitflags ,
@@ -493,7 +493,7 @@ FunctionMetaBuilder
         } else: {
             self finishExpansion
         }.
-    };
+    } makeOverride;
     withSelector: #addFunctionFlags: addMethod: {:self :(Bitflags)flags :: Void |
         self functionFlags: self functionFlags | flags
     };
@@ -563,7 +563,7 @@ FunctionMetaBuilder
         } else: {
             exportNode
         }
-    }.
+    } makeOverride.
 
 public: #function with: (MetaBuilderFactory for: FunctionMetaBuilder).
 
@@ -574,7 +574,7 @@ TemplateMetaBuilder
     withSelector: #initialize addMethod: {:self :: Void |
         (tuple: self withLookupStartingFrom: TemplateMetaBuilder supertype) initialize.
         self functionFlags: FunctionFlags::Memoized | FunctionFlags::Template.
-    };
+    } makeOverride;
     withSelector: #finishFunctionExpansion addMethod: {:self :: ASTNode |
         let: #templateResultArgument with: (ASTArgumentNode new
             sourcePosition: self sourcePosition;
@@ -591,7 +591,7 @@ TemplateMetaBuilder
             body: self expansionBody;
             resultType: self resultType;
             yourself
-    }.
+    } makeOverride.
 
 MacroMetaBuilder publicSubclass: #MethodMetaBuilder slots: (
     TypeSlot publicNamed: #methodFlags type: Bitflags ,
@@ -609,7 +609,7 @@ MethodMetaBuilder
         self methodFlags: FunctionFlags::None.
         self isMacro: false.
         self isFallbackMethod: false.
-    };
+    } makeOverride;
     withSelector: #expandMessageSendNode: addMethod: {:self :(ASTMessageSendNode)messageSendNode :: ASTNode |
         if: self selector == nil then: {
             self selector: messageSendNode selector.
@@ -618,7 +618,7 @@ MethodMetaBuilder
         } else: {
             self expandMessageSendNodeWithMetaBuilderMethod: messageSendNode
         }.
-    };
+    } makeOverride;
     withSelector: #addMethodFlags: addMethod: {:self :(Bitflags)flags :: Void |
         self methodFlags: self methodFlags | flags
     };
@@ -696,7 +696,7 @@ MethodMetaBuilder
         if: self isMacro
         then: self finishMacroMethodExpansion
         else: self finishMethodExpansion
-    }.
+    } makeOverride.
 
 MacroMetaBuilder publicSubclass: #MacroMethodMetaBuilder slots: (
     TypeSlot publicNamed: #methodFlags type: Bitflags ,
@@ -709,7 +709,7 @@ MacroMethodMetaBuilder
         (tuple: self withLookupStartingFrom: MacroMethodMetaBuilder supertype) initialize.
         self methodFlags: FunctionFlags::Macro.
         self isFallbackMethod: false.
-    };
+    } makeOverride;
     withSelector: #addMethodFlags: addMethod: {:self :(Bitflags)flags :: Void |
         self methodFlags: self methodFlags | flags
     };
@@ -749,7 +749,7 @@ FlagMetaBuilder
         self typeFlags: TypeFlags::None.
         self fieldFlags: TypeSlotFlags::None.
         self isPublic: false.
-    };
+    } makeOverride;
     withSelector: #expandMessageSendNode: addMethod: {:self :(ASTMessageSendNode)messageSendNode :: ASTNode |
         let: #selector with: messageSendNode selector.
         if: (selector isLiteralNode && selector value) == #class then: {
@@ -760,7 +760,7 @@ FlagMetaBuilder
         } else: {
             self expandMessageSendNodeWithMetaBuilderMethod: messageSendNode
         }.
-    };
+    } makeOverride;
     withSelector: #addFieldFlags: addMethod: {:self :(Bitflags)flags :: Void |
         self fieldFlags: self fieldFlags | flags
     };
@@ -870,7 +870,7 @@ PublicMetaBuilder
         (tuple: self withLookupStartingFrom: PublicMetaBuilder supertype) initialize.
         self fieldFlags: TypeSlotFlags::Public.
         self isPublic: true.
-    }.
+    } makeOverride.
 
 FlagMetaBuilder publicSubclass: #ProtectedMetaBuilder slots: (
 ).

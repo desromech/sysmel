@@ -156,7 +156,7 @@ FunctionBytecode definition: {
         }
     }.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self class; nl;
             nextPutAll: "argumentCount: "; print: self argumentCount; nl;
             nextPutAll: "captureVectorSize: "; print: self captureVectorSize; nl;

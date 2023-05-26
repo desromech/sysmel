@@ -23,7 +23,7 @@ public class TestClass superclass: Object; definition: {
     protected field first => Int32.
     protected field second => Int32.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         first := 1i32.
         second := first + 1i32.
     }.

@@ -90,10 +90,10 @@ public final struct ObjectModel::TupleHeader64 definition: {
             ifFalse: (typePointerAndFlags := identityHashAndFlags | ObjectModel::TypePointerFlag::Weak asUInt64).
     }.
 
-    public method identityHash ::=> UInt64
+    public method identityHashValue ::=> UInt64
         := identityHashAndFlags >> 4u64.
 
-    public method identityHash: (identityHash: UInt64) ::=> Void := {
+    public method identityHashValue: (identityHash: UInt64) ::=> Void := {
         identityHashAndFlags := (identityHash << 4u64) | (identityHashAndFlags & 15u64)
     }.
 }.

@@ -18,7 +18,7 @@ public class FunctionBytecodeAssemblerOperand superclass: FunctionBytecodeAssemb
     public field hasLoadStoreUsage => Boolean.
     public field hasNonLoadStoreUsage => Boolean.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         super initialize.
         self hasAllocaDestination: false.
         self hasNonAllocaDestination: false.
@@ -39,7 +39,7 @@ public class FunctionBytecodeAssemblerOperand superclass: FunctionBytecodeAssemb
     public override method encodedValueForInstruction: (instruction: FunctionBytecodeAssemblerAbstractInstruction) ::=> Int16
         := (self index << FunctionBytecode::OperandVectorName::Bits) | self vectorType.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         if: self name ~~ nil then: (stream print: self name; nextPut: ':').
         stream nextPutAll: (FunctionBytecode::OperandVectorNameDictionary at: self vectorType); nextPut: ':'; print: self index
     }.
@@ -54,7 +54,7 @@ FunctionBytecodeAssemblerAbstractInstruction definition: {
     public field sourceEnvironment => Environment.
     public field sourceASTNode => ASTNode.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         self pc: 0sz
     }.
 
@@ -85,30 +85,30 @@ public final class FunctionBytecodeAssemblerInstruction superclass: FunctionByte
     public field standardOpcode => UInt8.
     public field operands => Array.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         super initialize.
         self operands: #()
     }.
 
-    public method assembledSize => Size
+    public override method assembledSize => Size
         := 1sz + (self operands size * 2sz).
 
-    public method endPC => Size
+    public override method endPC => Size
         := self pc + self assembledSize.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         if: self name ~~ nil then: (stream print: self name; nextPut: ':').
         stream nextPutAll: (self pc printString padLeft: 4sz with: '0'asChar8)
     }.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: (FunctionBytecode::OpcodeNameDictionary at: self standardOpcode).
         self operands do: {:(FunctionBytecodeAssemblerOperand)operand :: Void |
             stream print: operand
         }
     }.
 
-    public method assembleIn: (instructionStream: ByteArray) ::=> Void := {
+    public override method assembleIn: (instructionStream: ByteArray) ::=> Void := {
         let destination mutable := self pc.
         let standardOpcode := self standardOpcode.
         let opcode := if: standardOpcode >= FunctionBytecode::Opcode::FirstVariable
@@ -132,7 +132,7 @@ public final class FunctionBytecodeAssemblerInstruction superclass: FunctionByte
         (opcode = FunctionBytecode::Opcode::Alloca) || (opcode = FunctionBytecode::Opcode::AllocaWithValue)
     }.
 
-    public method isBranchInstruction => Boolean := {
+    public override method isBranchInstruction => Boolean := {
         let opcode := self standardOpcode.
         ((opcode = FunctionBytecode::Opcode::Jump) || (opcode = FunctionBytecode::Opcode::JumpIfTrue))
         || (opcode = FunctionBytecode::Opcode::JumpIfFalse)
@@ -149,10 +149,10 @@ public final class FunctionBytecodeAssemblerInstruction superclass: FunctionByte
     public method isStoreInstruction => Boolean
         := self standardOpcode = FunctionBytecode::Opcode::Store.
 
-    public method destinationInstruction => FunctionBytecodeAssemblerAbstractInstruction
+    public override method destinationInstruction => FunctionBytecodeAssemblerAbstractInstruction
         := self operands last.
 
-    public method markOperandUsages => Void := {
+    public override method markOperandUsages => Void := {
         let destinationOperandCount := FunctionBytecode::OpcodeDestinationOperandCountDictionary at: self standardOpcode.
         let operands := self operands.
         let operandCount := operands size - (if: self isBranchInstruction then: 1sz else: 0sz).
@@ -215,7 +215,7 @@ public final class FunctionBytecodeAssemblerInstruction superclass: FunctionByte
         }
     }.
 
-    public method optimizeLocalOnlyAllocasWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {
+    public override method optimizeLocalOnlyAllocasWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {
         if: self isAllocaInstruction then: (self optimizeLocalOnlyAllocaWith: assembler).
         if: self isLoadInstruction then: (self optimizeLocalOnlyLoadWith: assembler).
         if: self isStoreInstruction then: (self optimizeLocalOnlyStoreWith: assembler).
@@ -237,7 +237,7 @@ FunctionBytecodeAssembler definition: {
     public field sourceEnvironment => Environment.
     public field sourceASTNode => ASTNode.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         self arguments: #().
         self captures: #().
         self literals: OrderedCollection new.

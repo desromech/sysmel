@@ -102,7 +102,7 @@ public final class Elf32::Header superclass: ByteSerializableObject; definition:
     public field sectionHeaderEntryNumber => Elf32::Half.
     public field sectionNameStringStringTableIndex => Elf32::Half.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         ident
             at: Elf::Ident::Magic0 put: 16r7f u8;
             at: Elf::Ident::Magic1 put: 'E' asUInt8;
@@ -134,7 +134,7 @@ public final class Elf64::Header superclass: ByteSerializableObject; definition:
     public field sectionHeaderEntryNumber => Elf64::Half.
     public field sectionNameStringStringTableIndex => Elf64::Half.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         ident
             at: Elf::Ident::Magic0 put: 16r7f u8;
             at: Elf::Ident::Magic1 put: 'E' asUInt8;
@@ -268,7 +268,7 @@ public final class Elf32::SymbolTable superclass: Object; definition: {
     protected field publicSymbolDictionary => Dictionary.
     protected field sectionIndexTable => Dictionary.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         publicSymbols := OrderedCollection new.
         privateSymbols := OrderedCollection new.
         privateSymbolDictionary := Dictionary new.
@@ -336,7 +336,7 @@ public final class Elf64::SymbolTable superclass: Object; definition: {
     protected field publicSymbolDictionary => Dictionary.
     protected field sectionIndexTable => Dictionary.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         publicSymbols := OrderedCollection new.
         privateSymbols := OrderedCollection new.
         privateSymbolDictionary := Dictionary new.

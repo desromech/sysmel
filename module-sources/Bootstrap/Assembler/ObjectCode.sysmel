@@ -59,7 +59,7 @@ AsmObjectCodeSection definition: {
     public field offsetOfEncodedElementInByteStream => Size.
     public field newRelocations => OrderedCollection.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         data := #[].
         size := 0sz.
         alignment := 1sz.
@@ -171,7 +171,7 @@ AsmObjectCodeSection definition: {
         writeOffset := writeOffset + 8sz.
     }.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream
             nextPutAll: "section: "; print: name;
             nextPutAll: " size: "; print: size;
@@ -192,10 +192,10 @@ AsmObjectCodeSection definition: {
         newRelocations := nil.
     }.
 
-    public method sizeOfByteEncoding => Size := data size.
-    public method canEncodeInBytes => Boolean := true.
+    public override method sizeOfByteEncoding => Size := data size.
+    public override method canEncodeInBytes => Boolean := true.
 
-    public method encodeInBytes: (destination: ByteArray) atOffset: (destinationOffset) ::=> Void := {
+    public override method encodeInBytes: (destination: ByteArray) atOffset: (destinationOffset) ::=> Void := {
         destination replaceFrom: destinationOffset until: destinationOffset + data size with: data
     }.
 }.
@@ -206,7 +206,7 @@ public final class AsmObjectCode superclass: Object; definition: {
     public field sections => Array.
     public field symbols => Array.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         sections do: {:(AsmObjectCodeSection)each :: Void |
             stream fullPrint: each
         }.
@@ -240,7 +240,7 @@ public final class AsmObjectCodeCStringTable superclass: Object; definition: {
     
     public field offsetOfEncodedElementInByteStream => Size.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         stringStream := StringStream new.
         stringIndexTable := Dictionary new.
         self addString: "".
@@ -264,10 +264,10 @@ public final class AsmObjectCodeCStringTable superclass: Object; definition: {
         size := data size.
     }.
 
-    public method sizeOfByteEncoding => Size := size.
-    public method canEncodeInBytes => Boolean := true.
+    public override method sizeOfByteEncoding => Size := size.
+    public override method canEncodeInBytes => Boolean := true.
 
-    public method encodeInBytes: (destination: ByteArray) atOffset: (destinationOffset) ::=> Void := {
+    public override method encodeInBytes: (destination: ByteArray) atOffset: (destinationOffset) ::=> Void := {
         destination replaceFrom: destinationOffset until: destinationOffset + data size with: data
     }.
 }.
@@ -314,7 +314,7 @@ AsmSymbol definition: {
         type := AsmSymbol::Type::Function.
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         self isPrivate ifTrue: (stream nextPut: '.').
         name ifNotNil: {
             stream string: name.
@@ -334,7 +334,7 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
     public field sectionNameTable => Dictionary.
     public field symbols => OrderedCollection.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         sections := OrderedCollection new.
         sectionNameTable := Dictionary new.
         symbols := OrderedCollection new.

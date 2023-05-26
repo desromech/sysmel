@@ -17,7 +17,7 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
     private field uncheckedFunctionEntryPointTrampoline => TACValue.
     private field checkedFunctionEntryPointTrampoline => TACValue.
 
-    public method initializeWithTarget: (theCompilationTarget: TACCompilationTarget) ::=> Void := {
+    public override method initializeWithTarget: (theCompilationTarget: TACCompilationTarget) ::=> Void := {
         compilationTarget := theCompilationTarget.
         targetModule := TACModule new
             compilationTarget: compilationTarget;
@@ -252,7 +252,7 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
     public field localOnlyAllocaDictionary => Dictionary.
     public field functionArgument => TACValue.
     
-    public method initialize => Void := {
+    public override method initialize => Void := {
         valueDictionary := Dictionary new.
         localOnlyAllocaDictionary := Dictionary new.
     }.

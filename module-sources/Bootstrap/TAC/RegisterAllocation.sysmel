@@ -77,7 +77,7 @@ public abstract class TACRegisterAllocator superclass: Object; definition: {
 
 TACPhysicalLocation extend: {
     __Meta__ extend: {
-        public method allocateRegisterWith: (registerAllocator: TACRegisterAllocator) ::=> TACPhysicalLocation
+        public virtual method allocateRegisterWith: (registerAllocator: TACRegisterAllocator) ::=> TACPhysicalLocation
             := registerAllocator allocateIntegerRegister.
     }.
 
@@ -93,7 +93,7 @@ TACPhysicalIntegerRegister extend: {
 
 TACPhysicalFloatRegister extend: {
     __Meta__ extend: {
-        public method allocateRegisterWith: (registerAllocator: TACRegisterAllocator) ::=> TACPhysicalLocation
+        public override method allocateRegisterWith: (registerAllocator: TACRegisterAllocator) ::=> TACPhysicalLocation
             := registerAllocator allocateFloatRegister.
     }.
 
@@ -104,7 +104,7 @@ TACPhysicalFloatRegister extend: {
 
 TACPhysicalVectorRegister extend: {
     __Meta__ extend: {
-        public method allocateRegisterWith: (registerAllocator: TACRegisterAllocator) ::=> TACPhysicalLocation
+        public override method allocateRegisterWith: (registerAllocator: TACRegisterAllocator) ::=> TACPhysicalLocation
             := registerAllocator allocateVectorRegister.
     }.
 

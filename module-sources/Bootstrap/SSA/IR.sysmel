@@ -80,28 +80,29 @@ SSAValue definition: {
         }.
     }.
 
-    public method postCopy => Void := {
+    public override method postCopy => Void := {
+        super postCopy.
         users := nil
     }.
 }.
 
 SSAConstant definition: {
-    public method isConstant => Boolean := true.
+    public override method isConstant => Boolean := true.
 }.
 
 public final class SSAUndefinedConstant superclass: SSAConstant; definition: {
-    public method isUndefinedConstant => Boolean := true.
+    public override method isUndefinedConstant => Boolean := true.
 
-    public method printOn: (stream: Stream) ::=> Void
+    public override method printOn: (stream: Stream) ::=> Void
         := stream nextPutAll: "undefined "; print: self type.
 }.
 
 public final class SSALiteralConstant superclass: SSAConstant; definition: {
     public field value.
 
-    public method isLiteralConstant => Boolean := true.
+    public override method isLiteralConstant => Boolean := true.
 
-    public method primitiveName => Symbol := {
+    public override method primitiveName => Symbol := {
         let value := self value.
 
         if: (value __type__ isSubtypeOf: Function)
@@ -109,7 +110,7 @@ public final class SSALiteralConstant superclass: SSAConstant; definition: {
         else: nil
     }.
 
-    public method printOn: (stream: Stream) ::=> Void
+    public override method printOn: (stream: Stream) ::=> Void
         := stream nextPutAll: "Literal("; print: self value; nextPutAll: " => "; print: self type; nextPut: ')'.
 }.
 
@@ -124,17 +125,17 @@ SSAFunction definition: {
     public field primitiveName => Symbol.
     public field exportedSymbols => Array.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         super initialize.
         captures := #().
         exportedSymbols := #().
     }.
 
-    public method isCaptureless => Boolean := captures isEmpty.
+    public override method isCaptureless => Boolean := captures isEmpty.
 
-    public method asSSAFunctionDefinitionOrNil => SSAFunctionDefinition := definition.
+    public override method asSSAFunctionDefinitionOrNil => SSAFunctionDefinition := definition.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: '@'.
         name ifNil: {
             stream print: sourcePosition.
@@ -143,7 +144,7 @@ SSAFunction definition: {
         }
     }.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self.
         stream nextPutAll: " captures [".
         captures doWithIndex: {:(SSAValue)capture :(Size)index :: Void |
@@ -171,9 +172,9 @@ SSAFunctionDefinition definition: {
     public field firstBasicBlock => SSABasicBlock.
     public field lastBasicBlock => SSABasicBlock.
 
-    public method isFunction => Boolean := true.
+    public override method isFunction => Boolean := true.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         importedSymbols := #().
     }.
 
@@ -181,9 +182,9 @@ SSAFunctionDefinition definition: {
         public method asSSAFunctionDefinitionOrNil => SSAFunctionDefinition := nil
     }.
 
-    public method asSSAFunctionDefinitionOrNil => SSAFunctionDefinition := self.
+    public override method asSSAFunctionDefinitionOrNil => SSAFunctionDefinition := self.
 
-    public method isCaptureless => Boolean := captures isEmpty.
+    public override method isCaptureless => Boolean := captures isEmpty.
 
     public method addBasicBlock: (basicBlock: SSABasicBlock) before: (position: SSABasicBlock) ::=> Void := {
         self assert: basicBlock parent isNil.
@@ -336,7 +337,7 @@ SSAFunctionDefinition definition: {
             nextBlock: nil
     }.
 
-    public method postCopy => Void := {
+    public override method postCopy => Void := {
         super postCopy.
 
         let oldLocalValues := self allLocalValues.
@@ -369,7 +370,7 @@ SSAFunctionDefinition definition: {
         }.
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: '%'.
         self name ifNotNil: {:name :: Void |
             stream print: self name
@@ -381,7 +382,7 @@ SSAFunctionDefinition definition: {
         }.
     }.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         self enumerateLocalValueIndices.
         self printOn: stream.
         
@@ -415,14 +416,14 @@ SSAFunctionLocalValue definition: {
     public field name.
     public field localValueIndex => Size.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         super initialize.
         self localValueIndex: 0sz
     }.
 
-    public method isFunctionLocalValue => Boolean := true.
+    public override method isFunctionLocalValue => Boolean := true.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: '$'; print: self localValueIndex.
 
         self name ifNotNil: {:name |
@@ -448,7 +449,7 @@ SSABasicBlock definition: {
     public field predecessorKinds => OrderedCollection.
     public field successors => Array.
 
-    public method isBasicBlock => Boolean := true.
+    public override method isBasicBlock => Boolean := true.
 
     public method markWhite => Void := {
         self traversalColor: 0u8
@@ -664,7 +665,7 @@ SSABasicBlock definition: {
         self successors: self lastInstruction successors
     }.
 
-    public method postCopy => Void := {
+    public override method postCopy => Void := {
         super postCopy.
         self parent: nil.
 
@@ -677,12 +678,12 @@ SSABasicBlock definition: {
         } continueWith: (nextInstructionToAdd := nextInstructionToAdd nextInstruction)
     }.
 
-    public method replaceWith: (replacement: SSAValue) ::=> Void := {
+    public override method replaceWith: (replacement: SSAValue) ::=> Void := {
         super replaceWith: replacement.
         self parent ifNotNil: {:parent :: Void | parent removeBasicBlock: self }
     }.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         self printOn: stream.
         stream nextPutAll: ":".
         if: (self predecessors ~~ nil) && self predecessors isNotEmpty then: {
@@ -710,52 +711,52 @@ SSAInstruction definition: {
     public method parentFunction => SSAFunctionDefinition
         := self parent ifNil: nil ifNotNil: {:(SSABasicBlock)parentBlock | parentBlock parent }.
 
-    public method isInstruction => Boolean := true.
+    public override method isInstruction => Boolean := true.
 
     public method isCapturedInClosure => Boolean
         := users isNotNil && (users anySatisfy: {:(SSAValue)user :: Boolean |
             user isMakeClosureInstruction && ((user downCastTo: SSAMakeClosureInstruction) captures includes: self)
         }).
 
-    public method postCopy => Void := {
+    public override method postCopy => Void := {
         super postCopy.
         parent := nil.
         previousInstruction := nil.
         nextInstruction := nil.
     }.
 
-    public method replaceWith: (replacement: SSAValue) ::=> Void := {
+    public override method replaceWith: (replacement: SSAValue) ::=> Void := {
         super replaceWith: replacement.
         parent ifNotNil: {parent removeInstruction: self }
     }.
 
-    public method replaceDestination: (oldDestination: SSABasicBlock) with: (newDestination: SSABasicBlock) ::=> Void
+    public override method replaceDestination: (oldDestination: SSABasicBlock) with: (newDestination: SSABasicBlock) ::=> Void
         := self error: "Not a branch instruction.".
 
-    public method successors => Array
+    public virtual method successors => Array
         := self error: "Non terminator instruction is present at the end of a basic block " -- self fullPrintString
 }.
 
 public final class SSAAllocaInstruction superclass: SSAInstruction; definition: {
     public field valueType => SSAValue.
 
-    public method isAllocaInstruction => Boolean := true.
+    public override method isAllocaInstruction => Boolean := true.
 
-    public method isLocalOnlyAlloca => Boolean
+    public override method isLocalOnlyAlloca => Boolean
         := users isNil || (users allSatisfy: {:(SSAValue)each :: Boolean | each isLoadOrStoreInstruction }).
 
-    public method fullPrintOn: (stream: Stream) ::=> Void
+    public override method fullPrintOn: (stream: Stream) ::=> Void
         := stream print: self; nextPutAll: " := alloca: "; print: self valueType.
 
-    public method usedValuesDo: aBlock ::=> Void := {
+    public override method usedValuesDo: aBlock ::=> Void := {
         aBlock(self valueType)
     }.
 
-    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
         if: self valueType = replacedValue then: (self valueType: replacement)
     }.
 
-    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         replacementDictionary at: self valueType ifPresent: {:(SSAValue)replacement :: Void | self valueType: replacement}.
     }.
 }.
@@ -763,27 +764,27 @@ public final class SSAAllocaInstruction superclass: SSAInstruction; definition: 
 public final class SSABranchInstruction superclass: SSAInstruction; definition: {
     public field destination => SSABasicBlock.
 
-    public method isTerminatorInstruction => Boolean := true.
+    public override method isTerminatorInstruction => Boolean := true.
 
-    public method successors => Array
+    public override method successors => Array
         := Array with: self destination.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void
+    public override method fullPrintOn: (stream: Stream) ::=> Void
         := stream nextPutAll: "branch: "; print: self destination.
 
-    public method usedValuesDo: aBlock ::=> Void := {
+    public override method usedValuesDo: aBlock ::=> Void := {
         aBlock(self destination).
     }.
 
-    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
         if: self destination = replacedValue then: (self destination: replacement)
     }.
 
-    public method replaceDestination: (oldDestination: SSABasicBlock) with: (newDestination: SSABasicBlock) ::=> Void := {
+    public override method replaceDestination: (oldDestination: SSABasicBlock) with: (newDestination: SSABasicBlock) ::=> Void := {
         if: self destination = oldDestination then: (self destination: newDestination)
     }.
 
-    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         replacementDictionary at: self destination ifPresent: {:(SSABasicBlock)replacement :: Void | self destination: replacement}.
     }.
 }.
@@ -793,7 +794,7 @@ public final class SSACallInstruction superclass: SSAInstruction; definition: {
     public field arguments => Array.
     public field isUnchecked => Boolean.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream
             print: self; nextPutAll: " := ";
             nextPutAll: "call "; print: self calledFunction.
@@ -803,17 +804,17 @@ public final class SSACallInstruction superclass: SSAInstruction; definition: {
         }
     }.
 
-    public method usedValuesDo: aBlock ::=> Void := {
+    public override method usedValuesDo: aBlock ::=> Void := {
         aBlock(self calledFunction).
         arguments do: aBlock
     }.
 
-    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
         if: calledFunction = replacedValue then: (calledFunction := replacement).
         arguments replaceAll: replacedValue with: replacement
     }.
 
-    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         replacementDictionary at: self calledFunction ifPresent: {:(SSAValue)replacement :: Void | self calledFunction: replacement}.
         arguments replaceAllWithDictionary: replacementDictionary
     }.
@@ -823,21 +824,21 @@ public final class SSABitcastInstruction superclass: SSAInstruction; definition:
     public field value => SSAValue.
     public field targetType => SSAValue.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void
+    public override method fullPrintOn: (stream: Stream) ::=> Void
         := stream print: self; nextPutAll: " := bitcast: "; print: self value;
             nextPut: ' '; print: self targetType.
 
-    public method usedValuesDo: aBlock ::=> Void := {
+    public override method usedValuesDo: aBlock ::=> Void := {
         aBlock(self value).
         aBlock(self targetType).
     }.
 
-    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
         if: self value = replacedValue then: (self value: replacement).
         if: self targetType = replacedValue then: (self targetType: replacement).
     }.
 
-    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
         replacementDictionary at: self targetType ifPresent: {:(SSAValue)replacement :: Void | self targetType: replacement}.
     }.
@@ -847,21 +848,21 @@ public final class SSACoerceValueInstruction superclass: SSAInstruction; definit
     public field value => SSAValue.
     public field targetType => SSAValue.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void
+    public override method fullPrintOn: (stream: Stream) ::=> Void
         := stream print: self; nextPutAll: " := coerceValue: "; print: self value;
             nextPut: ' '; print: self targetType.
 
-    public method usedValuesDo: aBlock ::=> Void := {
+    public override method usedValuesDo: aBlock ::=> Void := {
         aBlock(self value).
         aBlock(self targetType).
     }.
 
-    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
         if: self value = replacedValue then: (self value: replacement).
         if: self targetType = replacedValue then: (self targetType: replacement).
     }.
 
-    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
         replacementDictionary at: self targetType ifPresent: {:(SSAValue)replacement :: Void | self targetType: replacement}.
     }.
@@ -872,35 +873,35 @@ public final class SSAConditionalBranchInstruction superclass: SSAInstruction; d
     public field trueDestination => SSABasicBlock.
     public field falseDestination => SSABasicBlock.
 
-    public method isTerminatorInstruction => Boolean := true.
+    public override method isTerminatorInstruction => Boolean := true.
 
-    public method successors => Array
+    public override method successors => Array
         := Array with: self trueDestination with: self falseDestination.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void
+    public override method fullPrintOn: (stream: Stream) ::=> Void
         := stream nextPutAll: "condBranch: "; print: self condition;
             nextPut: ' '; print: self trueDestination;
             nextPut: ' '; print: self falseDestination.
 
-    public method usedValuesDo: aBlock ::=> Void := {
+    public override method usedValuesDo: aBlock ::=> Void := {
         aBlock(self condition).
         aBlock(self trueDestination).
         aBlock(self falseDestination).
     }.
 
-    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
         if: self condition = replacedValue then: (self condition: replacement).
         if: self trueDestination = replacedValue then: (self trueDestination: replacement).
         if: self falseDestination = replacedValue then: (self falseDestination: replacement).
     }.
 
-    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         replacementDictionary at: self condition ifPresent: {:(SSAValue)replacement :: Void | self condition: replacement}.
         replacementDictionary at: self trueDestination ifPresent: {:(SSABasicBlock)replacement :: Void | self trueDestination: replacement}.
         replacementDictionary at: self falseDestination ifPresent: {:(SSABasicBlock)replacement :: Void | self falseDestination: replacement}.
     }.
 
-    public method replaceDestination: (oldDestination: SSABasicBlock) with: (newDestination: SSABasicBlock) ::=> Void := {
+    public override method replaceDestination: (oldDestination: SSABasicBlock) with: (newDestination: SSABasicBlock) ::=> Void := {
         if: self trueDestination = oldDestination then: (self trueDestination: newDestination).
         if: self falseDestination = oldDestination then: (self falseDestination: newDestination)
     }.
@@ -910,23 +911,23 @@ public final class SSADownCastInstruction superclass: SSAInstruction; definition
     public field targetType => SSAValue.
     public field value => SSAValue.
 
-    public method isDownCastInstruction => Boolean := true.
+    public override method isDownCastInstruction => Boolean := true.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := downcast "; print: value; nextPutAll: " into "; print: targetType
     }.
 
-    public method usedValuesDo: aBlock ::=> Void := {
+    public override method usedValuesDo: aBlock ::=> Void := {
         aBlock(targetType).
         aBlock(value).
     }.
 
-    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
         if: targetType = replacedValue then: (targetType := replacement).
         if: value = replacedValue then: (value := replacement).
     }.
 
-    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         replacementDictionary at: self targetType ifPresent: {:(SSAValue)replacement :: Void | self targetType: replacement}.
         replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
     }.
@@ -936,23 +937,23 @@ public final class SSAPointerElementAtInstruction superclass: SSAInstruction; de
     public field pointer => SSAValue.
     public field index => SSAValue.
 
-    public method isPointerElementAtInstruction => Boolean := true.
+    public override method isPointerElementAtInstruction => Boolean := true.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := pointer "; print: self pointer; nextPutAll: " elementAt "; print: self index
     }.
 
-    public method usedValuesDo: aBlock ::=> Void := {
+    public override method usedValuesDo: aBlock ::=> Void := {
         aBlock(self pointer).
         aBlock(self index).
     }.
 
-    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
         if: self pointer = replacedValue then: (self pointer: replacement).
         if: self index = replacedValue then: (self index: replacement).
     }.
 
-    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         replacementDictionary at: self pointer ifPresent: {:(SSAValue)replacement :: Void | self pointer: replacement}.
         replacementDictionary at: self index ifPresent: {:(SSAValue)replacement :: Void | self index: replacement}.
     }.
@@ -962,21 +963,21 @@ public final class SSATypeSlotAtInstruction superclass: SSAInstruction; definiti
     public field tuple => SSAValue.
     public field typeSlot => TypeSlot.
 
-    public method isTypeSlotAtInstruction => Boolean := true.
+    public override method isTypeSlotAtInstruction => Boolean := true.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := typedSlotOf "; print: self tuple; nextPutAll: " at "; print: self typeSlot
     }.
 
-    public method usedValuesDo: aBlock ::=> Void := {
+    public override method usedValuesDo: aBlock ::=> Void := {
         aBlock(self tuple).
     }.
 
-    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
         if: self tuple = replacedValue then: (self tuple: replacement).
     }.
 
-    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         replacementDictionary at: self tuple ifPresent: {:(SSAValue)replacement :: Void | self tuple: replacement}.
     }.
 }.
@@ -985,21 +986,21 @@ public final class SSATypeSlotReferenceAtInstruction superclass: SSAInstruction;
     public field tuple => SSAValue.
     public field typeSlot => TypeSlot.
 
-    public method isTypeSlotAtInstruction => Boolean := true.
+    public override method isTypeSlotAtInstruction => Boolean := true.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := typedSlotOf "; print: self tuple; nextPutAll: " referenceAt "; print: self typeSlot
     }.
 
-    public method usedValuesDo: aBlock ::=> Void := {
+    public override method usedValuesDo: aBlock ::=> Void := {
         aBlock(self tuple).
     }.
 
-    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
         if: self tuple = replacedValue then: (self tuple: replacement).
     }.
 
-    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         replacementDictionary at: self tuple ifPresent: {:(SSAValue)replacement :: Void | self tuple: replacement}.
     }.
 }.
@@ -1009,25 +1010,25 @@ public final class SSATypeSlotAtPutInstruction superclass: SSAInstruction; defin
     public field value => SSAValue.
     public field typeSlot => TypeSlot.
 
-    public method isTypeSlotAtInstruction => Boolean := true.
+    public override method isTypeSlotAtInstruction => Boolean := true.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: "typedSlotOf "; print: self tuple;
             nextPutAll: " at "; print: self typeSlot;
             nextPutAll: " put "; print: self value
     }.
 
-    public method usedValuesDo: aBlock ::=> Void := {
+    public override method usedValuesDo: aBlock ::=> Void := {
         aBlock(self tuple).
         aBlock(self value).
     }.
 
-    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
         if: self tuple = replacedValue then: (self tuple: replacement).
         if: self value = replacedValue then: (self value: replacement).
     }.
 
-    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         replacementDictionary at: self tuple ifPresent: {:(SSAValue)replacement :: Void | self tuple: replacement}.
         replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
     }.
@@ -1036,22 +1037,22 @@ public final class SSATypeSlotAtPutInstruction superclass: SSAInstruction; defin
 public final class SSALoadInstruction superclass: SSAInstruction; definition: {
     public field storage => SSAValue.
 
-    public method isLoadInstruction => Boolean := true.
-    public method isLoadOrStoreInstruction => Boolean := true.
+    public override method isLoadInstruction => Boolean := true.
+    public override method isLoadOrStoreInstruction => Boolean := true.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := load "; print: self storage
     }.
 
-    public method usedValuesDo: aBlock ::=> Void := {
+    public override method usedValuesDo: aBlock ::=> Void := {
         aBlock(self storage).
     }.
 
-    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
         if: self storage = replacedValue then: (self storage: replacement).
     }.
 
-    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         replacementDictionary at: self storage ifPresent: {:(SSAValue)replacement :: Void | self storage: replacement}.
     }.
 }.
@@ -1060,26 +1061,26 @@ public final class SSAMakeClosureInstruction superclass: SSAInstruction; definit
     public field functionDefinition => SSAValue.
     public field captures => Array.
 
-    public method isMakeClosureInstruction => Boolean := true.
+    public override method isMakeClosureInstruction => Boolean := true.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := makeClosure "; print: self functionDefinition.
         self captures do: {:(SSAValue)capture :: Void |
             stream nextPutAll: ", "; print: capture
         }
     }.
 
-    public method usedValuesDo: aBlock ::=> Void := {
+    public override method usedValuesDo: aBlock ::=> Void := {
         aBlock(self functionDefinition).
         self captures do: aBlock
     }.
 
-    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
         if: self functionDefinition = replacedValue then: (self functionDefinition: replacement).
         self captures replaceAll: replacedValue with: replacement
     }.
 
-    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         replacementDictionary at: self functionDefinition ifPresent: {:(SSAValue)replacement :: Void | self functionDefinition: replacement}.
         self captures replaceAllWithDictionary: replacementDictionary
     }.
@@ -1088,14 +1089,14 @@ public final class SSAMakeClosureInstruction superclass: SSAInstruction; definit
 SSAPhiInstruction definition: {
     public field incomingBlocksAndValues => Array.
 
-    public method isPhiInstruction => Boolean := true.
+    public override method isPhiInstruction => Boolean := true.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         super initialize.
         self incomingBlocksAndValues: #().
     }.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := phi ["; nl.
         self incomingBlocksAndValues do: {:(Association)blockAndValue :: Void |
             stream nextPutAll: "        "; print: blockAndValue value; nextPutAll: " from "; print: blockAndValue key; nl 
@@ -1117,28 +1118,28 @@ SSAPhiInstruction definition: {
         }
     }.
 
-    public method usedValuesDo: aBlock ::=> Void := {
+    public override method usedValuesDo: aBlock ::=> Void := {
         self incomingBlocksAndValues do: {:(Association)association :: Void |
             aBlock(association key).
             aBlock(association value).
         }
     }.
 
-    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
         self incomingBlocksAndValues do: {:(Association)association :: Void |
             if: association key = replacedValue then: (association key: replacement).
             if: association value = replacedValue then: (association value: replacement).
         }
     }.
 
-    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         self incomingBlocksAndValues do: {:(Association)association :: Void |
             replacementDictionary at: association key ifPresent: {:(SSAValue)replacement :: Void | association key: replacement}.
             replacementDictionary at: association value ifPresent: {:(SSAValue)replacement :: Void | association value: replacement}.
         }
     }.
 
-    public method replaceIncomingBlock: (oldIncomingBlock: SSABasicBlock) with: (newIncomingBlock: SSABasicBlock) ::=> Void := {
+    public override method replaceIncomingBlock: (oldIncomingBlock: SSABasicBlock) with: (newIncomingBlock: SSABasicBlock) ::=> Void := {
         self incomingBlocksAndValues do: {:(Association)association :: Void |
             if: association key = oldIncomingBlock then: (association key: newIncomingBlock).
         }
@@ -1148,23 +1149,23 @@ SSAPhiInstruction definition: {
 public final class SSAReturnInstruction superclass: SSAInstruction; definition: {
     public field value => SSAValue.
 
-    public method isTerminatorInstruction => Boolean := true.
+    public override method isTerminatorInstruction => Boolean := true.
 
-    public method successors => Array
+    public override method successors => Array
         := #().
 
-    public method fullPrintOn: (stream: Stream) ::=> Void
+    public override method fullPrintOn: (stream: Stream) ::=> Void
         := stream nextPutAll: "return: "; print: self value.
 
-    public method usedValuesDo: aBlock ::=> Void := {
+    public override method usedValuesDo: aBlock ::=> Void := {
         aBlock(self value)
     }.
 
-    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
         if: self value = replacedValue then: (self value: replacement)
     }.
 
-    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
     }.
 }.
@@ -1175,7 +1176,7 @@ public final class SSASendInstruction superclass: SSAInstruction; definition: {
     public field selector => SSAValue.
     public field arguments => Array.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream
             print: self; nextPutAll: " := ";
             nextPutAll: "send "; print: self receiver.
@@ -1193,21 +1194,21 @@ public final class SSASendInstruction superclass: SSAInstruction; definition: {
         }
     }.
 
-    public method usedValuesDo: aBlock ::=> Void := {
+    public override method usedValuesDo: aBlock ::=> Void := {
         aBlock(self receiver).
         if: self receiverLookupType ~~ nil then: aBlock(self receiverLookupType).
         aBlock(self selector).
         self arguments do: aBlock
     }.
 
-    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
         if: self receiver = replacedValue then: (self receiver: replacement).
         if: self receiverLookupType = replacedValue then: (self receiverLookupType: replacement).
         if: self selector = replacedValue then: (self selector: replacement).
         self arguments replaceAll: replacedValue with: replacement
     }.
 
-    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         replacementDictionary at: self receiver ifPresent: {:(SSAValue)replacement :: Void | self receiver: replacement}.
         replacementDictionary at: self receiverLookupType ifPresent: {:(SSAValue)replacement :: Void | self receiverLookupType: replacement}.
         replacementDictionary at: self selector ifPresent: {:(SSAValue)replacement :: Void | self selector: replacement}.
@@ -1219,50 +1220,50 @@ public final class SSAStoreInstruction superclass: SSAInstruction; definition: {
     public field storage => SSAValue.
     public field value => SSAValue.
 
-    public method isStoreInstruction => Boolean := true.
-    public method isLoadOrStoreInstruction => Boolean := true.
+    public override method isStoreInstruction => Boolean := true.
+    public override method isLoadOrStoreInstruction => Boolean := true.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         super initialize.
         type := Void
     }.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "store "; print: self value; nextPutAll: " in "; print: self storage
     }.
 
-    public method usedValuesDo: aBlock ::=> Void := {
+    public override method usedValuesDo: aBlock ::=> Void := {
         aBlock(self storage).
         aBlock(self value).
     }.
 
-    public method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
         if: self storage = replacedValue then: (self storage: replacement).
         if: self value = replacedValue then: (self value: replacement).
     }.
 
-    public method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         replacementDictionary at: self storage ifPresent: {:(SSAValue)replacement :: Void | self storage: replacement}.
         replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
     }.
 }.
 
 public final class SSAUnreachableInstruction superclass: SSAInstruction; definition: {
-    public method isUnreachableInstruction => Boolean := true.
+    public override method isUnreachableInstruction => Boolean := true.
 
-    public method isTerminatorInstruction => Boolean := true.
+    public override method isTerminatorInstruction => Boolean := true.
 
-    public method successors => Array
+    public override method successors => Array
         := #().
 
-    public method fullPrintOn: (stream: Stream) ::=> Void
+    public override method fullPrintOn: (stream: Stream) ::=> Void
         := stream nextPutAll: "unreachable".
 }.
 
 public final class SSAModule superclass: Object; definition: {
     public field globalValues => OrderedCollection.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         globalValues := OrderedCollection new.
     }.
 
@@ -1270,7 +1271,7 @@ public final class SSAModule superclass: Object; definition: {
         globalValues add: globalValue
     }.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         globalValues do: {:(SSAGlobalValue)eachValue :: Void |
             stream fullPrint: eachValue; nl
         }

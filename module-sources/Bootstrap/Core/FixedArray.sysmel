@@ -2,7 +2,7 @@ public class FixedArrayType superclass: ValueType; definition: {
     public field elementType => Type.
     public field size => Size.
 
-    public method initializeWithElementType: (initialElementType: Type) size: (initialSize: Size) ::=> Void := {
+    public override method initializeWithElementType: (initialElementType: Type) size: (initialSize: Size) ::=> Void := {
         elementType := initialElementType.
         size := initialSize.
 
@@ -13,7 +13,7 @@ public class FixedArrayType superclass: ValueType; definition: {
             generatePublicAccessors.
     }.
 
-    public method generatePublicAccessors => Void := {
+    public override method generatePublicAccessors => Void := {
         let SelfType := self.
         let elementType := self elementType.
         let size := self size.
@@ -31,27 +31,27 @@ public class FixedArrayType superclass: ValueType; definition: {
             } makeFinal recompileAndOptimize.
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: elementType; nextPut: '['; print: size; nextPut: ']'
     }.
 
-    public method basicAllocate => self := {
+    public override method basicAllocate => self := {
         let result := RawTuple::new(size).
         (RawTuple::type:)(result, self).
         result
     }.
 
-    public method basicInitializeInstance: instance ::=> Void := {
+    public override method basicInitializeInstance: instance ::=> Void := {
         let i mutable := 0sz.
         while: (i < size) do: (
             (RawTuple::slotAt:put:)(instance, i, elementType defaultValue)
         ) continueWith: (i := i + 1sz)
     }.
 
-    public method defaultValue => self
+    public override method defaultValue => self
         := self basicNew.
 
-    public method computeLayout => Void := {
+    public override method computeLayout => Void := {
         instanceSize := 0sz.
         instanceAlignment := 1sz.
 
@@ -59,10 +59,10 @@ public class FixedArrayType superclass: ValueType; definition: {
         instanceAlignment := elementType valueAlignment.
     }.
 
-    public method canEncodeValueInBytes => Boolean
+    public override method canEncodeValueInBytes => Boolean
         := elementType canEncodeValueInBytes.
 
-    public method encodeValue: (value: self) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
+    public override method encodeValue: (value: self) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
         let i mutable := 0sz.
         let elementOffset mutable := offset.
         let elementSize := elementType alignedValueSize.
@@ -74,10 +74,10 @@ public class FixedArrayType superclass: ValueType; definition: {
         }.
     }.
 
-    public method canDecodeValueFromBytes => Boolean
+    public override method canDecodeValueFromBytes => Boolean
         := elementType canDecodeValueFromBytes.
 
-    public method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> self := {
+    public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> self := {
         let result := self basicAllocate.
         let i mutable := 0sz.
         let elementOffset mutable := offset.

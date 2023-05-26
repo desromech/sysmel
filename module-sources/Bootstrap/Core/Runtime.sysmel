@@ -231,6 +231,23 @@ Type
     } withEagerAnalysis;
     withSelector: #asReceiverType addMethod: {:(Type)self :: Type |
         self
+    } withEagerAnalysis;
+    withSelector: #>> addMethod: {:(Type)self :(Symbol)selector |
+        let: #methodDictionary with: self methodDictionary.
+        if: methodDictionary ~~ nil
+            then: (methodDictionary atOrNil: selector)
+            else: nil
+    } withEagerAnalysis;
+    withSelector: #lookupSelector: addMethod: {:(Type)self :(Symbol)selector |
+        let: #method with: self >> selector.
+        if: method ~~ nil
+        then: method
+        else: {
+            let: #supertype with: self supertype.
+            if: supertype ~~ nil
+                then: (supertype lookupSelector: selector)
+                else: (nil)
+        }
     } withEagerAnalysis.
 
 ASTDownCastNode __type__
@@ -279,31 +296,42 @@ TypeSlot
 
             if: receiverType isPointerLikeType then: {
                 ## Getter.
-                type withSelector: getterName addMethod: {:(receiverType)self :: slotType |
+                let: #getterMethod with: ({:(receiverType)self :: slotType |
                     (RawTuple::refTypeSlotAt:)(self, typeSlot)
-                } makePure makeFinal recompileAndOptimize.
+                } makePure makeFinal).
+
+                if: type supertype isNotNil then: (if: (type lookupSelector: getterName) isNotNil then: (getterMethod makeOverride)).
+                type withSelector: getterName addMethod: getterMethod recompileAndOptimize.
 
                 ## Setter
                 if: typeSlot isReadonly not then: {
-                    let: #setterName with: (typeSlot name asString -- ":") asSymbol.
-
-                    type withSelector: setterName addMethod: {:(receiverType)self :(slotType)value :: Void |
+                    let: #setterMethod with: ({:(receiverType)self :(slotType)value :: Void |
                         (RawTuple::refTypeSlotAt:put:)(self, typeSlot, value)
-                    } makeFinal recompileAndOptimize.
+                    } makeFinal).
+
+                    let: #setterName with: (typeSlot name asString -- ":") asSymbol.
+                    if: type supertype isNotNil then: (if: (type lookupSelector: setterName) isNotNil then: (setterMethod makeOverride)).
+
+                    type withSelector: setterName addMethod: setterMethod recompileAndOptimize.
                 }
             } else: {
                 ## Getter.
-                type withSelector: getterName addMethod: {:(receiverType)self :: slotType |
+                let: #getterMethod with: ({:(receiverType)self :: slotType |
                     (RawTuple::typeSlotAt:)(self, typeSlot)
-                } makePure makeFinal recompileAndOptimize.
+                } makePure makeFinal).
+
+                if: type supertype isNotNil then: (if: (type lookupSelector: getterName) isNotNil then: (getterMethod makeOverride)).
+                type withSelector: getterName addMethod: getterMethod recompileAndOptimize.
 
                 ## Setter
                 if: typeSlot isReadonly not then: {
+                    let: #setterMethod with: ({:(receiverType)self :(slotType)value :: Void |
+                        (RawTuple::typeSlotAt:put:)(self, typeSlot, value)
+                    } makeFinal).
                     let: #setterName with: (typeSlot name asString -- ":") asSymbol.
 
-                    type withSelector: setterName addMethod: {:(receiverType)self :(slotType)value :: Void |
-                        (RawTuple::typeSlotAt:put:)(self, typeSlot, value)
-                    } makeFinal recompileAndOptimize.
+                    if: type supertype isNotNil then: (if: (type lookupSelector: setterName) isNotNil then: (setterMethod makeOverride)).
+                    type withSelector: setterName addMethod: setterMethod recompileAndOptimize.
                 }
             }.
         }
@@ -490,23 +518,6 @@ Type
     withSelector: #new: addMethod: {:(Type)self :(Size)variableSlotCount :: self |
         (self basicNew: variableSlotCount) initialize; yourself
     } withEagerAnalysis;
-    withSelector: #>> addMethod: {:(Type)self :(Symbol)selector |
-        let: #methodDictionary with: self methodDictionary.
-        if: methodDictionary ~~ nil
-            then: (methodDictionary atOrNil: selector)
-            else: nil
-    };
-    withSelector: #lookupSelector: addMethod: {:(Type)self :(Symbol)selector |
-        let: #method with: self >> selector.
-        if: method ~~ nil
-        then: method
-        else: {
-            let: #supertype with: self supertype.
-            if: supertype ~~ nil
-                then: (supertype lookupSelector: selector)
-                else: (nil)
-        }
-    };
     withSelector: #localSlotNamed: addMethod: {:(Type)self :(Symbol)name |
         let: #slotDictionary with: self slotDictionary.
         if: slotDictionary ~~ nil

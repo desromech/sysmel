@@ -47,7 +47,7 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
 
     protected field objectHeap => AsmObjectHeap.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         programEntitySymbolMap := Dictionary new.
         compiledProgramEntitySymbolMap := Dictionary new.
         objectHeap := AsmObjectHeap new.
@@ -309,13 +309,13 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
         }
     }.
 
-    public method symbolForProgramEntity: (programEntity: TACProgramEntity) ::=> AsmSymbol := {
+    public override method symbolForProgramEntity: (programEntity: TACProgramEntity) ::=> AsmSymbol := {
         basicBlockSymbolDictionary at: programEntity ifAbsent: {|
             moduleGenerator symbolForProgramEntity: programEntity
         }
     }.
 
-    public method symbolForBasicBlock: (basicBlock: TACBasicBlock) ::=> AsmSymbol
+    public override method symbolForBasicBlock: (basicBlock: TACBasicBlock) ::=> AsmSymbol
         := basicBlockSymbolDictionary at: basicBlock.
 
     public method symbolOfStringLiteral: (string: String) nullTerminated: (nullTerminated: Boolean) ::=> AsmSymbol

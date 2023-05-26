@@ -23,11 +23,11 @@ public class StructType superclass: ValueType; definition: {
         struct
     }.
 
-    public method defaultValue => self
+    public override method defaultValue => self
         := self basicNew.
 
     protected field canEncodeValueInBytes.
-    public method canEncodeValueInBytes => Boolean := {
+    public override method canEncodeValueInBytes => Boolean := {
         canEncodeValueInBytes ifNil: {
             canEncodeValueInBytes := true.
             supertype ifNotNil: {
@@ -42,7 +42,7 @@ public class StructType superclass: ValueType; definition: {
         canEncodeValueInBytes
     }.
 
-    public method encodeValue: (value: self) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
+    public override method encodeValue: (value: self) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
         self ensureLayoutIsComputed.
 
         self allSlotsDo: {:(TypeSlot)eachSlot :: Void |
@@ -51,7 +51,7 @@ public class StructType superclass: ValueType; definition: {
     }.
 
     protected field canDecodeValueFromBytes.
-    public method canDecodeValueFromBytes => Boolean := {
+    public override method canDecodeValueFromBytes => Boolean := {
         canDecodeValueFromBytes ifNil: {
             canDecodeValueFromBytes := true.
             supertype ifNotNil: {
@@ -66,7 +66,7 @@ public class StructType superclass: ValueType; definition: {
         canDecodeValueFromBytes
     }.
 
-    public method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> self := {
+    public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> self := {
         let result := self basicAllocate.
         self ensureLayoutIsComputed.
 
@@ -135,7 +135,7 @@ StructMetaBuilder
         definitionExpression
         ifNil: structValueExpression
         ifNotNil: ``(`,structValueExpression definition: `,definitionExpression)
-    }.
+    } makeOverride.
 
 public global struct := MetaBuilderFactory for: StructMetaBuilder.
 

@@ -49,50 +49,50 @@ public class TACPhysicalLocationImmediate superclass: TACPhysicalLocation; defin
 }.
 
 Type extend: {
-    public method valueSizeForTacTarget: (target: TACCompilationTarget) ::=> Size
+    public virtual method valueSizeForTacTarget: (target: TACCompilationTarget) ::=> Size
         := target pointerSize.
 
-    public method valueAlignmentForTacTarget: (target: TACCompilationTarget) ::=> Size
+    public virtual method valueAlignmentForTacTarget: (target: TACCompilationTarget) ::=> Size
         := target pointerAlignment.
 
-    public method valueTacPhysicalLocationClass => TACPhysicalLocation class
+    public virtual method valueTacPhysicalLocationClass => TACPhysicalLocation class
         := TACPhysicalIntegerRegister.
 
-    public method valueIsSignedExtended => Boolean := false.
+    public virtual method valueIsSignedExtended => Boolean := false.
 }.
 
 ValueType extend: {
-    public method valueSizeForTacTarget: (target: TACCompilationTarget) ::=> Size
+    public override method valueSizeForTacTarget: (target: TACCompilationTarget) ::=> Size
         := self valueSize.
 
-    public method valueAlignmentForTacTarget: (target: TACCompilationTarget) ::=> Size
+    public override method valueAlignmentForTacTarget: (target: TACCompilationTarget) ::=> Size
         := self valueAlignment.
 
 }.
 
 Int8 class extend: {
-    public method valueIsSignedExtended => Boolean := true.
+    public override method valueIsSignedExtended => Boolean := true.
 }.
 
 Int16 class extend: {
-    public method valueIsSignedExtended => Boolean := true.
+    public override method valueIsSignedExtended => Boolean := true.
 }.
 
 Int32 class extend: {
-    public method valueIsSignedExtended => Boolean := true.
+    public override method valueIsSignedExtended => Boolean := true.
 }.
 
 Int64 class extend: {
-    public method valueIsSignedExtended => Boolean := true.
+    public override method valueIsSignedExtended => Boolean := true.
 }.
 
 Float32 class extend: {
-    public method valueTacPhysicalLocationClass => TACPhysicalLocation class
+    public override method valueTacPhysicalLocationClass => TACPhysicalLocation class
         := TACPhysicalFloatRegister.
 }.
 
 Float64 class extend: {
-    public method valueTacPhysicalLocationClass => TACPhysicalLocation class
+    public override method valueTacPhysicalLocationClass => TACPhysicalLocation class
         := TACPhysicalFloatRegister.
 }.
 
@@ -155,7 +155,7 @@ public abstract class TACProgramEntity superclass: TACValue; definition: {
     public method callingConvention => TACCallingConvention
         := self error: "Not a function with a defined calling convention.".
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         exportedSymbols := #().
     }.
 
@@ -185,12 +185,12 @@ public final class TACImportedFunction superclass: TACImportedProgramEntity; def
 
     public override method isRelativeImmediate32 => Boolean := true.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "importedFunction".
         name ifNotNil: (stream space; string: name).
     }.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " [".
         alternativeSymbols doWithIndex: {:each :(Size)index :: Void |
             index > 0sz ifTrue: (stream nextPutAll: ", ").
@@ -254,7 +254,7 @@ public final class TACArgumentVariable superclass: TACLocalVariable; definition:
 
     public override method isArgumentVariable => Boolean := true.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: 'a'; print: index.
         name ifNotNil: (stream space; string: name)
     }.
@@ -263,7 +263,7 @@ public final class TACArgumentVariable superclass: TACLocalVariable; definition:
 public final class TACCaptureVariable superclass: TACLocalVariable; definition: {
     public override method isCaptureVariable => Boolean := true.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: 'c'; print: index.
         name ifNotNil: (stream space; string: name)
     }.
@@ -272,7 +272,7 @@ public final class TACCaptureVariable superclass: TACLocalVariable; definition: 
 public final class TACTemporaryVariable superclass: TACLocalVariable; definition: {
     public override method isTemporaryVariable => Boolean := true.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: 't'; print: index.
         name ifNotNil: (stream space; string: name)
     }.
@@ -281,12 +281,12 @@ public final class TACTemporaryVariable superclass: TACLocalVariable; definition
 public final class TACGlobalVariable superclass: TACVariable; definition: {
     public override method isGlobalVariable => Boolean := true.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "global".
         name ifNotNil: (stream space; string: name).
     }.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " => "; print: type.
     }.
 }.
@@ -308,7 +308,7 @@ public final class TACGenericObjectPointerConstant superclass: TACConstant; defi
     public field alignment => Size.
     public field type => Type.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "genericObjectPointerConstant("; print: object; nextPut: ')'
     }.
 }.
@@ -320,7 +320,7 @@ public final class TACStringLiteralPointerConstant superclass: TACConstant; defi
     public field type => Type.
     public field nullTerminated => Boolean.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "stringLiteralPointerConstant("; print: string; nextPut: ')'
     }.
 }.
@@ -338,7 +338,7 @@ public final class TACConstantInt8 superclass: TACConstantInteger; definition: {
 
     public override method getConstantValue64 => Int64 := value asInt64.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "i8"
     }.
 
@@ -360,7 +360,7 @@ public final class TACConstantUInt8 superclass: TACConstantInteger; definition: 
     
     public override method getConstantValue64 => Int64 := value asInt64.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "u8"
     }.
 
@@ -383,7 +383,7 @@ public final class TACConstantInt16 superclass: TACConstantInteger; definition: 
 
     public override method getConstantValue64 => Int64 := value asInt64.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "i16"
     }.
 
@@ -405,7 +405,7 @@ public final class TACConstantUInt16 superclass: TACConstantInteger; definition:
 
     public override method getConstantValue64 => Int64 := value asInt64.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "u16"
     }.
 
@@ -428,7 +428,7 @@ public final class TACConstantInt32 superclass: TACConstantInteger; definition: 
 
     public override method getConstantValue64 => Int64 := value asInt64.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "i32"
     }.
 
@@ -450,7 +450,7 @@ public final class TACConstantUInt32 superclass: TACConstantInteger; definition:
 
     public override method getConstantValue64 => Int64 := value asInt64.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "u32"
     }.
 
@@ -473,7 +473,7 @@ public final class TACConstantInt64 superclass: TACConstantInteger; definition: 
     
     public override method getConstantValue64 => Int64 := value.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "i64"
     }.
 
@@ -495,7 +495,7 @@ public final class TACConstantUInt64 superclass: TACConstantInteger; definition:
     public override method alignment => UInt64 := 8u64.
     public override method size => UInt64 := 8u64.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "u64"
     }.
 
@@ -520,7 +520,7 @@ public final class TACConstantFloat32 superclass: TACConstantFloatingPoint; defi
     public override method alignment => UInt64 := 4u64.
     public override method size => UInt64 := 4u64.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "f32"
     }.
 
@@ -540,7 +540,7 @@ public final class TACConstantFloat64 superclass: TACConstantFloatingPoint; defi
     public override method alignment => UInt64 := 8u64.
     public override method size => UInt64 := 8u64.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "f64"
     }.
 
@@ -565,12 +565,12 @@ public final class TACOperation superclass: Object; definition: {
             := self new name: name; isTerminator: true; yourself.
     }.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         perTargetCodeGenerators := IdentityDictionary new.
         perTargetRegisterConstraints := IdentityDictionary new.
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream string: name
     }.
 }.
@@ -591,7 +591,7 @@ public final class TACInstruction superclass: TACValue; definition: {
 
     public field callingConvention => TACCallingConvention.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         super initialize.
         operands := #().
     }.
@@ -599,7 +599,7 @@ public final class TACInstruction superclass: TACValue; definition: {
     public method isTerminator => Boolean
         := operation isTerminator.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         result ifNotNil: (stream print: result; nextPutAll: " := ").
         stream print: operation.
         operands doWithIndex: {:(TACValue)eachOperand :(Size)index :: Void |
@@ -729,12 +729,12 @@ TACBasicBlock definition: {
         }
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: '@'; print: index.
         name ifNotNil: (stream nextPut: ':'; string: name)
     }.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPut: ':'; nl.
         self instructionsDo: {:(TACBasicBlock)each :: Void |
             stream nextPutAll: "    "; fullPrint: each; nl
@@ -759,7 +759,7 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
 
     public override method isRelativeImmediate32 => Boolean := true.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         super initialize.
         arguments := #().
         captures := #().
@@ -928,12 +928,12 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
         }.
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "function".
         name ifNotNil: (stream space; string: name).
     }.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " {"; nl.
         self enumerateBlocks; enumerateLocals.
         self basicBlocksDo: {:(TACBasicBlock)each :: Void |
@@ -1324,7 +1324,7 @@ public final class TACModule superclass: TACProgramEntity; definition: {
     public field compilationTarget => TACCompilationTarget.
     public field programEntities => OrderedCollection.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         super initialize.
         programEntities := OrderedCollection new.
     }.
@@ -1343,7 +1343,7 @@ public final class TACModule superclass: TACProgramEntity; definition: {
         function build: aBlock; yourself
     }.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         self programEntities do: {:(TACProgramEntity)each :: Void |
             stream fullPrint: each; nl
         }

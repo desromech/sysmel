@@ -15,7 +15,7 @@ public class AsmStreamElement superclass: Object; definition: {
     public field debugSourceNode => ASTNode.
     public field debugSourceEnvironment => Environment.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         position := 0sz
     }.
 
@@ -30,42 +30,42 @@ public class AsmStreamElement superclass: Object; definition: {
 }.
 
 AsmInstructionOperand definition: {
-    public method isImmediate => Boolean := false.
-    public method isImmediate8 => Boolean := self isImmediate && (self size = 1sz).
-    public method isImmediate16 => Boolean := self isImmediate && (self size = 2sz).
-    public method isImmediate32 => Boolean := self isImmediate && (self size = 4sz).
-    public method isImmediate64 => Boolean := self isImmediate && (self size = 8sz).
-    public method isImmediate128 => Boolean := self isImmediate && (self size = 16sz).
+    public virtual method isImmediate => Boolean := false.
+    public virtual method isImmediate8 => Boolean := self isImmediate && (self size = 1sz).
+    public virtual method isImmediate16 => Boolean := self isImmediate && (self size = 2sz).
+    public virtual method isImmediate32 => Boolean := self isImmediate && (self size = 4sz).
+    public virtual method isImmediate64 => Boolean := self isImmediate && (self size = 8sz).
+    public virtual method isImmediate128 => Boolean := self isImmediate && (self size = 16sz).
 
-    public method isImmediateSymbolWithAddend => Boolean := false.
+    public virtual method isImmediateSymbolWithAddend => Boolean := false.
 
-    public method isImmediateSigned8 => Boolean := false.
-    public method isImmediateSigned32 => Boolean := false.
-    public method isImmediateSigned64 => Boolean := false.
+    public virtual method isImmediateSigned8 => Boolean := false.
+    public virtual method isImmediateSigned32 => Boolean := false.
+    public virtual method isImmediateSigned64 => Boolean := false.
 
-    public method asImmediateSigned8Value => Int8 := self error: "Not an immediate signed 8".
+    public virtual method asImmediateSigned8Value => Int8 := self error: "Not an immediate signed 8".
 
-    public method isImmediateConstantChar8 => Boolean := false.
-    public method isImmediateConstantUInt8 => Boolean := false.
-    public method isImmediateConstantInt8 => Boolean := false.
+    public virtual method isImmediateConstantChar8 => Boolean := false.
+    public virtual method isImmediateConstantUInt8 => Boolean := false.
+    public virtual method isImmediateConstantInt8 => Boolean := false.
 
-    public method isImmediateConstantChar16 => Boolean := false.
-    public method isImmediateConstantUInt16 => Boolean := false.
-    public method isImmediateConstantInt16 => Boolean := false.
+    public virtual method isImmediateConstantChar16 => Boolean := false.
+    public virtual method isImmediateConstantUInt16 => Boolean := false.
+    public virtual method isImmediateConstantInt16 => Boolean := false.
 
-    public method isImmediateConstantChar32 => Boolean := false.
-    public method isImmediateConstantUInt32 => Boolean := false.
-    public method isImmediateConstantInt32 => Boolean := false.
+    public virtual method isImmediateConstantChar32 => Boolean := false.
+    public virtual method isImmediateConstantUInt32 => Boolean := false.
+    public virtual method isImmediateConstantInt32 => Boolean := false.
 
-    public method isImmediateConstantUInt64 => Boolean := false.
-    public method isImmediateConstantInt64 => Boolean := false.
+    public virtual method isImmediateConstantUInt64 => Boolean := false.
+    public virtual method isImmediateConstantInt64 => Boolean := false.
 
-    public method isImmediateConstantFloat32 => Boolean := false.
-    public method isImmediateConstantFloat64 => Boolean := false.
+    public virtual method isImmediateConstantFloat32 => Boolean := false.
+    public virtual method isImmediateConstantFloat64 => Boolean := false.
 
-    public method isRegister => Boolean := false.
-    public method isRegisterOrRegisterAddress => Boolean := false.
-    public method isRegisterAddress => Boolean := false.
+    public virtual method isRegister => Boolean := false.
+    public virtual method isRegisterOrRegisterAddress => Boolean := false.
+    public virtual method isRegisterAddress => Boolean := false.
 
     public abstract method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void
         := self subclassResponsibility.
@@ -77,17 +77,17 @@ AsmInstructionOperand definition: {
 }.
 
 public class AsmRegister superclass: AsmInstructionOperand; definition: {
-    public method isRegister => Boolean := true.
-    public method isRegisterOrRegisterAddress => Boolean := true.
+    public override method isRegister => Boolean := true.
+    public override method isRegisterOrRegisterAddress => Boolean := true.
 }.
 
 public class AsmRegisterAddress superclass: AsmInstructionOperand; definition: {
-    public method isRegisterAddress => Boolean := true.
-    public method isRegisterOrRegisterAddress => Boolean := true.
+    public override method isRegisterAddress => Boolean := true.
+    public override method isRegisterOrRegisterAddress => Boolean := true.
 }.
 
 public class AsmImmediate superclass: AsmInstructionOperand; definition: {
-    public method isImmediate => Boolean := true.
+    public override method isImmediate => Boolean := true.
 }.
 
 public global AsmSymbol::PICMode::None := 0u8.
@@ -100,18 +100,18 @@ public final class AsmImmediateSymbolWithAddend superclass: AsmImmediate; defini
     public field addend => Int64.
     public field picMode => UInt8.
 
-    public method isImmediateSymbolWithAddend => Boolean := true.
+    public override method isImmediateSymbolWithAddend => Boolean := true.
 
-    public method isImmediateSigned8 => Boolean := size = 1sz.
-    public method isImmediateSigned32 => Boolean := size = 2sz.
-    public method isImmediateSigned64 => Boolean := size = 4sz.
+    public override method isImmediateSigned8 => Boolean := size = 1sz.
+    public override method isImmediateSigned32 => Boolean := size = 2sz.
+    public override method isImmediateSigned64 => Boolean := size = 4sz.
 
     public method + (extraAddend: Int64) ::=> SelfType
         := self copy
             addend: addend + extraAddend;
             yourself.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: symbol.
         addend ~= 0 ifTrue: (stream nextPutAll: " + "; print: addend).
     }.
@@ -209,7 +209,7 @@ public final class AsmImmediateConstantChar8 superclass: AsmImmediateConstant; d
         codeStream nextPut: value asUInt8
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "c8"
     }.
 
@@ -229,7 +229,7 @@ public final class AsmImmediateConstantUInt8 superclass: AsmImmediateConstant; d
         codeStream nextPut: value
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "u8"
     }.
 
@@ -253,7 +253,7 @@ public final class AsmImmediateConstantInt8 superclass: AsmImmediateConstant; de
         codeStream nextPutInt8: value
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "i8"
     }.
 
@@ -273,7 +273,7 @@ public final class AsmImmediateConstantChar16 superclass: AsmImmediateConstant; 
         codeStream nextPutUInt16: value asUInt16
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "c16"
     }.
 
@@ -293,7 +293,7 @@ public final class AsmImmediateConstantUInt16 superclass: AsmImmediateConstant; 
         codeStream nextPutUInt16: value
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "u16"
     }.
 
@@ -313,7 +313,7 @@ public final class AsmImmediateConstantInt16 superclass: AsmImmediateConstant; d
         codeStream nextPutInt16: value
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "i16"
     }.
 
@@ -333,7 +333,7 @@ public final class AsmImmediateConstantChar32 superclass: AsmImmediateConstant; 
         codeStream nextPutUInt32: value asUInt32
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "c32"
     }.
 
@@ -353,7 +353,7 @@ public final class AsmImmediateConstantUInt32 superclass: AsmImmediateConstant; 
         codeStream nextPutUInt32: value
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "u32"
     }.
 
@@ -377,7 +377,7 @@ public final class AsmImmediateConstantInt32 superclass: AsmImmediateConstant; d
         codeStream nextPutInt32: value
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "i32"
     }.
 
@@ -397,7 +397,7 @@ public final class AsmImmediateConstantUInt64 superclass: AsmImmediateConstant; 
         codeStream nextPutUInt64: value
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "u64"
     }.
 
@@ -417,7 +417,7 @@ public final class AsmImmediateConstantInt64 superclass: AsmImmediateConstant; d
         codeStream nextPutInt64: value
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "i64"
     }.
 
@@ -437,7 +437,7 @@ public final class AsmImmediateConstantFloat32 superclass: AsmImmediateConstant;
         codeStream nextPutFloat32: value
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "f32"
     }.
 
@@ -457,7 +457,7 @@ public final class AsmImmediateConstantFloat64 superclass: AsmImmediateConstant;
         codeStream nextPutFloat64: value
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "f64"
     }.
 
@@ -532,7 +532,7 @@ public final class AsmStream superclass: Object; definition: {
         }.
     }.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         self elementsDo: {:(AsmStreamElement)each :: Void |
             each isFormattedWithIndentation ifTrue: (stream nextPutAll: "    ").
             stream fullPrint: each; nl
@@ -577,7 +577,7 @@ public final class AsmAlignDirective superclass: AsmStreamElement; definition: {
 
     public override method isFormattedWithIndentation => Boolean := false.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".align "; print: alignment
     }.
 
@@ -591,7 +591,7 @@ public final class AsmLabel superclass: AsmStreamElement; definition: {
 
     public override method isFormattedWithIndentation => Boolean := false.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: symbol; nextPut: ':'.
     }.
 
@@ -605,7 +605,7 @@ public final class AsmLabelEnd superclass: AsmStreamElement; definition: {
 
     public override method isFormattedWithIndentation => Boolean := false.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "/* "; print: symbol; nextPutAll: " end */".
     }.
 
@@ -624,7 +624,7 @@ public final class AsmSectionDirective superclass: AsmStreamElement; definition:
 
     public override method isFormattedWithIndentation => Boolean := false.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".section "; string: name.
     }.
 
@@ -640,7 +640,7 @@ public final class AsmSectionDirective superclass: AsmStreamElement; definition:
 public final class AsmByteDirective superclass: AsmStreamElement; definition: {
     public field value => UInt8.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".byte "; print: value.
     }.
 
@@ -652,7 +652,7 @@ public final class AsmByteDirective superclass: AsmStreamElement; definition: {
 public final class AsmSByteDirective superclass: AsmStreamElement; definition: {
     public field value => Int8.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".byte "; print: value.
     }.
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -663,7 +663,7 @@ public final class AsmSByteDirective superclass: AsmStreamElement; definition: {
 public final class AsmWordDirective superclass: AsmStreamElement; definition: {
     public field value => UInt16.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".word "; print: value.
     }.
 
@@ -675,7 +675,7 @@ public final class AsmWordDirective superclass: AsmStreamElement; definition: {
 public final class AsmSWordDirective superclass: AsmStreamElement; definition: {
     public field value => Int16.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".word "; print: value.
     }.
 
@@ -687,7 +687,7 @@ public final class AsmSWordDirective superclass: AsmStreamElement; definition: {
 public final class AsmDWordDirective superclass: AsmStreamElement; definition: {
     public field value => UInt32.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".word "; print: value.
     }.
 
@@ -699,7 +699,7 @@ public final class AsmDWordDirective superclass: AsmStreamElement; definition: {
 public final class AsmSDWordDirective superclass: AsmStreamElement; definition: {
     public field value => Int32.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".dword "; print: value.
     }.
 
@@ -711,7 +711,7 @@ public final class AsmSDWordDirective superclass: AsmStreamElement; definition: 
 public final class AsmQWordDirective superclass: AsmStreamElement; definition: {
     public field value => UInt64.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".qword "; print: value.
     }.
 
@@ -723,7 +723,7 @@ public final class AsmQWordDirective superclass: AsmStreamElement; definition: {
 public final class AsmSQWordDirective superclass: AsmStreamElement; definition: {
     public field value => Int64.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".qword "; print: value.
     }.
 
@@ -735,7 +735,7 @@ public final class AsmSQWordDirective superclass: AsmStreamElement; definition: 
 public final class AsmFloatDirective superclass: AsmStreamElement; definition: {
     public field value => Float32.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".float "; print: value.
     }.
 
@@ -747,7 +747,7 @@ public final class AsmFloatDirective superclass: AsmStreamElement; definition: {
 public final class AsmDoubleDirective superclass: AsmStreamElement; definition: {
     public field value => Float64.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".double "; print: value.
     }.
 
@@ -760,7 +760,7 @@ public final class AsmStringDirective superclass: AsmStreamElement; definition: 
     public field value => String.
     public field nullTerminated => Boolean.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: (nullTerminated ifTrue: ".cstring " ifFalse: ".string "); print: value.
     }.
 
@@ -919,7 +919,7 @@ public final class AsmProgramEntity superclass: Object; definition: {
     public field children => OrderedCollection.
     public field importedSymbols => OrderedCollection.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         streams := OrderedCollection new.
         children := OrderedCollection new.
         importedSymbols := OrderedCollection new.
@@ -947,7 +947,7 @@ public final class AsmProgramEntity superclass: Object; definition: {
         importedSymbols add: symbol
     }.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         streams do: {:(AsmStream)eachStream :: Void |
             stream fullPrint: eachStream
         }.

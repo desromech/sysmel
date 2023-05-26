@@ -42,10 +42,10 @@ public final class AsmARMRegister superclass: AsmRegister; definition: {
             := self new name: name; value: value; yourself.
     }.
 
-    public method size => Size := 4sz.
-    public method value32 => UInt32 := value asUInt32.
+    public override method size => Size := 4sz.
+    public override method value32 => UInt32 := value asUInt32.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream string: name
     }.
 }.
@@ -91,7 +91,7 @@ public class AsmARMInstruction superclass: AsmStreamElement; definition: {
 
     public method size => Size := 4sz.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         condition := ARM::Condition::AL
     }
 }.
@@ -106,7 +106,7 @@ public class AsmARMBranchInstruction superclass: AsmARMInstruction; definition: 
             (condition asUInt32 << 28u32) | (2r111 u32 << 25u32) | ((link ifTrue: 1u32 ifFalse: 0u32) << 24u32)
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: 'b'.
         link ifTrue: (stream nextPut: 'l').
         stream space; print: destination
@@ -121,7 +121,7 @@ public class AsmARMDataProcessingInstruction superclass: AsmARMInstruction; defi
     public field Rm => AsmARMRegister.
     public field shift => UInt8.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         super initialize.
         Rn := ARM::R0.
         Rd := ARM::R0.
@@ -226,7 +226,7 @@ public final class AsmARMDataProcessingImmediateShiftInstruction superclass: Asm
             | Rm value32.
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: mnemonic;
             space; print: Rd;
             nextPutAll: ", "; print: Rm;
@@ -237,7 +237,7 @@ public final class AsmARMDataProcessingImmediateShiftInstruction superclass: Asm
 
 public final class AsmARMBreakpointInstruction superclass: AsmARMDataProcessingInstruction; definition: {
     public field number => UInt16.
-    public method initialize => Void := {
+    public override method initialize => Void := {
         super initialize.
         mnemonic := #bkpt
     }.
@@ -249,7 +249,7 @@ public final class AsmARMBreakpointInstruction superclass: AsmARMDataProcessingI
                 | (2r0111 u32 << 4u32 ) | (number asUInt32 & 2r1111 u32).
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: mnemonic; space; print: number
     }
 }.
@@ -261,7 +261,7 @@ public class AsmARMSoftwareInterruptInstruction superclass: AsmARMInstruction; d
         stream nextPutUInt32: (condition asUInt32 << 28u32) | (2r1111 u32 << 24u32) | number
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "swi"; space; print: number
     }
 }.

@@ -24,7 +24,7 @@ FunctionBytecodeDirectCompiler definition: {
             := self new compileFunction: function.
     }.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         self assembler: FunctionBytecodeAssembler new.
         self bindingDictionary: IdentityDictionary new.
     }.

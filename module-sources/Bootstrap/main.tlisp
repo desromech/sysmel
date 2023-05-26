@@ -98,7 +98,7 @@
             (define existingMethod (Type::lookupLocalSelector type selector))
             (if:then:else: (== existingMethod nil)
                 (Type::checkNoOverridenSelector (Type::supertype type) selector)
-                void##(error (String::concat: "Overriding non-virtual method with selector " (printString selector)))
+                (error (String::concat: "Overriding non-virtual method with selector " (printString selector)))
                 )))
 )
 

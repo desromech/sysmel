@@ -4,9 +4,8 @@ public class SSAFunctionPass superclass: Object; definition: {
             := self new runIn: function; yourself
     }.
 
-    public method runIn: (function: SSAFunctionDefinition) ::=> Void := {
-
-    }.
+    public abstract method runIn: (function: SSAFunctionDefinition) ::=> Void
+        := self subclassResponsibility.
 }.
 
 SSAFunction extend: {
@@ -25,14 +24,14 @@ SSAFunctionDefinition extend: {
 
 ## Promote alloca
 public class SSAPromoteAllocaPass superclass: SSAFunctionPass; definition: {
-    public method runIn: (function: SSAFunctionDefinition) ::=> Void := {
+    public override method runIn: (function: SSAFunctionDefinition) ::=> Void := {
         printLine("TODO: SSAPromoteAllocaPass")
     }.
 }.
 
 ## Destroy SSA pass. This pass destroys the phi nodes by inserting alloca instructions.
 public class SSADestroySSAFunctionPass superclass: SSAFunctionPass; definition: {
-    public method runIn: (function: SSAFunctionDefinition) ::=> Void := {
+    public override method runIn: (function: SSAFunctionDefinition) ::=> Void := {
         function firstBasicBlock ifNil: (return: void).
         function
             computeControlFlowAndNormalizeBasicBlocks.

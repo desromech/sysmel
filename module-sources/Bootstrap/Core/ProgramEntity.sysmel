@@ -1,11 +1,11 @@
 Symbol extend: {
-    public method asCheckedEntryPointNameSymbol => Symbol
+    public virtual method asCheckedEntryPointNameSymbol => Symbol
         := self error: "Not a function name symbol".
 
-    public method asUncheckedEntryPointNameSymbol => Symbol
+    public virtual method asUncheckedEntryPointNameSymbol => Symbol
         := self error: "Not a function name symbol".
 
-    public method asCapturelessUncheckedEntryPointNameSymbol => Symbol
+    public virtual method asCapturelessUncheckedEntryPointNameSymbol => Symbol
         := self error: "Not a function name symbol".
 }.
 
@@ -17,17 +17,17 @@ public final class ProgramEntityQualifiedNameSymbol superclass: Symbol; definiti
             := self new programEntity: programEntity; yourself.
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         programEntity printQualifiedSymbolNameOn: stream.
     }.
 
-    public method asCapturelessUncheckedEntryPointNameSymbol => Symbol
+    public override method asCapturelessUncheckedEntryPointNameSymbol => Symbol
         := programEntity capturelessUncheckedEntryPointNameSymbol.
 
-    public method asCheckedEntryPointNameSymbol => Symbol
+    public override method asCheckedEntryPointNameSymbol => Symbol
         := programEntity checkedEntryPointNameSymbol.
 
-    public method asUncheckedEntryPointNameSymbol => Symbol
+    public override method asUncheckedEntryPointNameSymbol => Symbol
         := programEntity uncheckedEntryPointNameSymbol.
 }.
 
@@ -39,7 +39,7 @@ public final class FunctionCheckedEntryPointSymbol superclass: Symbol; definitio
             := self new function: function; yourself.
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         function printQualifiedSymbolNameOn: stream.
         stream nextPutAll: ".checked".
     }.
@@ -53,7 +53,7 @@ public final class FunctionCapturelessUncheckedEntryPointSymbol superclass: Symb
             := self new function: function; yourself.
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         function printQualifiedSymbolNameOn: stream.
         stream nextPutAll: ".captureless".
     }.
@@ -67,14 +67,14 @@ public final class FunctionUncheckedEntryPointSymbol superclass: Symbol; definit
             := self new function: function; yourself.
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         function printQualifiedSymbolNameOn: stream.
         stream nextPutAll: ".unchecked".
     }.
 }.
 
 ProgramEntity definition: {
-    public method programEntityKindName => Symbol
+    public virtual method programEntityKindName => Symbol
         := self class name.
 
     public method printSymbolNameOn: (stream: Stream) ::=> Void := {
@@ -93,48 +93,48 @@ ProgramEntity definition: {
         self printSymbolNameOn: stream
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         self printQualifiedSymbolNameOn: stream
     }.
 
     public method programEntityQualifiedNameSymbol => ProgramEntityQualifiedNameSymbol
         := ProgramEntityQualifiedNameSymbol for: self.
 
-    public method capturelessUncheckedEntryPointNameSymbol => FunctionCapturelessUncheckedEntryPointSymbol
+    public abstract method capturelessUncheckedEntryPointNameSymbol => FunctionCapturelessUncheckedEntryPointSymbol
         := self error: "Not a function definition".
 
-    public method checkedEntryPointNameSymbol => FunctionCheckedEntryPointSymbol
+    public abstract method checkedEntryPointNameSymbol => FunctionCheckedEntryPointSymbol
         := self error: "Not a function definition".
 
-    public method uncheckedEntryPointNameSymbol => FunctionUncheckedEntryPointSymbol
+    public abstract method uncheckedEntryPointNameSymbol => FunctionUncheckedEntryPointSymbol
         := self error: "Not a function definition".
 }.
 
 Type definition: {
-    public method programEntityKindName => Symbol
+    public override method programEntityKindName => Symbol
         := #T.
 }.
 
 Namespace definition: {
-    public method programEntityKindName => Symbol
+    public override method programEntityKindName => Symbol
         := #N.
 }.
 
 Function definition: {
-    public method programEntityKindName => Symbol
+    public override method programEntityKindName => Symbol
         := #C.
 }.
 
 FunctionDefinition definition: {
-    public method programEntityKindName => Symbol
+    public override method programEntityKindName => Symbol
         := #F.
 
-    public method checkedEntryPointNameSymbol => FunctionCheckedEntryPointSymbol
+    public override method checkedEntryPointNameSymbol => FunctionCheckedEntryPointSymbol
         := FunctionCheckedEntryPointSymbol for: self.
 
-    public method uncheckedEntryPointNameSymbol => FunctionUncheckedEntryPointSymbol
+    public override method uncheckedEntryPointNameSymbol => FunctionUncheckedEntryPointSymbol
         := FunctionUncheckedEntryPointSymbol for: self.
 
-    public method capturelessUncheckedEntryPointNameSymbol => Symbol
+    public override method capturelessUncheckedEntryPointNameSymbol => Symbol
         := FunctionCapturelessUncheckedEntryPointSymbol for: self.
 }.

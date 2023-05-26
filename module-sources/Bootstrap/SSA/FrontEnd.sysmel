@@ -13,7 +13,7 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
             := self forTarget: SSACompilationTarget default.
     }.
 
-    public method initializeWithTarget: (theCompilationTarget: SSACompilationTarget) ::=> Void := {
+    public override method initializeWithTarget: (theCompilationTarget: SSACompilationTarget) ::=> Void := {
         compilationTarget := theCompilationTarget.
         ssaModule := SSAModule new.
         translatedValueDictionary := IdentityDictionary new.
@@ -78,7 +78,7 @@ public final class SSAFunctionCompilationContext superclass: Object; definition:
     public field breakDestination => SSABasicBlock.
     public field continueDestination => SSABasicBlock.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         super initialize.
         bindingDictionary := IdentityDictionary new.
     }.
@@ -171,12 +171,12 @@ ASTNode extend: {
             self doGenerateSSAValueWith: context
     }.
 
-    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+    public abstract method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
         := self subclassResponsibility.
 }.
 
 ASTBreakNode extend: {
-    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
         context breakDestination ifNil: (self error: "Invalid break at this location.").
         context builder branch: context breakDestination.
         context builder literal: void
@@ -184,7 +184,7 @@ ASTBreakNode extend: {
 }.
 
 ASTCoerceValueNode extend: {
-    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
         let type := self typeExpression generateSSAValueWith: context.
         let value := self valueExpression generateSSAValueWith: context.
         context builder coerceValue: value into: type type: self analyzedType
@@ -192,7 +192,7 @@ ASTCoerceValueNode extend: {
 }.
 
 ASTContinueNode extend: {
-    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
         context continueDestination ifNil: (self error: "Invalid continue at this location.").
         context builder branch: context continueDestination.
         context builder literal: void
@@ -200,7 +200,7 @@ ASTContinueNode extend: {
 }.
 
 ASTDownCastNode extend: {
-    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
         let type := self typeExpression generateSSAValueWith: context.
         let value := self valueExpression generateSSAValueWith: context.
         context builder downCast: value into: type type: self analyzedType
@@ -288,7 +288,7 @@ let primitiveFunctionGenerators := #{
 }.
 
 ASTFunctionApplicationNode extend: {
-    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
         let primitiveGenerator := primitiveFunctionGenerators atOrNil: self functionExpression literalFunctionPrimitiveName.
         (primitiveGenerator ifNotNil: {
             primitiveGenerator(self, context)
@@ -304,7 +304,7 @@ ASTFunctionApplicationNode extend: {
 }.
 
 ASTLexicalBlockNode extend: {
-    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
         := context builder withSourceEnvironment: self bodyEnvironment do: {:: SSAValue | self body generateSSAValueWith: context }.
 }.
 
@@ -324,12 +324,12 @@ FunctionDefinition class extend: {
 }.
 
 ASTLiteralNode extend: {
-    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
         := self analyzedType translateASTLiteralNode: self intoSSAValueWith: context.
 }.
 
 ASTLambdaNode extend: {
-    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
         let functionDefinition := self functionDefinition.
         functionDefinition ensureAnalysis.
 
@@ -344,7 +344,7 @@ ASTLambdaNode extend: {
 }.
 
 ASTLocalDefinitionNode extend: {
-    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
         let builder := context builder.
 
         let value := self valueExpression generateSSAValueWith: context.
@@ -362,17 +362,17 @@ ASTLocalDefinitionNode extend: {
 }.
 
 SymbolAnalysisBinding extend: {
-    public method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+    public override method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
         := context getValueForLocalBinding: self.
 }.
 
 ASTIdentifierReferenceNode extend: {
-    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
         := self binding generateSSAValueWith: context.
 }.
 
 ASTIfNode extend: {
-    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
         let builder := context builder.
 
         ## Condition
@@ -454,7 +454,7 @@ ASTIfNode extend: {
 }.
 
 ASTDoWhileContinueWithNode extend: {
-    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
         let builder := context builder.
 
         let conditionExpression := self conditionExpression.
@@ -508,7 +508,7 @@ ASTDoWhileContinueWithNode extend: {
 }.
 
 ASTWhileContinueWithNode extend: {
-    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
         let builder := context builder.
 
         let conditionExpression := self conditionExpression.
@@ -562,7 +562,7 @@ ASTWhileContinueWithNode extend: {
 }.
 
 ASTMessageSendNode extend: {
-    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
         := context builder send: (self receiver generateSSAValueWith: context)
             receiverLookupType: (self receiverLookupType ifNotNil: {:(ASTNode)lookupTypeExpression :: SSAValue | lookupTypeExpression generateSSAValueWith: context })
             selector: (self selector generateSSAValueWith: context)
@@ -571,12 +571,12 @@ ASTMessageSendNode extend: {
 }.
 
 ASTReturnNode extend: {
-    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
         := context builder return: (self expression generateSSAValueWith: context)
 }.
 
 ASTSequenceNode extend: {
-    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
         let result mutable => SSAValue := context builder literal: void.
         self expressions do: {:(ASTNode)expression :: Void |
             context builder isLastTerminator ifFalse: {
@@ -589,7 +589,7 @@ ASTSequenceNode extend: {
 }.
 
 ASTUseNamedSlotsOfNode extend: {
-    public method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
         := context builder literal: void.
 
 }.

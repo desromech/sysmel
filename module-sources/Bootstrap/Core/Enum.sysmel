@@ -77,7 +77,7 @@ EnumMetaBuilder
         definitionExpression
         ifNil: structValueExpression
         ifNotNil: ``(`,structValueExpression definition: `,definitionExpression)
-    }.
+    } makeOverride.
 
 public global enum := MetaBuilderFactory for: EnumMetaBuilder.
 

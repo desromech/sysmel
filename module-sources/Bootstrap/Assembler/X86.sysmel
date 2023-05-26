@@ -151,7 +151,7 @@ public class AsmX86Register superclass: AsmRegister; definition: {
     public override method x86::rexBaseBit => UInt8
         := if: self isHighRegister then: 1u8 else: 0u8.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream string: name
     }.
 
@@ -306,7 +306,7 @@ AsmX86RegisterAddress definition: {
         }
     }.
 
-    public method printOn: (stream: Stream) ::=> Void := {
+    public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: (sizeNameTable at: size); nextPutAll: " [".
         let hasPrevious mutable => Boolean := false.
         base ifNotNil: {
@@ -495,7 +495,7 @@ public final class AsmX86InstructionTemplate superclass: Object; definition: {
     public field opcode => ByteArray.
     public field registerOpcode => UInt8.
 
-    public method initialize => Void := {
+    public override method initialize => Void := {
         mandatoryPrefix := #[].
         opcode := #[].
         registerOpcode := 0u8.
@@ -625,7 +625,7 @@ AsmX86Instruction definition: {
 }.
 
 public final class AsmX86InstructionWithoutOperands superclass: AsmX86Instruction; definition: {
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: definition mnemonic.
     }.
 
@@ -637,7 +637,7 @@ public final class AsmX86InstructionWithSingleOperand superclass: AsmX86Instruct
 
     public override method operandCount => Size := 1sz.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: definition mnemonic; space; print: firstOperand.
     }.
 }.
@@ -648,7 +648,7 @@ public final class AsmX86InstructionWithTwoOperands superclass: AsmX86Instructio
 
     public override method operandCount => Size := 2sz.
 
-    public method fullPrintOn: (stream: Stream) ::=> Void := {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: definition mnemonic; space; print: firstOperand; nextPutAll: ", "; print: secondOperand.
     }.
 }.
