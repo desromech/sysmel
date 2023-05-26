@@ -140,12 +140,16 @@ TACValue definition: {
     public virtual method isConstantFloat32 => Boolean := false.
     public virtual method isConstantFloat64 => Boolean := false.
 
+    public virtual method isImmediateValue1 => Boolean := false.
+
     public virtual method isImmediate8 => Boolean := false.
     public virtual method isImmediate16 => Boolean := false.
     public virtual method isImmediate32 => Boolean := false.
     public virtual method isImmediateS32 => Boolean := false.
     public virtual method isImmediate64 => Boolean := self isImmediate32.
     public virtual method isRelativeImmediate32 => Boolean := false.
+
+    public virtual method isImmediateU8 => Boolean := false.
 
     public virtual method getConstantValue64 => Int64
         := self error: "Not an immediate 64 constant".
@@ -343,6 +347,7 @@ public final class TACConstantInt8 superclass: TACConstantInteger; definition: {
     public override method isSignedExtended => Boolean := true.
     public override method isConstantInt8 => Boolean := true.
     public override method isImmediate8 => Boolean := true.
+    public override method isImmediateU8 => Boolean := value >= 0i8.
     public override method isImmediate16 => Boolean := true.
     public override method isImmediate32 => Boolean := true.
 
@@ -367,6 +372,7 @@ public final class TACConstantUInt8 superclass: TACConstantInteger; definition: 
 
     public override method isConstantUInt8 => Boolean := true.
     public override method isImmediate8 => Boolean := true.
+    public override method isImmediateU8 => Boolean := true.
     public override method isImmediate16 => Boolean := true.
     public override method isImmediate32 => Boolean := true.
 
@@ -391,6 +397,7 @@ public final class TACConstantInt16 superclass: TACConstantInteger; definition: 
 
     public override method isSignedExtended => Boolean := true.
     public override method isConstantInt16 => Boolean := true.
+    public override method isImmediateU8 => Boolean := (0i16 <= value) && (value <= 16rff i16).
     public override method isImmediate16 => Boolean := true.
     public override method isImmediate32 => Boolean := true.
 
@@ -414,6 +421,7 @@ public final class TACConstantUInt16 superclass: TACConstantInteger; definition:
     public field value => UInt16.
 
     public override method isConstantUInt16 => Boolean := true.
+    public override method isImmediateU8 => Boolean := value <= 16rff u16.
     public override method isImmediate16 => Boolean := true.
     public override method isImmediate32 => Boolean := true.
 
@@ -438,6 +446,7 @@ public final class TACConstantInt32 superclass: TACConstantInteger; definition: 
 
     public override method isSignedExtended => Boolean := true.
     public override method isConstantInt32 => Boolean := true.
+    public override method isImmediateU8 => Boolean := (0i32 <= value) && (value <= 16rff i32).
     public override method isImmediate32 => Boolean := true.
     public override method isImmediateS32 => Boolean := true.
 
@@ -461,6 +470,7 @@ public final class TACConstantUInt32 superclass: TACConstantInteger; definition:
     public field value => UInt32.
 
     public override method isConstantUInt32 => Boolean := true.
+    public override method isImmediateU8 => Boolean := value <= 16rff u32.
     public override method isImmediate32 => Boolean := true.
     public override method isImmediateS32 => Boolean := value <= 16r7FFFFFFF u32.
 
@@ -486,6 +496,7 @@ public final class TACConstantInt64 superclass: TACConstantInteger; definition: 
     public override method isSignedExtended => Boolean := true.
     public override method isConstantInt64 => Boolean := true.
     public override method isImmediate64 => Boolean := true.
+    public override method isImmediateU8 => Boolean := (0i64 <= value) && (value <= 16rff i64).
     public override method isImmediateS32 => Boolean := value asInt32 asInt64 = value.
 
     public override method type => Type := Int64.
@@ -508,6 +519,7 @@ public final class TACConstantUInt64 superclass: TACConstantInteger; definition:
     public field value => UInt64.
 
     public override method isConstantUInt64 => Boolean := true.
+    public override method isImmediateU8 => Boolean := value <= 16rff u64.
     public override method isImmediateS32 => Boolean := value asInt32 asInt64 asUInt64 = value.
     public override method isImmediate64 => Boolean := true.
 

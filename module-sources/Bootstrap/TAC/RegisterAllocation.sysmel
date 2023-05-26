@@ -20,6 +20,15 @@ public abstract class TACRegisterAllocator superclass: Object; definition: {
     public abstract method allocateRegisterForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void
         := self subclassResponsibility.
 
+    public virtual method allocateRegister: (requiredRegister: TACPhysicalLocation) orImmediateU8ForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        let operand := instruction operands at: operandIndex.
+        operand isImmediateU8 ifTrue: {
+            instruction operandRegisters at: operandIndex put: (TACPhysicalLocationImmediate for: operand)
+        } ifFalse: {
+            self allocateRegister: requiredRegister forInstruction: instruction operandAt: operandIndex
+        }
+    }.
+
     public virtual method allocateRegisterOrImmediate8ForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void := {
         let operand := instruction operands at: operandIndex.
         operand isImmediate8 ifTrue: {

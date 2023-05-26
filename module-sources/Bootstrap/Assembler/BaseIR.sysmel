@@ -31,6 +31,7 @@ public class AsmStreamElement superclass: Object; definition: {
 
 AsmInstructionOperand definition: {
     public virtual method isImmediate => Boolean := false.
+    public virtual method isImmediateValue1 => Boolean := false.
     public virtual method isImmediate8 => Boolean := self isImmediate && (self size = 1sz).
     public virtual method isImmediate16 => Boolean := self isImmediate && (self size = 2sz).
     public virtual method isImmediate32 => Boolean := self isImmediate && (self size = 4sz).
@@ -202,8 +203,10 @@ public class AsmImmediateConstant superclass: AsmImmediate; definition: {
 public final class AsmImmediateConstantChar8 superclass: AsmImmediateConstant; definition: {
     public field value => Char8.
 
+    public override method isImmediateValue1 => Boolean := value = 1c8.
     public override method isImmediateConstantChar8 => Boolean := true.
     public override method size => Size := 1sz.
+
 
     public override method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
         codeStream nextPut: value asUInt8
@@ -221,6 +224,8 @@ public final class AsmImmediateConstantChar8 superclass: AsmImmediateConstant; d
 
 public final class AsmImmediateConstantUInt8 superclass: AsmImmediateConstant; definition: {
     public field value => UInt8.
+
+    public override method isImmediateValue1 => Boolean := value = 1u8.
 
     public override method isImmediateConstantUInt8 => Boolean := true.
     public override method size => Size := 1sz.
@@ -242,6 +247,8 @@ public final class AsmImmediateConstantUInt8 superclass: AsmImmediateConstant; d
 public final class AsmImmediateConstantInt8 superclass: AsmImmediateConstant; definition: {
     public field value => Int8.
     
+    public override method isImmediateValue1 => Boolean := value = 1i8.
+
     public override method isImmediateSigned8 => Boolean := true.
     public override method isImmediateConstantInt8 => Boolean := true.
 

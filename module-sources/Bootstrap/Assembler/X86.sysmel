@@ -110,6 +110,7 @@ AsmInstructionOperand extend: {
 
     public virtual method x86::isRegisterAL => Boolean := false.
     public virtual method x86::isRegisterAX => Boolean := false.
+    public virtual method x86::isRegisterCL => Boolean := false.
 
     public virtual method x86::valueLow => UInt8
         := self error: "Not a x86 register.".
@@ -349,6 +350,7 @@ public class AsmX86IntRegister superclass: AsmX86Register; definition: {
 
     public override method x86::isRegisterAL => Boolean := (self size = 1sz) && (value = 0u8).
     public override method x86::isRegisterAX => Boolean := (self size ~= 1sz) && (value = 0u8).
+    public override method x86::isRegisterCL => Boolean := (self size = 1sz) && (value = 1u8).
 
     public method x86::byte => AsmX86RegisterAddress
         := AsmX86RegisterAddress base: self size: 1u8.
@@ -864,6 +866,116 @@ let instructionTemplateTable := #{
                 nextPutInt8: immediate
         };
         yourself).
+    OpRmbI_1: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
+            (instruction operandCount = 2sz) &&
+            instruction firstOperand isRegisterOrRegisterAddress &&
+            (instruction firstOperand size = 1sz) &&
+            instruction secondOperand isImmediateValue1
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let registerAddress := instruction firstOperand.
+            let operandSize := registerAddress size.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86SizeOverride: operandSize;
+                nextPutX86RexSize: operandSize rm: registerAddress;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode.
+        };
+        yourself).
+    OpRmbIb: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
+            (instruction operandCount = 2sz) &&
+            instruction firstOperand isRegisterOrRegisterAddress &&
+            (instruction firstOperand size = 1sz) &&
+            instruction secondOperand isImmediate8
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let registerAddress := instruction firstOperand.
+            let immediate := instruction secondOperand.
+            let operandSize := registerAddress size.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86SizeOverride: operandSize;
+                nextPutX86RexSize: operandSize rm: registerAddress;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode immediateSize: 1sz;
+                nextPutImmediate: immediate
+        };
+        yourself).
+    OpRmbCL: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
+            (instruction operandCount = 2sz) &&
+            instruction firstOperand isRegisterOrRegisterAddress &&
+            (instruction firstOperand size = 1sz) &&
+            instruction secondOperand x86::isRegisterCL
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let registerAddress := instruction firstOperand.
+            let operandSize := registerAddress size.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86SizeOverride: operandSize;
+                nextPutX86RexSize: operandSize rm: registerAddress;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode.
+        };
+        yourself).
+
+    OpRmwI_1: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
+            (instruction operandCount = 2sz) &&
+            instruction firstOperand isRegisterOrRegisterAddress && 
+            instruction secondOperand isImmediateValue1
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let registerAddress := instruction firstOperand.
+            let operandSize := registerAddress size.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86SizeOverride: operandSize;
+                nextPutX86RexSize: operandSize rm: registerAddress;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode.
+        };
+        yourself).
+    OpRmwIb: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
+            (instruction operandCount = 2sz) &&
+            instruction firstOperand isRegisterOrRegisterAddress && 
+            instruction secondOperand isImmediate8
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let registerAddress := instruction firstOperand.
+            let immediate := instruction secondOperand.
+            let operandSize := registerAddress size.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86SizeOverride: operandSize;
+                nextPutX86RexSize: operandSize rm: registerAddress;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode immediateSize: 1sz;
+                nextPutImmediate: immediate
+        };
+        yourself).
+    OpRmwCL: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
+            (instruction operandCount = 2sz) &&
+            instruction firstOperand isRegisterOrRegisterAddress && 
+            instruction secondOperand x86::isRegisterCL
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let registerAddress := instruction firstOperand.
+            let operandSize := registerAddress size.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86SizeOverride: operandSize;
+                nextPutX86RexSize: operandSize rm: registerAddress;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode.
+        };
+        yourself).
     OpRmbOp: (AsmX86InstructionTemplate new
         when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
             (instruction operandCount = 1sz) &&
@@ -1208,12 +1320,12 @@ let instructionDefinitionTable := #(
 		(Op #[] #[16rF0])
 	)
 
-    (neg () "Two complement negation"
+    (neg (dst) "Two complement negation"
         (OpRmbOp #[] #[16rF6] 3)
         (OpRmwOp #[] #[16rF7] 3)
     )
 
-    (not () "Bitwise not"
+    (not (dst) "Bitwise not"
         (OpRmbOp #[] #[16rF6] 2)
         (OpRmwOp #[] #[16rF7] 2)
     )
@@ -1363,6 +1475,76 @@ let instructionDefinitionTable := #(
 		(OpRmwRw #[] #[16r29])
 		(OpRbRmb #[] #[16r2A])
 		(OpRwRmw #[] #[16r2B])
+    )
+
+    (rcl (dst with) "Rotate with carry left"
+        (OpRmbI_1 #[] #[16rD0] 2)
+        (OpRmbIb #[] #[16rC0] 2)
+        (OpRmbCL #[] #[16rD2] 2)
+
+        (OpRmwI_1 #[] #[16rD1] 2)
+        (OpRmwIb #[] #[16rC1] 2)
+        (OpRmwCL #[] #[16rD3] 2)
+    )
+
+    (rcr (dst with) "Rotate with carry right"
+        (OpRmbI_1 #[] #[16rD0] 3)
+        (OpRmbIb #[] #[16rC0] 3)
+        (OpRmbCL #[] #[16rD2] 3)
+
+        (OpRmwI_1 #[] #[16rD1] 3)
+        (OpRmwIb #[] #[16rC1] 3)
+        (OpRmwCL #[] #[16rD3] 3)
+    )
+
+    (rol (dst with) "Rotate left"
+        (OpRmbI_1 #[] #[16rD0] 0)
+        (OpRmbIb #[] #[16rC0] 0)
+        (OpRmbCL #[] #[16rD2] 0)
+
+        (OpRmwI_1 #[] #[16rD1] 0)
+        (OpRmwIb #[] #[16rC1] 0)
+        (OpRmwCL #[] #[16rD3] 0)
+    )
+
+    (ror (dst with) "Rotate right"
+        (OpRmbI_1 #[] #[16rD0] 1)
+        (OpRmbIb #[] #[16rC0] 1)
+        (OpRmbCL #[] #[16rD2] 1)
+
+        (OpRmwI_1 #[] #[16rD1] 1)
+        (OpRmwIb #[] #[16rC1] 1)
+        (OpRmwCL #[] #[16rD3] 1)
+    )
+
+    (sal (dst with) "Logical shift left"
+        (OpRmbI_1 #[] #[16rD0] 4)
+        (OpRmbIb #[] #[16rC0] 4)
+        (OpRmbCL #[] #[16rD2] 4)
+
+        (OpRmwI_1 #[] #[16rD1] 4)
+        (OpRmwIb #[] #[16rC1] 4)
+        (OpRmwCL #[] #[16rD3] 4)
+    )
+
+    (shr (dst with) "Logical shift right"
+        (OpRmbI_1 #[] #[16rD0] 5)
+        (OpRmbIb #[] #[16rC0] 5)
+        (OpRmbCL #[] #[16rD2] 5)
+
+        (OpRmwI_1 #[] #[16rD1] 5)
+        (OpRmwIb #[] #[16rC1] 5)
+        (OpRmwCL #[] #[16rD3] 5)
+    )
+
+    (sar (dst with) "Arithmetic shift right"
+        (OpRmbI_1 #[] #[16rD0] 7)
+        (OpRmbIb #[] #[16rC0] 7)
+        (OpRmbCL #[] #[16rD2] 7)
+
+        (OpRmwI_1 #[] #[16rD1] 7)
+        (OpRmwIb #[] #[16rC1] 7)
+        (OpRmwCL #[] #[16rD3] 7)
     )
 
     (test (op with) "Compares with a bitwise and"
