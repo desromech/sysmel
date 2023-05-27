@@ -1,6 +1,7 @@
 public final class AsmStream superclass: Object.
 public class AsmInstructionOperand superclass: Object.
 public class AsmStreamElement superclass: AsmInstructionOperand.
+public abstract class AsmConstantExpression superclass: Object.
 
 public class AsmStreamElement superclass: Object; definition: {
     ## Instruction links.
@@ -91,21 +92,27 @@ public class AsmImmediate superclass: AsmInstructionOperand; definition: {
     public override method isImmediate => Boolean := true.
 }.
 
-public global AsmSymbol::PICMode::None := 0u8.
-public global AsmSymbol::PICMode::GOT := 1u8.
-public global AsmSymbol::PICMode::PLT := 2u8.
+public global AsmSymbol::RelocationMode::None := 0u8.
+public global AsmSymbol::RelocationMode::GOT := 1u8.
+public global AsmSymbol::RelocationMode::PLT := 2u8.
+public global AsmSymbol::RelocationMode::SectionRelative := 3u8.
 
 public final class AsmImmediateSymbolWithAddend superclass: AsmImmediate; definition: {
     public field symbol => AsmSymbol.
     public field size => Size.
     public field addend => Int64.
-    public field picMode => UInt8.
+    public field relocationMode => UInt8.
 
     public override method isImmediateSymbolWithAddend => Boolean := true.
 
     public override method isImmediateSigned8 => Boolean := size = 1sz.
     public override method isImmediateSigned32 => Boolean := size = 2sz.
     public override method isImmediateSigned64 => Boolean := size = 4sz.
+
+    public method asConstantExpression => AsmConstantExpression
+        := AsmConstantExpressionSymbolValue new
+            immediateSymbolWithAddend: self;
+            yourself.
 
     public method + (extraAddend: Int64) ::=> SelfType
         := self copy
@@ -168,17 +175,24 @@ public final class AsmImmediateSymbolWithAddend superclass: AsmImmediate; defini
     }.
 
     public method isAtGOT => Boolean
-        := picMode = AsmSymbol::PICMode::GOT.
+        := relocationMode = AsmSymbol::RelocationMode::GOT.
 
     public method makeAtGOT => Void :={
-        picMode := AsmSymbol::PICMode::GOT
+        relocationMode := AsmSymbol::RelocationMode::GOT
     }.
 
     public method isAtPLT => Boolean
-        :=  picMode = AsmSymbol::PICMode::PLT.
+        := relocationMode = AsmSymbol::RelocationMode::PLT.
 
     public method makeAtPLT => Void :={
-        picMode := AsmSymbol::PICMode::PLT
+        relocationMode := AsmSymbol::RelocationMode::PLT
+    }.
+
+    public method isSectionRelative => Boolean
+        := relocationMode = AsmSymbol::RelocationMode::SectionRelative.
+
+    public method makeSectionRelative => Void :={
+        relocationMode := AsmSymbol::RelocationMode::SectionRelative
     }.
 }.
 
@@ -187,6 +201,13 @@ AsmSymbol extend: {
         := AsmImmediateSymbolWithAddend new
             symbol: self;
             size: immediateSize;
+            yourself.
+
+    public method immediateSectionRelative: (immediateSize: Size) ::=> AsmImmediateSymbolWithAddend
+        := AsmImmediateSymbolWithAddend new
+            symbol: self;
+            size: immediateSize;
+            makeSectionRelative;
             yourself.
 
     public method byte => AsmImmediateSymbolWithAddend
@@ -204,6 +225,71 @@ AsmSymbol extend: {
 
 public class AsmImmediateConstant superclass: AsmImmediate; definition: {
     public method isImmediateConstant => Boolean := true.
+}.
+
+AsmConstantExpression definition: {
+    public abstract method evaluateInt64 => Int64
+        := self subclassResponsibility.
+
+    public virtual method evaluateInt32 => Int32
+        := self evaluateInt64 asInt32.
+
+    public virtual method evaluateInt16 => Int16
+        := self evaluateInt64 asInt16.
+
+    public virtual method evaluateInt8 => Int8
+        := self evaluateInt64 asInt8.
+
+    public method + (operand: AsmConstantExpression) ::=> AsmConstantExpression
+        := AsmConstantExpressionBinaryAdd new left: self; right: operand; yourself.
+
+    public method - (operand: AsmConstantExpression) ::=> AsmConstantExpression
+        := AsmConstantExpressionBinarySubtract new left: self; right: operand; yourself.
+}.
+
+public abstract class AsmConstantExpressionBinary superclass: AsmConstantExpression; definition: {
+    public field left => AsmConstantExpression.
+    public field right => AsmConstantExpression.
+}.
+
+public final class AsmConstantExpressionBinaryAdd superclass: AsmConstantExpressionBinary; definition: {
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream print: left; nextPutAll: " + "; print: right
+    }.
+
+    public override method evaluateInt64 => Int64
+        := left evaluateInt64 + right evaluateInt64.
+}.
+
+public final class AsmConstantExpressionBinarySubtract superclass: AsmConstantExpressionBinary; definition: {
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream print: left; nextPutAll: " - "; print: right
+    }.
+
+    public override method evaluateInt64 => Int64
+        := left evaluateInt64 - right evaluateInt64.
+}.
+
+public final class AsmConstantExpressionInteger superclass: AsmConstantExpression; definition: {
+    public field value => Int64.
+
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream print: value
+    }.
+
+    public override method evaluateInt64 => Int64
+        := value.
+}.
+
+public final class AsmConstantExpressionSymbolValue superclass: AsmConstantExpression; definition: {
+    public field immediateSymbolWithAddend => AsmImmediateSymbolWithAddend.
+
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream print: immediateSymbolWithAddend
+    }.
+
+    public override method evaluateInt64 => Int64
+        := immediateSymbolWithAddend symbol value asInt64 + immediateSymbolWithAddend addend.
 }.
 
 public final class AsmImmediateConstantChar8 superclass: AsmImmediateConstant; definition: {
@@ -634,6 +720,7 @@ public final class AsmSectionDirective superclass: AsmStreamElement; definition:
     public field writeable => Boolean.
     public field readable => Boolean.
     public field loaded => Boolean.
+    public field debugging => Boolean.
 
     public override method isFormattedWithIndentation => Boolean := false.
 
@@ -745,6 +832,35 @@ public final class AsmSQWordDirective superclass: AsmStreamElement; definition: 
     }.
 }.
 
+public final class AsmULEB128Directive superclass: AsmStreamElement; definition: {
+    public field value => UInt64.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".uleb "; print: value.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        let currentValue mutable := value.
+        do: {
+            let byte := (currentValue & 127u64) asUInt8.
+            currentValue := currentValue >> 7u64.
+            stream nextPut: byte | (currentValue ~= 0 ifTrue: 128u8 ifFalse: 0u8)
+        } while: (currentValue ~= 0u64)
+    }.
+}.
+
+public final class AsmSLEB128Directive superclass: AsmStreamElement; definition: {
+    public field value => Int64.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".sleb "; print: value.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutInt64: value
+    }.
+}.
+
 public final class AsmFloatDirective superclass: AsmStreamElement; definition: {
     public field value => Float32.
 
@@ -780,6 +896,88 @@ public final class AsmStringDirective superclass: AsmStreamElement; definition: 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
         stream nextPutString: value.
         nullTerminated ifTrue: (stream nextPut: 0u8).
+    }.
+}.
+
+public final class AsmByteConstantExpressionDirective superclass: AsmStreamElement; definition: {
+    public field expression => AsmConstantExpression.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".byte "; print: expression.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutInt8: expression evaluateInt8
+    }.
+}.
+
+public final class AsmWordConstantExpressionDirective superclass: AsmStreamElement; definition: {
+    public field expression => AsmConstantExpression.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".word "; print: expression.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutInt16: expression evaluateInt16
+    }.
+}.
+
+public final class AsmDWordConstantExpressionDirective superclass: AsmStreamElement; definition: {
+    public field expression => AsmConstantExpression.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".dword "; print: expression.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutInt32: expression evaluateInt32
+    }.
+}.
+
+public final class AsmQWordConstantExpressionDirective superclass: AsmStreamElement; definition: {
+    public field expression => AsmConstantExpression.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".qword "; print: expression.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutInt64: expression evaluateInt64
+    }.
+}.
+
+public final class AsmSLEB128ConstantExpressionDirective superclass: AsmStreamElement; definition: {
+    public field expression => AsmConstantExpression.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".sleb128 "; print: expression.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        let currentValue mutable := expression evaluateInt64 asUInt64.
+        do: {
+            let byte := (currentValue & 127u64) asUInt8.
+            currentValue := currentValue >> 7u64.
+            stream nextPut: byte | (currentValue ~= 0 ifTrue: 128u8 ifFalse: 0u8)
+        } while: (currentValue ~= 0u64)
+    }.
+}.
+
+public final class AsmULEB128ConstantExpressionDirective superclass: AsmStreamElement; definition: {
+    public field expression => AsmConstantExpression.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".uleb128 "; print: expression.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        let currentValue mutable := expression evaluateInt64 asUInt64.
+        do: {
+            let byte := (currentValue & 127u64) asUInt8.
+            currentValue := currentValue >> 7u64.
+            stream nextPut: byte | (currentValue ~= 0 ifTrue: 128u8 ifFalse: 0u8)
+        } while: (currentValue ~= 0u64)
     }.
 }.
 
@@ -907,6 +1105,16 @@ public final class AsmStreamBuilder superclass: Object; definition: {
             value: value;
             yourself).
 
+    public method uleb128: (value: UInt64) ::=> AsmULEB128Directive
+        := self addElement: (AsmULEB128Directive new
+            value: value;
+            yourself).
+
+    public method sleb128: (value: Int64) ::=> AsmSLEB128Directive
+        := self addElement: (AsmSLEB128Directive new
+            value: value;
+            yourself).
+
     public method float: (value: Float32) ::=> AsmFloatDirective
         := self addElement: (AsmFloatDirective new
             value: value;
@@ -921,6 +1129,44 @@ public final class AsmStreamBuilder superclass: Object; definition: {
         := self addElement: (AsmStringDirective new
             value: string;
             nullTerminated: nullTerminated;
+            yourself).
+
+    public method byteExpression: (expression: AsmConstantExpression) ::=> AsmByteConstantExpressionDirective
+        := self addElement: (AsmByteConstantExpressionDirective new
+            expression: expression;
+            yourself).
+
+    public method wordExpression: (expression: AsmConstantExpression) ::=> AsmWordConstantExpressionDirective
+        := self addElement: (AsmWordConstantExpressionDirective new
+            expression: expression;
+            yourself).
+
+    public method dwordExpression: (expression: AsmConstantExpression) ::=> AsmDWordConstantExpressionDirective
+        := self addElement: (AsmDWordConstantExpressionDirective new
+            expression: expression;
+            yourself).
+
+    public method qwordExpression: (expression: AsmConstantExpression) ::=> AsmQWordConstantExpressionDirective
+        := self addElement: (AsmQWordConstantExpressionDirective new
+            expression: expression;
+            yourself).
+
+    public method expression: (expression: AsmConstantExpression) size: (size: Size) ::=> AsmStreamElement := {
+        size = 8sz ifTrue: (return: (self qwordExpression: expression)).
+        size = 4sz ifTrue: (return: (self dwordExpression: expression)).
+        size = 2sz ifTrue: (return: (self wordExpression: expression)).
+        size = 1sz ifTrue: (return: (self byteExpression: expression)).
+        self error: "Unsupported asm constant expression of size " -- size asString -- "."
+    }.
+
+    public method sleb128Expression: (expression: AsmConstantExpression) ::=> AsmSLEB128ConstantExpressionDirective
+        := self addElement: (AsmSLEB128ConstantExpressionDirective new
+            expression: expression;
+            yourself).
+
+    public method uleb128Expression: (expression: AsmConstantExpression) ::=> AsmULEB128ConstantExpressionDirective
+        := self addElement: (AsmULEB128ConstantExpressionDirective new
+            expression: expression;
             yourself).
 }.
 

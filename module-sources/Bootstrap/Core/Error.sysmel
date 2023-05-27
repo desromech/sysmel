@@ -1,0 +1,6 @@
+error adoptDefinitionOf: {:(String)message :: Unwinds |
+    "Fatal error: " writeOntoStderr.
+    message writeOntoStderr.
+    "\n " writeOntoStderr.
+    sysmel_pal_abort().
+}.
