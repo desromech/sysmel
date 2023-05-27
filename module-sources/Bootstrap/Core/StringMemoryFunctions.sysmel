@@ -8,3 +8,42 @@ public function cstrlen(str: Char8 const pointer) => Size := {
 
     count
 }.
+
+public function memset(buffer: Void pointer, value: Int8, size: Size) => Void := {
+    let bytePointer := buffer reinterpretCastTo: Int8 pointer.
+
+    let i mutable := 0sz.
+    while: (i < size) do: {
+        bytePointer[i asIntPointer] := value
+    } continueWith: (i := i + 1sz).
+}.
+
+public function memcpy(dest: Void restrict pointer, source: Void restrict const pointer, size: Size) => Void := {
+    let destBytePointer := dest reinterpretCastTo: UInt8 restrict pointer.
+    let sourceBytePointer := source reinterpretCastTo: UInt8 restrict const pointer.
+
+    let i mutable := 0sz.
+    while: (i < size) do: {
+        destBytePointer[i asIntPointer] := sourceBytePointer[i asIntPointer]
+    } continueWith: (i := i + 1sz).
+}.
+
+public function reverseMemcpy(dest: Void restrict pointer, source: Void restrict const pointer, size: Size) => Void := {
+    let destBytePointer := dest reinterpretCastTo: UInt8 restrict pointer.
+    let sourceBytePointer := source reinterpretCastTo: UInt8 restrict const pointer.
+
+    let i mutable := 0sz.
+    while: (i < size) do: {
+        destBytePointer[i asIntPointer] := sourceBytePointer[(size - i - 1sz) asIntPointer]
+    } continueWith: (i := i + 1sz).
+}.
+
+public function memmove(dest: Void pointer, source: Void const pointer, size: Size) => Void := {
+    let destBytePointer := dest reinterpretCastTo: UInt8 pointer.
+    let sourceBytePointer := source reinterpretCastTo: UInt8 const pointer.
+
+    let i mutable := 0sz.
+    while: (i < size) do: {
+        destBytePointer[i asIntPointer] := sourceBytePointer[i asIntPointer]
+    } continueWith: (i := i + 1sz).
+}.

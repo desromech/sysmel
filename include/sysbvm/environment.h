@@ -112,7 +112,7 @@ typedef struct sysbvm_symbolMacroValueBinding_s
 
 typedef struct sysbvm_symbolTupleSlotBinding_s
 {
-    sysbvm_symbolBinding_t super;
+    sysbvm_symbolAnalysisBinding_t super;
     sysbvm_tuple_t tupleBinding;
     sysbvm_tuple_t typeSlot;
 } sysbvm_symbolTupleSlotBinding_t;

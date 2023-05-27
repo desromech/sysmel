@@ -37,6 +37,7 @@ SSAValue definition: {
     public virtual method isPointerElementAtInstruction => Boolean := false.
     public virtual method isLoadInstruction => Boolean := false.
     public virtual method isLoadOrStoreInstruction => Boolean := false.
+    public virtual method isMakeArrayInstruction => Boolean := false.
     public virtual method isMakeClosureInstruction => Boolean := false.
     public virtual method isStoreInstruction => Boolean := false.
     public virtual method isTypeSlotAtInstruction => Boolean := false.
@@ -1063,6 +1064,31 @@ public final class SSALoadInstruction superclass: SSAInstruction; definition: {
     }.
 }.
 
+public final class SSAMakeArrayInstruction superclass: SSAInstruction; definition: {
+    public field elements => Array.
+
+    public override method isMakeArrayInstruction => Boolean := true.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream print: self; nextPutAll: " := makeArray".
+        self elements do: {:(SSAValue)element :: Void |
+            stream nextPutAll: " "; print: element
+        }
+    }.
+
+    public override method usedValuesDo: aBlock ::=> Void := {
+        self elements do: aBlock
+    }.
+
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        self elements replaceAll: replacedValue with: replacement
+    }.
+
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+        self elements replaceAllWithDictionary: replacementDictionary
+    }.
+}.
+
 public final class SSAMakeClosureInstruction superclass: SSAInstruction; definition: {
     public field functionDefinition => SSAValue.
     public field captures => Array.
@@ -1457,6 +1483,18 @@ SSAInstructionBuilder definition: {
             type: type;
             registerInUsedValues;
             yourself).
+
+    public method makeArray: (elements: Array) ::=> SSAValue := {
+        elements isEmpty ifTrue: {
+            self literal: #()
+        } ifFalse: {
+            self addInstruction: (SSAMakeArrayInstruction new
+                elements: elements;
+                type: Array;
+                registerInUsedValues;
+                yourself)
+        }
+    }.
 
     public method makeClosure: (functionDefinition: SSAValue) captures: (captures: Array) type: (type: Type) ::=> SSAMakeClosureInstruction
         := self addInstruction: (SSAMakeClosureInstruction new

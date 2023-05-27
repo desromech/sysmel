@@ -1,4 +1,5 @@
 public global ObjectModel::Tag::Bits := 4u8.
+public global ObjectModel::MinimalAlignment := 16u32.
 
 public global ObjectModel::Tag::Pointer := 0u8.
 public global ObjectModel::Tag::Nil := 0u8.
@@ -84,8 +85,8 @@ public final struct ObjectModel::TupleHeader32 definition: {
 
     public method isBytes: (flag: Boolean) ::=> Void := {
         flag
-            ifTrue: (typePointerAndFlags := identityHashAndFlags & ObjectModel::TypePointerFlag::Bytes asUInt32 bitInvert)
-            ifFalse: (typePointerAndFlags := identityHashAndFlags | ObjectModel::TypePointerFlag::Bytes asUInt32).
+            ifTrue: (typePointerAndFlags := typePointerAndFlags & ObjectModel::TypePointerFlag::Bytes asUInt32 bitInvert)
+            ifFalse: (typePointerAndFlags := typePointerAndFlags | ObjectModel::TypePointerFlag::Bytes asUInt32).
     }.
 
     public method isWeak => Boolean
@@ -148,7 +149,7 @@ public final struct ObjectModel::TupleHeader64 definition: {
 public abstract class ObjectModelVariant superclass: Object; definition: {
     public abstract method pointerSize => UInt64 := self subclassResponsibility.
 
-    public virtual method minimalObjectAlignment => UInt64 := 16u64.
+    public virtual method minimalObjectAlignment => UInt64 := ObjectModel::MinimalAlignment asUInt64.
 
     public abstract method objectHeaderSize => UInt64
         := self subclassResponsibility.
@@ -418,6 +419,7 @@ public global ObjectModel::PointerSize := UIntPointer valueSize.
 public global ObjectModel::TupleHeader := if: ObjectModel::PointerSize = 4sz
     then: ObjectModel::TupleHeader32
     else: ObjectModel::TupleHeader64.
+public global ObjectModel::TupleHeaderSize := ObjectModel::TupleHeader valueSize.
 
 public function ObjectModel::isNonNullPointerValue(value: UIntPointer) => Boolean
     := (value ~= 0uptr) && ((value & 15uptr) = 0uptr).
@@ -535,3 +537,30 @@ public function ObjectModel::lookupVirtualSelector(object: Untyped, selector: Sy
 
 public function ObjectModel::lookupVirtualSelectorWithReceiverType(receiverType: Type, selector: Symbol) => Untyped
     := receiverType lookupVirtualSelector: selector.
+
+(RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:) adoptDefinitionOf: {
+    :(Type)type :(Size)instanceSize :(Size)instanceAlignment :(Size)slotCount :(Size)variableSize :(Boolean)isBytes :(Boolean)isWeak :: Untyped |
+    let allocationAlignment := instanceAlignment max: ObjectModel::MinimalAlignment asSize.
+    let variableDataSize := isBytes ifTrue: variableSize ifFalse: variableSize * ObjectModel::PointerSize.
+    let contentSize := instanceSize + variableDataSize.
+    let allocationSize := ObjectModel::TupleHeaderSize + contentSize.
+    let allocationPointer := sysmel_pal_malloc(allocationSize).
+    memset(allocationPointer, 0i8, allocationSize).
+
+    let objectHeader := allocationPointer reinterpretCastTo: ObjectModel::TupleHeader pointer.
+    let typePointerFlags := 
+        (isBytes ifTrue: ObjectModel::TypePointerFlag::Bytes asUIntPointer ifFalse: (0uptr)) |
+        (isWeak ifTrue: ObjectModel::TypePointerFlag::Weak asUIntPointer ifFalse: (0uptr)).
+    objectHeader _
+        typePointerAndFlags: ObjectModel::getTuplePointerUIntValue(type) | typePointerFlags;
+        objectSize: contentSize.
+
+    allocationPointer reinterpretCastTo: Untyped.
+}.
+
+let emptyArray := #().
+public function ObjectModel::makeArrayWithSize(size: Size) => Array := {
+    size = 0sz
+        ifTrue: emptyArray
+        ifFalse: (Array basicAllocate: size)
+}.

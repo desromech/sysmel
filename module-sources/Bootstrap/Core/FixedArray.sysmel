@@ -16,15 +16,23 @@ public class FixedArrayType superclass: ValueType; definition: {
     public override method generatePublicAccessors => Void := {
         let SelfType := self.
         let elementType := self elementType.
+        let elementReferenceType := elementType ref.
         let size := self size.
 
         self
             withSelector: #at: addMethod: {:(SelfType)self :(Size)index :: elementType |
+                <primitive: #FixedArray::at:>
                 if: index >= size then: error("Index is out of bounds.").
 
                 (RawTuple::slotAt:)(self, index)
             } makeFinal recompileAndOptimize;
+            withSelector: #"[]:" addMethod: {:(SelfType)self :(Size)index :: elementReferenceType |
+                <primitive: #FixedArray::referenceAt:>
+                if: index >= size then: error("Index is out of bounds.").
+                error("TODO: Implement reference at").
+            } makeFinal recompileAndOptimize;
             withSelector: #at:put: addMethod: {:(SelfType)self :(Size)index :(elementType)value :: Void |
+                <primitive: #FixedArray::at:put:>
                 if: index >= size then: error("Index is out of bounds.").
 
                 (RawTuple::slotAt:put:)(self, index, value)

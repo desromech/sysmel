@@ -1,9 +1,3 @@
-String extend: {
-    public final method writeOntoStdout => Void := {
-        sysmel_pal_writeToFile(sysmel_pal_getStdoutFileHandle(), self size, self __rawContentsPointer__).
-    }.
-}.
-
 let myPrint := {:(Array)elements... :: Void |
     elements do: {:each :: Void | each asString writeOntoStdout}
 }.
@@ -17,13 +11,15 @@ let myObject := Object new.
 public externC function main(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
     "Hello World\n" writeOntoStdout.
 
+    ##argc asString writeOntoStdout.
+
     ##let initialize := ObjectModel::lookupVirtualSelector(myObject, #initialize).
     ##let initialize := ObjectModel::lookupVirtualSelectorWithReceiverType(Object, #initialize).
+    let myObject := Object basicAllocate.
 
     let i mutable := 0i32.
     while: (i < argc) do: {
-        let arg := argv[i asIntPointer].
-        sysmel_pal_writeToFile(sysmel_pal_getStdoutFileHandle(), cstrlen(arg), arg reinterpretCastTo: Void const pointer).
+        (String fromCString: argv[i asIntPointer]) writeOntoStdout.
         "\n" writeOntoStdout.
     } continueWith: (i := i + 1i32).
 

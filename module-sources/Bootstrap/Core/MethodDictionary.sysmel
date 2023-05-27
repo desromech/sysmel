@@ -1,6 +1,5 @@
 MethodDictionary definition: {
     public final method scanFor: key ::=> IntPointer := {
-        let storage := self storage.
         storage ifNil: { return: -1iptr }.
 
         let capacity := storage size / 2sz.
@@ -29,7 +28,7 @@ MethodDictionary definition: {
         let index := self scanFor: selector.
         index >= 0iptr ifTrue: {
             let methodIndex := index *2iptr + 1iptr.
-            self storage at: methodIndex asSize
+            storage at: methodIndex asSize
         } ifFalse: {
             nil
         }

@@ -372,8 +372,15 @@ ASTLocalDefinitionNode extend: {
 }.
 
 SymbolAnalysisBinding extend: {
-    public method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+    public virtual method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
         := context getValueForLocalBinding: self.
+}.
+
+SymbolTupleSlotBinding extend: {
+    public override method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let tupleValue := tupleBinding generateSSAValueWith: context.
+        context builder tuple: tupleValue typedSlotReferenceAt: typeSlot.
+    }
 }.
 
 ASTIdentifierReferenceNode extend: {
@@ -571,6 +578,11 @@ ASTWhileContinueWithNode extend: {
     }
 }.
 
+ASTMakeArrayNode extend: {
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context builder makeArray: (self elements collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }).
+}.
+
 ASTMessageSendNode extend: {
     public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
         := context builder send: (self receiver generateSSAValueWith: context)
@@ -599,9 +611,10 @@ ASTSequenceNode extend: {
 }.
 
 ASTUseNamedSlotsOfNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := context builder literal: void.
-
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        context setValue: (self tupleExpression generateSSAValueWith: context) forBinding: self binding.
+        context builder literal: void.
+    }.
 }.
 
 FunctionDefinition extend: {

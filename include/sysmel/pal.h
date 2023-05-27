@@ -12,6 +12,11 @@
 
 typedef struct sysmel_pal_file_s *sysmel_pal_filehandle_t;
 
+SYSMEL_PAL_EXTERN_C void sysmel_pal_abort(void);
+
+SYSMEL_PAL_EXTERN_C void* sysmel_pal_malloc(size_t size);
+SYSMEL_PAL_EXTERN_C void sysmel_pal_free(void *pointer);
+
 SYSMEL_PAL_EXTERN_C sysmel_pal_filehandle_t sysmel_pal_getStdinFileHandle(void);
 SYSMEL_PAL_EXTERN_C sysmel_pal_filehandle_t sysmel_pal_getStdoutFileHandle(void);
 SYSMEL_PAL_EXTERN_C sysmel_pal_filehandle_t sysmel_pal_getStderrFileHandle(void);

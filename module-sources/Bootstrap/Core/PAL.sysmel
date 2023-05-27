@@ -1,6 +1,11 @@
 public struct SysmelPAL::File definition: {}.
 public global SysmelPAL::FileHandle := SysmelPAL::File pointer.
 
+public externC function sysmel_pal_abort() => Unwinds.
+
+public externC function sysmel_pal_malloc(size: Size) => Void pointer.
+public externC function sysmel_pal_free(pointer: Void pointer) => Void.
+
 public externC function sysmel_pal_getStdinFileHandle() => SysmelPAL::FileHandle.
 public externC function sysmel_pal_getStdoutFileHandle() => SysmelPAL::FileHandle.
 public externC function sysmel_pal_getStderrFileHandle() => SysmelPAL::FileHandle.

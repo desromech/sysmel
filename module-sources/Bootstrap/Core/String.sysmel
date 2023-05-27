@@ -13,6 +13,35 @@ Char8 extend: {
 }.
 
 String extend: {
+    __Meta__ definition: {
+        public final method fromCString: (cstring: Char8 const pointer) ::=> self := {
+            let stringLength := cstrlen(cstring).
+            let result := self basicAllocate: stringLength.
+            memcpy(result __rawContentsPointer__, cstring reinterpretCastTo: Void const pointer, stringLength).
+            result
+        }.
+
+        public final method withBuffer: (string: Char8 const pointer) size: (stringLength: Size) ::=> self := {
+            let result := self basicAllocate: stringLength.
+            memcpy(result __rawContentsPointer__, string reinterpretCastTo: Void const pointer, stringLength).
+            result
+        }.
+
+        public final method withReverseBuffer: (string: Char8 const pointer) size: (stringLength: Size) ::=> self := {
+            let result := self basicAllocate: stringLength.
+            reverseMemcpy(result __rawContentsPointer__, string reinterpretCastTo: Void const pointer, stringLength).
+            result
+        }.
+    }.
+
+    public final method writeOntoStdout => Void := {
+        sysmel_pal_writeToFile(sysmel_pal_getStdoutFileHandle(), self size, self __rawContentsPointer__).
+    }.
+
+    public final method writeOntoStderr => Void := {
+        sysmel_pal_writeToFile(sysmel_pal_getStderrFileHandle(), self size, self __rawContentsPointer__).
+    }.
+    
     public method asLowercase => String
         := self collect: {:(Char8)c :: Char8 | c asLowercase }.
 
@@ -73,6 +102,31 @@ Int32 extend: {
     public method printHexOn: (stream: Stream) ::=> Void := {
         self asUInt32 printHexOn: stream.
     }.
+
+    public override final method asString => String := {
+        let buffer mutable := Char8[32sz] new.
+        let characterCount mutable := 0sz.
+        let currentResult mutable := self.
+
+        ## Negative sign.
+        currentResult < 0i32 ifTrue: {
+            buffer at: 0sz put: '-'asChar8.
+            characterCount := 1sz.
+            currentResult := currentResult negated.
+        }.
+
+        do: {
+            let digit := currentResult % 10i32.
+            buffer at: characterCount put: '0'asChar8 + digit asChar8.
+            characterCount := characterCount + 1sz.
+            currentResult := currentResult / 10i32.
+        } while: (currentResult ~= 0i32).
+
+        String withBuffer: buffer[0sz] address size: characterCount
+    }.
+
+    public override final method printString => String
+        := self asString.
 }.
 
 Int64 extend: {

@@ -8,6 +8,8 @@ error __type__: (SimpleFunctionTypeTemplate((String,), 0bflgs, Unwinds)).
 (RawTuple::slotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size, Untyped), 0bflgs, Void)).
 (RawTuple::refTypeSlotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, TypeSlot), 0bflgs, Untyped)).
 (RawTuple::refTypeSlotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, TypeSlot, Untyped), 0bflgs, Void)).
+(RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:)
+    __type__: (SimpleFunctionTypeTemplate((Type, Size, Size, Size, Size, Boolean, Boolean), 0bflgs, Untyped)).
 (==) __type__: (SimpleFunctionTypeTemplate((AnyValue, AnyValue), 0bflgs, Boolean)).
 (~~) __type__: (SimpleFunctionTypeTemplate((AnyValue, AnyValue), 0bflgs, Boolean)).
 identityHash __type__: (SimpleFunctionTypeTemplate((AnyValue,), 0bflgs, Size)).
@@ -237,19 +239,19 @@ AnyValue
 Type
     withSelector: #hasFlag: addMethod: {:(Type)self :(Bitflags)flag :: Boolean |
         (self flags & flag) ~= 0bflgs
-    } withEagerAnalysis;
+    } makeFinal withEagerAnalysis;
     withSelector: #isDynamic addMethod: {:(Type)self :: Boolean |
         self hasFlag: TypeFlags::Dynamic.
-    } withEagerAnalysis;
+    } makeFinal withEagerAnalysis;
     withSelector: #isBytes addMethod: {:(Type)self :: Boolean |
         self hasFlag: TypeFlags::Bytes.
-    } withEagerAnalysis;
+    } makeFinal withEagerAnalysis;
     withSelector: #isWeak addMethod: {:(Type)self :: Boolean |
         self hasFlag: TypeFlags::Weak.
-    } withEagerAnalysis;
+    } makeFinal withEagerAnalysis;
     withSelector: #isPointerLikeType addMethod: {:(Type)self :: Boolean |
         self hasFlag: TypeFlags::PointerValue | TypeFlags::ReferenceValue.
-    } withEagerAnalysis;
+    } makeFinal withEagerAnalysis;
     withSelector: #basicAllocate addMethod: {:(Type)self :: self |
         let: #result with: (if: self isBytes
             then: RawTuple::byteNew(0sz)
@@ -498,7 +500,7 @@ Type
     withSelector: #validSupertypeTotalSlotCount addMethod: {:(Type)self :: Size |
         let: #supertype with: self supertype.
         if: supertype == nil then: 0sz else: supertype validTotalSlotCount.
-    };
+    } makeFinal;
     withSelector: #validSlots addMethod: {:(Type)self :: Array |
         let: #pendingSlots with: self pendingSlots.
         if: pendingSlots ~~ nil then: {
@@ -521,14 +523,14 @@ Type
 
         if: self slots == nil then: (self slots: #()).
         self slots
-    };
+    } makeFinal;
     withSelector: #validTotalSlotCount addMethod: {:(Type)self :: Size |
         let: #totalSlotCount with: self totalSlotCount.
         if: totalSlotCount == nil then: {
             self totalSlotCount: self validSupertypeTotalSlotCount + self validSlots size.
             self totalSlotCount
         } else: totalSlotCount
-    } withEagerAnalysis;
+    } makeFinal withEagerAnalysis;
     withSelector: #registerSlotsInDictionary addMethod: {:(Type)self :: Void |
         let: #supertypeSlotCount with: self validSupertypeTotalSlotCount.
 
@@ -542,7 +544,7 @@ Type
     withSelector: #invalidateLayout addMethod: {:(Type)self  :: Void |
         self instanceSize: 0sz.
         self instanceAlignment: 0sz.
-    } withEagerAnalysis;
+    } makeFinal withEagerAnalysis;
     withSelector: #addTypeSlot: addMethod: {:(Type)self :(TypeSlot)extraSlot :: Void |
         if: self totalSlotCount ~~ nil then: (self error: "Cannot add type slot when the total slot count has already been computed").
         if: self pendingSlots == nil then: (self pendingSlots: OrderedCollection new).
@@ -2326,6 +2328,9 @@ Type
     } makePure;
     withSelector: #const addMethod: {:(Type)self :: Type |
         self
+    } makePure;
+    withSelector: #restrict addMethod: {:(Type)self :: Type |
+        self
     } makePure.
 
 ReferenceType
@@ -2690,15 +2695,15 @@ Int64
 TypeSlot
     withSelector: #size addMethod: {:(TypeSlot)self :: Size |
         self type valueSize
-    };
+    } makeFinal;
     withSelector: #alignment addMethod: {:(TypeSlot)self :: Size |
         self type valueAlignment
-    }.
+    } makeFinal.
 
 Type
     withSelector: #ensureLayoutIsComputed addMethod: {:(Type)self :: Void |
         if: self instanceAlignment = 0sz then: (self computeLayout)
-    };
+    } makeFinal;
     withSelector: #computeLayout addMethod: {:(Type)self :: Void |
         self instanceSize: 0sz.
         self instanceAlignment: 1sz.
@@ -2725,11 +2730,11 @@ Type
     withSelector: #validInstanceSize addMethod: {:(Type)self :: Size |
         if: self instanceAlignment = 0sz then: (self ensureLayoutIsComputed).
         self instanceSize
-    };
+    } makeFinal;
     withSelector: #validInstanceAlignment addMethod: {:(Type)self :: Size |
         if: self instanceAlignment = 0sz then: (self ensureLayoutIsComputed).
         self instanceAlignment
-    };
+    } makeFinal;
     withSelector: #valueAlignment addMethod: {:(Type)self :: Size |
         UIntPointer instanceAlignment
     } makeVirtual;
@@ -2738,7 +2743,7 @@ Type
     } makeVirtual;
     withSelector: #alignedValueSize addMethod: {:(Type)self :: Size |
         self valueSize alignedTo: self valueAlignment
-    };
+    } makeFinal;
     withSelector: #isGarbageCollectedPointerType addMethod: {:(Type)self :: Boolean | true } makeVirtual;
     withSelector: #isValueType addMethod: {:(Type)self :: Boolean | false } makeVirtual.
 
