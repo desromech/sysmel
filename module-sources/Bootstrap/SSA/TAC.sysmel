@@ -1539,45 +1539,49 @@ SSAFunctionDefinitionTACCodeGenerator extend: {
 
         hasGeneratedPrimitive
     }.
-}.
 
-SSACallInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+    public method compileCall: (calledFunction: SSAValue) withArguments: (arguments: Array) unchecked: (isUnchecked: Boolean) into: (tacValue: TACValue) type: (resultType: Type)::=> Void := {
         ## Attempt to use the primitive generator first.
         let primitiveGenerator := SSATacPrimitiveCallGenerationTable atOrNil: calledFunction primitiveName.
         primitiveGenerator ifNotNil: {
-            primitiveGenerator(self arguments, tacValue, codegen) ifTrue: {
+            primitiveGenerator(arguments, tacValue, self) ifTrue: {
                 return: void
             }
         }.
 
         isUnchecked ifTrue: {
             calledFunction isCaptureless ifTrue: {
-                let entryPoint := codegen translateCapturelessUncheckedFunctionEntryPoint: calledFunction.
-                let tacArguments := arguments collect: {:(SSAValue)eachArgument :: TACValue | codegen translateValue: eachArgument}.
-                self type
-                    emitTacCall: entryPoint convention: codegen tacFunction compilationTarget defaultCallingConvention
+                let entryPoint := self translateCapturelessUncheckedFunctionEntryPoint: calledFunction.
+                let tacArguments := arguments collect: {:(SSAValue)eachArgument :: TACValue | self translateValue: eachArgument}.
+                resultType
+                    emitTacCall: entryPoint convention: self tacFunction compilationTarget defaultCallingConvention
                     withArguments: tacArguments into: tacValue
-                    withBlockBuilder: codegen blockBuilder
+                    withBlockBuilder: self blockBuilder
 
             } ifFalse: {
-                let tacCalledFunction := codegen translateValue: calledFunction.
-                let entryPoint := codegen translateUncheckedFunctionEntryPoint: calledFunction.
-                let tacArguments := arguments collect: {:(SSAValue)eachArgument :: TACValue | codegen translateValue: eachArgument}.
-                self type
-                    emitTacCall: entryPoint convention: codegen tacFunction compilationTarget defaultCallingConvention
+                let tacCalledFunction := self translateValue: calledFunction.
+                let entryPoint := self translateUncheckedFunctionEntryPoint: calledFunction.
+                let tacArguments := arguments collect: {:(SSAValue)eachArgument :: TACValue | self translateValue: eachArgument}.
+                resultType
+                    emitTacCall: entryPoint convention: self tacFunction compilationTarget defaultCallingConvention
                     withArguments: (Array with: tacCalledFunction) -- tacArguments into: tacValue
-                    withBlockBuilder: codegen blockBuilder
+                    withBlockBuilder: self blockBuilder
             }.
         } ifFalse: {
-            let tacCalledFunction := codegen translateBoxedValue: calledFunction.
-            let entryPoint := codegen translateCheckedFunctionEntryPoint: calledFunction.
-            let tacArguments := arguments collect: {:(SSAValue)eachArgument :: TACValue | codegen translateBoxedValue: eachArgument}.
+            let tacCalledFunction := self translateBoxedValue: calledFunction.
+            let entryPoint := self translateCheckedFunctionEntryPoint: calledFunction.
+            let tacArguments := arguments collect: {:(SSAValue)eachArgument :: TACValue | self translateBoxedValue: eachArgument}.
             AnyValue
-                emitTacCall: entryPoint convention: codegen tacFunction compilationTarget defaultCallingConvention
+                emitTacCall: entryPoint convention: self tacFunction compilationTarget defaultCallingConvention
                 withArguments: (Array with: tacCalledFunction) -- tacArguments into: tacValue
-                withBlockBuilder: codegen blockBuilder
+                withBlockBuilder: self blockBuilder
         }.
+    }.
+}.
+
+SSACallInstruction extend: {
+    public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        codegen compileCall: calledFunction withArguments: arguments unchecked: isUnchecked into: tacValue type: self type
     }.
 }.
 

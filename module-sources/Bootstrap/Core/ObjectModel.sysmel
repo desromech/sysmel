@@ -532,3 +532,6 @@ RawTuple::byteSize adoptDefinitionOf: {:(Untyped)self :: Size |
 
 public function ObjectModel::lookupVirtualSelector(object: Untyped, selector: Symbol) => Untyped
     := RawTuple::type(object) lookupVirtualSelector: selector.
+
+public function ObjectModel::lookupVirtualSelectorWithReceiverType(receiverType: Type, selector: Symbol) => Untyped
+    := receiverType lookupVirtualSelector: selector.
