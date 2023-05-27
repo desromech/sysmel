@@ -1588,6 +1588,17 @@ SSABitcastInstruction extend: {
     }.
 }.
 
+SSADownCastInstruction extend: {
+    public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        ## TODO: Add a target typecheck.
+        self value type isValueType && self type isValueType ifTrue: {
+            self error: "TODO: Implement unboxing generation on downcast"
+        } ifFalse: {
+            codegen blockBuilder movePointer: (codegen translateValue: self value) into: tacValue
+        }.
+    }.
+}.
+
 SSALoadInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
         (codegen localOnlyAllocaDictionary atOrNil: self storage) ifNotNil: {:(TACValue)localOnlyAlloca :: Void | 

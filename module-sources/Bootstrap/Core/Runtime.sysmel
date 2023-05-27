@@ -1,6 +1,9 @@
 ## We use these for the different implementations of Size
 error __type__: (SimpleFunctionTypeTemplate((String,), 0bflgs, Unwinds)).
 
+##(RawTuple::type) __type__: (SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Type)).
+(RawTuple::type:) __type__: (SimpleFunctionTypeTemplate((Untyped, Type), 0bflgs, Void)).
+
 (RawTuple::slotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size), 0bflgs, Untyped)).
 (RawTuple::slotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size, Untyped), 0bflgs, Void)).
 (RawTuple::refTypeSlotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, TypeSlot), 0bflgs, Untyped)).

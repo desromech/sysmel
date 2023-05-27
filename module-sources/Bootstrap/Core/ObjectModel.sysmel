@@ -452,8 +452,22 @@ AnyValue extend: {
         := ObjectModel::getTupleHeaderPointerOf(self) + 1iptr reinterpretCastTo: Void pointer.
 }.
 
+let HashBitCount := Size valueSize*8sz - 4sz.
+let HashBitMask := (1sz << HashBitCount) - 1sz.
+
+Size extend: {
+    public final method hashMultiply => UIntPointer
+        := (self * 1103515245sz) & HashBitMask
+}.
+
+
 identityHash adoptDefinitionOf: {:(Untyped)self :: Size |
-    ObjectModel::getTupleHeaderPointerOf(self) _ identityHashAndFlags >> 4uptr
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
+    ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
+        (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ identityHashAndFlags >> 4uptr
+    } ifFalse: {
+        pointerValue asSize hashMultiply
+    }
 }.
 
 RawTuple::isBytes adoptDefinitionOf: {:(Untyped)self :: Boolean |
@@ -472,6 +486,21 @@ RawTuple::size adoptDefinitionOf: {:(Untyped)self :: Size |
     } ifFalse: {
         0sz
     }.
+}.
+
+RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
+    let tag := pointerValue & 15uptr.
+    (pointerValue ~= 0uptr) && (tag = 0uptr) ifTrue: {
+        (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ typePointerAndFlags & -16uptr reinterpretCastTo: Type
+    } ifFalse: {
+        tag = 15uptr ifTrue: {
+            let trivialTypeIndex := pointerValue >> 4uptr.
+            ObjectModel::ImmediateTrivialTypeTable at: trivialTypeIndex asSize
+        } ifFalse: {
+            ObjectModel::ImmediateTagTypeTable at: tag asSize
+        }
+    }
 }.
 
 (RawTuple::slotAt:) adoptDefinitionOf: {:(Untyped)self :(Size)index :: Untyped |
@@ -500,3 +529,6 @@ RawTuple::byteSize adoptDefinitionOf: {:(Untyped)self :: Size |
         0sz
     }
 }.
+
+public function ObjectModel::lookupVirtualSelector(object: Untyped, selector: Symbol) => Untyped
+    := RawTuple::type(object) lookupVirtualSelector: selector.
