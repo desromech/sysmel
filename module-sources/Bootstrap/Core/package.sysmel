@@ -7,6 +7,8 @@ loadSourceNamed: "Enum.sysmel".
 loadSourceNamed: "ByteSerializableObject.sysmel".
 loadSourceNamed: "MethodDictionary.sysmel".
 loadSourceNamed: "Struct.sysmel".
+loadSourceNamed: "PAL.sysmel".
+loadSourceNamed: "StringMemoryFunctions.sysmel".
 loadSourceNamed: "ObjectModel.sysmel".
 loadSourceNamed: "Interval.sysmel".
 loadSourceNamed: "Math.sysmel".

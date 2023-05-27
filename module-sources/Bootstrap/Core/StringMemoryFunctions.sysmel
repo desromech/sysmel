@@ -1,0 +1,10 @@
+public function cstrlen(str: Char8 const pointer) => Size := {
+    if: str == nil then: {return: 0sz}.
+
+    let count mutable := 0sz.
+    while: (str[count asIntPointer] ~= 0c8) do: {
+        ## Nothing is required here.
+    } continueWith: (count := count + 1sz).
+
+    count
+}.
