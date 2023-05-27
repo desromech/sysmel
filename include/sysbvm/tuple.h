@@ -797,28 +797,6 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_int64_encode(sysbvm_context_t *context
 }
 
 /**
- * Encodes a size as a tuple.
- */
-SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_size_encode(sysbvm_context_t *context, sysbvm_size_t value)
-{
-    if(sizeof(sysbvm_size_t) == sizeof(uint32_t))
-        return sysbvm_tuple_uint32_encode(context, (uint32_t)value);
-    else
-        return sysbvm_tuple_uint64_encode(context, (uint64_t)value);
-}
-
-/**
- * Decodes a size from tuple.
- */
-SYSBVM_INLINE sysbvm_size_t sysbvm_tuple_size_decode(sysbvm_tuple_t tuple)
-{
-    if(sizeof(sysbvm_size_t) == sizeof(uint32_t))
-        return sysbvm_tuple_uint32_decode(tuple);
-    else
-        return sysbvm_tuple_uint64_decode(tuple);
-}
-
-/**
  * Decodes a bitflags from tuple.
  */
 SYSBVM_INLINE sysbvm_bitflags_t sysbvm_tuple_bitflags_decode(sysbvm_tuple_t tuple)
@@ -838,6 +816,28 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_bitflags_encode(sysbvm_bitflags_t flag
         return sysbvm_tuple_uint32_encodeSmall((uint32_t)flags);
     else
         return sysbvm_tuple_uint64_encodeSmall(flags);
+}
+
+/**
+ * Encodes a size as a tuple.
+ */
+SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_size_encode(sysbvm_context_t *context, sysbvm_size_t value)
+{
+    if(sizeof(sysbvm_size_t) == sizeof(uint32_t))
+        return sysbvm_tuple_uint32_encode(context, (uint32_t)value);
+    else
+        return sysbvm_tuple_uint64_encode(context, (uint64_t)value);
+}
+
+/**
+ * Decodes a size from tuple.
+ */
+SYSBVM_INLINE sysbvm_size_t sysbvm_tuple_size_decode(sysbvm_tuple_t tuple)
+{
+    if(sizeof(sysbvm_size_t) == sizeof(uint32_t))
+        return sysbvm_tuple_uint32_decode(tuple);
+    else
+        return sysbvm_tuple_uint64_decode(tuple);
 }
 
 /**

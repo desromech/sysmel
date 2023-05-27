@@ -694,7 +694,7 @@ public final class AsmObjectElf64FileWriter superclass: AsmObjectFileWriter; def
             sectionHeaders add: (Elf64::SectionHeader new
                 name: (sectionNameStringTable addString: ".symtab") asUInt32;
                 type: Elf::SectionHeaderType::Symtab;
-                size: symbolTable sectionSize;
+                size: symbolTable sectionSize asUInt64;
                 addrAlign: 1u64;
                 entrySize: Elf64::Symbol validInstanceSize asUInt64;
                 info: symbolTable privateSymbols size asUInt32;

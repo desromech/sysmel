@@ -12,11 +12,21 @@ typedef struct sysbvm_heap_s sysbvm_heap_t;
 
 typedef sysbvm_tuple_t (*sysbvm_functionEntryPoint_t)(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments);
 
+typedef struct sysbvm_contextCreationOptions_s
+{
+    uint32_t targetWordSize;
+    bool nojit;
+} sysbvm_contextCreationOptions_t;
 
 /**
  * Creates a new context.
  */
 SYSBVM_API sysbvm_context_t *sysbvm_context_create(void);
+
+/**
+ * Creates a new context.
+ */
+SYSBVM_API sysbvm_context_t *sysbvm_context_createWithOptions(sysbvm_contextCreationOptions_t *contextOptions);
 
 /**
  * Creates a context by loading it from an image.

@@ -1140,12 +1140,13 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.immediateTrivialTypeTable[SYSBVM_TUPLE_IMMEDIATE_TRIVIAL_INDEX_PENDING_MEMOIZATION_VALUE] = context->roots.pendingMemoizationValueType;
 }
 
-SYSBVM_API sysbvm_context_t *sysbvm_context_create(void)
+SYSBVM_API sysbvm_context_t *sysbvm_context_createWithOptions(sysbvm_contextCreationOptions_t *contextOptions)
 {
     sysbvm_context_t *context = (sysbvm_context_t*)calloc(1, sizeof(sysbvm_context_t));
-    context->targetWordSize = sizeof(void*);
+    context->targetWordSize = contextOptions->targetWordSize ? contextOptions->targetWordSize : sizeof(void*);
     context->identityHashSeed = 1;
-    context->jitEnabled = sysbvm_context_default_jitEnabled;
+    context->jitEnabled = sysbvm_context_default_jitEnabled && !contextOptions->nojit;
+
     sysbvm_heap_initialize(&context->heap);
     sysbvm_gc_lock(context);
 
@@ -1176,6 +1177,12 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_create(void)
     sysbvm_gc_unlock(context);
 
     return context;
+}
+
+SYSBVM_API sysbvm_context_t *sysbvm_context_create(void)
+{
+    sysbvm_contextCreationOptions_t emptyOptions = {};
+    return sysbvm_context_createWithOptions(&emptyOptions);
 }
 
 SYSBVM_API void sysbvm_context_destroy(sysbvm_context_t *context)

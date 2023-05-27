@@ -75,6 +75,13 @@ int doMain(int startArgumentIndex, int argc, const char *argv[])
             {
                 isParsingRemainingArgs = true;
             }
+            else if(!strcmp(argv[i], "-m32") ||
+                !strcmp(argv[i], "-m64") ||
+                !strcmp(argv[i], "-nojit")
+            )
+            {
+                // These options are parsed before the context creation.
+            }
         }
         else
         {
@@ -137,6 +144,8 @@ int mainWithContext(int startArgumentIndex, int argc, const char *argv[])
 
 int main(int argc, const char *argv[])
 {
+    sysbvm_contextCreationOptions_t contextOptions = {};
+
     // Allow creating the context by loading it from an image.
     int startArgumentIndex = 1;
     if(argc >= 3 && !strcmp(argv[1], "-load-image"))
@@ -146,7 +155,17 @@ int main(int argc, const char *argv[])
     }
     else
     {
-        context = sysbvm_context_create();
+        for(int i = 1; i < argc; ++i)
+        {
+            if(!strcmp(argv[i], "-m32"))
+                contextOptions.targetWordSize = 4;
+            else if(!strcmp(argv[i], "-m64"))
+                contextOptions.targetWordSize = 8;
+            else if(!strcmp(argv[i], "-nojit"))
+                contextOptions.nojit = true;
+        }
+
+        context = sysbvm_context_createWithOptions(&contextOptions);
     }
 
     if(!context)

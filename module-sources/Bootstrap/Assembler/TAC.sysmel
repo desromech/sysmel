@@ -97,7 +97,7 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
         objectHeap buildIn: targetModule.
     }.
 
-    public method offsetOfGCRootObjectTableEntryFor: (object: Untyped) ::=> UInt64
+    public method offsetOfGCRootObjectTableEntryFor: (object: Untyped) ::=> Size
         := objectHeap offsetOfGCRootObjectTableEntryFor: object.
 
     public method gcRootObjectTableSymbol ::=> AsmSymbol

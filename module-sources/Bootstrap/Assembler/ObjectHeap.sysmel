@@ -116,17 +116,17 @@ AsmObjectHeap definition: {
 
             heapSize := heapSize alignedTo: objectAlignment.
             heapAlignment := heapAlignment max: objectAlignment.
-            objectOffsetList at: index put: heapSize.
+            objectOffsetList at: index put: heapSize asSize.
 
             heapSize := heapSize + objectSize.
         }.
 
         heapSize := heapSize alignedTo: heapAlignment.
-        serializedObjectData := ByteArray new: heapSize.
+        serializedObjectData := ByteArray new: heapSize asSize.
         serializedObjectDataRelocations := OrderedCollection new.
 
         objectList doWithIndex: {:(Untyped)eachObject :(Size)index :: Void |
-            let offset => UInt64 := objectOffsetList at: index.
+            let offset => Size := objectOffsetList at: index.
             objectModel serializeObject: eachObject inAsmHeap: self at: offset
         }.
     }.
@@ -142,17 +142,17 @@ AsmObjectHeap definition: {
         }
     }.
 
-    public method indexOfGCObjectEntryFor: (object: Untyped) ::=> UInt64 := {
-        objectIndexTable untypedAt: object ifAbsentPut: { :: UInt64 |
-            let tableIndex := objectList size asUInt64.
+    public method indexOfGCObjectEntryFor: (object: Untyped) ::=> Size := {
+        objectIndexTable untypedAt: object ifAbsentPut: { :: Size |
+            let tableIndex := objectList size.
             objectList add: object.
             tableIndex
         }.
     }.
 
-    public method offsetOfGCRootObjectTableEntryFor: (object: Untyped) ::=> UInt64 := {
-        rootOffsetTable untypedAt: object ifAbsentPut: { :: UInt64 |
-            let tableOffset := (rootObjectList size * compilationTarget pointerSize) asUInt64.
+    public method offsetOfGCRootObjectTableEntryFor: (object: Untyped) ::=> Size := {
+        rootOffsetTable untypedAt: object ifAbsentPut: { :: Size |
+            let tableOffset := (rootObjectList size * compilationTarget pointerSize) asSize.
             rootObjectList add: (compilationTarget objectModel makeObject: object asmHeapRootTableEntryIn: self).
             tableOffset
         }.
@@ -236,7 +236,7 @@ AsmObjectHeap definition: {
             serializedObjectData uint64At: offset put: immediateValue
         } ifFalse: {
             let objectIndex => Size := objectIndexTable at: value.
-            let objectOffset => UInt64 := objectOffsetList at: objectIndex.
+            let objectOffset => Size := objectOffsetList at: objectIndex.
             serializedObjectDataRelocations add: (AsmObjectCodeRelocationAbsoluteInt64 new
                 symbol: self objectSectionSymbol;
                 offset: offset;

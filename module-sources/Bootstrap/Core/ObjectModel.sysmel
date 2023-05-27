@@ -57,6 +57,39 @@ public final struct ObjectModel::TupleHeader32 definition: {
     public field identityHashAndFlags => UInt32.
     public field objectSize => UInt32.
     public field forwardingPointer => UInt32.
+
+    public method gcColor => UInt8
+        := (typePointerAndFlags & ObjectModel::TypePointerFlag::GCColorMask asUInt32) asUInt8.
+
+    public method gcColor: (newColor: UInt8) ::=> Void := {
+        typePointerAndFlags := (typePointerAndFlags & ObjectModel::TypePointerFlag::GCColorMask asUInt32 bitInvert) | newColor asUInt32
+    }.
+
+    public method isBytes => Boolean
+        := (typePointerAndFlags & ObjectModel::TypePointerFlag::Bytes asUInt32) ~= 0u32.
+
+    public method isBytes: (flag: Boolean) ::=> Void := {
+        flag
+            ifTrue: (typePointerAndFlags := identityHashAndFlags & ObjectModel::TypePointerFlag::Bytes asUInt32 bitInvert)
+            ifFalse: (typePointerAndFlags := identityHashAndFlags | ObjectModel::TypePointerFlag::Bytes asUInt32).
+    }.
+
+    public method isWeak => Boolean
+        := (typePointerAndFlags & ObjectModel::TypePointerFlag::Weak asUInt32) ~= 0u32.
+
+    public method isWeak: (flag: Boolean) ::=> Void := {
+        flag
+            ifTrue: (typePointerAndFlags := identityHashAndFlags & ObjectModel::TypePointerFlag::Weak asUInt32 bitInvert)
+            ifFalse: (typePointerAndFlags := identityHashAndFlags | ObjectModel::TypePointerFlag::Weak asUInt32).
+    }.
+
+    public method identityHashValue ::=> UInt32
+        := identityHashAndFlags >> 4u32.
+
+    public method identityHashValue: (identityHash: UInt32) ::=> Void := {
+        identityHashAndFlags := (identityHash << 4u32) | (identityHashAndFlags & 15u32)
+    }.
+
 }.
 
 public final struct ObjectModel::TupleHeader64 definition: {
@@ -193,7 +226,7 @@ Type extend: {
 
 PointerLikeType extend: {
     public override method objectHeaderSizeForObjectModel: (objectModel: ObjectModelVariant) ::=> Size
-        := 0u64.
+        := 0sz.
 }.
 
 Char8 __type__ extend: {

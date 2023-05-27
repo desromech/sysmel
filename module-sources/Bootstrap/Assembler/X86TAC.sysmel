@@ -372,11 +372,11 @@ public final class TACSysVX86_64RegisterAssignmentState superclass: Object; defi
         }
     }.
 
-    public method allocateIntegerOfSize: (size: Size) alignment: (alignment: Size) ::=> TACPhysicalLocation
-        := size <= 8sz ifTrue: (self allocateIntegerRegister) ifFalse: nil.
+    public method allocateIntegerOfSize: (size: UInt64) alignment: (alignment: UInt64) ::=> TACPhysicalLocation
+        := size <= 8u64 ifTrue: (self allocateIntegerRegister) ifFalse: nil.
 
-    public method allocateVectorOfSize: (size: Size) alignment: (alignment: Size) ::=> TACPhysicalLocation
-        := size <= 16sz ifTrue: (self allocateVectorRegister) ifFalse: nil.
+    public method allocateVectorOfSize: (size: UInt64) alignment: (alignment: UInt64) ::=> TACPhysicalLocation
+        := size <= 16u64 ifTrue: (self allocateVectorRegister) ifFalse: nil.
 
     public method assignRegisterToValue: (value: TACValue) ::=> TACPhysicalLocation := {
         (value isFloatingPoint || value isVector)
