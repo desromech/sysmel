@@ -63,6 +63,12 @@ UInt8 extend: {
         self >> 4u8 printHexDigitOn: stream.
         self & 16rF u8 printHexDigitOn: stream.
     }.
+
+    public override final method asString => String
+        := self asUInt32 asString.
+
+    public override final method printString => String
+        := self asUInt32 asString.
 }.
 
 UInt16 extend: {
@@ -70,6 +76,12 @@ UInt16 extend: {
         (self >> 8u16) asUInt8 printHexOn: stream.
         self asUInt8 printHexOn: stream.
     }.
+
+    public override final method asString => String
+        := self asUInt32 asString.
+
+    public override final method printString => String
+        := self asUInt32 asString.
 }.
 
 UInt32 extend: {
@@ -77,6 +89,34 @@ UInt32 extend: {
         (self >> 16u32) asUInt16 printHexOn: stream.
         self asUInt16 printHexOn: stream.
     }.
+
+    public override final method asString => String := {
+        let digitCount mutable := 0sz.
+        let currentValue mutable := self.
+
+        ## Count the required number of digits.
+        do: {
+            currentValue := currentValue / 10u32.
+            digitCount := digitCount + 1sz.
+        } while: (currentValue ~= 0u32).
+
+        let result := String basicAllocate: digitCount.
+        
+        ## Emit the string
+        currentValue := self.
+        let digitIndex mutable := 0sz.
+        do: {
+            let digit := currentValue % 10u32.
+            currentValue := currentValue / 10u32.
+            result at: digitCount - digitIndex - 1sz put: '0'asChar8 + digit asChar8.
+            digitIndex := digitIndex + 1sz
+        } while: (currentValue ~= 0u32).
+
+        result
+    }.
+
+    public override final method printString => String
+        := self asString.
 }.
 
 UInt64 extend: {
@@ -84,18 +124,58 @@ UInt64 extend: {
         (self >> 32u64) asUInt32 printHexOn: stream.
         self asUInt32 printHexOn: stream.
     }.
+
+    public override final method asString => String := {
+        let digitCount mutable := 0sz.
+        let currentValue mutable := self.
+
+        ## Count the required number of digits.
+        do: {
+            currentValue := currentValue / 10u64.
+            digitCount := digitCount + 1sz.
+        } while: (currentValue ~= 0u64).
+
+        let result := String basicAllocate: digitCount.
+        
+        ## Emit the string
+        currentValue := self.
+        let digitIndex mutable := 0sz.
+        do: {
+            let digit := currentValue % 10u64.
+            currentValue := currentValue / 10u64.
+            result at: digitCount - digitIndex - 1sz put: '0'asChar8 + digit asChar8.
+            digitIndex := digitIndex + 1sz
+        } while: (currentValue ~= 0u64).
+
+        result
+    }.
+
+    public override final method printString => String
+        := self asString.
 }.
 
 Int8 extend: {
     public method printHexOn: (stream: Stream) ::=> Void := {
         self asUInt8 printHexOn: stream.
     }.
+
+    public override final method asString => String
+        := self asInt32 asString.
+
+    public override final method printString => String
+        := self asInt32 asString.
 }.
 
 Int16 extend: {
     public method printHexOn: (stream: Stream) ::=> Void := {
         self asUInt16 printHexOn: stream.
     }.
+
+    public override final method asString => String
+        := self asInt32 asString.
+
+    public override final method printString => String
+        := self asInt32 asString.
 }.
 
 Int32 extend: {
@@ -104,25 +184,32 @@ Int32 extend: {
     }.
 
     public override final method asString => String := {
-        let buffer mutable := Char8[32sz] new.
-        let characterCount mutable := 0sz.
-        let currentResult mutable := self.
+        let absoluteValue := self >= 0i32 ifTrue: self asUInt32 ifFalse: self negated asUInt32.
+        let isNegative := self < 0i32.
+        let digitCount mutable := 0sz.
+        let currentValue mutable := absoluteValue.
 
-        ## Negative sign.
-        currentResult < 0i32 ifTrue: {
-            buffer at: 0sz put: '-'asChar8.
-            characterCount := 1sz.
-            currentResult := currentResult negated.
-        }.
-
+        ## Count the required number of digits.
         do: {
-            let digit := currentResult % 10i32.
-            buffer at: characterCount put: '0'asChar8 + digit asChar8.
-            characterCount := characterCount + 1sz.
-            currentResult := currentResult / 10i32.
-        } while: (currentResult ~= 0i32).
+            currentValue := currentValue / 10u32.
+            digitCount := digitCount + 1sz.
+        } while: (currentValue ~= 0u32).
 
-        String withBuffer: buffer[0sz] address size: characterCount
+        let prefixSize := isNegative ifTrue: 1sz ifFalse: 0sz.
+        let result := String basicAllocate: prefixSize + digitCount.
+        
+        ## Emit the string
+        isNegative ifTrue: (result at: 0sz put: '-'asChar8).
+        currentValue := absoluteValue.
+        let digitIndex mutable := 0sz.
+        do: {
+            let digit := currentValue % 10u32.
+            currentValue := currentValue / 10u32.
+            result at: prefixSize + digitCount - digitIndex - 1sz put: '0'asChar8 + digit asChar8.
+            digitIndex := digitIndex + 1sz
+        } while: (currentValue ~= 0u32).
+
+        result
     }.
 
     public override final method printString => String
@@ -133,4 +220,36 @@ Int64 extend: {
     public method printHexOn: (stream: Stream) ::=> Void := {
         self asUInt64 printHexOn: stream.
     }.
+
+    public override final method asString => String := {
+        let absoluteValue := self >= 0i64 ifTrue: self asUInt64 ifFalse: self negated asUInt64.
+        let isNegative := self < 0i64.
+        let digitCount mutable := 0sz.
+        let currentValue mutable := absoluteValue.
+
+        ## Count the required number of digits.
+        do: {
+            currentValue := currentValue / 10u64.
+            digitCount := digitCount + 1sz.
+        } while: (currentValue ~= 0u64).
+
+        let prefixSize := isNegative ifTrue: 1sz ifFalse: 0sz.
+        let result := String basicAllocate: prefixSize + digitCount.
+        
+        ## Emit the string
+        isNegative ifTrue: (result at: 0sz put: '-'asChar8).
+        currentValue := absoluteValue.
+        let digitIndex mutable := 0sz.
+        do: {
+            let digit := currentValue % 10u64.
+            currentValue := currentValue / 10u64.
+            result at: prefixSize + digitCount - digitIndex - 1sz put: '0'asChar8 + digit asChar8.
+            digitIndex := digitIndex + 1sz
+        } while: (currentValue ~= 0u64).
+
+        result
+    }.
+
+    public override final method printString => String
+        := self asString.
 }.

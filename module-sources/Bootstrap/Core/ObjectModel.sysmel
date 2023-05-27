@@ -1,4 +1,5 @@
 public global ObjectModel::Tag::Bits := 4u8.
+public global ObjectModel::Tag::Mask := 15u8.
 public global ObjectModel::MinimalAlignment := 16u32.
 
 public global ObjectModel::Tag::Pointer := 0u8.
@@ -9,6 +10,9 @@ public global ObjectModel::Tag::Int8 := 2u8.
 public global ObjectModel::Tag::Int16 := 3u8.
 public global ObjectModel::Tag::Int32 := 4u8.
 public global ObjectModel::Tag::Int64 := 5u8.
+
+public global ObjectModel::Tag::SignedIntegerFirst := ObjectModel::Tag::Integer.
+public global ObjectModel::Tag::SignedIntegerLast := ObjectModel::Tag::Int64.
 
 public global ObjectModel::Tag::Char8 := 6u8.
 public global ObjectModel::Tag::UInt8 := 7u8.
@@ -508,19 +512,70 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
 (RawTuple::slotAt:) adoptDefinitionOf: {:(Untyped)self :(Size)index :: Untyped |
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
-        ((pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) + 1iptr reinterpretCastTo: Untyped pointer)[index asIntPointer]
+        let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
+        let contents := header + 1iptr.
+        header _ isBytes ifTrue: {
+            ((contents reinterpretCastTo: UInt8 pointer)[index asIntPointer] asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::UInt8 asUIntPointer reinterpretCastTo: Untyped
+        } ifFalse: {
+            (contents reinterpretCastTo: Untyped pointer)[index asIntPointer]
+        }.
     } ifFalse: {
-        nil
+        let shiftAmount := (index asUIntPointer * 8uptr) + ObjectModel::Tag::Bits asUIntPointer.
+        let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
+        let isSigned := (ObjectModel::Tag::SignedIntegerFirst asUIntPointer <= tag) && (tag <= ObjectModel::Tag::SignedIntegerLast asUIntPointer).
+        let byteValue := isSigned
+            ifTrue: (pointerValue asIntPointer >> shiftAmount asIntPointer) asUInt8
+            ifFalse: (pointerValue >> shiftAmount) asUInt8.
+
+        (byteValue asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::UInt8 asUIntPointer reinterpretCastTo: Untyped
     }
 }.
 
 (RawTuple::slotAt:put:) adoptDefinitionOf: {:(Untyped)self :(Size)index :(Untyped)value :: Void |
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
-        (ObjectModel::getTupleHeaderPointerOf(self) + 1iptr reinterpretCastTo: Untyped pointer)[index asIntPointer] := value
+        let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
+        let contents := header + 1iptr.
+        let isBytes := (header _ typePointerAndFlags & ObjectModel::TypePointerFlag::Bytes asUIntPointer) ~= 0uptr.
+        isBytes ifTrue: {
+            (contents reinterpretCastTo: UInt8 pointer)[index asIntPointer] := (ObjectModel::getTuplePointerUIntValue(value) >> ObjectModel::Tag::Bits asUIntPointer) asUInt8
+        } ifFalse: {
+            (contents reinterpretCastTo: Untyped pointer)[index asIntPointer] := value
+        }
+    }
+}.
+
+(RawTuple::byteSlotAt:) adoptDefinitionOf: {:(Untyped)self :(Size)index :: UInt8 |
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
+    ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
+        let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
+        let contents := header + 1iptr.
+        let isBytes := (header _ typePointerAndFlags & ObjectModel::TypePointerFlag::Bytes asUIntPointer) ~= 0uptr.
+        isBytes ifFalse: (error("Expected a byte tuple.")).
+        
+        (contents reinterpretCastTo: UInt8 pointer)[index asIntPointer]
     } ifFalse: {
-        nil
-    }.
+        let shiftAmount := (index asUIntPointer * 8uptr) + ObjectModel::Tag::Bits asUIntPointer.
+        let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
+        let isSigned := (ObjectModel::Tag::SignedIntegerFirst asUIntPointer <= tag) && (tag <= ObjectModel::Tag::SignedIntegerLast asUIntPointer).
+        isSigned
+            ifTrue: (pointerValue asIntPointer >> shiftAmount asIntPointer) asUInt8
+            ifFalse: (pointerValue >> shiftAmount) asUInt8
+    }
+}.
+
+(RawTuple::byteSlotAt:put:) adoptDefinitionOf: {:(Untyped)self :(Size)index :(UInt8)value :: Void |
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
+    ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
+        let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
+        let contents := header + 1iptr.
+        let isBytes := (header _ typePointerAndFlags & ObjectModel::TypePointerFlag::Bytes asUIntPointer) ~= 0uptr.
+        isBytes ifFalse: (error("Expected a byte tuple.")).
+
+        (contents reinterpretCastTo: UInt8 pointer)[index asIntPointer] := value
+    } ifFalse: {
+        error("Cannot modifiy immutable object.").
+    }
 }.
 
 RawTuple::byteSize adoptDefinitionOf: {:(Untyped)self :: Size |
@@ -548,7 +603,7 @@ public function ObjectModel::lookupVirtualSelectorWithReceiverType(receiverType:
     memset(allocationPointer, 0i8, allocationSize).
 
     let objectHeader := allocationPointer reinterpretCastTo: ObjectModel::TupleHeader pointer.
-    let typePointerFlags := 
+    let typePointerFlags :=
         (isBytes ifTrue: ObjectModel::TypePointerFlag::Bytes asUIntPointer ifFalse: (0uptr)) |
         (isWeak ifTrue: ObjectModel::TypePointerFlag::Weak asUIntPointer ifFalse: (0uptr)).
     objectHeader _

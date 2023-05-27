@@ -15,8 +15,6 @@ module buildDwarfCompileUnitWith: {:(Dwarf::DebugInfoEntry)compileUnit :(Dwarf::
         builder formalParameter: {:(Dwarf::DebugInfoEntry)param :(Dwarf::Builder)builder :: Void |
             param name: "argc"; type: intType
         }.
-
-        ##type name: #int; byteSize: 4; encodingUnsigned
     }.
 }.
 

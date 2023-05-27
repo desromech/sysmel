@@ -6,6 +6,8 @@ error __type__: (SimpleFunctionTypeTemplate((String,), 0bflgs, Unwinds)).
 
 (RawTuple::slotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size), 0bflgs, Untyped)).
 (RawTuple::slotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size, Untyped), 0bflgs, Void)).
+(RawTuple::byteSlotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size), 0bflgs, UInt8)).
+(RawTuple::byteSlotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size, UInt8), 0bflgs, Void)).
 (RawTuple::refTypeSlotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, TypeSlot), 0bflgs, Untyped)).
 (RawTuple::refTypeSlotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, TypeSlot, Untyped), 0bflgs, Void)).
 (RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:)
@@ -1627,10 +1629,10 @@ ByteArray
         self basicNew: initialSize
     } makeOverride makeFinal;
     withSelector: #at: addMethod: {:(ByteArray)self :(Size)index :: UInt8 |
-        self __slotAt__: index
+        self __byteSlotAt__: index
     } makeOverride;
     withSelector: #at:put: addMethod: {:(ByteArray)self :(Size)index :(UInt8)value :: Void |
-        self __slotAt__: index put: value
+        self __byteSlotAt__: index put: value
     } makeOverride;
     withSelector: #size addMethod: {:(ByteArray)self :: Size |
         self __byteSize__
@@ -1761,10 +1763,10 @@ String
         self basicNew: initialSize
     } makeOverride makeFinal;
     withSelector: #at: addMethod: {:(String)self :(Size)index :: Char8 |
-        (self __slotAt__: index) asChar8
+        (self __byteSlotAt__: index) asChar8
     } makeOverride;
     withSelector: #at:put: addMethod: {:(String)self :(Size)index :(Char8)value :: Void |
-        self __slotAt__: index put: value
+        self __byteSlotAt__: index put: value asUInt8
     } makeOverride;
     withSelector: #size addMethod: {:(String)self :: Size |
         self __byteSize__

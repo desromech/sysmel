@@ -1025,9 +1025,19 @@ SYSBVM_API void sysbvm_tuple_bytesToCStringFree(char *cstring);
 SYSBVM_API sysbvm_tuple_t sysbvm_tuple_slotAt(sysbvm_context_t *context, sysbvm_tuple_t tuple, size_t slotIndex);
 
 /**
+ * Gets the value of a slot in a byte tuple
+ */
+SYSBVM_API uint8_t sysbvm_tuple_byteSlotAt(sysbvm_context_t *context, sysbvm_tuple_t tuple, size_t slotIndex);
+
+/**
  * Sets the value in a slot of a tuple
  */
 SYSBVM_API void sysbvm_tuple_slotAtPut(sysbvm_context_t *context, sysbvm_tuple_t tuple, size_t slotIndex, sysbvm_tuple_t value);
+
+/**
+ * Sets the value in a slot of a byte tuple
+ */
+SYSBVM_API void sysbvm_tuple_byteSlotAtPut(sysbvm_context_t *context, sysbvm_tuple_t tuple, size_t slotIndex, uint8_t value);
 
 /**
  * Is this tuple a kind of the specified type?
