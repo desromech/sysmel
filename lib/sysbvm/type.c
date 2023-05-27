@@ -1382,6 +1382,8 @@ void sysbvm_type_setupPrimitives(sysbvm_context_t *context)
     context->roots.pointerLikeReinterpretCast = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "PointerLikeType::reinterpretCast", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_type_primitive_pointerLikeTypeReinterpretCast);
 
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "PointerType::reinterpretCastTo:", context->roots.anyPointerType, "reinterpretCastTo:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_type_primitive_pointerLikeTypeReinterpretCastTo);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "UIntPointer::reinterpretCastTo:", context->roots.uintptrType, "reinterpretCastTo:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_type_primitive_pointerLikeTypeReinterpretCastTo);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IntPointer::reinterpretCastTo:", context->roots.intptrType, "reinterpretCastTo:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_type_primitive_pointerLikeTypeReinterpretCastTo);
 
     context->roots.anyValueToVoidPrimitive = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "Void::fromAnyValue", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_NO_TYPECHECK_ARGUMENTS, NULL, sysbvm_void_primitive_anyValueToVoid);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Void::coerceASTNode:withEnvironment:", sysbvm_tuple_getType(context, context->roots.voidType), "coerceASTNode:withEnvironment:", 3, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_void_primitive_coerceASTNodeWithEnvironment);

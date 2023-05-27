@@ -1992,14 +1992,14 @@ TAC::Operation::ConditionalBranch
     forTarget: #x86 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
             x86::test: (instruction firstOperandRegister x86::int8For: codegen) with: 16rff u8 asAsmImmediate;
-            x86::jnz: (instruction secondOperandRegister x86::relCall32OrInt32For: codegen);
-            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+            x86::jz: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction secondOperandRegister x86::relCall32OrInt32For: codegen)
     };
     forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
             x86::test: (instruction firstOperandRegister x86::int8For: codegen) with: 16rff u8 asAsmImmediate;
-            x86::jnz: (instruction secondOperandRegister x86::relCall32OrInt64For: codegen);
-            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt64For: codegen)
+            x86::jz: (instruction thirdOperandRegister x86::relCall32OrInt64For: codegen);
+            x86::jmp: (instruction secondOperandRegister x86::relCall32OrInt64For: codegen)
     }.
 
 TAC::Operation::CallInt8

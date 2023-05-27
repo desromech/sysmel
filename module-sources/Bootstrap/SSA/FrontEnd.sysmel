@@ -213,6 +213,16 @@ let primitiveFunctionGenerators := #{
         let targetType := self arguments second generateSSAValueWith: context.
         context builder bitcast: pointer into: targetType type: self analyzedType
     }.
+    #UIntPointer::reinterpretCastTo: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+        let pointer := self arguments first generateSSAValueWith: context.
+        let targetType := self arguments second generateSSAValueWith: context.
+        context builder bitcast: pointer into: targetType type: self analyzedType
+    }.
+    #IntPointer::reinterpretCastTo: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+        let pointer := self arguments first generateSSAValueWith: context.
+        let targetType := self arguments second generateSSAValueWith: context.
+        context builder bitcast: pointer into: targetType type: self analyzedType
+    }.
 
     #PointerLikeType::reinterpretCast : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
         let pointer := self arguments first generateSSAValueWith: context.

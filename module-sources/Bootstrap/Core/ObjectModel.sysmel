@@ -25,6 +25,16 @@ public global ObjectModel::Tag::Float64 := 14u8.
 
 public global ObjectModel::Tag::Trivial := 15u8.
 
+public global ObjectModel::ImmediateTagTypeTable := (
+    UndefinedObject,
+    Integer, Int8, Int16, Int32, Int64,
+    Char8, UInt8,
+    Char16, UInt16,
+    Char32, UInt32,
+    UInt64, Float32, Float64,
+    nil
+).
+
 public global ObjectModel32::Immediate::Bits := 32u32 - ObjectModel::Tag::Bits asUInt32.
 public global ObjectModel32::Immediate::UInt::Min := 0u32.
 public global ObjectModel32::Immediate::UInt::Max := (1u32 << ObjectModel32::Immediate::Bits) - 1u32.
@@ -43,6 +53,10 @@ public global ObjectModel::ImmediateTrivialIndex::Void := 2u32.
 public global ObjectModel::ImmediateTrivialIndex::HashtableEmptyElement := 3u32.
 public global ObjectModel::ImmediateTrivialIndex::Tombstone := 4u32.
 public global ObjectModel::ImmediateTrivialIndex::PendingMemoizationValue := 5u32.
+
+public global ObjectModel::ImmediateTrivialTypeTable := (
+    False, True, Void, HashtableEmpty, ObjectTombstone, PendingMemoizationValue
+).
 
 public global ObjectModel::TypePointerFlag::GCColorMask := 3uptr.
 public global ObjectModel::TypePointerFlag::Bytes := 4uptr.
@@ -173,7 +187,7 @@ public abstract class ObjectModelVariant superclass: Object; definition: {
     public virtual method computeAlignmentOfObjectInstance: (object: Untyped) ::=> UInt64
         := RawTuple::type(object)
             ifNil: {self minimalObjectAlignment}
-            ifNotNil: {:(Type)type :: UInt64 | type validInstanceAlignment asUInt64}.
+            ifNotNil: {:(Type)type :: UInt64 | type validInstanceAlignment asUInt64 max: self minimalObjectAlignment}.
 }.
 
 public final class ObjectModelVariant32 superclass: ObjectModelVariant; definition: {
@@ -405,6 +419,9 @@ public global ObjectModel::TupleHeader := if: ObjectModel::PointerSize = 4sz
     then: ObjectModel::TupleHeader32
     else: ObjectModel::TupleHeader64.
 
+public function ObjectModel::isNonNullPointerValue(value: UIntPointer) => Boolean
+    := (value ~= 0uptr) && ((value & 15uptr) = 0uptr).
+
 public global ObjectModel::getTuplePointerUIntValue := {:(Untyped)object :: UIntPointer |
     <primitive: #PointerLikeType::reinterpretCast>
     0uptr
@@ -420,6 +437,16 @@ public global ObjectModel::getTupleHeaderPointerOf := {:(Untyped)object :: Objec
     nil
 }.
 
+(UIntPointer::reinterpretCastTo:) adoptDefinitionOf: {:(UIntPointer)self :(Type)targetPointerType :: targetPointerType |
+    <primitive: #UIntPointer::reinterpretCastTo>
+    nil
+}.
+
+(IntPointer::reinterpretCastTo:) adoptDefinitionOf: {:(IntPointer)self :(Type)targetPointerType :: targetPointerType |
+    <primitive: #IntPointer::reinterpretCastTo>
+    nil
+}.
+
 AnyValue extend: {
     public final method __rawContentsPointer__ => Void pointer
         := ObjectModel::getTupleHeaderPointerOf(self) + 1iptr reinterpretCastTo: Void pointer.
@@ -430,21 +457,46 @@ identityHash adoptDefinitionOf: {:(Untyped)self :: Size |
 }.
 
 RawTuple::isBytes adoptDefinitionOf: {:(Untyped)self :: Boolean |
-    ObjectModel::getTupleHeaderPointerOf(self) _ isBytes
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
+    ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
+        (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ isBytes
+    } ifFalse: {
+        false
+    }
 }.
 
 RawTuple::size adoptDefinitionOf: {:(Untyped)self :: Size |
-    ObjectModel::getTupleHeaderPointerOf(self) _ objectSize / ObjectModel::PointerSize
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
+    ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
+        (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ objectSize / ObjectModel::PointerSize
+    } ifFalse: {
+        0sz
+    }.
 }.
 
 (RawTuple::slotAt:) adoptDefinitionOf: {:(Untyped)self :(Size)index :: Untyped |
-    (ObjectModel::getTupleHeaderPointerOf(self) + 1iptr reinterpretCastTo: Untyped pointer)[index asIntPointer]
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
+    ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
+        ((pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) + 1iptr reinterpretCastTo: Untyped pointer)[index asIntPointer]
+    } ifFalse: {
+        nil
+    }
 }.
 
 (RawTuple::slotAt:put:) adoptDefinitionOf: {:(Untyped)self :(Size)index :(Untyped)value :: Void |
-    (ObjectModel::getTupleHeaderPointerOf(self) + 1iptr reinterpretCastTo: Untyped pointer)[index asIntPointer] := value
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
+    ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
+        (ObjectModel::getTupleHeaderPointerOf(self) + 1iptr reinterpretCastTo: Untyped pointer)[index asIntPointer] := value
+    } ifFalse: {
+        nil
+    }.
 }.
 
 RawTuple::byteSize adoptDefinitionOf: {:(Untyped)self :: Size |
-    ObjectModel::getTupleHeaderPointerOf(self) _ objectSize
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
+    ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
+        (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ objectSize
+    } ifFalse: {
+        0sz
+    }
 }.
