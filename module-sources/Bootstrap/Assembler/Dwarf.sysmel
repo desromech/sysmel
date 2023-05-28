@@ -777,6 +777,13 @@ public final class Dwarf::Builder superclass: Object; definition: {
         := self newDebugInfoEntry: Dwarf::DW_TAG_subprogram build: aBlock.
 }.
 
+Dwarf::DebugInfoEntry extend: {
+    public method builder => Dwarf::Builder
+        := Dwarf::Builder new
+            currentNode: self;
+            yourself
+}.
+
 AsmStreamBuilder extend: {
     public method dwarf::debugLineSection ::=> AsmSectionDirective
         := self addElement: (AsmSectionDirective new
@@ -1079,7 +1086,7 @@ public final class Dwarf::DebugLineWriter superclass: Object; definition: {
         directory isNil || (directory = "") ifTrue: {return: 0u32}.
 
         directoryDictionary at: directory ifAbsentPut: {:: UInt32 |
-            directories add: directory.
+            directories add: (directory withoutSuffix: "/").
             directories size asUInt32
         }
     }.
@@ -1184,7 +1191,9 @@ public final class Dwarf::DebugLineWriter superclass: Object; definition: {
 			yourself.
 		
 		## Directories
-		directories do: { :(String)eachDirectory :: Void | self cstring: eachDirectory }.
+		directories do: { :(String)eachDirectory :: Void |
+            self cstring: eachDirectory
+        }.
 		self byte: 0u8.
 		
 		## Files
@@ -1247,13 +1256,16 @@ public final class Dwarf::DebugLineWriter superclass: Object; definition: {
         regSourcePosition = sourcePosition ifTrue: {
             return: void
         }.
+        sourcePosition ifNil: {
+            return: void
+        }.
 
-        let sourceCode := sourcePosition ifNotNil: sourcePosition sourceCode.
-        let startLine := sourcePosition ifNil: 0u32 ifNotNil: sourcePosition startLine asUInt32.
-        let startColumn := sourcePosition ifNil: 0u32 ifNotNil: sourcePosition startColumn asUInt32.
+        let sourceCode := sourcePosition sourceCode.
+        let startLine := sourcePosition startLine asUInt32.
+        let startColumn := sourcePosition startColumn asUInt32.
 
         self
-            setFile: (sourceCode ifNil: 0u32 ifNotNil: (fileDictionary at: sourceCode));
+            setFile: (sourceCode ifNil: 1u32 ifNotNil: (fileDictionary at: sourceCode));
             setColumn: startColumn.
 
         let pcAdvance := pc - regAddress.
@@ -1391,22 +1403,37 @@ public final class Dwarf::DebugLineWriter superclass: Object; definition: {
 }.
 
 public final class Dwarf::ObjectDebugInformationGenerator superclass: AsmObjectDebugInformationGenerator; definition: {
+    public field pointerSize => Size.
     public field compileUnit => Dwarf::DebugInfoEntry.
 
     public field debugInfoProgramEntity => AsmProgramEntity.
     public field debugInfoWriter => Dwarf::AsmWriter.
 
+    public override method initialize => Void := {
+        super initialize.
+
+    }.
+
+    public method generateDebugInfoForProgramEntity: (sourceProgramEntity: ProgramEntity) generatedEntity: (generatedProgramEntity: AsmProgramEntity) ::=> Void := {
+        sourceProgramEntity ifNil: {return: void}.
+        generatedProgramEntity contentSymbol ifNil: {return: void}.
+
+        sourceProgramEntity dwarf::generateDIEForAsmProgramEntity: generatedProgramEntity with: self
+    }.
+
     public override method generateDebugInformationForModule: (module: AsmProgramEntity) ::=> Void := {
-        let compileUnit := Dwarf::Builder new compileUnit.
+        pointerSize := module compilationTarget pointerSize. 
+
+        compileUnit := Dwarf::Builder new compileUnit.
         compileUnit
             producer: "Sysmel Compiler";
-            pcRangeSymbol: module contentSymbol pointerSize: module compilationTarget pointerSize.
+            pcRangeSymbol: module contentSymbol pointerSize: pointerSize.
 
         debugInfoProgramEntity := module newProgramEntity.
 
-
-        #*module allChildrenDo: {:(AsmProgramEntity)eachChild :: Void |
-        }.*#
+        module allChildrenDo: {:(AsmProgramEntity)eachChild :: Void |
+            self generateDebugInfoForProgramEntity: eachChild sourceProgramEntity generatedEntity: eachChild
+        }.
 
         debugInfoWriter := Dwarf::AsmWriter new.
         debugInfoWriter writeCompilationUnit: compileUnit toProgramEntity: debugInfoProgramEntity pointerSize: module compilationTarget pointerSize.
@@ -1417,6 +1444,24 @@ public final class Dwarf::ObjectDebugInformationGenerator superclass: AsmObjectD
             writeSourceLocationForSections: objectCodeBuilder sections onto: (objectCodeBuilder getSectionNamed: #".debug_line") pointerSize: module compilationTarget pointerSize;
             yourself.
     }.
+}.
+
+ProgramEntity extend: {
+    public virtual method dwarf::generateDIEForAsmProgramEntity: (generatedProgramEntity: AsmProgramEntity) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+        ## By default do nothing
+    }
+}.
+
+FunctionDefinition extend: {
+    public override method dwarf::generateDIEForAsmProgramEntity: (generatedFunction: AsmProgramEntity) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+        generatedFunction isTrampoline ifTrue: {return: void}.
+
+        debugGenerator compileUnit builder subprogram: {:(Dwarf::DebugInfoEntry)subprogram :(Dwarf::Builder)builder :: Void |
+            subprogram
+                name: self qualifiedName;
+                pcRangeSymbol: generatedFunction contentSymbol pointerSize: debugGenerator pointerSize
+        }
+    }
 }.
 
 AsmCompilationTarget extend: {

@@ -97,6 +97,21 @@ ProgramEntity definition: {
         self printQualifiedSymbolNameOn: stream
     }.
 
+    public virtual method printQualifiedNameOn: (stream: Stream) ::=> Void := {
+        owner ifNotNil: {
+            owner printQualifiedNameOn: stream.
+            stream nextPut: '.'
+        }.
+
+        name ifNotNil: (stream string: name)
+    }.
+
+    public method qualifiedName => String := {
+        let stream := StringStream new.
+        self printQualifiedNameOn: stream.
+        stream asString
+    }.
+
     public method programEntityQualifiedNameSymbol => ProgramEntityQualifiedNameSymbol
         := ProgramEntityQualifiedNameSymbol for: self.
 
@@ -113,6 +128,17 @@ ProgramEntity definition: {
 Type definition: {
     public override method programEntityKindName => Symbol
         := #T.
+}.
+
+Metatype definition: {
+    public override method printQualifiedNameOn: (stream: Stream) ::=> Void := {
+        thisType ifNotNil: {
+            thisType printQualifiedNameOn: stream.
+            stream nextPutAll: ".__Meta__".
+        } ifNil: {
+            super printQualifiedNameOn: stream
+        }
+    }
 }.
 
 Namespace definition: {

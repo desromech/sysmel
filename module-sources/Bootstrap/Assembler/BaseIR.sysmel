@@ -1386,6 +1386,17 @@ public final class AsmProgramEntity superclass: Object; definition: {
         entity
     }.
 
+    public method withAllChildrenDo: (aBlock: (AsmProgramEntity) => Void) ::=> Void := {
+        aBlock(self).
+        self allChildrenDo: aBlock
+    }.
+
+    public method allChildrenDo: (aBlock: (AsmProgramEntity) => Void) ::=> Void := {
+        children do: {:(AsmProgramEntity)each :: Void |
+            each withAllChildrenDo: aBlock
+        }
+    }.
+
     public method addImportedSymbol: (symbol: AsmSymbol) ::=> Void := {
         importedSymbols add: symbol
     }.
