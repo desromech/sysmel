@@ -1287,6 +1287,8 @@ public final class Dwarf::DebugLineWriter superclass: Object; definition: {
         let startLine := sourcePosition startLine asUInt32.
         let startColumn := sourcePosition startColumn asUInt32.
 
+        (regColumn = startColumn) && (regLine = startLine) ifTrue: (return: void).
+
         self
             setFile: (sourceCode ifNil: 1u32 ifNotNil: (fileDictionary at: sourceCode));
             setColumn: startColumn.
@@ -1313,7 +1315,7 @@ public final class Dwarf::DebugLineWriter superclass: Object; definition: {
     public method advanceLine: (lineAdvance: Int32) pc: (pcAdvance: UInt32) andEmitWithOperationIndex: (operationIndex: UInt8) ::=> Void := {
         let operationAdvance := pcAdvance / minimumInstructionLength.
 
-        let opcode := (lineAdvance - lineBase) + (lineRange + operationAdvance asInt32) + opcodeBase asInt32.
+        let opcode := (lineAdvance - lineBase) + (lineRange * operationAdvance asInt32) + opcodeBase asInt32.
         (0i32 <= opcode) && (opcode <= 255i32) && (lineAdvance - lineBase < lineRange) && (lineAdvance >= lineBase) ifTrue: {
             self byte: opcode asUInt8.
             regLine := (regLine asInt32 + lineAdvance) asUInt32.
@@ -1461,7 +1463,6 @@ public final class Dwarf::ObjectDebugInformationGenerator superclass: AsmObjectD
                 declFile: (lineWriter addSourceCode: sourceCode);
                 declLine: sourcePosition startLine asUInt32;
                 declColumn: sourcePosition startColumn asUInt32
-
         }
     }.
 
@@ -1620,8 +1621,8 @@ FunctionDefinition extend: {
         (debugGenerator getOrCreateDieForProgramEntityOwner: self owner) addChild: subprogram.
 
         subprogram external: true.
-        ##self name ifNotNil: (subprogram name: self name asString).
-        self name ifNotNil: (subprogram name: self qualifiedName).
+        self name ifNotNil: (subprogram name: self name asString).
+        ##self name ifNotNil: (subprogram name: self qualifiedName).
         sourcePosition ifNotNil: (debugGenerator setDie: subprogram declarationPosition: sourcePosition).
 
         analyzedType ifNotNil: {
