@@ -21,6 +21,7 @@ extern void sysbvm_astInterpreter_registerPrimitives(void);
 extern void sysbvm_boolean_registerPrimitives(void);
 extern void sysbvm_bytecode_registerPrimitives(void);
 extern void sysbvm_bytecodeCompiler_registerPrimitives();
+extern void sysbvm_byteStream_registerPrimitives(void);
 extern void sysbvm_dictionary_registerPrimitives(void);
 extern void sysbvm_errors_registerPrimitives(void);
 extern void sysbvm_environment_registerPrimitives(void);
@@ -43,6 +44,7 @@ extern void sysbvm_astInterpreter_setupASTInterpreter(sysbvm_context_t *context)
 extern void sysbvm_boolean_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_bytecode_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_bytecodeCompiler_setupPrimitives(sysbvm_context_t *context);
+extern void sysbvm_byteStream_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_dictionary_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_errors_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_environment_setupPrimitives(sysbvm_context_t *context);
@@ -73,6 +75,7 @@ void sysbvm_context_registerPrimitives(void)
     sysbvm_boolean_registerPrimitives();
     sysbvm_bytecode_registerPrimitives();
     sysbvm_bytecodeCompiler_registerPrimitives();
+    sysbvm_byteStream_registerPrimitives();
     sysbvm_dictionary_registerPrimitives();
     sysbvm_errors_registerPrimitives();
     sysbvm_environment_registerPrimitives();
@@ -471,7 +474,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "=="), context->roots.identityEqualsFunction);
     sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "~~"), context->roots.identityNotEqualsFunction);
 
-    sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "String::hash"), context->roots.stringHashFunction);
+    sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "String::="), context->roots.stringHashFunction);
     sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "String::equals:"), context->roots.stringEqualsFunction);
 
     // Some basic method
@@ -859,6 +862,10 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         NULL);
     context->roots.streamType = sysbvm_context_createIntrinsicClass(context, "Stream", SYSBVM_NULL_TUPLE,
         NULL);
+    context->roots.byteStreamType = sysbvm_context_createIntrinsicClass(context, "ByteStream", context->roots.streamType,
+        "size", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "storage", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.byteArrayType,
+        NULL);
     context->roots.stringStreamType = sysbvm_context_createIntrinsicClass(context, "StringStream", context->roots.streamType,
         "size", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "storage", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,
@@ -1158,6 +1165,7 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_createWithOptions(sysbvm_contextCrea
     sysbvm_boolean_setupPrimitives(context);
     sysbvm_bytecode_setupPrimitives(context);
     sysbvm_bytecodeCompiler_setupPrimitives(context);
+    sysbvm_byteStream_setupPrimitives(context);
     sysbvm_dictionary_setupPrimitives(context);
     sysbvm_errors_setupPrimitives(context);
     sysbvm_environment_setupPrimitives(context);

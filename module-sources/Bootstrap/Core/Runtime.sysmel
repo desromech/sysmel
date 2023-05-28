@@ -1606,11 +1606,6 @@ WeakOrderedCollection
         WeakArray
     } makeOverride.
     
-StringStream
-    withSelector: #initialize addMethod: {:(StringStream)self :: Void |
-        self size: 0sz
-    } makeOverride withEagerAnalysis.
-
 Array
     withSelector: #new: addClassMethod: {:(Array class)self :(Size)initialSize :: self |
         self basicNew: initialSize
@@ -1794,6 +1789,32 @@ String
         self padLeft: requiredLength with: ' 'asChar8
     }.
 
+ByteStream
+    withSelector: #nextPutUInt16: addMethod: {:(ByteStream)self :(UInt16)value :: Void |
+        self
+            nextPut: value asUInt8;
+            nextPut: (value >> 8u16) asUInt8
+    };
+    withSelector: #nextPutUInt32: addMethod: {:(ByteStream)self :(UInt32)value :: Void |
+        self
+            nextPut: value asUInt8;
+            nextPut: (value >> 8u32) asUInt8;
+            nextPut: (value >> 16u32) asUInt8;
+            nextPut: (value >> 24u32) asUInt8
+    };
+    withSelector: #nextPutUInt64: addMethod: {:(ByteStream)self :(UInt64)value :: Void |
+        self
+            nextPut: value asUInt8;
+            nextPut: (value >> 8u64) asUInt8;
+            nextPut: (value >> 16u64) asUInt8;
+            nextPut: (value >> 24u64) asUInt8;
+
+            nextPut: (value >> 32u64) asUInt8;
+            nextPut: (value >> 40u64) asUInt8;
+            nextPut: (value >> 48u64) asUInt8;
+            nextPut: (value >> 56u64) asUInt8
+    }.
+
 ArraySlice
     withSelector: #new: addClassMethod: {:(ArraySlice class)self :(Size)size :: self |
         self basicNew
@@ -1877,8 +1898,8 @@ Char8 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(Char8 class)self :: Char8 | 0c8 } makeOverride;
-    withSelector: #zero addMethod: {:(Char8 class)self :: Char8 | 0c8 };
-    withSelector: #one addMethod: {:(Char8 class)self :: Char8 | 1c8 }.
+    withSelector: #zero addMethod: {:(Char8 class)self :: Char8 | 0c8 } makePure makeFinal;
+    withSelector: #one addMethod: {:(Char8 class)self :: Char8 | 1c8 } makePure makeFinal.
 
 UInt8 class
     withSelector: #canEncodeValueInBytes addMethod: {:(UInt8 class)self :: Boolean | true } makeOverride;
@@ -1891,8 +1912,8 @@ UInt8 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(UInt8 class)self :: UInt8 | 0u8 } makeOverride;
-    withSelector: #zero addMethod: {:(UInt8 class)self :: UInt8 | 0u8 };
-    withSelector: #one addMethod: {:(UInt8 class)self :: UInt8 | 1u8 }.
+    withSelector: #zero addMethod: {:(UInt8 class)self :: UInt8 | 0u8 } makePure makeFinal;
+    withSelector: #one addMethod: {:(UInt8 class)self :: UInt8 | 1u8 } makePure makeFinal.
 
 Int8 class
     withSelector: #canEncodeValueInBytes addMethod: {:(Int8 class)self :: Boolean | true } makeOverride;
@@ -1905,8 +1926,8 @@ Int8 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(Int8 class)self :: Int8 | 0i8 } makeOverride;
-    withSelector: #zero addMethod: {:(Int8 class)self :: Int8 | 0i8 };
-    withSelector: #one addMethod: {:(Int8 class)self :: Int8 | 1i8 }.
+    withSelector: #zero addMethod: {:(Int8 class)self :: Int8 | 0i8 } makePure makeFinal;
+    withSelector: #one addMethod: {:(Int8 class)self :: Int8 | 1i8 } makePure makeFinal.
 
 Char16 class
     withSelector: #canEncodeValueInBytes addMethod: {:(Char16 class)self :: Boolean | true } makeOverride;
@@ -1919,8 +1940,8 @@ Char16 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(Char16 class)self :: Char16 | 0c16 } makeOverride;
-    withSelector: #zero addMethod: {:(Char16 class)self :: Char16 | 0c16 };
-    withSelector: #one addMethod: {:(Char16 class)self :: Char16 | 1c16 }.
+    withSelector: #zero addMethod: {:(Char16 class)self :: Char16 | 0c16 } makePure makeFinal;
+    withSelector: #one addMethod: {:(Char16 class)self :: Char16 | 1c16 } makePure makeFinal.
 
 UInt16 class
     withSelector: #canEncodeValueInBytes addMethod: {:(UInt16 class)self :: Boolean | true } makeOverride;
@@ -1933,8 +1954,8 @@ UInt16 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(UInt16 class)self :: UInt16 | 0u16 } makeOverride;
-    withSelector: #zero addMethod: {:(UInt16 class)self :: UInt16 | 0u16 };
-    withSelector: #one addMethod: {:(UInt16 class)self :: UInt16 | 1u16 }.
+    withSelector: #zero addMethod: {:(UInt16 class)self :: UInt16 | 0u16 } makePure makeFinal;
+    withSelector: #one addMethod: {:(UInt16 class)self :: UInt16 | 1u16 } makePure makeFinal.
 
 Int16 class
     withSelector: #canEncodeValueInBytes addMethod: {:(Int16 class)self :: Boolean | true } makeOverride;
@@ -1947,8 +1968,8 @@ Int16 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(Int16 class)self :: Int16 | 0i16 } makeOverride;
-    withSelector: #zero addMethod: {:(Int16 class)self :: Int16 | 0i16 };
-    withSelector: #one addMethod: {:(Int16 class)self :: Int16 | 1i16 }.
+    withSelector: #zero addMethod: {:(Int16 class)self :: Int16 | 0i16 } makePure makeFinal;
+    withSelector: #one addMethod: {:(Int16 class)self :: Int16 | 1i16 } makePure makeFinal.
 
 Char32 class
     withSelector: #canEncodeValueInBytes addMethod: {:(Char32 class)self :: Boolean | true } makeOverride;
@@ -1961,8 +1982,8 @@ Char32 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(Char32 class)self :: Char32 | 0c32 } makeOverride;
-    withSelector: #zero addMethod: {:(Char32 class)self :: Char32 | 0c32 };
-    withSelector: #one addMethod: {:(Char32 class)self :: Char32 | 1c32 }.
+    withSelector: #zero addMethod: {:(Char32 class)self :: Char32 | 0c32 } makePure makeFinal;
+    withSelector: #one addMethod: {:(Char32 class)self :: Char32 | 1c32 } makePure makeFinal.
 
 UInt32 class
     withSelector: #canEncodeValueInBytes addMethod: {:(UInt32 class)self :: Boolean | true } makeOverride;
@@ -1975,8 +1996,8 @@ UInt32 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(UInt32 class)self :: UInt32 | 0u32 } makeOverride;
-    withSelector: #zero addMethod: {:(UInt32 class)self :: UInt32 | 0u32 };
-    withSelector: #one addMethod: {:(UInt32 class)self :: UInt32 | 1u32 }.
+    withSelector: #zero addMethod: {:(UInt32 class)self :: UInt32 | 0u32 } makePure makeFinal;
+    withSelector: #one addMethod: {:(UInt32 class)self :: UInt32 | 1u32 } makePure makeFinal.
 
 Int32 class
     withSelector: #canEncodeValueInBytes addMethod: {:(Int32 class)self :: Boolean | true } makeOverride;
@@ -1989,8 +2010,10 @@ Int32 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(Int32 class)self :: Int32 | 0i32 } makeOverride;
-    withSelector: #zero addMethod: {:(Int32 class)self :: Int32 | 0i32 };
-    withSelector: #one addMethod: {:(Int32 class)self :: Int32 | 1i32 }.
+    withSelector: #zero addMethod: {:(Int32 class)self :: Int32 | 0i32 } makePure makeFinal;
+    withSelector: #one addMethod: {:(Int32 class)self :: Int32 | 1i32 } makePure makeFinal;
+    withSelector: #minVal addMethod: {:(Int32 class)self :: Int32 | 16r80000000 i32 } makePure makeFinal;
+    withSelector: #maxVal addMethod: {:(Int32 class)self :: Int32 | 16r7FFFFFFF i32 } makePure makeFinal.
 
 Int64 class
     withSelector: #canEncodeValueInBytes addMethod: {:(Int64 class)self :: Boolean | true } makeOverride;
@@ -2003,8 +2026,8 @@ Int64 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(Int64 class)self :: Int64 | 0i64 } makeOverride;
-    withSelector: #zero addMethod: {:(Int64 class)self :: Int64 | 0i64 };
-    withSelector: #one addMethod: {:(Int64 class)self :: Int64 | 1i64 }.
+    withSelector: #zero addMethod: {:(Int64 class)self :: Int64 | 0i64 } makePure makeFinal;
+    withSelector: #one addMethod: {:(Int64 class)self :: Int64 | 1i64 } makePure makeFinal.
 
 UInt64 class
     withSelector: #canEncodeValueInBytes addMethod: {:(UInt64 class)self :: Boolean | true } makeOverride;
@@ -2017,8 +2040,8 @@ UInt64 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(UInt64 class)self :: UInt64 | 0u64 } makeOverride;
-    withSelector: #zero addMethod: {:(UInt64 class)self :: UInt64 | 0u64 };
-    withSelector: #one addMethod: {:(UInt64 class)self :: UInt64 | 1u64 }.
+    withSelector: #zero addMethod: {:(UInt64 class)self :: UInt64 | 0u64 } makePure makeFinal;
+    withSelector: #one addMethod: {:(UInt64 class)self :: UInt64 | 1u64 } makePure makeFinal.
 
 Float32 class
     withSelector: #canEncodeValueInBytes addMethod: {:(Float32 class)self :: Boolean | true } makeOverride;
@@ -2031,8 +2054,8 @@ Float32 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(Float32 class)self :: Float32 | 0.0f32 } makeOverride;
-    withSelector: #zero addMethod: {:(Float32 class)self :: Float32 | 0.0f32 };
-    withSelector: #one addMethod: {:(Float32 class)self :: Float32 | 1.0f32 }.
+    withSelector: #zero addMethod: {:(Float32 class)self :: Float32 | 0.0f32 } makePure makeFinal;
+    withSelector: #one addMethod: {:(Float32 class)self :: Float32 | 1.0f32 } makePure makeFinal.
 
 Float64 class
     withSelector: #canEncodeValueInBytes addMethod: {:(Float64 class)self :: Boolean | true } makeOverride;
@@ -2045,8 +2068,8 @@ Float64 class
     } makeOverride;
 
     withSelector: #defaultValue addMethod: {:(Float64 class)self :: Float64 | 0.0 } makeOverride;
-    withSelector: #zero addMethod: {:(Float64 class)self :: Float64 | 0.0 };
-    withSelector: #one addMethod: {:(Float64 class)self :: Float64 | 1.0 }.
+    withSelector: #zero addMethod: {:(Float64 class)self :: Float64 | 0.0 } makePure makeFinal;
+    withSelector: #one addMethod: {:(Float64 class)self :: Float64 | 1.0 } makePure makeFinal.
 
 Boolean class
     withSelector: #canEncodeValueInBytes addMethod: {:(Boolean class)self :: Boolean | true } makeOverride;
@@ -2058,7 +2081,7 @@ Boolean class
         (bytes at: offset) ~= 0u8
     } makeOverride;
 
-    withSelector: #defaultValue addMethod: {:(Boolean class)self :: Boolean | false } makeOverride.
+    withSelector: #defaultValue addMethod: {:(Boolean class)self :: Boolean | false } makeOverride makePure makeFinal.
 
 SequenceableCollection
     withSelector: #computeOffsetsOfEncodedElementsInByteStream addMethod: {:(SequenceableCollection)self :: Size |
@@ -2662,6 +2685,9 @@ UInt32
     }.
 
 Int32
+    withSelector: #abs addMethod: {:(Int32)a :: Int32 |
+        if: a >= 0i32 then: a else: a negated
+    };
     withSelector: #min: addMethod: {:(Int32)a :(Int32)b :: Int32 |
         if: a <= b then: a else: b
     };
@@ -2684,6 +2710,9 @@ UInt64
     }.
 
 Int64
+    withSelector: #abs addMethod: {:(Int64)a :: Int64 |
+        if: a >= 0i64 then: a else: a negated
+    };
     withSelector: #min: addMethod: {:(Int64)a :(Int64)b :: Int64 |
         if: a <= b then: a else: b
     };

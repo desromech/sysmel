@@ -11,7 +11,7 @@ public abstract class AsmCompilationTarget superclass: Object; definition: {
     public field operatingSystemName => Symbol.
     public field executable => Boolean.
     public field objectFileWriter => AsmObjectFileWriter.
-    public field debugInformationGenerator => AsmObjectDebugInformationGenerator.
+    public field debugInformationGenerator => AsmObjectDebugInformationGenerator class.
 
     public virtual method hasPositionIndependentCode => Boolean
         := false.
@@ -197,11 +197,18 @@ AsmObjectCodeSection definition: {
         writeOffset := 0sz.
     }.
 
+    public method writeUnallocatedBytes: (bytes: ByteArray) ::=> Void := {
+        self assert: writeOffset = size.
+        let extraSize := bytes size.
+        size := size + extraSize.
+        writeOffset := writeOffset + extraSize.
+        data := data -- bytes.
+    }.
+
     public method finishWritingWithTarget: (compilationTarget: AsmCompilationTarget) ::=> Void := {
         self alignWriteOffsetTo: alignment unreachable: true compilationTarget: compilationTarget.
         relocations := newRelocations asArray.
         newRelocations := nil.
-        self finishDebugInfo.
     }.
 
     public override method sizeOfByteEncoding => Size := data size.
@@ -408,6 +415,9 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
         symbols add: symbol
     }.
 
+    public method getSectionNamed: (name: Symbol) ::=> AsmObjectCodeSection
+        := sectionNameTable at: name.
+
     public method getOrCreateSectionNamed: (name: Symbol) ::=> AsmObjectCodeSection
         := sectionNameTable at: name ifAbsentPut: {:: AsmObjectCodeSection |
             let newSection := AsmObjectCodeSection new
@@ -416,6 +426,12 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
             sections add: newSection.
             newSection
         }.
+
+    public method finishDebugInfo => Void := {
+        sections do: {:(AsmObjectCodeSection)each :: Void |
+            each finishDebugInfo
+        }
+    }.
 
     public method finish => AsmObjectCode := {
         sections do: {:(AsmObjectCodeSection)each :: Void |

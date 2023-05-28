@@ -116,6 +116,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t associationType;
     sysbvm_tuple_t booleanType;
     sysbvm_tuple_t byteArrayType;
+    sysbvm_tuple_t byteStreamType;
     sysbvm_tuple_t classType;
     sysbvm_tuple_t collectionType;
     sysbvm_tuple_t dictionaryType;

@@ -101,6 +101,12 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
         }.
 
         self buildStringLiterals.
+        asmTarget debugInformationGenerator ifNotNil: {:(AsmObjectDebugInformationGenerator class)generatorClass :: Void |
+            let generator := generatorClass new.
+            targetModule debugInformationGenerator: generator.
+            generator generateDebugInformationForModule: targetModule
+        }.
+        
         objectHeap buildIn: targetModule.
     }.
 

@@ -19,6 +19,7 @@
 #include "boolean.c"
 #include "bytecode.c"
 #include "bytecodeCompiler.c"
+#include "byteStream.c"
 #include "context.c"
 #include "dictionary.c"
 #include "environment.c"

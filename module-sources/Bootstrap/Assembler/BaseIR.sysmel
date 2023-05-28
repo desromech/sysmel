@@ -1227,6 +1227,8 @@ public final class AsmProgramEntity superclass: Object; definition: {
     public field sourceProgramEntity => ProgramEntity.
     public field isTrampoline => Boolean.
     public field contentSymbol => AsmSymbol.
+
+    public field debugInformationGenerator => AsmObjectDebugInformationGenerator.
     
     public override method initialize => Void := {
         streams := OrderedCollection new.
@@ -1307,6 +1309,11 @@ public final class AsmProgramEntity superclass: Object; definition: {
         objectCodeBuilder allocateMemoryForWriting.
         self assembleSecondPassWith: objectCodeBuilder.
 
+        objectCodeBuilder finishDebugInfo.
+        debugInformationGenerator ifNotNil: {
+            debugInformationGenerator generateDebugLineInformationForModule: self objectCodeBuilder: objectCodeBuilder
+        }.
+
         objectCodeBuilder finish
     }.
 }.
@@ -1379,4 +1386,13 @@ AsmStream extend: {
         public method buildWith: (aBlock: (AsmStreamBuilder => Void)) ::=> self
             := self for: AsmCompilationTarget default buildWith: aBlock.
     }
-}
+}.
+
+AsmObjectDebugInformationGenerator extend: {
+    public abstract method generateDebugInformationForModule: (module: AsmProgramEntity) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method generateDebugLineInformationForModule: (module: AsmProgramEntity) objectCodeBuilder: (objectCodeBuilder: AsmObjectCodeBuilder) ::=> Void
+        := self subclassResponsibility.
+}.
+

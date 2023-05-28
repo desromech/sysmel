@@ -9,6 +9,7 @@ set(sysbvm_sources
     boolean.c
     bytecode.c
     bytecodeCompiler.c
+    byteStream.c
     context.c
     dictionary.c
     environment.c

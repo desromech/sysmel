@@ -728,6 +728,9 @@ public final class Dwarf::Builder superclass: Object; definition: {
     public method baseType: (aBlock: DIEBuildBlockType) ::=> Dwarf::DebugInfoEntry
         := self newDebugInfoEntry: Dwarf::DW_TAG_base_type build: aBlock.
 
+    public method compileUnit ::=> Dwarf::DebugInfoEntry
+        := self newDebugInfoEntry: Dwarf::DW_TAG_compile_unit.
+
     public method compileUnit: (aBlock: DIEBuildBlockType) ::=> Dwarf::DebugInfoEntry
         := self newDebugInfoEntry: Dwarf::DW_TAG_compile_unit build: aBlock.
 
@@ -979,13 +982,227 @@ AsmProgramEntity extend: {
     }.
 }.
 
-public final class Dwarf::ObjectDebugInformationGenerator superclass: AsmObjectDebugInformationGenerator; definition: {
+public final class Dwarf::DebugLineWriter superclass: Object; definition: {
+    public field defaultIsStatement => Boolean.
+    public field maxNumberOfOperationsPerInstruction => UInt32.
+    public field minimumInstructionLength => UInt32.
+    public field opcodeBase => UInt32.
 
+    public field directoryDictionary => Dictionary.
+    public field directories => OrderedCollection.
+
+    public field fileDictionary => Dictionary.
+    public field files => OrderedCollection.
+
+    public field minLine => Int32.
+    public field maxLine => Int32.
+    public field previousLine => Int32.
+    public field lineAdvance => Int32.
+    public field lineBase => Int32.
+    public field lineRange => Int32.
+
+    public field out => ByteStream.
+
+    public override method initialize => Void := {
+        defaultIsStatement := true.
+        maxNumberOfOperationsPerInstruction := 1u32.
+        minimumInstructionLength := 1u32.
+        opcodeBase := 13u32.
+
+        directoryDictionary := Dictionary new.
+        directories := OrderedCollection new.
+
+        fileDictionary := Dictionary new.
+        files := OrderedCollection new.
+    }.
+
+    public method addSourceDirectory: (directory: String) ::=> UInt32 := {
+        directory isNil || (directory = "") ifTrue: {return: 0u32}.
+
+        directoryDictionary at: directory ifAbsentPut: {:: UInt32 |
+            directories add: directory.
+            directories size asUInt32
+        }
+    }.
+
+    public method addSourceCode: (sourceCode: SourceCode) ::=> UInt32 := {
+        sourceCode ifNil: (return: 0u32).
+
+        fileDictionary at: sourceCode ifAbsentPut: {:: UInt32 |
+            let directoryIndex := self addSourceDirectory: sourceCode directory.
+            files add: (directoryIndex, sourceCode name).
+            files size asUInt32
+        }
+    }.
+
+    public method computeLineRangeForSections: (sections: OrderedCollection) ::=> Void := {
+        minLine := Int32 maxVal.
+        maxLine := Int32 minVal.
+        previousLine := 1i32.
+
+        sections do: {:(AsmObjectCodeSection)section :: Void |
+            section executable ifTrue: {
+                section debugSourcePositions ifNotNil: {:(Array)sourcePositions | 
+                    sourcePositions do: {:(SourcePosition)each :: Void |
+                        self addSourceCode: each sourceCode.
+
+                        let startLine := each startLine asInt32.
+                        let lineAdvance := startLine - previousLine.
+                        lineAdvance abs < 8i32 ifTrue: {
+                            minLine := minLine min: lineAdvance.
+                            maxLine := maxLine max: lineAdvance.
+                        }.
+                    }
+                }
+            }
+        }.
+
+        lineBase := (minLine min: 127i32) max: -128i32.
+        lineRange := maxLine - minLine min: 255i32.
+    }.
+
+    public method writeSourceLocationForSections: (sections: OrderedCollection) onto: (targetSection: AsmObjectCodeSection) pointerSize: (pointerSize: Size) ::=> Void := {
+        self computeLineRangeForSections: sections.
+
+        printLine("Line range: ", minLine, " ", maxLine, " base ", lineBase, " range ", lineRange).
+        printLine("Source directory count: ", directories size, " file count ", files size).
+
+        let programHeader := self generateProgramHeader.
+        ##printLine("ProgramHeader ", programHeader).
+        let program := self generateProgram.
+
+        out := ByteStream new.
+        pointerSize = 4sz ifTrue: {
+            self dword: (programHeader size + program size + pointerSize + 2sz) asUInt32.
+        } ifFalse: {
+            self
+                dword: 16rFFFFFFFF u32;
+                qword: (programHeader size + program size + pointerSize + 2sz) asUInt64.
+        }.
+
+        self word: 4u16.
+        pointerSize = 4sz ifTrue: {
+            self dword: programHeader size asUInt32.
+        } ifFalse: {
+            self qword: programHeader size asUInt64.
+        }.
+
+        out nextPutAll: programHeader.
+        let relocationAddressBase := out size + targetSection writeOffset.
+        out nextPutAll: program.
+
+        targetSection writeUnallocatedBytes: out asByteArray
+    }.
+
+    public method generateProgramHeader => ByteArray := {
+        out := ByteStream new.
+
+		self
+			byte: 1u8 #* minimum_instruction_length *#;
+			byte: 1u8 #* maximum_operations_per_instruction *#;
+			byte: (defaultIsStatement ifTrue: 1u8 ifFalse: 0u8);
+			byte: lineBase asUInt8;
+			byte: lineRange asUInt8;
+			byte: opcodeBase asUInt8 #* opcode_base *#;
+			
+			byte: 0u8; #* DW_LNS_copy *#
+			byte: 1u8; #* DW_LNS_advance_pc *#
+			byte: 1u8; #* DW_LNS_advance_line *#
+			byte: 1u8; #* DW_LNS_set_file *#
+			byte: 1u8; #* DW_LNS_set_column *#
+			byte: 0u8; #* DW_LNS_negate_stmt *#
+			byte: 0u8; #* DW_LNS_set_basic_block *#
+			byte: 0u8; #* DW_LNS_const_add_pc *#
+			byte: 1u8; #* DW_LNS_fixed_advance_pc *#
+			byte: 0u8; #* DW_LNS_set_prologue_end *#
+			byte: 0u8; #* DW_LNS_set_epilogue_begin *#
+			byte: 1u8; #* DW_LNS_set_isa *#
+			
+			yourself.
+		
+		## Directories
+		directories do: { :(String)eachDirectory :: Void | self cstring: eachDirectory }.
+		self byte: 0u8.
+		
+		## Files
+		files do: { :(Array)file :: Void |
+			self
+				cstring: file second;
+				uleb128: file first asUInt64;
+				uleb128: 0u64;
+				uleb128: 0u64.
+        }.
+		self byte: 0u8.
+        
+        out asByteArray
+    }.
+
+    public method generateProgram => ByteArray := {
+        out := ByteStream new.
+
+        self endSequence.
+        out asByteArray
+    }.
+
+    public method endSequence => Void := {
+        self byte: 0u8; uleb128: 1u64; byte: Dwarf::DW_LNE_end_sequence value asUInt8
+    }.
+
+    public method byte: (value: UInt8) ::=> Void := {
+        out nextPut: value
+    }.
+
+    public method word: (value: UInt16) ::=> Void := {
+        out nextPutUInt16: value
+    }.
+
+    public method dword: (value: UInt32) ::=> Void := {
+        out nextPutUInt32: value
+    }.
+
+    public method qword: (value: UInt64) ::=> Void := {
+        out nextPutUInt64: value
+    }.
+
+    public method cstring: (value: String) ::=> Void := {
+        out nextPutString: value; nextPut: 0u8.
+    }.
+
+    public method uleb128: (value: UInt64) ::=> Void := {
+        let currentValue mutable := value.
+        do: {
+            let byte := (currentValue & 127u64) asUInt8.
+            currentValue := currentValue >> 7u64.
+            out nextPut: byte | (currentValue ~= 0 ifTrue: 128u8 ifFalse: 0u8)
+        } while: (currentValue ~= 0u64)
+    }.
+}.
+
+public final class Dwarf::ObjectDebugInformationGenerator superclass: AsmObjectDebugInformationGenerator; definition: {
+    public field compileUnit => Dwarf::DebugInfoEntry.
+
+    public field debugInfoProgramEntity => AsmProgramEntity.
+    public field debugInfoWriter => Dwarf::AsmWriter.
+
+    public override method generateDebugInformationForModule: (module: AsmProgramEntity) ::=> Void := {
+        let compileUnit := Dwarf::Builder new compileUnit.
+
+        debugInfoProgramEntity := module newProgramEntity.
+
+        debugInfoWriter := Dwarf::AsmWriter new.
+        debugInfoWriter writeCompilationUnit: compileUnit toProgramEntity: debugInfoProgramEntity pointerSize: module compilationTarget pointerSize.
+    }.
+
+    public override method generateDebugLineInformationForModule: (module: AsmProgramEntity) objectCodeBuilder: (objectCodeBuilder: AsmObjectCodeBuilder) ::=> Void := {
+        let lineWriter := Dwarf::DebugLineWriter new
+            writeSourceLocationForSections: objectCodeBuilder sections onto: (objectCodeBuilder getSectionNamed: #".debug_line") pointerSize: module compilationTarget pointerSize;
+            yourself.
+    }.
 }.
 
 AsmCompilationTarget extend: {
     public method useDwarf => self __type__ := {
-        debugInformationGenerator := Dwarf::ObjectDebugInformationGenerator new.
+        debugInformationGenerator := Dwarf::ObjectDebugInformationGenerator.
         self
     }.
 }.
