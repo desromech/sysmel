@@ -59,6 +59,15 @@ AsmObjectCodeSection definition: {
     public field offsetOfEncodedElementInByteStream => Size.
     public field newRelocations => OrderedCollection.
 
+    public field debugSourcePositions => Array.
+    public field debugSourceNodes => Array.
+    public field debugSourceEnvironments => Array.
+    public field pcToDebugListTable => Array.
+
+    public field newDebugTuples => OrderedCollection.
+    public field newDebugListsDictionary => Dictionary.
+    public field newPCToDebugListTable => OrderedCollection.
+
     public override method initialize => Void := {
         data := #[].
         size := 0sz.
@@ -190,6 +199,7 @@ AsmObjectCodeSection definition: {
         self alignWriteOffsetTo: alignment unreachable: true compilationTarget: compilationTarget.
         relocations := newRelocations asArray.
         newRelocations := nil.
+        self finishDebugInfo.
     }.
 
     public override method sizeOfByteEncoding => Size := data size.
@@ -197,6 +207,53 @@ AsmObjectCodeSection definition: {
 
     public override method encodeInBytes: (destination: ByteArray) atOffset: (destinationOffset) ::=> Void := {
         destination replaceFrom: destinationOffset until: destinationOffset + data size with: data
+    }.
+
+    public method entryIndexForDebugSourcePosition: (sourcePosition: SourcePosition) node: (node: ASTNode) environment: (environment: Environment) ::=> UInt32 := {
+        newDebugTuples ifNil: {
+            newDebugTuples := OrderedCollection new.
+            newDebugListsDictionary := Dictionary new.
+            newPCToDebugListTable := OrderedCollection new.
+        }.
+
+        sourcePosition isNil && node isNil && environment isNil ifTrue: {
+            0u32
+        } ifFalse: {
+            let tuple := (sourcePosition, node, environment).
+            newDebugListsDictionary at: tuple ifAbsentPut: {:: UInt32 |
+                newDebugTuples add: tuple.
+                newDebugTuples size asUInt32
+            }
+        }
+    }.
+
+    public method recordDebugSourcePosition: (sourcePosition: SourcePosition) node: (node: ASTNode) environment: (environment: Environment) ::=> Void := {
+        let debugListEntryIndex := self entryIndexForDebugSourcePosition: sourcePosition node: node environment: environment.
+        let pc := writeOffset asUInt32.
+        newPCToDebugListTable isEmpty || (newPCToDebugListTable last ~= debugListEntryIndex) ifTrue: {
+            newPCToDebugListTable add: pc; add: debugListEntryIndex
+        }.
+    }.
+
+    public method finishDebugInfo => Void := {
+        newDebugTuples ifNil: {
+            return: void.
+        }.
+
+        debugSourcePositions := Array new: newDebugTuples size.
+        debugSourceNodes := Array new: newDebugTuples size.
+        debugSourceEnvironments := Array new: newDebugTuples size.
+        newDebugTuples doWithIndex: {:(Array)tuple :(Size)index :: Void |
+            debugSourcePositions at: index put: tuple first.
+            debugSourceNodes at: index put: tuple second.
+            debugSourceEnvironments at: index put: tuple third.
+        }.
+
+        pcToDebugListTable := newPCToDebugListTable asArray.
+
+        newDebugTuples := nil.
+        newDebugListsDictionary := nil.
+        newPCToDebugListTable := nil.
     }.
 }.
 
@@ -458,6 +515,10 @@ AsmObjectCodeStream definition: {
         activeSection := objectCodeBuilder getOrCreateSectionNamed: name
     }.
 
+    public virtual method recordDebugSourcePosition: (sourcePosition: SourcePosition) node: (node: ASTNode) environment: (environment: Environment) ::=> Void := {
+        ## By default do nothing.
+    }.
+
     public abstract method nextPut: (value: UInt8) ::=> Void
         := self subclassResponsibility.
 
@@ -578,6 +639,10 @@ AsmObjectCodeSizeStream definition: {
 }.
 
 AsmObjectCodeWriteStream definition: {
+    public override method recordDebugSourcePosition: (sourcePosition: SourcePosition) node: (node: ASTNode) environment: (environment: Environment) ::=> Void := {
+        activeSection recordDebugSourcePosition: sourcePosition node: node environment: environment
+    }.
+
     public override method alignTo: (requiredAlignment: Size) unreachable: (unreachable: Boolean) ::=> Void := {
         activeSection alignWriteOffsetTo: requiredAlignment unreachable: unreachable compilationTarget: objectCodeBuilder compilationTarget.
     }.

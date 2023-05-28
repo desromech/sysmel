@@ -644,6 +644,7 @@ AsmX86Instruction definition: {
 public final class AsmX86InstructionWithoutOperands superclass: AsmX86Instruction; definition: {
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: definition mnemonic.
+        self printDebugInfoOn: stream.
     }.
 
     public override method operandCount => Size := 0sz.
@@ -656,6 +657,7 @@ public final class AsmX86InstructionWithSingleOperand superclass: AsmX86Instruct
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: definition mnemonic; space; print: firstOperand.
+        self printDebugInfoOn: stream.
     }.
 }.
 
@@ -667,6 +669,7 @@ public final class AsmX86InstructionWithTwoOperands superclass: AsmX86Instructio
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: definition mnemonic; space; print: firstOperand; nextPutAll: ", "; print: secondOperand.
+        self printDebugInfoOn: stream.
     }.
 }.
 

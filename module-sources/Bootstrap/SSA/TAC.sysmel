@@ -104,6 +104,9 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
                 compilationTarget: compilationTarget;
                 callingConvention: compilationTarget defaultCallingConvention;
                 name: functionDefinition name asCapturelessUncheckedEntryPointNameSymbol;
+                debugSourcePosition: functionDefinition sourcePosition;
+                debugSourceNode: functionDefinition sourceASTNode;
+                debugSourceEnvironment: functionDefinition sourceEnvironment;
                 yourself.
             targetModule addProgramEntity: entryPoint.
             capturelessUncheckedEntryPointDictionary at: functionDefinition put: entryPoint.
@@ -131,6 +134,9 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
             compilationTarget: compilationTarget;
             callingConvention: compilationTarget defaultCallingConvention;
             name: functionDefinition name asUncheckedEntryPointNameSymbol;
+            debugSourcePosition: functionDefinition sourcePosition;
+            debugSourceNode: functionDefinition sourceASTNode;
+            debugSourceEnvironment: functionDefinition sourceEnvironment;
             yourself.
         targetModule addProgramEntity: entryPoint.
         uncheckedEntryPointDictionary at: functionDefinition put: entryPoint.
@@ -147,6 +153,10 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
             compilationTarget: compilationTarget;
             callingConvention: compilationTarget defaultCallingConvention;
             name: functionDefinition name asCheckedEntryPointNameSymbol;
+            debugSourcePosition: functionDefinition sourcePosition;
+            debugSourceNode: functionDefinition sourceASTNode;
+            debugSourceEnvironment: functionDefinition sourceEnvironment;
+            debugIsTrampoline: true;
             yourself.
         targetModule addProgramEntity: entryPoint.
         checkedEntryPointDictionary at: functionDefinition put: entryPoint.
@@ -350,28 +360,8 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
         }.
     }.
 
-    
-    public method compileImportedDefinition => Void := {
-        #*
-        self declareArguments.
-        
-        let passedArguments := tacFunction arguments allButFirst.
-        functionBuilder basicBlock: #ffiCall build: {:(TACBlockBuilder)asm :: Void |
-            let callArguments := tacFunction arguments allButFirst.
-
-            let canonicalResultType := ssaFunctionDefinition functionType canonicalResultType.
-            let result := canonicalResultType makeTacTemporaryValueNamed: #result withFunctionBuilder: functionBuilder.
-            canonicalResultType emitTacCall: importedFunction convention: moduleCodeGenerator compilationTarget defaultCallingConvention
-                withArguments: callArguments into: result withBlockBuilder: asm.
-
-            canonicalResultType emitTacReturn: result withBlockBuilder: asm
-        }.
-        *#
-    }.
-
     public method compileDefinition => Void := {
         ssaFunctionDefinition importedSymbols size > 0sz ifTrue: {
-            self compileImportedDefinition.
             return: void.
         }.
 
@@ -424,12 +414,16 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
         ssaFunctionDefinition basicBlocksDo: {:(SSABasicBlock)eachBlock :: Void |
             let tacBlock := TACBasicBlock new
                 name: eachBlock name;
+                debugSourcePosition: eachBlock sourcePosition;
+                debugSourceNode: eachBlock sourceASTNode;
+                debugSourceEnvironment: eachBlock sourceEnvironment;
                 yourself.
 
             tacFunction addBasicBlock: tacBlock.
             valueDictionary at: eachBlock put: tacBlock.
 
             eachBlock instructionsDo: {:(SSAInstruction)each :: Void |
+                functionBuilder useDebugInfoOfSSAValue: each.
                 let tacValue := each makeTacValueForResultWith: self.
                 valueDictionary at: each put: tacValue.
             }
@@ -449,6 +443,7 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
             function: tacFunction;
             yourself.
         ssaBasicBlock instructionsDo: {:(SSAInstruction)eachInstruction :: Void |
+            functionBuilder useDebugInfoOfSSAValue: eachInstruction.
             blockBuilder useDebugInfoOfSSAValue: eachInstruction.
             eachInstruction compileIntoTacValue: (valueDictionary at: eachInstruction) with: self
         }
@@ -471,6 +466,14 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
     public method translateCheckedFunctionEntryPoint: (value: SSAValue) ::=> TACValue
         := moduleCodeGenerator translateCheckedFunctionEntryPoint: value.
 
+}.
+
+TACFunctionBuilder extend: {
+    public method useDebugInfoOfSSAValue: (value: SSAValue) ::=> Void := {
+        debugSourcePosition := value sourcePosition.
+        debugSourceNode := value sourceASTNode.
+        debugSourceEnvironment := value sourceEnvironment.
+    }
 }.
 
 TACBlockBuilder extend: {
@@ -500,7 +503,7 @@ Type extend: {
     }.
 
     public virtual method makeTacTemporaryValueNamed: (name: Symbol) withFunctionBuilder: (functionBuilder: TACFunctionBuilder) ::=> TACValue
-        := functionBuilder function newTemporary: name withType: self.
+        := functionBuilder newTemporary: name withType: self.
 
     public virtual method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := codegen translateGenericObjectPointer: constant value.

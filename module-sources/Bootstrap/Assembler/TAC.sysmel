@@ -1,3 +1,10 @@
+AsmStreamBuilder extend: {
+    public method useDebugInfoOfTACValue: (value: TACValue) ::=> Void := {
+        debugSourcePosition := value debugSourcePosition.
+        debugSourceNode := value debugSourceNode.
+        debugSourceEnvironment := value debugSourceEnvironment.
+    }
+}.
 
 public abstract class TACAsmCompilationTarget superclass: TACCompilationTarget; definition: {
     public field asmCompilationTarget => AsmCompilationTarget.
@@ -150,6 +157,7 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
         self prepareToGenerateFunction.
 
         self textSection
+            useDebugInfoOfTACValue: functionToGenerate;
             align: moduleGenerator asmTarget indirectBranchTargetAlignment unreachable: true;
             label: symbol;
             yourself.
@@ -172,7 +180,9 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
             self generateBasicBlock: basicBlock
         }.
 
-        self textSection endLabel: symbol.
+        self textSection
+            useDebugInfoOfTACValue: functionToGenerate;
+            endLabel: symbol.
         exportedSymbols do: {:(AsmSymbol)eachSymbol :: Void |
             self textSection endLabel: eachSymbol
         }.
@@ -278,15 +288,20 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
 
     public method generateBasicBlock: (basicBlock: TACBasicBlock) ::=> Void := {
         let blockSymbol := basicBlockSymbolDictionary at: basicBlock.
-        self textSection label: blockSymbol.
+        self textSection
+            useDebugInfoOfTACValue: basicBlock;
+            label: blockSymbol.
         basicBlock instructionsDo: {:(TACInstruction)eachInstruction :: Void |
             self generateInstruction: eachInstruction
         }.
 
-        self textSection endLabel: blockSymbol.
+        self textSection
+            useDebugInfoOfTACValue: basicBlock;
+            endLabel: blockSymbol.
     }.
 
     public method generateInstruction: (instruction: TACInstruction) ::=> Void := {
+        self textSection useDebugInfoOfTACValue: instruction.
         self emitMoveValues: instruction operands intoRegisters: instruction operandRegisters.
 
         moduleGenerator target emitInstruction: instruction with: self.

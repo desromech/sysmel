@@ -3,6 +3,8 @@ public class AsmInstructionOperand superclass: Object.
 public class AsmStreamElement superclass: AsmInstructionOperand.
 public abstract class AsmConstantExpression superclass: Object.
 
+let PrintingDebugInfo := false.
+
 public class AsmStreamElement superclass: Object; definition: {
     ## Instruction links.
     public field previous => AsmStreamElement.
@@ -16,11 +18,23 @@ public class AsmStreamElement superclass: Object; definition: {
     public field debugSourceNode => ASTNode.
     public field debugSourceEnvironment => Environment.
 
+    public virtual method isSectionDirective => Boolean := false.
+
+    public method printDebugInfoOn: (stream: Stream) ::=> Void := {
+        debugSourcePosition isNotNil && PrintingDebugInfo ifTrue: {
+            stream space; nextPutAll: "# at "; print: debugSourcePosition
+        }
+    }.
+
     public override method initialize => Void := {
         position := 0sz
     }.
 
     public virtual method isFormattedWithIndentation => Boolean := true.
+
+    public virtual method recordDebugInfoOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream recordDebugSourcePosition: debugSourcePosition node: debugSourceNode environment: debugSourceEnvironment
+    }.
 
     public abstract method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void
         := self subclassResponsibility.
@@ -652,7 +666,9 @@ public final class AsmStream superclass: Object; definition: {
     public method assembleSecondPassWith: (objectCodeBuilder: AsmObjectCodeBuilder) ::=> Void := {
         let writeStream := objectCodeBuilder newWriteStream.
         self elementsDo: {:(AsmStreamElement)each :: Void |
-            each writeOnObjectCodeStream: writeStream.
+            each
+                recordDebugInfoOnObjectCodeStream: writeStream;
+                writeOnObjectCodeStream: writeStream.
         }.
     }.
 
@@ -677,7 +693,8 @@ public final class AsmAlignDirective superclass: AsmStreamElement; definition: {
     public override method isFormattedWithIndentation => Boolean := false.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: ".align "; print: alignment
+        stream nextPutAll: ".align "; print: alignment.
+        self printDebugInfoOn: stream.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -692,6 +709,7 @@ public final class AsmLabel superclass: AsmStreamElement; definition: {
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: symbol; nextPut: ':'.
+        self printDebugInfoOn: stream.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -706,6 +724,7 @@ public final class AsmLabelEnd superclass: AsmStreamElement; definition: {
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "/* "; print: symbol; nextPutAll: " end */".
+        self printDebugInfoOn: stream.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -722,10 +741,15 @@ public final class AsmSectionDirective superclass: AsmStreamElement; definition:
     public field loaded => Boolean.
     public field debugging => Boolean.
 
+    public override method isSectionDirective => Boolean := false.
     public override method isFormattedWithIndentation => Boolean := false.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".section "; string: name.
+        self printDebugInfoOn: stream.
+    }.
+
+    public override method recordDebugInfoOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -742,6 +766,7 @@ public final class AsmByteDirective superclass: AsmStreamElement; definition: {
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".byte "; print: value.
+        self printDebugInfoOn: stream.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -754,6 +779,7 @@ public final class AsmSByteDirective superclass: AsmStreamElement; definition: {
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".byte "; print: value.
+        self printDebugInfoOn: stream.
     }.
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
         stream nextPutInt8: value
@@ -765,6 +791,7 @@ public final class AsmWordDirective superclass: AsmStreamElement; definition: {
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".word "; print: value.
+        self printDebugInfoOn: stream.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -777,6 +804,7 @@ public final class AsmSWordDirective superclass: AsmStreamElement; definition: {
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".word "; print: value.
+        self printDebugInfoOn: stream.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -789,6 +817,7 @@ public final class AsmDWordDirective superclass: AsmStreamElement; definition: {
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".word "; print: value.
+        self printDebugInfoOn: stream.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -801,6 +830,7 @@ public final class AsmSDWordDirective superclass: AsmStreamElement; definition: 
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".dword "; print: value.
+        self printDebugInfoOn: stream.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -813,6 +843,7 @@ public final class AsmQWordDirective superclass: AsmStreamElement; definition: {
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".qword "; print: value.
+        self printDebugInfoOn: stream.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -825,6 +856,7 @@ public final class AsmSQWordDirective superclass: AsmStreamElement; definition: 
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".qword "; print: value.
+        self printDebugInfoOn: stream.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -837,6 +869,7 @@ public final class AsmULEB128Directive superclass: AsmStreamElement; definition:
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".uleb "; print: value.
+        self printDebugInfoOn: stream.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -854,6 +887,7 @@ public final class AsmSLEB128Directive superclass: AsmStreamElement; definition:
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".sleb "; print: value.
+        self printDebugInfoOn: stream.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -866,6 +900,7 @@ public final class AsmFloatDirective superclass: AsmStreamElement; definition: {
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".float "; print: value.
+        self printDebugInfoOn: stream.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -878,6 +913,7 @@ public final class AsmDoubleDirective superclass: AsmStreamElement; definition: 
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".double "; print: value.
+        self printDebugInfoOn: stream.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -891,6 +927,7 @@ public final class AsmStringDirective superclass: AsmStreamElement; definition: 
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: (nullTerminated ifTrue: ".cstring " ifFalse: ".string "); print: value.
+        self printDebugInfoOn: stream.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -904,6 +941,7 @@ public final class AsmByteConstantExpressionDirective superclass: AsmStreamEleme
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".byte "; print: expression.
+        self printDebugInfoOn: stream.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -916,6 +954,7 @@ public final class AsmWordConstantExpressionDirective superclass: AsmStreamEleme
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".word "; print: expression.
+        self printDebugInfoOn: stream.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -928,6 +967,7 @@ public final class AsmDWordConstantExpressionDirective superclass: AsmStreamElem
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".dword "; print: expression.
+        self printDebugInfoOn: stream.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -940,6 +980,7 @@ public final class AsmQWordConstantExpressionDirective superclass: AsmStreamElem
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".qword "; print: expression.
+        self printDebugInfoOn: stream.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -952,6 +993,7 @@ public final class AsmSLEB128ConstantExpressionDirective superclass: AsmStreamEl
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".sleb128 "; print: expression.
+        self printDebugInfoOn: stream.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
@@ -969,6 +1011,7 @@ public final class AsmULEB128ConstantExpressionDirective superclass: AsmStreamEl
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".uleb128 "; print: expression.
+        self printDebugInfoOn: stream.
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {

@@ -1,3 +1,5 @@
+let PrintingDebugInfo := false.
+
 public abstract class TACCompilationTarget superclass: Object.
 public abstract class TACCallingConvention superclass: Object.
 public abstract class TACValue superclass: Object.
@@ -157,6 +159,12 @@ TACValue definition: {
     public virtual method markUsageAt: (usageIndex: UInt32) ::=> Void := {}.
     public virtual method markWriteAt: (writeIndex: UInt32) ::=> Void := {}.
     public virtual method markSpillingRequired ::=> Void := {}.
+
+    public method printDebugInfoOn: (stream: Stream) ::=> Void := {
+        debugSourcePosition isNotNil && PrintingDebugInfo ifTrue: {
+            stream space; nextPutAll: "# at"; print: debugSourcePosition
+        }
+    }.
 }.
 
 public final class TACBasicBlock superclass: TACValue.
@@ -213,6 +221,7 @@ public final class TACImportedFunction superclass: TACImportedProgramEntity; def
             stream string: each.
         }.
         stream nextPut: ']'.
+        self printDebugInfoOn: stream.
     }.
 }.
 
@@ -304,6 +313,7 @@ public final class TACGlobalVariable superclass: TACVariable; definition: {
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " => "; print: type.
+        self printDebugInfoOn: stream.
     }.
 }.
 
@@ -642,6 +652,7 @@ public final class TACInstruction superclass: TACValue; definition: {
                 ifFalse: (stream nextPutAll: ", ").
             stream print: eachOperand
         }.
+        self printDebugInfoOn: stream.
     }.
 
     public method markLiveRange => Void := {
@@ -773,7 +784,9 @@ TACBasicBlock definition: {
     }.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream print: self; nextPut: ':'; nl.
+        stream print: self; nextPut: ':'.
+        self printDebugInfoOn: stream.
+        stream nl.
         self instructionsDo: {:(TACBasicBlock)each :: Void |
             stream nextPutAll: "    "; fullPrint: each; nl
         }.
@@ -789,6 +802,8 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
 
     public field firstBasicBlock => TACBasicBlock.
     public field lastBasicBlock => TACBasicBlock.
+
+    public field debugIsTrampoline => Boolean.
 
     public override method isFunction => Boolean := true.
 
@@ -972,7 +987,9 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
     }.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream print: self; nextPutAll: " {"; nl.
+        stream print: self; nextPutAll: " {".
+        self printDebugInfoOn: stream.
+        stream nl.
         self enumerateBlocks; enumerateLocals.
         self basicBlocksDo: {:(TACBasicBlock)each :: Void |
             stream fullPrint: each
@@ -1270,6 +1287,11 @@ public final class TACBlockBuilder superclass: Object; definition: {
 public final class TACFunctionBuilder superclass: Object; definition: {
     public field function => TACFunction.
 
+    ## Debugging information
+    public field debugSourcePosition => SourcePosition.
+    public field debugSourceNode => ASTNode.
+    public field debugSourceEnvironment => Environment.
+
     TACFunction extend: {
         public method build: (aBlock: (TACFunctionBuilder) => Void) ::=> Void := {
             let builder := TACFunctionBuilder new
@@ -1289,6 +1311,19 @@ public final class TACFunctionBuilder superclass: Object; definition: {
             yourself.
         aBlock(blockBuilder).
         block.
+    }.
+
+    public method setValueDebugInfo: (value: TACValue) ::=> Void := {
+        value
+            debugSourcePosition: debugSourcePosition;
+            debugSourceNode: debugSourceNode;
+            debugSourceEnvironment: debugSourceEnvironment
+    }.
+
+    public method newTemporary: (name: Symbol) withType: (type: Type) ::=> TACTemporaryVariable := {
+        let temporary := function newTemporary: name withType: type.
+        self setValueDebugInfo: temporary.
+        temporary
     }.
 }.
 
