@@ -1,5 +1,7 @@
 #include "sysbvm/sourcePosition.h"
 #include "sysbvm/sourceCode.h"
+#include "sysbvm/errors.h"
+#include "sysbvm/function.h"
 #include "internal/context.h"
 #include <stdio.h>
 
@@ -47,4 +49,51 @@ SYSBVM_API void sysbvm_sourcePosition_dump(sysbvm_tuple_t sourcePosition)
     {
         printf("unknown:%d.%d-%d.%d\n", (int)startLine, (int)startColumn, (int)endLine, (int)endColumn);
     }
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_sourcePosition_primitive_hash(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)closure;
+    (void)argumentCount;
+    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
+
+    sysbvm_sourcePosition_t *sourcePosition = (sysbvm_sourcePosition_t*)arguments[0];
+    size_t hash = sysbvm_hashConcatenate(
+        sysbvm_hashConcatenate(sysbvm_tuple_identityHash(sourcePosition->sourceCode),
+        sysbvm_tuple_identityHash(sourcePosition->startIndex)),
+            sysbvm_tuple_identityHash(sourcePosition->endIndex));
+
+    return sysbvm_tuple_size_encode(context, hash);
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_sourcePosition_primitive_equals(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    (void)argumentCount;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(1, argumentCount);
+
+    if(sysbvm_tuple_getType(context, arguments[0]) != sysbvm_tuple_getType(context, arguments[1]))
+        return SYSBVM_FALSE_TUPLE;
+
+    sysbvm_sourcePosition_t *leftSourcePosition = (sysbvm_sourcePosition_t*)arguments[0];
+    sysbvm_sourcePosition_t *rightSourcePosition = (sysbvm_sourcePosition_t*)arguments[1];
+
+    return sysbvm_tuple_boolean_encode(
+        leftSourcePosition->sourceCode == rightSourcePosition->sourceCode &&
+        leftSourcePosition->startIndex == rightSourcePosition->startIndex &&
+        leftSourcePosition->endIndex == rightSourcePosition->endIndex
+    );
+}
+
+void sysbvm_sourcePosition_registerPrimitives(void)
+{
+    sysbvm_primitiveTable_registerFunction(sysbvm_sourcePosition_primitive_hash, "SourcePosition::hash");
+    sysbvm_primitiveTable_registerFunction(sysbvm_sourcePosition_primitive_equals, "SourcePosition::=");
+}
+
+void sysbvm_sourcePosition_setupPrimitives(sysbvm_context_t *context)
+{
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "SourcePosition::hash", context->roots.sourcePositionType, "hash", 1, SYSBVM_FUNCTION_FLAGS_OVERRIDE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_sourcePosition_primitive_hash);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "SourcePosition::=", context->roots.sourcePositionType, "=", 2, SYSBVM_FUNCTION_FLAGS_OVERRIDE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_sourcePosition_primitive_equals);
 }

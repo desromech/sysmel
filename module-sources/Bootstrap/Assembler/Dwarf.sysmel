@@ -987,6 +987,7 @@ public final class Dwarf::DebugLineWriter superclass: Object; definition: {
     public field maxNumberOfOperationsPerInstruction => UInt32.
     public field minimumInstructionLength => UInt32.
     public field opcodeBase => UInt32.
+    public field pointerSize => Size.
 
     public field directoryDictionary => Dictionary.
     public field directories => OrderedCollection.
@@ -1001,6 +1002,22 @@ public final class Dwarf::DebugLineWriter superclass: Object; definition: {
     public field lineBase => Int32.
     public field lineRange => Int32.
 
+    private field regAddress => UInt32.
+    private field regAddressSection => AsmSymbol.
+    private field regOpIndex => UInt32.
+    private field regFile => UInt32.
+    private field regLine => UInt32.
+    private field regColumn => UInt32.
+    private field regIsStatement => Boolean.
+    private field regBasicBlock => Boolean.
+    private field regEndSequence => Boolean.
+    private field regPrologueEnd => Boolean.
+    private field regEpilogueBegin => Boolean.
+    private field regISA => UInt32.
+    private field regDiscriminator => Boolean.
+    private field regSourcePosition => SourcePosition.
+
+    private field programRelocations => OrderedCollection.
     public field out => ByteStream.
 
     public override method initialize => Void := {
@@ -1014,6 +1031,8 @@ public final class Dwarf::DebugLineWriter superclass: Object; definition: {
 
         fileDictionary := Dictionary new.
         files := OrderedCollection new.
+
+        programRelocations := OrderedCollection new.
     }.
 
     public method addSourceDirectory: (directory: String) ::=> UInt32 := {
@@ -1062,14 +1081,14 @@ public final class Dwarf::DebugLineWriter superclass: Object; definition: {
     }.
 
     public method writeSourceLocationForSections: (sections: OrderedCollection) onto: (targetSection: AsmObjectCodeSection) pointerSize: (pointerSize: Size) ::=> Void := {
+        self pointerSize: pointerSize.
         self computeLineRangeForSections: sections.
 
         printLine("Line range: ", minLine, " ", maxLine, " base ", lineBase, " range ", lineRange).
         printLine("Source directory count: ", directories size, " file count ", files size).
 
         let programHeader := self generateProgramHeader.
-        ##printLine("ProgramHeader ", programHeader).
-        let program := self generateProgram.
+        let program := self generateProgramForSections: sections.
 
         out := ByteStream new.
         pointerSize = 4sz ifTrue: {
@@ -1091,7 +1110,11 @@ public final class Dwarf::DebugLineWriter superclass: Object; definition: {
         let relocationAddressBase := out size + targetSection writeOffset.
         out nextPutAll: program.
 
-        targetSection writeUnallocatedBytes: out asByteArray
+        targetSection writeUnallocatedBytes: out asByteArray.
+        programRelocations do: {:(AsmObjectCodeRelocation)eachRelocation :: Void |
+            eachRelocation offset: relocationAddressBase + eachRelocation offset.
+            targetSection newRelocations add: eachRelocation
+        }
     }.
 
     public method generateProgramHeader => ByteArray := {
@@ -1137,11 +1160,136 @@ public final class Dwarf::DebugLineWriter superclass: Object; definition: {
         out asByteArray
     }.
 
-    public method generateProgram => ByteArray := {
+    public method generateProgramForSections: (sections: OrderedCollection) ::=> ByteArray := {
         out := ByteStream new.
+
+		regAddress := 0u32.
+		regAddressSection := nil.
+		regOpIndex := 0u32.
+		regFile := 1u32.
+		regLine := 1u32.
+		regColumn := 0u32.
+		regIsStatement := defaultIsStatement.
+		regBasicBlock := false.
+		regEndSequence := false.
+		regPrologueEnd := false.
+		regEpilogueBegin := false.
+		regISA := 0u32.
+		regDiscriminator := false.
+
+        sections do: {:(AsmObjectCodeSection)section :: Void |
+            section executable ifTrue: {
+                section pcToDebugListTable ifNotNil: {:(Array)pcToDebugListTable :: Void |
+                    let sectionSymbol := AsmSymbol new
+                        section: section;
+                        makePrivate;
+                        yourself.
+                    let debugSourcePositions := section debugSourcePositions.
+                    pcToDebugListTable pairsDo: {:(UInt32)pc :(UInt32)sourcePositionIndex :: Void |
+                        let sourcePosition => SourcePosition := sourcePositionIndex > 0u32
+                            ifTrue: (debugSourcePositions at: (sourcePositionIndex - 1u32) asSize)
+                            ifFalse: nil.
+                        
+                        self emitSourcePosition: sourcePosition section: sectionSymbol pc: pc.
+                    }
+                }
+            }
+        }.
 
         self endSequence.
         out asByteArray
+    }.
+
+    public method emitSourcePosition: (sourcePosition: SourcePosition) section: (section: AsmSymbol) pc: (pc: UInt32) ::=> Void := {
+        regAddressSection ~~ section ifTrue: {
+            self setSection: section pc: pc
+        }.
+        regSourcePosition = sourcePosition ifTrue: {
+            return: void
+        }.
+
+        self
+            setFile: (sourcePosition sourceCode ifNil: 0u32 ifNotNil: (fileDictionary at: sourcePosition sourceCode));
+            setColumn: sourcePosition startColumn asUInt32.
+
+        let pcAdvance := pc - regAddress.
+        let lineAdvance := sourcePosition startLine asInt32 - regLine asInt32.
+        self advanceLine: lineAdvance pc: pcAdvance andEmitWithOperationIndex: 0u8.
+        regSourcePosition := sourcePosition.
+    }.
+
+    public method setFile: (fileIndex: UInt32) ::=> Void := {
+        regFile = fileIndex ifFalse: {
+            self byte: Dwarf::DW_LNS_set_file value asUInt8; uleb128: fileIndex asUInt64.
+            regFile := fileIndex
+        }
+    }.
+
+    public method setColumn: (column: UInt32) ::=> Void := {
+        regColumn = column ifFalse: {
+            self byte: Dwarf::DW_LNS_set_column value asUInt8; uleb128: column asUInt64.
+            regColumn := column
+        }
+    }.
+
+    public method advanceLine: (lineAdvance: Int32) pc: (pcAdvance: UInt32) andEmitWithOperationIndex: (operationIndex: UInt8) ::=> Void := {
+        let operationAdvance := pcAdvance / minimumInstructionLength.
+
+        let opcode := (lineAdvance - lineBase) + (lineRange + operationAdvance asInt32) + opcodeBase asInt32.
+        (0i32 <= opcode) && (opcode <= 255i32) && (lineAdvance - lineBase < lineRange) && (lineAdvance >= lineBase) ifTrue: {
+            self byte: opcode asUInt8.
+            regLine := (regLine asInt32 + lineAdvance) asUInt32.
+            regAddress := regAddress + pcAdvance.
+        } ifFalse: {
+            self
+                advanceLine: lineAdvance;
+                advancePC: pcAdvance;
+                copyRow
+        }.
+    }.
+
+    public method advanceLine: (advance: Int32) ::=> Void := {
+        self byte: Dwarf::DW_LNS_advance_line value asUInt8; sleb128: advance asInt64.
+        regLine := (regLine asInt32 + advance) asUInt32.
+    }.
+
+    public method advancePC: (advance: UInt32) ::=> Void := {
+        self byte: Dwarf::DW_LNS_advance_pc value asUInt8; uleb128: advance asUInt64.
+        regAddress := regAddress + advance
+    }.
+
+    public method copyRow => Void := {
+        self byte: Dwarf::DW_LNS_copy value asUInt8.
+        regDiscriminator := false.
+        regBasicBlock := false.
+        regPrologueEnd := false.
+        regEpilogueBegin := false.
+    }.
+
+    public method setSection: (section: AsmSymbol) pc: (pc: UInt32) ::=> Void := {
+        self byte: 0u8; uleb128: (1sz + pointerSize) asUInt64; byte: Dwarf::DW_LNE_set_address value asUInt8; relocatableAddress: pc inSection: section
+    }.
+
+    public method relocatableAddress: (address: UInt32) inSection: (section: AsmSymbol) ::=> Void := {
+        pointerSize = 4sz ifTrue: {
+            programRelocations add: (AsmObjectCodeRelocationAbsoluteInt32 new
+                symbol: section;
+                offset: out size;
+                addend: address asInt32;
+                yourself).
+            self dword: 0u32.
+        } ifFalse: {
+            programRelocations add: (AsmObjectCodeRelocationAbsoluteInt64 new
+                symbol: section;
+                offset: out size;
+                addend: address asInt64;
+                yourself).
+            self qword: 0u64.
+        }.
+
+        regAddressSection := section.
+        regAddress := address.
+        regSourcePosition := nil.
     }.
 
     public method endSequence => Void := {
@@ -1175,6 +1323,26 @@ public final class Dwarf::DebugLineWriter superclass: Object; definition: {
             currentValue := currentValue >> 7u64.
             out nextPut: byte | (currentValue ~= 0 ifTrue: 128u8 ifFalse: 0u8)
         } while: (currentValue ~= 0u64)
+    }.
+
+    public method sleb128: (value: Int64) ::=> Void := {
+        let more mutable => Boolean := true.
+        let size := 64i64.
+
+        let currentValue mutable := value.
+        while: more do: {
+            let byte mutable := (currentValue & 127i64) asInt8.
+            currentValue := currentValue >> 7i64.
+            
+            let byteHasSign := (byte & 16r40 i8) ~= 0i8.
+            ((currentValue = 0i64) && byteHasSign not) || (currentValue == -1i64 && byteHasSign) ifTrue: {
+                more := false
+            } ifFalse: {
+                byte := byte | 16r80 i8.
+            }.
+
+            out nextPut: byte asUInt8
+        }.
     }.
 }.
 

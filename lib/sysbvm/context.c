@@ -32,6 +32,7 @@ extern void sysbvm_integer_registerPrimitives(void);
 extern void sysbvm_io_registerPrimitives(void);
 extern void sysbvm_primitiveInteger_registerPrimitives(void);
 extern void sysbvm_programEntity_registerPrimitives(void);
+extern void sysbvm_sourcePosition_registerPrimitives(void);
 extern void sysbvm_string_registerPrimitives(void);
 extern void sysbvm_stringStream_registerPrimitives(void);
 extern void sysbvm_time_registerPrimitives(void);
@@ -55,6 +56,7 @@ extern void sysbvm_integer_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_io_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_primitiveInteger_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_programEntity_setupPrimitives(sysbvm_context_t *context);
+extern void sysbvm_sourcePosition_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_string_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_stringStream_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_time_setupPrimitives(sysbvm_context_t *context);
@@ -86,6 +88,7 @@ void sysbvm_context_registerPrimitives(void)
     sysbvm_io_registerPrimitives();
     sysbvm_primitiveInteger_registerPrimitives();
     sysbvm_programEntity_registerPrimitives();
+    sysbvm_sourcePosition_registerPrimitives();
     sysbvm_string_registerPrimitives();
     sysbvm_stringStream_registerPrimitives();
     sysbvm_time_registerPrimitives();
@@ -478,8 +481,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "String::equals:"), context->roots.stringEqualsFunction);
 
     // Some basic method
-    sysbvm_type_setHashFunction(context, context->roots.anyValueType, context->roots.identityHashFunction);
-    sysbvm_type_setEqualsFunction(context, context->roots.anyValueType, context->roots.identityEqualsFunction);
+    sysbvm_type_setHashFunction(context, context->roots.anyValueType, sysbvm_function_createPrimitive(context, 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_VIRTUAL, NULL, sysbvm_tuple_primitive_identityHash));
+    sysbvm_type_setEqualsFunction(context, context->roots.anyValueType, sysbvm_function_createPrimitive(context, 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_VIRTUAL, NULL, sysbvm_tuple_primitive_identityEquals));
     
     sysbvm_type_setMethodWithSelector(context, context->roots.anyValueType, sysbvm_symbol_internWithCString(context, "identityHash"), context->roots.identityHashFunction);
     sysbvm_type_setMethodWithSelector(context, context->roots.anyValueType, sysbvm_symbol_internWithCString(context, "=="), context->roots.identityEqualsFunction);
@@ -1176,6 +1179,7 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_createWithOptions(sysbvm_contextCrea
     sysbvm_io_setupPrimitives(context);
     sysbvm_primitiveInteger_setupPrimitives(context);
     sysbvm_programEntity_setupPrimitives(context);
+    sysbvm_sourcePosition_setupPrimitives(context);
     sysbvm_string_setupPrimitives(context);
     sysbvm_stringStream_setupPrimitives(context);
     sysbvm_time_setupPrimitives(context);

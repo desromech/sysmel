@@ -199,8 +199,8 @@ AnyValue
     withSelector: #isNil addMethod: {:(AnyValue)self :: Boolean | self == nil } makePure makeFinal withEagerAnalysis;
     withSelector: #isNotNil addMethod: {:(AnyValue)self :: Boolean | self ~~ nil } makePure makeFinal withEagerAnalysis;
 
-    withSelector: #= addMethod: {:(AnyValue)self :other :: Boolean | self == other } makePure withEagerAnalysis;
-    withSelector: #~= addMethod: {:(AnyValue)self :other :: Boolean | self ~~ other } makePure withEagerAnalysis.
+    withSelector: #= addMethod: {:(AnyValue)self :other :: Boolean | self == other } makeVirtual makePure withEagerAnalysis;
+    withSelector: #~= addMethod: {:(AnyValue)self :other :: Boolean | (self = other) not } makeVirtual makePure withEagerAnalysis.
 
 Object
     withSelector: #class addMethod: {:(Object)self :: self __type__ __type__ | self __type__ } makePure makeFinal withEagerAnalysis;
@@ -1406,6 +1406,7 @@ SequenceableCollection
     withSelector: #tenth addMethod: {:(SequenceableCollection)self | self at: 9sz } makeFinal;
 
     withSelector: #last addMethod: {:(SequenceableCollection)self | self at: self size - 1sz } makeFinal;
+    withSelector: #nextToLast addMethod: {:(SequenceableCollection)self | self at: self size - 2sz } makeFinal;
 
     withSelector: #first: addMethod: {:(SequenceableCollection)self :(Size)elementsToKeep :: self species |
         let: #size with: self size.

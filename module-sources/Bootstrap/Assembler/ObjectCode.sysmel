@@ -239,8 +239,12 @@ AsmObjectCodeSection definition: {
     public method recordDebugSourcePosition: (sourcePosition: SourcePosition) node: (node: ASTNode) environment: (environment: Environment) ::=> Void := {
         let debugListEntryIndex := self entryIndexForDebugSourcePosition: sourcePosition node: node environment: environment.
         let pc := writeOffset asUInt32.
-        newPCToDebugListTable isEmpty || (newPCToDebugListTable last ~= debugListEntryIndex) ifTrue: {
-            newPCToDebugListTable add: pc; add: debugListEntryIndex
+        newPCToDebugListTable isEmpty || (debugListEntryIndex ~= newPCToDebugListTable last) ifTrue: {
+            (newPCToDebugListTable isNotEmpty && (pc = newPCToDebugListTable nextToLast)) ifTrue: {
+                newPCToDebugListTable at: newPCToDebugListTable size - 1sz put: debugListEntryIndex
+            } ifFalse: {
+                newPCToDebugListTable add: pc; add: debugListEntryIndex
+            }
         }.
     }.
 
