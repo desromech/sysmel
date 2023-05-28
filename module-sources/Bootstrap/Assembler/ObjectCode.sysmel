@@ -490,6 +490,14 @@ public final class AsmObjectCodeRelocationAbsoluteInt64 superclass: AsmObjectCod
     public field addend => Int64.
 }.
 
+public final class AsmObjectCodeRelocationSectionRelativeInt32 superclass: AsmObjectCodeRelocation; definition: {
+    public field addend => Int32.
+}.
+
+public final class AsmObjectCodeRelocationSectionRelativeInt64 superclass: AsmObjectCodeRelocation; definition: {
+    public field addend => Int64.
+}.
+
 public final class AsmObjectCodeRelocationRelativeInt8 superclass: AsmObjectCodeRelocation; definition: {
     public field addend => Int8.
 }.

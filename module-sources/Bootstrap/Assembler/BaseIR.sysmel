@@ -128,6 +128,11 @@ public final class AsmImmediateSymbolWithAddend superclass: AsmImmediate; defini
             immediateSymbolWithAddend: self;
             yourself.
 
+    public method endConstantExpression => AsmConstantExpression
+        := AsmConstantExpressionSymbolEndValue new
+            immediateSymbolWithAddend: self;
+            yourself.
+
     public method + (extraAddend: Int64) ::=> SelfType
         := self copy
             addend: addend + extraAddend;
@@ -259,6 +264,22 @@ AsmConstantExpression definition: {
 
     public method - (operand: AsmConstantExpression) ::=> AsmConstantExpression
         := AsmConstantExpressionBinarySubtract new left: self; right: operand; yourself.
+
+    public virtual method writeInt8OnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutInt8: self evaluateInt8
+    }.
+
+    public virtual method writeInt16OnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutInt16: self evaluateInt16
+    }.
+
+    public virtual method writeInt32OnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutInt32: self evaluateInt32
+    }.
+
+    public virtual method writeInt64OnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutInt64: self evaluateInt64
+    }.
 }.
 
 public abstract class AsmConstantExpressionBinary superclass: AsmConstantExpression; definition: {
@@ -304,6 +325,110 @@ public final class AsmConstantExpressionSymbolValue superclass: AsmConstantExpre
 
     public override method evaluateInt64 => Int64
         := immediateSymbolWithAddend symbol value asInt64 + immediateSymbolWithAddend addend.
+
+    public override method writeInt8OnObjectCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        codeStream recordRelocation: (AsmObjectCodeRelocationAbsoluteInt8 new
+            symbol: immediateSymbolWithAddend symbol;
+            addend: immediateSymbolWithAddend addend asInt8;
+            yourself).
+        codeStream nextPut: 0u8
+    }.
+
+    public override method writeInt16OnObjectCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        codeStream recordRelocation: (AsmObjectCodeRelocationAbsoluteInt16 new
+            symbol: immediateSymbolWithAddend symbol;
+            addend: immediateSymbolWithAddend addend asInt16;
+            yourself).
+        codeStream nextPutUInt16: 0u16
+    }.
+
+    public override method writeInt32OnObjectCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        immediateSymbolWithAddend isSectionRelative ifTrue: {
+            codeStream recordRelocation: (AsmObjectCodeRelocationSectionRelativeInt32 new
+                symbol: immediateSymbolWithAddend symbol;
+                addend: immediateSymbolWithAddend addend asInt32;
+                yourself).
+        } ifFalse: {
+            codeStream recordRelocation: (AsmObjectCodeRelocationAbsoluteInt32 new
+                symbol: immediateSymbolWithAddend symbol;
+                addend: immediateSymbolWithAddend addend asInt32;
+                yourself).
+        }.
+        codeStream nextPutUInt32: 0u32
+    }.
+
+    public override method writeInt64OnObjectCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        immediateSymbolWithAddend isSectionRelative ifTrue: {
+            codeStream recordRelocation: (AsmObjectCodeRelocationSectionRelativeInt64 new
+                symbol: immediateSymbolWithAddend symbol;
+                addend: immediateSymbolWithAddend addend;
+                yourself).
+        } ifFalse: {
+            codeStream recordRelocation: (AsmObjectCodeRelocationAbsoluteInt64 new
+                symbol: immediateSymbolWithAddend symbol;
+                addend: immediateSymbolWithAddend addend;
+                yourself).
+        }.
+        codeStream nextPutUInt64: 0u64
+    }.
+}.
+
+public final class AsmConstantExpressionSymbolEndValue superclass: AsmConstantExpression; definition: {
+    public field immediateSymbolWithAddend => AsmImmediateSymbolWithAddend.
+
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream print: immediateSymbolWithAddend
+    }.
+
+    public override method evaluateInt64 => Int64
+        := immediateSymbolWithAddend symbol value asInt64 + immediateSymbolWithAddend symbol size asInt64 + immediateSymbolWithAddend addend.
+
+    public override method writeInt8OnObjectCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        codeStream recordRelocation: (AsmObjectCodeRelocationAbsoluteInt8 new
+            symbol: immediateSymbolWithAddend symbol;
+            addend: immediateSymbolWithAddend symbol size asInt8 + immediateSymbolWithAddend addend asInt8;
+            yourself).
+        codeStream nextPut: 0u8
+    }.
+
+    public override method writeInt16OnObjectCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        codeStream recordRelocation: (AsmObjectCodeRelocationAbsoluteInt16 new
+            symbol: immediateSymbolWithAddend symbol;
+            addend: immediateSymbolWithAddend symbol size asInt16 + immediateSymbolWithAddend addend asInt16;
+            yourself).
+        codeStream nextPutUInt16: 0u16
+    }.
+
+    public override method writeInt32OnObjectCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        immediateSymbolWithAddend isSectionRelative ifTrue: {
+            codeStream recordRelocation: (AsmObjectCodeRelocationSectionRelativeInt32 new
+                symbol: immediateSymbolWithAddend symbol;
+                addend: immediateSymbolWithAddend symbol size asInt32 + immediateSymbolWithAddend addend asInt32;
+                yourself).
+        } ifFalse: {
+            codeStream recordRelocation: (AsmObjectCodeRelocationAbsoluteInt32 new
+                symbol: immediateSymbolWithAddend symbol;
+                addend: immediateSymbolWithAddend symbol size asInt32 + immediateSymbolWithAddend addend asInt32;
+                yourself).
+        }.
+        codeStream nextPutUInt32: 0u32
+    }.
+
+    public override method writeInt64OnObjectCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        immediateSymbolWithAddend isSectionRelative ifTrue: {
+            codeStream recordRelocation: (AsmObjectCodeRelocationSectionRelativeInt64 new
+                symbol: immediateSymbolWithAddend symbol;
+                addend: immediateSymbolWithAddend symbol size asInt64 + immediateSymbolWithAddend addend;
+                yourself).
+        } ifFalse: {
+            codeStream recordRelocation: (AsmObjectCodeRelocationAbsoluteInt64 new
+                symbol: immediateSymbolWithAddend symbol;
+                addend: immediateSymbolWithAddend symbol size asInt64 + immediateSymbolWithAddend addend;
+                yourself).
+        }.
+
+        codeStream nextPutUInt64: 0u64
+    }.
 }.
 
 public final class AsmImmediateConstantChar8 superclass: AsmImmediateConstant; definition: {
@@ -891,7 +1016,7 @@ public final class AsmSLEB128Directive superclass: AsmStreamElement; definition:
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
-        stream nextPutInt64: value
+        error("TODO: Implement this")
     }.
 }.
 
@@ -945,7 +1070,7 @@ public final class AsmByteConstantExpressionDirective superclass: AsmStreamEleme
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
-        stream nextPutInt8: expression evaluateInt8
+        expression writeInt8OnObjectCodeStream: stream.
     }.
 }.
 
@@ -958,7 +1083,7 @@ public final class AsmWordConstantExpressionDirective superclass: AsmStreamEleme
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
-        stream nextPutInt16: expression evaluateInt16
+        expression writeInt16OnObjectCodeStream: stream.
     }.
 }.
 
@@ -971,7 +1096,7 @@ public final class AsmDWordConstantExpressionDirective superclass: AsmStreamElem
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
-        stream nextPutInt32: expression evaluateInt32
+        expression writeInt32OnObjectCodeStream: stream.
     }.
 }.
 
@@ -984,7 +1109,7 @@ public final class AsmQWordConstantExpressionDirective superclass: AsmStreamElem
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
-        stream nextPutInt64: expression evaluateInt64
+        expression writeInt64OnObjectCodeStream: stream.
     }.
 }.
 
@@ -997,12 +1122,7 @@ public final class AsmSLEB128ConstantExpressionDirective superclass: AsmStreamEl
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
-        let currentValue mutable := expression evaluateInt64 asUInt64.
-        do: {
-            let byte := (currentValue & 127u64) asUInt8.
-            currentValue := currentValue >> 7u64.
-            stream nextPut: byte | (currentValue ~= 0 ifTrue: 128u8 ifFalse: 0u8)
-        } while: (currentValue ~= 0u64)
+        error("TODO: Implement this")
     }.
 }.
 
@@ -1218,6 +1338,7 @@ public final class AsmProgramEntity superclass: Object; definition: {
 
     public field name => Symbol.
     public field streams => OrderedCollection.
+    public field endStreams => OrderedCollection.
     public field children => OrderedCollection.
     public field importedSymbols => OrderedCollection.
 
@@ -1232,6 +1353,7 @@ public final class AsmProgramEntity superclass: Object; definition: {
     
     public override method initialize => Void := {
         streams := OrderedCollection new.
+        endStreams := OrderedCollection new.
         children := OrderedCollection new.
         importedSymbols := OrderedCollection new.
     }.
@@ -1241,6 +1363,16 @@ public final class AsmProgramEntity superclass: Object; definition: {
             compilationTarget: compilationTarget;
             yourself.
         streams add: stream.
+        AsmStreamBuilder new
+            stream: stream;
+            yourself
+    }.
+
+    public method newEndStreamBuilder => AsmStreamBuilder := {
+        let stream := AsmStream new
+            compilationTarget: compilationTarget;
+            yourself.
+        endStreams add: stream.
         AsmStreamBuilder new
             stream: stream;
             yourself
@@ -1266,6 +1398,10 @@ public final class AsmProgramEntity superclass: Object; definition: {
         children do: {:(AsmProgramEntity)eachChild :: Void |
             stream fullPrint: eachChild
         }.
+
+        endStreams do: {:(AsmStream)eachStream :: Void |
+            stream fullPrint: eachStream
+        }.
     }.
 
     public method prepareToAssemble => Void := {
@@ -1275,6 +1411,10 @@ public final class AsmProgramEntity superclass: Object; definition: {
 
         children do: {:(AsmProgramEntity)eachChild :: Void |
             eachChild prepareToAssemble
+        }.
+
+        endStreams do: {:(AsmStream)eachStream :: Void |
+            eachStream prepareToAssemble
         }.
     }.
 
@@ -1286,6 +1426,10 @@ public final class AsmProgramEntity superclass: Object; definition: {
         children do: {:(AsmProgramEntity)eachChild :: Void |
             eachChild assembleFirstPassWith: objectCodeBuilder
         }.
+
+        endStreams do: {:(AsmStream)eachStream :: Void |
+            eachStream assembleFirstPassWith: objectCodeBuilder
+        }.
     }.
 
     public method assembleSecondPassWith: (objectCodeBuilder: AsmObjectCodeBuilder) ::=> Void := {
@@ -1295,6 +1439,10 @@ public final class AsmProgramEntity superclass: Object; definition: {
 
         children do: {:(AsmProgramEntity)eachChild :: Void |
             eachChild assembleSecondPassWith: objectCodeBuilder
+        }.
+
+        endStreams do: {:(AsmStream)eachStream :: Void |
+            eachStream assembleSecondPassWith: objectCodeBuilder
         }.
     }.
 

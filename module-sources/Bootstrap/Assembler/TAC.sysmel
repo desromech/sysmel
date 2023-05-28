@@ -96,6 +96,17 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
     }.
 
     public method compileModule: (module: TACModule) ::=> Void := {
+        targetModule contentSymbol ifNil: {
+            let compileUnitSymbol := AsmSymbol new name: #compileUnit; makePrivate; yourself.
+            targetModule newStreamBuilder
+                textSection;
+                label: compileUnitSymbol.
+            targetModule newEndStreamBuilder
+                textSection;
+                endLabel: compileUnitSymbol.
+            targetModule contentSymbol: compileUnitSymbol.
+        }.
+
         module programEntities do: {:(TACProgramEntity)eachProgramEntity :: Void |
             self compileProgramEntity: eachProgramEntity
         }.

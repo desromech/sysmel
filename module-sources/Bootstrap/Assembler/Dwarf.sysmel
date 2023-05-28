@@ -510,6 +510,18 @@ public abstract class Dwarf::DebugInfoEntryAttribute superclass: Object; definit
 }.
 
 
+public final class Dwarf::DebugInfoAddrAttribute superclass: Dwarf::DebugInfoEntryAttribute; definition: {
+    public field value => AsmConstantExpression.
+
+    public override method writeAbbreviationFormWith: (writer: Dwarf::AsmWriter) ::=> Void := {
+        writer activeStream uleb128Expression: Dwarf::DW_FORM_addr
+    }.
+
+    public override method writeAttributeWith: (writer: Dwarf::AsmWriter) ::=> Void := {
+        writer writeAddress: value
+    }.
+}.
+
 public final class Dwarf::DebugInfoDIEReferenceAttribute superclass: Dwarf::DebugInfoEntryAttribute; definition: {
     public field value => Dwarf::DebugInfoEntry.
 
@@ -645,6 +657,12 @@ Dwarf::DebugInfoEntry definition: {
         writer activeStream byte: 0u8; byte: 0u8.
     }.
 
+    public method addAttribute: (attributeName: Dwarf::Constant) addr: (value: AsmConstantExpression) ::=> Dwarf::DebugInfoEntryAttribute
+        := self addAttribute: (Dwarf::DebugInfoAddrAttribute new
+            name: attributeName;
+            value: value;
+            yourself).
+
     public method addAttribute: (attributeName: Dwarf::Constant) dieReference: (value: Dwarf::DebugInfoEntry) ::=> Dwarf::DebugInfoEntryAttribute
         := self addAttribute: (Dwarf::DebugInfoDIEReferenceAttribute new
             name: attributeName;
@@ -672,8 +690,17 @@ Dwarf::DebugInfoEntry definition: {
     public method name: (name: String) ::=> Dwarf::DebugInfoEntryAttribute
         := self addAttribute: Dwarf::DW_AT_name string: name.
 
+    public method producer: (value: String) ::=> Dwarf::DebugInfoEntryAttribute
+        := self addAttribute: Dwarf::DW_AT_producer string: value.
+
     public method byteSize: (value: UInt64) ::=> Dwarf::DebugInfoEntryAttribute
         := self addAttribute: Dwarf::DW_AT_byte_size uleb128: value.
+
+    public method lowPC: (value: AsmConstantExpression) ::=> Dwarf::DebugInfoEntryAttribute
+        := self addAttribute: Dwarf::DW_AT_low_pc addr: value.
+
+    public method highPC: (value: AsmConstantExpression) ::=> Dwarf::DebugInfoEntryAttribute
+        := self addAttribute: Dwarf::DW_AT_high_pc addr: value.
 
     public method encoding: (encoding: Dwarf::Constant) ::=> Dwarf::DebugInfoEntryAttribute
         := self addAttribute: Dwarf::DW_AT_encoding uleb128Expression: encoding.
@@ -701,6 +728,15 @@ Dwarf::DebugInfoEntry definition: {
 
     public method type: (type: Dwarf::DebugInfoEntry) ::=> Dwarf::DebugInfoEntryAttribute
         := self addAttribute: Dwarf::DW_AT_type dieReference: type.
+
+    public method pcRangeSymbol: (symbol: AsmSymbol) pointerSize: (pointerSize: Size) ::=> Void := {
+        symbol ifNotNil: {
+            let symbolImmediate := symbol immediate: pointerSize.
+            self
+                lowPC: symbolImmediate asConstantExpression;
+                highPC: symbolImmediate endConstantExpression.
+        }
+    }.
 }.
 
 public final class Dwarf::Builder superclass: Object; definition: {
@@ -859,6 +895,10 @@ Dwarf::AsmWriter definition: {
     public method writeString: (string: String) ::=> Void := {
         let stringSymbol => AsmSymbol := stringTableDictionary at: string.
         activeStream expression: (stringSymbol immediateSectionRelative: pointerSize) asConstantExpression size: pointerSize
+    }.
+
+    public method writeAddress: (address: AsmConstantExpression) ::=> Void := {
+        activeStream expression: address size: pointerSize
     }.
 
     public method writeReferenceToDIE: (die: Dwarf::DebugInfoEntry) ::=> Void := {
@@ -1084,8 +1124,8 @@ public final class Dwarf::DebugLineWriter superclass: Object; definition: {
         self pointerSize: pointerSize.
         self computeLineRangeForSections: sections.
 
-        printLine("Line range: ", minLine, " ", maxLine, " base ", lineBase, " range ", lineRange).
-        printLine("Source directory count: ", directories size, " file count ", files size).
+        ##printLine("Line range: ", minLine, " ", maxLine, " base ", lineBase, " range ", lineRange).
+        ##printLine("Source directory count: ", directories size, " file count ", files size).
 
         let programHeader := self generateProgramHeader.
         let program := self generateProgramForSections: sections.
@@ -1208,12 +1248,16 @@ public final class Dwarf::DebugLineWriter superclass: Object; definition: {
             return: void
         }.
 
+        let sourceCode := sourcePosition ifNotNil: sourcePosition sourceCode.
+        let startLine := sourcePosition ifNil: 0u32 ifNotNil: sourcePosition startLine asUInt32.
+        let startColumn := sourcePosition ifNil: 0u32 ifNotNil: sourcePosition startColumn asUInt32.
+
         self
-            setFile: (sourcePosition sourceCode ifNil: 0u32 ifNotNil: (fileDictionary at: sourcePosition sourceCode));
-            setColumn: sourcePosition startColumn asUInt32.
+            setFile: (sourceCode ifNil: 0u32 ifNotNil: (fileDictionary at: sourceCode));
+            setColumn: startColumn.
 
         let pcAdvance := pc - regAddress.
-        let lineAdvance := sourcePosition startLine asInt32 - regLine asInt32.
+        let lineAdvance := startLine asInt32 - regLine asInt32.
         self advanceLine: lineAdvance pc: pcAdvance andEmitWithOperationIndex: 0u8.
         regSourcePosition := sourcePosition.
     }.
@@ -1354,8 +1398,15 @@ public final class Dwarf::ObjectDebugInformationGenerator superclass: AsmObjectD
 
     public override method generateDebugInformationForModule: (module: AsmProgramEntity) ::=> Void := {
         let compileUnit := Dwarf::Builder new compileUnit.
+        compileUnit
+            producer: "Sysmel Compiler";
+            pcRangeSymbol: module contentSymbol pointerSize: module compilationTarget pointerSize.
 
         debugInfoProgramEntity := module newProgramEntity.
+
+
+        #*module allChildrenDo: {:(AsmProgramEntity)eachChild :: Void |
+        }.*#
 
         debugInfoWriter := Dwarf::AsmWriter new.
         debugInfoWriter writeCompilationUnit: compileUnit toProgramEntity: debugInfoProgramEntity pointerSize: module compilationTarget pointerSize.
