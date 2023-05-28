@@ -702,6 +702,9 @@ Dwarf::DebugInfoEntry definition: {
     public method highPC: (value: AsmConstantExpression) ::=> Dwarf::DebugInfoEntryAttribute
         := self addAttribute: Dwarf::DW_AT_high_pc addr: value.
 
+    public method stmtList: (value: AsmConstantExpression) ::=> Dwarf::DebugInfoEntryAttribute
+        := self addAttribute: Dwarf::DW_AT_stmt_list addr: value.
+
     public method encoding: (encoding: Dwarf::Constant) ::=> Dwarf::DebugInfoEntryAttribute
         := self addAttribute: Dwarf::DW_AT_encoding uleb128Expression: encoding.
 
@@ -880,6 +883,8 @@ Dwarf::AsmWriter definition: {
             dwarf::debugLineSection;
             label: debugLineStart;
             yourself.
+
+        compilationUnit stmtList: (debugLineStart immediateSectionRelative: pointerSize) asConstantExpression.
 
         self 
             prepareForWriting;
