@@ -979,3 +979,13 @@ AsmProgramEntity extend: {
     }.
 }.
 
+public final class Dwarf::ObjectDebugInformationGenerator superclass: AsmObjectDebugInformationGenerator; definition: {
+
+}.
+
+AsmCompilationTarget extend: {
+    public method useDwarf => self __type__ := {
+        debugInformationGenerator := Dwarf::ObjectDebugInformationGenerator new.
+        self
+    }.
+}.

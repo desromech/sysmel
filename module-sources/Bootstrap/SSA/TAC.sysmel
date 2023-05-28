@@ -107,6 +107,7 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
                 debugSourcePosition: functionDefinition sourcePosition;
                 debugSourceNode: functionDefinition sourceASTNode;
                 debugSourceEnvironment: functionDefinition sourceEnvironment;
+                sourceProgramEntity: functionDefinition sourceObject;
                 yourself.
             targetModule addProgramEntity: entryPoint.
             capturelessUncheckedEntryPointDictionary at: functionDefinition put: entryPoint.
@@ -137,6 +138,7 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
             debugSourcePosition: functionDefinition sourcePosition;
             debugSourceNode: functionDefinition sourceASTNode;
             debugSourceEnvironment: functionDefinition sourceEnvironment;
+            sourceProgramEntity: functionDefinition sourceObject;
             yourself.
         targetModule addProgramEntity: entryPoint.
         uncheckedEntryPointDictionary at: functionDefinition put: entryPoint.
@@ -157,6 +159,7 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
             debugSourceNode: functionDefinition sourceASTNode;
             debugSourceEnvironment: functionDefinition sourceEnvironment;
             debugIsTrampoline: true;
+            sourceProgramEntity: functionDefinition sourceObject;
             yourself.
         targetModule addProgramEntity: entryPoint.
         checkedEntryPointDictionary at: functionDefinition put: entryPoint.

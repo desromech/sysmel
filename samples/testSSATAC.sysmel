@@ -12,6 +12,7 @@ public externC function main(argc: Int32, argv: Char8 const pointer pointer) => 
     "Hello World\n" writeOntoStdout.
 
     argc negated asString writeOntoStdout.
+    "\n" writeOntoStdout.
 
     ##let initialize := ObjectModel::lookupVirtualSelector(myObject, #initialize).
     ##let initialize := ObjectModel::lookupVirtualSelectorWithReceiverType(Object, #initialize).
@@ -26,7 +27,7 @@ public externC function main(argc: Int32, argv: Char8 const pointer pointer) => 
     0i32
 }.
 
-let compilationTarget := AsmCompilationTarget x86_64 useElf asTacCompilationTarget.
+let compilationTarget := AsmCompilationTarget x86_64 useElf useDwarf asTacCompilationTarget.
 
 let ssaModule := main asSSAModule.
 printLine(ssaModule fullPrintString).

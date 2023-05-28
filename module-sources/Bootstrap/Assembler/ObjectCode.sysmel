@@ -4,14 +4,16 @@ public final class AsmObjectCodeSizeStream superclass: AsmObjectCodeStream.
 public final class AsmObjectCodeWriteStream superclass: AsmObjectCodeStream.
 public abstract class AsmObjectCodeRelocation superclass: Object.
 public abstract class AsmObjectFileWriter superclass: Object.
+public abstract class AsmObjectDebugInformationGenerator superclass: Object.
 public final class AsmSymbol superclass: Object.
 
 public abstract class AsmCompilationTarget superclass: Object; definition: {
     public field operatingSystemName => Symbol.
     public field executable => Boolean.
     public field objectFileWriter => AsmObjectFileWriter.
+    public field debugInformationGenerator => AsmObjectDebugInformationGenerator.
 
-    public virtual method hasPositionIndependentCodeg => Boolean
+    public virtual method hasPositionIndependentCode => Boolean
         := false.
 
     public abstract method pointerSize => Size

@@ -102,6 +102,7 @@ TACValue definition: {
     public field debugSourcePosition => SourcePosition.
     public field debugSourceNode => ASTNode.
     public field debugSourceEnvironment => Environment.
+    public field sourceProgramEntity => ProgramEntity.
 
     public virtual method type => Type
         := self subclassResponsibility.

@@ -1221,6 +1221,13 @@ public final class AsmProgramEntity superclass: Object; definition: {
     public field children => OrderedCollection.
     public field importedSymbols => OrderedCollection.
 
+    public field debugSourcePosition => SourcePosition.
+    public field debugSourceNode => ASTNode.
+    public field debugSourceEnvironment => Environment.
+    public field sourceProgramEntity => ProgramEntity.
+    public field isTrampoline => Boolean.
+    public field contentSymbol => AsmSymbol.
+    
     public override method initialize => Void := {
         streams := OrderedCollection new.
         children := OrderedCollection new.

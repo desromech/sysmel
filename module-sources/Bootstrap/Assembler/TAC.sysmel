@@ -154,6 +154,12 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
     public method generateFunction: (functionToGenerate: TACFunction) withSymbol: (symbol: AsmSymbol) ::=> Void := {
         function := functionToGenerate.
         asmFunction := moduleGenerator targetModule newProgramEntity.
+        asmFunction
+            debugSourcePosition: functionToGenerate debugSourcePosition;
+            debugSourceNode: functionToGenerate debugSourceNode;
+            debugSourceEnvironment: functionToGenerate debugSourceEnvironment;
+            sourceProgramEntity: functionToGenerate sourceProgramEntity;
+            contentSymbol: symbol.
         self prepareToGenerateFunction.
 
         self textSection
@@ -350,6 +356,12 @@ public final class TACGlobalDataAsmCodeGenerator superclass: TACAsmCodeGenerator
 
     public method generateGlobalVariable: (globalToGenerate: TACGlobalVariable) withSymbol: (symbol: AsmSymbol) ::=> Void := {
         asmVariable := moduleGenerator targetModule newProgramEntity.
+        asmVariable
+            debugSourcePosition: globalToGenerate debugSourcePosition;
+            debugSourceNode: globalToGenerate debugSourceNode;
+            debugSourceEnvironment: globalToGenerate debugSourceEnvironment;
+            sourceProgramEntity: globalToGenerate sourceProgramEntity;
+            contentSymbol: symbol. 
 
         dataStream := asmVariable newStreamBuilder.
         self selectDataSection.
