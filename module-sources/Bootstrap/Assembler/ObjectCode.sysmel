@@ -242,7 +242,9 @@ AsmObjectCodeSection definition: {
         (newPCToDebugListTable isNotEmpty && (pc = newPCToDebugListTable nextToLast)) ifTrue: {
             newPCToDebugListTable at: newPCToDebugListTable size - 1sz put: debugListEntryIndex
         } ifFalse: {
-            newPCToDebugListTable add: pc; add: debugListEntryIndex
+            newPCToDebugListTable isEmpty || (debugListEntryIndex ~= newPCToDebugListTable last) ifTrue: {
+                newPCToDebugListTable add: pc; add: debugListEntryIndex
+            }
         }
     }.
 

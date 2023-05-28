@@ -522,6 +522,18 @@ public final class Dwarf::DebugInfoAddrAttribute superclass: Dwarf::DebugInfoEnt
     }.
 }.
 
+public final class Dwarf::DebugInfoSectionOffsetAttribute superclass: Dwarf::DebugInfoEntryAttribute; definition: {
+    public field value => AsmConstantExpression.
+
+    public override method writeAbbreviationFormWith: (writer: Dwarf::AsmWriter) ::=> Void := {
+        writer activeStream uleb128Expression: Dwarf::DW_FORM_sec_offset
+    }.
+
+    public override method writeAttributeWith: (writer: Dwarf::AsmWriter) ::=> Void := {
+        writer writeAddress: value
+    }.
+}.
+
 public final class Dwarf::DebugInfoDIEReferenceAttribute superclass: Dwarf::DebugInfoEntryAttribute; definition: {
     public field value => Dwarf::DebugInfoEntry.
 
@@ -670,6 +682,12 @@ Dwarf::DebugInfoEntry definition: {
             value: value;
             yourself).
 
+    public method addAttribute: (attributeName: Dwarf::Constant) sectionOffset: (value: AsmConstantExpression) ::=> Dwarf::DebugInfoEntryAttribute
+        := self addAttribute: (Dwarf::DebugInfoSectionOffsetAttribute new
+            name: attributeName;
+            value: value;
+            yourself).
+
     public method addAttribute: (attributeName: Dwarf::Constant) dieReference: (value: Dwarf::DebugInfoEntry) ::=> Dwarf::DebugInfoEntryAttribute
         := self addAttribute: (Dwarf::DebugInfoDIEReferenceAttribute new
             name: attributeName;
@@ -725,7 +743,7 @@ Dwarf::DebugInfoEntry definition: {
         := self addAttribute: Dwarf::DW_AT_high_pc addr: value.
 
     public method stmtList: (value: AsmConstantExpression) ::=> Dwarf::DebugInfoEntryAttribute
-        := self addAttribute: Dwarf::DW_AT_stmt_list addr: value.
+        := self addAttribute: Dwarf::DW_AT_stmt_list sectionOffset: value.
 
     public method encoding: (encoding: Dwarf::Constant) ::=> Dwarf::DebugInfoEntryAttribute
         := self addAttribute: Dwarf::DW_AT_encoding uleb128Expression: encoding.
