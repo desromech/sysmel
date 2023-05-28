@@ -2385,6 +2385,10 @@ FunctionType
     } makeVirtual.
 
 DependentFunctionType
+    withSelector: #canonicalResultType addMethod: {:(FunctionType)self :: Type |
+        ## FIXME: Implement this properly.
+        AnyValue
+    } makeOverride;
     withSelector: #printOn: addMethod: {:(DependentFunctionType)self :(Stream)stream :: Void |
         stream nextPutAll: "DependentFunctionType at "; print: self sourcePosition
     } makeOverride.
