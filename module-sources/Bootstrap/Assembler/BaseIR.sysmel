@@ -1595,6 +1595,7 @@ public final class AsmStackMapLocationCaptureOffset superclass: AsmStackMapLocat
 
 public final class AsmSymbolBindingLocationMap superclass: Object; definition: {
     public field binding => SymbolBinding.
+    public field isMutable => Boolean.
     public field location => AsmStackMapLocation.
 }.
 
@@ -1604,6 +1605,7 @@ AsmStackMap definition: {
 
     public field bindingDictionary => Dictionary.
     public field bindings => OrderedCollection.
+    public field arguments => OrderedCollection.
     public field captures => OrderedCollection.
     public field locals => OrderedCollection.
 
@@ -1611,21 +1613,30 @@ AsmStackMap definition: {
         super initialize.
         bindingDictionary := Dictionary new.
         bindings := OrderedCollection new.
-        locals := OrderedCollection new.
+        arguments := OrderedCollection new.
         captures := OrderedCollection new.
+        locals := OrderedCollection new.
     }.
 
     public method getMapOrNilForBinding: (binding: SymbolBinding) ::=> AsmSymbolBindingLocationMap
         := bindingDictionary atOrNil: binding.
 
-    public method setBinding: (binding: SymbolBinding) location: (location: AsmStackMapLocation) ::=> AsmSymbolBindingLocationMap := {
+    public method setBinding: (binding: SymbolBinding) isMutable: (isMutable: Boolean) location: (location: AsmStackMapLocation) ::=> AsmSymbolBindingLocationMap := {
         let map := AsmSymbolBindingLocationMap new
             binding: binding;
+            isMutable: isMutable;
             location: location;
             yourself.
         bindingDictionary at: binding put: map.
         bindings add: map.
         map
+    }.
+
+    public method setBinding: (binding: SymbolBinding) location: (location: AsmStackMapLocation) ::=> AsmSymbolBindingLocationMap
+        := self setBinding: binding isMutable: false location: location.
+
+    public method addArgumentBindingMap: (bindingMap: AsmSymbolBindingLocationMap) ::=> Void := {
+        arguments add: bindingMap
     }.
 
     public method addCaptureBindingMap: (bindingMap: AsmSymbolBindingLocationMap) ::=> Void := {

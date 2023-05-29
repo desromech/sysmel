@@ -600,6 +600,7 @@ public final class TACConstantFloat64 superclass: TACConstantFloatingPoint; defi
 public final class TACOperation superclass: Object; definition: {
     public field name => Symbol.
     public field isTerminator => Boolean.
+    public field isDebug => Boolean.
 
     protected field perTargetCodeGenerators => IdentityDictionary.
     protected field perTargetRegisterConstraints => IdentityDictionary.
@@ -610,6 +611,9 @@ public final class TACOperation superclass: Object; definition: {
 
         public method terminatorNamed: (name: Symbol) ::=> self
             := self new name: name; isTerminator: true; yourself.
+
+        public method debugNamed: (name: Symbol) ::=> self
+            := self new name: name; isDebug: true; yourself.
     }.
 
     public override method initialize => Void := {
@@ -638,6 +642,8 @@ public final class TACInstruction superclass: TACValue; definition: {
 
     public field callingConvention => TACCallingConvention.
 
+    public field sourceBinding => SymbolBinding.
+
     public override method initialize => Void := {
         super initialize.
         operands := #().
@@ -645,6 +651,9 @@ public final class TACInstruction superclass: TACValue; definition: {
 
     public method isTerminator => Boolean
         := operation isTerminator.
+
+    public method isDebug => Boolean
+        := operation isDebug.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         result ifNotNil: (stream print: result; nextPutAll: " := ").
@@ -729,6 +738,9 @@ public global TAC::Operation::ReturnStruct := TACOperation terminatorNamed: #ret
 public global TAC::Operation::ReturnVoid := TACOperation terminatorNamed: #returnVoid.
 
 public global TAC::Operation::Trap := TACOperation terminatorNamed: #trap.
+
+public global TAC::Operation::DebugSetBindingValue := TACOperation debugNamed: #debugSetBindingValue.
+public global TAC::Operation::DebugSetMutableBindingValue := TACOperation debugNamed: #debugSetMutableBindingValue.
 
 TACBasicBlock definition: {
     public field name => Symbol.
@@ -1289,6 +1301,20 @@ public final class TACBlockBuilder superclass: Object; definition: {
 
     public method trap ::=> TACInstruction
         := self operation: TAC::Operation::Trap.
+
+    public method debugSetBinding: (binding: SymbolBinding) value: (value: TACValue) ::=> TACInstruction
+        := self addInstruction: (TACInstruction new
+            operation: TAC::Operation::DebugSetBindingValue;
+            operands: (Array with: value);
+            sourceBinding: binding;
+            yourself).
+
+    public method debugSetMutableBinding: (binding: SymbolBinding) value: (value: TACValue) ::=> TACInstruction
+        := self addInstruction: (TACInstruction new
+            operation: TAC::Operation::DebugSetMutableBindingValue;
+            operands: (Array with: value);
+            sourceBinding: binding;
+            yourself).
 }.
 
 public final class TACFunctionBuilder superclass: Object; definition: {

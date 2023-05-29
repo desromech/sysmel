@@ -1811,6 +1811,8 @@ FunctionDefinition extend: {
                 }.
             }.
 
+            debugGenerator setDie: argument declarationPosition: binding sourcePosition.
+
             argument
         }).
 
@@ -1842,6 +1844,13 @@ AsmStackMap extend: {
                 self dwarf::emitLocationForLocalDIE: argumentDie with: debugGenerator
             }
         }.
+
+        captures do: {:(AsmSymbolBindingLocationMap)each :: Void |
+        }.
+
+        locals do: {:(AsmSymbolBindingLocationMap)each :: Void |
+            self dwarf::generateProgramEntityForBindingLocationMap: each subprogram: subprogram with: debugGenerator
+        }.
     }.
 
     public method dwarf::emitLocationForLocalDIE: (localDIE: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
@@ -1851,6 +1860,31 @@ AsmStackMap extend: {
         bindingMap ifNotNil: {
             localDIE location: (bindingMap location dwarf::buildExpressionForStackMap: self target: debugGenerator compilationTarget)
         }.
+    }.
+
+    public method dwarf::generateProgramEntityForBindingLocationMap: (bindingLocationMap: AsmSymbolBindingLocationMap) subprogram: (subprogram: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+        let binding := bindingLocationMap binding.
+        let variable := Dwarf::DebugInfoEntry tag: Dwarf::DW_TAG_variable.
+        variable sourceBinding: binding.
+        subprogram addChild: variable.
+
+        binding name ifNotNil: (variable name: binding name asString).
+        binding type ifNotNil: {
+            let bindingType := binding type.
+            bindingLocationMap isMutable && bindingType isReferenceType ifTrue: {
+                let valueType := (bindingType downCastTo: ReferenceType) baseType.
+                (valueType dwarf::getTypeDieWith: debugGenerator) ifNotNil: {:(Dwarf::DebugInfoEntry)resultType :: Void |
+                    variable type: resultType
+                }.
+            } ifFalse: {
+                (bindingType dwarf::getTypeDieWith: debugGenerator) ifNotNil: {:(Dwarf::DebugInfoEntry)resultType :: Void |
+                    variable type: resultType
+                }.
+            }.
+        }.
+
+        debugGenerator setDie: variable declarationPosition: binding sourcePosition.
+        variable location: (bindingLocationMap location dwarf::buildExpressionForStackMap: self target: debugGenerator compilationTarget)
     }.
 }.
 

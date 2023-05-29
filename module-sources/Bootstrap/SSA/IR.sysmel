@@ -1575,6 +1575,7 @@ SSAInstructionBuilder definition: {
     public method setDebugValue: (value: SSAValue) forBinding: (binding: SymbolBinding) ::=> SSASetDebugValueForBindingInstruction
         := self addInstruction: (SSASetDebugValueForBindingInstruction new
             value: value;
+            binding: binding;
             registerInUsedValues;
             yourself).
 

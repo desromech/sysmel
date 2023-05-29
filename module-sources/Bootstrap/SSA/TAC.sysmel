@@ -1644,7 +1644,11 @@ SSASendInstruction extend: {
 
 SSASetDebugValueForBindingInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
-        ## TODO: Implement this
+        (codegen localOnlyAllocaDictionary atOrNil: self value) ifNotNil: {:(TACValue)localOnlyAlloca :: Void | 
+            codegen blockBuilder debugSetMutableBinding: self binding value: localOnlyAlloca
+        } ifNil: {
+            codegen blockBuilder debugSetBinding: self binding value: (codegen translateValue: self value)
+        }.
     }.
 }.
 

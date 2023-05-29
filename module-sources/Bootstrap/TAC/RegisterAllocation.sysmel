@@ -261,8 +261,13 @@ public final class TACTrivialRegisterAllocator superclass: TACRegisterAllocator;
         integerRegisterFile := TACRegisterAllocationFile for: target allocableIntegerRegisters.
 
         function instructionsDo: {:(TACInstruction)instruction :: Void |
-            self resetRegisterFiles.
-            self allocateInstructionRegisters: instruction
+            instruction isDebug ifTrue: {
+                ## FIXME: Avoid requiring this spilling.
+                instruction operands first markSpillingRequired
+            } ifFalse: {
+                self resetRegisterFiles.
+                self allocateInstructionRegisters: instruction
+            }.
         }
     }.
 

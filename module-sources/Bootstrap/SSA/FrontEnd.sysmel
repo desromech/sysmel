@@ -365,7 +365,7 @@ ASTLocalDefinitionNode extend: {
             let localVariable := builder alloca: (builder literal: self analyzedValueType) type: self analyzedType.
             builder store: value in: localVariable.
             context setValue: localVariable forBinding: self binding.
-            context builder setDebugValue: value forBinding: self binding.
+            context builder setDebugValue: localVariable forBinding: self binding.
             localVariable
         } ifFalse: {
             context setValue: value forBinding: self binding.

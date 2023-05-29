@@ -304,15 +304,19 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
     }.
 
     public method generateStackMap => Void := {
-        let block := {:(TACLocalVariable)eachLocal :: Void |
+        function arguments do: {:(TACLocalVariable)eachLocal :: Void |
             eachLocal sourceBinding ifNotNil: {:(SymbolBinding)binding :: Void |
                 let location := eachLocal asm::makeStackMapLocationWith: self.
-                stackMap setBinding: binding location: location
+                stackMap addArgumentBindingMap: (stackMap setBinding: binding location: location)
             }
         }.
 
-        function arguments do: block.
-        function captures do: block.
+        function captures do: {:(TACLocalVariable)eachLocal :: Void |
+            eachLocal sourceBinding ifNotNil: {:(SymbolBinding)binding :: Void |
+                let location := eachLocal asm::makeStackMapLocationWith: self.
+                stackMap addCaptureBindingMap: (stackMap setBinding: binding location: location)
+            }
+        }..
     }.
 
     public method emitSpillRegisterArgumentsInStackFrame => Void := {
@@ -339,6 +343,11 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
     }.
 
     public method generateInstruction: (instruction: TACInstruction) ::=> Void := {
+        instruction isDebug ifTrue: {
+            self processDebugInstruction: instruction.
+            return: void
+        }.
+
         self textSection useDebugInfoOfTACValue: instruction.
         self emitMoveValues: instruction operands intoRegisters: instruction operandRegisters.
 
@@ -347,6 +356,18 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
         ## Do we need to support multiple result values?
         instruction resultRegister isNotNil && instruction result isNotNil ifTrue: {
             self emitMoveRegister: instruction resultRegister intoValue: instruction result
+        }.
+    }.
+
+    public method processDebugInstruction: (debugInstruction: TACInstruction) ::=> Void := {
+        self assert: (debugInstruction operation = TAC::Operation::DebugSetBindingValue)
+            || (debugInstruction operation = TAC::Operation::DebugSetMutableBindingValue).
+        let value := debugInstruction operands first.
+        let binding := debugInstruction sourceBinding.
+
+        let location := value asm::makeStackMapLocationWith: self.
+        location ifNotNil: {
+            stackMap addLocalBindingMap: (stackMap setBinding: binding isMutable: debugInstruction operation = TAC::Operation::DebugSetMutableBindingValue location: location)
         }.
     }.
 
