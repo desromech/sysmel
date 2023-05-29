@@ -725,6 +725,9 @@ Dwarf::DebugInfoEntry definition: {
     public method hasChildren => Boolean
         := firstChild isNotNil.
 
+    public method shouldEmitSiblingAttribute => Boolean
+        := firstChild isNotNil && nextSibling isNotNil.
+
     public method withAllChildrenDo: (aBlock: (Dwarf::DebugInfoEntry) => Void) ::=> Void := {
         aBlock(self).
         self allChildrenDo: aBlock
@@ -768,6 +771,12 @@ Dwarf::DebugInfoEntry definition: {
             byteExpression: (self hasChildren ifTrue: Dwarf::DW_CHILDREN_yes ifFalse: Dwarf::DW_CHILDREN_no).
         self attributesDo: {:(Dwarf::DebugInfoEntryAttribute)attribute :: Void |
             attribute writeAbbreviationWith: writer
+        }.
+
+        self shouldEmitSiblingAttribute ifTrue: {
+            writer activeStream
+                uleb128Expression: Dwarf::DW_AT_sibling;
+                uleb128Expression: Dwarf::DW_FORM_addr
         }.
 
         writer activeStream byte: 0u8; byte: 0u8.
@@ -1160,6 +1169,9 @@ Dwarf::AsmWriter definition: {
         debugInfoEntry attributesDo: {:(Dwarf::DebugInfoEntryAttribute)attribute :: Void |
             attribute writeAttributeWith: self
         }.
+        debugInfoEntry shouldEmitSiblingAttribute ifTrue: {
+            self writeReferenceToDIE: debugInfoEntry nextSibling
+        }.
 
         debugInfoEntry hasChildren ifTrue: {
             debugInfoEntry childrenDo: {:(Dwarf::DebugInfoEntry)child :: Void |
@@ -1314,9 +1326,6 @@ public final class Dwarf::DebugLineWriter superclass: Object; definition: {
     public method writeSourceLocationForSections: (sections: OrderedCollection) onto: (targetSection: AsmObjectCodeSection) pointerSize: (pointerSize: Size) ::=> Void := {
         self pointerSize: pointerSize.
         self computeLineRangeForSections: sections.
-
-        ##printLine("Line range: ", minLine, " ", maxLine, " base ", lineBase, " range ", lineRange).
-        ##printLine("Source directory count: ", directories size, " file count ", files size).
 
         let programHeader := self generateProgramHeader.
         let program := self generateProgramForSections: sections.
@@ -1584,6 +1593,7 @@ public final class Dwarf::DebugLineWriter superclass: Object; definition: {
 
 public final class Dwarf::ObjectDebugInformationGenerator superclass: AsmObjectDebugInformationGenerator; definition: {
     public field pointerSize => Size.
+    public field compilationTarget => AsmCompilationTarget.
     public field compileUnit => Dwarf::DebugInfoEntry.
 
     public field debugInfoProgramEntity => AsmProgramEntity.
@@ -1632,10 +1642,11 @@ public final class Dwarf::ObjectDebugInformationGenerator superclass: AsmObjectD
 
     public override method generateDebugInformationForModule: (module: AsmProgramEntity) ::=> Void := {
         pointerSize := module compilationTarget pointerSize. 
+        compilationTarget := module compilationTarget.
 
         compileUnit := Dwarf::Builder new compileUnit.
         compileUnit
-            language: Dwarf::DW_LANG_C_plus_plus;
+            ##language: Dwarf::DW_LANG_C;
             producer: "Sysmel Compiler";
             pcRangeSymbol: module contentSymbol pointerSize: pointerSize.
 
@@ -1815,20 +1826,30 @@ FunctionDefinition extend: {
 
         let stackMap := generatedFunction stackMap.
         stackMap ifNotNil: {
-            stackMap frameBase ifNotNil: {
-                subprogram frameBase: (stackMap frameBase dwarf::buildExpressionForStackMap: stackMap target: generatedFunction compilationTarget)
-            }.
+            stackMap dwarf::generateDebugInfoForFunctionDefinition: self subprogram: subprogram with: debugGenerator
+        }.
+    }.
+}.
 
-            subprogram declaredArguments ifNotNil: {:(Array)declaredArguments :: Void |
-                declaredArguments do: {:(Dwarf::DebugInfoEntry)argumentDie :: Void |
-                    let binding := argumentDie sourceBinding.
-                    let bindingMap := stackMap getMapOrNilForBinding: binding.
+AsmStackMap extend: {
+    public method dwarf::generateDebugInfoForFunctionDefinition: (functionDefinition: FunctionDefinition) subprogram: (subprogram: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+        frameBase ifNotNil: {
+            subprogram frameBase: (frameBase dwarf::buildExpressionForStackMap: self target: debugGenerator compilationTarget)
+        }.
 
-                    bindingMap ifNotNil: {
-                        argumentDie location: (bindingMap location dwarf::buildExpressionForStackMap: stackMap target: generatedFunction compilationTarget)
-                    }.
-                }
-            }.
+        subprogram declaredArguments ifNotNil: {:(Array)declaredArguments :: Void |
+            declaredArguments do: {:(Dwarf::DebugInfoEntry)argumentDie :: Void |
+                self dwarf::emitLocationForLocalDIE: argumentDie with: debugGenerator
+            }
+        }.
+    }.
+
+    public method dwarf::emitLocationForLocalDIE: (localDIE: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+        let binding := localDIE sourceBinding.
+        let bindingMap := self getMapOrNilForBinding: binding.
+
+        bindingMap ifNotNil: {
+            localDIE location: (bindingMap location dwarf::buildExpressionForStackMap: self target: debugGenerator compilationTarget)
         }.
     }.
 }.

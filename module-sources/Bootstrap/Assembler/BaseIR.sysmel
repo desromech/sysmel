@@ -1604,11 +1604,15 @@ AsmStackMap definition: {
 
     public field bindingDictionary => Dictionary.
     public field bindings => OrderedCollection.
+    public field captures => OrderedCollection.
+    public field locals => OrderedCollection.
 
     public override method initialize => Void := {
         super initialize.
         bindingDictionary := Dictionary new.
         bindings := OrderedCollection new.
+        locals := OrderedCollection new.
+        captures := OrderedCollection new.
     }.
 
     public method getMapOrNilForBinding: (binding: SymbolBinding) ::=> AsmSymbolBindingLocationMap
@@ -1622,5 +1626,13 @@ AsmStackMap definition: {
         bindingDictionary at: binding put: map.
         bindings add: map.
         map
+    }.
+
+    public method addCaptureBindingMap: (bindingMap: AsmSymbolBindingLocationMap) ::=> Void := {
+        captures add: bindingMap
+    }.
+
+    public method addLocalBindingMap: (bindingMap: AsmSymbolBindingLocationMap) ::=> Void := {
+        locals add: bindingMap
     }.
 }.
