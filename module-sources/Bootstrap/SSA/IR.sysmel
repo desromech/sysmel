@@ -36,7 +36,7 @@ SSAValue definition: {
     public virtual method isPhiInstruction => Boolean := false.
     public virtual method isPointerElementAtInstruction => Boolean := false.
     public virtual method isLoadInstruction => Boolean := false.
-    public virtual method isLoadOrStoreInstruction => Boolean := false.
+    public virtual method isLoadStoreOrDebugBindingInstruction => Boolean := false.
     public virtual method isMakeArrayInstruction => Boolean := false.
     public virtual method isMakeClosureInstruction => Boolean := false.
     public virtual method isStoreInstruction => Boolean := false.
@@ -162,6 +162,14 @@ SSAFunction definition: {
             stream print: definition
         }
     }.
+}.
+
+SSAFunctionCapture definition: {
+    public field sourceBinding => SymbolBinding.
+}.
+
+SSAFunctionArgument definition: {
+    public field sourceBinding => SymbolBinding.
 }.
 
 SSAFunctionDefinition definition: {
@@ -750,7 +758,7 @@ public final class SSAAllocaInstruction superclass: SSAInstruction; definition: 
     public override method isAllocaInstruction => Boolean := true.
 
     public method isLocalOnlyAlloca => Boolean
-        := users isNil || (users allSatisfy: {:(SSAValue)each :: Boolean | each isLoadOrStoreInstruction }).
+        := users isNil || (users allSatisfy: {:(SSAValue)each :: Boolean | each isLoadStoreOrDebugBindingInstruction }).
 
     public override method fullPrintOn: (stream: Stream) ::=> Void
         := stream print: self; nextPutAll: " := alloca: "; print: self valueType.
@@ -1045,7 +1053,7 @@ public final class SSALoadInstruction superclass: SSAInstruction; definition: {
     public field storage => SSAValue.
 
     public override method isLoadInstruction => Boolean := true.
-    public override method isLoadOrStoreInstruction => Boolean := true.
+    public override method isLoadStoreOrDebugBindingInstruction => Boolean := true.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := load "; print: self storage
@@ -1250,12 +1258,40 @@ public final class SSASendInstruction superclass: SSAInstruction; definition: {
     }.
 }.
 
+public final class SSASetDebugValueForBindingInstruction superclass: SSAInstruction; definition: {
+    public field value => SSAValue.
+    public field binding => SymbolBinding.
+
+    public override method isLoadStoreOrDebugBindingInstruction => Boolean := true.
+
+    public override method initialize => Void := {
+        super initialize.
+        type := Void
+    }.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: "setDebugValue "; print: self value; nextPutAll: " forBinding "; print: self binding
+    }.
+
+    public override method usedValuesDo: aBlock ::=> Void := {
+        aBlock(self value).
+    }.
+
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        if: self value = replacedValue then: (self value: replacement).
+    }.
+
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+        replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
+    }.
+}.
+
 public final class SSAStoreInstruction superclass: SSAInstruction; definition: {
     public field storage => SSAValue.
     public field value => SSAValue.
 
     public override method isStoreInstruction => Boolean := true.
-    public override method isLoadOrStoreInstruction => Boolean := true.
+    public override method isLoadStoreOrDebugBindingInstruction => Boolean := true.
 
     public override method initialize => Void := {
         super initialize.
@@ -1535,6 +1571,12 @@ SSAInstructionBuilder definition: {
 
     public method send: (receiver: SSAValue) selector: (selector: SSAValue) arguments: (arguments: Array) ::=> SSASendInstruction
         := self send: receiver receiverLookupType: nil selector: selector arguments: arguments resultType: nil.
+
+    public method setDebugValue: (value: SSAValue) forBinding: (binding: SymbolBinding) ::=> SSASetDebugValueForBindingInstruction
+        := self addInstruction: (SSASetDebugValueForBindingInstruction new
+            value: value;
+            registerInUsedValues;
+            yourself).
 
     public method store: (value: SSAValue) in: (storage: SSAValue) ::=> SSAStoreInstruction
         := self addInstruction: (SSAStoreInstruction new

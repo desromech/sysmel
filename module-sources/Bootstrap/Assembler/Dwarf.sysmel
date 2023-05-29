@@ -488,6 +488,82 @@ public final class Dwarf::Constant superclass: AsmConstantExpressionInteger; def
     __OwnerProgramEntity__ setPublicSymbol: constantPublicSymbol value: constant
 }.
 
+public abstract class Dwarf::ExpressionInstruction superclass: Object; definition: {
+    public abstract method computeSizeForWritingWith: (writer: Dwarf::AsmWriter) ::=> Size
+        := self subclassResponsibility.
+
+    public abstract method writeWith: (writer: Dwarf::AsmWriter) ::=> Void
+        := self subclassResponsibility.
+
+    public method sizeForRegister: (register: UInt32) with: (writer: Dwarf::AsmWriter) ::=> Size
+        := register <= 31u32 ifTrue: 1sz ifFalse: (1sz + (writer uleb128Size: register asUInt64)).
+
+    public method writeRegister: (register: UInt32) with: (writer: Dwarf::AsmWriter) ::=> Void := {
+        register <= 31u32 ifTrue: {
+            writer activeStream byte: (Dwarf::DW_OP_reg0 value asUInt32 + register) asUInt8
+        } ifFalse: {
+            writer activeStream 
+                byte: Dwarf::DW_OP_regx value asUInt8;
+                uleb128: register asUInt64.
+        }
+    }.
+}.
+
+public final class Dwarf::ExpressionInstructionOpcode superclass: Dwarf::ExpressionInstruction; definition: {
+    public field opcode => UInt8.
+}.
+
+public final class Dwarf::ExpressionInstructionRegister superclass: Dwarf::ExpressionInstruction; definition: {
+    public field register => UInt32.
+
+    public override method computeSizeForWritingWith: (writer: Dwarf::AsmWriter) ::=> Size
+        := self sizeForRegister: register with: writer.
+
+    public override method writeWith: (writer: Dwarf::AsmWriter) ::=> Void
+        := self writeRegister: register with: writer.
+}.
+
+public final class Dwarf::ExpressionInstructionFrameOffset superclass: Dwarf::ExpressionInstruction; definition: {
+    public field offset => Int64.
+
+    public override method computeSizeForWritingWith: (writer: Dwarf::AsmWriter) ::=> Size
+        := 1sz + (writer sleb128Size: offset).
+
+    public override method writeWith: (writer: Dwarf::AsmWriter) ::=> Void := {
+        writer activeStream 
+            byte: Dwarf::DW_OP_fbreg value asUInt8;
+            sleb128: offset.
+    }.
+}.
+
+public final class Dwarf::ExpressionBuilder superclass: Object; definition: {
+    __Meta__ definition: {
+        public method build: (aBlock: (Dwarf::ExpressionBuilder => Void)) ::=> Array
+            := self new build: aBlock.
+
+    }.
+
+    public field instructions => OrderedCollection.
+
+    public method build: (aBlock: (Dwarf::ExpressionBuilder => Void)) ::=> Array := {
+        instructions := OrderedCollection new.
+        aBlock(self).
+        instructions asArray
+    }.
+
+    public method opcode: (opcode: UInt8) ::=> Void := {
+        instructions add: (Dwarf::ExpressionInstructionOpcode new opcode: opcode; yourself)
+    }.
+
+    public method register: (register: UInt32) ::=> Void := {
+        instructions add: (Dwarf::ExpressionInstructionRegister new register: register; yourself)
+    }.
+
+    public method frameOffset: (offset: Int64) ::=> Void := {
+        instructions add: (Dwarf::ExpressionInstructionFrameOffset new offset: offset; yourself)
+    }.
+}.
+
 public abstract class Dwarf::DebugInfoEntryAttribute superclass: Object; definition: {
     public field name => Dwarf::Constant.
 
@@ -546,6 +622,27 @@ public final class Dwarf::DebugInfoDIEReferenceAttribute superclass: Dwarf::Debu
     }.
 }.
 
+public final class Dwarf::DebugInfoLocationExpressionAttribute superclass: Dwarf::DebugInfoEntryAttribute; definition: {
+    public field value => Array.
+
+    public override method writeAbbreviationFormWith: (writer: Dwarf::AsmWriter) ::=> Void := {
+        writer activeStream uleb128Expression: Dwarf::DW_FORM_exprloc
+    }.
+
+    public override method writeAttributeWith: (writer: Dwarf::AsmWriter) ::=> Void := {
+        let size mutable := 0sz.
+        value do: {:(Dwarf::ExpressionInstruction)instruction :: Void |
+            size := size + (instruction computeSizeForWritingWith: writer)
+        }.
+
+        writer activeStream uleb128: size asUInt64.
+        value do: {:(Dwarf::ExpressionInstruction)instruction :: Void |
+            instruction writeWith: writer
+        }.
+    }.
+}.
+
+
 public final class Dwarf::DebugInfoStringAttribute superclass: Dwarf::DebugInfoEntryAttribute; definition: {
     public field value => String.
 
@@ -561,7 +658,6 @@ public final class Dwarf::DebugInfoStringAttribute superclass: Dwarf::DebugInfoE
         writer writeString: value
     }.
 }.
-
 
 public final class Dwarf::DebugInfoSLEB128Attribute superclass: Dwarf::DebugInfoEntryAttribute; definition: {
     public field value => Int64.
@@ -609,7 +705,8 @@ Dwarf::DebugInfoEntry definition: {
     public field firstAttribute => Dwarf::DebugInfoEntryAttribute.
     public field lastAttribute => Dwarf::DebugInfoEntryAttribute.
 
-    public field argumentChildren => Array.
+    public field declaredArguments => Array.
+    public field sourceBinding => SymbolBinding.
 
     __Meta__ definition: {
         public method tag: (tag: Dwarf::Constant) ::=> self
@@ -694,6 +791,12 @@ Dwarf::DebugInfoEntry definition: {
             value: value;
             yourself).
 
+    public method addAttribute: (attributeName: Dwarf::Constant) locationExpression: (expression: Array) ::=> Dwarf::DebugInfoEntryAttribute
+        := self addAttribute: (Dwarf::DebugInfoLocationExpressionAttribute new
+            name: attributeName;
+            value: expression;
+            yourself).
+
     public method addAttribute: (attributeName: Dwarf::Constant) string: (value: String) ::=> Dwarf::DebugInfoEntryAttribute
         := self addAttribute: (Dwarf::DebugInfoStringAttribute new
             name: attributeName;
@@ -768,6 +871,12 @@ Dwarf::DebugInfoEntry definition: {
 
     public method encodingUnsignedChar ::=> Dwarf::DebugInfoEntryAttribute
         := self encoding: Dwarf::DW_ATE_unsigned_char.
+
+    public method frameBase: (expression: Array) ::=> Dwarf::DebugInfoEntryAttribute
+        := self addAttribute: Dwarf::DW_AT_frame_base locationExpression: expression.
+
+    public method location: (expression: Array) ::=> Dwarf::DebugInfoEntryAttribute
+        := self addAttribute: Dwarf::DW_AT_location locationExpression: expression.
 
     public method type: (type: Dwarf::DebugInfoEntry) ::=> Dwarf::DebugInfoEntryAttribute
         := self addAttribute: Dwarf::DW_AT_type dieReference: type.
@@ -1058,6 +1167,37 @@ Dwarf::AsmWriter definition: {
             }.
             activeStream byte: 0u8.
         }.
+    }.
+
+    public method uleb128Size: (value: UInt64) ::=> Size := {
+        let result mutable := 0sz.
+        let currentValue mutable := value.
+        do: {
+            let byte := (currentValue & 127u64) asUInt8.
+            currentValue := currentValue >> 7u64.
+            result := result + 1sz.
+        } while: (currentValue ~= 0u64).
+
+        result
+    }.
+
+    public method sleb128Size: (value: Int64) ::=> Size := {
+        let result mutable := 0sz.
+        let more mutable => Boolean := true.
+
+        let currentValue mutable := value.
+        while: more do: {
+            let byte mutable := (currentValue & 127i64) asInt8.
+            currentValue := currentValue >> 7i64.
+            
+            let byteHasSign := (byte & 16r40 i8) ~= 0i8.
+            ((currentValue = 0i64) && byteHasSign not) || (currentValue == -1i64 && byteHasSign) ifTrue: {
+                more := false
+            }.
+
+            result := result + 1sz.
+        }.
+        result
     }.
 }.
 
@@ -1424,7 +1564,6 @@ public final class Dwarf::DebugLineWriter superclass: Object; definition: {
 
     public method sleb128: (value: Int64) ::=> Void := {
         let more mutable => Boolean := true.
-        let size := 64i64.
 
         let currentValue mutable := value.
         while: more do: {
@@ -1649,8 +1788,9 @@ FunctionDefinition extend: {
             }.
         }.
 
-        subprogram argumentChildren: (analyzedArguments collect: {:(SymbolArgumentBinding)binding :: Dwarf::DebugInfoEntry |
+        subprogram declaredArguments: (analyzedArguments collect: {:(SymbolArgumentBinding)binding :: Dwarf::DebugInfoEntry |
             let argument := Dwarf::DebugInfoEntry tag: Dwarf::DW_TAG_formal_parameter.
+            argument sourceBinding: binding.
             subprogram addChild: argument.
 
             binding name ifNotNil: (argument name: binding name asString).
@@ -1669,8 +1809,54 @@ FunctionDefinition extend: {
     public override method dwarf::generateDIEForAsmProgramEntity: (generatedFunction: AsmProgramEntity) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
         generatedFunction isTrampoline ifTrue: {return: void}.
 
-        (debugGenerator getOrCreateDieForProgramEntity: self)
-            pcRangeSymbol: generatedFunction contentSymbol pointerSize: debugGenerator pointerSize
+        let subprogram := (debugGenerator getOrCreateDieForProgramEntity: self).
+        subprogram
+            pcRangeSymbol: generatedFunction contentSymbol pointerSize: debugGenerator pointerSize.
+
+        let stackMap := generatedFunction stackMap.
+        stackMap ifNotNil: {
+            stackMap frameBase ifNotNil: {
+                subprogram frameBase: (stackMap frameBase dwarf::buildExpressionForStackMap: stackMap target: generatedFunction compilationTarget)
+            }.
+
+            subprogram declaredArguments ifNotNil: {:(Array)declaredArguments :: Void |
+                declaredArguments do: {:(Dwarf::DebugInfoEntry)argumentDie :: Void |
+                    let binding := argumentDie sourceBinding.
+                    let bindingMap := stackMap getMapOrNilForBinding: binding.
+
+                    bindingMap ifNotNil: {
+                        argumentDie location: (bindingMap location dwarf::buildExpressionForStackMap: stackMap target: generatedFunction compilationTarget)
+                    }.
+                }
+            }.
+        }.
+    }.
+}.
+
+AsmStackMapLocation extend: {
+    public abstract method dwarf::buildExpressionForStackMap: (stackMap: AsmStackMap) target: (compilationTarget: AsmCompilationTarget) ::=> Array
+        := Dwarf::ExpressionBuilder build: ({:(Dwarf::ExpressionBuilder)builder :: Void |
+            self dwarf::buildExpression: builder forStackMap: stackMap target: compilationTarget.
+        }).
+
+    public abstract method dwarf::buildExpression: (builder: Dwarf::ExpressionBuilder) forStackMap: (stackMap: AsmStackMap) target: (compilationTarget: AsmCompilationTarget) ::=> Array
+        := self subclassResponsibility.
+}.
+
+AsmRegister extend: {
+    public abstract method dwarf::registerNumberForTarget: (compilationTarget: AsmCompilationTarget) ::=> UInt32
+        := self subclassResponsibility.
+}.
+
+AsmStackMapLocationRegister extend: {
+    public override method dwarf::buildExpression: (builder: Dwarf::ExpressionBuilder) forStackMap: (stackMap: AsmStackMap) target: (compilationTarget: AsmCompilationTarget) ::=> Void := {
+        builder register: (register dwarf::registerNumberForTarget: compilationTarget)
+    }.
+}.
+
+AsmStackMapLocationFrameOffset extend: {
+    public override method dwarf::buildExpression: (builder: Dwarf::ExpressionBuilder) forStackMap: (stackMap: AsmStackMap) target: (compilationTarget: AsmCompilationTarget) ::=> Void := {
+        builder frameOffset: offset
     }.
 }.
 

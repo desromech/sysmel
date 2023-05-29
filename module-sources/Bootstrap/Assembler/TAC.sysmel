@@ -151,6 +151,7 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
     public field moduleGenerator => TACModuleAsmCodeGenerator.
     public field function => TACFunction.
     public field asmFunction => AsmProgramEntity.
+    public field stackMap => AsmStackMap.
     private field basicBlockSymbolDictionary => IdentityDictionary.
 
     public field registerAllocator => TACRegisterAllocator.
@@ -171,10 +172,12 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
     public method generateFunction: (functionToGenerate: TACFunction) withSymbol: (symbol: AsmSymbol) ::=> Void := {
         function := functionToGenerate.
         asmFunction := moduleGenerator targetModule newProgramEntity.
+        stackMap := AsmStackMap new.
         asmFunction
             debugSourcePosition: functionToGenerate debugSourcePosition;
             debugSourceNode: functionToGenerate debugSourceNode;
             debugSourceEnvironment: functionToGenerate debugSourceEnvironment;
+            stackMap: stackMap;
             sourceProgramEntity: functionToGenerate sourceProgramEntity;
             contentSymbol: symbol.
         self prepareToGenerateFunction.
@@ -197,7 +200,8 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
 
         self
             emitPrologue;
-            emitStackFrameConstruction.
+            emitStackFrameConstruction;
+            generateStackMap.
 
         function basicBlocksDo: {:(TACBasicBlock)basicBlock :: Void |
             self generateBasicBlock: basicBlock
@@ -209,7 +213,6 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
         exportedSymbols do: {:(AsmSymbol)eachSymbol :: Void |
             self textSection endLabel: eachSymbol
         }.
-
     }.
 
     TACAsmCompilationTarget extend: {
@@ -298,6 +301,18 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
 
     public method emitStackFrameConstruction => Void := {
         moduleGenerator target emitStackFrameConstructionWith: self
+    }.
+
+    public method generateStackMap => Void := {
+        let block := {:(TACLocalVariable)eachLocal :: Void |
+            eachLocal sourceBinding ifNotNil: {:(SymbolBinding)binding :: Void |
+                let location := eachLocal asm::makeStackMapLocationWith: self.
+                stackMap setBinding: binding location: location
+            }
+        }.
+
+        function arguments do: block.
+        function captures do: block.
     }.
 
     public method emitSpillRegisterArgumentsInStackFrame => Void := {
@@ -429,6 +444,9 @@ TACValue definition: {
 
     public virtual method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
         := self error: self printString -- " is not an immediate 64 value.".
+
+    public virtual method asm::makeStackMapLocationWith: (codegen: TACAsmCodeGenerator) ::=> AsmStackMapLocation
+        := nil.
 }.
 
 TACProgramEntity definition: {
@@ -606,4 +624,20 @@ TACConstantInt64 definition: {
 
     public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
         := value asAsmImmediate.
+}.
+
+TACLocalVariable definition: {
+    public override method asm::makeStackMapLocationWith: (codegen: TACAsmCodeGenerator) ::=> AsmStackMapLocation := {
+        self needsStackAllocation ifTrue: {
+            AsmStackMapLocationFrameOffset new offset: offset; yourself
+        } ifFalse: {
+            nil
+        }
+    }
+}.
+
+TACCaptureVariable definition: {
+    public override method asm::makeStackMapLocationWith: (codegen: TACAsmCodeGenerator) ::=> AsmStackMapLocation := {
+        AsmStackMapLocationCaptureOffset new offset: offset; yourself
+    }
 }.

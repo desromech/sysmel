@@ -248,6 +248,8 @@ public final class TACLocalVariable superclass: TACVariable; definition: {
     public field firstWriteIndex => Int32.
     public field lastWriteIndex => Int32.
 
+    public field sourceBinding => SymbolBinding.
+
     public override method markSpillingRequired ::=> Void := {
         needsSpilling := true.
     }.
@@ -825,7 +827,7 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
         temporary
     }.
 
-    public method newArgument: (name: Symbol) withType: (type: Type) ::=> TACArgumentVariable
+    public method newArgument: (name: Symbol) withType: (type: Type) sourceBinding: (sourceBinding: SymbolBinding)::=> TACArgumentVariable
         := TACArgumentVariable new
             name: name;
             type: type;
@@ -833,7 +835,11 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
             alignment: (type valueAlignmentForTacTarget: compilationTarget) asUInt64;
             isGCRoot: type isGarbageCollectedPointerType;
             physicalLocationClass: type valueTacPhysicalLocationClass;
+            sourceBinding: sourceBinding;
             yourself.
+
+    public method newArgument: (name: Symbol) withType: (type: Type) ::=> TACArgumentVariable
+        := self newArgument: name withType: type sourceBinding: nil.
 
     public method newArgumentWithType: (type: Type) ::=> TACArgumentVariable
         := self newArgument: nil withType: type.

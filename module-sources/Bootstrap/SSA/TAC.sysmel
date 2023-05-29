@@ -308,7 +308,7 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
 
     public method compileFunction: (ssaFunction: SSAFunction) exportedEntryPoint: (exportedEntryPoint: TACFunction) into: (uncheckedEntryPoint: TACValue) ::=> Void := {
         let arguments := ssaFunction definition arguments collect: {:(SSAFunctionArgument)argument :: TACValue |
-            exportedEntryPoint newArgument: argument name withType: argument type.
+            exportedEntryPoint newArgument: argument name withType: argument type sourceBinding: argument sourceBinding.
         }.
 
         exportedEntryPoint arguments: arguments.
@@ -335,7 +335,7 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
         tacArguments add: functionArgument.
 
         let uncheckedArguments := ssaFunctionDefinition arguments collect: {:(SSAFunctionArgument)argument :: TACValue |
-            let tacArgument := checkedEntryPoint newArgument: argument name withType: Untyped.
+            let tacArgument := checkedEntryPoint newArgument: argument name withType: Untyped sourceBinding: argument sourceBinding.
             tacArguments add: tacArgument.
             tacArgument
         }.
@@ -389,7 +389,7 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
         }.
         
         ssaFunctionDefinition arguments do: {:(SSAFunctionArgument)argument :: Void |
-            let tacArgument := tacFunction newArgument: argument name withType: argument type.
+            let tacArgument := tacFunction newArgument: argument name withType: argument type sourceBinding: argument sourceBinding.
             valueDictionary at: argument put: tacArgument.
             tacArguments add: tacArgument.
         }.
@@ -1639,6 +1639,12 @@ SSAMakeClosureInstruction extend: {
 SSASendInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
         codegen blockBuilder trap
+    }.
+}.
+
+SSASetDebugValueForBindingInstruction extend: {
+    public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        ## TODO: Implement this
     }.
 }.
 

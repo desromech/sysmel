@@ -1,6 +1,7 @@
 public final class AsmStream superclass: Object.
 public class AsmInstructionOperand superclass: Object.
 public class AsmStreamElement superclass: AsmInstructionOperand.
+public final class AsmStackMap superclass: Object.
 public abstract class AsmConstantExpression superclass: Object.
 
 let PrintingDebugInfo := false.
@@ -1016,7 +1017,22 @@ public final class AsmSLEB128Directive superclass: AsmStreamElement; definition:
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
-        error("TODO: Implement this")
+        let more mutable => Boolean := true.
+
+        let currentValue mutable := value.
+        while: more do: {
+            let byte mutable := (currentValue & 127i64) asInt8.
+            currentValue := currentValue >> 7i64.
+            
+            let byteHasSign := (byte & 16r40 i8) ~= 0i8.
+            ((currentValue = 0i64) && byteHasSign not) || (currentValue == -1i64 && byteHasSign) ifTrue: {
+                more := false
+            } ifFalse: {
+                byte := byte | 16r80 i8.
+            }.
+
+            stream nextPut: byte asUInt8
+        }.
     }.
 }.
 
@@ -1348,6 +1364,7 @@ public final class AsmProgramEntity superclass: Object; definition: {
     public field sourceProgramEntity => ProgramEntity.
     public field isTrampoline => Boolean.
     public field contentSymbol => AsmSymbol.
+    public field stackMap => AsmStackMap.
 
     public field debugInformationGenerator => AsmObjectDebugInformationGenerator.
     
@@ -1555,3 +1572,55 @@ AsmObjectDebugInformationGenerator extend: {
         := self subclassResponsibility.
 }.
 
+public abstract class AsmStackMapLocation superclass: Object; definition: {
+
+}.
+
+public final class AsmStackMapLocationRegister superclass: AsmStackMapLocation; definition: {
+    __Meta__ definition: {
+        public method for: (register: AsmRegister) ::=> self
+            := self new register: register; yourself.
+    }.
+
+    public field register => AsmRegister.
+}.
+
+public final class AsmStackMapLocationFrameOffset superclass: AsmStackMapLocation; definition: {
+    public field offset => Int64.
+}.
+
+public final class AsmStackMapLocationCaptureOffset superclass: AsmStackMapLocation; definition: {
+    public field offset => Int64.
+}.
+
+public final class AsmSymbolBindingLocationMap superclass: Object; definition: {
+    public field binding => SymbolBinding.
+    public field location => AsmStackMapLocation.
+}.
+
+AsmStackMap definition: {
+    public field frameBase => AsmStackMapLocation.
+    public field captureBase => AsmStackMapLocation.
+
+    public field bindingDictionary => Dictionary.
+    public field bindings => OrderedCollection.
+
+    public override method initialize => Void := {
+        super initialize.
+        bindingDictionary := Dictionary new.
+        bindings := OrderedCollection new.
+    }.
+
+    public method getMapOrNilForBinding: (binding: SymbolBinding) ::=> AsmSymbolBindingLocationMap
+        := bindingDictionary atOrNil: binding.
+
+    public method setBinding: (binding: SymbolBinding) location: (location: AsmStackMapLocation) ::=> AsmSymbolBindingLocationMap := {
+        let map := AsmSymbolBindingLocationMap new
+            binding: binding;
+            location: location;
+            yourself.
+        bindingDictionary at: binding put: map.
+        bindings add: map.
+        map
+    }.
+}.

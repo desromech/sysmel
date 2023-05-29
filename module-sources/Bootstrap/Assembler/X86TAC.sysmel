@@ -572,6 +572,10 @@ public final class TACX86_64CompilationTarget superclass: TACAsmCompilationTarge
 
     public override method emitStackFrameConstructionWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         let stackFrameLayout := codegen stackFrameLayout.
+        stackFrameLayout isRequired ifTrue: {
+            codegen stackMap frameBase: (AsmStackMapLocationRegister for: X86::RBP)
+        }.
+
         stackFrameLayout temporaryFrameSize > 0u64 ifTrue: {
             codegen textSection
                 x86::sub: X86::RSP with: codegen stackFrameLayout temporaryFrameSize asInt32 asAsmImmediate

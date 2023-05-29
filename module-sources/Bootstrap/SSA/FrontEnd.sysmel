@@ -90,6 +90,7 @@ public final class SSAFunctionCompilationContext superclass: Object; definition:
         let ssaArgument := SSAFunctionArgument new
             name: binding name;
             type: binding type;
+            sourceBinding: binding;
             yourself.
 
         bindingDictionary at: binding put: ssaArgument.
@@ -101,6 +102,7 @@ public final class SSAFunctionCompilationContext superclass: Object; definition:
         let capture := SSAFunctionCapture new
             name: captureBinding name;
             type: captureBinding type;
+            sourceBinding: captureBinding;
             yourself.
 
         bindingDictionary at: captureBinding put: capture.
@@ -110,7 +112,7 @@ public final class SSAFunctionCompilationContext superclass: Object; definition:
 
     public method setValue: (value: SSAValue) forBinding: (binding: SymbolBinding) ::=> Void := {
         self assert: binding isNotNil.
-        bindingDictionary at: binding put: value
+        bindingDictionary at: binding put: value.
     }.
 
     public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) into: (ssaFunction: SSAFunctionDefinition) ::=> Void := {
@@ -363,9 +365,11 @@ ASTLocalDefinitionNode extend: {
             let localVariable := builder alloca: (builder literal: self analyzedValueType) type: self analyzedType.
             builder store: value in: localVariable.
             context setValue: localVariable forBinding: self binding.
+            context builder setDebugValue: value forBinding: self binding.
             localVariable
         } ifFalse: {
             context setValue: value forBinding: self binding.
+            context builder setDebugValue: value forBinding: self binding.
             value
         }
     }.

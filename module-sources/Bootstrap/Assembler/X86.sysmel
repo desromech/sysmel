@@ -134,11 +134,21 @@ AsmInstructionOperand extend: {
 public class AsmX86Register superclass: AsmRegister; definition: {
     public field name => Symbol.
     public field value => UInt8.
+    public field dwarf::value32 => UInt32.
+    public field dwarf::value64 => UInt32.
 
     __Meta__ definition: {
-        public method name: (name: Symbol) value: (value: UInt8) ::=> self
-            := self new name: name; value: value; yourself.
+        public method name: (name: Symbol) value: (value: UInt8) dwarf32: (dwarf32: UInt32) dwarf64: (dwarf64: UInt32) ::=> self
+            := self new name: name; value: value; dwarf::value32: dwarf32; dwarf::value64: dwarf64; yourself.
+
+        public method name: (name: Symbol) value: (value: UInt8) dwarf64: (dwarf64: UInt32) ::=> self
+            := self new name: name; value: value; dwarf::value32: -1u32; dwarf::value64: dwarf64; yourself.
     }.
+
+    public override method dwarf::registerNumberForTarget: (compilationTarget: AsmCompilationTarget) ::=> UInt32
+        := compilationTarget pointerSize = 8sz
+            ifTrue: dwarf::value64
+            ifFalse: dwarf::value32.
 
     public override method x86::valueLow => UInt8
         := value & 7u8.
@@ -393,99 +403,99 @@ public class AsmX86VectorRegister superclass: AsmX86IntRegister; definition: {
     public override method size => Size := 16sz.
 }.
 
-public global X86::AL := AsmX86Int8Register name: #AL value: 0u8.
-public global X86::CL := AsmX86Int8Register name: #CL value: 1u8.
-public global X86::DL := AsmX86Int8Register name: #DL value: 2u8.
-public global X86::BL := AsmX86Int8Register name: #BL value: 3u8.
-public global X86::AH := AsmX86Int8Register name: #AH value: 4u8.
-public global X86::CH := AsmX86Int8Register name: #CH value: 5u8.
-public global X86::DH := AsmX86Int8Register name: #DH value: 6u8.
-public global X86::BH := AsmX86Int8Register name: #BH value: 7u8.
+public global X86::AL := AsmX86Int8Register name: #AL value: 0u8 dwarf32: 0u32 dwarf64: 0u32.
+public global X86::CL := AsmX86Int8Register name: #CL value: 1u8 dwarf32: 1u32 dwarf64: 1u32.
+public global X86::DL := AsmX86Int8Register name: #DL value: 2u8 dwarf32: 2u32 dwarf64: 2u32.
+public global X86::BL := AsmX86Int8Register name: #BL value: 3u8 dwarf32: 3u32 dwarf64: 3u32.
+public global X86::AH := AsmX86Int8Register name: #AH value: 4u8 dwarf32: 0u32 dwarf64: 0u32.
+public global X86::CH := AsmX86Int8Register name: #CH value: 5u8 dwarf32: 1u32 dwarf64: 1u32.
+public global X86::DH := AsmX86Int8Register name: #DH value: 6u8 dwarf32: 2u32 dwarf64: 2u32.
+public global X86::BH := AsmX86Int8Register name: #BH value: 7u8 dwarf32: 3u32 dwarf64: 3u32.
 
-public global X86::RAXB := AsmX86Int8RexRegister name: #RAXB value: 0u8.
-public global X86::RCXB := AsmX86Int8RexRegister name: #RCXB value: 1u8.
-public global X86::RDXB := AsmX86Int8RexRegister name: #RDXB value: 2u8.
-public global X86::RBXB := AsmX86Int8RexRegister name: #RBXB value: 3u8.
-public global X86::RSPB := AsmX86Int8RexRegister name: #RSPB value: 4u8.
-public global X86::RBPB := AsmX86Int8RexRegister name: #RBPB value: 5u8.
-public global X86::RSIB := AsmX86Int8RexRegister name: #RSIB value: 6u8.
-public global X86::RDIB := AsmX86Int8RexRegister name: #RDIB value: 7u8.
-public global X86::R8B := AsmX86Int8RexRegister name: #R8B value: 8u8.
-public global X86::R9B := AsmX86Int8RexRegister name: #R9B value: 9u8.
-public global X86::R10B := AsmX86Int8RexRegister name: #R10B value: 10u8.
-public global X86::R11B := AsmX86Int8RexRegister name: #R11B value: 11u8.
-public global X86::R12B := AsmX86Int8RexRegister name: #R12B value: 12u8.
-public global X86::R13B := AsmX86Int8RexRegister name: #R13B value: 13u8.
-public global X86::R14B := AsmX86Int8RexRegister name: #R14B value: 14u8.
-public global X86::R15B := AsmX86Int8RexRegister name: #R15B value: 15u8.
+public global X86::RAXB := AsmX86Int8RexRegister name: #RAXB value: 0u8  dwarf32: 0u32 dwarf64: 0u32.
+public global X86::RCXB := AsmX86Int8RexRegister name: #RCXB value: 1u8  dwarf32: 1u32 dwarf64: 1u32.
+public global X86::RDXB := AsmX86Int8RexRegister name: #RDXB value: 2u8  dwarf32: 2u32 dwarf64: 2u32.
+public global X86::RBXB := AsmX86Int8RexRegister name: #RBXB value: 3u8  dwarf32: 3u32 dwarf64: 3u32.
+public global X86::RSPB := AsmX86Int8RexRegister name: #RSPB value: 4u8  dwarf32: 4u32 dwarf64: 7u32.
+public global X86::RBPB := AsmX86Int8RexRegister name: #RBPB value: 5u8  dwarf32: 5u32 dwarf64: 6u32.
+public global X86::RSIB := AsmX86Int8RexRegister name: #RSIB value: 6u8  dwarf32: 6u32 dwarf64: 4u32.
+public global X86::RDIB := AsmX86Int8RexRegister name: #RDIB value: 7u8  dwarf32: 7u32 dwarf64: 5u32.
+public global X86::R8B := AsmX86Int8RexRegister  name: #R8B  value: 8u8  dwarf64: 8u32.
+public global X86::R9B := AsmX86Int8RexRegister  name: #R9B  value: 9u8  dwarf64: 9u32.
+public global X86::R10B := AsmX86Int8RexRegister name: #R10B value: 10u8 dwarf64: 10u32.
+public global X86::R11B := AsmX86Int8RexRegister name: #R11B value: 11u8 dwarf64: 11u32.
+public global X86::R12B := AsmX86Int8RexRegister name: #R12B value: 12u8 dwarf64: 12u32.
+public global X86::R13B := AsmX86Int8RexRegister name: #R13B value: 13u8 dwarf64: 13u32.
+public global X86::R14B := AsmX86Int8RexRegister name: #R14B value: 14u8 dwarf64: 14u32.
+public global X86::R15B := AsmX86Int8RexRegister name: #R15B value: 15u8 dwarf64: 15u32.
 
-public global X86::AX := AsmX86Int16Register name: #AX value: 0u8.
-public global X86::CX := AsmX86Int16Register name: #CX value: 1u8.
-public global X86::DX := AsmX86Int16Register name: #DX value: 2u8.
-public global X86::BX := AsmX86Int16Register name: #BX value: 3u8.
-public global X86::SP := AsmX86Int16Register name: #SP value: 4u8.
-public global X86::BP := AsmX86Int16Register name: #BP value: 5u8.
-public global X86::SI := AsmX86Int16Register name: #SI value: 6u8.
-public global X86::DI := AsmX86Int16Register name: #DI value: 7u8.
-public global X86::R8W := AsmX86Int16Register name: #R8W value: 8u8.
-public global X86::R9W := AsmX86Int16Register name: #R9W value: 9u8.
-public global X86::R10W := AsmX86Int16Register name: #R10W value: 10u8.
-public global X86::R11W := AsmX86Int16Register name: #R11W value: 11u8.
-public global X86::R12W := AsmX86Int16Register name: #R12W value: 12u8.
-public global X86::R13W := AsmX86Int16Register name: #R13W value: 13u8.
-public global X86::R14W := AsmX86Int16Register name: #R14W value: 14u8.
-public global X86::R15W := AsmX86Int16Register name: #R15W value: 15u8.
+public global X86::AX := AsmX86Int16Register   name: #AX   value:  0u8 dwarf32: 0u32 dwarf64: 0u32.
+public global X86::CX := AsmX86Int16Register   name: #CX   value:  1u8 dwarf32: 1u32 dwarf64: 1u32.
+public global X86::DX := AsmX86Int16Register   name: #DX   value:  2u8 dwarf32: 2u32 dwarf64: 2u32.
+public global X86::BX := AsmX86Int16Register   name: #BX   value:  3u8 dwarf32: 3u32 dwarf64: 3u32.
+public global X86::SP := AsmX86Int16Register   name: #SP   value:  4u8 dwarf32: 4u32 dwarf64: 7u32.
+public global X86::BP := AsmX86Int16Register   name: #BP   value:  5u8 dwarf32: 5u32 dwarf64: 6u32.
+public global X86::SI := AsmX86Int16Register   name: #SI   value:  6u8 dwarf32: 6u32 dwarf64: 4u32.
+public global X86::DI := AsmX86Int16Register   name: #DI   value:  7u8 dwarf32: 7u32 dwarf64: 5u32.
+public global X86::R8W := AsmX86Int16Register  name: #R8W  value:  8u8 dwarf64: 8u32.
+public global X86::R9W := AsmX86Int16Register  name: #R9W  value:  9u8 dwarf64: 9u32.
+public global X86::R10W := AsmX86Int16Register name: #R10W value: 10u8 dwarf64: 10u32.
+public global X86::R11W := AsmX86Int16Register name: #R11W value: 11u8 dwarf64: 11u32.
+public global X86::R12W := AsmX86Int16Register name: #R12W value: 12u8 dwarf64: 12u32.
+public global X86::R13W := AsmX86Int16Register name: #R13W value: 13u8 dwarf64: 13u32.
+public global X86::R14W := AsmX86Int16Register name: #R14W value: 14u8 dwarf64: 14u32.
+public global X86::R15W := AsmX86Int16Register name: #R15W value: 15u8 dwarf64: 15u32.
 
-public global X86::EAX := AsmX86Int32Register name: #EAX value: 0u8.
-public global X86::ECX := AsmX86Int32Register name: #ECX value: 1u8.
-public global X86::EDX := AsmX86Int32Register name: #EDX value: 2u8.
-public global X86::EBX := AsmX86Int32Register name: #EBX value: 3u8.
-public global X86::ESP := AsmX86Int32Register name: #ESP value: 4u8.
-public global X86::EBP := AsmX86Int32Register name: #EBP value: 5u8.
-public global X86::ESI := AsmX86Int32Register name: #ESI value: 6u8.
-public global X86::EDI := AsmX86Int32Register name: #EDI value: 7u8.
-public global X86::R8D := AsmX86Int32Register name: #R8D value: 8u8.
-public global X86::R9D := AsmX86Int32Register name: #R9D value: 9u8.
-public global X86::R10D := AsmX86Int32Register name: #R10D value: 10u8.
-public global X86::R11D := AsmX86Int32Register name: #R11D value: 11u8.
-public global X86::R12D := AsmX86Int32Register name: #R12D value: 12u8.
-public global X86::R13D := AsmX86Int32Register name: #R13D value: 13u8.
-public global X86::R14D := AsmX86Int32Register name: #R14D value: 14u8.
-public global X86::R15D := AsmX86Int32Register name: #R15D value: 15u8.
+public global X86::EAX := AsmX86Int32Register  name: #EAX  value:  0u8 dwarf32: 0u32 dwarf64: 0u32.
+public global X86::ECX := AsmX86Int32Register  name: #ECX  value:  1u8 dwarf32: 1u32 dwarf64: 1u32.
+public global X86::EDX := AsmX86Int32Register  name: #EDX  value:  2u8 dwarf32: 2u32 dwarf64: 2u32.
+public global X86::EBX := AsmX86Int32Register  name: #EBX  value:  3u8 dwarf32: 3u32 dwarf64: 3u32.
+public global X86::ESP := AsmX86Int32Register  name: #ESP  value:  4u8 dwarf32: 4u32 dwarf64: 7u32.
+public global X86::EBP := AsmX86Int32Register  name: #EBP  value:  5u8 dwarf32: 5u32 dwarf64: 6u32.
+public global X86::ESI := AsmX86Int32Register  name: #ESI  value:  6u8 dwarf32: 6u32 dwarf64: 4u32.
+public global X86::EDI := AsmX86Int32Register  name: #EDI  value:  7u8 dwarf32: 7u32 dwarf64: 5u32.
+public global X86::R8D := AsmX86Int32Register  name: #R8D  value:  8u8 dwarf64: 8u32.
+public global X86::R9D := AsmX86Int32Register  name: #R9D  value:  9u8 dwarf64: 9u32.
+public global X86::R10D := AsmX86Int32Register name: #R10D value: 10u8 dwarf64: 10u32.
+public global X86::R11D := AsmX86Int32Register name: #R11D value: 11u8 dwarf64: 11u32.
+public global X86::R12D := AsmX86Int32Register name: #R12D value: 12u8 dwarf64: 12u32.
+public global X86::R13D := AsmX86Int32Register name: #R13D value: 13u8 dwarf64: 13u32.
+public global X86::R14D := AsmX86Int32Register name: #R14D value: 14u8 dwarf64: 14u32.
+public global X86::R15D := AsmX86Int32Register name: #R15D value: 15u8 dwarf64: 15u32.
 
-public global X86::RAX := AsmX86Int64Register name: #RAX value: 0u8.
-public global X86::RCX := AsmX86Int64Register name: #RCX value: 1u8.
-public global X86::RDX := AsmX86Int64Register name: #RDX value: 2u8.
-public global X86::RBX := AsmX86Int64Register name: #RBX value: 3u8.
-public global X86::RSP := AsmX86Int64Register name: #RSP value: 4u8.
-public global X86::RBP := AsmX86Int64Register name: #RBP value: 5u8.
-public global X86::RSI := AsmX86Int64Register name: #RSI value: 6u8.
-public global X86::RDI := AsmX86Int64Register name: #RDI value: 7u8.
-public global X86::R8 := AsmX86Int64Register name: #R8 value: 8u8.
-public global X86::R9 := AsmX86Int64Register name: #R9 value: 9u8.
-public global X86::R10 := AsmX86Int64Register name: #R10 value: 10u8.
-public global X86::R11 := AsmX86Int64Register name: #R11 value: 11u8.
-public global X86::R12 := AsmX86Int64Register name: #R12 value: 12u8.
-public global X86::R13 := AsmX86Int64Register name: #R13 value: 13u8.
-public global X86::R14 := AsmX86Int64Register name: #R14 value: 14u8.
-public global X86::R15 := AsmX86Int64Register name: #R15 value: 15u8.
+public global X86::RAX := AsmX86Int64Register name: #RAX value:  0u8 dwarf32: 0u32 dwarf64: 0u32.
+public global X86::RCX := AsmX86Int64Register name: #RCX value:  1u8 dwarf32: 1u32 dwarf64: 1u32.
+public global X86::RDX := AsmX86Int64Register name: #RDX value:  2u8 dwarf32: 2u32 dwarf64: 2u32.
+public global X86::RBX := AsmX86Int64Register name: #RBX value:  3u8 dwarf32: 3u32 dwarf64: 3u32.
+public global X86::RSP := AsmX86Int64Register name: #RSP value:  4u8 dwarf32: 4u32 dwarf64: 7u32.
+public global X86::RBP := AsmX86Int64Register name: #RBP value:  5u8 dwarf32: 5u32 dwarf64: 6u32.
+public global X86::RSI := AsmX86Int64Register name: #RSI value:  6u8 dwarf32: 6u32 dwarf64: 4u32.
+public global X86::RDI := AsmX86Int64Register name: #RDI value:  7u8 dwarf32: 7u32 dwarf64: 5u32.
+public global X86::R8 := AsmX86Int64Register  name: #R8  value:  8u8 dwarf64: 8u32.
+public global X86::R9 := AsmX86Int64Register  name: #R9  value:  9u8 dwarf64: 9u32.
+public global X86::R10 := AsmX86Int64Register name: #R10 value: 10u8 dwarf64: 10u32.
+public global X86::R11 := AsmX86Int64Register name: #R11 value: 11u8 dwarf64: 11u32.
+public global X86::R12 := AsmX86Int64Register name: #R12 value: 12u8 dwarf64: 12u32.
+public global X86::R13 := AsmX86Int64Register name: #R13 value: 13u8 dwarf64: 13u32.
+public global X86::R14 := AsmX86Int64Register name: #R14 value: 14u8 dwarf64: 14u32.
+public global X86::R15 := AsmX86Int64Register name: #R15 value: 15u8 dwarf64: 15u32.
 
-public global X86::XMM0 := AsmX86VectorRegister name: #XMM0 value: 0u8.
-public global X86::XMM1 := AsmX86VectorRegister name: #XMM1 value: 1u8.
-public global X86::XMM2 := AsmX86VectorRegister name: #XMM2 value: 2u8.
-public global X86::XMM3 := AsmX86VectorRegister name: #XMM3 value: 3u8.
-public global X86::XMM4 := AsmX86VectorRegister name: #XMM4 value: 4u8.
-public global X86::XMM5 := AsmX86VectorRegister name: #XMM5 value: 5u8.
-public global X86::XMM6 := AsmX86VectorRegister name: #XMM6 value: 6u8.
-public global X86::XMM7 := AsmX86VectorRegister name: #XMM7 value: 7u8.
-public global X86::XMM8 := AsmX86VectorRegister name: #XMM8 value: 8u8.
-public global X86::XMM9 := AsmX86VectorRegister name: #XMM9 value: 9u8.
-public global X86::XMM10 := AsmX86VectorRegister name: #XMM10 value: 10u8.
-public global X86::XMM11 := AsmX86VectorRegister name: #XMM11 value: 11u8.
-public global X86::XMM12 := AsmX86VectorRegister name: #XMM12 value: 12u8.
-public global X86::XMM13 := AsmX86VectorRegister name: #XMM13 value: 13u8.
-public global X86::XMM14 := AsmX86VectorRegister name: #XMM14 value: 14u8.
-public global X86::XMM15 := AsmX86VectorRegister name: #XMM15 value: 15u8.
+public global X86::XMM0 := AsmX86VectorRegister  name: #XMM0  value:  0u8 dwarf32: 21u32 dwarf64: 17u32.
+public global X86::XMM1 := AsmX86VectorRegister  name: #XMM1  value:  1u8 dwarf32: 22u32 dwarf64: 18u32.
+public global X86::XMM2 := AsmX86VectorRegister  name: #XMM2  value:  2u8 dwarf32: 23u32 dwarf64: 19u32.
+public global X86::XMM3 := AsmX86VectorRegister  name: #XMM3  value:  3u8 dwarf32: 24u32 dwarf64: 20u32.
+public global X86::XMM4 := AsmX86VectorRegister  name: #XMM4  value:  4u8 dwarf32: 25u32 dwarf64: 21u32.
+public global X86::XMM5 := AsmX86VectorRegister  name: #XMM5  value:  5u8 dwarf32: 26u32 dwarf64: 22u32.
+public global X86::XMM6 := AsmX86VectorRegister  name: #XMM6  value:  6u8 dwarf32: 27u32 dwarf64: 23u32.
+public global X86::XMM7 := AsmX86VectorRegister  name: #XMM7  value:  7u8 dwarf32: 28u32 dwarf64: 24u32.
+public global X86::XMM8 := AsmX86VectorRegister  name: #XMM8  value:  8u8 dwarf64: 25u32.
+public global X86::XMM9 := AsmX86VectorRegister  name: #XMM9  value:  9u8 dwarf64: 26u32.
+public global X86::XMM10 := AsmX86VectorRegister name: #XMM10 value: 10u8 dwarf64: 27u32.
+public global X86::XMM11 := AsmX86VectorRegister name: #XMM11 value: 11u8 dwarf64: 28u32.
+public global X86::XMM12 := AsmX86VectorRegister name: #XMM12 value: 12u8 dwarf64: 29u32.
+public global X86::XMM13 := AsmX86VectorRegister name: #XMM13 value: 13u8 dwarf64: 30u32.
+public global X86::XMM14 := AsmX86VectorRegister name: #XMM14 value: 14u8 dwarf64: 31u32.
+public global X86::XMM15 := AsmX86VectorRegister name: #XMM15 value: 15u8 dwarf64: 32u32.
 
 public final class AsmX86InstructionDefinition superclass: Object; definition: {
     public field mnemonic => Symbol.
