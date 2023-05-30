@@ -1709,6 +1709,9 @@ Type extend: {
     public virtual method dwarf::typeTag => Dwarf::Constant
         := Dwarf::DW_TAG_pointer_type.
 
+    public virtual method dwarf::typeTagIsPointer => Boolean
+        := true.
+
     public virtual method dwarf::programEntityTag => Dwarf::Constant
         := Dwarf::DW_TAG_class_type.
 
@@ -1789,8 +1792,14 @@ Type extend: {
 
     public virtual method dwarf::fillTypeInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
         self assert: self dwarf::hasSeparateDieForType.
+        self dwarf::typeTagIsPointer ifFalse: {
+            self dwarf::name ifNotNil: {:(String)name :: Void | die name: self dwarf::name}.
+        }.
+
         die byteSize: self valueSize asUInt64.
-        die type: (debugGenerator getOrCreateDieForProgramEntity: self).
+        self dwarf::typeTagIsPointer ifTrue: {
+            die type: (debugGenerator getOrCreateDieForProgramEntity: self).
+        }
     }.
 }.
 
@@ -1851,44 +1860,53 @@ ReferenceType extend: {
 }.
 
 PrimitiveValueType extend: {
+    public override method dwarf::hasSeparateDieForType => Boolean
+        := true.
+
+    public override method dwarf::typeTag => Dwarf::Constant
+        := Dwarf::DW_TAG_base_type.
+
+    public override method dwarf::typeTagIsPointer => Boolean
+        := false.
+
     public override method dwarf::canHaveMemberFields => Boolean
         := false.
 
-    public virtual method dwarf::programEntityTag => Dwarf::Constant
-        := Dwarf::DW_TAG_base_type.
+    public override method dwarf::programEntityTag => Dwarf::Constant
+        := Dwarf::DW_TAG_structure_type.
 }.
 
 PrimitiveCharacter __type__ extend: {
-    public override method dwarf::fillProgramEntityInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
-        super dwarf::fillProgramEntityInfo: die with: debugGenerator.
+    public override method dwarf::fillTypeInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+        super dwarf::fillTypeInfo: die with: debugGenerator.
         die encodingUnsignedChar
     }.
 }.
 
 PrimitiveSignedInteger __type__ extend: {
-    public override method dwarf::fillProgramEntityInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
-        super dwarf::fillProgramEntityInfo: die with: debugGenerator.
+    public override method dwarf::fillTypeInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+        super dwarf::fillTypeInfo: die with: debugGenerator.
         die encodingSigned
     }.
 }.
 
 PrimitiveUnsignedInteger __type__ extend: {
-    public override method dwarf::fillProgramEntityInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
-        super dwarf::fillProgramEntityInfo: die with: debugGenerator.
+    public override method dwarf::fillTypeInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+        super dwarf::fillTypeInfo: die with: debugGenerator.
         die encodingUnsigned
     }.
 }.
 
 PrimitiveFloat __type__ extend: {
-    public override method dwarf::fillProgramEntityInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
-        super dwarf::fillProgramEntityInfo: die with: debugGenerator.
+    public override method dwarf::fillTypeInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+        super dwarf::fillTypeInfo: die with: debugGenerator.
         die encodingFloat
     }.
 }.
 
 Boolean __type__ extend: {
-    public override method dwarf::fillProgramEntityInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
-        super dwarf::fillProgramEntityInfo: die with: debugGenerator.
+    public override method dwarf::fillTypeInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+        super dwarf::fillTypeInfo: die with: debugGenerator.
         die encodingBoolean
     }.
 }.
