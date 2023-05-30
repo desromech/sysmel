@@ -349,7 +349,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_tuple_setType((sysbvm_object_tuple_t*)sysbvm_tuple_getType(context, context->roots.metaclassType), context->roots.metaclassType);
 
     // Create the type slot class.
-    context->roots.typeSlotType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.typeSlotType);
+    context->roots.typeSlotType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.programEntityType);
 
     // Create the function class.
     context->roots.functionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.programEntityType);
@@ -602,8 +602,6 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.metaclassType, "Metaclass", SYSBVM_NULL_TUPLE,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.typeSlotType, "TypeSlot", SYSBVM_NULL_TUPLE,
-        "owner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.typeType,
-        "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         "type", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         "referenceType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,

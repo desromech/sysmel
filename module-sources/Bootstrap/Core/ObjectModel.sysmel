@@ -158,6 +158,9 @@ public abstract class ObjectModelVariant superclass: Object; definition: {
     public abstract method objectHeaderSize => UInt64
         := self subclassResponsibility.
 
+    public abstract method objectHeaderType => Type
+        := self subclassResponsibility.
+
     public virtual method isImmediateReference: (reference: Untyped) ::=> Boolean
         := self subclassResponsibility.
 
@@ -198,6 +201,9 @@ public abstract class ObjectModelVariant superclass: Object; definition: {
 public final class ObjectModelVariant32 superclass: ObjectModelVariant; definition: {
     public override method pointerSize => UInt64 := 4u64.
 
+    public override method objectHeaderSize => UInt64 := ObjectModel::TupleHeader32 valueSize asUInt64.
+    public override method objectHeaderType => Type := ObjectModel::TupleHeader32.
+
     let singleton := SelfType new.
 
     public override method isImmediateReference: (reference: Untyped) ::=> Boolean := {
@@ -214,8 +220,8 @@ public final class ObjectModelVariant32 superclass: ObjectModelVariant; definiti
 public final class ObjectModelVariant64 superclass: ObjectModelVariant; definition: {
     public override method pointerSize => UInt64 := 8u64.
 
-    public override method objectHeaderSize => UInt64
-        := ObjectModel::TupleHeader64 valueSize asUInt64.
+    public override method objectHeaderSize => UInt64 := ObjectModel::TupleHeader64 valueSize asUInt64.
+    public override method objectHeaderType => Type := ObjectModel::TupleHeader64.
 
     public override method isImmediateReference: (reference: Untyped) ::=> Boolean := {
         let type => Type := RawTuple::type(reference).
@@ -243,7 +249,7 @@ Type extend: {
         := objectModel objectHeaderSize.
 }.
 
-PointerLikeType extend: {
+ValueType extend: {
     public override method objectHeaderSizeForObjectModel: (objectModel: ObjectModelVariant) ::=> Size
         := 0sz.
 }.

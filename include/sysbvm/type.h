@@ -115,9 +115,7 @@ typedef struct sysbvm_valueMetatype_s
 
 typedef struct sysbvm_typeSlot_s
 {
-    sysbvm_tuple_header_t header;
-    sysbvm_tuple_t owner;
-    sysbvm_tuple_t name;
+    sysbvm_programEntity_t super;
     sysbvm_tuple_t flags;
     sysbvm_tuple_t type;
     sysbvm_tuple_t referenceType;

@@ -2122,7 +2122,7 @@ TypeSlot
     } withEagerAnalysis;
     withSelector: #validOffset addMethod: {:(TypeSlot)self :: Size |
         let: #owner with: self owner.
-        if: owner ~~ nil then: (owner ensureLayoutIsComputed).
+        if: owner ~~ nil then: ((owner downCastTo: Type) ensureLayoutIsComputed).
         self offset.
     }.
 

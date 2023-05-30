@@ -833,6 +833,12 @@ Dwarf::DebugInfoEntry definition: {
     public method byteSize: (value: UInt64) ::=> Dwarf::DebugInfoEntryAttribute
         := self addAttribute: Dwarf::DW_AT_byte_size uleb128: value.
 
+    public method accessibility: (value: Dwarf::Constant) ::=> Dwarf::DebugInfoEntryAttribute
+        := self addAttribute: Dwarf::DW_AT_accessibility uleb128: value value asUInt64.
+
+    public method dataMemberLocation: (value: UInt64) ::=> Dwarf::DebugInfoEntryAttribute
+        := self addAttribute: Dwarf::DW_AT_data_member_location uleb128: value.
+
     public method declFile: (value: UInt32) ::=> Dwarf::DebugInfoEntryAttribute
         := self addAttribute: Dwarf::DW_AT_decl_file uleb128: value asUInt64.
 
@@ -1732,8 +1738,47 @@ Type extend: {
         (debugGenerator getOrCreateDieForProgramEntityOwner: self dwarf::validOwner) addChild: programEntityDie.
         self dwarf::name ifNotNil: {:(String)name :: Void | programEntityDie name: self dwarf::name}.
         self dwarf::fillProgramEntityInfo: programEntityDie with: debugGenerator.
+        self dwarf::canHaveMemberFields ifTrue: {
+            self dwarf::makeMemberInformationIn: programEntityDie with: debugGenerator
+        }.
 
         programEntityDie
+    }.
+
+    public virtual method dwarf::computeMemberBaseOffsetWith: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Size
+        := self objectHeaderSizeForObjectModel: debugGenerator compilationTarget objectModel.
+
+    public virtual method dwarf::makeMemberInformationIn: (programEntityDie: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+        supertype ifNil: {
+            self isValueType ifFalse: {
+                let objectHeaderType := debugGenerator compilationTarget objectModel objectHeaderType.
+                objectHeaderType ifNotNil: {
+                    let objectHeader := Dwarf::DebugInfoEntry tag: Dwarf::DW_TAG_member.
+                    programEntityDie addChild: objectHeader.
+                    objectHeader
+                        name: "__objectHeader__";
+                        type: (debugGenerator getOrCreateDieForType: objectHeaderType);
+                        dataMemberLocation: 0u64;
+                        accessibility: Dwarf::DW_ACCESS_private
+
+                }
+            }.
+        } ifNotNil: {
+            ## Only add the inheritance if the value typeness does not change.
+            supertype isValueType = self isValueType ifTrue: {
+                let inheritance := Dwarf::DebugInfoEntry tag: Dwarf::DW_TAG_inheritance.
+                programEntityDie addChild: inheritance.
+                inheritance
+                    type: (debugGenerator getOrCreateDieForProgramEntity: supertype);
+                    dataMemberLocation: 0u64;
+                    accessibility: Dwarf::DW_ACCESS_public
+            }.
+        }.
+
+        ## Make sure the members are created.
+        self validSlots do: {:(TypeSlot)eachSlot :: Void |
+            debugGenerator getOrCreateDieForProgramEntity: eachSlot
+        }.
     }.
 
     public virtual method dwarf::fillProgramEntityInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
@@ -1744,6 +1789,27 @@ Type extend: {
         self assert: self dwarf::hasSeparateDieForType.
         die byteSize: self valueSize asUInt64.
         die type: (debugGenerator getOrCreateDieForProgramEntity: self).
+    }.
+}.
+
+TypeSlot extend: {
+    public override method dwarf::createDieWith: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Dwarf::DebugInfoEntry := {
+        let ownerDie := debugGenerator getOrCreateDieForProgramEntity: owner.
+        ownerDie ifNotNil: {
+            let member := Dwarf::DebugInfoEntry tag: Dwarf::DW_TAG_member.
+            ownerDie addChild: member.
+            debugGenerator setProgramEntity: self die: member.
+            self name ifNotNil: (member name: name asString).
+            member type: (debugGenerator getOrCreateDieForType: self type).
+            let ownerType := owner downCastTo: Type.
+            member dataMemberLocation: ((ownerType dwarf::computeMemberBaseOffsetWith: debugGenerator) + self validOffset) asUInt64.
+
+            member
+        }
+    }.
+
+    public virtual method dwarf::makeMemberFor: (ownerDie: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Dwarf::DebugInfoEntry := {
+        let memberEntry := Dwarf::DebugInfoEntry tag: Dwarf::DW_TAG_member
     }.
 }.
 

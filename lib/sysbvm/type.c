@@ -17,8 +17,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_typeSlot_create(sysbvm_context_t *context, sysb
 {
     sysbvm_typeSlot_t* result = (sysbvm_typeSlot_t*)sysbvm_context_allocatePointerTuple(context, context->roots.typeSlotType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_typeSlot_t));
     result->flags = flags;
-    result->owner = owner;
-    result->name = name;
+    result->super.owner = owner;
+    result->super.name = name;
     result->type = type;
     result->localIndex = sysbvm_tuple_size_encode(context, localIndex);
     result->index = sysbvm_tuple_size_encode(context, index);
@@ -718,8 +718,8 @@ SYSBVM_API void sysbvm_type_buildSlotDictionary(sysbvm_context_t *context, sysbv
     for(size_t i = 0; i < slotCount; ++i)
     {
         sysbvm_typeSlot_t *typeSlot = (sysbvm_typeSlot_t*)sysbvm_array_at(typeObject->slots, i);
-        if(typeSlot->name)
-            sysbvm_methodDictionary_atPut(context, typeObject->slotDictionary, typeSlot->name, (sysbvm_tuple_t)typeSlot);
+        if(typeSlot->super.name)
+            sysbvm_methodDictionary_atPut(context, typeObject->slotDictionary, typeSlot->super.name, (sysbvm_tuple_t)typeSlot);
     }
 }
 
@@ -1408,7 +1408,7 @@ void sysbvm_type_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::fallbackMethodDictionary", sysbvm_tuple_integer_encodeSmall(SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_type_tuple_t, fallbackMethodDictionary)));
 
     // Export the type slot layout. This is used by the bootstraping algorithm for creating the accessors.
-    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlot::Layout::name", sysbvm_tuple_integer_encodeSmall(SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_typeSlot_t, name)));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlot::Layout::name", sysbvm_tuple_integer_encodeSmall(SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_typeSlot_t, super.name)));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlot::Layout::flags", sysbvm_tuple_integer_encodeSmall(SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_typeSlot_t, flags)));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlot::Layout::type", sysbvm_tuple_integer_encodeSmall(SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_typeSlot_t, type)));
 

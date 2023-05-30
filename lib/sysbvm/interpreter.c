@@ -942,7 +942,7 @@ static sysbvm_tuple_t sysbvm_astDownCastNode_primitiveAnalyze(sysbvm_context_t *
         gcFrame.type = sysbvm_type_getCanonicalPendingInstanceType(context, gcFrame.typeExpressionType);
     }
 
-    gcFrame.valueExpression = sysbvm_interpreter_analyzeASTWithDirectTypeWithEnvironment(context, gcFrame.downCastNode->valueExpression, *environment);
+    gcFrame.valueExpression = sysbvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.downCastNode->valueExpression, *environment);
     gcFrame.downCastNode->valueExpression = gcFrame.valueExpression;
     SYSBVM_ASSERT(gcFrame.type);
     gcFrame.downCastNode->super.analyzedType = gcFrame.type;
