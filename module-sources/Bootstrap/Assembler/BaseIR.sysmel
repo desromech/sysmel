@@ -1477,8 +1477,8 @@ public final class AsmStreamBuilder superclass: Object; definition: {
     public method cfiEndPrologue => AsmCFIEndPrologueDirective
         := self addElement: (AsmCFIEndPrologueDirective new).
 
-    public method cfiBeginEpilogue => AsmCFIBeginProcedureDirective
-        := self addElement: (AsmCFIBeginProcedureDirective new).
+    public method cfiBeginEpilogue => AsmCFIBeginEpilogueDirective
+        := self addElement: (AsmCFIBeginEpilogueDirective new).
 
     public method cfiEndEpilogue => AsmCFIEndEpilogueDirective
         := self addElement: (AsmCFIEndEpilogueDirective new).
