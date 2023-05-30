@@ -6,6 +6,8 @@ public abstract class AsmObjectCodeRelocation superclass: Object.
 public abstract class AsmObjectFileWriter superclass: Object.
 public abstract class AsmObjectDebugInformationGenerator superclass: Object.
 public final class AsmSymbol superclass: Object.
+public class AsmInstructionOperand superclass: Object.
+public class AsmRegister superclass: AsmInstructionOperand.
 
 public abstract class AsmCompilationTarget superclass: Object; definition: {
     public field operatingSystemName => Symbol.
@@ -44,6 +46,46 @@ public abstract class AsmCompilationTarget superclass: Object; definition: {
         := self subclassResponsibility.
 }.
 
+public abstract class AsmCallFrameInformationInstruction superclass: Object; definition: {
+    public field address => UInt64.
+}.
+
+public final class AsmCallFrameInformationEndPrologueInstruction superclass: AsmCallFrameInformationInstruction.
+public final class AsmCallFrameInformationBeginEpilogueInstruction superclass: AsmCallFrameInformationInstruction.
+public final class AsmCallFrameInformationEndEpilogueInstruction superclass: AsmCallFrameInformationInstruction.
+
+public final class AsmCallFrameInformationPushRegisterInstruction superclass: AsmCallFrameInformationInstruction; definition: {
+    public field register => AsmRegister.
+}.
+
+public final class AsmCallFrameInformationPopRegisterInstruction superclass: AsmCallFrameInformationInstruction; definition: {
+    public field register => AsmRegister.
+}.
+
+public final class AsmCallFrameInformationSaveFramePointerInstruction superclass: AsmCallFrameInformationInstruction; definition: {
+    public field register => AsmRegister.
+}.
+
+public final class AsmCallFrameInformationRestoreFramePointerInstruction superclass: AsmCallFrameInformationInstruction; definition: {
+    public field register => AsmRegister.
+    public field offset => Int64.
+}.
+
+public final class AsmCallFrameInformationStackSizeAdvanceInstruction superclass: AsmCallFrameInformationInstruction; definition: {
+    public field increment => Int64.
+}.
+
+public final class AsmFrameDescriptionInformation superclass: Object; definition: {
+    public field startOffset => Size.
+    public field endOffset => Size.
+
+    public field instructions => OrderedCollection.
+
+    public override method initialize => Void := {
+        instructions := OrderedCollection new.
+    }.
+}.
+
 AsmObjectCodeSection definition: {
     public field name => Symbol.
     public field data => ByteArray.
@@ -57,9 +99,12 @@ AsmObjectCodeSection definition: {
     public field loaded => Boolean.
 
     public field relocations => Array.
+    public field frameDescriptions => Array.
 
     public field offsetOfEncodedElementInByteStream => Size.
     public field newRelocations => OrderedCollection.
+    public field newFrameDescriptions => OrderedCollection.
+    public field currentFrameDescription => AsmFrameDescriptionInformation.
 
     public field debugSourcePositions => Array.
     public field debugSourceNodes => Array.
@@ -76,6 +121,7 @@ AsmObjectCodeSection definition: {
         alignment := 1sz.
         writeOffset := 0sz.
         relocations := #().
+        frameDescriptions := #().
     }.
 
     public method increaseSizeBy: (extraSize: Size) ::=> Void := {
@@ -194,6 +240,7 @@ AsmObjectCodeSection definition: {
         size := size alignedTo: alignment.
         data := ByteArray new: size.
         newRelocations := OrderedCollection new.
+        newFrameDescriptions := OrderedCollection new.
         writeOffset := 0sz.
     }.
 
@@ -209,6 +256,8 @@ AsmObjectCodeSection definition: {
         self alignWriteOffsetTo: alignment unreachable: true compilationTarget: compilationTarget.
         relocations := newRelocations asArray.
         newRelocations := nil.
+        frameDescriptions := newFrameDescriptions asArray.
+        newFrameDescriptions := nil.
     }.
 
     public override method sizeOfByteEncoding => Size := data size.
@@ -267,6 +316,68 @@ AsmObjectCodeSection definition: {
         newDebugTuples := nil.
         newDebugListsDictionary := nil.
         newPCToDebugListTable := nil.
+    }.
+
+    public method cfiBeginProcedure => Void := {
+        currentFrameDescription := AsmFrameDescriptionInformation new
+            startOffset: writeOffset;
+            yourself.
+    }.
+
+    public method cfiEndProcedure => Void := {
+        currentFrameDescription endOffset: writeOffset.
+        currentFrameDescription := nil.
+    }.
+
+    public method cfiEndPrologue => Void := {
+        currentFrameDescription instructions add: (AsmCallFrameInformationEndPrologueInstruction new
+            address: writeOffset asUInt64;
+            yourself).
+    }.
+
+    public method cfiBeginEpilogue => Void := {
+        currentFrameDescription instructions add: (AsmCallFrameInformationBeginEpilogueInstruction new
+            address: writeOffset asUInt64;
+            yourself).
+    }.
+
+    public method cfiEndEpilogue => Void := {
+        currentFrameDescription instructions add: (AsmCallFrameInformationEndEpilogueInstruction new
+            address: writeOffset asUInt64;
+            yourself).
+    }.
+
+    public method cfiPushRegister: (register: AsmRegister) ::=> Void := {
+        currentFrameDescription instructions add: (AsmCallFrameInformationPushRegisterInstruction new
+            address: writeOffset asUInt64;
+            register: register;
+            yourself).
+    }.
+
+    public method cfiPopRegister: (register: AsmRegister) ::=> Void := {
+        currentFrameDescription instructions add: (AsmCallFrameInformationPopRegisterInstruction new
+            address: writeOffset asUInt64;
+            register: register;
+            yourself).
+    }.
+
+    public method cfiSaveFramePointer: (register: AsmRegister) ::=> Void := {
+        currentFrameDescription instructions add: (AsmCallFrameInformationSaveFramePointerInstruction new
+            register: register;
+            yourself).
+    }.
+
+    public method cfiRestoreFramePointer: (register: AsmRegister) offset: (offset: Int64) ::=> Void := {
+        currentFrameDescription instructions add: (AsmCallFrameInformationRestoreFramePointerInstruction new
+            register: register;
+            offset: offset;
+            yourself).
+    }.
+
+    public method cfiStackSizeAdvance: (increment: Int64) ::=> Void := {
+        currentFrameDescription instructions add: (AsmCallFrameInformationStackSizeAdvanceInstruction new
+            increment: increment;
+            yourself).
     }.
 }.
 
@@ -597,6 +708,17 @@ AsmObjectCodeStream definition: {
 
     public abstract method recordRelocations: (relocations: Collection) ::=> Void
         := self subclassResponsibility.
+
+    public virtual method cfiBeginProcedure => Void := {}.
+    public virtual method cfiEndProcedure => Void := {}.
+    public virtual method cfiEndPrologue => Void := {}.
+    public virtual method cfiBeginEpilogue => Void := {}.
+    public virtual method cfiEndEpilogue => Void := {}.
+    public virtual method cfiPushRegister: (register: AsmRegister) ::=> Void := {}.
+    public virtual method cfiPopRegister: (register: AsmRegister) ::=> Void := {}.
+    public virtual method cfiSaveFramePointer: (register: AsmRegister) ::=> Void := {}.
+    public virtual method cfiRestoreFramePointer: (register: AsmRegister) offset: (offset: Int64) ::=> Void := {}.
+    public virtual method cfiStackSizeAdvance: (increment: Int64) ::=> Void := {}.
 }.
 
 AsmObjectCodeSizeStream definition: {
@@ -744,5 +866,45 @@ AsmObjectCodeWriteStream definition: {
         relocations do: {:(AsmObjectCodeRelocation)eachRelocation :: Void |
             self recordRelocation: eachRelocation copy
         }
+    }.
+
+    public override method cfiBeginProcedure => Void := {
+        activeSection cfiBeginProcedure
+    }.
+
+    public override method cfiEndProcedure => Void := {
+        activeSection cfiEndProcedure
+    }.
+
+    public override method cfiEndPrologue => Void := {
+        activeSection cfiEndPrologue
+    }.
+
+    public override method cfiBeginEpilogue => Void := {
+        activeSection cfiBeginEpilogue
+    }.
+
+    public override method cfiEndEpilogue => Void := {
+        activeSection cfiEndEpilogue
+    }.
+
+    public override method cfiPushRegister: (register: AsmRegister) ::=> Void := {
+        activeSection cfiPushRegister: register
+    }.
+
+    public override method cfiPopRegister: (register: AsmRegister) ::=> Void := {
+        activeSection cfiPopRegister: register
+    }.
+
+    public override method cfiSaveFramePointer: (register: AsmRegister) ::=> Void := {
+        activeSection cfiSaveFramePointer: register
+    }.
+
+    public override method cfiRestoreFramePointer: (register: AsmRegister) offset: (offset: Int64) ::=> Void := {
+        activeSection cfiRestoreFramePointer: register offset: offset
+    }.
+
+    public override method cfiStackSizeAdvance: (increment: Int64) ::=> Void := {
+        activeSection cfiStackSizeAdvance: increment        
     }.
 }.

@@ -314,21 +314,30 @@ public final class TACX86CompilationTarget superclass: TACAsmCompilationTarget; 
     public override method defaultCallingConvention => TACCallingConvention
         := TAC::X86::CDeclCallingConvention.
 
-    public override method emitFunctionPrologueWith: (generator: TACFunctionAsmCodeGenerator) ::=> Void := {
-        generator textSection
-            x86::endbr32;
-            x86::push: X86::EBP;
-            x86::mov: X86::EBP src: X86::ESP
+    public override method emitFunctionPrologueWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::endbr32.
+
+        codegen stackFrameLayout isRequired ifTrue: {
+            codegen textSection
+                x86::push: X86::EBP;
+                cfiPushRegister: X86::EBP;
+                x86::mov: X86::EBP src: X86::ESP;
+                cfiSaveFramePointer: X86::EBP.
+        }.
+
     }.
 
-    public override method emitStackFrameConstructionWith: (generator: TACFunctionAsmCodeGenerator) ::=> Void := {
+    public override method emitStackFrameConstructionWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
 
+        codegen textSection cfiEndPrologue
     }.
 
     public override method emitFunctionEpilogueWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        codegen textSection
-            x86::mov: X86::ESP src: X86::EBP;
-            x86::pop: X86::EBP.
+        codegen stackFrameLayout isRequired ifTrue: {
+            codegen textSection
+                x86::mov: X86::ESP src: X86::EBP;
+                x86::pop: X86::EBP.
+        }.
     }.
 
     public override method emitMoveValue: (value: TACValue) intoLocation: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
@@ -500,7 +509,9 @@ public final class TACSysVX86_64CallingConvention superclass: TACCallingConventi
 
         ## Clear the stack arguments.
         alignedStackSize > 0u64 ifTrue: {
-            codegen textSection x86::add: X86::RSP with: alignedStackSize asInt32 asAsmImmediate
+            codegen textSection
+                x86::add: X86::RSP with: alignedStackSize asInt32 asAsmImmediate;
+                cfiStackSizeAdvance: alignedStackSize asInt64 negated
         }.
     }.
 
@@ -565,9 +576,11 @@ public final class TACX86_64CompilationTarget superclass: TACAsmCompilationTarge
         stackFrameLayout isRequired ifTrue: {
             codegen textSection
                 x86::push: X86::RBP;
-                x86::mov: X86::RBP src: X86::RSP.
-
+                cfiPushRegister: X86::RBP;
+                x86::mov: X86::RBP src: X86::RSP;
+                cfiSaveFramePointer: X86::RBP.
         }.
+
     }.
 
     public override method emitStackFrameConstructionWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
@@ -576,10 +589,13 @@ public final class TACX86_64CompilationTarget superclass: TACAsmCompilationTarge
             codegen stackMap frameBase: (AsmStackMapLocationRegister for: X86::RBP)
         }.
 
-        stackFrameLayout temporaryFrameSize > 0u64 ifTrue: {
+        let frameSize := stackFrameLayout temporaryFrameSize.
+        frameSize > 0u64 ifTrue: {
             codegen textSection
-                x86::sub: X86::RSP with: codegen stackFrameLayout temporaryFrameSize asInt32 asAsmImmediate
+                x86::sub: X86::RSP with: codegen stackFrameLayout temporaryFrameSize asInt32 asAsmImmediate;
+                cfiStackSizeAdvance: frameSize asInt64
         }.
+        codegen textSection cfiEndPrologue.
         
         codegen emitSpillRegisterArgumentsInStackFrame.
     }.
@@ -588,8 +604,12 @@ public final class TACX86_64CompilationTarget superclass: TACAsmCompilationTarge
         let stackFrameLayout := codegen stackFrameLayout.
         stackFrameLayout isRequired ifTrue: {
             codegen textSection
+                cfiBeginEpilogue;
                 x86::mov: X86::RSP src: X86::RBP;
-                x86::pop: X86::RBP.
+                cfiRestoreFramePointer: X86::RBP offset: 0i64;
+                x86::pop: X86::RBP;
+                cfiPopRegister: X86::RBP;
+                cfiEndEpilogue.
         }.
     }.
 
@@ -669,7 +689,8 @@ TACLocalVariable extend: {
             codegen textSection x86::push: localPointer
         } ifFalse: {
             codegen textSection x86::push: scratchRegister
-        }
+        }.
+        codegen textSection cfiStackSizeAdvance: 8i64.
     }.
 
 }.

@@ -1,5 +1,4 @@
 public final class AsmStream superclass: Object.
-public class AsmInstructionOperand superclass: Object.
 public class AsmStreamElement superclass: AsmInstructionOperand.
 public final class AsmStackMap superclass: Object.
 public abstract class AsmConstantExpression superclass: Object.
@@ -93,7 +92,7 @@ AsmInstructionOperand definition: {
     public abstract method size => Size := self subclassResponsibility.
 }.
 
-public class AsmRegister superclass: AsmInstructionOperand; definition: {
+AsmRegister definition: {
     public override method isRegister => Boolean := true.
     public override method isRegisterOrRegisterAddress => Boolean := true.
 }.
@@ -1160,6 +1159,127 @@ public final class AsmULEB128ConstantExpressionDirective superclass: AsmStreamEl
     }.
 }.
 
+public final class AsmCFIBeginProcedureDirective superclass: AsmStreamElement; definition: {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".cfiBeginProcedure".
+        self printDebugInfoOn: stream.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream cfiBeginProcedure.
+    }.
+}.
+
+public final class AsmCFIEndProcedureDirective superclass: AsmStreamElement; definition: {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".cfiEndProcedure".
+        self printDebugInfoOn: stream.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream cfiEndProcedure.        
+    }.
+}.
+
+public final class AsmCFIEndPrologueDirective superclass: AsmStreamElement; definition: {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".cfiEndPrologue".
+        self printDebugInfoOn: stream.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream cfiEndPrologue.
+    }.
+}.
+
+public final class AsmCFIBeginEpilogueDirective superclass: AsmStreamElement; definition: {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".cfiBeginEpilogue".
+        self printDebugInfoOn: stream.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream cfiBeginEpilogue.
+    }.
+}.
+
+public final class AsmCFIEndEpilogueDirective superclass: AsmStreamElement; definition: {
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".cfiEndEpilogue".
+        self printDebugInfoOn: stream.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream cfiEndEpilogue.
+    }.
+}.
+
+public final class AsmCFIPushRegisterDirective superclass: AsmStreamElement; definition: {
+    public field register => AsmRegister.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".cfiPushRegister "; print: register.
+        self printDebugInfoOn: stream.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream cfiPushRegister: register.
+    }.
+}.
+
+public final class AsmCFIPopRegisterDirective superclass: AsmStreamElement; definition: {
+    public field register => AsmRegister.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".cfiPopRegister "; print: register.
+        self printDebugInfoOn: stream.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream cfiPopRegister: register.
+    }.
+}.
+
+public final class AsmCFISaveFramePointerDirective superclass: AsmStreamElement; definition: {
+    public field register => AsmRegister.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".cfiSaveFramePointer "; print: register.
+        self printDebugInfoOn: stream.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream cfiSaveFramePointer: register.
+    }.
+}.
+
+public final class AsmCFIRestoreFramePointerDirective superclass: AsmStreamElement; definition: {
+    public field register => AsmRegister.
+    public field offset => Int64.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".cfiRestoreFramePointer "; print: register; space; print: offset.
+        self printDebugInfoOn: stream.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream cfiRestoreFramePointer: register offset: offset.
+    }.
+}.
+
+public final class AsmCFIStackSizeAdvanceDirective superclass: AsmStreamElement; definition: {
+    public field increment => Int64.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".cfiStackSizeAdvance "; print: increment.
+        self printDebugInfoOn: stream.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream cfiStackSizeAdvance: increment.
+    }.
+}.
+
 public final class AsmStreamBuilder superclass: Object; definition: {
     public field stream => AsmStream.
 
@@ -1347,6 +1467,47 @@ public final class AsmStreamBuilder superclass: Object; definition: {
         := self addElement: (AsmULEB128ConstantExpressionDirective new
             expression: expression;
             yourself).
+
+    public method cfiBeginProcedure => AsmCFIBeginProcedureDirective
+        := self addElement: (AsmCFIBeginProcedureDirective new).
+
+    public method cfiEndProcedure => AsmCFIEndProcedureDirective
+        := self addElement: (AsmCFIEndProcedureDirective new).
+
+    public method cfiEndPrologue => AsmCFIEndPrologueDirective
+        := self addElement: (AsmCFIEndPrologueDirective new).
+
+    public method cfiBeginEpilogue => AsmCFIBeginProcedureDirective
+        := self addElement: (AsmCFIBeginProcedureDirective new).
+
+    public method cfiEndEpilogue => AsmCFIEndEpilogueDirective
+        := self addElement: (AsmCFIEndEpilogueDirective new).
+
+    public method cfiPushRegister: (register: AsmRegister) ::=> AsmCFIPushRegisterDirective
+        := self addElement: (AsmCFIPushRegisterDirective new
+            register: register;
+            yourself).
+
+    public method cfiPopRegister: (register: AsmRegister) ::=> AsmCFIPopRegisterDirective
+        := self addElement: (AsmCFIPopRegisterDirective new
+            register: register;
+            yourself).
+
+    public method cfiSaveFramePointer: (register: AsmRegister) ::=> AsmCFISaveFramePointerDirective
+        := self addElement: (AsmCFISaveFramePointerDirective new
+            register: register;
+            yourself).
+
+    public method cfiRestoreFramePointer: (register: AsmRegister) offset: (offset: Int64) ::=> AsmCFIRestoreFramePointerDirective
+        := self addElement: (AsmCFIRestoreFramePointerDirective new
+            register: register;
+            offset: offset;
+            yourself).
+
+    public method cfiStackSizeAdvance: (increment: Int64) ::=> AsmCFIStackSizeAdvanceDirective
+        := self addElement: (AsmCFIStackSizeAdvanceDirective new
+            increment: increment;
+            yourself).
 }.
 
 public final class AsmProgramEntity superclass: Object; definition: {
@@ -1365,6 +1526,7 @@ public final class AsmProgramEntity superclass: Object; definition: {
     public field isTrampoline => Boolean.
     public field contentSymbol => AsmSymbol.
     public field stackMap => AsmStackMap.
+    public field isDebuggingInformation => Boolean.
 
     public field debugInformationGenerator => AsmObjectDebugInformationGenerator.
     
@@ -1419,6 +1581,8 @@ public final class AsmProgramEntity superclass: Object; definition: {
     }.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        isDebuggingInformation && PrintingDebugInfo not ifTrue: {return: void}.
+
         streams do: {:(AsmStream)eachStream :: Void |
             stream fullPrint: eachStream
         }.

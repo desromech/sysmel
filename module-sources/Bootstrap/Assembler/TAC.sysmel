@@ -183,9 +183,9 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
         self prepareToGenerateFunction.
 
         self textSection
-            useDebugInfoOfTACValue: functionToGenerate;
             align: moduleGenerator asmTarget indirectBranchTargetAlignment unreachable: true;
             label: symbol;
+            cfiBeginProcedure;
             yourself.
         let exportedSymbols := functionToGenerate exportedSymbols collect: {:(Symbol)symbol :: AsmSymbol |
             AsmSymbol new
@@ -203,12 +203,14 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
             emitStackFrameConstruction;
             generateStackMap.
 
+        self textSection useDebugInfoOfTACValue: functionToGenerate.
+
         function basicBlocksDo: {:(TACBasicBlock)basicBlock :: Void |
             self generateBasicBlock: basicBlock
         }.
 
         self textSection
-            useDebugInfoOfTACValue: functionToGenerate;
+            cfiEndProcedure;
             endLabel: symbol.
         exportedSymbols do: {:(AsmSymbol)eachSymbol :: Void |
             self textSection endLabel: eachSymbol

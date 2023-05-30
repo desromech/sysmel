@@ -1225,6 +1225,7 @@ AsmProgramEntity extend: {
             compileUnit: aBlock.
         
         let debugInfoProgramEntity := self newProgramEntity.
+        debugInfoProgramEntity isDebuggingInformation: true.
         Dwarf::AsmWriter new
             writeCompilationUnit: compileUnit toProgramEntity: debugInfoProgramEntity pointerSize: compilationTarget pointerSize.
 
@@ -1671,6 +1672,7 @@ public final class Dwarf::ObjectDebugInformationGenerator superclass: AsmObjectD
             pcRangeSymbol: module contentSymbol pointerSize: pointerSize.
 
         debugInfoProgramEntity := module newProgramEntity.
+        debugInfoProgramEntity isDebuggingInformation: true.
 
         module allChildrenDo: {:(AsmProgramEntity)eachChild :: Void |
             self generateDebugInfoForProgramEntity: eachChild sourceProgramEntity generatedEntity: eachChild
