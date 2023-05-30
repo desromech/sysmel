@@ -795,10 +795,10 @@ Dwarf::DebugInfoEntry definition: {
             yourself).
 
     public method addAttribute: (attributeName: Dwarf::Constant) dieReference: (value: Dwarf::DebugInfoEntry) ::=> Dwarf::DebugInfoEntryAttribute
-        := self addAttribute: (Dwarf::DebugInfoDIEReferenceAttribute new
+        := value ifNotNil: (self addAttribute: (Dwarf::DebugInfoDIEReferenceAttribute new
             name: attributeName;
             value: value;
-            yourself).
+            yourself)).
 
     public method addAttribute: (attributeName: Dwarf::Constant) locationExpression: (expression: Array) ::=> Dwarf::DebugInfoEntryAttribute
         := self addAttribute: (Dwarf::DebugInfoLocationExpressionAttribute new
@@ -1600,16 +1600,22 @@ public final class Dwarf::ObjectDebugInformationGenerator superclass: AsmObjectD
     public field debugInfoWriter => Dwarf::AsmWriter.
 
     public field programEntityDieDictionary => Dictionary.
+    public field typeDieDictionary => Dictionary.
     public field lineWriter => Dwarf::DebugLineWriter.
 
     public override method initialize => Void := {
         super initialize.
         programEntityDieDictionary := Dictionary new.
+        typeDieDictionary := Dictionary new.
         lineWriter := Dwarf::DebugLineWriter new.
     }.
 
     public method setProgramEntity: (programEntity: ProgramEntity) die: (die: Dwarf::DebugInfoEntry) ::=> Void := {
         programEntityDieDictionary at: programEntity put: die
+    }.
+
+    public method setType: (type: Type) die: (die: Dwarf::DebugInfoEntry) ::=> Void := {
+        typeDieDictionary at: type put: die
     }.
 
     public method getOrCreateDieForProgramEntity: (programEntity: ProgramEntity) ::=> Dwarf::DebugInfoEntry := {
@@ -1620,8 +1626,16 @@ public final class Dwarf::ObjectDebugInformationGenerator superclass: AsmObjectD
         }
     }.
 
+    public method getOrCreateDieForType: (type: Type) ::=> Dwarf::DebugInfoEntry := {
+        type ifNil: {return: nil}.
+
+        typeDieDictionary at: type ifAbsent: {:: Dwarf::DebugInfoEntry |
+            type dwarf::createTypeDieWith: self
+        }
+    }.
+
     public method getOrCreateDieForProgramEntityOwner: (programEntity: ProgramEntity) ::=> Dwarf::DebugInfoEntry
-        := compileUnit.##(self getOrCreateDieForProgramEntity: programEntity) ifNil: compileUnit.
+        := (self getOrCreateDieForProgramEntity: programEntity) ifNil: compileUnit.
 
     public method setDie: (die: Dwarf::DebugInfoEntry) declarationPosition: (sourcePosition: SourcePosition) ::=> Void := {
         let sourceCode := sourcePosition sourceCode.
@@ -1675,100 +1689,155 @@ ProgramEntity extend: {
 }.
 
 Type extend: {
-    public virtual method dwarf::getTypeDieWith: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Dwarf::DebugInfoEntry
-        := debugGenerator getOrCreateDieForProgramEntity: self.
-
     public virtual method dwarf::validOwner => ProgramEntity
         := self owner.
+
+    public virtual method dwarf::validTypeOwner => ProgramEntity
+        := self dwarf::hasSeparateDieForType ifTrue: nil ifFalse: self dwarf::validOwner.
+
+    public virtual method dwarf::hasSeparateDieForType => Boolean
+        := true.
 
     public virtual method dwarf::typeTag => Dwarf::Constant
         := Dwarf::DW_TAG_pointer_type.
 
-    public override method dwarf::createDieWith: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Dwarf::DebugInfoEntry := {
-        let typeDie := Dwarf::DebugInfoEntry tag: self dwarf::typeTag.
-        debugGenerator setProgramEntity: self die: typeDie.
-        (debugGenerator getOrCreateDieForProgramEntityOwner: self dwarf::validOwner) addChild: typeDie.
-        self name ifNotNil: (typeDie name: self name asString).
-        self dwarf::fillTypeInfo: typeDie with: debugGenerator.
+    public virtual method dwarf::programEntityTag => Dwarf::Constant
+        := Dwarf::DW_TAG_class_type.
 
-        typeDie
+    public virtual method dwarf::canHaveMemberFields => Boolean
+        := true.
+
+    public virtual method dwarf::name => String
+        := self name ifNotNil: (self name asString).
+
+    public virtual method dwarf::createTypeDieWith: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Dwarf::DebugInfoEntry := {
+        self dwarf::hasSeparateDieForType ifTrue: {
+            let typeDie := Dwarf::DebugInfoEntry tag: self dwarf::typeTag.
+            debugGenerator setType: self die: typeDie.
+            (debugGenerator getOrCreateDieForProgramEntityOwner: self dwarf::validTypeOwner) addChild: typeDie.
+            self dwarf::fillTypeInfo: typeDie with: debugGenerator.
+            typeDie
+        } ifFalse: {
+            self dwarf::createDieWith: debugGenerator
+        }
+    }.
+
+    public override method dwarf::createDieWith: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Dwarf::DebugInfoEntry := {
+        let programEntityDie := Dwarf::DebugInfoEntry tag: self dwarf::programEntityTag.
+        debugGenerator setProgramEntity: self die: programEntityDie.
+        self dwarf::hasSeparateDieForType ifFalse: {
+            debugGenerator setType: self die: programEntityDie.
+        }.
+
+        (debugGenerator getOrCreateDieForProgramEntityOwner: self dwarf::validOwner) addChild: programEntityDie.
+        self dwarf::name ifNotNil: {:(String)name :: Void | programEntityDie name: self dwarf::name}.
+        self dwarf::fillProgramEntityInfo: programEntityDie with: debugGenerator.
+
+        programEntityDie
+    }.
+
+    public virtual method dwarf::fillProgramEntityInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+        die byteSize: self instanceSize asUInt64
     }.
 
     public virtual method dwarf::fillTypeInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
-        die byteSize: self valueSize asUInt64
+        self assert: self dwarf::hasSeparateDieForType.
+        die byteSize: self valueSize asUInt64.
+        die type: (debugGenerator getOrCreateDieForProgramEntity: self).
     }.
 }.
 
-PointerLikeType extend: {
-    public override method dwarf::fillTypeInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
-        super dwarf::fillTypeInfo: die with: debugGenerator.
+ValueType extend: {
+    public override method dwarf::hasSeparateDieForType => Boolean
+        := false.
+}.
 
-        baseType ifNotNil: {
-            (baseType dwarf::getTypeDieWith: debugGenerator) ifNotNil: {:(Dwarf::DebugInfoEntry)baseType :: Void |
-                die type: baseType
-            }.
-        }.
+PointerLikeType extend: {
+    public override method dwarf::canHaveMemberFields => Boolean
+        := false.
+
+    public override method dwarf::fillProgramEntityInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+        super dwarf::fillProgramEntityInfo: die with: debugGenerator.
+        die type: (debugGenerator getOrCreateDieForType: baseType).
+    }.
+}.
+
+FixedArrayType extend: {
+    public override method dwarf::programEntityTag => Dwarf::Constant
+        := Dwarf::DW_TAG_array_type.
+
+    public override method dwarf::fillProgramEntityInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+        super dwarf::fillProgramEntityInfo: die with: debugGenerator.
+        die type: (debugGenerator getOrCreateDieForType: elementType).
     }.
 }.
 
 PointerType extend: {
-    public override method dwarf::typeTag => Dwarf::Constant
+    public override method dwarf::programEntityTag => Dwarf::Constant
         := Dwarf::DW_TAG_pointer_type.
 }.
 
 ReferenceType extend: {
-    public override method dwarf::typeTag => Dwarf::Constant
+    public override method dwarf::programEntityTag => Dwarf::Constant
         := Dwarf::DW_TAG_reference_type.
 }.
 
 PrimitiveValueType extend: {
-    public override method dwarf::typeTag => Dwarf::Constant
+    public override method dwarf::canHaveMemberFields => Boolean
+        := false.
+
+    public virtual method dwarf::programEntityTag => Dwarf::Constant
         := Dwarf::DW_TAG_base_type.
 }.
 
 PrimitiveCharacter __type__ extend: {
-    public override method dwarf::fillTypeInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
-        super dwarf::fillTypeInfo: die with: debugGenerator.
+    public override method dwarf::fillProgramEntityInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+        super dwarf::fillProgramEntityInfo: die with: debugGenerator.
         die encodingUnsignedChar
     }.
 }.
 
 PrimitiveSignedInteger __type__ extend: {
-    public override method dwarf::fillTypeInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
-        super dwarf::fillTypeInfo: die with: debugGenerator.
+    public override method dwarf::fillProgramEntityInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+        super dwarf::fillProgramEntityInfo: die with: debugGenerator.
         die encodingSigned
     }.
 }.
 
 PrimitiveUnsignedInteger __type__ extend: {
-    public override method dwarf::fillTypeInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
-        super dwarf::fillTypeInfo: die with: debugGenerator.
+    public override method dwarf::fillProgramEntityInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+        super dwarf::fillProgramEntityInfo: die with: debugGenerator.
         die encodingUnsigned
     }.
 }.
 
 PrimitiveFloat __type__ extend: {
-    public override method dwarf::fillTypeInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
-        super dwarf::fillTypeInfo: die with: debugGenerator.
+    public override method dwarf::fillProgramEntityInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+        super dwarf::fillProgramEntityInfo: die with: debugGenerator.
         die encodingFloat
     }.
 }.
 
 Boolean __type__ extend: {
-    public override method dwarf::fillTypeInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
-        super dwarf::fillTypeInfo: die with: debugGenerator.
+    public override method dwarf::fillProgramEntityInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+        super dwarf::fillProgramEntityInfo: die with: debugGenerator.
         die encodingBoolean
     }.
 }.
 
 Void __type__ extend: {
-    public override method dwarf::getTypeDieWith: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Dwarf::DebugInfoEntry
-        := nil.
+    public override method dwarf::createTypeDieWith: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Dwarf::DebugInfoEntry := {
+        debugGenerator setType: self die: nil.
+        nil
+    }.
 }.
 
 Metatype extend: {
     public override method dwarf::validOwner => ProgramEntity
         := thisType ifNotNil: thisType ifNil: owner.
+
+    public override method dwarf::name => String
+        := name isNil && thisType isNotNil ifTrue: ("__Meta__") ifFalse: (super dwarf::name).
 }.
 
 Namespace extend: {
@@ -1794,9 +1863,7 @@ FunctionDefinition extend: {
         sourcePosition ifNotNil: (debugGenerator setDie: subprogram declarationPosition: sourcePosition).
 
         analyzedType ifNotNil: {
-            (analyzedType canonicalResultType dwarf::getTypeDieWith: debugGenerator) ifNotNil: {:(Dwarf::DebugInfoEntry)resultType :: Void |
-                subprogram type: resultType
-            }.
+            subprogram type: (debugGenerator getOrCreateDieForType: analyzedType canonicalResultType)
         }.
 
         subprogram declaredArguments: (analyzedArguments collect: {:(SymbolArgumentBinding)binding :: Dwarf::DebugInfoEntry |
@@ -1805,11 +1872,7 @@ FunctionDefinition extend: {
             subprogram addChild: argument.
 
             binding name ifNotNil: (argument name: binding name asString).
-            binding type ifNotNil: {
-                (binding type dwarf::getTypeDieWith: debugGenerator) ifNotNil: {:(Dwarf::DebugInfoEntry)resultType :: Void |
-                    argument type: resultType
-                }.
-            }.
+            argument type: (debugGenerator getOrCreateDieForType: binding type).
 
             debugGenerator setDie: argument declarationPosition: binding sourcePosition.
 
@@ -1873,13 +1936,9 @@ AsmStackMap extend: {
             let bindingType := binding type.
             bindingLocationMap isMutable && bindingType isReferenceType ifTrue: {
                 let valueType := (bindingType downCastTo: ReferenceType) baseType.
-                (valueType dwarf::getTypeDieWith: debugGenerator) ifNotNil: {:(Dwarf::DebugInfoEntry)resultType :: Void |
-                    variable type: resultType
-                }.
+                variable type: (debugGenerator getOrCreateDieForType: valueType).
             } ifFalse: {
-                (bindingType dwarf::getTypeDieWith: debugGenerator) ifNotNil: {:(Dwarf::DebugInfoEntry)resultType :: Void |
-                    variable type: resultType
-                }.
+                variable type: (debugGenerator getOrCreateDieForType: bindingType).
             }.
         }.
 
