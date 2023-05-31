@@ -23,19 +23,23 @@ SysmelToken definition: {
 
 }.
 
-let Scanner::Whitespace := MonadicParser white plus.
-let Scanner::White := Scanner::Whitespace.
+let Scanner::Whitespace := MonadicParser white plus withoutValue.
+let Scanner::NotNewline := MonadicParser predicate: {:character :: Boolean | ('\n'asChar8 ~= character) && ('\r'asChar8 ~= character)} errorMessage: "Newline found".
+let Scanner::SingleLineComment := ("##" asMonadicParser -- Scanner::NotNewline star withoutValue) withoutValue.
+let Scanner::MultiLineComment := ("#*" asMonadicParser -- "*#" asMonadicParser not star withoutValue -- "*#" asMonadicParser) withoutValue.
+
+let Scanner::White := (Scanner::Whitespace | Scanner::SingleLineComment | Scanner::MultiLineComment) plus withoutValue.
 
 let Scanner::IdentifierPattern := (MonadicParser identifierStart -- MonadicParser identifierMiddle star withoutValue) withoutValue.
 let Scanner::IdentifierScopePattern := (MonadicParser identifierStart -- MonadicParser identifierMiddle star withoutValue -- "::" asMonadicParser) withoutValue.
 
-let Scanner::Identifier := Scanner::IdentifierScopePattern star withoutValue -- Scanner::IdentifierPattern trim: Scanner::White
+let Scanner::Identifier := Scanner::IdentifierScopePattern star withoutValue -- Scanner::IdentifierPattern
     ::==> {:(MonadicParserResult)parserResult :: AnyValue |
         SysmelToken kind: SysmelTokenKind::Identifier value: (parserResult sourceValue downCastTo: String) asSymbol sourcePosition: parserResult sourcePosition
     }.
 
-let Scanner::TokenGrammar := Scanner::Identifier.
-let Scanner::Grammar := Scanner::TokenGrammar star.
+let Scanner::TokenGrammar := Scanner::Identifier trim: Scanner::White.
+let Scanner::Grammar := Scanner::White optional -- Scanner::TokenGrammar star -- Scanner::White optional .
 
 public class SysmelLanguage superclass: Object; definition: {
     __Meta__ extend: {
@@ -44,7 +48,7 @@ public class SysmelLanguage superclass: Object; definition: {
             let parseResult := Scanner::Grammar parseWithState: parseState.
             self assert: parseResult isValid.
 
-            let resultValue => OrderedCollection := parseResult value.
+            let resultValue => OrderedCollection := parseResult value second.
             parseState atEnd ifFalse: {
                 resultValue add: (SysmelToken kind: SysmelTokenKind::Error value: "Expected end of stream" asSymbol sourcePosition: parseState sourcePositionUntilEnd)
             }.

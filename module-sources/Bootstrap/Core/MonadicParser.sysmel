@@ -213,6 +213,11 @@ public abstract class MonadicParser definition: {
             parser: self;
             yourself.
 
+    public method not => MonadicParser
+        := MonadicCombinatorNotParser new
+            parser: self;
+            yourself.
+
     public method trim: (trimmingParser: MonadicParser) ::=> MonadicParser
         := MonadicCombinatorTrimParser new
             trimmingParser: trimmingParser;
@@ -357,6 +362,22 @@ public class MonadicCombinatorOptionalParser superclass: MonadicParser; definiti
             self makeResultWithState: state.
         } ifFalse: {
             parseResult
+        }
+    }.
+}.
+
+public class MonadicCombinatorNotParser superclass: MonadicParser; definition: {
+    public field parser => MonadicParser.
+
+    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+        let startPosition := state memento.
+        let parseResult := parser parseWithState: state.
+        parseResult isValid ifTrue: {
+            self makeError: "Unexpected" withState: state
+        } ifFalse: {
+            state restoreMemento: startPosition.
+            state advance.
+            self makeResultWithState: state
         }
     }.
 }.
