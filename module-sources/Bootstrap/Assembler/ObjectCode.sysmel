@@ -365,12 +365,14 @@ AsmObjectCodeSection definition: {
 
     public method cfiSaveFramePointer: (register: AsmRegister) ::=> Void := {
         currentFrameDescription instructions add: (AsmCallFrameInformationSaveFramePointerInstruction new
+            address: writeOffset asUInt64;
             register: register;
             yourself).
     }.
 
     public method cfiRestoreFramePointer: (register: AsmRegister) offset: (offset: Int64) ::=> Void := {
         currentFrameDescription instructions add: (AsmCallFrameInformationRestoreFramePointerInstruction new
+            address: writeOffset asUInt64;
             register: register;
             offset: offset;
             yourself).
@@ -378,6 +380,7 @@ AsmObjectCodeSection definition: {
 
     public method cfiStackSizeAdvance: (increment: Int64) ::=> Void := {
         currentFrameDescription instructions add: (AsmCallFrameInformationStackSizeAdvanceInstruction new
+            address: writeOffset asUInt64;
             increment: increment;
             yourself).
     }.

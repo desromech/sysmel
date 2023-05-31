@@ -608,8 +608,7 @@ public final class TACX86_64CompilationTarget superclass: TACAsmCompilationTarge
                 x86::mov: X86::RSP src: X86::RBP;
                 cfiRestoreFramePointer: X86::RBP offset: 0i64;
                 x86::pop: X86::RBP;
-                cfiPopRegister: X86::RBP;
-                cfiEndEpilogue.
+                cfiPopRegister: X86::RBP.
         }.
     }.
 
@@ -2126,7 +2125,8 @@ TAC::Operation::ReturnInt8
     };
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
-        codegen textSection x86::ret
+        codegen textSection x86::ret.
+        codegen stackFrameLayout isRequired ifTrue: (codegen textSection cfiEndEpilogue).
     }.
 
 TAC::Operation::ReturnInt16
@@ -2138,7 +2138,8 @@ TAC::Operation::ReturnInt16
     };
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
-        codegen textSection x86::ret
+        codegen textSection x86::ret.
+        codegen stackFrameLayout isRequired ifTrue: (codegen textSection cfiEndEpilogue).
     }.
 
 TAC::Operation::ReturnInt32
@@ -2150,7 +2151,8 @@ TAC::Operation::ReturnInt32
     };
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
-        codegen textSection x86::ret
+        codegen textSection x86::ret.
+        codegen stackFrameLayout isRequired ifTrue: (codegen textSection cfiEndEpilogue).
     }.
 
 TAC::Operation::ReturnInt64
@@ -2159,7 +2161,8 @@ TAC::Operation::ReturnInt64
     };
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
-        codegen textSection x86::ret
+        codegen textSection x86::ret.
+        codegen stackFrameLayout isRequired ifTrue: (codegen textSection cfiEndEpilogue).
     }.
 
 TAC::Operation::ReturnFloat32
@@ -2171,7 +2174,8 @@ TAC::Operation::ReturnFloat32
     };
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
-        codegen textSection x86::ret
+        codegen textSection x86::ret.
+        codegen stackFrameLayout isRequired ifTrue: (codegen textSection cfiEndEpilogue).
     }.
 
 TAC::Operation::ReturnFloat64
@@ -2183,14 +2187,16 @@ TAC::Operation::ReturnFloat64
     };
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
-        codegen textSection x86::ret
+        codegen textSection x86::ret.
+        codegen stackFrameLayout isRequired ifTrue: (codegen textSection cfiEndEpilogue).
     }.
 
 TAC::Operation::ReturnVoid
     forTargets: #(x86 x86_64) registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void | };
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
-        codegen textSection x86::ret
+        codegen textSection x86::ret.
+        codegen stackFrameLayout isRequired ifTrue: (codegen textSection cfiEndEpilogue).
     }.
 
 TAC::Operation::Trap

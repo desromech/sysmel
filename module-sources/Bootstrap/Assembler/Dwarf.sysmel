@@ -312,7 +312,7 @@ public final class Dwarf::Constant superclass: AsmConstantExpressionInteger; def
     (DW_OP_CFA_undefined 16r07)
     (DW_OP_CFA_same_value 16r08)
     (DW_OP_CFA_register 16r09)
-    (DW_OP_CFA_remember_state 16r09)
+    (DW_OP_CFA_remember_state 16r0a)
     (DW_OP_CFA_restore_state 16r0b)
     (DW_OP_CFA_def_cfa 16r0c)
     (DW_OP_CFA_def_cfa_register 16r0d)
@@ -1284,9 +1284,9 @@ public final class Dwarf::SectionWriter superclass: Object; definition: {
         programRelocations := OrderedCollection new.
     }.
 
-    public method alignTo: (alignment: Size) paddingWith: (padding: UInt8) ::=> Void := {
-        let alignedSize := out size alignedTo: alignment.
-        let paddingSize mutable := alignedSize - out size.
+    public method alignTo: (alignment: Size) extraSize: (extraSize: Size) paddingWith: (padding: UInt8) ::=> Void := {
+        let alignedSize := out size + extraSize alignedTo: alignment.
+        let paddingSize mutable := alignedSize - out size - extraSize.
         while: (paddingSize > 0sz) do: {
             out nextPut: padding
         } continueWith: (paddingSize := paddingSize - 1sz)
@@ -1686,6 +1686,7 @@ public final class Dwarf::DebugLineWriter superclass: Dwarf::SectionWriter; defi
 
 public final class Dwarf::CallFrameInformationWriter superclass: Dwarf::SectionWriter; definition: {
     public field compilationTarget => AsmCompilationTarget.
+    public field cieVersion => UInt8.
     public field codeAlignmentFactor => UInt64.
     public field dataAlignmentFactor => Int64.
     public field returnAddressRegister => UInt8.
@@ -1697,6 +1698,7 @@ public final class Dwarf::CallFrameInformationWriter superclass: Dwarf::SectionW
 
     public override method initialize => Void := {
         super initialize.
+        cieVersion := 4u8.
         codeAlignmentFactor := 1u64.
         cfiRelocations := OrderedCollection new.
     }.
@@ -1740,15 +1742,19 @@ public final class Dwarf::CallFrameInformationWriter superclass: Dwarf::SectionW
         let cieBytes := self makeBytesDuring: {:: Void |
             self
                 pointerWord: -1u64; ## CIE_id
-                byte: 4u8; ## CIE version;
+                byte: cieVersion; ## CIE version;
                 cstring: ""; ## Augmentation;
                 byte: self pointerSize asUInt8; ## addressSize
                 byte: 0u8; ## segment size
                 uleb128: codeAlignmentFactor asUInt64;
-                sleb128: dataAlignmentFactor asInt64;
+                sleb128: dataAlignmentFactor asInt64 negated;
                 uleb128: returnAddressRegister asUInt64.
 
-            self alignTo: pointerSize paddingWith: 0u8
+            self
+                cfa::cfaInRegister: compilationTarget dwarf::stackPointerRegister asUInt64 withFactoredOffset: 1u32;
+                cfa::registerValue: compilationTarget dwarf::returnAddressRegister asUInt64 atOffset: 1u32.
+
+            self alignTo: pointerSize extraSize: self initialLengthSize paddingWith: 0u8
         }.
 
         self initialLength: cieBytes size asUInt64.
@@ -1765,7 +1771,9 @@ public final class Dwarf::CallFrameInformationWriter superclass: Dwarf::SectionW
                 pointer: sectionSymbol offset: frameDescription startOffset asInt64;
                 pointerWord: (frameDescription endOffset - frameDescription startOffset) asUInt64.
 
-            self alignTo: pointerSize paddingWith: 0u8
+            self emitFrameDescriptionInstructions: frameDescription.
+
+            self alignTo: pointerSize extraSize: self initialLengthSize paddingWith: 0u8
         }.
 
         self initialLength: fdeBytes size asUInt64.
@@ -1807,6 +1815,224 @@ public final class Dwarf::CallFrameInformationWriter superclass: Dwarf::SectionW
             self qword: 0u64
         }
     }.
+
+    private field lastEmittedPC => UInt64.
+    private field currentPC => UInt64.
+    private field isInPrologue => Boolean.
+    private field isInEpilogue => Boolean.
+
+    private field hasFramePointerRegister => Boolean.
+    private field framePointerRegister => UInt8.
+    private field stackFrameSizeAtFramePointer => UInt32.
+    private field stackFrameSize => UInt32.
+
+    private field storedHasFramePointerRegister => Boolean.
+    private field storedFramePointerRegister => UInt8.
+    private field storedStackFrameSizeAtFramePointer => UInt32.
+    private field storedStackFrameSize => UInt32.
+
+    public method emitFrameDescriptionInstructions: (frameDescription: AsmFrameDescriptionInformation) ::=> Void := {
+        currentPC := lastEmittedPC := frameDescription startOffset.
+        isInPrologue := true.
+        isInEpilogue := false.
+        hasFramePointerRegister := false.
+        framePointerRegister := 0u8.
+        stackFrameSize := 1u32. ## Return address.
+
+        frameDescription instructions do: {:(AsmCallFrameInformationInstruction)instruction :: Void |
+            instruction dwarf::emitWith: self
+        }.
+    }.
+
+    public method cfa::cfaInRegister: (register: UInt64) withOffset: (offset: UInt64) ::=> Void := {
+        self byte: Dwarf::DW_OP_CFA_def_cfa value asUInt8; uleb128: register; uleb128: offset.
+    }.
+
+    public method cfa::cfaInRegister: (register: UInt64) withFactoredOffset: (offset: UInt32) ::=> Void := {
+        self cfa::cfaInRegister: register withOffset: (offset * pointerSize asUInt32) asUInt64
+    }.
+
+    public method cfa::registerValue: (register: UInt64) atOffset: (offset: UInt32) ::=> Void := {
+        register <= 63u64 ifTrue: {
+            self byte: (Dwarf::DW_OP_CFA_offset value asUInt8 << 6u8) | register asUInt8; uleb128: offset asUInt64
+        } ifFalse: {
+            self byte: Dwarf::DW_OP_CFA_offset_extended value asUInt8; uleb128: register; uleb128: offset asUInt64
+        }
+    }.
+
+    public method cfa::restoreRegister: (register: UInt64) ::=> Void := {
+        register <= 63u64 ifTrue: {
+            self byte: (Dwarf::DW_OP_CFA_restore value asUInt8 << 6u8) | register asUInt8
+        } ifFalse: {
+            self byte: Dwarf::DW_OP_CFA_restore_extended value asUInt8; uleb128: register
+        }
+    }.
+
+    public method setPCAddress: (newAddress: UInt64) ::=> Void := {
+        currentPC := newAddress
+    }.
+
+    public method emitPCAddress => Void := {
+        let advance := currentPC - lastEmittedPC.
+        advance ~= 0u64 ifTrue: {
+            let advanceFactor := advance / codeAlignmentFactor.
+            (0u64 <= advanceFactor) && (advanceFactor <= 63u64) ifTrue: {
+                self byte: (Dwarf::DW_OP_CFA_advance_loc value asUInt8 << 6u8) | advanceFactor asUInt8.
+
+            } ifFalse: {
+                advanceFactor <= 16rFF u64 ifTrue: {
+                    self byte: Dwarf::DW_OP_CFA_advance_loc1 value asUInt8; byte: advanceFactor asUInt8
+                } ifFalse: {
+                    advanceFactor <= 16rFFFF u64 ifTrue: {
+                        self byte: Dwarf::DW_OP_CFA_advance_loc2 value asUInt8; word: advanceFactor asUInt16
+                    } ifFalse: {
+                        self assert: advanceFactor <= 16rFFFFFF u64.
+                        self byte: Dwarf::DW_OP_CFA_advance_loc4 value asUInt8; dword: advanceFactor asUInt32
+                    }
+                }
+            }.
+
+            lastEmittedPC := currentPC.
+        }.
+
+    }.
+
+    public method endPrologue ::=> Void := {
+        self assert: isInPrologue.
+        isInPrologue := false.
+    }.
+
+    public method beginEpilogue ::=> Void := {
+        self assert: isInEpilogue not.
+        isInEpilogue := true.
+        self emitPCAddress; byte: Dwarf::DW_OP_CFA_remember_state value asUInt8.
+
+        storedHasFramePointerRegister := hasFramePointerRegister.
+        storedFramePointerRegister := framePointerRegister.
+        storedStackFrameSizeAtFramePointer := stackFrameSizeAtFramePointer.
+        storedStackFrameSize := stackFrameSize.
+    }.
+
+    public method endEpilogue ::=> Void := {
+        self assert: isInEpilogue.
+        isInEpilogue := false.
+        self emitPCAddress; byte: Dwarf::DW_OP_CFA_restore_state value asUInt8.
+
+        hasFramePointerRegister := storedHasFramePointerRegister.
+        framePointerRegister := storedFramePointerRegister.
+        stackFrameSizeAtFramePointer := storedStackFrameSizeAtFramePointer.
+        stackFrameSize := storedStackFrameSize.
+    }.
+
+    public method pushRegister: (register: AsmRegister) ::=> Void := {
+        stackFrameSize := stackFrameSize + 1u32.
+        self emitPCAddress.
+        hasFramePointerRegister ifFalse: {
+            self cfa::cfaInRegister: compilationTarget dwarf::stackPointerRegister asUInt64 withFactoredOffset: stackFrameSize
+        }.
+        
+        self cfa::registerValue: (register dwarf::registerNumberForTarget: compilationTarget) asUInt64 atOffset: stackFrameSize
+    }.
+
+    public method popRegister: (register: AsmRegister) ::=> Void := {
+        self assert: isInPrologue not. 
+        stackFrameSize := stackFrameSize - 1u32.
+        self emitPCAddress.
+        hasFramePointerRegister ifFalse: {
+            self cfa::cfaInRegister: compilationTarget dwarf::stackPointerRegister asUInt64 withFactoredOffset: stackFrameSize
+        }.
+
+        self cfa::restoreRegister: (register dwarf::registerNumberForTarget: compilationTarget) asUInt64
+    }.
+
+    public method saveFramePointer: (register: AsmRegister) ::=> Void := {
+        self assert: hasFramePointerRegister not.
+        self assert: isInPrologue.
+
+        self emitPCAddress.
+
+        hasFramePointerRegister := true.
+        framePointerRegister := (register dwarf::registerNumberForTarget: compilationTarget) asUInt8.
+        stackFrameSizeAtFramePointer := stackFrameSize. 
+        self cfa::cfaInRegister: framePointerRegister asUInt64 withFactoredOffset: stackFrameSizeAtFramePointer
+    }.
+
+    public method restoreFramePointer: (register: AsmRegister) offset: (offset: Int64) ::=> Void := {
+        self assert: isInPrologue not.
+        self assert: isInEpilogue.
+        self assert: hasFramePointerRegister.
+
+        hasFramePointerRegister := false.
+        stackFrameSize := stackFrameSizeAtFramePointer.
+        self
+            emitPCAddress;
+            cfa::cfaInRegister: compilationTarget dwarf::stackPointerRegister asUInt64 withFactoredOffset: stackFrameSize
+    }.
+
+    public method stackSizeAdvance: (increment: Int64) ::=> Void := {
+        isInPrologue ifFalse: {return: void}.
+
+        increment ~= 0i64 ifTrue: {
+            stackFrameSize := (stackFrameSize asInt32 + increment asInt32 / self pointerSize asInt32) asUInt32.
+            hasFramePointerRegister ifFalse: {
+                self emitPCAddress.
+                self cfa::cfaInRegister: compilationTarget dwarf::stackPointerRegister asUInt64 withFactoredOffset: stackFrameSize
+            }.
+        }
+    }.
+}.
+
+AsmCallFrameInformationInstruction extend: {
+    public abstract method dwarf::emitWith: (writer: Dwarf::CallFrameInformationWriter) ::=> Void
+        := self subclassResponsibility.
+}.
+
+AsmCallFrameInformationEndPrologueInstruction extend: {
+    public override method dwarf::emitWith: (writer: Dwarf::CallFrameInformationWriter) ::=> Void := {
+        writer setPCAddress: address; endPrologue
+    }
+}.
+
+AsmCallFrameInformationBeginEpilogueInstruction extend: {
+    public override method dwarf::emitWith: (writer: Dwarf::CallFrameInformationWriter) ::=> Void := {
+        writer setPCAddress: address; beginEpilogue
+    }
+}.
+
+AsmCallFrameInformationEndEpilogueInstruction extend: {
+    public override method dwarf::emitWith: (writer: Dwarf::CallFrameInformationWriter) ::=> Void := {
+        writer setPCAddress: address; endEpilogue
+    }
+}.
+
+AsmCallFrameInformationPushRegisterInstruction extend: {
+    public override method dwarf::emitWith: (writer: Dwarf::CallFrameInformationWriter) ::=> Void := {
+        writer setPCAddress: address; pushRegister: register
+    }
+}.
+
+AsmCallFrameInformationPopRegisterInstruction extend: {
+    public override method dwarf::emitWith: (writer: Dwarf::CallFrameInformationWriter) ::=> Void := {
+        writer setPCAddress: address; popRegister: register
+    }
+}.
+
+AsmCallFrameInformationSaveFramePointerInstruction extend: {
+    public override method dwarf::emitWith: (writer: Dwarf::CallFrameInformationWriter) ::=> Void := {
+        writer setPCAddress: address; saveFramePointer: register
+    }
+}.
+
+AsmCallFrameInformationRestoreFramePointerInstruction extend: {
+    public override method dwarf::emitWith: (writer: Dwarf::CallFrameInformationWriter) ::=> Void := {
+        writer setPCAddress: address; restoreFramePointer: register offset: offset
+    }
+}.
+
+AsmCallFrameInformationStackSizeAdvanceInstruction extend: {
+    public override method dwarf::emitWith: (writer: Dwarf::CallFrameInformationWriter) ::=> Void := {
+        writer setPCAddress: address; stackSizeAdvance: increment
+    }
 }.
 
 public final class Dwarf::ObjectDebugInformationGenerator superclass: AsmObjectDebugInformationGenerator; definition: {
@@ -2281,7 +2507,10 @@ AsmCompilationTarget extend: {
     public abstract method dwarf::returnAddressRegister => UInt8
         := self subclassResponsibility.
 
-    public abstract method dwarf::stackFrameRegister => UInt8
+    public abstract method dwarf::stackPointerRegister => UInt8
+        := self subclassResponsibility.
+
+    public abstract method dwarf::framePointerRegister => UInt8
         := self subclassResponsibility.
 
     public method useDwarf => self __type__ := {
