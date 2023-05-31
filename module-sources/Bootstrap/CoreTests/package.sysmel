@@ -1,1 +1,2 @@
+loadSourceNamed: "MonadicParserTestCase.sysmel".
 loadSourceNamed: "SysmelScannerTestCase.sysmel".

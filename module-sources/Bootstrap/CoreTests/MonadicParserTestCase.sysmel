@@ -1,0 +1,56 @@
+public class MonadicParserTestCase superclass: TestCase; definition: {
+    public method testEpsilon => Void := {
+        let parser := MonadicEpsilonParser new.
+        self assert: (parser parse: "") isValid.
+    }.
+
+    public method testSingleCharacter => Void := {
+        let parser := 'a'asChar8 asMonadicElementParser.
+        self assert: (parser parse: "b") isError.
+        self assert: (parser parse: "a") isValid.
+    }.
+
+    public method testTwoCharacterSequence => Void := {
+        let parser := 'a'asChar8 asMonadicElementParser -- 'b'asChar8 asMonadicElementParser.
+        self assert: (parser parse: "b") isError.
+        self assert: (parser parse: "ba") isError.
+        self assert: (parser parse: "a") isError.
+        self assert: (parser parse: "ab") isValid.
+    }.
+
+    public method testTwoCharacterAlternatives => Void := {
+        let parser := 'a'asChar8 asMonadicElementParser | 'b'asChar8 asMonadicElementParser.
+        self assert: (parser parse: "a") isValid.
+        self assert: (parser parse: "b") isValid.
+        self assert: (parser parse: "c") isError.
+    }.
+
+    public method testStringSequence => Void := {
+        let parser := "abra" asMonadicParser.
+        self assert: (parser parse: "abbra") isError.
+        self assert: (parser parse: "abra") isValid.
+    }.
+
+    public method testEnd => Void := {
+        let parser := MonadicParser end.
+        self assert: (parser parse: "") isValid.
+        self assert: (parser parse: "a") isError.
+    }.
+
+    public method testStar => Void := {
+        let parser := "abra" asMonadicParser star -- MonadicParser end.
+        self assert: (parser parse: "") isValid.
+        self assert: (parser parse: "abra") isValid.
+        self assert: (parser parse: "abraabra") isValid.
+        self assert: (parser parse: "abrc") isError.
+        self assert: (parser parse: "abraabrc") isError.
+    }.
+
+    public method testPlus => Void := {
+        let parser := "abra" asMonadicParser plus.
+        self assert: (parser parse: "") isError.
+        self assert: (parser parse: "abra") isValid.
+        self assert: (parser parse: "abrc") isError.
+        self assert: (parser parse: "abraabra") isValid.
+    }.
+}.

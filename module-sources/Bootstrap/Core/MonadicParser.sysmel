@@ -1,0 +1,357 @@
+public class MonadicParserStreamEndMarkClass definition: {
+    let singleton := SelfType new.
+    __Meta__ definition: {
+        public method uniqueInstance => MonadicParserStreamEndMarkClass
+            := singleton.
+    }.
+}.
+
+public global MonadicParserStreamEndMark := MonadicParserStreamEndMarkClass uniqueInstance.
+
+public class MonadicParserState definition: {
+    public field sourceCollection => SequenceableCollection.
+    public field position => Size.
+
+    __Meta__ definition: {
+        public method for: (sourceCollection: SequenceableCollection) ::=> self
+            := self new sourceCollection: sourceCollection; yourself.
+    }.
+
+    public abstract method memento => Size
+        := position.
+
+    public abstract method restoreMemento: (memento: Size) ::=> Void := {
+        position := memento downCastTo: Size
+    }.
+
+    public method peek: (offset: Size) ::=> AnyValue := {
+        let peekPosition := position + offset.
+        peekPosition < sourceCollection size
+            ifTrue: (sourceCollection at: peekPosition)
+            ifFalse: MonadicParserStreamEndMark
+    }.
+
+    public method peek ::=> AnyValue
+        := self peek: 0sz.
+
+    public method advance: (increment: Size) ::=> Void := {
+        position := position + increment min: sourceCollection size
+    }.
+
+    public method advance ::=> Void
+        := self advance: 1sz.
+
+    public method atEnd => Boolean
+        := position >= sourceCollection size.
+}.
+
+public abstract class MonadicParserResult superclass: Object; definition: {
+    public field state => MonadicParserState.
+    public field value.
+    public field startPosition => Size.
+    public field endPosition => Size.
+
+    public abstract method isError => Boolean := false.
+    public method isValid => Boolean := self isError not.
+
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream print: startPosition; nextPut: '-'asChar8; print: endPosition; nextPutAll: ": "; print: value
+    }.
+}.
+
+public class MonadicParserErrorResult superclass: MonadicParserResult; definition: {
+    public field message => String.
+    
+    public abstract method isError => Boolean := true.
+
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream print: startPosition; nextPut: '-'asChar8; print: endPosition; nextPutAll: ": "; nextPutAll: message
+    }.
+}.
+
+public abstract class MonadicParser definition: {
+    __Meta__ extend: {
+        public method end => MonadicParser
+            := MonadicEndParser new.
+
+        public method predicate: (predicate: (AnyValue) => Boolean) errorMessage: (errorMessage: String) ::=> MonadicParser
+            := MonadicPredicateParser new
+                predicate: predicate;
+                errorMessage: errorMessage;
+                yourself.
+
+        public method white ::=> MonadicParser
+            := self predicate: {:character :: Boolean | ' 'asChar8 >= character } errorMessage: "Expected a whitespace.".
+
+        public method digit ::=> MonadicParser
+            := self predicate: {:character :: Boolean | ('0'asChar8 <= character) && ('9'asChar8 >= character) } errorMessage: "Expected a digit.".
+
+        public method alpha ::=> MonadicParser
+            := self predicate: {:character :: Boolean |
+                (('A'asChar8 <= character) && ('Z'asChar8 >= character)) ||
+                (('a'asChar8 <= character) && ('z'asChar8 <= character))
+            } errorMessage: "Expected an alphabetic character.".
+
+        public method alphaNum ::=> MonadicParser
+            := self predicate: {:character :: Boolean |
+                (('A'asChar8 <= character) && ('Z'asChar8 <= character)) ||
+                (('a'asChar8 <= character) && ('z'asChar8 <= character)) ||
+                (('0'asChar8 <= character) && ('9'asChar8 <= character))
+            } errorMessage: "Expected an alphanumeric character.".
+    }.
+
+    public method parse: (sourceCollection: SequenceableCollection) ::=> MonadicParserResult
+        := self parseWithState: (MonadicParserState for: sourceCollection).
+
+    public abstract method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult
+        := self subclassResponsibility.
+
+    public method makeResult: value withState: (state: MonadicParserState) ::=> MonadicParserResult
+        := MonadicParserResult new
+            state: state;
+            value: value;
+            startPosition: state memento;
+            endPosition: state memento;
+            yourself.
+
+    public method makeResultWithState: (state: MonadicParserState) ::=> MonadicParserResult
+        := MonadicParserResult new
+            state: state;
+            startPosition: state memento;
+            endPosition: state memento;
+            yourself.
+
+    public method makeResult: value from: (startPosition: Size) withState: (state: MonadicParserState) ::=> MonadicParserResult
+        := MonadicParserResult new
+            state: state;
+            value: value;
+            startPosition: startPosition;
+            endPosition: state memento;
+            yourself.
+
+    public method makeResultFrom: (startPosition: Size) withState: (state: MonadicParserState) ::=> MonadicParserResult
+        := MonadicParserResult new
+            state: state;
+            startPosition: startPosition;
+            endPosition: state memento;
+            yourself.
+
+    public method makeError: (message: String) withState: (state: MonadicParserState) ::=> MonadicParserResult
+        := MonadicParserErrorResult new
+            state: state;
+            message: message;
+            startPosition: state memento;
+            endPosition: state memento;
+            yourself.
+
+    public virtual method -- (nextParser: MonadicParser) ::=> MonadicParser
+        := MonadicCombinatorSequenceParser new
+            parsers: (Array with: self with: nextParser);
+            yourself.
+
+    public virtual method | (nextParser: MonadicParser) ::=> MonadicParser
+        := MonadicCombinatorAlternativesParser new
+            parsers: (Array with: self with: nextParser);
+            yourself.
+
+    public method optional => MonadicParser
+        := MonadicCombinatorOptionalParser new
+            parser: self;
+            yourself.
+
+    public method star => MonadicParser
+        := MonadicCombinatorStarParser new
+            parser: self;
+            yourself.
+
+    public method plus => MonadicParser
+        := MonadicCombinatorPlusParser new
+            parser: self;
+            yourself.
+}.
+
+public class MonadicEpsilonParser superclass: MonadicParser; definition: {
+    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult
+        := self makeResult: nil withState: state.
+}.
+
+public class MonadicEndParser superclass: MonadicParser; definition: {
+    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+        state atEnd ifTrue: {
+            self makeResult: nil withState: state. 
+        } ifFalse: {
+            self makeError: "Expected the end." withState: state.
+        }
+    }
+}.
+
+public class MonadicElementParser superclass: MonadicParser; definition: {
+    public field expectedElement => AnyValue.
+
+    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+        let startPosition := state memento.
+        state atEnd not && (expectedElement = state peek) ifTrue: {
+            state advance.
+            self makeResultFrom: startPosition withState: state.
+        } ifFalse: {
+            self makeError: "Expected " -- expectedElement asString withState: state.
+        }.
+    }
+}.
+
+public class MonadicPredicateParser superclass: MonadicParser; definition: {
+    public field predicate => (AnyValue => Boolean).
+    public field errorMessage => String.
+
+    __Meta__ definition: {
+        public method with: (predicate: (AnyValue => Boolean)) ::=> self
+            := self new predicate: predicate; yourself
+    }.
+
+    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+        let startPosition := state memento.
+        state atEnd not && predicate(state peek) ifTrue: {
+            state advance.
+            self makeResultFrom: startPosition withState: state
+        } ifFalse: {
+            self makeError: errorMessage withState: state.
+        }
+    }.
+}.
+
+public class MonadicSequenceParser superclass: MonadicParser; definition: {
+    public field expectedSequence => SequenceableCollection.
+
+    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+        let startPosition := state memento.
+        (expectedSequence allSatisfyWithIndex: {:expectedElement :(Size)index :: Boolean |
+            expectedElement = (state peek: index)
+        }) ifTrue: {
+            state advance: expectedSequence size.
+            self makeResultFrom: startPosition withState: state.
+        } ifFalse: {
+            self makeError: "Expected " -- expectedSequence asString withState: state.
+        }.
+    }
+}.
+
+SequenceableCollection extend: {
+    public method asMonadicParser => MonadicParser
+        := MonadicSequenceParser new expectedSequence: self; yourself.
+}.
+
+public class MonadicCombinatorSequenceParser superclass: MonadicParser; definition: {
+    public field parsers => Array.
+
+    public override method -- (nextParser: MonadicParser) ::=> MonadicParser
+        := MonadicCombinatorSequenceParser new
+            parsers: parsers -- (Array with: nextParser);
+            yourself.
+
+    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+        let startPosition := state memento.
+        let parserCount := parsers size.
+        let i mutable := 0sz.
+        let resultValue := Array new: parserCount.
+        while: (i < parserCount) do: {
+            let parser => MonadicParser := parsers at: i.
+            let parserResult := parser parseWithState: state.
+            parserResult isError ifTrue: {return: parserResult}.
+
+            resultValue at: i put: parserResult value.
+        } continueWith: (i := i + 1sz).
+
+        self makeResult: resultValue from: startPosition withState: state.
+    }.
+}.
+
+public class MonadicCombinatorAlternativesParser superclass: MonadicParser; definition: {
+    public field parsers => Array.
+
+    public override method | (nextParser: MonadicParser) ::=> MonadicParser
+        := MonadicCombinatorAlternativesParser new
+            parsers: parsers -- (Array with: nextParser);
+            yourself.
+
+    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+        let startPosition := state memento.
+        let parserResult mutable => MonadicParserResult := nil.
+        let i mutable := 0sz.
+        let parserCount := parsers size.
+        while: (i < parserCount) do: {
+            let parser => MonadicParser := parsers at: i.
+            parserResult := parser parseWithState: state.
+            parserResult isValid ifTrue: {return: parserResult}.
+        } continueWith: (i := i + 1sz).
+
+        parserResult
+    }.
+}.
+
+public class MonadicCombinatorOptionalParser superclass: MonadicParser; definition: {
+    public field parser => MonadicParser.
+
+    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+        let startPosition := state memento.
+        let parseResult := parser parseWithState: state.
+        parseResult isError ifTrue: {
+            state restoreMemento: startPosition.
+            self makeResultWithState: state.
+        } ifFalse: {
+            parseResult
+        }
+    }.
+}.
+
+public class MonadicCombinatorStarParser superclass: MonadicParser; definition: {
+    public field parser => MonadicParser.
+
+    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+        let startPosition := state memento.
+        let nextParseResult mutable => MonadicParserResult := nil.
+        let currentPosition mutable := startPosition.
+        let resultValue := OrderedCollection new.
+        while: ((nextParseResult := parser parseWithState: state) isValid) do: {
+            resultValue add: nextParseResult value.
+            currentPosition := state memento.
+        }.
+
+        state restoreMemento: currentPosition.
+        self makeResult: resultValue from: startPosition withState: state
+    }.
+}.
+
+public class MonadicCombinatorPlusParser superclass: MonadicParser; definition: {
+    public field parser => MonadicParser.
+
+    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+        let startPosition := state memento.
+        let currentPosition mutable := startPosition.
+
+        let resultValue := OrderedCollection new.
+        let nextParseResult mutable => MonadicParserResult := parser parseWithState: state.
+        nextParseResult isError ifTrue: {return: nextParseResult}.
+        resultValue add: nextParseResult value.
+        currentPosition := state memento.
+
+        while: ((nextParseResult := parser parseWithState: state) isValid) do: {
+            resultValue add: nextParseResult value.
+            currentPosition := state memento.
+        }.
+
+        state restoreMemento: currentPosition.
+        self makeResult: resultValue from: startPosition withState: state
+    }.
+}.
+
+public class MonadicDelegateParser superclass: MonadicParser; definition: {
+    public field delegated => MonadicParser.
+
+    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult
+        := delegated parseWithState: state.
+}.
+
+AnyValue extend: {
+    public method asMonadicElementParser => MonadicElementParser
+        := MonadicElementParser new expectedElement: self; yourself
+}.

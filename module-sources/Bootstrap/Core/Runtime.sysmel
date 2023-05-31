@@ -1242,6 +1242,16 @@ SequenceableCollection
         ) continueWith: (i := i + 1sz).
         hasFoundIt
     } makeFinal;
+    withSelector: #anySatisfyWithIndex: addMethod: {:(SequenceableCollection)self :aBlock :: Boolean |
+        let: #i mutableWith: 0sz.
+        let: #size with: self size.
+        let: #hasFoundIt type: Boolean mutableWith: false.
+
+        while: (if: hasFoundIt then: false else: i < self size) do: (
+            hasFoundIt := aBlock(self at: i, i)
+        ) continueWith: (i := i + 1sz).
+        hasFoundIt
+    } makeFinal;
     withSelector: #allSatisfy: addMethod: {:(SequenceableCollection)self :aBlock :: Boolean |
         let: #i mutableWith: 0sz.
         let: #size with: self size.
@@ -1249,6 +1259,16 @@ SequenceableCollection
 
         while: (if: everythingIsFine then: i < self size else: false) do: (
             everythingIsFine := aBlock(self at: i)
+        ) continueWith: (i := i + 1sz).
+        everythingIsFine
+    } makeFinal;
+    withSelector: #allSatisfyWithIndex: addMethod: {:(SequenceableCollection)self :aBlock :: Boolean |
+        let: #i mutableWith: 0sz.
+        let: #size with: self size.
+        let: #everythingIsFine type: Boolean mutableWith: true.
+
+        while: (if: everythingIsFine then: i < self size else: false) do: (
+            everythingIsFine := aBlock(self at: i, i)
         ) continueWith: (i := i + 1sz).
         everythingIsFine
     } makeFinal;
