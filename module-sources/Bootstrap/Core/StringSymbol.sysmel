@@ -1,4 +1,24 @@
 StringSymbol extend: {
+    public method <=> (other: StringSymbol) ::=> Int32 := {
+        let minSize := self size min: other size.
+        let i mutable := 0sz.
+        while: (i < minSize) do: {
+            let d := (self at: i) asInt32 - (other at: i) asInt32.
+            d ~= 0i32 ifTrue: {return: d}
+        } continueWith: (i := i + 1sz).
+
+        (self size - other size) asInt32
+    }.
+
+    public method < (other: StringSymbol) ::=> Boolean
+        := (self <=> other) < 0i32.
+    public method <= (other: StringSymbol) ::=> Boolean
+        := (self <=> other) <= 0i32.
+    public method > (other: StringSymbol) ::=> Boolean
+        := (self <=> other) > 0i32.
+    public method >= (other: StringSymbol) ::=> Boolean
+        := (self <=> other) >= 0i32.
+
     public method numSelectorArgs => Size := {
         let count mutable := 0sz.
         let i mutable := 0sz.

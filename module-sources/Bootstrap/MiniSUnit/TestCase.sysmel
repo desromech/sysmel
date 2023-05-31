@@ -33,7 +33,7 @@ public abstract class TestCase superclass: TestAsserter; definition: {
                 }
             }.
 
-            selectors asArray
+            selectors asArray sort; yourself
         }.
     }.
 
