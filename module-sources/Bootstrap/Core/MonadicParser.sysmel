@@ -100,6 +100,13 @@ public abstract class MonadicParser definition: {
             } errorMessage: "Expected an alphanumeric character.".
     }.
 
+    public field isOmmittingValue => Boolean.
+
+    public method withoutValue => MonadicParser := {
+        isOmmittingValue := true.
+        self
+    }.
+
     public method parse: (sourceCollection: SequenceableCollection) ::=> MonadicParserResult
         := self parseWithState: (MonadicParserState for: sourceCollection).
 
@@ -252,13 +259,15 @@ public class MonadicCombinatorSequenceParser superclass: MonadicParser; definiti
         let startPosition := state memento.
         let parserCount := parsers size.
         let i mutable := 0sz.
-        let resultValue := Array new: parserCount.
+        let resultValue => Array := isOmmittingValue ifTrue: nil ifFalse: (Array new: parserCount).
         while: (i < parserCount) do: {
             let parser => MonadicParser := parsers at: i.
             let parserResult := parser parseWithState: state.
             parserResult isError ifTrue: {return: parserResult}.
 
-            resultValue at: i put: parserResult value.
+            isOmmittingValue ifFalse: {
+                resultValue at: i put: parserResult value.
+            }
         } continueWith: (i := i + 1sz).
 
         self makeResult: resultValue from: startPosition withState: state.
@@ -310,9 +319,11 @@ public class MonadicCombinatorStarParser superclass: MonadicParser; definition: 
         let startPosition := state memento.
         let nextParseResult mutable => MonadicParserResult := nil.
         let currentPosition mutable := startPosition.
-        let resultValue := OrderedCollection new.
+        let resultValue => OrderedCollection := isOmmittingValue ifTrue: nil ifFalse: OrderedCollection new.
         while: ((nextParseResult := parser parseWithState: state) isValid) do: {
-            resultValue add: nextParseResult value.
+            isOmmittingValue ifFalse: {
+                resultValue add: nextParseResult value.
+            }.
             currentPosition := state memento.
         }.
 
@@ -328,14 +339,18 @@ public class MonadicCombinatorPlusParser superclass: MonadicParser; definition: 
         let startPosition := state memento.
         let currentPosition mutable := startPosition.
 
-        let resultValue := OrderedCollection new.
+        let resultValue => OrderedCollection := isOmmittingValue ifTrue: nil ifFalse: OrderedCollection new.
         let nextParseResult mutable => MonadicParserResult := parser parseWithState: state.
         nextParseResult isError ifTrue: {return: nextParseResult}.
-        resultValue add: nextParseResult value.
+        isOmmittingValue ifFalse: {
+            resultValue add: nextParseResult value.
+        }.
         currentPosition := state memento.
 
         while: ((nextParseResult := parser parseWithState: state) isValid) do: {
-            resultValue add: nextParseResult value.
+            isOmmittingValue ifFalse: {
+                resultValue add: nextParseResult value.
+            }.
             currentPosition := state memento.
         }.
 
