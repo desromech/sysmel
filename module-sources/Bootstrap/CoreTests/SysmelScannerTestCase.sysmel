@@ -21,21 +21,21 @@ public class SysmelScannerTestCase superclass: TestCase; definition: {
     public method testIdentifier => Void := {
         let tokenList := self scanString: "helloWorld1234".
         self assert: tokenList size equals: 1sz.
-        self assert: tokenList first kind equals: #helloWorld1234.
-        self assert: tokenList first value equals: SysmelTokenKind::Identifier.
+        self assert: tokenList first kind equals: SysmelTokenKind::Identifier.
+        self assert: tokenList first value equals: #helloWorld1234.
     }.
 
     public method testScopedIdentifier => Void := {
         let tokenList := self scanString: "Scope::helloWorld1234".
         self assert: tokenList size equals: 1sz.
-        self assert: tokenList first kind equals: #Scope::helloWorld1234.
-        self assert: tokenList first value equals: SysmelTokenKind::Identifier.
+        self assert: tokenList first kind equals: SysmelTokenKind::Identifier.
+        self assert: tokenList first value equals: #Scope::helloWorld1234.
     }.
 
     public method testScopedIdentifier2 => Void := {
         let tokenList := self scanString: "Scope::SubScope::helloWorld1234".
         self assert: tokenList size equals: 1sz.
-        self assert: tokenList first kind equals: #Scope::SubScope::helloWorld1234.
-        self assert: tokenList first value equals: SysmelTokenKind::Identifier.
+        self assert: tokenList first kind equals: SysmelTokenKind::Identifier.
+        self assert: tokenList first value equals: #Scope::SubScope::helloWorld1234.
     }.
 }.

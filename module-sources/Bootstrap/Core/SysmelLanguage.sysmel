@@ -11,9 +11,45 @@
     __OwnerProgramEntity__ setPublicSymbol: ("SysmelTokenKind::" -- tokenName asString) asSymbol value: index asUInt8
 }.
 
+SysmelToken definition: {
+    __Meta__ definition: {
+        public method kind: (kind: UInt8) value: (value: AnyValue) sourcePosition: (sourcePosition: SourcePosition) ::=> self
+            := self new
+                kind: kind;
+                value: value;
+                sourcePosition: sourcePosition;
+                yourself.
+    }.
+
+}.
+
+let Scanner::Whitespace := MonadicParser white plus.
+let Scanner::White := Scanner::Whitespace.
+
+let Scanner::IdentifierPattern := (MonadicParser identifierStart -- MonadicParser identifierMiddle star withoutValue) withoutValue.
+let Scanner::IdentifierScopePattern := (MonadicParser identifierStart -- MonadicParser identifierMiddle star withoutValue -- "::" asMonadicParser) withoutValue.
+
+let Scanner::Identifier := Scanner::IdentifierScopePattern star withoutValue -- Scanner::IdentifierPattern trim: Scanner::White
+    ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+        SysmelToken kind: SysmelTokenKind::Identifier value: (parserResult sourceValue downCastTo: String) asSymbol sourcePosition: parserResult sourcePosition
+    }.
+
+let Scanner::TokenGrammar := Scanner::Identifier.
+let Scanner::Grammar := Scanner::TokenGrammar star.
+
 public class SysmelLanguage superclass: Object; definition: {
     __Meta__ extend: {
-        public method scanSourceCode: (sourceCode: SourceCode) ::=> Array
-            := #().
+        public method scanSourceCode: (sourceCode: SourceCode) ::=> Array := {
+            let parseState := MonadicParserState forSourceCode: sourceCode.
+            let parseResult := Scanner::Grammar parseWithState: parseState.
+            self assert: parseResult isValid.
+
+            let resultValue => OrderedCollection := parseResult value.
+            parseState atEnd ifFalse: {
+                resultValue add: (SysmelToken kind: SysmelTokenKind::Error value: "Expected end of stream" asSymbol sourcePosition: parseState sourcePositionUntilEnd)
+            }.
+
+            resultValue asArray
+        }.
     }
 }.

@@ -1428,6 +1428,18 @@ SequenceableCollection
     withSelector: #last addMethod: {:(SequenceableCollection)self | self at: self size - 1sz } makeFinal;
     withSelector: #nextToLast addMethod: {:(SequenceableCollection)self | self at: self size - 2sz } makeFinal;
 
+    withSelector: #copyFrom:until: addMethod: {:(SequenceableCollection)self :(Size)startIndex :(Size)endIndex :: self species |
+        let: #resultSize with: (if: startIndex <= endIndex then: endIndex - startIndex else: 0sz).
+        
+        let: #result with: (self species new: resultSize).
+        let: #i mutableWith: 0sz.
+        while: i < resultSize do: (
+            result at: i put: (self at: startIndex + i)
+        ) continueWith: (i := i + 1sz).
+
+        result
+    };
+
     withSelector: #first: addMethod: {:(SequenceableCollection)self :(Size)elementsToKeep :: self species |
         let: #size with: self size.
         let: #resultSize with: (if: size < elementsToKeep then: size else: size).
@@ -1437,6 +1449,8 @@ SequenceableCollection
         while: i < resultSize do: (
             result at: i put: (self at: i)
         ) continueWith: (i := i + 1sz).
+
+        result
     };
     withSelector: #allButFirst: addMethod: {:(SequenceableCollection)self :(Size)dropCount :: self species |
         let: #size with: self size.

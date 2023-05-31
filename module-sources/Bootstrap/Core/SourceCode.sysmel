@@ -12,3 +12,19 @@ SourceCode definition: {
             := self text: text directory: FileSystem::dirname(filename) name: FileSystem::basename(filename) language: language.
     }
 }.
+
+SourcePosition definition: {
+    __Meta__ definition: {
+        public method for: (sourceCode: SourceCode) startIndex: (startIndex: Size) endIndex: (endIndex: Size) ::=> self
+            := self new
+                sourceCode: sourceCode;
+                startIndex: startIndex;
+                endIndex: endIndex;
+                computeLineAndColumnInfo;
+                yourself.
+    }.
+
+    public method computeLineAndColumnInfo => Void := {
+
+    }.
+}.

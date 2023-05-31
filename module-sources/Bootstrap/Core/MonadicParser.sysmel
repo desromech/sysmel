@@ -10,11 +10,18 @@ public global MonadicParserStreamEndMark := MonadicParserStreamEndMarkClass uniq
 
 public class MonadicParserState definition: {
     public field sourceCollection => SequenceableCollection.
+    public field sourceCode => SourceCode.
     public field position => Size.
 
     __Meta__ definition: {
         public method for: (sourceCollection: SequenceableCollection) ::=> self
             := self new sourceCollection: sourceCollection; yourself.
+
+        public method forSourceCode: (sourceCode: SourceCode) ::=> self
+            := self new
+                sourceCollection: sourceCode text;
+                sourceCode: sourceCode;
+                yourself.
     }.
 
     public abstract method memento => Size
@@ -43,6 +50,9 @@ public class MonadicParserState definition: {
 
     public method atEnd => Boolean
         := position >= sourceCollection size.
+
+    public method sourcePositionUntilEnd => SourcePosition
+        := SourcePosition for: sourceCode startIndex: position endIndex: sourceCollection size.
 }.
 
 public abstract class MonadicParserResult superclass: Object; definition: {
@@ -53,6 +63,15 @@ public abstract class MonadicParserResult superclass: Object; definition: {
 
     public abstract method isError => Boolean := false.
     public method isValid => Boolean := self isError not.
+
+    public method sourceValue => SequenceableCollection
+        := state sourceCollection copyFrom: startPosition until: endPosition.
+
+    public method sourceStringValue => String
+        := self sourceValue downCastTo: String.
+
+    public method sourcePosition => SourcePosition
+        := SourcePosition for: state sourceCode startIndex: startPosition endIndex: endPosition.
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: startPosition; nextPut: '-'asChar8; print: endPosition; nextPutAll: ": "; print: value
@@ -89,14 +108,29 @@ public abstract class MonadicParser definition: {
         public method alpha ::=> MonadicParser
             := self predicate: {:character :: Boolean |
                 (('A'asChar8 <= character) && ('Z'asChar8 >= character)) ||
-                (('a'asChar8 <= character) && ('z'asChar8 <= character))
+                (('a'asChar8 <= character) && ('z'asChar8 >= character))
             } errorMessage: "Expected an alphabetic character.".
 
         public method alphaNum ::=> MonadicParser
             := self predicate: {:character :: Boolean |
-                (('A'asChar8 <= character) && ('Z'asChar8 <= character)) ||
-                (('a'asChar8 <= character) && ('z'asChar8 <= character)) ||
-                (('0'asChar8 <= character) && ('9'asChar8 <= character))
+                (('A'asChar8 <= character) && ('Z'asChar8 >= character)) ||
+                (('a'asChar8 <= character) && ('z'asChar8 >= character)) ||
+                (('0'asChar8 <= character) && ('9'asChar8 >= character))
+            } errorMessage: "Expected an alphanumeric character.".
+
+        public method identifierStart ::=> MonadicParser
+            := self predicate: {:character :: Boolean |
+                (('A'asChar8 <= character) && ('Z'asChar8 >= character)) ||
+                (('a'asChar8 <= character) && ('z'asChar8 >= character)) ||
+                ('_' = character)
+            } errorMessage: "Expected an alphabetic character.".
+
+        public method identifierMiddle ::=> MonadicParser
+            := self predicate: {:character :: Boolean |
+                (('A'asChar8 <= character) && ('Z'asChar8 >= character)) ||
+                (('a'asChar8 <= character) && ('z'asChar8 >= character)) ||
+                (('0'asChar8 <= character) && ('9'asChar8 >= character)) ||
+                ('_' = character)
             } errorMessage: "Expected an alphanumeric character.".
     }.
 
@@ -109,6 +143,9 @@ public abstract class MonadicParser definition: {
 
     public method parse: (sourceCollection: SequenceableCollection) ::=> MonadicParserResult
         := self parseWithState: (MonadicParserState for: sourceCollection).
+
+    public method parseSourceCode: (sourceCode: SourceCode) ::=> MonadicParserResult
+        := self parseWithState: (MonadicParserState forSourceCode: sourceCode).
 
     public abstract method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult
         := self subclassResponsibility.
@@ -174,6 +211,18 @@ public abstract class MonadicParser definition: {
     public method plus => MonadicParser
         := MonadicCombinatorPlusParser new
             parser: self;
+            yourself.
+
+    public method trim: (trimmingParser: MonadicParser) ::=> MonadicParser
+        := MonadicCombinatorTrimParser new
+            trimmingParser: trimmingParser;
+            parser: self;
+            yourself.
+
+    public method ==> (valueComputationBlock: (MonadicParserResult) => AnyValue) ::=> MonadicParser
+        := MonadicValueComputationParser new
+            parser: self;
+            valueComputationBlock: valueComputationBlock;
             yourself.
 }.
 
@@ -357,6 +406,50 @@ public class MonadicCombinatorPlusParser superclass: MonadicParser; definition: 
         state restoreMemento: currentPosition.
         self makeResult: resultValue from: startPosition withState: state
     }.
+}.
+
+public class MonadicCombinatorTrimParser superclass: MonadicParser; definition: {
+    public field trimmingParser => MonadicParser.
+    public field parser => MonadicParser.
+
+    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+        {
+            let trimLeftPosition := state memento.
+            let trimLeftResult := trimmingParser parseWithState: state.
+            trimLeftResult isError ifTrue: {
+                state restoreMemento: trimLeftPosition
+            }.
+        }.
+
+        let parseResult := parser parseWithState: state.
+        parseResult isError ifTrue: {return: parseResult}.
+
+        {
+            let trimRightPosition := state memento.
+            let trimRightResult := trimmingParser parseWithState: state.
+            trimRightResult isError ifTrue: {
+                state restoreMemento: trimRightPosition
+            }.
+        }.
+
+        parseResult
+    }.
+}.
+
+public class MonadicValueComputationParser superclass: MonadicParser; definition: {
+    public field parser => MonadicParser.
+    public field valueComputationBlock => ((MonadicParserResult) => AnyValue).
+
+    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+        let parseResult := parser parseWithState: state.
+        parseResult isValid ifTrue: {
+            parseResult copy
+                value: valueComputationBlock(parseResult);
+                yourself
+        } ifFalse: {
+            parseResult
+        }
+    }
 }.
 
 public class MonadicDelegateParser superclass: MonadicParser; definition: {
