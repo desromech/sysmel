@@ -1055,7 +1055,9 @@ Collection
         }.
         result
     };
-
+    withSelector: #includes: addMethod: {:(Collection)self :element :: Boolean |
+        self subclassResponsibility
+    } makeAbstract;
     withSelector: #printOn: addMethod: {:(Collection)self :(Stream)stream :: Void |
         stream print: self class; nextPutAll: "(".
         self doWithIndex: {:element :(Size)index :: Void |
@@ -1291,7 +1293,7 @@ SequenceableCollection
             hasFoundIt := (self at: i) = element
         ) continueWith: (i := i + 1sz).
         hasFoundIt
-    } makeFinal;
+    } makeOverride makeFinal;
     withSelector: #collect: addMethod: {:(SequenceableCollection)self :aBlock :: self species |
         let: #i mutableWith: 0sz.
         let: #size with: self size.

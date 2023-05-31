@@ -21,25 +21,51 @@ SysmelToken definition: {
                 yourself.
     }.
 
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: "SystemToken kind: "; print: kind; nextPutAll: " value: "; print: value
+    }.
 }.
 
 let Scanner::Whitespace := MonadicParser white plus withoutValue.
 let Scanner::NotNewline := MonadicParser predicate: {:character :: Boolean | ('\n'asChar8 ~= character) && ('\r'asChar8 ~= character)} errorMessage: "Newline found".
 let Scanner::SingleLineComment := ("##" asMonadicParser -- Scanner::NotNewline star withoutValue) withoutValue.
-let Scanner::MultiLineComment := ("#*" asMonadicParser -- "*#" asMonadicParser not star withoutValue -- "*#" asMonadicParser) withoutValue.
+let Scanner::MultiLineComment := ("#*" asMonadicParser -- "*#" asMonadicParser negate star withoutValue -- "*#" asMonadicParser) withoutValue.
 
 let Scanner::White := (Scanner::Whitespace | Scanner::SingleLineComment | Scanner::MultiLineComment) plus withoutValue.
 
+let Scanner::ColonPattern := ':'asChar8 asMonadicElementParser -- ':'asChar8 asMonadicElementParser not.
+let Scanner::ColonColonPattern := "::" asMonadicParser.
+
 let Scanner::IdentifierPattern := (MonadicParser identifierStart -- MonadicParser identifierMiddle star withoutValue) withoutValue.
-let Scanner::IdentifierScopePattern := (MonadicParser identifierStart -- MonadicParser identifierMiddle star withoutValue -- "::" asMonadicParser) withoutValue.
+let Scanner::IdentifierScopePrefixPattern := (Scanner::IdentifierPattern -- Scanner::ColonColonPattern) star withoutValue.
+let Scanner::ScopedIdentifierPattern := (Scanner::IdentifierScopePrefixPattern -- Scanner::IdentifierPattern) withoutValue.
 
-let Scanner::Identifier := Scanner::IdentifierScopePattern star withoutValue -- Scanner::IdentifierPattern
-    ::==> {:(MonadicParserResult)parserResult :: AnyValue |
-        SysmelToken kind: SysmelTokenKind::Identifier value: (parserResult sourceValue downCastTo: String) asSymbol sourcePosition: parserResult sourcePosition
-    }.
+let Scanner::OperatorCharacter := "+-/\\*~<>=@%|&?!^" asMonadicSetParser.
+let Scanner::OperatorPattern := Scanner::OperatorCharacter plus withoutValue.
+let Scanner::ScopedOperatorPattern := (Scanner::IdentifierScopePrefixPattern -- Scanner::OperatorPattern) withoutValue.
 
-let Scanner::TokenGrammar := Scanner::Identifier trim: Scanner::White.
-let Scanner::Grammar := Scanner::White optional -- Scanner::TokenGrammar star -- Scanner::White optional .
+let Scanner::ScopedKeywordPattern := (Scanner::ScopedIdentifierPattern -- Scanner::ColonPattern) withoutValue.
+let Scanner::ScopedMultiKeywordPattern := (Scanner::IdentifierScopePrefixPattern -- ((Scanner::IdentifierPattern -- Scanner::ColonPattern) withoutValue plusN: 2sz) withoutValue) withoutValue.
+
+let Scanner::Identifier := Scanner::ScopedIdentifierPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::Identifier value: (parserResult sourceValue downCastTo: String) asSymbol sourcePosition: parserResult sourcePosition
+}.
+
+let Scanner::Operator := Scanner::ScopedOperatorPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::Operator value: (parserResult sourceValue downCastTo: String) asSymbol sourcePosition: parserResult sourcePosition
+}.
+
+let Scanner::Keyword := Scanner::ScopedKeywordPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::Keyword value: (parserResult sourceValue downCastTo: String) asSymbol sourcePosition: parserResult sourcePosition
+}.
+
+let Scanner::MultiKeyword := Scanner::ScopedMultiKeywordPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::MultiKeyword value: (parserResult sourceValue downCastTo: String) asSymbol sourcePosition: parserResult sourcePosition
+}.
+
+let Scanner::Token := Scanner::MultiKeyword | Scanner::Keyword | Scanner::Identifier | Scanner::Operator.
+let Scanner::TrimmedToken := Scanner::Token trim: Scanner::White.
+let Scanner::Grammar := Scanner::White optional -- Scanner::TrimmedToken star -- Scanner::White optional .
 
 public class SysmelLanguage superclass: Object; definition: {
     __Meta__ extend: {

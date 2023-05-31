@@ -37,6 +37,19 @@ public class MonadicParserTestCase superclass: TestCase; definition: {
         self assert: (parser parse: "a") isError.
     }.
 
+    public method testCharacterSet => Void := {
+        let parser := "+-/\\*~<>=@%|&?!^" asMonadicSetParser.
+        self assert: (parser parse: "+") isValid.
+        self assert: (parser parse: "-") isValid.
+        self assert: (parser parse: "a") isError.
+    }.
+
+    public method testCharacterSetList => Void := {
+        let parser := "+-/\\*~<>=@%|&?!^" asMonadicSetParser plus.
+        self assert: (parser parse: "+-") isValid.
+        self assert: (parser parse: "-/") isValid.
+    }.
+
     public method testStar => Void := {
         let parser := "abra" asMonadicParser star -- MonadicParser end.
         self assert: (parser parse: "") isValid.

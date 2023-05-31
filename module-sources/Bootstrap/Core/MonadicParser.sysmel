@@ -204,12 +204,23 @@ public abstract class MonadicParser definition: {
             yourself.
 
     public method star => MonadicParser
-        := MonadicCombinatorStarParser new
+        := MonadicCombinatorRepetitionParser new
             parser: self;
             yourself.
 
     public method plus => MonadicParser
-        := MonadicCombinatorPlusParser new
+        := MonadicCombinatorRepetitionParser new
+            parser: self;
+            minimalCount: 1sz;
+            yourself.
+    public method plusN: (minimalCount: Size) ::=> MonadicParser
+        := MonadicCombinatorRepetitionParser new
+            parser: self;
+            minimalCount: minimalCount;
+            yourself.
+
+    public method negate => MonadicParser
+        := MonadicCombinatorNegateParser new
             parser: self;
             yourself.
 
@@ -301,6 +312,25 @@ SequenceableCollection extend: {
         := MonadicSequenceParser new expectedSequence: self; yourself.
 }.
 
+public class MonadicSetParser superclass: MonadicParser; definition: {
+    public field expectedSet => Collection.
+
+    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+        let startPosition := state memento.
+        state atEnd not && (expectedSet includes: state peek) ifTrue: {
+            state advance.
+            self makeResultFrom: startPosition withState: state
+        } ifFalse: {
+            self makeError: "Element not in set." withState: state.
+        }
+    }
+}.
+
+Collection extend: {
+    public method asMonadicSetParser => MonadicParser
+        := MonadicSetParser new expectedSet: self; yourself.
+}.
+
 public class MonadicCombinatorSequenceParser superclass: MonadicParser; definition: {
     public field parsers => Array.
 
@@ -345,6 +375,7 @@ public class MonadicCombinatorAlternativesParser superclass: MonadicParser; defi
             let parser => MonadicParser := parsers at: i.
             parserResult := parser parseWithState: state.
             parserResult isValid ifTrue: {return: parserResult}.
+            state restoreMemento: startPosition.
         } continueWith: (i := i + 1sz).
 
         parserResult
@@ -366,7 +397,7 @@ public class MonadicCombinatorOptionalParser superclass: MonadicParser; definiti
     }.
 }.
 
-public class MonadicCombinatorNotParser superclass: MonadicParser; definition: {
+public class MonadicCombinatorNegateParser superclass: MonadicParser; definition: {
     public field parser => MonadicParser.
 
     public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
@@ -382,41 +413,41 @@ public class MonadicCombinatorNotParser superclass: MonadicParser; definition: {
     }.
 }.
 
-public class MonadicCombinatorStarParser superclass: MonadicParser; definition: {
+public class MonadicCombinatorNotParser superclass: MonadicParser; definition: {
     public field parser => MonadicParser.
 
     public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
         let startPosition := state memento.
-        let nextParseResult mutable => MonadicParserResult := nil.
-        let currentPosition mutable := startPosition.
-        let resultValue => OrderedCollection := isOmmittingValue ifTrue: nil ifFalse: OrderedCollection new.
-        while: ((nextParseResult := parser parseWithState: state) isValid) do: {
-            isOmmittingValue ifFalse: {
-                resultValue add: nextParseResult value.
-            }.
-            currentPosition := state memento.
-        }.
-
-        state restoreMemento: currentPosition.
-        self makeResult: resultValue from: startPosition withState: state
+        let parseResult := parser parseWithState: state.
+        parseResult isValid ifTrue: {
+            self makeError: "Unexpected" withState: state
+        } ifFalse: {
+            state restoreMemento: startPosition.
+            self makeResultWithState: state
+        }
     }.
 }.
 
-public class MonadicCombinatorPlusParser superclass: MonadicParser; definition: {
+public class MonadicCombinatorRepetitionParser superclass: MonadicParser; definition: {
     public field parser => MonadicParser.
+    public field minimalCount => Size.
 
     public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
         let startPosition := state memento.
         let currentPosition mutable := startPosition.
 
         let resultValue => OrderedCollection := isOmmittingValue ifTrue: nil ifFalse: OrderedCollection new.
-        let nextParseResult mutable => MonadicParserResult := parser parseWithState: state.
-        nextParseResult isError ifTrue: {return: nextParseResult}.
-        isOmmittingValue ifFalse: {
-            resultValue add: nextParseResult value.
-        }.
-        currentPosition := state memento.
+        let nextParseResult mutable => MonadicParserResult := nil.
+        let i mutable := 0sz.
+        while: (i < minimalCount) do: {
+            nextParseResult := parser parseWithState: state.
+            nextParseResult isError ifTrue: {return: nextParseResult}.
+            isOmmittingValue ifFalse: {
+                resultValue add: nextParseResult value.
+            }.
+        } continueWith: (i := i + 1sz).
 
+        currentPosition := state memento.
         while: ((nextParseResult := parser parseWithState: state) isValid) do: {
             isOmmittingValue ifFalse: {
                 resultValue add: nextParseResult value.

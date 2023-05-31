@@ -38,4 +38,61 @@ public class SysmelScannerTestCase superclass: TestCase; definition: {
         self assert: tokenList first kind equals: SysmelTokenKind::Identifier.
         self assert: tokenList first value equals: #Scope::SubScope::helloWorld1234.
     }.
+
+    public method testOperator => Void := {
+        let tokenList := self scanString: "+".
+        self assert: tokenList size equals: 1sz.
+        self assert: tokenList first kind equals: SysmelTokenKind::Operator.
+        self assert: tokenList first value equals: #+.
+    }.
+
+    public method testOperator2 => Void := {
+        let tokenList := self scanString: "||".
+        self assert: tokenList size equals: 1sz.
+        self assert: tokenList first kind equals: SysmelTokenKind::Operator.
+        self assert: tokenList first value equals: #||.
+    }.
+
+    public method testScopedOperator => Void := {
+        let tokenList := self scanString: "Scope::+".
+        self assert: tokenList size equals: 1sz.
+        self assert: tokenList first kind equals: SysmelTokenKind::Operator.
+        self assert: tokenList first value equals: #Scope::+.
+    }.
+
+    public method testScopedOperator2 => Void := {
+        let tokenList := self scanString: "Scope::SubScope::+".
+        self assert: tokenList size equals: 1sz.
+        self assert: tokenList first kind equals: SysmelTokenKind::Operator.
+        self assert: tokenList first value equals: #Scope::SubScope::+.
+    }.
+
+    public method testKeyword => Void := {
+        let tokenList := self scanString: "test:".
+        self assert: tokenList size equals: 1sz.
+        self assert: tokenList first kind equals: SysmelTokenKind::Keyword.
+        self assert: tokenList first value equals: #test:.
+    }.
+
+    public method testScopedKeyword => Void := {
+        let tokenList := self scanString: "Scope::test:".
+        self assert: tokenList size equals: 1sz.
+        self assert: tokenList first kind equals: SysmelTokenKind::Keyword.
+        self assert: tokenList first value equals: #Scope::test:.
+    }.
+
+    public method testMultiKeyword => Void := {
+        let tokenList := self scanString: "test:second:".
+        self assert: tokenList size equals: 1sz.
+        self assert: tokenList first kind equals: SysmelTokenKind::MultiKeyword.
+        self assert: tokenList first value equals: #test:second:.
+    }.
+
+    public method testScopedMultiKeyword => Void := {
+        let tokenList := self scanString: "Scope::test:second:".
+        self assert: tokenList size equals: 1sz.
+        self assert: tokenList first kind equals: SysmelTokenKind::MultiKeyword.
+        self assert: tokenList first value equals: #Scope::test:second:.
+    }.
+
 }.
