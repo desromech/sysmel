@@ -70,6 +70,12 @@ public abstract class MonadicParserResult superclass: Object; definition: {
     public method sourceStringValue => String
         := self sourceValue downCastTo: String.
 
+    public method sourceStringValueWithoutFirst: (startTrim: Size) ::=> String
+        := (state sourceCollection copyFrom: startPosition + startTrim until: endPosition) downCastTo: String.
+
+    public method sourceStringValueWithoutFirst: (startTrim: Size) last: (endTrim: Size)::=> String
+        := (state sourceCollection copyFrom: startPosition + startTrim until: endPosition - endTrim) downCastTo: String.
+
     public method sourcePosition => SourcePosition
         := SourcePosition for: state sourceCode startIndex: startPosition endIndex: endPosition.
 

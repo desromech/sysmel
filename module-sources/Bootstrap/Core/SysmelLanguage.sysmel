@@ -35,6 +35,7 @@ let Scanner::White := (Scanner::Whitespace | Scanner::SingleLineComment | Scanne
 
 let Scanner::ColonPattern := ':'asChar8 asMonadicElementParser -- ':'asChar8 asMonadicElementParser not.
 let Scanner::ColonColonPattern := "::" asMonadicParser.
+let Scanner::HashChar := "#" asMonadicParser.
 
 let Scanner::IdentifierPattern := (MonadicParser identifierStart -- MonadicParser identifierMiddle star withoutValue) withoutValue.
 let Scanner::IdentifierScopePrefixPattern := (Scanner::IdentifierPattern -- Scanner::ColonColonPattern) star withoutValue.
@@ -47,23 +48,47 @@ let Scanner::ScopedOperatorPattern := (Scanner::IdentifierScopePrefixPattern -- 
 let Scanner::ScopedKeywordPattern := (Scanner::ScopedIdentifierPattern -- Scanner::ColonPattern) withoutValue.
 let Scanner::ScopedMultiKeywordPattern := (Scanner::IdentifierScopePrefixPattern -- ((Scanner::IdentifierPattern -- Scanner::ColonPattern) withoutValue plusN: 2sz) withoutValue) withoutValue.
 
+let Scanner::SymbolIdentifierPattern := (Scanner::HashChar -- Scanner::ScopedIdentifierPattern) withoutValue.
+let Scanner::SymbolMultiKeywordPattern := (Scanner::HashChar -- Scanner::ScopedMultiKeywordPattern) withoutValue.
+let Scanner::SymbolKeywordPattern := (Scanner::HashChar -- Scanner::ScopedKeywordPattern) withoutValue.
+let Scanner::SymbolOperatorPattern := (Scanner::HashChar -- Scanner::ScopedOperatorPattern) withoutValue.
+
 let Scanner::Identifier := Scanner::ScopedIdentifierPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
-    SysmelToken kind: SysmelTokenKind::Identifier value: (parserResult sourceValue downCastTo: String) asSymbol sourcePosition: parserResult sourcePosition
+    SysmelToken kind: SysmelTokenKind::Identifier value: parserResult sourceStringValue asSymbol sourcePosition: parserResult sourcePosition
 }.
 
 let Scanner::Operator := Scanner::ScopedOperatorPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
-    SysmelToken kind: SysmelTokenKind::Operator value: (parserResult sourceValue downCastTo: String) asSymbol sourcePosition: parserResult sourcePosition
+    SysmelToken kind: SysmelTokenKind::Operator value: parserResult sourceStringValue asSymbol sourcePosition: parserResult sourcePosition
 }.
 
 let Scanner::Keyword := Scanner::ScopedKeywordPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
-    SysmelToken kind: SysmelTokenKind::Keyword value: (parserResult sourceValue downCastTo: String) asSymbol sourcePosition: parserResult sourcePosition
+    SysmelToken kind: SysmelTokenKind::Keyword value: parserResult sourceStringValue asSymbol sourcePosition: parserResult sourcePosition
 }.
 
 let Scanner::MultiKeyword := Scanner::ScopedMultiKeywordPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
-    SysmelToken kind: SysmelTokenKind::MultiKeyword value: (parserResult sourceValue downCastTo: String) asSymbol sourcePosition: parserResult sourcePosition
+    SysmelToken kind: SysmelTokenKind::MultiKeyword value: parserResult sourceStringValue asSymbol sourcePosition: parserResult sourcePosition
 }.
 
-let Scanner::Token := Scanner::MultiKeyword | Scanner::Keyword | Scanner::Identifier | Scanner::Operator.
+
+let Scanner::SymbolIdentifier := Scanner::SymbolIdentifierPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::Symbol value: (parserResult sourceStringValueWithoutFirst: 1sz) asSymbol sourcePosition: parserResult sourcePosition
+}.
+
+let Scanner::SymbolMultiKeyword := Scanner::SymbolMultiKeywordPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::Symbol value: (parserResult sourceStringValueWithoutFirst: 1sz) asSymbol sourcePosition: parserResult sourcePosition
+}.
+
+let Scanner::SymbolKeyword := Scanner::SymbolKeywordPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::Symbol value: (parserResult sourceStringValueWithoutFirst: 1sz) asSymbol sourcePosition: parserResult sourcePosition
+}.
+
+let Scanner::SymbolOperator := Scanner::SymbolOperatorPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::Symbol value: (parserResult sourceStringValueWithoutFirst: 1sz) asSymbol sourcePosition: parserResult sourcePosition
+}.
+
+let Scanner::Token :=
+    Scanner::SymbolIdentifier | Scanner::SymbolMultiKeyword | Scanner::SymbolKeyword | Scanner::SymbolOperator |
+    Scanner::MultiKeyword | Scanner::Keyword | Scanner::Identifier | Scanner::Operator.
 let Scanner::TrimmedToken := Scanner::Token trim: Scanner::White.
 let Scanner::Grammar := Scanner::White optional -- Scanner::TrimmedToken star -- Scanner::White optional .
 
