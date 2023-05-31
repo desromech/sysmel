@@ -203,7 +203,7 @@ SYSBVM_API uint8_t sysbvm_tuple_byteSlotAt(sysbvm_context_t *context, sysbvm_tup
         return 0;
     }
 
-    if(!sysbvm_tuple_isBytes(tuple)) return error("Expected a byte tuple.");
+    if(!sysbvm_tuple_isBytes(tuple)) sysbvm_error("Expected a byte tuple.");
 
     if(slotIndex < sysbvm_tuple_getSizeInBytes(tuple))
         return SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->bytes[slotIndex];

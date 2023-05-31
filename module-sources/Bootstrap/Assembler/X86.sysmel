@@ -86,6 +86,12 @@ public final class AsmX86_64CompilationTarget superclass: AsmAbstractX86Compilat
     public override method usesElfRelStyleRelocations => Boolean
         := false.
 
+    public override method dwarf::returnAddressRegister => UInt8
+        := 16u8.
+
+    public override method dwarf::stackFrameRegister => UInt8
+        := 7u8.
+
     public override method convertRelocationIntoElf64Rela: (relocation: AsmObjectCodeRelocation) withSymbolTable: (symbolTable: Elf64::SymbolTable) ::=> Elf64::Rela
         := relocation convertIntoX86_64RelaWithSymbolTable: symbolTable.
 }.

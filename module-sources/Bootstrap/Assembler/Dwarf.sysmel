@@ -298,6 +298,35 @@ public final class Dwarf::Constant superclass: AsmConstantExpressionInteger; def
     (DW_OP_reinterpret  169 '1' 'ULEB128 type entry offset')
     (DW_OP_lo_user 224 '' '')
     (DW_OP_hi_user 15 '' '')
+
+    (DW_OP_CFA_advance_loc 16r1)
+    (DW_OP_CFA_offset 16r2)
+    (DW_OP_CFA_restore 16r3)
+    (DW_OP_CFA_nop 0)
+    (DW_OP_CFA_set_loc 16r01)
+    (DW_OP_CFA_advance_loc1 16r02)
+    (DW_OP_CFA_advance_loc2 16r03)
+    (DW_OP_CFA_advance_loc4 16r04)
+    (DW_OP_CFA_offset_extended 16r05)
+    (DW_OP_CFA_restore_extended 16r06)
+    (DW_OP_CFA_undefined 16r07)
+    (DW_OP_CFA_same_value 16r08)
+    (DW_OP_CFA_register 16r09)
+    (DW_OP_CFA_remember_state 16r09)
+    (DW_OP_CFA_restore_state 16r0b)
+    (DW_OP_CFA_def_cfa 16r0c)
+    (DW_OP_CFA_def_cfa_register 16r0d)
+    (DW_OP_CFA_def_cfa_offset 16r0e)
+    (DW_OP_CFA_def_cfa_expression 16r0f)
+    (DW_OP_CFA_expression 16r10)
+    (DW_OP_CFA_offset_extended_sf 16r11)
+    (DW_OP_CFA_def_cfa_sf 16r12)
+    (DW_OP_CFA_def_cfa_offset_sf 16r13)
+    (DW_OP_CFA_val_offset 16r14)
+    (DW_OP_CFA_val_offset_sf 16r15)
+    (DW_OP_CFA_val_expression 16r16)
+    (DW_OP_CFA_lo_user 16r09)
+    (DW_OP_CFA_hi_user 16r09)
     
     (DW_LLE_end_of_list  0)
     (DW_LLE_base_addressx  1)
@@ -952,6 +981,14 @@ Dwarf::DebugInfoEntry extend: {
 }.
 
 AsmStreamBuilder extend: {
+    public method dwarf::debugFrameSection ::=> AsmSectionDirective
+        := self addElement: (AsmSectionDirective new
+            name: #".debug_frame";
+            loaded: true;
+            readable: false;
+            debugging: true;
+            yourself).
+            
     public method dwarf::debugLineSection ::=> AsmSectionDirective
         := self addElement: (AsmSectionDirective new
             name: #".debug_line";
@@ -1005,6 +1042,7 @@ Dwarf::AsmWriter definition: {
     public field debugLineStream => AsmStreamBuilder.
     public field debugAbbreviationsStream => AsmStreamBuilder.
     public field debugInfoStream => AsmStreamBuilder.
+    public field debugFrameStream => AsmStreamBuilder.
     public field activeStream => AsmStreamBuilder.
 
     public override method initialize => Void := {
@@ -1046,6 +1084,10 @@ Dwarf::AsmWriter definition: {
         debugLineStream := debugInfoProgramEntity newStreamBuilder
             dwarf::debugLineSection;
             label: debugLineStart;
+            yourself.
+
+        debugFrameStream := debugInfoProgramEntity newStreamBuilder
+            dwarf::debugFrameSection;
             yourself.
 
         compilationUnit stmtList: (debugLineStart immediateSectionRelative: pointerSize) asConstantExpression.
@@ -1233,12 +1275,105 @@ AsmProgramEntity extend: {
     }.
 }.
 
-public final class Dwarf::DebugLineWriter superclass: Object; definition: {
+public final class Dwarf::SectionWriter superclass: Object; definition: {
+    public field pointerSize => Size.
+    private field programRelocations => OrderedCollection.
+    public field out => ByteStream.
+
+    public override method initialize => Void := {
+        programRelocations := OrderedCollection new.
+    }.
+
+    public method alignTo: (alignment: Size) paddingWith: (padding: UInt8) ::=> Void := {
+        let alignedSize := out size alignedTo: alignment.
+        let paddingSize mutable := alignedSize - out size.
+        while: (paddingSize > 0sz) do: {
+            out nextPut: padding
+        } continueWith: (paddingSize := paddingSize - 1sz)
+    }.
+
+    public method makeBytesDuring: (aBlock: () => Void) ::=> ByteArray := {
+        let byteStream := ByteStream new.
+        let oldOut := out.
+        out := byteStream.
+        aBlock().
+        out := oldOut.
+        byteStream asByteArray
+    }.
+
+    public method byte: (value: UInt8) ::=> Void := {
+        out nextPut: value
+    }.
+
+    public method word: (value: UInt16) ::=> Void := {
+        out nextPutUInt16: value
+    }.
+
+    public method dword: (value: UInt32) ::=> Void := {
+        out nextPutUInt32: value
+    }.
+
+    public method qword: (value: UInt64) ::=> Void := {
+        out nextPutUInt64: value
+    }.
+
+    public method pointerWord: (value: UInt64) ::=> Void := {
+        pointerSize = 4sz
+            ifTrue: (self dword: value asUInt32)
+            ifFalse: (self qword: value)
+    }.
+
+    public method cstring: (value: String) ::=> Void := {
+        out nextPutString: value; nextPut: 0u8.
+    }.
+
+    public method initialLength: (length: UInt64) ::=> Void := {
+        pointerSize = 4sz ifTrue: {
+            self dword: length asUInt32.
+        } ifFalse: {
+            self
+                dword: 16rFFFFFFFF u32;
+                qword: length.
+        }
+    }.
+
+    public method initialLengthSize ::=> Size
+        := pointerSize = 4sz ifTrue: 4sz ifFalse: 12sz.
+
+    public method uleb128: (value: UInt64) ::=> Void := {
+        let currentValue mutable := value.
+        do: {
+            let byte := (currentValue & 127u64) asUInt8.
+            currentValue := currentValue >> 7u64.
+            out nextPut: byte | (currentValue ~= 0 ifTrue: 128u8 ifFalse: 0u8)
+        } while: (currentValue ~= 0u64)
+    }.
+
+    public method sleb128: (value: Int64) ::=> Void := {
+        let more mutable => Boolean := true.
+
+        let currentValue mutable := value.
+        while: more do: {
+            let byte mutable := (currentValue & 127i64) asInt8.
+            currentValue := currentValue >> 7i64.
+            
+            let byteHasSign := (byte & 16r40 i8) ~= 0i8.
+            ((currentValue = 0i64) && byteHasSign not) || (currentValue == -1i64 && byteHasSign) ifTrue: {
+                more := false
+            } ifFalse: {
+                byte := byte | 16r80 i8.
+            }.
+
+            out nextPut: byte asUInt8
+        }.
+    }.
+}.
+
+public final class Dwarf::DebugLineWriter superclass: Dwarf::SectionWriter; definition: {
     public field defaultIsStatement => Boolean.
     public field maxNumberOfOperationsPerInstruction => UInt32.
     public field minimumInstructionLength => UInt32.
     public field opcodeBase => UInt32.
-    public field pointerSize => Size.
 
     public field directoryDictionary => Dictionary.
     public field directories => OrderedCollection.
@@ -1267,10 +1402,9 @@ public final class Dwarf::DebugLineWriter superclass: Object; definition: {
     private field regISA => UInt32.
     private field regDiscriminator => Boolean.
 
-    private field programRelocations => OrderedCollection.
-    public field out => ByteStream.
-
     public override method initialize => Void := {
+        super initialize.
+
         defaultIsStatement := true.
         maxNumberOfOperationsPerInstruction := 1u32.
         minimumInstructionLength := 1u32.
@@ -1281,8 +1415,6 @@ public final class Dwarf::DebugLineWriter superclass: Object; definition: {
 
         fileDictionary := Dictionary new.
         files := OrderedCollection new.
-
-        programRelocations := OrderedCollection new.
     }.
 
     public method addSourceDirectory: (directory: String) ::=> UInt32 := {
@@ -1549,52 +1681,131 @@ public final class Dwarf::DebugLineWriter superclass: Object; definition: {
         self byte: 0u8; uleb128: 1u64; byte: Dwarf::DW_LNE_end_sequence value asUInt8
     }.
 
-    public method byte: (value: UInt8) ::=> Void := {
-        out nextPut: value
+
+}.
+
+public final class Dwarf::CallFrameInformationWriter superclass: Dwarf::SectionWriter; definition: {
+    public field compilationTarget => AsmCompilationTarget.
+    public field codeAlignmentFactor => UInt64.
+    public field dataAlignmentFactor => Int64.
+    public field returnAddressRegister => UInt8.
+
+    private field cieIsEmitted => Boolean.
+    private field cfiRelocations => OrderedCollection.
+    private field targetSectionSymbol => AsmSymbol.
+    private field relocationBaseOffset => Size.
+
+    public override method initialize => Void := {
+        super initialize.
+        codeAlignmentFactor := 1u64.
+        cfiRelocations := OrderedCollection new.
     }.
 
-    public method word: (value: UInt16) ::=> Void := {
-        out nextPutUInt16: value
-    }.
+    public method writeCallFrameInformationForSections: (sections: OrderedCollection) onto: (targetSection: AsmObjectCodeSection) pointerSize: (pointerSize: Size) ::=> Void := {
+        self
+            pointerSize: pointerSize;
+            dataAlignmentFactor: pointerSize asInt64.
 
-    public method dword: (value: UInt32) ::=> Void := {
-        out nextPutUInt32: value
-    }.
+        returnAddressRegister := compilationTarget dwarf::returnAddressRegister asUInt8.
 
-    public method qword: (value: UInt64) ::=> Void := {
-        out nextPutUInt64: value
-    }.
+        targetSectionSymbol := AsmSymbol new
+            section: targetSection;
+            makePrivate;
+            yourself.
 
-    public method cstring: (value: String) ::=> Void := {
-        out nextPutString: value; nextPut: 0u8.
-    }.
+        out := ByteStream new.
+        sections do: {:(AsmObjectCodeSection)section :: Void |
+            let sectionSymbol := AsmSymbol new
+                section: section;
+                makePrivate;
+                yourself.
 
-    public method uleb128: (value: UInt64) ::=> Void := {
-        let currentValue mutable := value.
-        do: {
-            let byte := (currentValue & 127u64) asUInt8.
-            currentValue := currentValue >> 7u64.
-            out nextPut: byte | (currentValue ~= 0 ifTrue: 128u8 ifFalse: 0u8)
-        } while: (currentValue ~= 0u64)
-    }.
-
-    public method sleb128: (value: Int64) ::=> Void := {
-        let more mutable => Boolean := true.
-
-        let currentValue mutable := value.
-        while: more do: {
-            let byte mutable := (currentValue & 127i64) asInt8.
-            currentValue := currentValue >> 7i64.
-            
-            let byteHasSign := (byte & 16r40 i8) ~= 0i8.
-            ((currentValue = 0i64) && byteHasSign not) || (currentValue == -1i64 && byteHasSign) ifTrue: {
-                more := false
-            } ifFalse: {
-                byte := byte | 16r80 i8.
+            section executable ifTrue: {
+                section frameDescriptions do: {:(AsmFrameDescriptionInformation)frameDescriptions :: Void |
+                    self writeFrameDescription: frameDescriptions section: sectionSymbol.
+                }.
             }.
-
-            out nextPut: byte asUInt8
         }.
+
+        targetSection writeUnallocatedBytes: out asByteArray.
+        targetSection newRelocations addAll: cfiRelocations.
+    }.
+
+    public method ensureCommonInformationEntryIsEmitted => Void := {
+        cieIsEmitted ifTrue: {return: void}.
+
+        cieIsEmitted := true.
+
+        relocationBaseOffset := out size + self initialLengthSize.
+        let cieBytes := self makeBytesDuring: {:: Void |
+            self
+                pointerWord: -1u64; ## CIE_id
+                byte: 4u8; ## CIE version;
+                cstring: ""; ## Augmentation;
+                byte: self pointerSize asUInt8; ## addressSize
+                byte: 0u8; ## segment size
+                uleb128: codeAlignmentFactor asUInt64;
+                sleb128: dataAlignmentFactor asInt64;
+                uleb128: returnAddressRegister asUInt64.
+
+            self alignTo: pointerSize paddingWith: 0u8
+        }.
+
+        self initialLength: cieBytes size asUInt64.
+        out nextPutAll: cieBytes.
+    }.
+
+    public method writeFrameDescription: (frameDescription: AsmFrameDescriptionInformation) section: (sectionSymbol: AsmSymbol) ::=> Void := {
+        self ensureCommonInformationEntryIsEmitted.
+
+        relocationBaseOffset := out size + self initialLengthSize.
+        let fdeBytes := self makeBytesDuring: {:: Void |
+            self
+                sectionRelativePointer: targetSectionSymbol offset: 0i64; ## CIE
+                pointer: sectionSymbol offset: frameDescription startOffset asInt64;
+                pointerWord: (frameDescription endOffset - frameDescription startOffset) asUInt64.
+
+            self alignTo: pointerSize paddingWith: 0u8
+        }.
+
+        self initialLength: fdeBytes size asUInt64.
+        out nextPutAll: fdeBytes.
+    }.
+
+    public method sectionRelativePointer: (address: AsmSymbol) offset: (offset: Int64) ::=> Void := {
+        pointerSize = 4sz ifTrue: {
+            cfiRelocations add: (AsmObjectCodeRelocationSectionRelativeInt32 new
+                symbol: address;
+                offset: relocationBaseOffset + out size;
+                addend: offset asInt32;
+                yourself).
+            self dword: 0u32
+        } ifFalse: {
+            cfiRelocations add: (AsmObjectCodeRelocationSectionRelativeInt64 new
+                symbol: address;
+                offset: relocationBaseOffset + out size;
+                addend: offset;
+                yourself).
+            self qword: 0u64
+        }
+    }.
+
+    public method pointer: (address: AsmSymbol) offset: (offset: Int64) ::=> Void := {
+        pointerSize = 4sz ifTrue: {
+            cfiRelocations add: (AsmObjectCodeRelocationAbsoluteInt32 new
+                symbol: address;
+                offset: relocationBaseOffset + out size;
+                addend: offset asInt32;
+                yourself).
+            self dword: 0u32
+        } ifFalse: {
+            cfiRelocations add: (AsmObjectCodeRelocationAbsoluteInt64 new
+                symbol: address;
+                offset: relocationBaseOffset + out size;
+                addend: offset;
+                yourself).
+            self qword: 0u64
+        }
     }.
 }.
 
@@ -1684,6 +1895,12 @@ public final class Dwarf::ObjectDebugInformationGenerator superclass: AsmObjectD
 
     public override method generateDebugLineInformationForModule: (module: AsmProgramEntity) objectCodeBuilder: (objectCodeBuilder: AsmObjectCodeBuilder) ::=> Void := {
         lineWriter writeSourceLocationForSections: objectCodeBuilder sections onto: (objectCodeBuilder getSectionNamed: #".debug_line") pointerSize: module compilationTarget pointerSize
+    }.
+
+    public override method generateCallFrameInformationForModule: (module: AsmProgramEntity) objectCodeBuilder: (objectCodeBuilder: AsmObjectCodeBuilder) ::=> Void := {
+        Dwarf::CallFrameInformationWriter new
+            compilationTarget: module compilationTarget;
+            writeCallFrameInformationForSections: objectCodeBuilder sections onto: (objectCodeBuilder getSectionNamed: #".debug_frame") pointerSize: module compilationTarget pointerSize
     }.
 }.
 
@@ -2061,6 +2278,12 @@ AsmStackMapLocationFrameOffset extend: {
 }.
 
 AsmCompilationTarget extend: {
+    public abstract method dwarf::returnAddressRegister => UInt8
+        := self subclassResponsibility.
+
+    public abstract method dwarf::stackFrameRegister => UInt8
+        := self subclassResponsibility.
+
     public method useDwarf => self __type__ := {
         debugInformationGenerator := Dwarf::ObjectDebugInformationGenerator.
         self

@@ -1649,9 +1649,11 @@ public final class AsmProgramEntity superclass: Object; definition: {
         objectCodeBuilder allocateMemoryForWriting.
         self assembleSecondPassWith: objectCodeBuilder.
 
-        objectCodeBuilder finishDebugInfo.
+        objectCodeBuilder finishDebugAndUnwindInfo.
         debugInformationGenerator ifNotNil: {
-            debugInformationGenerator generateDebugLineInformationForModule: self objectCodeBuilder: objectCodeBuilder
+            debugInformationGenerator
+                generateDebugLineInformationForModule: self objectCodeBuilder: objectCodeBuilder;
+                generateCallFrameInformationForModule: self objectCodeBuilder: objectCodeBuilder
         }.
 
         objectCodeBuilder finish
@@ -1733,6 +1735,9 @@ AsmObjectDebugInformationGenerator extend: {
         := self subclassResponsibility.
 
     public abstract method generateDebugLineInformationForModule: (module: AsmProgramEntity) objectCodeBuilder: (objectCodeBuilder: AsmObjectCodeBuilder) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method generateCallFrameInformationForModule: (module: AsmProgramEntity) objectCodeBuilder: (objectCodeBuilder: AsmObjectCodeBuilder) ::=> Void
         := self subclassResponsibility.
 }.
 

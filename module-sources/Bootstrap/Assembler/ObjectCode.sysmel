@@ -256,8 +256,6 @@ AsmObjectCodeSection definition: {
         self alignWriteOffsetTo: alignment unreachable: true compilationTarget: compilationTarget.
         relocations := newRelocations asArray.
         newRelocations := nil.
-        frameDescriptions := newFrameDescriptions asArray.
-        newFrameDescriptions := nil.
     }.
 
     public override method sizeOfByteEncoding => Size := data size.
@@ -297,7 +295,10 @@ AsmObjectCodeSection definition: {
         }
     }.
 
-    public method finishDebugInfo => Void := {
+    public method finishDebugAndUnwindInfo => Void := {
+        frameDescriptions := newFrameDescriptions asArray.
+        newFrameDescriptions := nil.
+
         newDebugTuples ifNil: {
             return: void.
         }.
@@ -322,6 +323,7 @@ AsmObjectCodeSection definition: {
         currentFrameDescription := AsmFrameDescriptionInformation new
             startOffset: writeOffset;
             yourself.
+        newFrameDescriptions add: currentFrameDescription.
     }.
 
     public method cfiEndProcedure => Void := {
@@ -542,9 +544,9 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
             newSection
         }.
 
-    public method finishDebugInfo => Void := {
+    public method finishDebugAndUnwindInfo => Void := {
         sections do: {:(AsmObjectCodeSection)each :: Void |
-            each finishDebugInfo
+            each finishDebugAndUnwindInfo
         }
     }.
 
