@@ -1,0 +1,41 @@
+public class SysmelScannerTestCase superclass: TestCase; definition: {
+    public method scanString: (string: String) ::=> Array
+        := SysmelLanguage scanSourceCode: (SourceCode text: string directory: nil name: "test" language: #tlisp).
+
+    public method testEmptyString => Void := {
+        self assert: (self scanString: "") isEmpty.
+    }.
+
+    public method testSingleLineComment => Void := {
+        self assert: (self scanString: "## Single line comment") isEmpty.
+    }.
+
+    public method testMultiLineComment => Void := {
+        self assert: (self scanString:"
+        #**
+         * Multi line comment
+         *#
+        ") isEmpty.
+    }.
+
+    public method testIdentifier => Void := {
+        let tokenList := self scanString: "helloWorld1234".
+        self assert: tokenList size equals: 1sz.
+        self assert: tokenList first kind equals: #helloWorld1234.
+        self assert: tokenList first value equals: SysmelTokenKind::Identifier.
+    }.
+
+    public method testScopedIdentifier => Void := {
+        let tokenList := self scanString: "Scope::helloWorld1234".
+        self assert: tokenList size equals: 1sz.
+        self assert: tokenList first kind equals: #Scope::helloWorld1234.
+        self assert: tokenList first value equals: SysmelTokenKind::Identifier.
+    }.
+
+    public method testScopedIdentifier2 => Void := {
+        let tokenList := self scanString: "Scope::SubScope::helloWorld1234".
+        self assert: tokenList size equals: 1sz.
+        self assert: tokenList first kind equals: #Scope::SubScope::helloWorld1234.
+        self assert: tokenList first value equals: SysmelTokenKind::Identifier.
+    }.
+}.

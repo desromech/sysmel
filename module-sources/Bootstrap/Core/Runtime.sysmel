@@ -1790,6 +1790,17 @@ String
         self padLeft: requiredLength with: ' 'asChar8
     }.
 
+StringSymbol
+    withSelector: #at: addMethod: {:(StringSymbol)self :(Size)index :: Char8 |
+        (self __byteSlotAt__: index) asChar8
+    };
+    withSelector: #at:put: addMethod: {:(StringSymbol)self :(Size)index :(Char8)value :: Void |
+        self __byteSlotAt__: index put: value asUInt8
+    };
+    withSelector: #size addMethod: {:(StringSymbol)self :: Size |
+        self __byteSize__
+    }.
+
 ByteStream
     withSelector: #nextPutUInt16: addMethod: {:(ByteStream)self :(UInt16)value :: Void |
         self

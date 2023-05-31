@@ -1,0 +1,14 @@
+SourceCode definition: {
+    __Meta__ definition: {
+        public method text: (text: String) directory: (directory: String) name: (name: String) language: (language: StringSymbol) ::=> self
+            := self new
+                text: text;
+                directory: directory;
+                name: name;
+                language: language;
+                yourself.
+
+        public method text: (text: String) filename: (filename: String) language: (language: StringSymbol) ::=> self
+            := self text: text directory: FileSystem::dirname(filename) name: FileSystem::basename(filename) language: language.
+    }
+}.

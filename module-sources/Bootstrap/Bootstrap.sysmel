@@ -1,6 +1,8 @@
 loadSourceNamed: "Core/package.sysmel".
 
 loadSourceNamed: "MiniSUnit/package.sysmel".
+loadSourceNamed: "CoreTests/package.sysmel".
+
 loadSourceNamed: "Bytecode/package.sysmel".
 loadSourceNamed: "TAC/package.sysmel".
 loadSourceNamed: "Assembler/package.sysmel".

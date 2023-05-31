@@ -7,6 +7,9 @@ loadSourceNamed: "Enum.sysmel".
 loadSourceNamed: "Struct.sysmel".
 loadSourceNamed: "PAL.sysmel".
 
+loadSourceNamed: "SysmelLanguage.sysmel".
+loadSourceNamed: "SourceCode.sysmel".
+
 loadSourceNamed: "ByteSerializableObject.sysmel".
 loadSourceNamed: "MethodDictionary.sysmel".
 loadSourceNamed: "StringMemoryFunctions.sysmel".
@@ -18,3 +21,4 @@ loadSourceNamed: "Math.sysmel".
 loadSourceNamed: "ProgramEntity.sysmel".
 loadSourceNamed: "Utility.sysmel".
 loadSourceNamed: "String.sysmel".
+loadSourceNamed: "StringSymbol.sysmel".

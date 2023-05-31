@@ -9,12 +9,14 @@ public abstract class TestCase superclass: TestAsserter; definition: {
         }.
 
         public method run ::=> Void := {
+            printLine("Running ", self name).
             self testSelectors do: {:(Symbol)eachTestSelector :: Void |
                 self run: eachTestSelector
             }
         }.
 
         public method run: (testSelector: Symbol) ::=> Void := {
+            printLine("-- ", testSelector).
             self new
                 setUp;
                 perform: testSelector;
@@ -24,9 +26,8 @@ public abstract class TestCase superclass: TestAsserter; definition: {
         public method testSelectors => Array := {
             let: #selectors with: OrderedCollection new.
             self withSupertypesDo: {:subtype :: Void |
-                subtype selectorsDo: {:(Symbol)each :: Void |
-                    let symbolString := each asString.
-                    if: (symbolString beginsWith: "test") && (symbolString numSelectorArgs = 0sz) then: {
+                subtype selectorsDo: {:(StringSymbol)each :: Void |
+                    if: (each beginsWith: "test") && (each numSelectorArgs = 0sz) then: {
                         selectors add: each
                     }
                 }

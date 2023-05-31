@@ -1,0 +1,19 @@
+#(
+    Character Float Identifier Keyword MultiKeyword Operator String Symbol
+    LParent RParent LBracket RBracket LCBracket RCBracket
+    LessThan GreaterThan Star
+    Colon ColonColon Bar
+    Assignment Semicolon Comma Dot Ellipsis
+    Quote QuasiQuote QuasiUnquote Splice
+    ByteArrayStart DictionaryStart LiteralArrayStart
+    Error
+) doWithIndex: {:(Symbol)tokenName :(Size)index :: Void |
+    __OwnerProgramEntity__ setPublicSymbol: ("SysmelTokenKind::" -- tokenName asString) asSymbol value: index asUInt8
+}.
+
+public class SysmelLanguage superclass: Object; definition: {
+    __Meta__ extend: {
+        public method scanSourceCode: (sourceCode: SourceCode) ::=> Array
+            := #().
+    }
+}.
