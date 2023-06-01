@@ -41,7 +41,8 @@ ASTNode
     withSelector: #isSpliceNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isWhileContinueWithNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     
-    withSelector: #literalFunctionPrimitiveName addMethod: {:(ASTNode)self :: Symbol | nil } makeVirtual.
+    withSelector: #literalFunctionPrimitiveName addMethod: {:(ASTNode)self :: Symbol | nil } makeVirtual;
+    withSelector: #copyWithNewReceiverOrFunction: addMethod: {:(ASTNode)self :(ASTNode)newReceiverOrFunction :: ASTNode | self subclassResponsibility } makeVirtual.
 
 ASTArgumentNode
     withSelector: #isArgumentNode addMethod: {:(ASTNode)self :: Boolean | true } makeOverride;
@@ -306,7 +307,13 @@ ASTMakeArrayNode
     } makeOverride.
 
 ASTMessageSendNode
-    withSelector: #isMessageSendNode addMethod: {:(ASTNode)self :: Boolean | true } makeOverride;
+    withSelector: #isMessageSendNode addMethod: {:(ASTMessageSendNode)self :: Boolean | true } makeOverride;
+
+    withSelector: #copyWithNewReceiverOrFunction: addMethod: {:(ASTMessageSendNode)self :(ASTNode)newReceiverOrFunction :: ASTNode |
+        self copy
+            receiver: newReceiverOrFunction;
+            yourself
+    } makeOverride;
 
     withSelector: #childrenDo: addMethod: {:(ASTMessageSendNode)self :aBlock :: Void |
         if: (self receiver isNotNil) then: aBlock(self receiver).
@@ -414,7 +421,12 @@ ASTSequenceNode
     } makeOverride.
 
 ASTUnexpandedApplicationNode
-    withSelector: #isUnexpandedApplicationNode addMethod: {:(ASTNode)self :: Boolean | true } makeOverride;
+    withSelector: #isUnexpandedApplicationNode addMethod: {:(ASTUnexpandedApplicationNode)self :: Boolean | true } makeOverride;
+    withSelector: #copyWithNewReceiverOrFunction: addMethod: {:(ASTUnexpandedApplicationNode)self :(ASTNode)newReceiverOrFunction :: ASTNode |
+        self copy
+            functionOrMacroExpression: newReceiverOrFunction;
+            yourself
+    } makeOverride;
 
     withSelector: #childrenDo: addMethod: {:(ASTUnexpandedApplicationNode)self :aBlock :: Void |
         if: (self functionOrMacroExpression isNotNil) then: aBlock(self functionOrMacroExpression).

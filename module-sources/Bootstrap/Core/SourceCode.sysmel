@@ -27,4 +27,12 @@ SourcePosition definition: {
     public method computeLineAndColumnInfo => Void := {
 
     }.
+
+    public method makeUnionWith: (next: SourcePosition) ::=> SourcePosition := {
+        sourceCode == next sourceCode ifTrue: {
+            SourcePosition for: sourceCode startIndex: (startIndex min: next startIndex) endIndex: (endIndex max: next endIndex)
+        } ifFalse: {
+            self
+        }
+    }.
 }.
