@@ -91,8 +91,74 @@ public class SysmelLispParserTestCase superclass: TestCase; definition: {
         self assert: sexpression elements isEmpty.
     }.
 
+    public method testUnexpandedEmptySExpression2 => Void := {
+        let ast := self parseString: "[]".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isUnexpandedSExpressionNode.
+        let sexpression := sequenceNode expressions first downCastTo: ASTUnexpandedSExpressionNode.
+        self assert: sexpression elements isEmpty.
+    }.
+
+    public method testUnexpandedEmptySExpression3 => Void := {
+        let ast := self parseString: "{}".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isUnexpandedSExpressionNode.
+        let sexpression := sequenceNode expressions first downCastTo: ASTUnexpandedSExpressionNode.
+        self assert: sexpression elements isEmpty.
+    }.
+
     public method testUnexpandedSExpression => Void := {
         let ast := self parseString: "(function)".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isUnexpandedSExpressionNode.
+
+        let sexpression := sequenceNode expressions first downCastTo: ASTUnexpandedSExpressionNode.
+        self assert: sexpression elements size equals: 1sz.
+
+        self assert: sexpression elements first isIdentifierReferenceNode.
+        let element := sexpression elements first downCastTo: ASTIdentifierReferenceNode.
+        self assert: element value equals: #function.
+    }.
+
+    public method testUnexpandedSExpression2 => Void := {
+        let ast := self parseString: "[function]".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isUnexpandedSExpressionNode.
+
+        let sexpression := sequenceNode expressions first downCastTo: ASTUnexpandedSExpressionNode.
+        self assert: sexpression elements size equals: 1sz.
+
+        self assert: sexpression elements first isIdentifierReferenceNode.
+        let element := sexpression elements first downCastTo: ASTIdentifierReferenceNode.
+        self assert: element value equals: #function.
+    }.
+
+    public method testUnexpandedSExpression3 => Void := {
+        let ast := self parseString: "{function}".
         self assert: ast isNotNil.
         self assert: ast isSequenceNode.
 
