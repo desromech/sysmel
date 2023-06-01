@@ -192,4 +192,78 @@ public class SysmelScannerTestCase superclass: TestCase; definition: {
         self assert: tokenList first kind equals: SysmelTokenKind::Symbol.
         self assert: tokenList first value equals: #"Hello \"World\r\n".
     }.
+
+    public method testDelimiters => Void := {
+        let tokenList := self scanString: "() [] {} : :: `' `` `, `@ | .. ... ; * < > #[ #( #{".
+        self assert: tokenList size equals: 23sz.
+
+        self assert: (tokenList at: 0sz) kind equals: SysmelTokenKind::LeftParent.
+        self assert: (tokenList at: 0sz) value equals: #"(".
+
+        self assert: (tokenList at: 1sz) kind equals: SysmelTokenKind::RightParent.
+        self assert: (tokenList at: 1sz) value equals: #")".
+
+        self assert: (tokenList at: 2sz) kind equals: SysmelTokenKind::LeftBracket.
+        self assert: (tokenList at: 2sz) value equals: #"[".
+
+        self assert: (tokenList at: 3sz) kind equals: SysmelTokenKind::RightBracket.
+        self assert: (tokenList at: 3sz) value equals: #"]".
+
+        self assert: (tokenList at: 4sz) kind equals: SysmelTokenKind::LeftCurlyBracket.
+        self assert: (tokenList at: 4sz) value equals: #"{".
+
+        self assert: (tokenList at: 5sz) kind equals: SysmelTokenKind::RightCurlyBracket.
+        self assert: (tokenList at: 5sz) value equals: #"}".
+
+        self assert: (tokenList at: 6sz) kind equals: SysmelTokenKind::Colon.
+        self assert: (tokenList at: 6sz) value equals: #":".
+
+        self assert: (tokenList at: 7sz) kind equals: SysmelTokenKind::ColonColon.
+        self assert: (tokenList at: 7sz) value equals: #"::".
+
+        self assert: (tokenList at: 8sz) kind equals: SysmelTokenKind::Quote.
+        self assert: (tokenList at: 8sz) value equals: #"`'".
+
+        self assert: (tokenList at: 9sz) kind equals: SysmelTokenKind::QuasiQuote.
+        self assert: (tokenList at: 9sz) value equals: #"``".
+
+        self assert: (tokenList at: 10sz) kind equals: SysmelTokenKind::QuasiUnquote.
+        self assert: (tokenList at: 10sz) value equals: #"`,".
+
+        self assert: (tokenList at: 11sz) kind equals: SysmelTokenKind::Splice.
+        self assert: (tokenList at: 11sz) value equals: #"`@".
+
+        self assert: (tokenList at: 12sz) kind equals: SysmelTokenKind::Bar.
+        self assert: (tokenList at: 12sz) value equals: #|.
+
+        self assert: (tokenList at: 13sz) kind equals: SysmelTokenKind::Dot.
+        self assert: (tokenList at: 13sz) value equals: #".".
+
+        self assert: (tokenList at: 14sz) kind equals: SysmelTokenKind::Dot.
+        self assert: (tokenList at: 14sz) value equals: #".".
+
+        self assert: (tokenList at: 15sz) kind equals: SysmelTokenKind::Ellipsis.
+        self assert: (tokenList at: 15sz) value equals: #"...".
+
+        self assert: (tokenList at: 16sz) kind equals: SysmelTokenKind::Semicolon.
+        self assert: (tokenList at: 16sz) value equals: #";".
+
+        self assert: (tokenList at: 17sz) kind equals: SysmelTokenKind::Star.
+        self assert: (tokenList at: 17sz) value equals: #"*".
+
+        self assert: (tokenList at: 18sz) kind equals: SysmelTokenKind::LessThan.
+        self assert: (tokenList at: 18sz) value equals: #<.
+
+        self assert: (tokenList at: 19sz) kind equals: SysmelTokenKind::GreaterThan.
+        self assert: (tokenList at: 19sz) value equals: #>.
+
+        self assert: (tokenList at: 20sz) kind equals: SysmelTokenKind::ByteArrayStart.
+        self assert: (tokenList at: 20sz) value equals: #"#[".
+
+        self assert: (tokenList at: 21sz) kind equals: SysmelTokenKind::LiteralArrayStart.
+        self assert: (tokenList at: 21sz) value equals: #"#(".
+
+        self assert: (tokenList at: 22sz) kind equals: SysmelTokenKind::DictionaryStart.
+        self assert: (tokenList at: 22sz) value equals: #"#{".
+    }.
 }.

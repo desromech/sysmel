@@ -1,6 +1,6 @@
 #(
     Character Float Identifier Integer Keyword MultiKeyword Operator String Symbol
-    LParent RParent LBracket RBracket LCBracket RCBracket
+    LeftParent RightParent LeftBracket RightBracket LeftCurlyBracket RightCurlyBracket
     LessThan GreaterThan Star
     Colon ColonColon Bar
     Assignment Semicolon Comma Dot Ellipsis
@@ -36,6 +36,25 @@ let Scanner::White := (Scanner::Whitespace | Scanner::SingleLineComment | Scanne
 let Scanner::ColonPattern := ':'asChar8 asMonadicElementParser -- ':'asChar8 asMonadicElementParser not.
 let Scanner::ColonColonPattern := "::" asMonadicParser.
 let Scanner::HashChar := "#" asMonadicParser.
+
+let Scanner::LeftParentPattern := '('asChar8 asMonadicElementParser.
+let Scanner::RightParentPattern := ')'asChar8 asMonadicElementParser.
+let Scanner::LeftBracketPattern := '['asChar8 asMonadicElementParser.
+let Scanner::RightBracketPattern := ']'asChar8 asMonadicElementParser.
+let Scanner::LeftCurlyBracketPattern := '{'asChar8 asMonadicElementParser.
+let Scanner::RightCurlyBracketPattern := '}'asChar8 asMonadicElementParser.
+let Scanner::EllipsisPattern := "..." asMonadicParser.
+let Scanner::DotPattern := '.'asChar8 asMonadicElementParser.
+let Scanner::SemicolonPattern := ';'asChar8 asMonadicElementParser.
+
+let Scanner::QuotePattern := "`'" asMonadicParser.
+let Scanner::QuasiQuotePattern := "``" asMonadicParser.
+let Scanner::QuasiUnquotePattern := "`," asMonadicParser.
+let Scanner::SplicePattern := "`@" asMonadicParser.
+
+let Scanner::ByteArrayStartPattern := "#[" asMonadicParser.
+let Scanner::LiteralArrayStartPattern := "#(" asMonadicParser.
+let Scanner::DictionaryStartPattern := "#{" asMonadicParser.
 
 let Scanner::IdentifierPattern := (MonadicParser identifierStart -- MonadicParser identifierMiddle star withoutValue) withoutValue.
 let Scanner::IdentifierScopePrefixPattern := (Scanner::IdentifierPattern -- Scanner::ColonColonPattern) star withoutValue.
@@ -76,6 +95,63 @@ let Scanner::SymbolMultiKeywordPattern := (Scanner::HashChar -- Scanner::ScopedM
 let Scanner::SymbolKeywordPattern := (Scanner::HashChar -- Scanner::ScopedKeywordPattern) withoutValue.
 let Scanner::SymbolOperatorPattern := (Scanner::HashChar -- Scanner::ScopedOperatorPattern) withoutValue.
 
+let Scanner::LeftParent := Scanner::LeftParentPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::LeftParent value: #"(" sourcePosition: parserResult sourcePosition
+}.
+let Scanner::RightParent := Scanner::RightParentPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::RightParent value: #")" sourcePosition: parserResult sourcePosition
+}.
+let Scanner::LeftBracket := Scanner::LeftBracketPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::LeftBracket value: #"[" sourcePosition: parserResult sourcePosition
+}.
+let Scanner::RightBracket := Scanner::RightBracketPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::RightBracket value: #"]" sourcePosition: parserResult sourcePosition
+}.
+let Scanner::LeftCurlyBracket := Scanner::LeftCurlyBracketPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::LeftCurlyBracket value: #"{" sourcePosition: parserResult sourcePosition
+}.
+let Scanner::RightCurlyBracket := Scanner::RightCurlyBracketPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::RightCurlyBracket value: #"}" sourcePosition: parserResult sourcePosition
+}.
+let Scanner::Ellipsis := Scanner::EllipsisPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::Ellipsis value: #"..." sourcePosition: parserResult sourcePosition
+}.
+let Scanner::Dot := Scanner::DotPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::Dot value: #"." sourcePosition: parserResult sourcePosition
+}.
+let Scanner::Colon := Scanner::ColonPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::Colon value: #":" sourcePosition: parserResult sourcePosition
+}.
+let Scanner::ColonColon := Scanner::ColonColonPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::ColonColon value: #"::" sourcePosition: parserResult sourcePosition
+}.
+let Scanner::Semicolon := Scanner::SemicolonPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::Semicolon value: #";" sourcePosition: parserResult sourcePosition
+}.
+
+let Scanner::Quote := Scanner::QuotePattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::Quote value: #"`'" sourcePosition: parserResult sourcePosition
+}.
+let Scanner::QuasiQuote := Scanner::QuasiQuotePattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::QuasiQuote value: #"``" sourcePosition: parserResult sourcePosition
+}.
+let Scanner::QuasiUnquote := Scanner::QuasiUnquotePattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::QuasiUnquote value: #"`," sourcePosition: parserResult sourcePosition
+}.
+let Scanner::Splice := Scanner::SplicePattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::Splice value: #"`@" sourcePosition: parserResult sourcePosition
+}.
+
+let Scanner::ByteArrayStart := Scanner::ByteArrayStartPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::ByteArrayStart value: #"#[" sourcePosition: parserResult sourcePosition
+}.
+let Scanner::LiteralArrayStart := Scanner::LiteralArrayStartPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::LiteralArrayStart value: #"#(" sourcePosition: parserResult sourcePosition
+}.
+let Scanner::DictionaryStart := Scanner::DictionaryStartPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::DictionaryStart value: #"#{" sourcePosition: parserResult sourcePosition
+}.
+
 let Scanner::Identifier := Scanner::ScopedIdentifierPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
     SysmelToken kind: SysmelTokenKind::Identifier value: parserResult sourceStringValue asSymbol sourcePosition: parserResult sourcePosition
 }.
@@ -88,8 +164,16 @@ let Scanner::Float := Scanner::FloatPattern ::==> {:(MonadicParserResult)parserR
     SysmelToken kind: SysmelTokenKind::Float value: (Float64 parseString: parserResult sourceStringValue) sourcePosition: parserResult sourcePosition
 }.
 
+let Scanner::DelimiterOperatorMap := #{
+    #"*" : SysmelTokenKind::Star.
+    #| : SysmelTokenKind::Bar.
+    #< : SysmelTokenKind::LessThan.
+    #> : SysmelTokenKind::GreaterThan.
+}.
+
 let Scanner::Operator := Scanner::ScopedOperatorPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
-    SysmelToken kind: SysmelTokenKind::Operator value: parserResult sourceStringValue asSymbol sourcePosition: parserResult sourcePosition
+    let value := parserResult sourceStringValue asSymbol.
+    SysmelToken kind: (Scanner::DelimiterOperatorMap at: value ifAbsent: {| SysmelTokenKind::Operator}) value: value sourcePosition: parserResult sourcePosition
 }.
 
 let Scanner::Keyword := Scanner::ScopedKeywordPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
@@ -129,6 +213,10 @@ let Scanner::SymbolString := Scanner::SymbolStringPattern ::==> {:(MonadicParser
 }.
 
 let Scanner::Token :=
+    Scanner::LeftParent | Scanner::RightParent | Scanner::LeftBracket | Scanner::RightBracket | Scanner::LeftCurlyBracket | Scanner::RightCurlyBracket |
+    Scanner::ByteArrayStart | Scanner::LiteralArrayStart | Scanner::DictionaryStart |
+    Scanner::Ellipsis | Scanner::Dot | Scanner::ColonColon | Scanner::Colon | Scanner::Semicolon |
+    Scanner::Quote | Scanner::QuasiQuote | Scanner::QuasiUnquote | Scanner::Splice |
     Scanner::Character | Scanner::String | Scanner::Float | Scanner::Integer |
     Scanner::SymbolIdentifier | Scanner::SymbolMultiKeyword | Scanner::SymbolKeyword | Scanner::SymbolString | Scanner::SymbolOperator |
     Scanner::MultiKeyword | Scanner::Keyword | Scanner::Identifier | Scanner::Operator.
