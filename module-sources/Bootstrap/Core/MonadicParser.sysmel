@@ -85,6 +85,9 @@ public abstract class MonadicParserResult superclass: Object; definition: {
     public method sourcePosition => SourcePosition
         := state sourcePositionFrom: startPosition until: endPosition.
 
+    public method sourcePositionWithoutFirst: (startTrim: Size) last: (endTrim: Size) ::=> SourcePosition
+        := state sourcePositionFrom: startPosition + startTrim until: endPosition - endTrim.
+
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: startPosition; nextPut: '-'asChar8; print: endPosition; nextPutAll: ": "; print: value
     }.

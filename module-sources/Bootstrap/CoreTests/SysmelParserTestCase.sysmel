@@ -46,7 +46,7 @@ public class SysmelParserTestCase superclass: TestCase; definition: {
         self assert: sequenceNode expressions size equals: 1sz.
 
         self assert: sequenceNode expressions first isIdentifierReferenceNode.
-        let identifierNode := sequenceNode expressions first downCastTo: ASTIdentifierReferenceNode.
+        let identifierNode => ASTIdentifierReferenceNode := sequenceNode expressions first.
         self assert: identifierNode value equals: #identifier.
     }.
 
@@ -60,7 +60,7 @@ public class SysmelParserTestCase superclass: TestCase; definition: {
         self assert: sequenceNode expressions size equals: 1sz.
 
         self assert: sequenceNode expressions first isLiteralNode.
-        let literalNode := sequenceNode expressions first downCastTo: ASTLiteralNode.
+        let literalNode => ASTLiteralNode := sequenceNode expressions first.
         self assert: literalNode value equals: 1234.
     }.
 
@@ -74,7 +74,357 @@ public class SysmelParserTestCase superclass: TestCase; definition: {
         self assert: sequenceNode expressions size equals: 1sz.
 
         self assert: sequenceNode expressions first isLiteralNode.
-        let literalNode := sequenceNode expressions first downCastTo: ASTLiteralNode.
+        let literalNode => ASTLiteralNode := sequenceNode expressions first.
         self assert: literalNode value equals: #test.
     }.
+
+    public method testParentheses => Void := {
+        let ast := self parseString: "(1234)".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isLiteralNode.
+        let literalNode => ASTLiteralNode := sequenceNode expressions first.
+        self assert: literalNode value equals: 1234.
+    }.
+
+    public method testParenthesesSequence=> Void := {
+        let ast := self parseString: "(1234 . hello)".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isSequenceNode.
+        let subsequenceNode => ASTSequenceNode := sequenceNode expressions first.
+        self assert: subsequenceNode pragmas size equals: 0sz.
+        self assert: subsequenceNode expressions size equals: 2sz.
+
+        self assert: subsequenceNode expressions first isLiteralNode.
+        let literalNode => ASTLiteralNode := subsequenceNode expressions first.
+        self assert: literalNode value equals: 1234.
+
+        self assert: subsequenceNode expressions second isIdentifierReferenceNode.
+        let identifierNode => ASTIdentifierReferenceNode := subsequenceNode expressions second.
+        self assert: identifierNode value equals: #hello.
+    }.
+
+    public method testMakeEmptyArray => Void := {
+        let ast := self parseString: "()".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isMakeArrayNode.
+        let makeArrayNode => ASTMakeArrayNode := sequenceNode expressions first.
+        self assert: makeArrayNode elements isEmpty.
+    }.
+
+    public method testMakeSingleArray => Void := {
+        let ast := self parseString: "1,".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isMakeArrayNode.
+        let makeArrayNode => ASTMakeArrayNode := sequenceNode expressions first.
+        self assert: makeArrayNode elements size equals: 1sz.
+
+        {
+            self assert: makeArrayNode elements first isLiteralNode.
+            let literalNode => ASTLiteralNode := makeArrayNode elements first.
+            self assert: literalNode value equals: 1.
+        }.
+    }.
+
+    public method testMakeTwoElementsArray => Void := {
+        let ast := self parseString: "1, 2".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isMakeArrayNode.
+        let makeArrayNode => ASTMakeArrayNode := sequenceNode expressions first.
+        self assert: makeArrayNode elements size equals: 2sz.
+
+        {
+            self assert: makeArrayNode elements first isLiteralNode.
+            let literalNode => ASTLiteralNode := makeArrayNode elements first.
+            self assert: literalNode value equals: 1.
+        }.
+
+        {
+            self assert: makeArrayNode elements second isLiteralNode.
+            let literalNode => ASTLiteralNode := makeArrayNode elements second.
+            self assert: literalNode value equals: 2.
+        }.
+    }.
+
+    public method testEmptyBlock => Void := {
+        let ast := self parseString: "{}".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isLexicalBlockNode.
+        let lexicalBlockNode => ASTLexicalBlockNode := sequenceNode expressions first.
+        
+        self assert: lexicalBlockNode body isSequenceNode.
+        let blockSequenceNode => ASTSequenceNode := lexicalBlockNode body downCastTo: ASTSequenceNode.
+        self assert: blockSequenceNode pragmas isEmpty.
+        self assert: blockSequenceNode expressions isEmpty.
+    }.
+
+    public method testLambda => Void := {
+        let ast := self parseString: "{|}".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isLambdaNode.
+        let lambdaNode => ASTLambdaNode := sequenceNode expressions first.
+        self assert: lambdaNode arguments isEmpty.
+        self assert: lambdaNode resultType isNil.
+        
+        self assert: lambdaNode body isSequenceNode.
+        let blockSequenceNode => ASTSequenceNode := lambdaNode body downCastTo: ASTSequenceNode.
+        self assert: blockSequenceNode pragmas isEmpty.
+        self assert: blockSequenceNode expressions isEmpty.
+    }.
+
+    public method testLambda2 => Void := {
+        let ast := self parseString: "{:arg |}".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isLambdaNode.
+        let lambdaNode => ASTLambdaNode := sequenceNode expressions first.
+        self assert: lambdaNode arguments size equals: 1sz.
+        self assert: lambdaNode resultType isNil.
+
+        {
+            self assert: lambdaNode arguments first isArgumentNode.
+            let argumentNode => ASTArgumentNode := lambdaNode arguments first.
+            self deny: argumentNode isForAll.
+            self assert: argumentNode name isLiteralNode.
+            self assert: (argumentNode name downCastTo: ASTLiteralNode) value equals: #arg.
+            self assert: argumentNode type isNil.
+        }.
+        
+        self assert: lambdaNode body isSequenceNode.
+        let blockSequenceNode => ASTSequenceNode := lambdaNode body downCastTo: ASTSequenceNode.
+        self assert: blockSequenceNode pragmas isEmpty.
+        self assert: blockSequenceNode expressions isEmpty.
+    }.
+    
+    public method testLambda3 => Void := {
+        let ast := self parseString: "{:(Int32)arg :secondArg |}".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isLambdaNode.
+        let lambdaNode => ASTLambdaNode := sequenceNode expressions first.
+        self assert: lambdaNode arguments size equals: 2sz.
+        self assert: lambdaNode resultType isNil.
+
+        {
+            self assert: lambdaNode arguments first isArgumentNode.
+            let argumentNode => ASTArgumentNode := lambdaNode arguments first.
+            self deny: argumentNode isForAll.
+            self assert: argumentNode name isLiteralNode.
+            self assert: (argumentNode name downCastTo: ASTLiteralNode) value equals: #arg.
+            self assert: argumentNode type isIdentifierReferenceNode.
+            self assert: (argumentNode type downCastTo: ASTIdentifierReferenceNode) value equals: #Int32.
+        }.
+        
+        {
+            self assert: lambdaNode arguments second isArgumentNode.
+            let argumentNode => ASTArgumentNode := lambdaNode arguments second.
+            self deny: argumentNode isForAll.
+            self assert: argumentNode name isLiteralNode.
+            self assert: (argumentNode name downCastTo: ASTLiteralNode) value equals: #secondArg.
+            self assert: argumentNode type isNil.
+        }.
+
+        self assert: lambdaNode body isSequenceNode.
+        let blockSequenceNode => ASTSequenceNode := lambdaNode body downCastTo: ASTSequenceNode.
+        self assert: blockSequenceNode pragmas isEmpty.
+        self assert: blockSequenceNode expressions isEmpty.
+    }.
+
+    public method testLambda4 => Void := {
+        let ast := self parseString: "{:(Int32)arg :secondArg :: Void |}".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isLambdaNode.
+        let lambdaNode => ASTLambdaNode := sequenceNode expressions first.
+        self assert: lambdaNode arguments size equals: 2sz.
+        self assert: lambdaNode resultType isIdentifierReferenceNode.
+        self assert: (lambdaNode resultType downCastTo: ASTIdentifierReferenceNode) value equals: #Void.
+
+        {
+            self assert: lambdaNode arguments first isArgumentNode.
+            let argumentNode => ASTArgumentNode := lambdaNode arguments first.
+            self deny: argumentNode isForAll.
+            self assert: argumentNode name isLiteralNode.
+            self assert: (argumentNode name downCastTo: ASTLiteralNode) value equals: #arg.
+            self assert: argumentNode type isIdentifierReferenceNode.
+            self assert: (argumentNode type downCastTo: ASTIdentifierReferenceNode) value equals: #Int32.
+        }.
+        
+        {
+            self assert: lambdaNode arguments second isArgumentNode.
+            let argumentNode => ASTArgumentNode := lambdaNode arguments second.
+            self deny: argumentNode isForAll.
+            self assert: argumentNode name isLiteralNode.
+            self assert: (argumentNode name downCastTo: ASTLiteralNode) value equals: #secondArg.
+            self assert: argumentNode type isNil.
+        }.
+
+        self assert: lambdaNode body isSequenceNode.
+        let blockSequenceNode => ASTSequenceNode := lambdaNode body downCastTo: ASTSequenceNode.
+        self assert: blockSequenceNode pragmas isEmpty.
+        self assert: blockSequenceNode expressions isEmpty.
+    }.
+
+
+    public method testLambda5 => Void := {
+        let ast := self parseString: "{ :: Void |}".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isLambdaNode.
+        let lambdaNode => ASTLambdaNode := sequenceNode expressions first.
+        self assert: lambdaNode arguments isEmpty.
+        self assert: lambdaNode resultType isIdentifierReferenceNode.
+        self assert: (lambdaNode resultType downCastTo: ASTIdentifierReferenceNode) value equals: #Void.
+
+        self assert: lambdaNode body isSequenceNode.
+        let blockSequenceNode => ASTSequenceNode := lambdaNode body downCastTo: ASTSequenceNode.
+        self assert: blockSequenceNode pragmas isEmpty.
+        self assert: blockSequenceNode expressions isEmpty.
+    }.
+
+    public method testBlockSingleExpression => Void := {
+        let ast := self parseString: "{1234}".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isLexicalBlockNode.
+        let lexicalBlockNode => ASTLexicalBlockNode := sequenceNode expressions first.
+        
+        self assert: lexicalBlockNode body isSequenceNode.
+        let blockSequenceNode => ASTSequenceNode := lexicalBlockNode body downCastTo: ASTSequenceNode.
+        self assert: blockSequenceNode pragmas isEmpty.
+        self assert: blockSequenceNode expressions size equals: 1sz.
+
+        self assert: blockSequenceNode expressions first isLiteralNode.
+        let literalNode => ASTLiteralNode := blockSequenceNode expressions first.
+        self assert: literalNode value equals: 1234.
+    }.
+
+    public method testBlockUnaryPragma => Void := {
+        let ast := self parseString: "{<unaryPragma> 1234}".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isLexicalBlockNode.
+        let lexicalBlockNode => ASTLexicalBlockNode := sequenceNode expressions first.
+        
+        self assert: lexicalBlockNode body isSequenceNode.
+        let blockSequenceNode => ASTSequenceNode := lexicalBlockNode body downCastTo: ASTSequenceNode.
+        self assert: blockSequenceNode pragmas size equals: 1sz.
+        self assert: blockSequenceNode expressions size equals: 1sz.
+
+        self assert: blockSequenceNode pragmas first isPragmaNode.
+        let pragmaNode => ASTPragmaNode := blockSequenceNode pragmas first.
+        self assert: pragmaNode selector isLiteralNode.
+        self assert: pragmaNode arguments isEmpty.
+
+        let pragmaSelectorNode := pragmaNode selector downCastTo: ASTLiteralNode.
+        self assert: pragmaSelectorNode value equals: #unaryPragma.
+
+        self assert: blockSequenceNode expressions first isLiteralNode.
+        let literalNode => ASTLiteralNode := blockSequenceNode expressions first.
+        self assert: literalNode value equals: 1234.
+    }.
+
+    public method testBlockKeywordPragma => Void := {
+        let ast := self parseString: "{<testPragma: 1>}".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isLexicalBlockNode.
+        let lexicalBlockNode => ASTLexicalBlockNode := sequenceNode expressions first.
+        
+        self assert: lexicalBlockNode body isSequenceNode.
+        let blockSequenceNode => ASTSequenceNode := lexicalBlockNode body downCastTo: ASTSequenceNode.
+        self assert: blockSequenceNode pragmas size equals: 1sz.
+        self assert: blockSequenceNode expressions isEmpty.
+
+        self assert: blockSequenceNode pragmas first isPragmaNode.
+        let pragmaNode => ASTPragmaNode := blockSequenceNode pragmas first.
+        self assert: pragmaNode selector isLiteralNode.
+        self assert: pragmaNode arguments size equals: 1sz.
+
+        let pragmaSelectorNode := pragmaNode selector downCastTo: ASTLiteralNode.
+        self assert: pragmaSelectorNode value equals: #testPragma:.
+
+        {
+            self assert: pragmaNode arguments first isLiteralNode.
+            let argumentNode => ASTLiteralNode :=  pragmaNode arguments first.
+            self assert: argumentNode value equals: 1.
+        }
+    }.
+
 }.

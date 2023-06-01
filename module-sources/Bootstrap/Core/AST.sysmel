@@ -171,6 +171,8 @@ ASTLambdaNode
     } makeOverride.
 
 ASTLexicalBlockNode
+    withSelector: #isLexicalBlockNode addMethod: {:(ASTNode)self :: Boolean | true } makeOverride;
+
     withSelector: #hasPragmaNamed: addMethod: {:(ASTLexicalBlockNode)self :selector :: Boolean |
         self body hasPragmaNamed: selector
     } makeOverride;

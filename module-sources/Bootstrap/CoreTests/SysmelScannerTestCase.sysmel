@@ -194,8 +194,8 @@ public class SysmelScannerTestCase superclass: TestCase; definition: {
     }.
 
     public method testDelimiters => Void := {
-        let tokenList := self scanString: "() [] {} : :: `' `` `, `@ | .. ... ; * < > #[ #( #{ :=".
-        self assert: tokenList size equals: 24sz.
+        let tokenList := self scanString: "() [] {} : :: `' `` `, `@ | .. ... ; * < > #[ #( #{ := ,".
+        self assert: tokenList size equals: 25sz.
 
         self assert: (tokenList at: 0sz) kind equals: SysmelTokenKind::LeftParent.
         self assert: (tokenList at: 0sz) value equals: #"(".
@@ -268,5 +268,8 @@ public class SysmelScannerTestCase superclass: TestCase; definition: {
 
         self assert: (tokenList at: 23sz) kind equals: SysmelTokenKind::Assignment.
         self assert: (tokenList at: 23sz) value equals: #":=".
+
+        self assert: (tokenList at: 24sz) kind equals: SysmelTokenKind::Comma.
+        self assert: (tokenList at: 24sz) value equals: #",".
     }.
 }.
