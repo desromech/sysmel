@@ -1,3 +1,7 @@
+## ----------------------------------------------------------------------------
+## Sysmel and sysmel lisp scanner definition.
+## ----------------------------------------------------------------------------
+
 #(
     Character Float Identifier Integer Keyword MultiKeyword Operator String Symbol
     LeftParent RightParent LeftBracket RightBracket LeftCurlyBracket RightCurlyBracket
@@ -223,6 +227,129 @@ let Scanner::Token :=
 let Scanner::TrimmedToken := Scanner::Token trim: Scanner::White.
 let Scanner::Grammar := Scanner::White optional -- Scanner::TrimmedToken star -- Scanner::White optional .
 
+
+## ----------------------------------------------------------------------------
+## Sysmel lisp grammar
+## ----------------------------------------------------------------------------
+public class SysmelTokenMonadicParser superclass: MonadicParser; definition: {
+    public field expectedToken => UInt8.
+    public field tokenName => String.
+
+    __Meta__ definition: {
+        public method for: (expectedToken: UInt8) name: (tokenName: String) ::=> self
+            := self new
+                expectedToken: expectedToken;
+                tokenName: tokenName;
+                yourself.
+    }.
+    
+    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+        let startPosition := state memento.
+        state atEnd not ifTrue: {
+            let token => SysmelToken := state peek.
+            expectedToken = token kind ifTrue: {
+                state advance.
+                self makeResult: token from: startPosition withState: state
+            } ifFalse: {
+                self makeError: "Expected " -- tokenName -- " instead of the end." withState: state
+            }
+        } ifFalse: {
+            self makeError: "Expected " -- tokenName -- "." withState: state
+        }.
+    }
+}.
+
+public class SysmelTokenMonadicParserState superclass: MonadicParserState; definition: {
+    public method sourceIndexForTokenStart: (tokenIndex: Size) ::=> Size := {
+        tokenIndex
+    }.
+
+    public method sourceIndexForTokenEnd: (tokenIndex: Size) ::=> Size := {
+        tokenIndex
+    }.
+
+    public override method sourcePositionFrom: (startIndex: Size) until: (endIndex: Size) ::=> SourcePosition
+        := SourcePosition for: sourceCode startIndex: (self sourceIndexForTokenStart: startIndex) endIndex: endIndex.
+
+    public override method sourcePositionUntilEnd => SourcePosition
+        := SourcePosition for: sourceCode startIndex: (self sourceIndexForTokenStart: position) endIndex: sourceCollection size.
+
+    public override method sourcePositionAtEnd => SourcePosition := {
+        let endIndex := sourceCode text size.
+        SourcePosition for: sourceCode startIndex: endIndex endIndex: endIndex
+    }.
+}.
+
+MonadicParserResult extend: {
+    public method valueAsSysmelToken => SysmelToken
+        := value downCastTo: SysmelToken.
+}.
+
+let Grammar::Token::Integer := SysmelTokenMonadicParser for: SysmelTokenKind::Integer name: "integer".
+let Grammar::Token::Character := SysmelTokenMonadicParser for: SysmelTokenKind::Character name: "character".
+let Grammar::Token::String := SysmelTokenMonadicParser for: SysmelTokenKind::String name: "string".
+let Grammar::Token::Symbol := SysmelTokenMonadicParser for: SysmelTokenKind::Symbol name: "symbol".
+
+let Grammar::Token::Identifier := SysmelTokenMonadicParser for: SysmelTokenKind::Identifier name: "identifier".
+let Grammar::Token::Keyword := SysmelTokenMonadicParser for: SysmelTokenKind::Keyword name: "keyword".
+let Grammar::Token::MultiKeyword := SysmelTokenMonadicParser for: SysmelTokenKind::MultiKeyword name: "multi keyword".
+let Grammar::Token::Operator := SysmelTokenMonadicParser for: SysmelTokenKind::Operator name: "operator".
+
+let Grammar::Token::LeftParent := SysmelTokenMonadicParser for: SysmelTokenKind::LeftParent name: "left parenthesis".
+let Grammar::Token::RightParent := SysmelTokenMonadicParser for: SysmelTokenKind::RightParent name: "right parenthesis".
+let Grammar::Token::LeftBracket := SysmelTokenMonadicParser for: SysmelTokenKind::LeftBracket name: "left bracket".
+let Grammar::Token::RightBracket := SysmelTokenMonadicParser for: SysmelTokenKind::RightBracket name: "right bracket".
+let Grammar::Token::LeftCurlyBracket := SysmelTokenMonadicParser for: SysmelTokenKind::LeftBracket name: "left curly bracket".
+let Grammar::Token::RightCurlyBracket := SysmelTokenMonadicParser for: SysmelTokenKind::RightBracket name: "right curly bracket".
+
+let LispGrammar::Expression := MonadicDelegateParser new.
+
+let LispGrammar::Identifier :=
+    Grammar::Token::Identifier |
+    Grammar::Token::Keyword |
+    Grammar::Token::MultiKeyword |
+    Grammar::Token::Operator
+    ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+        let token := parserResult valueAsSysmelToken.
+        ASTIdentifierReferenceNode new
+            sourcePosition: token sourcePosition;
+            value: token value;
+            yourself
+    }.
+
+let LispGrammar::LiteralAtom := Grammar::Token::Integer
+    | Grammar::Token::Character
+    | Grammar::Token::String
+    | Grammar::Token::Symbol 
+    
+    ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+        let token := parserResult valueAsSysmelToken.
+        ASTLiteralNode new
+            sourcePosition: token sourcePosition;
+            value: token value;
+            yourself
+    }.
+let LispGrammar::Atom := LispGrammar::LiteralAtom | LispGrammar::Identifier.
+
+let LispGrammar::SExpression := Grammar::Token::LeftParent -- LispGrammar::Expression star -- Grammar::Token::RightParent
+    ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+        let nodes => Array := parserResult value.
+        ASTUnexpandedSExpressionNode new
+            sourcePosition: parserResult sourcePosition;
+            elements: nodes second asArray;
+            yourself
+    }.
+
+LispGrammar::Expression := LispGrammar::Atom | LispGrammar::SExpression.
+
+let LispGrammar::ExpressionSequence := LispGrammar::Expression star ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    ASTSequenceNode new
+        sourcePosition: parserResult sourcePosition;
+        pragmas: #();
+        expressions: parserResult value asArray;
+        yourself
+}.
+
 public class SysmelLanguage superclass: Object; definition: {
     __Meta__ extend: {
         public method scanSourceCode: (sourceCode: SourceCode) ::=> Array
@@ -248,10 +375,39 @@ public class SysmelLanguage superclass: Object; definition: {
     public virtual method parseSourceCode: (sourceCode: SourceCode) ::=> ASTNode
         := self parseTokens: (self scanSourceCode: sourceCode) sourceCode: sourceCode.
 
-    public virtual method parseTokens: (tokens: Array) sourceCode: (sourceCode: SourceCode) ::=> ASTNode
+    public virtual method parseTokens: (tokens: Array) sourceCode: (sourceCode: SourceCode) ::=> ASTNode := {
+        let parseState := SysmelTokenMonadicParserState new
+            sourceCollection: tokens;
+            sourceCode: sourceCode;
+            yourself.
+        
+        let parseResult := self grammar parseWithState: parseState.
+        parseResult isError ifTrue: {
+            return: (ASTErrorNode new
+                errorMessage: parseResult errorMessage;
+                yourself).
+        }.
+
+        let resultNode => ASTNode := parseResult value.
+        resultNode isErrorNode ifFalse: {
+            parseState atEnd ifFalse: {
+                self assert: resultNode isSequenceNode.
+
+                let sequenceNode := resultNode downCastTo: ASTSequenceNode.
+                sequenceNode expressions: sequenceNode expressions -- (ASTErrorNode new
+                    errorMessage: "Expected expressions.";
+                    yourself,)
+            }.
+        }.
+
+        resultNode
+    }.
+
+    public abstract method grammar => MonadicParser
         := self subclassResponsibility.
 }.
 
 public class SysmelLispLanguage superclass: SysmelLanguage; definition: {
-
+    public override method grammar => MonadicParser
+        := LispGrammar::ExpressionSequence.
 }.

@@ -51,8 +51,14 @@ public class MonadicParserState definition: {
     public method atEnd => Boolean
         := position >= sourceCollection size.
 
-    public method sourcePositionUntilEnd => SourcePosition
+    public virtual method sourcePositionFrom: (startIndex: Size) until: (endIndex: Size) ::=> SourcePosition
+        := SourcePosition for: sourceCode startIndex: startIndex endIndex: endIndex.
+
+    public virtual method sourcePositionUntilEnd => SourcePosition
         := SourcePosition for: sourceCode startIndex: position endIndex: sourceCollection size.
+
+    public virtual method sourcePositionAtEnd => SourcePosition
+        := SourcePosition for: sourceCode startIndex: sourceCollection size endIndex: sourceCollection size.
 }.
 
 public abstract class MonadicParserResult superclass: Object; definition: {
@@ -77,17 +83,21 @@ public abstract class MonadicParserResult superclass: Object; definition: {
         := (state sourceCollection copyFrom: startPosition + startTrim until: endPosition - endTrim) downCastTo: String.
 
     public method sourcePosition => SourcePosition
-        := SourcePosition for: state sourceCode startIndex: startPosition endIndex: endPosition.
+        := state sourcePositionFrom: startPosition until: endPosition.
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: startPosition; nextPut: '-'asChar8; print: endPosition; nextPutAll: ": "; print: value
     }.
+
+    public virtual method errorMessage => String := "No an error".
 }.
 
 public class MonadicParserErrorResult superclass: MonadicParserResult; definition: {
     public field message => String.
     
     public abstract method isError => Boolean := true.
+
+    public override method errorMessage => String := message.
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: startPosition; nextPut: '-'asChar8; print: endPosition; nextPutAll: ": "; nextPutAll: message
@@ -278,6 +288,11 @@ public class MonadicElementParser superclass: MonadicParser; definition: {
             self makeError: "Expected " -- expectedElement asString withState: state.
         }.
     }
+}.
+
+AnyValue extend: {
+    public method asMonadicElementParser => MonadicElementParser
+        := MonadicElementParser new expectedElement: self; yourself
 }.
 
 public class MonadicPredicateParser superclass: MonadicParser; definition: {
@@ -531,9 +546,8 @@ public class MonadicDelegateParser superclass: MonadicParser; definition: {
 
     public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult
         := delegated parseWithState: state.
-}.
 
-AnyValue extend: {
-    public method asMonadicElementParser => MonadicElementParser
-        := MonadicElementParser new expectedElement: self; yourself
+    (public method := (parser: MonadicParser)) ::=> Void := {
+        delegated := parser
+    }.
 }.
