@@ -225,17 +225,33 @@ let Scanner::Grammar := Scanner::White optional -- Scanner::TrimmedToken star --
 
 public class SysmelLanguage superclass: Object; definition: {
     __Meta__ extend: {
-        public method scanSourceCode: (sourceCode: SourceCode) ::=> Array := {
-            let parseState := MonadicParserState forSourceCode: sourceCode.
-            let parseResult := Scanner::Grammar parseWithState: parseState.
-            self assert: parseResult isValid.
+        public method scanSourceCode: (sourceCode: SourceCode) ::=> Array
+            := self new scanSourceCode: sourceCode.
 
-            let resultValue => OrderedCollection := parseResult value second.
-            parseState atEnd ifFalse: {
-                resultValue add: (SysmelToken kind: SysmelTokenKind::Error value: "Expected end of stream" asSymbol sourcePosition: parseState sourcePositionUntilEnd)
-            }.
+        public method parseSourceCode: (sourceCode: SourceCode) ::=> ASTNode
+            := self new parseSourceCode: sourceCode.
+    }.
 
-            resultValue asArray
+    public virtual method scanSourceCode: (sourceCode: SourceCode) ::=> Array := {
+        let parseState := MonadicParserState forSourceCode: sourceCode.
+        let parseResult := Scanner::Grammar parseWithState: parseState.
+        self assert: parseResult isValid.
+
+        let resultValue => OrderedCollection := parseResult value second.
+        parseState atEnd ifFalse: {
+            resultValue add: (SysmelToken kind: SysmelTokenKind::Error value: "Expected end of stream" asSymbol sourcePosition: parseState sourcePositionUntilEnd)
         }.
-    }
+
+        resultValue asArray
+    }.
+
+    public virtual method parseSourceCode: (sourceCode: SourceCode) ::=> ASTNode
+        := self parseTokens: (self scanSourceCode: sourceCode) sourceCode: sourceCode.
+
+    public virtual method parseTokens: (tokens: Array) sourceCode: (sourceCode: SourceCode) ::=> ASTNode
+        := self subclassResponsibility.
+}.
+
+public class SysmelLispLanguage superclass: SysmelLanguage; definition: {
+
 }.
