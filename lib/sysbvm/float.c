@@ -57,6 +57,15 @@ SYSBVM_API sysbvm_tuple_t sysbvm_float32_parseString(sysbvm_context_t *context, 
     return result;
 }
 
+static sysbvm_tuple_t sysbvm_float32_primitive_parseString(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+    if(!sysbvm_tuple_isNonNullPointer(arguments[1])) return sysbvm_tuple_integer_encodeSmall(0);
+    return sysbvm_float32_parseString(context, sysbvm_tuple_getSizeInBytes(arguments[1]), (const char *)SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(arguments[1])->bytes);
+}
+
 SYSBVM_API double sysbvm_tuple_float64_decode(sysbvm_tuple_t tuple)
 {
     if(sysbvm_tuple_isNonNullPointer(tuple))
@@ -93,6 +102,15 @@ SYSBVM_API sysbvm_tuple_t sysbvm_float64_parseString(sysbvm_context_t *context, 
     sysbvm_tuple_t result = sysbvm_float64_parseCString(context, buffer);
     free(buffer);
     return result;
+}
+
+static sysbvm_tuple_t sysbvm_float64_primitive_parseString(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+    if(!sysbvm_tuple_isNonNullPointer(arguments[1])) return sysbvm_tuple_integer_encodeSmall(0);
+    return sysbvm_float64_parseString(context, sysbvm_tuple_getSizeInBytes(arguments[1]), (const char *)SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(arguments[1])->bytes);
 }
 
 static sysbvm_tuple_t sysbvm_float32_primitive_printString(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -690,6 +708,7 @@ static sysbvm_tuple_t sysbvm_float64_primitive_asIEEEFloat64Decoded(sysbvm_conte
 void sysbvm_float_registerPrimitives(void)
 {
     // Float32
+    sysbvm_primitiveTable_registerFunction(sysbvm_float32_primitive_parseString, "Float32::parseString");
     sysbvm_primitiveTable_registerFunction(sysbvm_float32_primitive_printString, "Float32::printString");
     sysbvm_primitiveTable_registerFunction(sysbvm_float32_primitive_fromFloat64, "Float32::fromFloat64");
 
@@ -724,6 +743,7 @@ void sysbvm_float_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_float32_primitive_asIEEEFloat32Decoded, "UInt32::asIEEEFloat32Decoded");
 
     // Float64
+    sysbvm_primitiveTable_registerFunction(sysbvm_float64_primitive_parseString, "Float64::parseString");
     sysbvm_primitiveTable_registerFunction(sysbvm_float64_primitive_printString, "Float64::printString");
     sysbvm_primitiveTable_registerFunction(sysbvm_float64_primitive_fromFloat32, "Float64::fromFloat32");
 
@@ -763,6 +783,7 @@ void sysbvm_float_setupPrimitives(sysbvm_context_t *context)
     // Float32
     sysbvm_type_setPrintStringFunction(context, context->roots.float32Type, sysbvm_function_createPrimitive(context, 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_float32_primitive_printString));
 
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::parseString:", sysbvm_tuple_getType(context, context->roots.float32Type), "parseString:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_float32_primitive_parseString);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::fromFloat64", context->roots.float64Type, "f32", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_float32_primitive_fromFloat64);
 
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::+", context->roots.float32Type, "+", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_float32_primitive_add);
@@ -799,6 +820,8 @@ void sysbvm_float_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::fromFloat32", context->roots.float32Type, "f64", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_float64_primitive_fromFloat32);
 
     sysbvm_type_setPrintStringFunction(context, context->roots.float64Type, sysbvm_function_createPrimitive(context, 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_float64_primitive_printString));
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::parseString:", sysbvm_tuple_getType(context, context->roots.float64Type), "parseString:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_float64_primitive_parseString);
+
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::+", context->roots.float64Type, "+", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_float64_primitive_add);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::-", context->roots.float64Type, "-", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_float64_primitive_subtract);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::negated", context->roots.float64Type, "negated", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_float64_primitive_negated);

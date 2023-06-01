@@ -1,13 +1,13 @@
 public class TestAsserter superclass: Object; definition: {
     public method assert: value equals: expectedValue ::=> Void := {
         value = expectedValue ifFalse: {
-            self error: value asString -- " is not equal to the expected value of " -- expectedValue asString
+            self error: value printString -- " is not equal to the expected value of " -- expectedValue printString
         }
     }.
 
     public method assert: value notEquals: expectedValue ::=> Void := {
         value ~= expectedValue ifFalse: {
-            self error: value asString -- " is equal to the unexpected value of " -- expectedValue asString
+            self error: value printString -- " is equal to the unexpected value of " -- expectedValue printString
         }
     }.
 

@@ -1,5 +1,5 @@
 #(
-    Character Float Identifier Keyword MultiKeyword Operator String Symbol
+    Character Float Identifier Integer Keyword MultiKeyword Operator String Symbol
     LParent RParent LBracket RBracket LCBracket RCBracket
     LessThan GreaterThan Star
     Colon ColonColon Bar
@@ -45,6 +45,29 @@ let Scanner::OperatorCharacter := "+-/\\*~<>=@%|&?!^" asMonadicSetParser.
 let Scanner::OperatorPattern := Scanner::OperatorCharacter plus withoutValue.
 let Scanner::ScopedOperatorPattern := (Scanner::IdentifierScopePrefixPattern -- Scanner::OperatorPattern) withoutValue.
 
+let Scanner::Sign := "+-" asMonadicSetParser.
+let Scanner::Digit := MonadicParser digit.
+let Scanner::DigitUnderscore := Scanner::Digit | '_'asChar8 asMonadicElementParser.
+let Scanner::Alphanum := MonadicParser alphaNum.
+let Scanner::AlphanumUnderscore := MonadicParser identifierMiddle.
+
+let Scanner::DecimalIntegerPattern := (Scanner::Sign optional -- Scanner::Digit -- Scanner::DigitUnderscore star withoutValue) withoutValue.
+let Scanner::RadixIntegerPattern := (Scanner::DecimalIntegerPattern -- 'r'asChar8 asMonadicElementParser -- Scanner::Alphanum -- Scanner::AlphanumUnderscore star withoutValue) withoutValue.
+let Scanner::IntegerPattern := Scanner::RadixIntegerPattern | Scanner::DecimalIntegerPattern.
+
+let Scanner::ExponentPattern := ("eE" asMonadicSetParser -- Scanner::DecimalIntegerPattern) withoutValue.
+let Scanner::FloatDecimalPattern := (Scanner::IntegerPattern -- '.'asChar8 asMonadicElementParser -- Scanner::Digit -- Scanner::DigitUnderscore star withoutValue) withoutValue.
+let Scanner::FloatExponentPattern := (Scanner::IntegerPattern -- Scanner::ExponentPattern) withoutValue.
+let Scanner::FloatPattern := Scanner::FloatDecimalPattern | Scanner::FloatExponentPattern.
+
+let Scanner::CharacterPattern := ('\''asChar8 asMonadicElementParser
+    -- (('\\'asChar8 asMonadicElementParser -- MonadicParser any) withoutValue | '\''asChar8 asMonadicElementParser negate)
+    -- '\''asChar8 asMonadicElementParser) withoutValue.
+let Scanner::StringPattern := ('"'asChar8 asMonadicElementParser
+    -- (('\\'asChar8 asMonadicElementParser -- MonadicParser any) withoutValue | '"'asChar8 asMonadicElementParser negate) star
+    -- '"'asChar8 asMonadicElementParser) withoutValue.
+let Scanner::SymbolStringPattern := ('#'asChar8 asMonadicElementParser -- Scanner::StringPattern) withoutValue.
+
 let Scanner::ScopedKeywordPattern := (Scanner::ScopedIdentifierPattern -- Scanner::ColonPattern) withoutValue.
 let Scanner::ScopedMultiKeywordPattern := (Scanner::IdentifierScopePrefixPattern -- ((Scanner::IdentifierPattern -- Scanner::ColonPattern) withoutValue plusN: 2sz) withoutValue) withoutValue.
 
@@ -55,6 +78,14 @@ let Scanner::SymbolOperatorPattern := (Scanner::HashChar -- Scanner::ScopedOpera
 
 let Scanner::Identifier := Scanner::ScopedIdentifierPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
     SysmelToken kind: SysmelTokenKind::Identifier value: parserResult sourceStringValue asSymbol sourcePosition: parserResult sourcePosition
+}.
+
+let Scanner::Integer := Scanner::IntegerPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::Integer value: (Integer parseString: parserResult sourceStringValue) sourcePosition: parserResult sourcePosition
+}.
+
+let Scanner::Float := Scanner::FloatPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::Float value: (Float64 parseString: parserResult sourceStringValue) sourcePosition: parserResult sourcePosition
 }.
 
 let Scanner::Operator := Scanner::ScopedOperatorPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
@@ -69,6 +100,13 @@ let Scanner::MultiKeyword := Scanner::ScopedMultiKeywordPattern ::==> {:(Monadic
     SysmelToken kind: SysmelTokenKind::MultiKeyword value: parserResult sourceStringValue asSymbol sourcePosition: parserResult sourcePosition
 }.
 
+let Scanner::Character := Scanner::CharacterPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::Character value: (parserResult sourceStringValueWithoutFirst: 1sz last: 1sz) parseCEscapeSequences first asChar32 sourcePosition: parserResult sourcePosition
+}.
+
+let Scanner::String := Scanner::StringPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::String value: (parserResult sourceStringValueWithoutFirst: 1sz last: 1sz) parseCEscapeSequences sourcePosition: parserResult sourcePosition
+}.
 
 let Scanner::SymbolIdentifier := Scanner::SymbolIdentifierPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
     SysmelToken kind: SysmelTokenKind::Symbol value: (parserResult sourceStringValueWithoutFirst: 1sz) asSymbol sourcePosition: parserResult sourcePosition
@@ -86,8 +124,13 @@ let Scanner::SymbolOperator := Scanner::SymbolOperatorPattern ::==> {:(MonadicPa
     SysmelToken kind: SysmelTokenKind::Symbol value: (parserResult sourceStringValueWithoutFirst: 1sz) asSymbol sourcePosition: parserResult sourcePosition
 }.
 
+let Scanner::SymbolString := Scanner::SymbolStringPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::Symbol value: (parserResult sourceStringValueWithoutFirst: 2sz last: 1sz) parseCEscapeSequences asSymbol sourcePosition: parserResult sourcePosition
+}.
+
 let Scanner::Token :=
-    Scanner::SymbolIdentifier | Scanner::SymbolMultiKeyword | Scanner::SymbolKeyword | Scanner::SymbolOperator |
+    Scanner::Character | Scanner::String | Scanner::Float | Scanner::Integer |
+    Scanner::SymbolIdentifier | Scanner::SymbolMultiKeyword | Scanner::SymbolKeyword | Scanner::SymbolString | Scanner::SymbolOperator |
     Scanner::MultiKeyword | Scanner::Keyword | Scanner::Identifier | Scanner::Operator.
 let Scanner::TrimmedToken := Scanner::Token trim: Scanner::White.
 let Scanner::Grammar := Scanner::White optional -- Scanner::TrimmedToken star -- Scanner::White optional .

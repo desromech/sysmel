@@ -70,6 +70,55 @@ String extend: {
 
     public pure method asLiteralCString => Char8 const pointer
         := Char8 const pointer withStorage: self.
+
+    public pure method parseCEscapeSequences => String := {
+        let resultSize mutable := 0sz.
+        let size := self size.
+
+        ## First pass: compute the result size.
+        let i mutable := 0sz.
+        while: (i < size) do: {
+            let c := self at: i.
+            c = '\\'asChar8 ifTrue: {
+                i := i + 1sz.
+            }.
+            
+            resultSize := resultSize + 1sz
+        } continueWith: (i := i + 1sz).
+
+        ## Second pass: parse the escape sequences.
+        let result := String basicAllocate: resultSize.
+        let destIndex mutable := 0sz.
+        i := 0sz.
+        while: (i < size) do: {
+            let c := self at: i.
+            c = '\\'asChar8 ifTrue: {
+                i := i + 1sz.
+                if: i < size then: {
+                    let escapeCharacter := self at: i.
+                    escapeCharacter = 'n' ifTrue: {
+                        result at: destIndex put: '\n'asChar8
+                    } ifFalse: {
+                        escapeCharacter = 'r' ifTrue: {
+                            result at: destIndex put: '\r'asChar8
+                        } ifFalse: {
+                            escapeCharacter = 't' ifTrue: {
+                                result at: destIndex put: '\t'asChar8
+                            } ifFalse: {
+                                result at: destIndex put: escapeCharacter
+                            }.
+                        }.
+                    }.
+                }.
+            } ifFalse: {
+                result at: destIndex put: c.
+            }.
+
+            destIndex := destIndex + 1sz
+        } continueWith: (i := i + 1sz).
+
+        result
+    }.
 }.
 
 UInt8 extend: {

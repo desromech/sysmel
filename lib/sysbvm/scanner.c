@@ -510,10 +510,7 @@ static bool sysbvm_scanner_scanNextTokenInto(sysbvm_context_t *context, sysbvm_s
                     return true;
                 }
             }
-            else
-            {
-                ++state->position;
-            }
+            ++state->position;
         }
 
         if(sysbvm_scanner_lookAt(state, 0) != '\'')

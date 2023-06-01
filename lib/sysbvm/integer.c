@@ -720,6 +720,15 @@ SYSBVM_API sysbvm_tuple_t sysbvm_integer_toHexString(sysbvm_context_t *context, 
     return resultString;
 }
 
+static sysbvm_tuple_t sysbvm_integer_primitive_parseString(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+    if(!sysbvm_tuple_isNonNullPointer(arguments[1])) return sysbvm_tuple_integer_encodeSmall(0);
+    return sysbvm_integer_parseString(context, sysbvm_tuple_getSizeInBytes(arguments[1]), (const char *)SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(arguments[1])->bytes);
+}
+
 static sysbvm_tuple_t sysbvm_integer_primitive_printString(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
@@ -856,6 +865,7 @@ static sysbvm_tuple_t sysbvm_integer_primitive_factorial(sysbvm_context_t *conte
 
 void sysbvm_integer_registerPrimitives(void)
 {
+    sysbvm_primitiveTable_registerFunction(sysbvm_integer_primitive_parseString, "Integer::parseString:");
     sysbvm_primitiveTable_registerFunction(sysbvm_integer_primitive_printString, "Integer::printString");
 
     sysbvm_primitiveTable_registerFunction(sysbvm_integer_primitive_add, "Integer::+");
@@ -882,6 +892,8 @@ void sysbvm_integer_setupPrimitives(sysbvm_context_t *context)
     sysbvm_type_setPrintStringFunction(context, context->roots.integerType, printString);
     sysbvm_type_setPrintStringFunction(context, context->roots.positiveIntegerType, printString);
     sysbvm_type_setPrintStringFunction(context, context->roots.negativeIntegerType, printString);
+    
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Integer::parseString:", sysbvm_tuple_getType(context, context->roots.integerType), "parseString:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_integer_primitive_parseString);
     
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Integer::+", context->roots.integerType, "+", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_integer_primitive_add);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Integer::-", context->roots.integerType, "-", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_integer_primitive_subtract);

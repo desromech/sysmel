@@ -99,6 +99,9 @@ public abstract class MonadicParser definition: {
         public method end => MonadicParser
             := MonadicEndParser new.
 
+        public method any => MonadicParser
+            := MonadicAnyParser new.
+
         public method predicate: (predicate: (AnyValue) => Boolean) errorMessage: (errorMessage: String) ::=> MonadicParser
             := MonadicPredicateParser new
                 predicate: predicate;
@@ -293,6 +296,19 @@ public class MonadicPredicateParser superclass: MonadicParser; definition: {
             self makeResultFrom: startPosition withState: state
         } ifFalse: {
             self makeError: errorMessage withState: state.
+        }
+    }.
+}.
+
+public class MonadicAnyParser superclass: MonadicParser; definition: {
+    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+        let startPosition := state memento.
+        state atEnd ifTrue: {
+            self makeError: "Unexpected end." withState: state.
+        } ifFalse: {
+            let value := state peek.
+            state advance.
+            self makeResult: value from: startPosition withState: state
         }
     }.
 }.
