@@ -1,0 +1,62 @@
+function concretizeMetaValueWithEnvironment(value: Untyped, environment: Environment) => Untyped := {
+    let type := RawTuple::type(value).
+    type
+        ifNil: value
+        ifNotNil: (type analyzeAndEvaluateConcreteMetaValue: value withEnvironment: environment)
+}.
+
+ASTNode definition: {
+    public virtual method analyzeConcreteMetaValueWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := self.
+}.
+
+ASTLiteralNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped
+        := self value.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := self copy
+            analyzedType: RawTuple::type(self value);
+            yourself.
+
+    public override method evaluateWithEnvironment: (environment: Environment) ::=> Untyped
+        := self value.
+
+    public override method analyzeConcreteMetaValueWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        analyzedType
+            ifNil: (self)
+            ifNotNil: (analyzedType analyzeConcreteMetaValue: self withEnvironment: environment)
+    }.
+}.
+
+ASTErrorNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped
+        := error(self errorMessage).
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := error(self errorMessage).
+
+    public override method evaluateWithEnvironment: (environment: Environment) ::=> Untyped
+        := error(self errorMessage).
+}.
+
+ASTSequenceNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        let resultBox := ValueBox with: void.
+        self expressions do: {:(ASTNode)eachExpression :: Void |
+            let expressionValue := eachExpression analyzeAndEvaluateWithEnvironment: environment.
+            resultBox value: concretizeMetaValueWithEnvironment(expressionValue, environment)
+        }.
+
+        resultBox value
+    }.
+
+    public override method evaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        let resultBox := ValueBox with: void.
+        self expressions do: {:(ASTNode)eachExpression :: Void |
+            resultBox value: (eachExpression evaluateWithEnvironment: environment)
+        }.
+
+        resultBox value
+    }.
+}.

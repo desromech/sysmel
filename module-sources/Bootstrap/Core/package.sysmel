@@ -9,6 +9,7 @@ loadSourceNamed: "PAL.sysmel".
 
 loadSourceNamed: "AnalysisQueue.sysmel".
 loadSourceNamed: "Environment.sysmel".
+loadSourceNamed: "SemanticAnalyzer.sysmel".
 loadSourceNamed: "MonadicParser.sysmel".
 loadSourceNamed: "SysmelLanguage.sysmel".
 loadSourceNamed: "SourceCode.sysmel".

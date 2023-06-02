@@ -15,6 +15,14 @@ Class
 
 Object publicSubclass: #MetaBuilder slots: ().
 
+Type
+    withSelector: #analyzeAndEvaluateConcreteMetaValue:withEnvironment: addMethod: {:self :metaBuilderInstance :(Environment)environment |
+        metaBuilderInstance
+    } makeVirtual;
+    withSelector: #analyzeConcreteMetaValue:withEnvironment: addMethod: {:self :(ASTLiteralNode)metaValueLiteralNode :(Environment)environment |
+        metaValueLiteralNode
+    } makeVirtual.
+
 MetaBuilder
     withSelector: #analyzeAndEvaluateMessageSendNode:forReceiver:withEnvironment: addClassMethod: {:self :(ASTMessageSendNode)messageSendNode :(Untyped)receiver :(Environment)environment |
         let: #selfReceiver with: (ASTLiteralNode new
@@ -73,10 +81,10 @@ MetaBuilder
     };
     withSelector: #analyzeAndEvaluateConcreteMetaValue:withEnvironment: addClassMethod: {:self :metaBuilderInstance :(Environment)environment |
         metaBuilderInstance analyzeAndEvaluateConcreteMetaValueWithEnvironment: environment
-    };
-    withSelector: #analyzeConcreteMetaValue:withEnvironment: addClassMethod: {:self :metaBuilderLiteralNode :(Environment)environment |
+    } makeOverride;
+    withSelector: #analyzeConcreteMetaValue:withEnvironment: addClassMethod: {:self :(ASTLiteralNode)metaBuilderLiteralNode :(Environment)environment |
         metaBuilderLiteralNode value analyzeConcreteMetaValue: metaBuilderLiteralNode withEnvironment: environment
-    };
+    } makeOverride;
     withSelector: #analyzeAndEvaluateMessageSendNode:withEnvironment: addMethod: {:self :(ASTMessageSendNode)messageSendNode :(Environment)environment |
         self subclassResponsibility
     } makeAbstract;
@@ -92,7 +100,7 @@ MetaBuilder
     withSelector: #analyzeAndEvaluateConcreteMetaValueWithEnvironment: addMethod: {:self :(Environment)environment |
         self
     } makeVirtual;
-    withSelector: #analyzeConcreteMetaValue:withEnvironment: addMethod: {:self :metaBuilderLiteralNode :(Environment)environment |
+    withSelector: #analyzeConcreteMetaValue:withEnvironment: addMethod: {:self :(ASTLiteralNode)metaBuilderLiteralNode :(Environment)environment |
         metaBuilderLiteralNode
     } makeVirtual.
 
@@ -178,7 +186,7 @@ MacroMetaBuilder
             environment: environment;
             finishExpansion) analyzeAndEvaluateWithEnvironment: environment
     } makeOverride;
-    withSelector: #analyzeConcreteMetaValue:withEnvironment: addMethod: {:self :metaBuilderLiteralNode :(Environment)environment |
+    withSelector: #analyzeConcreteMetaValue:withEnvironment: addMethod: {:self :(ASTLiteralNode)metaBuilderLiteralNode :(Environment)environment |
         self
             environment: environment;
             sourcePosition: metaBuilderLiteralNode sourcePosition;
@@ -595,6 +603,7 @@ MacroMetaBuilder publicSubclass: #MethodMetaBuilder slots: (
     TypeSlot publicNamed: #methodFlags type: Bitflags ,
     TypeSlot publicNamed: #isMacro type: Boolean ,
     TypeSlot publicNamed: #isFallbackMethod type: Boolean ,
+    TypeSlot publicNamed: #isEager type: Boolean ,
     TypeSlot publicNamed: #selector type: ASTNode ,
     TypeSlot publicNamed: #resultType type: ASTNode ,
     TypeSlot publicNamed: #body type: ASTNode ,
@@ -685,6 +694,7 @@ MethodMetaBuilder
             arguments: arguments;
             body: self bodyWithInjectedCode;
             resultType: self resultType;
+            hasLazyAnalysis: (self isEager ifTrue: false ifFalse: nil);
             yourself
         ).
         
@@ -738,6 +748,7 @@ MacroMetaBuilder publicSubclass: #FlagMetaBuilder slots: (
     TypeSlot publicNamed: #typeFlags type: Bitflags ,
     TypeSlot publicNamed: #fieldFlags type: Bitflags ,
     TypeSlot publicNamed: #isPublic type: Boolean ,
+    TypeSlot publicNamed: #isEager type: Boolean ,
 ).
 
 FlagMetaBuilder
@@ -835,10 +846,16 @@ FlagMetaBuilder
         self addMethodFlags: FunctionFlags::NeverInline.
         self continueExpansion
     };
+    withSelector: #eager addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self isEager: true.
+        self continueExpansion
+    };
     withSelector: #method addMethod: {:self :: ASTNode |
         <metaBuilder>
         self delegateToMetaBuilder: (MethodMetaBuilder new
             addMethodFlags: self methodFlags;
+            isEager: self isEager;
             yourself)
     };
     withSelector: #macro addMethod: {:self :: ASTNode |
