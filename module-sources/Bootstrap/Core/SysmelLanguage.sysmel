@@ -353,6 +353,10 @@ let Grammar::Token::RightBracket := SysmelTokenMonadicParser for: SysmelTokenKin
 let Grammar::Token::LeftCurlyBracket := SysmelTokenMonadicParser for: SysmelTokenKind::LeftCurlyBracket name: "left curly bracket".
 let Grammar::Token::RightCurlyBracket := SysmelTokenMonadicParser for: SysmelTokenKind::RightCurlyBracket name: "right curly bracket".
 
+let Grammar::Token::ByteArrayStart := SysmelTokenMonadicParser for: SysmelTokenKind::ByteArrayStart name: "byte array start (#[)".
+let Grammar::Token::DictionaryStart := SysmelTokenMonadicParser for: SysmelTokenKind::DictionaryStart name: "dictionary start (#{)".
+let Grammar::Token::LiteralArrayStart := SysmelTokenMonadicParser for: SysmelTokenKind::LiteralArrayStart name: "dictionary start (#()".
+
 let Grammar::Token::Dot := SysmelTokenMonadicParser for: SysmelTokenKind::Dot name: "dot (.)".
 let Grammar::Token::Comma := SysmelTokenMonadicParser for: SysmelTokenKind::Comma name: "comma (,)".
 let Grammar::Token::Ellipsis := SysmelTokenMonadicParser for: SysmelTokenKind::Ellipsis name: "elipsis (...)".
@@ -371,10 +375,20 @@ let Grammar::Token::QuasiQuote := SysmelTokenMonadicParser for: SysmelTokenKind:
 let Grammar::Token::QuasiUnquote := SysmelTokenMonadicParser for: SysmelTokenKind::QuasiUnquote name: "quasi unquote (`,)".
 let Grammar::Token::Splice := SysmelTokenMonadicParser for: SysmelTokenKind::Splice name: "splice (`@)".
 
+let Grammar::Token::Error := SysmelTokenMonadicParser for: SysmelTokenKind::Splice name: "error".
+
 ## ----------------------------------------------------------------------------
 ## Sysmel lisp grammar
 ## ----------------------------------------------------------------------------
 let LispGrammar::Expression := MonadicDelegateParser new.
+
+let LispGrammar::ErrorToken := Grammar::Token::Error ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+        let token := parserResult valueAsSysmelToken.
+        ASTErrorNode new
+            sourcePosition: token sourcePosition;
+            errorMessage: token value;
+            yourself
+    }.
 
 let LispGrammar::Identifier
     := Grammar::Token::Identifier
@@ -413,7 +427,7 @@ let LispGrammar::LiteralAtom
             value: token value;
             yourself
     }.
-let LispGrammar::Atom := LispGrammar::LiteralAtom | LispGrammar::Identifier.
+let LispGrammar::Atom := LispGrammar::LiteralAtom | LispGrammar::Identifier | LispGrammar::ErrorToken.
 
 let LispGrammar::SExpression
     := (Grammar::Token::LeftParent -- LispGrammar::Expression star -- Grammar::Token::RightParent)
@@ -450,6 +464,13 @@ let SysmelGrammar::QuasiQuote := MonadicDelegateParser new.
 let SysmelGrammar::QuasiUnquote := MonadicDelegateParser new.
 let SysmelGrammar::Splice := MonadicDelegateParser new.
 
+let SysmelGrammar::DictionaryElement := MonadicDelegateParser new.
+let SysmelGrammar::DictionaryElementList := MonadicDelegateParser new.
+let SysmelGrammar::MakeByteArray := MonadicDelegateParser new.
+let SysmelGrammar::MakeDictionary := MonadicDelegateParser new.
+let SysmelGrammar::LiteralArrayElement := MonadicDelegateParser new.
+let SysmelGrammar::LiteralArray := MonadicDelegateParser new.
+
 let SysmelGrammar::PrimaryTerm := MonadicDelegateParser new.
 let SysmelGrammar::Primary := MonadicDelegateParser new.
 let SysmelGrammar::UnaryExpression := MonadicDelegateParser new.
@@ -466,6 +487,14 @@ let SysmelGrammar::KeywordPragma := MonadicDelegateParser new.
 let SysmelGrammar::UnaryPragma := MonadicDelegateParser new.
 let SysmelGrammar::Pragma := MonadicDelegateParser new.
 let SysmelGrammar::PragmaList := MonadicDelegateParser new.
+
+let SysmelGrammar::ErrorToken := Grammar::Token::Error ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+        let token := parserResult valueAsSysmelToken.
+        ASTErrorNode new
+            sourcePosition: token sourcePosition;
+            errorMessage: token value;
+            yourself
+    }.
 
 let SysmelGrammar::Literal
     := Grammar::Token::Integer
@@ -649,11 +678,109 @@ SysmelGrammar::BlockExpression := Grammar::Token::LeftCurlyBracket -- SysmelGram
         }.
     }.
 
+let SysmelGrammar::LiteralArrayIdentifier
+    := Grammar::Token::Identifier
+    | Grammar::Token::Ellipsis
+    | Grammar::Token::Operator
+    | Grammar::Token::Bar
+    | Grammar::Token::Star
+    | Grammar::Token::LessThan
+    | Grammar::Token::GreaterThan
+    | Grammar::Token::Keyword
+    | Grammar::Token::MultiKeyword
+    | Grammar::Token::Dot
+    | Grammar::Token::Colon
+    | Grammar::Token::ColonColon
+    | Grammar::Token::Ellipsis
+    ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+        let token := parserResult valueAsSysmelToken.
+        ASTLiteralNode new
+            sourcePosition: token sourcePosition;
+            value: token value;
+            yourself
+    }.
+
+let SysmelGrammar::LiteralArrayWithParent := Grammar::Token::LeftParent -- SysmelGrammar::LiteralArrayElement star -- Grammar::Token::RightParent ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+        ASTMakeArrayNode new
+            sourcePosition: parserResult sourcePosition;
+            elements: parserResult value second;
+            yourself.
+    }.
+
+SysmelGrammar::LiteralArrayElement
+    := SysmelGrammar::Literal
+    | SysmelGrammar::LiteralArrayIdentifier
+    | SysmelGrammar::LiteralArrayWithParent
+    | SysmelGrammar::LiteralArray
+    .
+
+SysmelGrammar::LiteralArray := Grammar::Token::LiteralArrayStart -- SysmelGrammar::LiteralArrayElement star -- Grammar::Token::RightParent ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+        ASTMakeArrayNode new
+            sourcePosition: parserResult sourcePosition;
+            elements: parserResult value second asArray;
+            yourself.
+    }.
+
+SysmelGrammar::MakeByteArray
+    := Grammar::Token::ByteArrayStart -- SysmelGrammar::ExpressionList -- Grammar::Token::RightBracket ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+        ASTMakeByteArrayNode new
+            sourcePosition: parserResult sourcePosition;
+            elements: parserResult value second asArray;
+            yourself.
+    }.
+
+let SysmelGrammar::DictionaryElementKeywordKey
+    := Grammar::Token::Keyword
+    | Grammar::Token::MultiKeyword
+    .
+
+let SysmelGrammar::DictionaryElementKey
+    := ((SysmelGrammar::BinaryExpression -- Grammar::Token::Colon) ==> {:(MonadicParserResult)parserResult :: AnyValue |
+        parserResult value first
+    })
+    | (SysmelGrammar::DictionaryElementKeywordKey ==> {:(MonadicParserResult)parserResult :: AnyValue |
+        let token => SysmelToken := parserResult value.
+        let tokenValue => StringSymbol := token value.
+        ASTLiteralNode new
+            sourcePosition: token sourcePosition;
+            value: (tokenValue asString withoutSuffix: ":") asSymbol;
+            yourself.
+    })
+    .
+
+SysmelGrammar::DictionaryElement
+    := SysmelGrammar::DictionaryElementKey -- SysmelGrammar::Expression optional ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+        ASTMakeAssociationNode new
+            sourcePosition: parserResult sourcePosition;
+            key: parserResult value first;
+            value: parserResult value second;
+            yourself.
+    }.
+
+SysmelGrammar::DictionaryElementList := Grammar::Token::Dot star withoutValue -- SysmelGrammar::DictionaryElement optional -- (Grammar::Token::Dot plus withoutValue -- SysmelGrammar::DictionaryElement) star -- Grammar::Token::Dot star withoutValue ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    let elements => Array := parserResult value.
+    let optionalElement := elements second.
+    let listedElements := elements third asArray collect: {:(Array)dotExpression | dotExpression second}.
+    (optionalElement ifNil: #() ifNotNil: (Array with: optionalElement)) -- listedElements
+}.
+
+SysmelGrammar::MakeDictionary
+    := Grammar::Token::DictionaryStart -- SysmelGrammar::DictionaryElementList -- Grammar::Token::RightCurlyBracket ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+        ASTMakeDictionaryNode new
+            sourcePosition: parserResult sourcePosition;
+            elements: parserResult value second;
+            yourself.
+    }.
+
 SysmelGrammar::PrimaryTerm
     := SysmelGrammar::Identifier
     | SysmelGrammar::Literal
+    | SysmelGrammar::ErrorToken
     | SysmelGrammar::ParenthesisExpression
     | SysmelGrammar::BlockExpression
+    | SysmelGrammar::MakeByteArray
+    | SysmelGrammar::MakeDictionary
+    | SysmelGrammar::LiteralArray
     .
 
 SysmelGrammar::Quote := Grammar::Token::Quote -- SysmelGrammar::PrimaryTerm ::==> {:(MonadicParserResult)parserResult :: AnyValue |
@@ -712,6 +839,17 @@ let SysmelGrammar::FunctionApplicationSuffix := Grammar::Token::LeftParent -- Sy
             arguments: parseElements second;
             yourself.
     }.
+let SysmelGrammar::ApplyByteArraySuffix := SysmelGrammar::MakeByteArray  ==> {:(MonadicParserResult)parserResult :: AnyValue |
+        let byteArray => ASTNode := parserResult value.
+        ASTMessageSendNode new
+            sourcePosition: byteArray sourcePosition;
+            selector: (ASTLiteralNode new
+                sourcePosition: byteArray sourcePosition;
+                value: #"#[]:";
+                yourself);
+            arguments: (Array with: byteArray);
+            yourself.
+    }.
 
 let SysmelGrammar::ApplyBlockSuffix := SysmelGrammar::BlockExpression  ==> {:(MonadicParserResult)parserResult :: AnyValue |
         let block => ASTNode := parserResult value.
@@ -722,6 +860,30 @@ let SysmelGrammar::ApplyBlockSuffix := SysmelGrammar::BlockExpression  ==> {:(Mo
                 value: #"{}:";
                 yourself);
             arguments: (Array with: block);
+            yourself.
+    }.
+
+let SysmelGrammar::ApplyDictionarySuffix := SysmelGrammar::MakeDictionary  ==> {:(MonadicParserResult)parserResult :: AnyValue |
+        let dictionary => ASTNode := parserResult value.
+        ASTMessageSendNode new
+            sourcePosition: dictionary sourcePosition;
+            selector: (ASTLiteralNode new
+                sourcePosition: dictionary sourcePosition;
+                value: #"#{}:";
+                yourself);
+            arguments: (Array with: dictionary);
+            yourself.
+    }.
+
+let SysmelGrammar::ApplyLiteralArraySuffix := SysmelGrammar::LiteralArray  ==> {:(MonadicParserResult)parserResult :: AnyValue |
+        let literalArray => ASTNode := parserResult value.
+        ASTMessageSendNode new
+            sourcePosition: literalArray sourcePosition;
+            selector: (ASTLiteralNode new
+                sourcePosition: literalArray sourcePosition;
+                value: #"#():";
+                yourself);
+            arguments: (Array with: literalArray);
             yourself.
     }.
 
@@ -742,7 +904,10 @@ let SysmelGrammar::SubscriptSuffix := Grammar::Token::LeftBracket -- SysmelGramm
 let SysmelGrammar::UnarySuffixExpression
     := SysmelGrammar::UnarySuffixMessage
     | SysmelGrammar::FunctionApplicationSuffix
+    | SysmelGrammar::ApplyByteArraySuffix
     | SysmelGrammar::ApplyBlockSuffix
+    | SysmelGrammar::ApplyDictionarySuffix
+    | SysmelGrammar::ApplyLiteralArraySuffix
     | SysmelGrammar::SubscriptSuffix
     .
 
