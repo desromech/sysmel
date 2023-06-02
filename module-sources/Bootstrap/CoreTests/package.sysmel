@@ -1,4 +1,8 @@
 loadSourceNamed: "MonadicParserTestCase.sysmel".
 loadSourceNamed: "SysmelScannerTestCase.sysmel".
+
 loadSourceNamed: "SysmelLispParserTestCase.sysmel".
 loadSourceNamed: "SysmelParserTestCase.sysmel".
+
+loadSourceNamed: "SysmelLispInterpreterTestCase.sysmel".
+loadSourceNamed: "SysmelInterpreterTestCase.sysmel".

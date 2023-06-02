@@ -391,9 +391,9 @@ let LispGrammar::ErrorToken := Grammar::Token::Error ::==> {:(MonadicParserResul
     }.
 
 let LispGrammar::Identifier
-    := Grammar::Token::Identifier
+    := Grammar::Token::MultiKeyword
     | Grammar::Token::Keyword
-    | Grammar::Token::MultiKeyword
+    | Grammar::Token::Identifier
     | Grammar::Token::Operator
     | Grammar::Token::Star
     | Grammar::Token::LessThan
@@ -832,11 +832,12 @@ let SysmelGrammar::ApplicationArgumentList := SysmelGrammar::CommaExpressionElem
         (Array with: parseElements first) -- (parseElements second collect: {:each | each second}) asArray
     }.
 
-let SysmelGrammar::FunctionApplicationSuffix := Grammar::Token::LeftParent -- SysmelGrammar::ApplicationArgumentList --  Grammar::Token::RightParent  ==> {:(MonadicParserResult)parserResult :: AnyValue |
+let SysmelGrammar::FunctionApplicationSuffix := Grammar::Token::LeftParent -- SysmelGrammar::ApplicationArgumentList optional --  Grammar::Token::RightParent  ==> {:(MonadicParserResult)parserResult :: AnyValue |
         let parseElements => Array := parserResult value.
+        let arguments => Array := parseElements second.
         ASTUnexpandedApplicationNode new
             sourcePosition: parserResult sourcePosition;
-            arguments: parseElements second;
+            arguments: (arguments ifNil: #());
             yourself.
     }.
 let SysmelGrammar::ApplyByteArraySuffix := SysmelGrammar::MakeByteArray  ==> {:(MonadicParserResult)parserResult :: AnyValue |
@@ -1098,6 +1099,12 @@ public class SysmelLanguage superclass: Object; definition: {
 
         public method parseSourceCode: (sourceCode: SourceCode) ::=> ASTNode
             := self new parseSourceCode: sourceCode.
+
+        public method analyzeAndEvaluateSourceCode: (sourceCode: SourceCode) withEnvironment: (evaluationEnvironment: Environment) ::=> AnyValue
+            := self new analyzeAndEvaluateSourceCode: sourceCode withEnvironment: evaluationEnvironment.
+
+        public method analyzeAndEvaluateSourceCode: (sourceCode: SourceCode) ::=> AnyValue
+            := self new analyzeAndEvaluateSourceCode: sourceCode.
     }.
 
     public virtual method scanSourceCode: (sourceCode: SourceCode) ::=> Array := {
@@ -1146,6 +1153,14 @@ public class SysmelLanguage superclass: Object; definition: {
 
     public virtual method grammar => MonadicParser
         := SysmelGrammar::ExpressionSequence.
+
+    public virtual method analyzeAndEvaluateSourceCode: (sourceCode: SourceCode) withEnvironment: (evaluationEnvironment: Environment) ::=> AnyValue := {
+        let ast := self parseSourceCode: sourceCode.
+        ast analyzeAndEvaluateWithEnvironment: evaluationEnvironment
+    }.
+
+    public virtual method analyzeAndEvaluateSourceCode: (sourceCode: SourceCode) ::=> AnyValue
+        := self analyzeAndEvaluateSourceCode: sourceCode withEnvironment: Environment defaultEnvironmentForEvaluation.
 }.
 
 public class SysmelLispLanguage superclass: SysmelLanguage; definition: {

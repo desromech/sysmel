@@ -49,6 +49,34 @@ public class SysmelLispParserTestCase superclass: TestCase; definition: {
         self assert: identifierNode value equals: #identifier.
     }.
 
+    public method testKeywordIdentifierReference => Void := {
+        let ast := self parseString: "identifier:".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isIdentifierReferenceNode.
+        let identifierNode := sequenceNode expressions first downCastTo: ASTIdentifierReferenceNode.
+        self assert: identifierNode value equals: #identifier:.
+    }.
+
+    public method testMultiKeywordIdentifierReference => Void := {
+        let ast := self parseString: "if:then:else:".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isIdentifierReferenceNode.
+        let identifierNode := sequenceNode expressions first downCastTo: ASTIdentifierReferenceNode.
+        self assert: identifierNode value equals: #if:then:else:.
+    }.
+
     public method testLiteralInteger => Void := {
         let ast := self parseString: "1234".
         self assert: ast isNotNil.

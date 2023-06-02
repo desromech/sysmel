@@ -1,0 +1,15 @@
+Environment definition: {
+    __Meta__ definition: {
+        public method empty => self
+            := self new.
+
+        public virtual method parent: (parent: Environment) ::=> self
+            := self new parent: parent; yourself.
+
+        public virtual method parent: (parent: Environment) analysisQueue: (analysisQueue: AnalysisQueue) ::=> self
+            := self new parent: parent; analysisQueue: analysisQueue; yourself.
+
+        public method defaultEnvironmentForEvaluation ::=> self
+            := self parent: __Global__ analysisQueue: AnalysisQueue default.
+    }.
+}.

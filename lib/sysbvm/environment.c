@@ -50,9 +50,10 @@ SYSBVM_API void sysbvm_analysisQueue_enqueueProgramEntity(sysbvm_context_t *cont
 
 SYSBVM_API sysbvm_tuple_t sysbvm_analysisQueue_getDefault(sysbvm_context_t *context)
 {
-    if(!context->roots.defaultAnalysisQueue)
-        context->roots.defaultAnalysisQueue = sysbvm_analysisQueue_create(context);
-    return context->roots.defaultAnalysisQueue;
+    sysbvm_tuple_t *defaultQueue = SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(context->roots.defaultAnalysisQueueValueBox)->pointers;
+    if(!*defaultQueue)
+        *defaultQueue = sysbvm_analysisQueue_create(context);
+    return *defaultQueue;
 }
 
 SYSBVM_API void sysbvm_analysisQueue_waitPendingAnalysis(sysbvm_context_t *context, sysbvm_tuple_t queue)

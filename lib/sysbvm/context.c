@@ -639,6 +639,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
 
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.environmentType, "Environment", SYSBVM_NULL_TUPLE,
         "parent", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
+        "analysisQueue", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.analysisQueueType,
         "symbolTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.namespaceType, "Namespace", SYSBVM_NULL_TUPLE,
@@ -875,6 +876,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.untypedType,
         NULL);
     sysbvm_typeAndMetatype_setFlags(context, context->roots.valueBoxType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);
+    context->roots.defaultAnalysisQueueValueBox = (sysbvm_tuple_t)sysbvm_context_allocatePointerTuple(context, context->roots.valueBoxType, 1);
+    sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "__DefaultAnalysisQueueValueBox__"), context->roots.defaultAnalysisQueueValueBox);
 
     sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "Bitflags"), context->roots.bitflagsType);
     sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "SystemHandle"), context->roots.systemHandleType);

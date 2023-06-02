@@ -1,0 +1,51 @@
+public class SysmelInterpreterTestCase superclass: TestCase; definition: {
+    public method evaluateString: (string: String) ::=> AnyValue
+        := SysmelLanguage analyzeAndEvaluateSourceCode: (SourceCode text: string directory: nil name: "test" language: #sysmel).
+
+    public method testEmptyString => Void := {
+        self assert: (self evaluateString: "") equals: void
+    }.
+
+    public method testStringSymbol => Void := {
+        self assert: (self evaluateString: "#first") equals: #first.
+        self assert: (self evaluateString: "#first . #second") equals: #second.
+    }.
+
+    public method testIdentifier => Void := {
+        self assert: (self evaluateString: "nil") equals: nil.
+        self assert: (self evaluateString: "false") equals: false.
+        self assert: (self evaluateString: "true") equals: true.
+        self assert: (self evaluateString: "void") equals: void.
+    }.
+
+    public method testFunctionApplication => Void := {
+        self assert: (self evaluateString: "identityHash(nil)") equals: nil identityHash.
+        self assert: (self evaluateString: "identityHash(false)") equals: false identityHash.
+        self assert: (self evaluateString: "identityHash(true)") equals: true identityHash.
+        self assert: (self evaluateString: "identityHash(void)") equals: void identityHash.
+    }.
+
+    public method testNullaryLambdaApplication => Void := {
+        self assert: (self evaluateString: "{| nil}()") equals: nil.
+        self assert: (self evaluateString: "{| false}()") equals: false.
+        self assert: (self evaluateString: "{| true}()") equals: true.
+        self assert: (self evaluateString: "{| void}()") equals: void.
+    }.
+
+    public method testIdentityLambdaApplication => Void := {
+        self assert: (self evaluateString: "{:x | x} (nil)") equals: nil.
+        self assert: (self evaluateString: "{:x | x} (false)") equals: false.
+        self assert: (self evaluateString: "{:x | x} (true)") equals: true.
+        self assert: (self evaluateString: "{:x | x} (void)") equals: void.
+    }.
+
+    public method testIfExpression => Void := {
+        self assert: (self evaluateString: "if: true then: 1 else: 2") equals: 1.
+        self assert: (self evaluateString: "if: false then: 1 else: 2") equals: 2.
+    }.
+
+    public method testLet => Void := {
+        self assert: (self evaluateString: "let: #myvar with: false. myvar") equals: false.
+        self assert: (self evaluateString: "let: #myfunction with: {| false}. myfunction()") equals: false.
+    }.
+}.

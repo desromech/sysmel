@@ -1,0 +1,11 @@
+AnalysisQueue definition: {
+    __Meta__ definition: {
+        public method default => AnalysisQueue := {
+            __DefaultAnalysisQueueValueBox__ value ifNil: {
+                let newQueue := AnalysisQueue new.
+                __DefaultAnalysisQueueValueBox__ := newQueue.
+                newQueue
+            }
+        }.
+    }.
+}.

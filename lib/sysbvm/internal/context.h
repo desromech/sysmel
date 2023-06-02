@@ -281,7 +281,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t bytecodeCompilerInstructionVectorOperandType;
 
     sysbvm_tuple_t globalNamespace;
-    sysbvm_tuple_t defaultAnalysisQueue;
+    sysbvm_tuple_t defaultAnalysisQueueValueBox;
     sysbvm_tuple_t intrinsicTypes;
 
     struct
