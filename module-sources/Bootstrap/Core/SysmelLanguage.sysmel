@@ -31,27 +31,27 @@ SysmelToken definition: {
 }.
 
 let Scanner::Whitespace := MonadicParser white plus withoutValue.
-let Scanner::NotNewline := MonadicParser predicate: {:character :: Boolean | ('\n'asChar8 ~= character) && ('\r'asChar8 ~= character)} errorMessage: "Newline found".
+let Scanner::NotNewline := MonadicParser predicate: {:character :: Boolean | ('\n'c8 ~= character) && ('\r'c8 ~= character)} errorMessage: "Newline found".
 let Scanner::SingleLineComment := ("##" asMonadicParser -- Scanner::NotNewline star withoutValue) withoutValue.
 let Scanner::MultiLineComment := ("#*" asMonadicParser -- "*#" asMonadicParser negate star withoutValue -- "*#" asMonadicParser) withoutValue.
 
 let Scanner::White := (Scanner::Whitespace | Scanner::SingleLineComment | Scanner::MultiLineComment) plus withoutValue.
 
-let Scanner::ColonPattern := ':'asChar8 asMonadicElementParser -- ':'asChar8 asMonadicElementParser not.
+let Scanner::ColonPattern := ':'c8 asMonadicElementParser -- ':'c8 asMonadicElementParser not.
 let Scanner::ColonColonPattern := "::" asMonadicParser.
 let Scanner::HashChar := "#" asMonadicParser.
 
-let Scanner::LeftParentPattern := '('asChar8 asMonadicElementParser.
-let Scanner::RightParentPattern := ')'asChar8 asMonadicElementParser.
-let Scanner::LeftBracketPattern := '['asChar8 asMonadicElementParser.
-let Scanner::RightBracketPattern := ']'asChar8 asMonadicElementParser.
-let Scanner::LeftCurlyBracketPattern := '{'asChar8 asMonadicElementParser.
-let Scanner::RightCurlyBracketPattern := '}'asChar8 asMonadicElementParser.
+let Scanner::LeftParentPattern := '('c8 asMonadicElementParser.
+let Scanner::RightParentPattern := ')'c8 asMonadicElementParser.
+let Scanner::LeftBracketPattern := '['c8 asMonadicElementParser.
+let Scanner::RightBracketPattern := ']'c8 asMonadicElementParser.
+let Scanner::LeftCurlyBracketPattern := '{'c8 asMonadicElementParser.
+let Scanner::RightCurlyBracketPattern := '}'c8 asMonadicElementParser.
 let Scanner::EllipsisPattern := "..." asMonadicParser.
-let Scanner::DotPattern := '.'asChar8 asMonadicElementParser.
-let Scanner::CommaPattern := ','asChar8 asMonadicElementParser.
+let Scanner::DotPattern := '.'c8 asMonadicElementParser.
+let Scanner::CommaPattern := ','c8 asMonadicElementParser.
 let Scanner::AssignmentPattern := ":=" asMonadicParser.
-let Scanner::SemicolonPattern := ';'asChar8 asMonadicElementParser.
+let Scanner::SemicolonPattern := ';'c8 asMonadicElementParser.
 
 let Scanner::QuotePattern := "`'" asMonadicParser.
 let Scanner::QuasiQuotePattern := "``" asMonadicParser.
@@ -72,26 +72,26 @@ let Scanner::ScopedOperatorPattern := (Scanner::IdentifierScopePrefixPattern -- 
 
 let Scanner::Sign := "+-" asMonadicSetParser.
 let Scanner::Digit := MonadicParser digit.
-let Scanner::DigitUnderscore := Scanner::Digit | '_'asChar8 asMonadicElementParser.
+let Scanner::DigitUnderscore := Scanner::Digit | '_'c8 asMonadicElementParser.
 let Scanner::Alphanum := MonadicParser alphaNum.
 let Scanner::AlphanumUnderscore := MonadicParser identifierMiddle.
 
 let Scanner::DecimalIntegerPattern := (Scanner::Sign optional -- Scanner::Digit -- Scanner::DigitUnderscore star withoutValue) withoutValue.
-let Scanner::RadixIntegerPattern := (Scanner::DecimalIntegerPattern -- 'r'asChar8 asMonadicElementParser -- Scanner::Alphanum -- Scanner::AlphanumUnderscore star withoutValue) withoutValue.
+let Scanner::RadixIntegerPattern := (Scanner::DecimalIntegerPattern -- 'r'c8 asMonadicElementParser -- Scanner::Alphanum -- Scanner::AlphanumUnderscore star withoutValue) withoutValue.
 let Scanner::IntegerPattern := Scanner::RadixIntegerPattern | Scanner::DecimalIntegerPattern.
 
 let Scanner::ExponentPattern := ("eE" asMonadicSetParser -- Scanner::DecimalIntegerPattern) withoutValue.
-let Scanner::FloatDecimalPattern := (Scanner::IntegerPattern -- '.'asChar8 asMonadicElementParser -- Scanner::Digit -- Scanner::DigitUnderscore star withoutValue) withoutValue.
+let Scanner::FloatDecimalPattern := (Scanner::IntegerPattern -- '.'c8 asMonadicElementParser -- Scanner::Digit -- Scanner::DigitUnderscore star withoutValue) withoutValue.
 let Scanner::FloatExponentPattern := (Scanner::IntegerPattern -- Scanner::ExponentPattern) withoutValue.
 let Scanner::FloatPattern := Scanner::FloatDecimalPattern | Scanner::FloatExponentPattern.
 
-let Scanner::CharacterPattern := ('\''asChar8 asMonadicElementParser
-    -- (('\\'asChar8 asMonadicElementParser -- MonadicParser any) withoutValue | '\''asChar8 asMonadicElementParser negate)
-    -- '\''asChar8 asMonadicElementParser) withoutValue.
-let Scanner::StringPattern := ('"'asChar8 asMonadicElementParser
-    -- (('\\'asChar8 asMonadicElementParser -- MonadicParser any) withoutValue | '"'asChar8 asMonadicElementParser negate) star
-    -- '"'asChar8 asMonadicElementParser) withoutValue.
-let Scanner::SymbolStringPattern := ('#'asChar8 asMonadicElementParser -- Scanner::StringPattern) withoutValue.
+let Scanner::CharacterPattern := ('\''c8 asMonadicElementParser
+    -- (('\\'c8 asMonadicElementParser -- MonadicParser any) withoutValue | '\''c8 asMonadicElementParser negate)
+    -- '\''c8 asMonadicElementParser) withoutValue.
+let Scanner::StringPattern := ('"'c8 asMonadicElementParser
+    -- (('\\'c8 asMonadicElementParser -- MonadicParser any) withoutValue | '"'c8 asMonadicElementParser negate) star
+    -- '"'c8 asMonadicElementParser) withoutValue.
+let Scanner::SymbolStringPattern := ('#'c8 asMonadicElementParser -- Scanner::StringPattern) withoutValue.
 
 let Scanner::ScopedKeywordPattern := (Scanner::ScopedIdentifierPattern -- Scanner::ColonPattern) withoutValue.
 let Scanner::ScopedMultiKeywordPattern := (Scanner::IdentifierScopePrefixPattern -- ((Scanner::IdentifierPattern -- Scanner::ColonPattern) withoutValue plusN: 2sz) withoutValue) withoutValue.

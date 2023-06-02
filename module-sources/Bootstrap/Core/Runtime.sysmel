@@ -1823,7 +1823,7 @@ String
         }
     };
     withSelector: #padLeft: addMethod: {:(String)self :(Size)requiredLength :: self species |
-        self padLeft: requiredLength with: ' 'asChar8
+        self padLeft: requiredLength with: ' 'c8
     }.
 
 StringSymbol
@@ -2032,6 +2032,11 @@ Char32 class
     withSelector: #defaultValue addMethod: {:(Char32 class)self :: Char32 | 0c32 } makeOverride;
     withSelector: #zero addMethod: {:(Char32 class)self :: Char32 | 0c32 } makePure makeFinal;
     withSelector: #one addMethod: {:(Char32 class)self :: Char32 | 1c32 } makePure makeFinal.
+
+Char32
+    withSelector: #c8 addMethod: Char32 >> #asChar8;
+    withSelector: #c16 addMethod: Char32 >> #asChar16;
+    withSelector: #c32 addMethod: Char32 >> #asChar32.
 
 UInt32 class
     withSelector: #canEncodeValueInBytes addMethod: {:(UInt32 class)self :: Boolean | true } makeOverride;

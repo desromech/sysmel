@@ -1,13 +1,13 @@
 Char8 extend: {
     public method asLowercase => Char8 := {
-        if: ('A'asChar8 <= self) && (self <= 'Z'asChar8)
-        then: self + 'a'asChar8 - 'A'asChar8
+        if: ('A'c8 <= self) && (self <= 'Z'c8)
+        then: self + 'a'c8 - 'A'c8
         else: self
     }.
 
     public method asUppercase => Char8 := {
-        if: ('a'asChar8 <= self) && (self <= 'z'asChar8)
-        then: self + 'A'asChar8 - 'z'asChar8
+        if: ('a'c8 <= self) && (self <= 'z'c8)
+        then: self + 'A'c8 - 'z'c8
         else: self
     }.
 }.
@@ -79,7 +79,7 @@ String extend: {
         let i mutable := 0sz.
         while: (i < size) do: {
             let c := self at: i.
-            c = '\\'asChar8 ifTrue: {
+            c = '\\'c8 ifTrue: {
                 i := i + 1sz.
             }.
             
@@ -92,18 +92,18 @@ String extend: {
         i := 0sz.
         while: (i < size) do: {
             let c := self at: i.
-            c = '\\'asChar8 ifTrue: {
+            c = '\\'c8 ifTrue: {
                 i := i + 1sz.
                 if: i < size then: {
                     let escapeCharacter := self at: i.
                     escapeCharacter = 'n' ifTrue: {
-                        result at: destIndex put: '\n'asChar8
+                        result at: destIndex put: '\n'c8
                     } ifFalse: {
                         escapeCharacter = 'r' ifTrue: {
-                            result at: destIndex put: '\r'asChar8
+                            result at: destIndex put: '\r'c8
                         } ifFalse: {
                             escapeCharacter = 't' ifTrue: {
-                                result at: destIndex put: '\t'asChar8
+                                result at: destIndex put: '\t'c8
                             } ifFalse: {
                                 result at: destIndex put: escapeCharacter
                             }.
@@ -124,8 +124,8 @@ String extend: {
 UInt8 extend: {
     public method printHexDigitOn: (stream: Stream) ::=> Void := {
         (0u8 <= self) && (self <= 9u8)
-            ifTrue: (stream nextPut: self asChar8 + '0'asChar8)
-            ifFalse: (stream nextPut: self asChar8 + 'A'asChar8 - 10c8).
+            ifTrue: (stream nextPut: self asChar8 + '0'c8)
+            ifFalse: (stream nextPut: self asChar8 + 'A'c8 - 10c8).
     }.
 
     public method printHexOn: (stream: Stream) ::=> Void := {
@@ -177,7 +177,7 @@ UInt32 extend: {
         do: {
             let digit := currentValue % 10u32.
             currentValue := currentValue / 10u32.
-            result at: digitCount - digitIndex - 1sz put: '0'asChar8 + digit asChar8.
+            result at: digitCount - digitIndex - 1sz put: '0'c8 + digit asChar8.
             digitIndex := digitIndex + 1sz
         } while: (currentValue ~= 0u32).
 
@@ -212,7 +212,7 @@ UInt64 extend: {
         do: {
             let digit := currentValue % 10u64.
             currentValue := currentValue / 10u64.
-            result at: digitCount - digitIndex - 1sz put: '0'asChar8 + digit asChar8.
+            result at: digitCount - digitIndex - 1sz put: '0'c8 + digit asChar8.
             digitIndex := digitIndex + 1sz
         } while: (currentValue ~= 0u64).
 
@@ -268,13 +268,13 @@ Int32 extend: {
         let result := String basicAllocate: prefixSize + digitCount.
         
         ## Emit the string
-        isNegative ifTrue: (result at: 0sz put: '-'asChar8).
+        isNegative ifTrue: (result at: 0sz put: '-'c8).
         currentValue := absoluteValue.
         let digitIndex mutable := 0sz.
         do: {
             let digit := currentValue % 10u32.
             currentValue := currentValue / 10u32.
-            result at: prefixSize + digitCount - digitIndex - 1sz put: '0'asChar8 + digit asChar8.
+            result at: prefixSize + digitCount - digitIndex - 1sz put: '0'c8 + digit asChar8.
             digitIndex := digitIndex + 1sz
         } while: (currentValue ~= 0u32).
 
@@ -306,13 +306,13 @@ Int64 extend: {
         let result := String basicAllocate: prefixSize + digitCount.
         
         ## Emit the string
-        isNegative ifTrue: (result at: 0sz put: '-'asChar8).
+        isNegative ifTrue: (result at: 0sz put: '-'c8).
         currentValue := absoluteValue.
         let digitIndex mutable := 0sz.
         do: {
             let digit := currentValue % 10u64.
             currentValue := currentValue / 10u64.
-            result at: prefixSize + digitCount - digitIndex - 1sz put: '0'asChar8 + digit asChar8.
+            result at: prefixSize + digitCount - digitIndex - 1sz put: '0'c8 + digit asChar8.
             digitIndex := digitIndex + 1sz
         } while: (currentValue ~= 0u64).
 

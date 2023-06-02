@@ -5,13 +5,13 @@ public class MonadicParserTestCase superclass: TestCase; definition: {
     }.
 
     public method testSingleCharacter => Void := {
-        let parser := 'a'asChar8 asMonadicElementParser.
+        let parser := 'a'c8 asMonadicElementParser.
         self assert: (parser parse: "b") isError.
         self assert: (parser parse: "a") isValid.
     }.
 
     public method testTwoCharacterSequence => Void := {
-        let parser := 'a'asChar8 asMonadicElementParser -- 'b'asChar8 asMonadicElementParser.
+        let parser := 'a'c8 asMonadicElementParser -- 'b'c8 asMonadicElementParser.
         self assert: (parser parse: "b") isError.
         self assert: (parser parse: "ba") isError.
         self assert: (parser parse: "a") isError.
@@ -19,7 +19,7 @@ public class MonadicParserTestCase superclass: TestCase; definition: {
     }.
 
     public method testTwoCharacterAlternatives => Void := {
-        let parser := 'a'asChar8 asMonadicElementParser | 'b'asChar8 asMonadicElementParser.
+        let parser := 'a'c8 asMonadicElementParser | 'b'c8 asMonadicElementParser.
         self assert: (parser parse: "a") isValid.
         self assert: (parser parse: "b") isValid.
         self assert: (parser parse: "c") isError.

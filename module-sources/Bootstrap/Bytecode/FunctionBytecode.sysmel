@@ -165,14 +165,14 @@ FunctionBytecode definition: {
             nextPutAll: "instructions: ["; nl.
 
         self decodedInstructionsDo: {:(UInt8)opcode :(Array)operands :(Size)pc :(Size)nextPC :: Void |
-            stream nextPutAll: "  "; nextPutAll: (pc printString padLeft: 4sz with: '0'asChar8); nextPutAll: " ".
+            stream nextPutAll: "  "; nextPutAll: (pc printString padLeft: 4sz with: '0'c8); nextPutAll: " ".
             self printOpcodeMnemonic: opcode on: stream.
             
             let isBranchInstruction := self isBranchOpcode: opcode.
             operands doWithIndex: {:(Int16)each :(Size)operandIndex :: Void |
                 stream nextPut: ' '.
                 if: isBranchInstruction && ((operandIndex + 1sz) = operands size) then: {
-                    stream print: each; nextPut: '|'; nextPutAll: ((nextPC asIntPointer + each asIntPointer) printString padLeft: 4sz with: '0'asChar8)
+                    stream print: each; nextPut: '|'; nextPutAll: ((nextPC asIntPointer + each asIntPointer) printString padLeft: 4sz with: '0'c8)
                 } else: {
                     let operandVector := each & FunctionBytecode::OperandVectorName::BitMask.
                     let operandIndex := each >> FunctionBytecode::OperandVectorName::Bits.

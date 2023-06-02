@@ -98,7 +98,7 @@ public final class FunctionBytecodeAssemblerInstruction superclass: FunctionByte
 
     public override method printOn: (stream: Stream) ::=> Void := {
         if: self name ~~ nil then: (stream print: self name; nextPut: ':').
-        stream nextPutAll: (self pc printString padLeft: 4sz with: '0'asChar8)
+        stream nextPutAll: (self pc printString padLeft: 4sz with: '0'c8)
     }.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
