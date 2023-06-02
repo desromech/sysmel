@@ -1,0 +1,14 @@
+public class TestMetrics superclass: Object; definition: {
+    public field testCount => Size.
+    public field totalRunningTime => Int64.
+
+    public method countTestWithRunningTime: (runningTime: Int64) ::=> Void := {
+        testCount := testCount + 1sz.
+        totalRunningTime := totalRunningTime + runningTime
+    }.
+
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: "Run "; print: testCount; nextPutAll: " test. Running time ";
+            print: totalRunningTime asFloat64 * 0.001; nextPutAll: " ms.".
+    }.
+}.

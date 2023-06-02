@@ -1,2 +1,3 @@
 loadSourceNamed: "TestAsserter.sysmel".
+loadSourceNamed: "TestMetrics.sysmel".
 loadSourceNamed: "TestCase.sysmel".

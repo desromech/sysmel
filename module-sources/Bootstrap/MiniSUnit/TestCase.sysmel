@@ -1,26 +1,35 @@
 public abstract class TestCase superclass: TestAsserter; definition: {
     __Meta__ definition: {
         public method withAllSubclassesRun ::=> Void := {
+            let metrics := TestMetrics new.
             self withAllSubtypesDo: {:(TestCase class)eachClass :: Void |
                 eachClass isAbstract ifFalse: {
-                    eachClass run
+                    eachClass runWithMetrics: metrics.
                 }
-            }
+            }.
+
+            printLine(metrics).
         }.
 
-        public method run ::=> Void := {
-            printLine("Running ", self name).
+        public method runWithMetrics: (metrics: TestMetrics) ::=> Void := {
+            printLine(name).
             self testSelectors do: {:(Symbol)eachTestSelector :: Void |
-                self run: eachTestSelector
-            }
+                self run: eachTestSelector withMetrics: metrics.
+            }.
         }.
 
-        public method run: (testSelector: Symbol) ::=> Void := {
-            printLine("-- ", testSelector).
-            self new
-                setUp;
-                perform: testSelector;
-                tearDown.
+        public method run: (testSelector: Symbol) withMetrics: (metrics: TestMetrics) ::=> Void := {
+            print("-- ", testSelector asString).
+
+            let testTime := {|
+                self new
+                    setUp;
+                    perform: testSelector;
+                    tearDown.
+            } timeToRunInMicroseconds.
+
+            printLine(" ", testTime asFloat64 * 0.001, " ms").
+            metrics countTestWithRunningTime: testTime.
         }.
 
         public method testSelectors => Array := {
