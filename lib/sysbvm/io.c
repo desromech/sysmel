@@ -5,6 +5,7 @@
 #include "sysbvm/function.h"
 #include "sysbvm/string.h"
 #include "sysbvm/assert.h"
+#include "internal/context.h"
 #include <stdio.h>
 
 SYSBVM_API sysbvm_tuple_t sysbvm_io_readWholeFileNamedAsString(sysbvm_context_t *context, sysbvm_tuple_t filename)
@@ -93,6 +94,32 @@ static sysbvm_tuple_t sysbvm_io_primitive_printLine(sysbvm_context_t *context, s
     return SYSBVM_VOID_TUPLE;
 }
 
+static sysbvm_tuple_t sysbvm_io_primitive_writeOntoStdout(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
+
+    sysbvm_tuple_t string = arguments[0];
+    SYSBVM_ASSERT(sysbvm_tuple_isBytes(string));
+    fwrite(SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(string)->bytes, sysbvm_tuple_getSizeInBytes(string), 1, stdout);
+
+    return SYSBVM_VOID_TUPLE;
+}
+
+static sysbvm_tuple_t sysbvm_io_primitive_writeOntoStderr(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
+
+    sysbvm_tuple_t string = arguments[0];
+    SYSBVM_ASSERT(sysbvm_tuple_isBytes(string));
+    fwrite(SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(string)->bytes, sysbvm_tuple_getSizeInBytes(string), 1, stdout);
+
+    return SYSBVM_VOID_TUPLE;
+}
+
 static sysbvm_tuple_t sysbvm_io_primitive_print(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
@@ -151,6 +178,9 @@ void sysbvm_io_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_io_primitive_printLine, "printLine");
     sysbvm_primitiveTable_registerFunction(sysbvm_io_primitive_print, "printLine");
 
+    sysbvm_primitiveTable_registerFunction(sysbvm_io_primitive_writeOntoStdout, "IO::writeOntoStdout");
+    sysbvm_primitiveTable_registerFunction(sysbvm_io_primitive_writeOntoStderr, "IO::writeOntoStderr");
+
     sysbvm_primitiveTable_registerFunction(sysbvm_io_primitive_readWholeFileNamedAsString, "IO::readWholeFileNamedAsString");
     sysbvm_primitiveTable_registerFunction(sysbvm_io_primitive_readWholeFileNamedAsByteArray, "IO::readWholeFileNamedAsByteArray");
     sysbvm_primitiveTable_registerFunction(sysbvm_io_primitive_saveWholeFileNamed, "IO::saveWholeFileNamed");
@@ -159,8 +189,11 @@ void sysbvm_io_registerPrimitives(void)
 
 void sysbvm_io_setupPrimitives(sysbvm_context_t *context)
 {
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "printLine", 1, SYSBVM_FUNCTION_FLAGS_VARIADIC | SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_io_primitive_printLine);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "print", 1, SYSBVM_FUNCTION_FLAGS_VARIADIC | SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_io_primitive_print);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "printLine", 1, SYSBVM_FUNCTION_FLAGS_VARIADIC, NULL, sysbvm_io_primitive_printLine);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "print", 1, SYSBVM_FUNCTION_FLAGS_VARIADIC, NULL, sysbvm_io_primitive_print);
+
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IO::writeOntoStdout", context->roots.stringType, "writeOntoStdout", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_io_primitive_writeOntoStdout);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IO::writeOntoStderr", context->roots.stringType, "writeOntoStderr", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_io_primitive_writeOntoStderr);
 
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "IO::readWholeFileNamedAsString", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_io_primitive_readWholeFileNamedAsString);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "IO::readWholeFileNamedAsByteArray", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_io_primitive_readWholeFileNamedAsByteArray);

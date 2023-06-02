@@ -5892,15 +5892,15 @@ static void sysbvm_astInterpreter_setupNodeInterpretationFunctions(sysbvm_contex
     if(analysisFunction)
         sysbvm_type_setAstNodeAnalysisFunction(context, astNodeType, sysbvm_function_createPrimitive(context, 2, SYSBVM_FUNCTION_FLAGS_NONE, NULL, analysisFunction));
     if(evaluationFunction)
-        sysbvm_type_setAstNodeEvaluationFunction(context, astNodeType, sysbvm_function_createPrimitive(context, 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, evaluationFunction));
+        sysbvm_type_setAstNodeEvaluationFunction(context, astNodeType, sysbvm_function_createPrimitive(context, 2, SYSBVM_FUNCTION_FLAGS_NONE, NULL, evaluationFunction));
     if(analysisAndEvaluationFunction)
-        sysbvm_type_setAstNodeAnalysisAndEvaluationFunction(context, astNodeType, sysbvm_function_createPrimitive(context, 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, analysisAndEvaluationFunction));
+        sysbvm_type_setAstNodeAnalysisAndEvaluationFunction(context, astNodeType, sysbvm_function_createPrimitive(context, 2, SYSBVM_FUNCTION_FLAGS_NONE, NULL, analysisAndEvaluationFunction));
 }
 
 void sysbvm_astInterpreter_setupASTInterpreter(sysbvm_context_t *context)
 {
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "loadSourceNamedWithSolvedPath:", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_interpreter_primitive_loadSourceNamedWithSolvedPath);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "loadSourceNamed:", 2, SYSBVM_FUNCTION_FLAGS_MACRO | SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_interpreter_primitive_loadSourceNamedMacro);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "loadSourceNamedWithSolvedPath:", 1, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_interpreter_primitive_loadSourceNamedWithSolvedPath);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "loadSourceNamed:", 2, SYSBVM_FUNCTION_FLAGS_MACRO | SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_interpreter_primitive_loadSourceNamedMacro);
 
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "begin", 2, SYSBVM_FUNCTION_FLAGS_MACRO | SYSBVM_FUNCTION_FLAGS_VARIADIC, NULL, sysbvm_astSequenceNode_primitiveMacro);
 
