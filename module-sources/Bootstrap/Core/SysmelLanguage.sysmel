@@ -380,7 +380,9 @@ let Grammar::Token::Error := SysmelTokenMonadicParser for: SysmelTokenKind::Spli
 ## ----------------------------------------------------------------------------
 ## Sysmel lisp grammar
 ## ----------------------------------------------------------------------------
-let LispGrammar::Expression := MonadicDelegateParser new.
+let LispGrammar::Expression := MonadicMemoizedDelegateParser new.
+let LispGrammar::Atom := MonadicMemoizedDelegateParser new.
+let LispGrammar::ExpressionList := MonadicMemoizedDelegateParser new.
 
 let LispGrammar::ErrorToken := Grammar::Token::Error ::==> {:(MonadicParserResult)parserResult :: AnyValue |
         let token := parserResult valueAsSysmelToken.
@@ -427,12 +429,13 @@ let LispGrammar::LiteralAtom
             value: token value;
             yourself
     }.
-let LispGrammar::Atom := LispGrammar::LiteralAtom | LispGrammar::Identifier | LispGrammar::ErrorToken.
+LispGrammar::Atom := LispGrammar::LiteralAtom | LispGrammar::Identifier | LispGrammar::ErrorToken.
+LispGrammar::ExpressionList := LispGrammar::Expression star.
 
 let LispGrammar::SExpression
-    := (Grammar::Token::LeftParent -- LispGrammar::Expression star -- Grammar::Token::RightParent)
-    | (Grammar::Token::LeftBracket -- LispGrammar::Expression star -- Grammar::Token::RightBracket)
-    | (Grammar::Token::LeftCurlyBracket -- LispGrammar::Expression star -- Grammar::Token::RightCurlyBracket)
+    := (Grammar::Token::LeftParent -- LispGrammar::ExpressionList -- Grammar::Token::RightParent)
+    | (Grammar::Token::LeftBracket -- LispGrammar::ExpressionList -- Grammar::Token::RightBracket)
+    | (Grammar::Token::LeftCurlyBracket -- LispGrammar::ExpressionList -- Grammar::Token::RightCurlyBracket)
     ::==> {:(MonadicParserResult)parserResult :: AnyValue |
         let nodes => Array := parserResult value.
         ASTUnexpandedSExpressionNode new
@@ -454,39 +457,47 @@ let LispGrammar::ExpressionSequence := LispGrammar::Expression star ::==> {:(Mon
 ## ----------------------------------------------------------------------------
 ## Sysmel grammar
 ## ----------------------------------------------------------------------------
-let SysmelGrammar::ParenthesisExpression := MonadicDelegateParser new.
-let SysmelGrammar::LambdaArgument := MonadicDelegateParser new.
-let SysmelGrammar::LambdaHeader := MonadicDelegateParser new.
-let SysmelGrammar::BlockExpression := MonadicDelegateParser new.
+let SysmelGrammar::Literal := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::LiteralIdentifier := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::LiteralBinaryOperator := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::LiteralLowPrecedenceBinaryOperator := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::Identifier := MonadicMemoizedDelegateParser new.
 
-let SysmelGrammar::Quote := MonadicDelegateParser new.
-let SysmelGrammar::QuasiQuote := MonadicDelegateParser new.
-let SysmelGrammar::QuasiUnquote := MonadicDelegateParser new.
-let SysmelGrammar::Splice := MonadicDelegateParser new.
+let SysmelGrammar::ParenthesisExpression := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::LambdaArgument := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::LambdaHeader := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::BlockExpression := MonadicMemoizedDelegateParser new.
 
-let SysmelGrammar::DictionaryElement := MonadicDelegateParser new.
-let SysmelGrammar::DictionaryElementList := MonadicDelegateParser new.
-let SysmelGrammar::MakeByteArray := MonadicDelegateParser new.
-let SysmelGrammar::MakeDictionary := MonadicDelegateParser new.
-let SysmelGrammar::LiteralArrayElement := MonadicDelegateParser new.
-let SysmelGrammar::LiteralArray := MonadicDelegateParser new.
+let SysmelGrammar::Quote := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::QuasiQuote := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::QuasiUnquote := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::Splice := MonadicMemoizedDelegateParser new.
 
-let SysmelGrammar::PrimaryTerm := MonadicDelegateParser new.
-let SysmelGrammar::Primary := MonadicDelegateParser new.
-let SysmelGrammar::UnaryExpression := MonadicDelegateParser new.
-let SysmelGrammar::BinaryExpression := MonadicDelegateParser new.
-let SysmelGrammar::ChainExpression := MonadicDelegateParser new.
-let SysmelGrammar::LowPrecedenceBinaryExpression := MonadicDelegateParser new.
-let SysmelGrammar::AssignmentExpression := MonadicDelegateParser new.
-let SysmelGrammar::CommaExpressionElement := MonadicDelegateParser new.
-let SysmelGrammar::CommaExpression := MonadicDelegateParser new.
-let SysmelGrammar::Expression := MonadicDelegateParser new.
-let SysmelGrammar::ExpressionList := MonadicDelegateParser new.
+let SysmelGrammar::DictionaryElement := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::DictionaryElementList := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::MakeByteArray := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::MakeDictionary := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::LiteralArrayIdentifier := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::LiteralArrayElement := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::LiteralArray := MonadicMemoizedDelegateParser new.
 
-let SysmelGrammar::KeywordPragma := MonadicDelegateParser new.
-let SysmelGrammar::UnaryPragma := MonadicDelegateParser new.
-let SysmelGrammar::Pragma := MonadicDelegateParser new.
-let SysmelGrammar::PragmaList := MonadicDelegateParser new.
+let SysmelGrammar::PrimaryTerm := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::Primary := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::UnarySuffixExpression := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::UnaryExpression := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::BinaryExpression := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::ChainExpression := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::LowPrecedenceBinaryExpression := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::AssignmentExpression := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::CommaExpressionElement := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::CommaExpression := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::Expression := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::ExpressionList := MonadicMemoizedDelegateParser new.
+
+let SysmelGrammar::KeywordPragma := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::UnaryPragma := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::Pragma := MonadicMemoizedDelegateParser new.
+let SysmelGrammar::PragmaList := MonadicMemoizedDelegateParser new.
 
 let SysmelGrammar::ErrorToken := Grammar::Token::Error ::==> {:(MonadicParserResult)parserResult :: AnyValue |
         let token := parserResult valueAsSysmelToken.
@@ -496,7 +507,7 @@ let SysmelGrammar::ErrorToken := Grammar::Token::Error ::==> {:(MonadicParserRes
             yourself
     }.
 
-let SysmelGrammar::Literal
+SysmelGrammar::Literal
     := Grammar::Token::Integer
     | Grammar::Token::Float
     | Grammar::Token::Character
@@ -509,7 +520,7 @@ let SysmelGrammar::Literal
             value: token value;
             yourself
     }.
-let SysmelGrammar::LiteralIdentifier
+SysmelGrammar::LiteralIdentifier
     := Grammar::Token::Identifier
     ::==> {:(MonadicParserResult)parserResult :: AnyValue |
         let token := parserResult valueAsSysmelToken.
@@ -528,7 +539,7 @@ let SysmelGrammar::BinaryOperatorToken
     | Grammar::Token::LessThan
     | Grammar::Token::GreaterThan
     .
-let SysmelGrammar::LiteralBinaryOperator := SysmelGrammar::BinaryOperatorToken
+SysmelGrammar::LiteralBinaryOperator := SysmelGrammar::BinaryOperatorToken
     ::==> {:(MonadicParserResult)parserResult :: AnyValue |
         let token := parserResult valueAsSysmelToken.
         ASTLiteralNode new
@@ -536,7 +547,7 @@ let SysmelGrammar::LiteralBinaryOperator := SysmelGrammar::BinaryOperatorToken
             value: token value;
             yourself
     }.
-let SysmelGrammar::LiteralLowPrecedenceBinaryOperator := Grammar::Token::ColonColon -- SysmelGrammar::BinaryOperatorToken
+SysmelGrammar::LiteralLowPrecedenceBinaryOperator := Grammar::Token::ColonColon -- SysmelGrammar::BinaryOperatorToken
     ::==> {:(MonadicParserResult)parserResult :: AnyValue |
         let token => SysmelToken := parserResult value second.
         ASTLiteralNode new
@@ -545,7 +556,7 @@ let SysmelGrammar::LiteralLowPrecedenceBinaryOperator := Grammar::Token::ColonCo
             yourself
     }.
 
-let SysmelGrammar::Identifier
+SysmelGrammar::Identifier
     := Grammar::Token::Identifier
     | Grammar::Token::Ellipsis
     | Grammar::Token::Operator
@@ -678,7 +689,7 @@ SysmelGrammar::BlockExpression := Grammar::Token::LeftCurlyBracket -- SysmelGram
         }.
     }.
 
-let SysmelGrammar::LiteralArrayIdentifier
+SysmelGrammar::LiteralArrayIdentifier
     := Grammar::Token::Identifier
     | Grammar::Token::Ellipsis
     | Grammar::Token::Operator
@@ -902,7 +913,7 @@ let SysmelGrammar::SubscriptSuffix := Grammar::Token::LeftBracket -- SysmelGramm
             yourself.
     }.
 
-let SysmelGrammar::UnarySuffixExpression
+SysmelGrammar::UnarySuffixExpression
     := SysmelGrammar::UnarySuffixMessage
     | SysmelGrammar::FunctionApplicationSuffix
     | SysmelGrammar::ApplyByteArraySuffix

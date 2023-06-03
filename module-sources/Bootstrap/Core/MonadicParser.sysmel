@@ -12,6 +12,7 @@ public class MonadicParserState definition: {
     public field sourceCollection => SequenceableCollection.
     public field sourceCode => SourceCode.
     public field position => Size.
+    public field memoizationTable => Dictionary.
 
     __Meta__ definition: {
         public method for: (sourceCollection: SequenceableCollection) ::=> self
@@ -218,6 +219,11 @@ public abstract class MonadicParser definition: {
     public virtual method | (nextParser: MonadicParser) ::=> MonadicParser
         := MonadicCombinatorAlternativesParser new
             parsers: (Array with: self with: nextParser);
+            yourself.
+
+    public virtual method memoized => MonadicParser 
+        := MonadicMemoizedDelegateParser new
+            parser: self;
             yourself.
 
     public method optional => MonadicParser
@@ -545,12 +551,35 @@ public class MonadicValueComputationParser superclass: MonadicParser; definition
 }.
 
 public class MonadicDelegateParser superclass: MonadicParser; definition: {
-    public field delegated => MonadicParser.
+    public field parser => MonadicParser.
 
     public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult
-        := delegated parseWithState: state.
+        := parser parseWithState: state.
 
-    (public method := (parser: MonadicParser)) ::=> Void := {
-        delegated := parser
+    (public method := (newParser: MonadicParser)) ::=> Void := {
+        parser := newParser
+    }.
+}.
+
+public class MonadicMemoizedDelegateParser superclass: MonadicDelegateParser; definition: {
+    public override method memoized => MonadicParser
+        := self.
+
+    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+        state parseWithMemoizationOf: parser
+    }.
+}.
+
+MonadicParserState extend: {
+    public method validMemoizationTable => Dictionary
+        := memoizationTable ifNil: {memoizationTable := Dictionary new}.
+
+    public method parseWithMemoizationOf: (parser: MonadicParser) ::=> MonadicParserResult := {
+        let memoizedResult => MonadicParserResult := self validMemoizationTable at: (Array with: position with: parser) ifAbsentPut: {:: MonadicParserResult |
+            parser parseWithState: self
+        }.
+
+        position := memoizedResult endPosition.
+        memoizedResult
     }.
 }.
