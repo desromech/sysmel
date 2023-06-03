@@ -1,0 +1,23 @@
+function main(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
+    "Hello World\n" writeOntoStdout.
+
+    argc negated asString writeOntoStdout.
+    "\n" writeOntoStdout.
+
+    ##let initialize := ObjectModel::lookupVirtualSelector(myObject, #initialize).
+    ##let initialize := ObjectModel::lookupVirtualSelectorWithReceiverType(Object, #initialize).
+    let myObject := Object basicAllocate.
+
+    let i mutable := 0i32.
+    while: (i < argc) do: {
+        (String fromCString: argv[i asIntPointer]) writeOntoStdout.
+        "\n" writeOntoStdout.
+    } continueWith: (i := i + 1i32).
+
+    0i32
+}.
+
+ImageBuilder new
+    addProgramEntity: main;
+    build;
+    saveTo: "testImage.o"

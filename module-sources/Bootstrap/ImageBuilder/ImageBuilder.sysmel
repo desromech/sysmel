@@ -1,0 +1,32 @@
+public class ImageBuilder superclass: Object; definition: {
+    public field entryPointFunction => Function.
+    public field rootProgramEntities => OrderedCollection.
+    
+    public override method initialize => Void := {
+        super initialize.
+        rootProgramEntities := OrderedCollection new.
+    }.
+
+    public method addProgramEntity: (programEntity: ProgramEntity) ::=> Void := {
+        rootProgramEntities add: programEntity.
+    }.
+
+    public method addProgramEntities: (programEntities: Collection) ::=> Void := {
+        programEntities do: {:(ProgramEntity)each :: Void |
+            self addProgramEntity: each
+        }
+    }.
+
+    public method addNativeEntryPoint: (newEntryPointFunction: Function) ::=> Void := {
+        self addProgramEntity: entryPointFunction.
+        entryPointFunction := newEntryPointFunction.
+    }.
+
+    public method build => Void := {
+
+    }.
+
+    public method saveTo: (filename: String) ::=> Void := {
+
+    }.
+}.
