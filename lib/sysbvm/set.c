@@ -8,7 +8,7 @@
 
 SYSBVM_API sysbvm_tuple_t sysbvm_identitySet_create(sysbvm_context_t *context)
 {
-    sysbvm_identitySet_t *result = (sysbvm_identitySet_t*)sysbvm_context_allocatePointerTuple(context, context->roots.setType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_identitySet_t));
+    sysbvm_identitySet_t *result = (sysbvm_identitySet_t*)sysbvm_context_allocatePointerTuple(context, context->roots.identitySetType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_identitySet_t));
     result->size = sysbvm_tuple_size_encode(context, 0);
     return (sysbvm_tuple_t)result;
 }
@@ -172,4 +172,47 @@ SYSBVM_API void sysbvm_identitySet_insert(sysbvm_context_t *context, sysbvm_tupl
         if(newSize >= capacityThreshold)
             sysbvm_identitySet_increaseCapacity(context, set);
     }
+}
+
+static sysbvm_tuple_t sysbvm_identitySet_primitive_add(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_identitySet_insert(context, arguments[0], arguments[1]);
+    return SYSBVM_VOID_TUPLE;
+}
+
+static sysbvm_tuple_t sysbvm_identitySet_primitive_includes(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_tuple_t found = SYSBVM_NULL_TUPLE;
+    return sysbvm_tuple_boolean_encode(sysbvm_identitySet_find(arguments[0], arguments[1], &found));
+}
+
+static sysbvm_tuple_t sysbvm_identitySet_primitive_scanFor(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    return sysbvm_tuple_intptr_encode(context, sysbvm_identitySet_scanFor(arguments[0], arguments[1]));
+}
+
+void sysbvm_set_registerPrimitives(void)
+{
+    sysbvm_primitiveTable_registerFunction(sysbvm_identitySet_primitive_add, "IdentitySet::add:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_identitySet_primitive_includes, "IdentitySet::includes:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_identitySet_primitive_scanFor, "IdentitySet::scanFor:");
+}
+
+void sysbvm_set_setupPrimitives(sysbvm_context_t *context)
+{
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentitySet::add:", context->roots.identitySetType, "add:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_identitySet_primitive_add);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentitySet::includes:", context->roots.identitySetType, "includes:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_identitySet_primitive_includes);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentitySet::scanFor:", context->roots.identitySetType, "scanFor:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_identitySet_primitive_scanFor);
 }
