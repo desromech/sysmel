@@ -15,6 +15,27 @@ typedef sysbvm_tuple_t (*sysbvm_functionEntryPoint_t)(sysbvm_context_t *context,
 typedef struct sysbvm_contextCreationOptions_s
 {
     uint32_t targetWordSize;
+    const char *buildArchitectureName;
+    const char *buildVendorName;
+    const char *buildPlatformName;
+    const char *buildAbiName;
+    const char *buildObjectFileName;
+    const char *buildDebugInformationFormatName;
+    const char *buildExceptionHandlingTableFormatName;
+    const char *hostArchitectureName;
+    const char *hostVendorName;
+    const char *hostPlatformName;
+    const char *hostAbiName;
+    const char *hostObjectFileName;
+    const char *hostDebugInformationFormatName;
+    const char *hostExceptionHandlingTableFormatName;
+    const char *targetArchitectureName;
+    const char *targetVendorName;
+    const char *targetPlatformName;
+    const char *targetAbiName;
+    const char *targetObjectFileName;
+    const char *targetDebugInformationFormatName;
+    const char *targetExceptionHandlingTableFormatName;
     bool nojit;
 } sysbvm_contextCreationOptions_t;
 

@@ -7,6 +7,7 @@
 #include "sysbvm/stackFrame.h"
 #include "sysbvm/string.h"
 #include "sysbvm/set.h"
+#include "sysbvm/system.h"
 #include "sysbvm/function.h"
 #include <stdlib.h>
 #include <stdarg.h>
@@ -1165,6 +1166,79 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_createWithOptions(sysbvm_contextCrea
     sysbvm_gc_lock(context);
 
     sysbvm_context_createBasicTypes(context);
+
+    {
+        if(!contextOptions->buildArchitectureName)
+            contextOptions->buildArchitectureName = sysbvm_system_getArchitectureName();
+        if(!contextOptions->buildVendorName)
+            contextOptions->buildVendorName = sysbvm_system_getPlatformName();
+        if(!contextOptions->buildPlatformName)
+            contextOptions->buildPlatformName = sysbvm_system_getPlatformName();
+        if(!contextOptions->buildAbiName)
+            contextOptions->buildAbiName = sysbvm_system_getAbiName();
+        if(!contextOptions->buildObjectFileName)
+            contextOptions->buildObjectFileName = sysbvm_system_getObjectFileName();
+        if(!contextOptions->buildDebugInformationFormatName)
+            contextOptions->buildDebugInformationFormatName = sysbvm_system_getDebugInformationFormatName();
+        if(!contextOptions->buildExceptionHandlingTableFormatName)
+            contextOptions->buildExceptionHandlingTableFormatName = sysbvm_system_getExceptionHandlingTableFormatName();
+
+        if(!contextOptions->hostArchitectureName)
+            contextOptions->hostArchitectureName = contextOptions->buildArchitectureName;
+        if(!contextOptions->hostVendorName)
+            contextOptions->hostVendorName = contextOptions->buildVendorName;
+        if(!contextOptions->hostPlatformName)
+            contextOptions->hostPlatformName = contextOptions->buildPlatformName;
+        if(!contextOptions->hostAbiName)
+            contextOptions->hostAbiName = contextOptions->buildAbiName;
+        if(!contextOptions->hostObjectFileName)
+            contextOptions->hostObjectFileName = contextOptions->buildObjectFileName;
+        if(!contextOptions->hostDebugInformationFormatName)
+            contextOptions->hostDebugInformationFormatName = contextOptions->buildDebugInformationFormatName;
+        if(!contextOptions->hostExceptionHandlingTableFormatName)
+            contextOptions->hostExceptionHandlingTableFormatName = contextOptions->buildExceptionHandlingTableFormatName;
+
+        if(!contextOptions->targetArchitectureName)
+            contextOptions->targetArchitectureName = contextOptions->hostArchitectureName;
+        if(!contextOptions->targetVendorName)
+            contextOptions->targetVendorName = contextOptions->hostVendorName;
+        if(!contextOptions->targetPlatformName)
+            contextOptions->targetPlatformName = contextOptions->hostPlatformName;
+        if(!contextOptions->targetAbiName)
+            contextOptions->targetAbiName = contextOptions->hostAbiName;
+        if(!contextOptions->targetObjectFileName)
+            contextOptions->targetObjectFileName = contextOptions->hostObjectFileName;
+        if(!contextOptions->targetDebugInformationFormatName)
+            contextOptions->targetDebugInformationFormatName = contextOptions->hostDebugInformationFormatName;
+        if(!contextOptions->targetExceptionHandlingTableFormatName)
+            contextOptions->targetExceptionHandlingTableFormatName = contextOptions->hostExceptionHandlingTableFormatName;
+        
+        // FIXME: Fix the GC bug that gets triggered by this.
+        /*sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildArchitecture__", sysbvm_symbol_internWithCString(context, contextOptions->buildArchitectureName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildVendor__", sysbvm_symbol_internWithCString(context, contextOptions->buildVendorName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildPlatform__", sysbvm_symbol_internWithCString(context, contextOptions->buildPlatformName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildAbi__", sysbvm_symbol_internWithCString(context, contextOptions->buildAbiName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildObjectFile__", sysbvm_symbol_internWithCString(context, contextOptions->buildObjectFileName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildDebugInformationFormat__", sysbvm_symbol_internWithCString(context, contextOptions->buildDebugInformationFormatName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildExceptionHandlingTableFormat__", sysbvm_symbol_internWithCString(context, contextOptions->buildExceptionHandlingTableFormatName));
+        */
+
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__HostArchitecture__", sysbvm_symbol_internWithCString(context, contextOptions->hostArchitectureName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__HostVendor__", sysbvm_symbol_internWithCString(context, contextOptions->hostVendorName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__HostPlatform__", sysbvm_symbol_internWithCString(context, contextOptions->hostPlatformName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__HostAbi__", sysbvm_symbol_internWithCString(context, contextOptions->hostAbiName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__HostObjectFile__", sysbvm_symbol_internWithCString(context, contextOptions->hostObjectFileName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__HostDebugInformationFormat__", sysbvm_symbol_internWithCString(context, contextOptions->hostDebugInformationFormatName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__HostExceptionHandlingTableFormat__", sysbvm_symbol_internWithCString(context, contextOptions->hostExceptionHandlingTableFormatName));
+
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__TargetArchitecture__", sysbvm_symbol_internWithCString(context, contextOptions->targetArchitectureName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__TargetVendor__", sysbvm_symbol_internWithCString(context, contextOptions->targetVendorName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__TargetPlatform__", sysbvm_symbol_internWithCString(context, contextOptions->targetPlatformName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__TargetAbi__", sysbvm_symbol_internWithCString(context, contextOptions->targetAbiName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__TargetObjectFile__", sysbvm_symbol_internWithCString(context, contextOptions->targetObjectFileName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__TargetDebugInformationFormat__", sysbvm_symbol_internWithCString(context, contextOptions->targetDebugInformationFormatName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__TargetExceptionHandlingTableFormat__", sysbvm_symbol_internWithCString(context, contextOptions->targetExceptionHandlingTableFormatName));
+    }
     
     sysbvm_array_setupPrimitives(context);
     sysbvm_orderedCollection_setupPrimitives(context);

@@ -46,6 +46,7 @@
 #include "string.c"
 #include "stringStream.c"
 #include "sysmelParser.c"
+#include "system.c"
 #include "time.c"
 #include "token.c"
 #include "tuple.c"

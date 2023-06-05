@@ -1,10 +1,12 @@
 public class ImageBuilder superclass: Object; definition: {
     public field entryPointFunction => Function.
-    public field rootProgramEntities => OrderedCollection.
+    protected field rootProgramEntities => OrderedCollection.
+    protected field rootProgramEntitySet => IdentitySet.
     
     public override method initialize => Void := {
         super initialize.
         rootProgramEntities := OrderedCollection new.
+        rootProgramEntitySet := IdentitySet new.
     }.
 
     public method addProgramEntity: (programEntity: ProgramEntity) ::=> Void := {

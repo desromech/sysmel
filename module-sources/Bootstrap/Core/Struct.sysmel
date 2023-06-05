@@ -1,7 +1,9 @@
 public global TypeFlags::StructDefaultFlags := TypeFlags::None.
 
 public class StructType superclass: ValueType; definition: {
-    public method substructureWithTypeSlots: (typeSlots: Array) ::=> StructType := {
+    public field isPacked => Boolean.
+
+    public method substructureWithTypeSlots: (typeSlots: Array) packed: (isPacked: Boolean) ::=> StructType := {
         let: #metatype with: StructureMetatype basicNew.
         let: #metatypeSuper with: self __type__.
         metatype
@@ -16,12 +18,14 @@ public class StructType superclass: ValueType; definition: {
         struct
             flags: TypeFlags::StructDefaultFlags;
             supertype: self;
+            isPacked: isPacked;
             slots: ();
             totalSlotCount: nil;
             registerInSupertype.
         metatype thisType: struct.
         struct
     }.
+
 
     public override method defaultValue => self
         := self basicNew.
@@ -103,20 +107,30 @@ public global AnyStruct := AnyStructType basicNew
 
 ## Struct MetaBuilder.
 TypeMetaBuilder publicSubclass: #StructMetaBuilder slots: (
+    TypeSlot publicNamed: #isPacked type: Boolean ,
 ).
 
 StructMetaBuilder
     withSelector: #validSupertypeExpression addMethod: {:self :: ASTNode |
         self supertypeExpression ifNil: `'AnyStruct
     };
+    withSelector: #packed addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self isPacked: true.
+        self continueExpansion
+    };
     withSelector: #finishExpansionWithEnvironment: addMethod: {:self :(Environment)environment :: ASTNode |
         let: #flagsExpression with: (ASTLiteralNode new
             sourcePosition: self sourcePosition;
             value: self typeFlags;
             yourself).
+        let: #packedExpression with: (ASTLiteralNode new
+            sourcePosition: self sourcePosition;
+            value: self isPacked;
+            yourself).
 
         let: #makeStructExpression with: ``(
-            (`,(self validSupertypeExpression) substructureWithTypeSlots: `,(self validMetaSlotsExpression))
+            (`,(self validSupertypeExpression) substructureWithTypeSlots: `,(self validMetaSlotsExpression) packed: `,packedExpression)
                 addFlags: `,flagsExpression;
                 yourself
         ).
