@@ -36,7 +36,7 @@ MetaBuilder
         receiver analyzeAndEvaluateMessageSendNode: messageWithSelfReceiver withEnvironment: environment
     };
     withSelector: #analyzeMessageSendNode:withEnvironment: addClassMethod: {:self :(ASTMessageSendNode)messageSendNode :(Environment)environment |
-        ## FIXME: Guard against non-literal functionOrMacroExpression here.
+        self assert: messageSendNode receiver isLiteralNode.
         (messageSendNode receiver downCastTo: ASTLiteralNode) value analyzeMessageSendNode: messageSendNode withEnvironment: environment
     };
     withSelector: #analyzeAndEvaluateUnexpandedApplicationNode:of:withEnvironment: addClassMethod: {:self :(ASTUnexpandedApplicationNode)unexpandedApplicationNode :(Untyped)functional :(Environment)environment |
@@ -51,7 +51,7 @@ MetaBuilder
         functional analyzeAndEvaluateUnexpandedApplicationNode: unexpandedApplicationWithSelfReceiver withEnvironment: environment
     };
     withSelector: #analyzeUnexpandedApplicationNode:withEnvironment: addClassMethod: {:self :(ASTUnexpandedApplicationNode)unexpandedApplicationNode :(Environment)environment |
-        ## FIXME: Guard against non-literal functionOrMacroExpression here.
+        self assert: unexpandedApplicationNode functionOrMacroExpression isLiteralNode.
         (unexpandedApplicationNode functionOrMacroExpression downCastTo: ASTLiteralNode) value analyzeUnexpandedApplicationNode: unexpandedApplicationNode withEnvironment: environment
     };
     withSelector: #analyzeAndEvaluateMessageChainNode:forReceiver:withEnvironment: addClassMethod: {:self :messageChainNode :(Untyped)receiver :(Environment)environment :: Untyped |

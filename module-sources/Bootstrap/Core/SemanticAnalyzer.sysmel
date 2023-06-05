@@ -1,3 +1,54 @@
+SymbolBinding definition: {
+    public abstract method analyzeAndEvaluateWithEnvironment: (environment: Environment) at: (sourcePosition: SourcePosition) ::=> Untyped
+        := self subclassResponsibility.
+
+    public abstract eager method analyzeIdentifierReference: (node: ASTIdentifierReferenceNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := self subclassResponsibility.
+    
+    public abstract method evaluateWithActivationEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
+        := self subclassResponsibility.
+}.
+
+SymbolValueBinding definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) at: (sourcePosition: SourcePosition) ::=> Untyped
+        := self value.
+
+    public override eager method analyzeIdentifierReference: (node: ASTIdentifierReferenceNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := environment newLiteral: self value at: node sourcePosition.
+
+    public override method evaluateWithActivationEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
+        := self value.
+}.
+
+SymbolMacroValueBinding definition: {
+    public override eager method analyzeIdentifierReference: (node: ASTIdentifierReferenceNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := self expansion analyzeWithEnvironment: environment.
+}.
+
+SymbolAnalysisBinding definition: {
+    public override eager method analyzeIdentifierReference: (node: ASTIdentifierReferenceNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := node copy
+            analyzerToken: environment validAnalyzerToken;
+            analyzedType: self type;
+            binding: self;
+            yourself.
+}.
+
+SymbolArgumentBinding definition: {
+    public override method evaluateWithActivationEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
+        := environment valueVector at: vectorIndex.
+}.
+
+SymbolCaptureBinding definition: {
+    public override method evaluateWithActivationEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
+        := environment captureVector at: vectorIndex.
+}.
+
+SymbolLocalBinding definition: {
+    public override method evaluateWithActivationEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
+        := environment valueVector at: environment argumentVectorSize + vectorIndex.
+}.
+
 function concretizeMetaValueWithEnvironment(value: Untyped, environment: Environment) => Untyped := {
     let type := RawTuple::type(value).
     type
@@ -8,6 +59,10 @@ function concretizeMetaValueWithEnvironment(value: Untyped, environment: Environ
 ASTNode definition: {
     public virtual eager method analyzeConcreteMetaValueWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
         := self.
+
+    public virtual eager method semanticError: (errorMessage: String) ::=> Unwinds := {
+        self error: self sourcePosition printString -- ": " -- errorMessage
+    }.
 }.
 
 ASTArgumentNode definition: {
@@ -61,29 +116,55 @@ ASTDownCastNode definition: {
     public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
         let type => Type := self typeExpression analyzeAndEvaluateWithEnvironment: environment.
         let value := self valueExpression analyzeAndEvaluateWithEnvironment: environment.
-        (RawTuple::type(value) isSubtypeOf: type) ifFalse: error("Expected a value whose type is " -- type printString).
+        (RawTuple::type(value) isSubtypeOf: type) ifFalse: {
+            self semanticError: "Expected a value whose type is " -- type printString
+        }.
         value
     }.
 
     public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         let type => Type := self typeExpression evaluateWithEnvironment: environment.
         let value := self valueExpression evaluateWithEnvironment: environment.
-        (RawTuple::type(value) isSubtypeOf: type) ifFalse: error("Expected a value whose type is " -- type printString).
+        (RawTuple::type(value) isSubtypeOf: type) ifFalse: {
+            self semanticError: "Expected a value whose type is " -- type printString.
+        }.
         value
     }.
 }.
 
 ASTErrorNode definition: {
     public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped
-        := error(self errorMessage).
+        := self semanticError: self errorMessage.
 
     public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
-        := error(self errorMessage).
+        := self semanticError: self errorMessage.
 
     public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
-        := error(self errorMessage).
+        := self semanticError: self errorMessage.
 }.
 
+ASTIdentifierReferenceNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        let binding := environment lookSymbolRecursively: self value.
+        binding ifNil: {
+            self semanticError: "Failed to find binding for symbol " -- self value printString
+        }.
+
+        binding analyzeAndEvaluateWithEnvironment: environment at: self sourcePosition
+    }.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let binding := environment lookSymbolRecursively: self value.
+        binding ifNil: {
+            self semanticError: "Failed to find binding for symbol " -- self value printString
+        }.
+
+        binding analyzeIdentifierReference: self withEnvironment: environment
+    }.
+
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
+        := binding evaluateWithActivationEnvironment: environment.
+}.
 
 ASTLiteralNode definition: {
     public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped
@@ -318,5 +399,31 @@ ASTSequenceNode definition: {
         }.
 
         resultBox value
+    }.
+}.
+
+ASTUnexpandedSExpressionNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        self elements isEmpty ifTrue: {
+            #()
+        } ifFalse: {
+            ASTUnexpandedApplicationNode new
+                sourcePosition: self sourcePosition;
+                functionOrMacroExpression: self elements first;
+                arguments: self elements allButFirst;
+                analyzeAndEvaluateWithEnvironment: environment
+        }
+    }.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        self elements isEmpty ifTrue: {
+            environment newLiteral: #() at: self sourcePosition
+        } ifFalse: {
+            ASTUnexpandedApplicationNode new
+                sourcePosition: self sourcePosition;
+                functionOrMacroExpression: self elements first;
+                arguments: self elements allButFirst;
+                analyzeWithEnvironment: environment
+        }
     }.
 }.

@@ -2221,6 +2221,10 @@ TypeSlot
         let: #owner with: self owner.
         if: owner ~~ nil then: ((owner downCastTo: Type) ensureLayoutIsComputed).
         self offset.
+    };
+    withSelector: #validReferenceType addMethod: {:(TypeSlot)self :: Type |
+        if: self referenceType == nil then: (self referenceType: self type ref).
+        self referenceType
     }.
 
 Type

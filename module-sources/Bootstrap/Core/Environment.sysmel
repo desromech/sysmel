@@ -1,3 +1,14 @@
+SymbolBinding definition: {
+    public eager virtual method isAnalysisBinding => Boolean := false.
+}.
+
+SymbolAnalysisBinding definition: {
+    public eager override method isAnalysisBinding => Boolean := true.
+
+    public virtual method getOrCreateCaptureInFunctionAnalysisEnvironment: (environment: FunctionAnalysisEnvironment) ::=> SymbolBinding
+        := environment getOrCreateCaptureForParentBinding: self.
+}.
+
 Environment definition: {
     public eager virtual method initializeWithParent: (theParent: Environment) ::=> Void := {
         parent := theParent.
@@ -41,7 +52,23 @@ Environment definition: {
         self setNewBinding: binding.
         binding.
     }.
+
+    public virtual eager method lookLocalSymbolTable: (symbol: Symbol) ::=> SymbolBinding
+        := symbolTable ifNotNil: (symbolTable associationAtOrNil: symbol).
+
+    public virtual eager method lookLocalImportedSymbol: (symbol: Symbol) ::=> SymbolBinding
+        := nil.
+
+    public virtual eager method lookLocalSymbol: (symbol: Symbol) ::=> SymbolBinding := {
+        (self lookLocalSymbolTable: symbol) ifNil: (self lookLocalImportedSymbol: symbol)
+    }.
+    
+    public virtual method lookSymbolRecursively: (symbol: Symbol) ::=> SymbolBinding
+        := (self lookLocalSymbol: symbol)
+            ifNil: (parent ifNotNil: (parent lookSymbolRecursively: symbol)).
 }.
+
+Environment ensureAnalysisOfMethodWithSelector: #lookSymbolRecursively:.
 
 TypeInferenceType __type__ extend: {
     public override eager method coerceASTNode: (node: ASTNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
@@ -105,7 +132,37 @@ FunctionAnalysisEnvironment definition: {
     public eager virtual final method addInnerFunction: (innerFunction: FunctionDefinition) ::=> Void := {
         innerFunctionList add: innerFunction
     }.
+
+    public eager method getOrCreateCaptureForParentBinding: (parentBinding: SymbolAnalysisBinding) ::=> SymbolBinding := {
+        captureBindingTable at: parentBinding ifAbsentPut: {:: SymbolBinding |
+            let captureBinding := SymbolCaptureBinding new
+                sourcePosition: parentBinding sourcePosition;
+                name: parentBinding name;
+                type: parentBinding type;
+                ownerFunction: self functionDefinition;
+                vectorIndex: captureBindingList size;
+                sourceBinding: parentBinding;
+                yourself.
+            captureBindingList add: captureBinding.
+            captureBinding
+        }
+    }.
+
+    public override eager method lookSymbolRecursively: (symbol: Symbol) ::=> SymbolBinding := {
+        (self lookLocalSymbol: symbol) ifNil: {
+            parent ifNotNil: {
+                let parentBinding := parent lookSymbolRecursively: symbol.
+                parentBinding isNotNil && parentBinding isAnalysisBinding ifTrue: {
+                    (parentBinding downCastTo: SymbolAnalysisBinding) getOrCreateCaptureInFunctionAnalysisEnvironment: self
+                } ifFalse: {
+                    parentBinding
+                }.
+            }
+        }
+    }
 }.
+
+SymbolAnalysisBinding ensureAnalysisOfMethodWithSelector: #getOrCreateCaptureInFunctionAnalysisEnvironment:.
 
 AnalysisAndEvaluationEnvironment definition: {
     public eager override method initializeWithParent: (theParent: Environment) ::=> Void := {
@@ -261,6 +318,23 @@ AnalysisAndEvaluationEnvironment definition: {
         } ifNil: {
             self error: "A function analysis environment is required here."
         }
+    }.
+
+    public override eager method lookLocalImportedSymbol: (symbol: Symbol) ::=> SymbolBinding := {
+        let usedTuplesWithNamedSlotsCount := usedTuplesWithNamedSlots ifNil: 0sz ifNotNil: usedTuplesWithNamedSlots size.
+        let i mutable := 0sz.
+        while: i < usedTuplesWithNamedSlotsCount do: {
+            let usedTupleBinding := usedTuplesWithNamedSlots at: i.
+            let slot := usedTupleBinding type lookupSlot: symbol.
+            slot ifNotNil: {
+                return: (SymbolTupleSlotBinding new
+                    type: slot validReferenceType;
+                    tupleBinding: usedTupleBinding;
+                    typeSlot: slot;
+                    yourself).
+            }
+        } continueWith: (i := i + 1sz).
+        nil
     }.
 }.
 

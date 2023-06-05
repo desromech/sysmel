@@ -807,6 +807,19 @@ static sysbvm_tuple_t sysbvm_identityDictionary_primitive_atOrNil(sysbvm_context
     return found;
 }
 
+static sysbvm_tuple_t sysbvm_identityDictionary_primitive_associationAtOrNil(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_tuple_t found = SYSBVM_NULL_TUPLE;
+    if(!sysbvm_identityDictionary_findAssociation(arguments[0], arguments[1], &found))
+        found = SYSBVM_NULL_TUPLE;
+
+    return found;
+}
+
 static sysbvm_tuple_t sysbvm_identityDictionary_primitive_at(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
@@ -935,6 +948,7 @@ void sysbvm_dictionary_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_dictionary_primitive_scanFor, "Dictionary::scanFor:");
 
     sysbvm_primitiveTable_registerFunction(sysbvm_identityDictionary_primitive_add, "IdentityDictionary::add:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_identityDictionary_primitive_associationAtOrNil, "IdentityDictionary::associationAtOrNil:");
     sysbvm_primitiveTable_registerFunction(sysbvm_identityDictionary_primitive_atOrNil, "IdentityDictionary::atOrNil:");
     sysbvm_primitiveTable_registerFunction(sysbvm_identityDictionary_primitive_atPut, "IdentityDictionary::at:put:");
     sysbvm_primitiveTable_registerFunction(sysbvm_identityDictionary_primitive_at, "IdentityDictionary::at:");
@@ -960,6 +974,7 @@ void sysbvm_dictionary_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Dictionary::scanFor:", context->roots.dictionaryType, "scanFor:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_dictionary_primitive_scanFor);
 
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentityDictionary::add:", context->roots.identityDictionaryType, "add:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_identityDictionary_primitive_add);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentityDictionary::associationAtOrNil:", context->roots.identityDictionaryType, "associationAtOrNil:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_identityDictionary_primitive_associationAtOrNil);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentityDictionary::atOrNil:", context->roots.identityDictionaryType, "atOrNil:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_identityDictionary_primitive_atOrNil);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentityDictionary::at:put:", context->roots.identityDictionaryType, "at:put:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_identityDictionary_primitive_atPut);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentityDictionary::at:", context->roots.identityDictionaryType, "at:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_identityDictionary_primitive_at);
