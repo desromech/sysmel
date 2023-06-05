@@ -164,7 +164,7 @@ AnalysisAndEvaluationEnvironment definition: {
         self analyze: node withExpectedType: DecayedTypeInferenceType
     }.
 
-    public eager method analyze: (node: ASTNode) withExpectedTypeExpression: (expectedTypeExpression: ASTNode) ::=> ASTNodeWithCanonicalType := {
+    public eager method analyze: (node: ASTNode) withExpectedTypeExpression: (expectedTypeExpression: ASTNode) at: (sourcePosition: SourcePosition) ::=> ASTNodeWithCanonicalType := {
         expectedTypeExpression ifNil: {
             let analyzedNode := self analyzeWithDecayedType: node.
             ASTNodeWithCanonicalType new
@@ -196,6 +196,7 @@ AnalysisAndEvaluationEnvironment definition: {
                 shouldAddCoercion ifTrue: {
                     ASTNodeWithCanonicalType new
                         node: (ASTCoerceValueNode new
+                            sourcePosition: sourcePosition;
                             analyzerToken: self validAnalyzerToken;
                             analyzedType: canonicalResultType;
                             typeExpression: analyzedTypeExpression;

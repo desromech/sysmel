@@ -36,6 +36,43 @@ ASTArgumentNode definition: {
     }
 }.
 
+ASTCoerceValueNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        let type => Type := self typeExpression analyzeAndEvaluateWithEnvironment: environment.
+        let value := self valueExpression analyzeAndEvaluateWithEnvironment: environment.
+        type coerceValue: value.
+    }.
+
+    #*
+    public eager override method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        (environment analyze: self valueExpression withExpectedTypeExpression: self typeExpression at: self sourcePosition)
+            node
+    }.
+    *#
+
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+        let type => Type := self typeExpression evaluateWithEnvironment: environment.
+        let value := self valueExpression evaluateWithEnvironment: environment.
+        type coerceValue: value.
+    }.
+}.
+
+ASTDownCastNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        let type => Type := self typeExpression analyzeAndEvaluateWithEnvironment: environment.
+        let value := self valueExpression analyzeAndEvaluateWithEnvironment: environment.
+        (RawTuple::type(value) isSubtypeOf: type) ifFalse: error("Expected a value whose type is " -- type printString).
+        value
+    }.
+
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+        let type => Type := self typeExpression evaluateWithEnvironment: environment.
+        let value := self valueExpression evaluateWithEnvironment: environment.
+        (RawTuple::type(value) isSubtypeOf: type) ifFalse: error("Expected a value whose type is " -- type printString).
+        value
+    }.
+}.
+
 ASTErrorNode definition: {
     public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped
         := error(self errorMessage).
@@ -125,7 +162,7 @@ ASTLocalDefinitionNode definition: {
             result typeExpression: (environment analyze: result typeExpression withExpectedType: Type)
         }.
 
-        let nodeWithCanonicalType := environment analyze: result valueExpression withExpectedTypeExpression: result typeExpression.
+        let nodeWithCanonicalType := environment analyze: result valueExpression withExpectedTypeExpression: result typeExpression at: result sourcePosition.
         result valueExpression: nodeWithCanonicalType node.
 
         let evaluatedValueType := nodeWithCanonicalType canonicalType.
