@@ -98,12 +98,10 @@ ASTCoerceValueNode definition: {
         type coerceValue: value.
     }.
 
-    #*
     public eager override method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
         (environment analyze: self valueExpression withExpectedTypeExpression: self typeExpression at: self sourcePosition)
             node
     }.
-    *#
 
     public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         let type => Type := self typeExpression evaluateWithEnvironment: environment.
@@ -120,6 +118,24 @@ ASTDownCastNode definition: {
             self semanticError: "Expected a value whose type is " -- type printString
         }.
         value
+    }.
+
+    public eager override method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let result := self copy
+            analyzerToken: environment validAnalyzerToken;
+            typeExpression: (environment analyze: self typeExpression withExpectedType: Type);
+            yourself.
+
+        let hasLiteralType := result typeExpression isLiteralNode.
+        result analyzedType: (hasLiteralType
+            ifTrue: (result typeExpression downCastTo: ASTLiteralNode) value
+            ifFalse: (result typeExpression analyzedType asCanonicalPendingInstanceType)
+        ).
+        result valueExpression: (environment analyzeWithDecayedType: result valueExpression).
+
+        hasLiteralType && (result valueExpression analyzedType isDirectSubtypeOf: result analyzedType)
+            ifTrue: result valueExpression
+            ifFalse: result
     }.
 
     public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {

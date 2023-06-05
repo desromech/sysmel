@@ -231,7 +231,7 @@ AnalysisAndEvaluationEnvironment definition: {
         } ifNotNil: {
             let analyzedTypeExpression := self analyze: expectedTypeExpression withExpectedType: Type.
             analyzedTypeExpression isLiteralNode ifTrue: {
-                let literalExpectedType := (expectedTypeExpression downCastTo: ASTLiteralNode) value.
+                let literalExpectedType := (analyzedTypeExpression downCastTo: ASTLiteralNode) value.
                 let analyzedNode := self analyze: node withExpectedType: literalExpectedType.
                 ASTNodeWithCanonicalType new
                     node: analyzedNode;
