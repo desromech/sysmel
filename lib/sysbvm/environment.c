@@ -655,7 +655,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_analysisEnvironment_setNewSymbolArgumentBinding
 
     sysbvm_functionAnalysisEnvironment_t *functionAnalysisEnvironmentObject = (sysbvm_functionAnalysisEnvironment_t*)functionAnalysisEnvironment;
     sysbvm_tuple_t binding = sysbvm_symbolArgumentBinding_create(context, sourcePosition, name, type, functionAnalysisEnvironmentObject->functionDefinition, sysbvm_orderedCollection_getSize(functionAnalysisEnvironmentObject->argumentBindingList));
-    sysbvm_environment_setNewBinding(context, environment, binding);
+    if(name)
+        sysbvm_environment_setNewBinding(context, environment, binding);
     sysbvm_orderedCollection_add(context, functionAnalysisEnvironmentObject->argumentBindingList, binding);
     return binding;
 }
@@ -763,7 +764,7 @@ void sysbvm_environment_registerPrimitives(void)
 
 void sysbvm_environment_setupPrimitives(sysbvm_context_t *context)
 {
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Environment::setNewBinding:", context->roots.environmentType, "setBinding:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_environment_primitive_setNewBinding);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Environment::setNewBinding:", context->roots.environmentType, "setNewBinding:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_environment_primitive_setNewBinding);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Environment::setBinding:", context->roots.environmentType, "setBinding:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_environment_primitive_setBinding);
     
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Environment::setNewSymbol:bindingWithValue:", context->roots.environmentType, "setNewSymbol:bindingWithValue:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_environment_primitive_setNewSymbolBindingWithValue);

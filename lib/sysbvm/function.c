@@ -309,7 +309,13 @@ SYSBVM_API sysbvm_tuple_t sysbvm_ordinaryFunction_apply(sysbvm_context_t *contex
     if(functionObject->captureEnvironment)
     {
         if(functionObject->captureEnvironment == SYSBVM_PENDING_MEMOIZATION_VALUE)
-            sysbvm_error("Applying function with cyclic pending lazy analysis process.");
+        {
+            sysbvm_tuple_t errorTuple = sysbvm_string_concat(context,
+                sysbvm_string_createWithCString(context, "Applying function with cyclic pending lazy analysis process "),
+                sysbvm_tuple_printString(context, functionObject->super.name)
+            );
+            sysbvm_stackFrame_raiseException(errorTuple);
+        }
 
         struct {
             sysbvm_tuple_t function;

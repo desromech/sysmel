@@ -799,11 +799,8 @@ static sysbvm_tuple_t sysbvm_astArgumentNode_primitiveAnalyze(sysbvm_context_t *
         gcFrame.evaluatedType = context->roots.anyValueType;
     gcFrame.argumentNode->super.analyzedType = gcFrame.evaluatedType;
 
-    if(gcFrame.evaluatedName)
-    {
-        gcFrame.argumentBinding = sysbvm_analysisEnvironment_setNewSymbolArgumentBinding(context, *environment, gcFrame.argumentNode->super.sourcePosition, gcFrame.evaluatedName, gcFrame.evaluatedType);
-        gcFrame.argumentNode->binding = gcFrame.argumentBinding;
-    }
+    gcFrame.argumentBinding = sysbvm_analysisEnvironment_setNewSymbolArgumentBinding(context, *environment, gcFrame.argumentNode->super.sourcePosition, gcFrame.evaluatedName, gcFrame.evaluatedType);
+    gcFrame.argumentNode->binding = gcFrame.argumentBinding;
 
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -1520,6 +1517,8 @@ static sysbvm_tuple_t sysbvm_astLiteralNode_primitiveAnalyze(sysbvm_context_t *c
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_astLiteralNode_t *literalNode = (sysbvm_astLiteralNode_t *)arguments[0];
+    //sysbvm_tuple_t *environment = &arguments[1];
+
     if(literalNode->super.analyzedType)
         return (sysbvm_tuple_t)literalNode;
 

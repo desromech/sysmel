@@ -220,6 +220,23 @@ Type
     withSelector: #ensureAnalysisOfMethodWithSelector: addMethod: {:(Type)self :(Symbol)selector :: Void |
         (self methodDictionary at: selector) ensureAnalysis
     } withEagerAnalysis;
+    withSelector: #asCanonicalPendingInstanceType addMethod: {:(Type)self :: Type |
+        AnyValue
+    } makePure makeVirtual withEagerAnalysis;
+    withSelector: #asDecayedType addMethod: {:(Type)self :: Type |
+        self
+    } makePure makeVirtual withEagerAnalysis;
+    withSelector: #isDirectSubtypeOf: addMethod: {:(Type)self :(Type)expectedParent :: Boolean |
+        if: self == expectedParent
+        then: true
+        else: {
+            let: #supertype with: self supertype.
+            if: supertype ~~ nil
+                then: (supertype isDirectSubtypeOf: expectedParent )
+                else: false
+        }
+    } makePure;
+    ensureAnalysisOfMethodWithSelector: #isDirectSubtypeOf:;
     withSelector: #isSubtypeOf: addMethod: {:(Type)self :(Type)expectedParent :: Boolean |
         if: self == expectedParent
         then: true
@@ -617,6 +634,15 @@ UndefinedObject class
 
 ReferenceType
     withSelector: #isReferenceType addMethod: {:(ReferenceType)self :: Boolean | true } makeOverride makePure;
+    withSelector: #asDecayedType addMethod: {:(ReferenceType)self :: Type |
+        self baseType
+    } makePure makeOverride withEagerAnalysis;
+    withSelector: #asCanonicalPendingInstanceType addMethod: {:(ReferenceType)self :: Type |
+        let: #baseType with: self baseType.
+        if: baseType ~~ nil
+            then: (baseType asCanonicalPendingInstanceType refFor: self addressSpace)
+            else: (AnyValue refFor: self addressSpace).
+    } makePure makeOverride;
     withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(ReferenceType)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
 
         if: targetType isReferenceType then: {
@@ -1416,19 +1442,19 @@ SequenceableCollection
             }
         } continueWith: (i := i + 1sz)
     };
-    withSelector: #first addMethod: {:(SequenceableCollection)self | self at: 0sz } makeFinal;
-    withSelector: #second addMethod: {:(SequenceableCollection)self | self at: 1sz } makeFinal;
-    withSelector: #third addMethod: {:(SequenceableCollection)self | self at: 2sz } makeFinal;
-    withSelector: #fourth addMethod: {:(SequenceableCollection)self | self at: 3sz } makeFinal;
-    withSelector: #fifth addMethod: {:(SequenceableCollection)self | self at: 4sz } makeFinal;
-    withSelector: #sixth addMethod: {:(SequenceableCollection)self | self at: 5sz } makeFinal;
-    withSelector: #seventh addMethod: {:(SequenceableCollection)self | self at: 6sz } makeFinal;
-    withSelector: #eighth addMethod: {:(SequenceableCollection)self | self at: 7sz } makeFinal;
-    withSelector: #ninth addMethod: {:(SequenceableCollection)self | self at: 8sz } makeFinal;
-    withSelector: #tenth addMethod: {:(SequenceableCollection)self | self at: 9sz } makeFinal;
+    withSelector: #first addMethod: {:(SequenceableCollection)self | self at: 0sz } makeFinal withEagerAnalysis;
+    withSelector: #second addMethod: {:(SequenceableCollection)self | self at: 1sz } makeFinal withEagerAnalysis;
+    withSelector: #third addMethod: {:(SequenceableCollection)self | self at: 2sz } makeFinal withEagerAnalysis;
+    withSelector: #fourth addMethod: {:(SequenceableCollection)self | self at: 3sz } makeFinal withEagerAnalysis;
+    withSelector: #fifth addMethod: {:(SequenceableCollection)self | self at: 4sz } makeFinal withEagerAnalysis;
+    withSelector: #sixth addMethod: {:(SequenceableCollection)self | self at: 5sz } makeFinal withEagerAnalysis;
+    withSelector: #seventh addMethod: {:(SequenceableCollection)self | self at: 6sz } makeFinal withEagerAnalysis;
+    withSelector: #eighth addMethod: {:(SequenceableCollection)self | self at: 7sz } makeFinal withEagerAnalysis;
+    withSelector: #ninth addMethod: {:(SequenceableCollection)self | self at: 8sz } makeFinal withEagerAnalysis;
+    withSelector: #tenth addMethod: {:(SequenceableCollection)self | self at: 9sz } makeFinal withEagerAnalysis;
 
-    withSelector: #last addMethod: {:(SequenceableCollection)self | self at: self size - 1sz } makeFinal;
-    withSelector: #nextToLast addMethod: {:(SequenceableCollection)self | self at: self size - 2sz } makeFinal;
+    withSelector: #last addMethod: {:(SequenceableCollection)self | self at: self size - 1sz } makeFinal withEagerAnalysis;
+    withSelector: #nextToLast addMethod: {:(SequenceableCollection)self | self at: self size - 2sz } makeFinal withEagerAnalysis;
 
     withSelector: #copyFrom:until: addMethod: {:(SequenceableCollection)self :(Size)startIndex :(Size)endIndex :: self species |
         let: #resultSize with: (if: startIndex <= endIndex then: endIndex - startIndex else: 0sz).
@@ -2685,7 +2711,24 @@ GeneratedSymbol
         stream print: self class; nextPut: '('; print: self value; nextPut: ')'
     } makeOverride.
 
+
+Metatype
+    withSelector: #asCanonicalPendingInstanceType addMethod: {:(Metatype)self :: Type |
+        let: #thisType with: self thisType.
+        if: thisType ~~ nil then: thisType else: Type.
+    } makePure makeOverride withEagerAnalysis.
+
+Metatype __type__
+    withSelector: #getOrCreateDependentApplicationValueForNode: addMethod: {:(Metatype __type__)self :(ASTNode)astNode | Type } makeVirtual.
+
+Metaclass
+    withSelector: #asCanonicalPendingInstanceType addMethod: {:(Metaclass)self :: Type |
+        let: #thisType with: self thisType.
+        if: thisType ~~ nil then: thisType else: Class.
+    } makePure makeOverride withEagerAnalysis.
+
 Metaclass class
+    withSelector: #asCanonicalPendingInstanceType addMethod: {:(Metaclass class)self :: Type | Class } makeOverride withEagerAnalysis;
     withSelector: #getOrCreateDependentApplicationValueForNode: addMethod: {:(Metaclass class)self :(ASTNode)astNode |
         Class
     }.

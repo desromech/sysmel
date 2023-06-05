@@ -569,8 +569,9 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.noReturnType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "NoReturn", context->roots.controlFlowEscapeType, 0, 1);
     context->roots.unwindsType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Unwinds", context->roots.controlFlowEscapeType, 0, 1);
 
-    context->roots.decayedTypeInferenceType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "DecayedTypeInferenceType", SYSBVM_NULL_TUPLE, 0, 1);
-    context->roots.directTypeInferenceType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "DirectTypeInferenceType", SYSBVM_NULL_TUPLE, 0, 1);
+    context->roots.typeInferenceType = sysbvm_context_createIntrinsicClass(context, "TypeInferenceType", SYSBVM_NULL_TUPLE, NULL);
+    context->roots.decayedTypeInferenceType = sysbvm_context_createIntrinsicClass(context, "DecayedTypeInferenceType", context->roots.typeInferenceType, NULL);
+    context->roots.directTypeInferenceType = sysbvm_context_createIntrinsicClass(context, "DirectTypeInferenceType", context->roots.typeInferenceType, NULL);
 
     // Set the name of the root basic type.
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.untypedType, "Untyped", SYSBVM_NULL_TUPLE, NULL);
@@ -672,8 +673,9 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "captureBindingList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
         "argumentBindingList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
         "localBindingList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
-        "innerFunctionList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
         "pragmaList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
+        "innerFunctionList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
+        "primitiveName", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
         "hasBreakTarget", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "hasContinueTarget", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         NULL);

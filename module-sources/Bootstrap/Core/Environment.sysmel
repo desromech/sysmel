@@ -13,3 +13,205 @@ Environment definition: {
             := self parent: __Global__ analysisQueue: AnalysisQueue default.
     }.
 }.
+
+TypeInferenceType __type__ extend: {
+    public override eager method coerceASTNode: (node: ASTNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := self subclassResponsibility.
+}.
+
+DirectTypeInferenceType __type__ extend: {
+    public override eager method coerceASTNode: (node: ASTNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := node.
+}.
+
+DecayedTypeInferenceType __type__ extend: {
+    public override eager method coerceASTNode: (node: ASTNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := (node analyzedType ifNil: Untyped) asDecayedType coerceASTNode: node withEnvironment: environment.
+}.
+
+public final class ASTNodeWithCanonicalType superclass: Object; definition: {
+    public field node => ASTNode.
+    public field canonicalType => Type.
+}.
+
+Environment definition: {
+    public eager virtual method lookFunctionAnalysisEnvironmentRecursively => FunctionAnalysisEnvironment
+        := self error: "Cannot have a function analysis environment in this context.".
+}.
+
+FunctionAnalysisEnvironment definition: {
+    public eager override method lookFunctionAnalysisEnvironmentRecursively => FunctionAnalysisEnvironment
+        := self.
+
+    public eager virtual final method setNewSymbol: (name: Symbol) argumentBindingOfType: (bindingType: Type) at: (sourcePosition: SourcePosition) ::=> SymbolBinding := {
+        let binding := SymbolArgumentBinding new
+            name: name;
+            sourcePosition: sourcePosition;
+            type: bindingType;
+            ownerFunction: functionDefinition;
+            vectorIndex: argumentBindingList size;
+            yourself.
+        name ifNotNil: (self setNewBinding: binding).
+        argumentBindingList add: binding.
+        binding
+    }.
+
+    public eager virtual final method setNewSymbol: (name: Symbol) localBindingOfType: (bindingType: Type) at: (sourcePosition: SourcePosition) ::=> SymbolBinding := {
+        let binding := SymbolLocalBinding new
+            name: name;
+            sourcePosition: sourcePosition;
+            type: bindingType;
+            ownerFunction: functionDefinition;
+            vectorIndex: localBindingList size;
+            yourself.
+        name ifNotNil: (self setNewBinding: binding).
+        localBindingList add: binding.
+        binding
+    }.
+
+    public eager virtual final method addPragma: (pragma: Pragma) ::=> Void := {
+        pragmaList add: pragma.
+        (pragma selector = #primitive:) && self primitiveName isNil ifTrue: {
+            self primitiveName: pragma selector
+        }
+    }.
+
+    public eager virtual final method addInnerFunction: (innerFunction: FunctionDefinition) ::=> Void := {
+        innerFunctionList add: innerFunction
+    }.
+}.
+
+AnalysisAndEvaluationEnvironment definition: {
+    public eager override method lookFunctionAnalysisEnvironmentRecursively => FunctionAnalysisEnvironment
+        := parent ifNotNil: parent lookFunctionAnalysisEnvironmentRecursively.
+
+    public eager method validAnalyzerToken => Object
+        := analyzerToken ifNil: (analyzerToken := Object new).
+
+    public eager method analyzeIfNeeded: (node: ASTNode) ::=> ASTNode := {
+        node analyzerToken == self validAnalyzerToken ifTrue: {
+            node
+        } ifFalse: {
+            let analyzedNode := node analyzeWithEnvironment: self.
+            analyzedNode analyzedType ifNil: {
+                self error: "Analyzed node " -- analyzedNode printString -- " is missing the required analysis type."
+            }.
+            analyzedNode
+        }
+    }.
+
+    public eager method applyCoercionToASTNode: (node: ASTNode) intoExpectedType: (targetType: Type) ::=> ASTNode := {
+        (targetType ifNil: DecayedTypeInferenceType) coerceASTNode: node withEnvironment: self
+    }.
+
+    public eager method analyzeWithCurrentExpectedType: (node: ASTNode) ::=> ASTNode
+        := self applyCoercionToASTNode: (self analyzeIfNeeded: node) intoExpectedType: expectedType.
+
+    public eager method analyze: (node: ASTNode) withExpectedType: (newExpectedType: Type) ::=> ASTNode := {
+        ## FIXME: use an ensure block here.
+        let oldExpectedType := expectedType.
+        expectedType := newExpectedType ifNil: DecayedTypeInferenceType.
+
+        let analyzedNode := self analyzeWithCurrentExpectedType: node.
+
+        expectedType := oldExpectedType.
+        analyzedNode
+    }.
+
+    public eager method analyzeWithDirectType: (node: ASTNode) ::=> ASTNode := {
+        self analyze: node withExpectedType: DirectTypeInferenceType
+    }.
+
+    public eager method analyzeWithDecayedType: (node: ASTNode) ::=> ASTNode := {
+        self analyze: node withExpectedType: DecayedTypeInferenceType
+    }.
+
+    public eager method analyze: (node: ASTNode) withExpectedTypeExpression: (expectedTypeExpression: ASTNode) ::=> ASTNodeWithCanonicalType := {
+        expectedTypeExpression ifNil: {
+            let analyzedNode := self analyzeWithDecayedType: node.
+            ASTNodeWithCanonicalType new
+                node: analyzedNode;
+                canonicalType: analyzedNode analyzedType;
+                yourself
+        } ifNotNil: {
+            let analyzedTypeExpression := self analyze: expectedTypeExpression withExpectedType: Type.
+            analyzedTypeExpression isLiteralNode ifTrue: {
+                let literalExpectedType := (expectedTypeExpression downCastTo: ASTLiteralNode) value.
+                let analyzedNode := self analyze: node withExpectedType: literalExpectedType.
+                ASTNodeWithCanonicalType new
+                    node: analyzedNode;
+                    canonicalType: literalExpectedType;
+                    yourself
+            } ifFalse: {
+                let canonicalResultType := (analyzedTypeExpression analyzedType ifNil: AnyValue) asCanonicalPendingInstanceType.
+
+                let analyzedNode := self analyzeWithDirectType: node.
+                let shouldAddCoercion mutable => Boolean := false.
+                analyzedNode isCoerceValueNode ifTrue: {
+                    let coerceNode := analyzedNode downCastTo: ASTCoerceValueNode.
+                    (coerceNode typeExpression == analyzedTypeExpression) &&
+                    (coerceNode analyzedType == canonicalResultType) ifTrue: {
+                        shouldAddCoercion := false.
+                    }
+                }.
+
+                shouldAddCoercion ifTrue: {
+                    ASTNodeWithCanonicalType new
+                        node: (ASTCoerceValueNode new
+                            analyzerToken: self validAnalyzerToken;
+                            analyzedType: canonicalResultType;
+                            typeExpression: analyzedTypeExpression;
+                            valueExpression: analyzedNode;
+                            yourself);
+                        canonicalType: canonicalResultType;
+                        yourself
+                } ifFalse: {
+                    ASTNodeWithCanonicalType new
+                        node: analyzedNode;
+                        canonicalType: canonicalResultType;
+                        yourself
+                }
+            }
+        }.
+    }.
+
+    public eager method newLiteral: (value: Untyped) at: (sourcePosition: SourcePosition) ::=> ASTLiteralNode
+        := ASTLiteralNode new
+            sourcePosition: sourcePosition;
+            analyzedType: RawTuple::type(value);
+            analyzerToken: self validAnalyzerToken;
+            value: value;
+            yourself.
+
+    public eager virtual method setNewSymbol: (symbol: Symbol) argumentBindingOfType: (argumentType: Type) at: (sourcePosition: SourcePosition) ::=> SymbolBinding := {
+        self lookFunctionAnalysisEnvironmentRecursively ifNotNil: {:(FunctionAnalysisEnvironment)env :: SymbolBinding |
+            env setNewSymbol: symbol argumentBindingOfType: argumentType at: sourcePosition
+        } ifNil: {
+            self error: "A function analysis environment is required here."
+        }
+    }.
+
+    public eager virtual method setNewSymbol: (symbol: Symbol) localBindingOfType: (argumentType: Type) at: (sourcePosition: SourcePosition) ::=> SymbolBinding := {
+        self lookFunctionAnalysisEnvironmentRecursively ifNotNil: {:(FunctionAnalysisEnvironment)env :: SymbolBinding |
+            env setNewSymbol: symbol argumentBindingOfType: argumentType at: sourcePosition
+        } ifNil: {
+            self error: "A function analysis environment is required here."
+        }
+    }.
+
+    public eager virtual method addPragma: (pragma: Pragma) ::=> Void := {
+        self lookFunctionAnalysisEnvironmentRecursively ifNotNil: {:(FunctionAnalysisEnvironment)env :: Void |
+            env addPragma: pragma
+        } ifNil: {
+            self error: "A function analysis environment is required here."
+        }
+    }.
+
+    public eager virtual method addInnerFunction: (innerFunction: FunctionDefinition) ::=> Void := {
+        self lookFunctionAnalysisEnvironmentRecursively ifNotNil: {:(FunctionAnalysisEnvironment)env :: Void |
+            env addInnerFunction: innerFunction
+        } ifNil: {
+            self error: "A function analysis environment is required here."
+        }
+    }.
+}.

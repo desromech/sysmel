@@ -86,7 +86,7 @@ public class StructType superclass: ValueType; definition: {
 
 public class StructureMetatype superclass: ValueMetatype; definition: {
     __Meta__ definition:{
-        public method getOrCreateDependentApplicationValueForNode: (astNode: ASTNode)
+        public override method getOrCreateDependentApplicationValueForNode: (astNode: ASTNode)
             := StructType
     }.
 }.

@@ -398,7 +398,11 @@ ASTPragmaNode
     } makeOverride.
 
 ASTSequenceNode
-    withSelector: #isSequenceNode addMethod: {:(ASTNode)self :: Boolean | true } makeOverride;
+    withSelector: #initialize addMethod: {:(ASTSequenceNode)self :: Void |
+        self pragmas: #().
+        self expressions: #().
+    } makeOverride;
+    withSelector: #isSequenceNode addMethod: {:(ASTSequenceNode)self :: Boolean | true } makeOverride;
 
     withSelector: #hasPragmaNamed: addMethod: {:(ASTSequenceNode)self :selector :: Boolean |
         self pragmas anySatisfy: {:(ASTNode)pragma :: Boolean | pragma hasPragmaNamed: selector}

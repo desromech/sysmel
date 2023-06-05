@@ -6,8 +6,34 @@ function concretizeMetaValueWithEnvironment(value: Untyped, environment: Environ
 }.
 
 ASTNode definition: {
-    public virtual method analyzeConcreteMetaValueWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+    public virtual eager method analyzeConcreteMetaValueWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
         := self.
+}.
+
+ASTArgumentNode definition: {
+    public eager override method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let result := self copy
+            analyzerToken: environment validAnalyzerToken;
+            yourself.
+
+        result name ifNotNil: { result name: (environment analyze: result name withExpectedType: Symbol) }.
+        result type ifNotNil: {
+            result type: (environment analyze: result type withExpectedType: Type)
+        } ifNil: {
+            result type: (environment newLiteral: AnyValue at: self sourcePosition)
+        }.
+
+        let evaluatedName => Symbol := (result name isNotNil && result name isLiteralNode)
+            ifTrue: (result name downCastTo: ASTLiteralNode) value
+            ifFalse: nil.
+        let evaluatedType => Type := (result type isNotNil && result type isLiteralNode)
+            ifTrue: (result type downCastTo: ASTLiteralNode) value
+            ifFalse: AnyValue.
+        result
+            analyzedType: evaluatedType;
+            binding: (environment setNewSymbol: evaluatedName argumentBindingOfType: evaluatedType at: self sourcePosition);
+            yourself
+    }
 }.
 
 ASTLiteralNode definition: {
@@ -16,13 +42,14 @@ ASTLiteralNode definition: {
 
     public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
         := self copy
+            analyzerToken: environment validAnalyzerToken;
             analyzedType: RawTuple::type(self value);
             yourself.
 
     public override method evaluateWithEnvironment: (environment: Environment) ::=> Untyped
         := self value.
 
-    public override method analyzeConcreteMetaValueWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+    public override eager method analyzeConcreteMetaValueWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
         analyzedType
             ifNil: (self)
             ifNotNil: (analyzedType analyzeConcreteMetaValue: self withEnvironment: environment)
@@ -49,6 +76,24 @@ ASTSequenceNode definition: {
         }.
 
         resultBox value
+    }.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let expressionCount := self expressions size.
+        let result := self copy
+            analyzerToken: environment validAnalyzerToken;
+            pragmas: (self pragmas collect: {:(ASTNode)eachPragma :: ASTNode |
+                environment analyze: eachPragma withExpectedType: Pragma
+            });
+            expressions: (self expressions collectWithIndex: {:(ASTNode)eachExpression :(Size)index :: ASTNode |
+                (index + 1sz = expressionCount
+                    ifFalse: (environment analyze: eachExpression withExpectedType: Void)
+                    ifTrue: (environment analyzeWithCurrentExpectedType: eachExpression))
+                    analyzeConcreteMetaValueWithEnvironment: environment
+            });
+            yourself.
+        result analyzedType: (expressionCount = 0sz ifTrue: Void ifFalse: result expressions last analyzedType).
+        result
     }.
 
     public override method evaluateWithEnvironment: (environment: Environment) ::=> Untyped := {

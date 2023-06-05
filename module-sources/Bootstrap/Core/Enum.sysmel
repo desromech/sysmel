@@ -32,7 +32,7 @@ public class EnumType superclass: ValueType; definition: {
 
 public class EnumMetatype superclass: ValueMetatype; definition: {
     __Meta__ definition:{
-        public method getOrCreateDependentApplicationValueForNode: (astNode: ASTNode)
+        public override method getOrCreateDependentApplicationValueForNode: (astNode: ASTNode)
             := EnumType
     }.
 }.
