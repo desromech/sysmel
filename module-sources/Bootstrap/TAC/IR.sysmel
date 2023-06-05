@@ -1131,6 +1131,12 @@ public final class TACBlockBuilder superclass: Object; definition: {
     public method callFloat64: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
         := self callFloat64: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
 
+    public method callStruct: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+        := self call: function operation: TAC::Operation::CallStruct convention: callingConvention arguments: arguments result: result.
+
+    public method callStruct: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+        := self callStruct: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
+
     public method callVoid: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) ::=> TACInstruction
         := self call: function operation: TAC::Operation::CallVoid convention: callingConvention arguments: arguments result: nil.
 
@@ -1148,6 +1154,9 @@ public final class TACBlockBuilder superclass: Object; definition: {
 
     public method moveInt64: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::MoveInt64 with: source result: destination.
+
+    public method moveStruct: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::MoveStruct with: source result: destination.
 
     public method movePointer: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
         := self operation: (self has64BitsPointers ifTrue: (TAC::Operation::MoveInt64) ifFalse: (TAC::Operation::MoveInt32))
@@ -1298,6 +1307,9 @@ public final class TACBlockBuilder superclass: Object; definition: {
 
     public method returnFloat64: (value: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::ReturnFloat64 with: value.
+
+    public method returnStruct: (value: TACValue) ::=> TACInstruction
+        := self operation: TAC::Operation::ReturnStruct with: value.
 
     public method trap ::=> TACInstruction
         := self operation: TAC::Operation::Trap.
