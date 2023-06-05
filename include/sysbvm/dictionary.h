@@ -89,7 +89,7 @@ SYSBVM_API bool sysbvm_identityDictionary_findAssociation(sysbvm_tuple_t diction
 /**
  * Adds an association to the dictionary.
  */ 
-SYSBVM_API void sysbvm_identityDictionary_addAssociation(sysbvm_context_t *context, sysbvm_tuple_t dictionary, sysbvm_tuple_t association);
+SYSBVM_API void sysbvm_identityDictionary_add(sysbvm_context_t *context, sysbvm_tuple_t dictionary, sysbvm_tuple_t association);
 
 /**
  * Finds an element in the dictionary.

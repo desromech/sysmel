@@ -20,7 +20,7 @@ ASTArgumentNode definition: {
         result type ifNotNil: {
             result type: (environment analyze: result type withExpectedType: Type)
         } ifNil: {
-            result type: (environment newLiteral: AnyValue at: self sourcePosition)
+            result type: (environment newLiteral: AnyValue at: result sourcePosition)
         }.
 
         let evaluatedName => Symbol := (result name isNotNil && result name isLiteralNode)
@@ -31,10 +31,22 @@ ASTArgumentNode definition: {
             ifFalse: AnyValue.
         result
             analyzedType: evaluatedType;
-            binding: (environment setNewSymbol: evaluatedName argumentBindingOfType: evaluatedType at: self sourcePosition);
+            binding: (environment setNewSymbol: evaluatedName argumentBindingOfType: evaluatedType at: result sourcePosition);
             yourself
     }
 }.
+
+ASTErrorNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped
+        := error(self errorMessage).
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := error(self errorMessage).
+
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
+        := error(self errorMessage).
+}.
+
 
 ASTLiteralNode definition: {
     public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped
@@ -46,7 +58,7 @@ ASTLiteralNode definition: {
             analyzedType: RawTuple::type(self value);
             yourself.
 
-    public override method evaluateWithEnvironment: (environment: Environment) ::=> Untyped
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
         := self value.
 
     public override eager method analyzeConcreteMetaValueWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
@@ -56,15 +68,181 @@ ASTLiteralNode definition: {
     }.
 }.
 
-ASTErrorNode definition: {
-    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped
-        := error(self errorMessage).
+ASTLexicalBlockNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        let childEnvironment := AnalysisAndEvaluationEnvironment parent: environment.
+        body analyzeAndEvaluateWithEnvironment: childEnvironment
+    }.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let childEnvironment := LocalAnalysisEnvironment parent: environment.
+        (childEnvironment analyzeWithCurrentExpectedType: body)
+    }.
+
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+        body evaluateWithEnvironment: environment
+    }.
+}.
+
+ASTLocalDefinitionNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        let name := self nameExpression ifNotNil: (self nameExpression analyzeAndEvaluateWithEnvironment: environment).
+        self isMacroSymbol ifTrue: {
+            environment setNewMacro: name valueBinding: self valueExpression at: self sourcePosition.
+            return: void
+        }.
+
+        let type => Type := self typeExpression ifNotNil: (self typeExpression analyzeAndEvaluateWithEnvironment: environment).
+        let value := self valueExpression ifNotNil: (self valueExpression analyzeAndEvaluateWithEnvironment: environment).
+        let coercedValue := type ifNil: value ifNotNil: (type coerceValue: value).
+
+        let mutableValue := self isMutable
+            ifTrue: ((type ifNil: value __type__) refForFunction untypedWithBoxForValue: value)
+            ifFalse: value.
+
+        environment setNewSymbol: name valueBinding: mutableValue at: self sourcePosition.
+        mutableValue
+    }.
+
+    public eager override method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let result := self copy
+            analyzerToken: environment validAnalyzerToken;
+            yourself.
+
+        result nameExpression ifNotNil: {
+            result nameExpression: (environment analyze: result nameExpression withExpectedType: Symbol)
+        }.
+        let evaluatedName => Symbol := (result nameExpression isNotNil && result nameExpression isLiteralNode)
+            ifTrue: (result nameExpression downCastTo: ASTLiteralNode) value
+            ifFalse: nil.
+
+        result isMacroSymbol ifTrue: {
+            environment setNewMacro: evaluatedName valueBinding: result valueExpression at: result sourcePosition.
+            return: (environment newLiteral: void at: result sourcePosition)
+        }.
+
+        result typeExpression ifNotNil: {
+            result typeExpression: (environment analyze: result typeExpression withExpectedType: Type)
+        }.
+
+        let nodeWithCanonicalType := environment analyze: result valueExpression withExpectedTypeExpression: result typeExpression.
+        result valueExpression: nodeWithCanonicalType node.
+
+        let evaluatedValueType := nodeWithCanonicalType canonicalType.
+        let evaluatedType := result isMutable
+            ifTrue: (evaluatedValueType refForFunction)
+            ifFalse: (evaluatedValueType).
+
+        result nameExpression ifNil: {
+            return: result valueExpression
+        }.
+
+        result isMutable not && result valueExpression isLiteralNode ifTrue: {
+            let value := (result valueExpression downCastTo: ASTLiteralNode) value.
+            environment setNewSymbol: evaluatedName valueBinding: value at: result sourcePosition.
+            result valueExpression
+        } ifFalse: {
+            let binding := environment setNewSymbol: evaluatedName localBindingOfType: evaluatedType at: result sourcePosition.
+            result
+                analyzedType: evaluatedType;
+                binding: binding;
+                yourself
+        }.
+    }.
+
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+        let value := self valueExpression ifNotNil: (self valueExpression evaluateWithEnvironment: environment).
+        let mutableValue => Untyped := self isMutable
+            ifTrue: ((self analyzedType downCastTo: ReferenceType) untypedWithBoxForValue: value)
+            ifFalse: value.
+        environment setBinding: self binding activationValue: mutableValue.
+        mutableValue
+    }.
+}.
+
+ASTMakeAssociationNode definition: {
+    public override eager method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped
+        := Association
+            key: (self key analyzeAndEvaluateWithEnvironment: environment)
+            value: (self value ifNotNil: (self value analyzeAndEvaluateWithEnvironment: environment)).
 
     public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
-        := error(self errorMessage).
+        := self copy
+            analyzerToken: environment validAnalyzerToken;
+            analyzedType: Association;
+            key: (environment analyzeWithDecayedType: self key);
+            value: (self value ifNotNil: (environment analyzeWithDecayedType: self value));
+            yourself.
 
-    public override method evaluateWithEnvironment: (environment: Environment) ::=> Untyped
-        := error(self errorMessage).
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
+        := Association
+            key: (self key evaluateWithEnvironment: environment)
+            value: (self value ifNotNil: (self value evaluateWithEnvironment: environment)).
+}.
+
+ASTMakeArrayNode definition: {
+    public override eager method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped
+        := self elements collect: {:(ASTNode)each | each analyzeAndEvaluateWithEnvironment: environment }.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := self copy
+            analyzerToken: environment validAnalyzerToken;
+            analyzedType: Array;
+            elements: (self elements collect: {:(ASTNode)each :: ASTNode | environment analyzeWithDecayedType: each});
+            yourself.
+
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
+        := self elements collect: {:(ASTNode)each | each evaluateWithEnvironment: environment }.
+}.
+
+ASTMakeByteArrayNode definition: {
+    public override eager method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        let result := ByteArray new: elements size.
+        self elements doWithIndex: {:(ASTNode)each :(Size)index :: Void |
+            result at: index put: (each analyzeAndEvaluateWithEnvironment: environment) u8 ## FIXME: Use the asUInt8 message on integer.
+        }.
+        result
+    }.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := self copy
+            analyzerToken: environment validAnalyzerToken;
+            analyzedType: ByteArray;
+            elements: (self elements collect: {:(ASTNode)each :: ASTNode | environment analyzeWithDecayedType: each});
+            yourself.
+
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+        let result := ByteArray new: elements size.
+        self elements doWithIndex: {:(ASTNode)each :(Size)index :: Void |
+            result at: index put: (each evaluateWithEnvironment: environment)
+        }.
+        result
+    }.
+}.
+
+ASTMakeDictionaryNode definition: {
+    public override eager method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        let result := Dictionary new: elements size.
+        self elements doWithIndex: {:(ASTNode)each :(Size)index :: Void |
+            result add: (each analyzeAndEvaluateWithEnvironment: environment)
+        }.
+        result
+    }.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := self copy
+            analyzerToken: environment validAnalyzerToken;
+            analyzedType: Dictionary;
+            elements: (self elements collect: {:(ASTNode)each :: ASTNode | environment analyzeWithDecayedType: each});
+            yourself.
+
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+        let result := Dictionary new: elements size.
+        self elements doWithIndex: {:(ASTNode)each :(Size)index :: Void |
+            result add: (each evaluateWithEnvironment: environment)
+        }.
+        result
+    }.
 }.
 
 ASTSequenceNode definition: {
@@ -96,7 +274,7 @@ ASTSequenceNode definition: {
         result
     }.
 
-    public override method evaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         let resultBox := ValueBox with: void.
         self expressions do: {:(ASTNode)eachExpression :: Void |
             resultBox value: (eachExpression evaluateWithEnvironment: environment)

@@ -14,8 +14,8 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
     public field uncheckedEntryPointDictionary => Dictionary.
     public field checkedEntryPointDictionary => Dictionary.
 
-    private field uncheckedFunctionEntryPointTrampoline => TACValue.
-    private field checkedFunctionEntryPointTrampoline => TACValue.
+    private field uncheckedFunctionEntryPointTrampoline => TACProgramEntity.
+    private field checkedFunctionEntryPointTrampoline => TACProgramEntity.
 
     public method initializeWithTarget: (theCompilationTarget: TACCompilationTarget) ::=> Void := {
         compilationTarget := theCompilationTarget.
@@ -180,7 +180,7 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
         tacValue
     }.
 
-    public method validUncheckedFunctionEntryPointTrampoline => TACValue := {
+    public method validUncheckedFunctionEntryPointTrampoline => TACProgramEntity := {
         uncheckedFunctionEntryPointTrampoline ifNil: {
             uncheckedFunctionEntryPointTrampoline := targetModule build: #uncheckedFunctionEntryPointTrampoline function: {:(TACFunctionBuilder)functionBuilder :: Void |
             }
@@ -189,7 +189,7 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
         uncheckedFunctionEntryPointTrampoline
     }.
 
-    public method validCheckedFunctionEntryPointTrampoline => TACValue := {
+    public method validCheckedFunctionEntryPointTrampoline => TACProgramEntity := {
         checkedFunctionEntryPointTrampoline ifNil: {
             checkedFunctionEntryPointTrampoline := targetModule build: #checkedFunctionEntryPointTrampoline function: {:(TACFunctionBuilder)functionBuilder :: Void |
             }
@@ -215,7 +215,7 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
     public method translateUncheckedFunctionEntryPoint: (value: SSAValue) ::=> TACProgramEntity := {
         let functionDefinition := value asSSAFunctionDefinitionOrNil.
         (self shouldCompileFunctionDefinition: functionDefinition) ifTrue: {
-            uncheckedEntryPointDictionary at: functionDefinition ifAbsent: {:: TACValue |
+            uncheckedEntryPointDictionary at: functionDefinition ifAbsent: {:: TACProgramEntity |
                 self compileUncheckedFunctionEntryPoint: functionDefinition
             }
         } ifFalse: {
@@ -226,7 +226,7 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
     public method translateCheckedFunctionEntryPoint: (value: SSAValue) ::=> TACProgramEntity := {
         let functionDefinition := value asSSAFunctionDefinitionOrNil.
         (self shouldCompileFunctionDefinition: functionDefinition) ifTrue: {
-            checkedEntryPointDictionary at: functionDefinition ifAbsent: {:: TACValue |
+            checkedEntryPointDictionary at: functionDefinition ifAbsent: {:: TACProgramEntity |
                 self compileCheckedFunctionEntryPoint: functionDefinition
             }
         } ifFalse: {

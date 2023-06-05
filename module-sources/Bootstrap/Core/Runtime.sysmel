@@ -880,6 +880,16 @@ AnyValue
     } makeVirtual.
 
 Type
+    withSelector: #coerceValue:intoType: addMethod: {:(Type)self :(Untyped)value :(Type)targetType :: Untyped |
+        error("Cannot coerce value into the expected target type")
+    };
+
+    withSelector: #coerceValue: addMethod: {:(Type)self :(Untyped)value :: Untyped |
+        let: #valueType with: RawTuple::type(value).
+        if: (valueType isSubtypeOf: self) then: (value) else: {
+            valueType coerceValue: value intoType: self
+        }.
+    } makeVirtual;
     withSelector: #printOn: addMethod: {:(Type)self :(Stream)stream :: Void |
         let: #name with: self name.
         if: name ~~ nil
@@ -888,7 +898,7 @@ Type
     } makeOverride.
 
 Void class
-    withSelector: #coerceValue: addMethod: {:(Void class)self :value :: Void | void }.
+    withSelector: #coerceValue: addMethod: {:(Void class)self :value :: Void | void } makeOverride.
 Void
     withSelector: #printString addMethod: {:(Void)self :: String | "void" } makeOverride;
     withSelector: #printOn: addMethod: {:(Void)self :(Stream)stream :: Void | stream nextPutAll: "void" } makeOverride.
@@ -1664,6 +1674,15 @@ OrderedCollection
         self size: newSize
     }.
 
+Dictionary
+    withSelector: #new: addClassMethod: {:(Dictionary class)self :(Size)initialCapacity :: self |
+        self basicNew initializeWithCapacity: initialCapacity; yourself
+    } makeOverride makeFinal;
+    withSelector: #initializeWithCapacity: addMethod: {:(Dictionary)self :(Size)initialCapacity :: Void |
+        let: #requiredStorageCapacity with: initialCapacity * 130sz / 100sz.
+        self storage: (Array new: requiredStorageCapacity).
+    }.
+
 WeakOrderedCollection
     withSelector: #arrayType addClassMethod: {:(OrderedCollection class)self :: Array class |
         WeakArray
@@ -1939,7 +1958,7 @@ Type
     } makeAbstract;
     
     withSelector: #encodeValueAsByteArray: addMethod: {:(Type)self :value :: ByteArray |
-        let result := ByteArray new: self alignedValueSize.
+        let: #result with: (ByteArray new: self alignedValueSize).
         self encodeValue: value inBytes: result atOffset: 0sz.
         result
     } makeVirtual;
@@ -1955,7 +1974,7 @@ AnyValue
         self __type__ encodeValue: self inBytes: bytes atOffset: offset
     } makeVirtual;
     withSelector: #encodedInByteArray addMethod: {:self :: ByteArray |
-        let result := ByteArray new: self sizeOfByteEncoding.
+        let: #result with: (ByteArray new: self sizeOfByteEncoding).
         self encodeInBytes: result atOffset: 0sz.
         result
     } makeVirtual.
@@ -2422,6 +2441,9 @@ Type
         ReferenceTypeTemplate(self, addressSpace)
     } makePure;
     withSelector: #ref addMethod: {:(Type)self :: ReferenceType |
+        self refFor: nil
+    } makePure;
+    withSelector: #refForFunction addMethod: {:(Type)self :: ReferenceType |
         self refFor: nil
     } makePure;
     withSelector: #pointerFor: addMethod: {:(Type)self :addressSpace :: PointerType |
@@ -2895,15 +2917,27 @@ Type
     } makeVirtual withEagerAnalysis.
 
 PointerLikeType
-    withSelector: #computeLayout addMethod: {:(Type)self :: Void |
+    withSelector: #computeLayout addMethod: {:(PointerLikeType)self :: Void |
         self instanceSize: UIntPointer valueSize.
         self instanceAlignment: UIntPointer valueAlignment.
     } makeOverride;
-    withSelector: #withStorage: addMethod: {:(Type)self :storage :: self |
+    withSelector: #withStorage: addMethod: {:(PointerLikeType)self :storage :: self |
         let: #result with: (RawTuple::new(1sz)).
         (RawTuple::slotAt:put:)(result, 0sz, storage).
         (RawTuple::type:)(result, self).
         result
+    };
+    withSelector: #withBoxForValue: addMethod: {:(PointerLikeType)self :(Untyped)value :: Untyped |
+        self withStorage: (ValueBox with: value)
+    };
+    withSelector: #untypedWithStorage: addMethod: {:(PointerLikeType)self :storage :: Untyped |
+        let: #result with: (RawTuple::new(1sz)).
+        (RawTuple::slotAt:put:)(result, 0sz, storage).
+        (RawTuple::type:)(result, self).
+        result
+    };
+    withSelector: #untypedWithBoxForValue: addMethod: {:(PointerLikeType)self :(Untyped)value :: Untyped |
+        self untypedWithStorage: (ValueBox with: value)
     }.
 
 ValueType

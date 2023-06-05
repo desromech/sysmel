@@ -329,7 +329,7 @@ SYSBVM_API void sysbvm_environment_setBinding(sysbvm_context_t *context, sysbvm_
     sysbvm_environment_t *environmentObject = (sysbvm_environment_t*)environment;
     if(!environmentObject->symbolTable)
         environmentObject->symbolTable = sysbvm_identityDictionary_create(context);
-    sysbvm_identityDictionary_addAssociation(context, environmentObject->symbolTable, binding);
+    sysbvm_identityDictionary_add(context, environmentObject->symbolTable, binding);
 }
 
 SYSBVM_API void sysbvm_environment_setNewBinding(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t binding)
@@ -347,7 +347,7 @@ SYSBVM_API void sysbvm_environment_setNewBinding(sysbvm_context_t *context, sysb
     if(!environmentObject->symbolTable)
         environmentObject->symbolTable = sysbvm_identityDictionary_create(context);
 
-    sysbvm_identityDictionary_addAssociation(context, environmentObject->symbolTable, binding);
+    sysbvm_identityDictionary_add(context, environmentObject->symbolTable, binding);
 }
 
 SYSBVM_API void sysbvm_environment_setSymbolBindingWithValue(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t symbol, sysbvm_tuple_t value)
@@ -357,7 +357,7 @@ SYSBVM_API void sysbvm_environment_setSymbolBindingWithValue(sysbvm_context_t *c
 
     sysbvm_environment_t *environmentObject = (sysbvm_environment_t*)environment;
     sysbvm_tuple_t binding = sysbvm_symbolValueBinding_create(context, SYSBVM_NULL_TUPLE, symbol, value);
-    sysbvm_identityDictionary_addAssociation(context, environmentObject->symbolTable, binding);
+    sysbvm_identityDictionary_add(context, environmentObject->symbolTable, binding);
 }
 
 SYSBVM_API void sysbvm_environment_setNewSymbolBindingWithValueAtSourcePosition(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t symbol, sysbvm_tuple_t value, sysbvm_tuple_t sourcePosition)
@@ -714,6 +714,16 @@ SYSBVM_API sysbvm_tuple_t sysbvm_analysisEnvironment_setNewValueBinding(sysbvm_c
     return binding;
 }
 
+static sysbvm_tuple_t sysbvm_analysisQueue_primitive_waitPendingAnalysis(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
+
+    sysbvm_analysisQueue_waitPendingAnalysis(context, arguments[0]);
+    return SYSBVM_VOID_TUPLE;
+}
+
 static sysbvm_tuple_t sysbvm_environment_primitive_setNewBinding(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
@@ -756,6 +766,8 @@ static sysbvm_tuple_t sysbvm_environment_primitive_setSymbolBindingWithValue(sys
 
 void sysbvm_environment_registerPrimitives(void)
 {
+    sysbvm_primitiveTable_registerFunction(sysbvm_analysisQueue_primitive_waitPendingAnalysis, "AnalysisQueue::waitPendingAnalysis");
+
     sysbvm_primitiveTable_registerFunction(sysbvm_environment_primitive_setNewBinding, "Environment::setNewBinding:");
     sysbvm_primitiveTable_registerFunction(sysbvm_environment_primitive_setBinding, "Environment::setBinding:");
     sysbvm_primitiveTable_registerFunction(sysbvm_environment_primitive_setNewSymbolBindingWithValue, "Environment::setNewSymbol:bindingWithValue:");
@@ -764,6 +776,8 @@ void sysbvm_environment_registerPrimitives(void)
 
 void sysbvm_environment_setupPrimitives(sysbvm_context_t *context)
 {
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "AnalysisQueue::waitPendingAnalysis:", context->roots.analysisQueueType, "waitPendingAnalysis", 1, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_analysisQueue_primitive_waitPendingAnalysis);
+
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Environment::setNewBinding:", context->roots.environmentType, "setNewBinding:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_environment_primitive_setNewBinding);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Environment::setBinding:", context->roots.environmentType, "setBinding:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_environment_primitive_setBinding);
     

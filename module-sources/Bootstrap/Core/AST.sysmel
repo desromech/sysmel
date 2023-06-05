@@ -1,7 +1,7 @@
 ASTNode
     withSelector: #analyzeWithEnvironment: addMethod: {:(ASTNode)self :(AnalysisAndEvaluationEnvironment)environment :: ASTNode | self subclassResponsibility } makeAbstract;
     withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment :: Untyped| self subclassResponsibility } makeAbstract;
-    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment :: Untyped | self subclassResponsibility } makeAbstract;
+    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTNode)self :(FunctionActivationEnvironment)environment :: Untyped | self subclassResponsibility } makeAbstract;
 
     withSelector: #childrenDo: addMethod: {:(ASTNode)self :aBlock :: Void | self subclassResponsibility } makeAbstract;
 
@@ -83,7 +83,7 @@ ASTBinaryExpressionSequenceNode
     withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTBinaryExpressionSequenceNode)self :(Environment)environment :: Untyped |
         (self asExpandedNodeWithEnvironment: environment) analyzeAndEvaluateWithEnvironment: environment
     } makeOverride;
-    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTBinaryExpressionSequenceNode)self :(Environment)environment :: Untyped |
+    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTBinaryExpressionSequenceNode)self :(FunctionActivationEnvironment)environment :: Untyped |
         self error: "This node should be expanded." 
     } makeOverride;
 
@@ -496,7 +496,7 @@ ASTQuasiQuoteNode
     withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTQuasiQuoteNode)self :(Environment)environment :: Untyped|
         self node analyzeAndEvaluateQuasiQuoteWithEnvironment: environment
     } makeOverride;
-    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTQuasiQuoteNode)self :(Environment)environment |
+    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTQuasiQuoteNode)self :(FunctionActivationEnvironment)environment |
         self node evaluateQuasiQuoteWithEnvironment: environment
     } makeOverride;
     withSelector: #childrenDo: addMethod: {:(ASTQuasiQuoteNode)self :aBlock :: Void |
@@ -540,7 +540,7 @@ ASTQuoteNode
             yourself
     } makeOverride;
     withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment :: Untyped | self node} makeOverride;
-    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTQuoteNode)self :(Environment)environment | self node} makeOverride;
+    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTQuoteNode)self :(FunctionActivationEnvironment)environment | self node} makeOverride;
     withSelector: #childrenDo: addMethod: {:(ASTQuoteNode)self :aBlock :: Void |
         if: (self node isNotNil) then: aBlock(self node)
     } makeOverride;
@@ -553,7 +553,7 @@ ASTSpliceNode
 
     withSelector: #analyzeWithEnvironment: addMethod: {:(ASTSpliceNode)self :(AnalysisAndEvaluationEnvironment)environment | self invalidLocationError } makeOverride;
     withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment :: Untyped | self invalidLocationError } makeOverride;
-    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTSpliceNode)self :(Environment)environment | self invalidLocationError } makeOverride;
+    withSelector: #evaluateWithEnvironment: addMethod: {:(ASTSpliceNode)self :(FunctionActivationEnvironment)environment | self invalidLocationError } makeOverride;
     withSelector: #childrenDo: addMethod: {:(ASTSpliceNode)self :aBlock :: Void |
         if: (self expression isNotNil) then: aBlock(self expression)
     } makeOverride;

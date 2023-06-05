@@ -539,7 +539,7 @@ static void sysbvm_identityDictionary_increaseCapacity(sysbvm_context_t *context
     }
 }
 
-SYSBVM_API void sysbvm_identityDictionary_addAssociation(sysbvm_context_t *context, sysbvm_tuple_t dictionary, sysbvm_tuple_t association)
+SYSBVM_API void sysbvm_identityDictionary_add(sysbvm_context_t *context, sysbvm_tuple_t dictionary, sysbvm_tuple_t association)
 {
     if(!sysbvm_tuple_isNonNullPointer(dictionary))
         return;
@@ -730,6 +730,16 @@ SYSBVM_API void sysbvm_methodDictionary_atPut(sysbvm_context_t *context, sysbvm_
     }
 }
 
+static sysbvm_tuple_t sysbvm_dictionary_primitive_add(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_dictionary_add(context, arguments[0], arguments[1]);
+    return SYSBVM_VOID_TUPLE;
+}
+
 static sysbvm_tuple_t sysbvm_dictionary_primitive_atOrNil(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
@@ -772,6 +782,16 @@ static sysbvm_tuple_t sysbvm_dictionary_primitive_scanFor(sysbvm_context_t *cont
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     return sysbvm_tuple_intptr_encode(context, sysbvm_dictionary_scanFor(context, (sysbvm_dictionary_t**)&arguments[0], &arguments[1]));
+}
+
+static sysbvm_tuple_t sysbvm_identityDictionary_primitive_add(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_identityDictionary_add(context, arguments[0], arguments[1]);
+    return SYSBVM_VOID_TUPLE;
 }
 
 static sysbvm_tuple_t sysbvm_identityDictionary_primitive_atOrNil(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -908,11 +928,13 @@ static sysbvm_tuple_t sysbvm_methodDictionary_primitive_scanFor(sysbvm_context_t
 
 void sysbvm_dictionary_registerPrimitives(void)
 {
+    sysbvm_primitiveTable_registerFunction(sysbvm_dictionary_primitive_add, "Dictionary::add:");
     sysbvm_primitiveTable_registerFunction(sysbvm_dictionary_primitive_atOrNil, "Dictionary::atOrNil:");
     sysbvm_primitiveTable_registerFunction(sysbvm_dictionary_primitive_atPut, "Dictionary::at:put:");
     sysbvm_primitiveTable_registerFunction(sysbvm_dictionary_primitive_at, "Dictionary::at:");
     sysbvm_primitiveTable_registerFunction(sysbvm_dictionary_primitive_scanFor, "Dictionary::scanFor:");
 
+    sysbvm_primitiveTable_registerFunction(sysbvm_identityDictionary_primitive_add, "IdentityDictionary::add:");
     sysbvm_primitiveTable_registerFunction(sysbvm_identityDictionary_primitive_atOrNil, "IdentityDictionary::atOrNil:");
     sysbvm_primitiveTable_registerFunction(sysbvm_identityDictionary_primitive_atPut, "IdentityDictionary::at:put:");
     sysbvm_primitiveTable_registerFunction(sysbvm_identityDictionary_primitive_at, "IdentityDictionary::at:");
@@ -931,11 +953,13 @@ void sysbvm_dictionary_registerPrimitives(void)
 
 void sysbvm_dictionary_setupPrimitives(sysbvm_context_t *context)
 {
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Dictionary::add:", context->roots.dictionaryType, "add:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_dictionary_primitive_add);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Dictionary::atOrNil:", context->roots.dictionaryType, "atOrNil:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_dictionary_primitive_atOrNil);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Dictionary::at:put:", context->roots.dictionaryType, "at:put:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_dictionary_primitive_atPut);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Dictionary::at:", context->roots.dictionaryType, "at:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_dictionary_primitive_at);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Dictionary::scanFor:", context->roots.dictionaryType, "scanFor:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_dictionary_primitive_scanFor);
 
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentityDictionary::add:", context->roots.identityDictionaryType, "add:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_identityDictionary_primitive_add);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentityDictionary::atOrNil:", context->roots.identityDictionaryType, "atOrNil:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_identityDictionary_primitive_atOrNil);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentityDictionary::at:put:", context->roots.identityDictionaryType, "at:put:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_identityDictionary_primitive_atPut);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentityDictionary::at:", context->roots.identityDictionaryType, "at:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_identityDictionary_primitive_at);

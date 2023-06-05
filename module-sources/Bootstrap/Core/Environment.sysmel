@@ -1,16 +1,45 @@
 Environment definition: {
+    public eager virtual method initializeWithParent: (theParent: Environment) ::=> Void := {
+        parent := theParent.
+    }.
+
+    public eager virtual method analyzerTokenOrNil => Object := nil.
+    public eager virtual method expectedTypeOrNil => Type := nil.
+
     __Meta__ definition: {
         public method empty => self
             := self new.
 
-        public virtual method parent: (parent: Environment) ::=> self
-            := self new parent: parent; yourself.
+        public eager method parent: (parent: Environment) ::=> self
+            := self new initializeWithParent: parent; yourself.
 
-        public virtual method parent: (parent: Environment) analysisQueue: (analysisQueue: AnalysisQueue) ::=> self
-            := self new parent: parent; analysisQueue: analysisQueue; yourself.
+        public eager method parent: (parent: Environment) analysisQueue: (analysisQueue: AnalysisQueue) ::=> self
+            := (self parent: parent) analysisQueue: analysisQueue; yourself.
 
-        public method defaultEnvironmentForEvaluation ::=> self
+        public eager method defaultEnvironmentForEvaluation ::=> self
             := self parent: __Global__ analysisQueue: AnalysisQueue default.
+    }.
+
+    public eager method setNewMacro: (name: Symbol) valueBinding: (expansion: ASTNode) at: (sourcePosition: SourcePosition) ::=> Void := {
+        let binding := SymbolMacroValueBinding new
+            name: name;
+            expansion: expansion;
+            type: expansion class;
+            sourcePosition: sourcePosition;
+            yourself.
+        self setNewBinding: binding.
+        binding.
+    }.
+
+    public eager method setNewSymbol: (name: Symbol) valueBinding: (value: Untyped) at: (sourcePosition: SourcePosition) ::=> SymbolBinding := {
+        let binding := SymbolValueBinding new
+            name: name;
+            value: value;
+            type: RawTuple::type(value);
+            sourcePosition: sourcePosition;
+            yourself.
+        self setNewBinding: binding.
+        binding.
     }.
 }.
 
@@ -40,6 +69,16 @@ Environment definition: {
 }.
 
 FunctionAnalysisEnvironment definition: {
+    public eager override method initialize => Void := {
+        super initialize.
+        captureBindingTable := IdentityDictionary new.
+        captureBindingList := OrderedCollection new.
+        argumentBindingList := OrderedCollection new.
+        localBindingList := OrderedCollection new.
+        innerFunctionList := OrderedCollection new.
+        pragmaList := OrderedCollection new.
+    }.
+
     public eager override method lookFunctionAnalysisEnvironmentRecursively => FunctionAnalysisEnvironment
         := self.
 
@@ -56,19 +95,6 @@ FunctionAnalysisEnvironment definition: {
         binding
     }.
 
-    public eager virtual final method setNewSymbol: (name: Symbol) localBindingOfType: (bindingType: Type) at: (sourcePosition: SourcePosition) ::=> SymbolBinding := {
-        let binding := SymbolLocalBinding new
-            name: name;
-            sourcePosition: sourcePosition;
-            type: bindingType;
-            ownerFunction: functionDefinition;
-            vectorIndex: localBindingList size;
-            yourself.
-        name ifNotNil: (self setNewBinding: binding).
-        localBindingList add: binding.
-        binding
-    }.
-
     public eager virtual final method addPragma: (pragma: Pragma) ::=> Void := {
         pragmaList add: pragma.
         (pragma selector = #primitive:) && self primitiveName isNil ifTrue: {
@@ -82,11 +108,23 @@ FunctionAnalysisEnvironment definition: {
 }.
 
 AnalysisAndEvaluationEnvironment definition: {
+    public eager override method initializeWithParent: (theParent: Environment) ::=> Void := {
+        super initializeWithParent: theParent.
+        analyzerToken := theParent analyzerTokenOrNil.
+        expectedType := theParent expectedTypeOrNil.
+    }.
+
     public eager override method lookFunctionAnalysisEnvironmentRecursively => FunctionAnalysisEnvironment
         := parent ifNotNil: parent lookFunctionAnalysisEnvironmentRecursively.
 
     public eager method validAnalyzerToken => Object
         := analyzerToken ifNil: (analyzerToken := Object new).
+
+    public eager override method analyzerTokenOrNil => Object
+        := self validAnalyzerToken.
+    
+    public eager override method expectedTypeOrNil => Type
+        := expectedType.
 
     public eager method analyzeIfNeeded: (node: ASTNode) ::=> ASTNode := {
         node analyzerToken == self validAnalyzerToken ifTrue: {
@@ -183,17 +221,26 @@ AnalysisAndEvaluationEnvironment definition: {
             value: value;
             yourself.
 
-    public eager virtual method setNewSymbol: (symbol: Symbol) argumentBindingOfType: (argumentType: Type) at: (sourcePosition: SourcePosition) ::=> SymbolBinding := {
+    public eager virtual method setNewSymbol: (name: Symbol) argumentBindingOfType: (argumentType: Type) at: (sourcePosition: SourcePosition) ::=> SymbolBinding := {
         self lookFunctionAnalysisEnvironmentRecursively ifNotNil: {:(FunctionAnalysisEnvironment)env :: SymbolBinding |
-            env setNewSymbol: symbol argumentBindingOfType: argumentType at: sourcePosition
+            env setNewSymbol: name argumentBindingOfType: argumentType at: sourcePosition
         } ifNil: {
             self error: "A function analysis environment is required here."
         }
     }.
 
-    public eager virtual method setNewSymbol: (symbol: Symbol) localBindingOfType: (argumentType: Type) at: (sourcePosition: SourcePosition) ::=> SymbolBinding := {
-        self lookFunctionAnalysisEnvironmentRecursively ifNotNil: {:(FunctionAnalysisEnvironment)env :: SymbolBinding |
-            env setNewSymbol: symbol argumentBindingOfType: argumentType at: sourcePosition
+    public eager method setNewSymbol: (name: Symbol) localBindingOfType: (localType: Type) at: (sourcePosition: SourcePosition) ::=> SymbolBinding := {
+        self lookFunctionAnalysisEnvironmentRecursively ifNotNil: {:(FunctionAnalysisEnvironment)functionEnv :: SymbolBinding |
+            let binding := SymbolLocalBinding new
+                name: name;
+                sourcePosition: sourcePosition;
+                type: localType;
+                ownerFunction: functionEnv functionDefinition;
+                vectorIndex: functionEnv localBindingList size;
+                yourself.
+            name ifNotNil: (self setNewBinding: binding).
+            functionEnv localBindingList add: binding.
+            binding
         } ifNil: {
             self error: "A function analysis environment is required here."
         }
@@ -213,5 +260,11 @@ AnalysisAndEvaluationEnvironment definition: {
         } ifNil: {
             self error: "A function analysis environment is required here."
         }
+    }.
+}.
+
+FunctionActivationEnvironment definition: {
+    public method setBinding: (binding: SymbolBinding) activationValue: (value: Untyped) ::=> Void := {
+        error("TODO:")
     }.
 }.
