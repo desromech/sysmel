@@ -1,7 +1,7 @@
 public global Coff::ImageFileMachine::AMD64 := 16r8664 u16.
 public global Coff::ImageFileMachine::I386 := 16r14c u16.
 
-public struct Coff::Header packed definition: {
+public struct Coff::Header definition: {
     public field machine => UInt16.
     public field numberOfSections => UInt16.
     public field timestamp => UInt32.

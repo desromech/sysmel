@@ -82,6 +82,27 @@ public class StructType superclass: ValueType; definition: {
 
         result
     }.
+
+    public override method computeLayout => Void := {
+        self isPacked ifTrue: {
+            instanceSize := 0sz.
+            instanceAlignment := 1sz.
+
+            supertype ifNotNil: {
+                instanceSize := supertype validInstanceSize.
+            }.
+
+            self validSlots do: {:(TypeSlot)eachSlot :: Void |
+                let slotSize := eachSlot size.
+                let slotOffset := instanceSize.
+                eachSlot offset: slotOffset.
+                instanceSize := slotOffset + slotSize.
+            }.
+
+        } ifFalse: {
+            super computeLayout
+        }
+    }.
 }.
 
 public class StructureMetatype superclass: ValueMetatype; definition: {
