@@ -900,12 +900,12 @@ SYSBVM_API void sysbvm_type_setAnalyzeAndTypeCheckFunctionApplicationNodeWithEnv
 
 SYSBVM_API sysbvm_tuple_t sysbvm_type_getAnalyzeAndTypeCheckMessageSendNodeWithEnvironment(sysbvm_context_t *context, sysbvm_tuple_t type)
 {
-    return sysbvm_type_lookupSelector(context, type, context->roots.analyzeAndTypeCheckMessageSendNodeWithEnvironmentSelector);
+    return sysbvm_type_lookupSelector(context, type, context->roots.analyzeAndTypeCheckSolvedMessageSendNodeWithEnvironmentSelector);
 }
 
 SYSBVM_API void sysbvm_type_setAnalyzeAndTypeCheckMessageSendNodeWithEnvironment(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t typeCheckFunction)
 {
-    sysbvm_type_setMethodWithSelector(context, type, context->roots.analyzeAndTypeCheckMessageSendNodeWithEnvironmentSelector, typeCheckFunction);
+    sysbvm_type_setMethodWithSelector(context, type, context->roots.analyzeAndTypeCheckSolvedMessageSendNodeWithEnvironmentSelector, typeCheckFunction);
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_pointerLikeType_load(sysbvm_context_t *context, sysbvm_tuple_t pointerLikeValue)

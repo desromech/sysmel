@@ -450,7 +450,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
 
     context->roots.coerceASTNodeWithEnvironmentSelector = sysbvm_symbol_internWithCString(context, "coerceASTNode:withEnvironment:");
     context->roots.analyzeAndTypeCheckFunctionApplicationNodeWithEnvironmentSelector = sysbvm_symbol_internWithCString(context, "analyzeAndTypeCheckFunctionApplicationNode:withEnvironment:");
-    context->roots.analyzeAndTypeCheckMessageSendNodeWithEnvironmentSelector = sysbvm_symbol_internWithCString(context, "analyzeAndTypeCheckMessageSendNode:withEnvironment:");
+    context->roots.analyzeAndTypeCheckSolvedMessageSendNodeWithEnvironmentSelector = sysbvm_symbol_internWithCString(context, "analyzeAndTypeCheckSolvedMessageSendNode:withEnvironment:");
     context->roots.getOrCreateDependentApplicationValueForNodeSelector = sysbvm_symbol_internWithCString(context, "getOrCreateDependentApplicationValueForNode:");
 
     context->roots.applyWithoutArgumentsSelector = sysbvm_symbol_internWithCString(context, "()");
@@ -851,22 +851,23 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         NULL);
     context->roots.generatedSymbolType = sysbvm_context_createIntrinsicClass(context, "GeneratedSymbol", context->roots.symbolType,
         "value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
-        "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
+        "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sourcePositionType,
         NULL);
     context->roots.hashtableEmptyType = sysbvm_context_createIntrinsicClass(context, "HashtableEmpty", SYSBVM_NULL_TUPLE, NULL);
     sysbvm_typeAndMetatype_setFlags(context, context->roots.hashtableEmptyType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_IMMEDIATE | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);
 
     context->roots.macroContextType = sysbvm_context_createIntrinsicClass(context, "MacroContext", SYSBVM_NULL_TUPLE,
         "sourceNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
-        "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
+        "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sourcePositionType,
+        "environment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
         NULL);
     context->roots.messageType = sysbvm_context_createIntrinsicClass(context, "Message", SYSBVM_NULL_TUPLE,
-        "selector", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
-        "arguments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
+        "selector", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
+        "arguments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     context->roots.pragmaType = sysbvm_context_createIntrinsicClass(context, "Pragma", SYSBVM_NULL_TUPLE,
-        "selector", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
-        "arguments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
+        "selector", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
+        "arguments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     context->roots.streamType = sysbvm_context_createIntrinsicClass(context, "Stream", SYSBVM_NULL_TUPLE,
         NULL);

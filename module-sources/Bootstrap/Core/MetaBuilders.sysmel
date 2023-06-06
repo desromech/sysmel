@@ -34,7 +34,7 @@ MetaBuilder
             yourself).
 
         receiver analyzeAndEvaluateMessageSendNode: messageWithSelfReceiver withEnvironment: environment
-    };
+    } makeVirtual;
     withSelector: #analyzeMessageSendNode:withEnvironment: addClassMethod: {:self :(ASTMessageSendNode)messageSendNode :(Environment)environment |
         self assert: messageSendNode receiver isLiteralNode.
         (messageSendNode receiver downCastTo: ASTLiteralNode) value analyzeMessageSendNode: messageSendNode withEnvironment: environment
@@ -49,11 +49,11 @@ MetaBuilder
             yourself).
 
         functional analyzeAndEvaluateUnexpandedApplicationNode: unexpandedApplicationWithSelfReceiver withEnvironment: environment
-    };
+    } makeVirtual;
     withSelector: #analyzeUnexpandedApplicationNode:withEnvironment: addClassMethod: {:self :(ASTUnexpandedApplicationNode)unexpandedApplicationNode :(Environment)environment |
         self assert: unexpandedApplicationNode functionOrMacroExpression isLiteralNode.
         (unexpandedApplicationNode functionOrMacroExpression downCastTo: ASTLiteralNode) value analyzeUnexpandedApplicationNode: unexpandedApplicationNode withEnvironment: environment
-    };
+    } makeVirtual;
     withSelector: #analyzeAndEvaluateMessageChainNode:forReceiver:withEnvironment: addClassMethod: {:self :messageChainNode :(Untyped)receiver :(Environment)environment :: Untyped |
         let: #selfReceiver with: (ASTLiteralNode new
             sourcePosition: messageChainNode receiver sourcePosition;
@@ -67,7 +67,7 @@ MetaBuilder
         }.
 
         result
-    };
+    } makeVirtual;
     withSelector: #analyzeMessageChainNode:withEnvironment: addClassMethod: {:self :messageChainNode :(Environment)environment |
         let: #selfReceiver with: messageChainNode receiver.
         let: #receiver with: selfReceiver value.
@@ -78,7 +78,7 @@ MetaBuilder
         }.
 
         result
-    };
+    } makeVirtual;
     withSelector: #analyzeAndEvaluateConcreteMetaValue:withEnvironment: addClassMethod: {:self :metaBuilderInstance :(Environment)environment |
         metaBuilderInstance analyzeAndEvaluateConcreteMetaValueWithEnvironment: environment
     } makeOverride;

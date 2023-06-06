@@ -482,6 +482,27 @@ static sysbvm_tuple_t sysbvm_function_primitive_apply(sysbvm_context_t *context,
     return sysbvm_functionCallFrameStack_finish(context, &callFrameStack, 0);
 }
 
+static sysbvm_tuple_t sysbvm_function_primitive_applyWithArguments(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_tuple_t *function = &arguments[0];
+    sysbvm_tuple_t *argumentList = &arguments[1];
+
+    size_t callArgumentCount = sysbvm_array_getSize(*argumentList);
+
+    sysbvm_functionCallFrameStack_t callFrameStack = {0};
+    SYSBVM_STACKFRAME_PUSH_GC_ROOTS(callFrameStackRecord, callFrameStack.gcRoots);
+
+    sysbvm_functionCallFrameStack_begin(context, &callFrameStack, *function, callArgumentCount);
+    for(size_t i = 0; i < callArgumentCount; ++i)
+        sysbvm_functionCallFrameStack_push(&callFrameStack, sysbvm_array_at(*argumentList, i));
+
+    SYSBVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
+    return sysbvm_functionCallFrameStack_finish(context, &callFrameStack, 0);
+}
+
 static sysbvm_tuple_t sysbvm_function_primitive_isCorePrimitive(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)closure;
@@ -574,6 +595,7 @@ bool sysbvm_function_shouldOptimizeLookup(sysbvm_context_t *context, sysbvm_tupl
 void sysbvm_function_registerPrimitives(void)
 {
     sysbvm_primitiveTable_registerFunction(sysbvm_function_primitive_apply, "Function::apply");
+    sysbvm_primitiveTable_registerFunction(sysbvm_function_primitive_applyWithArguments, "Function::applyWithArguments:");
     sysbvm_primitiveTable_registerFunction(sysbvm_function_primitive_adoptDefinitionOf, "Function::adoptDefinitionOf");
     sysbvm_primitiveTable_registerFunction(sysbvm_function_primitive_isCorePrimitive, "Function::isCorePrimitive");
     sysbvm_primitiveTable_registerFunction(sysbvm_function_primitive_hasVirtualDispatch, "Function::hasVirtualDispatch");
@@ -584,7 +606,8 @@ void sysbvm_function_registerPrimitives(void)
 
 void sysbvm_function_setupPrimitives(sysbvm_context_t *context)
 {
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "apply", context->roots.functionType, "applyWithArguments:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_VARIADIC | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_function_primitive_apply);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "apply", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_VARIADIC | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_function_primitive_apply);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::applyWithArguments:", context->roots.functionType, "applyWithArguments:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_function_primitive_applyWithArguments);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::adoptDefinitionOf:", context->roots.functionType, "adoptDefinitionOf:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_function_primitive_adoptDefinitionOf);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::isCorePrimitive", context->roots.functionType, "isCorePrimitive", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_function_primitive_isCorePrimitive);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::hasVirtualDispatch", context->roots.functionType, "hasVirtualDispatch", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_function_primitive_hasVirtualDispatch);

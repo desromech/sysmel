@@ -419,15 +419,18 @@ ASTSequenceNode definition: {
 }.
 
 ASTUnexpandedSExpressionNode definition: {
+    public method asUnexpandedApplicationNode => ASTUnexpandedApplicationNode
+        := ASTUnexpandedApplicationNode new
+            sourcePosition: self sourcePosition;
+            functionOrMacroExpression: self elements first;
+            arguments: self elements allButFirst;
+            yourself.
+
     public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
         self elements isEmpty ifTrue: {
             #()
         } ifFalse: {
-            ASTUnexpandedApplicationNode new
-                sourcePosition: self sourcePosition;
-                functionOrMacroExpression: self elements first;
-                arguments: self elements allButFirst;
-                analyzeAndEvaluateWithEnvironment: environment
+            self asUnexpandedApplicationNode analyzeAndEvaluateWithEnvironment: environment
         }
     }.
 
@@ -435,11 +438,254 @@ ASTUnexpandedSExpressionNode definition: {
         self elements isEmpty ifTrue: {
             environment newLiteral: #() at: self sourcePosition
         } ifFalse: {
-            ASTUnexpandedApplicationNode new
-                sourcePosition: self sourcePosition;
-                functionOrMacroExpression: self elements first;
-                arguments: self elements allButFirst;
-                analyzeWithEnvironment: environment
+            self asUnexpandedApplicationNode analyzeWithEnvironment: environment
         }
+    }.
+}.
+
+ASTUnexpandedApplicationNode definition: {
+    public eager method asFunctionApplicationNode => ASTFunctionApplicationNode
+        := ASTFunctionApplicationNode new
+            sourcePosition: self sourcePosition;
+            functionExpression: self functionOrMacroExpression;
+            arguments: self arguments;
+            yourself.
+
+    public eager method expandWithMacro: macroFunction environment: (environment: Environment) ::=> ASTNode := {
+        let macroContext := MacroContext new
+            sourceNode: self;
+            sourcePosition: self sourcePosition;
+            environment: environment;
+            yourself.
+        macroFunction applyWithArguments: (Array with: macroContext) -- self arguments
+    }.
+}.
+
+## Temporal definition to avoid cyclic issues.
+Function class definition: {
+    public virtual eager method analyzeAndEvaluateUnexpandedApplicationNode: (node: ASTUnexpandedApplicationNode) of: (functional: Untyped) withEnvironment: (environment: Environment) ::=> Untyped := {
+        functional isMacro ifTrue: {
+            (node expandWithMacro: functional environment: environment) analyzeAndEvaluateWithEnvironment: environment
+        } ifFalse: {
+            node asFunctionApplicationNode
+                functionExpression: (ASTLiteralNode new
+                    sourcePosition: node functionOrMacroExpression sourcePosition;
+                    value: functional;
+                    yourself);
+                analyzeAndEvaluateWithEnvironment: environment
+        }.
+    }.
+
+    public virtual eager method analyzeUnexpandedApplicationNode: (node: ASTUnexpandedApplicationNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> Untyped := {
+        node functionOrMacroExpression isLiteralNode && (node functionOrMacroExpression downCastTo: ASTLiteralNode) value isMacro ifTrue: {
+            (node expandWithMacro: (node functionOrMacroExpression downCastTo: ASTLiteralNode) value environment: environment) analyzeWithEnvironment: environment
+        } ifFalse: {
+            node asFunctionApplicationNode analyzeWithEnvironment: environment
+        }.
+    }.
+}.
+
+FunctionType definition: {
+    public virtual eager method analyzeAndEvaluateUnexpandedApplicationNode: (node: ASTUnexpandedApplicationNode) of: (functional: Untyped) withEnvironment: (environment: Environment) ::=> Untyped := {
+        functional isMacro ifTrue: {
+            (node expandWithMacro: functional environment: environment) analyzeAndEvaluateWithEnvironment: environment
+        } ifFalse: {
+            node asFunctionApplicationNode
+                functionExpression: (ASTLiteralNode new
+                    sourcePosition: node functionOrMacroExpression sourcePosition;
+                    value: functional;
+                    yourself);
+                analyzeAndEvaluateWithEnvironment: environment
+        }.
+    }.
+
+    public virtual eager method analyzeUnexpandedApplicationNode: (node: ASTUnexpandedApplicationNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> Untyped := {
+        node functionOrMacroExpression isLiteralNode && (node functionOrMacroExpression downCastTo: ASTLiteralNode) value isMacro ifTrue: {
+            (node expandWithMacro: (node functionOrMacroExpression downCastTo: ASTLiteralNode) value environment: environment) analyzeWithEnvironment: environment
+        } ifFalse: {
+            node asFunctionApplicationNode analyzeWithEnvironment: environment
+        }.
+    }.
+}.
+
+Type definition: {
+    public virtual eager method analyzeAndEvaluateUnexpandedApplicationNode: (node: ASTUnexpandedApplicationNode) of: (functional: Untyped) withEnvironment: (environment: Environment) ::=> Untyped := {
+        node asFunctionApplicationNode
+            functionExpression: (ASTLiteralNode new
+                sourcePosition: node functionOrMacroExpression sourcePosition;
+                value: functional;
+                yourself);
+            analyzeAndEvaluateWithEnvironment: environment
+    }.
+
+    public virtual eager method analyzeUnexpandedApplicationNode: (node: ASTUnexpandedApplicationNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> Untyped := {
+        node asFunctionApplicationNode analyzeWithEnvironment: environment
+    }.
+}.
+
+Function class definition: {
+    public virtual eager method analyzeAndEvaluateUnexpandedApplicationNode: (node: ASTUnexpandedApplicationNode) of: (functional: Untyped) withEnvironment: (environment: Environment) ::=> Untyped := {
+        functional isMacro ifTrue: {
+            (node expandWithMacro: functional environment: environment) analyzeAndEvaluateWithEnvironment: environment
+        } ifFalse: {
+            super analyzeAndEvaluateUnexpandedApplicationNode: node of: functional withEnvironment: environment
+        }.
+    }.
+
+    public virtual eager method analyzeUnexpandedApplicationNode: (node: ASTUnexpandedApplicationNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> Untyped := {
+        node functionOrMacroExpression isLiteralNode && (node functionOrMacroExpression downCastTo: ASTLiteralNode) value isMacro ifTrue: {
+            (node expandWithMacro: (node functionOrMacroExpression downCastTo: ASTLiteralNode) value environment: environment) analyzeWithEnvironment: environment
+        } ifFalse: {
+            super analyzeUnexpandedApplicationNode: node withEnvironment: environment
+        }.
+    }.
+}.
+
+FunctionType definition: {
+    public virtual eager method analyzeAndEvaluateUnexpandedApplicationNode: (node: ASTUnexpandedApplicationNode) of: (functional: Untyped) withEnvironment: (environment: Environment) ::=> Untyped := {
+        functional isMacro ifTrue: {
+            (node expandWithMacro: functional environment: environment) analyzeAndEvaluateWithEnvironment: environment
+        } ifFalse: {
+            super analyzeAndEvaluateUnexpandedApplicationNode: node of: functional withEnvironment: environment
+        }.
+    }.
+
+    public virtual eager method analyzeUnexpandedApplicationNode: (node: ASTUnexpandedApplicationNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> Untyped := {
+        node functionOrMacroExpression isLiteralNode && (node functionOrMacroExpression downCastTo: ASTLiteralNode) value isMacro ifTrue: {
+            (node expandWithMacro: (node functionOrMacroExpression downCastTo: ASTLiteralNode) value environment: environment) analyzeWithEnvironment: environment
+        } ifFalse: {
+            super analyzeUnexpandedApplicationNode: node withEnvironment: environment
+        }.
+    }.
+}.
+
+MetaBuilder class definition: {
+    public virtual eager method analyzeUnexpandedApplicationNode: (node: ASTUnexpandedApplicationNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> Untyped := {
+        node functionOrMacroExpression isLiteralNode ifTrue: {
+            (node functionOrMacroExpression downCastTo: ASTLiteralNode) value analyzeUnexpandedApplicationNode: node withEnvironment: environment
+        } ifFalse: {
+            super analyzeUnexpandedApplicationNode: node withEnvironment: environment
+        }.
+    }.
+}.
+
+ASTUnexpandedApplicationNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        let functionOrMacro := self functionOrMacroExpression analyzeAndEvaluateWithEnvironment: environment.
+        RawTuple::type(functionOrMacro) analyzeAndEvaluateUnexpandedApplicationNode: self of: functionOrMacro withEnvironment: environment
+    }.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let result := self copy
+            analyzerToken: environment validAnalyzerToken;
+            functionOrMacroExpression: (environment analyzeWithDecayedType: self functionOrMacroExpression);
+            yourself.
+        result functionOrMacroExpression analyzedType analyzeUnexpandedApplicationNode: result withEnvironment: environment
+    }.
+}.
+
+ASTFunctionApplicationNode definition: {
+    public eager method optimizePureApplicationWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let canOptimize := self functionExpression isLiteralPureFunctionNode
+            && (self arguments allSatisfy: {:(ASTNode)each :: Boolean | each isLiteralNode }).
+        canOptimize
+            ifTrue: (environment newLiteral: (self analyzeAndEvaluateWithEnvironment: environment) at: self sourcePosition)
+            ifFalse: (self)
+    }.
+}.
+
+Type definition: {
+    public virtual eager method analyzeAndTypeCheckFunctionApplicationNode: (node: ASTFunctionApplicationNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        node
+            analyzedType: AnyValue;
+            arguments: (node arguments collect: {:(ASTNode)each :: ASTNode | environment analyzeWithDecayedType: each});
+            optimizePureApplicationWithEnvironment: environment
+    }.
+
+    public virtual eager method analyzeAndTypeCheckSolvedMessageSendNode: (node: ASTMessageSendNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        node
+            analyzedType: AnyValue;
+            receiver: (node receiver ifNotNil: (environment analyzeWithDecayedType: node receiver));
+            arguments: (node arguments collect: {:(ASTNode)each :: ASTNode | environment analyzeWithDecayedType: each});
+            yourself
+    }.
+
+    #*public virtual eager method analyzeMessageSendNode: (node: ASTMessageSendNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        error("TODO").
+    }.*#
+}.
+
+SimpleFunctionType definition: {
+    public virtual eager method analyzeAndTypeCheckFunctionApplicationNode: (node: ASTFunctionApplicationNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let isVariadic := self isVariadic.
+        let isMemoizedTemplate := self isMemoizedTemplate.
+
+        let typeArgumentCount := argumentTypes size.
+        let expectedArgumentCount mutable := typeArgumentCount.
+        let applicationArgumentCount := node arguments size.
+        let startingArgumentIndex := isMemoizedTemplate ifTrue: 1sz ifFalse: 0sz.
+        isVariadic && typeArgumentCount ifTrue: {
+            node semanticError: "Variadic applications require at least a single argument."
+        }.
+
+        let directApplicationArgumentCount mutable := isVariadic ifTrue: (typeArgumentCount - 1sz) ifFalse: (typeArgumentCount).
+        isMemoizedTemplate ifTrue: {
+            expectedArgumentCount = 0sz ifTrue: {
+                node semanticError: "Memoized template requires at least a single argument."
+            }.
+
+            expectedArgumentCount := expectedArgumentCount - 1sz.
+            directApplicationArgumentCount := directApplicationArgumentCount - 1sz.
+        }.
+
+        isVariadic && (applicationArgumentCount < directApplicationArgumentCount) ifTrue: {
+            node semanticError: "Missing required arguments."
+        }.
+        isVariadic not && (applicationArgumentCount ~= expectedArgumentCount) ifTrue: {
+            node semanticError: "Expected number of arguments is mismatching."
+        }.
+
+        node
+            arguments: (node arguments collectWithIndex: {:(ASTNode)eachArgument :(Size)eachArgumentIndex :: ASTNode |
+                let expectedType := eachArgumentIndex < directApplicationArgumentCount
+                    ifTrue: (argumentTypes at: startingArgumentIndex + eachArgumentIndex)
+                    ifFalse: AnyValue.
+                environment analyze: eachArgument withExpectedType: expectedType
+            });
+            analyzedType: self canonicalResultType;
+            optimizePureApplicationWithEnvironment: environment
+    }.
+
+    public override eager method analyzeAndTypeCheckSolvedMessageSendNode: (node: ASTMessageSendNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let firstArgumentIndex := node receiver ifNil: 0sz ifNotNil: 1sz.
+        node
+            analyzedType: self canonicalResultType;
+            receiver: (node receiver ifNotNil: (environment analyze: node receiver withExpectedType: argumentTypes first));
+            arguments: (node arguments collectWithIndex: {:(ASTNode)eachArgument :(Size)eachArgumentIndex :: ASTNode |
+                environment analyze: eachArgument withExpectedType: (argumentTypes at: firstArgumentIndex + eachArgumentIndex)
+            });
+            yourself
+    }.
+}.
+
+ASTFunctionApplicationNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        let function := self functionExpression analyzeAndEvaluateWithEnvironment: environment.
+        let arguments := self arguments collect: {:(ASTNode)each :: Untyped | each analyzeAndEvaluateWithEnvironment: environment}.
+        function applyWithArguments: arguments
+    }.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let result := self copy
+            analyzerToken: environment validAnalyzerToken;
+            functionExpression: (environment analyzeWithDecayedType: self functionExpression);
+            yourself.
+        result functionExpression analyzedType analyzeAndTypeCheckFunctionApplicationNode: self withEnvironment: environment
+    }.
+
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+        let function := self functionExpression evaluateWithEnvironment: environment.
+        let arguments := self arguments collect: {:(ASTNode)each :: Untyped | each evaluateWithEnvironment: environment}.
+        function applyWithArguments: arguments
     }.
 }.

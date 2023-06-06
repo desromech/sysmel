@@ -2502,11 +2502,20 @@ SimpleFunctionType
         let: #resultType with: self resultType.
         if: resultType == nil then: Untyped else: resultType.
     } makeOverride;
-    withSelector: #hasFunctionFlag: addMethod: {:(SimpleFunctionType)self :(Bitflags)flag :: Boolean |
-        (self functionFlags & flag) ~= 0bflgs
+    withSelector: #hasFunctionFlags: addMethod: {:(SimpleFunctionType)self :(Bitflags)flag :: Boolean |
+        (self functionFlags & flag) = flag
     };
     withSelector: #isVariadic addMethod: {:(SimpleFunctionType)self :: Boolean |
-        self hasFunctionFlag: FunctionFlags::Variadic
+        self hasFunctionFlags: FunctionFlags::Variadic
+    };
+    withSelector: #isMemoized addMethod: {:(SimpleFunctionType)self :: Boolean |
+        self hasFunctionFlags: FunctionFlags::Memoized
+    };
+    withSelector: #isTemplate addMethod: {:(SimpleFunctionType)self :: Boolean |
+        self hasFunctionFlags: FunctionFlags::Template
+    };
+    withSelector: #isMemoizedTemplate addMethod: {:(SimpleFunctionType)self :: Boolean |
+        self hasFunctionFlags: FunctionFlags::Memoized | FunctionFlags::Template
     };
     withSelector: #printOn: addMethod: {:(SimpleFunctionType)self :(Stream)stream :: Void |
         stream nextPut: '('.

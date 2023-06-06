@@ -100,7 +100,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t coerceValueSelector;
     sysbvm_tuple_t coerceASTNodeWithEnvironmentSelector;
     sysbvm_tuple_t analyzeAndTypeCheckFunctionApplicationNodeWithEnvironmentSelector;
-    sysbvm_tuple_t analyzeAndTypeCheckMessageSendNodeWithEnvironmentSelector;
+    sysbvm_tuple_t analyzeAndTypeCheckSolvedMessageSendNodeWithEnvironmentSelector;
     sysbvm_tuple_t getOrCreateDependentApplicationValueForNodeSelector;
     sysbvm_tuple_t defaultValueSelector;
 

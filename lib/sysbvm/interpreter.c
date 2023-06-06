@@ -5357,6 +5357,15 @@ static sysbvm_tuple_t sysbvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckFunc
         sysbvm_array_atPut(gcFrame.analyzedArguments, i, gcFrame.analyzedArgument);
     }
 
+    // Additional variadic arguments.
+    for(size_t i = directApplicationArgumentCount; i < applicationArgumentCount; ++i)
+    {
+        gcFrame.expectedArgumentType = context->roots.anyValueType;
+        gcFrame.argumentNode = sysbvm_array_at((*functionApplicationNode)->arguments, i);
+        gcFrame.analyzedArgument = sysbvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.argumentNode, gcFrame.expectedArgumentType, *environment);
+        sysbvm_array_atPut(gcFrame.analyzedArguments, i, gcFrame.analyzedArgument);
+    }
+
     (*functionApplicationNode)->applicationFlags = sysbvm_tuple_bitflags_encode(sysbvm_tuple_bitflags_decode((*functionApplicationNode)->applicationFlags) | SYSBVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK);
     (*functionApplicationNode)->arguments = gcFrame.analyzedArguments;
     (*functionApplicationNode)->super.analyzedType = (*simpleFunctionType)->resultType;
@@ -5881,9 +5890,9 @@ void sysbvm_astInterpreter_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_functionDefinition_primitiveEnsureAnalysis, "FunctionDefinition::ensureAnalysis");
 
     sysbvm_primitiveTable_registerFunction(sysbvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckFunctionApplicationNode, "SimpleFunctionType::analyzeAndTypeCheckFunctionApplicationNode:withEnvironment:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckMessageSendNode, "SimpleFunctionType::analyzeAndTypeCheckMessageSendNode:withEnvironment:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckMessageSendNode, "SimpleFunctionType::analyzeAndTypeCheckSolvedMessageSendNode:withEnvironment:");
     sysbvm_primitiveTable_registerFunction(sysbvm_dependentFunctionType_primitiveAnalyzeAndTypeCheckFunctionApplicationNode, "DependentFunctionType::analyzeAndTypeCheckFunctionApplicationNode:withEnvironment:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_dependentFunctionType_primitiveAnalyzeAndTypeCheckMessageSendNode, "DependentFunctionType::analyzeAndTypeCheckMessageSendNode:withEnvironment:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_dependentFunctionType_primitiveAnalyzeAndTypeCheckMessageSendNode, "DependentFunctionType::analyzeAndTypeCheckSolvedMessageSendNode:withEnvironment:");
 }
 
 static void sysbvm_astInterpreter_setupNodeInterpretationFunctions(sysbvm_context_t *context, sysbvm_tuple_t astNodeType, sysbvm_functionEntryPoint_t analysisFunction, sysbvm_functionEntryPoint_t evaluationFunction, sysbvm_functionEntryPoint_t analysisAndEvaluationFunction)

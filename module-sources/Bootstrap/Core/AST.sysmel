@@ -10,6 +10,7 @@ ASTNode
     
     withSelector: #hasPragmaNamed: addMethod: {:(ASTNode)self :selector :: Boolean | false } makeVirtual;
     withSelector: #hasLiteralValueEqualTo: addMethod: {:(ASTNode)self :expectedValue :: Boolean | false } makeVirtual;
+    withSelector: #isLiteralPureFunctionNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
 
     withSelector: #isArgumentNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isBinaryExpressionSequenceNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
@@ -201,6 +202,11 @@ ASTLiteralNode
     withSelector: #childrenDo: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | } makeOverride;
 
+    withSelector: #isLiteralPureFunctionNode addMethod: {:(ASTLiteralNode)self :: Boolean |
+        if: (self value __type__ lookupSelector: #isPure) ~~ nil
+            then: (self value isPure)
+            else: false
+    } makeOverride;
     withSelector: #literalFunctionPrimitiveName addMethod: {:(ASTLiteralNode)self :: Symbol |
         if: (self value __type__ lookupSelector: #primitiveName) ~~ nil
             then: (self value ensureAnalysis; primitiveName)
