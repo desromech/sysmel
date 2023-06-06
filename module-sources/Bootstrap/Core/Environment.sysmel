@@ -175,8 +175,10 @@ SymbolTupleSlotBinding ensureAnalysisOfMethodWithSelector: #getOrCreateCaptureIn
 AnalysisAndEvaluationEnvironment definition: {
     public eager override method initializeWithParent: (theParent: Environment) ::=> Void := {
         super initializeWithParent: theParent.
-        analyzerToken := theParent analyzerTokenOrNil.
-        expectedType := theParent expectedTypeOrNil.
+        theParent ifNotNil: {
+            analyzerToken := theParent analyzerTokenOrNil.
+            expectedType := theParent expectedTypeOrNil.
+        }.
     }.
 
     public eager override method lookFunctionAnalysisEnvironmentRecursively => FunctionAnalysisEnvironment
@@ -347,6 +349,10 @@ AnalysisAndEvaluationEnvironment definition: {
 }.
 
 FunctionActivationEnvironment definition: {
+    public method bindArgumentNodeAt: (argumentIndex: Size) value: (value: Untyped) ::=> Void := {
+        valueVector at: argumentIndex put: value
+    }.
+
     public method setBinding: (binding: SymbolBinding) activationValue: (value: Untyped) ::=> Void := {
         error("TODO:")
     }.

@@ -428,6 +428,15 @@ static sysbvm_tuple_t sysbvm_tuple_primitive_isWeak(sysbvm_context_t *context, s
     return sysbvm_tuple_boolean_encode(sysbvm_tuple_isWeakObject(arguments[0]));
 }
 
+static sysbvm_tuple_t sysbvm_tuple_primitive_isDummyValue(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
+
+    return sysbvm_tuple_boolean_encode(sysbvm_tuple_isDummyValue(arguments[0]));
+}
+
 static sysbvm_tuple_t sysbvm_tuple_primitive_shallowCopy(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
@@ -435,6 +444,16 @@ static sysbvm_tuple_t sysbvm_tuple_primitive_shallowCopy(sysbvm_context_t *conte
     if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
 
     return sysbvm_context_shallowCopy(context, arguments[0]);
+}
+
+static sysbvm_tuple_t sysbvm_tuple_primitive_markDummyValue(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
+
+    sysbvm_tuple_markDummyValue(arguments[0]);
+    return arguments[0];
 }
 
 static sysbvm_tuple_t sysbvm_tuple_primitive_markWeak(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -506,10 +525,12 @@ void sysbvm_tuple_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_basicAllocateWithTypeInstanceSizeAlignmentSlotCountIsBytesIsWeak, "RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_isBytes, "RawTuple::isBytes");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_isWeak, "RawTuple::isWeak");
+    sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_isDummyValue, "RawTuple::isDummyValue");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_size, "RawTuple::size");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_byteSize, "RawTuple::byteSize");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_shallowCopy, "RawTuple::shallowCopy");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_markWeak, "RawTuple::markWeak");
+    sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_markDummyValue, "RawTuple::markDumyValue");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_firstInstanceWithType, "RawTuple::firstInstanceWithType");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_nextInstanceWithSameType, "RawTuple::nextInstanceWithSameType");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_recordBindingWithOwnerAndName, "RawTuple::recordBindingWithOwnerAndName");
@@ -531,11 +552,13 @@ void sysbvm_tuple_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "RawTuple::byteNew", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_byteNew);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:", 7, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_basicAllocateWithTypeInstanceSizeAlignmentSlotCountIsBytesIsWeak);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::isBytes", context->roots.anyValueType, "__isBytes__", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_isBytes);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::isDummyValue", context->roots.anyValueType, "__isDummyValue__", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_isDummyValue);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::isWeak", context->roots.anyValueType, "__isWeak__", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_isWeak);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::size", context->roots.anyValueType, "__size__", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_size);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::byteSize", context->roots.anyValueType, "__byteSize__", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_byteSize);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::shallowCopy", context->roots.anyValueType, "__shallowCopy__", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_shallowCopy);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::markWeak", context->roots.anyValueType, "__markWeak__", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_markWeak);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::markDummyValue", context->roots.anyValueType, "__markDummyValue__", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_markDummyValue);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "RawTuple::firstInstanceWithType", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_firstInstanceWithType);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "RawTuple::nextInstanceWithSameType", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_nextInstanceWithSameType);
 
