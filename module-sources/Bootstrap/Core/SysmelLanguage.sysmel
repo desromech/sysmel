@@ -298,8 +298,6 @@ public class SysmelTokenMonadicParser superclass: MonadicParser; definition: {
 }.
 
 public class SysmelTokenMonadicParserState superclass: MonadicParserState; definition: {
-    public method dummyMethod => Void := {}. ## HACK: We might be triggering a GC. Check this later.
-
     public method sourceIndexForTokenStart: (tokenIndex: Size) ::=> Size := {
         tokenIndex < sourceCollection size ifTrue: {
             let token => SysmelToken := sourceCollection at: tokenIndex.

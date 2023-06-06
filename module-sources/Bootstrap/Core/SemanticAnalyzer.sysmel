@@ -502,7 +502,7 @@ Function class definition: {
 
     public virtual eager method analyzeUnexpandedApplicationNode: (node: ASTUnexpandedApplicationNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> Untyped := {
         node functionOrMacroExpression isLiteralNode && (node functionOrMacroExpression downCastTo: ASTLiteralNode) value isMacro ifTrue: {
-            (node expandWithMacro: (node functionOrMacroExpression downCastTo: ASTLiteralNode) value environment: environment) analyzeWithEnvironment: environment
+            environment analyzeWithCurrentExpectedType: (node expandWithMacro: (node functionOrMacroExpression downCastTo: ASTLiteralNode) value environment: environment)
         } ifFalse: {
             node asFunctionApplicationNode analyzeWithEnvironment: environment
         }.
@@ -525,7 +525,7 @@ FunctionType definition: {
 
     public virtual eager method analyzeUnexpandedApplicationNode: (node: ASTUnexpandedApplicationNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> Untyped := {
         node functionOrMacroExpression isLiteralNode && (node functionOrMacroExpression downCastTo: ASTLiteralNode) value isMacro ifTrue: {
-            (node expandWithMacro: (node functionOrMacroExpression downCastTo: ASTLiteralNode) value environment: environment) analyzeWithEnvironment: environment
+            environment analyzeWithCurrentExpectedType: (node expandWithMacro: (node functionOrMacroExpression downCastTo: ASTLiteralNode) value environment: environment)
         } ifFalse: {
             node asFunctionApplicationNode analyzeWithEnvironment: environment
         }.
@@ -618,6 +618,32 @@ ASTFunctionApplicationNode definition: {
     }.
 }.
 
+public final class MessageSendNodeStaticLookupResult superclass: Object; definition: {
+    public field foundMethod => AnyValue.
+    public field owner => Type.
+    public field selector => Symbol.
+    public field isDoesNotUnderstand => Boolean.
+
+    public eager method isMacro => Boolean
+        := (foundMethod answersTo: #isMacro) && foundMethod isMacro.
+    public eager method isFinal => Boolean
+        := (foundMethod answersTo: #isFinal) && foundMethod isFinal.
+
+    public eager method shouldOptimizeLookup => Boolean
+        := owner isFinal || self isMacro || self isFinal.
+}.
+
+ASTMessageSendNode definition: {
+    public eager method expandWithDoesNotUnderstandMacro: macroFunction environment: (environment: Environment) ::=> ASTNode := {
+        let macroContext := MacroContext new
+            sourceNode: self;
+            sourcePosition: self sourcePosition;
+            environment: environment;
+            yourself.
+        macroFunction(macroContext, self receiver, self)
+    }.
+}.
+
 Type definition: {
     public virtual eager method analyzeAndTypeCheckFunctionApplicationNode: (node: ASTFunctionApplicationNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
         node
@@ -626,17 +652,120 @@ Type definition: {
             optimizePureApplicationWithEnvironment: environment
     }.
 
-    public virtual eager method analyzeAndTypeCheckSolvedMessageSendNode: (node: ASTMessageSendNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
-        node
+    public virtual eager method analyzeAndTypeCheckSolvedMessageSendNode: (node: ASTMessageSendNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := node
             analyzedType: AnyValue;
             receiver: (node receiver ifNotNil: (environment analyzeWithDecayedType: node receiver));
             arguments: (node arguments collect: {:(ASTNode)each :: ASTNode | environment analyzeWithDecayedType: each});
-            yourself
+            yourself.
+
+    public virtual eager method messageSendNodeStaticLookupDirectSelector: (selector: Symbol) ::=> MessageSendNodeStaticLookupResult := {
+        let foundMethod mutable => AnyValue := nil.
+        foundMethod := self lookupMacroSelector: selector.
+        foundMethod ifNil: {
+            foundMethod := self lookupSelector: selector.
+            foundMethod ifNil: {
+                foundMethod := self lookupFallbackSelector: selector.
+            }.
+        }.
+
+        foundMethod ifNotNil: (MessageSendNodeStaticLookupResult new
+            foundMethod: foundMethod;
+            owner: self;
+            selector: selector;
+            yourself)
     }.
 
-    #*public virtual eager method analyzeMessageSendNode: (node: ASTMessageSendNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
-        error("TODO").
-    }.*#
+    public virtual eager method messageSendNodeStaticLookupDoesNotUnderstandSelector ::=> MessageSendNodeStaticLookupResult := {
+        let foundMethod mutable => AnyValue := nil.
+        let selector := #doesNotUnderstand:.
+        foundMethod := self lookupMacroSelector: selector.
+        foundMethod ifNil: {
+            foundMethod := self lookupSelector: selector.
+            foundMethod ifNil: {
+                foundMethod := self lookupFallbackSelector: selector.
+            }.
+        }.
+
+        foundMethod ifNotNil: (MessageSendNodeStaticLookupResult new
+            foundMethod: foundMethod;
+            owner: self;
+            selector: selector;
+            isDoesNotUnderstand: true;
+            yourself)
+    }.
+
+    public virtual eager method messageSendNodeStaticLookupSelector: (selector: Symbol) ::=> MessageSendNodeStaticLookupResult
+        := (self messageSendNodeStaticLookupDirectSelector: selector) ifNil: (self messageSendNodeStaticLookupDoesNotUnderstandSelector).
+
+    public virtual eager method analyzeUnboundMessageNode: (node: ASTMessageSendNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := node
+            analyzedType: AnyValue;
+            receiver: (node receiver ifNotNil: (environment analyzeWithDecayedType: node receiver));
+            arguments: (node arguments collect: {:(ASTNode)each :: ASTNode | environment analyzeWithDecayedType: each});
+            yourself.
+
+    public virtual eager method analyzeOrdinaryMessageNode: (node: ASTMessageSendNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        node selector: (environment analyze: node selector withExpectedType: Symbol).
+
+        let staticMethod := node selector isLiteralNode
+            ifTrue: (self messageSendNodeStaticLookupSelector: (node selector downCastTo: ASTLiteralNode) value)
+            ifFalse: (nil).
+
+        staticMethod ifNotNil: {
+            staticMethod isMacro && staticMethod isDoesNotUnderstand ifTrue: {
+                return: (environment analyzeWithCurrentExpectedType: (node expandWithDoesNotUnderstandMacro: staticMethod foundMethod environment: environment))
+            }.
+
+            let hasLiteralReceiver := node receiver isLiteralNode.
+            let hasExplicitSolvedLookupType := node receiverLookupType isNotNil && node receiverLookupType isLiteralNode.
+            hasExplicitSolvedLookupType || hasLiteralReceiver || staticMethod shouldOptimizeLookup ifTrue: {
+                return: (ASTUnexpandedApplicationNode new
+                    sourcePosition: node sourcePosition;
+                    functionOrMacroExpression: (environment newLiteral: staticMethod foundMethod at: node sourcePosition);
+                    arguments: (Array with: node receiver) -- node arguments;
+                    analyzeWithEnvironment: environment
+                )
+            }.
+
+            staticMethod isDoesNotUnderstand ifFalse: {
+                node boundMethod: staticMethod foundMethod.
+                return: (staticMethod foundMethod __type__ analyzeAndTypeCheckSolvedMessageSendNode: node withEnvironment: environment)
+            }.
+        } ifNil: {
+            node isDynamic || node receiver analyzedType asDecayedType isDynamic ifFalse: {
+                node selector isLiteralNode ifTrue: {
+                    let selector := (node selector downCastTo: ASTLiteralNode) value.
+                    node semanticError: "Cannot send undeclared message with selector " -- selector printString -- " to receiver without a dynamic type."
+                } ifFalse: {
+                    node semanticError: "Cannot send undeclared message to receiver without a dynamic type."
+                }
+            }.
+        }.
+
+        self analyzeUnboundMessageNode: node withEnvironment: environment
+    }.
+
+    MetaBuilder class definition: {
+        public virtual eager method analyzeMessageSendNode: (node: ASTMessageSendNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+            node receiver isLiteralNode ifTrue: {
+                (node receiver downCastTo: ASTLiteralNode) value analyzeMessageSendNode: node withEnvironment: environment
+            } ifFalse: {
+                self analyzeOrdinaryMessageNode: node withEnvironment: environment
+            }
+        }.
+    }.
+
+    public virtual eager method analyzeMessageSendNode: (node: ASTMessageSendNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := self analyzeOrdinaryMessageNode: node withEnvironment: environment.
+}.
+
+ReferenceType definition: {
+    public override eager method messageSendNodeStaticLookupDirectSelector: (selector: Symbol) ::=> MessageSendNodeStaticLookupResult
+        := (super messageSendNodeStaticLookupDirectSelector: selector) ifNil: (baseType messageSendNodeStaticLookupDirectSelector: selector).
+
+    public override eager method messageSendNodeStaticLookupDoesNotUnderstandSelector ::=> MessageSendNodeStaticLookupResult
+        := super messageSendNodeStaticLookupDoesNotUnderstandSelector ifNil: (baseType messageSendNodeStaticLookupDoesNotUnderstandSelector).
 }.
 
 SimpleFunctionType definition: {
@@ -843,5 +972,53 @@ ASTFunctionApplicationNode definition: {
         let function := self functionExpression evaluateWithEnvironment: environment.
         let arguments := self arguments collect: {:(ASTNode)each :: Untyped | each evaluateWithEnvironment: environment}.
         function applyWithArguments: arguments
+    }.
+}.
+
+ASTMessageSendNode definition: {
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let result := self copy
+            analyzerToken: environment validAnalyzerToken;
+            yourself.
+
+        result receiver ifNotNil: {
+            result receiver: (environment analyzeWithDirectType: result receiver).
+
+            result receiver isTupleWithLookupStartingFromNode ifTrue: {
+                let receiverWithTypeNode := result receiver downCastTo: ASTTupleWithLookupStartingFromNode.
+                result
+                    receiver: receiverWithTypeNode tupleExpression;
+                    receiverLookupType: receiverWithTypeNode typeExpression
+            }.
+
+            let receiverType := result receiverLookupType ifNotNil: {
+                result receiverLookupType: (environment analyze: result receiverLookupType withExpectedType: Type).
+                result receiverLookupType isLiteralNode ifFalse: {
+                    result receiverLookupType semanticError: "Receiver explicit lookup type expression must be solved into a literal."
+                }.
+
+                (result receiverLookupType downCastTo: ASTLiteralNode) value
+            } ifNil: {
+                result receiver analyzedType
+            }.
+
+            receiverType analyzeMessageSendNode: result withEnvironment: environment
+        } ifNil: {
+            result selector: (environment analyze: result selector withExpectedType: Symbol).
+            result selector isLiteralNode ifFalse: {
+                result selector semanticError: "Message sends without receiver must have a literal selector."
+            }.
+
+            let selectorValue := (result selector downCastTo: ASTLiteralNode) value.
+            let identifierNode := ASTIdentifierReferenceNode new
+                sourcePosition: result selector sourcePosition;
+                value: selectorValue;
+                yourself.
+            ASTUnexpandedApplicationNode new
+                sourcePosition: result sourcePosition;
+                functionOrMacroExpression: identifierNode;
+                arguments: result arguments;
+                analyzeWithEnvironment: environment
+        }
     }.
 }.

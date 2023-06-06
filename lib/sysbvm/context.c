@@ -910,7 +910,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.tokenType = sysbvm_context_createIntrinsicClass(context, "SysmelToken", SYSBVM_NULL_TUPLE,
         "kind", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint8Type,
         "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sourcePositionType,
-        "value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
+        "value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anyValueType,
         NULL);
 
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.astNodeType, "ASTNode", SYSBVM_NULL_TUPLE,
@@ -1009,7 +1009,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "selector", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "arguments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "isDynamic", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
-        "boundMethod", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
+        "boundMethod", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anyValueType,
         NULL);
     context->roots.astMessageChainNodeType = sysbvm_context_createIntrinsicClass(context, "ASTMessageChainNode", context->roots.astNodeType,
         "receiver", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,

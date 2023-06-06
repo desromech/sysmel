@@ -3,7 +3,7 @@
 
 SYSBVM_API sysbvm_tuple_t sysbvm_token_create(sysbvm_context_t *context, sysbvm_tuple_t kind, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t value)
 {
-    sysbvm_token_t *result = (sysbvm_token_t*)sysbvm_context_allocatePointerTuple(context, context->roots.sourceCodeType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_token_t));
+    sysbvm_token_t *result = (sysbvm_token_t*)sysbvm_context_allocatePointerTuple(context, context->roots.sourcePositionType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_token_t));
     result->kind = kind;
     result->sourcePosition = sourcePosition;
     result->value = value;

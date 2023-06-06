@@ -13,6 +13,7 @@ __DefaultAnalysisQueueValueBox__ value waitPendingAnalysis.
 loadSourceNamed: "AnalysisQueue.sysmel".
 loadSourceNamed: "Environment.sysmel".
 loadSourceNamed: "SemanticAnalyzer.sysmel".
+__DefaultAnalysisQueueValueBox__ value waitPendingAnalysis.
 loadSourceNamed: "MonadicParser.sysmel".
 loadSourceNamed: "SysmelLanguage.sysmel".
 loadSourceNamed: "SourceCode.sysmel".

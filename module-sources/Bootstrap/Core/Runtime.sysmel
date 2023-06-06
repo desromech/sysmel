@@ -252,6 +252,9 @@ Type
 AnyValue
     withSelector: #isKindOf: addMethod: {:(AnyValue)self :(Type)expectedType :: Boolean |
         self __type__ isSubtypeOf: expectedType
+    } makePure makeFinal withEagerAnalysis;
+    withSelector: #answersTo: addMethod: {:(AnyValue)self :(Symbol)selector :: Boolean |
+        (self __type__ lookupSelector: selector) ~~ nil
     } makePure makeFinal withEagerAnalysis.
 
 ## Early new implementation
@@ -290,14 +293,34 @@ Type
     withSelector: #asReceiverType addMethod: {:(Type)self :: Type |
         self
     } makeVirtual withEagerAnalysis;
-    withSelector: #>> addMethod: {:(Type)self :(Symbol)selector |
+    withSelector: #lookupLocalMacroSelector: addMethod: {:(Type)self :(Symbol)selector |
+        let: #methodDictionary with: self macroMethodDictionary.
+        if: methodDictionary ~~ nil
+            then: (methodDictionary atOrNil: selector)
+            else: nil
+    } makeFinal;
+    withSelector: #lookupMacroSelector: addMethod: {:(Type)self :(Symbol)selector |
+        let: #method with: (self lookupLocalMacroSelector: selector).
+        if: method ~~ nil
+        then: method
+        else: {
+            let: #supertype with: self supertype.
+            if: supertype ~~ nil
+                then: (supertype lookupMacroSelector: selector)
+                else: (nil)
+        }
+    } makeFinal;
+    withSelector: #lookupLocalSelector: addMethod: {:(Type)self :(Symbol)selector |
         let: #methodDictionary with: self methodDictionary.
         if: methodDictionary ~~ nil
             then: (methodDictionary atOrNil: selector)
             else: nil
-    } withEagerAnalysis;
+    } makeFinal withEagerAnalysis;
+    withSelector: #>> addMethod: {:(Type)self :(Symbol)selector |
+        self lookupLocalSelector: selector
+    } makeFinal withEagerAnalysis;
     withSelector: #lookupSelector: addMethod: {:(Type)self :(Symbol)selector |
-        let: #method with: self >> selector.
+        let: #method with: (self lookupLocalSelector: selector).
         if: method ~~ nil
         then: method
         else: {
@@ -306,8 +329,25 @@ Type
                 then: (supertype lookupSelector: selector)
                 else: (nil)
         }
-    };
+    } makeFinal;
     ensureAnalysisOfMethodWithSelector: #lookupSelector:;
+    withSelector: #lookupLocalFallbackSelector: addMethod: {:(Type)self :(Symbol)selector |
+        let: #methodDictionary with: self fallbackMethodDictionary.
+        if: methodDictionary ~~ nil
+            then: (methodDictionary atOrNil: selector)
+            else: nil
+    } makeFinal;
+    withSelector: #lookupFallbackSelector: addMethod: {:(Type)self :(Symbol)selector |
+        let: #method with: (self lookupLocalFallbackSelector: selector).
+        if: method ~~ nil
+        then: method
+        else: {
+            let: #supertype with: self supertype.
+            if: supertype ~~ nil
+                then: (supertype lookupFallbackSelector: selector)
+                else: (nil)
+        }
+    } makeFinal;
     withSelector: #lookupLocalVirtualSelector: addMethod: {:(Type)self :(Symbol)selector |
         let: #methodDictionary with: self virtualMethodDictionary.
         if: methodDictionary ~~ nil
@@ -442,7 +482,7 @@ Type
                 ##astNode.
                 ASTDownCastNode makeForASTNode: astNode targetType: targetType
             } else: {
-                error((("Cannot coerce node from type " -- self printString) -- " into type ") -- targetType printString)
+                error((((astNode sourcePosition printString -- ": Cannot coerce node from type ") -- self printString) -- " into type ") -- targetType printString)
             }
         }
     } makeVirtual withEagerAnalysis;

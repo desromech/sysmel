@@ -497,6 +497,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_astMessageSendNode_create(sysbvm_context_t *con
     result->receiver = receiver;
     result->selector = selector;
     result->arguments = arguments;
+    result->isDynamic = SYSBVM_FALSE_TUPLE;
     return (sysbvm_tuple_t)result;
 }
 
