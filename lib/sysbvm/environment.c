@@ -100,6 +100,11 @@ SYSBVM_API bool sysbvm_symbolBinding_isAnalysisBinding(sysbvm_context_t *context
     return sysbvm_tuple_isKindOf(context, binding, context->roots.symbolAnalysisBindingType);
 }
 
+SYSBVM_API bool sysbvm_symbolBinding_isTupleSlotBinding(sysbvm_context_t *context, sysbvm_tuple_t binding)
+{
+    return sysbvm_tuple_isKindOf(context, binding, context->roots.symbolTupleSlotBindingType);
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_symbolArgumentBinding_create(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t name, sysbvm_tuple_t type, sysbvm_tuple_t ownerFunction, size_t vectorIndex)
 {
     sysbvm_symbolArgumentBinding_t *result = (sysbvm_symbolArgumentBinding_t*)sysbvm_context_allocatePointerTuple(context, context->roots.symbolArgumentBindingType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_symbolArgumentBinding_t));
@@ -586,6 +591,20 @@ SYSBVM_API sysbvm_tuple_t sysbvm_environment_lookFunctionAnalysisEnvironmentRecu
     return sysbvm_environment_lookFunctionAnalysisEnvironmentRecursively(context, ((sysbvm_environment_t*)environment)->parent);
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_functionAnalysisEnvironment_getOrCreateCaptureFor(sysbvm_context_t *context, sysbvm_functionAnalysisEnvironment_t *environment, sysbvm_tuple_t sourceBinding)
+{
+    sysbvm_tuple_t capturedBinding;
+    sysbvm_symbolBinding_t *sourceBindingObject = (sysbvm_symbolBinding_t*)sourceBinding;
+    sysbvm_tuple_t capturedBindingKey = sourceBindingObject->name ? sourceBindingObject->name : sourceBinding;
+    if(sysbvm_identityDictionary_find(environment->captureBindingTable, capturedBindingKey, &capturedBinding))
+        return capturedBinding;
+
+    capturedBinding = sysbvm_symbolCaptureBinding_create(context, sourceBinding, environment->functionDefinition, sysbvm_orderedCollection_getSize(environment->captureBindingList));
+    sysbvm_identityDictionary_atPut(context, environment->captureBindingTable, capturedBindingKey, capturedBinding);
+    sysbvm_orderedCollection_add(context, environment->captureBindingList, capturedBinding);
+    return capturedBinding;
+}
+
 SYSBVM_API bool sysbvm_analysisEnvironment_lookSymbolRecursively(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t symbol, sysbvm_tuple_t *outBinding)
 {
     *outBinding = SYSBVM_NULL_TUPLE;
@@ -633,11 +652,19 @@ SYSBVM_API bool sysbvm_analysisEnvironment_lookSymbolRecursively(sysbvm_context_
         if(sysbvm_symbolBinding_isAnalysisBinding(context, parentSymbol))
         {
             // Create the capture and store it.
-            sysbvm_tuple_t captureBinding = sysbvm_symbolCaptureBinding_create(context, parentSymbol, functionAnalysisEnvironment->functionDefinition, sysbvm_orderedCollection_getSize(functionAnalysisEnvironment->captureBindingList));
-            sysbvm_identityDictionary_atPut(context, functionAnalysisEnvironment->captureBindingTable, symbol, captureBinding);
-            sysbvm_orderedCollection_add(context, functionAnalysisEnvironment->captureBindingList, captureBinding);
-            *outBinding = captureBinding;
-            return true;
+            if(sysbvm_symbolBinding_isTupleSlotBinding(context, parentSymbol))
+            {
+                sysbvm_symbolTupleSlotBinding_t *sourceTupleSlotBinding = (sysbvm_symbolTupleSlotBinding_t*)parentSymbol;
+                sysbvm_tuple_t captureBinding = sysbvm_functionAnalysisEnvironment_getOrCreateCaptureFor(context, functionAnalysisEnvironment, sourceTupleSlotBinding->tupleBinding);
+                *outBinding = sysbvm_symbolTupleSlotBinding_create(context, captureBinding, sourceTupleSlotBinding->typeSlot);
+                return true;
+            }
+            else
+            {
+                sysbvm_tuple_t captureBinding = sysbvm_functionAnalysisEnvironment_getOrCreateCaptureFor(context, functionAnalysisEnvironment, parentSymbol);
+                *outBinding = captureBinding;
+                return true;
+            }
         }
 
         *outBinding = parentSymbol;

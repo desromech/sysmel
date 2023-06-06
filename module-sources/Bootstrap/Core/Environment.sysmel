@@ -5,8 +5,15 @@ SymbolBinding definition: {
 SymbolAnalysisBinding definition: {
     public eager override method isAnalysisBinding => Boolean := true.
 
-    public virtual method getOrCreateCaptureInFunctionAnalysisEnvironment: (environment: FunctionAnalysisEnvironment) ::=> SymbolBinding
+    public virtual method getOrCreateCaptureInFunctionAnalysisEnvironment: (environment: FunctionAnalysisEnvironment) ::=> SymbolAnalysisBinding
         := environment getOrCreateCaptureForParentBinding: self.
+}.
+
+SymbolTupleSlotBinding definition: {
+    public override method getOrCreateCaptureInFunctionAnalysisEnvironment: (environment: FunctionAnalysisEnvironment) ::=> SymbolAnalysisBinding
+        := self copy
+            tupleBinding: (environment getOrCreateCaptureForParentBinding: self tupleBinding);
+            yourself.
 }.
 
 Environment definition: {
@@ -133,8 +140,8 @@ FunctionAnalysisEnvironment definition: {
         innerFunctionList add: innerFunction
     }.
 
-    public eager method getOrCreateCaptureForParentBinding: (parentBinding: SymbolAnalysisBinding) ::=> SymbolBinding := {
-        captureBindingTable at: parentBinding ifAbsentPut: {:: SymbolBinding |
+    public eager method getOrCreateCaptureForParentBinding: (parentBinding: SymbolAnalysisBinding) ::=> SymbolAnalysisBinding := {
+        captureBindingTable at: parentBinding ifAbsentPut: {:: SymbolAnalysisBinding |
             let captureBinding := SymbolCaptureBinding new
                 sourcePosition: parentBinding sourcePosition;
                 name: parentBinding name;
@@ -163,6 +170,7 @@ FunctionAnalysisEnvironment definition: {
 }.
 
 SymbolAnalysisBinding ensureAnalysisOfMethodWithSelector: #getOrCreateCaptureInFunctionAnalysisEnvironment:.
+SymbolTupleSlotBinding ensureAnalysisOfMethodWithSelector: #getOrCreateCaptureInFunctionAnalysisEnvironment:.
 
 AnalysisAndEvaluationEnvironment definition: {
     public eager override method initializeWithParent: (theParent: Environment) ::=> Void := {
