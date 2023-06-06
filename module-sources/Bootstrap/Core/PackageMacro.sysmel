@@ -1,0 +1,7 @@
+public: #loadPackageNamed: with: {:(MacroContext)__macroContext__ :(ASTNode)packageName :: ASTNode |
+    ``{
+        printLine("Loading package ", `,packageName).
+        loadSourceNamed: `,packageName -- "/package.sysmel".
+        AnalysisQueue current waitPendingAnalysis
+    }.
+} makeMacro.

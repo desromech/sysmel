@@ -3019,6 +3019,12 @@ Environment
     withSelector: #setPublicSymbol:value: addMethod: {:(Environment)self :(Symbol)symbol :value :: value __type__ |
         self setSymbol: symbol value: value
     };
+    withSelector: #withSelector:addMacroMethod: addMethod: {:(Environment)self :(Symbol)symbol :method :: Void |
+        self setSymbol: symbol value: method
+    };
     withSelector: #withSelector:addMethod: addMethod: {:(Environment)self :(Symbol)symbol :method :: Void |
+        self setSymbol: symbol value: method
+    };
+    withSelector: #withSelector:addFallbackMethod: addMethod: {:(Environment)self :(Symbol)symbol :method :: Void |
         self setSymbol: symbol value: method
     }.

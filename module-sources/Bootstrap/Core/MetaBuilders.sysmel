@@ -653,7 +653,7 @@ MethodMetaBuilder
             expressions: (Array with: useSelf with: self body);
             yourself)
     };
-    withSelector: #finishMacroMethod addMethod: {:self :: ASTNode |
+    withSelector: #finishMacroMethodExpansion addMethod: {:self :: ASTNode |
         let: #macroContextArgument with: (ASTArgumentNode new
             sourcePosition: self sourcePosition;
             isForAll: false;

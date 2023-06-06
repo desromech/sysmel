@@ -1021,4 +1021,26 @@ ASTMessageSendNode definition: {
                 analyzeWithEnvironment: environment
         }
     }.
+
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+        let receiver := self receiver evaluateWithEnvironment: environment.
+        let selector := self selector evaluateWithEnvironment: environment.
+        let arguments := self arguments collect: {:(ASTNode)eachArgument :: Untyped | eachArgument evaluateWithEnvironment: environment}.
+
+        let receiverLookupType => Type := self receiverLookupType
+            ifNil: RawTuple::type(receiver)
+            ifNotNil: (self receiverLookupType evaluateWithEnvironment: environment).
+        let foundMethod := receiverLookupType lookupSelector: selector.
+        foundMethod ifNotNil: {
+            foundMethod applyWithArguments: (Array with: receiver) -- arguments
+        } ifNil: {
+            let doesNotUnderstand := receiverLookupType lookupSelector: #doesNotUnderstand:.
+            doesNotUnderstand ifNil: (self error: "Message " -- selector printString -- " not understood by " -- receiverLookupType printString -- ".").
+            doesNotUnderstand(receiver, Message new
+                selector: selector;
+                arguments: arguments;
+                yourself
+            )
+        }
+    }.
 }.

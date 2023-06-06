@@ -4,6 +4,7 @@ __DefaultAnalysisQueueValueBox__ value waitPendingAnalysis.
 
 loadSourceNamed: "RuntimeMacros.sysmel".
 loadSourceNamed: "MetaBuilders.sysmel".
+loadSourceNamed: "PackageMacro.sysmel".
 loadSourceNamed: "FixedArray.sysmel".
 loadSourceNamed: "Enum.sysmel".
 loadSourceNamed: "Struct.sysmel".
@@ -13,7 +14,7 @@ __DefaultAnalysisQueueValueBox__ value waitPendingAnalysis.
 loadSourceNamed: "AnalysisQueue.sysmel".
 loadSourceNamed: "Environment.sysmel".
 loadSourceNamed: "SemanticAnalyzer.sysmel".
-__DefaultAnalysisQueueValueBox__ value waitPendingAnalysis.
+AnalysisQueue current waitPendingAnalysis.
 loadSourceNamed: "MonadicParser.sysmel".
 loadSourceNamed: "SysmelLanguage.sysmel".
 loadSourceNamed: "SourceCode.sysmel".

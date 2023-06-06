@@ -1,10 +1,12 @@
 loadSourceNamed: "Core/package.sysmel".
 
-loadSourceNamed: "MiniSUnit/package.sysmel".
-loadSourceNamed: "CoreTests/package.sysmel".
+loadPackageNamed: "MiniSUnit".
+loadPackageNamed: "CoreTests".
 
-loadSourceNamed: "ImageBuilder/package.sysmel".
-loadSourceNamed: "Bytecode/package.sysmel".
-loadSourceNamed: "TAC/package.sysmel".
-loadSourceNamed: "Assembler/package.sysmel".
-loadSourceNamed: "SSA/package.sysmel".
+loadPackageNamed: "ImageBuilder".
+loadPackageNamed: "Bytecode".
+loadPackageNamed: "TAC".
+loadPackageNamed: "Assembler".
+loadPackageNamed: "SSA".
+
+printLine("Bootstrap package loading finished.").
