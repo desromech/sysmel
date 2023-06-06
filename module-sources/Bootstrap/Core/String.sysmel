@@ -322,3 +322,12 @@ Int64 extend: {
     public override final method printString => String
         := self asString.
 }.
+
+print adoptDefinitionOf: {:(Array)elements... :: Void |
+    elements do: {:each :: Void | each asString writeOntoStdout}
+}.
+
+printLine adoptDefinitionOf: {:(Array)elements... :: Void |
+    elements do: {:each :: Void | each asString writeOntoStdout}.
+    "\n" writeOntoStdout
+}.

@@ -624,7 +624,7 @@ SimpleFunctionType definition: {
         let expectedArgumentCount mutable := typeArgumentCount.
         let applicationArgumentCount := node arguments size.
         let startingArgumentIndex := isMemoizedTemplate ifTrue: 1sz ifFalse: 0sz.
-        isVariadic && typeArgumentCount ifTrue: {
+        isVariadic && (typeArgumentCount = 0sz) ifTrue: {
             node semanticError: "Variadic applications require at least a single argument."
         }.
 
@@ -652,7 +652,8 @@ SimpleFunctionType definition: {
                     ifFalse: AnyValue.
                 environment analyze: eachArgument withExpectedType: expectedType
             });
-            analyzedType: self canonicalResultType;
+            analyzedType: resultType;
+            applicationFlags: node applicationFlags | FunctionApplicationFlags::NoTypecheck;
             optimizePureApplicationWithEnvironment: environment
     }.
 

@@ -1,12 +1,3 @@
-let myPrint := {:(Array)elements... :: Void |
-    elements do: {:each :: Void | each asString writeOntoStdout}
-}.
-
-let myPrintLine := {:(Array)elements... :: Void |
-    elements do: {:each :: Void | each asString writeOntoStdout}.
-    "\n" writeOntoStdout
-}.
-
 let myObject := Object new.
 public externC function main(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
     "Hello World\n" writeOntoStdout.

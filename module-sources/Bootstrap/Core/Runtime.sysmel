@@ -644,28 +644,31 @@ ReferenceType
             else: (AnyValue refFor: self addressSpace).
     } makePure makeOverride;
     withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(ReferenceType)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
+        if: (self isSubtypeOf: targetType)
+        then: astNode
+        else: {
+            if: targetType isReferenceType then: {
+                error("TODO: Implement coercion between two reference types.")
+            } else: {
+                let: #sourcePosition with: astNode sourcePosition.
+                let: #analyzerToken with: environment analyzerToken.
+                let: #loadValueFunction with: self loadValueFunction.
+                let: #baseType with: self baseType.
 
-        if: targetType isReferenceType then: {
-            error("TODO: Implement coercion between two reference types.")
-        } else: {
-            let: #sourcePosition with: astNode sourcePosition.
-            let: #analyzerToken with: environment analyzerToken.
-            let: #loadValueFunction with: self loadValueFunction.
-            let: #baseType with: self baseType.
-
-            targetType
-                coerceASTNode: (ASTFunctionApplicationNode new
-                    sourcePosition: astNode sourcePosition;
-                    functionExpression: (ASTLiteralNode new
-                        value: loadValueFunction;
-                        analyzedType: loadValueFunction __type__;
+                targetType
+                    coerceASTNode: (ASTFunctionApplicationNode new
+                        sourcePosition: astNode sourcePosition;
+                        functionExpression: (ASTLiteralNode new
+                            value: loadValueFunction;
+                            analyzedType: loadValueFunction __type__;
+                            analyzerToken: analyzerToken;
+                            yourself);
+                        arguments: (astNode,);
+                        analyzedType: self baseType;
                         analyzerToken: analyzerToken;
-                        yourself);
-                    arguments: (astNode,);
-                    analyzedType: self baseType;
-                    analyzerToken: analyzerToken;
-                    yourself)
-                withEnvironment: environment
+                        yourself)
+                    withEnvironment: environment
+            }
         }.
     } makeOverride withEagerAnalysis.
 

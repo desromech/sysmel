@@ -566,6 +566,7 @@ ValueType extend: {
     }.
 
     public override method emitTacLoadFromPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        error("do not load").
         builder loadStruct: pointer constantOffset: constantOffset into: result
     }.
 
