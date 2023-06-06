@@ -708,6 +708,68 @@ DependentFunctionType definition: {
             then: AnyValue
             else: type.
 
+    public virtual eager method analyzeAndTypeCheckFunctionApplicationNode: (applicationNode: ASTFunctionApplicationNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let argumentNodeCount := argumentNodes size.
+        let directEvaluationArgumentNodeCount mutable := argumentNodeCount.
+        let applicationArgumentCount := applicationNode arguments size.
+
+        let isVariadic := self isVariadic.
+        isVariadic ifTrue: {
+            directEvaluationArgumentNodeCount = 0sz ifTrue: {
+                applicationNode semanticError: "Variadic functions require at least a single argument."
+            }.
+
+            directEvaluationArgumentNodeCount := directEvaluationArgumentNodeCount - 1sz.
+        }.
+
+        let isMemoizedTemplate := self isMemoizedTemplate.
+        isMemoizedTemplate ifTrue: {
+            error("TODO: Implement this case.").
+        }.
+
+        let sourceArgumentIndex mutable := 0sz.
+
+        let applicationEnvironment := self createActivationEnvironment.
+        let analyzedArguments := Array new: applicationArgumentCount.
+        argumentNodes doWithIndex: {:(ASTArgumentNode)typeArgumentNode :(Size)typeArgumentNodeIndex :: Void |
+            typeArgumentNode isForAll ifTrue: {
+                error("TODO: Implement support for forall arguments.").
+            } ifFalse: {
+                sourceArgumentIndex < applicationNode arguments size ifFalse: {
+                    applicationNode semanticError: "Function application is missing required arguments."
+                }.
+
+                let applicationArgument := applicationNode arguments at: sourceArgumentIndex.
+                let expectedType := typeArgumentNode evaluateDependentArgumentTypeInEnvironment: applicationEnvironment.
+                let analyzedArgument := environment analyze: applicationArgument withExpectedType: expectedType.
+                analyzedArguments at: sourceArgumentIndex put: analyzedArgument.
+                sourceArgumentIndex := sourceArgumentIndex + 1sz.
+
+                let applicationValue := analyzedArgument getOrCreateDependentApplicationValue.
+                applicationEnvironment bindArgumentNodeAt: typeArgumentNodeIndex value: applicationValue
+            }
+        }.
+
+        isVariadic not && (sourceArgumentIndex = applicationArgumentCount) ifFalse: {
+            applicationNode semanticError: "Message send is not receiving the expected number of arguments."
+        }.
+
+        ## Remaining variadic arguments.
+        while: (sourceArgumentIndex < applicationArgumentCount) do: {
+            let variadicArgument := environment analyzeWithDecayedType: (applicationNode arguments at: sourceArgumentIndex).
+            analyzedArguments at: sourceArgumentIndex put: variadicArgument
+        } continueWith: (sourceArgumentIndex := sourceArgumentIndex + 1sz).
+        applicationNode arguments: analyzedArguments.
+
+        let resultType => Type := resultTypeNode
+            ifNil: AnyValue
+            ifNotNil: (resultTypeNode evaluateWithEnvironment: applicationEnvironment).
+        applicationNode
+            analyzedType: (self canonicalizeDependentResultType: resultType);
+            applicationFlags: applicationNode applicationFlags | FunctionApplicationFlags::NoTypecheck;
+            optimizePureApplicationWithEnvironment: environment
+    }.
+
     public override eager method analyzeAndTypeCheckSolvedMessageSendNode: (sendNode: ASTMessageSendNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
         let applicationEnvironment := self createActivationEnvironment.
 

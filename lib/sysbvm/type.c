@@ -202,8 +202,8 @@ static sysbvm_tuple_t sysbvm_type_doCreateSimpleFunctionType(sysbvm_context_t *c
     result->super.super.totalSlotCount = supertype->totalSlotCount;
     result->super.super.instanceSize = sysbvm_tuple_size_encode(context, 0);
     result->super.super.instanceAlignment = sysbvm_tuple_size_encode(context, 0);
+    result->super.functionFlags = flags;
     result->argumentTypes = argumentTypes;
-    result->functionFlags = flags;
     result->resultType = resultType;
     return (sysbvm_tuple_t)result;
 }
@@ -519,8 +519,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createDependentFunctionType(sysbvm_context
     result->super.super.totalSlotCount = supertype->totalSlotCount;
     result->super.super.instanceSize = sysbvm_tuple_size_encode(context, 0);
     result->super.super.instanceAlignment = sysbvm_tuple_size_encode(context, 0);
+    result->super.functionFlags = sysbvm_tuple_bitflags_encode(flags);
     result->argumentNodes = argumentNodes;
-    result->functionFlags = sysbvm_tuple_bitflags_encode(flags);
     result->resultTypeNode = resultTypeNode;
 
     result->environment = environment;

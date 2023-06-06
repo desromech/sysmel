@@ -128,13 +128,13 @@ typedef struct sysbvm_typeSlot_s
 typedef struct sysbvm_functionType_s
 {
     sysbvm_type_tuple_t super;
+    sysbvm_tuple_t functionFlags;
 } sysbvm_functionType_t;
 
 typedef struct sysbvm_simpleFunctionType_s
 {
     sysbvm_functionType_t super;
     sysbvm_tuple_t argumentTypes;
-    sysbvm_tuple_t functionFlags;
     sysbvm_tuple_t resultType;
 } sysbvm_simpleFunctionType_t;
 
@@ -144,7 +144,6 @@ typedef struct sysbvm_dependentFunctionType_s
     sysbvm_tuple_t sourcePosition;
 
     sysbvm_tuple_t argumentNodes;
-    sysbvm_tuple_t functionFlags;
     sysbvm_tuple_t resultTypeNode;
 
     sysbvm_tuple_t environment;

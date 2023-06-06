@@ -1135,7 +1135,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_canonicalizeFunctionType(sysbvm_context_t 
     if(dependentFunctionType->resultTypeNode)
         resultType = sysbvm_astLiteralNode_getValue(dependentFunctionType->resultTypeNode);
 
-    sysbvm_bitflags_t flags = sysbvm_tuple_bitflags_decode(dependentFunctionType->functionFlags);
+    sysbvm_bitflags_t flags = sysbvm_tuple_bitflags_decode(dependentFunctionType->super.functionFlags);
     return sysbvm_type_createSimpleFunctionType(context, argumentTypes, flags, resultType);
 }
 
@@ -5323,7 +5323,7 @@ static sysbvm_tuple_t sysbvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckFunc
 
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    sysbvm_bitflags_t flags = sysbvm_tuple_bitflags_decode((*simpleFunctionType)->functionFlags);
+    sysbvm_bitflags_t flags = sysbvm_tuple_bitflags_decode((*simpleFunctionType)->super.functionFlags);
     bool isVariadic = (flags & SYSBVM_FUNCTION_FLAGS_VARIADIC) != 0;
     bool isMemoizedTemplate = (flags & SYSBVM_FUNCTION_FLAGS_MEMOIZED_TEMPLATE) == SYSBVM_FUNCTION_FLAGS_MEMOIZED_TEMPLATE;
 
@@ -5447,7 +5447,7 @@ static sysbvm_tuple_t sysbvm_dependentFunctionType_primitiveAnalyzeAndTypeCheckF
     gcFrame.applicationEnvironment = sysbvm_functionActivationEnvironment_createForDependentFunctionType(context, SYSBVM_NULL_TUPLE, (sysbvm_tuple_t)*dependentFunctionType);
 
     size_t argumentNodeCount = sysbvm_array_getSize((*dependentFunctionType)->argumentNodes);
-    sysbvm_bitflags_t flags = sysbvm_tuple_bitflags_decode((*dependentFunctionType)->functionFlags);
+    sysbvm_bitflags_t flags = sysbvm_tuple_bitflags_decode((*dependentFunctionType)->super.functionFlags);
     bool isVariadic = (flags & SYSBVM_FUNCTION_FLAGS_VARIADIC) != 0;
     if(isVariadic && argumentNodeCount == 0)
         sysbvm_error("Variadic functions at least one extra argument node.");

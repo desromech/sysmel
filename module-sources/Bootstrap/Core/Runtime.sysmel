@@ -2489,7 +2489,22 @@ PointerType
 FunctionType
     withSelector: #canonicalResultType addMethod: {:(FunctionType)self :: Type |
         self subclassResponsibility
-    } makeVirtual.
+    } makeVirtual;
+    withSelector: #hasFunctionFlags: addMethod: {:(FunctionType)self :(Bitflags)flag :: Boolean |
+        (self functionFlags & flag) = flag
+    };
+    withSelector: #isVariadic addMethod: {:(FunctionType)self :: Boolean |
+        self hasFunctionFlags: FunctionFlags::Variadic
+    };
+    withSelector: #isMemoized addMethod: {:(FunctionType)self :: Boolean |
+        self hasFunctionFlags: FunctionFlags::Memoized
+    };
+    withSelector: #isTemplate addMethod: {:(FunctionType)self :: Boolean |
+        self hasFunctionFlags: FunctionFlags::Template
+    };
+    withSelector: #isMemoizedTemplate addMethod: {:(FunctionType)self :: Boolean |
+        self hasFunctionFlags: FunctionFlags::Memoized | FunctionFlags::Template
+    }.
 
 DependentFunctionType
     withSelector: #canonicalResultType addMethod: {:(FunctionType)self :: Type |
@@ -2505,21 +2520,6 @@ SimpleFunctionType
         let: #resultType with: self resultType.
         if: resultType == nil then: Untyped else: resultType.
     } makeOverride;
-    withSelector: #hasFunctionFlags: addMethod: {:(SimpleFunctionType)self :(Bitflags)flag :: Boolean |
-        (self functionFlags & flag) = flag
-    };
-    withSelector: #isVariadic addMethod: {:(SimpleFunctionType)self :: Boolean |
-        self hasFunctionFlags: FunctionFlags::Variadic
-    };
-    withSelector: #isMemoized addMethod: {:(SimpleFunctionType)self :: Boolean |
-        self hasFunctionFlags: FunctionFlags::Memoized
-    };
-    withSelector: #isTemplate addMethod: {:(SimpleFunctionType)self :: Boolean |
-        self hasFunctionFlags: FunctionFlags::Template
-    };
-    withSelector: #isMemoizedTemplate addMethod: {:(SimpleFunctionType)self :: Boolean |
-        self hasFunctionFlags: FunctionFlags::Memoized | FunctionFlags::Template
-    };
     withSelector: #printOn: addMethod: {:(SimpleFunctionType)self :(Stream)stream :: Void |
         stream nextPut: '('.
         self argumentTypes doWithIndex: {:(Type)argumentType :(Size)index :: Void |
