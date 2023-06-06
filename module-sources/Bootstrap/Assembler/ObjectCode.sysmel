@@ -261,7 +261,7 @@ AsmObjectCodeSection definition: {
     public override method sizeOfByteEncoding => Size := data size.
     public override method canEncodeInBytes => Boolean := true.
 
-    public override method encodeInBytes: (destination: ByteArray) atOffset: (destinationOffset) ::=> Void := {
+    public override method encodeInBytes: (destination: ByteArray) atOffset: (destinationOffset: Size) ::=> Void := {
         destination replaceFrom: destinationOffset until: destinationOffset + data size with: data
     }.
 
@@ -453,7 +453,7 @@ public final class AsmObjectCodeCStringTable superclass: Object; definition: {
     public override method sizeOfByteEncoding => Size := size.
     public override method canEncodeInBytes => Boolean := true.
 
-    public override method encodeInBytes: (destination: ByteArray) atOffset: (destinationOffset) ::=> Void := {
+    public override method encodeInBytes: (destination: ByteArray) atOffset: (destinationOffset: Size) ::=> Void := {
         destination replaceFrom: destinationOffset until: destinationOffset + data size with: data
     }.
 }.
@@ -499,6 +499,9 @@ AsmSymbol definition: {
     public method makeFunction => Void := {
         type := AsmSymbol::Type::Function.
     }.
+
+    public method isFunction => Boolean
+        := type = AsmSymbol::Type::Function.
 
     public override method printOn: (stream: Stream) ::=> Void := {
         self isPrivate ifTrue: (stream nextPut: '.').
@@ -586,8 +589,12 @@ AsmObjectCodeRelocation definition: {
     public field symbol => AsmSymbol.
     public field offset => Size.
 
-    public abstract method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) ::=> Void
+    public abstract method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) withExtraAddend: (extraAddend: Int64) ::=> Void
         := self subclassResponsibility.
+
+    public method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection)::=> Void := {
+        self applyAddendInTargetSection: targetSection withExtraAddend: 0i64
+    }.
 }.
 
 public final class AsmObjectCodeRelocationAbsoluteInt8 superclass: AsmObjectCodeRelocation; definition: {
@@ -625,22 +632,22 @@ public final class AsmObjectCodeRelocationRelativeInt16 superclass: AsmObjectCod
 public final class AsmObjectCodeRelocationRelativeInt32 superclass: AsmObjectCodeRelocation; definition: {
     public field addend => Int32.
 
-    public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) ::=> Void
-        := targetSection data int32At: offset put: addend.
+    public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) withExtraAddend: (extraAddend: Int64) ::=> Void
+        := targetSection data int32At: offset put: addend + extraAddend asInt32.
 }.
 
 public final class AsmObjectCodeRelocationRelativeInt32AtPLT superclass: AsmObjectCodeRelocation; definition: {
     public field addend => Int32.
 
-    public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) ::=> Void
-        := targetSection data int32At: offset put: addend.
+    public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) withExtraAddend: (extraAddend: Int64) ::=> Void
+        := targetSection data int32At: offset put: addend + extraAddend asInt32.
 }.
 
 public final class AsmObjectCodeRelocationRelativeInt32AtGOT superclass: AsmObjectCodeRelocation; definition: {
     public field addend => Int32.
 
-    public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) ::=> Void
-        := targetSection data int32At: offset put: addend.
+    public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) withExtraAddend: (extraAddend: Int64) ::=> Void
+        := targetSection data int32At: offset put: addend + extraAddend asInt32.
 }.
 
 public final class AsmObjectCodeRelocationRelativeInt64 superclass: AsmObjectCodeRelocation; definition: {

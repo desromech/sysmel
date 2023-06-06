@@ -63,11 +63,17 @@ public final class AsmX86CompilationTarget superclass: AsmAbstractX86Compilation
     public override method elfMachine => UInt16
         := Elf::Machine::I386.
 
+    public override method coffMachine => UInt16
+        := Coff::ImageFileMachine::I386.
+
     public override method usesElfRelStyleRelocations => Boolean
         := true.
 
     public override method convertRelocationIntoElf32Rel: (relocation: AsmObjectCodeRelocation) withSymbolTable: (symbolTable: Elf32::SymbolTable) ::=> Elf32::Rel
         := relocation convertIntoX86RelWithSymbolTable: symbolTable.
+
+    public override method convertCoffRelocationTypeOf: (relocation: AsmObjectCodeRelocation) ::=> UInt16
+        := relocation x86::coffRelocationType.
 }.
 
 public final class AsmX86_64CompilationTarget superclass: AsmAbstractX86CompilationTarget; definition: {
@@ -83,6 +89,9 @@ public final class AsmX86_64CompilationTarget superclass: AsmAbstractX86Compilat
     public override method elfMachine => UInt16
         := Elf::Machine::X86_64.
 
+    public override method coffMachine => UInt16
+        := Coff::ImageFileMachine::AMD64.
+
     public override method usesElfRelStyleRelocations => Boolean
         := false.
 
@@ -92,6 +101,9 @@ public final class AsmX86_64CompilationTarget superclass: AsmAbstractX86Compilat
 
     public override method convertRelocationIntoElf64Rela: (relocation: AsmObjectCodeRelocation) withSymbolTable: (symbolTable: Elf64::SymbolTable) ::=> Elf64::Rela
         := relocation convertIntoX86_64RelaWithSymbolTable: symbolTable.
+
+    public override method convertCoffRelocationTypeOf: (relocation: AsmObjectCodeRelocation) ::=> UInt16
+        := relocation x86_64::coffRelocationType.
 }.
 
 AsmCompilationTarget extend: {
@@ -1180,10 +1192,16 @@ let instructionTemplateTable := #{
 }.
 
 AsmObjectCodeRelocation extend: {
-    public virtual method convertIntoX86RelWithSymbolTable: (symbolTable: Elf32::SymbolTable) ::=> Elf32::Rel
+    public abstract method convertIntoX86RelWithSymbolTable: (symbolTable: Elf32::SymbolTable) ::=> Elf32::Rel
         := self subclassResponsibility.
 
-    public virtual method convertIntoX86_64RelaWithSymbolTable: (symbolTable: Elf64::SymbolTable) ::=> Elf64::Rela
+    public abstract method convertIntoX86_64RelaWithSymbolTable: (symbolTable: Elf64::SymbolTable) ::=> Elf64::Rela
+        := self subclassResponsibility.
+
+    public abstract method x86::coffRelocationType => UInt16
+        := self subclassResponsibility.
+
+    public abstract method x86_64::coffRelocationType => UInt16
         := self subclassResponsibility.
 }.
 
@@ -1200,6 +1218,12 @@ AsmObjectCodeRelocationRelativeInt32 extend: {
             symbol: (symbolTable indexOfSymbol: symbol) type: Elf::X86_64::Rel::PC32;
             addend: addend asInt64 + symbol privateAddend;
             yourself.
+
+    public override method x86::coffRelocationType => UInt16
+        := Coff::RelocationType::I386::Rel32.
+
+    public override method x86_64::coffRelocationType => UInt16
+        := Coff::RelocationType::AMD64::Rel32.
 }.
 
 AsmObjectCodeRelocationRelativeInt32AtPLT extend: {

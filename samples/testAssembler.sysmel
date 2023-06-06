@@ -1,4 +1,4 @@
-let codeX86_64 := (AsmStream for: AsmCompilationTarget x86_64 useElf buildWith: {:builder |
+let codeX86_64Block := {:builder |
     let addFunctionSymbol := (builder symbolNamed: #add)
         makeFunction;
         makePublic;
@@ -29,13 +29,17 @@ let codeX86_64 := (AsmStream for: AsmCompilationTarget x86_64 useElf buildWith: 
                 x86::pop: X86::RBP;
                 x86::ret
         }.
-}).
+}.
 
-printLine(codeX86_64 fullPrintString).
-printLine(codeX86_64 compilationTarget).
-codeX86_64 assemble writeObjectToFileNamed: "test.x86_64.elf64".
+let codeX86_64Elf := AsmStream for: AsmCompilationTarget x86_64 useElf buildWith: codeX86_64Block.
+let codeX86_64Coff := AsmStream for: AsmCompilationTarget x86_64 useCoff buildWith: codeX86_64Block.
 
-let codeI386 := (AsmStream for: AsmCompilationTarget x86 useElf buildWith: {:builder |
+printLine(codeX86_64Elf fullPrintString).
+printLine(codeX86_64Elf compilationTarget).
+codeX86_64Elf assemble writeObjectToFileNamed: "test.x86_64.elf64".
+codeX86_64Coff assemble writeObjectToFileNamed: "test.x86_64.coff".
+
+let codeI386Block := {:builder |
     let addFunctionSymbol := (builder symbolNamed: #add)
         makeFunction;
         makePublic;
@@ -67,13 +71,16 @@ let codeI386 := (AsmStream for: AsmCompilationTarget x86 useElf buildWith: {:bui
                 x86::pop: X86::EBP;
                 x86::ret
         }.
-}).
+}.
+let codeI386Elf := AsmStream for: AsmCompilationTarget x86 useElf buildWith: codeI386Block.
+let codeI386Coff := AsmStream for: AsmCompilationTarget x86 useCoff buildWith: codeI386Block.
 
-printLine(codeI386 fullPrintString).
-##printLine(codeI386 compilationTarget).
-codeI386 assemble writeObjectToFileNamed: "test.i386.elf32".
+printLine(codeI386Elf fullPrintString).
+##printLine(codeI386Elf compilationTarget).
+codeI386Elf assemble writeObjectToFileNamed: "test.i386.elf32".
+codeI386Coff assemble writeObjectToFileNamed: "test.i386.coff".
 
-let codeArm := (AsmStream for: AsmCompilationTarget armv6k useElf buildWith: {:builder |
+let codeArmBlock := {:builder |
     builder
         textSection;
         align: 16sz unreachable: true;
@@ -82,6 +89,9 @@ let codeArm := (AsmStream for: AsmCompilationTarget armv6k useElf buildWith: {:b
                 arm::bkpt: 45u16;
                 arm::swi: 42u32
         }.
-}).
-printLine(codeArm fullPrintString).
-codeArm assemble writeObjectToFileNamed: "test.arm.elf32".
+}.
+let codeArmElf := AsmStream for: AsmCompilationTarget armv6k useElf buildWith: codeArmBlock.
+let codeArmCoff := AsmStream for: AsmCompilationTarget armv6k useCoff buildWith: codeArmBlock.
+printLine(codeArmElf fullPrintString).
+codeArmElf assemble writeObjectToFileNamed: "test.arm.elf32".
+codeArmCoff assemble writeObjectToFileNamed: "test.arm.coff".

@@ -7,6 +7,9 @@ public final class AsmARMCompilationTarget superclass: AsmCompilationTarget; def
     public override method elfMachine => UInt16
         := Elf::Machine::ARM.
 
+    public override method coffMachine => UInt16
+        := Coff::ImageFileMachine::ARM.
+
     public override method pointerSize => Size
         := 4sz.
 
