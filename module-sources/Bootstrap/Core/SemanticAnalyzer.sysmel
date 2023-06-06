@@ -642,6 +642,15 @@ ASTMessageSendNode definition: {
             yourself.
         macroFunction(macroContext, self receiver, self)
     }.
+
+    public eager method expandWithMacro: macroFunction environment: (environment: Environment) ::=> ASTNode := {
+        let macroContext := MacroContext new
+            sourceNode: self;
+            sourcePosition: self sourcePosition;
+            environment: environment;
+            yourself.
+        macroFunction applyWithArguments: (Array with: macroContext with: self receiver) -- self arguments
+    }.
 }.
 
 Type definition: {
@@ -697,6 +706,55 @@ Type definition: {
 
     public virtual eager method messageSendNodeStaticLookupSelector: (selector: Symbol) ::=> MessageSendNodeStaticLookupResult
         := (self messageSendNodeStaticLookupDirectSelector: selector) ifNil: (self messageSendNodeStaticLookupDoesNotUnderstandSelector).
+
+    public virtual eager method analyzeAndEvaluateUnboundMessageSendNode: (node: ASTMessageSendNode) forReceiver: (receiver: Untyped) selector: (selector: Symbol) withEnvironment: (environment: Environment) ::=> Untyped
+        := node semanticError: "Message " -- selector printString -- " not understood by " -- self printString -- ".".
+
+    public virtual eager method analyzeAndEvaluateOrdinaryMessageSendNode: (node: ASTMessageSendNode) forReceiver: (receiver: Untyped) withEnvironment: (environment: Environment) ::=> Untyped := {
+        let selector => Symbol := node selector analyzeAndEvaluateWithEnvironment: environment.
+        let staticMethod := self messageSendNodeStaticLookupSelector: selector.
+
+        staticMethod ifNotNil: {
+            ## Is this a macro that we should expand?
+            staticMethod isMacro ifTrue: {
+                let newMessageNode := node copy
+                    receiver: (ASTLiteralNode new
+                        analyzedType: RawTuple::type(receiver);
+                        sourcePosition: node receiver sourcePosition;
+                        value: receiver;
+                        yourself);
+                    selector: (ASTLiteralNode new
+                        analyzedType: selector __type__;
+                        sourcePosition: node selector sourcePosition;
+                        value: selector;
+                        yourself);
+                    yourself.
+                let expandedNode := staticMethod isDoesNotUnderstand
+                    ifTrue: (newMessageNode expandWithDoesNotUnderstandMacro: staticMethod foundMethod environment: environment)
+                    ifFalse: (newMessageNode expandWithMacro: staticMethod foundMethod environment: environment).
+                return: (expandedNode analyzeAndEvaluateWithEnvironment: environment)
+            }.
+
+            let arguments := node arguments collect: {:(ASTNode)eachArgumentNode :: Untyped |
+                eachArgumentNode analyzeAndEvaluateWithEnvironment: environment
+            }.
+
+            staticMethod isDoesNotUnderstand ifTrue: {
+                staticMethod foundMethod(receiver, Message new
+                    selector: selector;
+                    arguments: arguments;
+                    yourself)
+            } ifFalse: {
+                staticMethod foundMethod applyWithArguments: (Array with: receiver) -- arguments
+            }
+        } ifNil: {
+            ## Analyze and evaluate an unbound message.
+            self analyzeAndEvaluateUnboundMessageSendNode: node forReceiver: receiver selector: selector withEnvironment: environment
+        }.
+    }.
+
+    public virtual eager method analyzeAndEvaluateMessageSendNode: (node: ASTMessageSendNode) forReceiver: (receiver: Untyped) withEnvironment: (environment: Environment) ::=> Untyped
+        := self analyzeAndEvaluateOrdinaryMessageSendNode: node forReceiver: receiver withEnvironment: environment.
 
     public virtual eager method analyzeUnboundMessageNode: (node: ASTMessageSendNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
         := node
@@ -976,6 +1034,38 @@ ASTFunctionApplicationNode definition: {
 }.
 
 ASTMessageSendNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        self receiver ifNotNil: {
+            let receiver := self receiver analyzeAndEvaluateWithEnvironment: environment.
+            let receiverLookupType => Type := self receiverLookupType
+                ifNil: (RawTuple::type(receiver))
+                ifNotNil: (self receiverLookupType analyzeAndEvaluateWithEnvironment: environment).
+
+            receiverLookupType analyzeAndEvaluateMessageSendNode: self forReceiver: receiver withEnvironment: environment
+        } ifNil: {
+            let selector => Symbol := self selector analyzeAndEvaluateWithEnvironment: environment.
+            let binding := environment lookSymbolRecursively: selector.
+            binding ifNil: {
+                self semanticError: "Failed to find binding for symbol " -- selector printString
+            }.
+            
+            let methodObject => AnyValue := binding analyzeAndEvaluateWithEnvironment: environment at: self sourcePosition.
+
+            (methodObject answersTo: #isMacro) && methodObject isMacro ifTrue: {
+                let macroContext := MacroContext new
+                    sourceNode: self;
+                    sourcePosition: self sourcePosition;
+                    environment: environment;
+                    yourself.
+                let expandedMacro => ASTNode := methodObject applyWithArguments: (Array with: macroContext) -- self arguments.
+                expandedMacro analyzeAndEvaluateWithEnvironment: environment
+            } ifFalse: {
+                let arguments := self arguments collect: {:(ASTNode)each :: Untyped | each analyzeAndEvaluateWithEnvironment: environment }.
+                methodObject applyWithArguments: arguments
+            }
+        }.
+    }.
+
     public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
         let result := self copy
             analyzerToken: environment validAnalyzerToken;
