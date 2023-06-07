@@ -4,8 +4,4 @@ loadSourceNamed: "Dwarf.sysmel".
 loadSourceNamed: "ObjectHeap.sysmel".
 loadSourceNamed: "Coff.sysmel".
 loadSourceNamed: "Elf.sysmel".
-loadSourceNamed: "X86.sysmel".
-loadSourceNamed: "ARM.sysmel".
-
 loadSourceNamed: "TAC.sysmel".
-loadSourceNamed: "X86TAC.sysmel".

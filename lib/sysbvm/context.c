@@ -658,6 +658,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "continueTarget", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
         NULL);
     context->roots.analysisEnvironmentType = sysbvm_context_createIntrinsicClass(context, "AnalysisEnvironment", context->roots.analysisAndEvaluationEnvironmentType,
+        "hasBreakTarget", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        "hasContinueTarget", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         NULL);
     context->roots.functionActivationEnvironmentType = sysbvm_context_createIntrinsicClass(context, "FunctionActivationEnvironment", context->roots.analysisAndEvaluationEnvironmentType,
         "function", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionType,
@@ -676,8 +678,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "pragmaList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
         "innerFunctionList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
         "primitiveName", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
-        "hasBreakTarget", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
-        "hasContinueTarget", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        "returnTypeExpression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     context->roots.localAnalysisEnvironmentType = sysbvm_context_createIntrinsicClass(context, "LocalAnalysisEnvironment", context->roots.analysisEnvironmentType,
         NULL);
@@ -1215,15 +1216,13 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_createWithOptions(sysbvm_contextCrea
         if(!contextOptions->targetExceptionHandlingTableFormatName)
             contextOptions->targetExceptionHandlingTableFormatName = contextOptions->hostExceptionHandlingTableFormatName;
         
-        // FIXME: Fix the GC bug that gets triggered by this.
-        /*sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildArchitecture__", sysbvm_symbol_internWithCString(context, contextOptions->buildArchitectureName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildArchitecture__", sysbvm_symbol_internWithCString(context, contextOptions->buildArchitectureName));
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildVendor__", sysbvm_symbol_internWithCString(context, contextOptions->buildVendorName));
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildPlatform__", sysbvm_symbol_internWithCString(context, contextOptions->buildPlatformName));
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildAbi__", sysbvm_symbol_internWithCString(context, contextOptions->buildAbiName));
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildObjectFile__", sysbvm_symbol_internWithCString(context, contextOptions->buildObjectFileName));
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildDebugInformationFormat__", sysbvm_symbol_internWithCString(context, contextOptions->buildDebugInformationFormatName));
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildExceptionHandlingTableFormat__", sysbvm_symbol_internWithCString(context, contextOptions->buildExceptionHandlingTableFormatName));
-        */
 
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__HostArchitecture__", sysbvm_symbol_internWithCString(context, contextOptions->hostArchitectureName));
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__HostVendor__", sysbvm_symbol_internWithCString(context, contextOptions->hostVendorName));

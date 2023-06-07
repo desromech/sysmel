@@ -1134,3 +1134,214 @@ ASTMessageSendNode definition: {
         }
     }.
 }.
+
+ASTTupleWithLookupStartingFromNode definition: {
+
+}.
+
+ASTTupleSlotNamedAtNode definition: {
+
+}.
+
+ASTTupleSlotNamedReferenceAtNode definition: {
+
+}.
+
+ASTTupleSlotNamedAtPutNode definition: {
+
+}.
+
+ASTUseNamedSlotsOfNode definition: {
+
+}.
+
+ASTBreakNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        self semanticError: "TODO: ASTBreakNode analyzeAndEvaluateWithEnvironment"
+    }.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        environment hasValidBreakTarget ifFalse: {
+            self semanticError: "Cannot a break statement in this location."
+        }.
+
+        self copy
+            analyzedType: ControlFlowBreakType;
+            analyzerToken: environment validAnalyzerToken;
+            yourself
+    }.
+
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+        self semanticError: "TODO: ASTBreakNode analyzeWithEnvironment"
+    }.
+}.
+
+ASTContinueNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        self semanticError: "TODO: ASTContinueNode analyzeAndEvaluateWithEnvironment"
+    }.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        environment hasValidContinueTarget ifFalse: {
+            self semanticError: "Cannot a continue statement in this location."
+        }.
+        
+        self copy
+            analyzedType: ControlFlowContinueType;
+            analyzerToken: environment validAnalyzerToken;
+            yourself
+    }.
+
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+        self semanticError: "TODO: ASTContinueNode analyzeWithEnvironment"
+    }.
+}.
+
+Type definition: {
+    public method computeTypeHierarchyDepth => Int32
+        := supertype ifNil: 0i32 ifNotNil: supertype computeTypeHierarchyDepth + 1i32.
+    Type ensureAnalysisOfMethodWithSelector: #computeTypeHierarchyDepth.
+
+    public eager method computeTypeHierarchyLowestCommonAncestorWith: (otherType: Type) ::=> Type := {
+        let leftType mutable := self.
+        let leftTypeDepth mutable := leftType computeTypeHierarchyDepth.
+
+        let rightType mutable := self.
+        let rightTypeDepth mutable := rightType computeTypeHierarchyDepth.
+
+        while: leftTypeDepth > rightTypeDepth do: {
+            leftType := leftType supertype.
+            leftTypeDepth := leftTypeDepth - 1i32.
+        }.
+
+        while: rightTypeDepth > rightTypeDepth do: {
+            rightType := rightType supertype.
+            rightTypeDepth := rightTypeDepth - 1i32.
+        }.
+
+        while: leftType isNotNil && rightType isNotNil && (leftType ~~ rightType) do: {
+            leftType := leftType supertype.
+            rightType := rightType supertype.
+        }.
+
+        leftType isNil || rightType isNil
+            ifTrue: nil
+            ifFalse: leftType
+    }.
+
+    public virtual eager method computeConditionCoercionTypeWithOrdinaryType: (otherType: Type) ::=> Type := {
+        (self computeTypeHierarchyLowestCommonAncestorWith: otherType) ifNil: AnyValue
+    }.
+
+    public virtual eager method computeConditionCoercionTypeWithControlFlowEscapeType: (otherType: Type) ::=> Type
+        := self.
+
+    public virtual eager method computeConditionCoercionTypeWithUndefinedType: (otherType: Type) ::=> Type
+        := self.
+
+    public virtual eager method computeConditionCoercionTypeWith: (otherType: Type) ::=> Type
+        := otherType computeConditionCoercionTypeWithOrdinaryType: self.
+}.
+
+UndefinedObject __type__ definition: {
+    public override eager method computeConditionCoercionTypeWithOrdinaryType: (otherType: Type) ::=> Type
+        := otherType.
+
+    public override eager method computeConditionCoercionTypeWith: (otherType: Type) ::=> Type
+        := otherType computeConditionCoercionTypeWithUndefinedType: self.
+}.
+
+ControlFlowEscapeType __type__ definition: {
+    public override eager method computeConditionCoercionTypeWithOrdinaryType: (otherType: Type) ::=> Type
+        := otherType.
+
+    public override eager method computeConditionCoercionTypeWith: (otherType: Type) ::=> Type
+        := otherType computeConditionCoercionTypeWithControlFlowEscapeType: self.
+}.
+
+ASTIfNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        let condition => Boolean := self conditionExpression analyzeAndEvaluateWithEnvironment: environment.
+        condition ifTrue: {
+            self trueExpression
+                ifNil: {void}
+                ifNotNil: {self trueExpression analyzeAndEvaluateWithEnvironment: environment}
+        } ifFalse: {
+            self falseExpression
+                ifNil: {void}
+                ifNotNil: {self falseExpression analyzeAndEvaluateWithEnvironment: environment}
+        }
+    }.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let result := self copy
+            analyzedType: AnyValue;
+            analyzerToken: environment validAnalyzerToken;
+            conditionExpression: (environment analyze: self conditionExpression withExpectedType: Boolean);
+            yourself.
+        result trueExpression ifNotNil: {
+            result trueExpression: (environment analyzeWithCurrentExpectedType: result trueExpression)
+        }.
+        result falseExpression ifNotNil: {
+            result falseExpression: (environment analyzeWithCurrentExpectedType: result falseExpression)
+        }.
+
+        ## Optimize the case where the condition is a constant.
+        result conditionExpression isLiteralNode ifTrue: {
+            let literalCondition => Boolean := (result conditionExpression downCastTo: ASTLiteralNode) value.
+            let literalResultNode := literalCondition
+                ifTrue: result trueExpression
+                ifFalse: result falseExpression.
+            return: (literalResultNode ifNil: (environment newLiteral: void at: self sourcePosition))
+        }.
+
+        result trueExpression isNotNil && result falseExpression isNotNil ifTrue: {
+            result analyzedType: (result trueExpression analyzedType computeConditionCoercionTypeWith: result falseExpression analyzedType)
+        } ifFalse: {
+            (result trueExpression isNil || result falseExpression isNil) ifTrue: {
+                result analyzedType: Void
+            }
+        }.
+
+        result
+    }.
+
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+        let condition => Boolean := self conditionExpression evaluateWithEnvironment: environment.
+        condition ifTrue: {
+            self trueExpression
+                ifNil: {void}
+                ifNotNil: {self trueExpression evaluateWithEnvironment: environment}
+        } ifFalse: {
+            self falseExpression
+                ifNil: {void}
+                ifNotNil: {self falseExpression evaluateWithEnvironment: environment}
+        }
+    }.
+}.
+
+ASTReturnNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        self semanticError: "TODO: ASTReturnNode analyzeAndEvaluateWithEnvironment"
+    }.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := self copy
+            analyzedType: ControlFlowReturnType;
+            analyzerToken: environment validAnalyzerToken;
+            expression: (environment analyze: self expression withExpectedTypeExpression: environment lookReturnTypeExpression at: self sourcePosition)
+                node;
+            yourself.
+
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+        self semanticError: "TODO: ASTReturnNode evaluateWithEnvironment"
+    }.
+}.
+
+ASTDoWhileContinueWithNode definition: {
+
+}.
+
+ASTWhileContinueWithNode definition: {
+
+}.

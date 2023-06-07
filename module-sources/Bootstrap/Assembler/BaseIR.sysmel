@@ -1816,3 +1816,13 @@ AsmStackMap definition: {
         locals add: bindingMap
     }.
 }.
+
+AsmCompilationTarget definition: {
+    __Meta__ definition: {
+        public virtual method isDefault => Boolean
+            := false.
+
+        public method default => AsmCompilationTarget
+            := nil.
+    }.
+}.

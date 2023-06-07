@@ -1181,6 +1181,7 @@ static void sysbvm_functionDefinition_analyzeType(sysbvm_context_t *context, sys
     (*functionDefinition)->analysisEnvironment = gcFrame.analysisEnvironment;
     (*functionDefinition)->analyzedArgumentNodes = gcFrame.analyzedArgumentsNode;
     (*functionDefinition)->analyzedResultTypeNode = gcFrame.analyzedResultTypeNode;
+    gcFrame.analysisEnvironmentObject->returnTypeExpression = (*functionDefinition)->analyzedResultTypeNode;
 
     (*functionDefinition)->bytecode = SYSBVM_NULL_TUPLE;
 

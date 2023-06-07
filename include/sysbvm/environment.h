@@ -53,9 +53,16 @@ typedef struct sysbvm_functionActivationEnvironment_s
     sysbvm_tuple_t valueVector;
 } sysbvm_functionActivationEnvironment_t;
 
-typedef struct sysbvm_functionAnalysisEnvironment_s
+typedef struct sysbvm_analysisEnvironment_s
 {
     sysbvm_analysisAndEvaluationEnvironment_t super;
+    sysbvm_tuple_t hasBreakTarget;
+    sysbvm_tuple_t hasContinueTarget;
+} sysbvm_analysisEnvironment_t;
+
+typedef struct sysbvm_functionAnalysisEnvironment_s
+{
+    sysbvm_analysisEnvironment_t super;
     sysbvm_tuple_t functionDefinition;
     sysbvm_tuple_t captureBindingTable;
     sysbvm_tuple_t captureBindingList;
@@ -64,13 +71,12 @@ typedef struct sysbvm_functionAnalysisEnvironment_s
     sysbvm_tuple_t pragmaList;
     sysbvm_tuple_t innerFunctionList;
     sysbvm_tuple_t primitiveName;
-    sysbvm_tuple_t hasBreakTarget;
-    sysbvm_tuple_t hasContinueTarget;
+    sysbvm_tuple_t returnTypeExpression;
 } sysbvm_functionAnalysisEnvironment_t;
 
 typedef struct sysbvm_localAnalysisEnvironment_s
 {
-    sysbvm_analysisAndEvaluationEnvironment_t super;
+    sysbvm_analysisEnvironment_t super;
 } sysbvm_localAnalysisEnvironment_t;
 
 typedef struct sysbvm_symbolBinding_s

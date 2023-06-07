@@ -284,7 +284,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionActivationEnvironment_createForDependen
 SYSBVM_API sysbvm_tuple_t sysbvm_functionAnalysisEnvironment_create(sysbvm_context_t *context, sysbvm_tuple_t parent, sysbvm_tuple_t functionDefinition)
 {
     sysbvm_functionAnalysisEnvironment_t *result = (sysbvm_functionAnalysisEnvironment_t*)sysbvm_context_allocatePointerTuple(context, context->roots.functionAnalysisEnvironmentType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_functionAnalysisEnvironment_t));
-    result->super.super.parent = parent;
+    result->super.super.super.parent = parent;
     result->functionDefinition = functionDefinition;
     result->captureBindingTable = sysbvm_identityDictionary_create(context);
     result->captureBindingList = sysbvm_orderedCollection_create(context);
@@ -292,16 +292,18 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionAnalysisEnvironment_create(sysbvm_conte
     result->localBindingList = sysbvm_orderedCollection_create(context);
     result->innerFunctionList = sysbvm_orderedCollection_create(context);
     result->pragmaList = sysbvm_orderedCollection_create(context);
-    result->hasBreakTarget = SYSBVM_FALSE_TUPLE;
-    result->hasContinueTarget = SYSBVM_FALSE_TUPLE;
+    result->super.hasBreakTarget = SYSBVM_FALSE_TUPLE;
+    result->super.hasContinueTarget = SYSBVM_FALSE_TUPLE;
     return (sysbvm_tuple_t)result;
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_localAnalysisEnvironment_create(sysbvm_context_t *context, sysbvm_tuple_t parent)
 {
     sysbvm_localAnalysisEnvironment_t *result = (sysbvm_localAnalysisEnvironment_t*)sysbvm_context_allocatePointerTuple(context, context->roots.localAnalysisEnvironmentType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_localAnalysisEnvironment_t));
-    result->super.super.parent = parent;
-    result->super.super.symbolTable = sysbvm_identityDictionary_create(context);
+    result->super.super.super.parent = parent;
+    result->super.super.super.symbolTable = sysbvm_identityDictionary_create(context);
+    result->super.hasBreakTarget = SYSBVM_FALSE_TUPLE;
+    result->super.hasContinueTarget = SYSBVM_FALSE_TUPLE;
     return (sysbvm_tuple_t)result;
 }
 

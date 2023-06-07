@@ -73,9 +73,23 @@ Environment definition: {
     public virtual method lookSymbolRecursively: (symbol: Symbol) ::=> SymbolBinding
         := (self lookLocalSymbol: symbol)
             ifNil: (parent ifNotNil: (parent lookSymbolRecursively: symbol)).
+
+    public virtual method lookReturnTypeExpression => ASTNode
+        := parent ifNotNil: parent lookReturnTypeExpression.
+
+    public virtual method hasValidBreakTarget => Boolean
+        := parent ifNil: false ifNotNil: parent hasValidBreakTarget.
+
+    public virtual method hasValidContinueTarget => Boolean
+        := parent ifNil: false ifNotNil: parent hasValidBreakTarget.
 }.
 
-Environment ensureAnalysisOfMethodWithSelector: #lookSymbolRecursively:.
+Environment
+    ensureAnalysisOfMethodWithSelector: #lookSymbolRecursively:;
+    ensureAnalysisOfMethodWithSelector: #lookReturnTypeExpression;
+    ensureAnalysisOfMethodWithSelector: #hasValidBreakTarget;
+    ensureAnalysisOfMethodWithSelector: #hasValidContinueTarget.
+    
 
 TypeInferenceType __type__ extend: {
     public override eager method coerceASTNode: (node: ASTNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
@@ -102,6 +116,24 @@ Environment definition: {
         := self error: "Cannot have a function analysis environment in this context.".
 }.
 
+AnalysisEnvironment definition: {
+    public eager override method hasValidBreakTarget => Boolean
+        := hasBreakTarget.
+
+    public eager override method hasValidContinueTarget => Boolean
+        := hasContinueTarget.
+}.
+
+LocalAnalysisEnvironment definition: {
+    public eager override method initializeWithParent: (theParent: Environment) ::=> Void := {
+        super initializeWithParent: theParent.
+        theParent ifNotNil: {
+            hasBreakTarget := theParent hasValidBreakTarget.
+            hasContinueTarget := theParent hasValidContinueTarget.
+        }.
+    }.
+}.
+
 FunctionAnalysisEnvironment definition: {
     public eager override method initialize => Void := {
         super initialize.
@@ -116,6 +148,9 @@ FunctionAnalysisEnvironment definition: {
     public eager override method lookFunctionAnalysisEnvironmentRecursively => FunctionAnalysisEnvironment
         := self.
 
+    public eager override method lookReturnTypeExpression => ASTNode
+        := returnTypeExpression.
+  
     public eager virtual final method setNewSymbol: (name: Symbol) argumentBindingOfType: (bindingType: Type) at: (sourcePosition: SourcePosition) ::=> SymbolBinding := {
         let binding := SymbolArgumentBinding new
             name: name;
