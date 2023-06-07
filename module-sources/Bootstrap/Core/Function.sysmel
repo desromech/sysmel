@@ -1,0 +1,15 @@
+Function definition: {
+    public eager method setupWithFunctionDefinition: (newDefinition: FunctionDefinition) captureEnvironment: (newCaptureEnvironment: Environment) ::=> Void := {
+        flags := newDefinition flags.
+        argumentCount := newDefinition argumentCount.
+        captureEnvironment := newCaptureEnvironment.
+        definition := newDefinition.
+    }.
+
+    public eager method setupWithFunctionDefinition: (newDefinition: FunctionDefinition) captureVector: (newCaptureVector: Array) ::=> Void := {
+        flags := newDefinition flags.
+        argumentCount := newDefinition argumentCount.
+        captureVector := newCaptureVector.
+        definition := newDefinition.
+    }.
+}.

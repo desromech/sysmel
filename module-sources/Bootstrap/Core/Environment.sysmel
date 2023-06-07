@@ -1,5 +1,13 @@
 SymbolBinding definition: {
     public eager virtual method isAnalysisBinding => Boolean := false.
+
+    public eager abstract method evaluateInEnvironment: (environment: Environment) ::=> Untyped
+        := self subclassResponsibility.
+}.
+
+SymbolValueBinding definition: {
+    public eager abstract method evaluateInEnvironment: (environment: Environment) ::=> Untyped
+        := self value.
 }.
 
 SymbolAnalysisBinding definition: {
@@ -85,6 +93,16 @@ Environment definition: {
 
     public virtual eager method addUseTupleWithNamedSlotsBinding: (binding: SymbolBinding) ::=> Void
         := self error: "Not an analysis and evaluation environment.".
+
+    public method lookAnalysisQueue => AnalysisQueue
+        := analysisQueue ifNil: (parent ifNotNil: parent lookAnalysisQueue).
+    Environment ensureAnalysisOfMethodWithSelector: #lookAnalysisQueue.
+
+    public eager method enqueuePendingAnalysis: (programEntity: ProgramEntity) ::=> Void
+        := (self lookAnalysisQueue) enqueueProgramEntity: programEntity.
+
+    public virtual eager method evaluateSymbolBinding: (symbolBinding: SymbolBinding) ::=> Untyped
+        := symbolBinding evaluateInEnvironment: self.
 }.
 
 Environment

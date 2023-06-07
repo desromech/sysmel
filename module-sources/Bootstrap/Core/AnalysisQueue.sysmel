@@ -11,4 +11,17 @@ AnalysisQueue definition: {
         public method current => AnalysisQueue
             := self default.
     }.
+
+    public method enqueueProgramEntity: (programEntity: ProgramEntity) ::=> Void := {
+        let newEntry := AnalysisQueueEntry new
+            programEntity: programEntity;
+            yourself.
+
+        lastEntry ifNotNil: {
+            lastEntry nextEntry: newEntry.
+            lastEntry := newEntry
+        } ifNil: {
+            firstEntry := lastEntry := newEntry
+        }.
+    }.
 }.

@@ -226,6 +226,115 @@ ASTLiteralNode definition: {
     }.
 }.
 
+ASTLambdaNode definition: {
+    public eager method argumentCount => Size := {
+        let result mutable := 0sz.
+        self arguments do: {:(ASTArgumentNode)eachArgument :: Void |
+            eachArgument isForAll ifFalse: {
+                result := result + 1sz.
+            }
+        }.
+
+        result
+    }.
+
+    public eager method makeFunctionDefinitionWithName: (name: Symbol) environment: (environment: Environment) ::=> FunctionDefinition
+        := FunctionDefinition new
+            sourcePosition: self sourcePosition;
+            flags: self flags;
+            argumentCount: self argumentCount;
+            definitionEnvironment: environment;
+            definitionArgumentNodes: self arguments;
+            definitionResultTypeNode: self resultType;
+            definitionBodyNode: self body;
+            yourself.
+
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        let name => Symbol := self name ifNotNil: (self name analyzeAndEvaluateWithEnvironment: environment).
+
+        let functionDefinition := self makeFunctionDefinitionWithName: name environment: environment.
+
+        let result := self hasLazyAnalysis == false ifTrue: {
+            functionDefinition ensureAnalysis.
+            let captureVector := functionDefinition analyzedCaptures collect: {:(SymbolBinding)eachCapture :: Untyped |
+                environment evaluateSymbolBinding: eachCapture
+            }.
+
+            let closure => Function := functionDefinition analyzedType new.
+            closure setupWithFunctionDefinition: functionDefinition captureVector: captureVector.
+            closure.
+        } ifFalse: {
+            functionDefinition ensureTypeAnalysis.
+            let closure => Function := functionDefinition analyzedType new.
+            closure setupWithFunctionDefinition: functionDefinition captureEnvironment: environment.
+            environment enqueuePendingAnalysis: closure.
+            closure
+        }.
+
+        name ifNotNil: {
+            environment setNewSymbol: name valueBinding: result at: self sourcePosition
+        }.
+
+        result
+    }.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let result := self copy
+            analyzerToken: environment validAnalyzerToken;
+            yourself.
+        
+        ## Construct the lambda definition.
+        let name => Symbol := result name ifNotNil: {
+            result name: (environment analyze: result name withExpectedType: Symbol).
+            result name isLiteralNode ifFalse: {
+                result name semanticError: "Lambda analyzed name must be a literal."
+            }.
+
+            (result name downCastTo: ASTLiteralNode) value
+        }.
+
+        ## Construct the lambda function definition.
+        let functionDefinition := result makeFunctionDefinitionWithName: name environment: environment.
+        environment addInnerFunction: functionDefinition.
+        result functionDefinition: functionDefinition.
+
+        ## Analyze the function definition.
+        functionDefinition ensureAnalysis.
+        result analyzedType: functionDefinition analyzedType.
+
+        ## Optimize the captureless lambdas.
+        functionDefinition analyzedCaptures isEmpty ifTrue: {
+            let capturelessClosure => Function := functionDefinition analyzedType new.
+            capturelessClosure setupWithFunctionDefinition: functionDefinition captureVector: #().
+            name ifNotNil: {
+                environment setNewSymbol: name valueBinding: capturelessClosure at: self sourcePosition
+            }.
+
+            return: (environment newLiteral: capturelessClosure at: self sourcePosition)
+        }.
+
+        name ifNotNil: {
+            result binding: (environment setNewSymbol: name localBindingOfType: result analyzedType at: result sourcePosition)
+        }.
+
+        result
+    }.
+
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+        let functionDefinition := self functionDefinition.
+        let captureVector := functionDefinition analyzedCaptures collect: {:(SymbolBinding)eachCapture :: Untyped |
+            eachCapture evaluateWithActivationEnvironment: environment
+        }.
+
+        let closure => Function := functionDefinition analyzedType new.
+        closure setupWithFunctionDefinition: functionDefinition captureVector: captureVector.
+        self binding ifNotNil: {
+            environment setBinding: self binding activationValue: closure
+        }.
+        closure.
+    }.
+}.
+
 ASTLexicalBlockNode definition: {
     public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
         let childEnvironment := AnalysisAndEvaluationEnvironment parent: environment.
