@@ -431,6 +431,10 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.plusSelector = sysbvm_symbol_internWithCString(context, "+");
     context->roots.subscriptSelector = sysbvm_symbol_internWithCString(context, "[]:");
     context->roots.addressSelector = sysbvm_symbol_internWithCString(context, "address");
+    context->roots.loadSelector = sysbvm_symbol_internWithCString(context, "load");
+    context->roots.storeSelector = sysbvm_symbol_internWithCString(context, "store:");
+    context->roots.refLoadSelector = sysbvm_symbol_internWithCString(context, "__refLoad__");
+    context->roots.refStoreSelector = sysbvm_symbol_internWithCString(context, "__refStore__:");
 
     context->roots.astNodeAnalysisSelector = sysbvm_symbol_internWithCString(context, "analyzeWithEnvironment:");
     context->roots.astNodeEvaluationSelector = sysbvm_symbol_internWithCString(context, "evaluateWithEnvironment:");

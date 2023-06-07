@@ -197,6 +197,12 @@
             <targetDefinedPrimitive>
             primitiveFailedError()
         }.
+
+        public pure final method asInteger ::=> Integer := {
+            <primitive: (primitivePrefix -- "asInteger") asSymbol>
+            <targetDefinedPrimitive>
+            primitiveFailedError()
+        }.
     }
 }.
 

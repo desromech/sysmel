@@ -24,6 +24,34 @@ primitiveFailedError __type__: (SimpleFunctionTypeTemplate((), 0bflgs, Unwinds))
     primitiveFailedError()
 }.
 
+(PointerLikeType::load) adoptDefinitionOf: {:(Untyped)pointer :: Untyped |
+    <primitive: #PointerLikeType::load>
+    <targetDefinedPrimitive>
+    primitiveFailedError()
+}.
+
+(PointerLikeType::store:) adoptDefinitionOf: {:(Untyped)pointer :(AnyValue)value :: Void |
+    <primitive: #PointerLikeType::store:>
+    <targetDefinedPrimitive>
+    primitiveFailedError()
+}.
+
+(PointerLikeType::at:) adoptDefinitionOf: {:(Untyped)pointer :(IntPointer)index :: Untyped |
+    <primitive: #PointerLikeType::at:>
+    <targetDefinedPrimitive>
+    primitiveFailedError()
+}.
+
+(PointerLikeType::reinterpretCast) adoptDefinitionOf: {:(Untyped)pointer :: Untyped |
+    <primitive: #PointerLikeType::reinterpretCast>
+    <targetDefinedPrimitive>
+    primitiveFailedError()
+}.
+
+#*
+context->roots.pointerLikeReinterpretCast = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "PointerLikeType::reinterpretCast", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_TARGET_DEFINED_PRIMITIVE, NULL, sysbvm_type_primitive_pointerLikeTypeReinterpretCast);
+*#
+
 identityHash adoptDefinitionOf: {:(AnyValue)value :: Size |
     <primitive: #identityHash >
     primitiveFailedError()
@@ -957,6 +985,24 @@ AnyValue
         self printOn: stream
     } makeVirtual.
 
+ProgramEntity
+    withSelector: #printAnonymousNameOn: addMethod: {:(Type)self :(Stream)stream :: Void |
+        stream nextPutAll: "a "; string: self class name
+    } makeVirtual;
+    withSelector: #printOwnerOn: addMethod: {:(Type)self :(Stream)stream :: Void |
+        let: #owner with: self owner.
+        if: owner ~~ nil then: {
+            stream print: owner; space
+        }.
+    } makeVirtual;
+    withSelector: #printOn: addMethod: {:(Type)self :(Stream)stream :: Void |
+        let: #name with: self name.
+        self printOwnerOn: stream.
+        if: name ~~ nil
+            then: (stream string: name)
+            else: (self printAnonymousNameOn: stream).
+    } makeOverride.
+
 Type
     withSelector: #coerceValue:intoType: addMethod: {:(Type)self :(Untyped)value :(Type)targetType :: Untyped |
         error("Cannot coerce value into the expected target type")
@@ -968,11 +1014,8 @@ Type
             valueType coerceValue: value intoType: self
         }.
     } makeVirtual;
-    withSelector: #printOn: addMethod: {:(Type)self :(Stream)stream :: Void |
-        let: #name with: self name.
-        if: name ~~ nil
-            then: (stream string: name)
-            else: (stream nextPutAll: "a Type")
+    withSelector: #printAnonymousNameOn: addMethod: {:(Type)self :(Stream)stream :: Void |
+        stream nextPutAll: "a Type"
     } makeOverride.
 
 Void class

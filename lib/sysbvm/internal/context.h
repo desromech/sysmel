@@ -55,6 +55,10 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t addressSelector;
     sysbvm_tuple_t plusSelector;
     sysbvm_tuple_t subscriptSelector;
+    sysbvm_tuple_t loadSelector;
+    sysbvm_tuple_t storeSelector;
+    sysbvm_tuple_t refLoadSelector;
+    sysbvm_tuple_t refStoreSelector;
 
     sysbvm_tuple_t pointerLikeLoadPrimitive;
     sysbvm_tuple_t pointerLikeStorePrimitive;

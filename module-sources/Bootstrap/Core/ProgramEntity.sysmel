@@ -93,10 +93,6 @@ ProgramEntity definition: {
         self printSymbolNameOn: stream
     }.
 
-    public override method printOn: (stream: Stream) ::=> Void := {
-        self printQualifiedSymbolNameOn: stream
-    }.
-
     public virtual method printQualifiedNameOn: (stream: Stream) ::=> Void := {
         owner ifNotNil: {
             owner printQualifiedNameOn: stream.
