@@ -293,13 +293,13 @@ Type
     withSelector: #asReceiverType addMethod: {:(Type)self :: Type |
         self
     } makeVirtual withEagerAnalysis;
-    withSelector: #lookupLocalMacroSelector: addMethod: {:(Type)self :(Symbol)selector |
+    withSelector: #lookupLocalMacroSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
         let: #methodDictionary with: self macroMethodDictionary.
         if: methodDictionary ~~ nil
             then: (methodDictionary atOrNil: selector)
             else: nil
     } makeFinal;
-    withSelector: #lookupMacroSelector: addMethod: {:(Type)self :(Symbol)selector |
+    withSelector: #lookupMacroSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
         let: #method with: (self lookupLocalMacroSelector: selector).
         if: method ~~ nil
         then: method
@@ -310,16 +310,16 @@ Type
                 else: (nil)
         }
     } makeFinal;
-    withSelector: #lookupLocalSelector: addMethod: {:(Type)self :(Symbol)selector |
+    withSelector: #lookupLocalSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
         let: #methodDictionary with: self methodDictionary.
         if: methodDictionary ~~ nil
             then: (methodDictionary atOrNil: selector)
             else: nil
     } makeFinal withEagerAnalysis;
-    withSelector: #>> addMethod: {:(Type)self :(Symbol)selector |
+    withSelector: #>> addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
         self lookupLocalSelector: selector
     } makeFinal withEagerAnalysis;
-    withSelector: #lookupSelector: addMethod: {:(Type)self :(Symbol)selector |
+    withSelector: #lookupSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
         let: #method with: (self lookupLocalSelector: selector).
         if: method ~~ nil
         then: method
@@ -331,13 +331,13 @@ Type
         }
     } makeFinal;
     ensureAnalysisOfMethodWithSelector: #lookupSelector:;
-    withSelector: #lookupLocalFallbackSelector: addMethod: {:(Type)self :(Symbol)selector |
+    withSelector: #lookupLocalFallbackSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
         let: #methodDictionary with: self fallbackMethodDictionary.
         if: methodDictionary ~~ nil
             then: (methodDictionary atOrNil: selector)
             else: nil
     } makeFinal;
-    withSelector: #lookupFallbackSelector: addMethod: {:(Type)self :(Symbol)selector |
+    withSelector: #lookupFallbackSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
         let: #method with: (self lookupLocalFallbackSelector: selector).
         if: method ~~ nil
         then: method
@@ -348,13 +348,13 @@ Type
                 else: (nil)
         }
     } makeFinal;
-    withSelector: #lookupLocalVirtualSelector: addMethod: {:(Type)self :(Symbol)selector |
+    withSelector: #lookupLocalVirtualSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
         let: #methodDictionary with: self virtualMethodDictionary.
         if: methodDictionary ~~ nil
             then: (methodDictionary atOrNil: selector)
             else: nil
     } makeFinal;
-    withSelector: #lookupVirtualSelector: addMethod: {:(Type)self :(Symbol)selector |
+    withSelector: #lookupVirtualSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
         let: #method with: (self lookupLocalVirtualSelector: selector).
         if: method ~~ nil
         then: method

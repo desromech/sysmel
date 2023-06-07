@@ -653,6 +653,70 @@ ASTMessageSendNode definition: {
     }.
 }.
 
+ASTMessageChainMessageNode definition: {
+    public eager method analyzeAndEvaluateWithReceiver: (receiver: Untyped) environment: (environment: Environment) ::=> Untyped
+        := (self asMessageSendNodeWithReceiver: (ASTLiteralNode new
+            sourcePosition: self sourcePosition;
+            value: receiver;
+            yourself)) analyzeAndEvaluateWithEnvironment: environment.
+}.
+
+ASTMessageChainNode definition: {
+    public eager method expandAsSequence => ASTNode := {
+        let messageCount := self messages size.
+        messageCount = 0sz ifTrue: {
+            return: self receiver
+        }.
+        messageCount = 1sz ifTrue: {
+            let message => ASTMessageChainMessageNode := self messages first.
+            return: (message asMessageSendNodeWithReceiver: self receiver receiverLookupType: self receiverLookupType)
+        }.
+
+        self receiver isLiteralNode ifTrue: {
+            return: (ASTSequenceNode new
+                sourcePosition: self sourcePosition;
+                pragmas: #();
+                expressions: (self messages collect: {:(ASTMessageChainMessageNode)eachMessage :: ASTNode |
+                    eachMessage asMessageSendNodeWithReceiver: self receiver receiverLookupType: self receiverLookupType
+                });
+                yourself)
+        }.
+
+        let expansionSymbol := GeneratedSymbol new
+            sourcePosition: self sourcePosition;
+            value: #"<messageChainReceiver>";
+            yourself.
+
+        let expansionReceiverExpression := ASTLocalDefinitionNode new
+            sourcePosition: self sourcePosition;
+            nameExpression: (ASTLiteralNode new
+                sourcePosition: self sourcePosition;
+                value: expansionSymbol;
+                yourself);
+            valueExpression: self receiver;
+            typeExpression: (ASTLiteralNode new
+                sourcePosition: self sourcePosition;
+                value: DirectTypeInferenceType;
+                yourself);
+            yourself.
+
+        let expansionReceiverIdentifier := ASTIdentifierReferenceNode new
+            sourcePosition: self sourcePosition;
+            value: expansionSymbol;
+            yourself.
+
+        let expansionReceiverLookupType := self receiverLookupType.
+
+        ASTSequenceNode new
+            sourcePosition: self sourcePosition;
+            pragmas: #();
+            expressions: (Array with: expansionReceiverExpression) -- (self messages collect: {:(ASTMessageChainMessageNode)eachMessage :: ASTNode |
+                eachMessage asMessageSendNodeWithReceiver: expansionReceiverIdentifier receiverLookupType: expansionReceiverLookupType
+            });
+            yourself
+    }
+}.
+
 Type definition: {
     public virtual eager method analyzeAndTypeCheckFunctionApplicationNode: (node: ASTFunctionApplicationNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
         node
@@ -756,6 +820,18 @@ Type definition: {
     public virtual eager method analyzeAndEvaluateMessageSendNode: (node: ASTMessageSendNode) forReceiver: (receiver: Untyped) withEnvironment: (environment: Environment) ::=> Untyped
         := self analyzeAndEvaluateOrdinaryMessageSendNode: node forReceiver: receiver withEnvironment: environment.
 
+    public virtual eager method analyzeAndEvaluateOrdinaryMessageChainNode: (node: ASTMessageChainNode) forReceiver: (receiver: Untyped) withEnvironment: (environment: Environment) ::=> Untyped := {
+        let result := ValueBox with: receiver.
+        node messages do: {:(ASTMessageChainMessageNode)chainedMessage :: Void |
+            result := chainedMessage analyzeAndEvaluateWithReceiver: receiver environment: environment.
+        }.
+
+        result value
+    }.
+
+    public virtual eager method analyzeAndEvaluateMessageChainNode: (node: ASTMessageChainNode) forReceiver: (receiver: Untyped) withEnvironment: (environment: Environment) ::=> Untyped
+        := self analyzeAndEvaluateOrdinaryMessageChainNode: node forReceiver: receiver withEnvironment: environment.
+
     public virtual eager method analyzeUnboundMessageNode: (node: ASTMessageSendNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
         := node
             analyzedType: AnyValue;
@@ -804,6 +880,9 @@ Type definition: {
         self analyzeUnboundMessageNode: node withEnvironment: environment
     }.
 
+    public virtual eager method analyzeOrdinaryMessageChainNode: (node: ASTMessageChainNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := node expandAsSequence analyzeWithEnvironment: environment.
+
     MetaBuilder class definition: {
         public virtual eager method analyzeMessageSendNode: (node: ASTMessageSendNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
             node receiver isLiteralNode ifTrue: {
@@ -812,10 +891,21 @@ Type definition: {
                 self analyzeOrdinaryMessageNode: node withEnvironment: environment
             }
         }.
+
+        public virtual eager method analyzeMessageChainNode: (node: ASTMessageChainNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+            node receiver isLiteralNode ifTrue: {
+                (node receiver downCastTo: ASTLiteralNode) value analyzeOrdinaryMessageChainNode: node withEnvironment: environment
+            } ifFalse: {
+                self analyzeOrdinaryMessageChainNode: node withEnvironment: environment
+            }
+        }.
     }.
 
     public virtual eager method analyzeMessageSendNode: (node: ASTMessageSendNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
         := self analyzeOrdinaryMessageNode: node withEnvironment: environment.
+
+    public virtual eager method analyzeMessageChainNode: (node: ASTMessageChainNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := self analyzeOrdinaryMessageChainNode: node withEnvironment: environment.
 }.
 
 ReferenceType definition: {
@@ -1133,6 +1223,57 @@ ASTMessageSendNode definition: {
             )
         }
     }.
+}.
+
+ASTMessageChainNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        self receiver ifNotNil: {
+            let receiver := self receiver analyzeAndEvaluateWithEnvironment: environment.
+            RawTuple::type(receiver) analyzeAndEvaluateMessageChainNode: self forReceiver: receiver withEnvironment: environment
+        } ifNil: {
+            let result := ValueBox with: nil.
+            self messages do: {:(ASTMessageChainMessageNode)eachMessage :: Void |
+                result := (eachMessage asMessageSendNodeWithReceiver: nil) analyzeAndEvaluateWithEnvironment: environment
+            }.
+
+            result value
+        }.
+    }.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let result := self copy
+            analyzerToken: environment validAnalyzerToken;
+            yourself.
+
+        result receiver ifNotNil: {
+            result receiver: (environment analyzeWithDirectType: result receiver).
+
+            result receiver isTupleWithLookupStartingFromNode ifTrue: {
+                let receiverWithTypeNode := result receiver downCastTo: ASTTupleWithLookupStartingFromNode.
+                result
+                    receiver: receiverWithTypeNode tupleExpression;
+                    receiverLookupType: receiverWithTypeNode typeExpression
+            }.
+
+            let receiverType := result receiverLookupType ifNotNil: {
+                result receiverLookupType: (environment analyze: result receiverLookupType withExpectedType: Type).
+                result receiverLookupType isLiteralNode ifFalse: {
+                    result receiverLookupType semanticError: "Receiver explicit lookup type expression must be solved into a literal."
+                }.
+
+                (result receiverLookupType downCastTo: ASTLiteralNode) value
+            } ifNil: {
+                result receiver analyzedType
+            }.
+
+            receiverType analyzeMessageChainNode: result withEnvironment: environment
+        } ifNil: {
+            error("TODO").
+        }
+    }.
+
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
+        := self error: "Message chain node should be expanded."
 }.
 
 ASTTupleWithLookupStartingFromNode definition: {

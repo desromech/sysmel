@@ -364,6 +364,15 @@ ASTMessageChainMessageNode
             arguments: self arguments;
             yourself
     };
+    withSelector: #asMessageSendNodeWithReceiver:receiverLookupType: addMethod: {:(ASTMessageChainMessageNode)self :(ASTNode)receiver :(ASTNode)receiverLookupType :: ASTMessageSendNode |
+        ASTMessageSendNode new
+            sourcePosition: self sourcePosition;
+            receiver: receiver;
+            receiverLookupType: receiverLookupType;
+            selector: self selector;
+            arguments: self arguments;
+            yourself
+    };
     withSelector: #childrenDo: addMethod: {:(ASTMessageChainMessageNode)self :aBlock :: Void |
         if: (self selector isNotNil) then: aBlock(self selector).
         self arguments do: aBlock

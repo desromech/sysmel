@@ -94,7 +94,15 @@ Environment
     ensureAnalysisOfMethodWithSelector: #hasValidContinueTarget.
     
 
+Type extend: {
+    public eager virtual method asCanonicalTypeForNode: (node: ASTNode) ::=> Type
+        := self.
+}.
+
 TypeInferenceType __type__ extend: {
+    public eager override method asCanonicalTypeForNode: (node: ASTNode) ::=> Type
+        := node analyzedType.
+
     public override eager method coerceASTNode: (node: ASTNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
         := self subclassResponsibility.
 }.
@@ -279,11 +287,11 @@ AnalysisAndEvaluationEnvironment definition: {
         } ifNotNil: {
             let analyzedTypeExpression := self analyze: expectedTypeExpression withExpectedType: Type.
             analyzedTypeExpression isLiteralNode ifTrue: {
-                let literalExpectedType := (analyzedTypeExpression downCastTo: ASTLiteralNode) value.
+                let literalExpectedType => Type := (analyzedTypeExpression downCastTo: ASTLiteralNode) value.
                 let analyzedNode := self analyze: node withExpectedType: literalExpectedType.
                 ASTNodeWithCanonicalType new
                     node: analyzedNode;
-                    canonicalType: literalExpectedType;
+                    canonicalType: (literalExpectedType asCanonicalTypeForNode: analyzedNode);
                     yourself
             } ifFalse: {
                 let canonicalResultType := (analyzedTypeExpression analyzedType ifNil: AnyValue) asCanonicalPendingInstanceType.
