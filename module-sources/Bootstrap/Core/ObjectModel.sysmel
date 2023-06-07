@@ -486,13 +486,14 @@ Size extend: {
 
 
 identityHash adoptDefinitionOf: {:(Untyped)self :: Size |
+    <primitive: #identityHash >
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
         (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ identityHashAndFlags >> 4uptr
     } ifFalse: {
         pointerValue asSize hashMultiply
     }
-} withEagerAnalysis.
+} makePure makeFinal withEagerAnalysis.
 
 RawTuple::isBytes adoptDefinitionOf: {:(Untyped)self :: Boolean |
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).

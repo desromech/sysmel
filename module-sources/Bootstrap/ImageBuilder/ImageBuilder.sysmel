@@ -1,6 +1,14 @@
 public class ImageBuilder superclass: Object.
 
 public class ImageBuilderObjectTraceStrategy superclass: Object; definition: {
+    public virtual method shouldTraceObject: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Boolean
+        := (imageBuilder objectModel isImmediateReference: object) not.
+
+    public method isTargetDefinedPrimitive: (object: Untyped) ::=> Boolean := {
+        let objectType := RawTuple::type(object).
+        ((objectType isSubtypeOf: Function) || (objectType isSubtypeOf: FunctionDefinition)) && object isTargetDefinedPrimitive
+    }.
+
     public virtual method shouldEmitTypeSlot: (typeSlot: TypeSlot) ::=> Boolean
         := true.
 
@@ -13,6 +21,9 @@ public class ImageBuilderObjectTraceStrategy superclass: Object; definition: {
 }.
 
 public class ImageBuilderObjectTraceStrategyNoRTTI superclass: ImageBuilderObjectTraceStrategy; definition: {
+    public virtual method shouldTraceObject: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Boolean
+        := (super shouldTraceObject: object with: imageBuilder) && (self isTargetDefinedPrimitive: object) not.
+
     public override method shouldEmitTypeSlot: (typeSlot: TypeSlot) ::=> Boolean
         := typeSlot isNoRTTIExcluded not.
 
@@ -93,8 +104,10 @@ FunctionDefinition definition: {
             super imageBuilder::traceMinimalReferencesOf: object with: imageBuilder.
 
             let functionDefinition => FunctionDefinition := object.
-            functionDefinition allNonPrimitiveLiteralDependenciesDo: {:(Untyped)dependency :: Void |
-                imageBuilder enqueueObjectTrace: dependency
+            functionDefinition allLiteralDependenciesDo: {:(Untyped)dependency :(Boolean)isAnalysisIndirect :: Void |
+                isAnalysisIndirect ifFalse: {
+                    imageBuilder enqueueObjectTrace: dependency
+                }.
             }.
         }.
 
@@ -103,8 +116,10 @@ FunctionDefinition definition: {
             super imageBuilder::traceNoRTTIReferencesOf: object with: imageBuilder.
 
             let functionDefinition => FunctionDefinition := object.
-            functionDefinition allNonPrimitiveLiteralDependenciesDo: {:(Untyped)dependency :: Void |
-                imageBuilder enqueueObjectTrace: dependency                
+            functionDefinition allLiteralDependenciesDo: {:(Untyped)dependency :(Boolean)isAnalysisIndirect :: Void |
+                isAnalysisIndirect ifFalse: {
+                    imageBuilder enqueueObjectTrace: dependency                
+                }.
             }.
         }.
 
@@ -189,7 +204,7 @@ ImageBuilder definition: {
     }.
 
     public method enqueueObjectTrace: (object: Untyped) ::=> Void := {
-        (objectModel isImmediateReference: object) ifFalse: {
+        (traceStrategy shouldTraceObject: object with: self) ifTrue: {
             (tracedObjectSet untypedIncludes: object) ifFalse: {
                 tracedObjects untypedAdd: object.
                 tracedObjectSet untypedAdd: object.

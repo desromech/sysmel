@@ -48,10 +48,6 @@ primitiveFailedError __type__: (SimpleFunctionTypeTemplate((), 0bflgs, Unwinds))
     primitiveFailedError()
 }.
 
-#*
-context->roots.pointerLikeReinterpretCast = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "PointerLikeType::reinterpretCast", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_TARGET_DEFINED_PRIMITIVE, NULL, sysbvm_type_primitive_pointerLikeTypeReinterpretCast);
-*#
-
 identityHash adoptDefinitionOf: {:(AnyValue)value :: Size |
     <primitive: #identityHash >
     primitiveFailedError()

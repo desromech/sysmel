@@ -30,18 +30,9 @@ FunctionDefinition definition: {
         analyzedResultTypeNode ifNotNil: (analyzedResultTypeNode withAllChildrenDo: aBlock).
     }.
 
-    public method allLiteralDependenciesDo: (aBlock: (Untyped) => Void) ::=> Void := {
+    public method allLiteralDependenciesDo: (aBlock: (Untyped, Boolean) => Void) ::=> Void := {
         self allAnalyzedNodesDo: {:(ASTNode)each :: Void |
             each literalDependenciesDo: aBlock
-        }
-    }.
-
-    public method allNonPrimitiveLiteralDependenciesDo: (aBlock: (Untyped) => Void) ::=> Void := {
-        self allLiteralDependenciesDo: {:(Untyped)each :: Void |
-            let elementType := RawTuple::type(each) ifNil: AnyValue.
-            ((elementType isSubtypeOf: Function) || (elementType isSubtypeOf: FunctionDefinition)) && each isTargetDefinedPrimitive ifFalse: {
-                aBlock(each)
-            }
         }
     }.
 }.

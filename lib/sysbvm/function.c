@@ -561,7 +561,7 @@ static sysbvm_tuple_t sysbvm_function_primitive_adoptDefinitionOf(sysbvm_context
     if(isCorePrimitive)
     {
         (*functionObject)->flags = sysbvm_tuple_bitflags_encode(
-            sysbvm_tuple_bitflags_decode((*functionObject)->flags & (SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_TARGET_DEFINED_PRIMITIVE))
+            (sysbvm_tuple_bitflags_decode((*functionObject)->flags) & SYSBVM_FUNCTION_FLAGS_BOOTSTRAP_PRIMITIVE_KEPT_FLAGS)
             | sysbvm_tuple_bitflags_decode((*definitionFunctionObject)->flags)
         );
 

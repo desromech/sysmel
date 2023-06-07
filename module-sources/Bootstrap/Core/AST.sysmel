@@ -10,7 +10,7 @@ ASTNode
             each withAllChildrenDo: aBlock
         }
     } makeAbstract;
-    withSelector: #literalDependenciesDo: addMethod: {:(ASTNode)self :((Untyped) => Void)aBlock :: Void | } makeVirtual;
+    withSelector: #literalDependenciesDo: addMethod: {:(ASTNode)self :((Untyped, Boolean) => Void)aBlock :: Void | } makeVirtual;
 
     withSelector: #transformWith: addMethod: {:(ASTNode)self :aBlock :: Void | self subclassResponsibility } makeAbstract;
     withSelector: #transformedWith: addMethod: {:(ASTNode)self :aBlock :: self class | self copy transformWith: aBlock; yourself };
@@ -242,7 +242,7 @@ ASTLiteralNode
 
     withSelector: #childrenDo: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | } makeOverride;
-    withSelector: #literalDependenciesDo: addMethod: {:(ASTLiteralNode)self :((Untyped) => Void)aBlock :: Void | aBlock(self value) } makeOverride;
+    withSelector: #literalDependenciesDo: addMethod: {:(ASTLiteralNode)self :((Untyped, Boolean) => Void)aBlock :: Void | aBlock(self value, false) } makeOverride;
 
     withSelector: #isLiteralPureFunctionNode addMethod: {:(ASTLiteralNode)self :: Boolean |
         if: (self value __type__ lookupSelector: #isPure) ~~ nil
@@ -361,8 +361,8 @@ ASTMessageSendNode
             yourself
     } makeOverride;
 
-    withSelector: #literalDependenciesDo: addMethod: {:(ASTMessageSendNode)self :((Untyped) => Void)aBlock :: Void |
-        if: self boundMethod ~~ nil then: aBlock(self boundMethod)
+    withSelector: #literalDependenciesDo: addMethod: {:(ASTMessageSendNode)self :((Untyped, Boolean) => Void)aBlock :: Void |
+        if: self boundMethod ~~ nil then: aBlock(self boundMethod, true)
     } makeVirtual;
     withSelector: #childrenDo: addMethod: {:(ASTMessageSendNode)self :aBlock :: Void |
         if: (self receiver isNotNil) then: aBlock(self receiver).
