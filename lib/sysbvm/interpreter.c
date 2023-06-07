@@ -6048,21 +6048,21 @@ void sysbvm_astInterpreter_setupASTInterpreter(sysbvm_context_t *context)
         sysbvm_astTupleWithLookupStartingFromNode_primitiveAnalyzeAndEvaluate
     );
 
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "tuple:slotNamedAt:", 3, SYSBVM_FUNCTION_FLAGS_MACRO, NULL, sysbvm_astTupleSlotNamedAtNode_primitiveMacro);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "tuple:slotNamedAt:", context->roots.anyValueType, "__slotNamedAt__:", 3, SYSBVM_FUNCTION_FLAGS_MACRO, NULL, sysbvm_astTupleSlotNamedAtNode_primitiveMacro);
     sysbvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astTupleSlotNamedAtNodeType,
         sysbvm_astTupleSlotNamedAtNode_primitiveAnalyze,
         sysbvm_astTupleSlotNamedAtNode_primitiveEvaluate,
         sysbvm_astTupleSlotNamedAtNode_primitiveAnalyzeAndEvaluate
     );
 
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "tuple:slotNamedReferenceAt:", 3, SYSBVM_FUNCTION_FLAGS_MACRO, NULL, sysbvm_astTupleSlotNamedReferenceAtNode_primitiveMacro);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "tuple:slotNamedReferenceAt:", context->roots.anyValueType, "__slotNamedReferenceAt__:", 3, SYSBVM_FUNCTION_FLAGS_MACRO, NULL, sysbvm_astTupleSlotNamedReferenceAtNode_primitiveMacro);
     sysbvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astTupleSlotNamedReferenceAtNodeType,
         sysbvm_astTupleSlotNamedReferenceAtNode_primitiveAnalyze,
         sysbvm_astTupleSlotNamedReferenceAtNode_primitiveEvaluate,
         sysbvm_astTupleSlotNamedReferenceAtNode_primitiveAnalyzeAndEvaluate
     );
 
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "tuple:slotNamedAt:put:", 4, SYSBVM_FUNCTION_FLAGS_MACRO, NULL, sysbvm_astTupleSlotNamedAtPutNode_primitiveMacro);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "tuple:slotNamedAt:put:", context->roots.anyValueType, "__slotNamedAt__:put:", 4, SYSBVM_FUNCTION_FLAGS_MACRO, NULL, sysbvm_astTupleSlotNamedAtPutNode_primitiveMacro);
     sysbvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astTupleSlotNamedAtPutNodeType,
         sysbvm_astTupleSlotNamedAtPutNode_primitiveAnalyze,
         sysbvm_astTupleSlotNamedAtPutNode_primitiveEvaluate,
@@ -6085,7 +6085,7 @@ void sysbvm_astInterpreter_setupASTInterpreter(sysbvm_context_t *context)
         sysbvm_astDoWhileContinueWithNode_primitiveAnalyzeAndEvaluate
     );
 
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "useNamedSlotsOf:", 2, SYSBVM_FUNCTION_FLAGS_MACRO, NULL, sysbvm_astUseNamedSlotsOfNode_primitiveMacro);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "useNamedSlotsOf:", context->roots.anyValueType, "__useNamedSlots__", 2, SYSBVM_FUNCTION_FLAGS_MACRO, NULL, sysbvm_astUseNamedSlotsOfNode_primitiveMacro);
     sysbvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astUseNamedSlotsOfNodeType,
         sysbvm_astUseNamedSlotsOfNode_primitiveAnalyze,
         sysbvm_astUseNamedSlotsOfNode_primitiveEvaluate,

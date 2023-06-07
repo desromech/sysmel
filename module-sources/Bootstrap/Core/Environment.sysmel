@@ -7,7 +7,7 @@ SymbolBinding definition: {
 
 SymbolValueBinding definition: {
     public eager abstract method evaluateInEnvironment: (environment: Environment) ::=> Untyped
-        := self value.
+        := self __slotNamedAt__: #value.
 }.
 
 SymbolAnalysisBinding definition: {

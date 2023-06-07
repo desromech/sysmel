@@ -11,13 +11,13 @@ SymbolBinding definition: {
 
 SymbolValueBinding definition: {
     public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) at: (sourcePosition: SourcePosition) ::=> Untyped
-        := self value.
+        := self __slotNamedAt__: #value.
 
     public override eager method analyzeIdentifierReference: (node: ASTIdentifierReferenceNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
-        := environment newLiteral: self value at: node sourcePosition.
+        := environment newLiteral: (self __slotNamedAt__: #value) at: node sourcePosition.
 
     public override method evaluateWithActivationEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
-        := self value.
+        := self __slotNamedAt__: #value.
 }.
 
 SymbolMacroValueBinding definition: {
@@ -83,7 +83,7 @@ ASTNode definition: {
 
 ASTLiteralNode definition: {
     public override eager method getOrCreateDependentApplicationValue => Untyped
-        := self value.
+        := self __slotNamedAt__: #value.
 }.
 
 ASTArgumentNode definition: {
@@ -208,16 +208,16 @@ ASTIdentifierReferenceNode definition: {
 
 ASTLiteralNode definition: {
     public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped
-        := self value.
+        := self __slotNamedAt__: #value.
 
     public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
         := self copy
             analyzerToken: environment validAnalyzerToken;
-            analyzedType: RawTuple::type(self value);
+            analyzedType: RawTuple::type(self __slotNamedAt__: #value);
             yourself.
 
     public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
-        := self value.
+        := self __slotNamedAt__: #value.
 
     public override eager method analyzeConcreteMetaValueWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
         analyzedType
