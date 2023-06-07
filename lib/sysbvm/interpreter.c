@@ -5852,9 +5852,9 @@ void sysbvm_astInterpreter_registerPrimitives(void)
 
     sysbvm_primitiveTable_registerFunction(sysbvm_astIfNode_primitiveMacro, "ASTIfNode::if:then:else:");
     sysbvm_primitiveTable_registerFunction(sysbvm_astIfNode_primitiveMacroIfThen, "ASTIfNode::if:then:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astIfNode_primitiveAnalyze, "ASTTupleWithLookupStartingFromNode::analyzeWithEnvironment:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astIfNode_primitiveEvaluate, "ASTTupleWithLookupStartingFromNode::evaluateWithEnvironment:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astIfNode_primitiveAnalyzeAndEvaluate, "ASTTupleWithLookupStartingFromNode::analyzeAndEvaluateWithEnvironment:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astIfNode_primitiveAnalyze, "ASTIfNode::analyzeWithEnvironment:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astIfNode_primitiveEvaluate, "ASTIfNode::evaluateWithEnvironment:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astIfNode_primitiveAnalyzeAndEvaluate, "ASTIfNode::analyzeAndEvaluateWithEnvironment:");
 
     sysbvm_primitiveTable_registerFunction(sysbvm_astDoWhileContinueWithNode_primitiveMacro, "ASTDoWhileContinueWithNode::do:while:continueWith:");
     sysbvm_primitiveTable_registerFunction(sysbvm_astDoWhileContinueWithNode_primitiveDoWhileMacro, "ASTDoWhileContinueWithNode::do:while:");

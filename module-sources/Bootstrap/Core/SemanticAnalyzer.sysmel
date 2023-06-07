@@ -1136,23 +1136,220 @@ ASTMessageSendNode definition: {
 }.
 
 ASTTupleWithLookupStartingFromNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped
+        := self tupleExpression analyzeAndEvaluateWithEnvironment: environment.
 
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let analyzedTupleExpression := environment analyzeWithCurrentExpectedType: self tupleExpression.
+        
+        self copy
+            analyzedType: analyzedTupleExpression analyzedType;
+            analyzerToken: environment validAnalyzerToken;
+            tupleExpression: analyzedTupleExpression;
+            typeExpression: (environment analyze: self typeExpression withExpectedType: Type);
+            yourself
+    }.
+
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
+        := self tupleExpression evaluateWithEnvironment: environment.
 }.
 
 ASTTupleSlotNamedAtNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        let tuple := self tupleExpression analyzeAndEvaluateWithEnvironment: environment.
+        let slot => TypeSlot := self boundSlot ifNotNil: {
+            self boundSlot
+        } ifNil {
+            let slotName := self nameExpression analyzeAndEvaluateWithEnvironment: environment.
+            (RawTuple::type(tuple) lookupSlot: slotName) ifNil: {
+                self semanticError: "Failed to find slot named " -- slotName printString -- ".".
 
+            }
+        }.
+
+        (RawTuple::typeSlotAt:)(tuple, slot)
+    }.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let result := self copy
+            analyzerToken: environment validAnalyzerToken;
+            tupleExpression: (environment analyzeWithDecayedType: self tupleExpression);
+            yourself.
+
+        result nameExpression ifNotNil: {
+            result nameExpression: (environment analyze: result nameExpression withExpectedType: Symbol).
+            result nameExpression isLiteralNode ifFalse: {
+                result nameExpression semanticError: "Literal slot name is required."
+            }.
+
+            let slotName => Symbol := (self nameExpression downCastTo: ASTLiteralNode) value.
+            let slot := tupleExpression analyzedType lookupSlot: slotName.
+            slot ifNil: {
+                self semanticError: "Failed to find slot named " -- slotName printString -- ".".
+            }.
+            
+            result boundSlot: slot
+        } ifNil: {
+            result boundSlot ifNil: {
+                self semanticError: "ASTTupleSlotNamedAtNode without a name expression requires a explicit type slot."
+            }
+        }.
+
+        result
+            analyzedType: result boundSlot type;
+            yourself
+    }.
+
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+        let tuple := self tupleExpression evaluateWithEnvironment: environment.
+        (RawTuple::typeSlotAt:)(tuple, self boundSlot)
+    }.
 }.
 
 ASTTupleSlotNamedReferenceAtNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        let tuple := self tupleExpression analyzeAndEvaluateWithEnvironment: environment.
+        let slot => TypeSlot := self boundSlot ifNotNil: {
+            self boundSlot
+        } ifNil {
+            let slotName := self nameExpression analyzeAndEvaluateWithEnvironment: environment.
+            (RawTuple::type(tuple) lookupSlot: slotName) ifNil: {
+                self semanticError: "Failed to find slot named " -- slotName printString -- ".".
 
+            }
+        }.
+
+        error("TODO: ASTTupleSlotNamedReferenceAtNode >> analyzeAndEvaluateWithEnvironment:").
+    }.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let result := self copy
+            analyzerToken: environment validAnalyzerToken;
+            tupleExpression: (environment analyzeWithDecayedType: self tupleExpression);
+            yourself.
+
+        result nameExpression ifNotNil: {
+            result nameExpression: (environment analyze: result nameExpression withExpectedType: Symbol).
+            result nameExpression isLiteralNode ifFalse: {
+                result nameExpression semanticError: "Literal slot name is required."
+            }.
+
+            let slotName => Symbol := (self nameExpression downCastTo: ASTLiteralNode) value.
+            let slot := tupleExpression analyzedType lookupSlot: slotName.
+            slot ifNil: {
+                self semanticError: "Failed to find slot named " -- slotName printString -- ".".
+            }.
+            
+            result boundSlot: slot
+        } ifNil: {
+            result boundSlot ifNil: {
+                self semanticError: "ASTTupleSlotNamedAtNode without a name expression requires a explicit type slot."
+            }
+        }.
+
+        result
+            analyzedType: result boundSlot validReferenceType;
+            yourself
+    }.
+
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+        let tuple := self tupleExpression evaluateWithEnvironment: environment.
+        error("TODO: ASTTupleSlotNamedReferenceAtNode >> evaluateWithEnvironment:").
+    }.
 }.
 
 ASTTupleSlotNamedAtPutNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        let tuple := self tupleExpression analyzeAndEvaluateWithEnvironment: environment.
+        let value := self valueExpression analyzeAndEvaluateWithEnvironment: environment.
+        let slot => TypeSlot := self boundSlot ifNotNil: {
+            self boundSlot
+        } ifNil {
+            let slotName := self nameExpression analyzeAndEvaluateWithEnvironment: environment.
+            (RawTuple::type(tuple) lookupSlot: slotName) ifNil: {
+                self semanticError: "Failed to find slot named " -- slotName printString -- ".".
 
+            }
+        }.
+
+        let coercedValue := slot type coerceValue: value.
+        (RawTuple::typeSlotAt:put:)(tuple, slot, coercedValue).
+        coercedValue
+    }.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let result := self copy
+            analyzerToken: environment validAnalyzerToken;
+            tupleExpression: (environment analyzeWithDecayedType: self tupleExpression);
+            yourself.
+
+        result nameExpression ifNotNil: {
+            result nameExpression: (environment analyze: result nameExpression withExpectedType: Symbol).
+            result nameExpression isLiteralNode ifFalse: {
+                result nameExpression semanticError: "Literal slot name is required."
+            }.
+
+            let slotName => Symbol := (self nameExpression downCastTo: ASTLiteralNode) value.
+            let slot := tupleExpression analyzedType lookupSlot: slotName.
+            slot ifNil: {
+                self semanticError: "Failed to find slot named " -- slotName printString -- ".".
+            }.
+            
+            result boundSlot: slot
+        } ifNil: {
+            result boundSlot ifNil: {
+                self semanticError: "ASTTupleSlotNamedAtNode without a name expression requires a explicit type slot."
+            }
+        }.
+
+        result
+            analyzedType: result boundSlot type;
+            valueExpression: (environment analyze: result valueExpression withExpectedType: result boundSlot type);
+            yourself
+    }.
+
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+        let tuple := self tupleExpression evaluateWithEnvironment: environment.
+        let value := self valueExpression evaluateWithEnvironment: environment.
+        (RawTuple::typeSlotAt:put:)(tuple, self boundSlot, value).
+        value
+    }.
 }.
 
 ASTUseNamedSlotsOfNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        let usedTuple := self tupleExpression analyzeAndEvaluateWithEnvironment: environment.
+        let localBinding := environment setNewSymbol: nil valueBinding: usedTuple at: self sourcePosition.
+        environment addUseTupleWithNamedSlotsBinding: localBinding.
+        void
+    }.
 
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let result := self copy
+            analyzedType: Void;
+            analyzerToken: environment validAnalyzerToken;
+            tupleExpression: (environment analyzeWithDecayedType: tupleExpression);
+            yourself.
+
+        result tupleExpression isLiteralNode ifTrue: {
+            let usedTuple := (result tupleExpression downCastTo: ASTLiteralNode) value.
+            let localBinding := environment setNewSymbol: nil valueBinding: usedTuple at: self sourcePosition.
+            environment addUseTupleWithNamedSlotsBinding: localBinding.
+            environment newLiteral: void at: self sourcePosition
+        } ifFalse: {
+            let localBinding := environment setNewSymbol: nil localBindingOfType: result tupleExpression analyzedType at: result sourcePosition.
+            environment addUseTupleWithNamedSlotsBinding: localBinding.
+            result
+                binding: localBinding;
+                yourself
+        }
+    }.
+
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+        let usedTuple := self tupleExpression analyzeAndEvaluateWithEnvironment: environment.
+        environment setBinding: self binding activationValue: usedTuple.
+        void
+    }.
 }.
 
 ASTBreakNode definition: {
@@ -1339,9 +1536,112 @@ ASTReturnNode definition: {
 }.
 
 ASTDoWhileContinueWithNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        do: {
+            self bodyExpression ifNotNil: {
+                self bodyExpression analyzeAndEvaluateWithEnvironment: environment
+            }.
+        } while: (self conditionExpression ifNil: true ifNotNil: (self conditionExpression analyzeAndEvaluateWithEnvironment: environment))
+          continueWith: (self continueExpression ifNotNil: (self continueExpression analyzeAndEvaluateWithEnvironment: environment)).
+        void
+    }.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let result := self copy
+            analyzerToken: environment validAnalyzerToken;
+            analyzedType: Void;
+            yourself.
+
+        result bodyExpression ifNotNil: {
+            let bodyEnvironment := LocalAnalysisEnvironment parent: environment.
+            bodyEnvironment hasBreakTarget: true; hasContinueTarget: true.
+            result bodyExpression: (bodyEnvironment analyze: result bodyExpression withExpectedType: Void)
+        }.
+
+        result conditionExpression ifNotNil: {
+            result conditionExpression: (environment analyze: result conditionExpression withExpectedType: Boolean)
+        }.
+
+        result continueExpression ifNotNil: {
+            result continueExpression: (environment analyze: result continueExpression withExpectedType: Void)
+        }.
+
+        (result conditionExpression isNotNil && result conditionExpression isLiteralNode) ifTrue: {
+            let literalCondition => Boolean := (result conditionExpression downCastTo: ASTLiteralNode) value.
+            literalCondition ifTrue: {
+                result conditionExpression: nil
+            } ifFalse: {
+                return: (result bodyExpression
+                    ifNotNil: result bodyExpression
+                    ifNil: (environment newLiteral: void at: result sourcePosition))
+            }
+        }.
+
+        result.
+    }.
+
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+        do: {
+            self bodyExpression ifNotNil: {
+                self bodyExpression evaluateWithEnvironment: environment
+            }.
+        } while: (self conditionExpression ifNil: true ifNotNil: (self conditionExpression evaluateWithEnvironment: environment))
+          continueWith: (self continueExpression ifNotNil: (self continueExpression evaluateWithEnvironment: environment)).
+        void
+
+    }.
 
 }.
 
 ASTWhileContinueWithNode definition: {
+    public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        while: (self conditionExpression ifNil: true ifNotNil: (self conditionExpression analyzeAndEvaluateWithEnvironment: environment)) do: {
+            self bodyExpression ifNotNil: {
+                self bodyExpression analyzeAndEvaluateWithEnvironment: environment
+            }.
 
+        } continueWith: (self continueExpression ifNotNil: (self continueExpression analyzeAndEvaluateWithEnvironment: environment)).
+        void
+    }.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let result := self copy
+            analyzerToken: environment validAnalyzerToken;
+            analyzedType: Void;
+            yourself.
+        result conditionExpression ifNotNil: {
+            result conditionExpression: (environment analyze: result conditionExpression withExpectedType: Boolean)
+        }.
+
+        result bodyExpression ifNotNil: {
+            let bodyEnvironment := LocalAnalysisEnvironment parent: environment.
+            bodyEnvironment hasBreakTarget: true; hasContinueTarget: true.
+            result bodyExpression: (bodyEnvironment analyze: result bodyExpression withExpectedType: Void)
+        }.
+
+        result continueExpression ifNotNil: {
+            result continueExpression: (environment analyze: result continueExpression withExpectedType: Void)
+        }.
+
+        (result conditionExpression isNotNil && result conditionExpression isLiteralNode) ifTrue: {
+            let literalCondition => Boolean := (result conditionExpression downCastTo: ASTLiteralNode) value.
+            literalCondition ifTrue: {
+                result conditionExpression: nil
+            } ifFalse: {
+                return: (environment newLiteral: void at: result sourcePosition)
+            }
+        }.
+
+        result.
+    }.
+
+    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+        while: (self conditionExpression ifNil: true ifNotNil: (self conditionExpression evaluateWithEnvironment: environment)) do: {
+            self bodyExpression ifNotNil: {
+                self bodyExpression evaluateWithEnvironment: environment
+            }.
+
+        } continueWith: (self continueExpression ifNotNil: (self continueExpression evaluateWithEnvironment: environment)).
+        void
+    }.
 }.

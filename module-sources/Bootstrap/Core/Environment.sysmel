@@ -82,6 +82,9 @@ Environment definition: {
 
     public virtual method hasValidContinueTarget => Boolean
         := parent ifNil: false ifNotNil: parent hasValidBreakTarget.
+
+    public virtual eager method addUseTupleWithNamedSlotsBinding: (binding: SymbolBinding) ::=> Void
+        := self error: "Not an analysis and evaluation environment.".
 }.
 
 Environment
@@ -332,8 +335,8 @@ AnalysisAndEvaluationEnvironment definition: {
         }
     }.
 
-    public eager method setNewSymbol: (name: Symbol) localBindingOfType: (localType: Type) at: (sourcePosition: SourcePosition) ::=> SymbolBinding := {
-        self lookFunctionAnalysisEnvironmentRecursively ifNotNil: {:(FunctionAnalysisEnvironment)functionEnv :: SymbolBinding |
+    public eager method setNewSymbol: (name: Symbol) localBindingOfType: (localType: Type) at: (sourcePosition: SourcePosition) ::=> SymbolLocalBinding := {
+        self lookFunctionAnalysisEnvironmentRecursively ifNotNil: {:(FunctionAnalysisEnvironment)functionEnv :: SymbolLocalBinding |
             let binding := SymbolLocalBinding new
                 name: name;
                 sourcePosition: sourcePosition;
@@ -380,6 +383,11 @@ AnalysisAndEvaluationEnvironment definition: {
             }
         } continueWith: (i := i + 1sz).
         nil
+    }.
+
+    public override eager method addUseTupleWithNamedSlotsBinding: (binding: SymbolBinding) ::=> Void := {
+        (usedTuplesWithNamedSlots ifNil: (usedTuplesWithNamedSlots := OrderedCollection new))
+            add: binding
     }.
 }.
 
