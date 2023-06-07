@@ -3,6 +3,7 @@ let PrintingDebugInfo := false.
 public abstract class TACCompilationTarget superclass: Object.
 public abstract class TACCallingConvention superclass: Object.
 public abstract class TACValue superclass: Object.
+public final class TACInstruction superclass: TACValue.
 
 public abstract class TACPhysicalLocation superclass: Object; definition: {
     public virtual method isMemory => Boolean := false.
@@ -161,6 +162,8 @@ TACValue definition: {
     public virtual method markWriteAt: (writeIndex: UInt32) ::=> Void := {}.
     public virtual method markSpillingRequired ::=> Void := {}.
 
+    public virtual method isLastUsedIn: (instruction: TACInstruction) ::=> Boolean := false.
+
     public method printDebugInfoOn: (stream: Stream) ::=> Void := {
         debugSourcePosition isNotNil && PrintingDebugInfo ifTrue: {
             stream space; nextPutAll: "# at"; print: debugSourcePosition
@@ -275,6 +278,9 @@ public final class TACLocalVariable superclass: TACVariable; definition: {
         firstWriteIndex < 0i32 ifTrue: (firstWriteIndex := writeIndex asInt32).
         lastWriteIndex := writeIndex asInt32
     }.
+
+    public override method isLastUsedIn: (instruction: TACInstruction) ::=> Boolean
+        := lastUsageIndex = instruction index asInt32.
 }.
 
 public final class TACArgumentVariable superclass: TACLocalVariable; definition: {
@@ -626,7 +632,7 @@ public final class TACOperation superclass: Object; definition: {
     }.
 }.
 
-public final class TACInstruction superclass: TACValue; definition: {
+TACInstruction definition: {
     public field previous => TACInstruction.
     public field next => TACInstruction.
 
@@ -1212,6 +1218,11 @@ public final class TACBlockBuilder superclass: Object; definition: {
                 ifTrue: (self int64Add: pointer with: offset into: destination)
                 ifFalse: (self int32Add: pointer with: offset into: destination).
 
+    public method subPointer: (pointer: TACValue) with: (offset: TACValue) into: (destination: TACValue) ::=> TACInstruction
+        := self has64BitsPointers
+                ifTrue: (self int64Sub: pointer with: offset into: destination)
+                ifFalse: (self int32Sub: pointer with: offset into: destination).
+
     public method multiplyPointerIndex: (index: TACValue) with: (scale: TACValue) into: (destination: TACValue) ::=> TACInstruction
         := self has64BitsPointers
                 ifTrue: (self int64Mul: index with: scale into: destination)
@@ -1280,8 +1291,16 @@ public final class TACBlockBuilder superclass: Object; definition: {
                 let constantOffset := indexValue getConstantValue64 * constantScale.
                 self addPointer: basePointer constantOffset: constantOffset into: result
             } ifFalse: {
-                self multiplyPointerIndex: indexValue constantScale: constantScale into: result.
-                self addPointer: result with: basePointer into: result
+                constantScale = 1i64 ifTrue: {
+                    self addPointer: basePointer with: indexValue into: result
+                } ifFalse: {
+                    constantScale = -1i64 ifTrue: {
+                        self subPointer: basePointer with: indexValue into: result
+                    } ifFalse: {
+                        self multiplyPointerIndex: indexValue constantScale: constantScale into: result.
+                        self addPointer: result with: basePointer into: result
+                    }
+                }.
             }.
         }.
     }.
@@ -1414,28 +1433,6 @@ public final class TACFunctionBuilder superclass: Object; definition: {
     __OwnerProgramEntity__ setPublicSymbol: globalName value: operation
 }.
 
-let comparisonOperationNames := #(
-    Int8Equals Int16Equals Int32Equals Int64Equals
-    Int8NotEquals Int16NotEquals Int32NotEquals Int64NotEquals
-
-    Int8LessThan Int16LessThan Int32LessThan Int64LessThan
-    Int8LessOrEquals Int16LessOrEquals Int32LessOrEquals Int64LessOrEquals
-    Int8GreaterThan Int16GreaterThan Int32GreaterThan Int64GreaterThan
-    Int8GreaterOrEquals Int16GreaterOrEquals Int32GreaterOrEquals Int64GreaterOrEquals
-
-    UInt8LessThan UInt16LessThan UInt32LessThan UInt64LessThan
-    UInt8LessOrEquals UInt16LessOrEquals UInt32LessOrEquals UInt64LessOrEquals
-    UInt8GreaterThan UInt16GreaterThan UInt32GreaterThan UInt64GreaterThan
-    UInt8GreaterOrEquals UInt16GreaterOrEquals UInt32GreaterOrEquals UInt64GreaterOrEquals
-
-    Float32UnorderedEquals Float64UnorderedEquals
-    Float32UnorderedNotEquals Float64UnorderedNotEquals
-    Float32UnorderedLessThan Float64UnorderedLessThan
-    Float32UnorderedLessOrEquals Float64UnorderedLessOrEquals
-    Float32UnorderedGreaterThan Float64UnorderedGreaterThan
-    Float32UnorderedGreaterOrEquals Float64UnorderedGreaterOrEquals
-).
-
 #(
     Int8Add Int16Add Int32Add Int64Add
     Int8Sub Int16Sub Int32Sub Int64Sub
@@ -1460,7 +1457,7 @@ let comparisonOperationNames := #(
     Float32Div Float64Div
 
     Float32UnorderedCompare Float64UnorderedCompare
-) -- comparisonOperationNames do: {:(Symbol)operationName :: Void |
+) do: {:(Symbol)operationName :: Void |
     let operationNameString := operationName asString.
     let lowerOperationNameString := operationNameString first asLowercase asString -- operationNameString allButFirst.
     let lowerOperationName := lowerOperationNameString asSymbol.
@@ -1474,23 +1471,92 @@ let comparisonOperationNames := #(
     __OwnerProgramEntity__ setPublicSymbol: globalName value: operation
 }.
 
-comparisonOperationNames do: {:(Symbol)operationName :: Void |
+let ComparisonOperationToBranchMap := Dictionary new.
+
+#(
+    Int8Equals Int16Equals Int32Equals Int64Equals
+    Int8NotEquals Int16NotEquals Int32NotEquals Int64NotEquals
+
+    Int8LessThan Int16LessThan Int32LessThan Int64LessThan
+    Int8LessOrEquals Int16LessOrEquals Int32LessOrEquals Int64LessOrEquals
+    Int8GreaterThan Int16GreaterThan Int32GreaterThan Int64GreaterThan
+    Int8GreaterOrEquals Int16GreaterOrEquals Int32GreaterOrEquals Int64GreaterOrEquals
+
+    UInt8LessThan UInt16LessThan UInt32LessThan UInt64LessThan
+    UInt8LessOrEquals UInt16LessOrEquals UInt32LessOrEquals UInt64LessOrEquals
+    UInt8GreaterThan UInt16GreaterThan UInt32GreaterThan UInt64GreaterThan
+    UInt8GreaterOrEquals UInt16GreaterOrEquals UInt32GreaterOrEquals UInt64GreaterOrEquals
+
+    Float32UnorderedEquals Float64UnorderedEquals
+    Float32UnorderedNotEquals Float64UnorderedNotEquals
+    Float32UnorderedLessThan Float64UnorderedLessThan
+    Float32UnorderedLessOrEquals Float64UnorderedLessOrEquals
+    Float32UnorderedGreaterThan Float64UnorderedGreaterThan
+    Float32UnorderedGreaterOrEquals Float64UnorderedGreaterOrEquals
+) do: {:(Symbol)operationName :: Void |
     let operationNameString := operationName asString.
     let lowerOperationNameString := operationNameString first asLowercase asString -- operationNameString allButFirst.
-    let lowerOperationName := lowerOperationNameString asSymbol.
 
     let branchOperationNameString := operationNameString -- "Branch".
     let lowerBranchOperationNameString := branchOperationNameString first asLowercase asString -- branchOperationNameString allButFirst.
-    let operation := TACOperation terminatorNamed: lowerBranchOperationNameString asSymbol.
-    let globalName := ("TAC::Operation::" -- branchOperationNameString) asSymbol.
+
+    let operation := TACOperation named: lowerOperationNameString asSymbol.
+    let globalName := ("TAC::Operation::" -- operationNameString) asSymbol.
+
+    let branchOperation := TACOperation terminatorNamed: lowerBranchOperationNameString asSymbol.
+    let branchGlobalName := ("TAC::Operation::" -- branchOperationNameString) asSymbol.
 
     TACBlockBuilder
+        withSelector: (lowerOperationNameString -- ":with:into:") asSymbol addMethod: {:(TACBlockBuilder)self :(TACValue)left :(TACValue)right :(TACValue)result :: TACInstruction |
+            self operation: operation with: left with: right result: result.
+        };
         withSelector: (lowerOperationNameString -- ":with:branchIfTrue:branchIfFalse:") asSymbol addMethod: {:(TACBlockBuilder)self :(TACValue)left :(TACValue)right :(TACValue)trueDestination :(TACValue)falseDestination :: TACInstruction |
-            self operation: operation with: left with: right with: trueDestination with: falseDestination.
+            self operation: branchOperation with: left with: right with: trueDestination with: falseDestination.
         }.
-    __OwnerProgramEntity__ setPublicSymbol: globalName value: operation
+
+    ComparisonOperationToBranchMap at: operation put: branchOperation.
+    __OwnerProgramEntity__
+        setPublicSymbol: globalName value: operation;
+        setPublicSymbol: branchGlobalName value: branchOperation
 }.
 
+TACFunction definition: {
+    public method performBasicOptimizations => Void := {
+        self fuseComparisonAndBranches
+    }.
+
+    public method fuseComparisonAndBranches => Void := {
+        self computeLiveRanges.
+        self basicBlocksDo: {:(TACBasicBlock)eachBasicBlock :: Void |
+            let position mutable := eachBasicBlock firstInstruction.
+            while: position isNotNil do: {
+                let nextPosition mutable := position next.
+                nextPosition isNotNil &&
+                nextPosition operation == TAC::Operation::ConditionalBranch &&
+                nextPosition operands first == position result && 
+                position result isNotNil && 
+                (position result isLastUsedIn: nextPosition) ifTrue: {
+                    let comparisonAndBranchOperation => TACOperation := ComparisonOperationToBranchMap atOrNil: position operation.
+                    comparisonAndBranchOperation ifNotNil: {
+                        position
+                            operation: comparisonAndBranchOperation;
+                            operands: position operands -- nextPosition operands allButFirst;
+                            result: nil;
+                            next: nextPosition next.
+                        eachBasicBlock lastInstruction == nextPosition ifTrue: {
+                            eachBasicBlock lastInstruction: position
+                        }.
+
+                        nextPosition := nextPosition next
+                    }.
+                }.
+
+                position := nextPosition.
+            }
+        }
+    }.
+
+}.
 public final class TACModule superclass: TACProgramEntity; definition: {
     public field programEntities => OrderedCollection.
 

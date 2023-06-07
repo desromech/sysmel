@@ -1493,6 +1493,140 @@ TAC::Operation::UInt8GreaterOrEquals
             x86::setae: (instruction resultRegister x86::int8For: codegen)
     }.
 
+let x86::integerComparisonBranchInt8RegisterConstraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+    allocator
+        allocateRegisterForInstruction: instruction operandAt: 0sz;
+        allocateRegisterOrImmediate8ForInstruction: instruction operandAt: 1sz;
+        allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 2sz;
+        allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 3sz
+}.
+
+TAC::Operation::Int8EqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt8RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int8For: codegen) with: (instruction secondOperandRegister x86::int8For: codegen);
+            x86::jnz: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int8NotEqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt8RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int8For: codegen) with: (instruction secondOperandRegister x86::int8For: codegen);
+            x86::jz: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int8LessThanBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt8RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int8For: codegen) with: (instruction secondOperandRegister x86::int8For: codegen);
+            x86::jge: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int8LessOrEqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt8RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int8For: codegen) with: (instruction secondOperandRegister x86::int8For: codegen);
+            x86::jg: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int8GreaterThanBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt8RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int8For: codegen) with: (instruction secondOperandRegister x86::int8For: codegen);
+            x86::jle: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int8GreaterOrEqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt8RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int8For: codegen) with: (instruction secondOperandRegister x86::int8For: codegen);
+            x86::jl: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int8LessThanBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt8RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int8For: codegen) with: (instruction secondOperandRegister x86::int8For: codegen);
+            x86::jge: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int8LessOrEqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt8RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int8For: codegen) with: (instruction secondOperandRegister x86::int8For: codegen);
+            x86::jg: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int8GreaterThanBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt8RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int8For: codegen) with: (instruction secondOperandRegister x86::int8For: codegen);
+            x86::jle: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int8GreaterOrEqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt8RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int8For: codegen) with: (instruction secondOperandRegister x86::int8For: codegen);
+            x86::jl: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::UInt8LessThanBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt8RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int8For: codegen) with: (instruction secondOperandRegister x86::int8For: codegen);
+            x86::jae: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::UInt8LessOrEqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt8RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int8For: codegen) with: (instruction secondOperandRegister x86::int8For: codegen);
+            x86::ja: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::UInt8GreaterThanBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt8RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int8For: codegen) with: (instruction secondOperandRegister x86::int8For: codegen);
+            x86::jbe: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::UInt8GreaterOrEqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt8RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int8For: codegen) with: (instruction secondOperandRegister x86::int8For: codegen);
+            x86::jb: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
 let x86::integerComparisonInt16RegisterConstraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterForInstructionResult: instruction;
@@ -1590,6 +1724,140 @@ TAC::Operation::UInt16GreaterOrEquals
             x86::setae: (instruction resultRegister x86::int8For: codegen)
     }.
 
+let x86::integerComparisonBranchInt16RegisterConstraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+    allocator
+        allocateRegisterForInstruction: instruction operandAt: 0sz;
+        allocateRegisterOrImmediate16ForInstruction: instruction operandAt: 1sz;
+        allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 2sz;
+        allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 3sz
+}.
+
+TAC::Operation::Int16EqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt16RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int16For: codegen) with: (instruction secondOperandRegister x86::int16For: codegen);
+            x86::jnz: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int16NotEqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt16RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int16For: codegen) with: (instruction secondOperandRegister x86::int16For: codegen);
+            x86::jz: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int16LessThanBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt16RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int16For: codegen) with: (instruction secondOperandRegister x86::int16For: codegen);
+            x86::jge: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int16LessOrEqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt16RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int16For: codegen) with: (instruction secondOperandRegister x86::int16For: codegen);
+            x86::jg: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int16GreaterThanBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt16RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int16For: codegen) with: (instruction secondOperandRegister x86::int16For: codegen);
+            x86::jle: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int16GreaterOrEqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt16RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int16For: codegen) with: (instruction secondOperandRegister x86::int16For: codegen);
+            x86::jl: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int16LessThanBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt16RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int16For: codegen) with: (instruction secondOperandRegister x86::int16For: codegen);
+            x86::jge: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int16LessOrEqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt16RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int16For: codegen) with: (instruction secondOperandRegister x86::int16For: codegen);
+            x86::jg: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int16GreaterThanBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt16RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int16For: codegen) with: (instruction secondOperandRegister x86::int16For: codegen);
+            x86::jle: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int16GreaterOrEqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt16RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int16For: codegen) with: (instruction secondOperandRegister x86::int16For: codegen);
+            x86::jl: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::UInt16LessThanBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt16RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int16For: codegen) with: (instruction secondOperandRegister x86::int16For: codegen);
+            x86::jae: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::UInt16LessOrEqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt16RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int16For: codegen) with: (instruction secondOperandRegister x86::int16For: codegen);
+            x86::ja: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::UInt16GreaterThanBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt16RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int16For: codegen) with: (instruction secondOperandRegister x86::int16For: codegen);
+            x86::jbe: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::UInt16GreaterOrEqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt16RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int16For: codegen) with: (instruction secondOperandRegister x86::int16For: codegen);
+            x86::jb: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
 let x86::integerComparisonInt32RegisterConstraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterForInstructionResult: instruction;
@@ -1685,6 +1953,140 @@ TAC::Operation::UInt32GreaterOrEquals
             x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen);
             x86::cmp: (instruction resultRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen);
             x86::setae: (instruction resultRegister x86::int8For: codegen)
+    }.
+
+let x86::integerComparisonBranchInt32RegisterConstraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+    allocator
+        allocateRegisterForInstruction: instruction operandAt: 0sz;
+        allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 1sz;
+        allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 2sz;
+        allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 3sz
+}.
+
+TAC::Operation::Int32EqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt32RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen);
+            x86::jnz: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int32NotEqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt32RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen);
+            x86::jz: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int32LessThanBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt32RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen);
+            x86::jge: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int32LessOrEqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt32RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen);
+            x86::jg: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int32GreaterThanBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt32RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen);
+            x86::jle: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int32GreaterOrEqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt32RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen);
+            x86::jl: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int32LessThanBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt32RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen);
+            x86::jge: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int32LessOrEqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt32RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen);
+            x86::jg: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int32GreaterThanBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt32RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen);
+            x86::jle: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::Int32GreaterOrEqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt32RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen);
+            x86::jl: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::UInt32LessThanBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt32RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen);
+            x86::jae: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::UInt32LessOrEqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt32RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen);
+            x86::ja: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::UInt32GreaterThanBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt32RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen);
+            x86::jbe: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+TAC::Operation::UInt32GreaterOrEqualsBranch
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerComparisonBranchInt32RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen);
+            x86::jb: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
     }.
 
 ## Int64 comparisons
