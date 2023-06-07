@@ -1,5 +1,6 @@
 ## We use these for the different implementations of Size
 error __type__: (SimpleFunctionTypeTemplate((String,), 0bflgs, Unwinds)).
+primitiveFailedError __type__: (SimpleFunctionTypeTemplate((), 0bflgs, Unwinds)).
 
 ##(RawTuple::type) __type__: (SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Type)).
 (RawTuple::type:) __type__: (SimpleFunctionTypeTemplate((Untyped, Type), 0bflgs, Void)).
@@ -12,9 +13,23 @@ error __type__: (SimpleFunctionTypeTemplate((String,), 0bflgs, Unwinds)).
 (RawTuple::refTypeSlotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, TypeSlot, Untyped), 0bflgs, Void)).
 (RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:)
     __type__: (SimpleFunctionTypeTemplate((Type, Size, Size, Size, Size, Boolean, Boolean), 0bflgs, Untyped)).
-(==) __type__: (SimpleFunctionTypeTemplate((AnyValue, AnyValue), 0bflgs, Boolean)).
-(~~) __type__: (SimpleFunctionTypeTemplate((AnyValue, AnyValue), 0bflgs, Boolean)).
-identityHash __type__: (SimpleFunctionTypeTemplate((AnyValue,), 0bflgs, Size)).
+(==) adoptDefinitionOf: {:(AnyValue)left :(AnyValue)right :: Boolean |
+    <primitive: #== >
+    primitiveFailedError()
+}.
+(~~) adoptDefinitionOf: {:(AnyValue)left :(AnyValue)right :: Boolean |
+    <primitive: #~~ >
+    primitiveFailedError()
+}.
+
+identityHash adoptDefinitionOf: {:(AnyValue)value :: Size |
+    <primitive: #identityHash >
+    primitiveFailedError()
+}.
+
+Void::fromAnyValue adoptDefinitionOf: {:(AnyValue)value :: Void |
+    void
+}.
 
 {
     let: #binaryFunctionType with: SimpleFunctionTypeTemplate((UInt32, UInt32), 0bflgs, UInt32).
@@ -2219,6 +2234,11 @@ Float64 class
     withSelector: #zero addMethod: {:(Float64 class)self :: Float64 | 0.0 } makePure makeFinal;
     withSelector: #one addMethod: {:(Float64 class)self :: Float64 | 1.0 } makePure makeFinal.
 
+Integer class
+    withSelector: #defaultValue addMethod: {:(Integer class)self :: Integer | 0 } makeOverride;
+    withSelector: #zero addMethod: {:(Integer class)self :: Integer | 0 } makePure makeFinal;
+    withSelector: #one addMethod: {:(Integer class)self :: Integer | 1 } makePure makeFinal.
+
 Boolean class
     withSelector: #canEncodeValueInBytes addMethod: {:(Boolean class)self :: Boolean | true } makeOverride;
     withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Boolean class)self :(Boolean)value :(ByteArray)bytes :(Size)offset :: Void |
@@ -2592,7 +2612,6 @@ SimpleFunctionType
 ) do: {:SelfType :: Void |
     let: #unaryFunctionType with: SelfType => SelfType.
     let: #binaryFunctionType with: (SelfType, SelfType) => SelfType.
-    let: #equalityFunctionType with: (SelfType, AnyValue) => Boolean.
     let: #binaryComparisonFunctionType with: (SelfType, SelfType) => Boolean.
 
     ## Unary selectors
@@ -2612,16 +2631,9 @@ SimpleFunctionType
         if: method ~~ nil then: (method __type__: binaryFunctionType)
     }.
 
-    ## Equality
-    #(
-        = ~=
-    ) do: {:selector :: Void |
-        (SelfType >> selector) __type__: equalityFunctionType
-    }.
-
     ## Comparisons
     #(
-        < <= >= >
+        = ~= < <= >= >
     ) do: {:selector :: Void |
         (SelfType >> selector) __type__: binaryComparisonFunctionType
     }.

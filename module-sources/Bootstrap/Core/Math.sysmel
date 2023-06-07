@@ -1,34 +1,277 @@
-## Number methods
-#*(
+## Common number methods
+(
     UInt8,Int8,Char8,
     UInt16,Int16,Char16,
     UInt32,Int32,Char32,
     UInt64,Int64,
     Float32,Float64,
     Integer
-) do: {:(Type)NumberType :: Void |
-    NumberType extend: {
-        public pure final method min: (other: SelfType) ::=> SelfType
-            := if: self <= other then: self else: other.
+) macroDo: {:NumberType :: Void |
+    let primitivePrefix := NumberType name asString -- "::".
+    let isUnsigned := NumberType one negated > NumberType zero.
 
-        public pure final method max: (other: SelfType) ::=> SelfType
-            := if: self >= other then: self else: other.
+    NumberType definition: {
+        public pure final method negated ::=> SelfType := {
+            <primitive: (primitivePrefix -- "negated") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method + (other: SelfType) ::=> SelfType := {
+            <primitive: (primitivePrefix -- "+") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method - (other: SelfType) ::=> SelfType := {
+            <primitive: (primitivePrefix -- "-") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method * (other: SelfType) ::=> SelfType := {
+            <primitive: (primitivePrefix -- "*") asSymbol>
+            primitiveFailedError()
+        }.
+
+        NumberType ~~ Integer ifTrue: {
+            public pure final method / (other: SelfType) ::=> SelfType := {
+                <primitive: (primitivePrefix -- "/") asSymbol>
+                primitiveFailedError()
+            }.
+        }.
+
+        public pure final override method = (other: SelfType) ::=> Boolean := {
+            <primitive: (primitivePrefix -- "=") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final override method ~= (other: SelfType) ::=> Boolean := {
+            <primitive: (primitivePrefix -- "~=") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method < (other: SelfType) ::=> Boolean := {
+            <primitive: (primitivePrefix -- "<") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method <= (other: SelfType) ::=> Boolean := {
+            <primitive: (primitivePrefix -- "<=") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method >= (other: SelfType) ::=> Boolean := {
+            <primitive: (primitivePrefix -- ">=") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method > (other: SelfType) ::=> Boolean := {
+            <primitive: (primitivePrefix -- ">") asSymbol>
+            primitiveFailedError()
+        }.
+
+        if: isUnsigned then: {
+            public pure final method abs ::=> SelfType := {
+                <primitive: #yourself>
+                self
+            }
+        } else: {
+            public pure final method abs ::=> SelfType := {
+                <primitive: (primitivePrefix -- "abs") asSymbol>
+                if: self < SelfType zero then: self negated else: self.
+            }.
+        }.
+
+        public pure final method min: (other: SelfType) ::=> SelfType := {
+            <primitive: (primitivePrefix -- "min:") asSymbol>
+            if: self <= other then: self else: other.
+        }.
+
+        public pure final method max: (other: SelfType) ::=> SelfType := {
+            <primitive: (primitivePrefix -- "max:") asSymbol>
+            if: self >= other then: self else: other.
+        }.
+
+        public pure final method asUInt8 ::=> UInt8 := {
+            <primitive: (primitivePrefix -- "asUInt8") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method asInt8 ::=> Int8 := {
+            <primitive: (primitivePrefix -- "asInt8") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method asChar8 ::=> Char8 := {
+            <primitive: (primitivePrefix -- "asChar8") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method asUInt16 ::=> UInt16 := {
+            <primitive: (primitivePrefix -- "asUInt16") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method asInt16 ::=> Int16 := {
+            <primitive: (primitivePrefix -- "asInt16") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method asChar16 ::=> Char16 := {
+            <primitive: (primitivePrefix -- "asChar16") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method asUInt32 ::=> UInt32 := {
+            <primitive: (primitivePrefix -- "asUInt32") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method asInt32 ::=> Int32 := {
+            <primitive: (primitivePrefix -- "asInt32") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method asChar32 ::=> Char32 := {
+            <primitive: (primitivePrefix -- "asChar32") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method asUInt64 ::=> UInt64 := {
+            <primitive: (primitivePrefix -- "asUInt64") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method asInt64 ::=> Int64 := {
+            <primitive: (primitivePrefix -- "asInt64") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method asSize ::=> Size := {
+            <primitive: (primitivePrefix -- "asSize") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method asIntPointer ::=> IntPointer := {
+            <primitive: (primitivePrefix -- "asIntPointer") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method asUIntPointer ::=> UIntPointer := {
+            <primitive: (primitivePrefix -- "asUIntPointer") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method asFloat32 ::=> Float32 := {
+            <primitive: (primitivePrefix -- "asFloat32") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method asFloat64 ::=> Float64 := {
+            <primitive: (primitivePrefix -- "asFloat64") asSymbol>
+            primitiveFailedError()
+        }.
     }
 }.
-*#
+
+## Literal conversion methods
+(
+    Integer, Char32, Float64
+) macroDo: {:LiteralType :: Void |
+    LiteralType extend: {
+        public pure final method u8 => UInt8 := self asUInt8.
+        public pure final method i8 =>  Int8 := self  asInt8.
+        public pure final method c8 => Char8 := self asChar8.
+
+        public pure final method u16 => UInt16 := self asUInt16.
+        public pure final method i16 =>  Int16 := self  asInt16.
+        public pure final method c16 => Char16 := self asChar16.
+
+        public pure final method u32 => UInt32 := self asUInt32.
+        public pure final method i32 =>  Int32 := self  asInt32.
+        public pure final method c32 => Char32 := self asChar32.
+
+        public pure final method u64 => UInt64 := self asUInt64.
+        public pure final method i64 =>  Int64 := self  asInt64.
+
+        public pure final method f32 => Float32 := self asFloat32.
+        public pure final method f64 => Float64 := self asFloat64.
+
+        public pure final method sz => Size := self asSize.
+        public pure final method uptr => UIntPointer := self asUIntPointer.
+        public pure final method iptr => IntPointer := self asIntPointer.
+    }.
+}.
 
 ## Integer methods.
-#*
 (
     UInt8,Int8,Char8,
     UInt16,Int16,Char16,
     UInt32,Int32,Char32,
     UInt64,Int64,
     Integer
-) do: {:(Type)IntegerType :: Void |
-    IntegerType extend: {
+) macroDo: {:IntegerType :: Void |
+    let primitivePrefix := IntegerType name asString -- "::".
+
+    IntegerType definition: {
+        public pure final method bitInvert ::=> SelfType := {
+            <primitive: (primitivePrefix -- "bitInvert") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method // (other: SelfType) ::=> SelfType := {
+            <primitive: (primitivePrefix -- "/") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method % (other: SelfType) ::=> SelfType := {
+            <primitive: (primitivePrefix -- "%") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method \ (other: SelfType) ::=> SelfType := {
+            <primitive: (primitivePrefix -- "%") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method & (other: SelfType) ::=> SelfType := {
+            <primitive: (primitivePrefix -- "&") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method | (other: SelfType) ::=> SelfType := {
+            <primitive: (primitivePrefix -- "|") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method ^ (other: SelfType) ::=> SelfType := {
+            <primitive: (primitivePrefix -- "^") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method << (other: SelfType) ::=> SelfType := {
+            <primitive: (primitivePrefix -- "<<") asSymbol>
+            primitiveFailedError()
+        }.
+
+        public pure final method >> (other: SelfType) ::=> SelfType := {
+            <primitive: (primitivePrefix -- ">>") asSymbol>
+            primitiveFailedError()
+        }.
+
         public pure final method alignedTo: (alignment: SelfType) ::=> SelfType
-            := ((self + alignment) - (SelfType fromInteger: 1)) & alignment negated.
-    }
+            := (self + alignment - SelfType one) & alignment negated.
+    }.
 }.
-*#
+
+## Float methods.
+(
+    Float32, Float64
+) macroDo: {:FloatType :: Void |
+    let primitivePrefix := FloatType name asString -- "::".
+
+    FloatType definition: {
+        public pure final method sqrt ::=> SelfType := {
+            <primitive: (primitivePrefix -- "sqrt") asSymbol>
+            primitiveFailedError()
+        }.
+    }.
+}.

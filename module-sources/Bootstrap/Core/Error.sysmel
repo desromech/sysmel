@@ -4,3 +4,8 @@ error adoptDefinitionOf: {:(String)message :: Unwinds |
     "\n " writeOntoStderr.
     sysmel_pal_abort().
 }.
+
+primitiveFailedError adoptDefinitionOf: {:: Unwinds |
+    "Fatal error: primitive failed\n" writeOntoStderr.
+    sysmel_pal_abort().
+}.

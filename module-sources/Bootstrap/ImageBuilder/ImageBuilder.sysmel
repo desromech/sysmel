@@ -234,13 +234,11 @@ ImageBuilder definition: {
         printLine("Functions ", tracedFunctions size).
         printLine("Function definitions ", tracedFunctionDefinitions size).
 
-        #*
         tracedFunctions do: {:(Function)each :: Void |
             each definition ifNil: {
                 printLine("Warning, function without definition: ", each).
             }
         }.
-        *#
     }.
 
     public method saveTo: (filename: String) ::=> Void := {

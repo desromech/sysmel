@@ -85,3 +85,23 @@ AnyValue
             if: `,receiver ~~ nil then: `,(notNilExpression cullExpressionWith: receiver at: macroContext sourcePosition) else: `,nilExpression
         }
     } makeMacro.
+
+Collection
+    withSelector: #macroDo: addMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)aBlock :: ASTNode |
+        let collection => Collection := self analyzeAndEvaluateWithEnvironment: macroContext environment.
+        let expressions := Array new: collection size.
+        collection doWithIndex: {:each :(Size)index :: Void |
+            let literal := ASTLiteralNode new
+                sourcePosition: macroContext sourcePosition;
+                value: each;
+                yourself.
+
+            expressions at: index put: (aBlock cullExpressionWith: literal at: macroContext sourcePosition)
+        }.
+
+        ASTSequenceNode new
+            sourcePosition: macroContext sourcePosition;
+            pragmas: #();
+            expressions: expressions;
+            yourself.
+    } makeMacro.

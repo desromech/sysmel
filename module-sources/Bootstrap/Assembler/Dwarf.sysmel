@@ -1345,7 +1345,7 @@ public final class Dwarf::SectionWriter superclass: Object; definition: {
         do: {
             let byte := (currentValue & 127u64) asUInt8.
             currentValue := currentValue >> 7u64.
-            out nextPut: byte | (currentValue ~= 0 ifTrue: 128u8 ifFalse: 0u8)
+            out nextPut: byte | (currentValue ~= 0u64 ifTrue: 128u8 ifFalse: 0u8)
         } while: (currentValue ~= 0u64)
     }.
 

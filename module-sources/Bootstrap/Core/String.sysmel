@@ -96,13 +96,13 @@ String extend: {
                 i := i + 1sz.
                 if: i < size then: {
                     let escapeCharacter := self at: i.
-                    escapeCharacter = 'n' ifTrue: {
+                    escapeCharacter = 'n'c8 ifTrue: {
                         result at: destIndex put: '\n'c8
                     } ifFalse: {
-                        escapeCharacter = 'r' ifTrue: {
+                        escapeCharacter = 'r'c8 ifTrue: {
                             result at: destIndex put: '\r'c8
                         } ifFalse: {
-                            escapeCharacter = 't' ifTrue: {
+                            escapeCharacter = 't'c8 ifTrue: {
                                 result at: destIndex put: '\t'c8
                             } ifFalse: {
                                 result at: destIndex put: escapeCharacter

@@ -140,7 +140,7 @@ public final class AsmImmediateSymbolWithAddend superclass: AsmImmediate; defini
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: symbol.
-        addend ~= 0 ifTrue: (stream nextPutAll: " + "; print: addend).
+        addend ~= 0i64 ifTrue: (stream nextPutAll: " + "; print: addend).
     }.
 
     public override method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
@@ -1002,7 +1002,7 @@ public final class AsmULEB128Directive superclass: AsmStreamElement; definition:
         do: {
             let byte := (currentValue & 127u64) asUInt8.
             currentValue := currentValue >> 7u64.
-            stream nextPut: byte | (currentValue ~= 0 ifTrue: 128u8 ifFalse: 0u8)
+            stream nextPut: byte | (currentValue ~= 0u64 ifTrue: 128u8 ifFalse: 0u8)
         } while: (currentValue ~= 0u64)
     }.
 }.
@@ -1154,7 +1154,7 @@ public final class AsmULEB128ConstantExpressionDirective superclass: AsmStreamEl
         do: {
             let byte := (currentValue & 127u64) asUInt8.
             currentValue := currentValue >> 7u64.
-            stream nextPut: byte | (currentValue ~= 0 ifTrue: 128u8 ifFalse: 0u8)
+            stream nextPut: byte | (currentValue ~= 0u64 ifTrue: 128u8 ifFalse: 0u8)
         } while: (currentValue ~= 0u64)
     }.
 }.
