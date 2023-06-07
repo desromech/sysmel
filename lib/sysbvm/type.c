@@ -1317,7 +1317,7 @@ static sysbvm_tuple_t sysbvm_type_primitive_coerceASTNodeWithEnvironment(sysbvm_
         }
         else
         {
-            sysbvm_error("Cannot perform the type coercion.");
+            sysbvm_error("Cannot perform the node type coercion.");
         }
     }
 

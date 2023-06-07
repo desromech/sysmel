@@ -1,5 +1,5 @@
 MethodDictionary definition: {
-    public final method scanFor: key ::=> IntPointer := {
+    public final eager method scanFor: key ::=> IntPointer := {
         storage ifNil: { return: -1iptr }.
 
         let capacity := storage size / 2sz.
@@ -24,7 +24,7 @@ MethodDictionary definition: {
         -1iptr
     }.
 
-    public final method atOrNil: selector := {
+    public final eager method atOrNil: selector := {
         let index := self scanFor: selector.
         index >= 0iptr ifTrue: {
             let methodIndex := index *2iptr + 1iptr.

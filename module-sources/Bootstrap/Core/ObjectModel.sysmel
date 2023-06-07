@@ -492,7 +492,7 @@ identityHash adoptDefinitionOf: {:(Untyped)self :: Size |
     } ifFalse: {
         pointerValue asSize hashMultiply
     }
-}.
+} withEagerAnalysis.
 
 RawTuple::isBytes adoptDefinitionOf: {:(Untyped)self :: Boolean |
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
@@ -501,7 +501,7 @@ RawTuple::isBytes adoptDefinitionOf: {:(Untyped)self :: Boolean |
     } ifFalse: {
         false
     }
-}.
+} withEagerAnalysis.
 
 RawTuple::size adoptDefinitionOf: {:(Untyped)self :: Size |
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
@@ -510,7 +510,7 @@ RawTuple::size adoptDefinitionOf: {:(Untyped)self :: Size |
     } ifFalse: {
         0sz
     }.
-}.
+} withEagerAnalysis.
 
 RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
@@ -525,7 +525,7 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
             ObjectModel::ImmediateTagTypeTable at: tag asSize
         }
     }
-}.
+} withEagerAnalysis.
 
 (RawTuple::slotAt:) adoptDefinitionOf: {:(Untyped)self :(Size)index :: Untyped |
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
@@ -547,7 +547,7 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
 
         (byteValue asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::UInt8 asUIntPointer reinterpretCastTo: Untyped
     }
-}.
+} withEagerAnalysis.
 
 (RawTuple::slotAt:put:) adoptDefinitionOf: {:(Untyped)self :(Size)index :(Untyped)value :: Void |
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
@@ -560,7 +560,7 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
             (contents reinterpretCastTo: Untyped pointer)[index asIntPointer] := value
         }
     }
-}.
+} withEagerAnalysis.
 
 (RawTuple::byteSlotAt:) adoptDefinitionOf: {:(Untyped)self :(Size)index :: UInt8 |
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
@@ -578,7 +578,7 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
             ifTrue: (pointerValue asIntPointer >> shiftAmount asIntPointer) asUInt8
             ifFalse: (pointerValue >> shiftAmount) asUInt8
     }
-}.
+} withEagerAnalysis.
 
 (RawTuple::byteSlotAt:put:) adoptDefinitionOf: {:(Untyped)self :(Size)index :(UInt8)value :: Void |
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
@@ -592,7 +592,7 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
     } ifFalse: {
         error("Cannot modifiy immutable object.").
     }
-}.
+} withEagerAnalysis.
 
 RawTuple::byteSize adoptDefinitionOf: {:(Untyped)self :: Size |
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
@@ -601,7 +601,7 @@ RawTuple::byteSize adoptDefinitionOf: {:(Untyped)self :: Size |
     } ifFalse: {
         0sz
     }
-}.
+} withEagerAnalysis.
 
 public function ObjectModel::lookupVirtualSelector(object: Untyped, selector: Symbol) => Untyped
     := RawTuple::type(object) lookupVirtualSelector: selector.

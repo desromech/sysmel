@@ -228,6 +228,14 @@ SYSBVM_INLINE bool sysbvm_function_isMemoizedTemplate(sysbvm_context_t *context,
 }
 
 /**
+ * Is this a core primitive?
+ */
+SYSBVM_INLINE bool sysbvm_function_isCorePrimitive(sysbvm_context_t *context, sysbvm_tuple_t function)
+{
+    return (sysbvm_function_getFlags(context, function) & SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE) != 0;
+}
+
+/**
  * Applies a function tuple with the given parameters
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_function_apply(sysbvm_context_t *context, sysbvm_tuple_t function, size_t argumentCount, sysbvm_tuple_t *arguments, sysbvm_bitflags_t applicationFlags);

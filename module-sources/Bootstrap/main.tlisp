@@ -117,9 +117,9 @@
 (define (Type::withSelector:addMethod: type selector method)
     (define methodDict (Type::validMethodDictionary type))
     (define existentMethod (MethodDictionary::atOrNil: methodDict selector))
-    (define isCorePrimitive (Function::isCorePrimitive existentMethod))
+    (define isBootstrapPrimitive (Function::isBootstrapPrimitive existentMethod))
     (define hasVirtualDispatch (Function::hasVirtualDispatch method))
-    (if:then:else: isCorePrimitive
+    (if:then:else: isBootstrapPrimitive
         (Function::adoptDefinitionOf: existentMethod method)
         (MethodDictionary::at:put: methodDict selector method))
     (Type::flushLookupSelector: type selector)
