@@ -138,6 +138,7 @@ SSAFunction definition: {
     }.
 
     public override method isCaptureless => Boolean := captures isEmpty.
+    public method isTargetDefinedPrimitive => Boolean := sourceObject isNotNil && sourceObject isTargetDefinedPrimitive.
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: '@'.
@@ -184,6 +185,8 @@ SSAFunctionDefinition definition: {
     public field lastBasicBlock => SSABasicBlock.
 
     public override method isFunction => Boolean := true.
+
+    public method isTargetDefinedPrimitive => Boolean := sourceObject isNotNil && sourceObject isTargetDefinedPrimitive.
 
     public override method initialize => Void := {
         importedSymbols := #().

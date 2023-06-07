@@ -15,10 +15,12 @@ primitiveFailedError __type__: (SimpleFunctionTypeTemplate((), 0bflgs, Unwinds))
     __type__: (SimpleFunctionTypeTemplate((Type, Size, Size, Size, Size, Boolean, Boolean), 0bflgs, Untyped)).
 (==) adoptDefinitionOf: {:(AnyValue)left :(AnyValue)right :: Boolean |
     <primitive: #== >
+    <targetDefinedPrimitive>
     primitiveFailedError()
 }.
 (~~) adoptDefinitionOf: {:(AnyValue)left :(AnyValue)right :: Boolean |
     <primitive: #~~ >
+    <targetDefinedPrimitive>
     primitiveFailedError()
 }.
 
@@ -28,6 +30,7 @@ identityHash adoptDefinitionOf: {:(AnyValue)value :: Size |
 }.
 
 Void::fromAnyValue adoptDefinitionOf: {:(AnyValue)value :: Void |
+    <targetDefinedPrimitive>
     void
 }.
 
@@ -200,6 +203,7 @@ AnyValue
     withSelector: #initialize addMethod: {:(AnyValue)self :: Void | } makeVirtual withEagerAnalysis;
     withSelector: #yourself addMethod: {:(AnyValue)self :: self __type__ |
         <primitive: #yourself>
+        <targetDefinedPrimitive>
         self
     } makePure makeFinal withEagerAnalysis;
 
@@ -489,7 +493,7 @@ Array
         let: #i mutableWith: 0sz.
         let: #size with: self size.
 
-        while: i < self size do: {
+        while: i < size do: {
             aBlock(self at: i, i)
         } continueWith: (i := i + 1sz)
     } makeVirtual makeFinal.
@@ -1102,6 +1106,11 @@ Function
 
         stream nextPut: ')'
     } makeOverride.
+
+FunctionDefinition
+    withSelector: #hasFlag: addMethod: {:(FunctionDefinition)self :(Bitflags)flag :: Boolean |
+        (self flags & flag) ~= 0bflgs
+    }.
 
 ValueBox
     withSelector: #with: addClassMethod: {:(ValueBox class)self :value :: self |

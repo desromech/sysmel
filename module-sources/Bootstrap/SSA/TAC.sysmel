@@ -42,6 +42,8 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
         := targetModule.
 
     public method compileDirectFunction: (function: SSAFunction) ::=> Void := {
+        (function isTargetDefinedPrimitive && function exportedSymbols isEmpty) ifTrue: {return: void}.
+
         function definition ifNotNil: {
             function isCaptureless ifTrue: {
                 (self translateCapturelessUncheckedFunctionEntryPoint: function definition)
@@ -53,6 +55,8 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
     }.
 
     public method compileDirectFunctionDefinition: (functionDefinition: SSAFunctionDefinition) ::=> Void := {
+        functionDefinition isTargetDefinedPrimitive ifTrue: {return: void}.
+
         functionDefinition isCaptureless ifTrue: {
             self translateCapturelessUncheckedFunctionEntryPoint: functionDefinition
         } ifFalse: {

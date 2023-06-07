@@ -12,9 +12,15 @@ Function definition: {
         captureVector := newCaptureVector.
         definition := newDefinition.
     }.
+
+    public method isTargetDefinedPrimitive => Boolean
+        := (self hasFlag: FunctionFlags::TargetDefinedPrimitive) || (self hasPragmaNamed: #targetDefinedPrimitive).
 }.
 
 FunctionDefinition definition: {
+    public method isTargetDefinedPrimitive => Boolean
+        := (self hasFlag: FunctionFlags::TargetDefinedPrimitive) || (self hasPragmaNamed: #targetDefinedPrimitive).
+
     public method allAnalyzedNodesDo: (aBlock: (ASTNode) => Void) ::=> Void := {
         self ensureAnalysis.
         analyzedArgumentNodes do: {:(ASTNode)each :: Void |
@@ -27,6 +33,15 @@ FunctionDefinition definition: {
     public method allLiteralDependenciesDo: (aBlock: (Untyped) => Void) ::=> Void := {
         self allAnalyzedNodesDo: {:(ASTNode)each :: Void |
             each literalDependenciesDo: aBlock
+        }
+    }.
+
+    public method allNonPrimitiveLiteralDependenciesDo: (aBlock: (Untyped) => Void) ::=> Void := {
+        self allLiteralDependenciesDo: {:(Untyped)each :: Void |
+            let elementType := RawTuple::type(each) ifNil: AnyValue.
+            ((elementType isSubtypeOf: Function) || (elementType isSubtypeOf: FunctionDefinition)) && each isTargetDefinedPrimitive ifFalse: {
+                aBlock(each)
+            }
         }
     }.
 }.

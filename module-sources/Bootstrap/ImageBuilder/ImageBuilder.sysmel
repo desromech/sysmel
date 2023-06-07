@@ -93,7 +93,7 @@ FunctionDefinition definition: {
             super imageBuilder::traceMinimalReferencesOf: object with: imageBuilder.
 
             let functionDefinition => FunctionDefinition := object.
-            functionDefinition allLiteralDependenciesDo: {:(Untyped)dependency :: Void |
+            functionDefinition allNonPrimitiveLiteralDependenciesDo: {:(Untyped)dependency :: Void |
                 imageBuilder enqueueObjectTrace: dependency
             }.
         }.
@@ -103,7 +103,7 @@ FunctionDefinition definition: {
             super imageBuilder::traceNoRTTIReferencesOf: object with: imageBuilder.
 
             let functionDefinition => FunctionDefinition := object.
-            functionDefinition allLiteralDependenciesDo: {:(Untyped)dependency :: Void |
+            functionDefinition allNonPrimitiveLiteralDependenciesDo: {:(Untyped)dependency :: Void |
                 imageBuilder enqueueObjectTrace: dependency                
             }.
         }.

@@ -624,10 +624,10 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.anyReferenceType, "AnyReference", SYSBVM_NULL_TUPLE, NULL);
 
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.pointerLikeType, "PointerLikeType", SYSBVM_NULL_TUPLE,
-        "baseType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
+        "baseType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_RTTI_EXCLUDED, context->roots.typeType,
         "addressSpace", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
-        "loadValueFunction", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionType,
-        "storeValueFunction", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionType,
+        "loadValueFunction", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.functionType,
+        "storeValueFunction", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.functionType,
         SYSBVM_NULL_TUPLE);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.pointerType, "PointerType", SYSBVM_NULL_TUPLE, NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.referenceType, "ReferenceType", SYSBVM_NULL_TUPLE, NULL);
