@@ -135,6 +135,11 @@ DecayedTypeInferenceType __type__ extend: {
         := (node analyzedType ifNil: Untyped) asDecayedType coerceASTNode: node withEnvironment: environment.
 }.
 
+ReceiverTypeInferenceType __type__ extend: {
+    public override eager method coerceASTNode: (node: ASTNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := (node analyzedType ifNil: Untyped) asDecayedReceiverType coerceASTNode: node withEnvironment: environment.
+}.
+
 public final class ASTNodeWithCanonicalType superclass: Object; definition: {
     public field node => ASTNode.
     public field canonicalType => Type.
@@ -295,6 +300,10 @@ AnalysisAndEvaluationEnvironment definition: {
         self analyze: node withExpectedType: DecayedTypeInferenceType
     }.
 
+    public eager method analyzeWithReceiverType: (node: ASTNode) ::=> ASTNode := {
+        self analyze: node withExpectedType: ReceiverTypeInferenceType
+    }.
+
     public eager method analyze: (node: ASTNode) withExpectedTypeExpression: (expectedTypeExpression: ASTNode) at: (sourcePosition: SourcePosition) ::=> ASTNodeWithCanonicalType := {
         expectedTypeExpression ifNil: {
             let analyzedNode := self analyzeWithDecayedType: node.
@@ -399,7 +408,7 @@ AnalysisAndEvaluationEnvironment definition: {
         let i mutable := 0sz.
         while: i < usedTuplesWithNamedSlotsCount do: {
             let usedTupleBinding := usedTuplesWithNamedSlots at: i.
-            let slot := usedTupleBinding type lookupSlot: symbol.
+            let slot := usedTupleBinding type asDecayedType lookupSlot: symbol.
             slot ifNotNil: {
                 return: (SymbolTupleSlotBinding new
                     type: slot validReferenceType;

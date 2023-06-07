@@ -246,6 +246,12 @@ Type
     withSelector: #asDecayedType addMethod: {:(Type)self :: Type |
         self
     } makePure makeVirtual withEagerAnalysis;
+    withSelector: #decayReferenceForReceiverType: addMethod: {:(Type)self :(ReferenceType)reference :: Type |
+        self
+    } makePure makeVirtual withEagerAnalysis;
+    withSelector: #asDecayedReceiverType addMethod: {:(Type)self :: Type |
+        self
+    } makePure makeVirtual withEagerAnalysis;
     withSelector: #isDirectSubtypeOf: addMethod: {:(Type)self :(Type)expectedParent :: Boolean |
         if: self == expectedParent
         then: true
@@ -702,6 +708,9 @@ ReferenceType
     withSelector: #isReferenceType addMethod: {:(ReferenceType)self :: Boolean | true } makeOverride makePure;
     withSelector: #asDecayedType addMethod: {:(ReferenceType)self :: Type |
         self baseType
+    } makePure makeOverride withEagerAnalysis;
+    withSelector: #asDecayedReceiverType addMethod: {:(ReferenceType)self :: Type |
+        self baseType decayReferenceForReceiverType: self
     } makePure makeOverride withEagerAnalysis;
     withSelector: #asCanonicalPendingInstanceType addMethod: {:(ReferenceType)self :: Type |
         let: #baseType with: self baseType.
@@ -3033,10 +3042,12 @@ ValueType
     } makeOverride;
     withSelector: #isGarbageCollectedPointerType addMethod: {:(Type)self :: Boolean | false } makeOverride;
     withSelector: #isValueType addMethod: {:(Type)self :: Boolean | true } makeOverride;
-    withSelector: #asReceiverType addMethod: {:(Type)self :: Type | self ref } makeOverride.
+    withSelector: #asReceiverType addMethod: {:(Type)self :: Type | self ref } makeOverride;
+    withSelector: #decayReferenceForReceiverType: addMethod: {:(Type)self :(ReferenceType)reference :: Type | reference } makeOverride.
 
 PrimitiveValueType
-    withSelector: #asReceiverType addMethod: {:(Type)self :: Type | self } makeOverride.
+    withSelector: #asReceiverType addMethod: {:(Type)self :: Type | self } makeOverride;
+    withSelector: #decayReferenceForReceiverType: addMethod: {:(Type)self :(ReferenceType)reference :: Type | self } makeOverride.
 
 Environment
     withSelector: #setSymbol:value: addMethod: {:(Environment)self :(Symbol)symbol :value :: value __type__ |

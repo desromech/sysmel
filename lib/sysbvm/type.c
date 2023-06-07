@@ -508,6 +508,12 @@ SYSBVM_API sysbvm_tuple_t sysbvm_referenceType_withTupleAndTypeSlot(sysbvm_conte
     return (sysbvm_tuple_t)reference;
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_referenceType_incrementWithTypeSlot(sysbvm_context_t *context, sysbvm_tuple_t referenceType, sysbvm_tuple_t parentReference, sysbvm_tuple_t typeSlot)
+{
+    // TODO: Implement this in a proper way.
+    return sysbvm_referenceType_withTupleAndTypeSlot(context, referenceType, sysbvm_pointerLikeType_load(context, parentReference), typeSlot);
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_type_createDependentFunctionType(sysbvm_context_t *context, sysbvm_tuple_t argumentNodes, sysbvm_bitflags_t flags, sysbvm_tuple_t resultTypeNode,
     sysbvm_tuple_t environment, sysbvm_tuple_t captureBindings, sysbvm_tuple_t argumentBindings, sysbvm_tuple_t localBindings)
 {

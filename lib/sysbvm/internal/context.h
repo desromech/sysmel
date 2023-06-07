@@ -198,6 +198,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t unwindsType;
     sysbvm_tuple_t typeInferenceType;
     sysbvm_tuple_t decayedTypeInferenceType;
+    sysbvm_tuple_t receiverTypeInferenceType;
     sysbvm_tuple_t directTypeInferenceType;
 
     sysbvm_tuple_t primitiveNumberType;

@@ -46,6 +46,9 @@ let opcodeNameDictionary := #{
     FunctionBytecode::Opcode::SlotAt : #slotAt.
     FunctionBytecode::Opcode::SlotReferenceAt : #slotReferenceAt.
     FunctionBytecode::Opcode::SlotAtPut : #slotAtPut.
+    FunctionBytecode::Opcode::RefSlotAt : #refSlotAt.
+    FunctionBytecode::Opcode::RefSlotReferenceAt : #refSlotReferenceAt.
+    FunctionBytecode::Opcode::RefSlotAtPut : #refSlotAtPut.
 
     FunctionBytecode::Opcode::Call : #call.
     FunctionBytecode::Opcode::UncheckedCall : #uncheckedCall.

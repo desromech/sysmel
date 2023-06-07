@@ -89,8 +89,8 @@ public final struct ObjectModel::TupleHeader32 definition: {
 
     public method isBytes: (flag: Boolean) ::=> Void := {
         flag
-            ifTrue: (typePointerAndFlags := typePointerAndFlags & ObjectModel::TypePointerFlag::Bytes asUInt32 bitInvert)
-            ifFalse: (typePointerAndFlags := typePointerAndFlags | ObjectModel::TypePointerFlag::Bytes asUInt32).
+            ifTrue: (typePointerAndFlags := typePointerAndFlags | ObjectModel::TypePointerFlag::Bytes asUInt32)
+            ifFalse: (typePointerAndFlags := typePointerAndFlags & ObjectModel::TypePointerFlag::Bytes asUInt32 bitInvert).
     }.
 
     public method isWeak => Boolean
@@ -98,8 +98,8 @@ public final struct ObjectModel::TupleHeader32 definition: {
 
     public method isWeak: (flag: Boolean) ::=> Void := {
         flag
-            ifTrue: (typePointerAndFlags := identityHashAndFlags & ObjectModel::TypePointerFlag::Weak asUInt32 bitInvert)
-            ifFalse: (typePointerAndFlags := identityHashAndFlags | ObjectModel::TypePointerFlag::Weak asUInt32).
+            ifTrue: (typePointerAndFlags := typePointerAndFlags | ObjectModel::TypePointerFlag::Weak asUInt32)
+            ifFalse: (typePointerAndFlags := typePointerAndFlags & ObjectModel::TypePointerFlag::Weak asUInt32 bitInvert).
     }.
 
     public method identityHashValue ::=> UInt32
@@ -109,6 +109,8 @@ public final struct ObjectModel::TupleHeader32 definition: {
         identityHashAndFlags := (identityHash << 4u32) | (identityHashAndFlags & 15u32)
     }.
 
+    public method slotCount => UInt32
+        := objectSize >> 2u32.
 }.
 
 public final struct ObjectModel::TupleHeader64 definition: {
@@ -129,8 +131,8 @@ public final struct ObjectModel::TupleHeader64 definition: {
 
     public method isBytes: (flag: Boolean) ::=> Void := {
         flag
-            ifTrue: (typePointerAndFlags := identityHashAndFlags & ObjectModel::TypePointerFlag::Bytes asUInt64 bitInvert)
-            ifFalse: (typePointerAndFlags := identityHashAndFlags | ObjectModel::TypePointerFlag::Bytes asUInt64).
+            ifTrue: (typePointerAndFlags := typePointerAndFlags | ObjectModel::TypePointerFlag::Bytes asUInt64)
+            ifFalse: (typePointerAndFlags := typePointerAndFlags & ObjectModel::TypePointerFlag::Bytes asUInt64 bitInvert).
     }.
 
     public method isWeak => Boolean
@@ -138,8 +140,8 @@ public final struct ObjectModel::TupleHeader64 definition: {
 
     public method isWeak: (flag: Boolean) ::=> Void := {
         flag
-            ifTrue: (typePointerAndFlags := identityHashAndFlags & ObjectModel::TypePointerFlag::Weak asUInt64 bitInvert)
-            ifFalse: (typePointerAndFlags := identityHashAndFlags | ObjectModel::TypePointerFlag::Weak asUInt64).
+            ifTrue: (typePointerAndFlags := typePointerAndFlags | ObjectModel::TypePointerFlag::Weak asUInt64)
+            ifFalse: (typePointerAndFlags := typePointerAndFlags & ObjectModel::TypePointerFlag::Weak asUInt64 bitInvert).
     }.
 
     public method identityHashValue ::=> UInt64
@@ -148,6 +150,9 @@ public final struct ObjectModel::TupleHeader64 definition: {
     public method identityHashValue: (identityHash: UInt64) ::=> Void := {
         identityHashAndFlags := (identityHash << 4u64) | (identityHashAndFlags & 15u64)
     }.
+
+    public method slotCount => UInt64
+        := objectSize >> 3u64.
 }.
 
 public abstract class ObjectModelVariant superclass: Object; definition: {
@@ -501,7 +506,7 @@ RawTuple::isBytes adoptDefinitionOf: {:(Untyped)self :: Boolean |
 RawTuple::size adoptDefinitionOf: {:(Untyped)self :: Size |
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
-        (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ objectSize / ObjectModel::PointerSize
+        (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ slotCount
     } ifFalse: {
         0sz
     }.
@@ -549,8 +554,7 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
         let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
         let contents := header + 1iptr.
-        let isBytes := (header _ typePointerAndFlags & ObjectModel::TypePointerFlag::Bytes asUIntPointer) ~= 0uptr.
-        isBytes ifTrue: {
+        header _ isBytes ifTrue: {
             (contents reinterpretCastTo: UInt8 pointer)[index asIntPointer] := (ObjectModel::getTuplePointerUIntValue(value) >> ObjectModel::Tag::Bits asUIntPointer) asUInt8
         } ifFalse: {
             (contents reinterpretCastTo: Untyped pointer)[index asIntPointer] := value
@@ -563,8 +567,7 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
         let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
         let contents := header + 1iptr.
-        let isBytes := (header _ typePointerAndFlags & ObjectModel::TypePointerFlag::Bytes asUIntPointer) ~= 0uptr.
-        isBytes ifFalse: (error("Expected a byte tuple.")).
+        header _ isBytes ifFalse: (error("Expected a byte tuple.")).
         
         (contents reinterpretCastTo: UInt8 pointer)[index asIntPointer]
     } ifFalse: {
@@ -582,7 +585,7 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
         let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
         let contents := header + 1iptr.
-        let isBytes := (header _ typePointerAndFlags & ObjectModel::TypePointerFlag::Bytes asUIntPointer) ~= 0uptr.
+        let isBytes := header _ isBytes.
         isBytes ifFalse: (error("Expected a byte tuple.")).
 
         (contents reinterpretCastTo: UInt8 pointer)[index asIntPointer] := value
@@ -616,11 +619,10 @@ public function ObjectModel::lookupVirtualSelectorWithReceiverType(receiverType:
     memset(allocationPointer, 0i8, allocationSize).
 
     let objectHeader := allocationPointer reinterpretCastTo: ObjectModel::TupleHeader pointer.
-    let typePointerFlags :=
-        (isBytes ifTrue: ObjectModel::TypePointerFlag::Bytes asUIntPointer ifFalse: (0uptr)) |
-        (isWeak ifTrue: ObjectModel::TypePointerFlag::Weak asUIntPointer ifFalse: (0uptr)).
     objectHeader _
-        typePointerAndFlags: ObjectModel::getTuplePointerUIntValue(type) | typePointerFlags;
+        typePointerAndFlags: ObjectModel::getTuplePointerUIntValue(type);
+        isBytes: isBytes;
+        isWeak: isWeak;
         objectSize: contentSize.
 
     allocationPointer reinterpretCastTo: Untyped.

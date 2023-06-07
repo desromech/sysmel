@@ -839,7 +839,7 @@ Type definition: {
     public virtual eager method analyzeAndTypeCheckSolvedMessageSendNode: (node: ASTMessageSendNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
         := node
             analyzedType: AnyValue;
-            receiver: (node receiver ifNotNil: (environment analyzeWithDecayedType: node receiver));
+            receiver: (node receiver ifNotNil: (environment analyzeWithReceiverType: node receiver));
             arguments: (node arguments collect: {:(ASTNode)each :: ASTNode | environment analyzeWithDecayedType: each});
             yourself.
 
@@ -1415,7 +1415,7 @@ ASTTupleSlotNamedAtNode definition: {
             self boundSlot
         } ifNil: {
             let slotName := self nameExpression analyzeAndEvaluateWithEnvironment: environment.
-            (RawTuple::type(tuple) lookupSlot: slotName) ifNil: {
+            (RawTuple::type(tuple) asDecayedType lookupSlot: slotName) ifNil: {
                 self semanticError: "Failed to find slot named " -- slotName printString -- ".".
 
             }
@@ -1427,7 +1427,7 @@ ASTTupleSlotNamedAtNode definition: {
     public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
         let result := self copy
             analyzerToken: environment validAnalyzerToken;
-            tupleExpression: (environment analyzeWithDecayedType: self tupleExpression);
+            tupleExpression: (environment analyzeWithReceiverType: self tupleExpression);
             yourself.
 
         result nameExpression ifNotNil: {
@@ -1437,7 +1437,7 @@ ASTTupleSlotNamedAtNode definition: {
             }.
 
             let slotName => Symbol := (self nameExpression downCastTo: ASTLiteralNode) value.
-            let slot := tupleExpression analyzedType lookupSlot: slotName.
+            let slot := tupleExpression analyzedType asDecayedType lookupSlot: slotName.
             slot ifNil: {
                 self semanticError: "Failed to find slot named " -- slotName printString -- ".".
             }.
@@ -1467,7 +1467,7 @@ ASTTupleSlotNamedReferenceAtNode definition: {
             self boundSlot
         } ifNil: {
             let slotName := self nameExpression analyzeAndEvaluateWithEnvironment: environment.
-            (RawTuple::type(tuple) lookupSlot: slotName) ifNil: {
+            (RawTuple::type(tuple) asDecayedType lookupSlot: slotName) ifNil: {
                 self semanticError: "Failed to find slot named " -- slotName printString -- ".".
 
             }
@@ -1479,7 +1479,7 @@ ASTTupleSlotNamedReferenceAtNode definition: {
     public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
         let result := self copy
             analyzerToken: environment validAnalyzerToken;
-            tupleExpression: (environment analyzeWithDecayedType: self tupleExpression);
+            tupleExpression: (environment analyzeWithReceiverType: self tupleExpression);
             yourself.
 
         result nameExpression ifNotNil: {
@@ -1489,7 +1489,7 @@ ASTTupleSlotNamedReferenceAtNode definition: {
             }.
 
             let slotName => Symbol := (self nameExpression downCastTo: ASTLiteralNode) value.
-            let slot := tupleExpression analyzedType lookupSlot: slotName.
+            let slot := tupleExpression analyzedType asDecayedType lookupSlot: slotName.
             slot ifNil: {
                 self semanticError: "Failed to find slot named " -- slotName printString -- ".".
             }.
@@ -1520,9 +1520,8 @@ ASTTupleSlotNamedAtPutNode definition: {
             self boundSlot
         } ifNil: {
             let slotName := self nameExpression analyzeAndEvaluateWithEnvironment: environment.
-            (RawTuple::type(tuple) lookupSlot: slotName) ifNil: {
+            (RawTuple::type(tuple) asDecayedType lookupSlot: slotName) ifNil: {
                 self semanticError: "Failed to find slot named " -- slotName printString -- ".".
-
             }
         }.
 
@@ -1534,7 +1533,7 @@ ASTTupleSlotNamedAtPutNode definition: {
     public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
         let result := self copy
             analyzerToken: environment validAnalyzerToken;
-            tupleExpression: (environment analyzeWithDecayedType: self tupleExpression);
+            tupleExpression: (environment analyzeWithReceiverType: self tupleExpression);
             yourself.
 
         result nameExpression ifNotNil: {
@@ -1544,7 +1543,7 @@ ASTTupleSlotNamedAtPutNode definition: {
             }.
 
             let slotName => Symbol := (self nameExpression downCastTo: ASTLiteralNode) value.
-            let slot := tupleExpression analyzedType lookupSlot: slotName.
+            let slot := tupleExpression analyzedType asDecayedType lookupSlot: slotName.
             slot ifNil: {
                 self semanticError: "Failed to find slot named " -- slotName printString -- ".".
             }.
@@ -1582,7 +1581,7 @@ ASTUseNamedSlotsOfNode definition: {
         let result := self copy
             analyzedType: Void;
             analyzerToken: environment validAnalyzerToken;
-            tupleExpression: (environment analyzeWithDecayedType: tupleExpression);
+            tupleExpression: (environment analyzeWithReceiverType: tupleExpression);
             yourself.
 
         result tupleExpression isLiteralNode ifTrue: {

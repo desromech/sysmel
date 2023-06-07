@@ -207,7 +207,13 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_getBindingValue(sysbvm_context
         sysbvm_symbolTupleSlotBinding_t *bindingObject = (sysbvm_symbolTupleSlotBinding_t*)binding;
         sysbvm_tuple_t tupleValue = sysbvm_bytecodeCompiler_getBindingValue(context, compiler, bindingObject->tupleBinding);
         sysbvm_tuple_t reference = sysbvm_bytecodeCompiler_newTemporary(context, compiler);
-        sysbvm_bytecodeCompiler_slotReferenceAt(context, compiler, reference, tupleValue, sysbvm_bytecodeCompiler_addLiteral(context, compiler, bindingObject->typeSlot));
+
+        sysbvm_symbolBinding_t *tupleBindingObject = (sysbvm_symbolBinding_t*)bindingObject->tupleBinding;
+
+        if(sysbvm_type_isPointerLikeType(tupleBindingObject->type))
+            sysbvm_bytecodeCompiler_refSlotReferenceAt(context, compiler, reference, tupleValue, sysbvm_bytecodeCompiler_addLiteral(context, compiler, bindingObject->typeSlot));
+        else
+            sysbvm_bytecodeCompiler_slotReferenceAt(context, compiler, reference, tupleValue, sysbvm_bytecodeCompiler_addLiteral(context, compiler, bindingObject->typeSlot));
         return reference;
     }
 
@@ -327,6 +333,42 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_slotAtPut(sysbvm_context_t *co
     sysbvm_array_atPut(operands, 2, value);
 
     sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_SLOT_AT_PUT, operands);
+    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    return instruction;
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_refSlotAt(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t result, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot)
+{
+    sysbvm_tuple_t operands = sysbvm_array_create(context, 3);
+    sysbvm_array_atPut(operands, 0, result);
+    sysbvm_array_atPut(operands, 1, tuple);
+    sysbvm_array_atPut(operands, 2, typeSlot);
+
+    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_REF_SLOT_AT, operands);
+    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    return instruction;
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_refSlotReferenceAt(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t result, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot)
+{
+    sysbvm_tuple_t operands = sysbvm_array_create(context, 3);
+    sysbvm_array_atPut(operands, 0, result);
+    sysbvm_array_atPut(operands, 1, tuple);
+    sysbvm_array_atPut(operands, 2, typeSlot);
+
+    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_REF_SLOT_REFERENCE_AT, operands);
+    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    return instruction;
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_refSlotAtPut(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot, sysbvm_tuple_t value)
+{
+    sysbvm_tuple_t operands = sysbvm_array_create(context, 3);
+    sysbvm_array_atPut(operands, 0, tuple);
+    sysbvm_array_atPut(operands, 1, typeSlot);
+    sysbvm_array_atPut(operands, 2, value);
+
+    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_REF_SLOT_AT_PUT, operands);
     sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
     return instruction;
 }
@@ -1518,7 +1560,10 @@ static sysbvm_tuple_t sysbvm_astTupleSlotNamedAtNode_primitiveCompileIntoBytecod
     gcFrame.tuple = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*slotNamedNode)->tupleExpression);
     gcFrame.slot = sysbvm_bytecodeCompiler_addLiteral(context, *compiler, (*slotNamedNode)->boundSlot);
     gcFrame.result = sysbvm_bytecodeCompiler_newTemporary(context, *compiler);
-    sysbvm_bytecodeCompiler_slotAt(context, *compiler, gcFrame.result, gcFrame.tuple, gcFrame.slot);
+    if(sysbvm_type_isPointerLikeType(sysbvm_astNode_getAnalyzedType((*slotNamedNode)->tupleExpression)))
+        sysbvm_bytecodeCompiler_refSlotAt(context, *compiler, gcFrame.result, gcFrame.tuple, gcFrame.slot);
+    else
+        sysbvm_bytecodeCompiler_slotAt(context, *compiler, gcFrame.result, gcFrame.tuple, gcFrame.slot);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
@@ -1544,7 +1589,10 @@ static sysbvm_tuple_t sysbvm_astTupleSlotNamedReferenceAtNode_primitiveCompileIn
     gcFrame.tuple = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*slotNamedNode)->tupleExpression);
     gcFrame.slot = sysbvm_bytecodeCompiler_addLiteral(context, *compiler, (*slotNamedNode)->boundSlot);
     gcFrame.result = sysbvm_bytecodeCompiler_newTemporary(context, *compiler);
-    sysbvm_bytecodeCompiler_slotReferenceAt(context, *compiler, gcFrame.result, gcFrame.tuple, gcFrame.slot);
+    if(sysbvm_type_isPointerLikeType(sysbvm_astNode_getAnalyzedType((*slotNamedNode)->tupleExpression)))
+        sysbvm_bytecodeCompiler_refSlotReferenceAt(context, *compiler, gcFrame.result, gcFrame.tuple, gcFrame.slot);
+    else
+        sysbvm_bytecodeCompiler_slotReferenceAt(context, *compiler, gcFrame.result, gcFrame.tuple, gcFrame.slot);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
@@ -1571,7 +1619,10 @@ static sysbvm_tuple_t sysbvm_astTupleSlotNamedAtPutNode_primitiveCompileIntoByte
     gcFrame.tuple = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*slotNamedNode)->tupleExpression);
     gcFrame.slot = sysbvm_bytecodeCompiler_addLiteral(context, *compiler, (*slotNamedNode)->boundSlot);
     gcFrame.value = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*slotNamedNode)->valueExpression);
-    sysbvm_bytecodeCompiler_slotAtPut(context, *compiler, gcFrame.tuple, gcFrame.slot, gcFrame.value);
+    if(sysbvm_type_isPointerLikeType(sysbvm_astNode_getAnalyzedType((*slotNamedNode)->tupleExpression)))
+        sysbvm_bytecodeCompiler_refSlotAtPut(context, *compiler, gcFrame.tuple, gcFrame.slot, gcFrame.value);
+    else
+        sysbvm_bytecodeCompiler_slotAtPut(context, *compiler, gcFrame.tuple, gcFrame.slot, gcFrame.value);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;

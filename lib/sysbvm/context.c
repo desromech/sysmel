@@ -571,6 +571,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
 
     context->roots.typeInferenceType = sysbvm_context_createIntrinsicClass(context, "TypeInferenceType", SYSBVM_NULL_TUPLE, NULL);
     context->roots.decayedTypeInferenceType = sysbvm_context_createIntrinsicClass(context, "DecayedTypeInferenceType", context->roots.typeInferenceType, NULL);
+    context->roots.receiverTypeInferenceType = sysbvm_context_createIntrinsicClass(context, "ReceiverTypeInferenceType", context->roots.typeInferenceType, NULL);
     context->roots.directTypeInferenceType = sysbvm_context_createIntrinsicClass(context, "DirectTypeInferenceType", context->roots.typeInferenceType, NULL);
 
     // Set the name of the root basic type.

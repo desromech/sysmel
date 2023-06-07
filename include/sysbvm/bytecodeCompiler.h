@@ -234,6 +234,21 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_slotAt(sysbvm_context_t *conte
 SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_slotReferenceAt(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t result, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot);
 
 /**
+ * Reference slot at put instruction.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_refSlotAtPut(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot, sysbvm_tuple_t value);
+
+/**
+ * Reference slot at instruction.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_refSlotAt(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t result, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot);
+
+/**
+ * Reference slot reference at instruction.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_refSlotReferenceAt(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t result, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot);
+
+/**
  * Slot at put instruction.
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_slotAtPut(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot, sysbvm_tuple_t value);

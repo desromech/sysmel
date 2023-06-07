@@ -34,6 +34,9 @@ typedef enum sysbvm_opcode_e
     SYSBVM_OPCODE_SLOT_AT, /// <Result> = slotAt <Tuple> <TypeSlot>
     SYSBVM_OPCODE_SLOT_REFERENCE_AT, /// <Result> = slotAt <Tuple> <TypeSlot>
     SYSBVM_OPCODE_SLOT_AT_PUT, /// slotAt <Tuple> <TypeSlot> <Value>
+    SYSBVM_OPCODE_REF_SLOT_AT, /// <Result> = refSlotAt <Tuple> <TypeSlot>
+    SYSBVM_OPCODE_REF_SLOT_REFERENCE_AT, /// <Result> = refSlotReferenceAt <Tuple> <TypeSlot>
+    SYSBVM_OPCODE_REF_SLOT_AT_PUT, /// refSlotAtPut <Tuple> <TypeSlot> <Value>
 
     // Variable operand instructions
     SYSBVM_OPCODE_CALL = 0x40, /// <Result> := call <Function> <Arguments>...

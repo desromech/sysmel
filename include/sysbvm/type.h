@@ -320,6 +320,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_referenceType_withBoxForValue(sysbvm_context_t 
 SYSBVM_API sysbvm_tuple_t sysbvm_referenceType_withTupleAndTypeSlot(sysbvm_context_t *context, sysbvm_tuple_t referenceType, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot);
 
 /**
+ * Creates a reference onto a specific type slot in an object by incrementing an existing reference.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_referenceType_incrementWithTypeSlot(sysbvm_context_t *context, sysbvm_tuple_t referenceType, sysbvm_tuple_t parentReference, sysbvm_tuple_t typeSlot);
+
+/**
  * Canonicalizes a function type
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_type_canonicalizeFunctionType(sysbvm_context_t *context, sysbvm_tuple_t functionType);

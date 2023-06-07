@@ -217,6 +217,24 @@ static void sysbvm_bytecodeJit_slotAtPut(sysbvm_context_t *context, sysbvm_tuple
     sysbvm_tuple_slotAtPut(context, tuple, slotIndex, value);
 }
 
+static sysbvm_tuple_t sysbvm_bytecodeJit_refSlotAt(sysbvm_context_t *context, sysbvm_tuple_t tupleReference, sysbvm_tuple_t typeSlot)
+{
+    size_t slotIndex = sysbvm_typeSlot_getIndex(typeSlot);
+    return sysbvm_tuple_slotAt(context, sysbvm_pointerLikeType_load(context, tupleReference), slotIndex);
+}
+
+static sysbvm_tuple_t sysbvm_bytecodeJit_refSlotReferenceAt(sysbvm_context_t *context, sysbvm_tuple_t tupleReference, sysbvm_tuple_t typeSlot)
+{
+    sysbvm_tuple_t slotReferenceType = sysbvm_typeSlot_getValidReferenceType(context, typeSlot);
+    return sysbvm_referenceType_incrementWithTypeSlot(context, slotReferenceType, tupleReference, typeSlot);
+}
+
+static void sysbvm_bytecodeJit_refSlotAtPut(sysbvm_context_t *context, sysbvm_tuple_t tupleReference, sysbvm_tuple_t typeSlot, sysbvm_tuple_t value)
+{
+    size_t slotIndex = sysbvm_typeSlot_getIndex(typeSlot);
+    sysbvm_tuple_slotAtPut(context, sysbvm_pointerLikeType_load(context, tupleReference), slotIndex, value);
+}
+
 static void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functionBytecode_t *functionBytecode)
 {
     (void)context;
@@ -385,6 +403,15 @@ static void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functionByt
             break;
         case SYSBVM_OPCODE_SLOT_REFERENCE_AT:
             sysbvm_jit_callWithContext2(&jit, &sysbvm_bytecodeJit_slotReferenceAt, decodedOperands[0], decodedOperands[1], decodedOperands[2]);
+            break;
+        case SYSBVM_OPCODE_REF_SLOT_AT:
+            sysbvm_jit_callWithContext2(&jit, &sysbvm_bytecodeJit_refSlotAt, decodedOperands[0], decodedOperands[1], decodedOperands[2]);
+            break;
+        case SYSBVM_OPCODE_REF_SLOT_AT_PUT:
+            sysbvm_jit_callWithContextNoResult3(&jit, &sysbvm_bytecodeJit_refSlotAtPut, decodedOperands[0], decodedOperands[1], decodedOperands[2]);
+            break;
+        case SYSBVM_OPCODE_REF_SLOT_REFERENCE_AT:
+            sysbvm_jit_callWithContext2(&jit, &sysbvm_bytecodeJit_refSlotReferenceAt, decodedOperands[0], decodedOperands[1], decodedOperands[2]);
             break;
 
         // Variable operand.

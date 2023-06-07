@@ -66,6 +66,8 @@ SYSBVM_API uint8_t sysbvm_bytecodeInterpreter_destinationOperandCountForOpcode(u
     case SYSBVM_OPCODE_MAKE_CLOSURE_WITH_VECTOR:
     case SYSBVM_OPCODE_SLOT_AT:
     case SYSBVM_OPCODE_SLOT_REFERENCE_AT:
+    case SYSBVM_OPCODE_REF_SLOT_AT:
+    case SYSBVM_OPCODE_REF_SLOT_REFERENCE_AT:
     case SYSBVM_OPCODE_CALL:
     case SYSBVM_OPCODE_UNCHECKED_CALL:
     case SYSBVM_OPCODE_SEND:
@@ -336,6 +338,25 @@ SYSBVM_API void sysbvm_bytecodeInterpreter_interpretWithActivationRecord(sysbvm_
                 sysbvm_tuple_slotAtPut(context, operandRegisterFile[0], slotIndex, operandRegisterFile[2]);
             }
             break;
+        case SYSBVM_OPCODE_REF_SLOT_AT:
+            {
+                size_t slotIndex = sysbvm_typeSlot_getIndex(operandRegisterFile[2]);
+                operandRegisterFile[0] = sysbvm_tuple_slotAt(context, sysbvm_pointerLikeType_load(context, operandRegisterFile[1]), slotIndex);
+            }
+            break;
+        case SYSBVM_OPCODE_REF_SLOT_REFERENCE_AT:
+            {
+                sysbvm_tuple_t slotReferenceType = sysbvm_typeSlot_getValidReferenceType(context, operandRegisterFile[2]);
+                // FIXME: Increase or update the pointer location here.
+                operandRegisterFile[0] = sysbvm_referenceType_incrementWithTypeSlot(context, slotReferenceType, operandRegisterFile[1], operandRegisterFile[2]);
+            }
+            break;
+        case SYSBVM_OPCODE_REF_SLOT_AT_PUT:
+            {
+                size_t slotIndex = sysbvm_typeSlot_getIndex(operandRegisterFile[1]);
+                sysbvm_tuple_slotAtPut(context, sysbvm_pointerLikeType_load(context, operandRegisterFile[0]), slotIndex, operandRegisterFile[2]);
+            }
+            break;
 
         // Three operands.
         case SYSBVM_OPCODE_ALLOCA_WITH_VALUE:
@@ -591,6 +612,9 @@ void sysbvm_bytecode_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::SlotAt", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_SLOT_AT));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::SlotReferenceAt", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_SLOT_REFERENCE_AT));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::SlotAtPut", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_SLOT_AT_PUT));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::RefSlotAt", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_REF_SLOT_AT));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::RefSlotReferenceAt", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_REF_SLOT_REFERENCE_AT));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::RefSlotAtPut", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_REF_SLOT_AT_PUT));
 
     // Variable operand count.
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::Call", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_CALL));
