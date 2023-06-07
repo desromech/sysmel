@@ -741,7 +741,7 @@ public final class MessageSendNodeStaticLookupResult superclass: Object; definit
         := (foundMethod answersTo: #isFinal) && foundMethod isFinal.
 
     public eager method shouldOptimizeLookup => Boolean
-        := owner isFinal || self isMacro || self isFinal.
+        := isDoesNotUnderstand not && (owner isFinal || self isMacro || self isFinal).
 }.
 
 ASTMessageSendNode definition: {

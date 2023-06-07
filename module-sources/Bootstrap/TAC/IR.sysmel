@@ -683,6 +683,7 @@ public final class TACInstruction superclass: TACValue; definition: {
     public method firstOperandRegister => TACPhysicalLocation := operandRegisters first.
     public method secondOperandRegister => TACPhysicalLocation := operandRegisters second.
     public method thirdOperandRegister => TACPhysicalLocation := operandRegisters third.
+    public method fourthOperandRegister => TACPhysicalLocation := operandRegisters fourth.
 
     public method firstScratchRegister => TACPhysicalLocation := scratchRegisters first.
     public method secondScratchRegister => TACPhysicalLocation := scratchRegisters first.
@@ -1070,6 +1071,9 @@ public final class TACBlockBuilder superclass: Object; definition: {
     public method operation: (operation: TACOperation) with: (firstOperand: TACValue) with: (secondOperand: TACValue) with: (thirdOperand: TACValue) ::=> TACInstruction
         := self addInstruction: (TACInstruction new operation: operation; operands: (Array with: firstOperand with: secondOperand with: thirdOperand); yourself).
 
+    public method operation: (operation: TACOperation) with: (firstOperand: TACValue) with: (secondOperand: TACValue) with: (thirdOperand: TACValue) with: (fourthOperand: TACValue) ::=> TACInstruction
+        := self addInstruction: (TACInstruction new operation: operation; operands: (Array with: firstOperand with: secondOperand with: thirdOperand with: fourthOperand); yourself).
+
     public method operation: (operation: TACOperation) with: (operand: TACValue) result: (result: TACValue) ::=> TACInstruction
         := self addInstruction: (TACInstruction new operation: operation; result: result; operands: (Array with: operand); yourself).
 
@@ -1410,6 +1414,28 @@ public final class TACFunctionBuilder superclass: Object; definition: {
     __OwnerProgramEntity__ setPublicSymbol: globalName value: operation
 }.
 
+let comparisonOperationNames := #(
+    Int8Equals Int16Equals Int32Equals Int64Equals
+    Int8NotEquals Int16NotEquals Int32NotEquals Int64NotEquals
+
+    Int8LessThan Int16LessThan Int32LessThan Int64LessThan
+    Int8LessOrEquals Int16LessOrEquals Int32LessOrEquals Int64LessOrEquals
+    Int8GreaterThan Int16GreaterThan Int32GreaterThan Int64GreaterThan
+    Int8GreaterOrEquals Int16GreaterOrEquals Int32GreaterOrEquals Int64GreaterOrEquals
+
+    UInt8LessThan UInt16LessThan UInt32LessThan UInt64LessThan
+    UInt8LessOrEquals UInt16LessOrEquals UInt32LessOrEquals UInt64LessOrEquals
+    UInt8GreaterThan UInt16GreaterThan UInt32GreaterThan UInt64GreaterThan
+    UInt8GreaterOrEquals UInt16GreaterOrEquals UInt32GreaterOrEquals UInt64GreaterOrEquals
+
+    Float32UnorderedEquals Float64UnorderedEquals
+    Float32UnorderedNotEquals Float64UnorderedNotEquals
+    Float32UnorderedLessThan Float64UnorderedLessThan
+    Float32UnorderedLessOrEquals Float64UnorderedLessOrEquals
+    Float32UnorderedGreaterThan Float64UnorderedGreaterThan
+    Float32UnorderedGreaterOrEquals Float64UnorderedGreaterOrEquals
+).
+
 #(
     Int8Add Int16Add Int32Add Int64Add
     Int8Sub Int16Sub Int32Sub Int64Sub
@@ -1426,33 +1452,15 @@ public final class TACFunctionBuilder superclass: Object; definition: {
     Int8LogicalShiftLeft Int16LogicalShiftLeft Int32LogicalShiftLeft Int64LogicalShiftLeft
     Int8LogicalShiftRight Int16LogicalShiftRight Int32LogicalShiftRight Int64LogicalShiftRight
 
-    Int8Equals Int16Equals Int32Equals Int64Equals
-    Int8NotEquals Int16NotEquals Int32NotEquals Int64NotEquals
-
     Int8Compare Int16Compare Int32Compare Int64Compare
-    Int8LessThan Int16LessThan Int32LessThan Int64LessThan
-    Int8LessOrEquals Int16LessOrEquals Int32LessOrEquals Int64LessOrEquals
-    Int8GreaterThan Int16GreaterThan Int32GreaterThan Int64GreaterThan
-    Int8GreaterOrEquals Int16GreaterOrEquals Int32GreaterOrEquals Int64GreaterOrEquals
-
-    UInt8LessThan UInt16LessThan UInt32LessThan UInt64LessThan
-    UInt8LessOrEquals UInt16LessOrEquals UInt32LessOrEquals UInt64LessOrEquals
-    UInt8GreaterThan UInt16GreaterThan UInt32GreaterThan UInt64GreaterThan
-    UInt8GreaterOrEquals UInt16GreaterOrEquals UInt32GreaterOrEquals UInt64GreaterOrEquals
 
     Float32Add Float64Add
     Float32Sub Float64Sub
     Float32Mul Float64Mul
     Float32Div Float64Div
 
-    Float32UnorderedEquals Float64UnorderedEquals
-    Float32UnorderedNotEquals Float64UnorderedNotEquals
     Float32UnorderedCompare Float64UnorderedCompare
-    Float32UnorderedLessThan Float64UnorderedLessThan
-    Float32UnorderedLessOrEquals Float64UnorderedLessOrEquals
-    Float32UnorderedGreaterThan Float64UnorderedGreaterThan
-    Float32UnorderedGreaterOrEquals Float64UnorderedGreaterOrEquals
-) do: {:(Symbol)operationName :: Void |
+) -- comparisonOperationNames do: {:(Symbol)operationName :: Void |
     let operationNameString := operationName asString.
     let lowerOperationNameString := operationNameString first asLowercase asString -- operationNameString allButFirst.
     let lowerOperationName := lowerOperationNameString asSymbol.
@@ -1462,6 +1470,23 @@ public final class TACFunctionBuilder superclass: Object; definition: {
     TACBlockBuilder
         withSelector: (lowerOperationNameString -- ":with:into:") asSymbol addMethod: {:(TACBlockBuilder)self :(TACValue)left :(TACValue)right :(TACValue)result :: TACInstruction |
             self operation: operation with: left with: right result: result.
+        }.
+    __OwnerProgramEntity__ setPublicSymbol: globalName value: operation
+}.
+
+comparisonOperationNames do: {:(Symbol)operationName :: Void |
+    let operationNameString := operationName asString.
+    let lowerOperationNameString := operationNameString first asLowercase asString -- operationNameString allButFirst.
+    let lowerOperationName := lowerOperationNameString asSymbol.
+
+    let branchOperationNameString := operationNameString -- "Branch".
+    let lowerBranchOperationNameString := branchOperationNameString first asLowercase asString -- branchOperationNameString allButFirst.
+    let operation := TACOperation terminatorNamed: lowerBranchOperationNameString asSymbol.
+    let globalName := ("TAC::Operation::" -- branchOperationNameString) asSymbol.
+
+    TACBlockBuilder
+        withSelector: (lowerOperationNameString -- ":with:branchIfTrue:branchIfFalse:") asSymbol addMethod: {:(TACBlockBuilder)self :(TACValue)left :(TACValue)right :(TACValue)trueDestination :(TACValue)falseDestination :: TACInstruction |
+            self operation: operation with: left with: right with: trueDestination with: falseDestination.
         }.
     __OwnerProgramEntity__ setPublicSymbol: globalName value: operation
 }.
