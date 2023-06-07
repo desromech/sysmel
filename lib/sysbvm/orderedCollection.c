@@ -124,5 +124,6 @@ void sysbvm_orderedCollection_registerPrimitives(void)
 void sysbvm_orderedCollection_setupPrimitives(sysbvm_context_t *context)
 {
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "OrderedCollection::add:", context->roots.orderedCollectionType, "add:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_orderedCollection_primitive_add);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "OrderedCollection::untypedAdd:", context->roots.orderedCollectionType, "untypedAdd:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_orderedCollection_primitive_add);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "OrderedCollection::asArray", context->roots.orderedCollectionType, "asArray", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_orderedCollection_primitive_asArray);
 }

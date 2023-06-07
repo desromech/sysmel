@@ -13,3 +13,20 @@ Function definition: {
         definition := newDefinition.
     }.
 }.
+
+FunctionDefinition definition: {
+    public method allAnalyzedNodesDo: (aBlock: (ASTNode) => Void) ::=> Void := {
+        self ensureAnalysis.
+        analyzedArgumentNodes do: {:(ASTNode)each :: Void |
+            each withAllChildrenDo: aBlock
+        }.
+        analyzedBodyNode ifNotNil: (analyzedBodyNode withAllChildrenDo: aBlock).
+        analyzedResultTypeNode ifNotNil: (analyzedResultTypeNode withAllChildrenDo: aBlock).
+    }.
+
+    public method allLiteralDependenciesDo: (aBlock: (Untyped) => Void) ::=> Void := {
+        self allAnalyzedNodesDo: {:(ASTNode)each :: Void |
+            each literalDependenciesDo: aBlock
+        }
+    }.
+}.

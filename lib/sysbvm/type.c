@@ -1440,5 +1440,7 @@ void sysbvm_type_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlotFlags::None", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_SLOT_FLAG_NONE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlotFlags::Public", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_SLOT_FLAG_PUBLIC));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlotFlags::ReadOnly", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_SLOT_FLAG_READONLY));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlotFlags::NoRTTIExcluded", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_SLOT_FLAG_NO_RTTI_EXCLUDED));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlotFlags::MinRTTIExcluded", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlotFlags::NoSourceDefinitionExcluded", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED));
 }

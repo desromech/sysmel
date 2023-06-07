@@ -293,6 +293,8 @@ ASTLambdaNode definition: {
             (result name downCastTo: ASTLiteralNode) value
         }.
 
+        ## TODO: Use the expected type for assisting the type inference of argument types and return values.
+
         ## Construct the lambda function definition.
         let functionDefinition := result makeFunctionDefinitionWithName: name environment: environment.
         environment addInnerFunction: functionDefinition.
@@ -975,13 +977,15 @@ Type definition: {
                 node boundMethod: staticMethod foundMethod.
                 return: (staticMethod foundMethod __type__ analyzeAndTypeCheckSolvedMessageSendNode: node withEnvironment: environment)
             }.
-        } ifNil: {
+        }.
+
+        staticMethod isNil || staticMethod isDoesNotUnderstand ifTrue: {
             node isDynamic || node receiver analyzedType asDecayedType isDynamic ifFalse: {
                 node selector isLiteralNode ifTrue: {
                     let selector := (node selector downCastTo: ASTLiteralNode) value.
-                    node semanticError: "Cannot send undeclared message with selector " -- selector printString -- " to receiver without a dynamic type."
+                    node semanticError: "Cannot send undeclared message with selector " -- selector printString -- " to receiver without dynamic type " -- node receiver analyzedType printString
                 } ifFalse: {
-                    node semanticError: "Cannot send undeclared message to receiver without a dynamic type."
+                    node semanticError: "Cannot send undeclared message to receiver without dynamic type " -- node receiver analyzedType printString
                 }
             }.
         }.
@@ -1409,7 +1413,7 @@ ASTTupleSlotNamedAtNode definition: {
         let tuple := self tupleExpression analyzeAndEvaluateWithEnvironment: environment.
         let slot => TypeSlot := self boundSlot ifNotNil: {
             self boundSlot
-        } ifNil {
+        } ifNil: {
             let slotName := self nameExpression analyzeAndEvaluateWithEnvironment: environment.
             (RawTuple::type(tuple) lookupSlot: slotName) ifNil: {
                 self semanticError: "Failed to find slot named " -- slotName printString -- ".".
@@ -1461,7 +1465,7 @@ ASTTupleSlotNamedReferenceAtNode definition: {
         let tuple := self tupleExpression analyzeAndEvaluateWithEnvironment: environment.
         let slot => TypeSlot := self boundSlot ifNotNil: {
             self boundSlot
-        } ifNil {
+        } ifNil: {
             let slotName := self nameExpression analyzeAndEvaluateWithEnvironment: environment.
             (RawTuple::type(tuple) lookupSlot: slotName) ifNil: {
                 self semanticError: "Failed to find slot named " -- slotName printString -- ".".
@@ -1514,7 +1518,7 @@ ASTTupleSlotNamedAtPutNode definition: {
         let value := self valueExpression analyzeAndEvaluateWithEnvironment: environment.
         let slot => TypeSlot := self boundSlot ifNotNil: {
             self boundSlot
-        } ifNil {
+        } ifNil: {
             let slotName := self nameExpression analyzeAndEvaluateWithEnvironment: environment.
             (RawTuple::type(tuple) lookupSlot: slotName) ifNil: {
                 self semanticError: "Failed to find slot named " -- slotName printString -- ".".

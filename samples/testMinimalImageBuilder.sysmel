@@ -18,6 +18,9 @@ function main(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
 }.
 
 ImageBuilder new
-    addProgramEntity: main;
+    beNoRTTI;
+    ##beMinimal;
+    ##beNoSourceDefinition;
+    addNativeEntryPoint: main;
     build;
     saveTo: "testImage.o"

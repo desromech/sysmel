@@ -1,16 +1,180 @@
-public class ImageBuilder superclass: Object; definition: {
+public class ImageBuilder superclass: Object.
+
+public class ImageBuilderObjectTraceStrategy superclass: Object; definition: {
+    public virtual method shouldEmitTypeSlot: (typeSlot: TypeSlot) ::=> Boolean
+        := true.
+
+    public virtual method traceType: (type: Type) with: (imageBuilder: ImageBuilder) ::=> Void
+        := imageBuilder enqueueObjectTrace: type.
+
+    public virtual method traceReferencesOf: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Void := {
+        (RawTuple::type(object) ifNil: Untyped) imageBuilder::traceReferencesOf: object with: imageBuilder
+    }.
+}.
+
+public class ImageBuilderObjectTraceStrategyNoRTTI superclass: ImageBuilderObjectTraceStrategy; definition: {
+    public override method shouldEmitTypeSlot: (typeSlot: TypeSlot) ::=> Boolean
+        := typeSlot isNoRTTIExcluded not.
+
+    public override method traceType: (type: Type) with: (imageBuilder: ImageBuilder) ::=> Void
+        := {}.
+
+    public override method traceReferencesOf: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Void := {
+        (RawTuple::type(object) ifNil: Untyped) imageBuilder::traceNoRTTIReferencesOf: object with: imageBuilder
+    }.
+}.
+
+public class ImageBuilderObjectTraceStrategyMinimal superclass: ImageBuilderObjectTraceStrategy; definition: {
+    public virtual method shouldEmitTypeSlot: (typeSlot: TypeSlot) ::=> Boolean
+        := typeSlot isMinRTTIExcluded not.
+
+    public override method traceReferencesOf: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Void := {
+        (RawTuple::type(object) ifNil: Untyped) imageBuilder::traceMinimalReferencesOf: object with: imageBuilder
+    }.
+}.
+
+public class ImageBuilderObjectTraceStrategyNoSourceDefinition superclass: ImageBuilderObjectTraceStrategy; definition: {
+    public virtual method shouldEmitTypeSlot: (typeSlot: TypeSlot) ::=> Boolean
+        := typeSlot isNoSourceDefinitionExcluded not.
+}.
+
+Type extend: {
+    public virtual method imageBuilder::traceNonLayoutReferencesOf: (object: Untyped) startingFrom: (startSlotIndex: Size) with: (imageBuilder: ImageBuilder) ::=> Void := {
+        let slotCount => Size := RawTuple::size(object).
+        let i mutable := startSlotIndex.
+        while: (i < slotCount) do: {
+            imageBuilder enqueueObjectTrace: (RawTuple::slotAt:)(object, i)
+        } continueWith: (i := i + 1sz).
+    }.
+
+    public virtual method imageBuilder::ordinaryTraceReferencesOf: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Void := {
+        imageBuilder traceType: self.
+        RawTuple::isDummyValue(object) || RawTuple::isBytes(object) ifTrue: {return: void}.
+
+        self allSlotsDo: {:(TypeSlot)eachSlot :: Void |
+            (imageBuilder shouldEmitTypeSlot: eachSlot) ifTrue: {
+                imageBuilder enqueueObjectTrace: (RawTuple::typeSlotAt:)(object, eachSlot)
+            }.
+        }.
+
+        self imageBuilder::traceNonLayoutReferencesOf: object startingFrom: self totalSlotCount with: imageBuilder
+    }.
+
+    public virtual method imageBuilder::traceReferencesOf: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Void := {
+        self imageBuilder::ordinaryTraceReferencesOf: object with: imageBuilder
+    }.
+
+    public virtual method imageBuilder::traceMinimalReferencesOf: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Void := {
+        self imageBuilder::ordinaryTraceReferencesOf: object with: imageBuilder
+    }.
+
+    public virtual method imageBuilder::traceNoRTTIReferencesOf: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Void := {
+        self imageBuilder::ordinaryTraceReferencesOf: object with: imageBuilder
+    }.
+
+    public virtual method imageBuilder::addObject: (object: Untyped) intoSpecialTraceListIn: (builder: ImageBuilder) ::=> Void := {
+        ## By default do nothing.
+    }.
+}.
+
+ProgramEntity definition: {
+    __Meta__ definition: {
+        public override method imageBuilder::addObject: (object: Untyped) intoSpecialTraceListIn: (builder: ImageBuilder) ::=> Void := {
+            super imageBuilder::addObject: object intoSpecialTraceListIn: builder.
+            builder tracedProgramEntities add: object
+        }.
+    }
+}.
+
+FunctionDefinition definition: {
+    __Meta__ definition: {
+        public override method imageBuilder::traceMinimalReferencesOf: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Void := {
+            RawTuple::isDummyValue(object) ifTrue: {return: void}.
+            super imageBuilder::traceMinimalReferencesOf: object with: imageBuilder.
+
+            let functionDefinition => FunctionDefinition := object.
+            functionDefinition allLiteralDependenciesDo: {:(Untyped)dependency :: Void |
+                imageBuilder enqueueObjectTrace: dependency
+            }.
+        }.
+
+        public override method imageBuilder::traceNoRTTIReferencesOf: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Void := {
+            RawTuple::isDummyValue(object) ifTrue: {return: void}.
+            super imageBuilder::traceNoRTTIReferencesOf: object with: imageBuilder.
+
+            let functionDefinition => FunctionDefinition := object.
+            functionDefinition allLiteralDependenciesDo: {:(Untyped)dependency :: Void |
+                imageBuilder enqueueObjectTrace: dependency                
+            }.
+        }.
+
+        public override method imageBuilder::addObject: (object: Untyped) intoSpecialTraceListIn: (builder: ImageBuilder) ::=> Void := {
+            super imageBuilder::addObject: object intoSpecialTraceListIn: builder.
+            builder tracedFunctionDefinitions add: object
+        }.
+    }.
+}.
+
+Function definition: {
+    __Meta__ definition: {
+        public override method imageBuilder::addObject: (object: Untyped) intoSpecialTraceListIn: (builder: ImageBuilder) ::=> Void := {
+            super imageBuilder::addObject: object intoSpecialTraceListIn: builder.
+            builder tracedFunctions add: object
+        }.
+    }.
+}.
+
+FunctionType definition: {
+    public override method imageBuilder::addObject: (object: Untyped) intoSpecialTraceListIn: (builder: ImageBuilder) ::=> Void := {
+        super imageBuilder::addObject: object intoSpecialTraceListIn: builder.
+        builder tracedFunctions add: object
+    }.
+}.
+
+ImageBuilder definition: {
+    public field objectModel => ObjectModelVariant.
+    public field traceStrategy => ImageBuilderObjectTraceStrategy.
     public field entryPointFunction => Function.
-    protected field rootProgramEntities => OrderedCollection.
+
+    public field tracedObjects => OrderedCollection.
+    protected field tracedObjectSet => IdentitySet.
+
+    public field rootProgramEntities => OrderedCollection.
     protected field rootProgramEntitySet => IdentitySet.
+
+    public field tracedProgramEntities => OrderedCollection.
+    public field tracedFunctions => OrderedCollection.
+    public field tracedFunctionDefinitions => OrderedCollection.
     
     public override method initialize => Void := {
         super initialize.
+        objectModel := ObjectModelVariant current.
+        traceStrategy := ImageBuilderObjectTraceStrategy new.
         rootProgramEntities := OrderedCollection new.
         rootProgramEntitySet := IdentitySet new.
     }.
 
+    public method beComplete => Void := {
+        traceStrategy := ImageBuilderObjectTraceStrategy new.
+    }.
+
+    public method beNoRTTI => Void := {
+        traceStrategy := ImageBuilderObjectTraceStrategyNoRTTI new.
+    }.
+
+    public method beMinimal => Void := {
+        traceStrategy := ImageBuilderObjectTraceStrategyMinimal new.
+    }.
+
+    public method beNoSourceDefinition => Void := {
+        traceStrategy := ImageBuilderObjectTraceStrategyNoSourceDefinition new.
+    }.
+
     public method addProgramEntity: (programEntity: ProgramEntity) ::=> Void := {
-        rootProgramEntities add: programEntity.
+        (rootProgramEntitySet includes: programEntity) ifFalse: {
+            rootProgramEntitySet add: programEntity. 
+            rootProgramEntities add: programEntity.
+        }.
     }.
 
     public method addProgramEntities: (programEntities: Collection) ::=> Void := {
@@ -20,12 +184,63 @@ public class ImageBuilder superclass: Object; definition: {
     }.
 
     public method addNativeEntryPoint: (newEntryPointFunction: Function) ::=> Void := {
-        self addProgramEntity: entryPointFunction.
+        self addProgramEntity: newEntryPointFunction.
         entryPointFunction := newEntryPointFunction.
     }.
 
-    public method build => Void := {
+    public method enqueueObjectTrace: (object: Untyped) ::=> Void := {
+        (objectModel isImmediateReference: object) ifFalse: {
+            (tracedObjectSet untypedIncludes: object) ifFalse: {
+                tracedObjects untypedAdd: object.
+                tracedObjectSet untypedAdd: object.
 
+                (RawTuple::type(object) ifNil: Untyped) imageBuilder::addObject: object intoSpecialTraceListIn: self
+            }.
+        }
+    }.
+
+    public method shouldEmitTypeSlot: (typeSlot: TypeSlot) ::=> Boolean
+        := traceStrategy shouldEmitTypeSlot: typeSlot.
+
+    public method traceType: (type: Type) ::=> Void := {
+        traceStrategy traceType: type with: self
+    }.
+
+    public method traceRequiredObjectSet => Void := {
+        tracedObjects := OrderedCollection new.
+        tracedObjectSet := IdentitySet new.
+        tracedProgramEntities := OrderedCollection new.
+        tracedFunctions := OrderedCollection new.
+        tracedFunctionDefinitions := OrderedCollection new.
+
+        rootProgramEntities do: {:(ProgramEntity)each :: Void |
+            self enqueueObjectTrace: each
+        }.
+
+        tracedObjects do: {:(Untyped)each :: Void |
+            traceStrategy traceReferencesOf: each with: self
+        }
+    } .
+
+    public method build => Void := {
+        self traceRequiredObjectSet.
+        self emitTraceReport.
+    }.
+
+    public method emitTraceReport => Void := {
+        printLine("Image builder trace results:").
+        printLine("Object set size ", tracedObjects size).
+        printLine("Program entities ", tracedProgramEntities size).
+        printLine("Functions ", tracedFunctions size).
+        printLine("Function definitions ", tracedFunctionDefinitions size).
+
+        #*
+        tracedFunctions do: {:(Function)each :: Void |
+            each definition ifNil: {
+                printLine("Warning, function without definition: ", each).
+            }
+        }.
+        *#
     }.
 
     public method saveTo: (filename: String) ::=> Void := {

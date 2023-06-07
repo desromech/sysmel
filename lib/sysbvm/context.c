@@ -578,7 +578,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.anyValueType, "AnyValue", SYSBVM_NULL_TUPLE, NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.objectType, "Object", SYSBVM_NULL_TUPLE, NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.programEntityType, "ProgramEntity", SYSBVM_NULL_TUPLE,
-        "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
+        "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_RTTI_EXCLUDED, context->roots.symbolType,
         "owner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.programEntityType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.typeType, "Type", SYSBVM_NULL_TUPLE,
@@ -594,7 +594,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
 
         "macroMethodDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.methodDictionaryType,
         "methodDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.methodDictionaryType,
-        "virtualMethodDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.methodDictionaryType,
+        "virtualMethodDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_RTTI_EXCLUDED, context->roots.methodDictionaryType,
         "fallbackMethodDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.methodDictionaryType,
 
         "pendingSlots", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, SYSBVM_NULL_TUPLE,
@@ -602,7 +602,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.classType, "Class", SYSBVM_NULL_TUPLE, NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.metatypeType, "Metatype", SYSBVM_NULL_TUPLE,
-        "thisType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
+        "thisType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_RTTI_EXCLUDED, context->roots.typeType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.metaclassType, "Metaclass", SYSBVM_NULL_TUPLE,
         NULL);
@@ -711,27 +711,27 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionType, "Function", SYSBVM_NULL_TUPLE,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         "argumentCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
-        "captureVector", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
+        "captureVector", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "captureEnvironment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.environmentType,
         "definition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
         "primitiveTableIndex", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
-        "primitiveName", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
+        "primitiveName", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_RTTI_EXCLUDED, context->roots.symbolType,
         "memoizationTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.weakValueDictionaryType,
-        "annotations", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.dictionaryType,
+        "annotations", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_RTTI_EXCLUDED, context->roots.dictionaryType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionDefinitionType, "FunctionDefinition", SYSBVM_NULL_TUPLE,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         "argumentCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, SYSBVM_NULL_TUPLE,
 
-        "definitionEnvironment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.environmentType,
-        "definitionArgumentNodes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
-        "definitionResultTypeNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.astNodeType,
-        "definitionBodyNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.astNodeType,
+        "definitionEnvironment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.environmentType,
+        "definitionArgumentNodes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.arrayType,
+        "definitionResultTypeNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.astNodeType,
+        "definitionBodyNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.astNodeType,
 
         "analyzedType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.functionTypeType,
 
-        "analysisEnvironment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.environmentType,
+        "analysisEnvironment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.environmentType,
         "analyzedCaptures", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
         "analyzedArguments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
         "analyzedLocals", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
@@ -739,11 +739,11 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "analyzedInnerFunctions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
         "analyzedPrimitiveName", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.symbolType,
 
-        "analyzedArgumentNodes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
-        "analyzedResultTypeNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.astNodeType,
-        "analyzedBodyNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.astNodeType,
+        "analyzedArgumentNodes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.arrayType,
+        "analyzedResultTypeNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.astNodeType,
+        "analyzedBodyNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.astNodeType,
 
-        "bytecode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.functionBytecodeType,
+        "bytecode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.functionBytecodeType,
         "capturelessUncheckedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
         "uncheckedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
         "checkedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
@@ -893,11 +893,11 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "IntPointer"), context->roots.intptrType);
 
     context->roots.sourceCodeType = sysbvm_context_createIntrinsicClass(context, "SourceCode", SYSBVM_NULL_TUPLE,
-        "text", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,
+        "text", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.stringType,
         "directory", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,
         "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,
         "language", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringSymbolType,
-        "lineStartIndexTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
+        "lineStartIndexTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, SYSBVM_NULL_TUPLE,
         NULL);
     context->roots.sourcePositionType = sysbvm_context_createIntrinsicClass(context, "SourcePosition", SYSBVM_NULL_TUPLE,
         "sourceCode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sourceCodeType,

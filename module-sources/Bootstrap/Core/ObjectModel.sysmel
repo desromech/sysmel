@@ -151,6 +151,13 @@ public final struct ObjectModel::TupleHeader64 definition: {
 }.
 
 public abstract class ObjectModelVariant superclass: Object; definition: {
+    __Meta__ definition: {
+        public method current => ObjectModelVariant
+            := UIntPointer valueSize = 4sz
+                ifTrue: ObjectModelVariant32 uniqueInstance
+                ifFalse: ObjectModelVariant64 uniqueInstance.
+    }.
+
     public abstract method pointerSize => UInt64 := self subclassResponsibility.
 
     public virtual method minimalObjectAlignment => UInt64 := ObjectModel::MinimalAlignment asUInt64.

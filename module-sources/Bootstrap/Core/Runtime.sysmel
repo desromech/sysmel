@@ -207,6 +207,7 @@ Object
     withSelector: #species addMethod: {:(Object)self :: Class | self class } withEagerAnalysis;
 
     withSelector: #error: addMethod: {:(Object)self :(String)errorMessage :: Unwinds | error(errorMessage) } withEagerAnalysis;
+    withSelector: #primitiveFailed addMethod: {:(Object)self :: Unwinds | error("Primitive failed") } withEagerAnalysis;
     withSelector: #assert: addMethod: {:(Object)self :(Boolean)condition :: Void |
         if: condition then: void else: error("Assertion failure.")
     } withEagerAnalysis;
@@ -392,17 +393,23 @@ Untyped __type__
     } withEagerAnalysis.
     
 TypeSlot
-    withSelector: #hasFlag: addMethod: {:(TypeSlot)self :(Bitflags)flag :: Boolean |
-        (self flags & flag) ~= 0bflgs
+    withSelector: #hasAnyFlags: addMethod: {:(TypeSlot)self :(Bitflags)flags :: Boolean |
+        (self flags & flags) ~= 0bflgs
     } withEagerAnalysis;
     withSelector: #isPublic addMethod: {:(TypeSlot)self :: Boolean |
-        self hasFlag: TypeSlotFlags::Public
+        self hasAnyFlags: TypeSlotFlags::Public
     } withEagerAnalysis;
     withSelector: #isReadonly addMethod: {:(TypeSlot)self :: Boolean |
-        self hasFlag: TypeSlotFlags::ReadOnly
+        self hasAnyFlags: TypeSlotFlags::ReadOnly
+    } withEagerAnalysis;
+    withSelector: #isNoRTTIExcluded addMethod: {:(TypeSlot)self :: Boolean |
+        self hasAnyFlags: (TypeSlotFlags::NoRTTIExcluded | TypeSlotFlags::MinRTTIExcluded) | TypeSlotFlags::NoSourceDefinitionExcluded
     } withEagerAnalysis;
     withSelector: #isMinRTTIExcluded addMethod: {:(TypeSlot)self :: Boolean |
-        self hasFlag: TypeSlotFlags::MinRTTIExcluded
+        self hasAnyFlags: TypeSlotFlags::MinRTTIExcluded | TypeSlotFlags::NoSourceDefinitionExcluded
+    } withEagerAnalysis;
+    withSelector: #isNoSourceDefinitionExcluded addMethod: {:(TypeSlot)self :: Boolean |
+        self hasAnyFlags: TypeSlotFlags::NoSourceDefinitionExcluded
     } withEagerAnalysis;
     withSelector: #generateAccessorsOn: addMethod: {:(TypeSlot)typeSlot :(Type)type :: Void |
         if: typeSlot isPublic then: {

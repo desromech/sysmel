@@ -215,4 +215,7 @@ void sysbvm_set_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentitySet::add:", context->roots.identitySetType, "add:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_identitySet_primitive_add);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentitySet::includes:", context->roots.identitySetType, "includes:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_identitySet_primitive_includes);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentitySet::scanFor:", context->roots.identitySetType, "scanFor:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_identitySet_primitive_scanFor);
+
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentitySet::untypedAdd:", context->roots.identitySetType, "untypedAdd:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_identitySet_primitive_add);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IdentitySet::untypedIncludes:", context->roots.identitySetType, "untypedIncludes:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_identitySet_primitive_includes);
 }

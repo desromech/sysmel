@@ -3,7 +3,14 @@ ASTNode
     withSelector: #analyzeAndEvaluateWithEnvironment: addMethod: {:(ASTNode)self :(Environment)environment :: Untyped| self subclassResponsibility } makeAbstract;
     withSelector: #evaluateWithEnvironment: addMethod: {:(ASTNode)self :(FunctionActivationEnvironment)environment :: Untyped | self subclassResponsibility } makeAbstract;
 
-    withSelector: #childrenDo: addMethod: {:(ASTNode)self :aBlock :: Void | self subclassResponsibility } makeAbstract;
+    withSelector: #childrenDo: addMethod: {:(ASTNode)self :((ASTNode) => Void)aBlock :: Void | self subclassResponsibility } makeAbstract;
+    withSelector: #withAllChildrenDo: addMethod: {:(ASTNode)self :((ASTNode) => Void)aBlock :: Void |
+        aBlock(self).
+        self childrenDo: {:(ASTNode)each :: Void |
+            each withAllChildrenDo: aBlock
+        }
+    } makeAbstract;
+    withSelector: #literalDependenciesDo: addMethod: {:(ASTNode)self :((Untyped) => Void)aBlock :: Void | } makeVirtual;
 
     withSelector: #transformWith: addMethod: {:(ASTNode)self :aBlock :: Void | self subclassResponsibility } makeAbstract;
     withSelector: #transformedWith: addMethod: {:(ASTNode)self :aBlock :: self class | self copy transformWith: aBlock; yourself };
@@ -14,7 +21,10 @@ ASTNode
 
     withSelector: #isArgumentNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isBinaryExpressionSequenceNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
+    withSelector: #isBreakNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isCoerceValueNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
+    withSelector: #isContinueNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
+    withSelector: #isDownCastNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isDoWhileContinueWithNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isErrorNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isFunctionApplicationNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
@@ -31,11 +41,16 @@ ASTNode
     withSelector: #isMessageSendNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isMessageChainMessageNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isMessageChainNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
+    withSelector: #isTupleSlotNamedAtFromNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
+    withSelector: #isTupleSlotNamedReferenceAtFromNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
+    withSelector: #isTupleSlotNamedAtPutFromNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isTupleWithLookupStartingFromNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isPragmaNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
+    withSelector: #isReturnNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isSequenceNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isUnexpandedApplicationNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isUnexpandedSExpressionNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
+    withSelector: #isUseNamedSlotsOfNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isQuasiQuoteNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isQuasiUnquoteNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isQuoteNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
@@ -97,6 +112,13 @@ ASTBinaryExpressionSequenceNode
         self operators: (self operators collect: aBlock).
     } makeOverride.
 
+ASTBreakNode
+    withSelector: #isBreakNode addMethod: {:(ASTBreakNode)self :: Boolean | true } makeOverride;
+    withSelector: #childrenDo: addMethod: {:(ASTBreakNode)self :aBlock :: Void |
+    } makeOverride;
+    withSelector: #transformWith: addMethod: {:(ASTBreakNode)self :aBlock :: Void |
+    } makeOverride.
+
 ASTCoerceValueNode
     withSelector: #isCoerceValueNode addMethod: {:(ASTNode)self :: Boolean | true } makeOverride;
 
@@ -105,6 +127,25 @@ ASTCoerceValueNode
         if: (self valueExpression isNotNil) then: aBlock(self valueExpression).
     } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTCoerceValueNode)self :aBlock :: Void |
+        if: (self typeExpression isNotNil) then: (self typeExpression: aBlock(self typeExpression)).
+        if: (self valueExpression isNotNil) then: (self valueExpression: aBlock(self valueExpression)).
+    } makeOverride.
+
+ASTContinueNode
+    withSelector: #isContinueNode addMethod: {:(ASTContinueNode)self :: Boolean | true } makeOverride;
+    withSelector: #childrenDo: addMethod: {:(ASTContinueNode)self :aBlock :: Void |
+    } makeOverride;
+    withSelector: #transformWith: addMethod: {:(ASTContinueNode)self :aBlock :: Void |
+    } makeOverride.
+
+ASTDownCastNode
+    withSelector: #isDownCastNode addMethod: {:(ASTDownCastNode)self :: Boolean | true } makeOverride;
+
+    withSelector: #childrenDo: addMethod: {:(ASTDownCastNode)self :aBlock :: Void |
+        if: (self typeExpression isNotNil) then: aBlock(self typeExpression).
+        if: (self valueExpression isNotNil) then: aBlock(self valueExpression).
+    } makeOverride;
+    withSelector: #transformWith: addMethod: {:(ASTDownCastNode)self :aBlock :: Void |
         if: (self typeExpression isNotNil) then: (self typeExpression: aBlock(self typeExpression)).
         if: (self valueExpression isNotNil) then: (self valueExpression: aBlock(self valueExpression)).
     } makeOverride.
@@ -201,6 +242,7 @@ ASTLiteralNode
 
     withSelector: #childrenDo: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | } makeOverride;
+    withSelector: #literalDependenciesDo: addMethod: {:(ASTLiteralNode)self :((Untyped) => Void)aBlock :: Void | aBlock(self value) } makeOverride;
 
     withSelector: #isLiteralPureFunctionNode addMethod: {:(ASTLiteralNode)self :: Boolean |
         if: (self value __type__ lookupSelector: #isPure) ~~ nil
@@ -319,6 +361,9 @@ ASTMessageSendNode
             yourself
     } makeOverride;
 
+    withSelector: #literalDependenciesDo: addMethod: {:(ASTMessageSendNode)self :((Untyped) => Void)aBlock :: Void |
+        if: self boundMethod ~~ nil then: aBlock(self boundMethod)
+    } makeVirtual;
     withSelector: #childrenDo: addMethod: {:(ASTMessageSendNode)self :aBlock :: Void |
         if: (self receiver isNotNil) then: aBlock(self receiver).
         if: (self receiverLookupType isNotNil) then: aBlock(self receiverLookupType).
@@ -412,6 +457,16 @@ ASTPragmaNode
         self arguments: (self arguments collect: aBlock)
     } makeOverride.
 
+ASTReturnNode
+    withSelector: #isReturnNode addMethod: {:(ASTReturnNode)self :: Boolean | true } makeOverride;
+    
+    withSelector: #childrenDo: addMethod: {:(ASTReturnNode)self :aBlock :: Void |
+        aBlock(self expression)
+    } makeOverride;
+    withSelector: #transformWith: addMethod: {:(ASTReturnNode)self :aBlock :: Void |
+        self expression: aBlock(self expression)
+    } makeOverride.
+
 ASTSequenceNode
     withSelector: #initialize addMethod: {:(ASTSequenceNode)self :: Void |
         self pragmas: #().
@@ -462,6 +517,16 @@ ASTUnexpandedSExpressionNode
     } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTUnexpandedSExpressionNode)self :aBlock :: Void |
         self elements: (self elements collect: aBlock)
+    } makeOverride.
+
+ASTUseNamedSlotsOfNode
+    withSelector: #isUseNamedSlotsOfNode addMethod: {:(ASTUseNamedSlotsOfNode)self :: Boolean | true } makeOverride;
+
+    withSelector: #childrenDo: addMethod: {:(ASTUseNamedSlotsOfNode)self :aBlock :: Void |
+        aBlock(self tupleExpression).
+    } makeOverride;
+    withSelector: #transformWith: addMethod: {:(ASTUseNamedSlotsOfNode)self :aBlock :: Void |
+        self tupleExpression: aBlock(self tupleExpression).
     } makeOverride.
 
 ASTNode
