@@ -1,0 +1,21 @@
+function evaluateString(string: String) => Void := {
+    let result := SysmelLanguage analyzeAndEvaluateSourceCode: (SourceCode text: string directory: nil name: "test" language: #sysmel).
+    printLine(result)
+}.
+
+function main(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
+    let i mutable := 0i32.
+    while: (i < argc) do: {
+        let expression := String fromCString: argv[i asIntPointer].
+        evaluateString(expression)
+    } continueWith: (i := i + 1i32).
+
+    0i32
+}.
+
+ImageBuilder new
+    beNoSourceDefinition;
+    addProgramEntity: __Global__;
+    addNativeEntryPoint: main;
+    build;
+    saveTo: "testImage.o"

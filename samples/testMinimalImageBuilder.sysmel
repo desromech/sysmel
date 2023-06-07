@@ -23,4 +23,4 @@ ImageBuilder new
     ##beNoSourceDefinition;
     addNativeEntryPoint: main;
     build;
-    saveTo: "testImage.o"
+    saveTo: "testMinimalImage.o"
