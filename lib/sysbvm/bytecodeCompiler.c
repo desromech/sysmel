@@ -873,6 +873,11 @@ SYSBVM_API void sysbvm_bytecodeCompiler_compileFunctionDefinition(sysbvm_context
     gcFrame.bytecode->localVectorSize = gcFrame.compiler->usedTemporaryCount;
     gcFrame.bytecode->literalVector = sysbvm_orderedCollection_asArray(context, gcFrame.compiler->literals);
 
+    gcFrame.bytecode->jittedCode = sysbvm_tuple_systemHandle_encode(context, 0);
+    gcFrame.bytecode->jittedCodeSessionToken = sysbvm_tuple_systemHandle_encode(context, 0);
+    gcFrame.bytecode->jittedCodeTrampoline = sysbvm_tuple_systemHandle_encode(context, 0);
+    gcFrame.bytecode->jittedCodeTrampolineSessionToken = sysbvm_tuple_systemHandle_encode(context, 0);
+
     // Tables for the debug information.
     gcFrame.pcToDebugListTable = sysbvm_orderedCollection_create(context);
     gcFrame.debugSourceASTNodes = sysbvm_orderedCollection_create(context);

@@ -1464,4 +1464,5 @@ void sysbvm_type_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlotFlags::NoSourceDefinitionExcluded", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlotFlags::Bytecode", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_SLOT_FLAG_BYTECODE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlotFlags::DebugInformation", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlotFlags::JitSpecific", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_SLOT_FLAG_JIT_SPECIFIC));
 }

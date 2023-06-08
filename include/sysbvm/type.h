@@ -161,7 +161,8 @@ typedef enum sysbvm_typeSlotFlags_e
     SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED = 1<<3,
     SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED = 1<<4,
     SYSBVM_TYPE_SLOT_FLAG_BYTECODE = 1<<5,
-    SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION = 1<<5,
+    SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION = 1<<6,
+    SYSBVM_TYPE_SLOT_FLAG_JIT_SPECIFIC = 1<<7,
 } sysbvm_typeSlotFlags_t;
 
 typedef struct sysbvm_inlineLookupCacheEntry_s sysbvm_inlineLookupCacheEntry_t;

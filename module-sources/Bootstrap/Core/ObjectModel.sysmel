@@ -505,6 +505,7 @@ RawTuple::isBytes adoptDefinitionOf: {:(Untyped)self :: Boolean |
 } withEagerAnalysis.
 
 RawTuple::size adoptDefinitionOf: {:(Untyped)self :: Size |
+    <primitive: #RawTuple::size>
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
         (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ slotCount
@@ -514,6 +515,7 @@ RawTuple::size adoptDefinitionOf: {:(Untyped)self :: Size |
 } withEagerAnalysis.
 
 RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
+    <primitive: #RawTuple::type>
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     let tag := pointerValue & 15uptr.
     (pointerValue ~= 0uptr) && (tag = 0uptr) ifTrue: {
@@ -529,6 +531,7 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
 } withEagerAnalysis.
 
 (RawTuple::slotAt:) adoptDefinitionOf: {:(Untyped)self :(Size)index :: Untyped |
+    <primitive: #RawTuple::slotAt:>
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
         let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
@@ -551,6 +554,7 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
 } withEagerAnalysis.
 
 (RawTuple::slotAt:put:) adoptDefinitionOf: {:(Untyped)self :(Size)index :(Untyped)value :: Void |
+    <primitive: #RawTuple::slotAt:put:>
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
         let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
@@ -564,6 +568,7 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
 } withEagerAnalysis.
 
 (RawTuple::byteSlotAt:) adoptDefinitionOf: {:(Untyped)self :(Size)index :: UInt8 |
+    <primitive: #RawTuple::byteSlotAt:>
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
         let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
@@ -582,6 +587,7 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
 } withEagerAnalysis.
 
 (RawTuple::byteSlotAt:put:) adoptDefinitionOf: {:(Untyped)self :(Size)index :(UInt8)value :: Void |
+    <primitive: #RawTuple::byteSlotAt:put:>
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
         let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
@@ -596,6 +602,7 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
 } withEagerAnalysis.
 
 RawTuple::byteSize adoptDefinitionOf: {:(Untyped)self :: Size |
+    <primitive: #RawTuple::byteSize>
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
         (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ objectSize
@@ -612,6 +619,7 @@ public function ObjectModel::lookupVirtualSelectorWithReceiverType(receiverType:
 
 (RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:) adoptDefinitionOf: {
     :(Type)type :(Size)instanceSize :(Size)instanceAlignment :(Size)slotCount :(Size)variableSize :(Boolean)isBytes :(Boolean)isWeak :: Untyped |
+    <primitive: #RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:>
     let allocationAlignment := instanceAlignment max: ObjectModel::MinimalAlignment asSize.
     let variableDataSize := isBytes ifTrue: variableSize ifFalse: variableSize * ObjectModel::PointerSize.
     let contentSize := instanceSize + variableDataSize.
@@ -627,7 +635,7 @@ public function ObjectModel::lookupVirtualSelectorWithReceiverType(receiverType:
         objectSize: contentSize.
 
     allocationPointer reinterpretCastTo: Untyped.
-}.
+} withEagerAnalysis.
 
 let emptyArray := #().
 public function ObjectModel::makeArrayWithSize(size: Size) => Array := {

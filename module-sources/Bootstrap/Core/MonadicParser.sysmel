@@ -145,7 +145,7 @@ public abstract class MonadicParser definition: {
             := self predicate: {:character :: Boolean |
                 (('A'c8 <= character) && ('Z'c8 >= character)) ||
                 (('a'c8 <= character) && ('z'c8 >= character)) ||
-                ('_' = character)
+                ('_'c8 = character)
             } errorMessage: "Expected an alphabetic character.".
 
         public method identifierMiddle ::=> MonadicParser
@@ -153,7 +153,7 @@ public abstract class MonadicParser definition: {
                 (('A'c8 <= character) && ('Z'c8 >= character)) ||
                 (('a'c8 <= character) && ('z'c8 >= character)) ||
                 (('0'c8 <= character) && ('9'c8 >= character)) ||
-                ('_' = character)
+                ('_'c8 = character)
             } errorMessage: "Expected an alphanumeric character.".
     }.
 
