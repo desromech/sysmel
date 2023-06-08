@@ -1,9 +1,12 @@
 public class ImageBuilderBytecodeImage superclass: ImageBuilderTargetImage; definition: {
+    public field imageData => ByteArray.
+
     public method constructWithBuilder: (builder: ImageBuilder) ::=> Void := {
-
+        imageData := LogicalImageSegmentWriter new
+            serializeObjectTrace: builder objectTrace;
+            segmentData
     }.
 
-    public override method saveTo: (filename: String) ::=> Boolean := {
-        false
-    }.
+    public override method saveTo: (filename: String) ::=> Boolean
+        := IO::saveWholeFileNamed(filename, imageData).
 }.

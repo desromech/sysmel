@@ -1,0 +1,8 @@
+public class ImageSegmentWriter definition: {
+    public field objectTrace => ImageObjectTrace.
+    public field segmentData => ByteArray.
+
+    public virtual method serializeObjectTrace: (theObjectTrace: ImageObjectTrace) ::=> Void := {
+        segmentData := ByteArray new: 0sz.
+    }.
+}.

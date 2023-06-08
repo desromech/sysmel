@@ -1309,7 +1309,35 @@ Dictionary
             entry value
         }
     };
-    withSelector: #untypedAt:ifAbsentPut: addMethod: {:(Dictionary)self :(Untyped)key :ifAbsentBlock |
+    withSelector: #includesKey: addMethod: {:(Dictionary)self :(AnyValue)key :: Boolean |
+        self ensureStorage.
+        let: #entryIndex with: (self scanFor: key) asSize.
+        let: #storage with: self storage.
+        let: #entry with: (storage at: entryIndex).
+        if: entry ~~ nil then: entry key = key else: false
+    };
+    withSelector: #at:ifPresent: addMethod: {:(Dictionary)self :key :ifPresentBlock :: Void |
+        self ensureStorage.
+        let: #entryIndex with: (self scanFor: key) asSize.
+        let: #storage with: self storage.
+        let: #entry with: (storage at: entryIndex).
+        if: entry ~~ nil then: {
+            ifPresentBlock(entry value)
+        }
+    }.
+
+IdentityDictionary
+    withSelector: #untypedIncludesKey: addMethod: {:(IdentityDictionary)self :(Untyped)key :: Boolean |
+        self ensureStorage.
+        let: #entryIndex with: (self scanFor: key) asSize.
+        let: #storage with: self storage.
+        let: #entry with: (storage at: entryIndex).
+        if: entry ~~ nil then: entry key == key else: false
+    };
+    withSelector: #untypedAt:put: addMethod: {:(IdentityDictionary)self :(Untyped)key :value :: Void |
+        self at: key put: value.
+    };
+    withSelector: #untypedAt:ifAbsentPut: addMethod: {:(IdentityDictionary)self :(Untyped)key :ifAbsentBlock |
         self ensureStorage.
         let: #entryIndex with: (self scanFor: key) asSize.
         let: #storage with: self storage.
@@ -1320,15 +1348,6 @@ Dictionary
             value
         } else: {
             entry value
-        }
-    };
-    withSelector: #at:ifPresent: addMethod: {:(Dictionary)self :key :ifPresentBlock :: Void |
-        self ensureStorage.
-        let: #entryIndex with: (self scanFor: key) asSize.
-        let: #storage with: self storage.
-        let: #entry with: (storage at: entryIndex).
-        if: entry ~~ nil then: {
-            ifPresentBlock(entry value)
         }
     }.
 

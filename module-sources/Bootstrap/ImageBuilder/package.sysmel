@@ -1,5 +1,8 @@
+loadSourceNamed: "ImageObjectTrace.sysmel".
 loadSourceNamed: "ImageBuilder.sysmel".
 loadSourceNamed: "ImageBuilderTarget.sysmel".
 loadSourceNamed: "ImageBuilderTargetImage.sysmel".
+loadSourceNamed: "ImageSegmentWriter.sysmel".
+loadSourceNamed: "LogicalImageSegmentWriter.sysmel".
 loadSourceNamed: "ImageBuilderBytecodeTarget.sysmel".
 loadSourceNamed: "ImageBuilderBytecodeImage.sysmel".

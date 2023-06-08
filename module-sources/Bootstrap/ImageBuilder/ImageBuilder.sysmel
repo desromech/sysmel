@@ -161,8 +161,7 @@ ImageBuilder definition: {
     public field traceStrategy => ImageBuilderObjectTraceStrategy.
     public field entryPointFunction => Function.
 
-    public field tracedObjects => OrderedCollection.
-    protected field tracedObjectSet => IdentitySet.
+    public field objectTrace => ImageObjectTrace.
 
     public field rootProgramEntities => OrderedCollection.
     protected field rootProgramEntitySet => IdentitySet.
@@ -218,9 +217,8 @@ ImageBuilder definition: {
 
     public method enqueueObjectTrace: (object: Untyped) ::=> Void := {
         (traceStrategy shouldTraceObject: object with: self) ifTrue: {
-            (tracedObjectSet untypedIncludes: object) ifFalse: {
-                tracedObjects untypedAdd: object.
-                tracedObjectSet untypedAdd: object.
+            (objectTrace includesObject: object) ifFalse: {
+                objectTrace addNewObject: object.
 
                 (RawTuple::type(object) ifNil: Untyped) imageBuilder::addObject: object intoSpecialTraceListIn: self
             }.
@@ -235,8 +233,7 @@ ImageBuilder definition: {
     }.
 
     public method traceRequiredObjectSet => Void := {
-        tracedObjects := OrderedCollection new.
-        tracedObjectSet := IdentitySet new.
+        objectTrace := ImageObjectTrace new.
         tracedProgramEntities := OrderedCollection new.
         tracedFunctions := OrderedCollection new.
         tracedFunctionDefinitions := OrderedCollection new.
@@ -245,7 +242,7 @@ ImageBuilder definition: {
             self enqueueObjectTrace: each
         }.
 
-        tracedObjects do: {:(Untyped)each :: Void |
+        objectTrace objectList do: {:(Untyped)each :: Void |
             traceStrategy traceReferencesOf: each with: self
         }
     } .
@@ -260,7 +257,7 @@ ImageBuilder definition: {
 
     public method emitTraceReport => Void := {
         printLine("Image builder trace results:").
-        printLine("Object set size ", tracedObjects size).
+        printLine("Object set size ", objectTrace objectList size).
         printLine("Program entities ", tracedProgramEntities size).
         printLine("Functions ", tracedFunctions size).
         printLine("Function definitions ", tracedFunctionDefinitions size).

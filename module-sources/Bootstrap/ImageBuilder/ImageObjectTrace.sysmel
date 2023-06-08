@@ -1,0 +1,28 @@
+public class ImageObjectTrace superclass: Object; definition: {
+    public field objectList => OrderedCollection.
+    public field objectIndexDictionary => IdentityDictionary.
+
+    public override method initialize => Void := {
+        super initialize.
+
+        objectList := OrderedCollection new.
+        objectIndexDictionary := IdentityDictionary new.
+    }.
+
+    public method includesObject: (object: Untyped) ::=> Boolean
+        := objectIndexDictionary untypedIncludesKey: object.
+
+    public method addNewObject: (object: Untyped) ::=> UInt32 := {
+        let index := objectList size asUInt32.
+        objectList add: object.
+        objectIndexDictionary untypedAt: object put: object.
+        index
+    }.
+
+    public method addObject: (object: Untyped) ::=> UInt32
+        := objectIndexDictionary untypedAt: object ifAbsentPut: { :: UInt32 |
+            let index := objectList size asUInt32.
+            objectList add: object.
+            index
+        }.
+}.
