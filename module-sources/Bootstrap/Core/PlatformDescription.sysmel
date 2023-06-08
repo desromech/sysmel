@@ -1,0 +1,77 @@
+public final class PlatformDescription definition: {
+    public field architectureName => Symbol.
+    public field vendorName => Symbol.
+    public field osName => Symbol.
+    public field abiName => Symbol.
+    public field objectFileName => Symbol.
+    public field debugInformationFormatName => Symbol.
+    public field exceptionHandlingTableFormatName => Symbol.
+
+    public method printTripleOn: (stream: Stream) ::=> Void := {
+        stream string: architectureName.
+        vendorName isNotNil && (vendorName ~~ #"") ifTrue: (stream nextPut: '-'c8; string: vendorName).
+        osName isNotNil && (osName ~~ #"") 
+            ifTrue: (stream nextPut: '-'c8; string: osName)
+            ifFalse: (stream nextPutAll: "-none").
+        abiName isNotNil && (abiName ~~ #"") ifTrue: (stream nextPut: '-'c8; string: abiName).
+    }.
+
+    public method triple => String := {
+        let stream := StringStream new.
+        self printTripleOn: stream.
+        stream asString
+    }.
+
+    public override method printOn: (stream: Stream) ::=> Void := {
+        self printTripleOn: stream
+    }
+}.
+
+let CurrentBuildPlatformDescription := PlatformDescription new
+    architectureName: __BuildArchitecture__;
+    vendorName: __BuildVendor__;
+    osName: __BuildOS__;
+    abiName: __BuildAbi__;
+    objectFileName: __BuildObjectFile__;
+    debugInformationFormatName: __BuildDebugInformationFormat__;
+    exceptionHandlingTableFormatName: __BuildExceptionHandlingTableFormat__;
+    yourself.
+
+let CurrentHostPlatformDescription := PlatformDescription new
+    architectureName: __HostArchitecture__;
+    vendorName: __HostVendor__;
+    osName: __HostOS__;
+    abiName: __HostAbi__;
+    objectFileName: __HostObjectFile__;
+    debugInformationFormatName: __HostDebugInformationFormat__;
+    exceptionHandlingTableFormatName: __HostExceptionHandlingTableFormat__;
+    yourself.
+
+let CurrentTargetPlatformDescription := PlatformDescription new
+    architectureName: __TargetArchitecture__;
+    vendorName: __TargetVendor__;
+    osName: __TargetOS__;
+    abiName: __TargetAbi__;
+    objectFileName: __TargetObjectFile__;
+    debugInformationFormatName: __TargetDebugInformationFormat__;
+    exceptionHandlingTableFormatName: __TargetExceptionHandlingTableFormat__;
+    yourself.
+
+PlatformDescription definition: {
+    __Meta__ definition: {
+        public method currentBuildPlatformDescription => PlatformDescription
+            := CurrentBuildPlatformDescription.
+
+        public method currentHostPlatformDescription => PlatformDescription
+            := CurrentHostPlatformDescription.
+
+        public method currentTargetPlatformDescription => PlatformDescription
+            := CurrentTargetPlatformDescription.
+    }.
+}.
+
+#*
+printLine("Build platform: ", PlatformDescription currentBuildPlatformDescription).
+printLine("Host platform: ", PlatformDescription currentHostPlatformDescription).
+printLine("Target platform: ", PlatformDescription currentTargetPlatformDescription).
+*#

@@ -1,4 +1,6 @@
 public class ImageBuilder superclass: Object.
+public abstract class ImageBuilderTarget superclass: Object.
+public abstract class ImageBuilderTargetImage superclass: Object.
 
 public class ImageBuilderObjectTraceStrategy superclass: Object; definition: {
     public virtual method shouldTraceObject: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Boolean
@@ -21,8 +23,14 @@ public class ImageBuilderObjectTraceStrategy superclass: Object; definition: {
 }.
 
 public class ImageBuilderObjectTraceStrategyNoRTTI superclass: ImageBuilderObjectTraceStrategy; definition: {
-    public virtual method shouldTraceObject: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Boolean
-        := (super shouldTraceObject: object with: imageBuilder) && (self isTargetDefinedPrimitive: object) not.
+    let BlacklistedTypes := (TypeSlot, Pragma).
+
+    public virtual method shouldTraceObject: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Boolean := {
+        let type := RawTuple::type(object).
+        (super shouldTraceObject: object with: imageBuilder)
+            && (self isTargetDefinedPrimitive: object) not
+            && (BlacklistedTypes includes: type) not
+    }.
 
     public override method shouldEmitTypeSlot: (typeSlot: TypeSlot) ::=> Boolean
         := typeSlot isNoRTTIExcluded not.
@@ -101,6 +109,7 @@ FunctionDefinition definition: {
     __Meta__ definition: {
         public override method imageBuilder::traceMinimalReferencesOf: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Void := {
             RawTuple::isDummyValue(object) ifTrue: {return: void}.
+            object ensureAnalysis.
             super imageBuilder::traceMinimalReferencesOf: object with: imageBuilder.
 
             let functionDefinition => FunctionDefinition := object.
@@ -147,7 +156,8 @@ FunctionType definition: {
 }.
 
 ImageBuilder definition: {
-    public field objectModel => ObjectModelVariant.
+    public field target => ImageBuilderTarget.
+    public field targetImage => ImageBuilderTargetImage.
     public field traceStrategy => ImageBuilderObjectTraceStrategy.
     public field entryPointFunction => Function.
 
@@ -163,11 +173,14 @@ ImageBuilder definition: {
     
     public override method initialize => Void := {
         super initialize.
-        objectModel := ObjectModelVariant current.
+        target := ImageBuilderTarget default.
         traceStrategy := ImageBuilderObjectTraceStrategy new.
         rootProgramEntities := OrderedCollection new.
         rootProgramEntitySet := IdentitySet new.
     }.
+
+    public method objectModel => ObjectModelVariant
+        := target objectModel.
 
     public method beComplete => Void := {
         traceStrategy := ImageBuilderObjectTraceStrategy new.
@@ -237,9 +250,12 @@ ImageBuilder definition: {
         }
     } .
 
-    public method build => Void := {
+    public method build => ImageBuilderTargetImage := {
         self traceRequiredObjectSet.
         self emitTraceReport.
+
+        targetImage := target buildTargetImageWith: self.
+        targetImage
     }.
 
     public method emitTraceReport => Void := {
@@ -249,14 +265,18 @@ ImageBuilder definition: {
         printLine("Functions ", tracedFunctions size).
         printLine("Function definitions ", tracedFunctionDefinitions size).
 
+        #*tracedObjects do: {:(Untyped)each :: Void |
+            printLine(RawTuple::type(each), ": ", each)
+        }.
+        *#
         tracedFunctions do: {:(Function)each :: Void |
+            ##printLine(each).
             each definition ifNil: {
                 printLine("Warning, function without definition: ", each).
             }
         }.
     }.
 
-    public method saveTo: (filename: String) ::=> Void := {
-
-    }.
+    public method saveTo: (filename: String) ::=> Boolean
+        := targetImage saveTo: filename.
 }.

@@ -1,0 +1,12 @@
+ImageBuilderTarget definition: {
+    __Meta__ definition: {
+        public method default => ImageBuilderTarget
+            := ImageBuilderBytecodeTarget new.
+    }.
+
+    public abstract method objectModel => ObjectModelVariant
+        := self subclassResponsibility.
+
+    public abstract method buildTargetImageWith: (builder: ImageBuilder) ::=> ImageBuilderTargetImage
+        := self subclassResponsibility.
+}.

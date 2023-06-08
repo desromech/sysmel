@@ -1,0 +1,9 @@
+public class ImageBuilderBytecodeImage superclass: ImageBuilderTargetImage; definition: {
+    public method constructWithBuilder: (builder: ImageBuilder) ::=> Void := {
+
+    }.
+
+    public override method saveTo: (filename: String) ::=> Boolean := {
+        false
+    }.
+}.

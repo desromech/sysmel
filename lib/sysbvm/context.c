@@ -587,7 +587,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "owner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.programEntityType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.typeType, "Type", SYSBVM_NULL_TUPLE,
-        "supertype", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
+        "supertype", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_RTTI_EXCLUDED, context->roots.typeType,
         "slots", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
         "slotsWithBasicInitialization", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
         "totalSlotCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anyValueType,
@@ -727,7 +727,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionDefinitionType, "FunctionDefinition", SYSBVM_NULL_TUPLE,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         "argumentCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
-        "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, SYSBVM_NULL_TUPLE,
+        "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.sourcePositionType,
 
         "definitionEnvironment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.environmentType,
         "definitionArgumentNodes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.arrayType,
@@ -1179,9 +1179,9 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_createWithOptions(sysbvm_contextCrea
         if(!contextOptions->buildArchitectureName)
             contextOptions->buildArchitectureName = sysbvm_system_getArchitectureName();
         if(!contextOptions->buildVendorName)
-            contextOptions->buildVendorName = sysbvm_system_getPlatformName();
-        if(!contextOptions->buildPlatformName)
-            contextOptions->buildPlatformName = sysbvm_system_getPlatformName();
+            contextOptions->buildVendorName = sysbvm_system_getVendorName();
+        if(!contextOptions->buildOSName)
+            contextOptions->buildOSName = sysbvm_system_getOSName();
         if(!contextOptions->buildAbiName)
             contextOptions->buildAbiName = sysbvm_system_getAbiName();
         if(!contextOptions->buildObjectFileName)
@@ -1195,8 +1195,8 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_createWithOptions(sysbvm_contextCrea
             contextOptions->hostArchitectureName = contextOptions->buildArchitectureName;
         if(!contextOptions->hostVendorName)
             contextOptions->hostVendorName = contextOptions->buildVendorName;
-        if(!contextOptions->hostPlatformName)
-            contextOptions->hostPlatformName = contextOptions->buildPlatformName;
+        if(!contextOptions->hostOSName)
+            contextOptions->hostOSName = contextOptions->buildOSName;
         if(!contextOptions->hostAbiName)
             contextOptions->hostAbiName = contextOptions->buildAbiName;
         if(!contextOptions->hostObjectFileName)
@@ -1210,8 +1210,8 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_createWithOptions(sysbvm_contextCrea
             contextOptions->targetArchitectureName = contextOptions->hostArchitectureName;
         if(!contextOptions->targetVendorName)
             contextOptions->targetVendorName = contextOptions->hostVendorName;
-        if(!contextOptions->targetPlatformName)
-            contextOptions->targetPlatformName = contextOptions->hostPlatformName;
+        if(!contextOptions->targetOSName)
+            contextOptions->targetOSName = contextOptions->hostOSName;
         if(!contextOptions->targetAbiName)
             contextOptions->targetAbiName = contextOptions->hostAbiName;
         if(!contextOptions->targetObjectFileName)
@@ -1223,7 +1223,7 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_createWithOptions(sysbvm_contextCrea
         
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildArchitecture__", sysbvm_symbol_internWithCString(context, contextOptions->buildArchitectureName));
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildVendor__", sysbvm_symbol_internWithCString(context, contextOptions->buildVendorName));
-        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildPlatform__", sysbvm_symbol_internWithCString(context, contextOptions->buildPlatformName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildOS__", sysbvm_symbol_internWithCString(context, contextOptions->buildOSName));
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildAbi__", sysbvm_symbol_internWithCString(context, contextOptions->buildAbiName));
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildObjectFile__", sysbvm_symbol_internWithCString(context, contextOptions->buildObjectFileName));
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__BuildDebugInformationFormat__", sysbvm_symbol_internWithCString(context, contextOptions->buildDebugInformationFormatName));
@@ -1231,7 +1231,7 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_createWithOptions(sysbvm_contextCrea
 
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__HostArchitecture__", sysbvm_symbol_internWithCString(context, contextOptions->hostArchitectureName));
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__HostVendor__", sysbvm_symbol_internWithCString(context, contextOptions->hostVendorName));
-        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__HostPlatform__", sysbvm_symbol_internWithCString(context, contextOptions->hostPlatformName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__HostOS__", sysbvm_symbol_internWithCString(context, contextOptions->hostOSName));
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__HostAbi__", sysbvm_symbol_internWithCString(context, contextOptions->hostAbiName));
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__HostObjectFile__", sysbvm_symbol_internWithCString(context, contextOptions->hostObjectFileName));
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__HostDebugInformationFormat__", sysbvm_symbol_internWithCString(context, contextOptions->hostDebugInformationFormatName));
@@ -1239,7 +1239,7 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_createWithOptions(sysbvm_contextCrea
 
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__TargetArchitecture__", sysbvm_symbol_internWithCString(context, contextOptions->targetArchitectureName));
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__TargetVendor__", sysbvm_symbol_internWithCString(context, contextOptions->targetVendorName));
-        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__TargetPlatform__", sysbvm_symbol_internWithCString(context, contextOptions->targetPlatformName));
+        sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__TargetOS__", sysbvm_symbol_internWithCString(context, contextOptions->targetOSName));
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__TargetAbi__", sysbvm_symbol_internWithCString(context, contextOptions->targetAbiName));
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__TargetObjectFile__", sysbvm_symbol_internWithCString(context, contextOptions->targetObjectFileName));
         sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "__TargetDebugInformationFormat__", sysbvm_symbol_internWithCString(context, contextOptions->targetDebugInformationFormatName));

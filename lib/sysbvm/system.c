@@ -24,7 +24,7 @@ SYSBVM_API const char *sysbvm_system_getVendorName(void)
 #endif
 }
 
-SYSBVM_API const char *sysbvm_system_getPlatformName(void)
+SYSBVM_API const char *sysbvm_system_getOSName(void)
 {
 #if defined(_WIN32)
     return "windows";

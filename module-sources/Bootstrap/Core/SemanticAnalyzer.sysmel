@@ -962,18 +962,18 @@ Type definition: {
                 return: (environment analyzeWithCurrentExpectedType: (node expandWithDoesNotUnderstandMacro: staticMethod foundMethod environment: environment))
             }.
 
-            let hasLiteralReceiver := node receiver isLiteralNode.
-            let hasExplicitSolvedLookupType := node receiverLookupType isNotNil && node receiverLookupType isLiteralNode.
-            hasExplicitSolvedLookupType || hasLiteralReceiver || staticMethod shouldOptimizeLookup ifTrue: {
-                return: (ASTUnexpandedApplicationNode new
-                    sourcePosition: node sourcePosition;
-                    functionOrMacroExpression: (environment newLiteral: staticMethod foundMethod at: node sourcePosition);
-                    arguments: (Array with: node receiver) -- node arguments;
-                    analyzeWithEnvironment: environment
-                )
-            }.
-
             staticMethod isDoesNotUnderstand ifFalse: {
+                let hasLiteralReceiver := node receiver isLiteralNode.
+                let hasExplicitSolvedLookupType := node receiverLookupType isNotNil && node receiverLookupType isLiteralNode.
+                hasExplicitSolvedLookupType || hasLiteralReceiver || staticMethod shouldOptimizeLookup ifTrue: {
+                    return: (ASTUnexpandedApplicationNode new
+                        sourcePosition: node sourcePosition;
+                        functionOrMacroExpression: (environment newLiteral: staticMethod foundMethod at: node sourcePosition);
+                        arguments: (Array with: node receiver) -- node arguments;
+                        analyzeWithEnvironment: environment
+                    )
+                }.
+
                 node boundMethod: staticMethod foundMethod.
                 return: (staticMethod foundMethod __type__ analyzeAndTypeCheckSolvedMessageSendNode: node withEnvironment: environment)
             }.

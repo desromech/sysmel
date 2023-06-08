@@ -20,7 +20,7 @@ SYSBVM_API const char *sysbvm_system_getVendorName(void);
 /**
  * Gets the platform name.
  */ 
-SYSBVM_API const char *sysbvm_system_getPlatformName(void);
+SYSBVM_API const char *sysbvm_system_getOSName(void);
 
 /**
  * Gets the abi name.

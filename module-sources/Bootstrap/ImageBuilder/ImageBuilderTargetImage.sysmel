@@ -1,0 +1,4 @@
+ImageBuilderTargetImage definition: {
+    public abstract method saveTo: (filename: String) ::=> Boolean
+        := self subclassResponsibility.
+}.
