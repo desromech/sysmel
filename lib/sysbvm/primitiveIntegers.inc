@@ -1,17 +1,17 @@
+#if !IS_CHARACTER
 static sysbvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_printString)(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
     if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
 
-#if IS_CHARACTER
-    return sysbvm_primitiveInteger_character_printString(context, primitiveInteger_decode(arguments[0]));
-#elif IS_SIGNED
+#if IS_SIGNED
     return sysbvm_primitiveInteger_signed_printString(context, primitiveInteger_decode(arguments[0]));
 #else
     return sysbvm_primitiveInteger_unsigned_printString(context, primitiveInteger_decode(arguments[0]));
 #endif
 }
+#endif
 
 static sysbvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_fromInteger)(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
@@ -356,8 +356,9 @@ static sysbvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_asFloat64)(sysbvm_con
 
 static void PRIMITIVE_INTEGER_FUNCTION(registerPrimitives)(void)
 {
+#if !IS_CHARACTER
     sysbvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_printString), INTEGER_TYPE_NAME "::printString");
-
+#endif
     sysbvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_fromInteger), INTEGER_TYPE_NAME "::fromInteger");
     sysbvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_asInteger), INTEGER_TYPE_NAME "::asInteger");
 
@@ -400,8 +401,9 @@ static void PRIMITIVE_INTEGER_FUNCTION(registerPrimitives)(void)
 
 static void PRIMITIVE_INTEGER_FUNCTION(setupPrimitives)(sysbvm_context_t *context)
 {
+#if !IS_CHARACTER
     sysbvm_type_setPrintStringFunction(context, context->roots.INTEGER_TYPE_ROOT_NAME, sysbvm_function_createPrimitive(context, 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, PRIMITIVE_INTEGER_FUNCTION(primitive_printString)));
-
+#endif
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, INTEGER_TYPE_NAME "::fromInteger", context->roots.integerType, INTEGER_TYPE_SHORT_SUFFIX_NAME, 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, PRIMITIVE_INTEGER_FUNCTION(primitive_fromInteger));
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, INTEGER_TYPE_NAME "::asInteger", context->roots.INTEGER_TYPE_ROOT_NAME, "asInteger", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, PRIMITIVE_INTEGER_FUNCTION(primitive_asInteger));
 

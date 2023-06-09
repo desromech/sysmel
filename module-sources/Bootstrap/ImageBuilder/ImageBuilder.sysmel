@@ -257,6 +257,7 @@ ImageBuilder definition: {
     } .
 
     public method build => ImageBuilderTargetImage := {
+        AnalysisQueue current waitPendingAnalysis.
         self traceRequiredObjectSet.
         self emitTraceReport.
 
@@ -282,7 +283,7 @@ ImageBuilder definition: {
             printLine("Warning, function without definition: ", undefinedFunctionNames size).
             undefinedFunctionNames sort.
             undefinedFunctionNames do: {:each :: Void |
-                printLine("    ", each).
+                printLine("  ", each).
             }
         }.
     }.

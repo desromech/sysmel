@@ -1,0 +1,3 @@
+## TODO: Implement this by calling PAL functions.
+Time::Timestamp::microsecondsNow adoptDefinitionOf: {:: Int64 | 0i64}.
+Time::Timestamp::nanosecondsNow adoptDefinitionOf: {:: Int64 | 0i64}.

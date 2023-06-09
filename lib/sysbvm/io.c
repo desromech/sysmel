@@ -56,7 +56,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_io_readWholeFileNamedAsByteArray(sysbvm_context
     return readByteArray;
 }
 
-SYSBVM_API bool sysbvm_io_saveWholeFileNamed(sysbvm_tuple_t filename, sysbvm_tuple_t content)
+SYSBVM_API bool sysbvm_io_writeWholeFileNamed(sysbvm_tuple_t filename, sysbvm_tuple_t content)
 {
     char *outputFileName = sysbvm_tuple_bytesToCString(filename);
     FILE *outputFile = fopen(outputFileName, "wb");
@@ -154,13 +154,13 @@ static sysbvm_tuple_t sysbvm_io_primitive_readWholeFileNamedAsByteArray(sysbvm_c
     return sysbvm_io_readWholeFileNamedAsString(context, arguments[0]);
 }
 
-static sysbvm_tuple_t sysbvm_io_primitive_saveWholeFileNamed(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+static sysbvm_tuple_t sysbvm_io_primitive_writeWholeFileNamed(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
-    return sysbvm_tuple_boolean_encode(sysbvm_io_saveWholeFileNamed(arguments[0], arguments[1]));
+    return sysbvm_tuple_boolean_encode(sysbvm_io_writeWholeFileNamed(arguments[0], arguments[1]));
 }
 
 static sysbvm_tuple_t sysbvm_io_primitive_halt(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -183,7 +183,7 @@ void sysbvm_io_registerPrimitives(void)
 
     sysbvm_primitiveTable_registerFunction(sysbvm_io_primitive_readWholeFileNamedAsString, "IO::readWholeFileNamedAsString");
     sysbvm_primitiveTable_registerFunction(sysbvm_io_primitive_readWholeFileNamedAsByteArray, "IO::readWholeFileNamedAsByteArray");
-    sysbvm_primitiveTable_registerFunction(sysbvm_io_primitive_saveWholeFileNamed, "IO::saveWholeFileNamed");
+    sysbvm_primitiveTable_registerFunction(sysbvm_io_primitive_writeWholeFileNamed, "IO::writeWholeFileNamed");
     sysbvm_primitiveTable_registerFunction(sysbvm_io_primitive_halt, "halt");
 }
 
@@ -197,7 +197,7 @@ void sysbvm_io_setupPrimitives(sysbvm_context_t *context)
 
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "IO::readWholeFileNamedAsString", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_io_primitive_readWholeFileNamedAsString);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "IO::readWholeFileNamedAsByteArray", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_io_primitive_readWholeFileNamedAsByteArray);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "IO::saveWholeFileNamed", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_io_primitive_saveWholeFileNamed);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "IO::writeWholeFileNamed", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_io_primitive_writeWholeFileNamed);
 
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "halt", 0, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_io_primitive_halt);
 }

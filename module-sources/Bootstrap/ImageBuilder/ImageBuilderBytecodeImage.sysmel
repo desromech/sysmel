@@ -34,5 +34,5 @@ public class ImageBuilderBytecodeImage superclass: ImageBuilderTargetImage; defi
     }.
 
     public override method saveTo: (filename: String) ::=> Boolean
-        := IO::saveWholeFileNamed(filename, imageData).
+        := IO::writeWholeFileNamed(filename, imageData).
 }.

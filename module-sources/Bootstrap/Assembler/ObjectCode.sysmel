@@ -413,7 +413,7 @@ AsmObjectFileWriter definition: {
         := self subclassResponsibility.
 
     public method writeObjectCode: (objectCode: AsmObjectCode) toFileNamed: (fileName: String) ::=> Void := {
-        IO::saveWholeFileNamed(fileName, self encodeObjectCode: objectCode).
+        IO::writeWholeFileNamed(fileName, self encodeObjectCode: objectCode).
     }.
 }.
 

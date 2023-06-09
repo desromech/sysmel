@@ -443,7 +443,7 @@ TACOperation extend: {
     public method generate: (instruction: TACInstruction) for: (target: TACAsmCompilationTarget) with: (functionGenerator: TACFunctionAsmCodeGenerator) ::=> Void := {
         let targetName := target name.
         (perTargetCodeGenerators at: targetName ifAbsent: {|
-            self error: "Missing code generation for TAC operation '" -- name printString -- "' in " -- targetName -- "."
+            self error: "Missing code generation for TAC operation '" -- name printString -- "' in " -- targetName asString -- "."
         }) (instruction, functionGenerator).
     }.
 }.

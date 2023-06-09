@@ -1,0 +1,4 @@
+halt adoptDefinitionOf: {:: Void |
+    <primitive: #halt>
+    <targetDefinedPrimitive>
+} withEagerAnalysis.

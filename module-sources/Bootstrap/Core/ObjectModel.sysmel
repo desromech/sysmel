@@ -502,7 +502,6 @@ Size extend: {
         := (self * 1103515245sz) & HashBitMask
 }.
 
-
 identityHash adoptDefinitionOf: {:(Untyped)self :: Size |
     <primitive: #identityHash >
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
@@ -514,12 +513,49 @@ identityHash adoptDefinitionOf: {:(Untyped)self :: Size |
 } makePure makeFinal withEagerAnalysis.
 
 RawTuple::isBytes adoptDefinitionOf: {:(Untyped)self :: Boolean |
+    <primitive: #RawTuple::isBytes>
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
         (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ isBytes
     } ifFalse: {
         false
     }
+} withEagerAnalysis.
+
+RawTuple::isDummyValue adoptDefinitionOf: {:(Untyped)self :: Boolean |
+    <primitive: #RawTuple::isDummyValue>
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
+    ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
+        (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ isDummyValue
+    } ifFalse: {
+        false
+    }
+} withEagerAnalysis.
+
+RawTuple::markDummyValue adoptDefinitionOf: {:(Untyped)self :: Void |
+    <primitive: #RawTuple::markDummy>
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
+    ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
+        (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ isDummyValue: true
+    }.
+} withEagerAnalysis.
+
+RawTuple::isWeak adoptDefinitionOf: {:(Untyped)self :: Boolean |
+    <primitive: #RawTuple::isWeak>
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
+    ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
+        (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ isWeak
+    } ifFalse: {
+        false
+    }
+} withEagerAnalysis.
+
+RawTuple::markWeak adoptDefinitionOf: {:(Untyped)self :: Void |
+    <primitive: #RawTuple::markWeak>
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
+    ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
+        (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ isWeak: true
+    }.
 } withEagerAnalysis.
 
 RawTuple::size adoptDefinitionOf: {:(Untyped)self :: Size |
@@ -546,6 +582,18 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
             ObjectModel::ImmediateTagTypeTable at: tag asSize
         }
     }
+} withEagerAnalysis.
+
+(RawTuple::type:) adoptDefinitionOf: {:(Untyped)self :(Type)newType :: Void |
+    <primitive: #RawTuple::type>
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
+    let newTypeValue := ObjectModel::getTuplePointerUIntValue(newType).
+    (pointerValue & 15uptr) ~= 0uptr ifTrue: error("Types cannot be immediate values.").
+
+    ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
+        let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
+        header _ typePointerAndFlags: newTypeValue | (header _ typePointerAndFlags & 15uptr)
+    }.
 } withEagerAnalysis.
 
 (RawTuple::slotAt:) adoptDefinitionOf: {:(Untyped)self :(Size)index :: Untyped |
@@ -653,6 +701,44 @@ public function ObjectModel::lookupVirtualSelectorWithReceiverType(receiverType:
         objectSize: contentSize.
 
     allocationPointer reinterpretCastTo: Untyped.
+} withEagerAnalysis.
+
+RawTuple::new adoptDefinitionOf: {:(Size)slotCount :: Untyped |
+    <primitive: #RawTuple::new>
+    error("TODO: RawTuple::new")
+} withEagerAnalysis.
+
+RawTuple::byteNew adoptDefinitionOf: {:(Size)slotCount :: Untyped |
+    <primitive: #RawTuple::new>
+    error("TODO: RawTuple::new")
+} withEagerAnalysis.
+
+RawTuple::shallowCopy adoptDefinitionOf: {:(Size)slotCount :: Untyped |
+    <primitive: #RawTuple::new>
+    error("TODO: RawTuple::new")
+} withEagerAnalysis.
+
+RawTuple::firstInstanceWithType adoptDefinitionOf: {:(Type)type :: Untyped | nil}.
+RawTuple::nextInstanceWithSameType adoptDefinitionOf: {:(Untyped)iterator :: Untyped | nil}.
+
+(RawTuple::typeSlotAt:) adoptDefinitionOf: {:(Untyped)self :(TypeSlot)typeSlot :: Untyped |
+    <primitive: #RawTuple::typeSlotAt:>
+    error("TODO: RawTuple::typeSlotAt:")
+} withEagerAnalysis.
+
+(RawTuple::typeSlotAt:put:) adoptDefinitionOf: {:(Untyped)self :(TypeSlot)typeSlot :(Untyped)value :: Void |
+    <primitive: #RawTuple::typeSlotAt:put:>
+    error("TODO: RawTuple::typeSlotAt:put:")
+} withEagerAnalysis.
+
+(RawTuple::refTypeSlotAt:) adoptDefinitionOf: {:(Untyped)self :(TypeSlot)typeSlot :: Untyped |
+    <primitive: #RawTuple::refTypeSlotAt:>
+    error("TODO: RawTuple::refTypeSlotAt:")
+} withEagerAnalysis.
+
+(RawTuple::refTypeSlotAt:put:) adoptDefinitionOf: {:(Untyped)self :(TypeSlot)typeSlot :(Untyped)value :: Void |
+    <primitive: #RawTuple::refTypeSlotAt:put:>
+    error("TODO: RawTuple::refTypeSlotAt:put:")
 } withEagerAnalysis.
 
 let emptyArray := #().

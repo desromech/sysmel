@@ -55,6 +55,12 @@
             primitiveFailedError()
         }.
 
+        public pure final eager method <=> (other: SelfType) ::=> Int32 := {
+            <primitive: (primitivePrefix -- "<=>") asSymbol>
+            <targetDefinedPrimitive>
+            primitiveFailedError()
+        }.
+
         public pure final eager method < (other: SelfType) ::=> Boolean := {
             <primitive: (primitivePrefix -- "<") asSymbol>
             <targetDefinedPrimitive>
@@ -317,5 +323,37 @@
             <targetDefinedPrimitive>
             primitiveFailedError()
         }.
+    }.
+}.
+
+UInt32 definition: {
+    public pure final method asIEEEFloat32Decoded => Float32 := {
+        <primitive: "UInt32::asIEEEFloat32Decoded">
+        <targetDefinedPrimitive>
+        primitiveFailedError()
+    }.
+}.
+
+UInt64 definition: {
+    public pure final method asIEEEFloat64Decoded => Float64 := {
+        <primitive: "UInt64::asIEEEFloat64Decoded">
+        <targetDefinedPrimitive>
+        primitiveFailedError()
+    }.
+}.
+
+Float32 definition: {
+    public pure final method asIEEEFloat32Encoding => UInt32 := {
+        <primitive: "Float32::asIEEEFloat32Encoding">
+        <targetDefinedPrimitive>
+        primitiveFailedError()
+    }.
+}.
+
+Float64 definition: {
+    public pure final method asIEEEFloat64Encoding => UInt64 := {
+        <primitive: "Float64::asIEEEFloat64Encoding">
+        <targetDefinedPrimitive>
+        primitiveFailedError()
     }.
 }.

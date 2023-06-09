@@ -514,6 +514,28 @@ ASTMakeDictionaryNode definition: {
     }.
 }.
 
+ASTPragmaNode definition: {
+    public eager override method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let result := self copy
+            analyzerToken: environment validAnalyzerToken;
+            analyzedType: Pragma;
+            selector: (environment analyze: self selector withExpectedType: Symbol);
+            arguments: (self arguments collect: {:(ASTNode)eachArgument :: ASTNode | environment analyzeWithDecayedType: eachArgument});
+            yourself.
+
+        result selector isLiteralNode && (result arguments allSatisfy: {:(ASTNode)eachArgument :: Boolean | eachArgument isLiteralNode}) ifTrue: {
+            let pragma := Pragma new
+                selector: (result selector downCastTo: ASTLiteralNode) value;
+                arguments: (result arguments collect: {:(ASTLiteralNode)eachArgument | eachArgument value});
+                yourself.
+            environment addPragma: pragma.
+            environment newLiteral: pragma at: result sourcePosition
+        } ifFalse: {
+            result
+        }.
+    }.
+}.
+
 ASTSequenceNode definition: {
     public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
         let resultBox := ValueBox with: void.

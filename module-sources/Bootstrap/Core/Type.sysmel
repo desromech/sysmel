@@ -1,0 +1,13 @@
+Type definition: {
+    public eager final method flushLookupSelector: (selector: Symbol) ::=> Void := {
+        <primitive: #Type::flushLookupSelector:>
+    }.
+
+    public eager final method flushMacroLookupSelector: (selector: Symbol) ::=> Void := {
+        <primitive: #Type::flushMacroLookupSelector:>
+    }.
+
+    public eager final method flushFallbackLookupSelector: (selector: Symbol) ::=> Void := {
+        <primitive: #Type::flushFallbackLookupSelector:>
+    }.
+}.

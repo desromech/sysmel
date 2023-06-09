@@ -119,6 +119,41 @@ String extend: {
 
         result
     }.
+
+    public pure override final method asString => String := self.
+
+    public pure override final method -- (other: SequenceableCollection) ::=> String
+        := super -- other.
+}.
+
+
+Char8 extend: {
+    public override final method asString => String
+        := String with: self.
+
+    public final method printCEscapedOn: (stream: Stream) ::=> Void := {
+        self = '\n'c8 ifTrue: {stream nextPutAll: "\\n". return: void}.
+        self = '\r'c8 ifTrue: {stream nextPutAll: "\\r". return: void}.
+        self = '\t'c8 ifTrue: {stream nextPutAll: "\\t". return: void}.
+        self = '\\'c8 ifTrue: {stream nextPutAll: "\\\\". return: void}.
+
+        (self < ' 'c8) || (self >= 128c8) ifTrue: {
+            stream nextPutAll: "x".
+            self asUInt8 printHexOn: stream.
+        } ifFalse: {
+            stream nextPut: self
+        }
+    }.
+
+    public override final method stringOn: (stream: Stream) ::=> Void := {
+        stream nextPut: self
+    }.
+
+    public override final method printOn: (stream: Stream) ::=> Void := {
+        stream nextPut: '\''.
+        self printCEscapedOn: stream.
+        stream nextPut: '\''.
+    }.
 }.
 
 UInt8 extend: {

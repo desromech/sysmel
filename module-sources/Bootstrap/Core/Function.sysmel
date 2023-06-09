@@ -14,12 +14,12 @@ Function definition: {
     }.
 
     public method isTargetDefinedPrimitive => Boolean
-        := (self hasFlag: FunctionFlags::TargetDefinedPrimitive) || (self hasPragmaNamed: #targetDefinedPrimitive).
+        := (self hasAnyFlag: FunctionFlags::TargetDefinedPrimitive) || (self hasPragmaNamed: #targetDefinedPrimitive).
 }.
 
 FunctionDefinition definition: {
     public method isTargetDefinedPrimitive => Boolean
-        := (self hasFlag: FunctionFlags::TargetDefinedPrimitive) || (self hasPragmaNamed: #targetDefinedPrimitive).
+        := (self hasAnyFlag: FunctionFlags::TargetDefinedPrimitive) || (self hasPragmaNamed: #targetDefinedPrimitive).
 
     public method allAnalyzedNodesDo: (aBlock: (ASTNode) => Void) ::=> Void := {
         self ensureAnalysis.
@@ -36,3 +36,10 @@ FunctionDefinition definition: {
         }
     }.
 }.
+
+(apply) adoptDefinitionOf: {:function :(Array)arguments... :: Untyped |
+    let actualArguments := arguments isEmpty
+        ifTrue: #()
+        ifFalse: arguments allButLast -- arguments last.
+    function applyWithArguments: actualArguments
+} withEagerAnalysis.

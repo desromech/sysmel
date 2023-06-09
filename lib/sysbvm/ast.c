@@ -220,7 +220,6 @@ SYSBVM_API sysbvm_tuple_t sysbvm_astBreakNode_create(sysbvm_context_t *context, 
 {
     sysbvm_astBreakNode_t *result = (sysbvm_astBreakNode_t*)sysbvm_context_allocatePointerTuple(context, context->roots.astBreakNodeType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_astBreakNode_t));
     result->super.sourcePosition = sourcePosition;
-    result->super.analyzedType = context->roots.controlFlowBreakType;
     return (sysbvm_tuple_t)result;
 }
 
@@ -237,7 +236,6 @@ SYSBVM_API sysbvm_tuple_t sysbvm_astContinueNode_create(sysbvm_context_t *contex
 {
     sysbvm_astContinueNode_t *result = (sysbvm_astContinueNode_t*)sysbvm_context_allocatePointerTuple(context, context->roots.astContinueNodeType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_astContinueNode_t));
     result->super.sourcePosition = sourcePosition;
-    result->super.analyzedType = context->roots.controlFlowContinueType;
     return (sysbvm_tuple_t)result;
 }
 
@@ -532,7 +530,6 @@ SYSBVM_API sysbvm_tuple_t sysbvm_astReturnNode_create(sysbvm_context_t *context,
 {
     sysbvm_astReturnNode_t *result = (sysbvm_astReturnNode_t*)sysbvm_context_allocatePointerTuple(context, context->roots.astReturnNodeType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_astReturnNode_t));
     result->super.sourcePosition = sourcePosition;
-    result->super.analyzedType = context->roots.controlFlowReturnType;
     result->expression = expression;
     return (sysbvm_tuple_t)result;
 }

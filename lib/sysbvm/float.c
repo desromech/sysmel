@@ -817,7 +817,7 @@ void sysbvm_float_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "UInt32::asIEEEFloat32Decoded", context->roots.uint32Type, "asIEEEFloat32Decoded", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_float32_primitive_asIEEEFloat32Decoded);
 
     // Float64
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float32::fromFloat32", context->roots.float32Type, "f64", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_float64_primitive_fromFloat32);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::fromFloat32", context->roots.float32Type, "asFloat64", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_float64_primitive_fromFloat32);
 
     sysbvm_type_setPrintStringFunction(context, context->roots.float64Type, sysbvm_function_createPrimitive(context, 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_float64_primitive_printString));
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Float64::parseString:", sysbvm_tuple_getType(context, context->roots.float64Type), "parseString:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_float64_primitive_parseString);

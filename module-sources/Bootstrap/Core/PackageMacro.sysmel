@@ -1,3 +1,7 @@
+(loadSourceNamed:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)sourceNameExpression :: ASTNode |
+    ``(loadSourceNamedWithSolvedPath: (__SourceDirectory__ FileSystem::joinPath: `,sourceNameExpression))
+} makeMacro withEagerAnalysis.
+
 public: #loadPackageNamed: with: {:(MacroContext)__macroContext__ :(ASTNode)packageName :: ASTNode |
     ``{
         printLine("Loading package ", `,packageName).

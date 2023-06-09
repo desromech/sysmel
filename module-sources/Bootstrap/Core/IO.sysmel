@@ -1,0 +1,18 @@
+(IO::readWholeFileNamedAsByteArray) adoptDefinitionOf: {:(String)filename :: ByteArray |
+    <primitive: #IO::readWholeFileNamedAsByteArray>
+    error("TODO: IO::readWholeFileNamedAsByteArray")
+}.
+
+(IO::readWholeFileNamedAsString) adoptDefinitionOf: {:(String)filename :: String |
+    <primitive: #IO::readWholeFileNamedAsString>
+    error("TODO: IO::readWholeFileNamedAsString")
+}.
+
+(IO::writeWholeFileNamed) adoptDefinitionOf: {:(String)filename :(ByteArray)data :: Boolean |
+    <primitive: #IO::writeWholeFileNamed>
+    error("TODO: IO::writeWholeFileNamed")
+}.
+
+(loadSourceNamedWithSolvedPath:) adoptDefinitionOf: {:(String)solvedPath :: Void |
+    error("TODO: implement loadSourceNamedWithSolvedPath: ")
+}.

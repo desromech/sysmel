@@ -176,7 +176,7 @@ TACOperation extend: {
         let targetName := registerAllocator compilationTarget name.
         (perTargetRegisterConstraints at: targetName
             ifAbsent: {:: Void |
-            self error: "Missing register constraints for TAC operation '" -- name printString -- "' in " -- targetName -- "."
+            self error: "Missing register constraints for TAC operation '" -- name printString -- "' in " -- targetName asString -- "."
         }) (instruction, registerAllocator)
     }.
 }.

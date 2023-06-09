@@ -1,3 +1,15 @@
+ProgramEntity definition:{
+    public virtual eager method ensureAnalysis => Void := {
+        ## By default do nothing
+    }.
+}.
+
+AnalysisQueueEntry definition: {
+    public method waitPendingAnalysis => Void := {
+        programEntity ensureAnalysis
+    }.
+}.
+
 AnalysisQueue definition: {
     __Meta__ definition: {
         public method default => AnalysisQueue := {
@@ -23,5 +35,21 @@ AnalysisQueue definition: {
         } ifNil: {
             firstEntry := lastEntry := newEntry
         }.
+    }.
+
+    public method dequeue => AnalysisQueueEntry := {
+        let result := firstEntry.
+        result ifNotNil: {
+            firstEntry := result nextEntry.
+            firstEntry ifNil: (lastEntry := nil)
+        }.
+
+        result
+    }.
+
+    public method waitPendingAnalysis => Void := {
+        while: (let nextEntry := self dequeue) isNotNil do: {
+            nextEntry waitPendingAnalysis
+        }
     }.
 }.

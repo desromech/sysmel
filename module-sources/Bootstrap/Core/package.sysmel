@@ -15,6 +15,7 @@ __DefaultAnalysisQueueValueBox__ value waitPendingAnalysis.
 loadSourceNamed: "AnalysisQueue.sysmel".
 loadSourceNamed: "Function.sysmel".
 loadSourceNamed: "Environment.sysmel".
+loadSourceNamed: "BootstrapStubs.sysmel".
 loadSourceNamed: "SemanticAnalyzer.sysmel".
 AnalysisQueue current waitPendingAnalysis.
 loadSourceNamed: "MonadicParser.sysmel".
@@ -22,6 +23,7 @@ loadSourceNamed: "SysmelLanguage.sysmel".
 loadSourceNamed: "SourceCode.sysmel".
 
 loadSourceNamed: "ByteSerializableObject.sysmel".
+loadSourceNamed: "Boolean.sysmel".
 loadSourceNamed: "Set.sysmel".
 loadSourceNamed: "Dictionary.sysmel".
 loadSourceNamed: "MethodDictionary.sysmel".
@@ -29,9 +31,14 @@ loadSourceNamed: "StringMemoryFunctions.sysmel".
 loadSourceNamed: "ObjectModel.sysmel".
 
 loadSourceNamed: "Error.sysmel".
+loadSourceNamed: "IO.sysmel".
+loadSourceNamed: "FileSystem.sysmel".
 loadSourceNamed: "Interval.sysmel".
 loadSourceNamed: "Math.sysmel".
 loadSourceNamed: "ProgramEntity.sysmel".
 loadSourceNamed: "Utility.sysmel".
 loadSourceNamed: "String.sysmel".
 loadSourceNamed: "StringSymbol.sysmel".
+loadSourceNamed: "System.sysmel".
+loadSourceNamed: "Time.sysmel".
+loadSourceNamed: "Type.sysmel".

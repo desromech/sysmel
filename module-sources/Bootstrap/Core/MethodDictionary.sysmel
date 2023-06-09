@@ -1,3 +1,5 @@
+MethodDictionary::new adoptDefinitionOf: {:: MethodDictionary | MethodDictionary new}.
+
 MethodDictionary definition: {
     public final eager method scanFor: key ::=> IntPointer := {
         storage ifNil: { return: -1iptr }.

@@ -41,9 +41,9 @@ ASTNode
     withSelector: #isMessageSendNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isMessageChainMessageNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isMessageChainNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
-    withSelector: #isTupleSlotNamedAtFromNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
-    withSelector: #isTupleSlotNamedReferenceAtFromNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
-    withSelector: #isTupleSlotNamedAtPutFromNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
+    withSelector: #isTupleSlotNamedAtNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
+    withSelector: #isTupleSlotNamedReferenceAtNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
+    withSelector: #isTupleSlotNamedAtPutNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isTupleWithLookupStartingFromNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isPragmaNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isReturnNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
@@ -425,6 +425,44 @@ ASTMessageChainMessageNode
     withSelector: #transformWith: addMethod: {:(ASTMessageChainMessageNode)self :aBlock :: Void |
         if: (self selector isNotNil) then: (self selector: aBlock(self selector)).
         self arguments: (self arguments collect: aBlock)
+    } makeOverride.
+
+ASTTupleSlotNamedAtNode
+    withSelector: #isTupleSlotNamedAtNode addMethod: {:(ASTTupleSlotNamedAtNode)self :: Boolean | true } makeOverride;
+
+    withSelector: #childrenDo: addMethod: {:(ASTTupleSlotNamedAtNode)self :aBlock :: Void |
+        if: (self tupleExpression isNotNil) then: aBlock(self tupleExpression).
+        if: (self nameExpression isNotNil) then: aBlock(self nameExpression).
+    } makeOverride;
+    withSelector: #transformWith: addMethod: {:(ASTTupleSlotNamedAtNode)self :aBlock :: Void |
+        if: (self tupleExpression isNotNil) then: (self tupleExpression: aBlock(self tupleExpression)).
+        if: (self nameExpression isNotNil) then: (self nameExpression: aBlock(self nameExpression)).
+    } makeOverride.
+
+ASTTupleSlotNamedReferenceAtNode
+    withSelector: #isTupleSlotNamedReferenceAtNode addMethod: {:(ASTTupleSlotNamedReferenceAtNode)self :: Boolean | true } makeOverride;
+
+    withSelector: #childrenDo: addMethod: {:(ASTTupleSlotNamedReferenceAtNode)self :aBlock :: Void |
+        if: (self tupleExpression isNotNil) then: aBlock(self tupleExpression).
+        if: (self nameExpression isNotNil) then: aBlock(self nameExpression).
+    } makeOverride;
+    withSelector: #transformWith: addMethod: {:(ASTTupleSlotNamedReferenceAtNode)self :aBlock :: Void |
+        if: (self tupleExpression isNotNil) then: (self tupleExpression: aBlock(self tupleExpression)).
+        if: (self nameExpression isNotNil) then: (self nameExpression: aBlock(self nameExpression)).
+    } makeOverride.
+
+ASTTupleSlotNamedAtPutNode
+    withSelector: #isTupleSlotNamedAtPutNode addMethod: {:(ASTTupleSlotNamedAtPutNode)self :: Boolean | true } makeOverride;
+
+    withSelector: #childrenDo: addMethod: {:(ASTTupleSlotNamedAtPutNode)self :aBlock :: Void |
+        if: (self tupleExpression isNotNil) then: aBlock(self tupleExpression).
+        if: (self nameExpression isNotNil) then: aBlock(self nameExpression).
+        if: (self valueExpression isNotNil) then: aBlock(self valueExpression).
+    } makeOverride;
+    withSelector: #transformWith: addMethod: {:(ASTTupleSlotNamedAtPutNode)self :aBlock :: Void |
+        if: (self tupleExpression isNotNil) then: (self tupleExpression: aBlock(self tupleExpression)).
+        if: (self nameExpression isNotNil) then: (self nameExpression: aBlock(self nameExpression)).
+        if: (self valueExpression isNotNil) then: aBlock(self valueExpression).
     } makeOverride.
 
 ASTTupleWithLookupStartingFromNode

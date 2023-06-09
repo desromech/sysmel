@@ -1713,7 +1713,7 @@ static sysbvm_tuple_t sysbvm_astWhileContinueNode_primitiveCompileIntoBytecode(s
 
 static void sysbvm_bytecodeCompiler_setupNodeCompilationFunction(sysbvm_context_t *context, sysbvm_tuple_t astNodeType, sysbvm_functionEntryPoint_t compilationFunction)
 {
-    sysbvm_type_setMethodWithSelector(context, astNodeType, context->roots.astNodeCompileIntoBytecodeSelector, sysbvm_function_createPrimitive(context, 2, SYSBVM_FUNCTION_FLAGS_NONE, NULL, compilationFunction));
+    sysbvm_type_setMethodWithSelector(context, astNodeType, context->roots.astNodeCompileIntoBytecodeSelector, sysbvm_function_createPrimitive(context, 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, compilationFunction));
 }
 
 void sysbvm_bytecodeCompiler_registerPrimitives(void)

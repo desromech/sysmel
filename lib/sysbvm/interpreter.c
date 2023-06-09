@@ -5126,6 +5126,8 @@ static sysbvm_tuple_t sysbvm_astReturnNode_primitiveAnalyze(sysbvm_context_t *co
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     gcFrame.returnNode = (sysbvm_astReturnNode_t*)sysbvm_context_shallowCopy(context, *node);
+    gcFrame.returnNode->super.analyzerToken = sysbvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
+    gcFrame.returnNode->super.analyzedType = context->roots.controlFlowReturnType;
     SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.returnNode->super.sourcePosition);
 
     if(gcFrame.returnNode->expression)
@@ -5908,7 +5910,7 @@ static void sysbvm_astInterpreter_setupNodeInterpretationFunctions(sysbvm_contex
 
 void sysbvm_astInterpreter_setupASTInterpreter(sysbvm_context_t *context)
 {
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "loadSourceNamedWithSolvedPath:", 1, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_interpreter_primitive_loadSourceNamedWithSolvedPath);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "loadSourceNamedWithSolvedPath:", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_interpreter_primitive_loadSourceNamedWithSolvedPath);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "loadSourceNamed:", 2, SYSBVM_FUNCTION_FLAGS_MACRO | SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_interpreter_primitive_loadSourceNamedMacro);
 
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "begin", 2, SYSBVM_FUNCTION_FLAGS_MACRO | SYSBVM_FUNCTION_FLAGS_VARIADIC, NULL, sysbvm_astSequenceNode_primitiveMacro);
@@ -5970,12 +5972,12 @@ void sysbvm_astInterpreter_setupASTInterpreter(sysbvm_context_t *context)
     );
     sysbvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astUnexpandedApplicationNodeType,
         sysbvm_astUnexpandedApplicationNode_primitiveAnalyze,
-        sysbvm_astUnexpandedApplicationNode_primitiveAnalyzeAndEvaluate,
+        NULL,
         sysbvm_astUnexpandedApplicationNode_primitiveAnalyzeAndEvaluate
     );
     sysbvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astUnexpandedSExpressionNodeType,
         sysbvm_astUnexpandedSExpressionNode_primitiveAnalyze,
-        sysbvm_astUnexpandedSExpressionNode_primitiveAnalyzeAndEvaluate,
+        NULL,
         sysbvm_astUnexpandedSExpressionNode_primitiveAnalyzeAndEvaluate
     );
     sysbvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astFunctionApplicationNodeType,

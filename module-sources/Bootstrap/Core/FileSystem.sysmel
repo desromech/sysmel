@@ -1,0 +1,45 @@
+FileSystem::workingDirectory adoptDefinitionOf: {:: String |
+    "."
+}.
+
+(FileSystem::workingDirectory:) adoptDefinitionOf: {:(String)newWorkingDirectory :: Void |
+    "."
+}.
+
+String definition: {
+    public pure final eager method FileSystem::isAbsolute => Boolean := {
+        ## FIXME: Add proper support for windows
+        self isNotEmpty && (self first = '/'c8 || ((self size >= 2sz) && (self second = ':'c8)))
+    }.
+
+    public pure final eager method FileSystem::absolute => String
+        := self FileSystem::isAbsolute ifTrue: self ifFalse: (FileSystem::workingDirectory() FileSystem::joinPath: self).
+
+    public pure final eager method FileSystem::joinPath: (nextPath: String) ::=> String := {
+        self isEmpty || nextPath FileSystem::isAbsolute ifTrue: {
+            nextPath
+        } ifFalse: {
+            let lastCharacter := self last.
+            (lastCharacter = '/'c8) || (lastCharacter == '\\'c8)
+                ifTrue: self -- nextPath
+                ifFalse: self -- "/" -- nextPath
+        }.
+    }.
+
+    public pure final eager method FileSystem::dirname ::=> String
+        := self first: (((self lastIndexOf: '/'c8) max: (self lastIndexOf: '\\'c8)) max: 0iptr) asSize.
+
+    public pure final eager method FileSystem::basename ::=> String := {
+        let separatorIndex := (self lastIndexOf: '/'c8) max: (self lastIndexOf: '\\'c8).
+        separatorIndex < 0iptr
+            ifTrue: (self)
+            ifFalse: (self allButFirst: separatorIndex asSize + 1sz).
+    }.
+
+    public pure final eager method FileSystem::extension ::=> String := {
+        let extensionIndex := self lastIndexOf: '.'c8.
+        extensionIndex < 0iptr
+            ifTrue: ""
+            ifFalse: (self allButFirst: extensionIndex asSize)
+    }.
+}.

@@ -12,6 +12,331 @@ MacroContext
             yourself
     }.
 
+(begin) adoptDefinitionOf: {:(MacroContext)macroContext :(Array)expressions... :: ASTSequenceNode |
+    ASTSequenceNode new
+        sourcePosition: macroContext sourcePosition;
+        pragmas: #();
+        expressions: expressions;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+(break) adoptDefinitionOf: {:(MacroContext)macroContext :: ASTBreakNode |
+    ASTBreakNode new
+        sourcePosition: macroContext sourcePosition;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+(continue) adoptDefinitionOf: {:(MacroContext)macroContext :: ASTContinueNode |
+    ASTContinueNode new
+        sourcePosition: macroContext sourcePosition;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+let: #parseLambdaSignatureArgument with: {:(ASTNode)argument :: ASTNode |
+    argument isIdentifierReferenceNode ifTrue: {
+        return: (ASTArgumentNode new
+            sourcePosition: argument sourcePosition;
+            name: (argument downCastTo: ASTIdentifierReferenceNode) asLiteralNode;
+            yourself).
+    }.
+
+    error("Invalid/unsupported form for lambda signature argument").
+} withEagerAnalysis.
+
+let: #parseLambdaSignatureArguments with: {:(Array)argumentsSExpression :: Array |
+    Array with: (argumentsSExpression collect: {:(ASTNode)each :: ASTNode | parseLambdaSignatureArgument(each)}) with: nil with: false.
+} withEagerAnalysis.
+
+(lambda) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)argumentSignatureNode :(Array)valueOrBodyNodes... :: ASTNode |
+    argumentSignatureNode isUnexpandedSExpressionNode ifFalse: error("Expected a s-expression for the lambda arguments.").
+
+    let: #argumentParseResult with: parseLambdaSignatureArguments((argumentSignatureNode downCastTo: ASTUnexpandedSExpressionNode) elements).
+    let: #arguments with: argumentParseResult first.
+    let: #resultType with: argumentParseResult second.
+    let: #isVariadic with: argumentParseResult third.
+    let: #body with: (ASTSequenceNode new
+        sourcePosition: macroContext sourcePosition;
+        pragmas: #();
+        expressions: valueOrBodyNodes;
+        yourself).
+
+    ASTLambdaNode new
+        sourcePosition: macroContext sourcePosition;
+        flags: (isVariadic ifTrue: FunctionFlags::Variadic ifFalse: FunctionFlags::None);
+        arguments: arguments;
+        resultType: resultType;
+        body: body;
+        yourself
+} makeMacro withEagerAnalysis.
+
+(define) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)nameOrLambdaSignature :(Array)valueOrBodyNodes... :: ASTNode |
+    nameOrLambdaSignature isIdentifierReferenceNode ifTrue: {
+        return: (ASTLocalDefinitionNode new
+            sourcePosition: macroContext sourcePosition;
+            nameExpression: (nameOrLambdaSignature downCastTo: ASTIdentifierReferenceNode) asLiteralNode;
+            valueExpression: (valueOrBodyNodes isEmpty 
+                ifTrue: (ASTLiteralNode new
+                    sourcePosition: macroContext sourcePosition;
+                    value: nil;
+                    yourself)
+                ifFalse: valueOrBodyNodes last);
+            yourself)
+    }.
+
+    nameOrLambdaSignature isUnexpandedSExpressionNode ifTrue: {
+        let: #lambdaSignature with: (nameOrLambdaSignature downCastTo: ASTUnexpandedSExpressionNode).
+        lambdaSignature elements isEmpty ifTrue: error("define lambda signature requires at least a single element, with the name.").
+        
+        let: #nameIdentifierNode with: lambdaSignature elements first.
+        nameIdentifierNode isIdentifierReferenceNode ifFalse: error("define lambda requires an identifier for a name.").
+
+        let: #name with: (nameIdentifierNode downCastTo: ASTIdentifierReferenceNode) asLiteralNode.
+        let: #argumentParseResult with: parseLambdaSignatureArguments(lambdaSignature elements allButFirst).
+        let: #arguments with: argumentParseResult first.
+        let: #resultType with: argumentParseResult second.
+        let: #isVariadic with: argumentParseResult third.
+        let: #body with: (ASTSequenceNode new
+            sourcePosition: macroContext sourcePosition;
+            pragmas: #();
+            expressions: valueOrBodyNodes;
+            yourself).
+
+        return: (ASTLambdaNode new
+            sourcePosition: macroContext sourcePosition;
+            flags: (isVariadic ifTrue: FunctionFlags::Variadic ifFalse: FunctionFlags::None);
+            name: name;
+            arguments: arguments;
+            resultType: resultType;
+            body: body;
+            yourself)
+    }.
+
+    error("Invalid/unsupported form for (define)").
+} makeMacro withEagerAnalysis.
+
+(defineMacro) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)nameOrLambdaSignature :(Array)valueOrBodyNodes... :: ASTNode |
+    nameOrLambdaSignature isIdentifierReferenceNode ifTrue: {
+        return: (ASTLocalDefinitionNode new
+            sourcePosition: macroContext sourcePosition;
+            nameExpression: (nameOrLambdaSignature downCastTo: ASTIdentifierReferenceNode) asLiteralNode;
+            valueExpression: (valueOrBodyNodes isEmpty 
+                ifTrue: (ASTLiteralNode new
+                    sourcePosition: macroContext sourcePosition;
+                    value: nil;
+                    yourself)
+                ifFalse: valueOrBodyNodes last);
+            isMacroSymbol: true;
+            yourself)
+    }.
+
+    nameOrLambdaSignature isUnexpandedSExpressionNode ifTrue: {
+        let: #lambdaSignature with: (nameOrLambdaSignature downCastTo: ASTUnexpandedSExpressionNode).
+        lambdaSignature elements isEmpty ifTrue: error("define lambda signature requires at least a single element, with the name.").
+        
+        let: #nameIdentifierNode with: lambdaSignature elements first.
+        nameIdentifierNode isIdentifierReferenceNode ifFalse: error("define lambda requires an identifier for a name.").
+
+        let: #name with: (nameIdentifierNode downCastTo: ASTIdentifierReferenceNode) asLiteralNode.
+        let: #argumentParseResult with: parseLambdaSignatureArguments(lambdaSignature elements allButFirst).
+        let: #arguments with: argumentParseResult first.
+        let: #resultType with: argumentParseResult second.
+        let: #isVariadic with: argumentParseResult third.
+        let: #body with: (ASTSequenceNode new
+            sourcePosition: macroContext sourcePosition;
+            pragmas: #();
+            expressions: valueOrBodyNodes;
+            yourself).
+
+        return: (ASTLambdaNode new
+            sourcePosition: macroContext sourcePosition;
+            flags: (isVariadic ifTrue: FunctionFlags::Variadic ifFalse: FunctionFlags::None) | FunctionFlags::Macro;
+            name: name;
+            arguments: arguments;
+            resultType: resultType;
+            body: body;
+            yourself)
+    }.
+
+    error("Invalid/unsupported form for (define)").
+} makeMacro withEagerAnalysis.
+
+(if:then:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)conditionExpression :(ASTNode)trueExpression :: ASTIfNode |
+    ASTIfNode new
+        sourcePosition: macroContext sourcePosition;
+        conditionExpression: conditionExpression;
+        trueExpression: trueExpression;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+(if:then:else:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)conditionExpression :(ASTNode)trueExpression :(ASTNode)falseExpression :: ASTIfNode |
+    ASTIfNode new
+        sourcePosition: macroContext sourcePosition;
+        conditionExpression: conditionExpression;
+        trueExpression: trueExpression;
+        falseExpression: falseExpression;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+(if:then:else:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)conditionExpression :(ASTNode)trueExpression :(ASTNode)falseExpression :: ASTIfNode |
+    ASTIfNode new
+        sourcePosition: macroContext sourcePosition;
+        conditionExpression: conditionExpression;
+        trueExpression: trueExpression;
+        falseExpression: falseExpression;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+(do:while:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)bodyExpression :(ASTNode)conditionExpression  :: ASTDoWhileContinueWithNode |
+    ASTDoWhileContinueWithNode new
+        sourcePosition: macroContext sourcePosition;
+        bodyExpression: bodyExpression;
+        conditionExpression: conditionExpression;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+(do:while:continueWith:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)bodyExpression :(ASTNode)conditionExpression :(ASTNode)continueExpression :: ASTDoWhileContinueWithNode |
+    ASTDoWhileContinueWithNode new
+        sourcePosition: macroContext sourcePosition;
+        bodyExpression: bodyExpression;
+        conditionExpression: conditionExpression;
+        continueExpression: continueExpression;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+(let:with:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)nameExpression :(ASTNode)valueExpression :: ASTLocalDefinitionNode |
+    ASTLocalDefinitionNode new
+        sourcePosition: macroContext sourcePosition;
+        nameExpression: nameExpression;
+        valueExpression: valueExpression;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+(let:mutableWith:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)nameExpression :(ASTNode)valueExpression :: ASTLocalDefinitionNode |
+    ASTLocalDefinitionNode new
+        sourcePosition: macroContext sourcePosition;
+        nameExpression: nameExpression;
+        valueExpression: valueExpression;
+        isMutable: true;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+(let:type:with:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)nameExpression :(ASTNode)typeExpression :(ASTNode)valueExpression :: ASTLocalDefinitionNode |
+    ASTLocalDefinitionNode new
+        sourcePosition: macroContext sourcePosition;
+        nameExpression: nameExpression;
+        typeExpression: typeExpression;
+        valueExpression: valueExpression;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+(let:type:mutableWith:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)nameExpression :(ASTNode)typeExpression :(ASTNode)valueExpression :: ASTLocalDefinitionNode |
+    ASTLocalDefinitionNode new
+        sourcePosition: macroContext sourcePosition;
+        nameExpression: nameExpression;
+        typeExpression: typeExpression;
+        valueExpression: valueExpression;
+        isMutable: true;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+(macroLet:with:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)nameExpression :(ASTNode)valueExpression :: ASTLocalDefinitionNode |
+    ASTLocalDefinitionNode new
+        sourcePosition: macroContext sourcePosition;
+        nameExpression: nameExpression;
+        valueExpression: valueExpression;
+        isMacroSymbol: true;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+(return:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)expression :: ASTReturnNode |
+    ASTReturnNode new
+        sourcePosition: macroContext sourcePosition;
+        expression: expression;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+(send) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)selector :(ASTNode)receiver :(Array)arguments... :: ASTMessageSendNode |
+    ASTMessageSendNode new
+        sourcePosition: macroContext sourcePosition;
+        receiver: receiver;
+        selector: selector;
+        arguments: arguments;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+(tuple:coerceTo:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)tupleExpression :(ASTNode)typeExpression :: ASTCoerceValueNode |
+    ASTCoerceValueNode new
+        sourcePosition: macroContext sourcePosition;
+        valueExpression: tupleExpression;
+        typeExpression: typeExpression;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+(tuple:downCastTo:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)tupleExpression :(ASTNode)typeExpression :: ASTDownCastNode |
+    ASTDownCastNode new
+        sourcePosition: macroContext sourcePosition;
+        valueExpression: tupleExpression;
+        typeExpression: typeExpression;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+(tuple:slotNamedAt:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)tupleExpression :(ASTNode)nameExpression :: ASTTupleSlotNamedAtNode |
+    ASTTupleSlotNamedAtNode new
+        sourcePosition: macroContext sourcePosition;
+        tupleExpression: tupleExpression;
+        nameExpression: nameExpression;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+(tuple:slotNamedAt:put:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)tupleExpression :(ASTNode)nameExpression :(ASTNode)valueExpression :: ASTTupleSlotNamedAtPutNode |
+    ASTTupleSlotNamedAtPutNode new
+        sourcePosition: macroContext sourcePosition;
+        tupleExpression: tupleExpression;
+        nameExpression: nameExpression;
+        valueExpression: valueExpression;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+(tuple:slotNamedReferenceAt:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)tupleExpression :(ASTNode)nameExpression :: ASTTupleSlotNamedReferenceAtNode |
+    ASTTupleSlotNamedReferenceAtNode new
+        sourcePosition: macroContext sourcePosition;
+        tupleExpression: tupleExpression;
+        nameExpression: nameExpression;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+(tuple:withLookupStartingFrom:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)tupleExpression :(ASTNode)typeExpression :: ASTTupleWithLookupStartingFromNode |
+    ASTTupleWithLookupStartingFromNode new
+        sourcePosition: macroContext sourcePosition;
+        tupleExpression: tupleExpression;
+        typeExpression: typeExpression;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+(useNamedSlotsOf:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)tupleExpression :: ASTUseNamedSlotsOfNode |
+    ASTUseNamedSlotsOfNode new
+        sourcePosition: macroContext sourcePosition;
+        tupleExpression: tupleExpression;
+        yourself
+} makeMacro withEagerAnalysis.
+
+(while:do:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)conditionExpression :(ASTNode)bodyExpression :: ASTWhileContinueWithNode |
+    ASTWhileContinueWithNode new
+        sourcePosition: macroContext sourcePosition;
+        conditionExpression: conditionExpression;
+        bodyExpression: bodyExpression;
+        yourself.
+} makeMacro withEagerAnalysis.
+
+(while:do:continueWith:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)conditionExpression :(ASTNode)bodyExpression :(ASTNode)continueExpression :: ASTWhileContinueWithNode |
+    ASTWhileContinueWithNode new
+        sourcePosition: macroContext sourcePosition;
+        conditionExpression: conditionExpression;
+        bodyExpression: bodyExpression;
+        continueExpression: continueExpression;
+        yourself.
+} makeMacro withEagerAnalysis.
+
 ASTNode
     withSelector: #cullExpressionWith:at: addMethod: {:(ASTNode)self :(ASTNode)argument :(SourcePosition)sourcePosition :: ASTNode |
         self

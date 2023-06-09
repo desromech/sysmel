@@ -242,8 +242,10 @@ AnyValue
     withSelector: #isNil addMethod: {:(AnyValue)self :: Boolean | self == nil } makePure makeFinal withEagerAnalysis;
     withSelector: #isNotNil addMethod: {:(AnyValue)self :: Boolean | self ~~ nil } makePure makeFinal withEagerAnalysis;
 
+    withSelector: #hash addMethod: {:(AnyValue)self :: Size | self identityHash } makeVirtual makePure withEagerAnalysis;
     withSelector: #= addMethod: {:(AnyValue)self :other :: Boolean | self == other } makeVirtual makePure withEagerAnalysis;
-    withSelector: #~= addMethod: {:(AnyValue)self :other :: Boolean | (self = other) not } makeVirtual makePure withEagerAnalysis.
+    withSelector: #~= addMethod: {:(AnyValue)self :other :: Boolean | (self = other) not } makeVirtual makePure withEagerAnalysis;
+    withSelector: #recordBindingWithOwner:andName: addMethod: {:(AnyValue)self :(ProgramEntity)owner :(Symbol)name :: Void | void} makeVirtual withEagerAnalysis.
 
 Object
     withSelector: #class addMethod: {:(Object)self :: self __type__ __type__ | self __type__ } makePure makeFinal withEagerAnalysis;
@@ -309,20 +311,20 @@ AnyValue
 
 ## Early new implementation
 Type
-    withSelector: #hasFlag: addMethod: {:(Type)self :(Bitflags)flag :: Boolean |
+    withSelector: #hasAnyFlag: addMethod: {:(Type)self :(Bitflags)flag :: Boolean |
         (self flags & flag) ~= 0bflgs
     } makeFinal withEagerAnalysis;
     withSelector: #isDynamic addMethod: {:(Type)self :: Boolean |
-        self hasFlag: TypeFlags::Dynamic.
+        self hasAnyFlag: TypeFlags::Dynamic.
     } makeFinal withEagerAnalysis;
     withSelector: #isBytes addMethod: {:(Type)self :: Boolean |
-        self hasFlag: TypeFlags::Bytes.
+        self hasAnyFlag: TypeFlags::Bytes.
     } makeFinal withEagerAnalysis;
     withSelector: #isWeak addMethod: {:(Type)self :: Boolean |
-        self hasFlag: TypeFlags::Weak.
+        self hasAnyFlag: TypeFlags::Weak.
     } makeFinal withEagerAnalysis;
     withSelector: #isPointerLikeType addMethod: {:(Type)self :: Boolean |
-        self hasFlag: TypeFlags::PointerValue | TypeFlags::ReferenceValue.
+        self hasAnyFlag: TypeFlags::PointerValue | TypeFlags::ReferenceValue.
     } makeFinal withEagerAnalysis;
     withSelector: #basicAllocate addMethod: {:(Type)self :: self |
         let: #result with: (if: self isBytes
@@ -559,7 +561,7 @@ Type
         self
     } withEagerAnalysis;
     withSelector: #isNullable addMethod: {:(Type)self :: Boolean |
-        self hasFlag: TypeFlags::Nullable.
+        self hasAnyFlag: TypeFlags::Nullable.
     } withEagerAnalysis;
 
     withSelector: #makeBytes addMethod: {:(Type)self :: Type |
@@ -577,7 +579,7 @@ Type
         self
     } withEagerAnalysis;
     withSelector: #isImmediate addMethod: {:(Type)self :: Boolean |
-        self hasFlag: TypeFlags::Immediate.
+        self hasAnyFlag: TypeFlags::Immediate.
     } withEagerAnalysis;
 
     withSelector: #makeFinal addMethod: {:(Type)self :: Type |
@@ -585,7 +587,7 @@ Type
         self
     } withEagerAnalysis;
     withSelector: #isFinal addMethod: {:(Type)self :: Boolean |
-        self hasFlag: TypeFlags::Final.
+        self hasAnyFlag: TypeFlags::Final.
     } withEagerAnalysis;
 
     withSelector: #makeAbstract addMethod: {:(Type)self :: Type |
@@ -593,7 +595,7 @@ Type
         self
     } withEagerAnalysis;
     withSelector: #isAbstract addMethod: {:(Type)self :: Boolean |
-        self hasFlag: TypeFlags::Abstract.
+        self hasAnyFlag: TypeFlags::Abstract.
     } withEagerAnalysis;
 
     withSelector: #defaultValue addMethod: {:(Type)self :: self |
@@ -958,6 +960,11 @@ Stream
     }.
 
 AnyValue
+    withSelector: #asString addMethod: {:(AnyValue)self :: String | 
+        let: #stream with: StringStream new.
+        self stringOn: stream.
+        stream asString.
+    } makeVirtual;
     withSelector: #printString addMethod: {:(AnyValue)self :: String | 
         let: #stream with: StringStream new.
         self printOn: stream.
@@ -1015,6 +1022,21 @@ Type
     } makeOverride.
 
 Void class
+    withSelector: #coerceASTNode:withEnvironment: addMethod: {:(Type)self :(ASTNode)astNode :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
+        let: #sourceType with: astNode analyzedType.
+        if: (if: sourceType ~~ nil then: (sourceType isDirectSubtypeOf: self) else: false)
+        then: astNode
+        else: (ASTFunctionApplicationNode new
+            sourcePosition: astNode sourcePosition;
+            analyzedType: Void;
+            functionExpression: (ASTLiteralNode new
+                sourcePosition: astNode sourcePosition;
+                analyzedType: Void::fromAnyValue __type__;
+                value: Void::fromAnyValue;
+                yourself);
+            arguments: (astNode,);
+            yourself)
+    } makeOverride withEagerAnalysis;
     withSelector: #coerceValue: addMethod: {:(Void class)self :value :: Void | void } makeOverride.
 Void
     withSelector: #printString addMethod: {:(Void)self :: String | "void" } makeOverride;
@@ -1080,53 +1102,59 @@ FunctionDefinition
     }.
 
 Function
-    withSelector: #hasFlag: addMethod: {:(Function)self :(Bitflags)flag :: Boolean |
+    withSelector: #hasAnyFlag: addMethod: {:(Function)self :(Bitflags)flag :: Boolean |
         (self flags & flag) ~= 0bflgs
     };
     withSelector: #isMacro addMethod: {:(Function)self :: Boolean |
-        self hasFlag: FunctionFlags::Macro
+        self hasAnyFlag: FunctionFlags::Macro
     };
     
     withSelector: #isVariadic addMethod: {:(Function)self :: Boolean |
-        self hasFlag: FunctionFlags::Variadic
+        self hasAnyFlag: FunctionFlags::Variadic
     };
     withSelector: #isCorePrimitive addMethod: {:(Function)self :: Boolean |
-        self hasFlag: FunctionFlags::CorePrimitive
+        self hasAnyFlag: FunctionFlags::CorePrimitive
     };
 
     withSelector: #isPure addMethod: {:(Function)self :: Boolean |
-        self hasFlag: FunctionFlags::Pure
+        self hasAnyFlag: FunctionFlags::Pure
     };
     withSelector: #isFinal addMethod: {:(Function)self :: Boolean |
-        self hasFlag: FunctionFlags::Final
+        self hasAnyFlag: FunctionFlags::Final
     };
     withSelector: #isVirtual addMethod: {:(Function)self :: Boolean |
-        self hasFlag: FunctionFlags::Virtual
+        self hasAnyFlag: FunctionFlags::Virtual
     };
     withSelector: #isAbstract addMethod: {:(Function)self :: Boolean |
-        self hasFlag: FunctionFlags::Abstract
+        self hasAnyFlag: FunctionFlags::Abstract
     };
     withSelector: #isOverride addMethod: {:(Function)self :: Boolean |
-        self hasFlag: FunctionFlags::Override
+        self hasAnyFlag: FunctionFlags::Override
     };
     withSelector: #isStatic addMethod: {:(Function)self :: Boolean |
-        self hasFlag: FunctionFlags::Static
+        self hasAnyFlag: FunctionFlags::Static
     };
     withSelector: #isMemoized addMethod: {:(Function)self :: Boolean |
-        self hasFlag: FunctionFlags::Memoized
+        self hasAnyFlag: FunctionFlags::Memoized
     };
     withSelector: #isTemplate addMethod: {:(Function)self :: Boolean |
-        self hasFlag: FunctionFlags::Template
+        self hasAnyFlag: FunctionFlags::Template
     };
     withSelector: #isInline addMethod: {:(Function)self :: Boolean |
-        self hasFlag: FunctionFlags::Inline
+        self hasAnyFlag: FunctionFlags::Inline
     };
     withSelector: #isAlwaysInline addMethod: {:(Function)self :: Boolean |
-        self hasFlag: FunctionFlags::AlwaysInline
+        self hasAnyFlag: FunctionFlags::AlwaysInline
     };
     withSelector: #isNeverInline addMethod: {:(Function)self :: Boolean |
-        self hasFlag: FunctionFlags::NeverInline
+        self hasAnyFlag: FunctionFlags::NeverInline
     };
+    withSelector: #hasOverrideDispatch addMethod: {:(Function)self :: Boolean |
+        self hasAnyFlag: FunctionFlags::Override
+    } withEagerAnalysis;
+    withSelector: #hasVirtualDispatch addMethod: {:(Function)self :: Boolean |
+        self hasAnyFlag: (FunctionFlags::Virtual | FunctionFlags::Abstract) | FunctionFlags::Override
+    } withEagerAnalysis;
 
     withSelector: #hasPragmaNamed: addMethod: {:(Function)self :selector :: Boolean |
         let: #definition with: self definition.
@@ -1156,7 +1184,7 @@ Function
     } makeOverride.
 
 FunctionDefinition
-    withSelector: #hasFlag: addMethod: {:(FunctionDefinition)self :(Bitflags)flag :: Boolean |
+    withSelector: #hasAnyFlag: addMethod: {:(FunctionDefinition)self :(Bitflags)flag :: Boolean |
         (self flags & flag) ~= 0bflgs
     }.
 
@@ -1461,6 +1489,16 @@ SequenceableCollection
 
         -1iptr
     };
+    withSelector: #lastIndexOf: addMethod: {:(SequenceableCollection)self :value :: IntPointer |
+        let: #i mutableWith: 0sz.
+        let: #size with: self size.
+        let: #bestFound mutableWith: -1iptr.
+        while: (i < size) do: (
+            if: value = (self at: i) then: (bestFound := i asIntPointer)
+        ) continueWith: (i := i + 1sz).
+
+        -1iptr
+    };
     withSelector: #includes: addMethod: {:(SequenceableCollection)self :element :: Boolean |
         let: #i mutableWith: 0sz.
         let: #size with: self size.
@@ -1567,7 +1605,7 @@ SequenceableCollection
         }.
 
         result
-    };
+    } makeVirtual;
     withSelector: #replaceFrom:until:with: addMethod: {:(SequenceableCollection)self :(Size)start :(Size)stop :(SequenceableCollection)replacements :: Void |
         let: #i mutableWith: start.
 
@@ -1646,6 +1684,22 @@ SequenceableCollection
     };
     withSelector: #allButFirst addMethod: {:(SequenceableCollection)self :: self species |
         self allButFirst: 1sz
+    };
+    withSelector: #allButLast: addMethod: {:(SequenceableCollection)self :(Size)dropCount :: self species |
+        let: #size with: self size.
+        if: dropCount >= size then: (self species new: 0sz)
+        else: {
+            let: #resultSize with: size - dropCount.
+            let: #result with: (self species new: resultSize).
+            let: #i mutableWith: 0sz.
+            while: i < resultSize do: (
+                result at: i put: (self at: i)
+            ) continueWith: (i := i + 1sz).
+            result
+        }
+    };
+    withSelector: #allButLast addMethod: {:(SequenceableCollection)self :: self species |
+        self allButLast: 1sz
     };
 
     withSelector: #insertionSort:from:until: addMethod: {:(SequenceableCollection)self :lessThanComparison :(Size)startIndex :(Size)endIndex :: Void |
