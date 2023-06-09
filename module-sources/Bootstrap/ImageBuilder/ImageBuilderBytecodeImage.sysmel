@@ -2,9 +2,35 @@ public class ImageBuilderBytecodeImage superclass: ImageBuilderTargetImage; defi
     public field imageData => ByteArray.
 
     public method constructWithBuilder: (builder: ImageBuilder) ::=> Void := {
-        imageData := LogicalImageSegmentWriter new
+        let writer := LogicalImageSegmentWriter new
+            objectModel: builder objectModel;
             serializeObjectTrace: builder objectTrace;
-            segmentData
+            yourself.
+
+        let byteStream := ByteStream new.
+        builder objectModel pointerSize = 8u64 ifTrue: {
+            byteStream
+                nextPutAll: "IM64";
+                nextPutUInt64: (writer uint64PointerValueForObjectReference: builder immediateTypeTable);
+                nextPutUInt64: (writer uint64PointerValueForObjectReference: builder immediateTrivialTypeTable);
+                nextPutUInt64: (writer uint64PointerValueForObjectReference: builder entryPointFunction);
+                nextPutUInt64: 1u64;
+                nextPutUInt64: writer baseVirtualAddress asUInt64;
+                nextPutUInt64: writer segmentData size asUInt64;
+                nextPutAll: writer segmentData.
+        } ifFalse: {
+            byteStream
+                nextPutAll: "IM32";
+                nextPutUInt32: (writer uint32PointerValueForObjectReference: builder immediateTypeTable);
+                nextPutUInt32: (writer uint32PointerValueForObjectReference: builder immediateTrivialTypeTable);
+                nextPutUInt32: (writer uint32PointerValueForObjectReference: builder entryPointFunction);
+                nextPutUInt32: 1u32;
+                nextPutUInt32: writer baseVirtualAddress asUInt32;
+                nextPutUInt32: writer segmentData size asUInt32;
+                nextPutAll: writer segmentData.
+        }.
+
+        imageData := byteStream asByteArray.        
     }.
 
     public override method saveTo: (filename: String) ::=> Boolean

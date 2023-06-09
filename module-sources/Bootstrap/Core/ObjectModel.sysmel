@@ -109,6 +109,15 @@ public final struct ObjectModel::TupleHeader32 definition: {
         identityHashAndFlags := (identityHash << 4u32) | (identityHashAndFlags & 15u32)
     }.
 
+    public method isDummyValue => Boolean
+        := (identityHashAndFlags & ObjectModel::IdentityHashFlag::DummyValue asUInt32) ~= 0u32.
+
+    public method isDummyValue: (flag: Boolean) ::=> Void := {
+        flag
+            ifTrue: (identityHashAndFlags := identityHashAndFlags | ObjectModel::IdentityHashFlag::DummyValue asUInt32)
+            ifFalse: (identityHashAndFlags := identityHashAndFlags & ObjectModel::IdentityHashFlag::DummyValue asUInt32 bitInvert).
+    }.
+
     public method slotCount => UInt32
         := objectSize >> 2u32.
 }.
@@ -142,6 +151,15 @@ public final struct ObjectModel::TupleHeader64 definition: {
         flag
             ifTrue: (typePointerAndFlags := typePointerAndFlags | ObjectModel::TypePointerFlag::Weak asUInt64)
             ifFalse: (typePointerAndFlags := typePointerAndFlags & ObjectModel::TypePointerFlag::Weak asUInt64 bitInvert).
+    }.
+
+    public method isDummyValue => Boolean
+        := (identityHashAndFlags & ObjectModel::IdentityHashFlag::DummyValue asUInt64) ~= 0u64.
+
+    public method isDummyValue: (flag: Boolean) ::=> Void := {
+        flag
+            ifTrue: (identityHashAndFlags := identityHashAndFlags | ObjectModel::IdentityHashFlag::DummyValue asUInt64)
+            ifFalse: (identityHashAndFlags := identityHashAndFlags & ObjectModel::IdentityHashFlag::DummyValue asUInt64 bitInvert).
     }.
 
     public method identityHashValue ::=> UInt64

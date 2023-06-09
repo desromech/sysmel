@@ -15,7 +15,17 @@ function main(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
 
 ImageBuilder new
     beNoSourceDefinition;
+    useDefaultTypeTables;
     addProgramEntity: __Global__;
     addNativeEntryPoint: main;
     build;
-    saveTo: "testImage.o"
+    saveTo: "testImage.image".
+
+#*ImageBuilder new
+    beComplete;
+    useDefaultTypeTables;
+    addProgramEntity: __Global__;
+    addNativeEntryPoint: main;
+    build;
+    saveTo: "testCompleteImage.image".
+*#

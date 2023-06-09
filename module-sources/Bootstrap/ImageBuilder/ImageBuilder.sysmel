@@ -160,6 +160,8 @@ ImageBuilder definition: {
     public field targetImage => ImageBuilderTargetImage.
     public field traceStrategy => ImageBuilderObjectTraceStrategy.
     public field entryPointFunction => Function.
+    public field immediateTypeTable => Array.
+    public field immediateTrivialTypeTable => Array.
 
     public field objectTrace => ImageObjectTrace.
 
@@ -176,6 +178,11 @@ ImageBuilder definition: {
         traceStrategy := ImageBuilderObjectTraceStrategy new.
         rootProgramEntities := OrderedCollection new.
         rootProgramEntitySet := IdentitySet new.
+    }.
+
+    public method useDefaultTypeTables => Void := {
+        immediateTypeTable := ObjectModel::ImmediateTagTypeTable.
+        immediateTrivialTypeTable := ObjectModel::ImmediateTrivialTypeTable.
     }.
 
     public method objectModel => ObjectModelVariant
@@ -238,6 +245,8 @@ ImageBuilder definition: {
         tracedFunctions := OrderedCollection new.
         tracedFunctionDefinitions := OrderedCollection new.
 
+        immediateTypeTable ifNotNil: (self enqueueObjectTrace: (self __slotNamedAt__: #immediateTypeTable)).
+        immediateTrivialTypeTable ifNotNil: (self enqueueObjectTrace: (self __slotNamedAt__: #immediateTrivialTypeTable)).
         rootProgramEntities do: {:(ProgramEntity)each :: Void |
             self enqueueObjectTrace: each
         }.
@@ -262,14 +271,18 @@ ImageBuilder definition: {
         printLine("Functions ", tracedFunctions size).
         printLine("Function definitions ", tracedFunctionDefinitions size).
 
-        #*tracedObjects do: {:(Untyped)each :: Void |
-            printLine(RawTuple::type(each), ": ", each)
-        }.
-        *#
+        let undefinedFunctionNames := OrderedCollection new.
         tracedFunctions do: {:(Function)each :: Void |
-            ##printLine(each).
             each definition ifNil: {
-                printLine("Warning, function without definition: ", each).
+                undefinedFunctionNames add: each printString.
+            }
+        }.
+
+        undefinedFunctionNames isNotEmpty ifTrue: {
+            printLine("Warning, function without definition: ", undefinedFunctionNames size).
+            undefinedFunctionNames sort.
+            undefinedFunctionNames do: {:each :: Void |
+                printLine("    ", each).
             }
         }.
     }.

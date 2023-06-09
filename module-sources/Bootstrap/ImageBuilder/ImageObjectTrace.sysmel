@@ -15,7 +15,7 @@ public class ImageObjectTrace superclass: Object; definition: {
     public method addNewObject: (object: Untyped) ::=> UInt32 := {
         let index := objectList size asUInt32.
         objectList add: object.
-        objectIndexDictionary untypedAt: object put: object.
+        objectIndexDictionary untypedAt: object put: index.
         index
     }.
 
