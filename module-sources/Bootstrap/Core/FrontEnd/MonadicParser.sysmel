@@ -305,7 +305,7 @@ AnyValue extend: {
 }.
 
 public class MonadicPredicateParser superclass: MonadicParser; definition: {
-    public field predicate => (AnyValue => Boolean).
+    public field predicate.## => (AnyValue => Boolean).
     public field errorMessage => String.
 
     __Meta__ definition: {
