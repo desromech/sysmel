@@ -1,0 +1,38 @@
+IdentitySet definition: {
+    public virtual eager method scanFor: (key: Untyped) ::=> IntPointer := {
+        storage ifNil: { return: -1iptr }.
+
+        let capacity := storage size.
+        let naturalIndex := Untyped::identityHash(key) % capacity.
+
+        let i mutable := naturalIndex.
+        while: (i < capacity) do: {
+            let element := storage untypedAt: i.
+            if: (Untyped::==)(element, __hashtableEmptyElement__) || (Untyped::==)(key, element) then: {
+                return: i asIntPointer
+            }
+        } continueWith: (i := i + 1sz).
+
+        i := 0sz.
+        while: (i < capacity) do: {
+            let element := storage untypedAt: i.
+            if: (Untyped::==)(element, __hashtableEmptyElement__) || (Untyped::==)(key, element) then: {
+                return: i asIntPointer
+            }
+        } continueWith: (i := i + 1sz).
+
+        -1iptr
+    }.
+
+    public override pure final eager method untypedAdd: (element: Untyped) ::=> Void
+        := super untypedAdd: element.
+
+    public override pure final eager method untypedIncludes: (element: Untyped) ::=> Boolean
+        := super untypedIncludes: element.
+
+    public override pure final eager method add: element ::=> Void
+        := self untypedAdd: element.
+
+    public override pure final eager method includes: element ::=> Boolean
+        := self untypedIncludes: element.
+}.

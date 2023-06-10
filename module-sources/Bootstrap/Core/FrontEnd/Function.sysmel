@@ -15,6 +15,29 @@ Function definition: {
 
     public method isTargetDefinedPrimitive => Boolean
         := (self hasAnyFlag: FunctionFlags::TargetDefinedPrimitive) || (self hasPragmaNamed: #targetDefinedPrimitive).
+
+    public eager method applyWithArguments: (arguments: Array) ::=> Untyped := {
+        let argCount := arguments size.
+        argCount = 0sz ifTrue: {return: self()}.
+        argCount = 1sz ifTrue: {return: self(
+            arguments at: 0sz
+        )}.
+        argCount = 2sz ifTrue: {return: self(
+            arguments at: 0sz, arguments at: 1sz 
+        )}.
+        argCount = 3sz ifTrue: {return: self(
+            arguments at: 0sz, arguments at: 1sz, arguments at: 2sz
+        )}.
+        argCount = 4sz ifTrue: {return: self(
+            arguments at: 0sz, arguments at: 1sz, arguments at: 2sz, arguments at: 3sz
+        )}.
+        argCount = 5sz ifTrue: {return: self(
+            arguments at: 0sz, arguments at: 1sz, arguments at: 2sz, arguments at: 3sz,
+            arguments at: 4sz
+        )}.
+
+        error("Unsupported apply argument count " -- argCount printString -- ".")
+    }.
 }.
 
 FunctionDefinition definition: {

@@ -1,0 +1,32 @@
+SequenceableCollection definition: {
+    public method beginsWith: (prefix: SequenceableCollection) ::=> Boolean := {
+        let prefixSize := prefix size.
+        if: self size < prefixSize then: {return: false}.
+
+        let i mutable := 0sz.
+        while: (i < prefixSize) do: {
+            if: (self at: i) ~= (prefix at: i) then: {return: false}
+        } continueWith: (i := i + 1sz).
+
+        true
+    }.
+
+    public method endsWith: (suffix: SequenceableCollection) ::=> Boolean := {
+        let suffixSize := suffix size.
+        let size := self size.
+        if: size < suffixSize then: {return: false}.
+
+        let i mutable := 0sz.
+        while: (i < suffixSize) do: {
+            if: (self at: size - i - 1sz) ~= (suffix at: i) then: {return: false}
+        } continueWith: (i := i + 1sz).
+
+        true
+    }.
+
+    public pure method withoutPrefix: (prefix: SequenceableCollection) ::=> self species
+        := self allButFirst: ((self beginsWith: prefix) ifTrue: prefix size ifFalse: 0sz).
+
+    public virtual pure method withoutSuffix: (suffix: SequenceableCollection) ::=> self species
+        := self allButLast: ((self endsWith: suffix) ifTrue: suffix size ifFalse: 0sz).
+}.

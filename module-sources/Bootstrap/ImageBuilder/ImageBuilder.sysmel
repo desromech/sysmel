@@ -280,7 +280,7 @@ ImageBuilder definition: {
         }.
 
         undefinedFunctionNames isNotEmpty ifTrue: {
-            printLine("Warning, function without definition: ", undefinedFunctionNames size).
+            printLine("Warning, functions without definition: ", undefinedFunctionNames size).
             undefinedFunctionNames sort.
             undefinedFunctionNames do: {:each :: Void |
                 printLine("  ", each).

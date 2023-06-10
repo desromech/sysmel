@@ -34,6 +34,33 @@ String extend: {
         }.
     }.
 
+    public override final pure method hash ::=> Size := {
+        let result mutable := 1sz hashMultiply.
+
+        let size := self size.
+        let i mutable := 0sz.
+        while: (i < size) do: {
+            result := result hashConcatenate: (self at: i) asSize
+        } continueWith: (i := i + 1sz).
+
+        result
+    }.
+
+    public override final pure method = other ::=> Boolean := {
+        self class == other __type__ ifFalse: {return: false}.
+        
+        let otherString => String := other.
+        let size := self size.
+        size = otherString size ifFalse: {return: false}.
+
+        let i mutable := 0sz.
+        while: (i < size) do: {
+            (self at: i) = (otherString at: i) ifFalse: {return: false}
+        } continueWith: (i := i + 1sz).
+
+        true
+    }.
+
     public method <=> (other: String) ::=> Int32 := {
         let minSize := self size min: other size.
         let i mutable := 0sz.
@@ -129,6 +156,9 @@ String extend: {
         <primitive: #String::asSymbol>
         primitiveFailedError()
     }.
+
+    public override final pure method withoutSuffix: (suffix: SequenceableCollection) ::=> String
+        := super withoutSuffix: suffix.
 }.
 
 

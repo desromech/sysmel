@@ -1,7 +1,9 @@
 loadSourceNamed: "ByteSerializableObject.sysmel".
 loadSourceNamed: "Array.sysmel".
 loadSourceNamed: "Boolean.sysmel".
+loadSourceNamed: "OrderedCollection.sysmel".
 loadSourceNamed: "Set.sysmel".
+loadSourceNamed: "SequenceableCollection.sysmel".
 loadSourceNamed: "IdentitySet.sysmel".
 loadSourceNamed: "Dictionary.sysmel".
 loadSourceNamed: "IdentityDictionary.sysmel".

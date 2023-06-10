@@ -1,0 +1,22 @@
+OrderedCollection definition: {
+    public eager method capacity => Size
+        := storage ifNil: 0sz ifNotNil: storage size.
+
+    public eager method ensureCapacityForAtLeast: (additionalRequiredCapacity: Size) ::=> Void := {
+        error("TODO: ensureCapacityForAtLeast:")
+    }.
+
+    public eager method untypedAdd: (element: Untyped) ::=> Void := {
+        self ensureCapacityForAtLeast: 1sz.
+        storage untypedAt: size put: element.
+        size := size + 1sz.
+    }.
+
+    public eager method add: element ::=> Void
+        := self untypedAdd: element.
+
+    public override eager method asArray ::=> Array
+        := storage isNil || size = 0sz
+            ifTrue: #()
+            ifFalse: (storage first: size).
+}.

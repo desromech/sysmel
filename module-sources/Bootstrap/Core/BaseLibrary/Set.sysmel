@@ -1,0 +1,67 @@
+Set definition: {
+    public virtual eager method scanFor: (key: Untyped) ::=> IntPointer := {
+        storage ifNil: { return: -1iptr }.
+
+        let capacity := storage size.
+        let naturalIndex := key hash % capacity.
+
+        let i mutable := naturalIndex.
+        while: (i < capacity) do: {
+            let element := storage untypedAt: i.
+            if: (Untyped::==)(element, __hashtableEmptyElement__) || key = element then: {
+                return: i asIntPointer
+            }
+        } continueWith: (i := i + 1sz).
+
+        i := 0sz.
+        while: (i < capacity) do: {
+            let element := storage untypedAt: i.
+            if: (Untyped::==)(element, __hashtableEmptyElement__) || key = element then: {
+                return: i asIntPointer
+            }
+        } continueWith: (i := i + 1sz).
+
+        -1iptr
+    }.
+
+    public final eager method capacity => Size
+        := storage ifNil: 0sz ifNotNil: storage size.
+
+    public eager method increaseCapacity => Void := {
+        error("TODO: Set increase capacity")
+    }.
+
+    public eager method checkCapacityIncreaseCondition => Void := {
+        let capacityThreshold := self capacity * 4sz / 5sz.
+        self size >= capacityThreshold ifTrue: {
+            self increaseCapacity
+        }
+    }.
+
+    public virtual eager method untypedAdd: (element: Untyped) ::=> Void := {
+        let index mutable := self scanFor: element.
+        index < 0iptr ifTrue: {
+            self increaseCapacity.
+            index := self scanFor: element.
+            self assert: index >= 0iptr
+        }.
+        
+        let isNewElement := (Untyped::~~)(storage untypedAt: index asSize , __hashtableEmptyElement__).
+        storage at: index asSize put: element.
+        isNewElement ifTrue: {
+            size := size + 1sz.
+            self checkCapacityIncreaseCondition
+        }
+    }.
+
+    public virtual eager method untypedIncludes: (element: Untyped) ::=> Boolean := {
+        let index := self scanFor: element.
+        (index >= 0iptr) && (element = (storage untypedAt: index asSize))
+    }.
+
+    public virtual eager method add: element ::=> Void
+        := self untypedAdd: element.
+
+    public virtual eager method includes: element ::=> Boolean
+        := self untypedIncludes: element.
+}.

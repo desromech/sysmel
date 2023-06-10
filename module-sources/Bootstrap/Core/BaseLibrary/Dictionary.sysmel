@@ -32,7 +32,7 @@ Dictionary definition: {
     }.
 
     public final eager method capacity => Size
-        := self storage size.
+        := storage ifNil: 0sz ifNotNil: storage size.
 
     public final eager method increaseCapacity => Void := {
         error("TODO: Dictionary increaseCapacity").
