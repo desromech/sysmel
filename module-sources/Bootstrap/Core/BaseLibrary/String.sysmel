@@ -124,6 +124,11 @@ String extend: {
 
     public pure override final method -- (other: SequenceableCollection) ::=> String
         := super -- other.
+
+    public pure final method asSymbol => StringSymbol := {
+        <primitive: #String::asSymbol>
+        primitiveFailedError()
+    }.
 }.
 
 
@@ -356,6 +361,58 @@ Int64 extend: {
 
     public override final method printString => String
         := self asString.
+}.
+
+Float32 definition: {
+    __Meta__ definition: {
+        public final method parseString: (string: String) ::=> Float32
+            := (Float64 parseString: string) asFloat32.
+    }.
+
+    public override final pure method printString => String
+        := self asFloat32 printString.
+}.
+
+Float64 definition: {
+    __Meta__ definition: {
+        public final method parseString: (string: String) ::=> Float64 := {
+            error("TODO: Float64 >> #parseString:")
+        }.
+    }.
+    
+    public override final pure method printString => String := {
+        error("TODO: Float64 >> #printString")
+    }.
+}.
+
+Integer definition: {
+    __Meta__ definition: {
+        public final method parseString: (string: String) ::=> Integer := {
+            let result mutable := 0.
+            let isNegative := string isNotEmpty && string first = '-'c8.
+
+            ## TODO: Implement this properly by adding support for radixes, etc.
+            string do: {:(Char8)c :: Void |
+                ('0'c8 <= c) && (c <= '9'c8) ifTrue: {
+                    let digit := (c - '0'c8) asInteger.
+                    result := result * 10 + digit
+                }.
+            }.
+
+            isNegative
+                ifTrue: result negated
+                ifFalse: result
+        }.
+    }.
+
+    public override final pure method printString => String
+        := super printString.
+
+    public override final method printOn: (stream: Stream) ::=> Void := {
+        self < 0 ifTrue: (stream nextPut: '-'c8).
+
+        error("TODO: Integer printString.").
+    }.
 }.
 
 print adoptDefinitionOf: {:(Array)elements... :: Void |

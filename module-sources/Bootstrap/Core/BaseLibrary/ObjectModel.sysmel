@@ -494,14 +494,6 @@ AnyValue extend: {
         := ObjectModel::getTupleHeaderPointerOf(self) + 1iptr reinterpretCastTo: Void pointer.
 }.
 
-let HashBitCount := Size valueSize*8sz - 4sz.
-let HashBitMask := (1sz << HashBitCount) - 1sz.
-
-Size extend: {
-    public final method hashMultiply => UIntPointer
-        := (self * 1103515245sz) & HashBitMask
-}.
-
 identityHash adoptDefinitionOf: {:(Untyped)self :: Size |
     <primitive: #identityHash >
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).

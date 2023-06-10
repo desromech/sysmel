@@ -177,7 +177,4 @@ void sysbvm_array_setupPrimitives(sysbvm_context_t *context)
 {
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Array::=", context->roots.arrayType, "=", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_array_primitive_equals);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Array::hash", context->roots.arrayType, "hash", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_array_primitive_hash);
-
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "WeakArray::=", context->roots.weakArrayType, "=", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_array_primitive_equals);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "WeakArray::hash", context->roots.weakArrayType, "hash", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_array_primitive_hash);
 }

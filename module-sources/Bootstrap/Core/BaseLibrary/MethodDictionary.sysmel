@@ -1,6 +1,9 @@
 MethodDictionary::new adoptDefinitionOf: {:: MethodDictionary | MethodDictionary new}.
 
 MethodDictionary definition: {
+    public final eager method capacity => Size
+        := self storage size / 2sz.
+
     public final eager method scanFor: key ::=> IntPointer := {
         storage ifNil: { return: -1iptr }.
 
@@ -26,10 +29,47 @@ MethodDictionary definition: {
         -1iptr
     }.
 
+    public eager method increaseCapacity => Void := {
+        error("TODO: MethodDictionary increaseCapacity").
+    }.
+
+    public eager method checkCapacityIncreaseCondition => Void := {
+        let capacityThreshold := self capacity * 4sz / 5sz.
+        self size >= capacityThreshold ifTrue: {
+            self increaseCapacity
+        }
+    }.
+
+    public final eager method at: key := {
+        let index := self scanFor: key.
+        index >= 0iptr ifTrue: {
+            let methodIndex := index *2iptr + 1iptr.
+            storage at: methodIndex asSize
+        } ifFalse: {
+            self error: "Key not found in method dictionary."
+        }
+    }.
+
+    public final eager method at: key put: value ::=> Void := {
+        let index mutable := self scanFor: key.
+        index < 0iptr ifTrue: {
+            self increaseCapacity.
+            index := self scanFor: key.
+        }.
+
+        let methodIndex := index asSize *2sz.
+        let isNewKey := (storage at: methodIndex) == nil.
+        storage
+            at: methodIndex asSize put: value;
+            at: methodIndex asSize + 1sz put: value.
+
+        self checkCapacityIncreaseCondition.
+    }.
+
     public final eager method atOrNil: selector := {
         let index := self scanFor: selector.
         index >= 0iptr ifTrue: {
-            let methodIndex := index *2iptr + 1iptr.
+            let methodIndex := index asSize *2sz + 1sz.
             storage at: methodIndex asSize
         } ifFalse: {
             nil

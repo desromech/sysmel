@@ -304,26 +304,6 @@ sysbvm_tuple_t sysbvm_symbol_primitive_asString(sysbvm_context_t *context, sysbv
     return sysbvm_string_createWithString(context, sysbvm_tuple_getSizeInBytes(symbol), (const char*)SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(symbol)->bytes);
 }
 
-sysbvm_tuple_t sysbvm_tuple_primitive_printString(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
-{
-    (void)context;
-    (void)closure;
-    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
-
-    sysbvm_tuple_t tuple = arguments[0];
-    return sysbvm_tuple_printString(context, tuple);
-}
-
-sysbvm_tuple_t sysbvm_tuple_primitive_asString(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
-{
-    (void)context;
-    (void)closure;
-    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
-
-    sysbvm_tuple_t tuple = arguments[0];
-    return sysbvm_tuple_asString(context, tuple);
-}
-
 static sysbvm_tuple_t sysbvm_tuple_primitive_defaultPrintString(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
@@ -392,8 +372,6 @@ void sysbvm_string_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_string_primitive_asString, "String::asString");
     sysbvm_primitiveTable_registerFunction(sysbvm_symbol_primitive_asString, "Symbol::asString");
 
-    sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_printString, "RawTuple::printString");
-    sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_asString, "RawTuple::asString");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_defaultPrintString, "RawTuple::defaultPrintString");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_defaultAsString, "RawTuple::defaultAsString");
     sysbvm_primitiveTable_registerFunction(sysbvm_string_primitive_concat, "String::--");
@@ -414,8 +392,6 @@ void sysbvm_string_setupPrimitives(sysbvm_context_t *context)
         sysbvm_type_setPrintStringFunction(context, context->roots.stringSymbolType, sysbvm_function_createPrimitive(context, 1, SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_symbol_primitive_asString));
     }
 
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "printString", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_printString);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "asString", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_asString);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::printString", context->roots.anyValueType, "printString", 1, SYSBVM_FUNCTION_FLAGS_VIRTUAL, NULL, sysbvm_tuple_primitive_defaultPrintString);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::asString", context->roots.anyValueType, "asString", 1, SYSBVM_FUNCTION_FLAGS_VIRTUAL, NULL, sysbvm_tuple_primitive_defaultAsString);
     sysbvm_type_setMethodWithSelector(context, context->roots.stringType, sysbvm_symbol_internWithCString(context, "="), context->roots.stringEqualsFunction);

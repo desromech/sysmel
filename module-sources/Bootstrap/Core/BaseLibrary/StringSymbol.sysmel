@@ -43,5 +43,32 @@ StringSymbol extend: {
         } continueWith: (i := i + 1sz).
 
         true
-    }
+    }.
+
+    public override pure final method asString => String := {
+        let size := self size.
+        let result := String new: size.
+        let i mutable := 0sz.
+        while: (i < size) do: {
+            result at: i put: (self at: i)
+        } continueWith: (i := i + 1sz).
+
+        result
+    }.
+
+    public override pure final method printString => String := {
+        let stream := StringStream new.
+        self printOn: stream.
+        stream asString
+    }.
+
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream nextPut: '#'c8.
+
+        let size := self size.
+        let i mutable := 0sz.
+        while: (i < size) do: {
+            stream nextPut: (self at: i)
+        } continueWith: (i := i + 1sz).
+    }.
 }.

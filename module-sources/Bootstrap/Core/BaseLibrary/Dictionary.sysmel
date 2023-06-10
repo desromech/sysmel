@@ -1,0 +1,114 @@
+Dictionary definition: {
+    public virtual eager method scanFor: (key: Untyped) ::=> IntPointer := {
+        storage ifNil: { return: -1iptr }.
+
+        let capacity := storage size.
+        let naturalIndex := key hash % capacity.
+
+        let i mutable := naturalIndex.
+        while: (i < capacity) do: {
+            let association := storage at: i.
+            if: association isNil || ((RawTuple::slotAt:)(association, 0sz) = key) then: {
+                return: i asIntPointer
+            }
+        } continueWith: (i := i + 1sz).
+
+        i := 0sz.
+        while: (i < naturalIndex) do: {
+            let association := storage at: i.
+            if: association isNil || ((RawTuple::slotAt:)(association, 0sz) = key) then: {
+                return: i asIntPointer
+            }
+        } continueWith: (i := i + 1sz).
+
+        -1iptr
+    }.
+
+    public eager method addAssociationNoCheck: (association: Untyped) ::=> Void := {
+        let key => Untyped := (RawTuple::slotAt:)(association, 0sz).
+        let index := self scanFor: key.
+        self assert: index >= 0iptr.
+        storage at: index asSize put: association
+    }.
+
+    public final eager method capacity => Size
+        := self storage size.
+
+    public final eager method increaseCapacity => Void := {
+        error("TODO: Dictionary increaseCapacity").
+    }.
+
+    public final eager method checkCapacityIncreaseCondition => Void := {
+        let capacityThreshold := self capacity * 4sz / 5sz.
+        self size >= capacityThreshold ifTrue: {
+            self increaseCapacity
+        }
+    }.
+
+    public virtual eager method add: association ::=> Void := {
+        let key => Untyped := (RawTuple::slotAt:)(association, 0sz).
+        let index mutable := self scanFor: key.
+        index < 0iptr ifTrue: {
+            self increaseCapacity.
+            index := self scanFor: key.
+            self assert: index >= 0iptr.
+        }.
+
+        let isNewAssociation := (storage at: index asSize) isNil.
+        storage at: index asSize put: association.
+
+        isNewAssociation ifTrue: {
+            size := size + 1sz.
+            self checkCapacityIncreaseCondition
+        }
+    }.
+
+    public virtual eager method associationAtOrNil: selector := {
+        let index := self scanFor: selector.
+        index >= 0iptr ifTrue: {
+            storage at: index asSize
+        } ifFalse: {
+            nil
+        }
+    }.
+
+    public virtual eager method at: key := {
+        let index := self scanFor: key.
+        index >= 0iptr ifTrue: {
+            let association := storage at: index asSize.
+            association ifNil: {self error: "Key not found in method dictionary."}.
+
+            (storage at: index asSize) value
+        } ifFalse: {
+            self error: "Key not found in method dictionary."
+        }
+    }.
+
+    public virtual eager method at: key put: value ::=> Void := {
+        let index mutable := self scanFor: key.
+        index < 0iptr ifTrue: {
+            self increaseCapacity.
+            index := self scanFor: key.
+            self assert: index >= 0iptr.
+        }.
+
+        let association := storage at: index asSize.
+        association ifNotNil: {
+            association value: value
+        } ifNil: {
+            let newAssociation := Association key: key value: value.
+            storage at: index asSize put: newAssociation.
+            size := size + 1sz.
+            self checkCapacityIncreaseCondition
+        }.
+    }.
+
+    public virtual eager method atOrNil: selector := {
+        let index := self scanFor: selector.
+        index >= 0iptr ifTrue: {
+            (storage at: index asSize) value
+        } ifFalse: {
+            nil
+        }
+    }.
+}.

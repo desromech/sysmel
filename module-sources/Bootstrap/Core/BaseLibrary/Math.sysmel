@@ -235,6 +235,7 @@
         public pure final eager method f32 => Float32 := self asFloat32.
         public pure final eager method f64 => Float64 := self asFloat64.
 
+        public pure final eager method bflgs => Bitflags := self asUInt64.
         public pure final eager method sz => Size := self asSize.
         public pure final eager method uptr => UIntPointer := self asUIntPointer.
         public pure final eager method iptr => IntPointer := self asIntPointer.
@@ -356,4 +357,12 @@ Float64 definition: {
         <targetDefinedPrimitive>
         primitiveFailedError()
     }.
+}.
+
+Integer definition: {
+    public pure final method factorial => Integer := {
+        self <= 0
+            ifTrue: { 1 }
+            ifFalse: { (self - 1) factorial * self }
+    }
 }.

@@ -1,0 +1,26 @@
+WeakValueDictionary definition: {
+    public override final eager method at: key
+        := super at: key.
+
+    public override final eager method atOrNil: key
+        := super atOrNil: key.
+
+    public override final eager method at: key put: value ::=> Void := {
+        let index mutable := self scanFor: key.
+        index < 0iptr ifTrue: {
+            self increaseCapacity.
+            index := self scanFor: key.
+            self assert: index >= 0iptr.
+        }.
+
+        let association := storage at: index asSize.
+        association ifNotNil: {
+            association value: value
+        } ifNil: {
+            let newAssociation := WeakValueAssociation key: key value: value.
+            storage at: index asSize put: newAssociation.
+            size := size + 1sz.
+            self checkCapacityIncreaseCondition
+        }.
+    }.
+}.

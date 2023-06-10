@@ -481,12 +481,15 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "BootstrapEnv::IntrinsicTypes"), context->roots.intrinsicTypes);
     sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "BootstrapEnv::InternedSymbolSet"), context->roots.internedSymbolSet);
 
+    sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "Untyped::identityHash"), sysbvm_context_shallowCopy(context, context->roots.identityHashFunction));
+    sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "Untyped::=="), sysbvm_context_shallowCopy(context, context->roots.identityEqualsFunction));
+    sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "Untyped::~~"), sysbvm_context_shallowCopy(context, context->roots.identityNotEqualsFunction));
     sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "identityHash"), context->roots.identityHashFunction);
     sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "=="), context->roots.identityEqualsFunction);
     sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "~~"), context->roots.identityNotEqualsFunction);
 
-    sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "String::="), context->roots.stringHashFunction);
-    sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "String::equals:"), context->roots.stringEqualsFunction);
+    sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "String::hash"), context->roots.stringHashFunction);
+    sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "String::="), context->roots.stringEqualsFunction);
 
     // Some basic method
     sysbvm_type_setHashFunction(context, context->roots.anyValueType, sysbvm_function_createPrimitive(context, 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_VIRTUAL, NULL, sysbvm_tuple_primitive_identityHash));
@@ -830,11 +833,11 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         NULL);
     sysbvm_typeAndMetatype_setFlags(context, context->roots.arraySliceType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);
     context->roots.associationType = sysbvm_context_createIntrinsicClass(context, "Association", SYSBVM_NULL_TUPLE,
-        "key", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
-        "value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
+        "key", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.untypedType,
+        "value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.untypedType,
         NULL);
     context->roots.weakValueAssociationType = sysbvm_context_createIntrinsicClass(context, "WeakValueAssociation", SYSBVM_NULL_TUPLE,
-        "key", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
+        "key", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.untypedType,
         //"value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_WEAK, SYSBVM_NULL_TUPLE,
         NULL);
     sysbvm_typeAndMetatype_setFlags(context, context->roots.associationType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);

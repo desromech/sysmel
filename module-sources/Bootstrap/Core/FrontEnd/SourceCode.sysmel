@@ -24,6 +24,15 @@ SourcePosition definition: {
                 yourself.
     }.
 
+    public override eager method hash => Size
+        := (sourceCode identityHash hashConcatenate: startIndex hash) hashConcatenate: endIndex hash.
+
+    public override eager method = other => Boolean := {
+        self class == other class ifFalse: {return: false}.
+        let otherSourcePosition => SourcePosition := other.
+        (self sourceCode == otherSourcePosition sourceCode) && (self startIndex = otherSourcePosition startIndex) && (self endIndex = otherSourcePosition endIndex)
+    }.
+
     public method computeLineAndColumnInfo => Void := {
 
     }.

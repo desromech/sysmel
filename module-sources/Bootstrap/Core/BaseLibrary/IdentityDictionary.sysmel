@@ -1,0 +1,41 @@
+IdentityDictionary definition: {
+    public override eager method scanFor: (key: Untyped) ::=> IntPointer := {
+        storage ifNil: { return: -1iptr }.
+
+        let capacity := storage size.
+        let naturalIndex := Untyped::identityHash(key) % capacity.
+
+        let i mutable := naturalIndex.
+        while: (i < capacity) do: {
+            let association := storage at: i.
+            if: association isNil || (Untyped::==)((RawTuple::slotAt:)(association, 0sz), key) then: {
+                return: i asIntPointer
+            }
+        } continueWith: (i := i + 1sz).
+
+        i := 0sz.
+        while: (i < naturalIndex) do: {
+            let association := storage at: i.
+            if: association isNil || (Untyped::==)((RawTuple::slotAt:)(association, 0sz), key) then: {
+                return: i asIntPointer
+            }
+        } continueWith: (i := i + 1sz).
+
+        -1iptr
+    }.
+
+    public override eager method add: association ::=> Void
+        := super add: association.
+
+    public override eager method associationAtOrNil: association ::=> Void
+        := super associationAtOrNil: association.
+
+    public override eager method at: key
+        := super at: key.
+
+    public override eager method at: key put: value ::=> Void
+        := super at: key put: value.
+
+    public override eager method atOrNil: selector
+        := super atOrNil: selector.
+}.

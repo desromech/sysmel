@@ -1,0 +1,24 @@
+Array definition: {
+    public override final eager method hash ::=> Size := {
+        let result mutable := self class identityHash.
+        self do: {:each :: Void |
+            result := result hashConcatenate: each hash
+        }.
+        result
+    }.
+
+    public override final eager method = other ::=> Boolean := {
+        (self class == other __type__) ifFalse: {return: false}.
+        
+        let otherArray => Array := other.
+        self size ~= otherArray size ifFalse: {return: false}.
+
+        let size := self size.
+        let i mutable := 0sz.
+        while: (i < size) do: {
+            (self at: i) = (other at: i) ifFalse: {return: false}
+        }.
+
+        return: true
+    }.
+}.

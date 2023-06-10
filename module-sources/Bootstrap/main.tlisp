@@ -50,7 +50,7 @@
     (define typeName (RawTuple::slotAt: type Type::Layout::name))
 
     (define (exportAndBindInstanceMethod selector method)
-        (define exportedName (StringSymbol::intern (String::concat: typeName (String::concat: "::" (asString selector)))))
+        (define exportedName (StringSymbol::intern (String::concat: typeName (String::concat: "::" (send #asString selector)))))
         (MethodDictionary::at:put: (Type::validMethodDictionary type) selector method)
         (send #recordBindingWithOwner:andName: method type selector)
         (exportInstrinsicBuiltInBinding exportedName method))
@@ -73,7 +73,7 @@
                 (RawTuple::typeSlotAt: self slot))))
 
         ## Setter
-        (exportAndBindInstanceMethod (StringSymbol::intern (String::concat: (asString slotName) ":"))
+        (exportAndBindInstanceMethod (StringSymbol::intern (String::concat: (send #asString slotName) ":"))
             (setupSetter (lambda ((self type) (value slotType) => Void)
                 (RawTuple::typeSlotAt:put: self slot value)))
         ))))
@@ -99,7 +99,7 @@
             (define existingMethod (Type::lookupLocalSelector type selector))
             (if:then:else: (== existingMethod nil)
                 (Type::checkNoOverridenSelector (Type::supertype type) selector)
-                (error (String::concat: "Overriding non-virtual method with selector " (printString selector)))
+                (error (String::concat: "Overriding non-virtual method with selector " (send #printString selector)))
                 ))))
 
 ## Type::checkNoOverridenSelector
@@ -110,8 +110,8 @@
             (if:then:else: (== existingMethod nil)
                 (Type::checkVirtualDispatchSelectorExistence (Type::supertype type) selector)
                 (if:then: (Boolean::not (Function::hasVirtualDispatch existingMethod))
-                    (error (String::concat: "Overriding method declaration does not have virtual dispatch supertype with selector " (printString selector))))))
-        (error (String::concat: "Overriding method does not have declaration in supertype with selector " (printString selector)))))
+                    (error (String::concat: "Overriding method declaration does not have virtual dispatch supertype with selector " (send #printString selector))))))
+        (error (String::concat: "Overriding method does not have declaration in supertype with selector " (send #printString selector)))))
 
 ## Type::withSelector:addMethod:
 (define (Type::withSelector:addMethod: type selector method)
@@ -178,11 +178,11 @@
 
     (define startLine (SourcePosition::startLine sourcePosition))
     (define startColumn (SourcePosition::startColumn sourcePosition))
-    (define startString (String::concat: (String::concat: (asString startLine) ".") (asString startColumn)))
+    (define startString (String::concat: (String::concat: (send #asString startLine) ".") (send #asString startColumn)))
 
     (define endLine (SourcePosition::endLine sourcePosition))
     (define endColumn (SourcePosition::endColumn sourcePosition))
-    (define endString (String::concat: (String::concat: (asString endLine) ".") (asString endColumn)))
+    (define endString (String::concat: (String::concat: (send #asString endLine) ".") (send #asString endColumn)))
 
     (String::concat: (String::concat: (String::concat: sourcePath ":") startString)
         (String::concat: "-" endString))

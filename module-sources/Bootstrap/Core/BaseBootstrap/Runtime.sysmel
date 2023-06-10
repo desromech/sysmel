@@ -13,6 +13,7 @@ primitiveFailedError __type__: (SimpleFunctionTypeTemplate((), 0bflgs, Unwinds))
 (RawTuple::refTypeSlotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, TypeSlot, Untyped), 0bflgs, Void)).
 (RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:)
     __type__: (SimpleFunctionTypeTemplate((Type, Size, Size, Size, Size, Boolean, Boolean), 0bflgs, Untyped)).
+
 (==) adoptDefinitionOf: {:(AnyValue)left :(AnyValue)right :: Boolean |
     <primitive: #== >
     <targetDefinedPrimitive>
@@ -21,6 +22,27 @@ primitiveFailedError __type__: (SimpleFunctionTypeTemplate((), 0bflgs, Unwinds))
 (~~) adoptDefinitionOf: {:(AnyValue)left :(AnyValue)right :: Boolean |
     <primitive: #~~ >
     <targetDefinedPrimitive>
+    primitiveFailedError()
+}.
+
+identityHash adoptDefinitionOf: {:(AnyValue)value :: Size |
+    <primitive: #identityHash >
+    primitiveFailedError()
+}.
+
+(Untyped::==) adoptDefinitionOf: {:(Untyped)left :(Untyped)right :: Boolean |
+    <primitive: #== >
+    <targetDefinedPrimitive>
+    primitiveFailedError()
+}.
+(Untyped::~~) adoptDefinitionOf: {:(Untyped)left :(Untyped)right :: Boolean |
+    <primitive: #~~ >
+    <targetDefinedPrimitive>
+    primitiveFailedError()
+}.
+
+Untyped::identityHash adoptDefinitionOf: {:(Untyped)value :: Size |
+    <primitive: #identityHash >
     primitiveFailedError()
 }.
 
@@ -45,11 +67,6 @@ primitiveFailedError __type__: (SimpleFunctionTypeTemplate((), 0bflgs, Unwinds))
 (PointerLikeType::reinterpretCast) adoptDefinitionOf: {:(Untyped)pointer :: Untyped |
     <primitive: #PointerLikeType::reinterpretCast>
     <targetDefinedPrimitive>
-    primitiveFailedError()
-}.
-
-identityHash adoptDefinitionOf: {:(AnyValue)value :: Size |
-    <primitive: #identityHash >
     primitiveFailedError()
 }.
 
@@ -516,6 +533,12 @@ Array
         self __slotAt__: index
     } makeVirtual makeFinal withEagerAnalysis;
     withSelector: #at:put: addMethod: {:(Array)self :(Size)index :value :: Void |
+        self __slotAt__: index put: value
+    } makeVirtual makeFinal withEagerAnalysis;
+    withSelector: #untypedAt: addMethod: {:(Array)self :(Size)index :: Untyped |
+        self __slotAt__: index
+    } makeVirtual makeFinal withEagerAnalysis;
+    withSelector: #untypedAt:put: addMethod: {:(Array)self :(Size)index :(Untyped)value :: Void |
         self __slotAt__: index put: value
     } makeVirtual makeFinal withEagerAnalysis;
     withSelector: #size addMethod: {:(Array)self :: Size |
@@ -1285,6 +1308,21 @@ Association
     withSelector: #printOn: addMethod: {:(Association)self :(Stream)stream :: Void |
         stream print: self key; nextPutAll: " -> "; print: self value
     } makeOverride.
+
+WeakValueAssociation
+    withSelector: #new addClassMethod: {:(WeakValueAssociation class)self :: self |
+        self basicNew: 1sz
+    } makeOverride;
+    withSelector: #key:value: addClassMethod: {:(WeakValueAssociation class)self :key :value :: self |
+        self new key: key; value: value; yourself
+    };
+    withSelector: #value addMethod: {:(WeakValueAssociation)self :: Untyped |
+        (RawTuple::slotAt:)(self, 1sz)
+    };
+    withSelector: #value: addMethod: {:(WeakValueAssociation)self :(Untyped)newValue :: Void |
+        (RawTuple::slotAt:put:)(self, 1sz, newValue)
+    }.
+
 Object
     withSelector:#-> addMethod: {:(Object)self :value :: Association |
         Association key: self value: value
@@ -1360,7 +1398,7 @@ IdentityDictionary
         let: #entryIndex with: (self scanFor: key) asSize.
         let: #storage with: self storage.
         let: #entry with: (storage at: entryIndex).
-        if: entry ~~ nil then: entry key == key else: false
+        if: entry ~~ nil then: (Untyped::==)((RawTuple::slotAt:)(entry, 0sz), key) else: false
     };
     withSelector: #untypedAt:put: addMethod: {:(IdentityDictionary)self :(Untyped)key :value :: Void |
         self at: key put: value.
@@ -1372,7 +1410,7 @@ IdentityDictionary
         let: #entry with: (storage at: entryIndex).
         if: entry == nil then: {
             let: #value with: ifAbsentBlock().
-            self at: key put: value.
+            self untypedAt: key put: value.
             value
         } else: {
             entry value
@@ -2821,6 +2859,27 @@ SimpleFunctionType
 (Float64 >> #sqrt) __type__: (Float32 => Float32).
 (Float64 >> #asIEEEFloat64Encoding) __type__: (Float64 => UInt64).
 (UInt64 >> #asIEEEFloat64Decoded) __type__: (UInt64 => Float64).
+
+let: #UInt32HashBitCount with: 32u32 - 4u32.
+let: #UInt32HashBitMask with: UInt32HashBitCount - 1u32.
+let: #UInt64HashBitCount with: 64u64 - 4u64.
+let: #UInt64HashBitMask with: UInt64HashBitCount - 1u64.
+
+UInt32
+    withSelector: #hashMultiply addMethod: {:(UInt32)self :: UInt32 |
+        (self * 1103515245u32) & UInt32HashBitMask
+    } makePure makeFinal withEagerAnalysis;
+    withSelector: #hashConcatenate: addMethod: {:(UInt32)self :(UInt32)next :: UInt32 |
+        (self hashMultiply + next) & UInt32HashBitMask
+    } makePure makeFinal withEagerAnalysis.
+
+UInt64
+    withSelector: #hashMultiply addMethod: {:(UInt64)self :: UInt64 |
+        (self * 1103515245u64) & UInt64HashBitMask
+    } makePure makeFinal withEagerAnalysis;
+    withSelector: #hashConcatenate: addMethod: {:(UInt64)self :(UInt64)next :: UInt64 |
+        (self hashMultiply + next) & UInt64HashBitMask
+    } makePure makeFinal withEagerAnalysis.
 
 FunctionDefinition
     withSelector: #validAnnotations addMethod: {:(FunctionDefinition)self :: Dictionary |

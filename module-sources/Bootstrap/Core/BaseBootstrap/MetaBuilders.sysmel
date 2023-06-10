@@ -442,7 +442,7 @@ FieldMetaBuilder
 
 ASTNode
     withSelector: #parseAsArgumentNode addMethod: {:self :: ASTArgumentNode |
-        self error: self asString -- " is not a valid argument expression."
+        self error: self sourcePosition asString -- ": " -- self asString -- " is not a valid argument expression."
     } makeVirtual.
 
 ASTArgumentNode
