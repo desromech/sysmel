@@ -17,6 +17,7 @@ typedef struct sysbvm_type_tuple_s
     sysbvm_tuple_t instanceSize;
     sysbvm_tuple_t instanceAlignment;
     sysbvm_tuple_t flags;
+    sysbvm_tuple_t emptyTrivialSingleton;
 
     sysbvm_tuple_t slotDictionary;
 

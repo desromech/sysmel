@@ -188,6 +188,10 @@ Function
         self addFlags: FunctionFlags::Template.
         self
     } withEagerAnalysis;
+    withSelector: #makeMemoizedTemplate addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::Memoized | FunctionFlags::Template.
+        self
+    } withEagerAnalysis;
 
     withSelector: #makeExternC addMethod: {:(Function)self :: Function |
         self addFlags: FunctionFlags::ExternC.

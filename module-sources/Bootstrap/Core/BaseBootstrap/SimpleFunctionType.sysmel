@@ -1,0 +1,5 @@
+private pure template simpleFunctionTypeTemplate(argumentTypes: Array, flags: Bitflags) => SimpleFunctionType := {
+    error("TODO: SimpleFunctionTypeTemplate").
+}.
+
+SimpleFunctionTypeTemplate adoptDefinitionOf: simpleFunctionTypeTemplate.

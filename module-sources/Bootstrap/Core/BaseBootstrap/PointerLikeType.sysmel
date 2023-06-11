@@ -1,0 +1,10 @@
+private pure template pointerTypeTemplate(baseType: Type, addressSpace: AddressSpace) => PointerType := {
+    error("TODO: pointerTypeTemplate").
+}.
+
+private pure template referenceTypeTemplate(baseType: Type, addressSpace: AddressSpace) => ReferenceType := {
+    error("TODO: referenceTypeTemplate").
+}.
+
+PointerTypeTemplate adoptDefinitionOf: pointerTypeTemplate.
+ReferenceTypeTemplate adoptDefinitionOf: referenceTypeTemplate.

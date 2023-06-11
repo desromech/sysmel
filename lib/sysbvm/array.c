@@ -2,15 +2,20 @@
 #include "sysbvm/arraySlice.h"
 #include "sysbvm/function.h"
 #include "sysbvm/errors.h"
+#include "sysbvm/type.h"
 #include "internal/context.h"
 
 SYSBVM_API sysbvm_tuple_t sysbvm_array_create(sysbvm_context_t *context, sysbvm_tuple_t slotCount)
 {
     if(slotCount == 0)
     {
-        if(!context->roots.emptyArrayConstant)
-            context->roots.emptyArrayConstant = (sysbvm_tuple_t)sysbvm_context_allocatePointerTuple(context, context->roots.arrayType, 0);
-        return context->roots.emptyArrayConstant;
+        sysbvm_type_tuple_t *arrayTypeObject = (sysbvm_type_tuple_t*)context->roots.arrayType;
+        if(arrayTypeObject)
+        {
+            if(!arrayTypeObject->emptyTrivialSingleton)
+                arrayTypeObject->emptyTrivialSingleton = (sysbvm_tuple_t)sysbvm_context_allocatePointerTuple(context, context->roots.arrayType, 0);
+            return arrayTypeObject->emptyTrivialSingleton;
+        }
     }
 
     return (sysbvm_tuple_t)sysbvm_context_allocatePointerTuple(context, context->roots.arrayType, slotCount);
@@ -20,12 +25,16 @@ SYSBVM_API sysbvm_tuple_t sysbvm_weakArray_create(sysbvm_context_t *context, sys
 {
     if(slotCount == 0)
     {
-        if(!context->roots.emptyWeakArrayConstant)
+        sysbvm_type_tuple_t *weakArrayTypeObject = (sysbvm_type_tuple_t*)context->roots.weakArrayType;
+        if(weakArrayTypeObject)
         {
-            context->roots.emptyWeakArrayConstant = (sysbvm_tuple_t)sysbvm_context_allocatePointerTuple(context, context->roots.weakArrayType, 0);
-            sysbvm_tuple_markWeakObject(context->roots.emptyWeakArrayConstant);
+            if(!weakArrayTypeObject->emptyTrivialSingleton)
+            {
+                weakArrayTypeObject->emptyTrivialSingleton = (sysbvm_tuple_t)sysbvm_context_allocatePointerTuple(context, context->roots.weakArrayType, 0);
+                sysbvm_tuple_markWeakObject(weakArrayTypeObject->emptyTrivialSingleton);
+            }
+            return weakArrayTypeObject->emptyTrivialSingleton;
         }
-        return context->roots.emptyWeakArrayConstant;
     }
 
     sysbvm_tuple_t result = (sysbvm_tuple_t)sysbvm_context_allocatePointerTuple(context, context->roots.weakArrayType, slotCount);
@@ -37,9 +46,13 @@ SYSBVM_API sysbvm_tuple_t sysbvm_byteArray_create(sysbvm_context_t *context, sys
 {
     if(size == 0)
     {
-        if(!context->roots.emptyByteArrayConstant)
-            context->roots.emptyByteArrayConstant = (sysbvm_tuple_t)sysbvm_context_allocateByteTuple(context, context->roots.byteArrayType, 0);
-        return context->roots.emptyByteArrayConstant;
+        sysbvm_type_tuple_t *byteArrayTypeObject = (sysbvm_type_tuple_t*)context->roots.arrayType;
+        if(byteArrayTypeObject)
+        {
+            if(!byteArrayTypeObject->emptyTrivialSingleton)
+                byteArrayTypeObject->emptyTrivialSingleton = (sysbvm_tuple_t)sysbvm_context_allocateByteTuple(context, context->roots.byteArrayType, 0);
+            return byteArrayTypeObject->emptyTrivialSingleton;
+        }
     }
 
     return (sysbvm_tuple_t)sysbvm_context_allocateByteTuple(context, context->roots.byteArrayType, size);

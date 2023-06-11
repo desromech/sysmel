@@ -1195,16 +1195,6 @@ static sysbvm_tuple_t sysbvm_type_primitive_flushFallbackLookupSelector(sysbvm_c
     return SYSBVM_VOID_TUPLE;
 }
 
-static sysbvm_tuple_t sysbvm_type_primitive_coerceValue(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
-{
-    (void)context;
-    (void)closure;
-    (void)arguments;
-    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
-
-    return sysbvm_type_coerceValue(context, arguments[1], arguments[0]);
-}
-
 static sysbvm_tuple_t sysbvm_type_primitive_createSimpleFunctionType(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
@@ -1382,7 +1372,6 @@ void sysbvm_type_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_void_primitive_anyValueToVoid, "Void::fromAnyValue");
     sysbvm_primitiveTable_registerFunction(sysbvm_void_primitive_coerceASTNodeWithEnvironment, "Void::coerceASTNode:withEnvironment:");
 
-    sysbvm_primitiveTable_registerFunction(sysbvm_type_primitive_coerceValue, "Type::coerceValue:into:");
     sysbvm_primitiveTable_registerFunction(sysbvm_type_primitive_coerceASTNodeWithEnvironment, "Type::coerceASTNode:withEnvironment:");
 
     sysbvm_primitiveTable_registerFunction(sysbvm_type_primitive_flushLookupSelector, "Type::flushLookupSelector:");
@@ -1407,7 +1396,6 @@ void sysbvm_type_setupPrimitives(sysbvm_context_t *context)
     context->roots.anyValueToVoidPrimitive = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "Void::fromAnyValue", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_NO_TYPECHECK_ARGUMENTS, NULL, sysbvm_void_primitive_anyValueToVoid);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Void::coerceASTNode:withEnvironment:", sysbvm_tuple_getType(context, context->roots.voidType), "coerceASTNode:withEnvironment:", 3, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_void_primitive_coerceASTNodeWithEnvironment);
     
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "Type::coerceValue:into:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_type_primitive_coerceValue);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Type::coerceASTNode:withEnvironment:", context->roots.typeType, "coerceASTNode:withEnvironment:", 3, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_type_primitive_coerceASTNodeWithEnvironment);
 
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Type::flushLookupSelector:", context->roots.typeType, "flushLookupSelector:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_type_primitive_flushLookupSelector);

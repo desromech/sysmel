@@ -597,6 +597,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "instanceSize", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "instanceAlignment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
+        "emptyTrivialSingleton", SYSBVM_TYPE_SLOT_FLAG_READONLY , context->roots.untypedType,
 
         "slotDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.methodDictionaryType,
 
@@ -631,9 +632,10 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.anyPointerType, "AnyPointer", SYSBVM_NULL_TUPLE, NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.anyReferenceType, "AnyReference", SYSBVM_NULL_TUPLE, NULL);
 
+    context->roots.addressSpaceType = sysbvm_context_createIntrinsicClass(context, "AddressSpace", SYSBVM_NULL_TUPLE, NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.pointerLikeType, "PointerLikeType", SYSBVM_NULL_TUPLE,
         "baseType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_RTTI_EXCLUDED, context->roots.typeType,
-        "addressSpace", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
+        "addressSpace", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.addressSpaceType,
         "loadValueFunction", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.functionType,
         "storeValueFunction", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.functionType,
         SYSBVM_NULL_TUPLE);

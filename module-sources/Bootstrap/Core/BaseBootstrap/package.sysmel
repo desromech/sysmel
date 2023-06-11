@@ -8,6 +8,9 @@ loadSourceNamed: "PackageMacro.sysmel".
 loadSourceNamed: "FixedArray.sysmel".
 loadSourceNamed: "Enum.sysmel".
 loadSourceNamed: "Struct.sysmel".
+loadSourceNamed: "Namespace.sysmel".
+loadSourceNamed: "PointerLikeType.sysmel".
+loadSourceNamed: "SimpleFunctionType.sysmel".
 loadSourceNamed: "PlatformDescription.sysmel".
 loadSourceNamed: "PAL.sysmel".
 __DefaultAnalysisQueueValueBox__ value waitPendingAnalysis.

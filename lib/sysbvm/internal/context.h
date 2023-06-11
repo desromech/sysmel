@@ -97,10 +97,6 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t genericAddressSpaceName;
     sysbvm_tuple_t functionLocalAddressSpaceName;
 
-    sysbvm_tuple_t emptyArrayConstant;
-    sysbvm_tuple_t emptyWeakArrayConstant;
-    sysbvm_tuple_t emptyByteArrayConstant;
-
     sysbvm_tuple_t coerceValueSelector;
     sysbvm_tuple_t coerceASTNodeWithEnvironmentSelector;
     sysbvm_tuple_t analyzeAndTypeCheckFunctionApplicationNodeWithEnvironmentSelector;
@@ -118,6 +114,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t orderedCollectionType;
     sysbvm_tuple_t arrayedCollectionType;
     sysbvm_tuple_t associationType;
+    sysbvm_tuple_t addressSpaceType;
     sysbvm_tuple_t booleanType;
     sysbvm_tuple_t byteArrayType;
     sysbvm_tuple_t byteStreamType;
