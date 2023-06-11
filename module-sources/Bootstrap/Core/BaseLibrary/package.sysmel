@@ -12,6 +12,7 @@ loadSourceNamed: "MethodDictionary.sysmel".
 loadSourceNamed: "StringMemoryFunctions.sysmel".
 loadSourceNamed: "ObjectModel.sysmel".
 
+loadSourceNamed: "ByteStream.sysmel".
 loadSourceNamed: "Error.sysmel".
 loadSourceNamed: "IO.sysmel".
 loadSourceNamed: "FileSystem.sysmel".
@@ -21,6 +22,7 @@ loadSourceNamed: "ProgramEntity.sysmel".
 loadSourceNamed: "Utility.sysmel".
 loadSourceNamed: "String.sysmel".
 loadSourceNamed: "StringSymbol.sysmel".
+loadSourceNamed: "StringStream.sysmel".
 loadSourceNamed: "System.sysmel".
 loadSourceNamed: "Time.sysmel".
 loadSourceNamed: "Type.sysmel".

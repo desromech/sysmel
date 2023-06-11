@@ -703,16 +703,16 @@ AsmX86InstructionDefinition definition: {
     public method generateStreamBuilderMethod => Void := {
         let selectorBuilder := StringStream new.
         let directSelectorBuilder := StringStream new.
-        selectorBuilder nextPutAll: "x86::"; nextPutAll: mnemonic.
-        directSelectorBuilder nextPutAll: "x86::direct::"; nextPutAll: mnemonic.
+        selectorBuilder nextPutAll: "x86::"; string: mnemonic.
+        directSelectorBuilder nextPutAll: "x86::direct::"; string: mnemonic.
         operandNames doWithIndex: {:(Symbol)operandName :(Size)index :: Void |
             if: index ~= 0sz then: {
-                selectorBuilder nextPutAll: operandName.
-                directSelectorBuilder nextPutAll: operandName.
+                selectorBuilder string: operandName.
+                directSelectorBuilder string: operandName.
             }.
 
-            selectorBuilder nextPut: ':'.
-            directSelectorBuilder nextPut: ':'.
+            selectorBuilder nextPut: ':'c8.
+            directSelectorBuilder nextPut: ':'c8.
         }.
 
         let selector := selectorBuilder asSymbol.

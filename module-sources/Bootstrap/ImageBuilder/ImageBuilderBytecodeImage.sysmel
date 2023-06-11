@@ -10,7 +10,7 @@ public class ImageBuilderBytecodeImage superclass: ImageBuilderTargetImage; defi
         let byteStream := ByteStream new.
         builder objectModel pointerSize = 8u64 ifTrue: {
             byteStream
-                nextPutAll: "IM64";
+                nextPutString: "IM64";
                 nextPutUInt64: (writer uint64PointerValueForObjectReference: builder immediateTypeTable);
                 nextPutUInt64: (writer uint64PointerValueForObjectReference: builder immediateTrivialTypeTable);
                 nextPutUInt64: (writer uint64PointerValueForObjectReference: builder entryPointFunction);
@@ -20,7 +20,7 @@ public class ImageBuilderBytecodeImage superclass: ImageBuilderTargetImage; defi
                 nextPutAll: writer segmentData.
         } ifFalse: {
             byteStream
-                nextPutAll: "IM32";
+                nextPutString: "IM32";
                 nextPutUInt32: (writer uint32PointerValueForObjectReference: builder immediateTypeTable);
                 nextPutUInt32: (writer uint32PointerValueForObjectReference: builder immediateTrivialTypeTable);
                 nextPutUInt32: (writer uint32PointerValueForObjectReference: builder entryPointFunction);

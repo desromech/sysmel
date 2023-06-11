@@ -950,10 +950,10 @@ ASTNode
 Stream
     withSelector: #nextPut: addMethod: {:(Stream)self :element :: Void | 
         self subclassResponsibility
-    };
+    } makeVirtual;
     withSelector: #nextPutAll: addMethod: {:(Stream)self :aCollection :: Void | 
         aCollection do: {:each :: Void | self nextPut: each}
-    };
+    } makeVirtual;
     withSelector: #print: addMethod: {:(Stream)self :value :: Void | 
         value printOn: self
     };

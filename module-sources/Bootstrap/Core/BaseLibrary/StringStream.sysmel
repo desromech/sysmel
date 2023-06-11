@@ -1,0 +1,40 @@
+StringStream definition: {
+    public method ensureCapacityFor: (requiredExtraSize: Size) ::=> Void := {
+        error("TODO: StringStream >> #ensureCapacityFor:")
+    }.
+
+    public override method nextPut: (character: Char8) ::=> Void := {
+        self ensureCapacityFor: 1sz.
+        storage at: size put: character.
+        size := size + 1sz.
+    }.
+
+    public override method nextPutAll: (string: String) ::=> Void := {
+        let charCount := string size.
+        self ensureCapacityFor: charCount.
+
+        let i mutable := 0sz.
+        while: (i < charCount) do: {
+            storage at: size put: (string at: i).
+            size := size + 1sz
+        } continueWith: (i := i + 1sz).
+    }.
+
+    public method asByteArray => ByteArray := {
+        let byteArraySize := self size.
+        let byteArray := ByteArray new: byteArraySize.
+
+        let i mutable := 0sz.
+        while: (i < byteArraySize) do: {
+            byteArray at: i put: (storage at: i) asUInt8
+        } continueWith: (i := i + 1sz).
+
+        byteArray
+    }.
+
+    public override method asString => String
+        := storage first: size.
+
+    public method asSymbol => StringSymbol
+        := self asString asSymbol.
+}.

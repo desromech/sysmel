@@ -1,0 +1,51 @@
+ByteStream definition: {
+    public method ensureCapacityFor: (requiredExtraSize: Size) ::=> Void := {
+        error("TODO: ByteStream >>#ensureCapacityFor:")
+    }.
+
+    public override method nextPut: (byte: UInt8) ::=> Void := {
+        self ensureCapacityFor: 1sz.
+        storage at: size put: byte.
+        size := size + 1sz.
+    }.
+
+    public override method nextPutAll: (bytes: ByteArray) ::=> Void := {
+        let byteCount := bytes size.
+        self ensureCapacityFor: byteCount.
+
+        let i mutable := 0sz.
+        while: (i < byteCount) do: {
+            storage at: size put: (bytes at: i).
+            size := size + 1sz
+        } continueWith: (i := i + 1sz).
+    }.
+
+    public method nextPutString: (string: String) ::=> Void := {
+        let stringSize := string size.
+        self ensureCapacityFor: stringSize.
+
+        let i mutable := 0sz.
+        while: (i < stringSize) do: {
+            storage at: size put: (string at: i) asUInt8.
+            size := size + 1sz
+        } continueWith: (i := i + 1sz).
+    }.
+
+    public method asByteArray => ByteArray
+        := storage first: size.
+
+    public override method asString => String := {
+        let stringSize := self size.
+        let string := String new: stringSize.
+
+        let i mutable := 0sz.
+        while: (i < stringSize) do: {
+            string at: i put: (storage at: i) asChar8.
+        } continueWith: (i := i + 1sz).
+
+        string
+    }.
+
+    public method asSymbol => StringSymbol
+        := self asString asSymbol.
+}.
