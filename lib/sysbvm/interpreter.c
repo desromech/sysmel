@@ -5916,8 +5916,8 @@ void sysbvm_astInterpreter_setupASTInterpreter(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "begin", 2, SYSBVM_FUNCTION_FLAGS_MACRO | SYSBVM_FUNCTION_FLAGS_VARIADIC, NULL, sysbvm_astSequenceNode_primitiveMacro);
 
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::ensureAnalysis", context->roots.functionType, "ensureAnalysis", 1, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_function_primitiveEnsureAnalysis);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "FunctionDefinition::ensureTypeAnalysis", context->roots.functionDefinitionType, "ensureTypeAnalysis", 1, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_functionDefinition_primitiveEnsureTypeAnalysis);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "FunctionDefinition::ensureAnalysis", context->roots.functionDefinitionType, "ensureAnalysis", 1, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_functionDefinition_primitiveEnsureAnalysis);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "FunctionDefinition::ensureTypeAnalysis", context->roots.functionDefinitionType, "ensureTypeAnalysis", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_functionDefinition_primitiveEnsureTypeAnalysis);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "FunctionDefinition::ensureAnalysis", context->roots.functionDefinitionType, "ensureAnalysis", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_functionDefinition_primitiveEnsureAnalysis);
 
     sysbvm_type_setAnalyzeAndTypeCheckFunctionApplicationNodeWithEnvironment(context, context->roots.simpleFunctionTypeType, sysbvm_function_createPrimitive(context, 3, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckFunctionApplicationNode));
     sysbvm_type_setAnalyzeAndTypeCheckMessageSendNodeWithEnvironment(context, context->roots.simpleFunctionTypeType, sysbvm_function_createPrimitive(context, 3, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckMessageSendNode));

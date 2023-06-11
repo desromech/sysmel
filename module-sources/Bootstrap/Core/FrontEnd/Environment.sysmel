@@ -148,6 +148,38 @@ public final class ASTNodeWithCanonicalType superclass: Object; definition: {
 Environment definition: {
     public eager virtual method lookFunctionAnalysisEnvironmentRecursively => FunctionAnalysisEnvironment
         := self error: "Cannot have a function analysis environment in this context.".
+
+    public eager method setBinding: (binding: SymbolBinding) ::=> Void := {
+        symbolTable ifNil: {symbolTable := IdentityDictionary new}.
+        symbolTable add: binding
+    }.
+
+    public eager method setNewBinding: (binding: SymbolBinding) ::=> Void := {
+        symbolTable ifNotNil: {
+            (symbolTable includesKey: binding name) ifTrue: {
+                error("Overriding existing symbol binding")
+            }.
+        } ifNil: {
+            symbolTable := IdentityDictionary new
+        }.
+        symbolTable add: binding
+    }.
+
+    public eager method setSymbol: (symbol: Symbol) bindingWithValue: (value: Untyped) ::=> Void := {
+        let binding := SymbolValueBinding new
+            name: symbol;
+            value: value;
+            yourself.
+        self setBinding: binding
+    }.
+
+    public eager method setNewSymbol: (symbol: Symbol) bindingWithValue: (value: Untyped) ::=> Void := {
+        let binding := SymbolValueBinding new
+            name: symbol;
+            value: value;
+            yourself.
+        self setNewBinding: binding
+    }.
 }.
 
 AnalysisEnvironment definition: {

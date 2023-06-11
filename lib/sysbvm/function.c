@@ -673,6 +673,7 @@ void sysbvm_function_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::NeverInline", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_NEVER_INLINE));
 
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::TargetDefinedPrimitive", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_TARGET_DEFINED_PRIMITIVE));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::BootstrapPrimitiveKeptFlags", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_BOOTSTRAP_PRIMITIVE_KEPT_FLAGS));
 
     // Export the function application flags.
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionApplicationFlags::None", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_APPLICATION_FLAGS_NONE));

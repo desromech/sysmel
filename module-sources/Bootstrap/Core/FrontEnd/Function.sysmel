@@ -16,6 +16,63 @@ Function definition: {
     public method isTargetDefinedPrimitive => Boolean
         := (self hasAnyFlag: FunctionFlags::TargetDefinedPrimitive) || (self hasPragmaNamed: #targetDefinedPrimitive).
 
+    public override eager method recordBindingWithOwner: (newOwner: ProgramEntity) andName: (newName: Symbol) ::=> Void := {
+        super recordBindingWithOwner: newOwner andName: newName.
+        definition ifNotNil: {
+            definition recordBindingWithOwner: newOwner andName: newName
+        }
+    }.
+
+    public eager method adoptDefinitionOf: (definitionFunction: Function) ::=> Void := {
+        definition := definitionFunction definition.
+        captureVector := definitionFunction captureVector.
+        captureEnvironment := definitionFunction captureEnvironment.
+        definitionFunction isCorePrimitive ifTrue: {
+            flags := (flags & FunctionFlags::BootstrapPrimitiveKeptFlags) | definitionFunction flags.
+
+            definitionFunction primitiveName ifNotNil: {
+                primitiveName := definitionFunction primitiveName
+            }.
+
+        } ifFalse: {
+            flags := definitionFunction flags.
+            primitiveName := definitionFunction primitiveName.
+            primitiveTableIndex := definitionFunction primitiveTableIndex.
+            annotations := definitionFunction annotations.
+        }.
+
+        (RawTuple::type:)(self, definitionFunction __type__)
+    }.
+
+    public override eager method ensureAnalysis => Void := {
+        super ensureAnalysis.
+        captureEnvironment isNil || definition isNil ifTrue: {return: void}.
+
+        let captureEnvironment := self captureEnvironment.
+        self captureEnvironment == __pendingMemoizationValue__ ifTrue: {
+            error("Cyclic analysis of function " -- self printString).
+        }.
+
+        self captureEnvironment: __pendingMemoizationValue__.
+        definition ensureAnalysis.
+
+        captureVector := definition analyzedCaptures collect: {:(SymbolBinding)captureBinding :: Untyped |
+            captureEnvironment evaluateSymbolBinding: captureBinding
+        }.
+        self captureEnvironment: nil.
+        self primitiveName ifNil: {
+            self primitiveName: definition analyzedPrimitiveName
+        }.
+        (RawTuple::type:)(self, definition analyzedType).
+    }.
+
+    public eager method recompileAndOptimize => Function := {
+        self ensureAnalysis.
+        (definition isNil || captureVector isEmpty) ifTrue: (return: self).
+
+        error("TODO: recompileAndOptimize")
+    }.
+
     public eager method applyWithArguments: (arguments: Array) ::=> Untyped := {
         let argCount := arguments size.
         argCount = 0sz ifTrue: {return: self()}.
@@ -41,6 +98,18 @@ Function definition: {
 }.
 
 FunctionDefinition definition: {
+    public eager method ensureTypeAnalysis => Void := {
+        error("TODO: FunctionDefinition >> ensureTypeAnalysis").
+    }.
+
+    public eager override method ensureAnalysis => Void := {
+        definitionArgumentNodes ifNil: {return: void}.
+        definitionBodyNode ifNil: {return: void}.
+        analyzedType ifNotNil: {return: void}.
+
+        error("TODO: FunctionDefinition >> ensureAnalysis").
+    }.
+
     public method isTargetDefinedPrimitive => Boolean
         := (self hasAnyFlag: FunctionFlags::TargetDefinedPrimitive) || (self hasPragmaNamed: #targetDefinedPrimitive).
 

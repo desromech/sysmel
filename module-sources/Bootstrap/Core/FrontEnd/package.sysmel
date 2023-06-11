@@ -1,4 +1,5 @@
 loadSourceNamed: "AnalysisQueue.sysmel".
+loadSourceNamed: "ProgramEntity.sysmel".
 loadSourceNamed: "Function.sysmel".
 loadSourceNamed: "Environment.sysmel".
 loadSourceNamed: "BootstrapStubs.sysmel".

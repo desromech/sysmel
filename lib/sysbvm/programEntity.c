@@ -28,10 +28,10 @@ static sysbvm_tuple_t sysbvm_programEntity_primitive_recordBindingWithOwnerAndNa
 
 void sysbvm_programEntity_registerPrimitives(void)
 {
-    sysbvm_primitiveTable_registerFunction(sysbvm_programEntity_primitive_recordBindingWithOwnerAndName, "ProgramEntity::recordBindingWithOwnerAndName");
+    sysbvm_primitiveTable_registerFunction(sysbvm_programEntity_primitive_recordBindingWithOwnerAndName, "ProgramEntity::recordBindingWithOwner:andName:");
 }
 
 void sysbvm_programEntity_setupPrimitives(sysbvm_context_t *context)
 {
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ProgramEntity::recordBindingWithOwnerAndName", context->roots.programEntityType, "recordBindingWithOwner:andName:", 3, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_programEntity_primitive_recordBindingWithOwnerAndName);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ProgramEntity::recordBindingWithOwner:andName:", context->roots.programEntityType, "recordBindingWithOwner:andName:", 3, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_programEntity_primitive_recordBindingWithOwnerAndName);
 }
