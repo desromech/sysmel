@@ -256,6 +256,7 @@ let primitiveFunctionGenerators := #{
         self arguments first generateSSAValueWith: context
     }.
     #RawTuple::typeSlotAt: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+
         self arguments second isLiteralNode ifTrue: {
             let tuple := self arguments first generateSSAValueWith: context.
             let typeSlot => TypeSlot := self arguments second value.

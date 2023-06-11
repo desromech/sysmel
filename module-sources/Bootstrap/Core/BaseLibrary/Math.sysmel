@@ -329,7 +329,7 @@
 
 UInt32 definition: {
     public pure final method asIEEEFloat32Decoded => Float32 := {
-        <primitive: "UInt32::asIEEEFloat32Decoded">
+        <primitive: #UInt32::asIEEEFloat32Decoded>
         <targetDefinedPrimitive>
         primitiveFailedError()
     }.
@@ -337,7 +337,7 @@ UInt32 definition: {
 
 UInt64 definition: {
     public pure final method asIEEEFloat64Decoded => Float64 := {
-        <primitive: "UInt64::asIEEEFloat64Decoded">
+        <primitive: #UInt64::asIEEEFloat64Decoded>
         <targetDefinedPrimitive>
         primitiveFailedError()
     }.
@@ -345,7 +345,7 @@ UInt64 definition: {
 
 Float32 definition: {
     public pure final method asIEEEFloat32Encoding => UInt32 := {
-        <primitive: "Float32::asIEEEFloat32Encoding">
+        <primitive: #Float32::asIEEEFloat32Encoding>
         <targetDefinedPrimitive>
         primitiveFailedError()
     }.
@@ -353,7 +353,7 @@ Float32 definition: {
 
 Float64 definition: {
     public pure final method asIEEEFloat64Encoding => UInt64 := {
-        <primitive: "Float64::asIEEEFloat64Encoding">
+        <primitive: #Float64::asIEEEFloat64Encoding>
         <targetDefinedPrimitive>
         primitiveFailedError()
     }.

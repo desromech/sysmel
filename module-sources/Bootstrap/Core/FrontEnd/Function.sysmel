@@ -68,7 +68,7 @@ Function definition: {
 
     public eager method recompileAndOptimize => Function := {
         self ensureAnalysis.
-        (definition isNil || captureVector isEmpty) ifTrue: (return: self).
+        (definition isNil || captureVector isNotNil) ifTrue: (return: self).
 
         error("TODO: recompileAndOptimize")
     }.

@@ -233,7 +233,7 @@ FunctionAnalysisEnvironment definition: {
     public eager virtual final method addPragma: (pragma: Pragma) ::=> Void := {
         pragmaList add: pragma.
         (pragma selector = #primitive:) && self primitiveName isNil ifTrue: {
-            self primitiveName: pragma selector
+            self primitiveName: pragma arguments first
         }
     }.
 

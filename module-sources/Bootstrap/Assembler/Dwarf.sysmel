@@ -1165,7 +1165,8 @@ Dwarf::AsmWriter definition: {
         activeStream := debugAbbreviationsStream.
         abbreviations do: {:(Association)abbreviationIdAndDie :: Void |
             activeStream uleb128: abbreviationIdAndDie key.
-            (abbreviationIdAndDie value downCastTo: Dwarf::DebugInfoEntry) writeAbbreviationWith: self
+            let debugInfoEntry => Dwarf::DebugInfoEntry := abbreviationIdAndDie value.
+            abbreviationIdAndDie value writeAbbreviationWith: self
         }.
 
         activeStream byte: 0u8
