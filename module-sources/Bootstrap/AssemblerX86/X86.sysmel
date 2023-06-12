@@ -883,6 +883,24 @@ let instructionTemplateTable := #{
         };
         yourself).
 
+    OppRbIb: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
+            (instruction operandCount = 2sz) &&
+            instruction firstOperand isRegister &&
+            (instruction firstOperand size = 1sz) &&
+            instruction secondOperand isImmediate8
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let register := instruction firstOperand.
+            let immediate := instruction secondOperand.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86RexRM: register;
+                nextPutX86Opcode: templ opcode first plusRegister: register;
+                nextPutImmediate: immediate
+        };
+        yourself).
+
     OpRmbIb: (AsmX86InstructionTemplate new
         when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
             (instruction operandCount = 2sz) &&
@@ -1445,8 +1463,10 @@ let instructionDefinitionTable := #(
     )
 
     (mov (dst src) "Move values"
+		(OppRbIb #[] #[16rB0] 0)
 		(OpRmqIsd #[] #[16rC7] 0)
 		(OppRwIww #[] #[16rB8])
+		(OpRmbIb #[] #[16rC6] 0)
 		(OpRmwIw #[] #[16rC7] 0)
 
         (OpRmbRb #[] #[16r88])

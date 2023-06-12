@@ -3,8 +3,9 @@ public class ImageBuilderSSAImage superclass: ImageBuilderTargetImage; definitio
     
     public override method saveTo: (filename: String) ::=> Boolean := {
         {
+            printLine("Writing SSA text IR").
             let ssaTextIR := ssaModule fullPrintString.
-            printLine(ssaTextIR).
+            ##printLine(ssaTextIR).
             IO::writeWholeFileNamedWithString(filename -- ".ssa", ssaTextIR)
         }.
         

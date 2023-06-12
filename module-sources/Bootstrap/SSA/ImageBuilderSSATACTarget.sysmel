@@ -3,17 +3,20 @@ public class ImageBuilderSSATACTarget superclass: ImageBuilderSSATarget; definit
         let ssaImage := ImageBuilderSSATACImage new.
         
         let ssaTacCompilation := compilationTarget downCastTo: SSATACCompilationTarget.
-        ssaImage
-            ssaModule: ((SSAModuleCompilationContext forTarget: compilationTarget)
+        printLine("Generating SSA Module").
+        ssaImage ssaModule: ((SSAModuleCompilationContext forTarget: compilationTarget)
                 exclusiveCompilationMode: true;
                 compileFunctions: builder tracedFunctions definitions: builder tracedFunctionDefinitions;
                 exportMainEntryPointFunction: builder entryPointFunction;
-                finish);
-            tacModule: (ssaImage ssaModule asTACModuleFor: ssaTacCompilation tacCompilationTarget);
-            targetIR: (ssaImage tacModule
+                finish).
+        printLine("Generating TAC Module").
+        ssaImage tacModule: (ssaImage ssaModule asTACModuleFor: ssaTacCompilation tacCompilationTarget).
+        printLine("Generating Assembly code").
+        ssaImage targetIR: (ssaImage tacModule
                 imageObjectTrace: (builder objectTrace lock; yourself);
-                asTargetIR);
-            yourself
+                asTargetIR).
+        printLine("Image data generated").
+        ssaImage
     }.
 
     public override method needsBytecode => Boolean

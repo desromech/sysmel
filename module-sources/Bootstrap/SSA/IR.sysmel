@@ -1088,8 +1088,8 @@ public final class SSAMakeAssociationInstruction superclass: SSAInstruction; def
     public override method isMakeAssociationInstruction => Boolean := true.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream print: self; nextPutAll: " := makeAssociation "; print: key;
-            nextPutAll: " : "; print: value.
+        stream print: self; nextPutAll: " := makeAssociation "; print: self key;
+            nextPutAll: " : "; print: self value.
     }.
 
     public override method usedValuesDo: aBlock ::=> Void := {

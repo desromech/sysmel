@@ -13,16 +13,19 @@ static void sysbvm_gc_markPointer(void *userdata, sysbvm_tuple_t *pointerAddress
     if(!sysbvm_tuple_isNonNullPointer(pointer))
         return;
 
-
     bool isWhite = sysbvm_tuple_getGCColor(pointer) == context->heap.gcWhiteColor;
     if(!isWhite)
         return;
 
     sysbvm_tuple_setGCColor(pointer, context->heap.gcGrayColor);
+    sysbvm_dynarray_add(&context->markingStack, &pointer);
+}
 
+static void sysbvm_gc_markObjectContent(sysbvm_context_t *context, sysbvm_tuple_t pointer)
+{
     // Mark the object type. We do not need to mark the immediate types since there are already present in the root object set.
     sysbvm_tuple_t objectType = sysbvm_tuple_getType(context, pointer);
-    sysbvm_gc_markPointer(userdata, &objectType);
+    sysbvm_gc_markPointer(context, &objectType);
 
     // Do not traverse the slot of byte objects, and the slots of weak objects
     if(!sysbvm_tuple_isBytes(pointer))
@@ -41,10 +44,20 @@ static void sysbvm_gc_markPointer(void *userdata, sysbvm_tuple_t *pointerAddress
         // Mark the object slots
         sysbvm_tuple_t *slots = SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(pointer)->pointers;
         for(size_t i = 0; i < strongSlotCount; ++i)
-            sysbvm_gc_markPointer(userdata, &slots[i]);
+            sysbvm_gc_markPointer(context, &slots[i]);
     }
 
     sysbvm_tuple_setGCColor(pointer, context->heap.gcBlackColor);
+}
+
+static void sysbvm_gc_markUntilStackIsEmpty(sysbvm_context_t *context)
+{
+    while(context->markingStack.size > 0)
+    {
+        sysbvm_tuple_t *pendingObjects = (sysbvm_tuple_t*)context->markingStack.data;
+        sysbvm_tuple_t nextPendingObject = pendingObjects[--context->markingStack.size];
+        sysbvm_gc_markObjectContent(context, nextPendingObject);
+    }
 }
 
 static void sysbvm_gc_applyForwardingPointer(void *userdata, sysbvm_tuple_t *pointerAddress)
@@ -74,6 +87,7 @@ static void sysbvm_gc_performCycle(sysbvm_context_t *context)
     // LISP 2 moving collection algorithm.
     // Phase 1: marking phase
     sysbvm_gc_iterateRoots(context, context, sysbvm_gc_markPointer);
+    sysbvm_gc_markUntilStackIsEmpty(context);
 
     // Phase 2: Compute the forwarding pointers.
     sysbvm_heap_computeCompactionForwardingPointers(&context->heap);

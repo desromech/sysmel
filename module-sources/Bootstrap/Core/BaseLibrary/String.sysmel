@@ -441,7 +441,7 @@ Integer definition: {
     public override final method printOn: (stream: Stream) ::=> Void := {
         self < 0 ifTrue: (stream nextPut: '-'c8).
 
-        error("TODO: Integer printString.").
+        stream nextPutAll: "<Todo:Integer>>printOn:>"
     }.
 }.
 

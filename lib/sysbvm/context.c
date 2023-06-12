@@ -1174,6 +1174,7 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_createWithOptions(sysbvm_contextCrea
     context->targetWordSize = contextOptions->targetWordSize ? contextOptions->targetWordSize : sizeof(void*);
     context->identityHashSeed = 1;
     context->jitEnabled = sysbvm_context_default_jitEnabled && !contextOptions->nojit;
+    sysbvm_dynarray_initialize(&context->markingStack, sizeof(sysbvm_tuple_t), 1<<20);
 
     sysbvm_heap_initialize(&context->heap);
     sysbvm_gc_lock(context);
@@ -1292,6 +1293,7 @@ SYSBVM_API void sysbvm_context_destroy(sysbvm_context_t *context)
     if(!context) return;
 
     // Destroy the context heap.
+    sysbvm_dynarray_destroy(&context->markingStack);
     sysbvm_heap_destroy(&context->heap);
     free(context);
 }

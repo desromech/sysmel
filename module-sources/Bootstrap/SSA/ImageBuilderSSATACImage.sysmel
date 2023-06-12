@@ -3,20 +3,23 @@ public class ImageBuilderSSATACImage superclass: ImageBuilderSSAImage; definitio
     public field targetIR.
     
     public override method saveTo: (filename: String) ::=> Boolean := {
-        (super saveTo: filename) ifFalse: {return: false}.
+        ##(super saveTo: filename) ifFalse: {return: false}.
 
         {
+            printLine("Writing TAC text IR").
             let tacTextIR := tacModule fullPrintString.
-            printLine(tacTextIR).
+            ##printLine(tacTextIR).
             IO::writeWholeFileNamedWithString(filename -- ".tac", tacTextIR)
         }.
 
         {
+            printLine("Writing assembly text IR").
             let targetTextIR := targetIR fullPrintString.
-            printLine(targetTextIR).
+            ##printLine(targetTextIR).
             IO::writeWholeFileNamedWithString(filename -- ".s", targetTextIR)
         }.
 
+        printLine("Generating object file").
         targetIR writeObjectToFileNamed: filename
     }.
 }.

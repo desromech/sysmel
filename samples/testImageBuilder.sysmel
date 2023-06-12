@@ -22,6 +22,16 @@ ImageBuilder new
     build;
     saveTo: "testImage.image".
 
+ImageBuilder new
+    target: AsmCompilationTarget x86_64 useElf useDwarf asImageBuilderTarget;
+    beNoSourceDefinition;
+    withoutInProcessDebugInformation;
+    useDefaultTypeTables;
+    addProgramEntity: __Global__;
+    addNativeEntryPoint: TestImageMain;
+    build;
+    saveTo: "testImage.x86_64.elf".
+
 #*ImageBuilder new
     beComplete;
     useDefaultTypeTables;

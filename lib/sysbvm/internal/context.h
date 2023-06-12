@@ -5,6 +5,7 @@
 
 #include "sysbvm/context.h"
 #include "heap.h"
+#include "dynarray.h"
 
 #define GLOBAL_LOOKUP_CACHE_ENTRY_COUNT 256
 #define PIC_ENTRY_COUNT 16
@@ -304,6 +305,7 @@ struct sysbvm_context_s
     uint32_t targetWordSize;
     size_t identityHashSeed;
     bool jitEnabled;
+    sysbvm_dynarray_t markingStack;
 };
 
 #endif //SYSBVM_INTERNAL_CONTEXT_H
