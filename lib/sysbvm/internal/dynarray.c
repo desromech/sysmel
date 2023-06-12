@@ -1,5 +1,5 @@
 #include "dynarray.h"
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
 
 void sysbvm_dynarray_initialize(sysbvm_dynarray_t *dynarray, size_t entrySize, size_t initialCapacity)
