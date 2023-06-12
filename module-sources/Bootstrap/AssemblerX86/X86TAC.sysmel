@@ -752,22 +752,26 @@ TACLocalVariable extend: {
 
     public override method x86_64::pushWith: (codegen: TACFunctionAsmCodeGenerator) scratchRegister: (scratchRegister: AsmInstructionOperand)::=> Void := {
         let localSize := self size.
-        let isSignedExtended := self isSignedExtended.
-        self assert: (localSize = 1sz) || (localSize = 2sz) || (localSize = 4sz) || (localSize = 8sz).
+        (localSize = 1sz) || (localSize = 2sz) || (localSize = 4sz) || (localSize = 8sz) ifTrue: {
+            let isSignedExtended := self isSignedExtended.
 
-        ## TODO: Support the lambda captures.
-        let localPointer := AsmX86RegisterAddress base: X86::RBP size: localSize asUInt8 displacement: self offset asInt32 asAsmImmediate.
-        localSize = 1u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: scratchRegister src: localPointer).
-        localSize = 1u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: scratchRegister src: localPointer).
-        localSize = 2u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: scratchRegister src: localPointer).
-        localSize = 2u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: scratchRegister src: localPointer).
-        localSize = 4u64 ifTrue: (codegen textSection x86::mov: scratchRegister src: localPointer).
-        localSize = 8u64 ifTrue: {
-            codegen textSection x86::push: localPointer
+            ## TODO: Support the lambda captures.
+            let localPointer := AsmX86RegisterAddress base: X86::RBP size: localSize asUInt8 displacement: self offset asInt32 asAsmImmediate.
+            localSize = 1u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: scratchRegister src: localPointer).
+            localSize = 1u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: scratchRegister src: localPointer).
+            localSize = 2u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: scratchRegister src: localPointer).
+            localSize = 2u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: scratchRegister src: localPointer).
+            localSize = 4u64 ifTrue: (codegen textSection x86::mov: scratchRegister src: localPointer).
+            localSize = 8u64 ifTrue: {
+                codegen textSection x86::push: localPointer
+            } ifFalse: {
+                codegen textSection x86::push: scratchRegister
+            }.
+            codegen textSection cfiStackSizeAdvance: 8i64.
         } ifFalse: {
-            codegen textSection x86::push: scratchRegister
-        }.
-        codegen textSection cfiStackSizeAdvance: 8i64.
+            ## TODO: Implement this
+            codegen textSection x86::int3
+        }
     }.
 
 }.
@@ -2587,6 +2591,17 @@ TAC::Operation::LoadUInt64
         codegen textSection x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64PointerWithOffset: instruction secondOperandRegister for: codegen)
     }.
 
+TAC::Operation::LoadStruct
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateMemoryForInstructionResult: instruction;
+            allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
+            allocateImmediate32ForInstruction: instruction operandAt: 1sz
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::int3
+    }.
+
 let x86::storePointerRegisterContraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
@@ -2961,6 +2976,16 @@ TAC::Operation::ReturnFloat64
     };
     forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
         allocator allocateRegister: TAC::X86::XMM0 forInstruction: instruction operandAt: 0sz
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen emitEpilogue.
+        codegen textSection x86::ret.
+        codegen stackFrameLayout isRequired ifTrue: (codegen textSection cfiEndEpilogue).
+    }.
+
+TAC::Operation::ReturnStruct
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator allocateMemoryForInstruction: instruction operandAt: 0sz
     };
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
