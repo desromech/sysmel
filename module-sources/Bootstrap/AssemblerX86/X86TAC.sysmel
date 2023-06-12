@@ -2633,6 +2633,17 @@ TAC::Operation::StoreInt64
         codegen textSection x86::mov: (instruction secondOperandRegister x86::int64PointerWithOffset: instruction thirdOperandRegister for: codegen) src: (instruction firstOperandRegister x86::int64For: codegen)
     }.
 
+TAC::Operation::StoreStruct
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateMemoryForInstruction: instruction operandAt: 0sz;
+            allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 1sz;
+            allocateImmediate32ForInstruction: instruction operandAt: 2sz
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::int3
+    }.
+
 TAC::Operation::TruncateInt64ToInt32
     forTarget: #x86_64 registerConstraintsWith: x86::moveIntegerRegisterConstraints;
     forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
@@ -2826,6 +2837,14 @@ TAC::Operation::Float32Add
             x86::addss: (instruction resultRegister x86::float32For: codegen) with: (instruction secondOperandRegister x86::float32For: codegen).
     }.
 
+TAC::Operation::Float32Negate
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::vectorUnaryAluRegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::xorps: (instruction resultRegister x86::float32For: codegen) with: (instruction resultRegister x86::float32For: codegen);
+            x86::subss: (instruction resultRegister x86::float32For: codegen) with: (instruction firstOperandRegister x86::float32For: codegen).
+    }.
+
 TAC::Operation::Float32Sub
     forTargets: #(x86 x86_64) registerConstraintsWith: x86::vectorAluRegisterConstraints;
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
@@ -2965,6 +2984,14 @@ TAC::Operation::Float64Add
             x86::addsd: (instruction resultRegister x86::float64For: codegen) with: (instruction secondOperandRegister x86::float64For: codegen).
     }.
 
+TAC::Operation::Float64Negate
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::vectorUnaryAluRegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::xorpd: (instruction resultRegister x86::float64For: codegen) with: (instruction resultRegister x86::float64For: codegen);
+            x86::subsd: (instruction resultRegister x86::float64For: codegen) with: (instruction firstOperandRegister x86::float64For: codegen).
+    }.
+
 TAC::Operation::Float64Sub
     forTargets: #(x86 x86_64) registerConstraintsWith: x86::vectorAluRegisterConstraints;
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
@@ -3094,6 +3121,48 @@ TAC::Operation::Float64UnorderedGreaterOrEqualsBranch
             x86::ucomisd: (instruction firstOperandRegister x86::float64For: codegen) src: (instruction secondOperandRegister x86::float64For: codegen);
             x86::jl: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
             x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+let x86::vectorScalarIntegerConversionRegisterConstrations := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+    allocator
+        allocateRegisterForInstructionResult: instruction;
+        allocateRegisterOrMemoryForInstruction: instruction operandAt: 0sz
+}.
+
+TAC::Operation::Float32ToFloat64
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::vectorScalarIntegerConversionRegisterConstrations;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::cvtss2sd: (instruction resultRegister x86::float64For: codegen) src: (instruction firstOperandRegister x86::float32For: codegen)
+    }.
+
+TAC::Operation::Float32ToInt32
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::vectorScalarIntegerConversionRegisterConstrations;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::cvtss2si: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::float32For: codegen)
+    }.
+
+TAC::Operation::Float64ToFloat32
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::vectorScalarIntegerConversionRegisterConstrations;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::cvtsd2ss: (instruction resultRegister x86::float32For: codegen) src: (instruction firstOperandRegister x86::float64For: codegen)
+    }.
+
+TAC::Operation::Float64ToInt32
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::vectorScalarIntegerConversionRegisterConstrations;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::cvtsd2si: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::float64For: codegen)
+    }.
+
+TAC::Operation::Int32ToFloat32
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::vectorScalarIntegerConversionRegisterConstrations;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::cvtsi2ss: (instruction resultRegister x86::float32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen)
+    }.
+
+TAC::Operation::Int32ToFloat64
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::vectorScalarIntegerConversionRegisterConstrations;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::cvtsi2sd: (instruction resultRegister x86::float64For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen)
     }.
 
 TAC::Operation::Branch

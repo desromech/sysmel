@@ -564,6 +564,9 @@ public final class TACConstantUInt64 superclass: TACConstantInteger; definition:
 public final class TACConstantFloatingPoint superclass: TACConstant; definition: {
     public override method isFloatingPoint => Boolean := true.
     public override method isConstantFloat => Boolean := true.
+
+    public override method physicalLocationClass => TACPhysicalLocation class
+        := TACPhysicalFloatRegister.
 }.
 
 public final class TACConstantFloat32 superclass: TACConstantFloatingPoint; definition: {
@@ -1425,7 +1428,8 @@ public final class TACFunctionBuilder superclass: Object; definition: {
     UInt8ToFloat32 Int8ToFloat32 UInt16ToFloat32 Int16ToFloat32 UInt32ToFloat32 Int32ToFloat32 UInt64ToFloat32 Int64ToFloat32
     UInt8ToFloat64 Int8ToFloat64 UInt16ToFloat64 Int16ToFloat64 UInt32ToFloat64 Int32ToFloat64 UInt64ToFloat64 Int64ToFloat64
 
-    Float32ToFloat64 Float64ToFloat32
+    Float32ToFloat64 Float32ToUInt8 Float32ToInt8 Float32ToUInt16 Float32ToInt16 Float32ToUInt32 Float32ToInt32 Float32ToUInt64 Float32ToInt64
+    Float64ToFloat32 Float64ToUInt8 Float64ToInt8 Float64ToUInt16 Float64ToInt16 Float64ToUInt32 Float64ToInt32 Float64ToUInt64 Float64ToInt64
 
 ) do: {:(Symbol)operationName :: Void |
     let operationNameString := operationName asString.

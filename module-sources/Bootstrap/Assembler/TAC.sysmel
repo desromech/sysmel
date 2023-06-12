@@ -671,6 +671,7 @@ TACLocalVariable definition: {
 
 TACCaptureVariable definition: {
     public override method asm::makeStackMapLocationWith: (codegen: TACAsmCodeGenerator) ::=> AsmStackMapLocation := {
-        AsmStackMapLocationCaptureOffset new offset: offset; yourself
+        ##AsmStackMapLocationCaptureOffset new offset: offset; yourself
+        nil
     }
 }.

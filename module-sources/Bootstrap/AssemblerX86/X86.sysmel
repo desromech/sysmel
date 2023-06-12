@@ -1267,6 +1267,44 @@ let instructionTemplateTable := #{
                 nextPutX86ModRM: registerAddress reg: register
         };
         yourself).
+
+    OpRxRmw: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
+            (instruction operandCount = 2sz) &&
+                instruction firstOperand isVectorRegister && 
+                instruction secondOperand isRegisterOrRegisterAddress
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let register := instruction firstOperand.
+            let registerAddress := instruction secondOperand.
+            let operandSize := registerAddress size.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86SizeOverride: operandSize;
+                nextPutX86RexSize: operandSize rm: registerAddress reg: register;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress reg: register
+        };
+        yourself).
+
+    OpRwRmx: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
+            (instruction operandCount = 2sz) &&
+                instruction firstOperand isRegister && 
+                instruction secondOperand isVectorRegisterOrRegisterAddress
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let register := instruction firstOperand.
+            let registerAddress := instruction secondOperand.
+            let operandSize := register size.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86SizeOverride: operandSize;
+                nextPutX86RexSize: operandSize rm: registerAddress reg: register;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress reg: register
+        };
+        yourself).
 }.
 
 AsmObjectCodeRelocation extend: {
@@ -1761,6 +1799,32 @@ let instructionDefinitionTable := #(
     )
     (addss (dst with) "Add scalar single"
         (OpRxRmx #[16rf3] #[16r0f 16r58])
+    )
+
+    (cvtsd2si (dst src) "Convert scalar double into scalar integer"
+        (OpRwRmx #[16rF2] #[16r0f 16r2D])
+    )
+    (cvtsd2ss (dst src) "Convert scalar double into scalar single"
+        (OpRxRmx #[16rF2] #[16r0f 16r5A])
+    )
+    (cvtsi2sd (dst src) "Convert scalar integer into scalar double"
+        (OpRxRmw #[16rF2] #[16r0f 16r2A])
+    )
+    (cvtsi2ss (dst src) "Convert scalar integer into scalar single"
+        (OpRxRmw #[16rF3] #[16r0f 16r2A])
+    )
+    (cvtss2sd (dst src) "Convert scalar single into scalar double"
+        (OpRxRmx #[16rF3] #[16r0f 16r5A])
+    )
+    (cvtss2si (dst src) "Convert scalar single into scalar integer"
+        (OpRwRmx #[16rF3] #[16r0f 16r2d])
+    )
+
+    (cvttss2si (dst src) "Convert scalar single into scalar integer with truncation"
+        (OpRwRmx #[16rF3] #[16r0f 16r2c])
+    )
+    (cvttsd2si (dst src) "Convert scalar double into scalar integer with truncation"
+        (OpRwRmx #[16rF2] #[16r0f 16r2c])
     )
 
     (andpd (dst with) "And packed double"
