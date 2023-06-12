@@ -95,6 +95,9 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
         }
     }.
 
+    public method imageObjectTrace => ImageObjectTrace
+        := objectHeap objectTrace.
+
     public method compileModule: (module: TACModule) ::=> Void := {
         ## Use the module image object trace for the object heap.
         module imageObjectTrace ifNotNil: {

@@ -177,6 +177,8 @@ public final class TACX86_64IntegerRegister superclass: TACPhysicalIntegerRegist
 
     public override method x86_64::loadFromLocal: (local: TACLocalVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         let localSize := local size.
+        localSize = 0sz ifTrue: {return: void}.
+
         let isSignedExtended := local isSignedExtended.
         self assert: (localSize = 1sz) || (localSize = 2sz) || (localSize = 4sz) || (localSize = 8sz).
 
@@ -192,7 +194,11 @@ public final class TACX86_64IntegerRegister superclass: TACPhysicalIntegerRegist
 
     public override method x86_64::storeInLocal: (local: TACLocalVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         let localSize := local size.
-        self assert: (localSize = 1u64) || (localSize = 2u64) || (localSize = 4u64) || (localSize = 8u64).
+        localSize = 0sz ifTrue: {return: void}.
+
+        (localSize = 1u64) || (localSize = 2u64) || (localSize = 4u64) || (localSize = 8u64) ifFalse: {
+            self error: (local printString -- " " -- local type printString -- " invalid local size " -- localSize asString -- " for integer register")
+        }.
 
         ## TODO: Support the lambda captures.
         let localPointer := AsmX86RegisterAddress base: X86::RBP size: localSize asUInt8 displacement: local offset asInt32 asAsmImmediate.
@@ -203,12 +209,22 @@ public final class TACX86_64IntegerRegister superclass: TACPhysicalIntegerRegist
     }.
 }.
 
-public final class TACX86VectorRegister superclass: TACPhysicalLocation; definition: {
+public final class TACX86VectorRegister superclass: TACPhysicalVectorRegister; definition: {
     public field register => AsmX86VectorRegister.
 
     __Meta__ definition: {
         public method register: (reg: AsmX86VectorRegister) ::=> self
             := self new register: reg; yourself.
+    }.
+
+    public override method x86_64::loadFromLocal: (local: TACLocalVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        ## TODO: Implement this.
+        codegen textSection x86::int3
+    }.
+
+    public virtual method x86_64::storeInLocal: (local: TACLocalVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        ## TODO: Implement this.
+        codegen textSection x86::int3
     }.
 }.
 
@@ -310,6 +326,9 @@ public final class TACX86CompilationTarget superclass: TACAsmCompilationTarget; 
 
     public override method allocableVectorRegisters => Array
         := TAC::X86::AllocableVectorRegisters.
+
+    public override method usesVectorRegistersForFloatOperations => Boolean
+        := true.
 
     public override method defaultCallingConvention => TACCallingConvention
         := TAC::X86::CDeclCallingConvention.
@@ -566,6 +585,9 @@ public final class TACX86_64CompilationTarget superclass: TACAsmCompilationTarge
     public override method allocableVectorRegisters => Array
         := TAC::X86::AllocableVectorRegisters.
 
+    public override method usesVectorRegistersForFloatOperations => Boolean
+        := true.
+
     public override method defaultCallingConvention => TACCallingConvention
         := TAC::X86_64::SysVCallingConvention.
 
@@ -772,8 +794,34 @@ TACConstantUInt64 extend: {
 }.
 
 TACConstantFloat32 extend: {
+    public override method x86::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        ## TODO: Implement this
+        codegen textSection x86::int3
+    }.
+
+    public override method x86::moveFromRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        ## TODO: Implement this
+        codegen textSection x86::int3
+    }.
+
     public override method x86_64::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::push: value asIEEEFloat32Encoding asAsmImmediate
+    }.
+}.
+
+TACConstantFloat64 extend: {
+    public override method x86::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        ## TODO: Implement this
+        codegen textSection x86::int3
+    }.
+
+    public override method x86::moveFromRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        ## TODO: Implement this
+        codegen textSection x86::int3
+    }.
+
+    public override method x86_64::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::push: value asIEEEFloat64Encoding asAsmImmediate
     }.
 }.
 
@@ -804,8 +852,12 @@ TACFunctionAsmCodeGenerator extend: {
     }.
 
     public method x86_64::pointerForGCRootObjectTableEntryFor: (object: Untyped) ::=> AsmInstructionOperand := {
-        let offset := moduleGenerator offsetOfGCRootObjectTableEntryFor: object.
-        AsmX86RegisterAddress size: target pointerSize asUInt8 displacement: moduleGenerator gcRootObjectTableSymbol qword + offset asInt64
+        moduleGenerator imageObjectTrace isLocked && (moduleGenerator imageObjectTrace includesObject: object) not ifTrue: {
+            0u32 asAsmImmediate
+        } ifFalse: {
+            let offset := moduleGenerator offsetOfGCRootObjectTableEntryFor: object.
+            AsmX86RegisterAddress size: target pointerSize asUInt8 displacement: moduleGenerator gcRootObjectTableSymbol qword + offset asInt64
+        }.
     }.
 }.
 
@@ -1330,6 +1382,13 @@ TAC::Operation::Int64SRem
             x86::idiv: (instruction secondOperandRegister x86::int64For: codegen)
     }.
 
+let x86::integerShift8RegisterConstraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+    allocator
+        allocateRegister: TAC::X86::ECX orImmediateU8ForInstruction: instruction operandAt: 1sz;
+        allocateRegister8ForInstructionResult: instruction;
+        allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz
+}.
+
 let x86::integerShiftRegisterConstraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
     allocator
         allocateRegister: TAC::X86::ECX orImmediateU8ForInstruction: instruction operandAt: 1sz;
@@ -1343,6 +1402,60 @@ let x86_64::integerShiftRegisterConstraints := {:(TACInstruction)instruction :(T
         allocateRegisterForInstructionResult: instruction;
         allocateRegisterOrImmediate64ForInstruction: instruction operandAt: 0sz
 }.
+
+TAC::Operation::Int8ArithmeticShiftRight
+    forTarget: #x86 registerConstraintsWith: x86::integerShift8RegisterConstraints;
+    forTarget: #x86_64 registerConstraintsWith: x86_64::integerShiftRegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen);
+            x86::sar: (instruction resultRegister x86::int8For: codegen) with: (instruction secondOperandRegister x86::int8For: codegen)
+    }.
+
+TAC::Operation::Int8LogicalShiftLeft
+    forTarget: #x86 registerConstraintsWith: x86::integerShift8RegisterConstraints;
+    forTarget: #x86_64 registerConstraintsWith: x86_64::integerShiftRegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen);
+            x86::sal: (instruction resultRegister x86::int8For: codegen) with: (instruction secondOperandRegister x86::int8For: codegen)
+    }.
+
+TAC::Operation::Int8LogicalShiftRight
+    forTarget: #x86 registerConstraintsWith: x86::integerShift8RegisterConstraints;
+    forTarget: #x86_64 registerConstraintsWith: x86_64::integerShiftRegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen);
+            x86::shr: (instruction resultRegister x86::int16For: codegen) with: (instruction secondOperandRegister x86::int8For: codegen)
+    }.
+
+TAC::Operation::Int16ArithmeticShiftRight
+    forTarget: #x86 registerConstraintsWith: x86::integerShiftRegisterConstraints;
+    forTarget: #x86_64 registerConstraintsWith: x86_64::integerShiftRegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen);
+            x86::sar: (instruction resultRegister x86::int16For: codegen) with: (instruction secondOperandRegister x86::int8For: codegen)
+    }.
+
+TAC::Operation::Int16LogicalShiftLeft
+    forTarget: #x86 registerConstraintsWith: x86::integerShiftRegisterConstraints;
+    forTarget: #x86_64 registerConstraintsWith: x86_64::integerShiftRegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen);
+            x86::sal: (instruction resultRegister x86::int16For: codegen) with: (instruction secondOperandRegister x86::int8For: codegen)
+    }.
+
+TAC::Operation::Int16LogicalShiftRight
+    forTarget: #x86 registerConstraintsWith: x86::integerShiftRegisterConstraints;
+    forTarget: #x86_64 registerConstraintsWith: x86_64::integerShiftRegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen);
+            x86::shr: (instruction resultRegister x86::int16For: codegen) with: (instruction secondOperandRegister x86::int8For: codegen)
+    }.
 
 TAC::Operation::Int32ArithmeticShiftRight
     forTarget: #x86 registerConstraintsWith: x86::integerShiftRegisterConstraints;

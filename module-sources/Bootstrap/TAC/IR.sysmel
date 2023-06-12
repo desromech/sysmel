@@ -1637,6 +1637,9 @@ TACCompilationTarget definition: {
     public abstract method allocableVectorRegisters => Array
         := self subclassResponsibility.
 
+    public abstract method usesVectorRegistersForFloatOperations => Boolean
+        := self subclassResponsibility.
+
     public abstract method generateTargetIRForTACModule: (module: TACModule) ::=> AnyValue
         := self subclassResponsibility.
 

@@ -17,6 +17,9 @@ public abstract class TACRegisterAllocator superclass: Object; definition: {
     public abstract method allocateRegisterForInstructionResult: (instruction: TACInstruction) ::=> Void
         := self subclassResponsibility.
 
+    public abstract method allocateRegister8ForInstructionResult: (instruction: TACInstruction) ::=> Void
+        := self subclassResponsibility.
+
     public abstract method allocateRegisterForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void
         := self subclassResponsibility.
 
@@ -259,6 +262,12 @@ public final class TACTrivialRegisterAllocator superclass: TACRegisterAllocator;
         compilationTarget := target.
 
         integerRegisterFile := TACRegisterAllocationFile for: target allocableIntegerRegisters.
+        vectorRegisterFile := TACRegisterAllocationFile for: target allocableVectorRegisters.
+        target usesVectorRegistersForFloatOperations ifTrue: {
+            floatRegisterFile := vectorRegisterFile
+        } ifFalse: {
+            floatRegisterFile := TACRegisterAllocationFile for: target allocableFloatRegisters.
+        }.
 
         function instructionsDo: {:(TACInstruction)instruction :: Void |
             instruction isDebug ifTrue: {
@@ -273,8 +282,8 @@ public final class TACTrivialRegisterAllocator superclass: TACRegisterAllocator;
 
     public method resetRegisterFiles => Void := {
         integerRegisterFile reset.
-        ##floatRegisterFile reset.
-        ##vectorRegisterFile reset.
+        floatRegisterFile ifNotNil: (floatRegisterFile reset).
+        vectorRegisterFile ifNotNil: (vectorRegisterFile reset).
     }.
 
     public method allocateInstructionRegisters: (instruction: TACInstruction) ::=> Void := {

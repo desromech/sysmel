@@ -278,7 +278,7 @@ Object
         if: condition then: void else: error("Assertion failure.")
     } withEagerAnalysis;
     withSelector: #subclassResponsibility addMethod: {:(Object)self :: Unwinds | self error: self __type__ printString -- " Subclass responsibility." } withEagerAnalysis;
-    withSelector: #shouldBeImplemented addMethod: {:(Object)self :: Unwinds | self error: "Should be implemented." } withEagerAnalysis;
+    withSelector: #shouldBeImplemented addMethod: {:(Object)self :: Unwinds | self error: self __type__ printString -- " should be implemented." } withEagerAnalysis;
     withSelector: #doesNotUnderstand: addMethod: {:(AnyValue)self :(Message)message |
         error((self class printString -- " doesNotUnderstand: ") -- message selector printString)
     } makeVirtual withEagerAnalysis.
