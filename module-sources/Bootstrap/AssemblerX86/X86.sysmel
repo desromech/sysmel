@@ -1808,6 +1808,32 @@ let instructionDefinitionTable := #(
         (OpRmxRx #[16rf3] #[16r0f 16r11])
     )
 
+    (maxpd (dst with) "Maximum packed double"
+        (OpRxRmx #[16r66] #[16r0f 16r5F])
+    )
+    (maxps (dst with) "Maximum packed single"
+        (OpRxRmx #[] #[16r0f 16r5F])
+    )
+    (maxsd (dst with) "Maximum scalar double"
+        (OpRxRmx #[16rf2] #[16r0f 16r5F])
+    )
+    (maxss (dst with) "Maximum scalar single"
+        (OpRxRmx #[16rf3] #[16r0f 16r5F])
+    )
+
+    (minpd (dst with) "Minimum packed double"
+        (OpRxRmx #[16r66] #[16r0f 16r5D])
+    )
+    (minps (dst with) "Minimum packed single"
+        (OpRxRmx #[] #[16r0f 16r5D])
+    )
+    (minsd (dst with) "Minimum scalar double"
+        (OpRxRmx #[16rf2] #[16r0f 16r5D])
+    )
+    (minss (dst with) "Minimum scalar single"
+        (OpRxRmx #[16rf3] #[16r0f 16r5D])
+    )
+
     (mulpd (dst with) "Multiply packed double"
         (OpRxRmx #[16r66] #[16r0f 16r59])
     )
@@ -1854,7 +1880,7 @@ let instructionDefinitionTable := #(
         (OpRxRmx #[16rf3] #[16r0f 16r5c])
     )
 
-    (ucomiss (dst src) "Compare scalar double and set eflags"
+    (ucomisd (dst src) "Compare scalar double and set eflags"
         (OpRxRmx #[16r66] #[16r0f 16r2E])
     )
     (ucomiss (dst src) "Compare scalar single and set eflags"
