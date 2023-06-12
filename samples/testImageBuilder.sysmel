@@ -3,7 +3,7 @@ function evaluateString(string: String) => Void := {
     printLine(result)
 }.
 
-function main(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
+public function TestImageMain(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
     let i mutable := 0i32.
     while: (i < argc) do: {
         let expression := String fromCString: argv[i asIntPointer].
@@ -15,9 +15,10 @@ function main(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
 
 ImageBuilder new
     beNoSourceDefinition;
+    withoutInProcessDebugInformation;
     useDefaultTypeTables;
     addProgramEntity: __Global__;
-    addNativeEntryPoint: main;
+    addNativeEntryPoint: TestImageMain;
     build;
     saveTo: "testImage.image".
 
@@ -25,7 +26,7 @@ ImageBuilder new
     beComplete;
     useDefaultTypeTables;
     addProgramEntity: __Global__;
-    addNativeEntryPoint: main;
+    addNativeEntryPoint: TestImageMain;
     build;
     saveTo: "testCompleteImage.image".
 *#

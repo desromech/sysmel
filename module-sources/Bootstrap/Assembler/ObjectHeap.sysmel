@@ -54,8 +54,7 @@ AsmObjectHeap definition: {
 
     protected field objectSectionSymbol => AsmSymbol.
     protected field objectSectionEndSymbol => AsmSymbol.
-    protected field objectList => OrderedCollection.
-    protected field objectIndexTable => IdentityDictionary.
+    public field objectTrace => ImageObjectTrace.
     public field objectOffsetList => Array.
 
     public field serializedObjectData => ByteArray.
@@ -69,16 +68,19 @@ AsmObjectHeap definition: {
     protected field rootOffsetTable => IdentityDictionary.
 
     public override method initialize => Void := {
-        objectList := OrderedCollection new.
-        objectIndexTable := IdentityDictionary new.
+        objectTrace := ImageObjectTrace new.
 
         rootObjectList := OrderedCollection new.
         rootOffsetTable := IdentityDictionary new.
     }.
 
     public method buildIn: (targetModule: AsmProgramEntity) ::=> Void := {
+        objectTrace isLocked ifFalse: {
+            ## TODO: remove this part when is not gonna be needed anymore.
+            self traceObjectSet
+        }.
+
         self
-            traceObjectSet;
             serializeObjects;
             serializeRootTable;
             buildGCObjectDataSectionIn: targetModule;
@@ -88,7 +90,7 @@ AsmObjectHeap definition: {
     public method traceObjectSet => Void := {
         let objectModel := compilationTarget objectModel.
 
-        objectList do: {:(Untyped)eachObject :: Void |
+        objectTrace objectList do: {:(Untyped)eachObject :: Void |
             objectModel traceReferencesOfObject: eachObject forAsmHeap: self
         }.
     }.
@@ -109,8 +111,8 @@ AsmObjectHeap definition: {
         let heapSize mutable := 0u64.
         let heapAlignment mutable := objectModel minimalObjectAlignment.
 
-        objectOffsetList := Array new: objectList size.
-        objectList doWithIndex: {:(Untyped)eachObject :(Size)index :: Void |
+        objectOffsetList := Array new: objectTrace objectList size.
+        objectTrace objectList doWithIndex: {:(Untyped)eachObject :(Size)index :: Void |
             let objectSize := objectModel computeSizeOfObjectInstance: eachObject.
             let objectAlignment := objectModel computeAlignmentOfObjectInstance: eachObject.
 
@@ -125,7 +127,7 @@ AsmObjectHeap definition: {
         serializedObjectData := ByteArray new: heapSize asSize.
         serializedObjectDataRelocations := OrderedCollection new.
 
-        objectList doWithIndex: {:(Untyped)eachObject :(Size)index :: Void |
+        objectTrace objectList doWithIndex: {:(Untyped)eachObject :(Size)index :: Void |
             let offset => Size := objectOffsetList at: index.
             objectModel serializeObject: eachObject inAsmHeap: self at: offset
         }.
@@ -143,11 +145,12 @@ AsmObjectHeap definition: {
     }.
 
     public method indexOfGCObjectEntryFor: (object: Untyped) ::=> Size := {
-        objectIndexTable untypedAt: object ifAbsentPut: { :: Size |
-            let tableIndex := objectList size.
-            objectList add: object.
-            tableIndex
-        }.
+        objectTrace isLocked ifTrue: {
+            let index => UInt32 := objectTrace objectIndexDictionary untypedAt: object.
+            index asSize
+        } ifFalse: {
+            (objectTrace addObject: object) asSize
+        }
     }.
 
     public method offsetOfGCRootObjectTableEntryFor: (object: Untyped) ::=> Size := {
@@ -180,7 +183,7 @@ AsmObjectHeap definition: {
     }.
 
     public method buildGCObjectDataSectionIn: (targetModule: AsmProgramEntity) ::=> Void := {
-        objectList isEmpty ifTrue: (return: void).
+        objectTrace objectList isEmpty ifTrue: (return: void).
 
         let objectDataProgramEntity := targetModule newProgramEntity.
         let objectSection := objectDataProgramEntity newStreamBuilder
@@ -215,13 +218,15 @@ AsmObjectHeap definition: {
             let immediateValue := RawTuple::type(value) encodeImmediateReference32: value.
             serializedObjectData uint32At: offset put: immediateValue
         } ifFalse: {
-            let objectIndex => Size := objectIndexTable at: value.
-            let objectOffset => UInt64 := objectOffsetList at: objectIndex.
-            serializedObjectDataRelocations add: (AsmObjectCodeRelocationAbsoluteInt32 new
-                symbol: self objectSectionSymbol;
-                offset: offset;
-                addend: objectOffset asInt32 + extraAddend asInt32;
-                yourself)
+            (objectTrace objectIndexDictionary untypedIncludesKey: value) ifTrue: {
+                let objectIndex => UInt32 := objectTrace objectIndexDictionary at: value.
+                let objectOffset => UInt64 := objectOffsetList at: objectIndex asSize.
+                serializedObjectDataRelocations add: (AsmObjectCodeRelocationAbsoluteInt32 new
+                    symbol: self objectSectionSymbol;
+                    offset: offset;
+                    addend: objectOffset asInt32 + extraAddend asInt32;
+                    yourself)
+            }
         }
     }.
 
@@ -235,13 +240,15 @@ AsmObjectHeap definition: {
             let immediateValue := RawTuple::type(value) encodeImmediateReference64: value.
             serializedObjectData uint64At: offset put: immediateValue
         } ifFalse: {
-            let objectIndex => Size := objectIndexTable at: value.
-            let objectOffset => Size := objectOffsetList at: objectIndex.
-            serializedObjectDataRelocations add: (AsmObjectCodeRelocationAbsoluteInt64 new
-                symbol: self objectSectionSymbol;
-                offset: offset;
-                addend: objectOffset asInt64 + extraAddend asInt64;
-                yourself)
+            (objectTrace objectIndexDictionary untypedIncludesKey: value) ifTrue: {
+                let objectIndex => UInt32 := objectTrace objectIndexDictionary untypedAt: value.
+                let objectOffset => Size := objectOffsetList at: objectIndex asSize.
+                serializedObjectDataRelocations add: (AsmObjectCodeRelocationAbsoluteInt64 new
+                    symbol: self objectSectionSymbol;
+                    offset: offset;
+                    addend: objectOffset asInt64 + extraAddend asInt64;
+                    yourself)
+            }
         }
     }.
 
@@ -265,17 +272,16 @@ TypeSlot extend: {
     }.
 
     public method writeReference64OrValueOf: (object: Untyped) inAsmHeap: (heap: AsmObjectHeap) at: (objectBaseOffset: Size) ::=> Void := {
-        self isMinRTTIExcluded not || heap hasFullRTTI ifTrue: {
-            let slotValue => Untyped := (RawTuple::typeSlotAt:)(object, self).
+        self isJitSpecific ifTrue: {return: void}.
 
-            type isNil || type isValueType not ifTrue: {
-                heap writeReference64: slotValue at: objectBaseOffset + offset.
-            } ifFalse: {
-                type encodeValue: slotValue inBytes: heap serializedObjectData atOffset: objectBaseOffset + offset
-            }
+        let slotValue => Untyped := (RawTuple::typeSlotAt:)(object, self).
+
+        type isNil || type isValueType not ifTrue: {
+            heap writeReference64: slotValue at: objectBaseOffset + offset.
+        } ifFalse: {
+            type encodeValue: slotValue inBytes: heap serializedObjectData atOffset: objectBaseOffset + offset
         }
     }.
-
 }.
 
 ObjectModelVariant extend: {
@@ -335,6 +341,7 @@ ObjectModelVariant64 extend: {
         let type := RawTuple::type(object).
         let isBytes := RawTuple::isBytes(object).
         let isWeak := RawTuple::isWeak(object).
+        let isDummyValue := RawTuple::isDummyValue(object).
         let headerSize := ObjectModel::TupleHeader64 valueSize.
         let destination := heap serializedObjectData.
 
@@ -342,6 +349,7 @@ ObjectModelVariant64 extend: {
         header
             isBytes: isBytes;
             isWeak: isWeak;
+            isDummyValue: isDummyValue;
             identityHashValue: identityHash(object) asUInt64;
             objectSize: (self computeSizeOfObjectInstanceContent: object).
 
@@ -352,6 +360,8 @@ ObjectModelVariant64 extend: {
         }.
 
         header encodeInBytes: destination atOffset: offset.
+
+        isDummyValue ifTrue: {return: void}.
 
         isBytes ifTrue: {
             let byteSize := RawTuple::byteSize(object).

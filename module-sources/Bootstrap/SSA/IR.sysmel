@@ -38,6 +38,9 @@ SSAValue definition: {
     public virtual method isLoadInstruction => Boolean := false.
     public virtual method isLoadStoreOrDebugBindingInstruction => Boolean := false.
     public virtual method isMakeArrayInstruction => Boolean := false.
+    public virtual method isMakeAssociationInstruction => Boolean := false.
+    public virtual method isMakeByteArrayInstruction => Boolean := false.
+    public virtual method isMakeDictionaryInstruction => Boolean := false.
     public virtual method isMakeClosureInstruction => Boolean := false.
     public virtual method isStoreInstruction => Boolean := false.
     public virtual method isTypeSlotAtInstruction => Boolean := false.
@@ -1078,6 +1081,33 @@ public final class SSALoadInstruction superclass: SSAInstruction; definition: {
     }.
 }.
 
+public final class SSAMakeAssociationInstruction superclass: SSAInstruction; definition: {
+    public field key => SSAValue.
+    public field value => SSAValue.
+
+    public override method isMakeAssociationInstruction => Boolean := true.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream print: self; nextPutAll: " := makeAssociation "; print: key;
+            nextPutAll: " : "; print: value.
+    }.
+
+    public override method usedValuesDo: aBlock ::=> Void := {
+        aBlock(self key).
+        aBlock(self value).
+    }.
+
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        if: self key = replacedValue then: (self key: replacement).
+        if: self value = replacedValue then: (self value: replacement).
+    }.
+
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+        replacementDictionary at: self key ifPresent: {:(SSAValue)replacement :: Void | self key: replacement}.
+        replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
+    }.
+}.
+
 public final class SSAMakeArrayInstruction superclass: SSAInstruction; definition: {
     public field elements => Array.
 
@@ -1085,6 +1115,31 @@ public final class SSAMakeArrayInstruction superclass: SSAInstruction; definitio
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := makeArray".
+        self elements do: {:(SSAValue)element :: Void |
+            stream nextPutAll: " "; print: element
+        }
+    }.
+
+    public override method usedValuesDo: aBlock ::=> Void := {
+        self elements do: aBlock
+    }.
+
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        self elements replaceAll: replacedValue with: replacement
+    }.
+
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+        self elements replaceAllWithDictionary: replacementDictionary
+    }.
+}.
+
+public final class SSAMakeByteArrayInstruction superclass: SSAInstruction; definition: {
+    public field elements => Array.
+
+    public override method isMakeByteArrayInstruction => Boolean := true.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream print: self; nextPutAll: " := makeByteArray".
         self elements do: {:(SSAValue)element :: Void |
             stream nextPutAll: " "; print: element
         }
@@ -1129,6 +1184,31 @@ public final class SSAMakeClosureInstruction superclass: SSAInstruction; definit
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         replacementDictionary at: self functionDefinition ifPresent: {:(SSAValue)replacement :: Void | self functionDefinition: replacement}.
         self captures replaceAllWithDictionary: replacementDictionary
+    }.
+}.
+
+public final class SSAMakeDictionaryInstruction superclass: SSAInstruction; definition: {
+    public field elements => Array.
+
+    public override method isMakeDictionaryInstruction => Boolean := true.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream print: self; nextPutAll: " := makeDictionary".
+        self elements do: {:(SSAValue)element :: Void |
+            stream nextPutAll: " "; print: element
+        }
+    }.
+
+    public override method usedValuesDo: aBlock ::=> Void := {
+        self elements do: aBlock
+    }.
+
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        self elements replaceAll: replacedValue with: replacement
+    }.
+
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+        self elements replaceAllWithDictionary: replacementDictionary
     }.
 }.
 
@@ -1536,6 +1616,35 @@ SSAInstructionBuilder definition: {
                 registerInUsedValues;
                 yourself)
         }
+    }.
+
+    public method makeByteArray: (elements: Array) ::=> SSAValue := {
+        elements isEmpty ifTrue: {
+            self literal: #[]
+        } ifFalse: {
+            self addInstruction: (SSAMakeByteArrayInstruction new
+                elements: elements;
+                type: ByteArray;
+                registerInUsedValues;
+                yourself)
+        }
+    }.
+
+    public method makeAssociationWithKey: (key: SSAValue) value: (value: SSAValue) ::=> SSAValue := {
+        self addInstruction: (SSAMakeAssociationInstruction new
+            key: key;
+            value: value;
+            type: Association;
+            registerInUsedValues;
+            yourself)
+    }.
+
+    public method makeDictionary: (elements: Array) ::=> SSAValue := {
+        self addInstruction: (SSAMakeDictionaryInstruction new
+            elements: elements;
+            type: Dictionary;
+            registerInUsedValues;
+            yourself)
     }.
 
     public method makeClosure: (functionDefinition: SSAValue) captures: (captures: Array) type: (type: Type) ::=> SSAMakeClosureInstruction

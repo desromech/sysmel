@@ -9,4 +9,7 @@ ImageBuilderTarget definition: {
 
     public abstract method buildTargetImageWith: (builder: ImageBuilder) ::=> ImageBuilderTargetImage
         := self subclassResponsibility.
+
+    public virtual method needsBytecode => Boolean
+        := true.
 }.

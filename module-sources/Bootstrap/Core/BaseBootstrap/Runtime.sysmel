@@ -483,6 +483,15 @@ TypeSlot
     withSelector: #isNoSourceDefinitionExcluded addMethod: {:(TypeSlot)self :: Boolean |
         self hasAnyFlags: TypeSlotFlags::NoSourceDefinitionExcluded
     } withEagerAnalysis;
+    withSelector: #isBytecode addMethod: {:(TypeSlot)self :: Boolean |
+        self hasAnyFlags: TypeSlotFlags::Bytecode
+    } withEagerAnalysis;
+    withSelector: #isDebugInformation addMethod: {:(TypeSlot)self :: Boolean |
+        self hasAnyFlags: TypeSlotFlags::DebugInformation
+    } withEagerAnalysis;
+    withSelector: #isJitSpecific addMethod: {:(TypeSlot)self :: Boolean |
+        self hasAnyFlags: TypeSlotFlags::JitSpecific
+    } withEagerAnalysis;
     withSelector: #generateAccessorsOn: addMethod: {:(TypeSlot)typeSlot :(Type)type :: Void |
         if: typeSlot isPublic then: {
             let: #slotType with: typeSlot type.
@@ -1403,6 +1412,9 @@ IdentityDictionary
         let: #storage with: self storage.
         let: #entry with: (storage at: entryIndex).
         if: entry ~~ nil then: (Untyped::==)((RawTuple::slotAt:)(entry, 0sz), key) else: false
+    };
+    withSelector: #untypedAt: addMethod: {:(IdentityDictionary)self :(Untyped)key |
+        self at: key
     };
     withSelector: #untypedAt:put: addMethod: {:(IdentityDictionary)self :(Untyped)key :value :: Void |
         self at: key put: value.

@@ -19,15 +19,32 @@ public function MinimalImageMain(argc: Int32, argv: Char8 const pointer pointer)
 
 ImageBuilder new
     beNoRTTI;
+    withoutInProcessDebugInformation;
     useDefaultTypeTables;
     addNativeEntryPoint: MinimalImageMain;
     build;
     saveTo: "testNoRTTI.image".
 
-
 ImageBuilder new
-    target: AsmCompilationTarget x86_64 useElf useDwarf asTacCompilationTarget asSSACompilationTarget asImageBuilderTarget;
+    target: AsmCompilationTarget x86_64 useElf useDwarf asImageBuilderTarget;
     beNoRTTI;
+    withoutInProcessDebugInformation;
     addNativeEntryPoint: MinimalImageMain;
     build;
     saveTo: "testNoRTTI.x86_64.elf".
+
+ImageBuilder new
+    beMinimal;
+    withoutInProcessDebugInformation;
+    useDefaultTypeTables;
+    addNativeEntryPoint: MinimalImageMain;
+    build;
+    saveTo: "testMinimal.image".
+
+ImageBuilder new
+    target: AsmCompilationTarget x86_64 useElf useDwarf asImageBuilderTarget;
+    beMinimal;
+    withoutInProcessDebugInformation;
+    addNativeEntryPoint: MinimalImageMain;
+    build;
+    saveTo: "testMinimal.x86_64.elf".

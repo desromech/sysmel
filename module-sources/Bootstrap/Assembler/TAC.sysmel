@@ -96,6 +96,11 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
     }.
 
     public method compileModule: (module: TACModule) ::=> Void := {
+        ## Use the module image object trace for the object heap.
+        module imageObjectTrace ifNotNil: {
+            objectHeap objectTrace: module imageObjectTrace
+        }.
+
         targetModule contentSymbol ifNil: {
             let compileUnitSymbol := AsmSymbol new name: #compileUnit; makePrivate; yourself.
             targetModule newStreamBuilder

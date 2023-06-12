@@ -11,13 +11,31 @@ public class ImageBuilderSSATACTarget superclass: ImageBuilderSSATarget; definit
                 finish);
             tacModule: (ssaImage ssaModule asTACModuleFor: ssaTacCompilation tacCompilationTarget);
             targetIR: (ssaImage tacModule
-                imageObjectTrace: builder objectTrace;
+                imageObjectTrace: (builder objectTrace lock; yourself);
                 asTargetIR);
             yourself
     }.
+
+    public override method needsBytecode => Boolean
+        := false.
 }.
 
 SSATACCompilationTarget definition: {
     public override method asImageBuilderTarget => ImageBuilderSSATarget
         := ImageBuilderSSATACTarget for: self
+}.
+
+TACCompilationTarget definition: {
+    public method asImageBuilderTarget => ImageBuilderSSATarget
+        := self asSSACompilationTarget asImageBuilderTarget.
+}.
+
+AsmX86CompilationTarget definition: {
+    public method asImageBuilderTarget => ImageBuilderSSATarget
+        := self asTacCompilationTarget asSSACompilationTarget asImageBuilderTarget.
+}.
+
+AsmX86_64CompilationTarget definition: {
+    public method asImageBuilderTarget => ImageBuilderSSATarget
+        := self asTacCompilationTarget asSSACompilationTarget asImageBuilderTarget.
 }.

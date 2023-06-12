@@ -164,6 +164,7 @@ ImageBuilder definition: {
     public field immediateTrivialTypeTable => Array.
 
     public field objectTrace => ImageObjectTrace.
+    public field keepingInProcessDebugInformation => Boolean.
 
     public field rootProgramEntities => OrderedCollection.
     protected field rootProgramEntitySet => IdentitySet.
@@ -178,6 +179,7 @@ ImageBuilder definition: {
         traceStrategy := ImageBuilderObjectTraceStrategy new.
         rootProgramEntities := OrderedCollection new.
         rootProgramEntitySet := IdentitySet new.
+        keepingInProcessDebugInformation := true.
     }.
 
     public method useDefaultTypeTables => Void := {
@@ -232,11 +234,24 @@ ImageBuilder definition: {
         }
     }.
 
-    public method shouldEmitTypeSlot: (typeSlot: TypeSlot) ::=> Boolean
-        := traceStrategy shouldEmitTypeSlot: typeSlot.
+    public method shouldEmitTypeSlot: (typeSlot: TypeSlot) ::=> Boolean := {
+        keepingInProcessDebugInformation not && typeSlot isDebugInformation ifTrue: {return: false}.
+        target needsBytecode not && typeSlot isBytecode ifTrue: {return: false}.
+        typeSlot isJitSpecific ifTrue: {return: true}.
+
+        traceStrategy shouldEmitTypeSlot: typeSlot
+    }.
 
     public method traceType: (type: Type) ::=> Void := {
         traceStrategy traceType: type with: self
+    }.
+
+    public method withoutInProcessDebugInformation => Void := {
+        keepingInProcessDebugInformation := false
+    }.
+
+    public method withInProcessDebugInformation => Void := {
+        keepingInProcessDebugInformation := true
     }.
 
     public method traceRequiredObjectSet => Void := {

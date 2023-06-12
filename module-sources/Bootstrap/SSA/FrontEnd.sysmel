@@ -638,6 +638,24 @@ ASTMakeArrayNode extend: {
         := context builder makeArray: (self elements collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }).
 }.
 
+ASTMakeAssociationNode extend: {
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context builder makeAssociationWithKey: (self key generateSSAValueWith: context)
+            value: (self value
+                ifNotNil: (self value generateSSAValueWith: context)
+                ifNil: (context builder literal: nil)).
+}.
+
+ASTMakeByteArrayNode extend: {
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context builder makeByteArray: (self elements collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }).
+}.
+
+ASTMakeDictionaryNode extend: {
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+        := context builder makeDictionary: (self elements collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }).
+}.
+
 ASTMessageSendNode extend: {
     public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
         := context builder send: (self receiver generateSSAValueWith: context)
@@ -663,6 +681,24 @@ ASTSequenceNode extend: {
 
         result
     }
+}.
+
+ASTTupleSlotNamedAtNode extend: {
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        context builder tuple: (self tupleExpression generateSSAValueWith: context) typedSlotAt: self boundSlot.
+    }.
+}.
+
+ASTTupleSlotNamedReferenceAtNode extend: {
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        context builder tuple: (self tupleExpression generateSSAValueWith: context) typedSlotReferenceAt: self boundSlot.
+    }.
+}.
+
+ASTTupleSlotNamedAtPutNode extend: {
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        context builder tuple: (self tupleExpression generateSSAValueWith: context) typedSlotAt: self boundSlot put: (self valueExpression generateSSAValueWith: context).
+    }.
 }.
 
 ASTUseNamedSlotsOfNode extend: {

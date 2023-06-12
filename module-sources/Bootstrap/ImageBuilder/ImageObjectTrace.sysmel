@@ -1,6 +1,7 @@
 public class ImageObjectTrace superclass: Object; definition: {
     public field objectList => OrderedCollection.
     public field objectIndexDictionary => IdentityDictionary.
+    public field isLocked => Boolean.
 
     public override method initialize => Void := {
         super initialize.
@@ -9,20 +10,35 @@ public class ImageObjectTrace superclass: Object; definition: {
         objectIndexDictionary := IdentityDictionary new.
     }.
 
+    public method lock => Void := {
+        isLocked := true.
+    }.
+
     public method includesObject: (object: Untyped) ::=> Boolean
         := objectIndexDictionary untypedIncludesKey: object.
 
     public method addNewObject: (object: Untyped) ::=> UInt32 := {
+        self assert: isLocked not.
         let index := objectList size asUInt32.
         objectList add: object.
         objectIndexDictionary untypedAt: object put: index.
         index
     }.
 
-    public method addObject: (object: Untyped) ::=> UInt32
-        := objectIndexDictionary untypedAt: object ifAbsentPut: { :: UInt32 |
+    public method addObject: (object: Untyped) ::=> UInt32 := {
+        self assert: isLocked not.
+        objectIndexDictionary untypedAt: object ifAbsentPut: { :: UInt32 |
             let index := objectList size asUInt32.
             objectList add: object.
             index
         }.
+    }.
+
+    public method indexOfObject: (object: Untyped) ifPresent: presentBlock ifAbsent: absentBlock := {
+        (objectIndexDictionary untypedIncludesKey: object) ifTrue: {
+            presentBlock(objectIndexDictionary untypedAt: object)
+        } ifFalse: {
+            absentBlock()
+        }
+    }.
 }.
