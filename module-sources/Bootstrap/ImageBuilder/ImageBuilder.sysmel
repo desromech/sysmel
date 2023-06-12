@@ -55,6 +55,10 @@ public class ImageBuilderObjectTraceStrategyMinimal superclass: ImageBuilderObje
 public class ImageBuilderObjectTraceStrategyNoSourceDefinition superclass: ImageBuilderObjectTraceStrategy; definition: {
     public virtual method shouldEmitTypeSlot: (typeSlot: TypeSlot) ::=> Boolean
         := typeSlot isNoSourceDefinitionExcluded not.
+
+    public override method traceReferencesOf: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Void := {
+        (RawTuple::type(object) ifNil: Untyped) imageBuilder::traceNoSourceDefinitionReferencesOf: object with: imageBuilder
+    }.
 }.
 
 Type extend: {
@@ -83,6 +87,10 @@ Type extend: {
         self imageBuilder::ordinaryTraceReferencesOf: object with: imageBuilder
     }.
 
+    public virtual method imageBuilder::traceNoSourceDefinitionReferencesOf: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Void := {
+        self imageBuilder::ordinaryTraceReferencesOf: object with: imageBuilder
+    }.
+
     public virtual method imageBuilder::traceMinimalReferencesOf: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Void := {
         self imageBuilder::ordinaryTraceReferencesOf: object with: imageBuilder
     }.
@@ -107,6 +115,17 @@ ProgramEntity definition: {
 
 FunctionDefinition definition: {
     __Meta__ definition: {
+        public override method imageBuilder::traceNoSourceDefinitionReferencesOf: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Void := {
+            RawTuple::isDummyValue(object) ifTrue: {return: void}.
+            object ensureAnalysis.
+            super imageBuilder::traceMinimalReferencesOf: object with: imageBuilder.
+
+            let functionDefinition => FunctionDefinition := object.
+            functionDefinition allLiteralDependenciesDo: {:(Untyped)dependency :(Boolean)isAnalysisIndirect :: Void |
+                imageBuilder enqueueObjectTrace: dependency
+            }.
+        }.
+
         public override method imageBuilder::traceMinimalReferencesOf: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Void := {
             RawTuple::isDummyValue(object) ifTrue: {return: void}.
             object ensureAnalysis.
