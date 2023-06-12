@@ -1668,6 +1668,9 @@ public final class AsmProgramEntity superclass: Object; definition: {
 
         objectCodeBuilder finish
     }.
+
+    public method writeObjectToFileNamed: (objectFileName: String) ::=> Boolean
+        := self assemble writeObjectToFileNamed: objectFileName.
 }.
 
 AsmObjectCodeStream extend: {

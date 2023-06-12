@@ -1559,6 +1559,7 @@ TACFunction definition: {
 }.
 public final class TACModule superclass: TACProgramEntity; definition: {
     public field programEntities => OrderedCollection.
+    public field imageObjectTrace => ImageObjectTrace.
 
     public override method initialize => Void := {
         super initialize.

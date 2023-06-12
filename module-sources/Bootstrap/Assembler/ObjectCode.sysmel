@@ -406,7 +406,7 @@ public final class AsmObjectCode superclass: Object; definition: {
     public method encodeAsObjectFile ::=> ByteArray
         := compilationTarget objectFileWriter encodeObjectCode: self.
 
-    public method writeObjectToFileNamed: (fileName: String) ::=> Void
+    public method writeObjectToFileNamed: (fileName: String) ::=> Boolean
         := compilationTarget objectFileWriter writeObjectCode: self toFileNamed: fileName.
 }.
 
@@ -414,9 +414,8 @@ AsmObjectFileWriter definition: {
     public abstract method encodeObjectCode: (objectCode: AsmObjectCode) ::=> ByteArray
         := self subclassResponsibility.
 
-    public method writeObjectCode: (objectCode: AsmObjectCode) toFileNamed: (fileName: String) ::=> Void := {
-        IO::writeWholeFileNamed(fileName, self encodeObjectCode: objectCode).
-    }.
+    public method writeObjectCode: (objectCode: AsmObjectCode) toFileNamed: (fileName: String) ::=> Boolean
+        := IO::writeWholeFileNamedWithByteArray(fileName, self encodeObjectCode: objectCode).
 }.
 
 public final class AsmObjectCodeCStringTable superclass: Object; definition: {

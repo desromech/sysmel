@@ -1,0 +1,13 @@
+public class ImageBuilderSSAImage superclass: ImageBuilderTargetImage; definition: {
+    public field ssaModule => SSAModule.
+    
+    public override method saveTo: (filename: String) ::=> Boolean := {
+        {
+            let ssaTextIR := ssaModule fullPrintString.
+            printLine(ssaTextIR).
+            IO::writeWholeFileNamedWithString(filename -- ".ssa", ssaTextIR)
+        }.
+        
+        true
+    }.
+}.

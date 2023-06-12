@@ -189,6 +189,9 @@ SSAFunctionDefinition definition: {
     public method isTargetDefinedPrimitive => Boolean := sourceObject isNotNil && sourceObject isTargetDefinedPrimitive.
 
     public override method initialize => Void := {
+        super initialize.
+        arguments := #().
+        captures := #().
         importedSymbols := #().
     }.
 
@@ -1629,6 +1632,17 @@ SSAInstructionBuilder definition: {
         := self lastInstruction
             ifNil: false
             ifNotNil: {:instruction :: Boolean | instruction isTerminatorInstruction }.
+}.
+
+SSACompilationTarget definition: {
+    public abstract method objectModel => ObjectModelVariant
+        := self subclassResponsibility.
+
+    public abstract method pointerSize => Size
+        := self subclassResponsibility.
+
+    public abstract method pointerAlignment => Size
+        := self subclassResponsibility.
 }.
 
 public class SSATupleVMCompilationTarget superclass: SSACompilationTarget; definition: {

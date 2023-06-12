@@ -1,6 +1,8 @@
 public final class SSAModuleCompilationContext superclass: Object; definition: {
     public field compilationTarget => SSACompilationTarget.
     public field ssaModule => SSAModule.
+    public field exclusiveCompilationMode => Boolean.
+
     protected field translatedValueDictionary => IdentityDictionary.
 
     __Meta__ extend: {
@@ -19,49 +21,122 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
         translatedValueDictionary := IdentityDictionary new.
     }.
 
-    public method translateFunction: (function: Function) ::=> SSAValue := {
+    public method compileFunctions: (functions: SequenceableCollection) definitions: (functionDefinitions: SequenceableCollection) ::=> Void := {
+        let ssaFunctionDefinitions := functionDefinitions collect: {:(FunctionDefinition)eachFunctionDefinition :: SSAFunctionDefinition |
+            self declareFunctionDefinition: eachFunctionDefinition
+        }.
+
+        functions do: {:(Function)eachFunction :: Void |
+            self declareFunction: eachFunction
+        }.
+
+        ssaFunctionDefinitions doWithIndex: {:(SSAFunctionDefinition)eachSSAFunctionDefinition :(Size)index :: Void |
+            let eachFunctionDefinition => FunctionDefinition := functionDefinitions at: index.
+            self compileFunctionDefinition: eachFunctionDefinition into: eachSSAFunctionDefinition
+        }.
+    }.
+
+    public method exportMainEntryPointFunction: (entryPointFunction: Function) ::=> Void := {
+        let ssaEntryPointFunction => SSAFunction := translatedValueDictionary atOrNil: entryPointFunction.
+        ssaEntryPointFunction ifNil: {return: void}.
+
+        ssaEntryPointFunction exportedSymbols: ssaEntryPointFunction exportedSymbols -- (Array with: #main).
+    }.
+
+    public method generateArgumentForNode: (argumentNode: ASTArgumentNode) ::=> SSAFunctionArgument := {
+        let binding := argumentNode binding.
+        self assert: binding isNotNil.
+
+        SSAFunctionArgument new
+            name: binding name;
+            type: binding type;
+            sourceBinding: binding;
+            yourself
+    }.
+
+    public method generateCaptureForBinding: (captureBinding: SymbolCaptureBinding) ::=> SSAFunctionCapture := {
+        SSAFunctionCapture new
+            name: captureBinding name;
+            type: captureBinding type;
+            sourceBinding: captureBinding;
+            yourself
+    }.
+
+    public method declareFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> SSAFunctionDefinition := {
+        functionDefinition ensureAnalysis.
+        let translatedValue := SSAFunctionDefinition new
+            sourceObject: functionDefinition;
+            name: functionDefinition programEntityQualifiedNameSymbol;
+            functionType: functionDefinition analyzedType;
+            importedSymbols: functionDefinition importedSymbols asArray;
+            primitiveName: functionDefinition analyzedPrimitiveName;
+            sourcePosition: functionDefinition sourcePosition;
+            arguments: (functionDefinition analyzedArgumentNodes collect: {:(ASTArgumentNode)argumentNode :: SSAFunctionArgument |
+                self generateArgumentForNode: argumentNode
+            }) asArray;
+            captures: (functionDefinition analyzedCaptures collect: {:(SymbolCaptureBinding)captureBinding :: SSAFunctionCapture |
+                self generateCaptureForBinding: captureBinding
+            }) asArray;
+            yourself.
+
+        ssaModule addGlobalValue: translatedValue.
+        translatedValueDictionary at: functionDefinition put: translatedValue.
+        translatedValue
+    }.
+
+    public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) into: (ssaFunctionDefinition: SSAFunctionDefinition) ::=> Void := {
+        SSAFunctionCompilationContext new
+            moduleCompilationContext: self;
+            compileFunctionDefinition: functionDefinition into: ssaFunctionDefinition.
+    }.
+
+    public method declareFunction: (function: Function) ::=> SSAFunction := {
+        function ensureAnalysis.
+        let translatedValue := SSAFunction new
+            sourceObject: function;
+            name: function programEntityQualifiedNameSymbol;
+            primitiveName: function primitiveName;
+            exportedSymbols: function exportedSymbols asArray;
+            yourself.
+
+        ssaModule addGlobalValue: translatedValue.
+        translatedValueDictionary at: function put: translatedValue.
+
+        function definition ifNotNil: {
+            translatedValue definition: (self translateFunctionDefinition: function definition).
+        }.
+        
+        translatedValue
+    }.
+
+    public method translateFunction: (function: Function) withBuilder: (builder: SSAInstructionBuilder) ::=> SSAValue := {
         translatedValueDictionary at: function ifAbsent: { :: SSAValue |
-            function ensureAnalysis.
-            let translatedValue := SSAFunction new
-                sourceObject: function;
-                name: function programEntityQualifiedNameSymbol;
-                primitiveName: function primitiveName;
-                exportedSymbols: function exportedSymbols asArray;
-                yourself.
-
-            ssaModule addGlobalValue: translatedValue.
-            translatedValueDictionary at: function put: translatedValue.
-
-            function definition ifNotNil: {
-                translatedValue definition: (self translateFunctionDefinition: function definition).
-            }.
-
-            translatedValue
+            exclusiveCompilationMode ifTrue: {
+                builder literal: function type: function class
+            } ifFalse: {
+                self declareFunction: function
+            }
         }
     }.
 
-    public method translateFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> SSAFunctionDefinition := {
+    public method translateFunction: (function: Function) ::=> SSAValue
+        := self translateFunction: function withBuilder: nil.
+
+    public method translateFunctionDefinition: (functionDefinition: FunctionDefinition) withBuilder: (builder: SSAInstructionBuilder) ::=> SSAFunctionDefinition := {
         functionDefinition ensureAnalysis.
         translatedValueDictionary at: functionDefinition ifAbsent: { :: SSAValue |
-            let translatedValue := SSAFunctionDefinition new
-                sourceObject: functionDefinition;
-                name: functionDefinition programEntityQualifiedNameSymbol;
-                functionType: functionDefinition analyzedType;
-                importedSymbols: functionDefinition importedSymbols asArray;
-                primitiveName: functionDefinition analyzedPrimitiveName;
-                yourself.
-
-            ssaModule addGlobalValue: translatedValue.
-            translatedValueDictionary at: functionDefinition put: translatedValue.
-
-            ## TODO: Add options for controlling this.
-            SSAFunctionCompilationContext new
-                moduleCompilationContext: self;
-                compileFunctionDefinition: functionDefinition into: translatedValue.
-
-            translatedValue
+            exclusiveCompilationMode ifTrue: {
+                builder literal: functionDefinition type: functionDefinition class
+            } ifFalse: {
+                let ssaFunctionDefinition := self declareFunctionDefinition: functionDefinition.
+                self compileFunctionDefinition: functionDefinition into: ssaFunctionDefinition.
+                ssaFunctionDefinition
+            }
         }
     }.
+
+    public method translateFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> SSAFunctionDefinition
+        := self translateFunctionDefinition: functionDefinition withBuilder: nil.
 
     public method finish => SSAModule := {
         ssaModule
@@ -83,33 +158,6 @@ public final class SSAFunctionCompilationContext superclass: Object; definition:
         bindingDictionary := IdentityDictionary new.
     }.
 
-    public method generateArgumentForNode: (argumentNode: ASTArgumentNode) ::=> SSAFunctionArgument := {
-        let binding := argumentNode binding.
-        self assert: binding isNotNil.
-
-        let ssaArgument := SSAFunctionArgument new
-            name: binding name;
-            type: binding type;
-            sourceBinding: binding;
-            yourself.
-
-        bindingDictionary at: binding put: ssaArgument.
-
-        ssaArgument
-    }.
-
-    public method generateCaptureForBinding: (captureBinding: SymbolCaptureBinding) ::=> SSAFunctionCapture := {
-        let capture := SSAFunctionCapture new
-            name: captureBinding name;
-            type: captureBinding type;
-            sourceBinding: captureBinding;
-            yourself.
-
-        bindingDictionary at: captureBinding put: capture.
-
-        capture
-    }.
-
     public method setValue: (value: SSAValue) forBinding: (binding: SymbolBinding) ::=> Void := {
         self assert: binding isNotNil.
         bindingDictionary at: binding put: value.
@@ -120,14 +168,16 @@ public final class SSAFunctionCompilationContext superclass: Object; definition:
         self functionDefinition: functionDefinition.
         self ssaFunction: ssaFunction.
 
-        ssaFunction
-            sourcePosition: functionDefinition sourcePosition;
-            arguments: (functionDefinition analyzedArgumentNodes collect: {:(ASTArgumentNode)argumentNode :: SSAFunctionArgument |
-                self generateArgumentForNode: argumentNode
-            }) asArray;
-            captures: (functionDefinition analyzedCaptures collect: {:(SymbolCaptureBinding)captureBinding :: SSAFunctionCapture |
-                self generateCaptureForBinding: captureBinding
-            }) asArray.
+        ssaFunction arguments do: {:(SSAFunctionArgument)eachArgument :: Void |
+            eachArgument sourceBinding ifNotNil: {
+                self setValue: eachArgument forBinding: eachArgument sourceBinding
+            }
+        }.
+        ssaFunction captures do: {:(SSAFunctionArgument)eachCapture :: Void |
+            eachCapture sourceBinding ifNotNil: {
+                self setValue: eachCapture forBinding: eachCapture sourceBinding
+            }
+        }.
 
         functionDefinition importedSymbols size = 0sz ifTrue: {
             functionDefinition analyzedBodyNode ifNotNil: {:bodyNode |
@@ -328,12 +378,12 @@ Type extend: {
 
 FunctionType extend: {
     public override method translateASTLiteralNode: (literalNode: ASTLiteralNode) intoSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := context moduleCompilationContext translateFunction: literalNode value.
+        := context moduleCompilationContext translateFunction: literalNode value withBuilder: context builder.
 }.
 
 FunctionDefinition class extend: {
     public override method translateASTLiteralNode: (literalNode: ASTLiteralNode) intoSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := context moduleCompilationContext translateFunctionDefinition: literalNode value.
+        := context moduleCompilationContext translateFunctionDefinition: literalNode value withBuilder: context builder.
 }.
 
 ASTLiteralNode extend: {

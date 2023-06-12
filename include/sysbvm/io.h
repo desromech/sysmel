@@ -16,6 +16,6 @@ SYSBVM_API sysbvm_tuple_t sysbvm_io_readWholeFileNamedAsByteArray(sysbvm_context
 /**
  * Saves a whole file with the specified name.
  */
-SYSBVM_API bool sysbvm_io_writeWholeFileNamed(sysbvm_tuple_t filename, sysbvm_tuple_t content);
+SYSBVM_API bool sysbvm_io_writeWholeFileNamedWithByteArray(sysbvm_tuple_t filename, sysbvm_tuple_t content);
 
 #endif //SYSBVM_IO_H

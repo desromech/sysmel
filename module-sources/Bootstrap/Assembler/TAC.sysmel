@@ -186,8 +186,8 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
             align: moduleGenerator asmTarget indirectBranchTargetAlignment unreachable: true;
             useDebugInfoOfTACValue: functionToGenerate;
             label: symbol;
-            cfiBeginProcedure;
             yourself.
+
         let exportedSymbols := functionToGenerate exportedSymbols collect: {:(Symbol)symbol :: AsmSymbol |
             AsmSymbol new
                 name: symbol;
@@ -195,9 +195,12 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
                 makeFunction;
                 yourself
         }.
+
         exportedSymbols do: {:(AsmSymbol)eachSymbol :: Void |
             self textSection label: eachSymbol
         }.
+
+        self textSection cfiBeginProcedure.
 
         self
             emitPrologue;
