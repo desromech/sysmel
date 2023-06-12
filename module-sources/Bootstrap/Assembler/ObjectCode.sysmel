@@ -88,6 +88,8 @@ public final class AsmFrameDescriptionInformation superclass: Object; definition
 
 AsmObjectCodeSection definition: {
     public field name => Symbol.
+    public field machoSectionName => Symbol.
+    public field machoSegmentName => Symbol.
     public field data => ByteArray.
     public field alignment => Size.
     public field size => Size.
@@ -541,10 +543,12 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
     public method getSectionNamed: (name: Symbol) ::=> AsmObjectCodeSection
         := sectionNameTable at: name.
 
-    public method getOrCreateSectionNamed: (name: Symbol) ::=> AsmObjectCodeSection
+    public method getOrCreateSectionNamed: (name: Symbol) machoSectionName: (machoSectionName: Symbol) machoSegmentName: (machoSegmentName: Symbol) ::=> AsmObjectCodeSection
         := sectionNameTable at: name ifAbsentPut: {:: AsmObjectCodeSection |
             let newSection := AsmObjectCodeSection new
                 name: name;
+                machoSectionName: machoSectionName;
+                machoSegmentName: machoSegmentName;
                 yourself.
             sections add: newSection.
             newSection
@@ -664,8 +668,8 @@ AsmObjectCodeStream definition: {
     public abstract method alignTo: (requiredAlignment: Size) unreachable: (unreachable: Boolean) ::=> Void
         := self subclassResponsibility.
 
-    public method enterSectionNamed: (name: Symbol) ::=> AsmObjectCodeSection := {
-        activeSection := objectCodeBuilder getOrCreateSectionNamed: name
+    public method enterSectionNamed: (name: Symbol) machoSectionName: (machoSectionName: Symbol) machoSegmentName: (machoSegmentName: Symbol) ::=> AsmObjectCodeSection := {
+        activeSection := objectCodeBuilder getOrCreateSectionNamed: name machoSectionName: machoSectionName machoSegmentName: machoSegmentName
     }.
 
     public virtual method recordDebugSourcePosition: (sourcePosition: SourcePosition) node: (node: ASTNode) environment: (environment: Environment) ::=> Void := {

@@ -66,6 +66,12 @@ public final class AsmX86CompilationTarget superclass: AsmAbstractX86Compilation
     public override method coffMachine => UInt16
         := Coff::ImageFileMachine::I386.
 
+    public override method machoCPUType => Int32
+        := MachO::CPUType::I386.
+
+    public override method machoCPUSubtype => Int32
+        := MachO::CPUSubtype::X86::All.
+
     public override method usesElfRelStyleRelocations => Boolean
         := true.
 
@@ -91,6 +97,12 @@ public final class AsmX86_64CompilationTarget superclass: AsmAbstractX86Compilat
 
     public override method coffMachine => UInt16
         := Coff::ImageFileMachine::AMD64.
+
+    public override method machoCPUType => Int32
+        := MachO::CPUType::X86_64.
+
+    public override method machoCPUSubtype => Int32
+        := MachO::CPUSubtype::X86::All.
 
     public override method usesElfRelStyleRelocations => Boolean
         := false.

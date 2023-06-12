@@ -33,11 +33,13 @@ let codeX86_64Block := {:builder |
 
 let codeX86_64Elf := AsmStream for: AsmCompilationTarget x86_64 useElf buildWith: codeX86_64Block.
 let codeX86_64Coff := AsmStream for: AsmCompilationTarget x86_64 useCoff buildWith: codeX86_64Block.
+let codeX86_64MachO := AsmStream for: AsmCompilationTarget x86_64 useMachO buildWith: codeX86_64Block.
 
 printLine(codeX86_64Elf fullPrintString).
 printLine(codeX86_64Elf compilationTarget).
 codeX86_64Elf assemble writeObjectToFileNamed: "test.x86_64.elf64".
 codeX86_64Coff assemble writeObjectToFileNamed: "test.x86_64.coff".
+codeX86_64MachO assemble writeObjectToFileNamed: "test.x86_64.macho64".
 
 let codeI386Block := {:builder |
     let addFunctionSymbol := (builder symbolNamed: #add)
@@ -74,11 +76,13 @@ let codeI386Block := {:builder |
 }.
 let codeI386Elf := AsmStream for: AsmCompilationTarget x86 useElf buildWith: codeI386Block.
 let codeI386Coff := AsmStream for: AsmCompilationTarget x86 useCoff buildWith: codeI386Block.
+let codeI386MachO := AsmStream for: AsmCompilationTarget x86 useMachO buildWith: codeI386Block.
 
 printLine(codeI386Elf fullPrintString).
 ##printLine(codeI386Elf compilationTarget).
 codeI386Elf assemble writeObjectToFileNamed: "test.i386.elf32".
 codeI386Coff assemble writeObjectToFileNamed: "test.i386.coff".
+codeI386MachO assemble writeObjectToFileNamed: "test.i386.macho32".
 
 let codeArmBlock := {:builder |
     builder
@@ -92,6 +96,8 @@ let codeArmBlock := {:builder |
 }.
 let codeArmElf := AsmStream for: AsmCompilationTarget armv6k useElf buildWith: codeArmBlock.
 let codeArmCoff := AsmStream for: AsmCompilationTarget armv6k useCoff buildWith: codeArmBlock.
+let codeArmMachO := AsmStream for: AsmCompilationTarget armv6k useMachO buildWith: codeArmBlock.
 printLine(codeArmElf fullPrintString).
 codeArmElf assemble writeObjectToFileNamed: "test.arm.elf32".
 codeArmCoff assemble writeObjectToFileNamed: "test.arm.coff".
+codeArmCoff assemble writeObjectToFileNamed: "test.arm.macho32".

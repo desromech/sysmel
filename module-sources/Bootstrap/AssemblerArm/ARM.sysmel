@@ -10,6 +10,12 @@ public final class AsmARMCompilationTarget superclass: AsmCompilationTarget; def
     public override method coffMachine => UInt16
         := Coff::ImageFileMachine::ARM.
 
+    public override method machoCPUType => Int32
+        := MachO::CPUType::ARM.
+
+    public override method machoCPUSubtype => Int32
+        := MachO::CPUSubtype::ARM::All.
+
     public override method pointerSize => Size
         := 4sz.
 

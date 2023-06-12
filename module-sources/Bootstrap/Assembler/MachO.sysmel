@@ -1,0 +1,302 @@
+public global MachO::Magic32 := 16rfeedface u32.
+public global MachO::Cigam32 := 16rcefaedfe u32.
+public global MachO::Magic64 := 16rfeedfacf u32.
+public global MachO::Cigam64 := 16rcffaedfe u32.
+
+public global MachO::Filetype::Object := 1u32.
+
+public global MachO::CPUType::ArchABI64 := 16r01000000 i32.
+
+public global MachO::CPUType::X86 := 7i32.
+public global MachO::CPUType::I386 := MachO::CPUType::X86.
+public global MachO::CPUType::X86_64 := MachO::CPUType::X86 | MachO::CPUType::ArchABI64.
+public global MachO::CPUSubtype::X86::All := 3i32.
+
+public global MachO::CPUType::ARM := 12i32.
+public global MachO::CPUType::ARM64 := MachO::CPUType::ARM | MachO::CPUType::ArchABI64.
+public global MachO::CPUSubtype::ARM::All := 0i32.
+
+public global MachO::SectionType::ZeroFill := 1u8.
+public global MachO::SectionAttribute::SomeInstructions := 16r0000_0400 u32.
+public global MachO::SectionAttribute::PureInstructions := 16r8000_0000 u32.
+
+public global MachO::VMProt::Read := 1i32.
+public global MachO::VMProt::Write := 2i32.
+public global MachO::VMProt::Execute := 4i32.
+
+public final class MachO::Header32 superclass: ByteSerializableObject; definition: {
+    public field magic => UInt32.
+    public field cputype => Int32.
+    public field cpusubtype => Int32.
+    public field filetype => UInt32.
+    public field numberOfCommands => UInt32.
+    public field sizeOfCommands => UInt32.
+    public field flags => UInt32.
+}.
+
+public final class MachO::Header64 superclass: ByteSerializableObject; definition: {
+    public field magic => UInt32.
+    public field cputype => Int32.
+    public field cpusubtype => Int32.
+    public field filetype => UInt32.
+    public field numberOfCommands => UInt32.
+    public field sizeOfCommands => UInt32.
+    public field flags => UInt32.
+    public field reserved => UInt32.
+}.
+
+public class MachO::LoadCommand superclass: ByteSerializableObject; definition: {
+    public field commandType => UInt32.
+    public field commandSize => UInt32.
+}.
+
+public final class MachO::SegmentLoadCommand32 superclass: MachO::LoadCommand; definition: {
+    public field name => Char8[16sz].
+    public field vmAddress => UInt32.
+    public field vmSize => UInt32.
+    public field fileOffset => UInt32.
+    public field fileSize => UInt32.
+    public field maxProtection => Int32.
+    public field initialProtection => Int32.
+    public field numberOfSections => UInt32.
+    public field flags => UInt32.
+}.
+
+public final class MachO::SegmentLoadCommand64 superclass: MachO::LoadCommand; definition: {
+    public field name => Char8[16sz].
+    public field vmAddress => UInt64.
+    public field vmSize => UInt64.
+    public field fileOffset => UInt64.
+    public field fileSize => UInt64.
+    public field maxProtection => Int32.
+    public field initialProtection => Int32.
+    public field numberOfSections => UInt32.
+    public field flags => UInt32.
+
+    public override method initialize => Void := {
+        super initialize.
+        commandType := 16r19 u32.
+        commandSize := self class validInstanceSize asUInt32.
+    }.
+
+    public method setName: (newName: String) ::=> Void := {
+        let nameSize := newName size min: 16sz.
+        let i mutable := 0sz.
+        while: (i < nameSize) do: {
+            name at: i put: (newName at: i)
+        } continueWith: (i := i + 1sz)
+    }.
+
+    public method executable => Void := {
+        initialProtection := initialProtection | MachO::VMProt::Execute.
+        maxProtection := initialProtection | MachO::VMProt::Execute.
+    }.
+
+    public method readable => Void := {
+        initialProtection := initialProtection | MachO::VMProt::Read.
+        maxProtection := initialProtection | MachO::VMProt::Read.
+    }.
+
+    public method writeable => Void := {
+        initialProtection := initialProtection | MachO::VMProt::Write.
+        maxProtection := initialProtection | MachO::VMProt::Write.
+    }.
+}.
+
+public final class MachO::SymbolTableLoadCommand superclass: MachO::LoadCommand; definition: {
+}.
+
+public class MachO::Section32 superclass: ByteSerializableObject; definition: {
+    public field sectionName => Char8[16sz].
+    public field segmentName => Char8[16sz].
+
+    public field address => UInt32.
+    public field size => UInt32.
+    public field offset => UInt32.
+    public field align => UInt32.
+    public field relocationsOffset => UInt32.
+    public field numberOfRelocations => UInt32.
+    public field flags => UInt32.
+    public field reserved1 => UInt32.
+    public field reserved2 => UInt32.
+}.
+
+public class MachO::Section64 superclass: ByteSerializableObject; definition: {
+    public field sectionName => Char8[16sz].
+    public field segmentName => Char8[16sz].
+
+    public field address => UInt64.
+    public field size => UInt64.
+    public field offset => UInt32.
+    public field align => UInt32.
+    public field relocationsOffset => UInt32.
+    public field numberOfRelocations => UInt32.
+    public field flags => UInt32.
+    public field reserved1 => UInt32.
+    public field reserved2 => UInt32.
+    public field reserved3 => UInt32.
+
+    public method setSectionName: (newName: String) ::=> Void := {
+        let nameSize := newName size min: 16sz.
+        let i mutable := 0sz.
+        while: (i < nameSize) do: {
+            sectionName at: i put: (newName at: i)
+        } continueWith: (i := i + 1sz)
+    }.
+
+    public method setSegmentName: (newName: String) ::=> Void := {
+        let nameSize := newName size min: 16sz.
+        let i mutable := 0sz.
+        while: (i < nameSize) do: {
+            segmentName at: i put: (newName at: i)
+        } continueWith: (i := i + 1sz)
+    }.
+
+    public method type: (type: UInt8) ::=> Void := {
+        flags := (flags | 16rffff_ff00 u32) | type asUInt32
+    }.
+
+    public method zeroFill => Void := {
+        self type: MachO::SectionType::ZeroFill.
+    }.
+
+    public method pureInstructions => Void := {
+        flags := flags | MachO::SectionAttribute::SomeInstructions | MachO::SectionAttribute::PureInstructions
+    }.
+}.
+
+public final class AsmObjectMachO32FileWriter superclass: AsmObjectFileWriter; definition: {
+    public override method encodeObjectCode: (objectCode: AsmObjectCode) ::=> ByteArray := {
+        let compilationTarget := objectCode compilationTarget.
+
+        let header := MachO::Header32 new
+            magic: MachO::Magic32;
+            cputype: compilationTarget machoCPUType;
+            cpusubtype: compilationTarget machoCPUSubtype;
+            filetype: MachO::Filetype::Object;
+            yourself.
+
+        let fileLayout := OrderedCollection new.
+        fileLayout add: header.
+
+        fileLayout encodedElementsInByteArray
+    }.
+}.
+
+public final class AsmObjectMachO64FileWriter superclass: AsmObjectFileWriter; definition: {
+    public override method encodeObjectCode: (objectCode: AsmObjectCode) ::=> ByteArray := {
+        let compilationTarget := objectCode compilationTarget.
+
+        let sectionHeaders := OrderedCollection new.
+        let sectionDataElements := OrderedCollection new.
+
+        let objectSegment := MachO::SegmentLoadCommand64 new
+            setName: "__OBJECT";
+            numberOfSections: objectCode sections size asUInt32;
+            yourself.
+
+        let baseAddress mutable := 0u64.
+        objectCode sections do: {:(AsmObjectCodeSection)eachSection :: Void |
+            let sectionHeader := MachO::Section64 new
+                setSectionName: eachSection machoSectionName asString;
+                setSegmentName: eachSection machoSegmentName asString;
+                address: baseAddress;
+                size: eachSection size;
+                yourself.
+
+            eachSection loaded ifFalse: {
+                sectionHeader zeroFill
+            }.
+            eachSection executable ifTrue: {
+                sectionHeader pureInstructions.
+                objectSegment executable
+            }.
+            eachSection readable ifTrue: {
+                objectSegment readable
+            }.
+            eachSection writeable ifTrue: {
+                objectSegment writeable
+            }.
+
+            sectionHeaders add: sectionHeader.
+            sectionDataElements add: eachSection.
+
+            baseAddress := baseAddress + eachSection size asUInt64.
+        }.
+
+        let header := MachO::Header64 new
+            magic: MachO::Magic64;
+            cputype: compilationTarget machoCPUType;
+            cpusubtype: compilationTarget machoCPUSubtype;
+            filetype: MachO::Filetype::Object;
+            numberOfCommands: 1u32;
+            yourself.
+        
+        let commandsStartLabel := ByteStreamEncodingLabel new.
+        let commandsEndLabel := ByteStreamEncodingLabel new.
+
+        let objectCommandStartLabel := ByteStreamEncodingLabel new.
+        let objectCommandEndLabel := ByteStreamEncodingLabel new.
+
+        let objectStartLabel := ByteStreamEncodingLabel new.
+        let objectEndLabel := ByteStreamEncodingLabel new.
+
+        let fileLayout := OrderedCollection new.
+        fileLayout
+            add: header;
+            add: commandsStartLabel;
+            
+            add: objectCommandStartLabel;
+            add: objectSegment;
+            addAll: sectionHeaders;
+            add: objectCommandEndLabel;
+            
+            add: commandsEndLabel;
+            
+            add: objectStartLabel;
+            addAll: objectCode sections;
+            add: objectEndLabel;
+            
+            computeOffsetsOfEncodedElementsInByteStream.
+
+        sectionDataElements doWithIndex: {:dataElement :(Size)index :: Void |
+            dataElement ifNotNil: {
+                (sectionHeaders at: index)
+                    offset: dataElement offsetOfEncodedElementInByteStream asUInt32
+            }.
+        }.
+
+        objectSegment
+            commandSize: (objectCommandEndLabel offsetOfEncodedElementInByteStream - objectCommandStartLabel offsetOfEncodedElementInByteStream) asUInt32;
+            fileOffset: objectStartLabel offsetOfEncodedElementInByteStream asUInt64;
+            fileSize: (objectEndLabel offsetOfEncodedElementInByteStream - objectStartLabel offsetOfEncodedElementInByteStream) asUInt64.
+        header sizeOfCommands: (commandsEndLabel offsetOfEncodedElementInByteStream - commandsStartLabel offsetOfEncodedElementInByteStream) asUInt32.
+
+        fileLayout encodedElementsInByteArray
+    }.
+}.
+
+AsmCompilationTarget extend: {
+    public abstract method machoCPUType => Int32
+        := self subclassResponsibility.
+
+    public abstract method machoCPUSubtype => Int32
+        := self subclassResponsibility.
+
+    public method useMachO => self __type__ := {
+        self pointerSize = 8sz
+            ifTrue: (self useMachO64)
+            ifFalse: (self useMachO32).
+        self
+    }.
+
+    public method useMachO32 => self __type__ := {
+        objectFileWriter := AsmObjectMachO32FileWriter new.
+        self
+    }.
+
+    public method useMachO64 => self __type__ := {
+        objectFileWriter := AsmObjectMachO64FileWriter new.
+        self
+    }.
+}.

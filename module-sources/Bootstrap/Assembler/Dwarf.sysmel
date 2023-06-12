@@ -984,6 +984,8 @@ AsmStreamBuilder extend: {
     public method dwarf::debugFrameSection ::=> AsmSectionDirective
         := self addElement: (AsmSectionDirective new
             name: #".debug_frame";
+            machoSectionName: #__debug_frame;
+            machoSegmentName: #__DWARF;
             loaded: true;
             readable: false;
             debugging: true;
@@ -992,6 +994,8 @@ AsmStreamBuilder extend: {
     public method dwarf::debugLineSection ::=> AsmSectionDirective
         := self addElement: (AsmSectionDirective new
             name: #".debug_line";
+            machoSectionName: #__debug_line;
+            machoSegmentName: #__DWARF;
             loaded: true;
             readable: false;
             debugging: true;
@@ -1000,6 +1004,8 @@ AsmStreamBuilder extend: {
     public method dwarf::debugStringSection ::=> AsmSectionDirective
         := self addElement: (AsmSectionDirective new
             name: #".debug_str";
+            machoSectionName: #__debug_str;
+            machoSegmentName: #__DWARF;
             loaded: true;
             readable: false;
             debugging: true;
@@ -1008,6 +1014,8 @@ AsmStreamBuilder extend: {
     public method dwarf::debugAbbreviationsSection ::=> AsmSectionDirective
         := self addElement: (AsmSectionDirective new
             name: #".debug_abbrev";
+            machoSectionName: #__debug_abbrev;
+            machoSegmentName: #__DWARF;
             loaded: true;
             readable: false;
             debugging: true;
@@ -1016,6 +1024,8 @@ AsmStreamBuilder extend: {
     public method dwarf::debugInfoSection ::=> AsmSectionDirective
         := self addElement: (AsmSectionDirective new
             name: #".debug_info";
+            machoSectionName: #__debug_info;
+            machoSegmentName: #__DWARF;
             loaded: true;
             readable: false;
             debugging: true;

@@ -257,10 +257,6 @@ public final class AsmObjectCoffFileWriter superclass: AsmObjectFileWriter; defi
         let fileLayout := OrderedCollection new.
         fileLayout add: header.
 
-        let storedSectionDataElements := OrderedCollection new
-            addAll: objectCode sections;
-            yourself.
-
         let sectionHeaders := OrderedCollection new.
         let sectionDataElements := OrderedCollection new.
 
@@ -323,7 +319,7 @@ public final class AsmObjectCoffFileWriter superclass: AsmObjectFileWriter; defi
 
         fileLayout
             addAll: sectionHeaders;
-            addAll: storedSectionDataElements;
+            addAll: objectCode sections;
             add: symbolTableLabel;
             addAll: symbolTable symbols;
             add: stringTable;
