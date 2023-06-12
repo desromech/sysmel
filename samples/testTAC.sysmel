@@ -15,6 +15,34 @@ let addFunction := module build: #add function: {:(TACFunctionBuilder)functionBu
     }
 }.
 
+let floatAddFunction := module build: #floatAdd function: {:(TACFunctionBuilder)functionBuilder :: Void |
+    let function := functionBuilder function.
+    let x := function newArgument: #x withType: Float32.
+    let y := function newArgument: #y withType: Float32.
+    function arguments: (x, y).
+
+    functionBuilder basicBlock: #entry build: {:(TACBlockBuilder)asm :: Void |
+        let result := asm temporaryFloat32.
+        asm
+            float32Add: x with: y into: result;
+            returnFloat32: result
+    }
+}.
+
+let doubleAddFunction := module build: #doubleAdd function: {:(TACFunctionBuilder)functionBuilder :: Void |
+    let function := functionBuilder function.
+    let x := function newArgument: #x withType: Float64.
+    let y := function newArgument: #y withType: Float64.
+    function arguments: (x, y).
+
+    functionBuilder basicBlock: #entry build: {:(TACBlockBuilder)asm :: Void |
+        let result := asm temporaryFloat64.
+        asm
+            float64Add: x with: y into: result;
+            returnFloat64: result
+    }
+}.
+
 module build: #main function: {:(TACFunctionBuilder)functionBuilder :: Void |
     functionBuilder basicBlock: #entry build: {:(TACBlockBuilder)asm :: Void |
         let result := asm temporaryInt32.

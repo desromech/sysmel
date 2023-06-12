@@ -81,6 +81,8 @@ AsmInstructionOperand definition: {
 
     public virtual method isRegister => Boolean := false.
     public virtual method isRegisterOrRegisterAddress => Boolean := false.
+    public virtual method isVectorRegister => Boolean := false.
+    public virtual method isVectorRegisterOrRegisterAddress => Boolean := false.
     public virtual method isRegisterAddress => Boolean := false.
 
     public abstract method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void
@@ -100,6 +102,7 @@ AsmRegister definition: {
 public class AsmRegisterAddress superclass: AsmInstructionOperand; definition: {
     public override method isRegisterAddress => Boolean := true.
     public override method isRegisterOrRegisterAddress => Boolean := true.
+    public override method isVectorRegisterOrRegisterAddress => Boolean := true.
 }.
 
 public class AsmImmediate superclass: AsmInstructionOperand; definition: {

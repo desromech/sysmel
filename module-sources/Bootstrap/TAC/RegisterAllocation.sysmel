@@ -124,6 +124,10 @@ public abstract class TACRegisterAllocator superclass: Object; definition: {
 
     public abstract method markActiveVectorRegister: (register: TACPhysicalVectorRegister) ::=> Void
         := self subclassResponsibility.
+
+    public virtual method allocateRegisterOrMemoryForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        self allocateRegisterForInstruction: instruction operandAt: operandIndex
+    }.
 }.
 
 TACPhysicalLocation extend: {

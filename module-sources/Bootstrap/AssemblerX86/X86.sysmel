@@ -427,8 +427,11 @@ public class AsmX86Int64Register superclass: AsmX86IntRegister; definition: {
     public override method size => Size := 8sz.
 }.
 
-public class AsmX86VectorRegister superclass: AsmX86IntRegister; definition: {
+public class AsmX86VectorRegister superclass: AsmX86Register; definition: {
     public override method size => Size := 16sz.
+
+    public override method isVectorRegister => Boolean := true.
+    public override method isVectorRegisterOrRegisterAddress => Boolean := true.
 }.
 
 public global X86::AL := AsmX86Int8Register name: #AL value: 0u8 dwarf32: 0u32 dwarf64: 0u32.
@@ -593,6 +596,18 @@ AsmObjectCodeStream definition: {
 
         let lowBits := (wBit << 3u8) | ((indexBit << 1u8) | (baseBit)).
         (lowBits ~= 0u8) || ((operandSize = 1sz) && self isInX86LongMode && rm x86::rexByteRequired)  ifTrue: { 
+            self assert: self isInX86LongMode.
+            self nextPut: 16r40 u8 | lowBits
+        }
+    }.
+
+    public method nextPutX86RexRM: (rm: AsmInstructionOperand) reg: (reg: AsmInstructionOperand) ::=> Void := {
+        let regBit := reg x86::rexRegBit.
+        let baseBit := rm x86::rexBaseBit.
+        let indexBit := rm x86::rexIndexBit.
+
+        let lowBits := (regBit << 2u8) | (indexBit << 1u8) | (baseBit).
+        (lowBits ~= 0u8) ifTrue: { 
             self assert: self isInX86LongMode.
             self nextPut: 16r40 u8 | lowBits
         }
@@ -1201,6 +1216,39 @@ let instructionTemplateTable := #{
                 nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode
         };
         yourself).
+
+    OpRxRmx: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
+            (instruction operandCount = 2sz) &&
+                instruction firstOperand isVectorRegister && 
+                instruction secondOperand isVectorRegisterOrRegisterAddress
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let register := instruction firstOperand.
+            let registerAddress := instruction secondOperand.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86RexRM: registerAddress reg: register;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress reg: register
+        };
+        yourself).
+    OpRmxRx: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
+            (instruction operandCount = 2sz) &&
+                instruction firstOperand isVectorRegisterOrRegisterAddress && 
+                instruction secondOperand isVectorRegister
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let register := instruction secondOperand.
+            let registerAddress := instruction firstOperand.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86RexRM: registerAddress reg: register;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress reg: register
+        };
+        yourself).
 }.
 
 AsmObjectCodeRelocation extend: {
@@ -1679,6 +1727,125 @@ let instructionDefinitionTable := #(
 		(OpRmwRw #[] #[16r31])
 		(OpRbRmb #[] #[16r32])
 		(OpRwRmw #[] #[16r33])
+    )
+
+    ## SSE instructions
+    (addpd (dst with) "Add packed double"
+        (OpRxRmx #[16r66] #[16r0f 16r58])
+    )
+    (addps (dst with) "Add packed single"
+        (OpRxRmx #[] #[16r0f 16r58])
+    )
+    (addsd (dst with) "Add scalar double"
+        (OpRxRmx #[16rf2] #[16r0f 16r58])
+    )
+    (addss (dst with) "Add scalar single"
+        (OpRxRmx #[16rf3] #[16r0f 16r58])
+    )
+
+    (andpd (dst with) "And packed double"
+        (OpRxRmx #[16r66] #[16r0f 16r54])
+    )
+    (andps (dst with) "And packed single"
+        (OpRxRmx #[] #[16r0f 16r54])
+    )
+
+    (andnpd (dst with) "And not packed double"
+        (OpRxRmx #[16r66] #[16r0f 16r55])
+    )
+    (andnps (dst with) "And not packed single"
+        (OpRxRmx #[] #[16r0f 16r55])
+    )
+
+
+    (divpd (dst with) "Divide packed double"
+        (OpRxRmx #[16r66] #[16r0f 16r5e])
+    )
+    (divps (dst with) "Divide packed single"
+        (OpRxRmx #[] #[16r0f 16r5e])
+    )
+    (divsd (dst with) "Divide scalar double"
+        (OpRxRmx #[16rf2] #[16r0f 16r5e])
+    )
+    (divss (dst with) "Divide scalar single"
+        (OpRxRmx #[16rf3] #[16r0f 16r5e])
+    )
+
+    (movapd (dst src) "Move aligned packed double"
+        (OpRxRmx #[16r66] #[16r0f 16r28])
+        (OpRmxRx #[16r66] #[16r0f 16r29])
+    )
+    (movaps (dst src) "Move aligned packed single"
+        (OpRxRmx #[] #[16r0f 16r28])
+        (OpRmxRx #[] #[16r0f 16r29])
+    )
+    (movsd (dst src) "Move scalar double"
+        (OpRxRmx #[16rf2] #[16r0f 16r10])
+        (OpRmxRx #[16rf2] #[16r0f 16r11])
+    )
+    (movss (dst src) "Move scalar single"
+        (OpRxRmx #[16rf3] #[16r0f 16r10])
+        (OpRmxRx #[16rf3] #[16r0f 16r11])
+    )
+
+    (mulpd (dst with) "Multiply packed double"
+        (OpRxRmx #[16r66] #[16r0f 16r59])
+    )
+    (mulps (dst with) "Multiply packed single"
+        (OpRxRmx #[] #[16r0f 16r59])
+    )
+    (mulsd (dst with) "Multiply scalar double"
+        (OpRxRmx #[16rf2] #[16r0f 16r59])
+    )
+    (mulss (dst with) "Multiply scalar single"
+        (OpRxRmx #[16rf3] #[16r0f 16r59])
+    )
+
+    (orpd (dst with) "Or packed double"
+        (OpRxRmx #[16r66] #[16r0f 16r56])
+    )
+    (orps (dst with) "Or packed single"
+        (OpRxRmx #[] #[16r0f 16r56])
+    )
+
+    (sqrtpd (dst with) "Sqrt packed double"
+        (OpRxRmx #[16r66] #[16r0f 16r51])
+    )
+    (sqrtps (dst with) "Sqrt packed single"
+        (OpRxRmx #[] #[16r0f 16r51])
+    )
+    (sqrtsd (dst with) "Sqrt scalar double"
+        (OpRxRmx #[16rf2] #[16r0f 16r51])
+    )
+    (sqrtss (dst with) "Sqrt scalar single"
+        (OpRxRmx #[16rf3] #[16r0f 16r51])
+    )
+
+    (subpd (dst with) "Subtract packed double"
+        (OpRxRmx #[16r66] #[16r0f 16r5c])
+    )
+    (subps (dst with) "Subtract packed single"
+        (OpRxRmx #[] #[16r0f 16r5c])
+    )
+    (subsd (dst with) "Subtract scalar double"
+        (OpRxRmx #[16rf2] #[16r0f 16r5c])
+    )
+    (subss (dst with) "Subtract scalar single"
+        (OpRxRmx #[16rf3] #[16r0f 16r5c])
+    )
+
+    (ucomiss (dst src) "Compare scalar double and set eflags"
+        (OpRxRmx #[16r66] #[16r0f 16r2E])
+    )
+    (ucomiss (dst src) "Compare scalar single and set eflags"
+        (OpRxRmx #[] #[16r0f 16r2E])
+    )
+
+    (xorpd (dst with) "Xor packed double"
+        (OpRxRmx #[16r66] #[16r0f 16r57])
+    )
+    (xorps (dst with) "Xor packed single"
+        (OpRxRmx #[] #[16r0f 16r57])
     )
 ).
 
