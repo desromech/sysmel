@@ -3,7 +3,7 @@ public class ImageBuilderSSATACImage superclass: ImageBuilderSSAImage; definitio
     public field targetIR.
     
     public override method saveTo: (filename: String) ::=> Boolean := {
-        ##(super saveTo: filename) ifFalse: {return: false}.
+        (super saveTo: filename) ifFalse: {return: false}.
 
         {
             printLine("Writing TAC text IR").

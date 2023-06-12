@@ -119,8 +119,13 @@ public final class SSALiteralConstant superclass: SSAConstant; definition: {
         else: nil
     }.
 
-    public override method printOn: (stream: Stream) ::=> Void
-        := stream nextPutAll: "Literal("; print: self value; nextPutAll: " => "; print: self type; nextPut: ')'.
+    public override method printOn: (stream: Stream) ::=> Void := {
+        RawTuple::isBytes(self value) || (self value __type__ isSubtypeOf: ValueType) ifTrue: {
+            stream nextPutAll: "Literal("; print: self value __type__; nextPutAll: " => "; print: self type; nextPut: ')'
+        } ifFalse: {
+            stream nextPutAll: "Literal("; print: self value __type__; nextPut: ')'
+        }.
+    }.
 }.
 
 SSAGlobalValue definition: {
@@ -1314,12 +1319,12 @@ public final class SSASendInstruction superclass: SSAInstruction; definition: {
 
         stream nextPutAll: ", "; print: self selector.
 
-        self arguments doWithIndex: {:(SSAValue)argument :(Size)index :: Void |
+        #*self arguments doWithIndex: {:(SSAValue)argument :(Size)index :: Void |
             index = 0sz
                 ifTrue: (stream nextPut: ' ')
                 ifFalse: (stream nextPutAll: ", ").
             stream print: argument
-        }
+        }*#
     }.
 
     public override method usedValuesDo: aBlock ::=> Void := {
