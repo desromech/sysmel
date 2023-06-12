@@ -506,7 +506,7 @@ ASTIfNode extend: {
 
         ## Merge
         builder beginBasicBlock: mergeBlock.
-        if: trueResultIsTerminator && falseResultIsTerminator then: {
+        if: (self analyzedType isSubtypeOf: Void) || (trueResultIsTerminator && falseResultIsTerminator) then: {
             builder literal: void
         } else: {
             trueResultIsTerminator ifTrue: (

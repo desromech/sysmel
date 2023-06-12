@@ -1,3 +1,5 @@
+let IgnoreNotYetImplementedErrors := true.
+
 public class SSATACCompilationTarget superclass: SSACompilationTarget; definition: {
     public field tacCompilationTarget => TACCompilationTarget.
 
@@ -489,6 +491,14 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
     public method translateCheckedFunctionEntryPoint: (value: SSAValue) ::=> TACValue
         := moduleCodeGenerator translateCheckedFunctionEntryPoint: value.
 
+    public method notYetImplementedError: (error: String) ::=> Void := {
+        IgnoreNotYetImplementedErrors ifTrue: {
+            blockBuilder trap
+        } ifFalse: {
+            self error: "SSA->TAC NotYetImplemented: " -- error
+        }.
+    }.
+
 }.
 
 TACFunctionBuilder extend: {
@@ -530,6 +540,9 @@ Type extend: {
 
     public virtual method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := codegen translateGenericObjectPointer: constant value.
+
+    public virtual method translateUndefinedConstant: (constant: SSAUndefinedConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := codegen compilationTarget pointerSize = 4sz ifTrue: 0u32 asTacConstant ifFalse: 0u64 asTacConstant.
 
     public virtual method translateSSALiteralConstant: (constant: SSALiteralConstant) pointerType: (pointerType: PointerLikeType) storage: storage base: base offset: (offset: IntPointer) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := codegen translateGenericObjectPointer: constant value.
@@ -652,6 +665,9 @@ Char8 __type__ extend: {
         builder storeInt8: value into: pointer constantOffset: constantOffset
     }.
 
+    public override method translateUndefinedConstant: (constant: SSAUndefinedConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := 0u8 asTacConstant.
+
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := constant value asUInt8 asTacConstant.
 }.
@@ -676,6 +692,9 @@ Int8 __type__ extend: {
     public override method emitTacStore: (value: TACValue) intoPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder storeInt8: value into: pointer constantOffset: constantOffset
     }.
+
+    public override method translateUndefinedConstant: (constant: SSAUndefinedConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := 0i8 asTacConstant.
 
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := constant value asTacConstant.
@@ -702,6 +721,9 @@ UInt8 __type__ extend: {
         builder storeInt8: value into: pointer constantOffset: constantOffset
     }.
 
+    public override method translateUndefinedConstant: (constant: SSAUndefinedConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := 0u8 asTacConstant.
+
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := constant value asTacConstant.
 }.
@@ -726,11 +748,15 @@ Boolean __type__ extend: {
     public override method emitTacStore: (value: TACValue) intoPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder storeInt8: value into: pointer constantOffset: constantOffset
     }.
+
+    public override method translateUndefinedConstant: (constant: SSAUndefinedConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := 0u8 asTacConstant.
 }.
 
 False __type__ extend: {
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := 0u8 asTacConstant.
+
 }.
 
 True __type__ extend: {
@@ -761,6 +787,9 @@ Char16 __type__ extend: {
 
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := constant value asUInt16 asTacConstant.
+
+    public override method translateUndefinedConstant: (constant: SSAUndefinedConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := 0u16 asTacConstant.
 }.
 
 Int16 __type__ extend: {
@@ -786,6 +815,9 @@ Int16 __type__ extend: {
 
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := constant value asTacConstant.
+
+    public override method translateUndefinedConstant: (constant: SSAUndefinedConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := 0i16 asTacConstant.
 }.
 
 UInt16 __type__ extend: {
@@ -811,6 +843,9 @@ UInt16 __type__ extend: {
 
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := constant value asTacConstant.
+
+    public override method translateUndefinedConstant: (constant: SSAUndefinedConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := 0u16 asTacConstant.
 }.
 
 Char32 __type__ extend: {
@@ -836,6 +871,9 @@ Char32 __type__ extend: {
 
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := constant value asUInt32 asTacConstant.
+
+    public override method translateUndefinedConstant: (constant: SSAUndefinedConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := 0u32 asTacConstant.
 }.
 
 Int32 __type__ extend: {
@@ -861,6 +899,9 @@ Int32 __type__ extend: {
 
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := constant value asTacConstant.
+
+    public override method translateUndefinedConstant: (constant: SSAUndefinedConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := 0i32 asTacConstant.
 }.
 
 UInt32 __type__ extend: {
@@ -886,6 +927,9 @@ UInt32 __type__ extend: {
 
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := constant value asTacConstant.
+
+    public override method translateUndefinedConstant: (constant: SSAUndefinedConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := 0u32 asTacConstant.
 }.
 
 Int64 __type__ extend: {
@@ -911,6 +955,9 @@ Int64 __type__ extend: {
 
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := constant value asTacConstant.
+
+    public override method translateUndefinedConstant: (constant: SSAUndefinedConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := 0i64 asTacConstant.
 }.
 
 UInt64 __type__ extend: {
@@ -936,6 +983,9 @@ UInt64 __type__ extend: {
 
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := constant value asTacConstant.
+
+    public override method translateUndefinedConstant: (constant: SSAUndefinedConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := 0u32 asTacConstant.
 }.
 
 Float32 __type__ extend: {
@@ -961,6 +1011,9 @@ Float32 __type__ extend: {
 
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := constant value asTacConstant.
+
+    public override method translateUndefinedConstant: (constant: SSAUndefinedConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := 0.0f32 asTacConstant.
 }.
 
 Float64 __type__ extend: {
@@ -986,6 +1039,9 @@ Float64 __type__ extend: {
 
     public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := constant value asTacConstant.
+
+    public override method translateUndefinedConstant: (constant: SSAUndefinedConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := 0.0 asTacConstant.
 }.
 
 Void __type__ extend: {
@@ -1020,17 +1076,28 @@ SSALiteralConstant extend: {
         := codegen setValue: self translationInto: (type translateSSALiteralConstant: self intoTacWith: codegen).
 }.
 
+SSAUndefinedConstant extend: {
+    public override method translateIntoTacValueWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := codegen setValue: self translationInto: (type translateUndefinedConstant: self intoTacWith: codegen).
+}.
+
 SSAGlobalValue extend: {
     public virtual method compileDirectTacTranslationWith: (codegen: SSAModuleTACCodeGenerator) ::=> Void := {}.
 }.
 
 SSAFunction extend: {
+    public override method translateIntoTacValueWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := codegen translateGenericObjectPointer: self sourceObject.
+
     public override method compileDirectTacTranslationWith: (codegen: SSAModuleTACCodeGenerator) ::=> Void := {
         codegen compileDirectFunction: self
     }.
 }.
 
 SSAFunctionDefinition extend: {
+    public override method translateIntoTacValueWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := codegen translateGenericObjectPointer: self sourceObject.
+
     public override method compileDirectTacTranslationWith: (codegen: SSAModuleTACCodeGenerator) ::=> Void := {
         codegen compileDirectFunctionDefinition: self
     }.
@@ -1058,7 +1125,7 @@ SSAAllocaInstruction extend: {
 
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
         tacValue ifNotNil: {
-            self error: "TODO: Generate non-local alloca"
+            codegen notYetImplementedError: "Generate non-local alloca"
         }
     }.
 }.
@@ -1644,7 +1711,7 @@ SSACoerceValueInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
         ## TODO: Add a target typecheck.
         self value type isValueType && self type isValueType ifTrue: {
-            self error: "TODO: Implement unboxing generation on downcast"
+            codegen notYetImplementedError: "Implement unboxing generation on SSACoerceValueInstruction"
         } ifFalse: {
             codegen blockBuilder movePointer: (codegen translateValue: self value) into: tacValue
         }.
@@ -1655,7 +1722,7 @@ SSADownCastInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
         ## TODO: Add a target typecheck.
         self value type isValueType && self type isValueType ifTrue: {
-            self error: "TODO: Implement unboxing generation on downcast"
+            codegen notYetImplementedError: "Implement unboxing generation on downcast"
         } ifFalse: {
             codegen blockBuilder movePointer: (codegen translateValue: self value) into: tacValue
         }.
@@ -1672,15 +1739,39 @@ SSALoadInstruction extend: {
     }.
 }.
 
+SSAMakeArrayInstruction extend: {
+    public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+       codegen notYetImplementedError: "Make array"
+    }.
+}.
+
+SSAMakeAssociationInstruction extend: {
+    public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+       codegen notYetImplementedError: "Make association"
+    }.
+}.
+
+SSAMakeByteArrayInstruction extend: {
+    public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+       codegen notYetImplementedError: "Make byte array"
+    }.
+}.
+
 SSAMakeClosureInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
-        codegen blockBuilder trap
+        codegen notYetImplementedError: "Make closure"
+    }.
+}.
+
+SSAMakeDictionaryInstruction extend: {
+    public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+       codegen notYetImplementedError: "Make dictionary"
     }.
 }.
 
 SSASendInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
-        codegen blockBuilder trap
+        codegen notYetImplementedError: "Send"
     }.
 }.
 

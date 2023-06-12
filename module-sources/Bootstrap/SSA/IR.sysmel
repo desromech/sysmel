@@ -1553,6 +1553,10 @@ SSAInstructionBuilder definition: {
     }.
 
     public method coerceValue: (value: SSAValue) into: (targetType: SSAValue) type: (type: Type) ::=> SSAValue := {
+        (value type isSubtypeOf: ControlFlowEscapeType) ifTrue: {
+            return: (self undefined: type)
+        }.
+
         (targetType == nil) || (targetType isLiteralConstant && (value type == (targetType downCastTo: SSALiteralConstant) value)) ifTrue: {
             value
         } ifFalse: {
@@ -1575,6 +1579,10 @@ SSAInstructionBuilder definition: {
             yourself).
 
     public method downCast: (value: SSAValue) into: (targetType: SSAValue) type: (type: Type) ::=> SSAValue := {
+        (value type isSubtypeOf: ControlFlowEscapeType) ifTrue: {
+            return: (self undefined: type)
+        }.
+
         (targetType == nil) || (targetType isLiteralConstant && (value type == (targetType downCastTo: SSALiteralConstant) value)) ifTrue: {
             value
         } ifFalse: {
@@ -1586,6 +1594,14 @@ SSAInstructionBuilder definition: {
                 yourself)
         }.
     }.
+
+    public method undefined: (type: Type) ::=> SSAUndefinedConstant
+        := SSAUndefinedConstant new
+            sourcePosition: self sourcePosition;
+            sourceASTNode: self sourceASTNode;
+            sourceEnvironment: self sourceEnvironment;
+            type: type;
+            yourself.
 
     public method literal: value type: (type: Type) ::=> SSALiteralConstant
         := SSALiteralConstant new

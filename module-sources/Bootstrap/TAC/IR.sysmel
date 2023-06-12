@@ -343,6 +343,9 @@ public final class TACGenericObjectPointerConstant superclass: TACConstant; defi
     public field alignment => Size.
     public field type => Type.
 
+    public override method physicalLocationClass => TACPhysicalLocation class
+        := TACPhysicalIntegerRegister.
+
     public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "genericObjectPointerConstant("; print: object; nextPut: ')'
     }.
@@ -1062,26 +1065,31 @@ public final class TACBlockBuilder superclass: Object; definition: {
     public method operation: (operation: TACOperation) ::=> TACInstruction
         := self addInstruction: (TACInstruction new operation: operation; yourself).
 
+    public method operation: (operation: TACOperation) withOperands: (operands: Array) result: (result: TACValue) ::=> TACInstruction := {
+        self assert: (operands allSatisfy: {:each :: Boolean | each isNotNil}).
+        self addInstruction: (TACInstruction new operation: operation; operands: operands; result: result; yourself)
+    }.
+
+    public method operation: (operation: TACOperation) withOperands: (operands: Array) ::=> TACInstruction
+        := self operation: operation withOperands: operands result: nil.
+
     public method operation: (operation: TACOperation) with: (operand: TACValue) ::=> TACInstruction
-        := self addInstruction: (TACInstruction new operation: operation; operands: (Array with: operand); yourself).
+        := self operation: operation withOperands: (Array with: operand).
 
     public method operation: (operation: TACOperation) with: (operand: TACValue) result: (result: TACValue)::=> TACInstruction
-        := self addInstruction: (TACInstruction new operation: operation; result: result; operands: (Array with: operand); yourself).
+        := self operation: operation withOperands: (Array with: operand) result: result.
 
     public method operation: (operation: TACOperation) with: (firstOperand: TACValue) with: (secondOperand: TACValue) ::=> TACInstruction
-        := self addInstruction: (TACInstruction new operation: operation; operands: (Array with: firstOperand with: secondOperand); yourself).
+        := self operation: operation withOperands: (Array with: firstOperand with: secondOperand)..
 
     public method operation: (operation: TACOperation) with: (firstOperand: TACValue) with: (secondOperand: TACValue) result: (result: TACValue) ::=> TACInstruction
-        := self addInstruction: (TACInstruction new operation: operation; result: result; operands: (Array with: firstOperand with: secondOperand); yourself).
+        := self operation: operation withOperands: (Array with: firstOperand with: secondOperand) result: result.
 
     public method operation: (operation: TACOperation) with: (firstOperand: TACValue) with: (secondOperand: TACValue) with: (thirdOperand: TACValue) ::=> TACInstruction
-        := self addInstruction: (TACInstruction new operation: operation; operands: (Array with: firstOperand with: secondOperand with: thirdOperand); yourself).
+        := self operation: operation withOperands: (Array with: firstOperand with: secondOperand with: thirdOperand).
 
     public method operation: (operation: TACOperation) with: (firstOperand: TACValue) with: (secondOperand: TACValue) with: (thirdOperand: TACValue) with: (fourthOperand: TACValue) ::=> TACInstruction
-        := self addInstruction: (TACInstruction new operation: operation; operands: (Array with: firstOperand with: secondOperand with: thirdOperand with: fourthOperand); yourself).
-
-    public method operation: (operation: TACOperation) with: (operand: TACValue) result: (result: TACValue) ::=> TACInstruction
-        := self addInstruction: (TACInstruction new operation: operation; result: result; operands: (Array with: operand); yourself).
+        := self operation: operation withOperands: (Array with: firstOperand with: secondOperand with: thirdOperand with: fourthOperand).
 
     public method branch: (destination: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::Branch with: destination.
