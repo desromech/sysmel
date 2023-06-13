@@ -33,8 +33,10 @@ primitiveFailedError __type__: (SimpleFunctionTypeTemplate((), 0bflgs, Unwinds))
 
 (Boolean::not) __type__: (SimpleFunctionTypeTemplate((Boolean,), 0bflgs, Boolean)).
 
+(OrderedCollection::new) __type__: (SimpleFunctionTypeTemplate((), 0bflgs, OrderedCollection)).
 (OrderedCollection::add:) __type__: (SimpleFunctionTypeTemplate((OrderedCollection, AnyValue), 0bflgs, Void)).
 (OrderedCollection::asArray) __type__: (SimpleFunctionTypeTemplate((OrderedCollection,), 0bflgs, Array)).
+(OrderedCollection::identityIncludes:) __type__: (SimpleFunctionTypeTemplate((OrderedCollection, AnyValue), 0bflgs, Boolean)).
 
 (Function::adoptDefinitionOf:) __type__: (SimpleFunctionTypeTemplate((Function, Function), 0bflgs, Function)).
 (Function::isBootstrapPrimitive) __type__: (SimpleFunctionTypeTemplate((Function,), 0bflgs, Boolean)).

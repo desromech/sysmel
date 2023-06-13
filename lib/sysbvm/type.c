@@ -7,6 +7,7 @@
 #include "sysbvm/errors.h"
 #include "sysbvm/environment.h"
 #include "sysbvm/function.h"
+#include "sysbvm/orderedCollection.h"
 #include "sysbvm/stackFrame.h"
 #include "sysbvm/string.h"
 #include "sysbvm/type.h"
@@ -717,9 +718,11 @@ SYSBVM_API void sysbvm_type_setMethodWithSelector(sysbvm_context_t *context, sys
 
     if((sysbvm_function_getFlags(context, method) & SYSBVM_FUNCTION_FLAGS_VIRTUAL_DISPATCH_FLAGS) != 0)
     {
-        if(!typeObject->virtualMethodDictionary)
-            typeObject->virtualMethodDictionary = sysbvm_methodDictionary_create(context);
-        sysbvm_methodDictionary_atPut(context, typeObject->virtualMethodDictionary, selector, method);
+        if(!typeObject->virtualMethodSelectorList)
+            typeObject->virtualMethodSelectorList = sysbvm_orderedCollection_create(context);
+
+        if(!sysbvm_orderedCollection_identityIncludes(typeObject->virtualMethodSelectorList, selector))
+            sysbvm_orderedCollection_add(context, typeObject->virtualMethodSelectorList, selector);
     }
 }
 
@@ -1411,7 +1414,6 @@ void sysbvm_type_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::flags", sysbvm_tuple_size_encode(context, SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_type_tuple_t, flags)));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::macroMethodDictionary", sysbvm_tuple_size_encode(context, SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_type_tuple_t, macroMethodDictionary)));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::methodDictionary", sysbvm_tuple_size_encode(context, SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_type_tuple_t, methodDictionary)));
-    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::virtualMethodDictionary", sysbvm_tuple_size_encode(context, SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_type_tuple_t, virtualMethodDictionary)));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Type::Layout::fallbackMethodDictionary", sysbvm_tuple_size_encode(context, SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_type_tuple_t, fallbackMethodDictionary)));
 
     // Export the type slot layout. This is used by the bootstraping algorithm for creating the accessors.
@@ -1453,4 +1455,5 @@ void sysbvm_type_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlotFlags::Bytecode", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_SLOT_FLAG_BYTECODE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlotFlags::DebugInformation", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlotFlags::JitSpecific", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_SLOT_FLAG_JIT_SPECIFIC));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeSlotFlags::TargetGenerated", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_SLOT_FLAG_TARGET_GENERATED));
 }

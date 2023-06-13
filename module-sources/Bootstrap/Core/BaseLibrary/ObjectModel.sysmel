@@ -669,12 +669,6 @@ RawTuple::byteSize adoptDefinitionOf: {:(Untyped)self :: Size |
     }
 } withEagerAnalysis.
 
-public function ObjectModel::lookupVirtualSelector(object: Untyped, selector: Symbol) => Untyped
-    := RawTuple::type(object) lookupVirtualSelector: selector.
-
-public function ObjectModel::lookupVirtualSelectorWithReceiverType(receiverType: Type, selector: Symbol) => Untyped
-    := receiverType lookupVirtualSelector: selector.
-
 (RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:) adoptDefinitionOf: {
     :(Type)type :(Size)instanceSize :(Size)instanceAlignment :(Size)slotCount :(Size)variableSize :(Boolean)isBytes :(Boolean)isWeak :: Untyped |
     <primitive: #RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:>

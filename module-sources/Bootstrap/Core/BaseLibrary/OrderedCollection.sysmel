@@ -1,3 +1,5 @@
+OrderedCollection::new adoptDefinitionOf: {:: OrderedCollection | OrderedCollection new}.
+
 OrderedCollection definition: {
     public eager method capacity => Size
         := storage ifNil: 0sz ifNotNil: storage size.
@@ -10,6 +12,18 @@ OrderedCollection definition: {
         self ensureCapacityForAtLeast: 1sz.
         storage untypedAt: size put: element.
         size := size + 1sz.
+    }.
+
+    public eager method identityIncludes: element ::=> Boolean := {
+        let i mutable := 0sz.
+        let size := self size.
+        while: (i < size) do: {
+            element == (storage at: i) ifTrue: {
+                return: true
+            }
+        } continueWith: (i := i + 1sz).
+
+        false
     }.
 
     public eager method add: element ::=> Void

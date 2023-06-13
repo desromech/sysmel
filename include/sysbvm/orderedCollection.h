@@ -49,4 +49,9 @@ SYSBVM_API size_t sysbvm_orderedCollection_getCapacity(sysbvm_tuple_t orderedCol
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_orderedCollection_at(sysbvm_tuple_t orderedCollection, size_t index);
 
+/**
+ * Does it include the specified element
+ */
+SYSBVM_API bool sysbvm_orderedCollection_identityIncludes(sysbvm_tuple_t orderedCollection, sysbvm_tuple_t element);
+
 #endif //SYSBVM_ARRAY_LIST_H

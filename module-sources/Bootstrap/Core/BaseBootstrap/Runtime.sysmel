@@ -288,23 +288,6 @@ Type
                 then: (supertype lookupFallbackSelector: selector)
                 else: (nil)
         }
-    } makeFinal;
-    withSelector: #lookupLocalVirtualSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
-        let: #methodDictionary with: self virtualMethodDictionary.
-        if: methodDictionary ~~ nil
-            then: (methodDictionary atOrNil: selector)
-            else: nil
-    } makeFinal;
-    withSelector: #lookupVirtualSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
-        let: #method with: (self lookupLocalVirtualSelector: selector).
-        if: method ~~ nil
-        then: method
-        else: {
-            let: #supertype with: self supertype.
-            if: supertype ~~ nil
-                then: (supertype lookupVirtualSelector: selector)
-                else: (nil)
-        }
     } makeFinal.
 
 ASTDownCastNode __type__

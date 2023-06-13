@@ -23,8 +23,11 @@ typedef struct sysbvm_type_tuple_s
 
     sysbvm_tuple_t macroMethodDictionary;
     sysbvm_tuple_t methodDictionary;
-    sysbvm_tuple_t virtualMethodDictionary;
     sysbvm_tuple_t fallbackMethodDictionary;
+
+    sysbvm_tuple_t virtualMethodSelectorList;
+    sysbvm_tuple_t virtualTableSelectorDictionary;
+    sysbvm_tuple_t virtualTable;
 
     sysbvm_tuple_t pendingSlots;
     sysbvm_tuple_t subtypes;
@@ -164,6 +167,7 @@ typedef enum sysbvm_typeSlotFlags_e
     SYSBVM_TYPE_SLOT_FLAG_BYTECODE = 1<<5,
     SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION = 1<<6,
     SYSBVM_TYPE_SLOT_FLAG_JIT_SPECIFIC = 1<<7,
+    SYSBVM_TYPE_SLOT_FLAG_TARGET_GENERATED = 1<<8,
 } sysbvm_typeSlotFlags_t;
 
 typedef struct sysbvm_inlineLookupCacheEntry_s sysbvm_inlineLookupCacheEntry_t;

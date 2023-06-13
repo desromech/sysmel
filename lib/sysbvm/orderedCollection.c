@@ -96,6 +96,30 @@ SYSBVM_API sysbvm_tuple_t sysbvm_orderedCollection_at(sysbvm_tuple_t orderedColl
     return ((sysbvm_array_t*)orderedCollectionObject->storage)->elements[index];
 }
 
+SYSBVM_API bool sysbvm_orderedCollection_identityIncludes(sysbvm_tuple_t orderedCollection, sysbvm_tuple_t element)
+{
+    if(!sysbvm_tuple_isNonNullPointer(orderedCollection)) return false;
+
+    sysbvm_orderedCollection_t *orderedCollectionObject = (sysbvm_orderedCollection_t*)orderedCollection;
+    size_t size = sysbvm_tuple_size_decode(orderedCollectionObject->size);
+    for(size_t i = 0; i < size; ++i)
+    {
+        if(sysbvm_array_at(orderedCollectionObject->storage, i) == element)
+            return true;
+    }
+
+    return false;
+}
+
+static sysbvm_tuple_t sysbvm_orderedCollection_primitive_new(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)closure;
+    (void)arguments;
+    if(argumentCount != 0) sysbvm_error_argumentCountMismatch(0, argumentCount);
+
+    return sysbvm_orderedCollection_create(context);
+}
+
 static sysbvm_tuple_t sysbvm_orderedCollection_primitive_add(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
@@ -115,15 +139,28 @@ static sysbvm_tuple_t sysbvm_orderedCollection_primitive_asArray(sysbvm_context_
     return sysbvm_orderedCollection_asArray(context, arguments[0]);
 }
 
+static sysbvm_tuple_t sysbvm_orderedCollection_primitive_identityIncludes(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    return sysbvm_tuple_boolean_encode(sysbvm_orderedCollection_identityIncludes(arguments[0], arguments[1]));
+}
+
 void sysbvm_orderedCollection_registerPrimitives(void)
 {
+    sysbvm_primitiveTable_registerFunction(sysbvm_orderedCollection_primitive_new, "OrderedCollection::new:");
     sysbvm_primitiveTable_registerFunction(sysbvm_orderedCollection_primitive_add, "OrderedCollection::add:");
     sysbvm_primitiveTable_registerFunction(sysbvm_orderedCollection_primitive_asArray, "OrderedCollection::asArray");
+    sysbvm_primitiveTable_registerFunction(sysbvm_orderedCollection_primitive_identityIncludes, "OrderedCollection::identityIncludes:");
 }
 
 void sysbvm_orderedCollection_setupPrimitives(sysbvm_context_t *context)
 {
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "OrderedCollection::new", 0, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_orderedCollection_primitive_new);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "OrderedCollection::add:", context->roots.orderedCollectionType, "add:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_orderedCollection_primitive_add);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "OrderedCollection::untypedAdd:", context->roots.orderedCollectionType, "untypedAdd:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_orderedCollection_primitive_add);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "OrderedCollection::asArray", context->roots.orderedCollectionType, "asArray", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_orderedCollection_primitive_asArray);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "OrderedCollection::identityIncludes:", context->roots.orderedCollectionType, "identityIncludes:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_orderedCollection_primitive_identityIncludes);
 }

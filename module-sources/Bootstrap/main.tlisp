@@ -26,15 +26,15 @@
             newMethodDictionary)
         existingMethodDictionary))
 
-## Type::validVirtualMethodDictionary
-(define (Type::validVirtualMethodDictionary type)
-    (define existingMethodDictionary (RawTuple::slotAt: type Type::Layout::virtualMethodDictionary))
-    (if:then:else: (== existingMethodDictionary nil)
+## Type::validVirtualMethodSelectorList
+(define (Type::validVirtualMethodSelectorList (type Type))
+    (define existingList (tuple:slotNamedAt: type #virtualMethodSelectorList))
+    (if:then:else: (== existingList nil)
         (begin
-            (define newMethodDictionary (MethodDictionary::new))
-            (RawTuple::slotAt:put: type Type::Layout::virtualMethodDictionary newMethodDictionary)
-            newMethodDictionary)
-        existingMethodDictionary))
+            (define newList (OrderedCollection::new))
+            (tuple:slotNamedAt:put: type #virtualMethodSelectorList newList)
+            newList)
+        existingList))
 
 ## Setup a getter method.
 (define (setupGetter getter)
@@ -128,7 +128,9 @@
         (begin
             (if:then: (Function::hasOverrideDispatch method)
                 (Type::checkVirtualDispatchSelectorExistence (Type::supertype type) selector))
-            (MethodDictionary::at:put: (Type::validVirtualMethodDictionary type) selector method)
+            (define virtualMethodSelectorList (Type::validVirtualMethodSelectorList type))
+            (if:then: (Boolean::not (OrderedCollection::identityIncludes: virtualMethodSelectorList selector))
+                (OrderedCollection::add: virtualMethodSelectorList selector))
         )
         (Type::checkNoOverridenSelector (Type::supertype type) selector))
 
