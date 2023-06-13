@@ -292,7 +292,9 @@ SYSBVM_API void sysbvm_tuple_byteSlotAtPut(sysbvm_context_t *context, sysbvm_tup
 bool sysbvm_tuple_isKindOf(sysbvm_context_t *context, sysbvm_tuple_t tuple, sysbvm_tuple_t type)
 {
     sysbvm_tuple_t tupleType = sysbvm_tuple_getType(context, tuple);
-    return tupleType == type || sysbvm_type_isDirectSubtypeOf(sysbvm_tuple_getType(context, tuple), type);
+    return tupleType == type
+        || (!tupleType && type == context->roots.untypedType)
+        || sysbvm_type_isDirectSubtypeOf(tupleType, type);
 }
 
 SYSBVM_API bool sysbvm_tuple_isTypeSatisfiedWithValue(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t value)

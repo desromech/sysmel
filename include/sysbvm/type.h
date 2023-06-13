@@ -493,7 +493,7 @@ SYSBVM_API void sysbvm_typeAndMetatype_setFlags(sysbvm_context_t *context, sysbv
  */
 SYSBVM_INLINE bool sysbvm_type_isNullable(sysbvm_tuple_t type)
 {
-    return (sysbvm_type_getFlags(type) & SYSBVM_TYPE_FLAGS_NULLABLE) != 0;
+    return !type || (sysbvm_type_getFlags(type) & SYSBVM_TYPE_FLAGS_NULLABLE) != 0;
 }
 
 /**

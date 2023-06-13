@@ -148,6 +148,13 @@ ASTDownCastNode
     withSelector: #transformWith: addMethod: {:(ASTDownCastNode)self :aBlock :: Void |
         if: (self typeExpression isNotNil) then: (self typeExpression: aBlock(self typeExpression)).
         if: (self valueExpression isNotNil) then: (self valueExpression: aBlock(self valueExpression)).
+    } makeOverride;
+    withSelector: #fullPrintOn: addMethod: {:(ASTDownCastNode)self :(Stream)stream :: Void |
+        stream print: self class; 
+            nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
+            nextPutAll: " typeExpression: ("; fullPrint: self typeExpression;
+            nextPutAll: ") valueExpression: ("; fullPrint: self valueExpression;
+            nextPutAll: ")"
     } makeOverride.
 
 ASTDoWhileContinueWithNode

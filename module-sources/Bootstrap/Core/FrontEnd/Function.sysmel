@@ -27,7 +27,7 @@ Function definition: {
         definition := definitionFunction definition.
         captureVector := definitionFunction captureVector.
         captureEnvironment := definitionFunction captureEnvironment.
-        definitionFunction isCorePrimitive ifTrue: {
+        definitionFunction isBootstrapPrimitive ifTrue: {
             flags := (flags & FunctionFlags::BootstrapPrimitiveKeptFlags) | definitionFunction flags.
 
             definitionFunction primitiveName ifNotNil: {

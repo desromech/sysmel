@@ -1,14 +1,15 @@
 ## Some utility functions.
+(loadSourceNamed: "Core/BaseBootstrap/PrimitiveFunctionTypeDefinitions.sysmel")
 
 ## until:do:
 (define (until:do: stop block)
-    (define ibox (RawTuple::new 1))
-    (define (i) (RawTuple::slotAt: ibox 0))
-    (define (i: v) (RawTuple::slotAt:put: ibox 0 v))
-    (i: 0)
+    (define ibox (RawTuple::new (send #sz 1)))
+    (define (i) (RawTuple::slotAt: ibox (send #sz 0)))
+    (define (i: v) (RawTuple::slotAt:put: ibox (send #sz 0) v))
+    (i: (send #sz 0))
     (while:do:continueWith: (Integer::< (i) stop)
         (block (i))
-        (i: (Integer::+ (i) 1)))
+        (i: (send #+ (i) (send #sz 1))))
 )
 
 ## exportInstrinsicBuiltInBinding
@@ -78,8 +79,8 @@
                 (RawTuple::typeSlotAt:put: self slot value)))
         ))))
 
-(define intrinsicTypeCount (RawTuple::slotAt: BootstrapEnv::IntrinsicTypes 0))
-(define intrinsicTypes (RawTuple::slotAt: BootstrapEnv::IntrinsicTypes 1))
+(define intrinsicTypeCount (RawTuple::slotAt: BootstrapEnv::IntrinsicTypes (send #sz 0)))
+(define intrinsicTypes (RawTuple::slotAt: BootstrapEnv::IntrinsicTypes (send #sz 1)))
 (until:do: intrinsicTypeCount (lambda (i)
     (define intrinsicType (RawTuple::slotAt: intrinsicTypes i))
     (makeTypeAccessors intrinsicType)

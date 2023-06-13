@@ -57,7 +57,7 @@ function concretizeMetaValueWithEnvironment(value: Untyped, environment: Environ
 }.
 
 Type definition: {
-    public virtual method getOrCreateDependentApplicationValueForNode: (node: ASTNode) ::=> Untyped := {
+    public virtual eager method getOrCreateDependentApplicationValueForNode: (node: ASTNode) ::=> Untyped := {
         let result := RawTuple::new(0sz).
         (RawTuple::type:)(result, self).
         RawTuple::markDummyValue(result).

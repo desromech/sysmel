@@ -1,136 +1,5 @@
 ## We use these for the different implementations of Size
-error __type__: (SimpleFunctionTypeTemplate((String,), 0bflgs, Unwinds)).
-primitiveFailedError __type__: (SimpleFunctionTypeTemplate((), 0bflgs, Unwinds)).
-
-##(RawTuple::type) __type__: (SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Type)).
-(RawTuple::type:) __type__: (SimpleFunctionTypeTemplate((Untyped, Type), 0bflgs, Void)).
-
-(RawTuple::slotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size), 0bflgs, Untyped)).
-(RawTuple::slotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size, Untyped), 0bflgs, Void)).
-(RawTuple::byteSlotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size), 0bflgs, UInt8)).
-(RawTuple::byteSlotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size, UInt8), 0bflgs, Void)).
-(RawTuple::refTypeSlotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, TypeSlot), 0bflgs, Untyped)).
-(RawTuple::refTypeSlotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, TypeSlot, Untyped), 0bflgs, Void)).
-(RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:)
-    __type__: (SimpleFunctionTypeTemplate((Type, Size, Size, Size, Size, Boolean, Boolean), 0bflgs, Untyped)).
-
-(==) adoptDefinitionOf: {:(AnyValue)left :(AnyValue)right :: Boolean |
-    <primitive: #== >
-    <targetDefinedPrimitive>
-    primitiveFailedError()
-}.
-(~~) adoptDefinitionOf: {:(AnyValue)left :(AnyValue)right :: Boolean |
-    <primitive: #~~ >
-    <targetDefinedPrimitive>
-    primitiveFailedError()
-}.
-
-identityHash adoptDefinitionOf: {:(AnyValue)value :: Size |
-    <primitive: #identityHash >
-    primitiveFailedError()
-}.
-
-(Untyped::==) adoptDefinitionOf: {:(Untyped)left :(Untyped)right :: Boolean |
-    <primitive: #== >
-    <targetDefinedPrimitive>
-    primitiveFailedError()
-}.
-(Untyped::~~) adoptDefinitionOf: {:(Untyped)left :(Untyped)right :: Boolean |
-    <primitive: #~~ >
-    <targetDefinedPrimitive>
-    primitiveFailedError()
-}.
-
-Untyped::identityHash adoptDefinitionOf: {:(Untyped)value :: Size |
-    <primitive: #identityHash >
-    primitiveFailedError()
-}.
-
-(PointerLikeType::load) adoptDefinitionOf: {:(Untyped)pointer :: Untyped |
-    <primitive: #PointerLikeType::load>
-    <targetDefinedPrimitive>
-    primitiveFailedError()
-}.
-
-(PointerLikeType::store:) adoptDefinitionOf: {:(Untyped)pointer :(AnyValue)value :: Void |
-    <primitive: #PointerLikeType::store:>
-    <targetDefinedPrimitive>
-    primitiveFailedError()
-}.
-
-(PointerLikeType::at:) adoptDefinitionOf: {:(Untyped)pointer :(IntPointer)index :: Untyped |
-    <primitive: #PointerLikeType::at:>
-    <targetDefinedPrimitive>
-    primitiveFailedError()
-}.
-
-(PointerLikeType::reinterpretCast) adoptDefinitionOf: {:(Untyped)pointer :: Untyped |
-    <primitive: #PointerLikeType::reinterpretCast>
-    <targetDefinedPrimitive>
-    primitiveFailedError()
-}.
-
-Void::fromAnyValue adoptDefinitionOf: {:(AnyValue)value :: Void |
-    <targetDefinedPrimitive>
-    void
-}.
-
-{
-    let: #binaryFunctionType with: SimpleFunctionTypeTemplate((UInt32, UInt32), 0bflgs, UInt32).
-    let: #equalityComparisonFunctionType with: SimpleFunctionTypeTemplate((UInt32, AnyValue), 0bflgs, Boolean).
-    let: #comparisonFunctionType with: SimpleFunctionTypeTemplate((UInt32, UInt32), 0bflgs, Boolean).
-
-    UInt32::+ __type__: binaryFunctionType.
-    UInt32::- __type__: binaryFunctionType.
-    UInt32::* __type__: binaryFunctionType.
-    UInt32::/ __type__: binaryFunctionType.
-    UInt32::% __type__: binaryFunctionType.
-
-    UInt32::& __type__: binaryFunctionType.
-    UInt32::| __type__: binaryFunctionType.
-    UInt32::<< __type__: binaryFunctionType.
-    UInt32::>> __type__: binaryFunctionType.
-
-    UInt32::= __type__: equalityComparisonFunctionType.
-    UInt32::~= __type__: equalityComparisonFunctionType.
-    UInt32::< __type__: comparisonFunctionType.
-    UInt32::<= __type__: comparisonFunctionType.
-    UInt32::>= __type__: comparisonFunctionType.
-    UInt32::> __type__: comparisonFunctionType.
-}.
-
-{
-    let: #binaryFunctionType with: SimpleFunctionTypeTemplate((UInt64, UInt64), 0bflgs, UInt64).
-    let: #equalityComparisonFunctionType with: SimpleFunctionTypeTemplate((UInt64, AnyValue), 0bflgs, Boolean).
-    let: #comparisonFunctionType with: SimpleFunctionTypeTemplate((UInt64, UInt64), 0bflgs, Boolean).
-
-    UInt64::+ __type__: binaryFunctionType.
-    UInt64::- __type__: binaryFunctionType.
-    UInt64::* __type__: binaryFunctionType.
-    UInt64::/ __type__: binaryFunctionType.
-    UInt64::% __type__: binaryFunctionType.
-
-    UInt64::& __type__: binaryFunctionType.
-    UInt64::| __type__: binaryFunctionType.
-    UInt64::<< __type__: binaryFunctionType.
-    UInt64::>> __type__: binaryFunctionType.
-
-    UInt64::= __type__: equalityComparisonFunctionType.
-    UInt64::~= __type__: equalityComparisonFunctionType.
-    UInt64::< __type__: comparisonFunctionType.
-    UInt64::<= __type__: comparisonFunctionType.
-    UInt64::>= __type__: comparisonFunctionType.
-    UInt64::> __type__: comparisonFunctionType.
-}.
-
-{
-    let: #booleanFunctionType with: SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Boolean).
-    let: #sizeFunctionType with: SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Size).
-
-    (RawTuple::isBytes) __type__: booleanFunctionType.
-    (RawTuple::size) __type__: sizeFunctionType.
-    (RawTuple::byteSize) __type__: sizeFunctionType.
-}.
+(String::concat:) __type__: (SimpleFunctionTypeTemplate((String, SequenceableCollection), 0bflgs, String)).
 
 Function
     withSelector: #withEagerAnalysis addMethod: {:(Function)self :: Function |
@@ -243,6 +112,34 @@ TypeSlot
         void
     } makeFinal withEagerAnalysis.
 
+Type
+    withSelector: #basicInitializeInstance: addMethod: {:(Type)self :(AnyValue)instance :: Void |
+    } makeVirtual withEagerAnalysis;
+    withSelector: #lookupLocalSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
+        let: #methodDictionary with: self methodDictionary.
+        if: methodDictionary ~~ nil
+            then: (methodDictionary atOrNil: selector)
+            else: nil
+    } makeFinal withEagerAnalysis;
+    withSelector: #ensureAnalysisOfMethodWithSelector: addMethod: {:(Type)self :(Symbol)selector :: Void |
+        (self methodDictionary at: selector) ensureAnalysis
+    } withEagerAnalysis;
+    withSelector: #>> addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
+        self lookupLocalSelector: selector
+    } makeFinal withEagerAnalysis;
+    withSelector: #lookupSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
+        let: #method with: (self lookupLocalSelector: selector).
+        if: method ~~ nil
+        then: method
+        else: {
+            let: #supertype with: self supertype.
+            if: supertype ~~ nil
+                then: (supertype lookupSelector: selector)
+                else: (nil)
+        }
+    } makeFinal;
+    ensureAnalysisOfMethodWithSelector: #lookupSelector:.
+
 AnyValue
     withSelector: #basicInitialize addMethod: {:(AnyValue)self :: Void | self __type__ basicInitializeInstance: self } withEagerAnalysis;
     withSelector: #initialize addMethod: {:(AnyValue)self :: Void | } makeVirtual withEagerAnalysis;
@@ -284,9 +181,6 @@ Object
     } makeVirtual withEagerAnalysis.
 
 Type
-    withSelector: #ensureAnalysisOfMethodWithSelector: addMethod: {:(Type)self :(Symbol)selector :: Void |
-        (self methodDictionary at: selector) ensureAnalysis
-    } withEagerAnalysis;
     withSelector: #asCanonicalPendingInstanceType addMethod: {:(Type)self :: Type |
         AnyValue
     } makePure makeVirtual withEagerAnalysis;
@@ -358,8 +252,6 @@ Type
     withSelector: #basicNew addMethod: {:(Type)self :: self |
         self basicAllocate
     } makeVirtual withEagerAnalysis;
-    withSelector: #basicInitializeInstance: addMethod: {:(TypeSlot)self :(AnyValue)instance :: Void |
-    } makeVirtual withEagerAnalysis;
     withSelector: #new addMethod: {:(Type)self :: self |
         self basicNew initialize; yourself
     } withEagerAnalysis;
@@ -383,27 +275,6 @@ Type
                 else: (nil)
         }
     } makeFinal;
-    withSelector: #lookupLocalSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
-        let: #methodDictionary with: self methodDictionary.
-        if: methodDictionary ~~ nil
-            then: (methodDictionary atOrNil: selector)
-            else: nil
-    } makeFinal withEagerAnalysis;
-    withSelector: #>> addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
-        self lookupLocalSelector: selector
-    } makeFinal withEagerAnalysis;
-    withSelector: #lookupSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
-        let: #method with: (self lookupLocalSelector: selector).
-        if: method ~~ nil
-        then: method
-        else: {
-            let: #supertype with: self supertype.
-            if: supertype ~~ nil
-                then: (supertype lookupSelector: selector)
-                else: (nil)
-        }
-    } makeFinal;
-    ensureAnalysisOfMethodWithSelector: #lookupSelector:;
     withSelector: #lookupLocalFallbackSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
         let: #methodDictionary with: self fallbackMethodDictionary.
         if: methodDictionary ~~ nil
@@ -1151,7 +1022,9 @@ Function
     withSelector: #isCorePrimitive addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::CorePrimitive
     };
-
+    withSelector: #isBootstrapPrimitive addMethod: {:(Function)self :: Boolean |
+        self isCorePrimitive || self definition isNil
+    };
     withSelector: #isPure addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Pure
     };

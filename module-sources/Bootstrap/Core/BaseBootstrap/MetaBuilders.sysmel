@@ -16,7 +16,7 @@ Class
 Object publicSubclass: #MetaBuilder slots: ().
 
 Type
-    withSelector: #analyzeAndEvaluateConcreteMetaValue:withEnvironment: addMethod: {:self :metaBuilderInstance :(Environment)environment |
+    withSelector: #analyzeAndEvaluateConcreteMetaValue:withEnvironment: addMethod: {:self :(Untyped)metaBuilderInstance :(Environment)environment :: Untyped |
         metaBuilderInstance
     } makeVirtual;
     withSelector: #analyzeConcreteMetaValue:withEnvironment: addMethod: {:self :(ASTLiteralNode)metaValueLiteralNode :(Environment)environment |

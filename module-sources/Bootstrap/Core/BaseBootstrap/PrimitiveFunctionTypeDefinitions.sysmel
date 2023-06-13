@@ -1,0 +1,184 @@
+SimpleFunctionTypeTemplate __type__: (SimpleFunctionTypeTemplate((WeakValueAssociation, Array, Bitflags, Type), FunctionFlags::Memoized | FunctionFlags::Template, SimpleFunctionType)). 
+PointerTypeTemplate __type__: (SimpleFunctionTypeTemplate((WeakValueAssociation, Type, AddressSpace), FunctionFlags::Memoized | FunctionFlags::Template, PointerType)). 
+ReferenceTypeTemplate __type__: (SimpleFunctionTypeTemplate((WeakValueAssociation, Type, AddressSpace), FunctionFlags::Memoized | FunctionFlags::Template, ReferenceType)). 
+
+error __type__: (SimpleFunctionTypeTemplate((String,), 0bflgs, Unwinds)).
+primitiveFailedError __type__: (SimpleFunctionTypeTemplate((), 0bflgs, Unwinds)).
+
+(RawTuple::type) __type__: (SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Type)).
+(RawTuple::type:) __type__: (SimpleFunctionTypeTemplate((Untyped, Type), 0bflgs, Void)).
+(RawTuple::isBytes) __type__: (SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Boolean)).
+(RawTuple::isWeak) __type__: (SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Boolean)).
+(RawTuple::markWeak) __type__: (SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Void)).
+(RawTuple::isDummyValue) __type__: (SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Boolean)).
+(RawTuple::markDummyValue) __type__: (SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Void)).
+
+(RawTuple::slotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size), 0bflgs, Untyped)).
+(RawTuple::slotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size, Untyped), 0bflgs, Void)).
+(RawTuple::byteSlotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size), 0bflgs, UInt8)).
+(RawTuple::byteSlotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size, UInt8), 0bflgs, Void)).
+(RawTuple::refTypeSlotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, TypeSlot), 0bflgs, Untyped)).
+(RawTuple::refTypeSlotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, TypeSlot, Untyped), 0bflgs, Void)).
+(RawTuple::typeSlotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, TypeSlot), 0bflgs, Untyped)).
+(RawTuple::typeSlotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, TypeSlot, Untyped), 0bflgs, Void)).
+(RawTuple::size) __type__: SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Size).
+(RawTuple::byteSize) __type__: SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Size).
+(RawTuple::byteNew) __type__: (SimpleFunctionTypeTemplate((Size,), 0bflgs, Untyped)).
+(RawTuple::new) __type__: (SimpleFunctionTypeTemplate((Size,), 0bflgs, Untyped)).
+(RawTuple::shallowCopy) __type__: (SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Untyped)).
+(RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:)
+    __type__: (SimpleFunctionTypeTemplate((Type, Size, Size, Size, Size, Boolean, Boolean), 0bflgs, Untyped)).
+(RawTuple::firstInstanceWithType) __type__: (SimpleFunctionTypeTemplate((Type,), 0bflgs, Untyped)).
+(RawTuple::nextInstanceWithSameType) __type__: (SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Untyped)).
+
+(Boolean::not) __type__: (SimpleFunctionTypeTemplate((Boolean,), 0bflgs, Boolean)).
+
+(OrderedCollection::add:) __type__: (SimpleFunctionTypeTemplate((OrderedCollection, AnyValue), 0bflgs, Void)).
+(OrderedCollection::asArray) __type__: (SimpleFunctionTypeTemplate((OrderedCollection,), 0bflgs, Array)).
+
+(Function::adoptDefinitionOf:) __type__: (SimpleFunctionTypeTemplate((Function, Function), 0bflgs, Function)).
+(Function::isBootstrapPrimitive) __type__: (SimpleFunctionTypeTemplate((Function,), 0bflgs, Boolean)).
+(Function::hasVirtualDispatch) __type__: (SimpleFunctionTypeTemplate((Function,), 0bflgs, Boolean)).
+(Function::hasOverrideDispatch) __type__: (SimpleFunctionTypeTemplate((Function,), 0bflgs, Boolean)).
+
+(Time::Timestamp::microsecondsNow) __type__: (SimpleFunctionTypeTemplate((), 0bflgs, Int64)).
+(Time::Timestamp::nanosecondsNow) __type__: (SimpleFunctionTypeTemplate((), 0bflgs, Int64)).
+
+(MethodDictionary::new) __type__: (SimpleFunctionTypeTemplate((), 0bflgs, MethodDictionary)).
+(MethodDictionary::at:) __type__: (SimpleFunctionTypeTemplate((MethodDictionary, AnyValue), 0bflgs, AnyValue)).
+(MethodDictionary::atOrNil:) __type__: (SimpleFunctionTypeTemplate((MethodDictionary, AnyValue), 0bflgs, AnyValue)).
+(MethodDictionary::at:put:) __type__: (SimpleFunctionTypeTemplate((MethodDictionary, AnyValue, AnyValue), 0bflgs, Void)).
+
+(FileSystem::joinPath:) __type__: (SimpleFunctionTypeTemplate((String, String), 0bflgs, String)).
+(StringStream::asString) __type__: (SimpleFunctionTypeTemplate((StringStream,), 0bflgs, String)).
+
+(Type::flushMacroLookupSelector:) __type__: (SimpleFunctionTypeTemplate((Type,Symbol), 0bflgs, Void)).
+(Type::flushLookupSelector:) __type__: (SimpleFunctionTypeTemplate((Type,Symbol), 0bflgs, Void)).
+(Type::flushFallbackLookupSelector:) __type__: (SimpleFunctionTypeTemplate((Type,Symbol), 0bflgs, Void)).
+
+print __type__: (SimpleFunctionTypeTemplate((Array,), FunctionFlags::Variadic, Void)). 
+printLine __type__: (SimpleFunctionTypeTemplate((Array,), FunctionFlags::Variadic, Void)). 
+
+let: #methodWithSelectorAt with: {:(Type)type :(Symbol)selector |
+    (type __slotNamedAt__: #methodDictionary) atOrNil: selector
+}.
+
+methodWithSelectorAt(Int8, #printString) __type__: (SimpleFunctionTypeTemplate((Int8,), 0bflgs, String)).
+methodWithSelectorAt(Int16, #printString) __type__: (SimpleFunctionTypeTemplate((Int16,), 0bflgs, String)).
+methodWithSelectorAt(Int32, #printString) __type__: (SimpleFunctionTypeTemplate((Int32,), 0bflgs, String)).
+methodWithSelectorAt(Int64, #printString) __type__: (SimpleFunctionTypeTemplate((Int64,), 0bflgs, String)).
+methodWithSelectorAt(UInt8, #printString) __type__: (SimpleFunctionTypeTemplate((UInt8,), 0bflgs, String)).
+methodWithSelectorAt(UInt16, #printString) __type__: (SimpleFunctionTypeTemplate((UInt16,), 0bflgs, String)).
+methodWithSelectorAt(UInt32, #printString) __type__: (SimpleFunctionTypeTemplate((UInt32,), 0bflgs, String)).
+methodWithSelectorAt(UInt64, #printString) __type__: (SimpleFunctionTypeTemplate((UInt64,), 0bflgs, String)).
+methodWithSelectorAt(Float32, #printString) __type__: (SimpleFunctionTypeTemplate((Float32,), 0bflgs, String)).
+methodWithSelectorAt(Float64, #printString) __type__: (SimpleFunctionTypeTemplate((Float64,), 0bflgs, String)).
+
+(==) adoptDefinitionOf: {:(AnyValue)left :(AnyValue)right :: Boolean |
+    <primitive: #== >
+    <targetDefinedPrimitive>
+    primitiveFailedError()
+}.
+(~~) adoptDefinitionOf: {:(AnyValue)left :(AnyValue)right :: Boolean |
+    <primitive: #~~ >
+    <targetDefinedPrimitive>
+    primitiveFailedError()
+}.
+
+identityHash adoptDefinitionOf: {:(AnyValue)value :: Size |
+    <primitive: #identityHash >
+    primitiveFailedError()
+}.
+
+(Untyped::==) adoptDefinitionOf: {:(Untyped)left :(Untyped)right :: Boolean |
+    <primitive: #== >
+    <targetDefinedPrimitive>
+    primitiveFailedError()
+}.
+(Untyped::~~) adoptDefinitionOf: {:(Untyped)left :(Untyped)right :: Boolean |
+    <primitive: #~~ >
+    <targetDefinedPrimitive>
+    primitiveFailedError()
+}.
+
+Untyped::identityHash adoptDefinitionOf: {:(Untyped)value :: Size |
+    <primitive: #identityHash >
+    primitiveFailedError()
+}.
+
+(PointerLikeType::load) adoptDefinitionOf: {:(Untyped)pointer :: Untyped |
+    <primitive: #PointerLikeType::load>
+    <targetDefinedPrimitive>
+    primitiveFailedError()
+}.
+
+(PointerLikeType::store:) adoptDefinitionOf: {:(Untyped)pointer :(AnyValue)value :: Void |
+    <primitive: #PointerLikeType::store:>
+    <targetDefinedPrimitive>
+    primitiveFailedError()
+}.
+
+(PointerLikeType::at:) adoptDefinitionOf: {:(Untyped)pointer :(IntPointer)index :: Untyped |
+    <primitive: #PointerLikeType::at:>
+    <targetDefinedPrimitive>
+    primitiveFailedError()
+}.
+
+(PointerLikeType::reinterpretCast) adoptDefinitionOf: {:(Untyped)pointer :: Untyped |
+    <primitive: #PointerLikeType::reinterpretCast>
+    <targetDefinedPrimitive>
+    primitiveFailedError()
+}.
+
+Void::fromAnyValue adoptDefinitionOf: {:(Untyped)value :: Void |
+    <targetDefinedPrimitive>
+    void
+}.
+
+{
+    let: #binaryFunctionType with: SimpleFunctionTypeTemplate((UInt32, UInt32), 0bflgs, UInt32).
+    let: #equalityComparisonFunctionType with: SimpleFunctionTypeTemplate((UInt32, AnyValue), 0bflgs, Boolean).
+    let: #comparisonFunctionType with: SimpleFunctionTypeTemplate((UInt32, UInt32), 0bflgs, Boolean).
+
+    UInt32::+ __type__: binaryFunctionType.
+    UInt32::- __type__: binaryFunctionType.
+    UInt32::* __type__: binaryFunctionType.
+    UInt32::/ __type__: binaryFunctionType.
+    UInt32::% __type__: binaryFunctionType.
+
+    UInt32::& __type__: binaryFunctionType.
+    UInt32::| __type__: binaryFunctionType.
+    UInt32::<< __type__: binaryFunctionType.
+    UInt32::>> __type__: binaryFunctionType.
+
+    UInt32::= __type__: equalityComparisonFunctionType.
+    UInt32::~= __type__: equalityComparisonFunctionType.
+    UInt32::< __type__: comparisonFunctionType.
+    UInt32::<= __type__: comparisonFunctionType.
+    UInt32::>= __type__: comparisonFunctionType.
+    UInt32::> __type__: comparisonFunctionType.
+}.
+
+{
+    let: #binaryFunctionType with: SimpleFunctionTypeTemplate((UInt64, UInt64), 0bflgs, UInt64).
+    let: #equalityComparisonFunctionType with: SimpleFunctionTypeTemplate((UInt64, AnyValue), 0bflgs, Boolean).
+    let: #comparisonFunctionType with: SimpleFunctionTypeTemplate((UInt64, UInt64), 0bflgs, Boolean).
+
+    UInt64::+ __type__: binaryFunctionType.
+    UInt64::- __type__: binaryFunctionType.
+    UInt64::* __type__: binaryFunctionType.
+    UInt64::/ __type__: binaryFunctionType.
+    UInt64::% __type__: binaryFunctionType.
+
+    UInt64::& __type__: binaryFunctionType.
+    UInt64::| __type__: binaryFunctionType.
+    UInt64::<< __type__: binaryFunctionType.
+    UInt64::>> __type__: binaryFunctionType.
+
+    UInt64::= __type__: equalityComparisonFunctionType.
+    UInt64::~= __type__: equalityComparisonFunctionType.
+    UInt64::< __type__: comparisonFunctionType.
+    UInt64::<= __type__: comparisonFunctionType.
+    UInt64::>= __type__: comparisonFunctionType.
+    UInt64::> __type__: comparisonFunctionType.
+}.
