@@ -4,7 +4,8 @@ public function NoRttiImageMain(argc: Int32, argv: Char8 const pointer pointer) 
     argc negated asString writeOntoStdout.
     "\n" writeOntoStdout.
 
-    let myObject := Object basicAllocate.
+    ##let myObject := Object basicAllocate.
+    let myObject := Object new.
 
     let i mutable := 0i32.
     while: (i < argc) do: {
@@ -19,7 +20,7 @@ ImageBuilder new
     beNoRTTI;
     withoutInProcessDebugInformation;
     useDefaultTypeTables;
-    addNativeEntryPoint: MinimalImageMain;
+    addNativeEntryPoint: NoRttiImageMain;
     build;
     saveTo: "testNoRTTI.image".
 
@@ -27,6 +28,6 @@ ImageBuilder new
     target: AsmCompilationTarget x86_64 useElf useDwarf asImageBuilderTarget;
     beNoRTTI;
     withoutInProcessDebugInformation;
-    addNativeEntryPoint: MinimalImageMain;
+    addNativeEntryPoint: NoRttiImageMain;
     build;
     saveTo: "testNoRTTI.x86_64.elf".

@@ -127,7 +127,7 @@ ASTCoerceValueNode definition: {
             node
     }.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         let type => Type := self typeExpression evaluateWithEnvironment: environment.
         let value := self valueExpression evaluateWithEnvironment: environment.
         type coerceValue: value.
@@ -162,7 +162,7 @@ ASTDownCastNode definition: {
             ifFalse: result
     }.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         let type => Type := self typeExpression evaluateWithEnvironment: environment.
         let value := self valueExpression evaluateWithEnvironment: environment.
         (RawTuple::type(value) isSubtypeOf: type) ifFalse: {
@@ -179,7 +179,7 @@ ASTErrorNode definition: {
     public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
         := self semanticError: self errorMessage.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
         := self semanticError: self errorMessage.
 }.
 
@@ -202,7 +202,7 @@ ASTIdentifierReferenceNode definition: {
         binding analyzeIdentifierReference: self withEnvironment: environment
     }.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
         := binding evaluateWithActivationEnvironment: environment.
 }.
 
@@ -216,7 +216,7 @@ ASTLiteralNode definition: {
             analyzedType: RawTuple::type(self __slotNamedAt__: #value);
             yourself.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
         := self __slotNamedAt__: #value.
 
     public override eager method analyzeConcreteMetaValueWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
@@ -322,7 +322,7 @@ ASTLambdaNode definition: {
         result
     }.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         let functionDefinition := self functionDefinition.
         let captureVector := functionDefinition analyzedCaptures collect: {:(SymbolBinding)eachCapture :: Untyped |
             eachCapture evaluateWithActivationEnvironment: environment
@@ -348,7 +348,7 @@ ASTLexicalBlockNode definition: {
         (childEnvironment analyzeWithCurrentExpectedType: body)
     }.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         body evaluateWithEnvironment: environment
     }.
 }.
@@ -419,7 +419,7 @@ ASTLocalDefinitionNode definition: {
         }.
     }.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         let value := self valueExpression ifNotNil: (self valueExpression evaluateWithEnvironment: environment).
         let mutableValue => Untyped := self isMutable
             ifTrue: ((self analyzedType downCastTo: ReferenceType) untypedWithBoxForValue: value)
@@ -565,7 +565,7 @@ ASTSequenceNode definition: {
         result
     }.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         let resultBox := ValueBox with: void.
         self expressions do: {:(ASTNode)eachExpression :: Void |
             resultBox value: (eachExpression evaluateWithEnvironment: environment)
@@ -761,9 +761,11 @@ public final class MessageSendNodeStaticLookupResult superclass: Object; definit
         := (foundMethod answersTo: #isMacro) && foundMethod isMacro.
     public eager method isFinal => Boolean
         := (foundMethod answersTo: #isFinal) && foundMethod isFinal.
+    public eager method hasVirtualDispatch => Boolean
+        := (foundMethod answersTo: #hasVirtualDispatch) && foundMethod hasVirtualDispatch.
 
     public eager method shouldOptimizeLookup => Boolean
-        := isDoesNotUnderstand not && (owner isFinal || self isMacro || self isFinal).
+        := isDoesNotUnderstand not && (owner isFinal || self isMacro || self isFinal || self hasVirtualDispatch not).
 }.
 
 ASTMessageSendNode definition: {
@@ -1251,7 +1253,7 @@ ASTFunctionApplicationNode definition: {
         result functionExpression analyzedType analyzeAndTypeCheckFunctionApplicationNode: self withEnvironment: environment
     }.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         let function := self functionExpression evaluateWithEnvironment: environment.
         let arguments := self arguments collect: {:(ASTNode)each :: Untyped | each evaluateWithEnvironment: environment}.
         function applyWithArguments: arguments
@@ -1407,7 +1409,7 @@ ASTMessageChainNode definition: {
         }
     }.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
         := self error: "Message chain node should be expanded."
 }.
 
@@ -1426,7 +1428,7 @@ ASTTupleWithLookupStartingFromNode definition: {
             yourself
     }.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
         := self tupleExpression evaluateWithEnvironment: environment.
 }.
 
@@ -1476,7 +1478,7 @@ ASTTupleSlotNamedAtNode definition: {
             yourself
     }.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         let tuple := self tupleExpression evaluateWithEnvironment: environment.
         (RawTuple::typeSlotAt:)(tuple, self boundSlot)
     }.
@@ -1528,7 +1530,7 @@ ASTTupleSlotNamedReferenceAtNode definition: {
             yourself
     }.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         let tuple := self tupleExpression evaluateWithEnvironment: environment.
         error("TODO: ASTTupleSlotNamedReferenceAtNode >> evaluateWithEnvironment:").
     }.
@@ -1583,7 +1585,7 @@ ASTTupleSlotNamedAtPutNode definition: {
             yourself
     }.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         let tuple := self tupleExpression evaluateWithEnvironment: environment.
         let value := self valueExpression evaluateWithEnvironment: environment.
         (RawTuple::typeSlotAt:put:)(tuple, self boundSlot, value).
@@ -1620,7 +1622,7 @@ ASTUseNamedSlotsOfNode definition: {
         }
     }.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         let usedTuple := self tupleExpression analyzeAndEvaluateWithEnvironment: environment.
         environment setBinding: self binding activationValue: usedTuple.
         void
@@ -1643,7 +1645,7 @@ ASTBreakNode definition: {
             yourself
     }.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         self semanticError: "TODO: ASTBreakNode analyzeWithEnvironment"
     }.
 }.
@@ -1664,7 +1666,7 @@ ASTContinueNode definition: {
             yourself
     }.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         self semanticError: "TODO: ASTContinueNode analyzeWithEnvironment"
     }.
 }.
@@ -1778,7 +1780,7 @@ ASTIfNode definition: {
         result
     }.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         let condition => Boolean := self conditionExpression evaluateWithEnvironment: environment.
         condition ifTrue: {
             self trueExpression
@@ -1805,7 +1807,7 @@ ASTReturnNode definition: {
                 node;
             yourself.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         self semanticError: "TODO: ASTReturnNode evaluateWithEnvironment"
     }.
 }.
@@ -1855,7 +1857,7 @@ ASTDoWhileContinueWithNode definition: {
         result.
     }.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         do: {
             self bodyExpression ifNotNil: {
                 self bodyExpression evaluateWithEnvironment: environment
@@ -1910,7 +1912,7 @@ ASTWhileContinueWithNode definition: {
         result.
     }.
 
-    public override method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         while: (self conditionExpression ifNil: true ifNotNil: (self conditionExpression evaluateWithEnvironment: environment)) do: {
             self bodyExpression ifNotNil: {
                 self bodyExpression evaluateWithEnvironment: environment

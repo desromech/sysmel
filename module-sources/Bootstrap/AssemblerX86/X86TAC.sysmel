@@ -770,7 +770,7 @@ TACLocalVariable extend: {
             codegen textSection cfiStackSizeAdvance: 8i64.
         } ifFalse: {
             ## TODO: Implement this
-            codegen textSection x86::int3
+            codegen textSection x86::int3; x86::nop
         }
     }.
 
@@ -856,12 +856,12 @@ TACConstantUInt64 extend: {
 TACConstantFloat32 extend: {
     public override method x86::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         ## TODO: Implement this
-        codegen textSection x86::int3
+        codegen textSection x86::int3; x86::nop
     }.
 
     public override method x86::moveFromRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         ## TODO: Implement this
-        codegen textSection x86::int3
+        codegen textSection x86::int3; x86::nop
     }.
 
     public override method x86_64::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
@@ -872,12 +872,12 @@ TACConstantFloat32 extend: {
 TACConstantFloat64 extend: {
     public override method x86::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         ## TODO: Implement this
-        codegen textSection x86::int3
+        codegen textSection x86::int3; x86::nop
     }.
 
     public override method x86::moveFromRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         ## TODO: Implement this
-        codegen textSection x86::int3
+        codegen textSection x86::int3; x86::nop
     }.
 
     public override method x86_64::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
@@ -2599,7 +2599,7 @@ TAC::Operation::LoadStruct
             allocateImmediate32ForInstruction: instruction operandAt: 1sz
     };
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
-        codegen textSection x86::int3
+        codegen textSection x86::int3; x86::nop
     }.
 
 let x86::storePointerRegisterContraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
@@ -2641,7 +2641,7 @@ TAC::Operation::StoreStruct
             allocateImmediate32ForInstruction: instruction operandAt: 2sz
     };
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
-        codegen textSection x86::int3
+        codegen textSection x86::int3; x86::nop
     }.
 
 TAC::Operation::TruncateInt64ToInt32
@@ -3576,7 +3576,7 @@ TAC::Operation::ReturnVoid
 TAC::Operation::Trap
     forTargets: #(x86 x86_64) registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void | };
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
-        codegen textSection x86::int3
+        codegen textSection x86::int3; x86::nop
     }.
 
 AsmX86CompilationTarget extend: {

@@ -612,6 +612,7 @@ bool sysbvm_function_shouldOptimizeLookup(sysbvm_context_t *context, sysbvm_tupl
     return
         hasLiteralReceiver ||
         (sysbvm_type_getFlags(receiverType) & (SYSBVM_TYPE_FLAGS_FINAL)) != SYSBVM_TYPE_FLAGS_NONE ||
+        (functionFlags & SYSBVM_FUNCTION_FLAGS_VIRTUAL_DISPATCH_FLAGS) == SYSBVM_TYPE_FLAGS_NONE ||
         (functionFlags & (SYSBVM_FUNCTION_FLAGS_MACRO | SYSBVM_FUNCTION_FLAGS_FINAL)) != SYSBVM_FUNCTION_FLAGS_NONE;
 }
 

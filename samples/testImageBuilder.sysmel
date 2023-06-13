@@ -1,4 +1,4 @@
-function evaluateString(string: String) => Void := {
+public function evaluateString(string: String) => Void := {
     let result := SysmelLanguage analyzeAndEvaluateSourceCode: (SourceCode text: string directory: nil name: "test" language: #sysmel).
     printLine(result)
 }.
