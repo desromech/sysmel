@@ -1430,7 +1430,8 @@ public final class TACFunctionBuilder superclass: Object; definition: {
 
     Float32ToFloat64 Float32ToUInt8 Float32ToInt8 Float32ToUInt16 Float32ToInt16 Float32ToUInt32 Float32ToInt32 Float32ToUInt64 Float32ToInt64
     Float64ToFloat32 Float64ToUInt8 Float64ToInt8 Float64ToUInt16 Float64ToInt16 Float64ToUInt32 Float64ToInt32 Float64ToUInt64 Float64ToInt64
-
+    Float32ToIEEEUInt32 Float64ToIEEEUInt64 IEEEUInt32ToFloat32 IEEEUInt64ToFloat64
+    
 ) do: {:(Symbol)operationName :: Void |
     let operationNameString := operationName asString.
     let lowerOperationNameString := operationNameString first asLowercase asString -- operationNameString allButFirst.

@@ -1,6 +1,3 @@
-## We use these for the different implementations of Size
-(String::concat:) __type__: (SimpleFunctionTypeTemplate((String, SequenceableCollection), 0bflgs, String)).
-
 Function
     withSelector: #withEagerAnalysis addMethod: {:(Function)self :: Function |
         self ensureAnalysis.

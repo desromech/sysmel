@@ -1286,7 +1286,24 @@ let instructionTemplateTable := #{
                 nextPutX86ModRM: registerAddress reg: register
         };
         yourself).
-
+    OpRmwRx: (AsmX86InstructionTemplate new
+        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
+            (instruction operandCount = 2sz) &&
+                instruction firstOperand isRegisterOrRegisterAddress && 
+                instruction secondOperand isVectorRegister
+        };
+        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
+            let register := instruction secondOperand.
+            let registerAddress := instruction firstOperand.
+            let operandSize := registerAddress size.
+            stream 
+                nextPutAll: templ mandatoryPrefix;
+                nextPutX86SizeOverride: operandSize;
+                nextPutX86RexSize: operandSize rm: registerAddress reg: register;
+                nextPutAll: templ opcode;
+                nextPutX86ModRM: registerAddress reg: register
+        };
+        yourself).
     OpRwRmx: (AsmX86InstructionTemplate new
         when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean | 
             (instruction operandCount = 2sz) &&
@@ -1870,6 +1887,15 @@ let instructionDefinitionTable := #(
     (movss (dst src) "Move scalar single"
         (OpRxRmx #[16rf3] #[16r0f 16r10])
         (OpRmxRx #[16rf3] #[16r0f 16r11])
+    )
+
+    (movd (dst src) "Move double-word"
+        (OpRxRmw #[16r66] #[16r0f 16r6E])
+        (OpRmwRx #[16r66] #[16r0f 16r7E])
+    )
+    (movq (dst src) "Move quad-word"
+        (OpRxRmw #[16r66] #[16r0f 16r6E])
+        (OpRmwRx #[16r66] #[16r0f 16r7E])
     )
 
     (maxpd (dst with) "Maximum packed double"

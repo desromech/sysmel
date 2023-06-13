@@ -1219,8 +1219,8 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #Char8::asUInt32 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt32).
     #Char8::asInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt64).
     #Char8::asUInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt64).
-    #Char8::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::Int8ToFloat32).
-    #Char8::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::Int8ToFloat64).
+    #Char8::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::UInt8ToFloat32).
+    #Char8::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::UInt8ToFloat64).
 
     ## UInt8 primitives
     #UInt8::negated : translateUnaryPrimitiveInto(TAC::Operation::Int8Negate).
@@ -1257,8 +1257,8 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #UInt8::asUInt32 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt32).
     #UInt8::asInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt64).
     #UInt8::asUInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt8ToInt64).
-    #UInt8::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::Int8ToFloat32).
-    #UInt8::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::Int8ToFloat64).
+    #UInt8::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::UInt8ToFloat32).
+    #UInt8::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::UInt8ToFloat64).
 
     ## Int8 primitives
     #Int8::negated : translateUnaryPrimitiveInto(TAC::Operation::Int8Negate).
@@ -1333,8 +1333,8 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #Char16::asUInt32 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt16ToInt32).
     #Char16::asInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt16ToInt64).
     #Char16::asUInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt16ToInt64).
-    #Char16::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::Int16ToFloat32).
-    #Char16::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::Int16ToFloat64).
+    #Char16::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::UInt16ToFloat32).
+    #Char16::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::UInt16ToFloat64).
 
     ## UInt16 primitives
     #UInt16::negated : translateUnaryPrimitiveInto(TAC::Operation::Int16Negate).
@@ -1371,8 +1371,8 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #UInt16::asUInt32 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt16ToInt32).
     #UInt16::asInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt16ToInt64).
     #UInt16::asUInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt16ToInt64).
-    #UInt16::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::Int16ToFloat32).
-    #UInt16::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::Int16ToFloat64).
+    #UInt16::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::UInt16ToFloat32).
+    #UInt16::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::UInt16ToFloat64).
 
     ## Int16 primitives
     #Int16::negated : translateUnaryPrimitiveInto(TAC::Operation::Int16Negate).
@@ -1447,8 +1447,8 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #Char32::asUInt32 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt32).
     #Char32::asInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt32ToInt64).
     #Char32::asUInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt32ToInt64).
-    #Char32::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::Int32ToFloat32).
-    #Char32::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::Int32ToFloat64).
+    #Char32::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::UInt32ToFloat32).
+    #Char32::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::UInt32ToFloat64).
 
     ## UInt32 primitives
     #UInt32::negated : translateUnaryPrimitiveInto(TAC::Operation::Int32Negate).
@@ -1485,8 +1485,9 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #UInt32::asUInt32 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt32).
     #UInt32::asInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt32ToInt64).
     #UInt32::asUInt64 : translateUnaryPrimitiveInto(TAC::Operation::ZeroExtendInt32ToInt64).
-    #UInt32::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::Int32ToFloat32).
-    #UInt32::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::Int32ToFloat64).
+    #UInt32::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::UInt32ToFloat32).
+    #UInt32::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::UInt32ToFloat64).
+    #UInt32::asIEEEFloat32Decoded : translateUnaryPrimitiveInto(TAC::Operation::IEEEUInt32ToFloat32). 
 
     ## Int32 primitives
     #Int32::negated : translateUnaryPrimitiveInto(TAC::Operation::Int32Negate).
@@ -1601,6 +1602,7 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #UInt64::asUInt64 : translateUnaryPrimitiveInto(TAC::Operation::MoveInt64).
     #UInt64::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::UInt64ToFloat32).
     #UInt64::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::UInt64ToFloat64).
+    #UInt64::asIEEEFloat64Decoded : translateUnaryPrimitiveInto(TAC::Operation::IEEEUInt64ToFloat64). 
 
     ## Float32 primitives
     #Float32::negated : translateUnaryPrimitiveInto(TAC::Operation::Float32Negate).
@@ -1619,6 +1621,21 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #Float32::> : translateBinaryPrimitiveInto(TAC::Operation::Float32UnorderedGreaterThan).
     #Float32::>= : translateBinaryPrimitiveInto(TAC::Operation::Float32UnorderedGreaterOrEquals).
 
+    #Float32::asChar8 : translateUnaryPrimitiveInto(TAC::Operation::Float32ToUInt8).
+    #Float32::asInt8 : translateUnaryPrimitiveInto(TAC::Operation::Float32ToInt8).
+    #Float32::asUInt8 : translateUnaryPrimitiveInto(TAC::Operation::Float32ToUInt8).
+    #Float32::asChar16 : translateUnaryPrimitiveInto(TAC::Operation::Float32ToUInt16).
+    #Float32::asInt16 : translateUnaryPrimitiveInto(TAC::Operation::Float32ToInt16).
+    #Float32::asUInt16 : translateUnaryPrimitiveInto(TAC::Operation::Float32ToUInt16).
+    #Float32::asChar32 : translateUnaryPrimitiveInto(TAC::Operation::Float32ToUInt32).
+    #Float32::asInt32 : translateUnaryPrimitiveInto(TAC::Operation::Float32ToInt32).
+    #Float32::asUInt32 : translateUnaryPrimitiveInto(TAC::Operation::Float32ToUInt32).
+    #Float32::asInt64 : translateUnaryPrimitiveInto(TAC::Operation::Float32ToInt64).
+    #Float32::asUInt64 : translateUnaryPrimitiveInto(TAC::Operation::Float32ToUInt64).
+    #Float32::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::MoveFloat32).
+    #Float32::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::Float32ToFloat64).
+    #Float32::asIEEEFloat32Encoding : translateUnaryPrimitiveInto(TAC::Operation::Float32ToIEEEUInt32). 
+
     ## Float64 primitives
     #Float64::negated : translateUnaryPrimitiveInto(TAC::Operation::Float64Negate).
     #Float64::sqrt : translateUnaryPrimitiveInto(TAC::Operation::Float64Sqrt).
@@ -1635,6 +1652,21 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #Float64::<= : translateBinaryPrimitiveInto(TAC::Operation::Float64UnorderedLessOrEquals).
     #Float64::> : translateBinaryPrimitiveInto(TAC::Operation::Float64UnorderedGreaterThan).
     #Float64::>= : translateBinaryPrimitiveInto(TAC::Operation::Float64UnorderedGreaterOrEquals).
+
+    #Float64::asChar8 : translateUnaryPrimitiveInto(TAC::Operation::Float64ToUInt8).
+    #Float64::asInt8 : translateUnaryPrimitiveInto(TAC::Operation::Float64ToInt8).
+    #Float64::asUInt8 : translateUnaryPrimitiveInto(TAC::Operation::Float64ToUInt8).
+    #Float64::asChar16 : translateUnaryPrimitiveInto(TAC::Operation::Float64ToUInt16).
+    #Float64::asInt16 : translateUnaryPrimitiveInto(TAC::Operation::Float64ToInt16).
+    #Float64::asUInt16 : translateUnaryPrimitiveInto(TAC::Operation::Float64ToUInt16).
+    #Float64::asChar32 : translateUnaryPrimitiveInto(TAC::Operation::Float64ToUInt32).
+    #Float64::asInt32 : translateUnaryPrimitiveInto(TAC::Operation::Float64ToInt32).
+    #Float64::asUInt32 : translateUnaryPrimitiveInto(TAC::Operation::Float64ToUInt32).
+    #Float64::asInt64 : translateUnaryPrimitiveInto(TAC::Operation::Float64ToInt64).
+    #Float64::asUInt64 : translateUnaryPrimitiveInto(TAC::Operation::Float64ToUInt64).
+    #Float64::asFloat32 : translateUnaryPrimitiveInto(TAC::Operation::MoveFloat64).
+    #Float64::asFloat64 : translateUnaryPrimitiveInto(TAC::Operation::Float64ToFloat32).
+    #Float64::asIEEEFloat64Encoding : translateUnaryPrimitiveInto(TAC::Operation::Float64ToIEEEUInt64). 
 }.
 
 SSAFunctionDefinitionTACCodeGenerator extend: {

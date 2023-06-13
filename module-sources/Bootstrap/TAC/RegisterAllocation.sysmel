@@ -17,10 +17,13 @@ public abstract class TACRegisterAllocator superclass: Object; definition: {
     public abstract method allocateRegisterForInstructionResult: (instruction: TACInstruction) ::=> Void
         := self subclassResponsibility.
 
+    public abstract method allocateRegisterForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void
+        := self subclassResponsibility.
+
     public abstract method allocateRegister8ForInstructionResult: (instruction: TACInstruction) ::=> Void
         := self subclassResponsibility.
 
-    public abstract method allocateRegisterForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void
+    public abstract method allocateRegister8ForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void
         := self subclassResponsibility.
 
     public virtual method allocateRegister: (requiredRegister: TACPhysicalLocation) orImmediateU8ForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void := {

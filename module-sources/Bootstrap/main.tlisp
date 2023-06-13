@@ -48,7 +48,7 @@
 
 ## Bootstrap environment reflection core.
 (define (makeTypeAccessors type)
-    (define typeName (RawTuple::slotAt: type Type::Layout::name))
+    (define typeName (send #asString (RawTuple::slotAt: type Type::Layout::name)))
 
     (define (exportAndBindInstanceMethod selector method)
         (define exportedName (StringSymbol::intern (String::concat: typeName (String::concat: "::" (send #asString selector)))))
