@@ -648,10 +648,8 @@ AsmObjectCodeStream definition: {
     public method nextPutX86ModRM: (rm: AsmInstructionOperand) regOpcode: (opcode: UInt8) ::=> Void
         := self nextPutX86ModRM: rm regOpcode: opcode immediateSize: 0sz.
 
-    public method nextPutX86ImmediateWord: (immediate: AsmInstructionOperand) ::=> Void := {
-        self assert: immediate size <= 4sz.
-        self nextPutImmediate: immediate
-    }.
+    public method nextPutX86ImmediateWord: (immediate: AsmInstructionOperand) withSize: (operandSize: Size) ::=> Void
+        := self nextPutImmediate: immediate withSize: (operandSize min: 4sz).
 
 }.
 
@@ -806,7 +804,10 @@ let instructionTemplateTable := #{
             instruction secondOperand isImmediate
         };
         writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
-            stream nextPutAll: templ mandatoryPrefix; nextPutAll: templ opcode; nextPutImmediate: instruction secondOperand.
+            stream
+                nextPutAll: templ mandatoryPrefix;
+                nextPutAll: templ opcode;
+                nextPutImmediate: instruction secondOperand withSize: 1sz.
         };
         yourself).
 
@@ -823,7 +824,7 @@ let instructionTemplateTable := #{
                 nextPutX86SizeOverride: register size;
                 nextPutX86RexSize: register size;
                 nextPutAll: templ opcode;
-                nextPutX86ImmediateWord: instruction secondOperand.
+                nextPutX86ImmediateWord: instruction secondOperand withSize: register size.
         };
         yourself).
 
@@ -849,7 +850,10 @@ let instructionTemplateTable := #{
             (instruction operandCount = 1sz) && instruction firstOperand isImmediate
         };
         writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
-            stream nextPutAll: templ mandatoryPrefix; nextPutAll: templ opcode; nextPutX86ImmediateWord: instruction firstOperand
+            stream
+                nextPutAll: templ mandatoryPrefix;
+                nextPutAll: templ opcode;
+                nextPutX86ImmediateWord: instruction firstOperand withSize: 4sz
         };
         yourself).
     OppR: (AsmX86InstructionTemplate new
@@ -879,7 +883,7 @@ let instructionTemplateTable := #{
                 nextPutX86SizeOverride: register size;
                 nextPutX86RexSize: register size rm: register;
                 nextPutX86Opcode: templ opcode first plusRegister: register;
-                nextPutImmediate: immediate
+                nextPutImmediate: immediate withSize: register size
         };
         yourself).
 
@@ -897,7 +901,7 @@ let instructionTemplateTable := #{
                 nextPutAll: templ mandatoryPrefix;
                 nextPutX86RexRM: register;
                 nextPutX86Opcode: templ opcode first plusRegister: register;
-                nextPutImmediate: immediate
+                nextPutImmediate: immediate withSize: 1sz
         };
         yourself).
 
@@ -917,7 +921,7 @@ let instructionTemplateTable := #{
                 nextPutX86RexSize: operandSize rm: registerAddress;
                 nextPutAll: templ opcode;
                 nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode immediateSize: 1sz;
-                nextPutImmediate: immediate
+                nextPutImmediate: immediate withSize: 1sz
         };
         yourself).
 
@@ -975,7 +979,7 @@ let instructionTemplateTable := #{
                 nextPutX86RexSize: operandSize rm: registerAddress;
                 nextPutAll: templ opcode;
                 nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode immediateSize: 1sz;
-                nextPutImmediate: immediate
+                nextPutImmediate: immediate withSize: 1sz
         };
         yourself).
     OpRmbCL: (AsmX86InstructionTemplate new
@@ -1030,7 +1034,7 @@ let instructionTemplateTable := #{
                 nextPutX86RexSize: operandSize rm: registerAddress;
                 nextPutAll: templ opcode;
                 nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode immediateSize: 1sz;
-                nextPutImmediate: immediate
+                nextPutImmediate: immediate withSize: 1sz
         };
         yourself).
     OpRmwCL: (AsmX86InstructionTemplate new
@@ -1098,7 +1102,7 @@ let instructionTemplateTable := #{
                 nextPutX86RexSize: operandSize rm: registerAddress;
                 nextPutAll: templ opcode;
                 nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode immediateSize: immediate size;
-                nextPutX86ImmediateWord: immediate
+                nextPutX86ImmediateWord: immediate withSize: operandSize
         };
         yourself).
     OpRmqIsd: (AsmX86InstructionTemplate new
@@ -1117,7 +1121,7 @@ let instructionTemplateTable := #{
                 nextPutX86RexSize: operandSize rm: registerAddress;
                 nextPutAll: templ opcode;
                 nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode immediateSize: immediate size;
-                nextPutImmediate: immediate
+                nextPutX86ImmediateWord: immediate withSize: operandSize
         };
         yourself).
 
@@ -1775,6 +1779,10 @@ let instructionDefinitionTable := #(
         (OpRmwRw #[] #[16r85])
         (OpRbRmb #[] #[16r84])
         (OpRwRmw #[] #[16r85])
+    )
+
+    (ud2 () "Undefined. Raise invalid opcode exception."
+        (Op #[] #[16r0F 16r0B])
     )
 
     (xadd (dst with) "Exchange and add"

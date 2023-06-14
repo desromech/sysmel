@@ -119,6 +119,19 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
         }
     }.
 
+    public method ensureFunctionWithDefinitionIsTranslated: (function: Function) ::=> Void := {
+        let definition := function definition.
+        self assert: definition isNotNil.
+        translatedValueDictionary at: definition ifAbsent: {|
+            let ssaDefinition := self declareFunctionDefinition: definition.
+            translatedValueDictionary at: function ifAbsent: {|
+                self declareFunction: function.
+            }.
+
+            self compileFunctionDefinition: definition into: ssaDefinition
+        }.
+    }.
+
     public method translateFunction: (function: Function) ::=> SSAValue
         := self translateFunction: function withBuilder: nil.
 
@@ -126,7 +139,7 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
         functionDefinition ensureAnalysis.
         translatedValueDictionary at: functionDefinition ifAbsent: { :: SSAValue |
             exclusiveCompilationMode ifTrue: {
-                builder literal: functionDefinition type: functionDefinition class
+                builder ifNotNil: (builder literal: functionDefinition type: functionDefinition class)
             } ifFalse: {
                 let ssaFunctionDefinition := self declareFunctionDefinition: functionDefinition.
                 self compileFunctionDefinition: functionDefinition into: ssaFunctionDefinition.
@@ -140,6 +153,29 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
 
     public method finish => SSAModule := {
         ssaModule
+    }.
+
+    public method recordMakeArrayInstruction: (instruction: SSAMakeArrayInstruction) ::=> Void
+        := self ensureFunctionWithDefinitionIsTranslated: ObjectModel::makeArrayWithSize.
+
+    public method recordMakeAssociationInstruction: (instruction: SSAMakeAssociationInstruction) ::=> Void
+        := self ensureFunctionWithDefinitionIsTranslated: ObjectModel::makeAssociation.
+
+    public method recordMakeByteArrayInstruction: (instruction: SSAMakeByteArrayInstruction) ::=> Void
+        := self ensureFunctionWithDefinitionIsTranslated: ObjectModel::makeByteArrayWithSize.
+
+    public method recordMakeClosureInstruction: (instruction: SSAMakeClosureInstruction) ::=> Void
+        := self ensureFunctionWithDefinitionIsTranslated: ObjectModel::makeClosure.
+
+    public method recordMakeDictionaryInstruction: (instruction: SSAMakeDictionaryInstruction) ::=> Void
+        := self ensureFunctionWithDefinitionIsTranslated: ObjectModel::makeDictionaryWithCapacity.
+
+    public method recordCallInstruction: (instruction: SSACallInstruction) ::=> Void := {
+
+    }.
+
+    public method recordSendInstruction: (instruction: SSASendInstruction) ::=> Void := {
+
     }.
 }.
 
@@ -215,6 +251,27 @@ public final class SSAFunctionCompilationContext superclass: Object; definition:
 
         result
     }.
+
+    public method recordMakeArrayInstruction: (instruction: SSAMakeArrayInstruction) ::=> Void
+        := moduleCompilationContext recordMakeArrayInstruction: instruction.
+
+    public method recordMakeAssociationInstruction: (instruction: SSAMakeAssociationInstruction) ::=> Void
+        := moduleCompilationContext recordMakeAssociationInstruction: instruction.
+
+    public method recordMakeByteArrayInstruction: (instruction: SSAMakeByteArrayInstruction) ::=> Void
+        := moduleCompilationContext recordMakeByteArrayInstruction: instruction.
+
+    public method recordMakeClosureInstruction: (instruction: SSAMakeClosureInstruction) ::=> Void
+        := moduleCompilationContext recordMakeClosureInstruction: instruction.
+
+    public method recordMakeDictionaryInstruction: (instruction: SSAMakeDictionaryInstruction) ::=> Void
+        := moduleCompilationContext recordMakeDictionaryInstruction: instruction.
+
+    public method recordCallInstruction: (instruction: SSACallInstruction) ::=> Void
+        := moduleCompilationContext recordCallInstruction: instruction.
+
+    public method recordSendInstruction: (instruction: SSASendInstruction) ::=> Void
+        := moduleCompilationContext recordSendInstruction: instruction.
 }.
 
 ASTNode extend: {
@@ -357,11 +414,13 @@ ASTFunctionApplicationNode extend: {
             primitiveGenerator(self, context)
         }) ifNil: {
             let functionExpression := self functionExpression generateSSAValueWith: context.
-            (context builder call: functionExpression
+            let callInstruction := (context builder call: functionExpression
                 arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
                 resultType: self analyzedType)
                 isUnchecked: self isNoTypechecked;
-                yourself
+                yourself.
+            context recordCallInstruction: callInstruction.
+            callInstruction
         }.
     }.
 }.
@@ -402,7 +461,9 @@ ASTLambdaNode extend: {
             context getValueForLocalBinding: capture sourceBinding
         }.
 
-        context builder makeClosure: functionDefinitionValue captures: captures type: self analyzedType
+        let instruction := context builder makeClosure: functionDefinitionValue captures: captures type: self analyzedType.
+        context recordMakeClosureInstruction: instruction.
+        instruction
     }.
 }.
 
@@ -634,35 +695,54 @@ ASTWhileContinueWithNode extend: {
 }.
 
 ASTMakeArrayNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := context builder makeArray: (self elements collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }).
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let instruction := context builder makeArray: (self elements collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }).
+        instruction isMakeArrayInstruction ifTrue: {
+            context recordMakeArrayInstruction: (instruction downCastTo: SSAMakeArrayInstruction).
+        }.
+        instruction
+    }.
 }.
 
 ASTMakeAssociationNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := context builder makeAssociationWithKey: (self key generateSSAValueWith: context)
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let instruction := context builder makeAssociationWithKey: (self key generateSSAValueWith: context)
             value: (self value
                 ifNotNil: (self value generateSSAValueWith: context)
                 ifNil: (context builder literal: nil)).
+        context recordMakeAssociationInstruction: instruction.
+        instruction
+    }.
 }.
 
 ASTMakeByteArrayNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := context builder makeByteArray: (self elements collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }).
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue :={
+        let instruction := context builder makeByteArray: (self elements collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }).
+        instruction isMakeByteArrayInstruction ifTrue: {
+            context recordMakeByteArrayInstruction: (instruction downCastTo: SSAMakeByteArrayInstruction).
+        }.
+        instruction
+    }.
 }.
 
 ASTMakeDictionaryNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := context builder makeDictionary: (self elements collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }).
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let instruction := context builder makeDictionary: (self elements collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }).
+        context recordMakeDictionaryInstruction: instruction.
+        instruction
+    }.
 }.
 
 ASTMessageSendNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := context builder send: (self receiver generateSSAValueWith: context)
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let sendInstruction := context builder send: (self receiver generateSSAValueWith: context)
             receiverLookupType: (self receiverLookupType ifNotNil: {:(ASTNode)lookupTypeExpression :: SSAValue | lookupTypeExpression generateSSAValueWith: context })
             selector: (self selector generateSSAValueWith: context)
             arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
-            resultType: self analyzedType
+            resultType: self analyzedType.
+        context recordSendInstruction: sendInstruction.
+        sendInstruction
+    }.
 }.
 
 ASTReturnNode extend: {

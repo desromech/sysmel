@@ -4,8 +4,14 @@ public function NoRttiImageMain(argc: Int32, argv: Char8 const pointer pointer) 
     argc negated asString writeOntoStdout.
     "\n" writeOntoStdout.
 
+    let testArray := (1, "Hello", argc asString).
+    testArray size asString asString writeOntoStdout.
+
+    let testByteArray := #[1u8. argc asUInt8].
+    testByteArray size asString asString writeOntoStdout.
+
     ##let myObject := Object basicAllocate.
-    let myObject := Object new.
+    ##let myObject := Object new.
 
     let i mutable := 0i32.
     while: (i < argc) do: {

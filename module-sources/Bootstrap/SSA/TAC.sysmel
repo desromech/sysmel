@@ -1866,7 +1866,7 @@ SSAReturnInstruction extend: {
 
 SSAUnreachableInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
-        codegen blockBuilder trap
+        codegen blockBuilder unreachableTrap
     }.
 }.
 

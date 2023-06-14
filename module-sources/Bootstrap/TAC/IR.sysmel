@@ -750,7 +750,8 @@ public global TAC::Operation::ReturnFloat64 := TACOperation terminatorNamed: #re
 public global TAC::Operation::ReturnStruct := TACOperation terminatorNamed: #returnStruct.
 public global TAC::Operation::ReturnVoid := TACOperation terminatorNamed: #returnVoid.
 
-public global TAC::Operation::Trap := TACOperation terminatorNamed: #trap.
+public global TAC::Operation::Trap := TACOperation named: #trap.
+public global TAC::Operation::UnreachableTrap := TACOperation terminatorNamed: #unreachableTrap.
 
 public global TAC::Operation::DebugSetBindingValue := TACOperation debugNamed: #debugSetBindingValue.
 public global TAC::Operation::DebugSetMutableBindingValue := TACOperation debugNamed: #debugSetMutableBindingValue.
@@ -1347,6 +1348,9 @@ public final class TACBlockBuilder superclass: Object; definition: {
 
     public method trap ::=> TACInstruction
         := self operation: TAC::Operation::Trap.
+
+    public method unreachableTrap ::=> TACInstruction
+        := self operation: TAC::Operation::UnreachableTrap.
 
     public method debugSetBinding: (binding: SymbolBinding) value: (value: TACValue) ::=> TACInstruction
         := self addInstruction: (TACInstruction new

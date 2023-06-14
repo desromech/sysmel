@@ -682,6 +682,93 @@ AsmObjectCodeStream definition: {
         bytes do: {:(UInt8)each :: Void | self nextPut: each}
     }.
 
+    public method nextPutUInt32: (value: UInt32) withSize: (size: Size) ::=> Void := {
+        size = 1sz ifTrue: {
+            self nextPutUInt8: value asUInt8.
+            return: void
+        }.
+        size = 2sz ifTrue: {
+            self nextPutUInt16: value asUInt16.
+            return: void
+        }.
+        size = 4sz ifTrue: {
+            self nextPutUInt32: value.
+            return: void
+        }.
+        size = 8sz ifTrue: {
+            self nextPutUInt64: value asUInt64.
+            return: void
+        }.
+
+        self error: "Unsupported size".
+    }.
+
+    public method nextPutInt32: (value: Int32) withSize: (size: Size) ::=> Void := {
+        size = 1sz ifTrue: {
+            self nextPutInt8: value asInt8.
+            return: void
+        }.
+        size = 2sz ifTrue: {
+            self nextPutInt16: value asInt16.
+            return: void
+        }.
+        size = 4sz ifTrue: {
+            self nextPutInt32: value.
+            return: void
+        }.
+        size = 8sz ifTrue: {
+            self nextPutInt64: value asInt64.
+            return: void
+        }.
+
+        self error: "Unsupported size".
+    }.
+
+    public method nextPutUInt64: (value: UInt64) withSize: (size: Size) ::=> Void := {
+        size = 1sz ifTrue: {
+            self nextPutUInt8: value asUInt8.
+            return: void
+        }.
+        size = 2sz ifTrue: {
+            self nextPutUInt16: value asUInt16.
+            return: void
+        }.
+        size = 4sz ifTrue: {
+            self nextPutUInt32: value asUInt32.
+            return: void
+        }.
+        size = 8sz ifTrue: {
+            self nextPutUInt64: value.
+            return: void
+        }.
+
+        self error: "Unsupported size".
+    }.
+
+    public method nextPutInt64: (value: Int64) withSize: (size: Size) ::=> Void := {
+        size = 1sz ifTrue: {
+            self nextPutInt8: value asInt8.
+            return: void
+        }.
+        size = 2sz ifTrue: {
+            self nextPutInt16: value asInt16.
+            return: void
+        }.
+        size = 4sz ifTrue: {
+            self nextPutInt32: value asInt32.
+            return: void
+        }.
+        size = 8sz ifTrue: {
+            self nextPutInt64: value.
+            return: void
+        }.
+
+        self error: "Unsupported size".
+    }.
+
+    public method nextPutUInt8: (value: UInt8) ::=> Void
+        := self nextPut: value.
+
     public abstract method nextPutInt8: (value: Int8) ::=> Void
         := self subclassResponsibility.
 

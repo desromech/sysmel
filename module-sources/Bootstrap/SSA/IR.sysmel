@@ -1651,22 +1651,20 @@ SSAInstructionBuilder definition: {
         }
     }.
 
-    public method makeAssociationWithKey: (key: SSAValue) value: (value: SSAValue) ::=> SSAValue := {
-        self addInstruction: (SSAMakeAssociationInstruction new
+    public method makeAssociationWithKey: (key: SSAValue) value: (value: SSAValue) ::=> SSAMakeAssociationInstruction
+        := self addInstruction: (SSAMakeAssociationInstruction new
             key: key;
             value: value;
             type: Association;
             registerInUsedValues;
-            yourself)
-    }.
+            yourself).
 
-    public method makeDictionary: (elements: Array) ::=> SSAValue := {
-        self addInstruction: (SSAMakeDictionaryInstruction new
+    public method makeDictionary: (elements: Array) ::=> SSAMakeDictionaryInstruction
+        := self addInstruction: (SSAMakeDictionaryInstruction new
             elements: elements;
             type: Dictionary;
             registerInUsedValues;
-            yourself)
-    }.
+            yourself).
 
     public method makeClosure: (functionDefinition: SSAValue) captures: (captures: Array) type: (type: Type) ::=> SSAMakeClosureInstruction
         := self addInstruction: (SSAMakeClosureInstruction new

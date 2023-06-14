@@ -733,3 +733,25 @@ public function ObjectModel::makeArrayWithSize(size: Size) => Array := {
         ifTrue: emptyArray
         ifFalse: (Array basicAllocate: size)
 }.
+
+public function ObjectModel::makeAssociation(key: Untyped, value: Untyped) => Association
+    := Association basicAllocate
+        __slotNamedAt__: #key put: key;
+        __slotNamedAt__: #value put: value;
+        yourself.
+
+public function ObjectModel::makeClosure(functionDefinition: FunctionDefinition, captureVector: AnyValue) => Function
+    := Function basicAllocate
+        __slotNamedAt__: #definition put: functionDefinition;
+        __slotNamedAt__: #captureVector put: captureVector;
+        yourself.
+
+let emptyByteArray := #[].
+public function ObjectModel::makeByteArrayWithSize(size: Size) => ByteArray := {
+    size = 0sz
+        ifTrue: emptyByteArray
+        ifFalse: (ByteArray basicAllocate: size)
+}.
+
+public function ObjectModel::makeDictionaryWithCapacity(initialCapacity: Size) => Dictionary
+    := Dictionary new: initialCapacity.

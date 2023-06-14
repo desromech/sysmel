@@ -3576,7 +3576,13 @@ TAC::Operation::ReturnVoid
 TAC::Operation::Trap
     forTargets: #(x86 x86_64) registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void | };
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
-        codegen textSection x86::int3; x86::nop
+        codegen textSection x86::int3
+    }.
+
+TAC::Operation::UnreachableTrap
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void | };
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::ud2
     }.
 
 AsmX86CompilationTarget extend: {

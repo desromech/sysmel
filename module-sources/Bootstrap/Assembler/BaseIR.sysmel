@@ -48,10 +48,10 @@ AsmInstructionOperand definition: {
     public virtual method isImmediate => Boolean := false.
     public virtual method isImmediateValue1 => Boolean := false.
     public virtual method isImmediate8 => Boolean := self isImmediate && (self size = 1sz).
-    public virtual method isImmediate16 => Boolean := self isImmediate && (self size = 2sz).
-    public virtual method isImmediate32 => Boolean := self isImmediate && (self size = 4sz).
-    public virtual method isImmediate64 => Boolean := self isImmediate && (self size = 8sz).
-    public virtual method isImmediate128 => Boolean := self isImmediate && (self size = 16sz).
+    public virtual method isImmediate16 => Boolean := self isImmediate && (self size <= 2sz).
+    public virtual method isImmediate32 => Boolean := self isImmediate && (self size <= 4sz).
+    public virtual method isImmediate64 => Boolean := self isImmediate && (self size <= 8sz).
+    public virtual method isImmediate128 => Boolean := self isImmediate && (self size <= 16sz).
 
     public virtual method isImmediateSymbolWithAddend => Boolean := false.
 
@@ -85,7 +85,7 @@ AsmInstructionOperand definition: {
     public virtual method isVectorRegisterOrRegisterAddress => Boolean := false.
     public virtual method isRegisterAddress => Boolean := false.
 
-    public abstract method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void
+    public abstract method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void
         := self subclassResponsibility.
 
     public abstract method nextPutIPRelativeI32WithExtraOffset: (extraOffset: Int32) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void
@@ -146,9 +146,9 @@ public final class AsmImmediateSymbolWithAddend superclass: AsmImmediate; defini
         addend ~= 0i64 ifTrue: (stream nextPutAll: " + "; print: addend).
     }.
 
-    public override method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
-        self assert: (size = 4sz) || (size = 8sz).
-        size = 4sz ifTrue: {
+    public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        self assert: (requiredSize = 4sz) || (requiredSize = 8sz).
+        requiredSize = 4sz ifTrue: {
             codeStream
                 recordRelocation: (AsmObjectCodeRelocationAbsoluteInt32 new
                     symbol: symbol;
@@ -156,7 +156,7 @@ public final class AsmImmediateSymbolWithAddend superclass: AsmImmediate; defini
                     yourself);
                 nextPutUInt32: 0u32
         }.
-        size = 8sz ifTrue: {
+        requiredSize = 8sz ifTrue: {
             codeStream
                 recordRelocation: (AsmObjectCodeRelocationAbsoluteInt64 new
                     symbol: symbol;
@@ -442,8 +442,8 @@ public final class AsmImmediateConstantChar8 superclass: AsmImmediateConstant; d
     public override method size => Size := 1sz.
 
 
-    public override method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
-        codeStream nextPut: value asUInt8
+    public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        codeStream nextPutUInt32: value asUInt32 withSize: requiredSize
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -464,8 +464,8 @@ public final class AsmImmediateConstantUInt8 superclass: AsmImmediateConstant; d
     public override method isImmediateConstantUInt8 => Boolean := true.
     public override method size => Size := 1sz.
 
-    public override method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
-        codeStream nextPut: value
+    public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        codeStream nextPutUInt32: value asUInt32 withSize: requiredSize
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -490,8 +490,8 @@ public final class AsmImmediateConstantInt8 superclass: AsmImmediateConstant; de
 
     public override method size => Size := 1sz.
 
-    public override method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
-        codeStream nextPutInt8: value
+    public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        codeStream nextPutInt32: value asInt32 withSize: requiredSize
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -510,8 +510,8 @@ public final class AsmImmediateConstantChar16 superclass: AsmImmediateConstant; 
     public override method isImmediateConstantChar16 => Boolean := true.
     public override method size => Size := 2sz.
 
-    public override method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
-        codeStream nextPutUInt16: value asUInt16
+    public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        codeStream nextPutUInt32: value asUInt32 withSize: requiredSize
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -530,8 +530,8 @@ public final class AsmImmediateConstantUInt16 superclass: AsmImmediateConstant; 
     public override method isImmediateConstantUInt16 => Boolean := true.
     public override method size => Size := 2sz.
 
-    public override method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
-        codeStream nextPutUInt16: value
+    public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        codeStream nextPutUInt32: value asUInt32 withSize: requiredSize
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -550,8 +550,8 @@ public final class AsmImmediateConstantInt16 superclass: AsmImmediateConstant; d
     public override method isImmediateConstantInt16 => Boolean := true.
     public override method size => Size := 2sz.
 
-    public override method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
-        codeStream nextPutInt16: value
+    public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        codeStream nextPutInt32: value asInt32 withSize: requiredSize
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -570,8 +570,8 @@ public final class AsmImmediateConstantChar32 superclass: AsmImmediateConstant; 
     public override method isImmediateConstantChar32 => Boolean := true.
     public override method size => Size := 4sz.
 
-    public override method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
-        codeStream nextPutUInt32: value asUInt32
+    public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        codeStream nextPutUInt32: value asUInt32 withSize: requiredSize
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -590,8 +590,8 @@ public final class AsmImmediateConstantUInt32 superclass: AsmImmediateConstant; 
     public override method isImmediateConstantUInt32 => Boolean := true.
     public override method size => Size := 4sz.
 
-    public override method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
-        codeStream nextPutUInt32: value
+    public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        codeStream nextPutUInt32: value withSize: requiredSize
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -614,8 +614,8 @@ public final class AsmImmediateConstantInt32 superclass: AsmImmediateConstant; d
     public override method isImmediateSigned8 => Boolean := value asInt8 asInt32 = value.
     public override method asImmediateSigned8Value => Int8 := value asInt8.
 
-    public override method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
-        codeStream nextPutInt32: value
+    public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        codeStream nextPutInt32: value withSize: requiredSize
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -634,8 +634,8 @@ public final class AsmImmediateConstantUInt64 superclass: AsmImmediateConstant; 
     public override method isImmediateConstantUInt64 => Boolean := true.
     public override method size => Size := 8sz.
 
-    public override method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
-        codeStream nextPutUInt64: value
+    public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        codeStream nextPutUInt64: value withSize: requiredSize
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -654,8 +654,8 @@ public final class AsmImmediateConstantInt64 superclass: AsmImmediateConstant; d
     public override method isImmediateConstantInt64 => Boolean := true.
     public override method size => Size := 8sz.
 
-    public override method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
-        codeStream nextPutInt64: value
+    public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        codeStream nextPutInt64: value withSize: requiredSize
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -674,8 +674,8 @@ public final class AsmImmediateConstantFloat32 superclass: AsmImmediateConstant;
     public override method isImmediateConstantFloat32 => Boolean := true.
     public override method size => Size := 4sz.
 
-    public override method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
-        codeStream nextPutFloat32: value
+    public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        codeStream nextPutUInt32: value asIEEEFloat32Encoding withSize: requiredSize
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -694,8 +694,8 @@ public final class AsmImmediateConstantFloat64 superclass: AsmImmediateConstant;
     public override method isImmediateConstantFloat64 => Boolean := true.
     public override method size => Size := 8sz.
 
-    public override method nextPutImmediateOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
-        codeStream nextPutFloat64: value
+    public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        codeStream nextPutUInt64: value asIEEEFloat64Encoding withSize: requiredSize
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -1680,27 +1680,23 @@ AsmObjectCodeStream extend: {
     public abstract method nextPutIPRelativeI32: (operand: AsmInstructionOperand) extraOffset: (extraOffset: Int32) ::=> Void
         := self subclassResponsibility.
 
-    public abstract method nextPutImmediate: (operand: AsmInstructionOperand) ::=> Void
+    public abstract method nextPutImmediate: (operand: AsmInstructionOperand) withSize: (size: Size) ::=> Void
         := self subclassResponsibility.
 
     public method nextPutImmediate8: (operand: AsmInstructionOperand) ::=> Void := {
-        self assert: operand isImmediate8.
-        self nextPutImmediate: operand
+        self nextPutImmediate: operand withSize: 1sz
     }.
 
     public method nextPutImmediate16: (operand: AsmInstructionOperand) ::=> Void := {
-        self assert: operand isImmediate16.
-        self nextPutImmediate: operand
+        self nextPutImmediate: operand withSize: 2sz
     }.
 
     public method nextPutImmediate32: (operand: AsmInstructionOperand) ::=> Void := {
-        self assert: operand isImmediate32.
-        self nextPutImmediate: operand
+        self nextPutImmediate: operand withSize: 4sz
     }.
 
     public method nextPutImmediate64: (operand: AsmInstructionOperand) ::=> Void := {
-        self assert: operand isImmediate64.
-        self nextPutImmediate: operand
+        self nextPutImmediate: operand withSize: 8sz
     }.
 
     public method nextPutIPRelativeI32: (operand: AsmInstructionOperand) ::=> Void := {
@@ -1709,8 +1705,8 @@ AsmObjectCodeStream extend: {
 }.
 
 AsmObjectCodeSizeStream extend: {
-    public override method nextPutImmediate: (operand: AsmInstructionOperand) ::=> Void := {
-        activeSection increaseSizeBy: operand size
+    public override method nextPutImmediate: (operand: AsmInstructionOperand) withSize: (size: Size) ::=> Void := {
+        activeSection increaseSizeBy: size
     }.
 
     public override method nextPutIPRelativeI32: (operand: AsmInstructionOperand) extraOffset: (extraOffset: Int32) ::=> Void := {
@@ -1719,8 +1715,8 @@ AsmObjectCodeSizeStream extend: {
 }.
 
 AsmObjectCodeWriteStream extend: {
-    public override method nextPutImmediate: (operand: AsmInstructionOperand) ::=> Void := {
-        operand nextPutImmediateOnCodeStream: self
+    public override method nextPutImmediate: (operand: AsmInstructionOperand) withSize: (size: Size) ::=> Void := {
+        operand nextPutImmediateWithSize: size onCodeStream: self
     }.
 
     public override method nextPutIPRelativeI32: (operand: AsmInstructionOperand) extraOffset: (extraOffset: Int32) ::=> Void := {
