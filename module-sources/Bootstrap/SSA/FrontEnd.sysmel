@@ -167,8 +167,10 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
     public method recordMakeClosureInstruction: (instruction: SSAMakeClosureInstruction) ::=> Void
         := self ensureFunctionWithDefinitionIsTranslated: ObjectModel::makeClosure.
 
-    public method recordMakeDictionaryInstruction: (instruction: SSAMakeDictionaryInstruction) ::=> Void
-        := self ensureFunctionWithDefinitionIsTranslated: ObjectModel::makeDictionaryWithCapacity.
+    public method recordMakeDictionaryInstruction: (instruction: SSAMakeDictionaryInstruction) ::=> Void := {
+        self ensureFunctionWithDefinitionIsTranslated: ObjectModel::makeDictionaryWithCapacity.
+        self ensureFunctionWithDefinitionIsTranslated: ObjectModel::Dictionary::add.
+    }.
 
     public method recordCallInstruction: (instruction: SSACallInstruction) ::=> Void := {
 
@@ -414,11 +416,10 @@ ASTFunctionApplicationNode extend: {
             primitiveGenerator(self, context)
         }) ifNil: {
             let functionExpression := self functionExpression generateSSAValueWith: context.
-            let callInstruction := (context builder call: functionExpression
+            let callInstruction := context builder call: functionExpression
                 arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
-                resultType: self analyzedType)
-                isUnchecked: self isNoTypechecked;
-                yourself.
+                resultType: self analyzedType.
+            callInstruction isUnchecked: self isNoTypechecked.
             context recordCallInstruction: callInstruction.
             callInstruction
         }.
@@ -740,6 +741,7 @@ ASTMessageSendNode extend: {
             selector: (self selector generateSSAValueWith: context)
             arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
             resultType: self analyzedType.
+        sendInstruction isUnchecked: self isNoTypechecked.
         context recordSendInstruction: sendInstruction.
         sendInstruction
     }.

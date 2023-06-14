@@ -755,3 +755,6 @@ public function ObjectModel::makeByteArrayWithSize(size: Size) => ByteArray := {
 
 public function ObjectModel::makeDictionaryWithCapacity(initialCapacity: Size) => Dictionary
     := Dictionary new: initialCapacity.
+
+public function ObjectModel::Dictionary::add(dictionary: Dictionary, association: Association) => Void
+    := dictionary add: association.

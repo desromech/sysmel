@@ -164,6 +164,7 @@ typedef struct sysbvm_astMessageSendNode_s
     sysbvm_tuple_t arguments;
     sysbvm_tuple_t isDynamic;
     sysbvm_tuple_t boundMethod;
+    sysbvm_tuple_t applicationFlags;
 } sysbvm_astMessageSendNode_t;
 
 typedef struct sysbvm_astMessageChainNode_s

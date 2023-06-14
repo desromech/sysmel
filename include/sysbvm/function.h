@@ -56,7 +56,6 @@ typedef enum sysbvm_functionApplicationFlags_e
 {
     SYSBVM_FUNCTION_APPLICATION_FLAGS_NONE = 0,
     SYSBVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK = 1<<0,
-    SYSBVM_FUNCTION_APPLICATION_FLAGS_PASS_THROUGH_REFERENCES = 1<<1,
 } sysbvm_functionApplicationFlags_t;
 
 typedef struct sysbvm_function_s

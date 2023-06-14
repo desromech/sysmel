@@ -368,6 +368,12 @@ ASTMessageSendNode
             yourself
     } makeOverride;
 
+    withSelector: #hasApplicationFlag: addMethod: {:(ASTMessageSendNode)self :(Bitflags)flag :: Boolean |
+        (self applicationFlags & flag) ~= 0bflgs
+    };
+    withSelector: #isNoTypechecked addMethod: {:(ASTMessageSendNode)self :: Boolean |
+        self hasApplicationFlag: FunctionApplicationFlags::NoTypecheck
+    };
     withSelector: #literalDependenciesDo: addMethod: {:(ASTMessageSendNode)self :((Untyped, Boolean) => Void)aBlock :: Void |
         if: self boundMethod ~~ nil then: aBlock(self boundMethod, true)
     } makeVirtual;

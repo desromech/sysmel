@@ -1141,6 +1141,15 @@ public final class TACBlockBuilder superclass: Object; definition: {
     public method callPointer: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
         := self callPointer: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
 
+    public method callPointer: (function: TACValue) with: (firstArgument: TACValue) result: (result: TACValue) ::=> TACInstruction
+        := self callPointer: function arguments: (Array with: firstArgument) result: result.
+
+    public method callPointer: (function: TACValue) with: (firstArgument: TACValue) with: (secondArgument: TACValue) result: (result: TACValue) ::=> TACInstruction
+        := self callPointer: function arguments: (Array with: firstArgument with: secondArgument) result: result.
+
+    public method callPointer: (function: TACValue) with: (firstArgument: TACValue) with: (secondArgument: TACValue) with: (thirdArgument: TACValue) result: (result: TACValue) ::=> TACInstruction
+        := self callPointer: function arguments: (Array with: firstArgument with: secondArgument with: thirdArgument) result: result.
+
     public method callFloat32: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
         := self call: function operation: TAC::Operation::CallFloat32 convention: callingConvention arguments: arguments result: result.
 
@@ -1164,6 +1173,15 @@ public final class TACBlockBuilder superclass: Object; definition: {
 
     public method callVoid: (function: TACValue) arguments: (arguments: Array) ::=> TACInstruction
         := self callVoid: function convention: self compilationTarget defaultCallingConvention arguments: arguments.
+
+    public method callVoid: (function: TACValue) with: (firstArgument: TACValue) ::=> TACInstruction
+        := self callVoid: function arguments: (Array with: firstArgument).
+
+    public method callVoid: (function: TACValue) with: (firstArgument: TACValue) with: (secondArgument: TACValue) ::=> TACInstruction
+        := self callVoid: function arguments: (Array with: firstArgument with: secondArgument).
+
+    public method callVoid: (function: TACValue) with: (firstArgument: TACValue) with: (secondArgument: TACValue) with: (thirdArgument: TACValue) ::=> TACInstruction
+        := self callVoid: function arguments: (Array with: firstArgument with: secondArgument with: thirdArgument).
 
     public method moveInt8: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::MoveInt8 with: source result: destination.
@@ -1268,6 +1286,11 @@ public final class TACBlockBuilder superclass: Object; definition: {
 
     public method loadStruct: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
         := self operation: TAC::Operation::LoadStruct with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+
+    public method pointerConstantWith: (value: UInt64) ::=> TACValue
+        := self has64BitsPointers
+            ifTrue: (value asTacConstant)
+            ifFalse: (value asUInt32 asTacConstant).
 
     public method storeInt8: (value: TACValue) into: (pointer: TACValue) constantOffset: (constantOffset: Int64) ::=> TACInstruction
         := self operation: TAC::Operation::StoreInt8 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).

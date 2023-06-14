@@ -130,6 +130,8 @@ public final class SSALiteralConstant superclass: SSAConstant; definition: {
 
 SSAGlobalValue definition: {
     public field name => Symbol.
+
+    public virtual method sourceObject := nil.
 }.
 
 SSAFunction definition: {
@@ -1308,6 +1310,7 @@ public final class SSASendInstruction superclass: SSAInstruction; definition: {
     public field receiverLookupType => SSAValue.
     public field selector => SSAValue.
     public field arguments => Array.
+    public field isUnchecked => Boolean.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream
@@ -1423,14 +1426,22 @@ public final class SSAUnreachableInstruction superclass: SSAInstruction; definit
 
 public final class SSAModule superclass: Object; definition: {
     public field globalValues => OrderedCollection.
+    private field globalValueDictionary => IdentityDictionary.
 
     public override method initialize => Void := {
         globalValues := OrderedCollection new.
+        globalValueDictionary := IdentityDictionary new.
     }.
 
     public method addGlobalValue: (globalValue: SSAGlobalValue) ::=> Void := {
-        globalValues add: globalValue
+        globalValues add: globalValue.
+        globalValue sourceObject ifNotNil: {
+            globalValueDictionary at: globalValue sourceObject put: globalValue
+        }
     }.
+
+    public method getGlobalValueFor: value ::=> SSAValue
+        := globalValueDictionary at: value.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         globalValues do: {:(SSAGlobalValue)eachValue :: Void |

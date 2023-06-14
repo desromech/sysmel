@@ -1,8 +1,102 @@
-Size extend: {
-    public method until: (stop: SelfType) do: (aBlock: SelfType => Void) ::=> Void := {
-        let i mutable := self.
+public final class Interval superclass: SequenceableCollection; definition: {
+    public field start.
+    public field stop.
+    public field increment.
+
+    public override method size => Size
+        := (stop // increment) asSize.
+
+    public override method do: aBlock ::=> Void := {
+        let i mutable := start.
+        while: (i <= stop) do: (
+            aBlock(i)
+        ) continueWith: (i := i + increment)
+    }.
+
+    public override method doWithIndex: aBlock ::=> Void := {
+        let i mutable := start.
+        let index mutable := 0sz.
+        while: (i <= stop) do: {
+            aBlock(i, index).
+            i := i + increment.
+            index := index + 1sz.
+        }
+    }.
+}.
+
+public final class ExclusiveInterval superclass: SequenceableCollection; definition: {
+    public field start.
+    public field stop.
+    public field increment.
+
+    public override method size => Size
+        := ((stop - increment) // increment) asSize.
+
+    public override method do: aBlock ::=> Void := {
+        let i mutable := start.
         while: (i < stop) do: (
             aBlock(i)
-        ) continueWith: (i := i + SelfType one)
+        ) continueWith: (i := i + increment)
+    }.
+
+    public override method doWithIndex: aBlock ::=> Void := {
+        let i mutable := start.
+        let index mutable := 0sz.
+        while: (i < stop) do: {
+            aBlock(i, index).
+            i := i + increment.
+            index := index + 1sz.
+        }
+    }.
+}.
+
+(
+    UInt8, Int8,
+    UInt16, Int16,
+    UInt32, Int32,
+    UInt64, Int64,
+    Integer,
+    Float32, Float64
+) macroDo: {:NumberType :: Void |
+    NumberType extend: {
+        public pure method to: (stop: SelfType) ::=> Interval
+            := Interval new start: self; stop: stop; increment: SelfType one; yourself.
+
+        public pure method to: (stop: SelfType) by: (increment: SelfType) ::=> Interval
+            := Interval new start: self; stop: stop; increment: increment; yourself.
+
+        public method to: (stop: SelfType) by: (increment: SelfType) do: (aBlock: SelfType => Void) ::=> Void := {
+            let i mutable := self.
+            while: (i <= stop) do: (
+                aBlock(i)
+            ) continueWith: (i := i + increment)
+        }.
+
+        public method to: (stop: SelfType) do: (aBlock: SelfType => Void) ::=> Void := {
+            let i mutable := self.
+            while: (i <= stop) do: (
+                aBlock(i)
+            ) continueWith: (i := i + SelfType one)
+        }.
+
+        public pure method until: (stop: SelfType) ::=> ExclusiveInterval
+            := ExclusiveInterval new start: self; stop: stop; increment: SelfType one; yourself.
+
+        public pure method until: (stop: SelfType) by: (increment: SelfType) ::=> ExclusiveInterval
+            := ExclusiveInterval new start: self; stop: stop; increment: increment; yourself.
+
+        public method until: (stop: SelfType) by: (increment: SelfType) do: (aBlock: SelfType => Void) ::=> Void := {
+            let i mutable := self.
+            while: (i < stop) do: (
+                aBlock(i)
+            ) continueWith: (i := i + increment)
+        }.
+
+        public method until: (stop: SelfType) do: (aBlock: SelfType => Void) ::=> Void := {
+            let i mutable := self.
+            while: (i < stop) do: (
+                aBlock(i)
+            ) continueWith: (i := i + SelfType one)
+        }.
     }.
 }.

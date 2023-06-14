@@ -265,7 +265,19 @@
             primitiveFailedError()
         }.
 
+        public pure final eager method // (other: SelfType) ::=> SelfType := {
+            <primitive: (primitivePrefix -- "/") asSymbol>
+            <targetDefinedPrimitive>
+            primitiveFailedError()
+        }.
+
         public pure final eager method % (other: SelfType) ::=> SelfType := {
+            <primitive: (primitivePrefix -- "%") asSymbol>
+            <targetDefinedPrimitive>
+            primitiveFailedError()
+        }.
+
+        public pure final eager method \\ (other: SelfType) ::=> SelfType := {
             <primitive: (primitivePrefix -- "%") asSymbol>
             <targetDefinedPrimitive>
             primitiveFailedError()

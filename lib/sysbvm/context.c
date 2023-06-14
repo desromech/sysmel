@@ -1023,6 +1023,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "arguments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "isDynamic", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "boundMethod", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anyValueType,
+        "applicationFlags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         NULL);
     context->roots.astMessageChainNodeType = sysbvm_context_createIntrinsicClass(context, "ASTMessageChainNode", context->roots.astNodeType,
         "receiver", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,

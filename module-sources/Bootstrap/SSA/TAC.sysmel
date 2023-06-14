@@ -24,6 +24,7 @@ TACCompilationTarget extend: {
 
 public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; definition: {
     public field compilationTarget => TACCompilationTarget.
+    public field ssaModule => SSAModule.
     public field targetModule => TACModule.
     public field globalValueDictionary => Dictionary.
     public field capturelessUncheckedEntryPointDictionary => Dictionary.
@@ -46,6 +47,7 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
 
     public method compileSSAModule: (module: SSAModule) ::=> TACModule := {
         ## Declare the values.
+        ssaModule := module.
         module globalValues do: {:(SSAGlobalValue)each :: Void |
             each compileDirectTacTranslationWith: self
         }.
@@ -203,6 +205,11 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
     public method validUncheckedFunctionEntryPointTrampoline => TACProgramEntity := {
         uncheckedFunctionEntryPointTrampoline ifNil: {
             uncheckedFunctionEntryPointTrampoline := targetModule build: #uncheckedFunctionEntryPointTrampoline function: {:(TACFunctionBuilder)functionBuilder :: Void |
+                functionBuilder basicBlock: #entry build: {:(TACBlockBuilder)asm :: Void |
+                    asm
+                        trap;
+                        returnVoid
+                }
             }
         }.
 
@@ -212,6 +219,11 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
     public method validCheckedFunctionEntryPointTrampoline => TACProgramEntity := {
         checkedFunctionEntryPointTrampoline ifNil: {
             checkedFunctionEntryPointTrampoline := targetModule build: #checkedFunctionEntryPointTrampoline function: {:(TACFunctionBuilder)functionBuilder :: Void |
+                functionBuilder basicBlock: #entry build: {:(TACBlockBuilder)asm :: Void |
+                    asm
+                        trap;
+                        returnVoid
+                }
             }
         }.
 
@@ -252,6 +264,12 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
         } ifFalse: {
             self validCheckedFunctionEntryPointTrampoline
         }
+    }.
+
+    public method translateRuntimeFunction: (function: Function) ::=> TACValue := {
+        let ssaRuntimeFunction := ssaModule getGlobalValueFor: function.
+        self assert: ssaRuntimeFunction isNotNil.
+        self translateCapturelessUncheckedFunctionEntryPoint: ssaRuntimeFunction
     }.
 
     public method translateGenericObjectPointer: (object: Untyped) ::=> TACValue := {
@@ -490,6 +508,9 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
 
     public method translateCheckedFunctionEntryPoint: (value: SSAValue) ::=> TACValue
         := moduleCodeGenerator translateCheckedFunctionEntryPoint: value.
+
+    public method translateRuntimeFunction: (function: Function) ::=> TACValue
+        := moduleCodeGenerator translateRuntimeFunction: function.
 
     public method notYetImplementedError: (error: String) ::=> Void := {
         IgnoreNotYetImplementedErrors ifTrue: {
@@ -1773,19 +1794,43 @@ SSALoadInstruction extend: {
 
 SSAMakeArrayInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
-       codegen notYetImplementedError: "Make array"
+        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::makeArrayWithSize)
+            with: (codegen blockBuilder pointerConstantWith: self elements size asUInt64)
+            result: tacValue.
+
+        let headerSize := (self type objectHeaderSizeForObjectModel: codegen compilationTarget objectModel) asInt64.
+        let pointerSize := codegen compilationTarget pointerSize asInt64.
+
+        self elements doWithIndex: {:(SSAValue)eachElement :(Size)eachElementIndex :: Void |
+            let eachElementValue := codegen translateBoxedValue: eachElement.
+            codegen blockBuilder storePointer: eachElementValue into: tacValue constantOffset: headerSize + (eachElementIndex asInt64 * pointerSize)
+        }.
     }.
 }.
 
 SSAMakeAssociationInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
-       codegen notYetImplementedError: "Make association"
+        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::makeAssociation)
+            with: (codegen translateBoxedValue: self key)
+            with: (codegen translateBoxedValue: self value)
+            result: tacValue.
     }.
 }.
 
 SSAMakeByteArrayInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
-       codegen notYetImplementedError: "Make byte array"
+        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::makeByteArrayWithSize)
+            with: (codegen blockBuilder pointerConstantWith: self elements size asUInt64)
+            result: tacValue.
+
+        let headerSize := (self type objectHeaderSizeForObjectModel: codegen compilationTarget objectModel) asInt64.
+        let pointerSize := codegen compilationTarget pointerSize asInt64.
+
+        self elements doWithIndex: {:(SSAValue)eachElement :(Size)eachElementIndex :: Void |
+            let eachElementValue := codegen translateValue: eachElement.
+
+            codegen blockBuilder storeInt8: eachElementValue into: tacValue constantOffset: headerSize + (eachElementIndex asInt64 * pointerSize)
+        }.
     }.
 }.
 
@@ -1797,7 +1842,15 @@ SSAMakeClosureInstruction extend: {
 
 SSAMakeDictionaryInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
-       codegen notYetImplementedError: "Make dictionary"
+        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::makeByteArrayWithSize)
+            with: (codegen blockBuilder pointerConstantWith: self elements size asUInt64)
+            result: tacValue.
+
+        let addFunction := codegen translateRuntimeFunction: ObjectModel::Dictionary::add.
+        self elements do: {:(SSAValue)eachElement :(Size)eachElementIndex :: Void |
+            let eachElementValue := codegen translateValue: eachElement.
+            codegen blockBuilder callVoid: addFunction with: tacValue with: eachElementValue
+        }.
     }.
 }.
 
