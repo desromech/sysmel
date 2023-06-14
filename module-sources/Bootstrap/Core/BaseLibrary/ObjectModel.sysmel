@@ -597,7 +597,7 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
         header _ isBytes ifTrue: {
             ((contents reinterpretCastTo: UInt8 pointer)[index asIntPointer] asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::UInt8 asUIntPointer reinterpretCastTo: Untyped
         } ifFalse: {
-            (contents reinterpretCastTo: Untyped pointer)[index asIntPointer]
+            (contents reinterpretCastTo: Untyped pointer)[index asIntPointer] __refLoad__
         }.
     } ifFalse: {
         let shiftAmount := (index asUIntPointer * 8uptr) + ObjectModel::Tag::Bits asUIntPointer.

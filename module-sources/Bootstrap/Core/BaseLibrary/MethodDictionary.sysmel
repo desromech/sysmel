@@ -13,7 +13,7 @@ MethodDictionary definition: {
         let i mutable := naturalIndex.
         while: (i < capacity) do: {
             let storageKey := storage at: i*2sz.
-            if: (storageKey == key) || storageKey isNil then: {
+            if: (storageKey == key) || (storageKey == __hashtableEmptyElement__) then: {
                 return: i asIntPointer
             }
         } continueWith: (i := i + 1sz).
@@ -21,7 +21,7 @@ MethodDictionary definition: {
         i := 0sz.
         while: (i < naturalIndex) do: {
             let storageKey := storage at: i*2sz.
-            if: (storageKey == key) || storageKey isNil then: {
+            if: (storageKey == key) || (storageKey == __hashtableEmptyElement__) then: {
                 return: i asIntPointer
             }
         } continueWith: (i := i + 1sz).
