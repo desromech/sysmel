@@ -485,6 +485,14 @@ Type
         self hasAnyFlag: TypeFlags::Abstract.
     } withEagerAnalysis;
 
+    withSelector: #makeFunction addMethod: {:(Type)self :: Type |
+        self addFlags: TypeFlags::Function.
+        self
+    } withEagerAnalysis;
+    withSelector: #isFunction addMethod: {:(Type)self :: Boolean |
+        self hasAnyFlag: TypeFlags::Function.
+    } withEagerAnalysis;
+
     withSelector: #defaultValue addMethod: {:(Type)self :: self |
         if: self isNullable
             then: nil

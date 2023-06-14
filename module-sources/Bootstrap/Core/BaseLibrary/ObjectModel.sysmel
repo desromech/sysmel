@@ -469,6 +469,11 @@ public global ObjectModel::getTuplePointerUIntValue := {:(Untyped)object :: UInt
     0uptr
 }.
 
+public global ObjectModel::tupleAsFunction := {:(Untyped)object :: Function |
+    <primitive: #PointerLikeType::reinterpretCast>
+    object downCastTo: Function
+}.
+
 public global ObjectModel::getTupleHeaderPointerOf := {:(Untyped)object :: ObjectModel::TupleHeader pointer |
     <primitive: #PointerLikeType::reinterpretCast>
     nil
@@ -759,6 +764,11 @@ public function ObjectModel::makeDictionaryWithCapacity(initialCapacity: Size) =
 public function ObjectModel::Dictionary::add(dictionary: Dictionary, association: Association) => Void
     := dictionary add: association.
 
+public function ObjectModel::isFunction(value: Untyped) => Boolean := {
+    let type := RawTuple::type(value).
+    type isNotNil && type isFunction
+}.
+
 ## Generate the trampolines via macro metaprogramming.
 public global ObjectModel::CheckedFunctionApplicationTrampolines := Array new: 16.
 public global ObjectModel::SendWithReceiverTypeTrampolines := Array new: 16.
@@ -774,7 +784,25 @@ public global ObjectModel::SendTrampolines := Array new: 16.
 
     ``{
         public function `,(applyName asMacroLiteral)(functional: Untyped, `@argumentNodes) => Untyped := {
-            error("TODO: Checked function application trampoline.")
+            ObjectModel::isFunction(functional) ifTrue: {
+                let function := ObjectModel::tupleAsFunction(functional).
+                let definition := function definition.
+                definition ifNotNil: {
+                    let checkedEntryPoint := definition checkedEntryPoint asUIntPointer.
+                    checkedEntryPoint ~= 0uptr ifTrue: {
+                        error("TODO: Checked function application trampoline.")
+                    } ifFalse: {
+                        let bytecode := definition bytecode.
+                        bytecode ifNotNil: {
+                            error("TODO: Attempt to interpret bytecoded function.")
+                        } ifNil: {
+                            error("Cannot evaluate function without native compiled definition or bytecode.")
+                        }
+                    }
+                }.
+            }.
+
+            functional applyWithArguments: (`@argumentIdentifiers,)
         }.
         ObjectModel::CheckedFunctionApplicationTrampolines at: `,(ArgumentCount asMacroLiteral) put: `,(applyName asMacroIdentifier).
 
