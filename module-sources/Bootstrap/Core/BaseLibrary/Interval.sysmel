@@ -3,8 +3,10 @@ public final class Interval superclass: SequenceableCollection; definition: {
     public field stop.
     public field increment.
 
+    public override method species => Class := Array.
+
     public override method size => Size
-        := (stop // increment) asSize.
+        := ((stop - start) // increment) asSize.
 
     public override method do: aBlock ::=> Void := {
         let i mutable := start.
@@ -29,8 +31,10 @@ public final class ExclusiveInterval superclass: SequenceableCollection; definit
     public field stop.
     public field increment.
 
+    public override method species => Class := Array.
+
     public override method size => Size
-        := ((stop - increment) // increment) asSize.
+        := ((stop - start) // increment) asSize.
 
     public override method do: aBlock ::=> Void := {
         let i mutable := start.

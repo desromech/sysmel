@@ -411,6 +411,50 @@ AnyValue
         }
     } makeMacro.
 
+ASTNode
+    withSelector: #macroEvalHere addMethod: {:(MacroContext)macroContext :(ASTNode)self :: ASTNode |
+        self analyzeAndEvaluateWithEnvironment: macroContext environment
+    } makeMacro.
+
+AnyValue
+    withSelector: #asASTLiteralNodeAt: addMethod: {:(AnyValue)self :(SourcePosition)sourcePosition :: ASTLiteralNode |
+        ASTLiteralNode new
+            sourcePosition: sourcePosition;
+            value: self;
+            yourself
+    };
+    withSelector: #asMacroLiteral addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :: ASTNode |
+        ``(`,self asASTLiteralNodeAt: `,(ASTLiteralNode new
+                sourcePosition: macroContext sourcePosition;
+                value: macroContext sourcePosition;
+                yourself)
+        )
+    } makeMacro.
+
+Symbol
+    withSelector: #asASTIdentifierNodeAt: addMethod: {:(Symbol)self :(SourcePosition)sourcePosition :: ASTIdentifierReferenceNode |
+        ASTIdentifierReferenceNode new
+            sourcePosition: sourcePosition;
+            value: self;
+            yourself
+    };
+    withSelector: #asASTArgumentNodeWithType:at: addMethod: {:(Symbol)self :(ASTNode)typeExpression :(SourcePosition)sourcePosition :: ASTArgumentNode |
+        ASTArgumentNode new
+            sourcePosition: sourcePosition;
+            name: (ASTLiteralNode new
+                sourcePosition: sourcePosition;
+                value: self;
+                yourself);
+            type: typeExpression;
+            yourself
+    };
+    withSelector: #asMacroIdentifier addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :: ASTNode |
+        ``(`,self asASTIdentifierNodeAt: `,(macroContext sourcePosition asMacroLiteral))
+    } makeMacro;
+    withSelector: #asMacroArgumentWithType: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)type :: ASTNode |
+        ``(`,self asASTArgumentNodeWithType: `,type at: `,(macroContext sourcePosition asMacroLiteral))
+    } makeMacro.
+
 Collection
     withSelector: #macroDo: addMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)aBlock :: ASTNode |
         let collection => Collection := self analyzeAndEvaluateWithEnvironment: macroContext environment.

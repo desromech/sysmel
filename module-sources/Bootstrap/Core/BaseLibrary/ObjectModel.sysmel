@@ -758,3 +758,42 @@ public function ObjectModel::makeDictionaryWithCapacity(initialCapacity: Size) =
 
 public function ObjectModel::Dictionary::add(dictionary: Dictionary, association: Association) => Void
     := dictionary add: association.
+
+## Generate the trampolines via macro metaprogramming.
+public global ObjectModel::CheckedFunctionApplicationTrampolines := Array new: 16.
+public global ObjectModel::SendWithReceiverTypeTrampolines := Array new: 16.
+public global ObjectModel::SendTrampolines := Array new: 16.
+
+(0sz until: 16sz) macroDo: {:ArgumentCount |
+    let argumentNames := (0sz until: ArgumentCount) collect: {:(Size)each | ("arg" -- each asString) asSymbol}.
+    let argumentNodes := argumentNames collect: {:(Symbol)eachName | eachName asMacroArgumentWithType: Untyped asMacroLiteral}.
+    let argumentIdentifiers := argumentNames collect: {:(Symbol)eachName | eachName asMacroIdentifier}.
+    let applyName := ("ObjectModel::apply" -- ArgumentCount asString) asSymbol.
+    let sendWithReceiverTypeName := ("ObjectModel::sendWithReceiverType" -- ArgumentCount asString) asSymbol.
+    let sendTypeName := ("ObjectModel::send" -- ArgumentCount asString) asSymbol.
+
+    ``{
+        public function `,(applyName asMacroLiteral)(functional: Untyped, `@argumentNodes) => Untyped := {
+            error("TODO: Checked function application trampoline.")
+        }.
+        ObjectModel::CheckedFunctionApplicationTrampolines at: `,(ArgumentCount asMacroLiteral) put: `,(applyName asMacroIdentifier).
+
+        public function `,(sendWithReceiverTypeName asMacroLiteral)(receiver: Untyped, receiverType: Type, selector: Symbol, `@argumentNodes) => Untyped := {
+            let foundMethod := (receiverType ifNil: Untyped) lookupSelector: selector.
+            foundMethod ifNotNil: {
+                foundMethod(receiver, `@argumentIdentifiers)
+            } ifNil: {
+                ObjectModel::sendWithReceiverType1(receiver, receiverType, #doesNotUnderstand:, Message new
+                    selector: selector;
+                    arguments: (`@argumentIdentifiers,);
+                    yourself)
+            }.
+        }.
+        ObjectModel::SendWithReceiverTypeTrampolines at: `,(ArgumentCount asMacroLiteral) put: `,(sendWithReceiverTypeName asMacroIdentifier).
+
+        public function `,(sendTypeName asMacroLiteral)(receiver: Untyped, selector: Symbol, `@argumentNodes) => Untyped
+            := `,(sendWithReceiverTypeName asMacroIdentifier)(receiver, RawTuple::type(receiver), selector, `@argumentIdentifiers)
+
+        ObjectModel::SendTrampolines at: `,(ArgumentCount asMacroLiteral) put: `,(sendTypeName asMacroIdentifier).
+    } macroEvalHere
+}.

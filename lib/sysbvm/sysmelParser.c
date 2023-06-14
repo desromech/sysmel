@@ -160,7 +160,7 @@ static sysbvm_tuple_t sysbvm_sysmelParser_parseQuasiUnquote(sysbvm_context_t *co
 
 static sysbvm_tuple_t sysbvm_sysmelParser_parseSplice(sysbvm_context_t *context, sysbvm_sysmelParser_state_t *state)
 {
-    if(sysbvm_sysmelParser_lookKindAt(state, 0) != SYSBVM_TOKEN_KIND_QUASI_UNQUOTE)
+    if(sysbvm_sysmelParser_lookKindAt(state, 0) != SYSBVM_TOKEN_KIND_SPLICE)
         return sysbvm_astErrorNode_createWithCString(context, sysbvm_sysmelParser_makeSourcePositionForParserState(context, state), "Expected a quote token.");
     
     size_t startPosition = state->tokenPosition;

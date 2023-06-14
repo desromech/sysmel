@@ -164,7 +164,7 @@ AnyValue
 
 Object
     withSelector: #class addMethod: {:(Object)self :: self __type__ __type__ | self __type__ } makePure makeFinal withEagerAnalysis;
-    withSelector: #species addMethod: {:(Object)self :: Class | self class } withEagerAnalysis;
+    withSelector: #species addMethod: {:(Object)self :: Class | self class } makeVirtual withEagerAnalysis;
 
     withSelector: #error: addMethod: {:(Object)self :(String)errorMessage :: Unwinds | error(errorMessage) } withEagerAnalysis;
     withSelector: #primitiveFailed addMethod: {:(Object)self :: Unwinds | error("Primitive failed") } withEagerAnalysis;
@@ -1421,9 +1421,9 @@ SequenceableCollection
         let: #size with: self size.
         let: #result with: (self species new: size).
 
-        while: i < self size do: {
-            result at: i put: aBlock(self at: i)
-        } continueWith: (i := i + 1sz).
+        self doWithIndex: {:each :(Size)index :: Void |
+            result at: index put: aBlock(each)
+        }.
 
         result
     } makeFinal;
@@ -1432,9 +1432,9 @@ SequenceableCollection
         let: #size with: self size.
         let: #result with: (resultType new: size).
 
-        while: i < self size do: {
-            result at: i put: aBlock(self at: i)
-        } continueWith: (i := i + 1sz).
+        self doWithIndex: {:each :(Size)index :: Void |
+            result at: index put: aBlock(each)
+        }.
 
         result
     } makeFinal;
@@ -1443,9 +1443,9 @@ SequenceableCollection
         let: #size with: self size.
         let: #result with: (self species new: size).
 
-        while: i < self size do: {
-            result at: i put: aBlock(self at: i, i)
-        } continueWith: (i := i + 1sz).
+        self doWithIndex: {:each :(Size)index :: Void |
+            result at: index put: aBlock(each, index)
+        }.
 
         result
     } makeFinal;
