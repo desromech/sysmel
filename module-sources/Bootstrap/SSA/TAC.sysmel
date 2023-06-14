@@ -32,7 +32,6 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
     public field checkedEntryPointDictionary => Dictionary.
 
     private field uncheckedFunctionEntryPointTrampoline => TACProgramEntity.
-    private field checkedFunctionEntryPointTrampoline => TACProgramEntity.
 
     public method initializeWithTarget: (theCompilationTarget: TACCompilationTarget) ::=> Void := {
         compilationTarget := theCompilationTarget.
@@ -216,19 +215,6 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
         uncheckedFunctionEntryPointTrampoline
     }.
 
-    public method validCheckedFunctionEntryPointTrampoline => TACProgramEntity := {
-        checkedFunctionEntryPointTrampoline ifNil: {
-            checkedFunctionEntryPointTrampoline := targetModule build: #checkedFunctionEntryPointTrampoline function: {:(TACFunctionBuilder)functionBuilder :: Void |
-                functionBuilder basicBlock: #entry build: {:(TACBlockBuilder)asm :: Void |
-                    asm
-                        trap;
-                        returnVoid
-                }
-            }
-        }.
-
-        checkedFunctionEntryPointTrampoline
-    }.
 
     public method shouldCompileFunctionDefinition: (definition: SSAFunctionDefinition) ::=> Boolean
         := definition ~~ nil.
@@ -255,18 +241,22 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
         }
     }.
 
-    public method translateCheckedFunctionEntryPoint: (value: SSAValue) ::=> TACProgramEntity := {
+    public method translateCheckedFunctionEntryPoint: (value: SSAValue) argumentCount: (argumentCount: Size)::=> TACProgramEntity := {
         let functionDefinition := value asSSAFunctionDefinitionOrNil.
         (self shouldCompileFunctionDefinition: functionDefinition) ifTrue: {
-            checkedEntryPointDictionary at: functionDefinition ifAbsent: {:: TACProgramEntity |
-                self compileCheckedFunctionEntryPoint: functionDefinition
+            uncheckedEntryPointDictionary at: functionDefinition ifAbsent: {:: TACProgramEntity |
+                self compileUncheckedFunctionEntryPoint: functionDefinition
             }
         } ifFalse: {
-            self validCheckedFunctionEntryPointTrampoline
+            argumentCount < ObjectModel::CheckedFunctionApplicationTrampolines size ifTrue: {
+                self translateRuntimeFunction: (ObjectModel::CheckedFunctionApplicationTrampolines at: argumentCount)
+            } ifFalse: {
+                nil
+            }.
         }
     }.
 
-    public method translateRuntimeFunction: (function: Function) ::=> TACValue := {
+    public method translateRuntimeFunction: (function: Function) ::=> TACProgramEntity := {
         let ssaRuntimeFunction := ssaModule getGlobalValueFor: function.
         self assert: ssaRuntimeFunction isNotNil.
         self translateCapturelessUncheckedFunctionEntryPoint: ssaRuntimeFunction
@@ -506,10 +496,10 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
     public method translateUncheckedFunctionEntryPoint: (value: SSAValue) ::=> TACValue
         := moduleCodeGenerator translateUncheckedFunctionEntryPoint: value.
 
-    public method translateCheckedFunctionEntryPoint: (value: SSAValue) ::=> TACValue
-        := moduleCodeGenerator translateCheckedFunctionEntryPoint: value.
+    public method translateCheckedFunctionEntryPoint: (value: SSAValue) argumentCount: (argumentCount: Size)::=> TACValue
+        := moduleCodeGenerator translateCheckedFunctionEntryPoint: value argumentCount: argumentCount.
 
-    public method translateRuntimeFunction: (function: Function) ::=> TACValue
+    public method translateRuntimeFunction: (function: Function) ::=> TACProgramEntity
         := moduleCodeGenerator translateRuntimeFunction: function.
 
     public method notYetImplementedError: (error: String) ::=> Void := {
@@ -553,6 +543,10 @@ Type extend: {
     }.
 
     public virtual method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder callPointer: function convention: callingConvention arguments: arguments result: result
+    }.
+
+    public virtual method emitTacUnboxingCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder callPointer: function convention: callingConvention arguments: arguments result: result
     }.
 
@@ -1067,6 +1061,10 @@ Float64 __type__ extend: {
 
 Void __type__ extend: {
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder callVoid: function convention: callingConvention arguments: arguments
+    }.
+
+    public virtual method emitTacUnboxingCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder callVoid: function convention: callingConvention arguments: arguments
     }.
 
@@ -1737,12 +1735,16 @@ SSAFunctionDefinitionTACCodeGenerator extend: {
             }.
         } ifFalse: {
             let tacCalledFunction := self translateBoxedValue: calledFunction.
-            let entryPoint := self translateCheckedFunctionEntryPoint: calledFunction.
+            let entryPoint := self translateCheckedFunctionEntryPoint: calledFunction argumentCount: arguments size.
             let tacArguments := arguments collect: {:(SSAValue)eachArgument :: TACValue | self translateBoxedValue: eachArgument}.
-            AnyValue
-                emitTacCall: entryPoint convention: self tacFunction compilationTarget defaultCallingConvention
-                withArguments: (Array with: tacCalledFunction) -- tacArguments into: tacValue
-                withBlockBuilder: self blockBuilder
+            entryPoint ifNotNil: {
+                resultType
+                    emitTacUnboxingCall: entryPoint convention: self tacFunction compilationTarget defaultCallingConvention
+                    withArguments: (Array with: tacCalledFunction) -- tacArguments into: tacValue
+                    withBlockBuilder: self blockBuilder.
+            } ifNil: {
+                self blockBuilder trap
+            }.
         }.
     }.
 }.
@@ -1856,7 +1858,24 @@ SSAMakeDictionaryInstruction extend: {
 
 SSASendInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
-        codegen notYetImplementedError: "Send"
+        let tacReceiver := codegen translateBoxedValue: self receiver.
+        let tacReceiverLookupType := self receiverLookupType ifNotNil: (codegen translateBoxedValue: self receiverLookupType).
+        let tacSelector := codegen translateBoxedValue: self selector.
+        let tacArguments := self arguments collect: {:(SSAValue)eachArgument :: TACValue | codegen translateBoxedValue: eachArgument}.
+
+        tacReceiverLookupType ifNil: {
+            let trampoline := codegen translateRuntimeFunction: (ObjectModel::SendTrampolines at: self arguments size).
+            self type
+                emitTacUnboxingCall: trampoline convention: trampoline callingConvention
+                withArguments: (Array with: tacReceiver with: tacSelector) -- tacArguments into: tacValue
+                withBlockBuilder: codegen blockBuilder.
+        } ifNotNil: {
+            let trampoline := codegen translateRuntimeFunction: (ObjectModel::SendWithReceiverTypeTrampolines at: self arguments size).
+            self type
+                emitTacUnboxingCall: trampoline convention: trampoline callingConvention
+                withArguments: (Array with: tacReceiver with: tacReceiverLookupType with: tacSelector) -- tacArguments into: tacValue
+                withBlockBuilder: codegen blockBuilder.
+        }.
     }.
 }.
 

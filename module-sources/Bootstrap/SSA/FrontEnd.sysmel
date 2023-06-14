@@ -173,11 +173,19 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
     }.
 
     public method recordCallInstruction: (instruction: SSACallInstruction) ::=> Void := {
-
+        instruction isUnchecked ifFalse: {
+            instruction arguments size < ObjectModel::CheckedFunctionApplicationTrampolines size ifTrue: {
+                self ensureFunctionWithDefinitionIsTranslated: (ObjectModel::CheckedFunctionApplicationTrampolines at: instruction arguments size)
+            }.
+        }.
     }.
 
     public method recordSendInstruction: (instruction: SSASendInstruction) ::=> Void := {
-
+        instruction receiverLookupType ifNil: {
+            self ensureFunctionWithDefinitionIsTranslated: (ObjectModel::SendTrampolines at: instruction arguments size)
+        } ifNotNil: {
+            self ensureFunctionWithDefinitionIsTranslated: (ObjectModel::SendWithReceiverTypeTrampolines at: instruction arguments size)
+        }
     }.
 }.
 

@@ -770,7 +770,7 @@ public global ObjectModel::SendTrampolines := Array new: 16.
     let argumentIdentifiers := argumentNames collect: {:(Symbol)eachName | eachName asMacroIdentifier}.
     let applyName := ("ObjectModel::apply" -- ArgumentCount asString) asSymbol.
     let sendWithReceiverTypeName := ("ObjectModel::sendWithReceiverType" -- ArgumentCount asString) asSymbol.
-    let sendTypeName := ("ObjectModel::send" -- ArgumentCount asString) asSymbol.
+    let sendName := ("ObjectModel::send" -- ArgumentCount asString) asSymbol.
 
     ``{
         public function `,(applyName asMacroLiteral)(functional: Untyped, `@argumentNodes) => Untyped := {
@@ -791,9 +791,9 @@ public global ObjectModel::SendTrampolines := Array new: 16.
         }.
         ObjectModel::SendWithReceiverTypeTrampolines at: `,(ArgumentCount asMacroLiteral) put: `,(sendWithReceiverTypeName asMacroIdentifier).
 
-        public function `,(sendTypeName asMacroLiteral)(receiver: Untyped, selector: Symbol, `@argumentNodes) => Untyped
-            := `,(sendWithReceiverTypeName asMacroIdentifier)(receiver, RawTuple::type(receiver), selector, `@argumentIdentifiers)
+        public function `,(sendName asMacroLiteral)(receiver: Untyped, selector: Symbol, `@argumentNodes) => Untyped
+            := `,(sendWithReceiverTypeName asMacroIdentifier)(receiver, RawTuple::type(receiver), selector, `@argumentIdentifiers).
 
-        ObjectModel::SendTrampolines at: `,(ArgumentCount asMacroLiteral) put: `,(sendTypeName asMacroIdentifier).
+        ObjectModel::SendTrampolines at: `,(ArgumentCount asMacroLiteral) put: `,(sendName asMacroIdentifier).
     } macroEvalHere
 }.
