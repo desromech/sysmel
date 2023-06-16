@@ -50,7 +50,7 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
         checkedEntryPointDictionary := Dictionary new.
     }.
 
-    public method compileSSAModule: (module: SSAModule) ::=> TACModule := {
+    public method compileSSAModule: (module: SSAModule) patchingFunctions: (patchedFunctionList: SequenceableCollection) definitions: (patchedFunctionDefinitionList: SequenceableCollection) ::=> TACModule := {
         ## Declare the values.
         ssaModule := module.
         module globalValues do: {:(SSAGlobalValue)each :: Void |
@@ -63,9 +63,22 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
             }.
         }.
 
+        patchedFunctionDefinitionList do: {:(FunctionDefinition)eachFunctionDefinition :: Void |
+            let ssaFunctionDefinition := ssaModule getGlobalValueFor: eachFunctionDefinition.
+            ssaFunctionDefinition isCaptureless ifTrue: {
+                self translateCapturelessUncheckedFunctionEntryPoint: ssaFunctionDefinition.
+            }.
+
+            self translateUncheckedFunctionEntryPointOrNil: ssaFunctionDefinition.
+            self translateCheckedFunctionEntryPointOrNil: ssaFunctionDefinition.
+        }.
+
         ## Return the target module.
         targetModule
     }.
+
+    public method compileSSAModule: (module: SSAModule) ::=> TACModule
+        := self compileSSAModule: module patchingFunctions: #() definitions: #().
 
     public method finish => TACModule
         := targetModule.
@@ -78,7 +91,9 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
                 (self translateCapturelessUncheckedFunctionEntryPoint: function definition)
                     addExportedSymbols: function exportedSymbols
             } ifFalse: {
-                self error: "TODO: Compile non-captureless function."
+                function exportedSymbols isNotEmpty ifTrue: {
+                    self error: "TODO: Compile non-captureless function."
+                }
             }.
         }
     }.
@@ -154,6 +169,7 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
             let importedEntity := TACImportedFunction new
                 name: importedSymbols first;
                 compilationTarget: compilationTarget;
+                callingConvention: compilationTarget defaultCallingConvention;
                 alternativeSymbols: importedSymbols;
                 yourself.
             targetModule addProgramEntity: importedEntity.
@@ -176,9 +192,17 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
         targetModule addProgramEntity: entryPoint.
         uncheckedEntryPointDictionary at: functionDefinition put: entryPoint.
 
-        SSAFunctionDefinitionTACCodeGenerator new
-            moduleCodeGenerator: self;
-            compileSSAFunctionDefinition: functionDefinition intoUncheckedEntryPoint: entryPoint.
+        functionDefinition isCaptureless ifTrue: {
+            SSAFunctionDefinitionTACCodeGenerator new
+                moduleCodeGenerator: self;
+                compileSSAFunctionDefinition: functionDefinition
+                    uncheckedEntryPoint: entryPoint
+                    into: (self translateCapturelessUncheckedFunctionEntryPoint: functionDefinition)
+        } ifFalse: {
+            SSAFunctionDefinitionTACCodeGenerator new
+                moduleCodeGenerator: self;
+                compileSSAFunctionDefinition: functionDefinition intoUncheckedEntryPoint: entryPoint.
+        }.
 
         entryPoint
     }.
@@ -201,9 +225,9 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
             moduleCodeGenerator: self;
             compileSSAFunctionDefinition: functionDefinition checkedEntryPoint: entryPoint
             into: (functionDefinition isCaptureless
-                ifTrue: (self translateCapturelessUncheckedFunctionEntryPoint: functionDefinition)
-                ifFalse: (self translateUncheckedFunctionEntryPoint: functionDefinition))
-            isCaptureless: functionDefinition isCaptureless.
+                    ifTrue: (self translateCapturelessUncheckedFunctionEntryPoint: functionDefinition)
+                    ifFalse: (self translateUncheckedFunctionEntryPoint: functionDefinition)
+                ) isCaptureless: functionDefinition isCaptureless.
 
         entryPoint
     }.
@@ -250,6 +274,28 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
             }
         } ifFalse: {
             self validUncheckedFunctionEntryPointTrampoline
+        }
+    }.
+
+    public method translateUncheckedFunctionEntryPointOrNil: (value: SSAValue) ::=> TACProgramEntity := {
+        let functionDefinition := value asSSAFunctionDefinitionOrNil.
+        (self shouldCompileFunctionDefinition: functionDefinition) ifTrue: {
+            uncheckedEntryPointDictionary at: functionDefinition ifAbsent: {:: TACProgramEntity |
+                self compileUncheckedFunctionEntryPoint: functionDefinition
+            }
+        } ifFalse: {
+            nil
+        }
+    }.
+
+    public method translateCheckedFunctionEntryPointOrNil: (value: SSAValue) ::=> TACProgramEntity := {
+        let functionDefinition := value asSSAFunctionDefinitionOrNil.
+        (self shouldCompileFunctionDefinition: functionDefinition) ifTrue: {
+            checkedEntryPointDictionary at: functionDefinition ifAbsent: {:: TACProgramEntity |
+                self compileCheckedFunctionEntryPoint: functionDefinition
+            }
+        } ifFalse: {
+            nil
         }
     }.
 
@@ -389,6 +435,34 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
         }.
     }.
 
+    public method compileSSAFunctionDefinition: (ssaFunctionDefinition: SSAFunctionDefinition) uncheckedEntryPoint: (uncheckedEntryPoint: TACFunction) into: (capturelessEntryPoint: TACProgramEntity) ::=> Void := {
+        let tacArguments := OrderedCollection new.
+        functionArgument := uncheckedEntryPoint newArgument: #closure withType: Function.
+        tacArguments add: functionArgument.
+
+        let calledArguments := ssaFunctionDefinition arguments collect: {:(SSAFunctionArgument)argument :: TACValue |
+            let tacArgument := uncheckedEntryPoint newArgument: argument name withType: argument type sourceBinding: argument sourceBinding.
+            tacArguments add: tacArgument.
+            tacArgument
+        }.
+        uncheckedEntryPoint arguments: tacArguments asArray.
+
+        uncheckedEntryPoint build: {:(TACFunctionBuilder)functionBuilder :: Void |
+            tacFunction := functionBuilder function.
+            self functionBuilder: functionBuilder.
+
+            functionBuilder basicBlock: #wrapper build: {:(TACBlockBuilder)asm :: Void |
+                let canonicalResultType := ssaFunctionDefinition functionType canonicalResultType.
+                let result := canonicalResultType makeTacTemporaryValueNamed: #result withFunctionBuilder: functionBuilder.
+
+                canonicalResultType emitTacCall: capturelessEntryPoint convention: capturelessEntryPoint callingConvention
+                    withArguments: tacArguments allButFirst asArray into: result withBlockBuilder: asm.
+
+                canonicalResultType emitTacReturn: result withBlockBuilder: asm.
+            }.
+        }
+    }.
+
     public method compileSSAFunctionDefinition: (ssaFunctionDefinition: SSAFunctionDefinition) checkedEntryPoint: (checkedEntryPoint: TACFunction) into: (uncheckedEntryPoint: TACProgramEntity) isCaptureless: (isCaptureless: Boolean) ::=> Void := {
         let tacArguments := OrderedCollection new.
         functionArgument := checkedEntryPoint newArgument: #closure withType: Function.
@@ -402,25 +476,31 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
 
         checkedEntryPoint arguments: tacArguments asArray.
 
-        functionBuilder basicBlock: #wrapper build: {:(TACBlockBuilder)asm :: Void |
-            let checkedAndConvertedArguments := ssaFunctionDefinition arguments collectWithIndex: {:(SSAFunctionArgument)argument :(Size)index :: TACValue |
-                let tacArgument => TACValue := tacArguments at: index + 1sz.
-                argument type emitTacCheckAndUnbox: tacArgument withSSACodeGenerator: self
-            }.
+        checkedEntryPoint build: {:(TACFunctionBuilder)functionBuilder :: Void |
+            tacFunction := functionBuilder function.
+            self functionBuilder: functionBuilder.
 
-            let canonicalResultType := ssaFunctionDefinition functionType canonicalResultType.
-            let result := canonicalResultType makeTacTemporaryValueNamed: #result withFunctionBuilder: functionBuilder.
-            isCaptureless ifTrue: {
-                canonicalResultType emitTacCall: uncheckedEntryPoint convention: uncheckedEntryPoint callingConvention
-                    withArguments: checkedAndConvertedArguments into: result withBlockBuilder: asm.
-            } ifFalse: {
-                canonicalResultType emitTacCall: uncheckedEntryPoint convention: uncheckedEntryPoint callingConvention
-                    withArguments: (Array with: functionArgument) -- checkedAndConvertedArguments into: result withBlockBuilder: asm.
-            }.
+            functionBuilder basicBlock: #wrapper build: {:(TACBlockBuilder)asm :: Void |
+                self blockBuilder: asm.
+                let checkedAndConvertedArguments := ssaFunctionDefinition arguments collectWithIndex: {:(SSAFunctionArgument)argument :(Size)index :: TACValue |
+                    let tacArgument => TACValue := tacArguments at: index + 1sz.
+                    argument type emitTacCheckAndUnbox: tacArgument withSSACodeGenerator: self
+                }.
 
-            let boxedResult := canonicalResultType emitTacBox: result withSSACodeGenerator: self.
-            asm returnPointer: boxedResult
-        }.
+                let canonicalResultType := ssaFunctionDefinition functionType canonicalResultType.
+                let result := canonicalResultType makeTacTemporaryValueNamed: #result withFunctionBuilder: functionBuilder.
+                isCaptureless ifTrue: {
+                    canonicalResultType emitTacCall: uncheckedEntryPoint convention: uncheckedEntryPoint callingConvention
+                        withArguments: checkedAndConvertedArguments into: result withBlockBuilder: asm.
+                } ifFalse: {
+                    canonicalResultType emitTacCall: uncheckedEntryPoint convention: uncheckedEntryPoint callingConvention
+                        withArguments: (Array with: functionArgument) -- checkedAndConvertedArguments into: result withBlockBuilder: asm.
+                }.
+
+                let boxedResult := canonicalResultType emitTacBox: result withSSACodeGenerator: self.
+                asm returnPointer: boxedResult
+            }.
+        }
     }.
 
     public method compileDefinition => Void := {

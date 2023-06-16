@@ -3,6 +3,12 @@ public abstract class ImageBuilderTarget superclass: Object.
 public abstract class ImageBuilderTargetImage superclass: Object.
 
 public class ImageBuilderObjectTraceStrategy superclass: Object; definition: {
+    public virtual method requiredTracedReflectiveFunctionsOf: (imageBuilder: ImageBuilder) ::=> SequenceableCollection
+        := imageBuilder tracedFunctions.
+
+    public virtual method requiredTracedReflectiveFunctionDefinitionsOf: (imageBuilder: ImageBuilder) ::=> SequenceableCollection
+        := imageBuilder tracedFunctionDefinitions.
+
     public virtual method shouldTraceObject: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Boolean
         := (imageBuilder objectModel isImmediateReference: object) not.
 
@@ -229,6 +235,12 @@ ImageBuilder definition: {
     public method beNoSourceDefinition => Void := {
         traceStrategy := ImageBuilderObjectTraceStrategyNoSourceDefinition new.
     }.
+
+    public method requiredTracedReflectiveFunctions => SequenceableCollection
+        := traceStrategy requiredTracedReflectiveFunctionsOf: self.
+        
+    public method requiredTracedReflectiveFunctionDefinitions => SequenceableCollection
+        := traceStrategy requiredTracedReflectiveFunctionDefinitionsOf: self.
 
     public method addProgramEntity: (programEntity: ProgramEntity) ::=> Void := {
         (rootProgramEntitySet includes: programEntity) ifFalse: {

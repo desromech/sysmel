@@ -43,6 +43,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createAnonymous(sysbvm_context_t *context)
 {
     sysbvm_type_tuple_t* result = (sysbvm_type_tuple_t*)sysbvm_context_allocatePointerTuple(context, context->roots.typeType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_type_tuple_t));
     result->supertype = context->roots.anyValueType;
+    result->flags = sysbvm_tuple_bitflags_encode(0);
     result->totalSlotCount = sysbvm_tuple_size_encode(context, 0);
     result->instanceSize = sysbvm_tuple_size_encode(context, 0);
     result->instanceAlignment = sysbvm_tuple_size_encode(context, 0);

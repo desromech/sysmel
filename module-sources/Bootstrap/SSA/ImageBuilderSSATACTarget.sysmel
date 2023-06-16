@@ -10,7 +10,10 @@ public class ImageBuilderSSATACTarget superclass: ImageBuilderSSATarget; definit
                 exportMainEntryPointFunction: builder entryPointFunction;
                 finish).
         printLine("Generating TAC Module").
-        ssaImage tacModule: (ssaImage ssaModule asTACModuleFor: ssaTacCompilation tacCompilationTarget).
+        ssaImage tacModule: (SSAModuleTACCodeGenerator new
+            initializeWithTarget: ssaTacCompilation tacCompilationTarget;
+            compileSSAModule: ssaImage ssaModule patchingFunctions: builder requiredTracedReflectiveFunctions definitions: builder requiredTracedReflectiveFunctionDefinitions;
+            finish).
         printLine("Generating Assembly code").
         ssaImage targetIR: (ssaImage tacModule
                 imageObjectTrace: (builder objectTrace lock; yourself);

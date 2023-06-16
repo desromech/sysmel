@@ -109,6 +109,9 @@ public abstract class TACRegisterAllocator superclass: Object; definition: {
     public abstract method allocateIntegerRegister ::=> TACPhysicalLocation
         := self subclassResponsibility.
 
+    public abstract method allocateIntegerRegister8 ::=> TACPhysicalLocation
+        := self subclassResponsibility.
+
     public abstract method allocateFloatRegister ::=> TACPhysicalLocation
         := self subclassResponsibility.
 
@@ -258,6 +261,12 @@ public final class TACRegisterAllocationFile superclass: Object; definition: {
         usedRegisters at: index put: true.
         registers at: index
     }.
+
+    public method allocateForByte => TACPhysicalLocation := {
+        let result := self allocate.
+        self assert: result canBeUsedForByte.
+        result
+    }.
 }.
 
 public final class TACTrivialRegisterAllocator superclass: TACRegisterAllocator; definition: {
@@ -306,6 +315,14 @@ public final class TACTrivialRegisterAllocator superclass: TACRegisterAllocator;
         }
     }.
 
+    public override method allocateRegister8ForInstructionResult: (instruction: TACInstruction) ::=> Void := {
+        let result := instruction result.
+        result ifNotNil: {
+            instruction resultRegister: (self allocateRegister8ForOperand: result).
+            result markSpillingRequired
+        }
+    }.
+
     public override method allocateRegister: (register: TACPhysicalLocation) forInstructionResult: (instruction: TACInstruction) ::=> Void := {
         instruction resultRegister: register.
         instruction result markSpillingRequired.
@@ -336,12 +353,30 @@ public final class TACTrivialRegisterAllocator superclass: TACRegisterAllocator;
         operand markSpillingRequired.
     }.
     
+    public override method allocateRegister8ForInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        let operand := instruction operands at: operandIndex.
+        let register :=
+            (operandIndex == 0sz) &&
+            (instruction resultRegister isNotNil) &&
+            (instruction result physicalLocationClass == instruction operands first physicalLocationClass)
+            ifTrue: (instruction resultRegister)
+            ifFalse: (self allocateRegister8ForOperand: operand).
+        instruction operandRegisters at: operandIndex put: register.
+        operand markSpillingRequired.
+    }.
+
     public method allocateRegisterForOperand: (operand: TACValue) ::=> TACPhysicalLocation := {
         operand physicalLocationClass allocateRegisterWith: self
     }.
 
+    public method allocateRegister8ForOperand: (operand: TACValue) ::=> TACPhysicalLocation
+        := self allocateIntegerRegister8.
+
     public override method allocateIntegerRegister ::=> TACPhysicalLocation
         := integerRegisterFile allocate.
+
+    public override method allocateIntegerRegister8 ::=> TACPhysicalLocation
+        := integerRegisterFile allocateForByte.
 
     public override method markActiveIntegerRegister: (register: TACPhysicalIntegerRegister) ::=> Void := {
         integerRegisterFile markActiveRegister: register

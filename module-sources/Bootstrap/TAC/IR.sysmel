@@ -12,6 +12,7 @@ public abstract class TACPhysicalLocation superclass: Object; definition: {
     public virtual method isIntegerRegister => Boolean := false.
     public virtual method isFloatRegister => Boolean := false.
     public virtual method isVectorRegister => Boolean := false.
+    public virtual method canBeUsedForByte => Boolean := false.
 }.
 
 public abstract class TACPhysicalLocationMemory superclass: TACPhysicalLocation; definition: {

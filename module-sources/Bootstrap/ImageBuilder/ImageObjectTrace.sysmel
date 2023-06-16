@@ -1,6 +1,7 @@
 public class ImageObjectTrace superclass: Object; definition: {
     public field objectList => OrderedCollection.
     public field objectIndexDictionary => IdentityDictionary.
+    public field patchDictionary => IdentityDictionary.
     public field isLocked => Boolean.
 
     public override method initialize => Void := {
@@ -8,6 +9,7 @@ public class ImageObjectTrace superclass: Object; definition: {
 
         objectList := OrderedCollection new.
         objectIndexDictionary := IdentityDictionary new.
+        patchDictionary := IdentityDictionary new.
     }.
 
     public method lock => Void := {
