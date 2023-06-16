@@ -27,6 +27,11 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
     public field ssaModule => SSAModule.
     public field targetModule => TACModule.
     public field globalValueDictionary => Dictionary.
+
+    public field runtimeFunctionDictionary => Dictionary.
+    public field importRuntimeFunction => Boolean.
+    private field runtimeFunctionCompilerFrontend => SSAModuleCompilationContext.
+
     public field capturelessUncheckedEntryPointDictionary => Dictionary.
     public field uncheckedEntryPointDictionary => Dictionary.
     public field checkedEntryPointDictionary => Dictionary.
@@ -39,6 +44,7 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
             compilationTarget: compilationTarget;
             yourself.
         globalValueDictionary := Dictionary new.
+        runtimeFunctionDictionary := Dictionary new.
         capturelessUncheckedEntryPointDictionary := Dictionary new.
         uncheckedEntryPointDictionary := Dictionary new.
         checkedEntryPointDictionary := Dictionary new.
@@ -49,6 +55,12 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
         ssaModule := module.
         module globalValues do: {:(SSAGlobalValue)each :: Void |
             each compileDirectTacTranslationWith: self
+        }.
+
+        runtimeFunctionCompilerFrontend ifNotNil: {
+            runtimeFunctionCompilerFrontend ssaModule globalValues do: {:(SSAGlobalValue)each :: Void |
+                each compileDirectTacTranslationWith: self
+            }.
         }.
 
         ## Return the target module.
@@ -257,9 +269,28 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
     }.
 
     public method translateRuntimeFunction: (function: Function) ::=> TACProgramEntity := {
-        let ssaRuntimeFunction := ssaModule getGlobalValueFor: function.
-        self assert: ssaRuntimeFunction isNotNil.
-        self translateCapturelessUncheckedFunctionEntryPoint: ssaRuntimeFunction
+        runtimeFunctionDictionary at: function ifAbsentPut: {:TACProgramEntity |
+            let ssaRuntimeFunction := ssaModule getGlobalValueOrNilFor: function.
+            ssaRuntimeFunction ifNotNil: {
+                self translateCapturelessUncheckedFunctionEntryPoint: ssaRuntimeFunction
+            } ifNil: {
+                importRuntimeFunction ifTrue: {
+                    let importedRuntimeFunction := TACImportedFunction new
+                        name: function definition capturelessUncheckedEntryPointNameSymbol;
+                        compilationTarget: compilationTarget;
+                        callingConvention: compilationTarget defaultCallingConvention;
+                        yourself.
+                    targetModule addProgramEntity: importedRuntimeFunction.
+                    importedRuntimeFunction
+                } ifFalse: {
+                    runtimeFunctionCompilerFrontend ifNil: {
+                        runtimeFunctionCompilerFrontend := SSAModuleCompilationContext forTarget: compilationTarget asSSACompilationTarget.
+                        runtimeFunctionCompilerFrontend addUsedModule: ssaModule.
+                    }.
+                    self translateCapturelessUncheckedFunctionEntryPoint: (runtimeFunctionCompilerFrontend translateFunction: function)
+                }.
+            }.
+        }.
     }.
 
     public method translateGenericObjectPointer: (object: Untyped) ::=> TACValue := {

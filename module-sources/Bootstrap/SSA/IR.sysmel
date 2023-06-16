@@ -1443,6 +1443,9 @@ public final class SSAModule superclass: Object; definition: {
     public method getGlobalValueFor: value ::=> SSAValue
         := globalValueDictionary at: value.
 
+    public method getGlobalValueOrNilFor: value ::=> SSAValue
+        := globalValueDictionary atOrNil: value.
+
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         globalValues do: {:(SSAGlobalValue)eachValue :: Void |
             stream fullPrint: eachValue; nl
