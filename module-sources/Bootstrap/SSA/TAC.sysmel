@@ -2035,6 +2035,17 @@ SSAFunctionDefinitionTACCodeGenerator extend: {
             }
         }.
 
+        ## If this is a pointer like type, then we must perform a direct call.
+        calledFunction type isPointerLikeType ifTrue: {
+            let entryPoint := self translateValue: calledFunction.
+            let tacArguments := arguments collect: {:(SSAValue)eachArgument :: TACValue | self translateValue: eachArgument}.
+            resultType
+                emitTacCall: entryPoint convention: self tacFunction compilationTarget defaultCallingConvention
+                withArguments: tacArguments into: tacValue
+                withBlockBuilder: self blockBuilder.
+            return: void.
+        }.
+
         isUnchecked ifTrue: {
             calledFunction isCaptureless ifTrue: {
                 let entryPoint := self translateCapturelessUncheckedFunctionEntryPoint: calledFunction.

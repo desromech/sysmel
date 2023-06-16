@@ -1045,6 +1045,11 @@ Type definition: {
         := self analyzeOrdinaryMessageChainNode: node withEnvironment: environment.
 }.
 
+PointerType definition: {
+    public override eager method analyzeAndTypeCheckFunctionApplicationNode: (node: ASTFunctionApplicationNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
+        := baseType analyzeAndTypeCheckFunctionApplicationNode: node withEnvironment: environment.
+}.
+
 ReferenceType definition: {
     public override eager method messageSendNodeStaticLookupDirectSelector: (selector: Symbol) ::=> MessageSendNodeStaticLookupResult
         := (super messageSendNodeStaticLookupDirectSelector: selector) ifNil: (baseType messageSendNodeStaticLookupDirectSelector: selector).
