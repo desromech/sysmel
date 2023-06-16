@@ -5,4 +5,5 @@ loadSourceNamed: "ObjectHeap.sysmel".
 loadSourceNamed: "Coff.sysmel".
 loadSourceNamed: "Elf.sysmel".
 loadSourceNamed: "MachO.sysmel".
+loadSourceNamed: "ImageFunctionDefinitionEntryPointAsmPatch.sysmel".
 loadSourceNamed: "TAC.sysmel".

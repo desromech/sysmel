@@ -1614,15 +1614,24 @@ TACFunction definition: {
             }
         }
     }.
-
 }.
+
+public final class TACFunctionDefinitionPatch superclass: Object; definition: {
+    public field functionDefinition => FunctionDefinition.
+    public field checkedEntryPoint => TACProgramEntity.
+    public field uncheckedEntryPoint => TACProgramEntity.
+    public field uncheckedCapturelessEntryPoint => TACProgramEntity.
+}.
+
 public final class TACModule superclass: TACProgramEntity; definition: {
     public field programEntities => OrderedCollection.
     public field imageObjectTrace => ImageObjectTrace.
+    public field functionDefinitionPatches => OrderedCollection.
 
     public override method initialize => Void := {
         super initialize.
         programEntities := OrderedCollection new.
+        functionDefinitionPatches := OrderedCollection new.
     }.
 
     public method addProgramEntity: (programEntity: TACProgramEntity) ::=> Void := {

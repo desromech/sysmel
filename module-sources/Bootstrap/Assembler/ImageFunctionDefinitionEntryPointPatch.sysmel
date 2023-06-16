@@ -1,5 +1,0 @@
-public class ImageFunctionDefinitionEntryPointPatch superclass: ImageObjectTracePatch; definition: {
-    public field checkedEntryPoint => AsmSymbol.
-    public field uncheckedEntryPoint => AsmSymbol.
-    public field uncheckedCapturelessEntryPoint => AsmSymbol.
-}.

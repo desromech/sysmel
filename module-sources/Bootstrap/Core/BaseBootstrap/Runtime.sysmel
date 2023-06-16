@@ -1277,6 +1277,9 @@ IdentityDictionary
     withSelector: #untypedAt: addMethod: {:(IdentityDictionary)self :(Untyped)key |
         self at: key
     };
+    withSelector: #untypedAtOrNil: addMethod: {:(IdentityDictionary)self :(Untyped)key |
+        self atOrNil: key
+    };
     withSelector: #untypedAt:put: addMethod: {:(IdentityDictionary)self :(Untyped)key :value :: Void |
         self at: key put: value.
     };

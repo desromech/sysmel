@@ -119,6 +119,15 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
             self compileProgramEntity: eachProgramEntity
         }.
 
+        module functionDefinitionPatches do: {:(TACFunctionDefinitionPatch)tacPatch :: Void |
+            objectHeap objectTrace addObject: tacPatch functionDefinition patch: (ImageFunctionDefinitionEntryPointAsmPatch new
+                functionDefinition: tacPatch functionDefinition;
+                checkedEntryPoint: (compiledProgramEntitySymbolMap atOrNil: tacPatch checkedEntryPoint);
+                uncheckedEntryPoint: (compiledProgramEntitySymbolMap atOrNil: tacPatch uncheckedEntryPoint);
+                uncheckedCapturelessEntryPoint: (compiledProgramEntitySymbolMap atOrNil: tacPatch uncheckedCapturelessEntryPoint);
+                yourself)
+        }.
+
         self buildStringLiterals.
         asmTarget debugInformationGenerator ifNotNil: {:(AsmObjectDebugInformationGenerator class)generatorClass :: Void |
             let generator := generatorClass new.
@@ -126,6 +135,7 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
             generator generateDebugInformationForModule: targetModule
         }.
         
+        printLine("Building object heap for assembly.").
         objectHeap buildIn: targetModule.
     }.
 

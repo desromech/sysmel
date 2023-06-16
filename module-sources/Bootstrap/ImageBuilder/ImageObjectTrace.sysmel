@@ -16,6 +16,10 @@ public class ImageObjectTrace superclass: Object; definition: {
         isLocked := true.
     }.
 
+    public method addObject: (object: Untyped) patch: (patch: ImageObjectTracePatch) ::=> Void := {
+        patchDictionary untypedAt: object put: patch
+    }.
+
     public method includesObject: (object: Untyped) ::=> Boolean
         := objectIndexDictionary untypedIncludesKey: object.
 

@@ -65,12 +65,17 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
 
         patchedFunctionDefinitionList do: {:(FunctionDefinition)eachFunctionDefinition :: Void |
             let ssaFunctionDefinition := ssaModule getGlobalValueFor: eachFunctionDefinition.
+            let patch := TACFunctionDefinitionPatch new
+                functionDefinition: eachFunctionDefinition;
+                yourself.
+
             ssaFunctionDefinition isCaptureless ifTrue: {
-                self translateCapturelessUncheckedFunctionEntryPoint: ssaFunctionDefinition.
+                patch uncheckedCapturelessEntryPoint: (self translateCapturelessUncheckedFunctionEntryPoint: ssaFunctionDefinition).
             }.
 
-            self translateUncheckedFunctionEntryPointOrNil: ssaFunctionDefinition.
-            self translateCheckedFunctionEntryPointOrNil: ssaFunctionDefinition.
+            patch uncheckedEntryPoint: (self translateUncheckedFunctionEntryPointOrNil: ssaFunctionDefinition).
+            patch checkedEntryPoint: (self translateCheckedFunctionEntryPointOrNil: ssaFunctionDefinition).
+            targetModule functionDefinitionPatches add: patch.
         }.
 
         ## Return the target module.

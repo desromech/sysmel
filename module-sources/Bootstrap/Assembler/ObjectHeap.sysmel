@@ -252,6 +252,13 @@ AsmObjectHeap definition: {
         }
     }.
 
+    public method writeSymbolReference64: (symbol: AsmSymbol) at: (offset: Size) ::=> Void := {
+        serializedObjectDataRelocations add: (AsmObjectCodeRelocationAbsoluteInt64 new
+            symbol: symbol;
+            offset: offset;
+            yourself)
+    }.
+
     public method writeReference64: (value: Untyped) at: (offset: Size) ::=> Void := {
         self writeReference64: value at: offset extraAddend: 0u64
     }.
@@ -319,14 +326,25 @@ ObjectModelVariant extend: {
         := self subclassResponsibility.
 }.
 
+ImageObjectTracePatch extend: {
+    public virtual method writeSlot: (slot: TypeSlot) reference64OrValueOf: (object: Untyped) inAsmHeap: (heap: AsmObjectHeap) at: (offset: Size) ::=> Void := {
+        slot writeReference64OrValueOf: object inAsmHeap: heap at: offset
+    }.
+}.
+
 ObjectModelVariant64 extend: {
     public method saveLayoutDataOfObject: (object: Untyped) inAsmHeap: (heap: AsmObjectHeap) at: (offset: Size) ::=> Size := {
         let type => Type := RawTuple::type(object).
+        let patch => ImageObjectTracePatch := heap objectTrace patchDictionary untypedAtOrNil: object.
         type ifNil: {
             0sz
         } ifNotNil: {
             type allSlotsDo: {:(TypeSlot)eachSlot :: Void |
-                eachSlot writeReference64OrValueOf: object inAsmHeap: heap at: offset
+                patch ifNotNil: {
+                    patch writeSlot: eachSlot reference64OrValueOf: object inAsmHeap: heap at: offset
+                } ifNil: {
+                    eachSlot writeReference64OrValueOf: object inAsmHeap: heap at: offset
+                }
             }.
             type totalSlotCount
         }
