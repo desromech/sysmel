@@ -83,6 +83,7 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
     public method declareFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> SSAFunctionDefinition := {
         functionDefinition ensureAnalysis.
         let translatedValue := SSAFunctionDefinition new
+            type: FunctionDefinition;
             sourceObject: functionDefinition;
             name: functionDefinition programEntityQualifiedNameSymbol;
             functionType: functionDefinition analyzedType;
@@ -115,6 +116,7 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
             name: function programEntityQualifiedNameSymbol;
             primitiveName: function primitiveName;
             exportedSymbols: function exportedSymbols asArray;
+            type: function __type__;
             yourself.
 
         ssaModule addGlobalValue: translatedValue.

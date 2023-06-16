@@ -1037,7 +1037,7 @@ if: ObjectModel::PointerSize = 4sz then: {
         }.
     }.
 
-    public function ObjectModel::checkAndUnboxInt64(value: Untyped) => Int32 := {
+    public function ObjectModel::checkAndUnboxInt32(value: Untyped) => Int32 := {
         let pointerValue := ObjectModel::getTuplePointerIntValue(value).
         let tag := pointerValue & ObjectModel::Tag::Mask asIntPointer.
         tag = ObjectModel::Tag::Int32 asIntPointer ifTrue: {
@@ -1057,23 +1057,23 @@ if: ObjectModel::PointerSize = 4sz then: {
         }.
     }.
 
-    public function ObjectModel::checkAndUnboxFloat64(value: Untyped) => Float64 := {
+    public function ObjectModel::checkAndUnboxFloat32(value: Untyped) => Float32 := {
         let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
         let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
-        tag = ObjectModel::Tag::Float64 asUIntPointer ifTrue: {
-            (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt64 asIEEEFloat64Decoded
+        tag = ObjectModel::Tag::Float32 asUIntPointer ifTrue: {
+            (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt32 asIEEEFloat32Decoded
         } ifFalse: {
             pointerValue = 0uptr ifTrue: {
-                error("Expected a Float64 boxed value instead of nil.").
+                error("Expected a Float32 boxed value instead of nil.").
             }.
 
             let objectHeader := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
             let objectType := objectHeader _ typePointer reinterpretCastTo: Type.
-            objectType ~~ Float64 ifTrue: {
-                error("Expected a Float64 boxed value.").
+            objectType ~~ Float32 ifTrue: {
+                error("Expected a Float32 boxed value.").
             }.
 
-            (objectHeader + 1iptr reinterpretCastTo: Float64 pointer) _
+            (objectHeader + 1iptr reinterpretCastTo: Float32 pointer) _
         }.
     }.
 } else: {
@@ -1162,7 +1162,7 @@ public function ObjectModel::checkAndUnboxFloat64(value: Untyped) => Float64 := 
     let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
     let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
     tag = ObjectModel::Tag::Float64 asUIntPointer ifTrue: {
-        (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt64
+        (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt64 asIEEEFloat64Decoded
     } ifFalse: {
         pointerValue = 0uptr ifTrue: {
             error("Expected a Float64 boxed value instead of nil.").
@@ -1202,6 +1202,12 @@ public function ObjectModel::typecheckNullableValue(expectedType: Type, value: U
     Untyped::==(value, nil) ifTrue: (return: void).
 
     ObjectModel::typecheckValue(expectedType, value)
+}.
+
+public function ObjectModel::allocaGC(size: Size, elementType: Type) => Void pointer := {
+    let result := sysmel_pal_malloc(size).
+    memset(result, 0i8, size).
+    result
 }.
 
 ## Generate the trampolines via macro metaprogramming.
