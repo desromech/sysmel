@@ -25,7 +25,7 @@ public function NoRttiImageMain(argc: Int32, argv: Char8 const pointer pointer) 
 ImageBuilder new
     beNoRTTI;
     withoutInProcessDebugInformation;
-    useDefaultTypeTables;
+    useDynamicMessaging;
     addNativeEntryPoint: NoRttiImageMain;
     build;
     saveTo: "testNoRTTI.image".
@@ -34,6 +34,7 @@ ImageBuilder new
     target: AsmCompilationTarget x86_64 useElf useDwarf asImageBuilderTarget;
     beNoRTTI;
     withoutInProcessDebugInformation;
+    useDefaultTypeTables;
     addNativeEntryPoint: NoRttiImageMain;
     build;
     saveTo: "testNoRTTI.x86_64.elf".

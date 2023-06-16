@@ -206,6 +206,11 @@ ImageBuilder definition: {
         immediateTrivialTypeTable := ObjectModel::ImmediateTrivialTypeTable.
     }.
 
+    public method useDynamicMessaging => Void := {
+        self useDefaultTypeTables.
+        self addProgramEntities: ObjectModel::SendTrampolines.
+    }.
+
     public method objectModel => ObjectModelVariant
         := target objectModel.
 

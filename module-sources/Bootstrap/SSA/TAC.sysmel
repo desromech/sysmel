@@ -326,6 +326,7 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
     protected field valueDictionary => Dictionary.
     public field localOnlyAllocaDictionary => Dictionary.
     public field functionArgument => TACValue.
+    protected field boxedValueDictionary => Dictionary.
 
     public override method initialize => Void := {
         valueDictionary := Dictionary new.
@@ -404,7 +405,7 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
         functionBuilder basicBlock: #wrapper build: {:(TACBlockBuilder)asm :: Void |
             let checkedAndConvertedArguments := ssaFunctionDefinition arguments collectWithIndex: {:(SSAFunctionArgument)argument :(Size)index :: TACValue |
                 let tacArgument => TACValue := tacArguments at: index + 1sz.
-                argument type emitTacCheckAndUnbox: tacArgument withBlockBuilder: asm
+                argument type emitTacCheckAndUnbox: tacArgument withSSACodeGenerator: self
             }.
 
             let canonicalResultType := ssaFunctionDefinition functionType canonicalResultType.
@@ -417,7 +418,7 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
                     withArguments: (Array with: functionArgument) -- checkedAndConvertedArguments into: result withBlockBuilder: asm.
             }.
 
-            let boxedResult := canonicalResultType emitTacBox: result withBlockBuilder: asm.
+            let boxedResult := canonicalResultType emitTacBox: result withSSACodeGenerator: self.
             asm returnPointer: boxedResult
         }.
     }.
@@ -506,6 +507,7 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
             block: tacBlock;
             function: tacFunction;
             yourself.
+        boxedValueDictionary := nil.
         ssaBasicBlock instructionsDo: {:(SSAInstruction)eachInstruction :: Void |
             functionBuilder useDebugInfoOfSSAValue: eachInstruction.
             blockBuilder useDebugInfoOfSSAValue: eachInstruction.
@@ -519,7 +521,11 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
         }.
     
     public method translateBoxedValue: (value: SSAValue) ::=> TACValue
-        := self translateValue: value.
+        := (boxedValueDictionary ifNil: {boxedValueDictionary := Dictionary new})
+            at: value ifAbsentPut: {:: TACValue |
+                let translatedValue := self translateValue: value.
+                value type emitTacBox: translatedValue withSSACodeGenerator: self
+            }.
 
     public method translateCapturelessUncheckedFunctionEntryPoint: (value: SSAValue) ::=> TACValue
         := moduleCodeGenerator translateCapturelessUncheckedFunctionEntryPoint: value.
@@ -560,12 +566,39 @@ TACBlockBuilder extend: {
 }.
 
 Type extend: {
-    public virtual method emitTacCheckAndUnbox: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> TACValue := {
-        ## TODO: Emit a type check call.
+    public virtual method emitTacCoerceInto: (targetType: TACValue) thenUnbox: (value: TACValue) into: (resultValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        let coerceFunction := codegen translateRuntimeFunction: (self isNullable
+            ifTrue: ObjectModel::coerceNullableValue
+            ifFalse: ObjectModel::coerceValue
+        ).
+
+        codegen blockBuilder
+            callPointer: (codegen translateRuntimeFunction: ObjectModel::coerceValue)
+            with: targetType with: value
+            result: resultValue
+    }.
+
+    public virtual method emitTacCheckInto: (targetType: TACValue) thenUnbox: (value: TACValue) into: (resultValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        let typecheckFunction := codegen translateRuntimeFunction: (self isNullable
+            ifTrue: ObjectModel::typecheckNullableValue
+            ifFalse: ObjectModel::typecheckValue
+        ).
+
+        codegen blockBuilder
+            callVoid: typecheckFunction with: targetType with: value;
+            movePointer: value into: resultValue.
+    }.
+
+    public virtual method emitTacCheckAndUnbox: (value: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
+        let typecheckFunction := codegen translateRuntimeFunction: (self isNullable
+            ifTrue: ObjectModel::typecheckNullableValue
+            ifFalse: ObjectModel::typecheckValue
+        ).
+        codegen blockBuilder callVoid: typecheckFunction with: (codegen moduleCodeGenerator translateGenericObjectPointer: self) with: value.
         value
     }.
 
-    public virtual method emitTacBox: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> TACValue := {
+    public virtual method emitTacBox: (value: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
         value
     }.
 
@@ -632,6 +665,42 @@ String class extend: {
 }.
 
 ValueType extend: {
+    public override method emitTacCoerceInto: (targetType: TACValue) thenUnbox: (value: TACValue) into: (resultValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        self emitTacCheckInto: targetType thenUnbox: value into: resultValue withSSACodeGenerator: codegen
+    }.
+
+    public override method emitTacCheckInto: (targetType: TACValue) thenUnbox: (value: TACValue) into: (resultValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        let typecheckFunction := codegen translateRuntimeFunction: (self isNullable
+            ifTrue: ObjectModel::typecheckNullableValue
+            ifFalse: ObjectModel::typecheckValue
+        ).
+
+        codegen blockBuilder callVoid: typecheckFunction with: targetType with: value.
+        self emitTacCheckThenUnbox: value into: resultValue withSSACodeGenerator: codegen.
+    }.
+
+    public virtual method emitTacCheckThenUnbox: (value: TACValue) into: (resultValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        ## TODO: Implement this via some kind of memcpy for the generic case.
+        codegen blockBuilder trap.
+    }.
+
+    public override method emitTacCheckAndUnbox: (value: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
+        let unboxedTemporary := codegen blockBuilder function newTemporary: #unboxed withType: self.
+        self emitTacCheckThenUnbox: value into: unboxedTemporary withSSACodeGenerator: codegen.
+        unboxedTemporary.
+    }.
+
+    public virtual method emitTacBox: (value: TACValue) into: (boxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
+        ## TODO: Implement this via some kind of memcpy.
+        codegen blockBuilder trap.
+    }.
+
+    public override method emitTacBox: (value: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
+        let boxedTemporary := codegen blockBuilder function newTemporary: #boxed withType: Untyped.
+        self emitTacBox: value into: boxedTemporary withSSACodeGenerator: codegen.
+        boxedTemporary.
+    }.
+
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder callStruct: function convention: callingConvention arguments: arguments result: result
     }.
@@ -691,6 +760,14 @@ PointerLikeType extend: {
 }.
 
 Char8 __type__ extend: {
+    public override method emitTacCheckThenUnbox: (boxedValue: TACValue) into: (unboxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        codegen blockBuilder callInt8: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxChar8) with: boxedValue result: unboxedValue
+    }.
+
+    public override method emitTacBox: (unboxedValue: TACValue) into: (boxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
+        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxChar8) with: unboxedValue result: boxedValue
+    }.
+
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder callInt32: function convention: callingConvention arguments: arguments result: result
     }.
@@ -719,6 +796,14 @@ Char8 __type__ extend: {
 }.
 
 Int8 __type__ extend: {
+    public override method emitTacCheckThenUnbox: (boxedValue: TACValue) into: (unboxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        codegen blockBuilder callInt8: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxInt8) with: boxedValue result: unboxedValue
+    }.
+
+    public override method emitTacBox: (unboxedValue: TACValue) into: (boxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
+        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxInt8) with: unboxedValue result: boxedValue
+    }.
+
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder callInt8: function convention: callingConvention arguments: arguments result: result
     }.
@@ -747,6 +832,14 @@ Int8 __type__ extend: {
 }.
 
 UInt8 __type__ extend: {
+    public override method emitTacCheckThenUnbox: (boxedValue: TACValue) into: (unboxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        codegen blockBuilder callInt8: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxUInt8) with: boxedValue result: unboxedValue
+    }.
+
+    public override method emitTacBox: (unboxedValue: TACValue) into: (boxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
+        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxUInt8) with: unboxedValue result: boxedValue
+    }.
+
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder callInt8: function convention: callingConvention arguments: arguments result: result
     }.
@@ -775,6 +868,14 @@ UInt8 __type__ extend: {
 }.
 
 Boolean __type__ extend: {
+    public override method emitTacCheckThenUnbox: (boxedValue: TACValue) into: (unboxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        codegen blockBuilder callInt8: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxBoolean) with: boxedValue result: unboxedValue
+    }.
+
+    public override method emitTacBox: (unboxedValue: TACValue) into: (boxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
+        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxBoolean) with: unboxedValue result: boxedValue
+    }.
+
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder callInt8: function convention: callingConvention arguments: arguments result: result
     }.
@@ -811,6 +912,14 @@ True __type__ extend: {
 }.
 
 Char16 __type__ extend: {
+    public override method emitTacCheckThenUnbox: (boxedValue: TACValue) into: (unboxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        codegen blockBuilder callInt16: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxChar16) with: boxedValue result: unboxedValue
+    }.
+
+    public override method emitTacBox: (unboxedValue: TACValue) into: (boxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
+        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxChar16) with: unboxedValue result: boxedValue
+    }.
+
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder callInt16: function convention: callingConvention arguments: arguments result: result
     }.
@@ -839,6 +948,14 @@ Char16 __type__ extend: {
 }.
 
 Int16 __type__ extend: {
+    public override method emitTacCheckThenUnbox: (boxedValue: TACValue) into: (unboxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        codegen blockBuilder callInt16: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxInt16) with: boxedValue result: unboxedValue
+    }.
+
+    public override method emitTacBox: (unboxedValue: TACValue) into: (boxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
+        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxInt16) with: unboxedValue result: boxedValue
+    }.
+
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder callInt16: function convention: callingConvention arguments: arguments result: result
     }.
@@ -867,6 +984,14 @@ Int16 __type__ extend: {
 }.
 
 UInt16 __type__ extend: {
+    public override method emitTacCheckThenUnbox: (boxedValue: TACValue) into: (unboxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        codegen blockBuilder callInt16: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxUInt16) with: boxedValue result: unboxedValue
+    }.
+
+    public override method emitTacBox: (unboxedValue: TACValue) into: (boxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
+        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxUInt16) with: unboxedValue result: boxedValue
+    }.
+
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder callInt16: function convention: callingConvention arguments: arguments result: result
     }.
@@ -895,6 +1020,14 @@ UInt16 __type__ extend: {
 }.
 
 Char32 __type__ extend: {
+    public override method emitTacCheckThenUnbox: (boxedValue: TACValue) into: (unboxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        codegen blockBuilder callInt32: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxChar32) with: boxedValue result: unboxedValue
+    }.
+
+    public override method emitTacBox: (unboxedValue: TACValue) into: (boxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
+        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxChar32) with: unboxedValue result: boxedValue
+    }.
+
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder callInt32: function convention: callingConvention arguments: arguments result: result
     }.
@@ -923,6 +1056,14 @@ Char32 __type__ extend: {
 }.
 
 Int32 __type__ extend: {
+    public override method emitTacCheckThenUnbox: (boxedValue: TACValue) into: (unboxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        codegen blockBuilder callInt32: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxInt32) with: boxedValue result: unboxedValue
+    }.
+
+    public override method emitTacBox: (unboxedValue: TACValue) into: (boxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
+        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxInt32) with: unboxedValue result: boxedValue
+    }.
+
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder callInt32: function convention: callingConvention arguments: arguments result: result
     }.
@@ -951,6 +1092,14 @@ Int32 __type__ extend: {
 }.
 
 UInt32 __type__ extend: {
+    public override method emitTacCheckThenUnbox: (boxedValue: TACValue) into: (unboxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        codegen blockBuilder callInt32: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxUInt32) with: boxedValue result: unboxedValue
+    }.
+
+    public override method emitTacBox: (unboxedValue: TACValue) into: (boxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
+        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxUInt32) with: unboxedValue result: boxedValue
+    }.
+
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder callInt32: function convention: callingConvention arguments: arguments result: result
     }.
@@ -979,6 +1128,14 @@ UInt32 __type__ extend: {
 }.
 
 Int64 __type__ extend: {
+    public override method emitTacCheckThenUnbox: (boxedValue: TACValue) into: (unboxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        codegen blockBuilder callInt64: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxInt64) with: boxedValue result: unboxedValue
+    }.
+
+    public override method emitTacBox: (unboxedValue: TACValue) into: (boxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
+        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxInt64) with: unboxedValue result: boxedValue
+    }.
+
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder callInt64: function convention: callingConvention arguments: arguments result: result
     }.
@@ -1007,6 +1164,14 @@ Int64 __type__ extend: {
 }.
 
 UInt64 __type__ extend: {
+    public override method emitTacCheckThenUnbox: (boxedValue: TACValue) into: (unboxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        codegen blockBuilder callInt64: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxUInt64) with: boxedValue result: unboxedValue
+    }.
+
+    public override method emitTacBox: (unboxedValue: TACValue) into: (boxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
+        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxUInt64) with: unboxedValue result: boxedValue
+    }.
+
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder callInt64: function convention: callingConvention arguments: arguments result: result
     }.
@@ -1035,6 +1200,14 @@ UInt64 __type__ extend: {
 }.
 
 Float32 __type__ extend: {
+    public override method emitTacCheckThenUnbox: (boxedValue: TACValue) into: (unboxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        codegen blockBuilder callFloat32: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxFloat32) with: boxedValue result: unboxedValue
+    }.
+
+    public override method emitTacBox: (unboxedValue: TACValue) into: (boxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
+        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxFloat32) with: unboxedValue result: boxedValue
+    }.
+
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder callFloat32: function convention: callingConvention arguments: arguments result: result
     }.
@@ -1063,6 +1236,14 @@ Float32 __type__ extend: {
 }.
 
 Float64 __type__ extend: {
+    public override method emitTacCheckThenUnbox: (boxedValue: TACValue) into: (unboxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        codegen blockBuilder callFloat64: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxFloat64) with: boxedValue result: unboxedValue
+    }.
+
+    public override method emitTacBox: (unboxedValue: TACValue) into: (boxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
+        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxFloat64) with: unboxedValue result: boxedValue
+    }.
+
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder callFloat64: function convention: callingConvention arguments: arguments result: result
     }.
@@ -1091,6 +1272,13 @@ Float64 __type__ extend: {
 }.
 
 Void __type__ extend: {
+    public override method emitTacCheckThenUnbox: (boxedValue: TACValue) into: (unboxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        ## Nothing is required here.
+    }.
+
+    public override method emitTacBox: (unboxedValue: TACValue) into: (boxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
+        codegen blockBuilder movePointer: (codegen moduleCodeGenerator translateGenericObjectPointer: void) into: boxedValue.
+    }.
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder callVoid: function convention: callingConvention arguments: arguments
     }.
@@ -1795,23 +1983,13 @@ SSABitcastInstruction extend: {
 
 SSACoerceValueInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
-        ## TODO: Add a target typecheck.
-        self value type isValueType && self type isValueType ifTrue: {
-            codegen notYetImplementedError: "Implement unboxing generation on SSACoerceValueInstruction"
-        } ifFalse: {
-            codegen blockBuilder movePointer: (codegen translateValue: self value) into: tacValue
-        }.
+        self type emitTacCoerceInto: (codegen translateValue: self targetType) thenUnbox: (codegen translateValue: self value) into: tacValue withSSACodeGenerator: codegen
     }.
 }.
 
 SSADownCastInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
-        ## TODO: Add a target typecheck.
-        self value type isValueType && self type isValueType ifTrue: {
-            codegen notYetImplementedError: "Implement unboxing generation on downcast"
-        } ifFalse: {
-            codegen blockBuilder movePointer: (codegen translateValue: self value) into: tacValue
-        }.
+        self type emitTacCheckInto: (codegen translateValue: self targetType) thenUnbox: (codegen translateValue: self value) into: tacValue withSSACodeGenerator: codegen
     }.
 }.
 

@@ -29,6 +29,7 @@ ImageBuilder new
     target: AsmCompilationTarget x86_64 useElf useDwarf asImageBuilderTarget;
     beMinimal;
     withoutInProcessDebugInformation;
+    useDynamicMessaging;
     addNativeEntryPoint: MinimalImageMain;
     build;
     saveTo: "testMinimal.x86_64.elf".
