@@ -823,14 +823,16 @@ PointerLikeType extend: {
         }
     }.
 
-    public virtual method emitTacCheckThenUnbox: (value: TACValue) into: (resultValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
-        ## TODO: Implement this via some kind of memcpy for the generic case.
-        codegen notYetImplementedError: "PointerLikeType type unbox"
+    public virtual method emitTacCheckThenUnbox: (boxedValue: TACValue) into: (unboxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        codegen blockBuilder
+            callPointer: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxPointer)
+            with: (codegen moduleCodeGenerator translateGenericObjectPointer: self) with: boxedValue result: unboxedValue
     }.
 
     public virtual method emitTacBox: (unboxedValue: TACValue) into: (boxedValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
-        ## TODO: Implement this via some kind of memcpy.
-        codegen notYetImplementedError: "PointerLikeType type box"
+        codegen blockBuilder
+            callPointer: (codegen translateRuntimeFunction: ObjectModel::boxPointer)
+            with: (codegen moduleCodeGenerator translateGenericObjectPointer: self) with: unboxedValue result: boxedValue
     }.
 
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {

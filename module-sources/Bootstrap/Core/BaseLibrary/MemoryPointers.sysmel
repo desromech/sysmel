@@ -1,0 +1,139 @@
+Type extend: {
+    public virtual method loadValueFromPointer: (pointer: Void const pointer) ::=> Untyped
+        := (pointer reinterpretCastTo: Untyped const pointer) load.
+
+    public virtual method storeValue: (value: Untyped) inPointer: (pointer: Void pointer) ::=> Void := {
+        (pointer reinterpretCastTo: Untyped pointer) store: value
+    }.
+}.
+
+ValueType extend: {
+    public override method loadValueFromPointer: (pointer: Void const pointer) ::=> Untyped := {
+        self subclassResponsibility
+    }.
+
+    public override method storeValue: (value: Untyped) inPointer: (pointer: Void pointer) ::=> Void := {
+        self subclassResponsibility
+    }.
+}.
+
+Boolean __type__ extend: {
+    public override method loadValueFromPointer: (pointer: Void const pointer) ::=> Untyped
+        := (pointer reinterpretCastTo: Boolean const pointer) load.
+
+    public override method storeValue: (value: Untyped) inPointer: (pointer: Void pointer) ::=> Void
+        := (pointer reinterpretCastTo: Boolean pointer) store: value.
+}.
+
+Char8 __type__ extend: {
+    public override method loadValueFromPointer: (pointer: Void const pointer) ::=> Untyped
+        := (pointer reinterpretCastTo: Char8 const pointer) load.
+
+    public override method storeValue: (value: Untyped) inPointer: (pointer: Void pointer) ::=> Void
+        := (pointer reinterpretCastTo: Char8 pointer) store: value.
+}.
+
+UInt8 __type__ extend: {
+    public override method loadValueFromPointer: (pointer: Void const pointer) ::=> Untyped
+        := (pointer reinterpretCastTo: UInt8 const pointer) load.
+
+    public override method storeValue: (value: Untyped) inPointer: (pointer: Void pointer) ::=> Void
+        := (pointer reinterpretCastTo: UInt8 pointer) store: value.
+}.
+
+Int8 __type__ extend: {
+    public override method loadValueFromPointer: (pointer: Void const pointer) ::=> Untyped
+        := (pointer reinterpretCastTo: Int8 const pointer) load.
+
+    public override method storeValue: (value: Untyped) inPointer: (pointer: Void pointer) ::=> Void
+        := (pointer reinterpretCastTo: Int8 pointer) store: value.
+}.
+
+Char16 __type__ extend: {
+    public override method loadValueFromPointer: (pointer: Void const pointer) ::=> Untyped
+        := (pointer reinterpretCastTo: Char16 const pointer) load.
+
+    public override method storeValue: (value: Untyped) inPointer: (pointer: Void pointer) ::=> Void
+        := (pointer reinterpretCastTo: Char16 pointer) store: value.
+}.
+
+UInt16 __type__ extend: {
+    public override method loadValueFromPointer: (pointer: Void const pointer) ::=> Untyped
+        := (pointer reinterpretCastTo: UInt16 const pointer) load.
+
+    public override method storeValue: (value: Untyped) inPointer: (pointer: Void pointer) ::=> Void
+        := (pointer reinterpretCastTo: UInt16 pointer) store: value.
+}.
+
+Int16 __type__ extend: {
+    public override method loadValueFromPointer: (pointer: Void const pointer) ::=> Untyped
+        := (pointer reinterpretCastTo: Int16 const pointer) load.
+
+    public override method storeValue: (value: Untyped) inPointer: (pointer: Void pointer) ::=> Void
+        := (pointer reinterpretCastTo: Int16 pointer) store: value.
+}.
+
+Char32 __type__ extend: {
+    public override method loadValueFromPointer: (pointer: Void const pointer) ::=> Untyped
+        := (pointer reinterpretCastTo: Char32 const pointer) load.
+
+    public override method storeValue: (value: Untyped) inPointer: (pointer: Void pointer) ::=> Void
+        := (pointer reinterpretCastTo: Char32 pointer) store: value.
+}.
+
+UInt32 __type__ extend: {
+    public override method loadValueFromPointer: (pointer: Void const pointer) ::=> Untyped
+        := (pointer reinterpretCastTo: UInt32 const pointer) load.
+
+    public override method storeValue: (value: Untyped) inPointer: (pointer: Void pointer) ::=> Void
+        := (pointer reinterpretCastTo: UInt32 pointer) store: value.
+}.
+
+Int32 __type__ extend: {
+    public override method loadValueFromPointer: (pointer: Void const pointer) ::=> Untyped
+        := (pointer reinterpretCastTo: Int32 const pointer) load.
+
+    public override method storeValue: (value: Untyped) inPointer: (pointer: Void pointer) ::=> Void
+        := (pointer reinterpretCastTo: Int32 pointer) store: value.
+}.
+
+UInt64 __type__ extend: {
+    public override method loadValueFromPointer: (pointer: Void const pointer) ::=> Untyped
+        := (pointer reinterpretCastTo: UInt64 const pointer) load.
+
+    public override method storeValue: (value: Untyped) inPointer: (pointer: Void pointer) ::=> Void
+        := (pointer reinterpretCastTo: UInt64 pointer) store: value.
+}.
+
+Int64 __type__ extend: {
+    public override method loadValueFromPointer: (pointer: Void const pointer) ::=> Untyped
+        := (pointer reinterpretCastTo: Int64 const pointer) load.
+
+    public override method storeValue: (value: Untyped) inPointer: (pointer: Void pointer) ::=> Void
+        := (pointer reinterpretCastTo: Int64 pointer) store: value.
+}.
+
+Float32 __type__ extend: {
+    public override method loadValueFromPointer: (pointer: Void const pointer) ::=> Untyped
+        := (pointer reinterpretCastTo: Float32 const pointer) load.
+
+    public override method storeValue: (value: Untyped) inPointer: (pointer: Void pointer) ::=> Void
+        := (pointer reinterpretCastTo: Float32 pointer) store: value.
+}.
+
+Float64 __type__ extend: {
+    public override method loadValueFromPointer: (pointer: Void const pointer) ::=> Untyped
+        := (pointer reinterpretCastTo: Float64 const pointer) load.
+
+    public override method storeValue: (value: Untyped) inPointer: (pointer: Void pointer) ::=> Void
+        := (pointer reinterpretCastTo: Float64 pointer) store: value.
+}.
+
+Void __type__ extend: {
+    public override method loadValueFromPointer: (pointer: Void const pointer) ::=> Untyped
+        := void.
+
+    public override method storeValue: (value: Untyped) inPointer: (pointer: Void pointer) ::=> Void := {
+        ## Do nothing
+    }.
+}.

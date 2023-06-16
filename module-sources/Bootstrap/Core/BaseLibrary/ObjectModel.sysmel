@@ -742,7 +742,7 @@ RawTuple::byteNew adoptDefinitionOf: {:(Size)slotCount :: Untyped |
     error("TODO: RawTuple::new")
 } withEagerAnalysis.
 
-RawTuple::shallowCopy adoptDefinitionOf: {:(Size)slotCount :: Untyped |
+RawTuple::shallowCopy adoptDefinitionOf: {:(Untyped)sourceObject :: Untyped |
     <primitive: #RawTuple::new>
     error("TODO: RawTuple::new")
 } withEagerAnalysis.
@@ -752,12 +752,14 @@ RawTuple::nextInstanceWithSameType adoptDefinitionOf: {:(Untyped)iterator :: Unt
 
 (RawTuple::typeSlotAt:) adoptDefinitionOf: {:(Untyped)self :(TypeSlot)typeSlot :: Untyped |
     <primitive: #RawTuple::typeSlotAt:>
-    error("TODO: RawTuple::typeSlotAt:")
+    let slotPointerValue := ObjectModel::getTuplePointerUIntValue(self) + ObjectModel::TupleHeaderSize + typeSlot offset.
+    (typeSlot type ifNil: Untyped) loadValueFromPointer: (slotPointerValue reinterpretCastTo: Void const pointer)
 } withEagerAnalysis.
 
 (RawTuple::typeSlotAt:put:) adoptDefinitionOf: {:(Untyped)self :(TypeSlot)typeSlot :(Untyped)value :: Void |
     <primitive: #RawTuple::typeSlotAt:put:>
-    error("TODO: RawTuple::typeSlotAt:put:")
+    let slotPointerValue := ObjectModel::getTuplePointerUIntValue(self) + ObjectModel::TupleHeaderSize + typeSlot offset.
+    (typeSlot type ifNil: Untyped) storeValue: value inPointer: (slotPointerValue reinterpretCastTo: Void pointer)
 } withEagerAnalysis.
 
 (RawTuple::refTypeSlotAt:) adoptDefinitionOf: {:(Untyped)self :(TypeSlot)typeSlot :: Untyped |
@@ -851,7 +853,7 @@ if: ObjectModel::PointerSize = 4sz then: {
             (value asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::Char32 asUIntPointer reinterpretCastTo: AnyValue.
         } ifFalse: {
             let box := ObjectModel::allocateBoxForValueOfTypeWithSize(Char32, 4sz).
-            (box + 1iptr reinterpretCastTo: Char32 pointer) _ := value.
+            (box + 1iptr reinterpretCastTo: Char32 pointer) store: value.
             box reinterpretCastTo: AnyValue
         }.
     }.
@@ -861,7 +863,7 @@ if: ObjectModel::PointerSize = 4sz then: {
             (value asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::UInt32 asUIntPointer reinterpretCastTo: AnyValue.
         } ifFalse: {
             let box := ObjectModel::allocateBoxForValueOfTypeWithSize(UInt32, 4sz).
-            (box + 1iptr reinterpretCastTo: UInt32 pointer) _ := value.
+            (box + 1iptr reinterpretCastTo: UInt32 pointer) store: value.
             box reinterpretCastTo: AnyValue
         }.
     }.
@@ -871,14 +873,14 @@ if: ObjectModel::PointerSize = 4sz then: {
             (value asIntPointer << ObjectModel::Tag::Bits asIntPointer) | ObjectModel::Tag::Int32 asIntPointer reinterpretCastTo: AnyValue.
         } ifFalse: {
             let box := ObjectModel::allocateBoxForValueOfTypeWithSize(Int32, 4sz).
-            (box + 1iptr reinterpretCastTo: Int32 pointer) _ := value.
+            (box + 1iptr reinterpretCastTo: Int32 pointer) store: value.
             box reinterpretCastTo: AnyValue
         }.
     }.
 
     public function ObjectModel::boxFloat32(value: Float32) => AnyValue := {
         let box := ObjectModel::allocateBoxForValueOfTypeWithSize(Float32, 4sz).
-        (box + 1iptr reinterpretCastTo: Float32 pointer) _ := value.
+        (box + 1iptr reinterpretCastTo: Float32 pointer) store: value.
         box reinterpretCastTo: AnyValue
     }.
 } else: {
@@ -902,7 +904,7 @@ public function ObjectModel::boxUInt64(value: UInt64) => AnyValue := {
         (value asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::UInt64 asUIntPointer reinterpretCastTo: AnyValue.
     } ifFalse: {
         let box := ObjectModel::allocateBoxForValueOfTypeWithSize(UInt64, 8sz).
-        (box + 1iptr reinterpretCastTo: UInt64 pointer) _ := value.
+        (box + 1iptr reinterpretCastTo: UInt64 pointer) store: value.
         box reinterpretCastTo: AnyValue
     }.
 }.
@@ -912,15 +914,25 @@ public function ObjectModel::boxInt64(value: Int64) => AnyValue := {
         (value asIntPointer << ObjectModel::Tag::Bits asIntPointer) | ObjectModel::Tag::Int64 asIntPointer reinterpretCastTo: AnyValue.
     } ifFalse: {
         let box := ObjectModel::allocateBoxForValueOfTypeWithSize(Int64, 8sz).
-        (box + 1iptr reinterpretCastTo: Int64 pointer) _ := value.
+        (box + 1iptr reinterpretCastTo: Int64 pointer) store: value.
         box reinterpretCastTo: AnyValue
     }.
 }.
 
 public function ObjectModel::boxFloat64(value: Float64) => AnyValue := {
     let box := ObjectModel::allocateBoxForValueOfTypeWithSize(Float64, 8sz).
-    (box + 1iptr reinterpretCastTo: Float64 pointer) _ := value.
+    (box + 1iptr reinterpretCastTo: Float64 pointer) store: value.
     box reinterpretCastTo: AnyValue
+}.
+
+public function ObjectModel::boxPointer(pointerType: Type, value: UIntPointer) => AnyValue := {
+    value = 0uptr ifTrue: {
+        nil
+    } ifFalse: {
+        let box := ObjectModel::allocateBoxForValueOfTypeWithSize(pointerType, ObjectModel::PointerSize).
+        (box + 1iptr reinterpretCastTo: UIntPointer pointer) store: value.
+        box reinterpretCastTo: AnyValue
+    }.
 }.
 
 ## Unboxing methods.
@@ -1013,7 +1025,7 @@ if: ObjectModel::PointerSize = 4sz then: {
                 error("Expected an Char32 boxed value.").
             }.
 
-            (objectHeader + 1iptr reinterpretCastTo: Char32 pointer) _
+            (objectHeader + 1iptr reinterpretCastTo: Char32 pointer) load
         }.
     }.
 
@@ -1033,7 +1045,7 @@ if: ObjectModel::PointerSize = 4sz then: {
                 error("Expected an UInt32 boxed value.").
             }.
 
-            (objectHeader + 1iptr reinterpretCastTo: UInt32 pointer) _
+            (objectHeader + 1iptr reinterpretCastTo: UInt32 pointer) load
         }.
     }.
 
@@ -1053,7 +1065,7 @@ if: ObjectModel::PointerSize = 4sz then: {
                 error("Expected an Int32 boxed value.").
             }.
 
-            (objectHeader + 1iptr reinterpretCastTo: Int32 pointer) _
+            (objectHeader + 1iptr reinterpretCastTo: Int32 pointer) load
         }.
     }.
 
@@ -1073,7 +1085,7 @@ if: ObjectModel::PointerSize = 4sz then: {
                 error("Expected a Float32 boxed value.").
             }.
 
-            (objectHeader + 1iptr reinterpretCastTo: Float32 pointer) _
+            (objectHeader + 1iptr reinterpretCastTo: Float32 pointer) load
         }.
     }.
 } else: {
@@ -1134,7 +1146,7 @@ public function ObjectModel::checkAndUnboxUInt64(value: Untyped) => UInt64 := {
             error("Expected an UInt32 boxed value.").
         }.
 
-        (objectHeader + 1iptr reinterpretCastTo: UInt64 pointer) _
+        (objectHeader + 1iptr reinterpretCastTo: UInt64 pointer) load
     }.
 }.
 
@@ -1154,7 +1166,7 @@ public function ObjectModel::checkAndUnboxInt64(value: Untyped) => Int64 := {
             error("Expected an UInt32 boxed value.").
         }.
 
-        (objectHeader + 1iptr reinterpretCastTo: Int64 pointer) _
+        (objectHeader + 1iptr reinterpretCastTo: Int64 pointer) load
     }.
 }.
 
@@ -1174,7 +1186,26 @@ public function ObjectModel::checkAndUnboxFloat64(value: Untyped) => Float64 := 
             error("Expected a Float64 boxed value.").
         }.
 
-        (objectHeader + 1iptr reinterpretCastTo: Float64 pointer) _
+        (objectHeader + 1iptr reinterpretCastTo: Float64 pointer) load
+    }.
+}.
+
+public function ObjectModel::checkAndUnboxPointer(pointerType: Type, value: Untyped) => UIntPointer := {
+    Untyped::==(value, nil) ifTrue: {
+        0uptr
+    } ifFalse: {
+        RawTuple::type(value) == pointerType ifFalse: {
+            error("Expected a pointer with a specific type.").
+        }.
+
+        let objectHeader := ObjectModel::getTuplePointerUIntValue(value) reinterpretCastTo: ObjectModel::TupleHeader pointer.
+        objectHeader _ isBytes ifTrue: {
+            (objectHeader + 1iptr reinterpretCastTo: UIntPointer pointer) load
+        } ifFalse: {
+            let slotCount := objectHeader _ slotCount.
+            let slots := objectHeader + 1iptr reinterpretCastTo: AnyValue pointer.
+            error("TODO: Unbox object oriented pointer.").
+        }.
     }.
 }.
 
@@ -1222,6 +1253,8 @@ public global ObjectModel::SendTrampolines := Array new: 16.
     let applyName := ("ObjectModel::apply" -- ArgumentCount asString) asSymbol.
     let sendWithReceiverTypeName := ("ObjectModel::sendWithReceiverType" -- ArgumentCount asString) asSymbol.
     let sendName := ("ObjectModel::send" -- ArgumentCount asString) asSymbol.
+    let checkedEntryPointArgumentTypes := (Array new: 1sz + ArgumentCount) atAllPut: Untyped; yourself.
+    let checkedEntryPointPointerType := (checkedEntryPointArgumentTypes => Untyped) pointer.
 
     ``{
         public function `,(applyName asMacroLiteral)(functional: Untyped, `@argumentNodes) => Untyped := {
@@ -1231,14 +1264,15 @@ public global ObjectModel::SendTrampolines := Array new: 16.
                 definition ifNotNil: {
                     let checkedEntryPoint := definition checkedEntryPoint asUIntPointer.
                     checkedEntryPoint ~= 0uptr ifTrue: {
-                        error("TODO: Checked function application trampoline.")
+                        let checkedEntryPointFunction := checkedEntryPoint reinterpretCastTo: `,(checkedEntryPointPointerType asMacroLiteral).
+                        return: checkedEntryPointFunction(functional, `@argumentIdentifiers)
                     } ifFalse: {
                         let bytecode := definition bytecode.
-                        bytecode ifNotNil: {
-                            error("TODO: Attempt to interpret bytecoded function.")
-                        } ifNil: {
+                        bytecode ifNil: {
                             error("Cannot evaluate function without native compiled definition or bytecode.")
-                        }
+                        }.
+                        
+                        error("TODO: Attempt to interpret bytecoded function.")
                     }
                 }.
             }.
