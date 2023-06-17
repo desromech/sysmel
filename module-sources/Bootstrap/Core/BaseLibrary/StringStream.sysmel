@@ -1,6 +1,20 @@
 StringStream definition: {
+    public eager method capacity => Size
+        := storage ifNil: 0sz ifNotNil: storage size.
+
     public method ensureCapacityFor: (requiredExtraSize: Size) ::=> Void := {
-        error("TODO: StringStream >> #ensureCapacityFor:")
+        let requiredCapacity := size + requiredExtraSize.
+        requiredCapacity <= self capacity ifTrue: {return: void}.
+
+        let newCapacity := requiredCapacity asLargerPowerOfTwo max: 16sz.
+        let newStorage := String basicAllocate: newCapacity.
+        let currentSize := size.
+        let i mutable := 0sz.
+        while: (i < currentSize) do: {
+            newStorage at: i put: (storage at: i)
+        } continueWith: (i := i + 1sz).
+
+        storage := newStorage.
     }.
 
     public override method nextPut: (character: Char8) ::=> Void := {

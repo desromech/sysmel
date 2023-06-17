@@ -35,7 +35,18 @@ Dictionary definition: {
         := storage ifNil: 0sz ifNotNil: storage size.
 
     public final eager method increaseCapacity => Void := {
-        error("TODO: Dictionary increaseCapacity").
+        let oldCapacity := self capacity.
+        let newCapacity := oldCapacity * 2sz max: 8sz.
+        let oldStorage := storage.
+        let storage := Array new: newCapacity.
+
+        let i mutable := 0sz.
+        while: (i < oldCapacity) do: {
+            let oldAssociation := oldStorage at: i.
+            oldAssociation ifNotNil: {
+                self addAssociationNoCheck: oldAssociation
+            }
+        } continueWith: (i := i + 1sz)
     }.
 
     public final eager method checkCapacityIncreaseCondition => Void := {
