@@ -2281,10 +2281,16 @@ SSASetDebugValueForBindingInstruction extend: {
 
 SSAStoreInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        let pointerType := self storage type.
+        self assert: pointerType isPointerLikeType.
+        let baseType := (pointerType downCastTo: PointerLikeType) baseType.
+        let valueToStore := codegen translateValue: self value withExpectedType: baseType.
+        valueToStore ifNil: {return: void}.
+
         (codegen localOnlyAllocaDictionary atOrNil: self storage) ifNotNil: {:(TACValue)localOnlyAlloca :: Void | 
-            self value type emitTacMove: (codegen translateValue: self value) into: localOnlyAlloca withBlockBuilder: codegen blockBuilder
+            baseType emitTacMove: valueToStore into: localOnlyAlloca withBlockBuilder: codegen blockBuilder
         } ifNil: {
-            self value type emitTacStore: (codegen translateValue: self value) intoPointer: (codegen translateValue: self storage) constantOffset: 0i64 withBlockBuilder: codegen blockBuilder
+            baseType emitTacStore: valueToStore intoPointer: (codegen translateValue: self storage) constantOffset: 0i64 withBlockBuilder: codegen blockBuilder
         }
     }.
 }.

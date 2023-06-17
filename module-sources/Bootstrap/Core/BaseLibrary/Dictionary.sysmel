@@ -3,7 +3,8 @@ Dictionary definition: {
         storage ifNil: { return: -1iptr }.
 
         let capacity := storage size.
-        let naturalIndex := key hash % capacity.
+        let keyHash => Size := key hash.
+        let naturalIndex := keyHash % capacity.
 
         let i mutable := naturalIndex.
         while: (i < capacity) do: {
@@ -38,7 +39,7 @@ Dictionary definition: {
         let oldCapacity := self capacity.
         let newCapacity := oldCapacity * 2sz max: 8sz.
         let oldStorage := storage.
-        let storage := Array new: newCapacity.
+        storage := Array new: newCapacity.
 
         let i mutable := 0sz.
         while: (i < oldCapacity) do: {
