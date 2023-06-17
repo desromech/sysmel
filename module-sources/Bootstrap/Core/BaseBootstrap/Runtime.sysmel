@@ -1577,7 +1577,7 @@ SequenceableCollection
 
     withSelector: #first: addMethod: {:(SequenceableCollection)self :(Size)elementsToKeep :: self species |
         let: #size with: self size.
-        let: #resultSize with: (if: size < elementsToKeep then: size else: size).
+        let: #resultSize with: (if: size < elementsToKeep then: size else: elementsToKeep).
         
         let: #result with: (self species new: resultSize).
         let: #i mutableWith: 0sz.
