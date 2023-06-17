@@ -304,7 +304,10 @@ public final class TACTrivialRegisterAllocator superclass: TACRegisterAllocator;
 
     public method allocateInstructionRegisters: (instruction: TACInstruction) ::=> Void := {
         instruction resetRegisterAllocation.
-        instruction operation computeRegisterConstraintsOf: instruction with: self
+        instruction operation computeRegisterConstraintsOf: instruction with: self.
+        instruction usesCapture ifTrue: {
+            instruction captureVectorPointerRegister: self allocateIntegerRegister.
+        }.
     }.
 
     public override method allocateRegisterForInstructionResult: (instruction: TACInstruction) ::=> Void := {

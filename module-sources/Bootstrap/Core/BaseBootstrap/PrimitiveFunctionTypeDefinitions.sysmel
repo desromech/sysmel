@@ -139,9 +139,15 @@ Void::fromAnyValue adoptDefinitionOf: {:(Untyped)value :: Void |
 }.
 
 {
+    let: #unaryFunctionType with: SimpleFunctionTypeTemplate((UInt32,), 0bflgs, UInt32).
     let: #binaryFunctionType with: SimpleFunctionTypeTemplate((UInt32, UInt32), 0bflgs, UInt32).
     let: #equalityComparisonFunctionType with: SimpleFunctionTypeTemplate((UInt32, AnyValue), 0bflgs, Boolean).
     let: #comparisonFunctionType with: SimpleFunctionTypeTemplate((UInt32, UInt32), 0bflgs, Boolean).
+
+    UInt32::negated __type__: unaryFunctionType.
+    UInt32::bitInvert __type__: unaryFunctionType.
+    UInt32::highBit __type__: unaryFunctionType.
+    UInt32::lowBit __type__: unaryFunctionType.
 
     UInt32::+ __type__: binaryFunctionType.
     UInt32::- __type__: binaryFunctionType.
@@ -163,9 +169,15 @@ Void::fromAnyValue adoptDefinitionOf: {:(Untyped)value :: Void |
 }.
 
 {
+    let: #unaryFunctionType with: SimpleFunctionTypeTemplate((UInt64,), 0bflgs, UInt64).
     let: #binaryFunctionType with: SimpleFunctionTypeTemplate((UInt64, UInt64), 0bflgs, UInt64).
     let: #equalityComparisonFunctionType with: SimpleFunctionTypeTemplate((UInt64, AnyValue), 0bflgs, Boolean).
     let: #comparisonFunctionType with: SimpleFunctionTypeTemplate((UInt64, UInt64), 0bflgs, Boolean).
+
+    UInt64::negated __type__: unaryFunctionType.
+    UInt64::bitInvert __type__: unaryFunctionType.
+    UInt64::highBit __type__: unaryFunctionType.
+    UInt64::lowBit __type__: unaryFunctionType.
 
     UInt64::+ __type__: binaryFunctionType.
     UInt64::- __type__: binaryFunctionType.

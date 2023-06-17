@@ -187,6 +187,17 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
             rodataSection;
             yourself).
 
+    protected field captureVectorPointerRegister => TACPhysicalLocation.
+
+    public method validCaptureVectorPointerRegister => TACPhysicalLocation := {
+        captureVectorPointerRegister ifNil: (self error: "Cannot use unloaded capture vector pointer register").
+        captureVectorPointerRegister
+    }.
+
+    public field closureArgument => TACArgumentVariable.
+    public field captureVectorDataOffset => Size.
+    public field closureCaptureVectorMemberOffset => Size.
+
     public method generateFunction: (functionToGenerate: TACFunction) withSymbol: (symbol: AsmSymbol) ::=> Void := {
         function := functionToGenerate.
         asmFunction := moduleGenerator targetModule newProgramEntity.
@@ -260,6 +271,9 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
 
         public abstract method emitMoveRegister: (register: TACPhysicalLocation) intoValue: (value: TACValue) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
+
+        public abstract method emitLoadCaptureVectorPointerFromClosure: (closureArgument: TACValue) intoRegister: (register: TACPhysicalLocation) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
     }.
 
     TACCallingConvention extend: {
@@ -303,6 +317,13 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
     }.
 
     public method prepareToGenerateFunction => Void := {
+        function captures isNotEmpty ifTrue: {
+            closureArgument := function arguments first.
+            captureVectorDataOffset := function compilationTarget objectModel objectHeaderSize.
+            ## FIXME: Delegate this offset computation onto the compilation target.
+            closureCaptureVectorMemberOffset := function compilationTarget objectModel objectHeaderSize + (Function lookupSlot: #captureVector) validOffset.
+        }.
+
         self
             computeArgumentPassingLayout;
             performRegisterAllocation;
@@ -343,7 +364,7 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
                 let location := eachLocal asm::makeStackMapLocationWith: self.
                 stackMap addCaptureBindingMap: (stackMap setBinding: binding location: location)
             }
-        }..
+        }.
     }.
 
     public method emitSpillRegisterArgumentsInStackFrame => Void := {
@@ -376,6 +397,7 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
         }.
 
         self textSection useDebugInfoOfTACValue: instruction.
+        self loadCaptureVectorPointerIfNeededFor: instruction.
         self emitMoveValues: instruction operands intoRegisters: instruction operandRegisters.
 
         moduleGenerator target emitInstruction: instruction with: self.
@@ -384,6 +406,15 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
         instruction resultRegister isNotNil && instruction result isNotNil ifTrue: {
             self emitMoveRegister: instruction resultRegister intoValue: instruction result
         }.
+
+        captureVectorPointerRegister := nil.
+    }.
+
+    public method loadCaptureVectorPointerIfNeededFor: (instruction: TACInstruction) ::=> Void := {
+        captureVectorPointerRegister := instruction captureVectorPointerRegister.
+        captureVectorPointerRegister ifNil: {return: void}.
+
+        moduleGenerator target emitLoadCaptureVectorPointerFromClosure: closureArgument intoRegister: captureVectorPointerRegister with: self.
     }.
 
     public method processDebugInstruction: (debugInstruction: TACInstruction) ::=> Void := {

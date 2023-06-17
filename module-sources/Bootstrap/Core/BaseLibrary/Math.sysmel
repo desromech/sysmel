@@ -321,6 +321,37 @@
 
         public pure final eager method alignedTo: (alignment: SelfType) ::=> SelfType
             := (self + alignment - SelfType one) & alignment negated.
+
+        public pure final eager method highBit ::=> SelfType := {
+            <primitive: (primitivePrefix -- "highBit") asSymbol>
+            <targetDefinedPrimitive>
+            primitiveFailedError()
+        }.
+
+        public pure final eager method lowBit ::=> SelfType := {
+            <primitive: (primitivePrefix -- "lowBit") asSymbol>
+            <targetDefinedPrimitive>
+            primitiveFailedError()
+        }.
+
+        ## Bitwise logarithm base 2.
+        public pure final eager method log2Floor ::=> SelfType
+            := self highBit - SelfType one.
+
+        #**
+        * According to https:##en.wikipedia.org/wiki/Binary_logarithm:
+        * floor(log2(n)) = ceil(log2(n + 1)) - 1
+        * => ceil(log2(n + 1)) = floor(log2(n)) + 1
+        * => ceil(log2(n)) = floor(log2(n - 1)) + 1
+        *#
+        public pure final eager method log2Ceiling ::=> SelfType
+            := (self - SelfType one) log2Floor + SelfType one.
+
+        public pure final eager method asSmallerPowerOfTwo ::=> SelfType
+            := SelfType one << self log2Floor.
+
+        public pure final eager method asLargerPowerOfTwo ::=> SelfType
+            := SelfType one << self log2Ceiling.
     }.
 }.
 

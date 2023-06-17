@@ -59,16 +59,16 @@ TACPhysicalLocation extend: {
     public virtual method x86::relCall32OrInt64For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 relativeCall32 immediate or int64 register".
 
-    public virtual method x86::loadFromLocal: (local: TACLocalVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+    public virtual method x86::loadFromVariable: (local: TACVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
         := self shouldBeImplemented.
 
-    public virtual method x86::storeInLocal: (local: TACLocalVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+    public virtual method x86::storeInVariable: (local: TACVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
         := self shouldBeImplemented.
 
-    public virtual method x86_64::loadFromLocal: (local: TACLocalVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+    public virtual method x86_64::loadFromVariable: (local: TACVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
         := self shouldBeImplemented.
 
-    public virtual method x86_64::storeInLocal: (local: TACLocalVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+    public virtual method x86_64::storeInVariable: (local: TACVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
         := self shouldBeImplemented.
 }.
 
@@ -126,29 +126,27 @@ public final class TACX86IntegerRegister superclass: TACPhysicalIntegerRegister;
             := self new int8: int8; int16: int16; int32: int32; yourself.
     }.
 
-    public override method x86::loadFromLocal: (local: TACLocalVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        let localSize := local size.
-        let isSignedExtended := local isSignedExtended.
-        self assert: (localSize = 1sz) || (localSize = 2sz) || (localSize = 4sz).
+    public override method x86::loadFromVariable: (variable: TACVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        let variableSize := variable size.
+        let isSignedExtended := variable isSignedExtended.
+        self assert: (variableSize = 1sz) || (variableSize = 2sz) || (variableSize = 4sz).
 
-        ## TODO: Support the lambda captures.
-        let localPointer := AsmX86RegisterAddress base: X86::RBP size: localSize asUInt8 displacement: local offset asInt32 asAsmImmediate.
-        localSize = 1u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: self x86::int32 src: localPointer).
-        localSize = 1u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: self x86::int32 src: localPointer).
-        localSize = 2u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: self x86::int32 src: localPointer).
-        localSize = 2u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: self x86::int32 src: localPointer).
-        localSize = 4u64 ifTrue: (codegen textSection x86::mov: self x86::int32 src: localPointer).
+        let variablePointer := variable x86::pointerWithCodegen: codegen.
+        variableSize = 1u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: self x86::int32 src: variablePointer).
+        variableSize = 1u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: self x86::int32 src: variablePointer).
+        variableSize = 2u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: self x86::int32 src: variablePointer).
+        variableSize = 2u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: self x86::int32 src: variablePointer).
+        variableSize = 4u64 ifTrue: (codegen textSection x86::mov: self x86::int32 src: variablePointer).
     }.
 
-    public override method x86::storeInLocal: (local: TACLocalVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        let localSize := local size.
-        self assert: (localSize = 1u64) || (localSize = 2u64) || (localSize = 4u64).
+    public override method x86::storeInVariable: (variable: TACVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        let variableSize := variable size.
+        self assert: (variableSize = 1u64) || (variableSize = 2u64) || (variableSize = 4u64).
         
-        ## TODO: Support the lambda captures.
-        let localPointer := AsmX86RegisterAddress base: X86::RBP size: localSize asUInt8 displacement: local offset asInt32 asAsmImmediate.
-        localSize = 1u64 ifTrue: (codegen textSection x86::mov: localPointer src: self x86::int8).
-        localSize = 2u64 ifTrue: (codegen textSection x86::mov: localPointer src: self x86::int16).
-        localSize = 4u64 ifTrue: (codegen textSection x86::mov: localPointer src: self x86::int32).
+        let variablePointer := variable x86::pointerWithCodegen: codegen.
+        variableSize = 1u64 ifTrue: (codegen textSection x86::mov: variablePointer src: self x86::int8).
+        variableSize = 2u64 ifTrue: (codegen textSection x86::mov: variablePointer src: self x86::int16).
+        variableSize = 4u64 ifTrue: (codegen textSection x86::mov: variablePointer src: self x86::int32).
     }.
 }.
 
@@ -206,37 +204,35 @@ public final class TACX86_64IntegerRegister superclass: TACPhysicalIntegerRegist
             := self new int8: int8; int16: int16; int32: int32; int64: int64; yourself.
     }.
 
-    public override method x86_64::loadFromLocal: (local: TACLocalVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        let localSize := local size.
-        localSize = 0sz ifTrue: {return: void}.
+    public override method x86_64::loadFromVariable: (variable: TACVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        let variableSize := variable size.
+        variableSize = 0sz ifTrue: {return: void}.
 
-        let isSignedExtended := local isSignedExtended.
-        self assert: (localSize = 1sz) || (localSize = 2sz) || (localSize = 4sz) || (localSize = 8sz).
+        let isSignedExtended := variable isSignedExtended.
+        self assert: (variableSize = 1sz) || (variableSize = 2sz) || (variableSize = 4sz) || (variableSize = 8sz).
 
-        ## TODO: Support the lambda captures.
-        let localPointer := AsmX86RegisterAddress base: X86::RBP size: localSize asUInt8 displacement: local offset asInt32 asAsmImmediate.
-        localSize = 1u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: self x86::int32 src: localPointer).
-        localSize = 1u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: self x86::int32 src: localPointer).
-        localSize = 2u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: self x86::int32 src: localPointer).
-        localSize = 2u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: self x86::int32 src: localPointer).
-        localSize = 4u64 ifTrue: (codegen textSection x86::mov: self x86::int32 src: localPointer).
-        localSize = 8u64 ifTrue: (codegen textSection x86::mov: self x86::int64 src: localPointer).
+        let variablePointer := variable x86_64::pointerWithCodegen: codegen.
+        variableSize = 1u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: self x86::int32 src: variablePointer).
+        variableSize = 1u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: self x86::int32 src: variablePointer).
+        variableSize = 2u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: self x86::int32 src: variablePointer).
+        variableSize = 2u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: self x86::int32 src: variablePointer).
+        variableSize = 4u64 ifTrue: (codegen textSection x86::mov: self x86::int32 src: variablePointer).
+        variableSize = 8u64 ifTrue: (codegen textSection x86::mov: self x86::int64 src: variablePointer).
     }.
 
-    public override method x86_64::storeInLocal: (local: TACLocalVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        let localSize := local size.
-        localSize = 0sz ifTrue: {return: void}.
+    public override method x86_64::storeInVariable: (variable: TACVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        let variableSize := variable size.
+        variableSize = 0sz ifTrue: {return: void}.
 
-        (localSize = 1u64) || (localSize = 2u64) || (localSize = 4u64) || (localSize = 8u64) ifFalse: {
-            self error: (local printString -- " " -- local type printString -- " invalid local size " -- localSize asString -- " for integer register")
+        (variableSize = 1u64) || (variableSize = 2u64) || (variableSize = 4u64) || (variableSize = 8u64) ifFalse: {
+            self error: (variable printString -- " " -- variable type printString -- " invalid variable size " -- variableSize asString -- " for integer register")
         }.
 
-        ## TODO: Support the lambda captures.
-        let localPointer := AsmX86RegisterAddress base: X86::RBP size: localSize asUInt8 displacement: local offset asInt32 asAsmImmediate.
-        localSize = 1u64 ifTrue: (codegen textSection x86::mov: localPointer src: self x86::int8).
-        localSize = 2u64 ifTrue: (codegen textSection x86::mov: localPointer src: self x86::int16).
-        localSize = 4u64 ifTrue: (codegen textSection x86::mov: localPointer src: self x86::int32).
-        localSize = 8u64 ifTrue: (codegen textSection x86::mov: localPointer src: self x86::int64).
+        let variablePointer := variable x86_64::pointerWithCodegen: codegen.
+        variableSize = 1u64 ifTrue: (codegen textSection x86::mov: variablePointer src: self x86::int8).
+        variableSize = 2u64 ifTrue: (codegen textSection x86::mov: variablePointer src: self x86::int16).
+        variableSize = 4u64 ifTrue: (codegen textSection x86::mov: variablePointer src: self x86::int32).
+        variableSize = 8u64 ifTrue: (codegen textSection x86::mov: variablePointer src: self x86::int64).
     }.
 }.
 
@@ -257,34 +253,60 @@ public final class TACX86VectorRegister superclass: TACPhysicalVectorRegister; d
     public virtual method x86::vector128For: (codegen: TACAsmCodeGenerator) ::=> AsmInstructionOperand
         := register.
 
-    public override method x86_64::loadFromLocal: (local: TACLocalVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        let localSize := local size.
-        localSize = 0sz ifTrue: {return: void}.
+    public override method x86::loadFromVariable: (variable: TACVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        let variableSize := variable size.
+        variableSize = 0sz ifTrue: {return: void}.
 
-        (localSize = 4u64) || (localSize = 8u64) || (localSize = 16u64) ifFalse: {
-            self error: (local printString -- " " -- local type printString -- " invalid local size " -- localSize asString -- " for vector register")
+        (variableSize = 4u64) || (variableSize = 8u64) || (variableSize = 16u64) ifFalse: {
+            self error: (variable printString -- " " -- variable type printString -- " invalid variable size " -- variableSize asString -- " for vector register")
         }.
 
-        ## TODO: Support the lambda captures.
-        let localPointer := AsmX86RegisterAddress base: X86::RBP size: localSize asUInt8 displacement: local offset asInt32 asAsmImmediate.
-        localSize = 4u64 ifTrue: (codegen textSection x86::movss: self register src: localPointer).
-        localSize = 8u64 ifTrue: (codegen textSection x86::movsd: self register src: localPointer).
-        localSize = 16u64 ifTrue: (codegen textSection x86::movaps: self register src: localPointer).
+        let variablePointer := variable x86_64::pointerWithCodegen: codegen.
+        variableSize = 4u64 ifTrue: (codegen textSection x86::movss: self register src: variablePointer).
+        variableSize = 8u64 ifTrue: (codegen textSection x86::movsd: self register src: variablePointer).
+        variableSize = 16u64 ifTrue: (codegen textSection x86::movaps: self register src: variablePointer).
     }.
 
-    public virtual method x86_64::storeInLocal: (local: TACLocalVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        let localSize := local size.
-        localSize = 0sz ifTrue: {return: void}.
+    public virtual method x86::storeInVariable: (variable: TACVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        let variableSize := variable size.
+        variableSize = 0sz ifTrue: {return: void}.
 
-        (localSize = 4u64) || (localSize = 8u64) || (localSize = 16u64) ifFalse: {
-            self error: (local printString -- " " -- local type printString -- " invalid local size " -- localSize asString -- " for vector register")
+        (variableSize = 4u64) || (variableSize = 8u64) || (variableSize = 16u64) ifFalse: {
+            self error: (variable printString -- " " -- variable type printString -- " invalid variable size " -- variableSize asString -- " for vector register")
         }.
 
-        ## TODO: Support the lambda captures.
-        let localPointer := AsmX86RegisterAddress base: X86::RBP size: localSize asUInt8 displacement: local offset asInt32 asAsmImmediate.
-        localSize = 4u64 ifTrue: (codegen textSection x86::movss: localPointer src: register).
-        localSize = 8u64 ifTrue: (codegen textSection x86::movsd: localPointer src: register).
-        localSize = 16u64 ifTrue: (codegen textSection x86::movaps: localPointer src: register).
+        let variablePointer := variable x86_64::pointerWithCodegen: codegen.
+        variableSize = 4u64 ifTrue: (codegen textSection x86::movss: variablePointer src: register).
+        variableSize = 8u64 ifTrue: (codegen textSection x86::movsd: variablePointer src: register).
+        variableSize = 16u64 ifTrue: (codegen textSection x86::movaps: variablePointer src: register).
+    }.
+
+    public override method x86_64::loadFromVariable: (variable: TACVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        let variableSize := variable size.
+        variableSize = 0sz ifTrue: {return: void}.
+
+        (variableSize = 4u64) || (variableSize = 8u64) || (variableSize = 16u64) ifFalse: {
+            self error: (variable printString -- " " -- variable type printString -- " invalid variable size " -- variableSize asString -- " for vector register")
+        }.
+
+        let variablePointer := variable x86_64::pointerWithCodegen: codegen.
+        variableSize = 4u64 ifTrue: (codegen textSection x86::movss: self register src: variablePointer).
+        variableSize = 8u64 ifTrue: (codegen textSection x86::movsd: self register src: variablePointer).
+        variableSize = 16u64 ifTrue: (codegen textSection x86::movaps: self register src: variablePointer).
+    }.
+
+    public virtual method x86_64::storeInVariable: (variable: TACVariable) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        let variableSize := variable size.
+        variableSize = 0sz ifTrue: {return: void}.
+
+        (variableSize = 4u64) || (variableSize = 8u64) || (variableSize = 16u64) ifFalse: {
+            self error: (variable printString -- " " -- variable type printString -- " invalid variable size " -- variableSize asString -- " for vector register")
+        }.
+
+        let variablePointer := variable x86_64::pointerWithCodegen: codegen.
+        variableSize = 4u64 ifTrue: (codegen textSection x86::movss: variablePointer src: register).
+        variableSize = 8u64 ifTrue: (codegen textSection x86::movsd: variablePointer src: register).
+        variableSize = 16u64 ifTrue: (codegen textSection x86::movaps: variablePointer src: register).
     }.
 }.
 
@@ -701,6 +723,12 @@ public final class TACX86_64CompilationTarget superclass: TACAsmCompilationTarge
     public override method emitMoveRegister: (register: TACPhysicalLocation) intoValue: (value: TACValue) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         value x86_64::moveFromRegister: register with: codegen
     }.
+
+    public override method emitLoadCaptureVectorPointerFromClosure: (closureArgument: TACValue) intoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        closureArgument x86_64::moveIntoRegister: register with: codegen.
+        let reg := (register x86::int64For: codegen) downCastTo: AsmX86IntRegister.
+        codegen textSection x86::mov: reg src: reg x86::qword + codegen closureCaptureVectorMemberOffset asInt32 asAsmImmediate
+    }.
 }.
 
 TACValue extend: {
@@ -737,37 +765,26 @@ TACProgramEntity extend: {
     }.
 }.
 
-TACLocalVariable extend: {
-    public override method x86::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        register x86::loadFromLocal: self with: codegen
-    }.
+TACVariable extend: {
+    public virtual method x86::pointerWithCodegen: (codegen: TACFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress
+        := self subclassResponsibility.
 
-    public override method x86::moveFromRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        register x86::storeInLocal: self with: codegen
-    }.
-
-    public override method x86_64::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        register x86_64::loadFromLocal: self with: codegen
-    }.
-
-    public override method x86_64::moveFromRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        register x86_64::storeInLocal: self with: codegen
-    }.
+    public virtual method x86_64::pointerWithCodegen: (codegen: TACFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress
+        := self subclassResponsibility.
 
     public override method x86_64::pushWith: (codegen: TACFunctionAsmCodeGenerator) scratchRegister: (scratchRegister: AsmInstructionOperand)::=> Void := {
-        let localSize := self size.
-        (localSize = 1sz) || (localSize = 2sz) || (localSize = 4sz) || (localSize = 8sz) ifTrue: {
+        let variableSize := self size.
+        (variableSize = 1sz) || (variableSize = 2sz) || (variableSize = 4sz) || (variableSize = 8sz) ifTrue: {
             let isSignedExtended := self isSignedExtended.
 
-            ## TODO: Support the lambda captures.
-            let localPointer := AsmX86RegisterAddress base: X86::RBP size: localSize asUInt8 displacement: self offset asInt32 asAsmImmediate.
-            localSize = 1u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: scratchRegister src: localPointer).
-            localSize = 1u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: scratchRegister src: localPointer).
-            localSize = 2u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: scratchRegister src: localPointer).
-            localSize = 2u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: scratchRegister src: localPointer).
-            localSize = 4u64 ifTrue: (codegen textSection x86::mov: scratchRegister src: localPointer).
-            localSize = 8u64 ifTrue: {
-                codegen textSection x86::push: localPointer
+            let variablePointer := self x86_64::pointerWithCodegen: codegen.
+            variableSize = 1u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: scratchRegister src: variablePointer).
+            variableSize = 1u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: scratchRegister src: variablePointer).
+            variableSize = 2u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: scratchRegister src: variablePointer).
+            variableSize = 2u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: scratchRegister src: variablePointer).
+            variableSize = 4u64 ifTrue: (codegen textSection x86::mov: scratchRegister src: variablePointer).
+            variableSize = 8u64 ifTrue: {
+                codegen textSection x86::push: variablePointer
             } ifFalse: {
                 codegen textSection x86::push: scratchRegister
             }.
@@ -778,6 +795,43 @@ TACLocalVariable extend: {
         }
     }.
 
+    public override method x86::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        register x86::loadFromVariable: self with: codegen
+    }.
+
+    public override method x86::moveFromRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        register x86::storeInVariable: self with: codegen
+    }.
+
+    public override method x86_64::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        register x86_64::loadFromVariable: self with: codegen
+    }.
+
+    public override method x86_64::moveFromRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        register x86_64::storeInVariable: self with: codegen
+    }.
+}.
+
+TACLocalVariable extend: {
+    public override method x86::pointerWithCodegen: (codegen: TACFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress
+        := AsmX86RegisterAddress base: X86::EBP size: self size asUInt8 displacement: self offset asInt32 asAsmImmediate.
+
+    public override method x86_64::pointerWithCodegen: (codegen: TACFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress
+        := AsmX86RegisterAddress base: X86::RBP size: self size asUInt8 displacement: self offset asInt32 asAsmImmediate.
+}.
+
+TACCaptureVariable extend: {
+    public override method x86::pointerWithCodegen: (codegen: TACFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress
+        := AsmX86RegisterAddress
+            base: ((codegen validCaptureVectorPointerRegister x86::int32For: codegen) downCastTo: AsmX86Register)
+            size: self size asUInt8
+            displacement: (codegen captureVectorDataOffset asInt32 + self offset asInt32) asAsmImmediate.
+
+    public override method x86_64::pointerWithCodegen: (codegen: TACFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress
+        := AsmX86RegisterAddress
+            base: ((codegen validCaptureVectorPointerRegister x86::int32For: codegen) downCastTo: AsmX86Register)
+            size: self size asUInt8
+            displacement: (codegen captureVectorDataOffset asInt32 + self offset asInt32) asAsmImmediate.
 }.
 
 TACConstant extend: {
@@ -1046,6 +1100,15 @@ TAC::Operation::Int16Negate
             x86::neg: (instruction resultRegister x86::int16For: codegen)
     }.
 
+TAC::Operation::Int16HighBit
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerAluUnaryInt32RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::lzcnt: (instruction resultRegister x86::int16For: codegen) with: (instruction firstOperandRegister x86::int16For: codegen);
+            x86::neg: (instruction resultRegister x86::int16For: codegen);
+            x86::add: (instruction resultRegister x86::int16For: codegen) with: 32u8 asAsmImmediate
+    }.
+
 TAC::Operation::Int16BitNot
     forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerAluUnaryInt16RegisterConstraints;
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
@@ -1111,6 +1174,15 @@ TAC::Operation::Int32Negate
             x86::neg: (instruction resultRegister x86::int32For: codegen)
     }.
 
+TAC::Operation::Int32HighBit
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerAluUnaryInt32RegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::lzcnt: (instruction resultRegister x86::int32For: codegen) with: (instruction firstOperandRegister x86::int32For: codegen);
+            x86::neg: (instruction resultRegister x86::int32For: codegen);
+            x86::add: (instruction resultRegister x86::int32For: codegen) with: 32u8 asAsmImmediate
+    }.
+
 TAC::Operation::Int32BitNot
     forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerAluUnaryInt32RegisterConstraints;
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
@@ -1173,6 +1245,16 @@ TAC::Operation::Int64Negate
         codegen textSection
             x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen);
             x86::neg: (instruction resultRegister x86::int64For: codegen)
+    }.
+
+TAC::Operation::Int64HighBit
+    forTarget: #x86_64 registerConstraintsWith: x86::integerAluUnaryInt64RegisterConstraints;
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::lzcnt: (instruction resultRegister x86::int64For: codegen) with: (instruction firstOperandRegister x86::int64For: codegen);
+            x86::neg: (instruction resultRegister x86::int64For: codegen);
+            x86::add: (instruction resultRegister x86::int64For: codegen) with: 64u8 asAsmImmediate
+
     }.
 
 TAC::Operation::Int64BitNot

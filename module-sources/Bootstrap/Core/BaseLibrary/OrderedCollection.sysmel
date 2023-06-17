@@ -8,7 +8,15 @@ OrderedCollection definition: {
         let requiredCapacity := size + additionalRequiredCapacity.
         requiredCapacity <= self capacity ifTrue: {return: void}.
 
-        error("TODO: ensureCapacityForAtLeast:")
+        let newCapacity := requiredCapacity asLargerPowerOfTwo max: 4sz.
+        let newStorage := Array basicAllocate: newCapacity.
+        let currentSize := size.
+        let i mutable := 0sz.
+        while: (i < currentSize) do: {
+            newStorage at: i put: (storage at: i)
+        } continueWith: (i := i + 1sz).
+
+        storage := newStorage.
     }.
 
     public eager method untypedAdd: (element: Untyped) ::=> Void := {
@@ -32,8 +40,16 @@ OrderedCollection definition: {
     public eager method add: element ::=> Void
         := self untypedAdd: element.
 
+    public eager method addAll: (elements: Collection) ::=> Void := {
+        self ensureCapacityForAtLeast: elements size.
+        elements do: {:each :: Void |
+            storage at: size put: each.
+            size := size + 1sz
+        }
+    }.
+
     public override eager method asArray ::=> Array
-        := storage isNil || size = 0sz
+        := storage isNil || (size = 0sz)
             ifTrue: #()
             ifFalse: (storage first: size).
 }.

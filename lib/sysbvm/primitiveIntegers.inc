@@ -83,6 +83,26 @@ static sysbvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_bitInvert)(sysbvm_con
     return primitiveInteger_encode(~operand);
 }
 
+static sysbvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_highBit)(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
+
+    integer_t operand = primitiveInteger_decode(arguments[0]);
+    return primitiveInteger_encode(primitiveInteger_highBit(operand));
+}
+
+static sysbvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_lowBit)(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
+
+    integer_t operand = primitiveInteger_decode(arguments[0]);
+    return primitiveInteger_encode(primitiveInteger_lowBit(operand));
+}
+
 static sysbvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_multiply)(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
@@ -365,6 +385,9 @@ static void PRIMITIVE_INTEGER_FUNCTION(registerPrimitives)(void)
     sysbvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_negated), INTEGER_TYPE_NAME "::negated");
     sysbvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_bitInvert), INTEGER_TYPE_NAME "::bitInvert");
 
+    sysbvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_highBit), INTEGER_TYPE_NAME "::highBit");
+    sysbvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_lowBit), INTEGER_TYPE_NAME "::lowBit");
+
     sysbvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_add), INTEGER_TYPE_NAME "::+");
     sysbvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_subtract), INTEGER_TYPE_NAME "::-");
     sysbvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_multiply), INTEGER_TYPE_NAME "::*");
@@ -409,6 +432,8 @@ static void PRIMITIVE_INTEGER_FUNCTION(setupPrimitives)(sysbvm_context_t *contex
 
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, INTEGER_TYPE_NAME "::negated", context->roots.INTEGER_TYPE_ROOT_NAME, "negated", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, PRIMITIVE_INTEGER_FUNCTION(primitive_negated));
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, INTEGER_TYPE_NAME "::bitInvert", context->roots.INTEGER_TYPE_ROOT_NAME, "bitInvert", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, PRIMITIVE_INTEGER_FUNCTION(primitive_bitInvert));
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, INTEGER_TYPE_NAME "::highBit", context->roots.INTEGER_TYPE_ROOT_NAME, "highBit", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, PRIMITIVE_INTEGER_FUNCTION(primitive_highBit));
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, INTEGER_TYPE_NAME "::lowBit", context->roots.INTEGER_TYPE_ROOT_NAME, "lowBit", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, PRIMITIVE_INTEGER_FUNCTION(primitive_lowBit));
 
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, INTEGER_TYPE_NAME "::+", context->roots.INTEGER_TYPE_ROOT_NAME, "+", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, PRIMITIVE_INTEGER_FUNCTION(primitive_add));
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, INTEGER_TYPE_NAME "::-", context->roots.INTEGER_TYPE_ROOT_NAME, "-", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, PRIMITIVE_INTEGER_FUNCTION(primitive_subtract));
@@ -462,6 +487,8 @@ static void PRIMITIVE_INTEGER_FUNCTION(setupPrimitives)(sysbvm_context_t *contex
 #undef integer_t
 #undef primitiveInteger_decode
 #undef primitiveInteger_encode
+#undef primitiveInteger_highBit
+#undef primitiveInteger_lowBit
 #undef IS_CHARACTER
 #undef IS_SIGNED
 #undef FUNCTION_PREFIX

@@ -13,6 +13,78 @@ typedef struct sysbvm_integer_s
     uint32_t words[];
 } sysbvm_integer_t;
 
+SYSBVM_INLINE uint32_t sysbvm_uint32_highBit(uint32_t word)
+{
+#if defined(_MSC_VER)
+    return 32 - __lzcnt(word);
+#elif defined(__GNUC__)
+    return word == 0 ? 0 : 32 - __builtin_clz(word);
+#else
+    uint32_t result = 0;
+    while(word > 0)
+    {
+        ++result;
+        word >>= 1;
+    }
+
+    return result;
+#endif
+}
+
+SYSBVM_INLINE uint32_t sysbvm_uint32_lowBit(uint32_t word)
+{
+#if defined(__GNUC__)
+    return word == 0 ? 0 : 1 + __builtin_ctz(word);
+#else
+    if(word == 0) return 0;
+
+    uint32_t result = 1;
+    while((word & 1) == 0)
+    {
+        ++result;
+        word >>= 1;
+    }
+
+    return result;
+#endif
+}
+
+SYSBVM_INLINE uint64_t sysbvm_uint64_highBit(uint64_t word)
+{
+#if defined(_MSC_VER)
+    return 64 - __lzcnt64(word);
+#elif defined(__GNUC__)
+    return word == 0 ? 0 : 64 - __builtin_clzl(word);
+#else
+    uint32_t result = 0;
+    while(word > 0)
+    {
+        ++result;
+        word >>= 1;
+    }
+
+    return result;
+#endif
+}
+
+SYSBVM_INLINE uint64_t sysbvm_uint64_lowBit(uint64_t word)
+{
+#if defined(__GNUC__)
+    return word == 0 ? 0 : 1 + __builtin_ctz(word);
+#else
+    if(word == 0) return 0;
+
+    uint64_t result = 1;
+    while((word & 1) == 0)
+    {
+        ++result;
+        word >>= 1;
+    }
+
+    return result;
+#endif
+}
+
 /**
  * Parses an integer from a string.
  */ 

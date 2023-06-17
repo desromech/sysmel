@@ -558,7 +558,9 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
             tacCaptures add: tacCapture.
         }.
 
-        tacFunction captures: tacCaptures asArray.
+        tacFunction
+            captures: tacCaptures asArray;
+            computeCaptureVectorLayout
     }.
 
     public method declareValues => Void := {
@@ -676,12 +678,27 @@ Type extend: {
     }.
 
     public virtual method emitTacCheckAndUnbox: (value: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
-        let typecheckFunction := codegen translateRuntimeFunction: (self isNullable
-            ifTrue: ObjectModel::typecheckNullableValue
-            ifFalse: ObjectModel::typecheckValue
-        ).
-        codegen blockBuilder callVoid: typecheckFunction with: (codegen moduleCodeGenerator translateGenericObjectPointer: self) with: value.
+        self == Untyped ifFalse: {
+            let typecheckFunction := codegen translateRuntimeFunction: (self isNullable
+                ifTrue: ObjectModel::typecheckNullableValue
+                ifFalse: ObjectModel::typecheckValue
+            ).
+            codegen blockBuilder callVoid: typecheckFunction with: (codegen moduleCodeGenerator translateGenericObjectPointer: self) with: value.
+        }.
+
         value
+    }.
+
+    public virtual method emitTacCheckThenUnbox: (value: TACValue) into: (resultValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        self == Untyped ifFalse: {
+            let typecheckFunction := codegen translateRuntimeFunction: (self isNullable
+                ifTrue: ObjectModel::typecheckNullableValue
+                ifFalse: ObjectModel::typecheckValue
+            ).
+            codegen blockBuilder callVoid: typecheckFunction with: (codegen moduleCodeGenerator translateGenericObjectPointer: self) with: value.
+        }.
+
+        codegen blockBuilder movePointer: value into: resultValue
     }.
 
     public virtual method emitTacBox: (value: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
@@ -696,8 +713,20 @@ Type extend: {
         builder callPointer: function convention: callingConvention arguments: arguments result: result
     }.
 
-    public virtual method emitTacUnboxingCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
-        builder callPointer: function convention: callingConvention arguments: arguments result: result
+    public virtual method emitTacUnboxingCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        self == Untyped ifTrue: {
+            codegen blockBuilder callPointer: function convention: callingConvention arguments: arguments result: result.
+            return: void.
+        }.
+
+        let typecheckFunction := codegen translateRuntimeFunction: (self isNullable
+            ifTrue: ObjectModel::typecheckNullableValue
+            ifFalse: ObjectModel::typecheckValue
+        ).
+
+        codegen blockBuilder
+            callPointer: function convention: callingConvention arguments: arguments result: result;
+            callVoid: typecheckFunction with: (codegen moduleCodeGenerator translateGenericObjectPointer: self) with: result
     }.
 
     public virtual method makeTacTemporaryValueNamed: (name: Symbol) withFunctionBuilder: (functionBuilder: TACFunctionBuilder) ::=> TACValue
@@ -765,7 +794,8 @@ ValueType extend: {
         self emitTacCheckThenUnbox: value into: resultValue withSSACodeGenerator: codegen.
     }.
 
-    public virtual method emitTacCheckThenUnbox: (value: TACValue) into: (resultValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+
+    public override method emitTacCheckThenUnbox: (value: TACValue) into: (resultValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
         ## TODO: Implement this via some kind of memcpy for the generic case.
         codegen notYetImplementedError: "Generic value type unbox"
     }.
@@ -789,6 +819,12 @@ ValueType extend: {
 
     public override method emitTacCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder callStruct: function convention: callingConvention arguments: arguments result: result
+    }.
+
+    public override method emitTacUnboxingCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        let boxedTemporary := codegen blockBuilder function newTemporary: #boxed withType: Untyped.
+        codegen blockBuilder callPointer: function convention: callingConvention arguments: arguments result: boxedTemporary.
+        self emitTacCheckThenUnbox: boxedTemporary into: result withSSACodeGenerator: codegen
     }.
 
     public override method emitTacReturn: (value: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
@@ -1643,6 +1679,7 @@ public global SSATacPrimitiveCallGenerationTable := #{
     ## Char16 primitives
     #Char16::negated : translateUnaryPrimitiveInto(TAC::Operation::Int16Negate).
     #Char16::bitInvert : translateUnaryPrimitiveInto(TAC::Operation::Int16BitNot).
+    #Char16::highBit : translateUnaryPrimitiveInto(TAC::Operation::Int16HighBit).
 
     #Char16::+ : translateBinaryPrimitiveInto(TAC::Operation::Int16Add).
     #Char16::- : translateBinaryPrimitiveInto(TAC::Operation::Int16Sub).
@@ -1681,6 +1718,7 @@ public global SSATacPrimitiveCallGenerationTable := #{
     ## UInt16 primitives
     #UInt16::negated : translateUnaryPrimitiveInto(TAC::Operation::Int16Negate).
     #UInt16::bitInvert : translateUnaryPrimitiveInto(TAC::Operation::Int16BitNot).
+    #UInt16::highBit : translateUnaryPrimitiveInto(TAC::Operation::Int16HighBit).
 
     #UInt16::+ : translateBinaryPrimitiveInto(TAC::Operation::Int16Add).
     #UInt16::- : translateBinaryPrimitiveInto(TAC::Operation::Int16Sub).
@@ -1719,6 +1757,7 @@ public global SSATacPrimitiveCallGenerationTable := #{
     ## Int16 primitives
     #Int16::negated : translateUnaryPrimitiveInto(TAC::Operation::Int16Negate).
     #Int16::bitInvert : translateUnaryPrimitiveInto(TAC::Operation::Int16BitNot).
+    #Int16::highBit : translateUnaryPrimitiveInto(TAC::Operation::Int16HighBit).
 
     #Int16::+ : translateBinaryPrimitiveInto(TAC::Operation::Int16Add).
     #Int16::- : translateBinaryPrimitiveInto(TAC::Operation::Int16Sub).
@@ -1757,6 +1796,7 @@ public global SSATacPrimitiveCallGenerationTable := #{
     ## Char32 primitives
     #Char32::negated : translateUnaryPrimitiveInto(TAC::Operation::Int32Negate).
     #Char32::bitInvert : translateUnaryPrimitiveInto(TAC::Operation::Int32BitNot).
+    #Char32::highBit : translateUnaryPrimitiveInto(TAC::Operation::Int32HighBit).
 
     #Char32::+ : translateBinaryPrimitiveInto(TAC::Operation::Int32Add).
     #Char32::- : translateBinaryPrimitiveInto(TAC::Operation::Int32Sub).
@@ -1795,6 +1835,7 @@ public global SSATacPrimitiveCallGenerationTable := #{
     ## UInt32 primitives
     #UInt32::negated : translateUnaryPrimitiveInto(TAC::Operation::Int32Negate).
     #UInt32::bitInvert : translateUnaryPrimitiveInto(TAC::Operation::Int32BitNot).
+    #UInt32::highBit : translateUnaryPrimitiveInto(TAC::Operation::Int32HighBit).
 
     #UInt32::+ : translateBinaryPrimitiveInto(TAC::Operation::Int32Add).
     #UInt32::- : translateBinaryPrimitiveInto(TAC::Operation::Int32Sub).
@@ -1834,6 +1875,7 @@ public global SSATacPrimitiveCallGenerationTable := #{
     ## Int32 primitives
     #Int32::negated : translateUnaryPrimitiveInto(TAC::Operation::Int32Negate).
     #Int32::bitInvert : translateUnaryPrimitiveInto(TAC::Operation::Int32BitNot).
+    #Int32::highBit : translateUnaryPrimitiveInto(TAC::Operation::Int32HighBit).
 
     #Int32::+ : translateBinaryPrimitiveInto(TAC::Operation::Int32Add).
     #Int32::- : translateBinaryPrimitiveInto(TAC::Operation::Int32Sub).
@@ -1892,6 +1934,7 @@ public global SSATacPrimitiveCallGenerationTable := #{
     #Int64::<= : translateBinaryPrimitiveInto(TAC::Operation::Int64LessOrEquals).
     #Int64::> : translateBinaryPrimitiveInto(TAC::Operation::Int64GreaterThan).
     #Int64::>= : translateBinaryPrimitiveInto(TAC::Operation::Int64GreaterOrEquals).
+    #Int64::highBit : translateUnaryPrimitiveInto(TAC::Operation::Int64HighBit).
 
     #Int64::asChar8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt64ToInt8).
     #Int64::asInt8 : translateUnaryPrimitiveInto(TAC::Operation::TruncateInt64ToInt8).
@@ -1910,6 +1953,7 @@ public global SSATacPrimitiveCallGenerationTable := #{
     ## UInt64 primitives
     #UInt64::negated : translateUnaryPrimitiveInto(TAC::Operation::Int64Negate).
     #UInt64::bitInvert : translateUnaryPrimitiveInto(TAC::Operation::Int64BitNot).
+    #UInt64::highBit : translateUnaryPrimitiveInto(TAC::Operation::Int64HighBit).
 
     #UInt64::+ : translateBinaryPrimitiveInto(TAC::Operation::Int64Add).
     #UInt64::- : translateBinaryPrimitiveInto(TAC::Operation::Int64Sub).
@@ -2075,7 +2119,7 @@ SSAFunctionDefinitionTACCodeGenerator extend: {
                 resultType
                     emitTacUnboxingCall: entryPoint convention: self tacFunction compilationTarget defaultCallingConvention
                     withArguments: (Array with: tacCalledFunction) -- tacArguments into: tacValue
-                    withBlockBuilder: self blockBuilder.
+                    withSSACodeGenerator: self.
             } ifNil: {
                 self blockBuilder trap
             }.
@@ -2104,7 +2148,11 @@ SSACoerceValueInstruction extend: {
 
 SSADownCastInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
-        self type emitTacCheckInto: (codegen translateValue: self targetType) thenUnbox: (codegen translateValue: self value) into: tacValue withSSACodeGenerator: codegen
+        self targetType isLiteralConstant ifTrue: {
+            self type emitTacCheckThenUnbox: (codegen translateValue: self value) into: tacValue withSSACodeGenerator: codegen
+        } ifFalse: {
+            self type emitTacCheckInto: (codegen translateValue: self targetType) thenUnbox: (codegen translateValue: self value) into: tacValue withSSACodeGenerator: codegen
+        }.
     }.
 }.
 
@@ -2215,13 +2263,13 @@ SSASendInstruction extend: {
             self type
                 emitTacUnboxingCall: trampoline convention: trampoline callingConvention
                 withArguments: (Array with: tacReceiver with: tacSelector) -- tacArguments into: tacValue
-                withBlockBuilder: codegen blockBuilder.
+                withSSACodeGenerator: codegen.
         } ifNotNil: {
             let trampoline := codegen translateRuntimeFunction: (ObjectModel::SendWithReceiverTypeTrampolines at: self arguments size).
             self type
                 emitTacUnboxingCall: trampoline convention: trampoline callingConvention
                 withArguments: (Array with: tacReceiver with: tacReceiverLookupType with: tacSelector) -- tacArguments into: tacValue
-                withBlockBuilder: codegen blockBuilder.
+                withSSACodeGenerator: codegen.
         }.
     }.
 }.

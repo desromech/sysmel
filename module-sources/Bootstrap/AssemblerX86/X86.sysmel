@@ -1595,6 +1595,10 @@ let instructionDefinitionTable := #(
         ##(OpI8 #[] #[16rCD])
     )
 
+    (lzcnt (dst with) "Count leading zeros"
+		(OpRwRmw #[16rF3] #[16r0F 16rBD])
+    )
+
 	(lock () "Lock prefix"
 		(Op #[] #[16rF0])
 	)
@@ -1779,6 +1783,10 @@ let instructionDefinitionTable := #(
         (OpRmwRw #[] #[16r85])
         (OpRbRmb #[] #[16r84])
         (OpRwRmw #[] #[16r85])
+    )
+
+    (tzcnt (dst with) "Count trailing zeros"
+		(OpRwRmw #[16rF3] #[16r0F 16rBC])
     )
 
     (ud2 () "Undefined. Raise invalid opcode exception."

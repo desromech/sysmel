@@ -1735,6 +1735,10 @@ OrderedCollection
         self size: initialSize.
         self storage: (self class arrayType new: initialSize).
     };
+    withSelector: #capacity addMethod: {:(OrderedCollection)self :: Size |
+        let: #storage with: self storage.
+        if: storage == nil then: 0sz else: storage size
+    };
     withSelector: #addAll: addMethod: {:(OrderedCollection)self :(Collection)elements |
         elements do: {:each :: Void |
             self add: each
@@ -2948,6 +2952,15 @@ UInt32
     };
     withSelector: #alignedTo: addMethod: {:(UInt32)value :(UInt32)alignment :: UInt32 |
         ((value + alignment) - 1u32) & alignment negated.
+    };
+    withSelector: #log2Floor addMethod: {:(UInt32)value :: UInt32 |
+        value highBit - 1u32
+    };
+    withSelector: #log2Ceiling addMethod: {:(UInt32)value :: UInt32 |
+        (value - 1u32) log2Floor + 1u32
+    };
+    withSelector: #asLargerPowerOfTwo addMethod: {:(UInt32)value :: UInt32 |
+        1u32 << value log2Ceiling
     }.
 
 Int32
@@ -2973,6 +2986,15 @@ UInt64
     };
     withSelector: #alignedTo: addMethod: {:(UInt64)value :(UInt64)alignment :: UInt64 |
         ((value + alignment) - 1u64) & alignment negated.
+    };
+    withSelector: #log2Floor addMethod: {:(UInt64)value :: UInt64 |
+        value highBit - 1u64
+    };
+    withSelector: #log2Ceiling addMethod: {:(UInt64)value :: UInt64 |
+        (value - 1u64) log2Floor + 1u64
+    };
+    withSelector: #asLargerPowerOfTwo addMethod: {:(UInt64)value :: UInt64 |
+        1u64 << value log2Ceiling
     }.
 
 Int64

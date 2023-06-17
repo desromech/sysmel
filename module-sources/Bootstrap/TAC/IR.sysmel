@@ -653,6 +653,8 @@ TACInstruction definition: {
     public field operandRegisters => Array.
     public field scratchRegisters => Array.
 
+    public field captureVectorPointerRegister => TACPhysicalLocation.
+
     public field callingConvention => TACCallingConvention.
 
     public field sourceBinding => SymbolBinding.
@@ -667,6 +669,10 @@ TACInstruction definition: {
 
     public method isDebug => Boolean
         := operation isDebug.
+
+    public method usesCapture => Boolean
+        := (result isNotNil && result isCaptureVariable) ||
+        (operands anySatisfy: {:(TACValue)operand :: Boolean | operand isCaptureVariable}).
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         result ifNotNil: (stream print: result; nextPutAll: " := ").
@@ -834,6 +840,9 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
     public field lastBasicBlock => TACBasicBlock.
 
     public field trampolineTarget => TACProgramEntity.
+
+    public field captureVectorSize => UInt64.
+    public field captureVectorAlignment => UInt64.
 
     public override method isFunction => Boolean := true.
 
@@ -1013,6 +1022,22 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
         self instructionsDo: {:(TACInstruction)eachInstruction :: Void |
             eachInstruction markLiveRange
         }.
+    }.
+
+    public method computeCaptureVectorLayout => Void := {
+        let offset mutable := 0u64.
+        let alignment mutable := 1u64.
+        captures do: {:(TACCaptureVariable)each :: Void |
+            offset := offset alignedTo: each alignment.
+            alignment := alignment max: each alignment.
+
+            each offset: offset asInt64.
+            offset := offset + each size
+        }.
+
+        offset := offset alignedTo: alignment.
+        self captureVectorSize: offset.
+        self captureVectorAlignment: alignment.
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -1455,6 +1480,9 @@ public final class TACFunctionBuilder superclass: Object; definition: {
 #(
     Int8BitNot Int16BitNot Int32BitNot Int64BitNot
     Int8Negate Int16Negate Int32Negate Int64Negate
+    Int8LowBit Int16LowBit Int32LowBit Int64LowBit
+    Int8HighBit Int16HighBit Int32HighBit Int64HighBit
+    Int8PopCount Int16PopCount Int32PopCount Int64PopCount
 
     Float32Negate Float64Negate
     Float32Sqrt Float64Sqrt
