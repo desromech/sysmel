@@ -2605,6 +2605,9 @@ PointerType
         }.
     } makeOverride.
 
+Type
+    withSelector: #canonicalTypeForApplicationArgumentWithIndex: addMethod: {:(Type)self :(Size)index :: Type | AnyValue } makeVirtual.
+
 FunctionType
     withSelector: #canonicalResultType addMethod: {:(FunctionType)self :: Type |
         self subclassResponsibility
@@ -2626,7 +2629,11 @@ FunctionType
     }.
 
 DependentFunctionType
-    withSelector: #canonicalResultType addMethod: {:(FunctionType)self :: Type |
+    withSelector: #canonicalResultType addMethod: {:(DependentFunctionType)self :: Type |
+        ## FIXME: Implement this properly.
+        AnyValue
+    } makeOverride;
+    withSelector: #canonicalTypeForApplicationArgumentWithIndex: addMethod: {:(DependentFunctionType)self :(Size)index :: Type |
         ## FIXME: Implement this properly.
         AnyValue
     } makeOverride;
@@ -2635,6 +2642,11 @@ DependentFunctionType
     } makeOverride.
 
 SimpleFunctionType
+    withSelector: #canonicalTypeForApplicationArgumentWithIndex: addMethod: {:(SimpleFunctionType)self :(Size)index :: Type |
+        if: index < self argumentTypes size
+        then: (self argumentTypes at: index)
+        else: Untyped
+    } makeOverride;
     withSelector: #canonicalResultType addMethod: {:(SimpleFunctionType)self :: Type |
         let: #resultType with: self resultType.
         if: resultType == nil then: Untyped else: resultType.

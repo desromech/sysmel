@@ -32,6 +32,11 @@ public class MonadicParserState definition: {
         position := memento downCastTo: Size
     }.
 
+    public method remainingSize => Size
+        := position <= sourceCollection size
+            ifTrue: sourceCollection size - position
+            ifFalse: 0sz.
+
     public method peek: (offset: Size) ::=> AnyValue := {
         let peekPosition := position + offset.
         peekPosition < sourceCollection size
@@ -342,7 +347,7 @@ public class MonadicSequenceParser superclass: MonadicParser; definition: {
 
     public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
         let startPosition := state memento.
-        (expectedSequence allSatisfyWithIndex: {:expectedElement :(Size)index :: Boolean |
+        (expectedSequence size <= state remainingSize) && (expectedSequence allSatisfyWithIndex: {:expectedElement :(Size)index :: Boolean |
             expectedElement = (state peek: index)
         }) ifTrue: {
             state advance: expectedSequence size.

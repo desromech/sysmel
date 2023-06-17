@@ -174,23 +174,44 @@
             primitiveFailedError()
         }.
 
-        public pure final eager method asSize ::=> Size := {
-            <primitive: (primitivePrefix -- "asSize") asSymbol>
-            <targetDefinedPrimitive>
-            primitiveFailedError()
+        if: Size == UInt64 then: {
+            public pure final eager method asSize ::=> Size := {
+                <primitive: (primitivePrefix -- "asUInt64") asSymbol>
+                <targetDefinedPrimitive>
+                primitiveFailedError()
+            }.
+
+            public pure final eager method asIntPointer ::=> IntPointer := {
+                <primitive: (primitivePrefix -- "asInt64") asSymbol>
+                <targetDefinedPrimitive>
+                primitiveFailedError()
+            }.
+
+            public pure final eager method asUIntPointer ::=> UIntPointer := {
+                <primitive: (primitivePrefix -- "asUInt64") asSymbol>
+                <targetDefinedPrimitive>
+                primitiveFailedError()
+            }.
+        } else: {
+            public pure final eager method asSize ::=> Size := {
+                <primitive: (primitivePrefix -- "asUInt32") asSymbol>
+                <targetDefinedPrimitive>
+                primitiveFailedError()
+            }.
+
+            public pure final eager method asIntPointer ::=> IntPointer := {
+                <primitive: (primitivePrefix -- "asInt32") asSymbol>
+                <targetDefinedPrimitive>
+                primitiveFailedError()
+            }.
+
+            public pure final eager method asUIntPointer ::=> UIntPointer := {
+                <primitive: (primitivePrefix -- "asUInt32") asSymbol>
+                <targetDefinedPrimitive>
+                primitiveFailedError()
+            }.
         }.
 
-        public pure final eager method asIntPointer ::=> IntPointer := {
-            <primitive: (primitivePrefix -- "asIntPointer") asSymbol>
-            <targetDefinedPrimitive>
-            primitiveFailedError()
-        }.
-
-        public pure final eager method asUIntPointer ::=> UIntPointer := {
-            <primitive: (primitivePrefix -- "asUIntPointer") asSymbol>
-            <targetDefinedPrimitive>
-            primitiveFailedError()
-        }.
 
         public pure final eager method asFloat32 ::=> Float32 := {
             <primitive: (primitivePrefix -- "asFloat32") asSymbol>

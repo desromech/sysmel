@@ -1116,6 +1116,22 @@ SimpleFunctionType definition: {
 }.
 
 DependentFunctionType definition: {
+    public override eager method canonicalResultType => Type
+        := resultTypeNode isNotNil && resultTypeNode isLiteralNode
+            ifTrue: (resultTypeNode downCastTo: ASTLiteralNode) value
+            ifFalse: AnyValue.
+
+    public override eager method canonicalTypeForApplicationArgumentWithIndex: (argumentIndex: Size) ::=> Type := {
+        argumentIndex < self argumentNodes size ifTrue: {
+            let argumentNode := self argumentNodes at: argumentIndex.
+            argumentNode isLiteralNode
+                ifTrue: (argumentNode downCastTo: ASTLiteralNode) value
+                ifFalse: (AnyValue)
+        } ifFalse: {
+            AnyValue
+        }.
+    }.
+
     public eager method createActivationEnvironment => FunctionActivationEnvironment := {
         (FunctionActivationEnvironment parent: nil)
             dependentFunctionType: self;

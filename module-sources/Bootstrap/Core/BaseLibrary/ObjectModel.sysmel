@@ -738,13 +738,23 @@ RawTuple::new adoptDefinitionOf: {:(Size)slotCount :: Untyped |
 } withEagerAnalysis.
 
 RawTuple::byteNew adoptDefinitionOf: {:(Size)slotCount :: Untyped |
-    <primitive: #RawTuple::new>
+    <primitive: #RawTuple::byteNew>
     error("TODO: RawTuple::new")
 } withEagerAnalysis.
 
 RawTuple::shallowCopy adoptDefinitionOf: {:(Untyped)sourceObject :: Untyped |
-    <primitive: #RawTuple::new>
-    error("TODO: RawTuple::new")
+    <primitive: #RawTuple::shallowCopy>
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(sourceObject).
+    ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
+        let sourceObjectSize := ObjectModel::TupleHeaderSize + (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ objectSize.
+
+        let allocationPointer := sysmel_pal_malloc(sourceObjectSize).
+        memcpy(allocationPointer, (pointerValue reinterpretCastTo: Void const pointer), sourceObjectSize).
+
+        allocationPointer reinterpretCastTo: Untyped
+    } ifFalse: {
+        sourceObject
+    }
 } withEagerAnalysis.
 
 RawTuple::firstInstanceWithType adoptDefinitionOf: {:(Type)type :: Untyped | nil}.
@@ -834,8 +844,8 @@ public function ObjectModel::boxInt8(value: Int8) => AnyValue
 
 public function ObjectModel::boxBoolean(value: Boolean) => AnyValue := {
     if: value
-    then: (ObjectModel::ImmediateTrivialConstant::False asUIntPointer reinterpretCastTo: AnyValue)
-    else: (ObjectModel::ImmediateTrivialConstant::True asUIntPointer reinterpretCastTo: AnyValue)
+    then: (ObjectModel::ImmediateTrivialConstant::True asUIntPointer reinterpretCastTo: AnyValue)
+    else: (ObjectModel::ImmediateTrivialConstant::False asUIntPointer reinterpretCastTo: AnyValue)
 }.
 
 public function ObjectModel::boxChar16(value: Char16) => AnyValue
@@ -1252,6 +1262,10 @@ public function ObjectModel::allocaGC(size: Size, elementType: Type) => Void poi
     memset(result, 0i8, size).
     result
 }.
+
+
+public function ObjectModel::fetchUncheckedEntryPoint(function: Function) => UIntPointer
+    := function definition uncheckedEntryPoint asUIntPointer.
 
 ## Generate the trampolines via macro metaprogramming.
 public global ObjectModel::CheckedFunctionApplicationTrampolines := Array new: 16.
