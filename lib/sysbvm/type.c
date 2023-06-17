@@ -281,7 +281,7 @@ static sysbvm_tuple_t sysbvm_type_doCreateSequenceTupleType(sysbvm_context_t *co
     for(size_t i = 0; i < elementCount; ++i)
     {
         sysbvm_tuple_t elementType = sysbvm_array_at(elementTypes, i);
-        sysbvm_tuple_t typeSlot = sysbvm_typeSlot_create(context, (sysbvm_tuple_t)result, SYSBVM_NULL_TUPLE, sysbvm_tuple_bitflags_encode(0), elementType, i, i);
+        sysbvm_tuple_t typeSlot = sysbvm_typeSlot_create(context, (sysbvm_tuple_t)result, SYSBVM_NULL_TUPLE, sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL), elementType, i, i);
         sysbvm_array_atPut(result->super.slots, i, typeSlot);
     }
 

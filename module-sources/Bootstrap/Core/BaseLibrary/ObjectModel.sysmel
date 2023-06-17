@@ -1235,6 +1235,18 @@ public function ObjectModel::typecheckNullableValue(expectedType: Type, value: U
     ObjectModel::typecheckValue(expectedType, value)
 }.
 
+public function ObjectModel::allocateCaptureVectorOfType(captureVectorType: SequenceTupleType) => AnySequenceTuple
+    := captureVectorType basicAllocate.
+
+public function ObjectModel::makeClosureWithCaptureVector(functionDefinition: FunctionDefinition, captureVector: AnySequenceTuple) => Function := {
+    let result := Function basicAllocate.
+    result
+        captureVector: captureVector;
+        definition: functionDefinition;
+        __type__: (functionDefinition analyzedType ifNil: Function);
+        yourself.
+}.
+
 public function ObjectModel::allocaGC(size: Size, elementType: Type) => Void pointer := {
     let result := sysmel_pal_malloc(size).
     memset(result, 0i8, size).

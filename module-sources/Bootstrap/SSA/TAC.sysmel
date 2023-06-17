@@ -2161,7 +2161,30 @@ SSAMakeByteArrayInstruction extend: {
 
 SSAMakeClosureInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
-        codegen notYetImplementedError: "Make closure"
+        let captureVectorType := SequenceTupleTypeTemplate(self captures collect: {:(SSAValue)eachCapture :: Type | eachCapture type ifNil: Untyped}).
+        let tacCaptureVector := codegen blockBuilder function newTemporary: #captureVector withType: captureVectorType.
+
+        ## Allocate the capture vector.
+        codegen blockBuilder
+            callPointer: (codegen translateRuntimeFunction: ObjectModel::allocateCaptureVectorOfType)
+            with: (codegen moduleCodeGenerator translateGenericObjectPointer: captureVectorType)
+            result: tacCaptureVector.
+
+        ## Fill the capture vector.
+        let headerSize := captureVectorType objectHeaderSizeForObjectModel: codegen compilationTarget objectModel.
+        self captures doWithIndex: {:(SSAValue)eachCapture :(Size)eachCaptureIndex :: Void |
+            let captureVectorSlot := captureVectorType slots at: eachCaptureIndex.
+            eachCapture type
+                emitTacStore: (codegen translateValue: eachCapture)
+                intoPointer: tacCaptureVector constantOffset: headerSize asInt64 + captureVectorSlot validOffset asInt64
+                withBlockBuilder: codegen blockBuilder
+        }.
+
+        ## Create the closure.
+        codegen blockBuilder
+            callPointer: (codegen translateRuntimeFunction: ObjectModel::makeClosureWithCaptureVector)
+            with: (codegen translateValue: functionDefinition) with: tacCaptureVector
+            result: tacValue
     }.
 }.
 
