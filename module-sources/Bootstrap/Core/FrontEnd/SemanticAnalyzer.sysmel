@@ -1122,14 +1122,9 @@ DependentFunctionType definition: {
             ifFalse: AnyValue.
 
     public override eager method canonicalTypeForApplicationArgumentWithIndex: (argumentIndex: Size) ::=> Type := {
-        argumentIndex < self argumentNodes size ifTrue: {
-            let argumentNode := self argumentNodes at: argumentIndex.
-            argumentNode isLiteralNode
-                ifTrue: (argumentNode downCastTo: ASTLiteralNode) value
-                ifFalse: (AnyValue)
-        } ifFalse: {
-            AnyValue
-        }.
+        argumentIndex < self argumentBindings size
+            ifTrue: (argumentBindings at: argumentIndex) type
+            ifFalse: AnyValue
     }.
 
     public eager method createActivationEnvironment => FunctionActivationEnvironment := {
