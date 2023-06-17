@@ -156,6 +156,12 @@ typedef struct sysbvm_dependentFunctionType_s
     sysbvm_tuple_t localBindings;
 } sysbvm_dependentFunctionType_t;
 
+typedef struct sysbvm_sequenceTupleType_s
+{
+    sysbvm_type_tuple_t super;
+    sysbvm_tuple_t elementTypes;
+} sysbvm_sequenceTupleType_t;
+
 typedef enum sysbvm_typeSlotFlags_e
 {
     SYSBVM_TYPE_SLOT_FLAG_NONE = 0,
@@ -271,6 +277,21 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createSimpleFunctionTypeWithArguments1(sys
  * Creates a simple function type with two arguments.
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_type_createSimpleFunctionTypeWithArguments2(sysbvm_context_t *context, sysbvm_tuple_t argument0, sysbvm_tuple_t argument1, sysbvm_tuple_t resultType);
+
+/**
+ * Creates a sequence tuple type.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_type_createSequenceTupleType(sysbvm_context_t *context, sysbvm_tuple_t elementTypes);
+
+/**
+ * Creates a sequence tuple.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_sequenceTuple_create(sysbvm_context_t *context, sysbvm_tuple_t sequenceTupleType);
+
+/**
+ * Creates a sequence tuple for the specified function definition.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_sequenceTuple_createForFunctionDefinition(sysbvm_context_t *context, sysbvm_tuple_t functionDefinition);
 
 /**
  * Creates a pointer type.

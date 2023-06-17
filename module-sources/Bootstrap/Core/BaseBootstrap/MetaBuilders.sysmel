@@ -481,6 +481,7 @@ ASTUnexpandedApplicationNode
 
 NamedMetaBuilder publicSubclass: #FunctionMetaBuilder slots: (
     TypeSlot publicNamed: #functionFlags type: Bitflags ,
+    TypeSlot publicNamed: #isEager type: Boolean ,
     TypeSlot publicNamed: #isMacro type: Boolean ,
     TypeSlot publicNamed: #isPublic type: Boolean ,
     TypeSlot publicNamed: #resultType type: ASTNode ,
@@ -531,6 +532,7 @@ FunctionMetaBuilder
             arguments: arguments;
             body: self body;
             resultType: self resultType;
+            hasLazyAnalysis: (self isEager ifTrue: false ifFalse: nil);
             yourself
     };
     withSelector: #expansionBody addMethod: {:self  :: ASTNode |
@@ -551,6 +553,7 @@ FunctionMetaBuilder
             arguments: self arguments;
             body: self expansionBody;
             resultType: self resultType;
+            hasLazyAnalysis: (self isEager ifTrue: false ifFalse: nil);
             yourself
     } makeVirtual;
     withSelector: #finishExpansionWithEnvironment: addMethod: {:self :(Environment)environment :: ASTNode |
@@ -596,6 +599,7 @@ TemplateMetaBuilder
             arguments: (Array with: templateResultArgument) -- self arguments;
             body: self expansionBody;
             resultType: self resultType;
+            hasLazyAnalysis: (self isEager ifTrue: false ifFalse: nil);
             yourself
     } makeOverride.
 
@@ -876,6 +880,7 @@ FlagMetaBuilder
         self delegateToMetaBuilder: (FunctionMetaBuilder new
             addFunctionFlags: self methodFlags;
             isPublic: self isPublic;
+            isEager: self isEager;
             yourself)
     };
     withSelector: #global addMethod: {:self :: ASTNode |
@@ -889,6 +894,7 @@ FlagMetaBuilder
         self delegateToMetaBuilder: (TemplateMetaBuilder new
             addFunctionFlags: self methodFlags;
             isPublic: self isPublic;
+            isEager: self isEager;
             yourself)
     }.
 

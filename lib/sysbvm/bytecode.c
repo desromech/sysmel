@@ -369,7 +369,7 @@ SYSBVM_API void sysbvm_bytecodeInterpreter_interpretWithActivationRecord(sysbvm_
             operandRegisterFile[0] = sysbvm_association_create(context, operandRegisterFile[1], operandRegisterFile[2]);
             break;
         case SYSBVM_OPCODE_MAKE_CLOSURE_WITH_VECTOR:
-            operandRegisterFile[0] = sysbvm_function_createClosureWithCaptureVector(context, operandRegisterFile[1], operandRegisterFile[2]);
+            operandRegisterFile[0] = sysbvm_function_createClosureWithCaptureVectorArray(context, operandRegisterFile[1], operandRegisterFile[2]);
             break;
 
         // Variable operand.
@@ -407,7 +407,8 @@ SYSBVM_API void sysbvm_bytecodeInterpreter_interpretWithActivationRecord(sysbvm_
         case SYSBVM_OPCODE_MAKE_CLOSURE_WITH_CAPTURES:
             {
                 size_t captureVectorSize = opcode & 0xF;
-                operandRegisterFile[0] = sysbvm_array_create(context, captureVectorSize);
+                sysbvm_functionDefinition_t *functionDefinition = (sysbvm_functionDefinition_t*)operandRegisterFile[1];
+                operandRegisterFile[0] = sysbvm_sequenceTuple_create(context, functionDefinition->analyzedCaptureVectorType);
                 sysbvm_tuple_t *captureVectorSlots = SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(operandRegisterFile[0])->pointers;
                 for(size_t i = 0; i < captureVectorSize; ++i)
                     captureVectorSlots[i] = operandRegisterFile[2 + i];

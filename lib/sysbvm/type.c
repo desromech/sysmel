@@ -263,6 +263,57 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createSimpleFunctionTypeWithArguments2(sys
     return gcFrame.result;
 }
 
+static sysbvm_tuple_t sysbvm_type_doCreateSequenceTupleType(sysbvm_context_t *context, sysbvm_tuple_t templateResult, sysbvm_tuple_t elementTypes)
+{
+    sysbvm_type_tuple_t *supertype = (sysbvm_type_tuple_t*)context->roots.anySequenceTupleType;
+    
+    sysbvm_sequenceTupleType_t* result = (sysbvm_sequenceTupleType_t*)sysbvm_context_allocatePointerTuple(context, context->roots.sequenceTupleType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_sequenceTupleType_t));
+    sysbvm_association_setValue(templateResult, (sysbvm_tuple_t)result);
+
+    result->super.supertype = (sysbvm_tuple_t)supertype;
+    result->super.flags = supertype->flags;
+    size_t elementCount = sysbvm_array_getSize(elementTypes);
+    result->super.totalSlotCount = sysbvm_tuple_size_encode(context, elementCount);
+    result->super.instanceSize = sysbvm_tuple_size_encode(context, 0);
+    result->super.instanceAlignment = sysbvm_tuple_size_encode(context, 0);
+    result->super.slots = sysbvm_array_create(context, elementCount);
+    result->elementTypes = elementTypes;
+    for(size_t i = 0; i < elementCount; ++i)
+    {
+        sysbvm_tuple_t elementType = sysbvm_array_at(elementTypes, i);
+        sysbvm_tuple_t typeSlot = sysbvm_typeSlot_create(context, (sysbvm_tuple_t)result, SYSBVM_NULL_TUPLE, sysbvm_tuple_bitflags_encode(0), elementType, i, i);
+        sysbvm_array_atPut(result->super.slots, i, typeSlot);
+    }
+
+    return (sysbvm_tuple_t)result;
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_type_createSequenceTupleType(sysbvm_context_t *context, sysbvm_tuple_t elementTypes)
+{
+    return sysbvm_function_apply1(context, context->roots.sequenceTupleTypeTemplate, elementTypes);
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_sequenceTuple_create(sysbvm_context_t *context, sysbvm_tuple_t sequenceTupleType)
+{
+    if(!sysbvm_tuple_isNonNullPointer(sequenceTupleType)) sysbvm_error_nullArgument();
+
+    sysbvm_sequenceTupleType_t* sequenceTupleTypeObject = (sysbvm_sequenceTupleType_t*)sequenceTupleType;
+    size_t slotCount = sysbvm_tuple_size_decode(sequenceTupleTypeObject->super.totalSlotCount);
+    if(slotCount == 0 && sequenceTupleTypeObject->super.emptyTrivialSingleton)
+        return sequenceTupleTypeObject->super.emptyTrivialSingleton;
+
+    sysbvm_tuple_t result = (sysbvm_tuple_t)sysbvm_context_allocatePointerTuple(context, sequenceTupleType, slotCount);
+    if(slotCount == 0)
+        sequenceTupleTypeObject->super.emptyTrivialSingleton = result;
+    return result;
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_sequenceTuple_createForFunctionDefinition(sysbvm_context_t *context, sysbvm_tuple_t functionDefinition)
+{
+    if(!sysbvm_tuple_isNonNullPointer(functionDefinition)) sysbvm_error_nullArgument();
+    return sysbvm_sequenceTuple_create(context, ((sysbvm_functionDefinition_t*)functionDefinition)->analyzedCaptureVectorType);
+}
+
 static sysbvm_tuple_t sysbvm_function_copy(sysbvm_context_t *context, sysbvm_tuple_t function)
 {
     sysbvm_tuple_t copy = sysbvm_context_shallowCopy(context, function);
@@ -1209,6 +1260,16 @@ static sysbvm_tuple_t sysbvm_type_primitive_createSimpleFunctionType(sysbvm_cont
     return sysbvm_type_doCreateSimpleFunctionType(context, arguments[0], arguments[1], arguments[2], arguments[3]);
 }
 
+static sysbvm_tuple_t sysbvm_type_primitive_createSequenceTupleTemplate(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    (void)arguments;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    return sysbvm_type_doCreateSequenceTupleType(context, arguments[0], arguments[1]);
+}
+
 static sysbvm_tuple_t sysbvm_type_primitive_createPointerType(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
@@ -1364,6 +1425,7 @@ static sysbvm_tuple_t sysbvm_void_primitive_coerceASTNodeWithEnvironment(sysbvm_
 void sysbvm_type_registerPrimitives(void)
 {
     sysbvm_primitiveTable_registerFunction(sysbvm_type_primitive_createSimpleFunctionType, "SimpleFunctionTypeTemplate");
+    sysbvm_primitiveTable_registerFunction(sysbvm_type_primitive_createSequenceTupleTemplate, "SequenceTupleTemplate");
     sysbvm_primitiveTable_registerFunction(sysbvm_type_primitive_createPointerType, "PointerTypeTemplate");
     sysbvm_primitiveTable_registerFunction(sysbvm_type_primitive_createReferenceType, "ReferenceTypeTemplate");
 
@@ -1386,6 +1448,7 @@ void sysbvm_type_registerPrimitives(void)
 void sysbvm_type_setupPrimitives(sysbvm_context_t *context)
 {
     context->roots.simpleFunctionTypeTemplate = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "SimpleFunctionTypeTemplate", 4, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_MEMOIZED | SYSBVM_FUNCTION_FLAGS_TEMPLATE, NULL, sysbvm_type_primitive_createSimpleFunctionType);
+    context->roots.sequenceTupleTypeTemplate = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "SequenceTupleTypeTemplate", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_MEMOIZED | SYSBVM_FUNCTION_FLAGS_TEMPLATE, NULL, sysbvm_type_primitive_createSequenceTupleTemplate);
     context->roots.pointerTypeTemplate = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "PointerTypeTemplate", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_MEMOIZED | SYSBVM_FUNCTION_FLAGS_TEMPLATE, NULL, sysbvm_type_primitive_createPointerType);
     context->roots.referenceTypeTemplate = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "ReferenceTypeTemplate", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_MEMOIZED | SYSBVM_FUNCTION_FLAGS_TEMPLATE, NULL, sysbvm_type_primitive_createReferenceType);
     context->roots.pointerLikeLoadPrimitive = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "PointerLikeType::load", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_TARGET_DEFINED_PRIMITIVE, NULL, sysbvm_type_primitive_pointerLikeLoad);

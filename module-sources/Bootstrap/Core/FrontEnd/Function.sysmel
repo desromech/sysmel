@@ -6,7 +6,7 @@ Function definition: {
         definition := newDefinition.
     }.
 
-    public eager method setupWithFunctionDefinition: (newDefinition: FunctionDefinition) captureVector: (newCaptureVector: Array) ::=> Void := {
+    public eager method setupWithFunctionDefinition: (newDefinition: FunctionDefinition) captureVector: (newCaptureVector: AnySequenceTuple) ::=> Void := {
         flags := newDefinition flags.
         argumentCount := newDefinition argumentCount.
         captureVector := newCaptureVector.
@@ -56,9 +56,12 @@ Function definition: {
         self captureEnvironment: __pendingMemoizationValue__.
         definition ensureAnalysis.
 
-        captureVector := definition analyzedCaptures collect: {:(SymbolBinding)captureBinding :: Untyped |
-            captureEnvironment evaluateSymbolBinding: captureBinding
+        let newCaptureVector => AnySequenceTuple := definition analyzedCaptureVectorType new.
+        definition analyzedCaptures doWithIndex: {:(SymbolBinding)captureBinding :(Size)index |
+            newCaptureVector at: index put: (captureEnvironment evaluateSymbolBinding: captureBinding)
         }.
+
+        captureVector := newCaptureVector.
         self captureEnvironment: nil.
         self primitiveName ifNil: {
             self primitiveName: definition analyzedPrimitiveName

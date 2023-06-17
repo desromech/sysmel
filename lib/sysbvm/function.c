@@ -109,6 +109,9 @@ SYSBVM_API sysbvm_tuple_t sysbvm_function_createClosureWithCaptureVector(sysbvm_
 
     sysbvm_functionDefinition_t *functionDefinitionObject = (sysbvm_functionDefinition_t*)functionDefinition;
     SYSBVM_ASSERT(functionDefinitionObject->analyzedType);
+    SYSBVM_ASSERT(functionDefinitionObject->analyzedCaptureVectorType);
+    if(!sysbvm_tuple_isKindOf(context, captureVector, functionDefinitionObject->analyzedCaptureVectorType))
+        sysbvm_error("Function capture vector does not have the required type.");
 
     sysbvm_function_t *result = (sysbvm_function_t*)sysbvm_context_allocatePointerTuple(context, functionDefinitionObject->analyzedType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_function_t));
     result->flags = functionDefinitionObject->flags;
@@ -118,6 +121,16 @@ SYSBVM_API sysbvm_tuple_t sysbvm_function_createClosureWithCaptureVector(sysbvm_
     result->primitiveName = functionDefinitionObject->analyzedPrimitiveName;
     result->primitiveTableIndex = sysbvm_tuple_uint32_encode(context, 0);
     return (sysbvm_tuple_t)result;
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_function_createClosureWithCaptureVectorArray(sysbvm_context_t *context, sysbvm_tuple_t functionDefinition, sysbvm_tuple_t captureVectorArray)
+{
+    (void)context;
+    (void)functionDefinition;
+    (void)captureVectorArray;
+    sysbvm_error("TODO: Implement this method.");
+    return SYSBVM_NULL_TUPLE;
+    //return sysbvm_function_createClosureWithCaptureVector(context, functionDefinition, captureVectorArray);
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_function_createClosureWithCaptureEnvironment(sysbvm_context_t *context, sysbvm_tuple_t functionDefinition, sysbvm_tuple_t captureEnviroment)
@@ -552,7 +565,6 @@ static sysbvm_tuple_t sysbvm_function_primitive_adoptDefinitionOf(sysbvm_context
     
     sysbvm_function_t **functionObject = (sysbvm_function_t**)function;
     sysbvm_function_t **definitionFunctionObject = (sysbvm_function_t**)definitionFunction;
-
 
     (*functionObject)->definition = (*definitionFunctionObject)->definition;
     (*functionObject)->captureVector = (*definitionFunctionObject)->captureVector;

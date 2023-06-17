@@ -393,7 +393,7 @@ static void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functionByt
             sysbvm_jit_callWithContext2(&jit, &sysbvm_association_create, decodedOperands[0], decodedOperands[1], decodedOperands[2]);
             break;
         case SYSBVM_OPCODE_MAKE_CLOSURE_WITH_VECTOR:
-            sysbvm_jit_callWithContext2(&jit, &sysbvm_function_createClosureWithCaptureVector, decodedOperands[0], decodedOperands[1], decodedOperands[2]);
+            sysbvm_jit_callWithContext2(&jit, &sysbvm_function_createClosureWithCaptureVectorArray, decodedOperands[0], decodedOperands[1], decodedOperands[2]);
             break;
         case SYSBVM_OPCODE_SLOT_AT:
             sysbvm_jit_callWithContext2(&jit, &sysbvm_bytecodeJit_slotAt, decodedOperands[0], decodedOperands[1], decodedOperands[2]);

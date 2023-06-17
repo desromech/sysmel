@@ -68,6 +68,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t pointerTypeTemplate;
     sysbvm_tuple_t referenceTypeTemplate;
     sysbvm_tuple_t simpleFunctionTypeTemplate;
+    sysbvm_tuple_t sequenceTupleTypeTemplate;
     
     sysbvm_tuple_t anyValueToVoidPrimitive;
     sysbvm_tuple_t anyValueToVoidPrimitiveName;
@@ -109,6 +110,9 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t anyValueType;
     sysbvm_tuple_t anyReferenceType;
     sysbvm_tuple_t anyPointerType;
+
+    sysbvm_tuple_t anySequenceTupleType;
+    sysbvm_tuple_t sequenceTupleType;
 
     sysbvm_tuple_t arrayType;
     sysbvm_tuple_t arraySliceType;

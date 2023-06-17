@@ -414,6 +414,10 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.stringEqualsFunction = sysbvm_function_createPrimitive(context, 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_string_primitive_equals);
     context->roots.stringHashFunction = sysbvm_function_createPrimitive(context, 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_string_primitive_hash);
 
+    // Tuple type classes
+    context->roots.anySequenceTupleType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.sequenceableCollectionType);
+    context->roots.sequenceTupleType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.typeType);
+
     // Create the intrinsic built-in environment
     context->roots.globalNamespace = sysbvm_namespace_create(context, SYSBVM_NULL_TUPLE);
     context->roots.intrinsicTypes = sysbvm_orderedCollection_create(context);
@@ -498,7 +502,6 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_type_setMethodWithSelector(context, context->roots.anyValueType, sysbvm_symbol_internWithCString(context, "identityHash"), context->roots.identityHashFunction);
     sysbvm_type_setMethodWithSelector(context, context->roots.anyValueType, sysbvm_symbol_internWithCString(context, "=="), context->roots.identityEqualsFunction);
     sysbvm_type_setMethodWithSelector(context, context->roots.anyValueType, sysbvm_symbol_internWithCString(context, "~~"), context->roots.identityNotEqualsFunction);
-
 
     // Create the value type classes.
     context->roots.valueType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.typeType);
@@ -678,7 +681,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "functionDefinition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
         "dependentFunctionType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionTypeType,
         "argumentVectorSize", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
-        "captureVector", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "captureVector", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anySequenceTupleType,
         "valueVector", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     context->roots.functionAnalysisEnvironmentType = sysbvm_context_createIntrinsicClass(context, "FunctionAnalysisEnvironment", context->roots.analysisEnvironmentType,
@@ -723,7 +726,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionType, "Function", SYSBVM_NULL_TUPLE,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         "argumentCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
-        "captureVector", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anyValueType,
+        "captureVector", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anySequenceTupleType,
         "captureEnvironment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.anyValueType,
         "definition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
         "primitiveTableIndex", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
@@ -741,6 +744,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "definitionResultTypeNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.astNodeType,
         "definitionBodyNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.astNodeType,
 
+        "analyzedCaptureVectorType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sequenceTupleType,
         "analyzedType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.functionTypeType,
 
         "analysisEnvironment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.environmentType,
@@ -796,6 +800,13 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.simpleFunctionTypeType, "SimpleFunctionType", SYSBVM_NULL_TUPLE,
         "argumentTypes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
         "resultType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.typeType,
+        NULL);
+
+    // Tuple type classes
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.anySequenceTupleType, "AnySequenceTuple", SYSBVM_NULL_TUPLE,
+        NULL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.sequenceTupleType, "SequenceTupleType", SYSBVM_NULL_TUPLE,
+        "elementTypes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
 
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolType, "Symbol", SYSBVM_NULL_TUPLE, NULL);

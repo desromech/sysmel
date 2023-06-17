@@ -1,0 +1,16 @@
+AnySequenceTuple definition: {
+    public override method size => Size
+        := self class slots size.
+
+    public override method at: (index: Size)
+        := (RawTuple::typeSlotAt:)(self, self class slots at: index).
+
+    public override method at: (index: Size) put: value ::=> Void := {
+        (RawTuple::typeSlotAt:put:)(self, self class slots at: index, value)
+    }.
+}.
+
+private pure eager template sequenceTupleTypeTemplate(elementTypes: Array) => SequenceTupleType := {
+    error("TODO: sequenceTupleTypeTemplate").
+}.
+SequenceTupleTypeTemplate adoptDefinitionOf: sequenceTupleTypeTemplate.

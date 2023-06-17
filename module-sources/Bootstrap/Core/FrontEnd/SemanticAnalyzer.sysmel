@@ -256,8 +256,10 @@ ASTLambdaNode definition: {
 
         let result := self hasLazyAnalysis == false ifTrue: {
             functionDefinition ensureAnalysis.
-            let captureVector := functionDefinition analyzedCaptures collect: {:(SymbolBinding)eachCapture :: Untyped |
-                environment evaluateSymbolBinding: eachCapture
+            let captureVector => AnySequenceTuple := functionDefinition analyzedCaptureVectorType new.
+            
+            functionDefinition analyzedCaptures doWithIndex: {:(SymbolBinding)eachCapture :(Size)index :: Void |
+                captureVector at: index put: (environment evaluateSymbolBinding: eachCapture)
             }.
 
             let closure => Function := functionDefinition analyzedType new.
@@ -307,7 +309,7 @@ ASTLambdaNode definition: {
         ## Optimize the captureless lambdas.
         functionDefinition analyzedCaptures isEmpty ifTrue: {
             let capturelessClosure => Function := functionDefinition analyzedType new.
-            capturelessClosure setupWithFunctionDefinition: functionDefinition captureVector: #().
+            capturelessClosure setupWithFunctionDefinition: functionDefinition captureVector: functionDefinition analyzedCaptureVectorType new.
             name ifNotNil: {
                 environment setNewSymbol: name valueBinding: capturelessClosure at: self sourcePosition
             }.
@@ -324,8 +326,9 @@ ASTLambdaNode definition: {
 
     public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         let functionDefinition := self functionDefinition.
-        let captureVector := functionDefinition analyzedCaptures collect: {:(SymbolBinding)eachCapture :: Untyped |
-            eachCapture evaluateWithActivationEnvironment: environment
+        let captureVector => AnySequenceTuple := functionDefinition analyzedCaptureVectorType new.
+        functionDefinition analyzedCaptures doWithIndex: {:(SymbolBinding)eachCapture :(Size)index :: Untyped |
+            captureVector at: index put: (eachCapture evaluateWithActivationEnvironment: environment)
         }.
 
         let closure => Function := functionDefinition analyzedType new.
@@ -1116,7 +1119,7 @@ DependentFunctionType definition: {
     public eager method createActivationEnvironment => FunctionActivationEnvironment := {
         (FunctionActivationEnvironment parent: nil)
             dependentFunctionType: self;
-            captureVector: #();
+            captureVector: SequenceTupleTypeTemplate(#()) new;
             argumentVectorSize: argumentBindings size;
             valueVector: (Array new: argumentBindings size + localBindings size);
             yourself

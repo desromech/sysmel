@@ -85,6 +85,7 @@ typedef struct sysbvm_functionDefinition_s
     sysbvm_tuple_t definitionResultTypeNode;
     sysbvm_tuple_t definitionBodyNode;
     
+    sysbvm_tuple_t analyzedCaptureVectorType;
     sysbvm_tuple_t analyzedType;
 
     sysbvm_tuple_t analysisEnvironment;
@@ -136,6 +137,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_function_createPrimitive(sysbvm_context_t *cont
  * Creates a closure by passing its definition and capture vector.
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_function_createClosureWithCaptureVector(sysbvm_context_t *context, sysbvm_tuple_t functionDefinition, sysbvm_tuple_t captureVector);
+
+/**
+ * Creates a closure by passing its definition and a capture vector array.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_function_createClosureWithCaptureVectorArray(sysbvm_context_t *context, sysbvm_tuple_t functionDefinition, sysbvm_tuple_t captureVectorArray);
 
 /**
  * Creates a closure with lazy analysis by passing its capture environment.

@@ -1081,13 +1081,14 @@ sysbvm_tuple_t sysbvm_interpreter_recompileAndOptimizeFunction(sysbvm_context_t 
     gcFrame.optimizedFunctionDefinition->analyzedBodyNode = SYSBVM_NULL_TUPLE;
     gcFrame.optimizedFunctionDefinition->analyzedResultTypeNode = SYSBVM_NULL_TUPLE;
 
+    gcFrame.optimizedFunctionDefinition->analyzedCaptureVectorType = SYSBVM_NULL_TUPLE;
     gcFrame.optimizedFunctionDefinition->analyzedType = SYSBVM_NULL_TUPLE;
 
     gcFrame.optimizedFunctionDefinition->bytecode = SYSBVM_NULL_TUPLE;
 
     sysbvm_functionDefinition_ensureAnalysis(context, &gcFrame.optimizedFunctionDefinition);
     SYSBVM_ASSERT(sysbvm_array_getSize(gcFrame.optimizedFunctionDefinition->analyzedCaptures) == 0);
-    gcFrame.optimizedFunction = sysbvm_function_createClosureWithCaptureVector(context, (sysbvm_tuple_t)gcFrame.optimizedFunctionDefinition, sysbvm_array_create(context, 0));
+    gcFrame.optimizedFunction = sysbvm_function_createClosureWithCaptureVector(context, (sysbvm_tuple_t)gcFrame.optimizedFunctionDefinition, sysbvm_sequenceTuple_create(context, gcFrame.optimizedFunctionDefinition->analyzedCaptureVectorType));
     ((sysbvm_function_t*)gcFrame.optimizedFunction)->flags = (*functionObject)->flags;
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.optimizedFunction;
@@ -1197,6 +1198,7 @@ static void sysbvm_functionDefinition_analyze(sysbvm_context_t *context, sysbvm_
         sysbvm_tuple_t analysisEnvironment;
         sysbvm_functionAnalysisEnvironment_t *analysisEnvironmentObject;
         sysbvm_tuple_t analyzedBodyNode;
+        sysbvm_tuple_t captureTypes;
     } gcFrame = {0};
 
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
@@ -1215,6 +1217,17 @@ static void sysbvm_functionDefinition_analyze(sysbvm_context_t *context, sysbvm_
     (*functionDefinition)->analyzedPrimitiveName = gcFrame.analysisEnvironmentObject->primitiveName;
 
     (*functionDefinition)->analyzedBodyNode = gcFrame.analyzedBodyNode;
+
+    size_t captureCount = sysbvm_array_getSize((*functionDefinition)->analyzedCaptures);
+    gcFrame.captureTypes = sysbvm_array_create(context, captureCount);
+    for(size_t i = 0; i < captureCount; ++i)
+    {
+        sysbvm_tuple_t captureType = sysbvm_symbolBinding_getType(sysbvm_array_at((*functionDefinition)->analyzedCaptures, i));
+        if(!captureType)
+            captureType = context->roots.untypedType;
+        sysbvm_array_atPut(gcFrame.captureTypes, i, captureType);
+    }
+    (*functionDefinition)->analyzedCaptureVectorType = sysbvm_type_createSequenceTupleType(context, gcFrame.captureTypes);
 
     (*functionDefinition)->bytecode = SYSBVM_NULL_TUPLE;
     sysbvm_bytecodeCompiler_compileFunctionDefinition(context, (*functionDefinition));
@@ -1280,7 +1293,7 @@ SYSBVM_API void sysbvm_function_ensureAnalysis(sysbvm_context_t *context, sysbvm
 
     // Create the actual capture vector.
     size_t captureVectorSize = sysbvm_array_getSize(gcFrame.functionDefinition->analyzedCaptures);
-    gcFrame.captureVector = sysbvm_array_create(context, captureVectorSize);
+    gcFrame.captureVector = sysbvm_sequenceTuple_create(context, gcFrame.functionDefinition->analyzedCaptureVectorType);
     for(size_t i = 0; i < captureVectorSize; ++i)
     {
         gcFrame.captureBinding = sysbvm_symbolCaptureBinding_getSourceBinding(sysbvm_array_at(gcFrame.functionDefinition->analyzedCaptures, i));
@@ -1390,7 +1403,7 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveAnalyze(sysbvm_context_t *co
     // Optimize lambdas without captures by turning them onto a literal.
     if(sysbvm_array_getSize(gcFrame.functionDefinition->analyzedCaptures) == 0)
     {
-        gcFrame.capturelessFunction = sysbvm_function_createClosureWithCaptureVector(context, (sysbvm_tuple_t)gcFrame.functionDefinition, sysbvm_array_create(context, 0));
+        gcFrame.capturelessFunction = sysbvm_function_createClosureWithCaptureVector(context, (sysbvm_tuple_t)gcFrame.functionDefinition, sysbvm_sequenceTuple_create(context, gcFrame.functionDefinition->analyzedCaptureVectorType));
         gcFrame.capturelessLiteral = sysbvm_astLiteralNode_create(context, gcFrame.lambdaNode->super.sourcePosition, gcFrame.capturelessFunction);
         if(gcFrame.name)
             gcFrame.localBinding = sysbvm_analysisEnvironment_setNewValueBinding(context, *environment, gcFrame.lambdaNode->super.sourcePosition, gcFrame.name, gcFrame.capturelessFunction);
@@ -1483,7 +1496,7 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveAnalyzeAndEvaluate(sysbvm_co
         sysbvm_functionDefinition_ensureAnalysis(context, &gcFrame.functionDefinition);
 
         size_t captureVectorSize = sysbvm_array_getSize(gcFrame.functionDefinition->analyzedCaptures);
-        gcFrame.captureVector = sysbvm_array_create(context, captureVectorSize);
+        gcFrame.captureVector = sysbvm_sequenceTuple_create(context, gcFrame.functionDefinition->analyzedCaptureVectorType);
         for(size_t i = 0; i < captureVectorSize; ++i)
         {
             gcFrame.captureBinding = sysbvm_symbolCaptureBinding_getSourceBinding(sysbvm_array_at(gcFrame.functionDefinition->analyzedCaptures, i));

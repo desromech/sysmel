@@ -829,8 +829,8 @@ static void sysbvm_jit_makeClosureWithCaptures(sysbvm_bytecodeJit_t *jit, int16_
 
     // Make the capture vector.
     sysbvm_jit_x86_jitLoadContextInRegister(jit, SYSBVM_X86_64_ARG0);
-    sysbvm_jit_x86_movImmediate32(jit, SYSBVM_X86_64_ARG1, (int32_t)captureCount);
-    sysbvm_jit_x86_call(jit, &sysbvm_array_create);
+    sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_64_ARG1, functionDefinitionOperand);
+    sysbvm_jit_x86_call(jit, &sysbvm_sequenceTuple_createForFunctionDefinition);
 
     sysbvm_jit_x86_mov64Register(jit, SYSBVM_X86_64_ARG2, SYSBVM_X86_RAX);
     for(size_t i = 0; i < captureCount; ++i)
