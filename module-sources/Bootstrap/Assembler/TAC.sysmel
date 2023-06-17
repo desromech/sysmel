@@ -198,6 +198,11 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
             stackMap: stackMap;
             sourceProgramEntity: functionToGenerate sourceProgramEntity;
             contentSymbol: symbol.
+
+        functionToGenerate trampolineTarget ifNotNil: {
+            asmFunction trampolineTarget: (moduleGenerator symbolForProgramEntity: functionToGenerate trampolineTarget)
+        }.
+
         self prepareToGenerateFunction.
 
         self textSection

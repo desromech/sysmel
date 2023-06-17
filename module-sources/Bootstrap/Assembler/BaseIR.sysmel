@@ -1536,7 +1536,7 @@ public final class AsmProgramEntity superclass: Object; definition: {
     public field debugSourceNode => ASTNode.
     public field debugSourceEnvironment => Environment.
     public field sourceProgramEntity => ProgramEntity.
-    public field isTrampoline => Boolean.
+    public field trampolineTarget => AsmSymbol.
     public field contentSymbol => AsmSymbol.
     public field stackMap => AsmStackMap.
     public field isDebuggingInformation => Boolean.

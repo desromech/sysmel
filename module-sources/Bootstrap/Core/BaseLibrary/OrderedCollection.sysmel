@@ -5,6 +5,9 @@ OrderedCollection definition: {
         := storage ifNil: 0sz ifNotNil: storage size.
 
     public eager method ensureCapacityForAtLeast: (additionalRequiredCapacity: Size) ::=> Void := {
+        let requiredCapacity := size + additionalRequiredCapacity.
+        requiredCapacity <= self capacity ifTrue: {return: void}.
+
         error("TODO: ensureCapacityForAtLeast:")
     }.
 

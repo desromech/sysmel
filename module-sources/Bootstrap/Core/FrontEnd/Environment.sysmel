@@ -238,6 +238,7 @@ FunctionAnalysisEnvironment definition: {
     }.
 
     public eager virtual final method addInnerFunction: (innerFunction: FunctionDefinition) ::=> Void := {
+        innerFunction owner: self functionDefinition.
         innerFunctionList add: innerFunction
     }.
 

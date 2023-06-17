@@ -833,7 +833,7 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
     public field firstBasicBlock => TACBasicBlock.
     public field lastBasicBlock => TACBasicBlock.
 
-    public field debugIsTrampoline => Boolean.
+    public field trampolineTarget => TACProgramEntity.
 
     public override method isFunction => Boolean := true.
 

@@ -651,6 +651,18 @@ public final class Dwarf::DebugInfoDIEReferenceAttribute superclass: Dwarf::Debu
     }.
 }.
 
+public final class Dwarf::DebugInfoFlagAttribute superclass: Dwarf::DebugInfoEntryAttribute; definition: {
+    public field value => Boolean.
+
+    public override method writeAbbreviationFormWith: (writer: Dwarf::AsmWriter) ::=> Void := {
+        writer activeStream uleb128Expression: Dwarf::DW_FORM_flag
+    }.
+
+    public override method writeAttributeWith: (writer: Dwarf::AsmWriter) ::=> Void := {
+        writer activeStream byte: (value ifTrue: 1u8 ifFalse: 0u8)
+    }.
+}.
+
 public final class Dwarf::DebugInfoLocationExpressionAttribute superclass: Dwarf::DebugInfoEntryAttribute; definition: {
     public field value => Array.
 
@@ -847,11 +859,20 @@ Dwarf::DebugInfoEntry definition: {
             value: value;
             yourself).
 
+    public method addAttribute: (attributeName: Dwarf::Constant) flag: (value: Boolean) ::=> Dwarf::DebugInfoEntryAttribute
+        := self addAttribute: (Dwarf::DebugInfoFlagAttribute new
+            name: attributeName;
+            value: value;
+            yourself).
+
     public method addAttribute: (attributeName: Dwarf::Constant) uleb128Expression: (expression: AsmConstantExpression) ::=> Dwarf::DebugInfoEntryAttribute
         := self addAttribute: (Dwarf::DebugInfoULEB128ExpressionAttribute new
             name: attributeName;
             expression: expression;
             yourself).
+
+    public method artificial: (value: Boolean) ::=> Dwarf::DebugInfoEntryAttribute
+        := self addAttribute: Dwarf::DW_AT_artificial flag: value.
 
     public method name: (name: String) ::=> Dwarf::DebugInfoEntryAttribute
         := self addAttribute: Dwarf::DW_AT_name string: name.
@@ -921,6 +942,9 @@ Dwarf::DebugInfoEntry definition: {
 
     public method location: (expression: Array) ::=> Dwarf::DebugInfoEntryAttribute
         := self addAttribute: Dwarf::DW_AT_location locationExpression: expression.
+
+    public method trampolineWithTargetDie: (targetDie: Dwarf::DebugInfoEntry) ::=> Dwarf::DebugInfoEntryAttribute
+        := self addAttribute: Dwarf::DW_AT_trampoline dieReference: targetDie.
 
     public method type: (type: Dwarf::DebugInfoEntry) ::=> Dwarf::DebugInfoEntryAttribute
         := self addAttribute: Dwarf::DW_AT_type dieReference: type.
@@ -2382,23 +2406,26 @@ Metatype extend: {
 
 Namespace extend: {
     public override method dwarf::createDieWith: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Dwarf::DebugInfoEntry := {
-        let subprogram := Dwarf::DebugInfoEntry tag: Dwarf::DW_TAG_namespace.
-        debugGenerator setProgramEntity: self die: subprogram.
-        (debugGenerator getOrCreateDieForProgramEntityOwner: self owner) addChild: subprogram.
-        self name ifNotNil: (subprogram name: self name asString).
+        let namespace := Dwarf::DebugInfoEntry tag: Dwarf::DW_TAG_namespace.
+        debugGenerator setProgramEntity: self die: namespace.
+        (debugGenerator getOrCreateDieForProgramEntityOwner: self owner) addChild: namespace.
+        namespace name: (self name ifNil: "" ifNotNil: self name asString).
 
-        subprogram
+        namespace
     }.
 }.
 
 FunctionDefinition extend: {
+    public method dwarf::name => String
+        := self name ifNil: "<anonymous>" ifNotNil: self name asString.
+
     public override method dwarf::createDieWith: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Dwarf::DebugInfoEntry := {
         let subprogram := Dwarf::DebugInfoEntry tag: Dwarf::DW_TAG_subprogram.
         debugGenerator setProgramEntity: self die: subprogram.
         (debugGenerator getOrCreateDieForProgramEntityOwner: self owner) addChild: subprogram.
 
         subprogram external: true.
-        self name ifNotNil: (subprogram name: self name asString).
+        subprogram name: self dwarf::name.
         ##self name ifNotNil: (subprogram name: self qualifiedName).
         sourcePosition ifNotNil: (debugGenerator setDie: subprogram declarationPosition: sourcePosition).
 
@@ -2423,16 +2450,25 @@ FunctionDefinition extend: {
     }.
 
     public override method dwarf::generateDIEForAsmProgramEntity: (generatedFunction: AsmProgramEntity) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
-        generatedFunction isTrampoline ifTrue: {return: void}.
+        generatedFunction trampolineTarget ifNotNil: {
+            let trampolineSubprogram := Dwarf::DebugInfoEntry tag: Dwarf::DW_TAG_subprogram.
+            (debugGenerator getOrCreateDieForProgramEntityOwner: self owner) addChild: trampolineSubprogram.
 
-        let subprogram := (debugGenerator getOrCreateDieForProgramEntity: self).
-        subprogram
-            pcRangeSymbol: generatedFunction contentSymbol pointerSize: debugGenerator pointerSize.
+            trampolineSubprogram
+                name: self dwarf::name -- "-Trampoline";
+                artificial: true;
+                trampolineWithTargetDie: (debugGenerator getOrCreateDieForProgramEntity: self);
+                pcRangeSymbol: generatedFunction contentSymbol pointerSize: debugGenerator pointerSize.
+        } ifNil: {
+            let subprogram := debugGenerator getOrCreateDieForProgramEntity: self.
+            subprogram
+                pcRangeSymbol: generatedFunction contentSymbol pointerSize: debugGenerator pointerSize.
 
-        let stackMap := generatedFunction stackMap.
-        stackMap ifNotNil: {
-            stackMap dwarf::generateDebugInfoForFunctionDefinition: self subprogram: subprogram with: debugGenerator
-        }.
+            let stackMap := generatedFunction stackMap.
+            stackMap ifNotNil: {
+                stackMap dwarf::generateDebugInfoForFunctionDefinition: self subprogram: subprogram with: debugGenerator
+            }
+        }
     }.
 }.
 

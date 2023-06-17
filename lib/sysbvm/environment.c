@@ -725,6 +725,8 @@ SYSBVM_API void sysbvm_analysisEnvironment_addInnerFunction(sysbvm_context_t *co
         sysbvm_error("A function analysis environment is required here.");
 
     sysbvm_functionAnalysisEnvironment_t *functionAnalysisEnvironmentObject = (sysbvm_functionAnalysisEnvironment_t*)functionAnalysisEnvironment;
+    sysbvm_functionDefinition_t *innerFunctionDefinitionObject = (sysbvm_functionDefinition_t*)innerFunction;
+    innerFunctionDefinitionObject->super.owner = functionAnalysisEnvironmentObject->functionDefinition;
     sysbvm_orderedCollection_add(context, functionAnalysisEnvironmentObject->innerFunctionList, innerFunction);
 }
 

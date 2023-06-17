@@ -220,7 +220,6 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
             debugSourcePosition: functionDefinition sourcePosition;
             debugSourceNode: functionDefinition sourceASTNode;
             debugSourceEnvironment: functionDefinition sourceEnvironment;
-            debugIsTrampoline: true;
             sourceProgramEntity: functionDefinition sourceObject;
             yourself.
         targetModule addProgramEntity: entryPoint.
@@ -451,6 +450,7 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
             tacArgument
         }.
         uncheckedEntryPoint arguments: tacArguments asArray.
+        uncheckedEntryPoint trampolineTarget: capturelessEntryPoint.
 
         uncheckedEntryPoint build: {:(TACFunctionBuilder)functionBuilder :: Void |
             tacFunction := functionBuilder function.
@@ -480,6 +480,7 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
         }.
 
         checkedEntryPoint arguments: tacArguments asArray.
+        checkedEntryPoint trampolineTarget: uncheckedEntryPoint.
 
         checkedEntryPoint build: {:(TACFunctionBuilder)functionBuilder :: Void |
             tacFunction := functionBuilder function.
