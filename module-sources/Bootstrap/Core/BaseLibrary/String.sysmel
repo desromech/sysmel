@@ -437,14 +437,37 @@ Integer definition: {
         }.
     }.
 
-    public override final pure method printString => String
-        := super printString.
+    public override final method asString => String := {
+        let absoluteValue := self >= 0 ifTrue: self ifFalse: self negated.
+        let isNegative := self < 0.
+        let digitCount mutable := 0sz.
+        let currentValue mutable := absoluteValue.
 
-    public override final method printOn: (stream: Stream) ::=> Void := {
-        self < 0 ifTrue: (stream nextPut: '-'c8).
+        ## Count the required number of digits.
+        do: {
+            currentValue := currentValue // 10.
+            digitCount := digitCount + 1sz.
+        } while: (currentValue ~~ 0).
 
-        stream nextPutAll: "<Todo:Integer>>printOn:>"
+        let prefixSize := isNegative ifTrue: 1sz ifFalse: 0sz.
+        let result := String basicAllocate: prefixSize + digitCount.
+        
+        ## Emit the string
+        isNegative ifTrue: (result at: 0sz put: '-'c8).
+        currentValue := absoluteValue.
+        let digitIndex mutable := 0sz.
+        do: {
+            let digit := currentValue % 10.
+            currentValue := currentValue // 10.
+            result at: prefixSize + digitCount - digitIndex - 1sz put: '0'c8 + digit asChar8.
+            digitIndex := digitIndex + 1sz
+        } while: (currentValue ~~ 0).
+
+        result
     }.
+
+    public override final method printString => String
+        := self asString.
 }.
 
 print adoptDefinitionOf: {:(Array)elements... :: Void |

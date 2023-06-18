@@ -145,6 +145,20 @@ Integer definition: {
         self error: "TODO: Large integer negated."
     }.
 
+    public pure final eager method bitInvert => Integer := {
+        <primitive: #Integer::negated>
+        -1 - self
+    }.
+
+    public pure final eager method highBit => Integer := {
+        <primitive: #Integer::highBit>
+        self isSmallInteger ifTrue: {
+            return: self smallIntegerUncheckedDecoded highBit asInteger
+        }.
+
+        self error: "TODO: Large integer highBit."
+    }.
+
     public pure final eager method + (other: Integer) ::=> Integer := {
         <primitive: #Integer::+ >
         self isSmallInteger && other isSmallInteger ifTrue: {
@@ -164,7 +178,7 @@ Integer definition: {
     }.
 
     public pure final eager method * (other: Integer) ::=> Integer := {
-        <primitive: #Integer::- >
+        <primitive: #Integer::* >
         self isSmallInteger && other isSmallInteger ifTrue: {
             return: (self smallIntegerUncheckedDecoded * other smallIntegerUncheckedDecoded) asInteger
         }.
@@ -184,7 +198,7 @@ Integer definition: {
     public pure final eager method % (other: Integer) ::=> Integer := {
         <primitive: #Integer::% >
         self isSmallInteger && other isSmallInteger ifTrue: {
-            return: (self smallIntegerUncheckedDecoded / other smallIntegerUncheckedDecoded) asInteger
+            return: (self smallIntegerUncheckedDecoded % other smallIntegerUncheckedDecoded) asInteger
         }.
 
         self error: "TODO: Large integer remainder."
@@ -192,6 +206,33 @@ Integer definition: {
 
     public pure final eager method \ (other: Integer) ::=> Integer
         := self % other.
+
+    public pure final eager method & (other: Integer) ::=> Integer := {
+        <primitive: #Integer::& >
+        self isSmallInteger && other isSmallInteger ifTrue: {
+            return: (self smallIntegerUncheckedDecoded & other smallIntegerUncheckedDecoded) asInteger
+        }.
+
+        self error: "TODO: Large integer &."
+    }.
+
+    public pure final eager method | (other: Integer) ::=> Integer := {
+        <primitive: #Integer::& >
+        self isSmallInteger && other isSmallInteger ifTrue: {
+            return: (self smallIntegerUncheckedDecoded | other smallIntegerUncheckedDecoded) asInteger
+        }.
+
+        self error: "TODO: Large integer |."
+    }.
+
+    public pure final eager method ^ (other: Integer) ::=> Integer := {
+        <primitive: #Integer::& >
+        self isSmallInteger && other isSmallInteger ifTrue: {
+            return: (self smallIntegerUncheckedDecoded | other smallIntegerUncheckedDecoded) asInteger
+        }.
+
+        self error: "TODO: Large integer ^."
+    }.
 
     public pure final eager method <=> (other: Integer) ::=> Int32 := {
         <primitive: #Integer::<=> >
@@ -248,6 +289,36 @@ Integer definition: {
 
     public pure final eager override method ~= other ::=> Boolean
         := (self = other) not.
+
+    public pure final eager method asChar8 ::=> Char8 := {
+        <primitive: #Integer::asChar8>
+        self asUInt32 asChar8
+    }.
+
+    public pure final eager method asInt8 ::=> Int8 := {
+        <primitive: #Integer::asInt8>
+        self asUInt32 asInt8
+    }.
+
+    public pure final eager method asUInt8 ::=> UInt8 := {
+        <primitive: #Integer::asUInt8>
+        self asUInt32 asUInt8
+    }.
+
+    public pure final eager method asChar16 ::=> Char16 := {
+        <primitive: #Integer::asChar16>
+        self asUInt32 asChar16
+    }.
+
+    public pure final eager method asInt16 ::=> Int16 := {
+        <primitive: #Integer::asInt16>
+        self asUInt32 asInt16
+    }.
+
+    public pure final eager method asUInt16 ::=> UInt16 := {
+        <primitive: #Integer::asUInt16>
+        self asUInt32 asUInt16
+    }.
 
     public pure final eager method asChar32 ::=> Char32 := {
         <primitive: #Integer::asChar32>
