@@ -1091,15 +1091,33 @@ SimpleFunctionType definition: {
             node semanticError: "Expected number of arguments is mismatching."
         }.
 
+        ## Create the direct analyzed argument list.
+        let analyzedArguments := Array new: expectedArgumentCount.
+        let argumentIndex mutable := 0sz.
+        while: (argumentIndex < directApplicationArgumentCount) do: {
+            let expectedType := argumentTypes at: startingArgumentIndex + argumentIndex.
+            analyzedArguments
+                at: argumentIndex
+                put: (environment analyze: (node arguments at: argumentIndex) withExpectedType: expectedType)
+        } continueWith: (argumentIndex := argumentIndex + 1sz).
+
+        ## Analyze the variadic arguments.
+        isVariadic ifTrue: {
+            let expectedVariadicVectorType := argumentTypes at: directApplicationArgumentCount.
+            let variadicArguments := ASTMakeArrayNode new
+                sourcePosition: node sourcePosition;
+                elements: (node arguments allButFirst: directApplicationArgumentCount);
+                yourself.
+            
+            analyzedArguments at: directApplicationArgumentCount put: (environment analyze: variadicArguments withExpectedType: expectedVariadicVectorType)
+        } ifFalse: {
+            self assert: argumentIndex = analyzedArguments size.
+        }.
+
         node
-            arguments: (node arguments collectWithIndex: {:(ASTNode)eachArgument :(Size)eachArgumentIndex :: ASTNode |
-                let expectedType := eachArgumentIndex < directApplicationArgumentCount
-                    ifTrue: (argumentTypes at: startingArgumentIndex + eachArgumentIndex)
-                    ifFalse: AnyValue.
-                environment analyze: eachArgument withExpectedType: expectedType
-            });
+            arguments: analyzedArguments;
             analyzedType: resultType;
-            applicationFlags: node applicationFlags | FunctionApplicationFlags::NoTypecheck;
+            applicationFlags: node applicationFlags | FunctionApplicationFlags::NoTypecheck | FunctionApplicationFlags::VariadicExpanded;
             optimizePureApplicationWithEnvironment: environment
     }.
 

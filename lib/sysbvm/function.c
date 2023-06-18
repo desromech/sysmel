@@ -411,7 +411,7 @@ SYSBVM_API void sysbvm_functionCallFrameStack_begin(sysbvm_context_t *context, s
     callFrameStack->argumentIndex = 0;
     callFrameStack->variadicArgumentIndex = 0;
 
-    if(applicationFlags & SYSBVM_FUNCTION_APPLICATION_FLAGS_VARIADIC_EXPANDED)
+    if(applicationFlags & (SYSBVM_FUNCTION_APPLICATION_FLAGS_VARIADIC_EXPANDED | SYSBVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK))
         callFrameStack->isVariadic = false;
 
     size_t requiredArgumentCount = callFrameStack->expectedArgumentCount;
@@ -718,4 +718,5 @@ void sysbvm_function_setupPrimitives(sysbvm_context_t *context)
     // Export the function application flags.
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionApplicationFlags::None", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_APPLICATION_FLAGS_NONE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionApplicationFlags::NoTypecheck", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionApplicationFlags::VariadicExpanded", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_APPLICATION_FLAGS_VARIADIC_EXPANDED));
 }

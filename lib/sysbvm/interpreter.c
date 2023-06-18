@@ -5335,6 +5335,8 @@ static sysbvm_tuple_t sysbvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckFunc
         sysbvm_tuple_t analyzedArgument;
         sysbvm_tuple_t analyzedArguments;
         sysbvm_tuple_t expectedArgumentType;
+        sysbvm_tuple_t variadicArguments;
+        sysbvm_tuple_t variadicArgumentsNode;
     } gcFrame = {0};
 
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
@@ -5364,7 +5366,7 @@ static sysbvm_tuple_t sysbvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckFunc
     else if(!isVariadic && applicationArgumentCount != expectedArgumentCount)
         sysbvm_error("Expected number of arguments is mismatching.");
 
-    gcFrame.analyzedArguments = sysbvm_array_create(context, applicationArgumentCount);
+    gcFrame.analyzedArguments = sysbvm_array_create(context, expectedArgumentCount);
     for(size_t i = 0; i < directApplicationArgumentCount; ++i)
     {
         gcFrame.expectedArgumentType = sysbvm_array_at((*simpleFunctionType)->argumentTypes, startingArgumentIndex + i);
@@ -5373,16 +5375,19 @@ static sysbvm_tuple_t sysbvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckFunc
         sysbvm_array_atPut(gcFrame.analyzedArguments, i, gcFrame.analyzedArgument);
     }
 
-    // Additional variadic arguments.
-    for(size_t i = directApplicationArgumentCount; i < applicationArgumentCount; ++i)
+    // Analyze the variadic arguments.
+    if(isVariadic)
     {
-        gcFrame.expectedArgumentType = context->roots.anyValueType;
-        gcFrame.argumentNode = sysbvm_array_at((*functionApplicationNode)->arguments, i);
-        gcFrame.analyzedArgument = sysbvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.argumentNode, gcFrame.expectedArgumentType, *environment);
-        sysbvm_array_atPut(gcFrame.analyzedArguments, i, gcFrame.analyzedArgument);
+        gcFrame.variadicArguments = sysbvm_array_create(context, applicationArgumentCount - directApplicationArgumentCount);
+        for(size_t i = directApplicationArgumentCount; i < applicationArgumentCount; ++i)
+            sysbvm_array_atPut(gcFrame.variadicArguments, i - directApplicationArgumentCount, sysbvm_array_at((*functionApplicationNode)->arguments, i));
+
+        gcFrame.variadicArgumentsNode = sysbvm_astMakeArrayNode_create(context, (*functionApplicationNode)->super.sourcePosition, gcFrame.variadicArguments);
+        gcFrame.variadicArgumentsNode = sysbvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.variadicArgumentsNode, context->roots.arrayType, *environment);
+        sysbvm_array_atPut(gcFrame.analyzedArguments, directApplicationArgumentCount, gcFrame.variadicArgumentsNode);
     }
 
-    (*functionApplicationNode)->applicationFlags = sysbvm_tuple_bitflags_encode(sysbvm_tuple_bitflags_decode((*functionApplicationNode)->applicationFlags) | SYSBVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK);
+    (*functionApplicationNode)->applicationFlags = sysbvm_tuple_bitflags_encode(sysbvm_tuple_bitflags_decode((*functionApplicationNode)->applicationFlags) | SYSBVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK | SYSBVM_FUNCTION_APPLICATION_FLAGS_VARIADIC_EXPANDED);
     (*functionApplicationNode)->arguments = gcFrame.analyzedArguments;
     (*functionApplicationNode)->super.analyzedType = (*simpleFunctionType)->resultType;
 

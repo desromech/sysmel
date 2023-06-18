@@ -97,7 +97,8 @@ static uint8_t sysbvm_bytecodeInterpreter_offsetOperandCountForOpcode(uint8_t op
 
 static sysbvm_tuple_t sysbvm_bytecodeInterpreter_functionApplyNoCopyArguments(sysbvm_context_t *context, sysbvm_tuple_t function, size_t argumentCount, sysbvm_tuple_t *arguments, sysbvm_bitflags_t applicationFlags)
 {
-    if(sysbvm_function_isVariadic(context, function))
+    if((applicationFlags & (SYSBVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK | SYSBVM_FUNCTION_APPLICATION_FLAGS_VARIADIC_EXPANDED)) == 0 &&
+        sysbvm_function_isVariadic(context, function))
     {
         size_t expectedArgumentCount = sysbvm_function_getArgumentCount(context, function);
         SYSBVM_ASSERT(expectedArgumentCount > 0);
