@@ -503,7 +503,7 @@ ASTIfNode extend: {
         ## True branch
         let trueResult mutable => SSAValue := nil.
         let trueResultBlock mutable := conditionBlock.
-        let trueResultIsTerminator mutable => Boolean := false.
+        let trueResultIsTerminator mutable := false.
 
         trueExpression ifNotNil: {
             builder beginBasicBlock: trueDestination.
@@ -522,7 +522,7 @@ ASTIfNode extend: {
         ## False branch
         let falseResult mutable => SSAValue := nil.
         let falseResultBlock mutable := conditionBlock.
-        let falseResultIsTerminator mutable => Boolean := false.
+        let falseResultIsTerminator mutable := false.
         falseExpression ifNotNil: {
             builder beginBasicBlock: falseDestination.
             falseResult := falseExpression generateSSAValueWith: context.

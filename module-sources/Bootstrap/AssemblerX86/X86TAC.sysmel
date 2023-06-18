@@ -903,23 +903,25 @@ TACConstantInt64 extend: {
     public override method x86_64::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::mov: (register x86::int64For: codegen) src: value asAsmImmediate.
     }.
+
+    public override method x86_64::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::push: (codegen symbolForInt64Constant: value) x86::qwordPtr
+    }.
 }.
 
 TACConstantUInt64 extend: {
     public override method x86_64::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::mov: (register x86::int64For: codegen) src: value asAsmImmediate.
     }.
+
+    public override method x86_64::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::push: (codegen symbolForUInt64Constant: value) x86::qwordPtr
+    }.
 }.
 
 TACConstantFloat32 extend: {
-    public override method x86::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        ## TODO: Implement this
-        codegen textSection x86::int3; x86::nop
-    }.
-
-    public override method x86::moveFromRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        ## TODO: Implement this
-        codegen textSection x86::int3; x86::nop
+    public override method x86_64::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::movss: (register x86::float32For: codegen) src: (codegen symbolForFloat32Constant: value) x86::dwordPtr
     }.
 
     public override method x86_64::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
@@ -928,18 +930,12 @@ TACConstantFloat32 extend: {
 }.
 
 TACConstantFloat64 extend: {
-    public override method x86::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        ## TODO: Implement this
-        codegen textSection x86::int3; x86::nop
-    }.
-
-    public override method x86::moveFromRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        ## TODO: Implement this
-        codegen textSection x86::int3; x86::nop
+    public override method x86_64::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::movsd: (register x86::float64For: codegen) src: (codegen symbolForFloat64Constant: value) x86::qwordPtr
     }.
 
     public override method x86_64::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        codegen textSection x86::push: value asIEEEFloat64Encoding asAsmImmediate
+        codegen textSection x86::push: (codegen symbolForFloat64Constant: value) x86::qwordPtr
     }.
 }.
 

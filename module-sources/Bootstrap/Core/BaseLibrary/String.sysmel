@@ -405,13 +405,15 @@ Float32 definition: {
 
 Float64 definition: {
     __Meta__ definition: {
-        public final method parseString: (string: String) ::=> Float64 := {
-            error("TODO: Float64 >> #parseString:")
-        }.
+        public final method parseString: (string: String) ::=> Float64
+            := sysmel_pal_parseFloat64(string size, string __rawContentsPointer__ reinterpretCastTo: Char8 const pointer).
     }.
     
     public override final pure method printString => String := {
-        error("TODO: Float64 >> #printString")
+        let cstring := sysmel_pal_float64ToString(self).
+        let result := String fromCString: cstring.
+        sysmel_pal_free(cstring reinterpretCastTo: Void pointer).
+        result
     }.
 }.
 
@@ -419,7 +421,7 @@ Integer definition: {
     __Meta__ definition: {
         public final method parseString: (string: String) ::=> Integer := {
             let result mutable := 0.
-            let isNegative := string isNotEmpty && string first = '-'c8.
+            let isNegative := string isNotEmpty && (string first = '-'c8).
 
             ## TODO: Implement this properly by adding support for radixes, etc.
             string do: {:(Char8)c :: Void |

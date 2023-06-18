@@ -1278,7 +1278,7 @@ Dwarf::AsmWriter definition: {
 
     public method sleb128Size: (value: Int64) ::=> Size := {
         let result mutable := 0sz.
-        let more mutable => Boolean := true.
+        let more mutable := true.
 
         let currentValue mutable := value.
         while: more do: {
@@ -1385,7 +1385,7 @@ public final class Dwarf::SectionWriter superclass: Object; definition: {
     }.
 
     public method sleb128: (value: Int64) ::=> Void := {
-        let more mutable => Boolean := true.
+        let more mutable := true.
 
         let currentValue mutable := value.
         while: more do: {

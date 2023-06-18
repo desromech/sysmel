@@ -1,0 +1,316 @@
+Char8 definition: {
+    public pure final eager method asInteger ::=> Integer := {
+        <primitive: #Char8::asInteger>
+        self asUInt32 asInteger
+    }.
+}.
+
+UInt8 definition: {
+    public pure final eager method asInteger ::=> Integer := {
+        <primitive: #UInt8::asInteger>
+        self asUInt32 asInteger
+    }.
+}.
+
+Int8 definition: {
+    public pure final eager method asInteger ::=> Integer := {
+        <primitive: #Int8::asInteger>
+        self asInt32 asInteger
+    }.
+}.
+
+Char16 definition: {
+    public pure final eager method asInteger ::=> Integer := {
+        <primitive: #Char16::asInteger>
+        self asUInt32 asInteger
+    }.
+}.
+
+UInt16 definition: {
+    public pure final eager method asInteger ::=> Integer := {
+        <primitive: #UInt16::asInteger>
+        self asUInt32 asInteger
+    }.
+}.
+
+Int16 definition: {
+    public pure final eager method asInteger ::=> Integer := {
+        <primitive: #Int16::asInteger>
+        self asInt32 asInteger
+    }.
+}.
+
+Char32 definition: {
+    public pure final eager method asInteger ::=> Integer := {
+        <primitive: #Char32::asInteger>
+        self asUInt32 asInteger
+    }.
+}.
+
+if: ObjectModel::PointerSize = 4sz then: {
+    UInt32 definition: {
+        public pure final eager method asInteger ::=> Integer := {
+            <primitive: #UInt32::asInteger>
+            self <= ObjectModel::Immediate::UInt::Max asUInt32 ifTrue: {
+                (self asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::UInt32 asUIntPointer reinterpretCastTo: Integer.
+            } ifFalse: {
+                let box := ObjectModel::allocateBoxForValueOfTypeWithSize(LargePositiveInteger, 4sz).
+                (box + 1iptr reinterpretCastTo: UInt32 pointer) store: self.
+                box reinterpretCastTo: Integer
+            }.
+        }.
+    }.
+
+    Int32 definition: {
+        public pure final eager method asInteger ::=> Integer := {
+            <primitive: #UInt32::asInteger>
+            (ObjectModel::Immediate::Int::Min asInt32 <= self) && (self <= ObjectModel::Immediate::Int::Max asInt32) ifTrue: {
+                (self asIntPointer << ObjectModel::Tag::Bits asIntPointer) | ObjectModel::Tag::Integer asIntPointer reinterpretCastTo: Integer.
+            } ifFalse: {
+                let box := ObjectModel::allocateBoxForValueOfTypeWithSize(self < 0i32 ifTrue: LargeNegativeInteger ifFalse: LargePositiveInteger, 4sz).
+                (box + 1iptr reinterpretCastTo: asInt32 pointer) store: (self < 0i32 ifTrue: self negated ifFalse: self).
+                box reinterpretCastTo: Integer
+            }
+        }.
+    }.
+} else: {
+    UInt32 definition: {
+        public pure final eager method asInteger ::=> Integer := {
+            <primitive: #UInt32::asInteger>
+            (self asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::Integer asUIntPointer reinterpretCastTo: Integer.
+        }.
+    }.
+
+    Int32 definition: {
+        public pure final eager method asInteger ::=> Integer := {
+            <primitive: #UInt32::asInteger>
+            (self asIntPointer << ObjectModel::Tag::Bits asIntPointer) | ObjectModel::Tag::Integer asIntPointer reinterpretCastTo: Integer.
+        }.
+    }.
+}.
+
+UInt64 definition: {
+    public pure final eager method asInteger ::=> Integer := {
+        <primitive: #UInt64::asInteger>
+        self <= ObjectModel::Immediate::UInt::Max asUInt64 ifTrue: {
+            (self asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::UInt64 asUIntPointer reinterpretCastTo: Integer.
+        } ifFalse: {
+            let box := ObjectModel::allocateBoxForValueOfTypeWithSize(LargePositiveInteger, 8sz).
+            (box + 1iptr reinterpretCastTo: UInt64 pointer) store: self.
+            box reinterpretCastTo: Integer
+        }.
+    }.
+}.
+
+Int64 definition: {
+    public pure final eager method asInteger ::=> Integer := {
+        <primitive: #Int64::asInteger>
+        (ObjectModel::Immediate::Int::Min asInt64 <= self) && (self <= ObjectModel::Immediate::Int::Max asInt64) ifTrue: {
+            (self asIntPointer << ObjectModel::Tag::Bits asIntPointer) | ObjectModel::Tag::Integer asIntPointer reinterpretCastTo: Integer.
+        } ifFalse: {
+            let box := ObjectModel::allocateBoxForValueOfTypeWithSize(self < 0i64 ifTrue: LargeNegativeInteger ifFalse: LargePositiveInteger, 8sz).
+            (box + 1iptr reinterpretCastTo: Int64 pointer) store: (self < 0i64 ifTrue: self negated ifFalse: self).
+            box reinterpretCastTo: Integer
+        }
+    }.
+}.
+
+Float32 definition: {
+    public pure final eager method asInteger ::=> Integer := {
+        <primitive: #Float32::asInteger>
+        self asIntPointer asInteger
+    }.
+}.
+
+Float64 definition: {
+    public pure final eager method asInteger ::=> Integer := {
+        <primitive: #Float64::asInteger>
+        self asIntPointer asInteger
+    }.
+}.
+
+Integer definition: {
+    public pure final eager method isSmallInteger => Boolean
+        := (ObjectModel::getTuplePointerUIntValue(self) & ObjectModel::Tag::Mask asUIntPointer) = ObjectModel::Tag::Integer asUIntPointer.
+
+    public pure final eager method smallIntegerUncheckedDecoded => IntPointer
+        := ObjectModel::getTuplePointerIntValue(self) >> ObjectModel::Tag::Bits asIntPointer.
+
+    public pure final eager method negated => Integer := {
+        <primitive: #Integer::negated>
+        self isSmallInteger ifTrue: {
+            return: self smallIntegerUncheckedDecoded negated asInteger
+        }.
+
+        self error: "TODO: Large integer negated."
+    }.
+
+    public pure final eager method + (other: Integer) ::=> Integer := {
+        <primitive: #Integer::+ >
+        self isSmallInteger && other isSmallInteger ifTrue: {
+            return: (self smallIntegerUncheckedDecoded + other smallIntegerUncheckedDecoded) asInteger
+        }.
+
+        self error: "TODO: Large integer addition."
+    }.
+
+    public pure final eager method - (other: Integer) ::=> Integer := {
+        <primitive: #Integer::- >
+        self isSmallInteger && other isSmallInteger ifTrue: {
+            return: (self smallIntegerUncheckedDecoded - other smallIntegerUncheckedDecoded) asInteger
+        }.
+
+        self error: "TODO: Large integer subtraction."
+    }.
+
+    public pure final eager method * (other: Integer) ::=> Integer := {
+        <primitive: #Integer::- >
+        self isSmallInteger && other isSmallInteger ifTrue: {
+            return: (self smallIntegerUncheckedDecoded * other smallIntegerUncheckedDecoded) asInteger
+        }.
+
+        self error: "TODO: Large integer multiplication."
+    }.
+
+    public pure final eager method // (other: Integer) ::=> Integer := {
+        <primitive: #Integer::// >
+        self isSmallInteger && other isSmallInteger ifTrue: {
+            return: (self smallIntegerUncheckedDecoded / other smallIntegerUncheckedDecoded) asInteger
+        }.
+
+        self error: "TODO: Large integer division."
+    }.
+
+    public pure final eager method % (other: Integer) ::=> Integer := {
+        <primitive: #Integer::% >
+        self isSmallInteger && other isSmallInteger ifTrue: {
+            return: (self smallIntegerUncheckedDecoded / other smallIntegerUncheckedDecoded) asInteger
+        }.
+
+        self error: "TODO: Large integer remainder."
+    }.
+
+    public pure final eager method \ (other: Integer) ::=> Integer
+        := self % other.
+
+    public pure final eager method <=> (other: Integer) ::=> Int32 := {
+        <primitive: #Integer::<=> >
+        self isSmallInteger && other isSmallInteger ifTrue: {
+            return: self smallIntegerUncheckedDecoded <=> other smallIntegerUncheckedDecoded
+        }.
+
+        self error: "TODO: Large integer compare."
+    }.
+
+    public pure final eager method < (other: Integer) ::=> Boolean := {
+        <primitive: #Integer::< >
+        self isSmallInteger && other isSmallInteger ifTrue: {
+            return: self smallIntegerUncheckedDecoded < other smallIntegerUncheckedDecoded
+        }.
+
+        self error: "TODO: Large integer less-than."
+    }.
+
+    public pure final eager method <= (other: Integer) ::=> Boolean := {
+        <primitive: #Integer::<= >
+        self isSmallInteger && other isSmallInteger ifTrue: {
+            return: self smallIntegerUncheckedDecoded <= other smallIntegerUncheckedDecoded
+        }.
+
+        self error: "TODO: Large integer less-equals."
+    }.
+
+    public pure final eager method > (other: Integer) ::=> Boolean := {
+        <primitive: #Integer::> >
+        self isSmallInteger && other isSmallInteger ifTrue: {
+            return: self smallIntegerUncheckedDecoded > other smallIntegerUncheckedDecoded
+        }.
+
+        self error: "TODO: Large integer less-than."
+    }.
+
+    public pure final eager method >= (other: Integer) ::=> Boolean := {
+        <primitive: #Integer::>= >
+        self isSmallInteger && other isSmallInteger ifTrue: {
+            return: self smallIntegerUncheckedDecoded >= other smallIntegerUncheckedDecoded
+        }.
+
+        self error: "TODO: Large integer less-equals."
+    }.
+
+    public pure final eager override method = other ::=> Boolean := {
+        <primitive: #Integer::= >
+        self == other ifTrue: {return: true}.
+        self class == other class ifFalse: {return: false}.
+
+        self error: "TODO: Large integer equality."
+    }.
+
+    public pure final eager override method ~= other ::=> Boolean
+        := (self = other) not.
+
+    public pure final eager method asChar32 ::=> Char32 := {
+        <primitive: #Integer::asChar32>
+        self asUInt32 asChar32
+    }.
+
+    public pure final eager method asInt32 ::=> Int32 := {
+        <primitive: #Integer::asInt32>
+        self isSmallInteger ifTrue: {
+            return: self smallIntegerUncheckedDecoded asInt32
+        }.
+
+        self error: "TODO: Large integer asInt32."
+    }.
+
+    public pure final eager method asUInt32 ::=> UInt32 := {
+        <primitive: #Integer::asUInt32>
+        self isSmallInteger ifTrue: {
+            return: self smallIntegerUncheckedDecoded asUInt32
+        }.
+
+        self error: "TODO: Large integer asUInt64."
+    }.
+
+    public pure final eager method asInt64 ::=> Int64 := {
+        <primitive: #Integer::asInt64>
+        self isSmallInteger ifTrue: {
+            return: self smallIntegerUncheckedDecoded asInt64
+        }.
+
+        self error: "TODO: Large integer asInt64."
+    }.
+
+    public pure final eager method asUInt64 ::=> UInt64 := {
+        <primitive: #Integer::asUInt64>
+        self isSmallInteger ifTrue: {
+            return: self smallIntegerUncheckedDecoded asUInt64
+        }.
+
+        self error: "TODO: Large integer asUInt64."
+    }.
+
+    public pure final eager method asFloat32 ::=> Float32 := {
+        <primitive: #Integer::asUInt64>
+        self isSmallInteger ifTrue: {
+            return: self smallIntegerUncheckedDecoded asFloat32
+        }.
+
+        self asUInt64 asFloat32
+    }.
+
+    public pure final eager method asFloat64 ::=> Float64 := {
+        <primitive: #Integer::asFloat64>
+        self isSmallInteger ifTrue: {
+            return: self smallIntegerUncheckedDecoded asFloat64
+        }.
+
+        self asUInt64 asFloat64
+    }.
+
+    public pure final method factorial => Integer := {
+        self <= 0
+            ifTrue: { 1 }
+            ifFalse: { (self - 1) factorial * self }
+    }
+}.

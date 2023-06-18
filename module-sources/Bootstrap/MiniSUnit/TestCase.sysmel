@@ -11,6 +11,12 @@ public abstract class TestCase superclass: TestAsserter; definition: {
             printLine(metrics).
         }.
 
+        public method run ::=> Void := {
+            let metrics := TestMetrics new.
+            self runWithMetrics: metrics.
+            printLine(metrics).
+        }.
+
         public method runWithMetrics: (metrics: TestMetrics) ::=> Void := {
             printLine(name).
             self testSelectors do: {:(Symbol)eachTestSelector :: Void |

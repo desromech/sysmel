@@ -363,8 +363,8 @@ Int16 __type__ extend: {
 
 Char32 __type__ extend: {
     public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := {
-        let value := reference asUInt32.
-        (ObjectModel32::Immediate::UInt::Min <= value) && (value <= ObjectModel32::Immediate::UInt::Max)
+        let value => Char32 := reference.
+        (ObjectModel32::Immediate::UInt::Min asChar32 <= value) && (value <= ObjectModel32::Immediate::UInt::Max asChar32)
     }.
 
     public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := true.
@@ -375,7 +375,7 @@ Char32 __type__ extend: {
 
 UInt32 __type__ extend: {
     public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := {
-        let value := reference asUInt32.
+        let value => UInt32 := reference.
         (ObjectModel32::Immediate::UInt::Min <= value) && (value <= ObjectModel32::Immediate::UInt::Max)
     }.
 
@@ -387,7 +387,7 @@ UInt32 __type__ extend: {
 
 Int32 __type__ extend: {
     public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := {
-        let value := reference asInt32.
+        let value => Int32 := reference.
         (ObjectModel32::Immediate::Int::Min <= value) && (value <= ObjectModel32::Immediate::Int::Max)
     }.
 
@@ -399,12 +399,12 @@ Int32 __type__ extend: {
 
 UInt64 __type__ extend: {
     public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := {
-        let value := reference asUInt64.
+        let value => UInt64 := reference.
         (ObjectModel32::Immediate::UInt::Min asUInt64 <= value) && (value <= ObjectModel32::Immediate::UInt::Max asUInt64)
     }.
 
     public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := {
-        let value := reference asUInt64.
+        let value => UInt64 := reference.
         (ObjectModel64::Immediate::UInt::Min <= value) && (value <= ObjectModel64::Immediate::UInt::Max)
     }.
 
@@ -414,17 +414,39 @@ UInt64 __type__ extend: {
 
 Int64 __type__ extend: {
     public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := {
-        let value := reference asInt64.
-        (ObjectModel32::Immediate::Int::Min asUInt64 <= value) && (value <= ObjectModel32::Immediate::Int::Max asUInt64)
+        let value => Int64 := reference.
+        (ObjectModel32::Immediate::Int::Min asInt64 <= value) && (value <= ObjectModel32::Immediate::Int::Max asInt64)
     }.
 
     public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := {
-        let value := reference asInt64.
+        let value => Int64  := reference.
         (ObjectModel64::Immediate::Int::Min <= value) && (value <= ObjectModel64::Immediate::Int::Max)
     }.
 
     public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Int64 asUInt32.
     public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Int64 asUInt64.
+}.
+
+Integer __type__ extend: {
+    public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := {
+        let value => Integer := reference.
+        (ObjectModel32::Immediate::Int::Min asInteger <= value) && (value <= ObjectModel32::Immediate::Int::Max asInteger)
+    }.
+
+    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := {
+        let value => Integer := reference.
+        (ObjectModel64::Immediate::Int::Min asInteger <= value) && (value <= ObjectModel64::Immediate::Int::Max asInteger)
+    }.
+
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := {
+        let value => Integer := reference.
+        (value asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Integer asUInt32.
+    }.
+
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := {
+        let value => Integer := reference.
+        (value asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Integer asUInt64.
+    }.
 }.
 
 UndefinedObject __type__ extend: {

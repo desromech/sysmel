@@ -1,0 +1,57 @@
+public class IntegerTestCase superclass: TestCase; definition: {
+    public method parse: (string: String) ::=> Integer
+        := Integer parseString: string.
+
+    public neverInline method quote: (value: Integer) ::=> Integer := value.
+
+    public method testParseString => Void := {
+        self assert: (self parse: "0") equals: 0.
+        self assert: (self parse: "-0") equals: 0.
+        self assert: (self parse: "1") equals: 1.
+        self assert: (self parse: "42") equals: 42.
+    }.
+
+    public method testNegation => Void := {
+        self assert: (self quote: 0) equals: 0.
+        self assert: (self quote: 0) negated equals: 0.
+
+        self assert: (self quote: 1) negated equals: -1.
+        self assert: (self quote: -1) negated equals: 1.
+
+        self assert: (self quote: 2) negated equals: -2.
+        self assert: (self quote: -2) negated equals: 2.
+    }.
+
+    public method testAddition => Void := {
+        ## Neutral element
+        self assert: (self quote: 0) + (self quote: 0) equals: 0.
+        self assert: (self quote: 1) + (self quote: 0) equals: 1.
+        self assert: (self quote: 0) + (self quote: 1) equals: 1.
+
+        ## Cancellation
+        self assert: (self quote: 1) + (self quote: -1) equals: 0.
+
+        ## Simple sums
+        self assert: (self quote: 1) + (self quote: 1) equals: 2.
+        self assert: (self quote: 42) + (self quote: 7) equals: 49.
+
+        ## Differing sign sums
+        self assert: (self quote: 2) + (self quote: -3) equals: -1.
+        self assert: (self quote: 3) + (self quote: -2) equals: 1.
+    }.
+
+    public method testSubtraction => Void := {
+        ## Neutral element
+        self assert: (self quote: 0) - (self quote: 0) equals: 0.
+        self assert: (self quote: 1) - (self quote: 0) equals: 1.
+
+        self assert: (self quote: 0) - (self quote: 1) equals: -1.
+    }.
+
+    public method testMultiplication => Void := {
+        ## Neutral element
+        self assert: (self quote: 1) * (self quote: 1) equals: 1.
+        self assert: (self quote: 2) * (self quote: 1) equals: 2.
+        self assert: (self quote: 1) * (self quote: 2) equals: 2.
+    }.
+}.

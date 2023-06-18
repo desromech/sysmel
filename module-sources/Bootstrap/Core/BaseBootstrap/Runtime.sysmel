@@ -181,6 +181,9 @@ Type
     withSelector: #asCanonicalPendingInstanceType addMethod: {:(Type)self :: Type |
         AnyValue
     } makePure makeVirtual withEagerAnalysis;
+    withSelector: #asCanonicalType addMethod: {:(Type)self :: Type |
+        self
+    } makePure makeVirtual withEagerAnalysis;
     withSelector: #asDecayedType addMethod: {:(Type)self :: Type |
         self
     } makePure makeVirtual withEagerAnalysis;
@@ -212,6 +215,9 @@ Type
         }
     } makePure;
     ensureAnalysisOfMethodWithSelector: #isSubtypeOf:.
+
+Boolean __type__ withSelector: #asCanonicalType addMethod: {:(Type)self :: Type | Boolean } makePure makeOverride withEagerAnalysis.
+Integer __type__ withSelector: #asCanonicalType addMethod: {:(Type)self :: Type | Integer } makePure makeOverride withEagerAnalysis.
 
 AnyValue
     withSelector: #isKindOf: addMethod: {:(AnyValue)self :(Type)expectedType :: Boolean |

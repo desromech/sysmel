@@ -6,6 +6,9 @@ public function evaluateString(string: String) => Void := {
 
 public function TestImageMain(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
     let i mutable := 1i32.
+
+    IntegerTestCase run.
+    MonadicParserTestCase run.
     while: (i < argc) do: {
         let expression := String fromCString: argv[i asIntPointer].
         evaluateString(expression)

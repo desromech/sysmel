@@ -1229,7 +1229,7 @@ DependentFunctionType definition: {
         let applicationArgumentCount := sendNode arguments size.
 
         let sourceArgumentIndex mutable := 0sz.
-        let hasAnalyzedReceiver mutable => Boolean := false.
+        let hasAnalyzedReceiver mutable := false.
 
         let analyzedArguments := Array new: applicationArgumentCount.
         argumentNodes doWithIndex: {:(ASTArgumentNode)typeArgumentNode :(Size)typeArgumentNodeIndex :: Void |

@@ -174,6 +174,7 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
 
     public field registerAllocator => TACRegisterAllocator.
     public field stackFrameLayout => TACStackFrameLayout.
+    private field constantSymbolDictionary => Dictionary.
 
     protected field textSection => AsmStreamBuilder.
     public method textSection => AsmStreamBuilder
@@ -202,6 +203,7 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
         function := functionToGenerate.
         asmFunction := moduleGenerator targetModule newProgramEntity.
         stackMap := AsmStackMap new.
+        constantSymbolDictionary := Dictionary new.
         asmFunction
             debugSourcePosition: functionToGenerate debugSourcePosition;
             debugSourceNode: functionToGenerate debugSourceNode;
@@ -458,6 +460,96 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
 
     public method symbolOfStringLiteral: (string: String) nullTerminated: (nullTerminated: Boolean) ::=> AsmSymbol
         := moduleGenerator symbolOfStringLiteral: string nullTerminated: nullTerminated.
+
+    public method symbolForUInt8Constant: (constant: UInt8) ::=> AsmSymbol
+        := constantSymbolDictionary at: (#uint8, constant) ifAbsentPut: {:: AsmSymbol |
+            let symbol := AsmSymbol new
+                name: #uint32Constant;
+                yourself.
+            self rodataSection label: symbol; byte: constant.
+            symbol
+        }.
+
+    public method symbolForInt8Constant: (constant: Int8) ::=> AsmSymbol
+        := constantSymbolDictionary at: (#int8, constant) ifAbsentPut: {:: AsmSymbol |
+            let symbol := AsmSymbol new
+                name: #int8Constant;
+                yourself.
+            self rodataSection label: symbol; sbyte: constant.
+            symbol
+        }.
+
+    public method symbolForUInt16Constant: (constant: UInt16) ::=> AsmSymbol
+        := constantSymbolDictionary at: (#uint32, constant) ifAbsentPut: {:: AsmSymbol |
+            let symbol := AsmSymbol new
+                name: #uint32Constant;
+                yourself.
+            self rodataSection align: 2sz; label: symbol; word: constant.
+            symbol
+        }.
+
+    public method symbolForInt16Constant: (constant: Int16) ::=> AsmSymbol
+        := constantSymbolDictionary at: (#int32, constant) ifAbsentPut: {:: AsmSymbol |
+            let symbol := AsmSymbol new
+                name: #uint16Constant;
+                yourself.
+            self rodataSection align: 2sz; label: symbol; sword: constant.
+            symbol
+        }.
+
+    public method symbolForUInt32Constant: (constant: UInt32) ::=> AsmSymbol
+        := constantSymbolDictionary at: (#uint32, constant) ifAbsentPut: {:: AsmSymbol |
+            let symbol := AsmSymbol new
+                name: #uint32Constant;
+                yourself.
+            self rodataSection align: 4sz; label: symbol; dword: constant.
+            symbol
+        }.
+
+    public method symbolForInt32Constant: (constant: Int32) ::=> AsmSymbol
+        := constantSymbolDictionary at: (#int32, constant) ifAbsentPut: {:: AsmSymbol |
+            let symbol := AsmSymbol new
+                name: #int32Constant;
+                yourself.
+            self rodataSection align: 4sz; label: symbol; sdword: constant.
+            symbol
+        }.
+
+    public method symbolForUInt64Constant: (constant: UInt64) ::=> AsmSymbol
+        := constantSymbolDictionary at: (#uint64, constant) ifAbsentPut: {:: AsmSymbol |
+            let symbol := AsmSymbol new
+                name: #uint64Constant;
+                yourself.
+            self rodataSection align: 8sz; label: symbol; qword: constant.
+            symbol
+        }.
+
+    public method symbolForInt64Constant: (constant: Int64) ::=> AsmSymbol
+        := constantSymbolDictionary at: (#int64, constant) ifAbsentPut: {:: AsmSymbol |
+            let symbol := AsmSymbol new
+                name: #int64Constant;
+                yourself.
+            self rodataSection align: 8sz; label: symbol; sqword: constant.
+            symbol
+        }.
+
+    public method symbolForFloat32Constant: (constant: Float32) ::=> AsmSymbol
+        := constantSymbolDictionary at: (#float32, constant) ifAbsentPut: {:: AsmSymbol |
+            let symbol := AsmSymbol new
+                name: #float32Constant;
+                yourself.
+            self rodataSection align: 4sz; label: symbol; float: constant.
+            symbol
+        }.
+
+    public method symbolForFloat64Constant: (constant: Float64) ::=> AsmSymbol
+        := constantSymbolDictionary at: (#float64, constant) ifAbsentPut: {:: AsmSymbol |
+            let symbol := AsmSymbol new
+                name: #float64Constant;
+                yourself.
+            self rodataSection align: 8sz; label: symbol; double: constant.
+            symbol
+        }.
 }.
 
 public final class TACGlobalDataAsmCodeGenerator superclass: TACAsmCodeGenerator; definition: {

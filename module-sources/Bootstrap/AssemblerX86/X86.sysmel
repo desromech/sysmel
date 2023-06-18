@@ -281,8 +281,8 @@ AsmX86RegisterAddress definition: {
             sibByte := (scaleShift << 6u8) | (indexValue << 3u8) | baseValue.
         }.
 
-        let hasDisplacement mutable => Boolean := false.
-        let hasSmallDisplacement mutable => Boolean := false.
+        let hasDisplacement mutable := false.
+        let hasSmallDisplacement mutable := false.
         let modBaseValue mutable := 0u8.
         let mod mutable := 0u8.
 
@@ -350,7 +350,7 @@ AsmX86RegisterAddress definition: {
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: (sizeNameTable at: size); nextPutAll: " [".
-        let hasPrevious mutable => Boolean := false.
+        let hasPrevious mutable := false.
         base ifNotNil: {
             stream print: base.
             hasPrevious := true.

@@ -121,44 +121,44 @@ public abstract class MonadicParser definition: {
         public method any => MonadicParser
             := MonadicAnyParser new.
 
-        public method predicate: (predicate: (AnyValue) => Boolean) errorMessage: (errorMessage: String) ::=> MonadicParser
+        public method predicate: predicate errorMessage: (errorMessage: String) ::=> MonadicParser
             := MonadicPredicateParser new
                 predicate: predicate;
                 errorMessage: errorMessage;
                 yourself.
 
         public method white ::=> MonadicParser
-            := self predicate: {:character :: Boolean | ' 'c8 >= character } errorMessage: "Expected a whitespace.".
+            := self predicate: {:(Char8)character :: Boolean | character <= ' 'c8 } errorMessage: "Expected a whitespace.".
 
         public method digit ::=> MonadicParser
-            := self predicate: {:character :: Boolean | ('0'c8 <= character) && ('9'c8 >= character) } errorMessage: "Expected a digit.".
+            := self predicate: {:(Char8)character :: Boolean | ('0'c8 <= character) && (character <= '9'c8) } errorMessage: "Expected a digit.".
 
         public method alpha ::=> MonadicParser
-            := self predicate: {:character :: Boolean |
-                (('A'c8 <= character) && ('Z'c8 >= character)) ||
-                (('a'c8 <= character) && ('z'c8 >= character))
+            := self predicate: {:(Char8)character :: Boolean |
+                (('A'c8 <= character) && (character <= 'Z'c8)) ||
+                (('a'c8 <= character) && (character <= 'z'c8))
             } errorMessage: "Expected an alphabetic character.".
 
         public method alphaNum ::=> MonadicParser
-            := self predicate: {:character :: Boolean |
-                (('A'c8 <= character) && ('Z'c8 >= character)) ||
-                (('a'c8 <= character) && ('z'c8 >= character)) ||
-                (('0'c8 <= character) && ('9'c8 >= character))
+            := self predicate: {:(Char8)character :: Boolean |
+                (('A'c8 <= character) && (character <= 'Z'c8)) ||
+                (('a'c8 <= character) && (character <= 'z'c8)) ||
+                (('0'c8 <= character) && (character <= '9'c8))
             } errorMessage: "Expected an alphanumeric character.".
 
         public method identifierStart ::=> MonadicParser
-            := self predicate: {:character :: Boolean |
-                (('A'c8 <= character) && ('Z'c8 >= character)) ||
-                (('a'c8 <= character) && ('z'c8 >= character)) ||
-                ('_'c8 = character)
+            := self predicate: {:(Char8)character :: Boolean |
+                (('A'c8 <= character) && (character <= 'Z'c8)) ||
+                (('a'c8 <= character) && (character <= 'z'c8)) ||
+                (character = '_'c8)
             } errorMessage: "Expected an alphabetic character.".
 
         public method identifierMiddle ::=> MonadicParser
             := self predicate: {:character :: Boolean |
-                (('A'c8 <= character) && ('Z'c8 >= character)) ||
-                (('a'c8 <= character) && ('z'c8 >= character)) ||
-                (('0'c8 <= character) && ('9'c8 >= character)) ||
-                ('_'c8 = character)
+                (('A'c8 <= character) && (character <= 'Z'c8)) ||
+                (('a'c8 <= character) && (character <= 'z'c8)) ||
+                (('0'c8 <= character) && (character <= '9'c8)) ||
+                (character = '_'c8)
             } errorMessage: "Expected an alphanumeric character.".
     }.
 
@@ -310,7 +310,7 @@ AnyValue extend: {
 }.
 
 public class MonadicPredicateParser superclass: MonadicParser; definition: {
-    public field predicate.## => (AnyValue => Boolean).
+    public field predicate.
     public field errorMessage => String.
 
     __Meta__ definition: {

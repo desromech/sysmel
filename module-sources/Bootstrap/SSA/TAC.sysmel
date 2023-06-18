@@ -588,11 +588,16 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
             }.
 
     public method translateValue: (value: SSAValue) withExpectedType: (expectedType: Type) ::=> TACValue := {
-        value type == expectedType || value type isValueType not || expectedType isValueType ifTrue: {
+        value type == expectedType || (value type isValueType = expectedType isValueType) ifTrue: {
             self translateValue: value
         } ifFalse: {
-            self assert: expectedType isValueType not.
-            self translateBoxedValue: value
+            value type isValueType ifTrue: {
+                self assert: value type isValueType && expectedType isValueType not.
+                self translateBoxedValue: value
+            } ifFalse: {
+                self assert: value type isValueType not && expectedType isValueType.
+                expectedType emitTacCheckAndUnbox: (self translateValue: value) withSSACodeGenerator: self
+            }
         }
     }.
 
@@ -2047,7 +2052,7 @@ SSAFunctionDefinitionTACCodeGenerator extend: {
     public method compilePrimitiveFunctionBody => Boolean := {
         ## Attempt to use the primitive generator first.
         let primitiveGenerator := SSATacPrimitiveCallGenerationTable atOrNil: ssaFunctionDefinition primitiveName.
-        let hasGeneratedPrimitive mutable => Boolean := false.
+        let hasGeneratedPrimitive mutable := false.
         primitiveGenerator ifNotNil: {
             functionBuilder basicBlock: #primitive build: {:(TACBlockBuilder)asm :: Void |
                 self blockBuilder: asm.

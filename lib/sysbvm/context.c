@@ -556,8 +556,10 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.falseType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "False", context->roots.booleanType, 1, 1);
 
     context->roots.integerType = sysbvm_context_createIntrinsicClass(context, "Integer", SYSBVM_NULL_TUPLE, NULL);
-    context->roots.positiveIntegerType = sysbvm_context_createIntrinsicClass(context, "PositiveInteger", context->roots.integerType, NULL);
-    context->roots.negativeIntegerType = sysbvm_context_createIntrinsicClass(context, "NegativeInteger", context->roots.integerType, NULL);
+    context->roots.smallIntegerType = sysbvm_context_createIntrinsicClass(context, "SmallInteger", context->roots.integerType, NULL);
+    context->roots.largeIntegerType = sysbvm_context_createIntrinsicClass(context, "LargeInteger", context->roots.integerType, NULL);
+    context->roots.largePositiveIntegerType = sysbvm_context_createIntrinsicClass(context, "LargePositiveInteger", context->roots.largeIntegerType, NULL);
+    context->roots.largeNegativeIntegerType = sysbvm_context_createIntrinsicClass(context, "LargeNegativeInteger", context->roots.largeIntegerType, NULL);
 
     context->roots.undefinedObjectType = sysbvm_context_createIntrinsicClass(context, "UndefinedObject", SYSBVM_NULL_TUPLE, NULL);
     sysbvm_typeAndMetatype_setFlags(context, context->roots.undefinedObjectType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_IMMEDIATE | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);
@@ -1157,7 +1159,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     
     // Fill the immediate type table.
     context->roots.immediateTypeTable[SYSBVM_TUPLE_TAG_NIL] = context->roots.undefinedObjectType;
-    context->roots.immediateTypeTable[SYSBVM_TUPLE_TAG_INTEGER] = context->roots.integerType;
+    context->roots.immediateTypeTable[SYSBVM_TUPLE_TAG_INTEGER] = context->roots.smallIntegerType;
     context->roots.immediateTypeTable[SYSBVM_TUPLE_TAG_CHAR8] = context->roots.char8Type;
     context->roots.immediateTypeTable[SYSBVM_TUPLE_TAG_UINT8] = context->roots.uint8Type;
     context->roots.immediateTypeTable[SYSBVM_TUPLE_TAG_INT8] = context->roots.int8Type;

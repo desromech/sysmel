@@ -379,7 +379,7 @@ static void PRIMITIVE_INTEGER_FUNCTION(registerPrimitives)(void)
 #if !IS_CHARACTER
     sysbvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_printString), INTEGER_TYPE_NAME "::printString");
 #endif
-    sysbvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_fromInteger), INTEGER_TYPE_NAME "::fromInteger");
+    sysbvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_fromInteger), "Integer::as" INTEGER_TYPE_NAME);
     sysbvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_asInteger), INTEGER_TYPE_NAME "::asInteger");
 
     sysbvm_primitiveTable_registerFunction(PRIMITIVE_INTEGER_FUNCTION(primitive_negated), INTEGER_TYPE_NAME "::negated");
@@ -428,6 +428,7 @@ static void PRIMITIVE_INTEGER_FUNCTION(setupPrimitives)(sysbvm_context_t *contex
     sysbvm_type_setPrintStringFunction(context, context->roots.INTEGER_TYPE_ROOT_NAME, sysbvm_function_createPrimitive(context, 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, PRIMITIVE_INTEGER_FUNCTION(primitive_printString)));
 #endif
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, INTEGER_TYPE_NAME "::fromInteger", context->roots.integerType, INTEGER_TYPE_SHORT_SUFFIX_NAME, 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, PRIMITIVE_INTEGER_FUNCTION(primitive_fromInteger));
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Integer::as" INTEGER_TYPE_NAME, context->roots.integerType, "as" INTEGER_TYPE_NAME, 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, PRIMITIVE_INTEGER_FUNCTION(primitive_fromInteger));
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, INTEGER_TYPE_NAME "::asInteger", context->roots.INTEGER_TYPE_ROOT_NAME, "asInteger", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, PRIMITIVE_INTEGER_FUNCTION(primitive_asInteger));
 
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, INTEGER_TYPE_NAME "::negated", context->roots.INTEGER_TYPE_ROOT_NAME, "negated", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, PRIMITIVE_INTEGER_FUNCTION(primitive_negated));

@@ -1021,7 +1021,7 @@ public final class AsmSLEB128Directive superclass: AsmStreamElement; definition:
     }.
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
-        let more mutable => Boolean := true.
+        let more mutable := true.
 
         let currentValue mutable := value.
         while: more do: {

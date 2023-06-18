@@ -342,7 +342,7 @@ AnalysisAndEvaluationEnvironment definition: {
             let analyzedNode := self analyzeWithDecayedType: node.
             ASTNodeWithCanonicalType new
                 node: analyzedNode;
-                canonicalType: analyzedNode analyzedType;
+                canonicalType: analyzedNode analyzedType asCanonicalType;
                 yourself
         } ifNotNil: {
             let analyzedTypeExpression := self analyze: expectedTypeExpression withExpectedType: Type.
@@ -357,7 +357,7 @@ AnalysisAndEvaluationEnvironment definition: {
                 let canonicalResultType := (analyzedTypeExpression analyzedType ifNil: AnyValue) asCanonicalPendingInstanceType.
 
                 let analyzedNode := self analyzeWithDirectType: node.
-                let shouldAddCoercion mutable => Boolean := false.
+                let shouldAddCoercion mutable := false.
                 analyzedNode isCoerceValueNode ifTrue: {
                     let coerceNode := analyzedNode downCastTo: ASTCoerceValueNode.
                     (coerceNode typeExpression == analyzedTypeExpression) &&

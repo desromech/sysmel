@@ -15,3 +15,9 @@ public externC function sysmel_pal_writeToFileAtOffset(handle: SysmelPAL::FileHa
 
 public externC function sysmel_pal_readFromFile(handle: SysmelPAL::FileHandle, size: Size, buffer: Void pointer) => IntPointer.
 public externC function sysmel_pal_readFromFileAtOffset(handle: SysmelPAL::FileHandle, offset: UInt64, size: Size, buffer: Void pointer) => IntPointer.
+
+public externC function sysmel_pal_parseFloat64(size: Size, string: Char8 const pointer) => Float64.
+public externC function sysmel_pal_float64ToString(value: Float64) => Char8 pointer.
+
+public externC function sysmel_pal_microsecondsNow() => Int64.
+public externC function sysmel_pal_nanosecondsNow() => Int64.

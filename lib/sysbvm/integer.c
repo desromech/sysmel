@@ -33,7 +33,7 @@ static void sysbvm_integer_decodeLargeOrImmediate(sysbvm_context_t *context, sys
     {
         // Decode the large integer.
         sysbvm_integer_t *integerObject = (sysbvm_integer_t*)integer;
-        decodedInteger->isNegative = sysbvm_tuple_getType(context, integer) == context->roots.negativeIntegerType;
+        decodedInteger->isNegative = sysbvm_tuple_getType(context, integer) == context->roots.largeNegativeIntegerType;
         decodedInteger->words = integerObject->words;
         decodedInteger->wordCount = sysbvm_tuple_getSizeInBytes(integer) / 4;
 
@@ -159,7 +159,7 @@ static sysbvm_tuple_t sysbvm_integer_normalize(sysbvm_context_t *context, sysbvm
     
     // Attempt to fit in an immediate, if possible.
     sysbvm_tuple_t largeIntegerType = sysbvm_tuple_getType(context, (sysbvm_tuple_t)integer);
-    bool isNegative = largeIntegerType == context->roots.negativeIntegerType;
+    bool isNegative = largeIntegerType == context->roots.largeNegativeIntegerType;
     if(normalizedWordCount <= 2)
     {
         uint64_t valueUInt64 = (uint64_t)integer->words[0] | ((uint64_t)integer->words[1] << 32);
@@ -194,7 +194,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_tuple_integer_encodeBigInt32(sysbvm_context_t *
 #pragma GCC diagnostic pop
 #endif
 
-    sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, value >= 0 ? context->roots.positiveIntegerType : context->roots.negativeIntegerType, 4);
+    sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, value >= 0 ? context->roots.largePositiveIntegerType : context->roots.largeNegativeIntegerType, 4);
     if(value >= 0)
         result->words[0] = (uint32_t)value;
     else
@@ -215,7 +215,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_tuple_integer_encodeBigUInt32(sysbvm_context_t 
 #pragma GCC diagnostic pop
 #endif
 
-    sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, context->roots.positiveIntegerType, 4);
+    sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, context->roots.largePositiveIntegerType, 4);
     result->words[0] = (uint32_t)value;
     return (sysbvm_tuple_t)result;
 }
@@ -229,13 +229,13 @@ SYSBVM_API sysbvm_tuple_t sysbvm_tuple_integer_encodeBigInt64(sysbvm_context_t *
 
     if(positiveValue <= UINT32_MAX)
     {
-        sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, value >= 0 ? context->roots.positiveIntegerType : context->roots.negativeIntegerType, 4);
+        sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, value >= 0 ? context->roots.largePositiveIntegerType : context->roots.largeNegativeIntegerType, 4);
         result->words[0] = (uint32_t)value;
         return (sysbvm_tuple_t)result;
     }
     else
     {
-        sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, value >= 0 ? context->roots.positiveIntegerType : context->roots.negativeIntegerType, 8);
+        sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, value >= 0 ? context->roots.largePositiveIntegerType : context->roots.largeNegativeIntegerType, 8);
         result->words[0] = (uint32_t)value;
         result->words[1] = (uint32_t)(value >> 32);
         return (sysbvm_tuple_t)result;
@@ -249,13 +249,13 @@ SYSBVM_API sysbvm_tuple_t sysbvm_tuple_integer_encodeBigUInt64(sysbvm_context_t 
 
     if(value <= UINT32_MAX)
     {
-        sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, context->roots.positiveIntegerType, 4);
+        sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, context->roots.largePositiveIntegerType, 4);
         result->words[0] = (uint32_t)value;
         return (sysbvm_tuple_t)result;
     }
     else
     {
-        sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, context->roots.positiveIntegerType, 8);
+        sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, context->roots.largePositiveIntegerType, 8);
         result->words[0] = (uint32_t)value;
         result->words[1] = (uint32_t)(value >> 32);
         return (sysbvm_tuple_t)result;
@@ -272,7 +272,7 @@ int32_t sysbvm_tuple_integer_decodeInt32(sysbvm_context_t *context, sysbvm_tuple
 
     sysbvm_integer_t *integer = (sysbvm_integer_t *)value;
     int32_t decodedValue = integer->words[0];
-    if(sysbvm_tuple_getType(context, value) == context->roots.negativeIntegerType)
+    if(sysbvm_tuple_getType(context, value) == context->roots.largeNegativeIntegerType)
         decodedValue = -decodedValue;
     return decodedValue;
 }
@@ -298,7 +298,7 @@ int64_t sysbvm_tuple_integer_decodeInt64(sysbvm_context_t *context, sysbvm_tuple
     else
         decodedValue = (uint64_t)integer->words[0];
     
-    if(sysbvm_tuple_getType(context, value) == context->roots.negativeIntegerType)
+    if(sysbvm_tuple_getType(context, value) == context->roots.largeNegativeIntegerType)
         decodedValue = -decodedValue;
     return decodedValue;
 }
@@ -411,7 +411,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_integer_add(sysbvm_context_t *context, sysbvm_t
         if(carry != 0)
             ++resultWordCount;
 
-        sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, decodedLeftInteger.isNegative ? context->roots.negativeIntegerType : context->roots.positiveIntegerType, resultWordCount*4);
+        sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, decodedLeftInteger.isNegative ? context->roots.largeNegativeIntegerType : context->roots.largePositiveIntegerType, resultWordCount*4);
         sysbvm_integer_sumInto(decodedLeftInteger.wordCount, decodedLeftInteger.words, decodedRightInteger.wordCount, decodedRightInteger.words, resultWordCount, result->words);
         return (sysbvm_tuple_t)result;
     }
@@ -426,7 +426,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_integer_add(sysbvm_context_t *context, sysbvm_t
         {
             size_t resultWordCount = decodedLeftInteger.wordCount;
             bool resultIsNegative = decodedLeftInteger.isNegative;
-            sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, resultIsNegative ? context->roots.negativeIntegerType : context->roots.positiveIntegerType, resultWordCount*4);
+            sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, resultIsNegative ? context->roots.largeNegativeIntegerType : context->roots.largePositiveIntegerType, resultWordCount*4);
             sysbvm_integer_subtractFromInto(decodedLeftInteger.wordCount, decodedLeftInteger.words, decodedRightInteger.wordCount, decodedRightInteger.words, resultWordCount, result->words);
             return sysbvm_integer_normalize(context, result);
         }
@@ -434,7 +434,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_integer_add(sysbvm_context_t *context, sysbvm_t
         {
             size_t resultWordCount = decodedRightInteger.wordCount;
             bool resultIsNegative = decodedRightInteger.isNegative;
-            sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, resultIsNegative ? context->roots.negativeIntegerType : context->roots.positiveIntegerType, resultWordCount*4);
+            sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, resultIsNegative ? context->roots.largeNegativeIntegerType : context->roots.largePositiveIntegerType, resultWordCount*4);
             sysbvm_integer_subtractFromInto(decodedRightInteger.wordCount, decodedRightInteger.words, decodedLeftInteger.wordCount, decodedLeftInteger.words, resultWordCount, result->words);
             return sysbvm_integer_normalize(context, result);
         }
@@ -466,7 +466,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_integer_subtract(sysbvm_context_t *context, sys
         {
             size_t resultWordCount = decodedLeftInteger.wordCount;
             bool resultIsNegative = decodedLeftInteger.isNegative;
-            sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, resultIsNegative ? context->roots.negativeIntegerType : context->roots.positiveIntegerType, resultWordCount*4);
+            sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, resultIsNegative ? context->roots.largeNegativeIntegerType : context->roots.largePositiveIntegerType, resultWordCount*4);
             sysbvm_integer_subtractFromInto(decodedLeftInteger.wordCount, decodedLeftInteger.words, decodedRightInteger.wordCount, decodedRightInteger.words, resultWordCount, result->words);
             return sysbvm_integer_normalize(context, result);
         }
@@ -474,7 +474,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_integer_subtract(sysbvm_context_t *context, sys
         {
             size_t resultWordCount = decodedRightInteger.wordCount;
             bool resultIsNegative = decodedRightInteger.isNegative;
-            sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, resultIsNegative ? context->roots.negativeIntegerType : context->roots.positiveIntegerType, resultWordCount*4);
+            sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, resultIsNegative ? context->roots.largeNegativeIntegerType : context->roots.largePositiveIntegerType, resultWordCount*4);
             sysbvm_integer_subtractFromInto(decodedRightInteger.wordCount, decodedRightInteger.words, decodedLeftInteger.wordCount, decodedLeftInteger.words, resultWordCount, result->words);
             return sysbvm_integer_normalize(context, result);
         }
@@ -487,7 +487,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_integer_subtract(sysbvm_context_t *context, sys
         if(carry != 0)
             ++resultWordCount;
 
-        sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, decodedLeftInteger.isNegative ? context->roots.negativeIntegerType : context->roots.positiveIntegerType, resultWordCount*4);
+        sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, decodedLeftInteger.isNegative ? context->roots.largeNegativeIntegerType : context->roots.largePositiveIntegerType, resultWordCount*4);
         sysbvm_integer_sumInto(decodedLeftInteger.wordCount, decodedLeftInteger.words, decodedRightInteger.wordCount, decodedRightInteger.words, resultWordCount, result->words);
         return (sysbvm_tuple_t)result;
     }
@@ -504,7 +504,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_integer_negated(sysbvm_context_t *context, sysb
     // Shallow copy and swap the integer type.
     sysbvm_tuple_t negatedInteger = sysbvm_context_shallowCopy(context, integer);
     sysbvm_tuple_t integerType = sysbvm_tuple_getType(context, negatedInteger);
-    sysbvm_tuple_setType(SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(negatedInteger), integerType == context->roots.positiveIntegerType ? context->roots.negativeIntegerType : context->roots.positiveIntegerType);
+    sysbvm_tuple_setType(SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(negatedInteger), integerType == context->roots.largePositiveIntegerType ? context->roots.largeNegativeIntegerType : context->roots.largePositiveIntegerType);
     return sysbvm_integer_normalize(context, (sysbvm_integer_t*)negatedInteger);
 }
 
@@ -527,7 +527,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_integer_multiply(sysbvm_context_t *context, sys
 
     bool resultIsNegative = decodedLeftInteger.isNegative != decodedRightInteger.isNegative;
     size_t resultWordCount = decodedLeftInteger.wordCount + decodedRightInteger.wordCount + 1;
-    sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, resultIsNegative ? context->roots.negativeIntegerType : context->roots.positiveIntegerType, resultWordCount*4);
+    sysbvm_integer_t *result = (sysbvm_integer_t*)sysbvm_context_allocateByteTuple(context, resultIsNegative ? context->roots.largeNegativeIntegerType : context->roots.largePositiveIntegerType, resultWordCount*4);
     sysbvm_integer_multiplyInto(decodedLeftInteger.wordCount, decodedLeftInteger.words, decodedRightInteger.wordCount, decodedRightInteger.words, resultWordCount, result->words);
     return sysbvm_integer_normalize(context, result);
 }
@@ -890,8 +890,8 @@ void sysbvm_integer_setupPrimitives(sysbvm_context_t *context)
 {
     sysbvm_tuple_t printString = sysbvm_function_createPrimitive(context, 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_integer_primitive_printString);
     sysbvm_type_setPrintStringFunction(context, context->roots.integerType, printString);
-    sysbvm_type_setPrintStringFunction(context, context->roots.positiveIntegerType, printString);
-    sysbvm_type_setPrintStringFunction(context, context->roots.negativeIntegerType, printString);
+    sysbvm_type_setPrintStringFunction(context, context->roots.largePositiveIntegerType, printString);
+    sysbvm_type_setPrintStringFunction(context, context->roots.largeNegativeIntegerType, printString);
     
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Integer::parseString:", sysbvm_tuple_getType(context, context->roots.integerType), "parseString:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_integer_primitive_parseString);
     

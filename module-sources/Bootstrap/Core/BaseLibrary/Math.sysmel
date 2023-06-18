@@ -224,12 +224,6 @@
             <targetDefinedPrimitive>
             primitiveFailedError()
         }.
-
-        public pure final eager method asInteger ::=> Integer := {
-            <primitive: (primitivePrefix -- "asInteger") asSymbol>
-            <targetDefinedPrimitive>
-            primitiveFailedError()
-        }.
     }
 }.
 
@@ -423,10 +417,3 @@ Float64 definition: {
     }.
 }.
 
-Integer definition: {
-    public pure final method factorial => Integer := {
-        self <= 0
-            ifTrue: { 1 }
-            ifFalse: { (self - 1) factorial * self }
-    }
-}.
