@@ -2097,7 +2097,7 @@ SSAFunctionDefinitionTACCodeGenerator extend: {
             } ifFalse: {
                 let tacCalledFunction := self translateValue: calledFunction.
                 let entryPoint := self translateUncheckedFunctionEntryPoint: calledFunction.
-                let tacArguments := arguments collect: {:(SSAValue)eachArgument :(Size)index :: TACValue |
+                let tacArguments := arguments collectWithIndex: {:(SSAValue)eachArgument :(Size)index :: TACValue |
                     self translateValue: eachArgument withExpectedType: (calledFunctionType canonicalTypeForApplicationArgumentWithIndex: index)
                 }.
 
