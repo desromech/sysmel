@@ -56,6 +56,7 @@ typedef enum sysbvm_functionApplicationFlags_e
 {
     SYSBVM_FUNCTION_APPLICATION_FLAGS_NONE = 0,
     SYSBVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK = 1<<0,
+    SYSBVM_FUNCTION_APPLICATION_FLAGS_VARIADIC_EXPANDED = 1<<1,
 } sysbvm_functionApplicationFlags_t;
 
 typedef struct sysbvm_function_s
@@ -111,6 +112,7 @@ typedef struct sysbvm_functionDefinition_s
 
 typedef struct sysbvm_functionCallFrameStack_s
 {
+    sysbvm_bitflags_t applicationFlags;
     bool isVariadic;
     bool isMemoizedTemplate;
     size_t expectedArgumentCount;
@@ -390,7 +392,7 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_send4(sysbvm_context_t *context, sysbv
 /**
  * Begins constructing a function call frame stack.
  */
-SYSBVM_API void sysbvm_functionCallFrameStack_begin(sysbvm_context_t *context, sysbvm_functionCallFrameStack_t *callFrameStack, sysbvm_tuple_t function, size_t argumentCount);
+SYSBVM_API void sysbvm_functionCallFrameStack_begin(sysbvm_context_t *context, sysbvm_functionCallFrameStack_t *callFrameStack, sysbvm_tuple_t function, size_t argumentCount, sysbvm_bitflags_t applicationFlags);
 
 /**
  * Pushes an argument into the function call frame stack.
@@ -400,7 +402,7 @@ SYSBVM_API void sysbvm_functionCallFrameStack_push(sysbvm_functionCallFrameStack
 /**
  * Ends constructing a function call frame stack and dispatch the function call.
  */
-SYSBVM_API sysbvm_tuple_t sysbvm_functionCallFrameStack_finish(sysbvm_context_t *context, sysbvm_functionCallFrameStack_t *callFrameStack, sysbvm_bitflags_t applicationFlags);
+SYSBVM_API sysbvm_tuple_t sysbvm_functionCallFrameStack_finish(sysbvm_context_t *context, sysbvm_functionCallFrameStack_t *callFrameStack);
 
 /**
  * Does the function require an optimized lookup?

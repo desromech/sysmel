@@ -2241,7 +2241,7 @@ static sysbvm_tuple_t sysbvm_astUnexpandedApplicationNode_expandNodeWithMacro(sy
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(callFrameStackRecord, callFrameStack.gcRoots);
 
-    sysbvm_functionCallFrameStack_begin(context, &callFrameStack, *macro, 1 + applicationArgumentCount);
+    sysbvm_functionCallFrameStack_begin(context, &callFrameStack, *macro, 1 + applicationArgumentCount, 0);
     gcFrame.macroContext = sysbvm_macroContext_create(context, *node, (*unexpandedNode)->super.sourcePosition, *environment);
     sysbvm_functionCallFrameStack_push(&callFrameStack, gcFrame.macroContext);
     for(size_t i = 0; i < applicationArgumentCount; ++i)
@@ -2249,7 +2249,7 @@ static sysbvm_tuple_t sysbvm_astUnexpandedApplicationNode_expandNodeWithMacro(sy
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-    return sysbvm_functionCallFrameStack_finish(context, &callFrameStack, 0);
+    return sysbvm_functionCallFrameStack_finish(context, &callFrameStack);
 }
 
 static sysbvm_tuple_t sysbvm_astUnexpandedApplicationNode_primitiveAnalyze(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -2356,7 +2356,7 @@ static sysbvm_tuple_t sysbvm_astUnexpandedApplicationNode_primitiveAnalyzeAndEva
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(callFrameStackRecord, callFrameStack.gcRoots);
 
     size_t applicationArgumentCount = sysbvm_array_getSize((*unexpandedNode)->arguments);
-    sysbvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.functionOrMacro, applicationArgumentCount);
+    sysbvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.functionOrMacro, applicationArgumentCount, 0);
 
     for(size_t i = 0; i < applicationArgumentCount; ++i)
     {
@@ -2368,7 +2368,7 @@ static sysbvm_tuple_t sysbvm_astUnexpandedApplicationNode_primitiveAnalyzeAndEva
     //SYSBVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-    return sysbvm_functionCallFrameStack_finish(context, &callFrameStack, 0);
+    return sysbvm_functionCallFrameStack_finish(context, &callFrameStack);
 }
 
 static sysbvm_tuple_t sysbvm_astUnexpandedSExpressionNode_primitiveAnalyze(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -2552,7 +2552,7 @@ static sysbvm_tuple_t sysbvm_astFunctionApplicationNode_optimizePureApplication(
     sysbvm_functionCallFrameStack_t callFrameStack = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(callFrameStackRecord, callFrameStack.gcRoots);
 
-    sysbvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.literalFunction, applicationArgumentCount);
+    sysbvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.literalFunction, applicationArgumentCount, sysbvm_tuple_bitflags_decode((*applicationNode)->applicationFlags));
 
     for(size_t i = 0; i < applicationArgumentCount; ++i)
     {
@@ -2562,7 +2562,7 @@ static sysbvm_tuple_t sysbvm_astFunctionApplicationNode_optimizePureApplication(
     }
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
-    gcFrame.pureCallResult = sysbvm_functionCallFrameStack_finish(context, &callFrameStack, sysbvm_tuple_bitflags_decode((*applicationNode)->applicationFlags));
+    gcFrame.pureCallResult = sysbvm_functionCallFrameStack_finish(context, &callFrameStack);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return sysbvm_astLiteralNode_create(context, (*applicationNode)->super.sourcePosition, gcFrame.pureCallResult);
@@ -2659,7 +2659,7 @@ static sysbvm_tuple_t sysbvm_astFunctionApplicationNode_primitiveAnalyzeAndEvalu
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(callFrameStackRecord, callFrameStack.gcRoots);
 
     size_t applicationArgumentCount = sysbvm_array_getSize((*applicationNode)->arguments);
-    sysbvm_functionCallFrameStack_begin(context, &callFrameStack, sysbvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*applicationNode)->functionExpression, *environment), applicationArgumentCount);
+    sysbvm_functionCallFrameStack_begin(context, &callFrameStack, sysbvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*applicationNode)->functionExpression, *environment), applicationArgumentCount, 0);
 
     for(size_t i = 0; i < applicationArgumentCount; ++i)
     {
@@ -2668,7 +2668,7 @@ static sysbvm_tuple_t sysbvm_astFunctionApplicationNode_primitiveAnalyzeAndEvalu
     }
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
-    sysbvm_tuple_t result = sysbvm_functionCallFrameStack_finish(context, &callFrameStack, 0);
+    sysbvm_tuple_t result = sysbvm_functionCallFrameStack_finish(context, &callFrameStack);
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     return result;
 }
@@ -2696,7 +2696,7 @@ static sysbvm_tuple_t sysbvm_astFunctionApplicationNode_primitiveEvaluate(sysbvm
 
     sysbvm_functionCallFrameStack_t callFrameStack = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(callFrameStackRecord, callFrameStack.gcRoots);
-    sysbvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.function, applicationArgumentCount);
+    sysbvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.function, applicationArgumentCount, sysbvm_tuple_bitflags_decode((*applicationNode)->applicationFlags));
 
     for(size_t i = 0; i < applicationArgumentCount; ++i)
     {
@@ -2705,7 +2705,7 @@ static sysbvm_tuple_t sysbvm_astFunctionApplicationNode_primitiveEvaluate(sysbvm
     }
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
-    gcFrame.result = sysbvm_functionCallFrameStack_finish(context, &callFrameStack, sysbvm_tuple_bitflags_decode((*applicationNode)->applicationFlags));
+    gcFrame.result = sysbvm_functionCallFrameStack_finish(context, &callFrameStack);
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
@@ -3423,7 +3423,7 @@ static sysbvm_tuple_t sysbvm_astMessageChainMessageNode_analyzeAndEvaluate(sysbv
     sysbvm_functionCallFrameStack_t callFrameStack = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(callFrameStackRecord, callFrameStack.gcRoots);
 
-    sysbvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.method, applicationArgumentCount + (hasReceiver ? 1 : 0));
+    sysbvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.method, applicationArgumentCount + (hasReceiver ? 1 : 0), 0);
 
     if(hasReceiver)
         sysbvm_functionCallFrameStack_push(&callFrameStack, *receiver);
@@ -3436,7 +3436,7 @@ static sysbvm_tuple_t sysbvm_astMessageChainMessageNode_analyzeAndEvaluate(sysbv
     }
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
-    gcFrame.result = sysbvm_functionCallFrameStack_finish(context, &callFrameStack, 0);
+    gcFrame.result = sysbvm_functionCallFrameStack_finish(context, &callFrameStack);
 
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -3550,7 +3550,7 @@ static sysbvm_tuple_t sysbvm_astMessageChainMessageNode_evaluate(sysbvm_context_
     sysbvm_functionCallFrameStack_t callFrameStack = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(callFrameStackRecord, callFrameStack.gcRoots);
 
-    sysbvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.method, applicationArgumentCount + (hasReceiver ? 1 : 0));
+    sysbvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.method, applicationArgumentCount + (hasReceiver ? 1 : 0), 0);
 
     if(hasReceiver)
         sysbvm_functionCallFrameStack_push(&callFrameStack, *receiver);
@@ -3563,7 +3563,7 @@ static sysbvm_tuple_t sysbvm_astMessageChainMessageNode_evaluate(sysbvm_context_
     }
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
-    gcFrame.result = sysbvm_functionCallFrameStack_finish(context, &callFrameStack, 0);
+    gcFrame.result = sysbvm_functionCallFrameStack_finish(context, &callFrameStack);
 
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -3948,7 +3948,7 @@ static sysbvm_tuple_t sysbvm_astMessageSendNode_primitiveAnalyzeAndEvaluate(sysb
     if(isMacro)
     {
         size_t applicationArgumentCount = sysbvm_array_getSize((*sendNode)->arguments);
-        sysbvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.method, 1 + applicationArgumentCount + (hasReceiver ? 1 : 0));
+        sysbvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.method, 1 + applicationArgumentCount + (hasReceiver ? 1 : 0), 0);
 
         gcFrame.macroContext = sysbvm_macroContext_create(context, *node, (*sendNode)->super.sourcePosition, *environment);
         sysbvm_functionCallFrameStack_push(&callFrameStack, gcFrame.macroContext);
@@ -3965,7 +3965,7 @@ static sysbvm_tuple_t sysbvm_astMessageSendNode_primitiveAnalyzeAndEvaluate(sysb
             sysbvm_functionCallFrameStack_push(&callFrameStack, sysbvm_array_at((*sendNode)->arguments, i));
 
         SYSBVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
-        gcFrame.expansionResult = sysbvm_functionCallFrameStack_finish(context, &callFrameStack, 0);
+        gcFrame.expansionResult = sysbvm_functionCallFrameStack_finish(context, &callFrameStack);
         SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
         SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
 
@@ -3975,7 +3975,7 @@ static sysbvm_tuple_t sysbvm_astMessageSendNode_primitiveAnalyzeAndEvaluate(sysb
     else
     {
         size_t applicationArgumentCount = sysbvm_array_getSize((*sendNode)->arguments);
-        sysbvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.method, applicationArgumentCount + (hasReceiver ? 1 : 0));
+        sysbvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.method, applicationArgumentCount + (hasReceiver ? 1 : 0), 0);
 
         if(hasReceiver)
             sysbvm_functionCallFrameStack_push(&callFrameStack, gcFrame.receiver);
@@ -3988,7 +3988,7 @@ static sysbvm_tuple_t sysbvm_astMessageSendNode_primitiveAnalyzeAndEvaluate(sysb
         }
 
         SYSBVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
-        gcFrame.result = sysbvm_functionCallFrameStack_finish(context, &callFrameStack, 0);
+        gcFrame.result = sysbvm_functionCallFrameStack_finish(context, &callFrameStack);
         SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
         SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
         return gcFrame.result;
@@ -4069,7 +4069,7 @@ static sysbvm_tuple_t sysbvm_astMessageSendNode_primitiveEvaluate(sysbvm_context
     sysbvm_functionCallFrameStack_t callFrameStack = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(callFrameStackRecord, callFrameStack.gcRoots);
 
-    sysbvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.method, applicationArgumentCount + (hasReceiver ? 1 : 0));
+    sysbvm_functionCallFrameStack_begin(context, &callFrameStack, gcFrame.method, applicationArgumentCount + (hasReceiver ? 1 : 0), 0);
 
     if(hasReceiver)
         sysbvm_functionCallFrameStack_push(&callFrameStack, gcFrame.receiver);
@@ -4082,7 +4082,7 @@ static sysbvm_tuple_t sysbvm_astMessageSendNode_primitiveEvaluate(sysbvm_context
     }
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(callFrameStackRecord);
-    gcFrame.result = sysbvm_functionCallFrameStack_finish(context, &callFrameStack, 0);
+    gcFrame.result = sysbvm_functionCallFrameStack_finish(context, &callFrameStack);
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
