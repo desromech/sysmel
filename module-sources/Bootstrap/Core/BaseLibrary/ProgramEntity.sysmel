@@ -77,20 +77,11 @@ ProgramEntity definition: {
     public virtual method programEntityKindName => Symbol
         := self class name.
 
-    public method printSymbolNameOn: (stream: Stream) ::=> Void := {
-        name ifNotNil: (stream string: name).
-        stream nextPut: '#'c8; string: self programEntityKindName.
+    public method printQualifiedSymbolNameOn: (stream: Stream) ::=> Void := {
+        self printQualifiedNameOn: stream.
+        stream nextPutAll: ".S"; string: self programEntityKindName.
         stream nextPut: '_'c8.
         self identityHash printHexOn: stream.
-    }.
-
-    public method printQualifiedSymbolNameOn: (stream: Stream) ::=> Void := {
-        owner ifNotNil: {
-            owner printQualifiedSymbolNameOn: stream.
-            stream nextPut: '.'c8.
-        }.
-
-        self printSymbolNameOn: stream
     }.
 
     public virtual method printQualifiedNameOn: (stream: Stream) ::=> Void := {
