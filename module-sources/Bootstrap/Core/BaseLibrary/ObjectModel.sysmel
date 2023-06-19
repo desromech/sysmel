@@ -1332,6 +1332,8 @@ public global ObjectModel::SendTrampolines := Array new: 16.
             definition ifNil: {
                 error("Cannot apply direct function without definition.")
             }.
+            
+            function ensureIsReadyForEvaluation.
 
             let checkedEntryPoint := definition checkedEntryPoint asUIntPointer.
             checkedEntryPoint ~= 0uptr ifTrue: {
@@ -1339,12 +1341,7 @@ public global ObjectModel::SendTrampolines := Array new: 16.
                 return: checkedEntryPointFunction(function, `@argumentIdentifiers)
             }.
 
-            let bytecode := definition bytecode.
-            bytecode ifNil: {
-                error("Cannot evaluate function without native compiled definition or bytecode.")
-            }.
-                
-            error("TODO: Attempt to interpret bytecoded function.")
+            function interpretWithArgument: (`@argumentIdentifiers,)
         }.
         ObjectModel::DirectFunctionApplicationTrampolines at: `,(ArgumentCount asMacroLiteral) put: `,(applyDirectName asMacroIdentifier).
 
@@ -1354,18 +1351,15 @@ public global ObjectModel::SendTrampolines := Array new: 16.
                 function requiresArgumentExpansionDuringApplication ifFalse: {
                     let definition := function definition.
                     definition ifNotNil: {
+                        function ensureIsReadyForEvaluation.
+                        
                         let checkedEntryPoint := definition checkedEntryPoint asUIntPointer.
                         checkedEntryPoint ~= 0uptr ifTrue: {
                             let checkedEntryPointFunction := checkedEntryPoint reinterpretCastTo: `,(checkedEntryPointPointerType asMacroLiteral).
                             return: checkedEntryPointFunction(functional, `@argumentIdentifiers)
                         }.
-
-                        let bytecode := definition bytecode.
-                        bytecode ifNil: {
-                            error("Cannot evaluate function without native compiled definition or bytecode.")
-                        }.
                         
-                        error("TODO: Attempt to interpret bytecoded function.")
+                        function interpretWithArgument: (`@argumentIdentifiers,)
                     }.
                 }
             }.

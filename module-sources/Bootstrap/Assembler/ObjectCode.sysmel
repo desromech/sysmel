@@ -505,7 +505,7 @@ AsmSymbol definition: {
         := type = AsmSymbol::Type::Function.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        self isPrivate ifTrue: (stream nextPut: '.').
+        self isPrivate ifTrue: (stream nextPut: '.'c8).
         name ifNotNil: {
             stream string: name.
         } ifNil: {

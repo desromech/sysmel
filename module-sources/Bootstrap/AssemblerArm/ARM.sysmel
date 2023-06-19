@@ -116,8 +116,8 @@ public class AsmARMBranchInstruction superclass: AsmARMInstruction; definition: 
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream nextPut: 'b'.
-        link ifTrue: (stream nextPut: 'l').
+        stream nextPut: 'b'c8.
+        link ifTrue: (stream nextPut: 'l'c8).
         stream space; print: destination
     }
 }.

@@ -1,3 +1,5 @@
+let emptyArray := Array new.
+
 public function evaluateString(string: String) => Void := {
     printLine("Evaluating ", string).
     let result := SysmelLanguage analyzeAndEvaluateSourceCode: (SourceCode text: string directory: "" name: "test" language: #sysmel).

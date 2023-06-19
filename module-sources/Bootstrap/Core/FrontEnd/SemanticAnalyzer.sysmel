@@ -1114,10 +1114,12 @@ SimpleFunctionType definition: {
             self assert: argumentIndex = analyzedArguments size.
         }.
 
+
+
         node
             arguments: analyzedArguments;
             analyzedType: resultType;
-            applicationFlags: node applicationFlags | FunctionApplicationFlags::NoTypecheck | FunctionApplicationFlags::VariadicExpanded;
+            applicationFlags: node applicationFlags | (isMemoizedTemplate ifTrue: 0bflgs ifFalse: FunctionApplicationFlags::NoTypecheck) | FunctionApplicationFlags::VariadicExpanded;
             optimizePureApplicationWithEnvironment: environment
     }.
 
@@ -1134,6 +1136,47 @@ SimpleFunctionType definition: {
 }.
 
 DependentFunctionType definition: {
+    public method initializeWithFunctionAnalysisEnvironment: (functionAnalysisEnvironment: FunctionAnalysisEnvironment)
+        argumentNodes: (theArgumentNode: Array) resultTypeNode: (theResultTypeNode: ASTNode) functionFlags: (theFunctionFlags: Bitflags) ::=> Void := {
+
+        supertype := Function.
+        flags := supertype flags | TypeFlags::Function.
+        totalSlotCount := supertype totalSlotCount.
+        instanceSize := supertype validInstanceSize.
+        instanceAlignment := supertype instanceAlignment.
+
+        functionFlags := theFunctionFlags.
+        argumentNodes := theArgumentNode.
+        resultTypeNode := theResultTypeNode.
+
+        environment := functionAnalysisEnvironment.
+        captureBindings := functionAnalysisEnvironment captureBindingList asArray.
+        argumentBindings := functionAnalysisEnvironment argumentBindingList asArray.
+        localBindings := functionAnalysisEnvironment localBindingList asArray.
+    }.
+
+    public method canonicalize => FunctionType := {
+        let hasLiteralResultType := resultTypeNode isNil || resultTypeNode isLiteralNode.
+        let hasLiteralArguments := argumentNodes allSatisfy: {:(ASTArgumentNode)each :: Boolean |
+            each type isNil || each type isLiteralNode
+        }.
+
+        hasLiteralResultType && hasLiteralArguments ifTrue: {
+            let resultType => Type := resultTypeNode
+                ifNil: (AnyValue)
+                ifNotNil: (resultTypeNode downCastTo: ASTLiteralNode) value.
+            let argumentTypes := argumentNodes collect: {:(ASTArgumentNode)eachArgumentNode :: Type |
+                eachArgumentNode type
+                    ifNil: (AnyValue)
+                    ifNotNil: (eachArgumentNode type downCastTo: ASTLiteralNode) value.
+            }.
+
+            SimpleFunctionTypeTemplate(argumentTypes, functionFlags, resultType)
+        } ifFalse: {
+            self
+        }
+    }.
+
     public override eager method canonicalResultType => Type
         := resultTypeNode isNotNil && resultTypeNode isLiteralNode
             ifTrue: (resultTypeNode downCastTo: ASTLiteralNode) value
@@ -1217,7 +1260,7 @@ DependentFunctionType definition: {
             ifNotNil: (resultTypeNode evaluateWithEnvironment: applicationEnvironment).
         applicationNode
             analyzedType: (self canonicalizeDependentResultType: resultType);
-            applicationFlags: applicationNode applicationFlags | FunctionApplicationFlags::NoTypecheck;
+            applicationFlags: applicationNode applicationFlags | (isMemoizedTemplate ifTrue: 0bflgs ifFalse: FunctionApplicationFlags::NoTypecheck);
             optimizePureApplicationWithEnvironment: environment
     }.
 
@@ -1272,6 +1315,48 @@ DependentFunctionType definition: {
         sendNode
             analyzedType: (self canonicalizeDependentResultType: resultType);
             yourself
+    }.
+}.
+
+FunctionDefinition definition: {
+    public eager method ensureTypeAnalysis => Void := {
+        definitionArgumentNodes ifNil: {return: void}.
+        analyzedType ifNotNil: {return: void}.
+
+        analysisEnvironment := FunctionAnalysisEnvironment parent: definitionEnvironment.
+        analysisEnvironment functionDefinition: self.
+
+        analyzedArgumentNodes := definitionArgumentNodes collect: {:(ASTNode)each :: ASTNode |
+            analysisEnvironment analyzeIfNeeded: each
+        }.
+
+        definitionResultTypeNode ifNotNil: {
+            analyzedResultTypeNode := analysisEnvironment analyze: definitionResultTypeNode withExpectedType: Type
+        }.
+
+        analyzedType := DependentFunctionType new 
+            initializeWithFunctionAnalysisEnvironment: analysisEnvironment
+                argumentNodes: analyzedArgumentNodes resultTypeNode: analyzedResultTypeNode functionFlags: flags & FunctionFlags::TypeFlags;
+            canonicalize.
+        analysisEnvironment returnTypeExpression: analyzedResultTypeNode.
+    }.
+
+    public eager override method ensureAnalysis => Void := {
+        analyzedCaptures ifNotNil: {return: void}.
+        definitionBodyNode ifNil: {return: void}.
+        self ensureTypeAnalysis.
+
+        analyzedBodyNode := (analysisEnvironment analyze: definitionBodyNode withExpectedTypeExpression: analyzedResultTypeNode at: sourcePosition) node.
+
+        analyzedCaptures := analysisEnvironment captureBindingList asArray.
+        analyzedArguments := analysisEnvironment argumentBindingList asArray.
+        analyzedLocals := analysisEnvironment localBindingList asArray.
+        analyzedPragmas := analysisEnvironment pragmaList asArray.
+        analyzedInnerFunctions := analysisEnvironment innerFunctionList asArray.
+        analyzedPrimitiveName := analysisEnvironment primitiveName.
+
+        let captureTypes := analyzedCaptures collect: {:(SymbolBinding)eachCaptureBinding :: Type | eachCaptureBinding type ifNil: Untyped}.
+        analyzedCaptureVectorType := SequenceTupleTypeTemplate(captureTypes).
     }.
 }.
 
@@ -1904,7 +1989,6 @@ ASTDoWhileContinueWithNode definition: {
         void
 
     }.
-
 }.
 
 ASTWhileContinueWithNode definition: {

@@ -228,7 +228,7 @@ public final class TACImportedFunction superclass: TACImportedProgramEntity; def
             index > 0sz ifTrue: (stream nextPutAll: ", ").
             stream string: each.
         }.
-        stream nextPut: ']'.
+        stream nextPut: ']'c8.
         self printDebugInfoOn: stream.
     }.
 }.
@@ -296,7 +296,7 @@ public final class TACArgumentVariable superclass: TACLocalVariable; definition:
     public override method isArgumentVariable => Boolean := true.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream nextPut: 'a'; print: index.
+        stream nextPut: 'a'c8; print: index.
         name ifNotNil: (stream space; string: name)
     }.
 }.
@@ -306,7 +306,7 @@ public final class TACCaptureVariable superclass: TACLocalVariable; definition: 
     public override method isCaptureVariableOrPointer => Boolean := true.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream nextPut: 'c'; print: index.
+        stream nextPut: 'c'c8; print: index.
         name ifNotNil: (stream space; string: name)
     }.
 }.
@@ -315,7 +315,7 @@ public final class TACTemporaryVariable superclass: TACLocalVariable; definition
     public override method isTemporaryVariable => Boolean := true.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream nextPut: 't'; print: index.
+        stream nextPut: 't'c8; print: index.
         name ifNotNil: (stream space; string: name)
     }.
 }.
@@ -372,7 +372,7 @@ public final class TACGenericObjectPointerConstant superclass: TACConstant; defi
         := TACPhysicalIntegerRegister.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: "genericObjectPointerConstant("; print: object; nextPut: ')'
+        stream nextPutAll: "genericObjectPointerConstant("; print: object; nextPut: ')'c8
     }.
 }.
 
@@ -384,7 +384,7 @@ public final class TACStringLiteralPointerConstant superclass: TACConstant; defi
     public field nullTerminated => Boolean.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: "stringLiteralPointerConstant("; print: string; nextPut: ')'
+        stream nextPutAll: "stringLiteralPointerConstant("; print: string; nextPut: ')'c8
     }.
 }.
 
@@ -839,12 +839,12 @@ TACBasicBlock definition: {
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream nextPut: '@'; print: index.
+        stream nextPut: '@'c8; print: index.
         name ifNotNil: (stream nextPut: ':'; string: name)
     }.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream print: self; nextPut: ':'.
+        stream print: self; nextPut: ':'c8.
         self printDebugInfoOn: stream.
         stream nl.
         self instructionsDo: {:(TACBasicBlock)each :: Void |
@@ -1077,7 +1077,7 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
         self basicBlocksDo: {:(TACBasicBlock)each :: Void |
             stream fullPrint: each
         }.
-        stream nextPut: '}'; nl.
+        stream nextPut: '}'c8; nl.
     }.
 }.
 

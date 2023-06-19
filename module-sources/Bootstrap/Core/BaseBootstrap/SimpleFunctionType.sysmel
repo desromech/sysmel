@@ -1,5 +1,25 @@
-private pure template simpleFunctionTypeTemplate(argumentTypes: Array, flags: Bitflags) => SimpleFunctionType := {
+SimpleFunctionType definition: {
+    public method initializeWithArgumentTypes: (theArgumentTypes: Array) functionFlags: (theFunctionFlags: Bitflags) resultType: (theResultType) ::=> Void := {
+        supertype := Function.
+        flags := supertype flags | TypeFlags::Function.
+        totalSlotCount := supertype totalSlotCount.
+        instanceSize := supertype validInstanceSize.
+        instanceAlignment := supertype instanceAlignment.
+
+        functionFlags := theFunctionFlags.
+        argumentTypes := theArgumentTypes.
+        resultType := theResultType.
+    }.
+}.
+
+private pure template simpleFunctionTypeTemplate(argumentTypes: Array, flags: Bitflags, resultType: Type) => SimpleFunctionType := {
     error("TODO: SimpleFunctionTypeTemplate").
+
+    let result := SimpleFunctionType basicNew.
+    __templateResult__ value: result.
+    result
+        initializeWithArgumentTypes: argumentTypes functionFlags: flags resultType: resultType;
+        yourself.
 }.
 
 SimpleFunctionTypeTemplate adoptDefinitionOf: simpleFunctionTypeTemplate.

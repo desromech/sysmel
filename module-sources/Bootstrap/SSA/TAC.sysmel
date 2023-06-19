@@ -277,7 +277,7 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
 
     public method translateCheckedFunctionEntryPoint: (value: SSAValue) argumentCount: (argumentCount: Size)::=> TACProgramEntity := {
         let functionDefinition := value asSSAFunctionDefinitionOrNil.
-        (self shouldCompileFunctionDefinition: functionDefinition) ifTrue: {
+        (self shouldCompileFunctionDefinition: functionDefinition) && functionDefinition requiresArgumentExpansionDuringApplication not ifTrue: {
             checkedEntryPointDictionary at: functionDefinition ifAbsent: {:: TACProgramEntity |
                 self compileCheckedFunctionEntryPoint: functionDefinition
             }

@@ -11,13 +11,17 @@ Array definition: {
         (self class == other __type__) ifFalse: {return: false}.
         
         let otherArray => Array := other.
-        self size ~= otherArray size ifFalse: {return: false}.
+        self size = otherArray size ifFalse: {
+            return: false
+        }.
 
         let size := self size.
         let i mutable := 0sz.
         while: (i < size) do: {
-            (self at: i) = (other at: i) ifFalse: {return: false}
-        }.
+            (self at: i) = (other at: i) ifFalse: {
+                return: false
+            }
+        } continueWith: (i := i + 1sz).
 
         return: true
     }.

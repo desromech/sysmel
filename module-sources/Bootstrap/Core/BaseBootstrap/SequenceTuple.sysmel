@@ -11,18 +11,39 @@ AnySequenceTuple definition: {
 }.
 
 SequenceTupleType definition: {
+    public method initializeWithElementTypes: (theElementTypes: Array) ::=> Void := {
+        elementTypes := theElementTypes.
+
+        supertype := AnySequenceTuple.
+        slots := theElementTypes collectWithIndex: {:(Type)eachType :(Size)slotIndex :: TypeSlot |
+            TypeSlot new
+                type: eachType;
+                localIndex: slotIndex;
+                index: slotIndex;
+                owner: self;
+                yourself
+        }.
+
+        self ensureLayoutIsComputed.
+    }.
+
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream nextPut: '('.
+        stream nextPut: '('c8.
         elementTypes doWithIndex: {:(Type)eachType :(Size)index :: Void |
             index > 0sz ifTrue: (stream nextPutAll: ", ").
             stream print: eachType
         }.
         stream nextPutAll: ") sequenceTupleType".
-    }
+    }.
 }.
 
 private pure eager template sequenceTupleTypeTemplate(elementTypes: Array) => SequenceTupleType := {
     error("TODO: sequenceTupleTypeTemplate").
+    let result := SequenceTupleType basicNew.
+    __templateResult__ value: result.
+    result
+        initializeWithElementTypes: elementTypes;
+        yourself
 }.
 SequenceTupleTypeTemplate adoptDefinitionOf: sequenceTupleTypeTemplate.
 

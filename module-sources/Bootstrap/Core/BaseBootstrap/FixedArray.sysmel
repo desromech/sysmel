@@ -40,7 +40,7 @@ public class FixedArrayType superclass: ValueType; definition: {
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream print: elementType; nextPut: '['; print: size; nextPut: ']'
+        stream print: elementType; nextPut: '['c8; print: size; nextPut: ']'c8
     }.
 
     public override method basicAllocate => self := {

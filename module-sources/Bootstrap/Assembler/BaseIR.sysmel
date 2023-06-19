@@ -836,7 +836,7 @@ public final class AsmLabel superclass: AsmStreamElement; definition: {
     public override method isFormattedWithIndentation => Boolean := false.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream print: symbol; nextPut: ':'.
+        stream print: symbol; nextPut: ':'c8.
         self printDebugInfoOn: stream.
     }.
 

@@ -832,6 +832,13 @@ Stream
     withSelector: #nextPutAll: addMethod: {:(Stream)self :aCollection :: Void | 
         aCollection do: {:each :: Void | self nextPut: each}
     } makeVirtual;
+    withSelector: #nextPutAllBytesOf: addMethod: {:(Stream)self :anObject :: Void | 
+        let: #size mutableWith: RawTuple::byteSize(anObject).
+        let: #i mutableWith: 0sz.
+        while: i < size do: {
+            self nextPut: (RawTuple::byteSlotAt:)(anObject, i)
+        } continueWith: (i := i+ 1sz)
+    } makeVirtual;
     withSelector: #print: addMethod: {:(Stream)self :value :: Void | 
         value printOn: self
     };
@@ -845,19 +852,19 @@ Stream
         value fullPrintOn: self
     };
     withSelector: #cr addMethod: {:(Stream)self :: Void | 
-        self nextPut: '\r'
+        self nextPut: '\r'c8
     };
     withSelector: #lf addMethod: {:(Stream)self :: Void | 
-        self nextPut: '\n'
+        self nextPut: '\n'c8
     };
     withSelector: #nl addMethod: {:(Stream)self :: Void | 
-        self nextPut: '\n'
+        self nextPut: '\n'c8
     };
     withSelector: #tab addMethod: {:(Stream)self :: Void | 
-        self nextPut: '\t'
+        self nextPut: '\t'c8
     };
     withSelector: #space addMethod: {:(Stream)self :: Void | 
-        self nextPut: ' '
+        self nextPut: ' 'c8
     }.
 
 AnyValue
@@ -961,26 +968,26 @@ True
 
 String
     withSelector: #stringOn: addMethod: {:(String)self :(Stream)stream :: Void |
-        stream nextPutAll: self
+        stream nextPutAllBytesOf: self
     } makeOverride;
     withSelector: #printOn: addMethod: {:(String)self :(Stream)stream :: Void |
         ## TODO: Implement this part properly.
-        stream nextPut: '"'.
-        stream nextPutAll: self.
-        stream nextPut: '"'.
+        stream nextPut: '"'c8.
+        stream nextPutAllBytesOf: self.
+        stream nextPut: '"'c8.
     } makeOverride.
 
 StringSymbol
-    withSelector: #stringOn: addMethod: {:(String)self :(Stream)stream :: Void |
-        stream nextPutAll: self
+    withSelector: #stringOn: addMethod: {:(StringSymbol)self :(Stream)stream :: Void |
+        stream nextPutAllBytesOf: self
     } makeOverride;
     withSelector: #printOn: addMethod: {:(StringSymbol)self :(Stream)stream :: Void |
         ## TODO: Implement this part properly.
-        stream nextPut: '#'; nextPutAll: self
+        stream nextPut: '#'c8; nextPutAllBytesOf: self
     } makeOverride;
     withSelector: #fullPrintOn: addMethod: {:(StringSymbol)self :(Stream)stream :: Void |
         ## TODO: Implement this part properly.
-        stream nextPut: '#'; nextPutAll: self
+        stream nextPut: '#'c8; nextPutAllBytesOf: self
     } makeOverride.
 
 
@@ -1005,6 +1012,9 @@ FunctionDefinition
 Function
     withSelector: #hasAnyFlag: addMethod: {:(Function)self :(Bitflags)flag :: Boolean |
         (self flags & flag) ~= 0bflgs
+    } makeFinal makeAlwaysInline;
+    withSelector: #hasAllFlags: addMethod: {:(Function)self :(Bitflags)flags :: Boolean |
+        (self flags & flags) = flags
     } makeFinal makeAlwaysInline;
     withSelector: #isMacro addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Macro
@@ -1041,6 +1051,9 @@ Function
     } makeFinal makeAlwaysInline;
     withSelector: #isTemplate addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Template
+    } makeFinal makeAlwaysInline;
+    withSelector: #isMemoizedTemplate addMethod: {:(Function)self :: Boolean |
+        self hasAllFlags: FunctionFlags::Memoized | FunctionFlags::Template
     } makeFinal makeAlwaysInline;
     withSelector: #isInline addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Inline
@@ -1085,12 +1098,15 @@ Function
             stream nextPutAll: "at "; print: sourcePosition
         }.
 
-        stream nextPut: ')'
+        stream nextPut: ')'c8
     } makeOverride.
 
 FunctionDefinition
     withSelector: #hasAnyFlag: addMethod: {:(FunctionDefinition)self :(Bitflags)flag :: Boolean |
         (self flags & flag) ~= 0bflgs
+    };
+    withSelector: #requiresArgumentExpansionDuringApplication addMethod: {:(FunctionDefinition)self :: Boolean |
+        self hasAnyFlag: FunctionFlags::Memoized | FunctionFlags::Variadic
     }.
 
 ValueBox
@@ -1243,7 +1259,7 @@ Dictionary
         } else: {
             entry value
         }
-    };
+    } makeVirtual;
     withSelector: #at:ifAbsentPut: addMethod: {:(Dictionary)self :key :ifAbsentBlock |
         self ensureStorage.
         let: #entryIndex with: (self scanFor: key) asSize.
@@ -1256,7 +1272,7 @@ Dictionary
         } else: {
             entry value
         }
-    };
+    } makeVirtual;
     withSelector: #includesKey: addMethod: {:(Dictionary)self :(AnyValue)key :: Boolean |
         self ensureStorage.
         let: #entryIndex with: (self scanFor: key) asSize.
@@ -2604,7 +2620,7 @@ ReferenceType
     } makeOverride.
 
 PointerType
-    withSelector: #printOn: addMethod: {:(ReferenceType)self :(Stream)stream :: Void |
+    withSelector: #printOn: addMethod: {:(PointerType)self :(Stream)stream :: Void |
         stream print: self baseType.
         if: self addressSpace == nil then: {
             stream nextPutAll: " pointer"
@@ -2660,7 +2676,7 @@ SimpleFunctionType
         if: resultType == nil then: Untyped else: resultType.
     } makeOverride;
     withSelector: #printOn: addMethod: {:(SimpleFunctionType)self :(Stream)stream :: Void |
-        stream nextPut: '('.
+        stream nextPut: '('c8.
         self argumentTypes doWithIndex: {:(Type)argumentType :(Size)index :: Void |
             index > 0sz ifTrue: (stream nextPutAll: ", ").
             stream print: argumentType
@@ -2883,22 +2899,22 @@ SourcePosition
 
         stream
             nextPutAll: (sourceCode directory FileSystem::joinPath: sourceCode name);
-            nextPut: ':';
+            nextPut: ':'c8;
             print: self startLine;
-            nextPut: '.';
+            nextPut: '.'c8;
             print: self startColumn;
-            nextPut: '-';
+            nextPut: '-'c8;
             print: self endLine;
-            nextPut: '.';
+            nextPut: '.'c8;
             print: self endColumn
     } makeOverride.
 
 GeneratedSymbol
     withSelector: #printOn: addMethod: {:(GeneratedSymbol)self :(Stream)stream :: Void |
-        stream print: self class; nextPut: '('; print: self value; nextPut: ')'
+        stream print: self class; nextPut: '('c8; print: self value; nextPut: ')'c8
     } makeOverride;
     withSelector: #fullPrintOn: addMethod: {:(GeneratedSymbol)self :(Stream)stream :: Void |
-        stream print: self class; nextPut: '('; print: self value; nextPut: ')'
+        stream print: self class; nextPut: '('c8; print: self value; nextPut: ')'c8
     } makeOverride.
 
 

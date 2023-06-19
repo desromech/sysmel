@@ -121,9 +121,9 @@ public final class SSALiteralConstant superclass: SSAConstant; definition: {
 
     public override method printOn: (stream: Stream) ::=> Void := {
         RawTuple::isBytes(self value) || (self value __type__ isSubtypeOf: ValueType) ifTrue: {
-            stream nextPutAll: "Literal("; print: self value __type__; nextPutAll: " => "; print: self type; nextPut: ')'
+            stream nextPutAll: "Literal("; print: self value __type__; nextPutAll: " => "; print: self type; nextPut: ')'c8
         } ifFalse: {
-            stream nextPutAll: "Literal("; print: self value __type__; nextPut: ')'
+            stream nextPutAll: "Literal("; print: self value __type__; nextPut: ')'c8
         }.
     }.
 }.
@@ -151,7 +151,7 @@ SSAFunction definition: {
     public method isTargetDefinedPrimitive => Boolean := sourceObject isNotNil && sourceObject isTargetDefinedPrimitive.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream nextPut: '@'.
+        stream nextPut: '@'c8.
         name ifNil: {
             stream print: sourcePosition.
         } ifNotNil: {:name :: Void |
@@ -167,7 +167,7 @@ SSAFunction definition: {
             stream print: capture
         }.
 
-        stream nextPut: ']'.
+        stream nextPut: ']'c8.
         definition ifNotNil: {:(SSAValue)definition :: Void |
             stream nextPutAll: " definition ".
             stream print: definition
@@ -197,6 +197,9 @@ SSAFunctionDefinition definition: {
     public override method isFunction => Boolean := true.
 
     public method isTargetDefinedPrimitive => Boolean := sourceObject isNotNil && sourceObject isTargetDefinedPrimitive.
+
+    public method requiresArgumentExpansionDuringApplication => Boolean
+        := sourceObject isNotNil && sourceObject requiresArgumentExpansionDuringApplication.
 
     public override method initialize => Void := {
         super initialize.
@@ -402,7 +405,7 @@ SSAFunctionDefinition definition: {
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream nextPut: '%'.
+        stream nextPut: '%'c8.
         self name ifNotNil: {:name :: Void |
             stream print: self name
         }.
@@ -417,18 +420,18 @@ SSAFunctionDefinition definition: {
         self enumerateLocalValueIndices.
         self printOn: stream.
         
-        stream nextPut: '('.
+        stream nextPut: '('c8.
         self arguments doWithIndex: {:(SSAFunctionArgument)argument :(Size)index :: Void |
             index > 0sz ifTrue: (stream nextPutAll: ", ").
             stream print: argument
         }.
-        stream nextPut: ')'.
-        stream nextPut: '['.
+        stream nextPut: ')'c8.
+        stream nextPut: '['c8.
         self captures doWithIndex: {:(SSAFunctionCapture)capture :(Size)index :: Void |
             index > 0sz ifTrue: (stream nextPutAll: ", ").
             stream print: capture
         }.
-        stream nextPut: ']'.
+        stream nextPut: ']'c8.
 
         stream nextPutAll: " := {"; nl.
         self basicBlocksDo: {:(SSABasicBlock)basicBlock :: Void |
@@ -455,10 +458,10 @@ SSAFunctionLocalValue definition: {
     public override method isFunctionLocalValue => Boolean := true.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream nextPut: '$'; print: self localValueIndex.
+        stream nextPut: '$'c8; print: self localValueIndex.
 
         self name ifNotNil: {:name |
-            stream nextPut: ':'; nextPutAll: self name.
+            stream nextPut: ':'c8; nextPutAll: self name.
         }.
         self type ifNotNil: {:type |
             stream nextPutAll: " => "; print: self type.
@@ -720,7 +723,7 @@ SSABasicBlock definition: {
         if: (self predecessors ~~ nil) && self predecessors isNotEmpty then: {
             stream nextPutAll: " ## Predecessors".
             self predecessors do: {:(SSABasicBlock)each :: Void |
-                stream nextPut: ' '; print: each
+                stream nextPut: ' 'c8; print: each
             }
         }.
 
@@ -857,7 +860,7 @@ public final class SSABitcastInstruction superclass: SSAInstruction; definition:
 
     public override method fullPrintOn: (stream: Stream) ::=> Void
         := stream print: self; nextPutAll: " := bitcast: "; print: self value;
-            nextPut: ' '; print: self targetType.
+            space; print: self targetType.
 
     public override method usedValuesDo: aBlock ::=> Void := {
         aBlock(self value).
@@ -911,8 +914,8 @@ public final class SSAConditionalBranchInstruction superclass: SSAInstruction; d
 
     public override method fullPrintOn: (stream: Stream) ::=> Void
         := stream nextPutAll: "condBranch: "; print: self condition;
-            nextPut: ' '; print: self trueDestination;
-            nextPut: ' '; print: self falseDestination.
+            space; print: self trueDestination;
+            space; print: self falseDestination.
 
     public override method usedValuesDo: aBlock ::=> Void := {
         aBlock(self condition).
@@ -1324,7 +1327,7 @@ public final class SSASendInstruction superclass: SSAInstruction; definition: {
 
         #*self arguments doWithIndex: {:(SSAValue)argument :(Size)index :: Void |
             index = 0sz
-                ifTrue: (stream nextPut: ' ')
+                ifTrue: (stream nextPut: ' 'c8)
                 ifFalse: (stream nextPutAll: ", ").
             stream print: argument
         }*#

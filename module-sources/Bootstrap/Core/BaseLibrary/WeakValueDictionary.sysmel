@@ -23,4 +23,18 @@ WeakValueDictionary definition: {
             self checkCapacityIncreaseCondition
         }.
     }.
+
+    public override final eager method at: key ifAbsent: ifAbsentBlock := {
+        let index mutable := self scanFor: key.
+        index < 0iptr ifTrue: {
+            return: ifAbsentBlock().
+        }.
+
+        let association := storage at: index asSize.
+        association isNotNil && (__tombstone__ ~~ association value) ifTrue: {
+            association value
+        } ifFalse: {
+            ifAbsentBlock()
+        }
+    }.
 }.

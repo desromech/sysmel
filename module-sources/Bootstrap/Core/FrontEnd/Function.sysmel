@@ -1,3 +1,17 @@
+public abstract class FunctionInterpretationStrategy definition: {
+    public abstract method interpretFunction: (function: Function) withArguments: (arguments: Array) ::=> Untyped
+        := self subclassResponsibility.
+}.
+
+public final class FunctionASTInterpretationStrategy superclass: FunctionInterpretationStrategy; definition: {
+    public virtual method interpretFunction: (function: Function) withArguments: (arguments: Array) ::=> Untyped := {
+        let activationEnvironment := function createFunctionActivationEnvironmentWithArguments: arguments.
+        function definition analyzedBodyNode evaluateWithEnvironment: activationEnvironment
+    }.
+}.
+
+public global Function::CurrentInterpretationStrategy := ValueBox with: FunctionASTInterpretationStrategy new.
+
 Function definition: {
     public eager method setupWithFunctionDefinition: (newDefinition: FunctionDefinition) captureEnvironment: (newCaptureEnvironment: Environment) ::=> Void := {
         flags := newDefinition flags.
@@ -44,7 +58,7 @@ Function definition: {
         (RawTuple::type:)(self, definitionFunction __type__)
     }.
 
-    public override eager method ensureAnalysis => Void := {
+    public eager method doEnsureAnalysis => Void := {
         super ensureAnalysis.
         captureEnvironment isNil || definition isNil ifTrue: {return: void}.
 
@@ -69,6 +83,10 @@ Function definition: {
         (RawTuple::type:)(self, definition analyzedType).
     }.
 
+    public override eager method ensureAnalysis => Void := {
+        self doEnsureAnalysis
+    }.
+
     public eager method recompileAndOptimize => Function := {
         self ensureAnalysis.
         (definition isNil || captureVector isNotNil) ifTrue: (return: self).
@@ -81,37 +99,87 @@ Function definition: {
     }.
 
     public eager method applyWithMemoizedArguments: (arguments: Array) ::=> Untyped := {
-        error("TODO: applyWithMemoizedArguments.")
+        memoizationTable ifNil: {
+            memoizationTable := WeakValueDictionary new.
+        }.
+
+        let memoizationKey := arguments size = 1sz
+            ifTrue: (arguments first)
+            ifFalse: arguments.
+
+        let result := memoizationTable at: memoizationKey ifAbsent: {:: Untyped |
+            let association := WeakValueAssociation key: memoizationKey value: __pendingMemoizationValue__.
+            memoizationTable add: association.
+
+            let newResult := self applyWithExpandedArguments: (self isMemoizedTemplate
+                ifTrue: (Array with: association) -- arguments
+                ifFalse: (arguments)).
+            association value: newResult.
+            newResult
+        }.
+
+        (Untyped::==)(result, __pendingMemoizationValue__) ifTrue: {
+            error("Cyclic evaluation of memoized function " -- self printString -- " with arguments: " -- arguments)
+        }.
+
+        result
     }.
 
     public eager method applyWithArguments: (arguments: Array) ::=> Untyped := {
         let expandedArguments := self isVariadic ifTrue: {
             self assert: argumentCount > 0sz.
+            let directArgumentCount := argumentCount - 1sz.
+            let passedArgumentCount := arguments size.
+            passedArgumentCount < directArgumentCount ifTrue: {
+                error("Missing required arguments in function call of " -- self printString)
+            }.
+
+            let i mutable := 0sz.
             let expandedArguments := Array new: argumentCount.
-        } ifFalse: (arguments).
+            let variadicVector := Array new: passedArgumentCount - directArgumentCount.
+            while: (i < directArgumentCount) do: {
+                expandedArguments at: i put: (arguments at: i)
+            } continueWith: (i := i + 1sz).
+            expandedArguments at: directArgumentCount put: variadicVector.
+
+            while: (i < passedArgumentCount) do: {
+                variadicVector at: i - directArgumentCount put: (arguments at: i)
+            } continueWith: (i := i + 1sz).
+
+            expandedArguments
+        } ifFalse: {
+            arguments
+        }.
 
         self isMemoized ifTrue: {
             return: (self applyWithMemoizedArguments: expandedArguments)
-
         }.
-        
         return: (self applyWithExpandedArguments: expandedArguments).
+    }.
+
+    public method createFunctionActivationEnvironmentWithArguments: (arguments: Array) ::=> FunctionActivationEnvironment
+        := (FunctionActivationEnvironment parent: nil)
+            function: self;
+            captureVector: captureVector;
+            argumentVectorSize: arguments size;
+            valueVector: arguments -- (Array new: definition analyzedLocals size);
+            yourself.
+
+    public method interpretWithArgument: (arguments: Array) ::=> Untyped := {
+        self doEnsureAnalysis.
+
+        let interpretationStrategy => FunctionInterpretationStrategy := Function::CurrentInterpretationStrategy value.
+        interpretationStrategy interpretFunction: self withArguments: arguments
+    }.
+
+    public method ensureIsReadyForEvaluation => Void := {
+        captureEnvironment ifNotNil: {
+            self doEnsureAnalysis
+        }.
     }.
 }.
 
 FunctionDefinition definition: {
-    public eager method ensureTypeAnalysis => Void := {
-        error("TODO: FunctionDefinition >> ensureTypeAnalysis").
-    }.
-
-    public eager override method ensureAnalysis => Void := {
-        definitionArgumentNodes ifNil: {return: void}.
-        definitionBodyNode ifNil: {return: void}.
-        analyzedType ifNotNil: {return: void}.
-
-        error("TODO: FunctionDefinition >> ensureAnalysis").
-    }.
-
     public method isTargetDefinedPrimitive => Boolean
         := (self hasAnyFlag: FunctionFlags::TargetDefinedPrimitive) || (self hasPragmaNamed: #targetDefinedPrimitive).
 

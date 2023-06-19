@@ -205,9 +205,9 @@ Char8 extend: {
     }.
 
     public override final method printOn: (stream: Stream) ::=> Void := {
-        stream nextPut: '\''.
+        stream nextPut: '\''c8.
         self printCEscapedOn: stream.
-        stream nextPut: '\''.
+        stream nextPut: '\''c8.
     }.
 }.
 

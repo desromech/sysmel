@@ -66,6 +66,8 @@ let: #methodWithSelectorAt with: {:(Type)type :(Symbol)selector |
     (type __slotNamedAt__: #methodDictionary) atOrNil: selector
 }.
 
+methodWithSelectorAt(Dictionary, #scanFor:) __type__: (SimpleFunctionTypeTemplate((Dictionary, Untyped,), 0bflgs, IntPointer)).
+
 methodWithSelectorAt(Int8, #printString) __type__: (SimpleFunctionTypeTemplate((Int8,), 0bflgs, String)).
 methodWithSelectorAt(Int16, #printString) __type__: (SimpleFunctionTypeTemplate((Int16,), 0bflgs, String)).
 methodWithSelectorAt(Int32, #printString) __type__: (SimpleFunctionTypeTemplate((Int32,), 0bflgs, String)).

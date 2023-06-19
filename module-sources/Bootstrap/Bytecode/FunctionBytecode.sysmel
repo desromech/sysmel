@@ -173,15 +173,15 @@ FunctionBytecode definition: {
             
             let isBranchInstruction := self isBranchOpcode: opcode.
             operands doWithIndex: {:(Int16)each :(Size)operandIndex :: Void |
-                stream nextPut: ' '.
+                stream nextPut: ' 'c8.
                 if: isBranchInstruction && ((operandIndex + 1sz) = operands size) then: {
-                    stream print: each; nextPut: '|'; nextPutAll: ((nextPC asIntPointer + each asIntPointer) printString padLeft: 4sz with: '0'c8)
+                    stream print: each; nextPut: '|'c8; nextPutAll: ((nextPC asIntPointer + each asIntPointer) printString padLeft: 4sz with: '0'c8)
                 } else: {
                     let operandVector := each & FunctionBytecode::OperandVectorName::BitMask.
                     let operandIndex := each >> FunctionBytecode::OperandVectorName::Bits.
-                    stream nextPutAll: (operandVectorNameDictionary at: operandVector); nextPut: '@'; print: operandIndex.
+                    stream nextPutAll: (operandVectorNameDictionary at: operandVector); nextPut: '@'c8; print: operandIndex.
                     if: operandVector = FunctionBytecode::OperandVectorName::Literal
-                        then: (stream nextPut: ':'; print: (self literalVector at: operandIndex asSize)).
+                        then: (stream nextPut: ':'c8; print: (self literalVector at: operandIndex asSize)).
                 }.
             }.
             stream nl.

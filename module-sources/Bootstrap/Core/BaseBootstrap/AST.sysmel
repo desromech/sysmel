@@ -234,7 +234,7 @@ ASTLexicalBlockNode
     } makeOverride;
     withSelector: #fullPrintOn: addMethod: {:(ASTLexicalBlockNode)self :(Stream)stream :: Void |
         stream print: self class; 
-            nextPutAll: " body: ("; fullPrint: self body; nextPut: ')'
+            nextPutAll: " body: ("; fullPrint: self body; nextPut: ')'c8
     } makeOverride.
 
 ASTLiteralNode
@@ -282,7 +282,7 @@ ASTLocalDefinitionNode
         stream print: self class; 
             nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
             nextPutAll: " nameExpression: ("; fullPrint: self nameExpression;
-            nextPutAll: ") valueExpression: ("; fullPrint: self valueExpression; nextPut: ')'
+            nextPutAll: ") valueExpression: ("; fullPrint: self valueExpression; nextPut: ')'c8
     } makeOverride.
 
 ASTIdentifierReferenceNode
@@ -300,7 +300,7 @@ ASTIdentifierReferenceNode
         stream print: self class; 
             nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
             nextPutAll: " value: ("; fullPrint: self value;
-            nextPutAll: ") binding: ("; fullPrint: self binding; nextPut: ')'
+            nextPutAll: ") binding: ("; fullPrint: self binding; nextPut: ')'c8
     } makeOverride.
 
 ASTIfNode
@@ -769,5 +769,5 @@ ASTWhileContinueWithNode
         stream print: self class; 
             nextPutAll: " conditionExpression: ("; fullPrint: self conditionExpression;
             nextPutAll: ") bodyExpression: ("; fullPrint: self bodyExpression;
-            nextPutAll: ") continueExpression: ("; fullPrint: self continueExpression; nextPut: ')'
+            nextPutAll: ") continueExpression: ("; fullPrint: self continueExpression; nextPut: ')'c8
     } makeOverride.

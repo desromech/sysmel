@@ -357,7 +357,7 @@ AsmX86RegisterAddress definition: {
         }.
         index ifNotNil: {
             hasPrevious ifTrue: (stream nextPutAll: " + ").
-            stream print: index; nextPut: '*'; print: self scale.
+            stream print: index; nextPut: '*'c8; print: self scale.
             hasPrevious := true.
         }.
         displacement ifNotNil: {
