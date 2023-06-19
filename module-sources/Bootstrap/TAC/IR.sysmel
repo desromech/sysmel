@@ -1540,7 +1540,7 @@ public final class TACFunctionBuilder superclass: Object; definition: {
     TACBlockBuilder
         withSelector: (lowerOperationNameString -- ":into:") asSymbol addMethod: {:(TACBlockBuilder)self :(TACValue)operand :(TACValue)result :: TACInstruction |
             self operation: operation with: operand result: result.
-        }.
+        } makeFinal recompileAndOptimize.
     __OwnerProgramEntity__ setPublicSymbol: globalName value: operation
 }.
 
@@ -1578,7 +1578,7 @@ public final class TACFunctionBuilder superclass: Object; definition: {
     TACBlockBuilder
         withSelector: (lowerOperationNameString -- ":with:into:") asSymbol addMethod: {:(TACBlockBuilder)self :(TACValue)left :(TACValue)right :(TACValue)result :: TACInstruction |
             self operation: operation with: left with: right result: result.
-        }.
+        } makeFinal recompileAndOptimize.
     __OwnerProgramEntity__ setPublicSymbol: globalName value: operation
 }.
 
@@ -1620,10 +1620,10 @@ let ComparisonOperationToBranchMap := Dictionary new.
     TACBlockBuilder
         withSelector: (lowerOperationNameString -- ":with:into:") asSymbol addMethod: {:(TACBlockBuilder)self :(TACValue)left :(TACValue)right :(TACValue)result :: TACInstruction |
             self operation: operation with: left with: right result: result.
-        };
+        } makeFinal recompileAndOptimize;
         withSelector: (lowerOperationNameString -- ":with:branchIfTrue:branchIfFalse:") asSymbol addMethod: {:(TACBlockBuilder)self :(TACValue)left :(TACValue)right :(TACValue)trueDestination :(TACValue)falseDestination :: TACInstruction |
             self operation: branchOperation with: left with: right with: trueDestination with: falseDestination.
-        }.
+        } makeFinal recompileAndOptimize.
 
     ComparisonOperationToBranchMap at: operation put: branchOperation.
     __OwnerProgramEntity__
@@ -1643,8 +1643,8 @@ TACFunction definition: {
             while: position isNotNil do: {
                 let nextPosition mutable := position next.
                 nextPosition isNotNil &&
-                nextPosition operation == TAC::Operation::ConditionalBranch &&
-                nextPosition operands first == position result && 
+                (nextPosition operation == TAC::Operation::ConditionalBranch) &&
+                (nextPosition operands first == position result) && 
                 position result isNotNil && 
                 (position result isLastUsedIn: nextPosition) ifTrue: {
                     let comparisonAndBranchOperation => TACOperation := ComparisonOperationToBranchMap atOrNil: position operation.
