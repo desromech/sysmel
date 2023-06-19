@@ -4,6 +4,9 @@
 #    define _XOPEN_SOURCE 600
 #endif
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
 
@@ -20,6 +23,67 @@ SYSMEL_PAL_EXTERN_C sysmel_pal_filehandle_t sysmel_pal_getStdoutFileHandle(void)
 SYSMEL_PAL_EXTERN_C sysmel_pal_filehandle_t sysmel_pal_getStderrFileHandle(void)
 {
     return (sysmel_pal_filehandle_t)(uintptr_t)STDERR_FILENO;
+}
+
+SYSMEL_PAL_EXTERN_C sysmel_pal_filehandle_t sysmel_pal_openFile(size_t nameSize, const char *name, uint32_t openFlags, uint32_t creationPermissions)
+{
+    char *nameBuffer = (char*)malloc(nameSize + 1);
+    memcpy(nameBuffer, name, nameSize);
+    nameBuffer[nameSize] = 0;
+
+    int unixOpenFlags = 0;
+    if(openFlags & SYSMEl_PAL_FILE_OPEN_FLAGS_READ_ONLY)
+        unixOpenFlags |= O_RDONLY;
+    if(openFlags & SYSMEl_PAL_FILE_OPEN_FLAGS_WRITE_ONLY)
+        unixOpenFlags |= O_WRONLY;
+    if(openFlags & SYSMEl_PAL_FILE_OPEN_FLAGS_READ_WRITE)
+        unixOpenFlags |= O_RDWR;
+
+    if(openFlags & SYSMEl_PAL_FILE_OPEN_FLAGS_CREATE)
+        unixOpenFlags |= O_CREAT;
+    if(openFlags & SYSMEl_PAL_FILE_OPEN_FLAGS_TRUNCATE)
+        unixOpenFlags |= O_TRUNC;
+    if(openFlags & SYSMEl_PAL_FILE_OPEN_FLAGS_APPEND)
+        unixOpenFlags |= O_APPEND;
+#ifdef O_CLOEXEC
+    if(openFlags & SYSMEl_PAL_FILE_OPEN_FLAGS_CLOSE_ON_EXEC)
+        unixOpenFlags |= O_CLOEXEC;
+#endif
+
+    int fd = open(nameBuffer, unixOpenFlags, creationPermissions);
+    free(nameBuffer);
+
+    return (sysmel_pal_filehandle_t)(intptr_t)fd;
+}
+
+SYSMEL_PAL_EXTERN_C void sysmel_pal_closeFile(sysmel_pal_filehandle_t handle)
+{
+    close((intptr_t)handle);
+}
+
+SYSMEL_PAL_EXTERN_C bool sysmel_pal_isFileHandleValid(sysmel_pal_filehandle_t handle)
+{
+    return (intptr_t)handle >= 0;
+}
+
+SYSMEL_PAL_EXTERN_C int64_t sysmel_pal_seek(sysmel_pal_filehandle_t handle, int64_t offset, int32_t mode)
+{
+    int unixSeekMode = SEEK_SET;
+    switch(mode)
+    {
+    default:
+    case SYSMEl_PAL_SEEK_MODE_SET:
+        unixSeekMode = SEEK_SET;
+        break;
+    case SYSMEl_PAL_SEEK_MODE_CURRENT:
+        unixSeekMode = SEEK_CUR;
+        break;
+    case SYSMEl_PAL_SEEK_MODE_END:
+        unixSeekMode = SEEK_END;
+        break;
+    }
+
+    return lseek((intptr_t)handle, offset, unixSeekMode);
 }
 
 SYSMEL_PAL_EXTERN_C intptr_t sysmel_pal_writeToFile(sysmel_pal_filehandle_t handle, size_t size, const void *buffer)

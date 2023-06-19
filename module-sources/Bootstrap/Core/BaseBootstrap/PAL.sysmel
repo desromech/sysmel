@@ -1,6 +1,24 @@
 public struct SysmelPAL::File definition: {}.
 public global SysmelPAL::FileHandle := SysmelPAL::File pointer.
 
+public global SysmelPAL::FileOpenFlags::ReadOnly := 1u32 << 0u32.
+public global SysmelPAL::FileOpenFlags::WriteOnly := 1u32 << 1u32.
+public global SysmelPAL::FileOpenFlags::ReadWrite := 1u32 << 2u32.
+
+public global SysmelPAL::FileOpenFlags::Create := 1u32 << 3u32.
+public global SysmelPAL::FileOpenFlags::Truncate := 1u32 << 4u32.
+public global SysmelPAL::FileOpenFlags::Append := 1u32 << 5u32.
+public global SysmelPAL::FileOpenFlags::CloseOnExec := 1u32 << 6u32.
+
+public global SysmelPAL::FileCreationPermissions::None := 0u32.
+public global SysmelPAL::FileCreationPermissions::RegularFileDefaults := 8r644 u32.
+public global SysmelPAL::FileCreationPermissions::DirectoryDefaults := 8r755 u32.
+public global SysmelPAL::FileCreationPermissions::ProgramDefaults := 8r755 u32.
+
+public global SysmelPAL::SeekMode::Set := 0i32.
+public global SysmelPAL::SeekMode::Current := 1i32.
+public global SysmelPAL::SeekMode::End := 2i32.
+
 public externC function sysmel_pal_abort() => Unwinds.
 
 public externC function sysmel_pal_malloc(size: Size) => Void pointer.
@@ -9,6 +27,12 @@ public externC function sysmel_pal_free(pointer: Void pointer) => Void.
 public externC function sysmel_pal_getStdinFileHandle() => SysmelPAL::FileHandle.
 public externC function sysmel_pal_getStdoutFileHandle() => SysmelPAL::FileHandle.
 public externC function sysmel_pal_getStderrFileHandle() => SysmelPAL::FileHandle.
+
+public externC function sysmel_pal_openFile(nameSize: Size, name: Char8 const pointer, openFlags: UInt32, creationPermissions: UInt32) => SysmelPAL::FileHandle.
+public externC function sysmel_pal_closeFile(handle: SysmelPAL::FileHandle) => Void.
+public externC function sysmel_pal_isFileHandleValid(handle) => Boolean.
+
+public externC function sysmel_pal_seek(handle: SysmelPAL::FileHandle, offset: Int64, mode: Int32) => Int64.
 
 public externC function sysmel_pal_writeToFile(handle: SysmelPAL::FileHandle, size: Size, buffer: Void const pointer) => IntPointer.
 public externC function sysmel_pal_writeToFileAtOffset(handle: SysmelPAL::FileHandle, offset: UInt64, size: Size, buffer: Void const pointer) => IntPointer.

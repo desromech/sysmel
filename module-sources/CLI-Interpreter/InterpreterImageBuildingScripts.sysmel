@@ -1,0 +1,28 @@
+CLISysmelInterpreter definition: {
+    __Meta__ definition: {
+        public method buildNativeInterpreterImageFor: (target: ImageBuilderTarget) ::=> ImageBuilderTargetImage
+            := ImageBuilder new
+                target: target;
+                beNoSourceDefinition;
+                withoutInProcessDebugInformation;
+                useDefaultTypeTables;
+                addProgramEntity: __Global__;
+                addNativeEntryPoint: CLISysmelInterpreter::nativeMain;
+                build.
+
+        public method buildNativeInterpreterImage ::=> ImageBuilderTargetImage
+            := self buildNativeInterpreterImageFor: AsmCompilationTarget x86_64 useElf useDwarf asImageBuilderTarget.
+
+        public method buildFullNativeInterpreterImageFor: (target: ImageBuilderTarget) ::=> ImageBuilderTargetImage
+            := ImageBuilder new
+                target: target;
+                beComplete;
+                useDefaultTypeTables;
+                addProgramEntity: __Global__;
+                addNativeEntryPoint: CLISysmelInterpreter::nativeMain;
+                build.
+
+        public method buildFullNativeInterpreterImageFor ::=> ImageBuilderTargetImage
+            := self buildFullNativeInterpreterImageFor: AsmCompilationTarget x86_64 useElf useDwarf asImageBuilderTarget.
+    }
+}.

@@ -1,0 +1,61 @@
+public class CLISysmelInterpreter definition: {
+    public field programName => String.
+
+    public method main: (arguments: Array) ::=> Int32 := {
+        programName := arguments first.
+
+        let i mutable := 1sz.
+        while: (i < arguments size) do: {
+            let argument => String := arguments at: i.
+            (argument beginsWith: "-") ifTrue: {
+                argument = "-version" ifTrue: {
+                    self printVersion.
+                    continue()
+                }.
+                argument = "-help" ifTrue: {
+                    continue()
+                }.
+                argument = "-e" ifTrue: {
+                    i := i + 1sz.
+                    self evaluateString: (arguments at: i).
+                    continue()
+                }.
+            } ifFalse: {
+                self evaluateFileNamed: argument
+            }
+        } continueWith: (i := i + 1sz).
+
+        0i32
+    }.
+
+    public method evaluateFileNamed: (fileName: String) ::=> Void := {
+        let sourceCodeText := IO::readWholeFileNamedAsString(fileName).
+        let directory := FileSystem::dirname(fileName).
+        let basename := FileSystem::basename(fileName).
+
+        let sourceCode := SourceCode text: sourceCodeText directory: directory name: basename language: #sysmel.
+        SysmelLanguage analyzeAndEvaluateSourceCode: sourceCode
+    }.
+
+    public method evaluateString: (sourceString: String) ::=> Void := {
+        SysmelLanguage analyzeAndEvaluateSourceCode: (SourceCode text: sourceString directory: "" name: "<cli>" language: #sysmel)
+    }.
+
+    public method printHelp => Void := {
+        printLine(programName, " <files>...").
+    }.
+
+    public method printVersion => Void := {
+        printLine(programName, " version 0.1").
+    }.
+}.
+
+public function CLISysmelInterpreter::nativeMain(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
+    let arguments := Array new: argc asSize.
+    let i mutable := 0i32.
+    while: (i < argc) do: {
+        arguments at: i asSize put: (String fromCString: argv[i asIntPointer]).
+    } continueWith: (i := i + 1i32).
+
+    CLISysmelInterpreter new main: arguments
+}.
