@@ -22,7 +22,7 @@ CLISysmelInterpreter definition: {
                 addNativeEntryPoint: CLISysmelInterpreter::nativeMain;
                 build.
 
-        public method buildFullNativeInterpreterImageFor ::=> ImageBuilderTargetImage
+        public method buildFullNativeInterpreterImage ::=> ImageBuilderTargetImage
             := self buildFullNativeInterpreterImageFor: AsmCompilationTarget x86_64 useElf useDwarf asImageBuilderTarget.
     }
 }.
