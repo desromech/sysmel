@@ -118,7 +118,8 @@ Dictionary definition: {
     public virtual eager method atOrNil: selector := {
         let index := self scanFor: selector.
         index >= 0iptr ifTrue: {
-            (storage at: index asSize) value
+            let association := storage at: index asSize.
+            association ifNotNil: association value.
         } ifFalse: {
             nil
         }

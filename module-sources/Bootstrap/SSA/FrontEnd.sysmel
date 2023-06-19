@@ -205,7 +205,7 @@ public final class SSAFunctionCompilationContext superclass: Object; definition:
                 self setValue: eachArgument forBinding: eachArgument sourceBinding
             }
         }.
-        ssaFunction captures do: {:(SSAFunctionArgument)eachCapture :: Void |
+        ssaFunction captures do: {:(SSAFunctionCapture)eachCapture :: Void |
             eachCapture sourceBinding ifNotNil: {
                 self setValue: eachCapture forBinding: eachCapture sourceBinding
             }
