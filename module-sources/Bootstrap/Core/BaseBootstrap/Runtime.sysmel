@@ -3084,7 +3084,21 @@ Type
         self valueSize alignedTo: self valueAlignment
     } makeFinal;
     withSelector: #isGarbageCollectedPointerType addMethod: {:(Type)self :: Boolean | true } makeVirtual;
-    withSelector: #isValueType addMethod: {:(Type)self :: Boolean | false } makeVirtual.
+    withSelector: #isValueType addMethod: {:(Type)self :: Boolean | false } makeVirtual;
+    withSelector: #isPrimitiveNumberType addMethod: {:(Type)self :: Boolean | false } makeVirtual;
+    withSelector: #isPrimitiveCharacterType addMethod: {:(Type)self :: Boolean | false } makeVirtual;
+    withSelector: #isPrimitiveFloatType addMethod: {:(Type)self :: Boolean | false } makeVirtual;
+    withSelector: #isPrimitiveIntegerType addMethod: {:(Type)self :: Boolean | false } makeVirtual;
+    withSelector: #isPrimitiveUnsignedIntegerType addMethod: {:(Type)self :: Boolean | false } makeVirtual;
+    withSelector: #isPrimitiveSignedIntegerType addMethod: {:(Type)self :: Boolean | false } makeVirtual;
+    withSelector: #isPrimitiveVectorType addMethod: {:(Type)self :: Boolean | false } makeVirtual.
+
+PrimitiveNumber __type__ withSelector: #isPrimitiveNumberType addMethod: {:(Type)self :: Boolean | true } makeOverride.
+PrimitiveCharacter __type__ withSelector: #isPrimitiveCharacterType addMethod: {:(Type)self :: Boolean | true } makeOverride.
+PrimitiveFloat __type__ withSelector: #isPrimitiveFloatType addMethod: {:(Type)self :: Boolean | true } makeOverride.
+PrimitiveInteger __type__ withSelector: #isPrimitiveIntegerType addMethod: {:(Type)self :: Boolean | true } makeOverride.
+PrimitiveSignedInteger __type__ withSelector: #isPrimitiveSignedIntegerType addMethod: {:(Type)self :: Boolean | true } makeOverride.
+PrimitiveUnsignedInteger __type__ withSelector: #isPrimitiveUnsignedIntegerType addMethod: {:(Type)self :: Boolean | true } makeOverride.
 
 Type
     validInstanceAlignment;

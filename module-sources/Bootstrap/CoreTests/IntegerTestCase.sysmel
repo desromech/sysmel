@@ -9,6 +9,7 @@ public class IntegerTestCase superclass: TestCase; definition: {
         self assert: (self parse: "-0") equals: 0.
         self assert: (self parse: "1") equals: 1.
         self assert: (self parse: "42") equals: 42.
+        self assert: (self parse: "16rFF00") equals: 16rFF00.
     }.
 
     public method testNegation => Void := {

@@ -129,8 +129,11 @@ TACValue definition: {
     public virtual method isVariable => Boolean := false.
     public virtual method isArgumentVariable => Boolean := false.
     public virtual method isCaptureVariable => Boolean := false.
+    public virtual method isCaptureVariableOrPointer => Boolean := false.
     public virtual method isTemporaryVariable => Boolean := false.
     public virtual method isGlobalVariable => Boolean := false.
+
+    public virtual method isVariablePointer => Boolean := false.
 
     public virtual method isConstant => Boolean := false.
     public virtual method isConstantInt8 => Boolean := false.
@@ -239,6 +242,9 @@ public abstract class TACVariable superclass: TACProgramEntity; definition: {
     public field isGCRoot => Boolean.
 
     public override method isVariable => Boolean := true.
+
+    public override method isFloatingPoint => Boolean := type asDecayedType isPrimitiveFloatType.
+    public override method isVector => Boolean := type asDecayedType isPrimitiveVectorType.
 }.
 
 public final class TACLocalVariable superclass: TACVariable; definition: {
@@ -270,12 +276,12 @@ public final class TACLocalVariable superclass: TACVariable; definition: {
         lastWriteIndex := -1i32.
     }.
 
-    public virtual method markUsageAt: (usageIndex: UInt32) ::=> Void := {
+    public override method markUsageAt: (usageIndex: UInt32) ::=> Void := {
         firstUsageIndex < 0i32 ifTrue: (firstWriteIndex := usageIndex asInt32).
         lastUsageIndex := usageIndex asInt32
     }.
 
-    public virtual method markWriteAt: (writeIndex: UInt32) ::=> Void := {
+    public override method markWriteAt: (writeIndex: UInt32) ::=> Void := {
         firstWriteIndex < 0i32 ifTrue: (firstWriteIndex := writeIndex asInt32).
         lastWriteIndex := writeIndex asInt32
     }.
@@ -297,6 +303,7 @@ public final class TACArgumentVariable superclass: TACLocalVariable; definition:
 
 public final class TACCaptureVariable superclass: TACLocalVariable; definition: {
     public override method isCaptureVariable => Boolean := true.
+    public override method isCaptureVariableOrPointer => Boolean := true.
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: 'c'; print: index.
@@ -325,6 +332,23 @@ public final class TACGlobalVariable superclass: TACVariable; definition: {
         stream print: self; nextPutAll: " => "; print: type.
         self printDebugInfoOn: stream.
     }.
+}.
+
+public final class TACVariablePointer superclass: TACValue; definition: {
+    public field variable => TACVariable.
+
+    public override method isVariablePointer => Boolean := true.
+    public override method isCaptureVariableOrPointer => Boolean := variable isCaptureVariable.
+
+    public override method physicalLocationClass => TACPhysicalLocation class
+        := TACPhysicalIntegerRegister.
+}.
+
+TACVariable definition: {
+    public method asVariablePointer => TACVariablePointer
+        := TACVariablePointer new
+            variable: self;
+            yourself.
 }.
 
 public abstract class TACConstant superclass: TACValue; definition: {
@@ -671,7 +695,7 @@ TACInstruction definition: {
         := operation isDebug.
 
     public method usesCapture => Boolean
-        := (result isNotNil && result isCaptureVariable) ||
+        := (result isNotNil && result isCaptureVariableOrPointer) ||
         (operands anySatisfy: {:(TACValue)operand :: Boolean | operand isCaptureVariable}).
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {

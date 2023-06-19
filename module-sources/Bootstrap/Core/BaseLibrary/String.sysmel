@@ -441,15 +441,49 @@ Integer definition: {
     __Meta__ definition: {
         public final method parseString: (string: String) ::=> Integer := {
             let result mutable := 0.
-            let isNegative := string isNotEmpty && (string first = '-'c8).
+            let radix mutable := 10.
+            let canParseRadix mutable := true.
 
-            ## TODO: Implement this properly by adding support for radixes, etc.
-            string do: {:(Char8)c :: Void |
+            let size := string size.
+            let isNegative := size > 0sz && (string first = '-'c8).
+            let i mutable := isNegative ifTrue: 1sz ifFalse: 0sz.
+
+            while: (i < size) do: {
+                let c := string at: i.
                 ('0'c8 <= c) && (c <= '9'c8) ifTrue: {
                     let digit := (c - '0'c8) asInteger.
-                    result := result * 10 + digit
+                    result := result * radix + digit.
+                    continue().
                 }.
-            }.
+
+                canParseRadix ifTrue: {
+                    ('r'c8 = c) || ('R'c8 = c) ifTrue: {
+                        radix := result.
+                        result := 0.
+                        canParseRadix := false.
+                        continue().
+                    }
+                } ifFalse: {
+                    ('A'c8 <= c) && (c <= 'Z'c8) ifTrue: {
+                        let digit := (c - 'A'c8) asInteger + 10.
+                        result := result * radix + digit.
+                        continue().
+                    }.
+
+                    ('a'c8 <= c) && (c <= 'z'c8) ifTrue: {
+                        let digit := (c - 'a'c8) asInteger + 10.
+                        result := result * radix + digit.
+                        continue().
+                    }.
+                }.
+
+                ## Ignore the separator.
+                '_'c8 = c ifTrue: {
+                    continue().
+                }.
+
+                error("Invalid integer literal.")
+            } continueWith: (i := i + 1sz).
 
             isNegative
                 ifTrue: result negated
