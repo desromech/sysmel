@@ -1,6 +1,6 @@
 public class SysmelScannerTestCase superclass: TestCase; definition: {
     public method scanString: (string: String) ::=> Array
-        := SysmelLanguage scanSourceCode: (SourceCode text: string directory: nil name: "test" language: #tlisp).
+        := SysmelLanguage scanSourceCode: (SourceCode text: string directory: "" name: "test" language: #tlisp).
 
     public method testEmptyString => Void := {
         self assert: (self scanString: "") isEmpty.

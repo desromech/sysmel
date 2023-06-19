@@ -1,4 +1,25 @@
+let InternedSymbolSet := BootstrapEnv::InternedSymbolSet.
+let hashFunction := {:(String)string :: Size | string hash}.
+let equalsFunction := {:(String)string :(StringSymbol)symbol :: Boolean |
+    string equalsStringSymbol: symbol
+}.
+
 StringSymbol extend: {
+    __Meta__ definition: {
+        public method intern: (string: String) ::=> StringSymbol := {
+            let existent := InternedSymbolSet atOrNil: string withHashFunction: hashFunction equalsFunction: equalsFunction.
+            existent ifNotNil: {return: existent}.
+
+            let newSymbol => AnyValue := string shallowCopy.
+            (RawTuple::identityHash:)(newSymbol, hashFunction(string)).
+            (RawTuple::type:)(newSymbol, StringSymbol).
+
+            InternedSymbolSet add: newSymbol.
+
+            newSymbol
+        }.
+    }.
+
     public method <=> (other: StringSymbol) ::=> Int32 := {
         let minSize := self size min: other size.
         let i mutable := 0sz.

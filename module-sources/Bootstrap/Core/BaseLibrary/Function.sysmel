@@ -1,0 +1,103 @@
+Function definition: {
+    public eager method applyWithExpandedArguments: (arguments: Array) ::=> Untyped := {
+        arguments size = argumentCount ifFalse: {
+            error("Mismatching argument count.")
+        }.
+
+        argumentCount < 8sz ifTrue: {
+            argumentCount < 4sz ifTrue: {
+                argumentCount = 0sz ifTrue: {
+                    return: ObjectModel::applyDirect0(self)
+                }.
+                argumentCount = 1sz ifTrue: {
+                    return: ObjectModel::applyDirect1(self, arguments untypedAt: 0sz)
+                }.
+                argumentCount = 2sz ifTrue: {
+                    return: ObjectModel::applyDirect2(self, arguments untypedAt: 0sz, arguments untypedAt: 1sz)
+                }.
+                argumentCount = 3sz ifTrue: {
+                    return: ObjectModel::applyDirect3(self, arguments untypedAt: 0sz, arguments untypedAt: 1sz, arguments untypedAt: 2sz)
+                }.
+            } ifFalse: {
+                argumentCount = 4sz ifTrue: {
+                    return: ObjectModel::applyDirect4(self, arguments untypedAt: 0sz, arguments untypedAt: 1sz, arguments untypedAt: 2sz,
+                        arguments untypedAt: 3sz
+                    )
+                }.
+                argumentCount = 5sz ifTrue: {
+                    return: ObjectModel::applyDirect5(self, arguments untypedAt: 0sz, arguments untypedAt: 1sz, arguments untypedAt: 2sz,
+                        arguments untypedAt: 3sz, arguments untypedAt: 4sz
+                    )
+                }.
+                argumentCount = 6sz ifTrue: {
+                    return: ObjectModel::applyDirect6(self, arguments untypedAt: 0sz, arguments untypedAt: 1sz, arguments untypedAt: 2sz,
+                        arguments untypedAt: 3sz, arguments untypedAt: 4sz, arguments untypedAt: 5sz
+                    )
+                }.
+                argumentCount = 7sz ifTrue: {
+                    return: ObjectModel::applyDirect7(self, arguments untypedAt: 0sz, arguments untypedAt: 1sz, arguments untypedAt: 2sz,
+                        arguments untypedAt: 3sz, arguments untypedAt: 4sz, arguments untypedAt: 5sz, arguments untypedAt: 6sz
+                    )
+                }.
+            }
+        } ifFalse: {
+            argumentCount < 12sz ifTrue: {
+                argumentCount = 8sz ifTrue: {
+                    return: ObjectModel::applyDirect8(self, arguments untypedAt: 0sz, arguments untypedAt: 1sz, arguments untypedAt: 2sz,
+                        arguments untypedAt: 3sz, arguments untypedAt: 4sz, arguments untypedAt: 5sz, arguments untypedAt: 6sz, 
+                        arguments untypedAt: 7sz
+                    )
+                }.
+                argumentCount = 9sz ifTrue: {
+                    return: ObjectModel::applyDirect9(self, arguments untypedAt: 0sz, arguments untypedAt: 1sz, arguments untypedAt: 2sz,
+                        arguments untypedAt: 3sz, arguments untypedAt: 4sz, arguments untypedAt: 5sz, arguments untypedAt: 6sz, 
+                        arguments untypedAt: 7sz, arguments untypedAt: 8sz
+                    )
+                }.
+                argumentCount = 10sz ifTrue: {
+                    return: ObjectModel::applyDirect10(self, arguments untypedAt: 0sz, arguments untypedAt: 1sz, arguments untypedAt: 2sz,
+                        arguments untypedAt: 3sz, arguments untypedAt: 4sz, arguments untypedAt: 5sz, arguments untypedAt: 6sz, 
+                        arguments untypedAt: 7sz, arguments untypedAt: 8sz, arguments untypedAt: 9sz
+                    )
+                }.
+                argumentCount = 11sz ifTrue: {
+                    return: ObjectModel::applyDirect11(self, arguments untypedAt: 0sz, arguments untypedAt: 1sz, arguments untypedAt: 2sz,
+                        arguments untypedAt: 3sz, arguments untypedAt: 4sz, arguments untypedAt: 5sz, arguments untypedAt: 6sz, 
+                        arguments untypedAt: 7sz, arguments untypedAt: 8sz, arguments untypedAt: 9sz, arguments untypedAt: 10sz
+                    )
+                }.
+            } ifFalse: {
+                argumentCount = 12sz ifTrue: {
+                    return: ObjectModel::applyDirect12(self, arguments untypedAt: 0sz, arguments untypedAt: 1sz, arguments untypedAt: 2sz,
+                        arguments untypedAt: 3sz, arguments untypedAt: 4sz, arguments untypedAt: 5sz, arguments untypedAt: 6sz, 
+                        arguments untypedAt: 7sz, arguments untypedAt: 8sz, arguments untypedAt: 9sz, arguments untypedAt: 10sz,
+                        arguments untypedAt: 11sz
+                    )
+                }.
+                argumentCount = 13sz ifTrue: {
+                    return: ObjectModel::applyDirect13(self, arguments untypedAt: 0sz, arguments untypedAt: 1sz, arguments untypedAt: 2sz,
+                        arguments untypedAt: 3sz, arguments untypedAt: 4sz, arguments untypedAt: 5sz, arguments untypedAt: 6sz, 
+                        arguments untypedAt: 7sz, arguments untypedAt: 8sz, arguments untypedAt: 9sz, arguments untypedAt: 10sz,
+                        arguments untypedAt: 11sz, arguments untypedAt: 12sz
+                    )
+                }.
+                argumentCount = 14sz ifTrue: {
+                    return: ObjectModel::applyDirect14(self, arguments untypedAt: 0sz, arguments untypedAt: 1sz, arguments untypedAt: 2sz,
+                        arguments untypedAt: 3sz, arguments untypedAt: 4sz, arguments untypedAt: 5sz, arguments untypedAt: 6sz, 
+                        arguments untypedAt: 7sz, arguments untypedAt: 8sz, arguments untypedAt: 9sz, arguments untypedAt: 10sz,
+                        arguments untypedAt: 11sz, arguments untypedAt: 12sz, arguments untypedAt: 13sz
+                    )
+                }.
+                argumentCount = 15sz ifTrue: {
+                    return: ObjectModel::applyDirect15(self, arguments untypedAt: 0sz, arguments untypedAt: 1sz, arguments untypedAt: 2sz,
+                        arguments untypedAt: 3sz, arguments untypedAt: 4sz, arguments untypedAt: 5sz, arguments untypedAt: 6sz, 
+                        arguments untypedAt: 7sz, arguments untypedAt: 8sz, arguments untypedAt: 9sz, arguments untypedAt: 10sz,
+                        arguments untypedAt: 11sz, arguments untypedAt: 12sz, arguments untypedAt: 13sz, arguments untypedAt: 14sz
+                    )
+                }.
+            }.
+        }.
+
+        error("applyWithExpandedArguments with an excessive number of arguments.").
+    }.
+}.

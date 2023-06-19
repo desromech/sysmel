@@ -1,6 +1,6 @@
 public function evaluateString(string: String) => Void := {
     printLine("Evaluating ", string).
-    let result := SysmelLanguage analyzeAndEvaluateSourceCode: (SourceCode text: string directory: nil name: "test" language: #sysmel).
+    let result := SysmelLanguage analyzeAndEvaluateSourceCode: (SourceCode text: string directory: "" name: "test" language: #sysmel).
     printLine(result)
 }.
 
@@ -17,6 +17,7 @@ public function TestImageMain(argc: Int32, argv: Char8 const pointer pointer) =>
     0i32
 }.
 
+#*
 ImageBuilder new
     beNoSourceDefinition;
     withoutInProcessDebugInformation;
@@ -25,6 +26,7 @@ ImageBuilder new
     addNativeEntryPoint: TestImageMain;
     build;
     saveTo: "testImage.image".
+*#
 
 ImageBuilder new
     target: AsmCompilationTarget x86_64 useElf useDwarf asImageBuilderTarget;

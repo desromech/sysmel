@@ -1,4 +1,30 @@
 Set definition: {
+    public eager method scanFor: (key: Untyped) hashFunction: hashFunction equalsFunction: equalsFunction ::=> IntPointer := {
+        storage ifNil: { return: -1iptr }.
+
+        let capacity := storage size.
+        let keyHash => Size := hashFunction(key).
+        let naturalIndex := keyHash % capacity.
+
+        let i mutable := naturalIndex.
+        while: (i < capacity) do: {
+            let element := storage untypedAt: i.
+            if: (Untyped::==)(element, __hashtableEmptyElement__) || equalsFunction(key, element) then: {
+                return: i asIntPointer
+            }
+        } continueWith: (i := i + 1sz).
+
+        i := 0sz.
+        while: (i < capacity) do: {
+            let element := storage untypedAt: i.
+            if: (Untyped::==)(element, __hashtableEmptyElement__) || equalsFunction(key, element) then: {
+                return: i asIntPointer
+            }
+        } continueWith: (i := i + 1sz).
+
+        -1iptr
+    }.
+
     public virtual eager method scanFor: (key: Untyped) ::=> IntPointer := {
         storage ifNil: { return: -1iptr }.
 
@@ -27,8 +53,25 @@ Set definition: {
     public final eager method capacity => Size
         := storage ifNil: 0sz ifNotNil: storage size.
 
+    public eager method addNoCheck: (element: Untyped) ::=> Void := {
+        let index mutable := self scanFor: element.
+        self assert: index >= 0iptr.
+        storage untypedAt: index asSize put: element
+    }.
+
     public eager method increaseCapacity => Void := {
-        error("TODO: Set increase capacity")
+        let oldCapacity := self capacity.
+        let newCapacity := oldCapacity * 2sz max: 8sz.
+        let oldStorage := storage.
+        storage := Array new: newCapacity.
+        storage atAllPut: __hashtableEmptyElement__.
+
+        let i mutable := 0sz.
+        while: (i < oldCapacity) do: {
+            let oldElement := oldStorage untypedAt: i.
+            (Untyped::==)(oldElement, __hashtableEmptyElement__) ifFalse: {
+            }
+        } continueWith: (i := i + 1sz)
     }.
 
     public eager method checkCapacityIncreaseCondition => Void := {
@@ -64,4 +107,17 @@ Set definition: {
 
     public virtual eager method includes: element ::=> Boolean
         := self untypedIncludes: element.
+
+    public method atOrNil: element withHashFunction: hashFunction equalsFunction: equalsFunction := {
+        let index := self scanFor: element hashFunction: hashFunction equalsFunction: equalsFunction.
+        (index >= 0iptr) ifTrue: {
+            let foundElement := storage untypedAt: index asSize.
+            (Untyped::==)(foundElement, __hashtableEmptyElement__)
+                ifTrue: nil
+                ifFalse: foundElement.
+        } ifFalse: {
+            nil
+        }
+    }.
+
 }.

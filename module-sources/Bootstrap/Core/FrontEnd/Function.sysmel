@@ -77,7 +77,7 @@ Function definition: {
     }.
 
     public eager method applyWithExpandedArguments: (arguments: Array) ::=> Untyped := {
-        error("TODO: applyWithDirectArguments.")
+        primitiveFailedError()
     }.
 
     public eager method applyWithMemoizedArguments: (arguments: Array) ::=> Untyped := {

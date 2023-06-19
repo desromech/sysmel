@@ -1,6 +1,6 @@
 public class SysmelInterpreterTestCase superclass: TestCase; definition: {
     public method evaluateString: (string: String) ::=> AnyValue
-        := SysmelLanguage analyzeAndEvaluateSourceCode: (SourceCode text: string directory: nil name: "test" language: #sysmel).
+        := SysmelLanguage analyzeAndEvaluateSourceCode: (SourceCode text: string directory: "" name: "test" language: #sysmel).
 
     public method testEmptyString => Void := {
         self assert: (self evaluateString: "") equals: void

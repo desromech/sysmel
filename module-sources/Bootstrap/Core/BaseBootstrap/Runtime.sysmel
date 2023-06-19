@@ -1005,47 +1005,46 @@ FunctionDefinition
 Function
     withSelector: #hasAnyFlag: addMethod: {:(Function)self :(Bitflags)flag :: Boolean |
         (self flags & flag) ~= 0bflgs
-    };
+    } makeFinal makeAlwaysInline;
     withSelector: #isMacro addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Macro
-    };
-    
+    } makeFinal makeAlwaysInline;
     withSelector: #isVariadic addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Variadic
-    };
+    } makeFinal makeAlwaysInline;
     withSelector: #isCorePrimitive addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::CorePrimitive
-    };
+    } makeFinal makeAlwaysInline;
     withSelector: #isBootstrapPrimitive addMethod: {:(Function)self :: Boolean |
         self isCorePrimitive || self definition isNil
-    };
+    } makeFinal makeAlwaysInline;
     withSelector: #isPure addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Pure
-    };
+    } makeFinal makeAlwaysInline;
     withSelector: #isFinal addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Final
-    };
+    } makeFinal makeAlwaysInline;
     withSelector: #isVirtual addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Virtual
-    };
+    } makeFinal makeAlwaysInline;
     withSelector: #isAbstract addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Abstract
-    };
+    } makeFinal makeAlwaysInline;
     withSelector: #isOverride addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Override
-    };
+    } makeFinal makeAlwaysInline;
     withSelector: #isStatic addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Static
-    };
+    } makeFinal makeAlwaysInline;
     withSelector: #isMemoized addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Memoized
-    };
+    } makeFinal makeAlwaysInline;
     withSelector: #isTemplate addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Template
-    };
+    } makeFinal makeAlwaysInline;
     withSelector: #isInline addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Inline
-    };
+    } makeFinal makeAlwaysInline;
     withSelector: #isAlwaysInline addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::AlwaysInline
     };
@@ -1057,6 +1056,9 @@ Function
     } withEagerAnalysis;
     withSelector: #hasVirtualDispatch addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: (FunctionFlags::Virtual | FunctionFlags::Abstract) | FunctionFlags::Override
+    } withEagerAnalysis;
+    withSelector: #requiresArgumentExpansionDuringApplication addMethod: {:(Function)self :: Boolean |
+        self hasAnyFlag: FunctionFlags::Memoized | FunctionFlags::Variadic
     } withEagerAnalysis;
 
     withSelector: #hasPragmaNamed: addMethod: {:(Function)self :selector :: Boolean |
@@ -2763,9 +2765,9 @@ SimpleFunctionType
 (UInt64 >> #asIEEEFloat64Decoded) __type__: (UInt64 => Float64).
 
 let: #UInt32HashBitCount with: 32u32 - 4u32.
-let: #UInt32HashBitMask with: UInt32HashBitCount - 1u32.
+let: #UInt32HashBitMask with: (1u32 << UInt32HashBitCount) - 1u32.
 let: #UInt64HashBitCount with: 64u64 - 4u64.
-let: #UInt64HashBitMask with: UInt64HashBitCount - 1u64.
+let: #UInt64HashBitMask with: (1u64 << UInt64HashBitCount) - 1u64.
 
 UInt32
     withSelector: #hashMultiply addMethod: {:(UInt32)self :: UInt32 |

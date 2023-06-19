@@ -13,6 +13,7 @@ loadSourceNamed: "StringMemoryFunctions.sysmel".
 loadSourceNamed: "Interval.sysmel".
 loadSourceNamed: "MemoryPointers.sysmel".
 loadSourceNamed: "ObjectModel.sysmel".
+loadSourceNamed: "Function.sysmel".
 
 loadSourceNamed: "ByteStream.sysmel".
 loadSourceNamed: "Error.sysmel".
@@ -22,8 +23,8 @@ loadSourceNamed: "Math.sysmel".
 loadSourceNamed: "Integer.sysmel".
 loadSourceNamed: "ProgramEntity.sysmel".
 loadSourceNamed: "Utility.sysmel".
-loadSourceNamed: "String.sysmel".
 loadSourceNamed: "StringSymbol.sysmel".
+loadSourceNamed: "String.sysmel".
 loadSourceNamed: "StringStream.sysmel".
 loadSourceNamed: "System.sysmel".
 loadSourceNamed: "Time.sysmel".

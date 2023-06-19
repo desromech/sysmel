@@ -27,7 +27,7 @@ IdentityDictionary definition: {
     public override eager method add: association ::=> Void
         := super add: association.
 
-    public override eager method associationAtOrNil: association ::=> Void
+    public override eager method associationAtOrNil: association
         := super associationAtOrNil: association.
 
     public override eager method at: key

@@ -466,8 +466,8 @@ False __type__ extend: {
 }.
 
 True __type__ extend: {
-    public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := false == reference.
-    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := false == reference.
+    public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := true == reference.
+    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := true == reference.
 
     public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (ObjectModel::ImmediateTrivialIndex::True << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Trivial asUInt32.
     public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (ObjectModel::ImmediateTrivialIndex::True asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Trivial asUInt64.
@@ -559,7 +559,7 @@ AnyValue extend: {
         := ObjectModel::getTupleHeaderPointerOf(self) + 1iptr reinterpretCastTo: Void pointer.
 }.
 
-identityHash adoptDefinitionOf: {:(Untyped)self :: Size |
+identityHash adoptDefinitionOf: {:(AnyValue)self :: Size |
     <primitive: #identityHash >
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
@@ -568,6 +568,26 @@ identityHash adoptDefinitionOf: {:(Untyped)self :: Size |
         pointerValue asSize hashMultiply
     }
 } makePure makeFinal withEagerAnalysis.
+
+Untyped::identityHash adoptDefinitionOf: {:(Untyped)self :: Size |
+    <primitive: #identityHash >
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
+    ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
+        (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ identityHashAndFlags >> 4uptr
+    } ifFalse: {
+        pointerValue asSize hashMultiply
+    }
+} makePure makeFinal withEagerAnalysis.
+
+(RawTuple::identityHash:) adoptDefinitionOf: {:(Untyped)self :(Size)newHash :: Void |
+    <primitive: #RawTuple::isBytes>
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
+    ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
+        (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ identityHashValue: newHash
+    } ifFalse: {
+        error("Cannot set the identity hash of an immediate object.")
+    }
+} withEagerAnalysis.
 
 RawTuple::isBytes adoptDefinitionOf: {:(Untyped)self :: Boolean |
     <primitive: #RawTuple::isBytes>
@@ -1290,6 +1310,7 @@ public function ObjectModel::fetchUncheckedEntryPoint(function: Function) => UIn
     := function definition uncheckedEntryPoint asUIntPointer.
 
 ## Generate the trampolines via macro metaprogramming.
+public global ObjectModel::DirectFunctionApplicationTrampolines := Array new: 16.
 public global ObjectModel::CheckedFunctionApplicationTrampolines := Array new: 16.
 public global ObjectModel::SendWithReceiverTypeTrampolines := Array new: 16.
 public global ObjectModel::SendTrampolines := Array new: 16.
@@ -1298,6 +1319,7 @@ public global ObjectModel::SendTrampolines := Array new: 16.
     let argumentNames := (0sz until: ArgumentCount) collect: {:(Size)each | ("arg" -- each asString) asSymbol}.
     let argumentNodes := argumentNames collect: {:(Symbol)eachName | eachName asMacroArgumentWithType: Untyped asMacroLiteral}.
     let argumentIdentifiers := argumentNames collect: {:(Symbol)eachName | eachName asMacroIdentifier}.
+    let applyDirectName := ("ObjectModel::applyDirect" -- ArgumentCount asString) asSymbol.
     let applyName := ("ObjectModel::apply" -- ArgumentCount asString) asSymbol.
     let sendWithReceiverTypeName := ("ObjectModel::sendWithReceiverType" -- ArgumentCount asString) asSymbol.
     let sendName := ("ObjectModel::send" -- ArgumentCount asString) asSymbol.
@@ -1305,24 +1327,47 @@ public global ObjectModel::SendTrampolines := Array new: 16.
     let checkedEntryPointPointerType := (checkedEntryPointArgumentTypes => Untyped) pointer.
 
     ``{
+        public function `,(applyDirectName asMacroLiteral)(function: Function, `@argumentNodes) => Untyped := {
+            let definition := function definition.
+            definition ifNil: {
+                error("Cannot apply direct function without definition.")
+            }.
+
+            let checkedEntryPoint := definition checkedEntryPoint asUIntPointer.
+            checkedEntryPoint ~= 0uptr ifTrue: {
+                let checkedEntryPointFunction := checkedEntryPoint reinterpretCastTo: `,(checkedEntryPointPointerType asMacroLiteral).
+                return: checkedEntryPointFunction(function, `@argumentIdentifiers)
+            }.
+
+            let bytecode := definition bytecode.
+            bytecode ifNil: {
+                error("Cannot evaluate function without native compiled definition or bytecode.")
+            }.
+                
+            error("TODO: Attempt to interpret bytecoded function.")
+        }.
+        ObjectModel::DirectFunctionApplicationTrampolines at: `,(ArgumentCount asMacroLiteral) put: `,(applyDirectName asMacroIdentifier).
+
         public function `,(applyName asMacroLiteral)(functional: Untyped, `@argumentNodes) => Untyped := {
             ObjectModel::isFunction(functional) ifTrue: {
                 let function := ObjectModel::tupleAsFunction(functional).
-                let definition := function definition.
-                definition ifNotNil: {
-                    let checkedEntryPoint := definition checkedEntryPoint asUIntPointer.
-                    checkedEntryPoint ~= 0uptr ifTrue: {
-                        let checkedEntryPointFunction := checkedEntryPoint reinterpretCastTo: `,(checkedEntryPointPointerType asMacroLiteral).
-                        return: checkedEntryPointFunction(functional, `@argumentIdentifiers)
-                    } ifFalse: {
+                function requiresArgumentExpansionDuringApplication ifFalse: {
+                    let definition := function definition.
+                    definition ifNotNil: {
+                        let checkedEntryPoint := definition checkedEntryPoint asUIntPointer.
+                        checkedEntryPoint ~= 0uptr ifTrue: {
+                            let checkedEntryPointFunction := checkedEntryPoint reinterpretCastTo: `,(checkedEntryPointPointerType asMacroLiteral).
+                            return: checkedEntryPointFunction(functional, `@argumentIdentifiers)
+                        }.
+
                         let bytecode := definition bytecode.
                         bytecode ifNil: {
                             error("Cannot evaluate function without native compiled definition or bytecode.")
                         }.
                         
                         error("TODO: Attempt to interpret bytecoded function.")
-                    }
-                }.
+                    }.
+                }
             }.
 
             functional applyWithArguments: (`@argumentIdentifiers,)

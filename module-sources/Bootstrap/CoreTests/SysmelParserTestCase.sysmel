@@ -1,6 +1,6 @@
 public class SysmelParserTestCase superclass: TestCase; definition: {
     public method parseString: (string: String) ::=> ASTNode
-        := SysmelLanguage parseSourceCode: (SourceCode text: string directory: nil name: "test" language: #sysmel).
+        := SysmelLanguage parseSourceCode: (SourceCode text: string directory: "" name: "test" language: #sysmel).
 
     public method testEmptyString => Void := {
         let ast := self parseString: "".

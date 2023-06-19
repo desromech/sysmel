@@ -93,6 +93,11 @@ identityHash adoptDefinitionOf: {:(AnyValue)value :: Size |
     primitiveFailedError()
 }.
 
+(RawTuple::identityHash:) adoptDefinitionOf: {:(AnyValue)value :(Size)hash :: Void |
+    <primitive: #RawTuple::identityHash: >
+    primitiveFailedError()
+}.
+
 (Untyped::==) adoptDefinitionOf: {:(Untyped)left :(Untyped)right :: Boolean |
     <primitive: #== >
     <targetDefinedPrimitive>

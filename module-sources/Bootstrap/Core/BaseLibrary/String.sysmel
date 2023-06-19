@@ -51,11 +51,31 @@ String extend: {
         
         let otherString => String := other.
         let size := self size.
-        size = otherString size ifFalse: {return: false}.
+        size = otherString size ifFalse: {
+            return: false
+        }.
 
         let i mutable := 0sz.
         while: (i < size) do: {
-            (self at: i) = (otherString at: i) ifFalse: {return: false}
+            (self at: i) = (otherString at: i) ifFalse: {
+                return: false
+            }
+        } continueWith: (i := i + 1sz).
+
+        true
+    }.
+
+    public final pure method equalsStringSymbol: (other: StringSymbol) ::=> Boolean := {
+        let size := self size.
+        size = other size ifFalse: {
+            return: false
+        }.
+
+        let i mutable := 0sz.
+        while: (i < size) do: {
+            (self at: i) = (other at: i) ifFalse: {
+                return: false
+            }
         } continueWith: (i := i + 1sz).
 
         true
@@ -154,7 +174,7 @@ String extend: {
 
     public pure final method asSymbol => StringSymbol := {
         <primitive: #String::asSymbol>
-        primitiveFailedError()
+        StringSymbol intern: self.
     }.
 
     public override final pure method withoutSuffix: (suffix: SequenceableCollection) ::=> String

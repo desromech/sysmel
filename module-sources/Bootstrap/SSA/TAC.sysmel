@@ -2333,7 +2333,10 @@ SSATypeSlotAtPutInstruction extend: {
 
 SSAReturnInstruction extend: {
     public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
-        self value type emitTacReturn: (codegen translateValue: self value) withBlockBuilder: codegen blockBuilder
+        (self value type isSubtypeOf: ControlFlowEscapeType) ifTrue: {return: void}.
+
+        let canonicalResultType := codegen ssaFunctionDefinition functionType canonicalResultType.
+        canonicalResultType emitTacReturn: (codegen translateValue: self value withExpectedType: canonicalResultType) withBlockBuilder: codegen blockBuilder
     }.
 }.
 
