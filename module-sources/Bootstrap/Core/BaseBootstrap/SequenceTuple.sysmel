@@ -38,7 +38,6 @@ SequenceTupleType definition: {
 }.
 
 private pure eager template sequenceTupleTypeTemplate(elementTypes: Array) => SequenceTupleType := {
-    error("TODO: sequenceTupleTypeTemplate").
     let result := SequenceTupleType basicNew.
     __templateResult__ value: result.
     result

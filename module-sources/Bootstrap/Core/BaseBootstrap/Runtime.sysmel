@@ -1026,7 +1026,7 @@ Function
         self hasAnyFlag: FunctionFlags::CorePrimitive
     } makeFinal makeAlwaysInline;
     withSelector: #isBootstrapPrimitive addMethod: {:(Function)self :: Boolean |
-        self isCorePrimitive || self definition isNil
+        self isNotNil && (self isCorePrimitive || self definition isNil)
     } makeFinal makeAlwaysInline;
     withSelector: #isPure addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Pure

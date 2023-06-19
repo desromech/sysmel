@@ -1064,7 +1064,21 @@ SysmelGrammar::LowPrecedenceBinaryExpression := SysmelGrammar::ChainExpression -
     }.
 
 SysmelGrammar::AssignmentExpression
-    := SysmelGrammar::LowPrecedenceBinaryExpression -- Grammar::Token::Assignment -- SysmelGrammar::AssignmentExpression
+    := (SysmelGrammar::LowPrecedenceBinaryExpression -- Grammar::Token::Assignment -- SysmelGrammar::AssignmentExpression ==> {:(MonadicParserResult)parserResult :: AnyValue |
+        let parseElements => Array := parserResult value.
+        let receiver => ASTNode := parseElements first.
+        let selector => SysmelToken := parseElements second.
+        let argument => ASTNode := parseElements third.
+        ASTMessageSendNode new
+            sourcePosition: (receiver sourcePosition makeUnionWith: argument sourcePosition);
+            receiver: receiver;
+            selector: (ASTLiteralNode new
+                sourcePosition: selector sourcePosition;
+                value: selector value;
+                yourself);
+            arguments: (Array with: argument);
+            yourself
+    })
     | SysmelGrammar::LowPrecedenceBinaryExpression.
 
 SysmelGrammar::CommaExpressionElement := SysmelGrammar::AssignmentExpression.

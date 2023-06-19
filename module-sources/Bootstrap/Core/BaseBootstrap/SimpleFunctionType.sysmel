@@ -13,8 +13,6 @@ SimpleFunctionType definition: {
 }.
 
 private pure template simpleFunctionTypeTemplate(argumentTypes: Array, flags: Bitflags, resultType: Type) => SimpleFunctionType := {
-    error("TODO: SimpleFunctionTypeTemplate").
-
     let result := SimpleFunctionType basicNew.
     __templateResult__ value: result.
     result

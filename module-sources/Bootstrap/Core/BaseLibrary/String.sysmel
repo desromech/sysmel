@@ -420,7 +420,7 @@ Float32 definition: {
     }.
 
     public override final pure method printString => String
-        := self asFloat32 printString.
+        := self asFloat64 printString.
 }.
 
 Float64 definition: {

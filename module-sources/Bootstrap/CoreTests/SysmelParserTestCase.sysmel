@@ -284,6 +284,28 @@ public class SysmelParserTestCase superclass: TestCase; definition: {
         self assert: sendNode arguments isEmpty
     }.
 
+    public method testAssignment => Void := {
+        let ast := self parseString: "a := 2".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isMessageSendNode.
+        let sendNode => ASTMessageSendNode := sequenceNode expressions first.
+        self assert: sendNode receiver isIdentifierReferenceNode.
+        self assert: (sendNode receiver downCastTo: ASTIdentifierReferenceNode) value equals: #a.
+
+        self assert: sendNode selector isLiteralNode.
+        self assert: (sendNode selector downCastTo: ASTLiteralNode) value equals: #":=".
+
+        self assert: sendNode arguments size equals: 1sz.
+        self assert: sendNode arguments first isLiteralNode.
+        self assert: (sendNode arguments first downCastTo: ASTLiteralNode) value equals: 2.
+    }.
+
     public method testBinaryExpression => Void := {
         let ast := self parseString: "1 + 2".
         self assert: ast isNotNil.

@@ -532,7 +532,7 @@ FunctionMetaBuilder
             arguments: arguments;
             body: self body;
             resultType: self resultType;
-            hasLazyAnalysis: (self isEager ifTrue: false ifFalse: nil);
+            makeEagerIf: self isEager;
             yourself
     };
     withSelector: #expansionBody addMethod: {:self  :: ASTNode |
@@ -553,7 +553,7 @@ FunctionMetaBuilder
             arguments: self arguments;
             body: self expansionBody;
             resultType: self resultType;
-            hasLazyAnalysis: (self isEager ifTrue: false ifFalse: nil);
+            makeEagerIf: self isEager;
             yourself
     } makeVirtual;
     withSelector: #finishExpansionWithEnvironment: addMethod: {:self :(Environment)environment :: ASTNode |
@@ -599,7 +599,7 @@ TemplateMetaBuilder
             arguments: (Array with: templateResultArgument) -- self arguments;
             body: self expansionBody;
             resultType: self resultType;
-            hasLazyAnalysis: (self isEager ifTrue: false ifFalse: nil);
+            makeEagerIf: self isEager;
             yourself
     } makeOverride.
 
@@ -698,7 +698,7 @@ MethodMetaBuilder
             arguments: arguments;
             body: self bodyWithInjectedCode;
             resultType: self resultType;
-            hasLazyAnalysis: (self isEager ifTrue: false ifFalse: nil);
+            makeEagerIf: self isEager;
             yourself
         ).
         

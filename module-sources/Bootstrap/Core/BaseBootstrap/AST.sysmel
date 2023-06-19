@@ -207,7 +207,13 @@ ASTFunctionApplicationNode
     } makeOverride.
 
 ASTLambdaNode
-    withSelector: #isLambdaNode addMethod: {:(ASTNode)self :: Boolean | true } makeOverride;
+    withSelector: #isLambdaNode addMethod: {:(ASTLambdaNode)self :: Boolean | true } makeOverride;
+
+    withSelector: #makeEagerIf: addMethod: {:(ASTLambdaNode)self :(Boolean)condition :: Void |
+        if: condition then: {
+            self hasLazyAnalysis: false
+        }
+    };
 
     withSelector: #childrenDo: addMethod: {:(ASTLambdaNode)self :aBlock :: Void |
         self arguments do: aBlock.
