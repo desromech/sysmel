@@ -561,7 +561,7 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
         }.
 
         ## SSA must be destroyed before compiling.
-        SSADestroySSAFunctionPass runIn: ssaFunctionDefinition.
+        SSADestroySSAFunctionPass runInFunctionDefinition: ssaFunctionDefinition.
 
         self declareArguments.
 

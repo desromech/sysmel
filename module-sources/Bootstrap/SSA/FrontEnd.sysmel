@@ -54,6 +54,11 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
         }.
     }.
 
+    public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> Void := {
+        let ssaFunctionDefinition := self declareFunctionDefinition: functionDefinition.
+        self compileFunctionDefinition: functionDefinition into: ssaFunctionDefinition
+    }.
+
     public method exportMainEntryPointFunction: (entryPointFunction: Function) ::=> Void := {
         let ssaEntryPointFunction => SSAFunction := translatedValueDictionary atOrNil: entryPointFunction.
         ssaEntryPointFunction ifNil: {return: void}.
@@ -746,23 +751,29 @@ ASTUseNamedSlotsOfNode extend: {
 FunctionDefinition extend: {
     public method asSSAModuleForTarget: (compilationTarget: SSACompilationTarget) ::=> SSAModule
         := (SSAModuleCompilationContext forTarget: compilationTarget)
-            translateFunctionDefinition: self;
+            exclusiveCompilationMode: true;
+            compileFunctionDefinition: self;
             finish.
 
     public method asSSAModule => SSAModule
         := SSAModuleCompilationContext forDefaultTarget
-            translateFunctionDefinition: self;
+            exclusiveCompilationMode: true;
+            compileFunctionDefinition: self;
             finish.
 }.
 
 Function extend: {
     public method asSSAModuleForTarget: (compilationTarget: SSACompilationTarget) ::=> SSAModule
         := (SSAModuleCompilationContext forTarget: compilationTarget)
-            translateFunction: self;
+            exclusiveCompilationMode: true;
+            declareFunction: self;
+            compileFunctionDefinition: self definition;
             finish.
 
     public method asSSAModule => SSAModule
         := SSAModuleCompilationContext forDefaultTarget
-            translateFunction: self;
+            exclusiveCompilationMode: true;
+            declareFunction: self;
+            compileFunctionDefinition: self definition;
             finish.
 }.

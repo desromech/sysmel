@@ -27,6 +27,7 @@ SSAValue definition: {
     public virtual method isCaptureless => Boolean := false.
 
     public virtual method isFunction => Boolean := false.
+    public virtual method isFunctionDefinition => Boolean := false.
     public virtual method isFunctionLocalValue => Boolean := false.
     public virtual method isBasicBlock => Boolean := false.
     
@@ -147,6 +148,8 @@ SSAFunction definition: {
         exportedSymbols := #().
     }.
 
+    public override method isFunction => Boolean := true.
+
     public override method isCaptureless => Boolean := captures isEmpty.
     public method isTargetDefinedPrimitive => Boolean := sourceObject isNotNil && sourceObject isTargetDefinedPrimitive.
 
@@ -194,7 +197,7 @@ SSAFunctionDefinition definition: {
     public field firstBasicBlock => SSABasicBlock.
     public field lastBasicBlock => SSABasicBlock.
 
-    public override method isFunction => Boolean := true.
+    public override method isFunctionDefinition => Boolean := true.
 
     public method isTargetDefinedPrimitive => Boolean := sourceObject isNotNil && sourceObject isTargetDefinedPrimitive.
 
@@ -326,10 +329,12 @@ SSAFunctionDefinition definition: {
                 self removeBasicBlock: eachBasicBlock
             }
         }.
+    }.
 
+    public method fixCriticalEdges => Void := {
         self basicBlocksDo: {:(SSABasicBlock)eachBasicBlock :: Void |
             eachBasicBlock fixCriticalEdges
-        }.
+        }
     }.
 
     public method traverseBasicBlockForLiveness: (basicBlock: SSABasicBlock) from: (predecessor: SSABasicBlock) ::=> Void := {

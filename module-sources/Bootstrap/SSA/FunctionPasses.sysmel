@@ -1,40 +1,55 @@
-public class SSAFunctionPass superclass: Object; definition: {
+public class SSATransformationPass superclass: Object; definition: {
     __Meta__ definition:{
-        public method runIn: (function: SSAFunctionDefinition) ::=> SSAFunctionPass
-            := self new runIn: function; yourself
+        public method runInModule: (module: SSAModule) ::=> self
+            := self new runInModule: module; yourself.
+
+        public method runInFunctionDefinition: (function: SSAFunctionDefinition) ::=> self
+            := self new runInFunctionDefinition: function; yourself.
     }.
 
-    public abstract method runIn: (function: SSAFunctionDefinition) ::=> Void
+    public abstract method runInModule: (module: SSAModule) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method runInFunctionDefinition: (function: SSAFunctionDefinition) ::=> Void
         := self subclassResponsibility.
 }.
 
-SSAFunction extend: {
+public class SSAFunctionDefinitionPass superclass: SSATransformationPass; definition: {
+    public override method runInModule: (module: SSAModule) ::=> Void := {
+        module globalValues do: {:(SSAGlobalValue)each :: Void |
+            each isFunctionDefinition ifTrue: {
+                self runInFunctionDefinition: (each downCastTo: SSAFunctionDefinition)
+            }
+        }
+    }.
+}.
+
+SSAModule extend: {
     public method runPasses: passes ::=> Void := {
-        self definition ifNotNil: {:definition |
-            definition runPasses: passes
-        }.
+        passes do: {:(SSATransformationPass)each :: Void | each runInModule: self }
     }.
 }.
 
 SSAFunctionDefinition extend: {
     public method runPasses: passes ::=> Void := {
-        passes do: {:(SSAFunctionPass)each :: Void | each runIn: self }
+        passes do: {:(SSATransformationPass)each :: Void | each runInFunctionDefinition: self }
     }.
 }.
 
 ## Promote alloca
-public class SSAPromoteAllocaPass superclass: SSAFunctionPass; definition: {
-    public override method runIn: (function: SSAFunctionDefinition) ::=> Void := {
+public class SSAPromoteAllocaPass superclass: SSAFunctionDefinitionPass; definition: {
+    public override method runInFunctionDefinition: (function: SSAFunctionDefinition) ::=> Void := {
         printLine("TODO: SSAPromoteAllocaPass")
     }.
 }.
 
 ## Destroy SSA pass. This pass destroys the phi nodes by inserting alloca instructions.
-public class SSADestroySSAFunctionPass superclass: SSAFunctionPass; definition: {
-    public override method runIn: (function: SSAFunctionDefinition) ::=> Void := {
+public class SSADestroySSAFunctionPass superclass: SSAFunctionDefinitionPass; definition: {
+    public override method runInFunctionDefinition: (function: SSAFunctionDefinition) ::=> Void := {
         function firstBasicBlock ifNil: (return: void).
         function
-            computeControlFlowAndNormalizeBasicBlocks.
+            computeControlFlowAndNormalizeBasicBlocks;
+            fixCriticalEdges.
 
         let allocaBuilder := SSAInstructionBuilder new
             beginInsertingInBasicBlock: function firstBasicBlock;
