@@ -77,7 +77,8 @@ int doMain(int startArgumentIndex, int argc, const char *argv[])
             }
             else if(!strcmp(argv[i], "-m32") ||
                 !strcmp(argv[i], "-m64") ||
-                !strcmp(argv[i], "-nojit")
+                !strcmp(argv[i], "-nojit") ||
+                !strcmp(argv[i], "-nogc")
             )
             {
                 // These options are parsed before the context creation.
@@ -163,6 +164,8 @@ int main(int argc, const char *argv[])
                 contextOptions.targetWordSize = 8;
             else if(!strcmp(argv[i], "-nojit"))
                 contextOptions.nojit = true;
+            else if(!strcmp(argv[i], "-nogc"))
+                contextOptions.nogc = true;
         }
 
         context = sysbvm_context_createWithOptions(&contextOptions);

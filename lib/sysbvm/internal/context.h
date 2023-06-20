@@ -311,6 +311,7 @@ struct sysbvm_context_s
     uint32_t targetWordSize;
     size_t identityHashSeed;
     bool jitEnabled;
+    bool gcDisabled;
     sysbvm_dynarray_t markingStack;
 };
 

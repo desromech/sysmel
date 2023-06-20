@@ -37,6 +37,7 @@ typedef struct sysbvm_contextCreationOptions_s
     const char *targetDebugInformationFormatName;
     const char *targetExceptionHandlingTableFormatName;
     bool nojit;
+    bool nogc;
 } sysbvm_contextCreationOptions_t;
 
 /**

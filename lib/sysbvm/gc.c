@@ -109,7 +109,7 @@ SYSBVM_API void sysbvm_gc_safepoint(sysbvm_context_t *context)
         return;
 
     // Check the attempt collection flag on the heap.
-    if(!context->heap.shouldAttemptToCollect)
+    if(!context->heap.shouldAttemptToCollect || context->gcDisabled)
         return;
 
     // TODO: Add Support for multiple threads.
