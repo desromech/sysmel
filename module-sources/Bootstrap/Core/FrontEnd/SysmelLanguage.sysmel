@@ -39,7 +39,7 @@ let Scanner::White := (Scanner::Whitespace | Scanner::SingleLineComment | Scanne
 
 let Scanner::ColonPattern := ':'c8 asMonadicElementParser -- ':'c8 asMonadicElementParser not.
 let Scanner::ColonColonPattern := "::" asMonadicParser.
-let Scanner::HashChar := "#" asMonadicParser.
+let Scanner::HashChar := '#'c8 asMonadicElementParser.
 
 let Scanner::LeftParentPattern := '('c8 asMonadicElementParser.
 let Scanner::RightParentPattern := ')'c8 asMonadicElementParser.
@@ -96,9 +96,9 @@ let Scanner::SymbolStringPattern := ('#'c8 asMonadicElementParser -- Scanner::St
 let Scanner::ScopedKeywordPattern := (Scanner::ScopedIdentifierPattern -- Scanner::ColonPattern) withoutValue.
 let Scanner::ScopedMultiKeywordPattern := (Scanner::IdentifierScopePrefixPattern -- ((Scanner::IdentifierPattern -- Scanner::ColonPattern) withoutValue plusN: 2sz) withoutValue) withoutValue.
 
-let Scanner::SymbolIdentifierPattern := (Scanner::HashChar -- Scanner::ScopedIdentifierPattern) withoutValue.
 let Scanner::SymbolMultiKeywordPattern := (Scanner::HashChar -- Scanner::ScopedMultiKeywordPattern) withoutValue.
 let Scanner::SymbolKeywordPattern := (Scanner::HashChar -- Scanner::ScopedKeywordPattern) withoutValue.
+let Scanner::SymbolIdentifierPattern := (Scanner::HashChar -- Scanner::ScopedIdentifierPattern) withoutValue.
 let Scanner::SymbolOperatorPattern := (Scanner::HashChar -- Scanner::ScopedOperatorPattern) withoutValue.
 
 let Scanner::LeftParent := Scanner::LeftParentPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
@@ -204,15 +204,15 @@ let Scanner::String := Scanner::StringPattern ::==> {:(MonadicParserResult)parse
     SysmelToken kind: SysmelTokenKind::String value: (parserResult sourceStringValueWithoutFirst: 1sz last: 1sz) parseCEscapeSequences sourcePosition: parserResult sourcePosition
 }.
 
-let Scanner::SymbolIdentifier := Scanner::SymbolIdentifierPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
-    SysmelToken kind: SysmelTokenKind::Symbol value: (parserResult sourceStringValueWithoutFirst: 1sz) asSymbol sourcePosition: parserResult sourcePosition
-}.
-
 let Scanner::SymbolMultiKeyword := Scanner::SymbolMultiKeywordPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
     SysmelToken kind: SysmelTokenKind::Symbol value: (parserResult sourceStringValueWithoutFirst: 1sz) asSymbol sourcePosition: parserResult sourcePosition
 }.
 
 let Scanner::SymbolKeyword := Scanner::SymbolKeywordPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
+    SysmelToken kind: SysmelTokenKind::Symbol value: (parserResult sourceStringValueWithoutFirst: 1sz) asSymbol sourcePosition: parserResult sourcePosition
+}.
+
+let Scanner::SymbolIdentifier := Scanner::SymbolIdentifierPattern ::==> {:(MonadicParserResult)parserResult :: AnyValue |
     SysmelToken kind: SysmelTokenKind::Symbol value: (parserResult sourceStringValueWithoutFirst: 1sz) asSymbol sourcePosition: parserResult sourcePosition
 }.
 
@@ -254,9 +254,9 @@ let Scanner::Token
     | Scanner::Float
     | Scanner::Integer
 
-    | Scanner::SymbolIdentifier
     | Scanner::SymbolMultiKeyword
     | Scanner::SymbolKeyword
+    | Scanner::SymbolIdentifier
     | Scanner::SymbolString
     | Scanner::SymbolOperator
 

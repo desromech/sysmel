@@ -2529,7 +2529,7 @@ AsmStackMapLocation extend: {
             self dwarf::buildExpression: builder forStackMap: stackMap target: compilationTarget.
         }).
 
-    public abstract method dwarf::buildExpression: (builder: Dwarf::ExpressionBuilder) forStackMap: (stackMap: AsmStackMap) target: (compilationTarget: AsmCompilationTarget) ::=> Array
+    public abstract method dwarf::buildExpression: (builder: Dwarf::ExpressionBuilder) forStackMap: (stackMap: AsmStackMap) target: (compilationTarget: AsmCompilationTarget) ::=> Void
         := self subclassResponsibility.
 }.
 

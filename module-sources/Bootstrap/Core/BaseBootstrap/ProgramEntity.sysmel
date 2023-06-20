@@ -1,0 +1,7 @@
+ProgramEntity definition: {
+    public override method postCopy => Void := {
+        super postCopy.
+        name := nil.
+        owner := nil.
+    }.
+}.

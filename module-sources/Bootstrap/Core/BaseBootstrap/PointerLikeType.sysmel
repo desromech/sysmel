@@ -1,9 +1,82 @@
+PointerType definition: {
+    public method initializeWithBaseType: (theBaseType: Type) addressSpace: (theAddressSpace: AddressSpace) ::=> Void := {
+        flags := TypeFlags::PointerTypeFlags.
+        totalSlotCount := 0sz.
+        supertype := AnyPointer.
+        instanceAlignment := UIntPointer valueAlignment.
+        instanceSize := UIntPointer valueSize.
+
+        baseType := theBaseType.
+        addressSpace := theAddressSpace.
+
+        loadValueFunction := (PointerLikeType::load) copy
+            __type__: (self) => baseType;
+            yourself.
+        storeValueFunction := (PointerLikeType::store:) copy
+            __type__: (self, baseType) => Void;
+            yourself.
+
+        let referenceType := ReferenceTypeTemplate(theBaseType, theAddressSpace).
+
+        self
+            withSelector: #load addMethod: loadValueFunction;
+            withSelector: #store: addMethod: storeValueFunction;
+            withSelector: #+ addMethod: ((PointerLikeType::at:) copy
+                __type__: (self, IntPointer) => self;
+                yourself);
+            withSelector: #"[]:" addMethod: ((PointerLikeType::at:) copy
+                __type__: (self, IntPointer) => referenceType;
+                yourself);
+            withSelector: #_ addMethod: ((PointerLikeType::reinterpretCast) copy
+                __type__: (self) => referenceType;
+                yourself).
+    }.
+}.
+
+ReferenceType definition: {
+    public method initializeWithBaseType: (theBaseType: Type) addressSpace: (theAddressSpace: AddressSpace) ::=> Void := {
+        flags := TypeFlags::ReferenceTypeFlags.
+        totalSlotCount := 0sz.
+        supertype := AnyPointer.
+        instanceAlignment := UIntPointer valueAlignment.
+        instanceSize := UIntPointer valueSize.
+
+        baseType := theBaseType.
+        addressSpace := theAddressSpace.
+
+        let pointerType := PointerTypeTemplate(theBaseType, theAddressSpace).
+        loadValueFunction := (PointerLikeType::load) copy
+            __type__: (self) => baseType;
+            yourself.
+        storeValueFunction := (PointerLikeType::store:) copy
+            __type__: (self, baseType) => Void;
+            yourself.
+
+        let referenceType := ReferenceTypeTemplate(theBaseType, theAddressSpace).
+
+        self
+            withSelector: #__refLoad__ addMethod: loadValueFunction;
+            withSelector: #__refStore__: addMethod: storeValueFunction;
+            withSelector: #address addMethod: ((PointerLikeType::reinterpretCast) copy
+                __type__: (self) => pointerType;
+                yourself).
+    }.
+}.
+
 private pure template pointerTypeTemplate(baseType: Type, addressSpace: AddressSpace) => PointerType := {
-    error("TODO: pointerTypeTemplate").
+    let result := PointerType basicNew.
+    __templateResult__ value: result.
+    result
+        initializeWithBaseType: baseType addressSpace: addressSpace;
+        yourself
 }.
 
 private pure template referenceTypeTemplate(baseType: Type, addressSpace: AddressSpace) => ReferenceType := {
-    error("TODO: referenceTypeTemplate").
+    let result := ReferenceType basicNew.
+    __templateResult__ value: result.
+    result
+        initializeWithBaseType: baseType addressSpace: addressSpace;
+        yourself
 }.
 
 PointerTypeTemplate adoptDefinitionOf: pointerTypeTemplate.

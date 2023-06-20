@@ -95,6 +95,20 @@ public class SysmelScannerTestCase superclass: TestCase; definition: {
         self assert: tokenList first value equals: #Scope::test:second:.
     }.
 
+    public method testKeywordSymbol => Void := {
+        let tokenList := self scanString: "#helloWorld1234:".
+        self assert: tokenList size equals: 1sz.
+        self assert: tokenList first kind equals: SysmelTokenKind::Symbol.
+        self assert: tokenList first value equals: #helloWorld1234:.
+    }.
+
+    public method testMultiKeywordSymbol => Void := {
+        let tokenList := self scanString: "#helloWorld1234:with:".
+        self assert: tokenList size equals: 1sz.
+        self assert: tokenList first kind equals: SysmelTokenKind::Symbol.
+        self assert: tokenList first value equals: #helloWorld1234:with:.
+    }.
+
     public method testIdentifierSymbol => Void := {
         let tokenList := self scanString: "#helloWorld1234".
         self assert: tokenList size equals: 1sz.

@@ -470,6 +470,15 @@ Integer __type__ extend: {
     }.
 }.
 
+Float32 __type__ extend: {
+    public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := true.
+
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := {
+        let value => Float32 := reference.
+        (value asIEEEFloat32Encoding asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Float32 asUInt64.
+    }.
+}.
+
 UndefinedObject __type__ extend: {
     public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := nil == reference.
     public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := nil == reference.

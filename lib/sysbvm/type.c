@@ -1498,6 +1498,7 @@ void sysbvm_type_setupPrimitives(sysbvm_context_t *context)
 
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::PointerValue", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_POINTER_VALUE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::ReferenceValue", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_REFERENCE_VALUE));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::TemporaryReferenceValue", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_TEMPORARY_REFERENCE_VALUE));
 
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::Function", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_FUNCTION));
 
@@ -1507,6 +1508,7 @@ void sysbvm_type_setupPrimitives(sysbvm_context_t *context)
 
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::PointerTypeFlags", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_POINTER_TYPE_FLAGS));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::ReferenceTypeFlags", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_REFERENCE_TYPE_FLAGS));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::TemporaryReferenceTypeFlags", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_TEMPORARY_REFERENCE_TYPE_FLAGS));
 
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::PrimitiveValueTypeDefaultFlags", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_PRIMITIVE_VALUE_TYPE_DEFAULT_FLAGS));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::PrimitiveValueMetatypeDefaultFlags", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_PRIMITIVE_VALUE_TYPE_METATYPE_FLAGS));
