@@ -180,7 +180,18 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
     }.
 }.
 
-public final class SSAFunctionCompilationContext superclass: Object; definition: {
+public final class SSAFunctionCompilationContext superclass: Object.
+
+let primitiveFunctionContentGenerator := #{
+    #ObjectModel::isLogical : {:(SSAFunctionCompilationContext)context :: SSAValue |
+        context builder literal: context compilationTarget hasLogicalObjectModel
+    }.
+    #ObjectModel::isNative : {:(SSAFunctionCompilationContext)context :: SSAValue |
+        context builder literal: context compilationTarget hasNativeObjectModel
+    }.
+}.
+
+SSAFunctionCompilationContext definition: {
     public field moduleCompilationContext => SSAModuleCompilationContext.
     public field functionDefinition => FunctionDefinition.
     public field ssaFunction => SSAFunctionDefinition.
@@ -189,6 +200,9 @@ public final class SSAFunctionCompilationContext superclass: Object; definition:
 
     public field breakDestination => SSABasicBlock.
     public field continueDestination => SSABasicBlock.
+
+    public method compilationTarget => SSACompilationTarget
+        := moduleCompilationContext compilationTarget.
 
     public override method initialize => Void := {
         super initialize.
@@ -223,8 +237,13 @@ public final class SSAFunctionCompilationContext superclass: Object; definition:
                     function: ssaFunction;
                     beginBasicBlockNamed: #entry;
                     yourself).
-                
-                let resultValue := bodyNode generateSSAValueWith: self.
+
+                let primitiveGenerator := primitiveFunctionContentGenerator atOrNil: functionDefinition analyzedPrimitiveName.
+                let resultValue := primitiveGenerator ifNotNil: {
+                    primitiveGenerator(self)
+                } ifNil: {
+                    bodyNode generateSSAValueWith: self.
+                }.
                 self builder isLastTerminator ifFalse: (self builder return: resultValue).
             }.
         }.
@@ -384,6 +403,13 @@ let primitiveFunctionGenerators := #{
         } ifFalse: {
             nil
         }.
+    }.
+
+    #ObjectModel::isLogical : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+        context builder literal: context compilationTarget hasLogicalObjectModel
+    }.
+    #ObjectModel::isNative : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+        context builder literal: context compilationTarget hasNativeObjectModel
     }.
 }.
 

@@ -10,6 +10,7 @@ public function cstrlen(str: Char8 const pointer) => Size := {
 }.
 
 public function memset(buffer: Void pointer, value: Int8, size: Size) => Void := {
+    <primitive: #memset>
     let bytePointer := buffer reinterpretCastTo: Int8 pointer.
 
     let i mutable := 0sz.
@@ -19,6 +20,7 @@ public function memset(buffer: Void pointer, value: Int8, size: Size) => Void :=
 }.
 
 public function memcpy(dest: Void restrict pointer, source: Void restrict const pointer, size: Size) => Void := {
+    <primitive: #memcpy>
     let destBytePointer := dest reinterpretCastTo: UInt8 restrict pointer.
     let sourceBytePointer := source reinterpretCastTo: UInt8 restrict const pointer.
 
@@ -29,6 +31,7 @@ public function memcpy(dest: Void restrict pointer, source: Void restrict const 
 }.
 
 public function reverseMemcpy(dest: Void restrict pointer, source: Void restrict const pointer, size: Size) => Void := {
+    <primitive: #reverseMemcpy>
     let destBytePointer := dest reinterpretCastTo: UInt8 restrict pointer.
     let sourceBytePointer := source reinterpretCastTo: UInt8 restrict const pointer.
 
@@ -39,6 +42,7 @@ public function reverseMemcpy(dest: Void restrict pointer, source: Void restrict
 }.
 
 public function memmove(dest: Void pointer, source: Void const pointer, size: Size) => Void := {
+    <primitive: #memmove>
     let destBytePointer := dest reinterpretCastTo: UInt8 pointer.
     let sourceBytePointer := source reinterpretCastTo: UInt8 const pointer.
 

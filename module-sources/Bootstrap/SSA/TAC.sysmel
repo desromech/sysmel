@@ -11,6 +11,12 @@ public class SSATACCompilationTarget superclass: SSACompilationTarget; definitio
 
     public override method pointerAlignment => Size
         := tacCompilationTarget pointerAlignment.
+
+    public override method hasLogicalObjectModel => Boolean
+        := false.
+
+    public override method hasNativeObjectModel => Boolean
+        := true.
 }.
 
 public abstract class SSATACCodeGenerator superclass: Object; definition: {

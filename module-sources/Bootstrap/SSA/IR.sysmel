@@ -1793,12 +1793,23 @@ SSACompilationTarget definition: {
 
     public abstract method pointerAlignment => Size
         := self subclassResponsibility.
+
+    public abstract method hasLogicalObjectModel => Boolean
+        := self subclassResponsibility.
+
+    public abstract method hasNativeObjectModel => Boolean
+        := self subclassResponsibility.
 }.
 
 public class SSATupleVMCompilationTarget superclass: SSACompilationTarget; definition: {
-
     SSACompilationTarget class extend: {
         public method default => self := SSATupleVMCompilationTarget new.
-    }
+    }.
+
+    public override method hasLogicalObjectModel => Boolean
+        := true.
+
+    public override method hasNativeObjectModel => Boolean
+        := false.
 }.
 

@@ -147,6 +147,16 @@ Void::fromAnyValue adoptDefinitionOf: {:(Untyped)value :: Void |
     void
 }.
 
+ObjectModel::isLogical adoptDefinitionOf: {:: Boolean |
+    <primitive: #ObjectModel::isLogical>
+    true
+}.
+
+ObjectModel::isNative adoptDefinitionOf: {:: Boolean |
+    <primitive: #ObjectModel::isNative>
+    false
+}.
+
 {
     let: #unaryFunctionType with: SimpleFunctionTypeTemplate((UInt32,), 0bflgs, UInt32).
     let: #binaryFunctionType with: SimpleFunctionTypeTemplate((UInt32, UInt32), 0bflgs, UInt32).
