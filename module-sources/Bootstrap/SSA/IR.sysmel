@@ -22,6 +22,8 @@ SSAValue definition: {
 
     public virtual method isConstant => Boolean := false.
     public virtual method isLiteralConstant => Boolean := false.
+    public virtual method isLiteralConstantTrue => Boolean := false.
+    public virtual method isLiteralConstantFalse => Boolean := false.
     public virtual method isUndefinedConstant => Boolean := false.
 
     public virtual method isCaptureless => Boolean := false.
@@ -111,6 +113,8 @@ public final class SSALiteralConstant superclass: SSAConstant; definition: {
     public field value.
 
     public override method isLiteralConstant => Boolean := true.
+    public override method isLiteralConstantTrue => Boolean := value == true.
+    public override method isLiteralConstantFalse => Boolean := value == false.
 
     public override method primitiveName => Symbol := {
         let value := self value.
@@ -1629,6 +1633,14 @@ SSAInstructionBuilder definition: {
             sourceEnvironment: self sourceEnvironment;
             type: type;
             yourself.
+
+    public method unreachable ::=> SSAUnreachableInstruction
+        := self addInstruction: (SSAUnreachableInstruction new
+            sourcePosition: self sourcePosition;
+            sourceASTNode: self sourceASTNode;
+            sourceEnvironment: self sourceEnvironment;
+            type: Void;
+            yourself).
 
     public method literal: value type: (type: Type) ::=> SSALiteralConstant
         := SSALiteralConstant new

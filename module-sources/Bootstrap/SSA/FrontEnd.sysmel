@@ -423,9 +423,18 @@ ASTFunctionApplicationNode extend: {
             let callInstruction := context builder call: functionExpression
                 arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
                 resultType: self analyzedType.
-            callInstruction
-                isUnchecked: self isNoTypechecked;
-                yourself
+            
+            callInstruction isUnchecked: self isNoTypechecked.
+
+            (callInstruction type isSubtypeOf: ControlFlowEscapeType) ifTrue: {
+                context builder
+                    unreachable;
+                    literal: void
+            } ifFalse: {
+                (callInstruction type isSubtypeOf: Void)
+                    ifTrue: (context builder literal: void)
+                    ifFalse: callInstruction
+            }
         }.
     }.
 }.
@@ -515,6 +524,24 @@ ASTIfNode extend: {
         let condition := self conditionExpression
             ifNotNil: {:condition :: SSAValue | condition generateSSAValueWith: context}
             ifNil: (builder literal: false).
+
+        ## Optimize out true constant literal.
+        condition isLiteralConstantTrue ifTrue: {
+            return: (trueExpression ifNotNil: {
+                trueExpression generateSSAValueWith: context
+            } ifNil: {
+                builder literal: void
+            })
+        }.
+
+        ## Optimize out false constant literal.
+        condition isLiteralConstantFalse ifTrue: {
+            return: (falseExpression ifNotNil: {
+                falseExpression generateSSAValueWith: context
+            } ifNil: {
+                builder literal: void
+            })
+        }.
         
         let conditionBlock := builder basicBlock.
         let mergeBlock := builder newBasicBlockNamed: #ifMerge.
@@ -721,14 +748,25 @@ ASTMakeDictionaryNode extend: {
 }.
 
 ASTMessageSendNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := (context builder send: (self receiver generateSSAValueWith: context)
+    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+        let sendInstruction := context builder send: (self receiver generateSSAValueWith: context)
             receiverLookupType: (self receiverLookupType ifNotNil: {:(ASTNode)lookupTypeExpression :: SSAValue | lookupTypeExpression generateSSAValueWith: context })
             selector: (self selector generateSSAValueWith: context)
             arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
-            resultType: self analyzedType)
-                isUnchecked: self isNoTypechecked;
-                yourself
+            resultType: self analyzedType.
+
+        sendInstruction isUnchecked: self isNoTypechecked.
+
+        (sendInstruction type isSubtypeOf: ControlFlowEscapeType) ifTrue: {
+            context builder
+                unreachable;
+                literal: void
+        } ifFalse: {
+            (sendInstruction type isSubtypeOf: Void)
+                ifTrue: (context builder literal: void)
+                ifFalse: sendInstruction
+        }
+    }
 }.
 
 ASTReturnNode extend: {
@@ -738,9 +776,12 @@ ASTReturnNode extend: {
 
 ASTSequenceNode extend: {
     public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
-        let result mutable => SSAValue := context builder literal: void.
+        let voidLiteral :=  context builder literal: void.
+        let result mutable => SSAValue := voidLiteral.
         self expressions do: {:(ASTNode)expression :: Void |
-            context builder isLastTerminator ifFalse: {
+            context builder isLastTerminator ifTrue: {
+                result := voidLiteral
+            } ifFalse: {
                 result := expression generateSSAValueWith: context
             }
         }.
