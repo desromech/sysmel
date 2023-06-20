@@ -466,7 +466,7 @@ SSAFunctionLocalValue definition: {
         stream nextPut: '$'c8; print: self localValueIndex.
 
         self name ifNotNil: {:name |
-            stream nextPut: ':'c8; nextPutAll: self name.
+            stream nextPut: ':'c8; string: self name.
         }.
         self type ifNotNil: {:type |
             stream nextPutAll: " => "; print: self type.
