@@ -48,4 +48,9 @@ public class SysmelInterpreterTestCase superclass: TestCase; definition: {
         self assert: (self evaluateString: "let: #myvar with: false. myvar") equals: false.
         self assert: (self evaluateString: "let: #myfunction with: {| false}. myfunction()") equals: false.
     }.
+
+    public method testArgument => Void := {
+        self assert: (self evaluateString: "{:x | x + 1} (2)") equals: 3.
+        self assert: (self evaluateString: "{:x :y | x * y} (2, 3)") equals: 6.
+    }.
 }.

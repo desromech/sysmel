@@ -5387,7 +5387,9 @@ static sysbvm_tuple_t sysbvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckFunc
         sysbvm_array_atPut(gcFrame.analyzedArguments, directApplicationArgumentCount, gcFrame.variadicArgumentsNode);
     }
 
-    (*functionApplicationNode)->applicationFlags = sysbvm_tuple_bitflags_encode(sysbvm_tuple_bitflags_decode((*functionApplicationNode)->applicationFlags) | SYSBVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK | SYSBVM_FUNCTION_APPLICATION_FLAGS_VARIADIC_EXPANDED);
+    (*functionApplicationNode)->applicationFlags = sysbvm_tuple_bitflags_encode(sysbvm_tuple_bitflags_decode((*functionApplicationNode)->applicationFlags)
+        | (isMemoizedTemplate ? 0 : SYSBVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK)
+        | SYSBVM_FUNCTION_APPLICATION_FLAGS_VARIADIC_EXPANDED);
     (*functionApplicationNode)->arguments = gcFrame.analyzedArguments;
     (*functionApplicationNode)->super.analyzedType = (*simpleFunctionType)->resultType;
 

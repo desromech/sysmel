@@ -40,10 +40,15 @@ MethodDictionary definition: {
         let newCapacity := oldCapacity * 2sz max: 8sz.
         let oldStorage := storage.
         let oldStoragePairCount := oldCapacity*2sz.
-        storage := Array new: newCapacity*2sz.
-        storage atAllPut: __hashtableEmptyElement__.
 
+        let newCapacityPairCount := newCapacity*2sz.
+        storage := Array new: newCapacityPairCount.
         let i mutable := 0sz.
+        while: (i < newCapacityPairCount) do: {
+            storage at: i put: __hashtableEmptyElement__.
+        } continueWith: (i := i + 2sz).
+
+        i := 0sz.
         while: (i < oldStoragePairCount) do: {
             let oldKey := oldStorage at: i.
             __hashtableEmptyElement__ == oldKey ifFalse: {
@@ -78,12 +83,15 @@ MethodDictionary definition: {
         }.
 
         let methodIndex := index asSize *2sz.
-        let isNewKey := (storage at: methodIndex) == nil.
+        let isNewKey := (storage at: methodIndex) == __hashtableEmptyElement__.
         storage
-            at: methodIndex asSize put: value;
+            at: methodIndex asSize put: key;
             at: methodIndex asSize + 1sz put: value.
 
-        self checkCapacityIncreaseCondition.
+        isNewKey ifTrue: {
+            size := size + 1sz.
+            self checkCapacityIncreaseCondition
+        }.
     }.
 
     public final eager method atOrNil: selector := {

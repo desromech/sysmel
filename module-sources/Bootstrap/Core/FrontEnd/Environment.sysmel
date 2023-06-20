@@ -3,6 +3,9 @@ SymbolBinding definition: {
 
     public eager abstract method evaluateInEnvironment: (environment: Environment) ::=> Untyped
         := self subclassResponsibility.
+
+    public abstract method setValue: (value: Untyped) inFunctionActivationEnvironment: (environment: FunctionActivationEnvironment) ::=> Void
+        := self subclassResponsibility.
 }.
 
 SymbolValueBinding definition: {
@@ -22,6 +25,18 @@ SymbolTupleSlotBinding definition: {
         := self copy
             tupleBinding: (environment getOrCreateCaptureForParentBinding: self tupleBinding);
             yourself.
+}.
+
+SymbolArgumentBinding definition: {
+    public override method setValue: (value: Untyped) inFunctionActivationEnvironment: (environment: FunctionActivationEnvironment) ::=> Void := {
+        environment valueVector untypedAt: vectorIndex put: value
+    }
+}.
+
+SymbolLocalBinding definition: {
+    public override method setValue: (value: Untyped) inFunctionActivationEnvironment: (environment: FunctionActivationEnvironment) ::=> Void := {
+        environment valueVector untypedAt: environment argumentVectorSize + vectorIndex put: value
+    }
 }.
 
 Environment definition: {
@@ -465,6 +480,6 @@ FunctionActivationEnvironment definition: {
     }.
 
     public method setBinding: (binding: SymbolBinding) activationValue: (value: Untyped) ::=> Void := {
-        error("TODO:")
+        binding setValue: value inFunctionActivationEnvironment: self
     }.
 }.

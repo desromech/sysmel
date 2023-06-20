@@ -466,9 +466,22 @@ ASTIdentifierReferenceNode
             yourself
     } makeOverride.
 
+ASTUnexpandedSExpressionNode
+    withSelector: #parseAsArgumentNode addMethod: {:self :: ASTArgumentNode |
+        if: self elements size ~= 2sz then: self asString -- " is not a valid argument expression.".
+        let: #name with: self elements first parseKeywordAsLiteralWithoutColon.
+        let: #type with: self elements second.
+        ASTArgumentNode new
+            sourcePosition: self sourcePosition;
+            isForAll: false;
+            name: name;
+            type: type;
+            yourself
+    } makeOverride.
+
 ASTUnexpandedApplicationNode
     withSelector: #parseAsArgumentNode addMethod: {:self :: ASTArgumentNode |
-        if: self arguments size ~= 1 then: self asString -- " is not a valid argument expression.".
+        if: self arguments size ~= 1sz then: self asString -- " is not a valid argument expression.".
         let: #name with: self functionOrMacroExpression parseKeywordAsLiteralWithoutColon.
         let: #type with: self arguments first.
         ASTArgumentNode new

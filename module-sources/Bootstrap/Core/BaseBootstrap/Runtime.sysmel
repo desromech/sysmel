@@ -897,16 +897,16 @@ AnyValue
     } makeVirtual.
 
 ProgramEntity
-    withSelector: #printAnonymousNameOn: addMethod: {:(Type)self :(Stream)stream :: Void |
+    withSelector: #printAnonymousNameOn: addMethod: {:(ProgramEntity)self :(Stream)stream :: Void |
         stream nextPutAll: "a "; string: self class name
     } makeVirtual;
-    withSelector: #printOwnerOn: addMethod: {:(Type)self :(Stream)stream :: Void |
+    withSelector: #printOwnerOn: addMethod: {:(ProgramEntity)self :(Stream)stream :: Void |
         let: #owner with: self owner.
         if: owner ~~ nil then: {
             stream print: owner; space
         }.
     } makeVirtual;
-    withSelector: #printOn: addMethod: {:(Type)self :(Stream)stream :: Void |
+    withSelector: #printOn: addMethod: {:(ProgramEntity)self :(Stream)stream :: Void |
         let: #name with: self name.
         self printOwnerOn: stream.
         if: name ~~ nil

@@ -257,6 +257,12 @@ ASTLiteralNode
     withSelector: #transformWith: addMethod: {:(ASTLiteralNode)self :aBlock :: Void | } makeOverride;
     withSelector: #literalDependenciesDo: addMethod: {:(ASTLiteralNode)self :((Untyped, Boolean) => Void)aBlock :: Void | aBlock(self value, false) } makeOverride;
 
+    withSelector: #asIdentifierReferenceNode addMethod: {:(ASTLiteralNode)self :: ASTIdentifierReferenceNode |
+        ASTIdentifierReferenceNode new
+            sourcePosition: self sourcePosition;
+            value: self value;
+            yourself
+    };
     withSelector: #isLiteralPureFunctionNode addMethod: {:(ASTLiteralNode)self :: Boolean |
         if: (self value __type__ lookupSelector: #isPure) ~~ nil
             then: (self value isPure)
@@ -420,6 +426,12 @@ ASTMessageChainNode
 ASTMessageChainMessageNode
     withSelector: #isMessageChainMessageNode addMethod: {:(ASTNode)self :: Boolean | true } makeOverride;
 
+    withSelector: #asUnexpandedSExpression addMethod: {:(ASTMessageChainMessageNode)self :: ASTUnexpandedSExpressionNode |
+        ASTUnexpandedSExpressionNode new
+            sourcePosition: self sourcePosition;
+            elements: (Array with: (self selector downCastTo: ASTLiteralNode) asIdentifierReferenceNode) -- self arguments;
+            yourself
+    };
     withSelector: #asMessageSendNodeWithReceiver: addMethod: {:(ASTMessageChainMessageNode)self :(ASTNode)receiver :: ASTMessageSendNode |
         ASTMessageSendNode new
             sourcePosition: self sourcePosition;

@@ -337,17 +337,18 @@ public class SysmelParserTestCase superclass: TestCase; definition: {
         self assert: sequenceNode pragmas size equals: 0sz.
         self assert: sequenceNode expressions size equals: 1sz.
 
-        self assert: sequenceNode expressions first isMessageSendNode.
-        let sendNode => ASTMessageSendNode := sequenceNode expressions first.
-        self assert: sendNode selector isLiteralNode.
-        self assert: (sendNode selector downCastTo: ASTLiteralNode) value equals: #if:then:.
+        self assert: sequenceNode expressions first isUnexpandedSExpressionNode.
+        let unexpandedSExpression => ASTUnexpandedSExpressionNode := sequenceNode expressions first.
+        self assert: unexpandedSExpression elements size equals: 3sz.
 
-        self assert: sendNode arguments size equals: 2sz.
-        self assert: sendNode arguments first isIdentifierReferenceNode.
-        self assert: (sendNode arguments first downCastTo: ASTIdentifierReferenceNode) value equals: #true.
+        self assert: unexpandedSExpression elements first isIdentifierReferenceNode.
+        self assert: (unexpandedSExpression elements first downCastTo: ASTIdentifierReferenceNode) value equals: #if:then:.
 
-        self assert: sendNode arguments second isLiteralNode.
-        self assert: (sendNode arguments second downCastTo: ASTLiteralNode) value equals: 1.
+        self assert: unexpandedSExpression elements second isIdentifierReferenceNode.
+        self assert: (unexpandedSExpression elements second downCastTo: ASTIdentifierReferenceNode) value equals: #true.
+
+        self assert: unexpandedSExpression elements third isLiteralNode.
+        self assert: (unexpandedSExpression elements third downCastTo: ASTLiteralNode) value equals: 1.
     }.
 
     public method testKeywordMessage => Void := {

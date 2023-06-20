@@ -59,11 +59,11 @@ printLine(myAddFunction(2i32, 4i32)).
 
 function myPlusN(n: Int32) => (Int32 => Int32)
     := function(x: Int32) => Int32 := x + n.
-printLine(myPlusN(5)(7)).
+printLine(myPlusN(5i32)(7i32)).
 
 function myPlusN2(n: Int32) => (Int32 => Int32) :={
     function result(x: Int32) => Int32
         := x + n.
     result
 }.
-printLine(myPlusN2(5)(7)).
+printLine(myPlusN2(5i32)(7i32)).

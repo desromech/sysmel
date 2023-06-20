@@ -1003,7 +1003,7 @@ let SysmelGrammar::ChainedMessage
     | SysmelGrammar::ChainedKeywordMessage.
 
 let SysmelGrammar::MessageWithoutReceiver := SysmelGrammar::ChainedKeywordMessage ==> {:(MonadicParserResult)parserResult :: AnyValue |
-        parserResult value asMessageSendNodeWithReceiver: nil
+        parserResult value asUnexpandedSExpression
     }.
 
 SysmelGrammar::ChainExpression

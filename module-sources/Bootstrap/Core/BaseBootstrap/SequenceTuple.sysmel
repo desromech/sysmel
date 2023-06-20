@@ -1,11 +1,11 @@
 AnySequenceTuple definition: {
-    public override method size => Size
+    public override final method size => Size
         := self class slots size.
 
-    public override method at: (index: Size)
+    public override final method at: (index: Size)
         := (RawTuple::typeSlotAt:)(self, self class slots at: index).
 
-    public override method at: (index: Size) put: value ::=> Void := {
+    public override final method at: (index: Size) put: value ::=> Void := {
         (RawTuple::typeSlotAt:put:)(self, self class slots at: index, value)
     }.
 }.
@@ -23,6 +23,8 @@ SequenceTupleType definition: {
                 owner: self;
                 yourself
         }.
+        totalSlotCount := slots size.
+        flags := supertype flags.
 
         self ensureLayoutIsComputed.
     }.
@@ -35,6 +37,9 @@ SequenceTupleType definition: {
         }.
         stream nextPutAll: ") sequenceTupleType".
     }.
+
+    public override final method basicAllocate => self
+        := super basicAllocate.
 }.
 
 private pure eager template sequenceTupleTypeTemplate(elementTypes: Array) => SequenceTupleType := {
