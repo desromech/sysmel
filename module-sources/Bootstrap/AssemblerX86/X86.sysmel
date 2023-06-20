@@ -211,7 +211,7 @@ public class AsmX86Register superclass: AsmRegister; definition: {
 
 AsmX86RegisterAddress definition: {
     public field scaleShift => UInt8.
-    public field size => UInt8.
+    public field size => Size.
 
     public field base => AsmX86Register.
     public field index => AsmX86Register.
@@ -220,14 +220,14 @@ AsmX86RegisterAddress definition: {
     __Meta__ definition: {
         public method size: (size: UInt8) displacement: (displacement: AsmImmediate) ::=> self
             := self new
-                size: size;
+                size: size asSize;
                 displacement: displacement;
                 yourself.
 
         public method base: (base: AsmX86Register) size: (size: UInt8) displacement: (displacement: AsmImmediate) ::=> self
             := self new
                 base: base;
-                size: size;
+                size: size asSize;
                 displacement: displacement;
                 yourself.
     }.
@@ -247,11 +247,11 @@ AsmX86RegisterAddress definition: {
     }.
 
     let sizeNameTable := #{
-        1u8 : "byte ptr".
-        2u8 : "word ptr".
-        4u8 : "dword ptr".
-        8u8 : "qword ptr".
-        16u8 : "oword ptr".
+        1sz : "byte ptr".
+        2sz : "word ptr".
+        4sz : "dword ptr".
+        8sz : "qword ptr".
+        16sz : "oword ptr".
     }.
 
     public method scale => UInt8
@@ -694,7 +694,7 @@ AsmX86Instruction definition: {
 
 public final class AsmX86InstructionWithoutOperands superclass: AsmX86Instruction; definition: {
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: definition mnemonic.
+        stream string: definition mnemonic.
         self printDebugInfoOn: stream.
     }.
 
@@ -707,7 +707,7 @@ public final class AsmX86InstructionWithSingleOperand superclass: AsmX86Instruct
     public override method operandCount => Size := 1sz.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: definition mnemonic; space; print: firstOperand.
+        stream string: definition mnemonic; space; print: firstOperand.
         self printDebugInfoOn: stream.
     }.
 }.
@@ -719,7 +719,7 @@ public final class AsmX86InstructionWithTwoOperands superclass: AsmX86Instructio
     public override method operandCount => Size := 2sz.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: definition mnemonic; space; print: firstOperand; nextPutAll: ", "; print: secondOperand.
+        stream string: definition mnemonic; space; print: firstOperand; nextPutAll: ", "; print: secondOperand.
         self printDebugInfoOn: stream.
     }.
 }.
@@ -750,7 +750,7 @@ AsmX86InstructionDefinition definition: {
                 builder addElement: (AsmX86InstructionWithoutOperands new
                     definition: self;
                     yourself)
-            }.
+            } recompileAndOptimize.
 
             AsmStreamBuilder
                 withSelector: directSelector addMethod: method;
@@ -764,7 +764,7 @@ AsmX86InstructionDefinition definition: {
                     definition: self;
                     firstOperand: operand;
                     yourself)
-            }.
+            } recompileAndOptimize.
 
             AsmStreamBuilder
                 withSelector: directSelector addMethod: method;
@@ -779,7 +779,7 @@ AsmX86InstructionDefinition definition: {
                     firstOperand: firstOperand;
                     secondOperand: secondOperand;
                     yourself)
-            }..
+            } recompileAndOptimize.
 
             AsmStreamBuilder
                 withSelector: directSelector addMethod: method;

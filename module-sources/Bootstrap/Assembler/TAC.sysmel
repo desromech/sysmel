@@ -626,8 +626,12 @@ TACProgramEntity definition: {
         let symbol := AsmSymbol new
             name: name;
             yourself.
-        ## TODO: Select a much more appropriate visibility.
-        name ifNotNil: (symbol makePublic).
+        name ifNotNil: {
+            symbol makePublic.
+            self isWeak ifTrue: (symbol makeWeak).
+            self isPrivate ifTrue: (symbol makePrivate).
+        }.
+        
         symbol
     }.
 

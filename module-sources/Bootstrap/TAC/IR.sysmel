@@ -182,6 +182,19 @@ public abstract class TACProgramEntity superclass: TACValue; definition: {
     public field compilationTarget => TACCompilationTarget.
     public field exportedSymbols => Array.
 
+    ## TODO: Add proper support for the different visibility levels.
+    public field isWeak => Boolean.
+    public field isPublic => Boolean.
+    public field isPrivate => Boolean.
+
+    public method makeWeak => Void := {
+        isWeak := true.
+    }.
+
+    public method makePrivate => Void := {
+        isPrivate := true.
+    }.
+
     public override method isProgramEntity => Boolean := true.
 
     public virtual method callingConvention => TACCallingConvention
@@ -840,14 +853,14 @@ TACBasicBlock definition: {
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: '@'c8; print: index.
-        name ifNotNil: (stream nextPut: ':'; string: name)
+        name ifNotNil: (stream nextPut: ':'c8; string: name)
     }.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPut: ':'c8.
         self printDebugInfoOn: stream.
         stream nl.
-        self instructionsDo: {:(TACBasicBlock)each :: Void |
+        self instructionsDo: {:(TACInstruction)each :: Void |
             stream nextPutAll: "    "; fullPrint: each; nl
         }.
     }.
@@ -874,6 +887,12 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
         := TACPhysicalIntegerRegister.
 
     public override method isRelativeImmediate32 => Boolean := true.
+
+    public override method size => UInt64
+        := compilationTarget pointerSize asUInt64.
+
+    public override method alignment => UInt64
+        := compilationTarget pointerAlignment asUInt64.
 
     public override method initialize => Void := {
         super initialize.

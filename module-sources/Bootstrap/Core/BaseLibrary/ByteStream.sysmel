@@ -46,7 +46,7 @@ ByteStream definition: {
     }.
 
     public method asByteArray => ByteArray
-        := storage first: size.
+        := size = 0sz ifTrue: #[] ifFalse: (storage first: size).
 
     public override method asString => String := {
         let stringSize := self size.

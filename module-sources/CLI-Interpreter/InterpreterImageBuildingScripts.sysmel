@@ -17,6 +17,7 @@ CLISysmelInterpreter definition: {
             := ImageBuilder new
                 target: target;
                 beComplete;
+                withoutInProcessDebugInformation;
                 useDefaultTypeTables;
                 addProgramEntity: __Global__;
                 addNativeEntryPoint: CLISysmelInterpreter::nativeMain;

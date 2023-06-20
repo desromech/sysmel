@@ -694,6 +694,16 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
     }.
 } withEagerAnalysis.
 
+(RawTuple::refSlotAt:) adoptDefinitionOf: {:(Untyped)self :(Size)index :: Untyped |
+    <primitive: #RawTuple::refSlotAt:>
+    error("TODO:refSlotAt:")
+} withEagerAnalysis.
+
+(RawTuple::refSlotAt:put:) adoptDefinitionOf: {:(Untyped)self :(Size)index :(Untyped)value :: Void |
+    <primitive: #RawTuple::refSlotAt:put:>
+    error("TODO:refSlotAt:")
+} withEagerAnalysis.
+
 (RawTuple::slotAt:) adoptDefinitionOf: {:(Untyped)self :(Size)index :: Untyped |
     <primitive: #RawTuple::slotAt:>
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
@@ -1356,8 +1366,17 @@ public function ObjectModel::allocaGC(size: Size, elementType: Type) => Void poi
 }.
 
 
-public function ObjectModel::fetchUncheckedEntryPoint(function: Function) => UIntPointer
-    := function definition uncheckedEntryPoint asUIntPointer.
+public function ObjectModel::fetchUncheckedEntryPointOrInterpreterTrampoline(function: Function, interpreterTrampoline: UIntPointer) => UIntPointer := {
+    let result := function definition uncheckedEntryPoint asUIntPointer.
+    result = 0uptr ifTrue: {
+        interpreterTrampoline
+    } ifFalse: {
+        result
+    }
+}.
+
+public function ObjectModel::interpretFunctionWithArguments(function: Function, arguments: Array) => Untyped
+    := function interpretWithArgument: arguments.
 
 ## Generate the trampolines via macro metaprogramming.
 public global ObjectModel::DirectFunctionApplicationTrampolines := Array new: 16.

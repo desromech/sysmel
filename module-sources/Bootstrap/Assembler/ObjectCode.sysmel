@@ -536,6 +536,13 @@ AsmSymbol definition: {
         visibility := AsmSymbol::Visibility::Public.
     }.
 
+    public method isWeak => Boolean
+        := visibility = AsmSymbol::Visibility::Weak.
+
+    public method makeWeak => Void := {
+        visibility := AsmSymbol::Visibility::Weak.
+    }.
+
     public method isPublic => Boolean
         := visibility = AsmSymbol::Visibility::Public.
 

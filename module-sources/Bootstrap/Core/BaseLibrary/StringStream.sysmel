@@ -58,8 +58,8 @@ StringStream definition: {
     }.
 
     public override method asString => String
-        := storage first: size.
+        := size = 0sz ifTrue: "" ifFalse: (storage first: size).
 
     public method asSymbol => StringSymbol
-        := self asString asSymbol.
+        := size = 0sz ifTrue: #"" ifFalse: (self asString asSymbol).
 }.

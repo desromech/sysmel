@@ -35,6 +35,7 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
     public field capturelessUncheckedEntryPointDictionary => Dictionary.
     public field uncheckedEntryPointDictionary => Dictionary.
     public field checkedEntryPointDictionary => Dictionary.
+    public field uncheckedInterpreterTrampolinesDictionary => Dictionary.
 
     public method initializeWithTarget: (theCompilationTarget: TACCompilationTarget) ::=> Void := {
         compilationTarget := theCompilationTarget.
@@ -46,6 +47,7 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
         capturelessUncheckedEntryPointDictionary := Dictionary new.
         uncheckedEntryPointDictionary := Dictionary new.
         checkedEntryPointDictionary := Dictionary new.
+        uncheckedInterpreterTrampolinesDictionary := Dictionary new.
     }.
 
     public method compileSSAModule: (module: SSAModule) patchingFunctions: (patchedFunctionList: SequenceableCollection) definitions: (patchedFunctionDefinitionList: SequenceableCollection) ::=> TACModule := {
@@ -232,6 +234,28 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
                 ) isCaptureless: functionDefinition isCaptureless.
 
         entryPoint
+    }.
+
+    public method getOrCreateUncheckedInterpreterTrampolineWithSignature: (signature: Array) ::=> TACProgramEntity := {
+        uncheckedInterpreterTrampolinesDictionary at: signature ifAbsent: {|
+            let nameBuilder := StringStream new.
+            nameBuilder nextPutAll: "uncheckedInterpreterTrampoline"; print: signature size; nextPutAll: ".SUIT".
+            signature hash printHexOn: nameBuilder.
+
+            let trampoline := TACFunction new
+                compilationTarget: compilationTarget;
+                callingConvention: compilationTarget defaultCallingConvention;
+                name: nameBuilder asSymbol;
+                yourself.
+            targetModule addProgramEntity: trampoline.
+            uncheckedInterpreterTrampolinesDictionary at: signature put: trampoline.
+
+            SSAFunctionDefinitionTACCodeGenerator new
+                moduleCodeGenerator: self;
+                compileUncheckedInterpreterTrampolineWithSignature: signature into: trampoline.
+
+            trampoline
+        }.
     }.
 
     public method setValue: (value: SSAValue) translationInto: (tacValue: TACValue) ::=> TACValue := {
@@ -481,6 +505,56 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
         }
     }.
 
+    public method compileUncheckedInterpreterTrampolineWithSignature: (signature: Array) into: (trampoline: TACFunction) ::=> Void := {
+        let tacArguments := OrderedCollection new.
+        functionArgument := trampoline newArgument: #closure withType: Function.
+        tacArguments add: functionArgument.
+
+        let argumentTypes := signature allButLast.
+        let resultType => Type := signature last.
+
+        let uncheckedArguments := argumentTypes collect: {:(Type)argumentType :: TACValue |
+            let tacArgument := trampoline newArgumentWithType: argumentType.
+            tacArguments add: tacArgument.
+            tacArgument
+        }.
+
+        trampoline arguments: tacArguments asArray.
+
+        trampoline build: {:(TACFunctionBuilder)functionBuilder :: Void |
+            tacFunction := functionBuilder function.
+            self functionBuilder: functionBuilder.
+
+            functionBuilder basicBlock: #trampoline build: {:(TACBlockBuilder)asm :: Void |
+                self blockBuilder: asm.
+
+                ## Allocate the boxed argument vector.
+                let boxedArgumentVector := tacFunction newTemporary: #boxedArgumentVector withType: Array.
+                asm callPointer: (self translateRuntimeFunction: ObjectModel::makeArrayWithSize)
+                    with: (asm pointerConstantWith: uncheckedArguments size asUInt64)
+                    result: boxedArgumentVector.
+
+                ## Box the arguments and store them in the vecotr
+                let headerSize := (Array objectHeaderSizeForObjectModel: self compilationTarget objectModel) asInt64.
+                let pointerSize := self compilationTarget pointerSize asInt64.
+                uncheckedArguments doWithIndex: {:(TACValue)unboxedArgument :(Size)index :: Void |
+                    let argumentType := argumentTypes at: index.
+                    let boxedArgument := argumentType emitTacBox: unboxedArgument withSSACodeGenerator: self.
+                    asm storePointer: boxedArgument into: boxedArgumentVector constantOffset: headerSize + (index asInt64 * pointerSize)
+                }.
+
+                ## Call the interpreter.
+                let boxedResult := tacFunction newTemporary: #boxedResult withType: Untyped.
+                asm callPointer: (self translateRuntimeFunction: ObjectModel::interpretFunctionWithArguments)
+                    with: functionArgument with: boxedArgumentVector result: boxedResult.
+
+                ## Unbox and store the result.
+                let unboxedResult := resultType emitTacCheckAndUnbox: boxedResult withSSACodeGenerator: self.
+                resultType emitTacReturn: unboxedResult withBlockBuilder: asm.
+            }
+        }
+    }.
+
     public method compileDefinition => Void := {
         ssaFunctionDefinition importedSymbols size > 0sz ifTrue: {
             return: void.
@@ -604,11 +678,23 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
     public method translateCapturelessUncheckedFunctionEntryPoint: (value: SSAValue) ::=> TACValue
         := moduleCodeGenerator translateCapturelessUncheckedFunctionEntryPoint: value.
 
-    public method translateUncheckedFunctionEntryPoint: (value: SSAValue) ::=> TACValue := {
+    public method translateUncheckedFunctionEntryPoint: (value: SSAValue) functionType: (functionType: Type) resultType: (resultType: Type) argumentCount: (argumentCount: Size) ::=> TACValue := {
         (moduleCodeGenerator translateUncheckedFunctionEntryPointOrNil: value) ifNil: {
             let entryPoint := tacFunction newTemporary: #uncheckedEntryPoint withType: value type.
-            blockBuilder callPointer: (self translateRuntimeFunction: ObjectModel::fetchUncheckedEntryPoint)
-                with: (self translateValue: value)
+            let trampolineTypeSignature := Array new: argumentCount + 1sz.
+            {
+                let i mutable := 0sz.
+                while: (i < argumentCount) do: {
+                    trampolineTypeSignature at: i put: (functionType canonicalTypeForApplicationArgumentWithIndex: i)
+                } continueWith: (i := i + 1sz).
+
+                trampolineTypeSignature at: i put: resultType.
+            }.
+
+            let interpreterTrampoline := moduleCodeGenerator getOrCreateUncheckedInterpreterTrampolineWithSignature: trampolineTypeSignature.
+
+            blockBuilder callPointer: (self translateRuntimeFunction: ObjectModel::fetchUncheckedEntryPointOrInterpreterTrampoline)
+                with: (self translateValue: value) with: interpreterTrampoline
                 result: entryPoint.
             entryPoint
         }
@@ -2101,7 +2187,7 @@ SSAFunctionDefinitionTACCodeGenerator extend: {
 
             } ifFalse: {
                 let tacCalledFunction := self translateValue: calledFunction.
-                let entryPoint := self translateUncheckedFunctionEntryPoint: calledFunction.
+                let entryPoint := self translateUncheckedFunctionEntryPoint: calledFunction functionType: calledFunctionType resultType: resultType argumentCount: arguments size.
                 let tacArguments := arguments collectWithIndex: {:(SSAValue)eachArgument :(Size)index :: TACValue |
                     self translateValue: eachArgument withExpectedType: (calledFunctionType canonicalTypeForApplicationArgumentWithIndex: index)
                 }.
