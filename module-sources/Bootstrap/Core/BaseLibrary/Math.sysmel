@@ -4,8 +4,7 @@
     UInt16,Int16,Char16,
     UInt32,Int32,Char32,
     UInt64,Int64,
-    Float32,Float64,
-    Integer
+    Float32,Float64
 ) macroDo: {:NumberType :: Void |
     let primitivePrefix := NumberType name asString -- "::".
     let isUnsigned := NumberType one negated > NumberType zero.
@@ -247,13 +246,15 @@
         public pure final eager method u64 => UInt64 := self asUInt64.
         public pure final eager method i64 =>  Int64 := self  asInt64.
 
-        public pure final eager method f32 => Float32 := self asFloat32.
-        public pure final eager method f64 => Float64 := self asFloat64.
+        LiteralType ~~ Integer ifTrue: {
+            public pure final eager method f32 => Float32 := self asFloat32.
+            public pure final eager method f64 => Float64 := self asFloat64.
 
-        public pure final eager method bflgs => Bitflags := self asUInt64.
-        public pure final eager method sz => Size := self asSize.
-        public pure final eager method uptr => UIntPointer := self asUIntPointer.
-        public pure final eager method iptr => IntPointer := self asIntPointer.
+            public pure final eager method bflgs => Bitflags := self asUInt64.
+            public pure final eager method sz => Size := self asSize.
+            public pure final eager method uptr => UIntPointer := self asUIntPointer.
+            public pure final eager method iptr => IntPointer := self asIntPointer.
+        }.
     }.
 }.
 
@@ -262,8 +263,7 @@
     UInt8,Int8,Char8,
     UInt16,Int16,Char16,
     UInt32,Int32,Char32,
-    UInt64,Int64,
-    Integer
+    UInt64,Int64
 ) macroDo: {:IntegerType :: Void |
     let primitivePrefix := IntegerType name asString -- "::".
 

@@ -282,7 +282,7 @@ Integer definition: {
     public pure final eager override method = other ::=> Boolean := {
         <primitive: #Integer::= >
         self == other ifTrue: {return: true}.
-        self class == other class ifFalse: {return: false}.
+        self __type__ == other __type__ ifFalse: {return: false}.
 
         self error: "TODO: Large integer equality."
     }.
@@ -378,6 +378,46 @@ Integer definition: {
 
         self asUInt64 asFloat64
     }.
+
+    if: Size == UInt64 then: {
+        public pure final eager method asSize ::=> Size := {
+            <primitive: #Integer::asUInt64>
+            self asUInt64
+        }.
+
+        public pure final eager method asIntPointer ::=> IntPointer := {
+            <primitive: #Integer::asInt64>
+            self asInt64
+        }.
+
+        public pure final eager method asUIntPointer ::=> UIntPointer := {
+            <primitive: #Integer::asUInt64>
+            self asUInt64
+        }.
+    } else: {
+        public pure final eager method asSize ::=> Size := {
+            <primitive: #Integer::asUInt32>
+            self asUInt64
+        }.
+
+        public pure final eager method asIntPointer ::=> IntPointer := {
+            <primitive: #Integer::asInt32>
+            self asInt64
+        }.
+
+        public pure final eager method asUIntPointer ::=> UIntPointer := {
+            <primitive: #Integer::asUInt32>
+            self asUInt64
+        }.
+    }.
+
+    public pure final eager method f32 => Float32 := self asFloat32.
+    public pure final eager method f64 => Float64 := self asFloat64.
+
+    public pure final eager method bflgs => Bitflags := self asUInt64.
+    public pure final eager method sz => Size := self asSize.
+    public pure final eager method uptr => UIntPointer := self asUIntPointer.
+    public pure final eager method iptr => IntPointer := self asIntPointer.
 
     public pure final method factorial => Integer := {
         self <= 0

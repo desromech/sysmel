@@ -95,7 +95,7 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
                     addExportedSymbols: function exportedSymbols
             } ifFalse: {
                 function exportedSymbols isNotEmpty ifTrue: {
-                    self error: "TODO: Compile non-captureless function."
+                    self error: "TODO: Compile non-captureless exported function."
                 }
             }.
         }

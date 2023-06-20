@@ -623,12 +623,15 @@ public final class AsmObjectElf64FileWriter superclass: AsmObjectFileWriter; def
         }.
 
         ## Convert the symbols.
+        {|
         objectCode symbols do: {:(AsmSymbol)eachSymbol :: Void |
             symbolTable addSymbol: eachSymbol
         }.
+        } printTimeToRunInMicrosecondsWithTitle: "Elf symbol table conversion".
 
         ## Emit the relocations.
         let relSectionHeaders := OrderedCollection new.
+        {|
 
         objectCode sections doWithIndex: {:(AsmObjectCodeSection)eachSection :(Size)index :: Void |
             let sectionHeaderIndex := index + 1sz.
@@ -679,6 +682,7 @@ public final class AsmObjectElf64FileWriter superclass: AsmObjectFileWriter; def
 
             }.
         }.
+        } printTimeToRunInMicrosecondsWithTitle: "Elf relocations".
 
         ## Symbol table.
         {
@@ -750,7 +754,9 @@ public final class AsmObjectElf64FileWriter superclass: AsmObjectFileWriter; def
             sectionHeaderOffset: sectionsHeadersLabel offsetOfEncodedElementInByteStream asUInt64;
             sectionHeaderEntryNumber: sectionHeaders size asUInt16.
 
+        {|
         fileLayout encodedElementsInByteArray
+        } printTimeToRunInMicrosecondsWithTitle: "Elf encode as byte array"
     }.
 }.
 

@@ -403,6 +403,59 @@ public class SysmelParserTestCase superclass: TestCase; definition: {
         self assert: (binaryExpressionSequence operators second downCastTo: ASTLiteralNode) value equals: #-.
     }.
 
+    public method testMessageChain => Void := {
+        let ast := self parseString: "receiver begin; drawPointX: 1 y: 2; finish".
+        self assert: ast isNotNil.
+        self assert: ast isSequenceNode.
+
+        let sequenceNode := ast downCastTo: ASTSequenceNode.
+        self assert: sequenceNode pragmas size equals: 0sz.
+        self assert: sequenceNode expressions size equals: 1sz.
+
+        self assert: sequenceNode expressions first isMessageChainNode.
+        let messageChain => ASTMessageChainNode := sequenceNode expressions first.
+        self assert: messageChain receiver isIdentifierReferenceNode.
+        self assert: (messageChain receiver downCastTo: ASTIdentifierReferenceNode) value equals: #receiver.
+
+        self assert: messageChain messages size equals: 3sz.
+
+        {
+            self assert: messageChain messages first isMessageChainMessageNode.
+            let chainedMessage => ASTMessageChainMessageNode := messageChain messages first.
+            
+            self assert: chainedMessage selector isLiteralNode.
+            self assert: (chainedMessage selector downCastTo: ASTLiteralNode) value equals: #begin.
+
+            self assert: chainedMessage arguments isEmpty.
+        }.
+
+        {
+            self assert: messageChain messages second isMessageChainMessageNode.
+            let chainedMessage => ASTMessageChainMessageNode := messageChain messages second.
+            
+            self assert: chainedMessage selector isLiteralNode.
+            self assert: (chainedMessage selector downCastTo: ASTLiteralNode) value equals: #drawPointX:y:.
+
+            self assert: chainedMessage arguments size equals: 2sz.
+
+            self assert: chainedMessage arguments first isLiteralNode.
+            self assert: chainedMessage arguments first value equals: 1.
+
+            self assert: chainedMessage arguments second isLiteralNode.
+            self assert: chainedMessage arguments second value equals: 2.
+        }.
+
+        {
+            self assert: messageChain messages third isMessageChainMessageNode.
+            let chainedMessage => ASTMessageChainMessageNode := messageChain messages third.
+            
+            self assert: chainedMessage selector isLiteralNode.
+            self assert: (chainedMessage selector downCastTo: ASTLiteralNode) value equals: #finish.
+
+            self assert: chainedMessage arguments isEmpty.
+        }.
+    }.
+
     public method testLowPrecedenceBinaryExpression => Void := {
         let ast := self parseString: "1 ::+ 2".
         self assert: ast isNotNil.

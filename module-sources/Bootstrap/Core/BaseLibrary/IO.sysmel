@@ -1,6 +1,25 @@
 (IO::readWholeFileNamedAsByteArray) adoptDefinitionOf: {:(String)filename :: ByteArray |
     <primitive: #IO::readWholeFileNamedAsByteArray>
-    error("TODO: IO::readWholeFileNamedAsByteArray")
+    let file := sysmel_pal_openFile(filename size, filename __rawContentsPointer__ reinterpretCastTo: Char8 const pointer, SysmelPAL::FileOpenFlags::ReadOnly, SysmelPAL::FileCreationPermissions::None).
+    sysmel_pal_isFileHandleValid(file) ifFalse: {
+        error("Failed to open file " -- filename)
+    }.
+
+    let fileSize := sysmel_pal_seek(file, 0i64, SysmelPAL::SeekMode::End).
+    sysmel_pal_seek(file, 0i64, SysmelPAL::SeekMode::Set).
+    fileSize < 0i64 ifTrue: {
+        sysmel_pal_closeFile(file).
+        error("Failed to obtain file size of " -- filename)
+    }.
+
+    let result := ByteArray basicAllocate: fileSize asSize.
+    let readCount := sysmel_pal_readFromFileAtOffset(file, 0u64, result size, result __rawContentsPointer__).
+    sysmel_pal_closeFile(file).
+    readCount asSize = result size ifFalse: {
+        error("Failed to read whole content of" -- filename)
+    }.
+
+    result
 }.
 
 (IO::readWholeFileNamedAsString) adoptDefinitionOf: {:(String)filename :: String |
@@ -29,12 +48,30 @@
 
 (IO::writeWholeFileNamedWithByteArray) adoptDefinitionOf: {:(String)filename :(ByteArray)data :: Boolean |
     <primitive: #IO::writeWholeFileNamedWithByteArray>
-    error("TODO: IO::writeWholeFileNamedWithByteArray")
+
+    let file := sysmel_pal_openFile(filename size, filename __rawContentsPointer__ reinterpretCastTo: Char8 const pointer, SysmelPAL::FileOpenFlags::WriteOnly | SysmelPAL::FileOpenFlags::Create | SysmelPAL::FileOpenFlags::Truncate, SysmelPAL::FileCreationPermissions::RegularFileDefaults).
+    sysmel_pal_isFileHandleValid(file) ifFalse: {
+        error("Failed to open file " -- filename)
+    }.
+
+    let writeCount := sysmel_pal_writeToFileAtOffset(file, 0u64, data size, data __rawContentsPointer__).
+    sysmel_pal_closeFile(file).
+
+    writeCount asSize = data size
 }.
 
 (IO::writeWholeFileNamedWithString) adoptDefinitionOf: {:(String)filename :(String)data :: Boolean |
-    <primitive: #IO::writeWholeFileNamedWithByteArray>
-    error("TODO: IO::writeWholeFileNamedWithString")
+    <primitive: #IO::writeWholeFileNamedWithString>
+
+    let file := sysmel_pal_openFile(filename size, filename __rawContentsPointer__ reinterpretCastTo: Char8 const pointer, SysmelPAL::FileOpenFlags::WriteOnly | SysmelPAL::FileOpenFlags::Create | SysmelPAL::FileOpenFlags::Truncate, SysmelPAL::FileCreationPermissions::RegularFileDefaults).
+    sysmel_pal_isFileHandleValid(file) ifFalse: {
+        error("Failed to open file " -- filename)
+    }.
+
+    let writeCount := sysmel_pal_writeToFileAtOffset(file, 0u64, data size, data __rawContentsPointer__).
+    sysmel_pal_closeFile(file).
+
+    writeCount asSize = data size
 }.
 
 (loadSourceNamedWithSolvedPath:) adoptDefinitionOf: {:(String)solvedPath :: Void |

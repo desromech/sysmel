@@ -1,4 +1,4 @@
-let codeX86_64Block := {:builder |
+let codeX86_64Block := {:(AsmStreamBuilder)builder :: Void |
     let addFunctionSymbol := (builder symbolNamed: #add)
         makeFunction;
         makePublic;
@@ -7,7 +7,7 @@ let codeX86_64Block := {:builder |
     builder
         textSection;
         align: 16sz unreachable: true;
-        blockNamed: addFunctionSymbol with: {:builder |
+        blockNamed: addFunctionSymbol with: {:(AsmStreamBuilder)builder :: Void |
             builder
                 x86::endbr64;
                 x86::mov: X86::RAX src: X86::RDI;
@@ -15,7 +15,7 @@ let codeX86_64Block := {:builder |
                 x86::ret
         };
         align: 16sz unreachable: true;
-        blockNamed: ((builder symbolNamed: #main) makeFunction; makePublic; yourself) with: {:builder |
+        blockNamed: ((builder symbolNamed: #main) makeFunction; makePublic; yourself) with: {:(AsmStreamBuilder)builder :: Void |
             builder
                 x86::endbr64;
                 x86::push: X86::RBP;
@@ -41,7 +41,7 @@ codeX86_64Elf assemble writeObjectToFileNamed: "test.x86_64.elf64".
 codeX86_64Coff assemble writeObjectToFileNamed: "test.x86_64.coff".
 codeX86_64MachO assemble writeObjectToFileNamed: "test.x86_64.macho64".
 
-let codeI386Block := {:builder |
+let codeI386Block := {:(AsmStreamBuilder)builder :: Void |
     let addFunctionSymbol := (builder symbolNamed: #add)
         makeFunction;
         makePublic;
@@ -50,7 +50,7 @@ let codeI386Block := {:builder |
     builder
         textSection;
         align: 16sz unreachable: true;
-        blockNamed: addFunctionSymbol with: {:builder |
+        blockNamed: addFunctionSymbol with: {:(AsmStreamBuilder)builder :: Void |
             builder
                 x86::endbr32;
                 x86::mov: X86::EAX src: X86::ESP x86::dword + 8i8 asAsmImmediate;
@@ -58,7 +58,7 @@ let codeI386Block := {:builder |
                 x86::ret
         };
         align: 16sz unreachable: true;
-        blockNamed: ((builder symbolNamed: #main) makeFunction; makePublic; yourself) with: {:builder |
+        blockNamed: ((builder symbolNamed: #main) makeFunction; makePublic; yourself) with: {:(AsmStreamBuilder)builder :: Void |
             builder
                 x86::endbr32;
                 x86::push: X86::EBP;
@@ -84,11 +84,11 @@ codeI386Elf assemble writeObjectToFileNamed: "test.i386.elf32".
 codeI386Coff assemble writeObjectToFileNamed: "test.i386.coff".
 codeI386MachO assemble writeObjectToFileNamed: "test.i386.macho32".
 
-let codeArmBlock := {:builder |
+let codeArmBlock := {:(AsmStreamBuilder)builder :: Void |
     builder
         textSection;
         align: 16sz unreachable: true;
-        blockNamed: ((builder symbolNamed: #main) makeFunction; makePublic; yourself) with: {:builder |
+        blockNamed: ((builder symbolNamed: #main) makeFunction; makePublic; yourself) with: {:(AsmStreamBuilder)builder :: Void |
             builder
                 arm::bkpt: 45u16;
                 arm::swi: 42u32

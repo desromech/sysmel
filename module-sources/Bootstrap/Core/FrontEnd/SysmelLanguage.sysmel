@@ -1023,9 +1023,9 @@ SysmelGrammar::ChainExpression
         })
     | ((SysmelGrammar::BinaryExpression -- SysmelGrammar::ChainedKeywordMessage optional -- (Grammar::Token::Semicolon -- SysmelGrammar::ChainedMessage) star) ==> {:(MonadicParserResult)parserResult :: AnyValue |
         let parseElements => Array := parserResult value.
-        let receiver := parseElements first.
+        let receiver => ASTNode := parseElements first.
         let firstKeywordChainedMessage => ASTMessageChainMessageNode := parseElements second.
-        let chainedMessages => OrderedCollection := parseElements third.
+        let chainedMessages => OrderedCollection := parseElements third collect: {:(Array)each :: ASTNode | each second}.
         firstKeywordChainedMessage isNil && chainedMessages isEmpty ifTrue: {
             receiver
         } ifFalse: {
@@ -1035,12 +1035,29 @@ SysmelGrammar::ChainExpression
                     yourself
 
             } ifFalse: {
+                let actualReceiver mutable := receiver.
+                let firstChainedMessage := firstKeywordChainedMessage ifNil: {
+                    receiver isMessageSendNode ifTrue: {
+                        let receiverMessage := receiver downCastTo: ASTMessageSendNode.
+                        actualReceiver := receiverMessage receiver.
+
+                        Array with: (ASTMessageChainMessageNode new
+                            sourcePosition: receiverMessage sourcePosition;
+                            selector: receiverMessage selector;
+                            arguments: receiverMessage arguments;
+                            yourself)
+                    } ifFalse: {
+                        #()
+                    }
+                } ifNotNil: {
+                    Array with: firstKeywordChainedMessage
+                }.
+
                 ASTMessageChainNode new
                     sourcePosition: parserResult sourcePosition;
-                    receiver: receiver;
-                    messages: (firstKeywordChainedMessage ifNil: #() ifNotNil: (Array with: firstKeywordChainedMessage)) -- chainedMessages asArray;
+                    receiver: actualReceiver;
+                    messages: firstChainedMessage -- chainedMessages asArray;
                     yourself
-
             }.
         }.
     }).
