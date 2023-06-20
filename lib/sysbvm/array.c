@@ -4,6 +4,7 @@
 #include "sysbvm/errors.h"
 #include "sysbvm/type.h"
 #include "internal/context.h"
+#include <string.h>
 
 SYSBVM_API sysbvm_tuple_t sysbvm_array_create(sysbvm_context_t *context, sysbvm_tuple_t slotCount)
 {
@@ -166,7 +167,6 @@ static sysbvm_tuple_t sysbvm_array_primitive_equals(sysbvm_context_t *context, s
 
 static sysbvm_tuple_t sysbvm_array_primitive_hash(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
-    (void)context;
     (void)closure;
     if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
 
@@ -180,14 +180,477 @@ static sysbvm_tuple_t sysbvm_array_primitive_hash(sysbvm_context_t *context, sys
     return sysbvm_tuple_size_encode(context, result);
 }
 
+static sysbvm_tuple_t sysbvm_byteArray_primitive_replaceBytesFromWith(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 5) sysbvm_error_argumentCountMismatch(5, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t startIndex = sysbvm_tuple_size_decode(arguments[1]);
+    size_t replacementSize = sysbvm_tuple_size_decode(arguments[2]);
+    sysbvm_byteArray_t *replacement = (sysbvm_byteArray_t*)arguments[3];
+    size_t replacementOffset = sysbvm_tuple_size_decode(arguments[4]);
+
+    if(startIndex + replacementSize > sysbvm_tuple_getSizeInBytes(arguments[0])) sysbvm_error_outOfBoundsSlotAccess();
+    if(replacementSize > sysbvm_tuple_getSizeInBytes(arguments[3])) sysbvm_error_outOfBoundsSlotAccess();
+
+    memcpy(array->elements + startIndex, replacement->elements + replacementOffset, replacementSize);
+    return SYSBVM_VOID_TUPLE;
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_char8At(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 1 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    return sysbvm_tuple_char8_encode(array->elements[index]);
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_uint8At(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 1 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    return sysbvm_tuple_uint8_encode(array->elements[index]);
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_int8At(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 1 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    return sysbvm_tuple_int8_encode(array->elements[index]);
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_char16At(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 2 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    return sysbvm_tuple_char16_encode(*(uint16_t*)(array->elements + index));
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_uint16At(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 2 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    return sysbvm_tuple_uint16_encode(*(uint16_t*)(array->elements + index));
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_int16At(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 2 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    return sysbvm_tuple_int16_encode(*(int16_t*)(array->elements + index));
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_char32At(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 4 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    return sysbvm_tuple_char32_encode(context, *(uint32_t*)(array->elements + index));
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_uint32At(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 4 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    return sysbvm_tuple_uint32_encode(context, *(uint32_t*)(array->elements + index));
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_int32At(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 4 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    return sysbvm_tuple_int32_encode(context, *(int32_t*)(array->elements + index));
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_uint64At(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 8 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    return sysbvm_tuple_uint64_encode(context, *(uint64_t*)(array->elements + index));
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_int64At(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 8 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    return sysbvm_tuple_int64_encode(context, *(int64_t*)(array->elements + index));
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_float32At(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 4 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    float value = 0;
+    memcpy(&value, array->elements + index, 4);
+    return sysbvm_tuple_float32_encode(context, value);
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_float64At(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 8 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    double value = 0;
+    memcpy(&value, array->elements + index, 8);
+    return sysbvm_tuple_float64_encode(context, value);
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_char8AtPut(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 1 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    array->elements[index] = sysbvm_tuple_char8_decode(arguments[2]);
+    return SYSBVM_VOID_TUPLE;
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_uint8AtPut(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 1 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    array->elements[index] = sysbvm_tuple_uint8_decode(arguments[2]);
+    return SYSBVM_VOID_TUPLE;
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_int8AtPut(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 1 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    array->elements[index] = sysbvm_tuple_int8_decode(arguments[2]);
+    return SYSBVM_VOID_TUPLE;
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_char16AtPut(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 2 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    *(uint16_t*)(array->elements + index) = sysbvm_tuple_char16_decode(arguments[2]);
+    return SYSBVM_VOID_TUPLE;
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_uint16AtPut(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 2 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    *(uint16_t*)(array->elements + index) = sysbvm_tuple_uint16_decode(arguments[2]);
+    return SYSBVM_VOID_TUPLE;
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_int16AtPut(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 2 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    *(int16_t*)(array->elements + index) = sysbvm_tuple_int16_decode(arguments[2]);
+    return SYSBVM_VOID_TUPLE;
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_char32AtPut(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 4 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    *(uint32_t*)(array->elements + index) = sysbvm_tuple_char32_decode(arguments[2]);
+    return SYSBVM_VOID_TUPLE;
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_uint32AtPut(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 4 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    *(uint32_t*)(array->elements + index) = sysbvm_tuple_uint32_decode(arguments[2]);
+    return SYSBVM_VOID_TUPLE;
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_int32AtPut(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 4 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    *(int32_t*)(array->elements + index) = sysbvm_tuple_int32_decode(arguments[2]);
+    return SYSBVM_VOID_TUPLE;
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_uint64AtPut(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 8 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    *(uint64_t*)(array->elements + index) = sysbvm_tuple_uint64_decode(arguments[2]);
+    return SYSBVM_VOID_TUPLE;
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_int64AtPut(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 8 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    *(int64_t*)(array->elements + index) = sysbvm_tuple_int64_decode(arguments[2]);
+    return SYSBVM_VOID_TUPLE;
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_float32AtPut(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 4 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    float value = sysbvm_tuple_float32_decode(arguments[2]);
+    memcpy(array->elements + index, &value, 4);
+    return SYSBVM_VOID_TUPLE;
+}
+
+static sysbvm_tuple_t sysbvm_byteArray_primitive_float64AtPut(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t index = sysbvm_tuple_size_decode(arguments[1]);
+    if(index + 8 > size) sysbvm_error_outOfBoundsSlotAccess();
+
+    double value = sysbvm_tuple_float64_decode(arguments[2]);
+    memcpy(array->elements + index, &value, 8);
+    return SYSBVM_VOID_TUPLE;
+}
+
 void sysbvm_array_registerPrimitives(void)
 {
     sysbvm_primitiveTable_registerFunction(sysbvm_array_primitive_equals, "Array::=");
     sysbvm_primitiveTable_registerFunction(sysbvm_array_primitive_hash, "Array::hash");
+
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_replaceBytesFromWith, "ByteArray::replaceBytesFrom:count:with:startingAt:");
+
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_char8At, "ByteArray::char8At:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_uint8At, "ByteArray::uint8At:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_int8At , "ByteArray::int8At:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_char16At, "ByteArray::char16At:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_uint16At, "ByteArray::uint16At:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_int16At , "ByteArray::int16At:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_char32At, "ByteArray::char32At:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_uint32At, "ByteArray::uint32At:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_int32At , "ByteArray::int32At:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_uint64At, "ByteArray::uint64At:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_int64At , "ByteArray::int64At:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_float32At , "ByteArray::float32At:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_float64At , "ByteArray::float64At:");
+
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_char8AtPut, "ByteArray::char8At:put:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_uint8AtPut, "ByteArray::uint8At:put:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_int8AtPut , "ByteArray::int8At:put:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_char16AtPut, "ByteArray::char16At:put:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_uint16AtPut, "ByteArray::uint16At:put:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_int16AtPut , "ByteArray::int16At:put:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_char32AtPut, "ByteArray::char32At:put:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_uint32AtPut, "ByteArray::uint32At:put:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_int32AtPut , "ByteArray::int32At:put:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_uint64AtPut, "ByteArray::uint64At:put:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_int64AtPut , "ByteArray::int64At:put:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_float32AtPut , "ByteArray::float32At:put:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_float64AtPut , "ByteArray::float64At:put:");
 }
 
 void sysbvm_array_setupPrimitives(sysbvm_context_t *context)
 {
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Array::=", context->roots.arrayType, "=", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_array_primitive_equals);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Array::hash", context->roots.arrayType, "hash", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_array_primitive_hash);
+
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::replaceBytesFrom:count:with:startingAt:", context->roots.byteArrayType, "replaceBytesFrom:count:with:startingAt:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_replaceBytesFromWith);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "String::replaceBytesFrom:count:with:startingAt:", context->roots.stringType, "replaceBytesFrom:count:with:startingAt:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_replaceBytesFromWith);
+
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::char8At:", context->roots.byteArrayType, "char8At:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_char8At);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::uint8At:", context->roots.byteArrayType, "uint8At:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_uint8At);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::int8At:",  context->roots.byteArrayType, "int8At:" , 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_int8At);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::char16At:", context->roots.byteArrayType, "char16At:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_char16At);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::uint16At:", context->roots.byteArrayType, "uint16At:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_uint16At);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::int16At:",  context->roots.byteArrayType, "int16At:" , 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_int16At);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::char32At:", context->roots.byteArrayType, "char32At:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_char32At);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::uint32At:", context->roots.byteArrayType, "uint32At:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_uint32At);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::int32At:",  context->roots.byteArrayType, "int32At:" , 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_int32At);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::uint64At:", context->roots.byteArrayType, "uint64At:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_uint64At);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::int64At:",  context->roots.byteArrayType, "int64At:" , 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_int64At);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::float32At:",  context->roots.byteArrayType, "float32At:" , 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_float32At);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::float64At:",  context->roots.byteArrayType, "float64At:" , 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_float64At);
+
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::char8At:put:", context->roots.byteArrayType, "char8At:put:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_char8AtPut);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::uint8At:put:", context->roots.byteArrayType, "uint8At:put:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_uint8AtPut);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::int8At:put:",  context->roots.byteArrayType, "int8At:put:" , 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_int8AtPut);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::char16At:put:", context->roots.byteArrayType, "char16At:put:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_char16AtPut);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::uint16At:put:", context->roots.byteArrayType, "uint16At:put:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_uint16AtPut);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::int16At:put:",  context->roots.byteArrayType, "int16At:put:" , 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_int16AtPut);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::char32At:put:", context->roots.byteArrayType, "char32At:put:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_char32AtPut);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::uint32At:put:", context->roots.byteArrayType, "uint32At:put:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_uint32AtPut);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::int32At:put:",  context->roots.byteArrayType, "int32At:put:" , 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_int32AtPut);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::uint64At:put:", context->roots.byteArrayType, "uint64At:put:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_uint64AtPut);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::int64At:put:",  context->roots.byteArrayType, "int64At:put:" , 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_int64AtPut);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::float32At:put:",  context->roots.byteArrayType, "float32At:put:" , 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_float32AtPut);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteArray::float64At:put:",  context->roots.byteArrayType, "float64At:put:" , 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_float64AtPut);
 }

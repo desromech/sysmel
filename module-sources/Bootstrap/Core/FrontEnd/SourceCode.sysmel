@@ -10,7 +10,68 @@ SourceCode definition: {
 
         public method text: (text: String) filename: (filename: String) language: (language: StringSymbol) ::=> self
             := self text: text directory: FileSystem::dirname(filename) name: FileSystem::basename(filename) language: language.
-    }
+    }.
+
+    public method ensureLineStartIndexTableIsBuilt => Void := {
+        lineStartIndexTable ifNotNil: {return: void}.
+
+        let table := OrderedCollection new.
+        table add: 0sz.
+
+        let textSize := text size.
+        let i mutable := 0sz.
+        while: (i < textSize) do: {
+            let c := text at: i.
+            c = '\n'c8 ifTrue: {
+                table add: i + 1sz
+            }
+        } continueWith: (i := i + 1sz).
+
+        lineStartIndexTable := table asArray.
+    }.
+
+    public method findLineIndexForSourceIndex: (sourceCodeIndex: Size) ::=> Size := {
+        self ensureLineStartIndexTableIsBuilt.
+
+        let left mutable := 0sz.
+        let right mutable := lineStartIndexTable size.
+
+        let bestSoFar mutable := 0sz.
+        while: (left < right) do: {
+            let middle := left + ((right - left) / 2sz).
+            let middleIndex := lineStartIndexTable at: middle.
+            middleIndex <= sourceCodeIndex ifTrue: {
+                bestSoFar := middle.
+                left := middle + 1sz
+            } ifFalse: {
+                right := middle
+            }
+        }.
+
+        bestSoFar
+    }.
+
+    public method computeLineInfoForSourcePosition: (sourcePosition: SourcePosition) ::=> Void := {
+        ## Start.
+        {
+            let lineIndex := self findLineIndexForSourceIndex: sourcePosition startIndex.
+            let lineSourceIndex := lineStartIndexTable at: lineIndex.
+
+            sourcePosition
+                startLine: lineIndex + 1sz;
+                startColumn: sourcePosition startIndex - lineSourceIndex + 1sz
+        }.
+
+        ## End
+        {
+            let lineIndex := self findLineIndexForSourceIndex: sourcePosition endIndex.
+            let lineSourceIndex := lineStartIndexTable at: lineIndex.
+
+            sourcePosition
+                endLine: lineIndex + 1sz;
+                endColumn: sourcePosition endIndex - lineSourceIndex + 1sz
+        }.
+    }.
 }.
 
 SourcePosition definition: {
@@ -28,13 +89,16 @@ SourcePosition definition: {
         := (sourceCode identityHash hashConcatenate: startIndex hash) hashConcatenate: endIndex hash.
 
     public override eager method = other => Boolean := {
+        self == other ifTrue: {return: true}.
         self class == other class ifFalse: {return: false}.
         let otherSourcePosition => SourcePosition := other.
         (self sourceCode == otherSourcePosition sourceCode) && (self startIndex = otherSourcePosition startIndex) && (self endIndex = otherSourcePosition endIndex)
     }.
 
     public method computeLineAndColumnInfo => Void := {
-
+        sourceCode ifNotNil: {
+            sourceCode computeLineInfoForSourcePosition: self.
+        }
     }.
 
     public method makeUnionWith: (next: SourcePosition) ::=> SourcePosition := {

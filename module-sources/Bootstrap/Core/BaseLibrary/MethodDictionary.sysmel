@@ -29,8 +29,28 @@ MethodDictionary definition: {
         -1iptr
     }.
 
+    public eager method addNoCheckKey: key value: value ::=> Void := {
+        let index := (self scanFor: key) asSize.
+        storage at: index*2sz put: key.
+        storage at: index*2sz + 1sz put: value.
+    }.
+
     public eager method increaseCapacity => Void := {
-        error("TODO: MethodDictionary increaseCapacity").
+        let oldCapacity := self capacity.
+        let newCapacity := oldCapacity * 2sz max: 8sz.
+        let oldStorage := storage.
+        let oldStoragePairCount := oldCapacity*2sz.
+        storage := Array new: newCapacity*2sz.
+        storage atAllPut: __hashtableEmptyElement__.
+
+        let i mutable := 0sz.
+        while: (i < oldStoragePairCount) do: {
+            let oldKey := oldStorage at: i.
+            __hashtableEmptyElement__ == oldKey ifFalse: {
+                let oldValue := oldStorage at: i + 1sz.
+                self addNoCheckKey: oldKey value: oldValue.
+            }
+        } continueWith: (i := i + 2sz)
     }.
 
     public eager method checkCapacityIncreaseCondition => Void := {

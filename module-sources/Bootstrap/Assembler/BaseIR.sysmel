@@ -1657,16 +1657,28 @@ public final class AsmProgramEntity superclass: Object; definition: {
             addImportedSymbols: importedSymbols;
             yourself.
 
-        self prepareToAssemble.
-        self assembleFirstPassWith: objectCodeBuilder.
+        {|
+            self prepareToAssemble.
+        } printTimeToRunInMicrosecondsWithTitle: "Assembler preparation".
+
+        {|
+            self assembleFirstPassWith: objectCodeBuilder.
+        } printTimeToRunInMicrosecondsWithTitle: "Assembler first pass".
+
         objectCodeBuilder allocateMemoryForWriting.
-        self assembleSecondPassWith: objectCodeBuilder.
+        {|
+            self assembleSecondPassWith: objectCodeBuilder.
+        } printTimeToRunInMicrosecondsWithTitle: "Assembler second pass pass".
 
         objectCodeBuilder finishDebugAndUnwindInfo.
         debugInformationGenerator ifNotNil: {
-            debugInformationGenerator
-                generateDebugLineInformationForModule: self objectCodeBuilder: objectCodeBuilder;
-                generateCallFrameInformationForModule: self objectCodeBuilder: objectCodeBuilder
+            {|
+                debugInformationGenerator generateDebugLineInformationForModule: self objectCodeBuilder: objectCodeBuilder
+            } printTimeToRunInMicrosecondsWithTitle: "Debug line information generation.".
+            
+            {|
+                debugInformationGenerator generateCallFrameInformationForModule: self objectCodeBuilder: objectCodeBuilder
+            } printTimeToRunInMicrosecondsWithTitle: "Debug call frame information generation.".
         }.
 
         objectCodeBuilder finish

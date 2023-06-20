@@ -174,7 +174,7 @@ Object
     withSelector: #subclassResponsibility addMethod: {:(Object)self :: Unwinds | self error: self __type__ printString -- " Subclass responsibility." } withEagerAnalysis;
     withSelector: #shouldBeImplemented addMethod: {:(Object)self :: Unwinds | self error: self __type__ printString -- " should be implemented." } withEagerAnalysis;
     withSelector: #doesNotUnderstand: addMethod: {:(AnyValue)self :(Message)message |
-        error((self class printString -- " doesNotUnderstand: ") -- message selector printString)
+        error((self __type__ printString -- " doesNotUnderstand: ") -- message selector printString)
     } makeVirtual withEagerAnalysis.
 
 Type
@@ -1856,6 +1856,17 @@ ByteArray
         self __byteSize__
     } makeOverride;
 
+    withSelector: #replaceBytesFrom:count:with:startingAt: addMethod: {:(ByteArray)self :(Size)startIndex :(Size)replacementSize :replacement :(Size)replacementOffset :: Void |
+        self assert: (startIndex + replacementSize <= self size) && (replacementSize >= replacement __byteSize__).
+        
+        let: #i mutableWith: 0sz.
+        while: (i < replacementSize) do: {
+            self __byteSlotAt__: startIndex + i put: (replacement __byteSlotAt__: replacementOffset + i)
+        } continueWith: (i := i + 1sz)
+    };
+    withSelector: #replaceBytesFrom:count:with: addMethod: {:(ByteArray)self :(Size)startIndex :(Size)replacementSize :replacement :: Void |
+        self replaceBytesFrom: startIndex count: replacementSize with: replacement startingAt: 0sz
+    };
     withSelector: #uint8At: addMethod: {:(ByteArray)self :(Size)index :: UInt8 |
         self at: index
     };
@@ -1989,6 +2000,17 @@ String
     withSelector: #size addMethod: {:(String)self :: Size |
         self __byteSize__
     } makeOverride;
+    withSelector: #replaceBytesFrom:count:with:startingAt: addMethod: {:(String)self :(Size)startIndex :(Size)replacementSize :replacement :(Size)replacementOffset :: Void |
+        self assert: (startIndex + replacementSize <= self size) && (replacementSize >= replacement __byteSize__).
+        
+        let: #i mutableWith: 0sz.
+        while: (i < replacementSize) do: {
+            self __byteSlotAt__: startIndex + i put: (replacement __byteSlotAt__: replacementOffset + i)
+        } continueWith: (i := i + 1sz)
+    };
+    withSelector: #replaceBytesFrom:count:with: addMethod: {:(String)self :(Size)startIndex :(Size)replacementSize :replacement :: Void |
+        self replaceBytesFrom: startIndex count: replacementSize with: replacement startingAt: 0sz
+    };
     withSelector: #padLeft:with: addMethod: {:(String)self :(Size)requiredLength :(Char8)paddingCharacter :: self species |
         let: #size with: self size.
         if: size >= requiredLength then: self
