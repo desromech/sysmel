@@ -883,6 +883,9 @@ Dwarf::DebugInfoEntry definition: {
     public method byteSize: (value: UInt64) ::=> Dwarf::DebugInfoEntryAttribute
         := self addAttribute: Dwarf::DW_AT_byte_size uleb128: value.
 
+    public method count: (value: UInt64) ::=> Dwarf::DebugInfoEntryAttribute
+        := self addAttribute: Dwarf::DW_AT_count uleb128: value.
+
     public method accessibility: (value: Dwarf::Constant) ::=> Dwarf::DebugInfoEntryAttribute
         := self addAttribute: Dwarf::DW_AT_accessibility uleb128: value value asUInt64.
 
@@ -2318,12 +2321,19 @@ PointerLikeType extend: {
 }.
 
 FixedArrayType extend: {
+    public override method dwarf::canHaveMemberFields => Boolean
+        := false.
+
     public override method dwarf::programEntityTag => Dwarf::Constant
         := Dwarf::DW_TAG_array_type.
 
     public override method dwarf::fillProgramEntityInfo: (die: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
         super dwarf::fillProgramEntityInfo: die with: debugGenerator.
+
         die type: (debugGenerator getOrCreateDieForType: elementType).
+        let subrange := Dwarf::DebugInfoEntry tag: Dwarf::DW_TAG_subrange_type.
+        die addChild: subrange.
+        subrange count: size asUInt64
     }.
 }.
 

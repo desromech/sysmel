@@ -37,6 +37,7 @@ SSAValue definition: {
     public virtual method isAllocaInstruction => Boolean := false.
     public virtual method isDownCastInstruction => Boolean := false.
     public virtual method isPhiInstruction => Boolean := false.
+    public virtual method isReferenceElementAtInstruction => Boolean := false.
     public virtual method isPointerElementAtInstruction => Boolean := false.
     public virtual method isLoadInstruction => Boolean := false.
     public virtual method isLoadStoreOrDebugBindingInstruction => Boolean := false.
@@ -976,6 +977,32 @@ public final class SSADownCastInstruction superclass: SSAInstruction; definition
     }.
 }.
 
+public final class SSAReferenceElementAtInstruction superclass: SSAInstruction; definition: {
+    public field reference => SSAValue.
+    public field index => SSAValue.
+
+    public override method isReferenceElementAtInstruction => Boolean := true.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream print: self; nextPutAll: " := reference "; print: self reference; nextPutAll: " elementAt "; print: self index
+    }.
+
+    public override method usedValuesDo: aBlock ::=> Void := {
+        aBlock(self reference).
+        aBlock(self index).
+    }.
+
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        if: self reference = replacedValue then: (self reference: replacement).
+        if: self index = replacedValue then: (self index: replacement).
+    }.
+
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+        replacementDictionary at: self reference ifPresent: {:(SSAValue)replacement :: Void | self reference: replacement}.
+        replacementDictionary at: self index ifPresent: {:(SSAValue)replacement :: Void | self index: replacement}.
+    }.
+}.
+
 public final class SSAPointerElementAtInstruction superclass: SSAInstruction; definition: {
     public field pointer => SSAValue.
     public field index => SSAValue.
@@ -1751,6 +1778,14 @@ SSAInstructionBuilder definition: {
         := self addInstruction: (SSAStoreInstruction new
             value: value;
             storage: storage;
+            registerInUsedValues;
+            yourself).
+
+    public method reference: (reference: SSAValue) elementAt: (index: SSAValue) type: (type: Type) ::=> SSAReferenceElementAtInstruction
+        := self addInstruction: (SSAReferenceElementAtInstruction new
+            reference: reference;
+            index: index;
+            type: type;
             registerInUsedValues;
             yourself).
 

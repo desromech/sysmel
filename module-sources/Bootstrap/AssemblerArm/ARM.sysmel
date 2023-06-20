@@ -235,7 +235,7 @@ public final class AsmARMDataProcessingImmediateShiftInstruction superclass: Asm
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: mnemonic;
+        stream string: mnemonic;
             space; print: Rd;
             nextPutAll: ", "; print: Rm;
             nextPutAll: ", "; print: Rn;
@@ -258,7 +258,7 @@ public final class AsmARMBreakpointInstruction superclass: AsmARMDataProcessingI
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: mnemonic; space; print: number
+        stream string: mnemonic; space; print: number
     }
 }.
 

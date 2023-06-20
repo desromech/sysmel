@@ -814,6 +814,10 @@ Type extend: {
             callVoid: typecheckFunction with: (codegen moduleCodeGenerator translateGenericObjectPointer: self) with: result
     }.
 
+    public abstract method emitTacReference: (reference: TACValue) elementPointerAt: (elementIndex: TACValue) into: (elementPointer: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void
+        := self subclassResponsibility.
+
+
     public virtual method makeTacTemporaryValueNamed: (name: Symbol) withFunctionBuilder: (functionBuilder: TACFunctionBuilder) ::=> TACValue
         := functionBuilder newTemporary: name withType: self.
 
@@ -975,6 +979,12 @@ PointerLikeType extend: {
 
     public override method emitTacStore: (value: TACValue) intoPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder storePointer: value into: pointer constantOffset: constantOffset
+    }.
+}.
+
+FixedArrayType definition: {
+    public override method emitTacReference: (reference: TACValue) elementPointerAt: (elementIndex: TACValue) into: (elementPointer: TACValue) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
+        builder loadEffectiveAddress: reference index: elementIndex constantScale: elementType alignedValueSize asInt64 into: elementPointer
     }.
 }.
 
@@ -2398,6 +2408,15 @@ SSAPointerElementAtInstruction extend: {
         let indexValue := codegen translateValue: self index.
         let elementSize := (self pointer type downCastTo: PointerLikeType) baseType alignedValueSize.
         codegen blockBuilder loadEffectiveAddress: pointerValue index: indexValue constantScale: elementSize asInt64 into: tacValue
+    }.
+}.
+
+SSAReferenceElementAtInstruction extend: {
+    public override method compileIntoTacValue: (tacValue: TACValue) with: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
+        let referenceValue := codegen translateValue: self reference.
+        let indexValue := codegen translateValue: self index.
+        let referencedType := (self reference type downCastTo: PointerLikeType) baseType.
+        referencedType emitTacReference: referenceValue elementPointerAt: indexValue into: tacValue withBlockBuilder: codegen blockBuilder
     }.
 }.
 

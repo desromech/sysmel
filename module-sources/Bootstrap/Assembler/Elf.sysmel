@@ -570,7 +570,7 @@ public final class AsmObjectElf32FileWriter superclass: AsmObjectFileWriter; def
         sectionDataElements doWithIndex: {:dataElement :(Size)index :: Void |
             dataElement ifNotNil: {
                 (sectionHeaders at: index)
-                    offset: dataElement offsetOfEncodedElementInByteStream asUInt64
+                    offset: dataElement offsetOfEncodedElementInByteStream asUInt32
             }.
         }.
 

@@ -354,6 +354,34 @@ let primitiveFunctionGenerators := #{
         context builder store: value in: reference.
         reference
     }.
+
+    #FixedArray::at: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+        let reference := self arguments first generateSSAValueWith: context.
+        let index := self arguments second generateSSAValueWith: context.
+        let referenceType => PointerLikeType := self arguments first analyzedType.
+        let fixedArrayType := referenceType baseType downCastTo: FixedArrayType.
+        let elementReferenceType := fixedArrayType elementType refFor: referenceType addressSpace.
+        let elementReference := context builder reference: reference elementAt: index type: elementReferenceType.
+        context builder load: elementReference type: self analyzedType
+    }.
+    #FixedArray::at:put: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+        let reference := self arguments first generateSSAValueWith: context.
+        let index := self arguments second generateSSAValueWith: context.
+        let value := self arguments third generateSSAValueWith: context.
+        let referenceType => PointerLikeType := self arguments first analyzedType.
+        let fixedArrayType := referenceType baseType downCastTo: FixedArrayType.
+        let elementReferenceType := fixedArrayType elementType refFor: referenceType addressSpace.
+        let elementReference := context builder reference: reference elementAt: index type: elementReferenceType.
+        context builder
+            store: value in: elementReference;
+            literal: void
+    }.
+    #"FixedArray::[]:" : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+        let reference := self arguments first generateSSAValueWith: context.
+        let index := self arguments second generateSSAValueWith: context.
+        context builder reference: reference elementAt: index type: self analyzedType
+    }.
+
     #Void::fromAnyValue : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
         self arguments do: {:(ASTNode)each :: Void | each generateSSAValueWith: context }.
         context builder literal: void
