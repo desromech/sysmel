@@ -108,7 +108,7 @@ public final class Coff::StringTable superclass: Object; definition: {
     public override method encodeInBytes: (destination: ByteArray) atOffset: (destinationOffset: Size) ::=> Void := {
         destination
             uint32At: destinationOffset put: self sizeOfByteEncoding asUInt32;
-            replaceFrom: destinationOffset + 4sz until: destinationOffset + data size with: data
+            replaceBytesFrom: destinationOffset + 4sz count: data size with: data
     }.
 }.
 

@@ -2908,10 +2908,11 @@ Function
         endTime - startTime
     };
     withSelector: #printTimeToRunInMicrosecondsWithTitle: addMethod: {:(Function)self :(String)title |
+        printLine(title, "...").
         let: #startTime with: Time::Timestamp::microsecondsNow().
         let: #result with: self().
         let: #endTime with: Time::Timestamp::microsecondsNow().
-        printLine(title, " ", (endTime - startTime) asFloat32 * 0.001f32,  " ms").
+        printLine(title, " took ", (endTime - startTime) asFloat32 * 0.001f32,  " ms").
         result
     }.
 

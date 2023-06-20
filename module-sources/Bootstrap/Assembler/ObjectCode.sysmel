@@ -264,7 +264,7 @@ AsmObjectCodeSection definition: {
     public override method canEncodeInBytes => Boolean := true.
 
     public override method encodeInBytes: (destination: ByteArray) atOffset: (destinationOffset: Size) ::=> Void := {
-        destination replaceFrom: destinationOffset until: destinationOffset + data size with: data
+        destination replaceBytesFrom: destinationOffset count: data size with: data
     }.
 
     public method entryIndexForDebugSourcePosition: (sourcePosition: SourcePosition) ::=> UInt32 := {
@@ -497,7 +497,7 @@ public final class AsmObjectCodeCStringTable superclass: Object; definition: {
     public override method canEncodeInBytes => Boolean := true.
 
     public override method encodeInBytes: (destination: ByteArray) atOffset: (destinationOffset: Size) ::=> Void := {
-        destination replaceFrom: destinationOffset until: destinationOffset + data size with: data
+        destination replaceBytesFrom: destinationOffset count: data size with: data
     }.
 }.
 

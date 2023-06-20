@@ -1674,18 +1674,22 @@ public final class AsmProgramEntity superclass: Object; definition: {
         debugInformationGenerator ifNotNil: {
             {|
                 debugInformationGenerator generateDebugLineInformationForModule: self objectCodeBuilder: objectCodeBuilder
-            } printTimeToRunInMicrosecondsWithTitle: "Debug line information generation.".
+            } printTimeToRunInMicrosecondsWithTitle: "Debug line information generation".
             
             {|
                 debugInformationGenerator generateCallFrameInformationForModule: self objectCodeBuilder: objectCodeBuilder
-            } printTimeToRunInMicrosecondsWithTitle: "Debug call frame information generation.".
+            } printTimeToRunInMicrosecondsWithTitle: "Debug call frame information generation".
         }.
 
         objectCodeBuilder finish
     }.
 
-    public method writeObjectToFileNamed: (objectFileName: String) ::=> Boolean
-        := self assemble writeObjectToFileNamed: objectFileName.
+    public method writeObjectToFileNamed: (objectFileName: String) ::=> Boolean := {
+        let assembledCode := self assemble.
+        {|
+            assembledCode writeObjectToFileNamed: objectFileName
+        } printTimeToRunInMicrosecondsWithTitle: "Writing object file " -- objectFileName
+    }
 }.
 
 AsmObjectCodeStream extend: {

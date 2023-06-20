@@ -3,21 +3,27 @@ public class ImageBuilderSSATACTarget superclass: ImageBuilderSSATarget; definit
         let ssaImage := ImageBuilderSSATACImage new.
         
         let ssaTacCompilation := compilationTarget downCastTo: SSATACCompilationTarget.
-        printLine("Generating SSA Module").
-        ssaImage ssaModule: ((SSAModuleCompilationContext forTarget: compilationTarget)
-                exclusiveCompilationMode: true;
-                compileFunctions: builder tracedFunctions definitions: builder tracedFunctionDefinitions;
-                exportMainEntryPointFunction: builder entryPointFunction;
+        {|
+            ssaImage ssaModule: ((SSAModuleCompilationContext forTarget: compilationTarget)
+                    exclusiveCompilationMode: true;
+                    compileFunctions: builder tracedFunctions definitions: builder tracedFunctionDefinitions;
+                    exportMainEntryPointFunction: builder entryPointFunction;
+                    finish).
+        } printTimeToRunInMicrosecondsWithTitle: "SSA Module".
+
+        {|
+            ssaImage tacModule: (SSAModuleTACCodeGenerator new
+                initializeWithTarget: ssaTacCompilation tacCompilationTarget;
+                compileSSAModule: ssaImage ssaModule patchingFunctions: builder requiredTracedReflectiveFunctions definitions: builder requiredTracedReflectiveFunctionDefinitions;
                 finish).
-        printLine("Generating TAC Module").
-        ssaImage tacModule: (SSAModuleTACCodeGenerator new
-            initializeWithTarget: ssaTacCompilation tacCompilationTarget;
-            compileSSAModule: ssaImage ssaModule patchingFunctions: builder requiredTracedReflectiveFunctions definitions: builder requiredTracedReflectiveFunctionDefinitions;
-            finish).
-        printLine("Generating Assembly code").
-        ssaImage targetIR: (ssaImage tacModule
-                imageObjectTrace: (builder objectTrace lock; yourself);
-                asTargetIR).
+        } printTimeToRunInMicrosecondsWithTitle: "TAC Module".
+
+        {|
+            ssaImage targetIR: (ssaImage tacModule
+                    imageObjectTrace: (builder objectTrace lock; yourself);
+                    asTargetIR).
+        } printTimeToRunInMicrosecondsWithTitle: "Assembly code".
+
         printLine("Image data generated").
         ssaImage
     }.

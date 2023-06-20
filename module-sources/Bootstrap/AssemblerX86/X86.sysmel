@@ -42,7 +42,7 @@ public abstract class AsmAbstractX86CompilationTarget superclass: AsmCompilation
             while: (remainingSize > 0sz) do: {
                 let paddingPattern => ByteArray := X86NopPatterns at: (remainingSize min: X86NopPatterns size) - 1sz.
                 let paddingPatternSize := paddingPattern size.
-                data replaceFrom: writeOffset until: writeOffset + paddingPatternSize with: paddingPattern.
+                data replaceBytesFrom: writeOffset count: paddingPatternSize with: paddingPattern.
                 remainingSize := remainingSize - paddingPatternSize.
                 writeOffset := writeOffset + paddingPatternSize
             }.

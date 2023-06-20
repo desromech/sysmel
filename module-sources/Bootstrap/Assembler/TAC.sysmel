@@ -137,7 +137,7 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
         
         {|
             objectHeap buildIn: targetModule.
-        } printTimeToRunInMicrosecondsWithTitle: "Object heap for assembly construction."
+        } printTimeToRunInMicrosecondsWithTitle: "Assembler object heap"
     }.
 
     public method offsetOfGCRootObjectTableEntryFor: (object: Untyped) ::=> Size
