@@ -349,7 +349,7 @@ AsmX86RegisterAddress definition: {
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: (sizeNameTable at: size); nextPutAll: " [".
+        stream nextPutAll: ((sizeNameTable atOrNil: size) ifNil: "struct"); nextPutAll: " [".
         let hasPrevious mutable := false.
         base ifNotNil: {
             stream print: base.
@@ -1534,6 +1534,10 @@ let instructionDefinitionTable := #(
         (OpRwRmw #[] #[16r8B])
     )
 
+	(movsb () "Move data from string into string"
+		(Op #[] #[16rA4])
+	)
+
     (movsx (dst src) "Move with sign extension"
 		(OpRwRmb #[] #[16r0F 16rBE])
 		(OpRwRmw #[] #[16r0F 16rBF])
@@ -1686,6 +1690,10 @@ let instructionDefinitionTable := #(
 		(OpRbRmb #[] #[16r1A])
 		(OpRwRmw #[] #[16r1B])
     )
+
+	(stosb () "Store string"
+		(Op #[] #[16rAA])
+	)
 
     (sub (dst with) "Integer subtraction"
         (OpALI8 #[] #[16r2C])
@@ -2027,6 +2035,18 @@ instructionDefinitionTable do: {:instructionDescription :: Void |
 }.
 
 AsmStreamBuilder extend: {
+    public method x86::add: (destination: AsmInstructionOperand) with: (operand: AsmInstructionOperand) ::=> AsmX86InstructionWithTwoOperands := {
+        operand isImmediateValue0
+            ifFalse: (self x86::direct::add: destination with: operand)
+            ifTrue: (nil)        
+    }.
+
+    public method x86::sub: (destination: AsmInstructionOperand) with: (operand: AsmInstructionOperand) ::=> AsmX86InstructionWithTwoOperands := {
+        operand isImmediateValue0
+            ifFalse: (self x86::direct::sub: destination with: operand)
+            ifTrue: (nil)        
+    }.
+
     public method x86::mov: (destination: AsmInstructionOperand) src: (source: AsmInstructionOperand) ::=> AsmX86InstructionWithTwoOperands := {
         destination ~= source
             ifTrue: (self x86::direct::mov: destination src: source)

@@ -8,7 +8,13 @@ public abstract class TACRegisterAllocator superclass: Object; definition: {
     public abstract method allocateRegister: (register: TACPhysicalLocation) forInstructionResult: (instruction: TACInstruction) ::=> Void
         := self subclassResponsibility.
 
+    public abstract method allocateRegister: (register: TACPhysicalLocation) forInstructionResultPointer: (instruction: TACInstruction) ::=> Void
+        := self subclassResponsibility.
+
     public abstract method allocateRegister: (register: TACPhysicalLocation) forInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method allocateRegister: (register: TACPhysicalLocation) forInstruction: (instruction: TACInstruction) operandPointerAt: (operandIndex: Size) ::=> Void
         := self subclassResponsibility.
 
     public abstract method allocateRegister: (register: TACPhysicalLocation) forInstruction: (instruction: TACInstruction) scratchAt: (operandIndex: Size) ::=> Void
@@ -332,8 +338,20 @@ public final class TACTrivialRegisterAllocator superclass: TACRegisterAllocator;
         register markActiveWithRegisterAllocator: self.
     }.
 
+    public override method allocateRegister: (register: TACPhysicalLocation) forInstructionResultPointer: (instruction: TACInstruction) ::=> Void := {
+        instruction resultRegister: (TACPhysicalLocationRegisterWithPointer new register: register; yourself).
+        instruction result markSpillingRequired.
+        register markActiveWithRegisterAllocator: self.
+    }.
+
     public override method allocateRegister: (register: TACPhysicalLocation) forInstruction: (instruction: TACInstruction) operandAt: (operandIndex: Size) ::=> Void := {
         instruction operandRegisters at: operandIndex put: register.
+        (instruction operands at: operandIndex) markSpillingRequired.
+        register markActiveWithRegisterAllocator: self.
+    }.
+
+    public override method allocateRegister: (register: TACPhysicalLocation) forInstruction: (instruction: TACInstruction) operandPointerAt: (operandIndex: Size) ::=> Void := {
+        instruction operandRegisters at: operandIndex put: (TACPhysicalLocationRegisterWithPointer new register: register; yourself).
         (instruction operands at: operandIndex) markSpillingRequired.
         register markActiveWithRegisterAllocator: self.
     }.

@@ -179,6 +179,11 @@ AsmObjectCodeSection definition: {
         writeOffset := writeOffset + byteCount.
     }.
 
+    public method nextPutStructure: (structure: AnyValue) withSize: (structureSize: Size) ::=> Void := {
+        structure __type__ encodeValue: structure inBytes: data atOffset: writeOffset.
+        writeOffset := writeOffset + structureSize
+    }.
+
     public method nextPutAll: (bytes: ByteArray) ::=> Void := {
         let byteCount := bytes size.
         data replaceBytesFrom: writeOffset count: byteCount with: bytes startingAt: 0sz.
@@ -847,6 +852,9 @@ AsmObjectCodeStream definition: {
     public abstract method nextPutString: (string: String) ::=> Void
         := self subclassResponsibility.
 
+    public abstract method nextPutStructure: (structure: AnyValue) withSize: (structureSize: Size) ::=> Void
+        := self subclassResponsibility.
+
     public abstract method recordSymbol: (symbol: AsmSymbol) ::=> Void
         := self subclassResponsibility.
 
@@ -923,6 +931,11 @@ AsmObjectCodeSizeStream definition: {
     public override method nextPutString: (string: String) ::=> Void := {
         activeSection increaseSizeBy: string size
     }.
+    
+    public abstract method nextPutStructure: (structure: AnyValue) withSize: (structureSize: Size) ::=> Void := {
+        activeSection increaseSizeBy: structureSize
+
+    }.
 
     public override method recordSymbol: (symbol: AsmSymbol) ::=> Void := {
         objectCodeBuilder recordSymbol: symbol.
@@ -991,6 +1004,10 @@ AsmObjectCodeWriteStream definition: {
 
     public override method nextPutString: (string: String) ::=> Void := {
         activeSection nextPutString: string
+    }.
+
+    public override method nextPutStructure: (structure: AnyValue) withSize: (structureSize: Size) ::=> Void := {
+        activeSection nextPutStructure: structure withSize: structureSize
     }.
 
     public override method nextPutAll: (bytes: ByteArray) ::=> Void := {

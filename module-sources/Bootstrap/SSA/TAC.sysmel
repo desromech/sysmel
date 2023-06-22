@@ -358,6 +358,16 @@ public final class SSAModuleTACCodeGenerator superclass: SSATACCodeGenerator; de
         }.
     }.
 
+    public method translateStructureConstant: (structure: AnyValue) ::=> TACValue := {
+        let structureType := structure __type__.
+        TACStructureConstant new
+            value: structure;
+            size: structureType validInstanceSize;
+            alignment: structureType validInstanceAlignment;
+            type: structureType;
+            yourself.
+    }.
+
     public method translateCStringConstant: (string: String) ::=> TACValue
         := TACStringLiteralPointerConstant new
             size: compilationTarget pointerSize;
@@ -660,12 +670,13 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
             moduleCodeGenerator translateValue: value
         }.
     
-    public method translateBoxedValue: (value: SSAValue) ::=> TACValue
-        := (boxedValueDictionary ifNil: {boxedValueDictionary := Dictionary new})
-            at: value ifAbsentPut: {:: TACValue |
-                let translatedValue := self translateValue: value.
-                value type emitTacBox: translatedValue withSSACodeGenerator: self
-            }.
+    public method translateBoxedValue: (value: SSAValue) ::=> TACValue := {
+        boxedValueDictionary ifNil: (boxedValueDictionary := Dictionary new).
+        boxedValueDictionary at: value ifAbsentPut: {:: TACValue |
+            let translatedValue := self translateValue: value.
+            value type emitTacBox: translatedValue withSSACodeGenerator: self
+        }
+    }.
 
     public method translateValue: (value: SSAValue) withExpectedType: (expectedType: Type) ::=> TACValue := {
         value type == expectedType || (value type isValueType = expectedType isValueType) ifTrue: {
@@ -931,6 +942,9 @@ ValueType extend: {
     public override method emitTacStore: (value: TACValue) intoPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder storeStruct: value into: pointer constantOffset: constantOffset
     }.
+
+    #*public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
+        := codegen translateStructureConstant: constant value.*#
 }.
 
 PointerLikeType extend: {

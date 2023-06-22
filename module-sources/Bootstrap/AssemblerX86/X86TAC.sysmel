@@ -720,6 +720,10 @@ public final class TACX86_64CompilationTarget superclass: TACAsmCompilationTarge
         value x86_64::moveIntoRegister: register with: codegen
     }.
 
+    public override method emitMoveValuePointer: (value: TACValue) intoLocation: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        value x86_64::movePointerIntoRegister: register with: codegen
+    }.
+
     public override method emitMoveRegister: (register: TACPhysicalLocation) intoValue: (value: TACValue) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         value x86_64::moveFromRegister: register with: codegen
     }.
@@ -735,6 +739,9 @@ TACValue extend: {
     public abstract method x86::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
         := self subclassResponsibility.
 
+    public abstract method x86::movePointerIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+        := self subclassResponsibility.
+
     public abstract method x86::moveFromRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
         := self subclassResponsibility.
 
@@ -743,6 +750,9 @@ TACValue extend: {
 
     public virtual method x86_64::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
         := self x86::moveIntoRegister: register with: codegen.
+
+    public virtual method x86_64::movePointerIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+        := self x86::movePointerIntoRegister: register with: codegen.
 
     public virtual method x86_64::moveFromRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
         := self x86::moveFromRegister: register with: codegen.
@@ -760,7 +770,15 @@ TACProgramEntity extend: {
         codegen textSection x86::mov: (register x86::int32For: codegen) src: (codegen symbolForProgramEntity: self) dword
     }.
 
+    public override method x86::movePointerIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: (register x86::int32For: codegen) src: (codegen symbolForProgramEntity: self) dword
+    }.
+
     public override method x86_64::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::lea: (register x86::int64For: codegen) src: (codegen symbolForProgramEntity: self) x86::qwordPtr
+    }.
+
+    public override method x86_64::movePointerIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::lea: (register x86::int64For: codegen) src: (codegen symbolForProgramEntity: self) x86::qwordPtr
     }.
 }.
@@ -803,12 +821,20 @@ TACVariable extend: {
         register x86::storeInVariable: self with: codegen
     }.
 
+    public override method x86::movePointerIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::lea: (register x86::int32For: codegen) src: (self x86::pointerWithCodegen: codegen)
+    }.
+
     public override method x86_64::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         register x86_64::loadFromVariable: self with: codegen
     }.
 
     public override method x86_64::moveFromRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         register x86_64::storeInVariable: self with: codegen
+    }.
+
+    public override method x86_64::movePointerIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::lea: (register x86::int64For: codegen) src: (self x86_64::pointerWithCodegen: codegen)
     }.
 }.
 
@@ -944,14 +970,24 @@ TACGenericObjectPointerConstant extend: {
         codegen textSection x86::mov: (register x86::int64For: codegen) src: (codegen x86_64::pointerForGCRootObjectTableEntryFor: self object).
     }.
 
+    public override method x86_64::movePointerIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: (register x86::int64For: codegen) src: (codegen x86_64::pointerForGCRootObjectTableEntryFor: self object).
+    }.
+
     public override method x86::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::push: (codegen x86_64::pointerForGCRootObjectTableEntryFor: self object)
     }.
 }.
 
+TACStructureConstant extend: {
+    public override method x86_64::movePointerIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::lea: (register x86::int64For: codegen) src: (codegen symbolOfStructureConstant: self) x86::bytePtr.
+    }.
+}.
+
 TACStringLiteralPointerConstant extend: {
     public override method x86_64::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
-        codegen textSection x86::lea: (register x86::int64For: codegen) src: (codegen symbolOfStringLiteral: string nullTerminated: nullTerminated) x86::qwordPtr
+        codegen textSection x86::lea: (register x86::int64For: codegen) src: (codegen symbolOfStringLiteral: string nullTerminated: nullTerminated) x86::bytePtr
     }.
 
     public override method x86::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
@@ -2746,6 +2782,19 @@ TAC::Operation::MoveInt64
         codegen textSection x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen)
     }.
 
+TAC::Operation::MoveStruct
+    forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegister: TAC::X86_64::RDI forInstructionResultPointer: instruction;
+            allocateRegister: TAC::X86_64::RSI forInstruction: instruction operandPointerAt: 0sz;
+            allocateRegister: TAC::X86_64::RCX forInstruction: instruction scratchAt: 0sz
+    };
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: X86::RCX src: instruction operands first size asUInt64 asAsmImmediate;
+            x86::rep; x86::movsb
+    }.
+
 let x86::loadPointerRegisterContraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterForInstructionResult: instruction;
@@ -2802,14 +2851,18 @@ TAC::Operation::LoadUInt64
     }.
 
 TAC::Operation::LoadStruct
-    forTargets: #(x86 x86_64) registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+    forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
         allocator
-            allocateMemoryForInstructionResult: instruction;
-            allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
-            allocateImmediate32ForInstruction: instruction operandAt: 1sz
+            allocateRegister: TAC::X86_64::RDI forInstructionResultPointer: instruction;
+            allocateRegister: TAC::X86_64::RSI forInstruction: instruction operandAt: 0sz;
+            allocateImmediate32ForInstruction: instruction operandAt: 1sz;
+            allocateRegister: TAC::X86_64::RCX forInstruction: instruction scratchAt: 0sz
     };
-    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
-        codegen textSection x86::int3; x86::nop
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: X86::RCX src: instruction operands first size asUInt64 asAsmImmediate;
+            x86::add: X86::RSI with: (instruction secondOperandRegister x86::immediate32For: codegen);
+            x86::rep; x86::movsb
     }.
 
 let x86::storePointerRegisterContraints := {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
@@ -2844,14 +2897,18 @@ TAC::Operation::StoreInt64
     }.
 
 TAC::Operation::StoreStruct
-    forTargets: #(x86 x86_64) registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
+    forTarget: #x86_64 registerConstraintsWith: {:(TACInstruction)instruction :(TACRegisterAllocator)allocator :: Void |
         allocator
-            allocateMemoryForInstruction: instruction operandAt: 0sz;
-            allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 1sz;
-            allocateImmediate32ForInstruction: instruction operandAt: 2sz
+            allocateRegister: TAC::X86_64::RSI forInstruction: instruction operandPointerAt: 0sz;
+            allocateRegister: TAC::X86_64::RDI forInstruction: instruction operandAt: 1sz;
+            allocateImmediate32ForInstruction: instruction operandAt: 2sz;
+            allocateRegister: TAC::X86_64::RCX forInstruction: instruction scratchAt: 0sz
     };
-    forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
-        codegen textSection x86::int3; x86::nop
+    forTarget: #x86_64 generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: X86::RCX src: instruction operands first size asUInt64 asAsmImmediate;
+            x86::add: X86::RDI with: (instruction thirdOperandRegister x86::immediate32For: codegen);
+            x86::rep; x86::movsb
     }.
 
 TAC::Operation::TruncateInt64ToInt32

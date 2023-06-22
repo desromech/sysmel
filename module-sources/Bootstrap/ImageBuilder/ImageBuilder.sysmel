@@ -47,6 +47,12 @@ public class ImageBuilderObjectTraceStrategyNoRTTI superclass: ImageBuilderObjec
     public override method traceReferencesOf: (object: Untyped) with: (imageBuilder: ImageBuilder) ::=> Void := {
         (RawTuple::type(object) ifNil: Untyped) imageBuilder::traceNoRTTIReferencesOf: object with: imageBuilder
     }.
+
+    public override method requiredTracedReflectiveFunctionsOf: (imageBuilder: ImageBuilder) ::=> SequenceableCollection
+        := #().
+
+    public override method requiredTracedReflectiveFunctionDefinitionsOf: (imageBuilder: ImageBuilder) ::=> SequenceableCollection
+        := #().
 }.
 
 public class ImageBuilderObjectTraceStrategyMinimal superclass: ImageBuilderObjectTraceStrategy; definition: {

@@ -9,6 +9,7 @@ public abstract class TACPhysicalLocation superclass: Object; definition: {
     public virtual method isMemory => Boolean := false.
     public virtual method isImmediate => Boolean := false.
     public virtual method isRegister => Boolean := false.
+    public virtual method isRegisterWithPointer => Boolean := false.
     public virtual method isIntegerRegister => Boolean := false.
     public virtual method isFloatRegister => Boolean := false.
     public virtual method isVectorRegister => Boolean := false.
@@ -23,6 +24,12 @@ public abstract class TACPhysicalLocationMemory superclass: TACPhysicalLocation;
         public method uniqueInstance => TACPhysicalLocationMemory
             := singleton.
     }
+}.
+
+public abstract class TACPhysicalLocationRegisterWithPointer superclass: TACPhysicalLocation; definition: {
+    public virtual method isRegisterWithPointer => Boolean := true.
+
+    public field register => TACPhysicalLocation.
 }.
 
 public abstract class TACPhysicalLocationRegister superclass: TACPhysicalLocation; definition: {
@@ -396,8 +403,25 @@ public final class TACStringLiteralPointerConstant superclass: TACConstant; defi
     public field type => Type.
     public field nullTerminated => Boolean.
 
+    public override method physicalLocationClass => TACPhysicalLocation class
+        := TACPhysicalIntegerRegister.
+
     public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "stringLiteralPointerConstant("; print: string; nextPut: ')'c8
+    }.
+}.
+
+public final class TACStructureConstant superclass: TACConstant; definition: {
+    public field value => AnyValue.
+    public field size => Size.
+    public field alignment => Size.
+    public field type => Type.
+
+    public override method physicalLocationClass => TACPhysicalLocation class
+        := TACPhysicalLocationMemory.
+
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: "structureConstant("; print: value; nextPut: ')'c8
     }.
 }.
 
@@ -1666,7 +1690,8 @@ TACFunction definition: {
                 (nextPosition operands first == position result) && 
                 position result isNotNil && 
                 (position result isLastUsedIn: nextPosition) ifTrue: {
-                    let comparisonAndBranchOperation => TACOperation := ComparisonOperationToBranchMap atOrNil: position operation.
+                    let positionOperation := position operation.
+                    let comparisonAndBranchOperation => TACOperation := ComparisonOperationToBranchMap atOrNil: positionOperation.
                     comparisonAndBranchOperation ifNotNil: {
                         position
                             operation: comparisonAndBranchOperation;

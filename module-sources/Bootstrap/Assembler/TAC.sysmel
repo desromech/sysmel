@@ -272,6 +272,9 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
         public abstract method emitMoveValue: (value: TACValue) intoLocation: (register: TACPhysicalLocation) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
+        public abstract method emitMoveValuePointer: (value: TACValue) intoLocation: (register: TACPhysicalLocation) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
         public abstract method emitMoveRegister: (register: TACPhysicalLocation) intoValue: (value: TACValue) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
@@ -401,12 +404,15 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
 
         self textSection useDebugInfoOfTACValue: instruction.
         self loadCaptureVectorPointerIfNeededFor: instruction.
+        instruction resultRegister isNotNil && instruction resultRegister isRegisterWithPointer ifTrue: {
+            self emitMoveValue: instruction result intoLocation: instruction resultRegister
+        }.
         self emitMoveValues: instruction operands intoRegisters: instruction operandRegisters.
 
         moduleGenerator target emitInstruction: instruction with: self.
 
         ## Do we need to support multiple result values?
-        instruction resultRegister isNotNil && instruction result isNotNil ifTrue: {
+        instruction resultRegister isNotNil && instruction resultRegister isRegisterWithPointer not && instruction result isNotNil ifTrue: {
             self emitMoveRegister: instruction resultRegister intoValue: instruction result
         }.
 
@@ -441,7 +447,10 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
     public method emitMoveValue: (value: TACValue) intoLocation: (location: TACPhysicalLocation) ::=> Void := {
         location isRegister ifTrue: {
             moduleGenerator target emitMoveValue: value intoLocation: location with: self.
-        }
+        }.
+        location isRegisterWithPointer ifTrue: {
+            moduleGenerator target emitMoveValuePointer: value intoLocation: (location downCastTo: TACPhysicalLocationRegisterWithPointer) register with: self.
+        }.
     }.
 
     public method emitMoveRegister: (location: TACPhysicalLocation) intoValue: (value: TACValue) ::=> Void := {
@@ -461,6 +470,18 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
 
     public method symbolOfStringLiteral: (string: String) nullTerminated: (nullTerminated: Boolean) ::=> AsmSymbol
         := moduleGenerator symbolOfStringLiteral: string nullTerminated: nullTerminated.
+
+    public method symbolOfStructureConstant: (structureConstant: TACStructureConstant) ::=> AsmSymbol
+        := constantSymbolDictionary at: (#uint8, structureConstant) ifAbsentPut: {:: AsmSymbol |
+            let symbol := AsmSymbol new
+                name: #structConstant;
+                yourself.
+            self rodataSection
+                align: structureConstant alignment;
+                label: symbol;
+                structure: structureConstant value size: structureConstant size.
+            symbol
+        }.
 
     public method symbolForUInt8Constant: (constant: UInt8) ::=> AsmSymbol
         := constantSymbolDictionary at: (#uint8, constant) ifAbsentPut: {:: AsmSymbol |

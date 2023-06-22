@@ -894,7 +894,7 @@ public final class SSACoerceValueInstruction superclass: SSAInstruction; definit
 
     public override method fullPrintOn: (stream: Stream) ::=> Void
         := stream print: self; nextPutAll: " := coerceValue: "; print: self value;
-            nextPut: ' '; print: self targetType.
+            nextPut: ' 'c8; print: self targetType.
 
     public override method usedValuesDo: aBlock ::=> Void := {
         aBlock(self value).

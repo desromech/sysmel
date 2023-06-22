@@ -377,7 +377,15 @@ ObjectModelVariant64 extend: {
             heap writeReference64: type at: offset extraAddend: typePointerFlags asUInt64.
         }.
 
-        header encodeInBytes: destination atOffset: offset.
+        ObjectModel::isLogical() ifTrue: {
+            header encodeInBytes: destination atOffset: offset.
+        } ifFalse: {
+            memcpy(
+                ((destination __rawContentsPointer__ reinterpretCastTo: UInt8 pointer) + offset asIntPointer) reinterpretCastTo: Void pointer,
+                header address reinterpretCastTo: Void pointer,
+                ObjectModel::TupleHeader64 valueSize
+            )
+        }.
 
         isDummyValue ifTrue: {return: void}.
 

@@ -205,6 +205,16 @@ AnalysisEnvironment definition: {
         := hasContinueTarget.
 }.
 
+AnalysisAndEvaluationEnvironment definition: {
+    public eager override method initializeWithParent: (theParent: Environment) ::=> Void := {
+        super initializeWithParent: theParent.
+        theParent ifNotNil: {
+            analyzerToken := theParent analyzerTokenOrNil.
+            expectedType := theParent expectedTypeOrNil.
+        }.
+    }.
+}.
+
 LocalAnalysisEnvironment definition: {
     public eager override method initializeWithParent: (theParent: Environment) ::=> Void := {
         super initializeWithParent: theParent.
@@ -290,14 +300,6 @@ SymbolAnalysisBinding ensureAnalysisOfMethodWithSelector: #getOrCreateCaptureInF
 SymbolTupleSlotBinding ensureAnalysisOfMethodWithSelector: #getOrCreateCaptureInFunctionAnalysisEnvironment:.
 
 AnalysisAndEvaluationEnvironment definition: {
-    public eager override method initializeWithParent: (theParent: Environment) ::=> Void := {
-        super initializeWithParent: theParent.
-        theParent ifNotNil: {
-            analyzerToken := theParent analyzerTokenOrNil.
-            expectedType := theParent expectedTypeOrNil.
-        }.
-    }.
-
     public eager override method lookFunctionAnalysisEnvironmentRecursively => FunctionAnalysisEnvironment
         := parent ifNotNil: parent lookFunctionAnalysisEnvironmentRecursively.
 

@@ -47,6 +47,7 @@ public class AsmStreamElement superclass: Object; definition: {
 AsmInstructionOperand definition: {
     public virtual method isImmediate => Boolean := false.
     public virtual method isImmediateValue1 => Boolean := false.
+    public virtual method isImmediateValue0 => Boolean := false.
     public virtual method isImmediate8 => Boolean := self isImmediate && (self size = 1sz).
     public virtual method isImmediate16 => Boolean := self isImmediate && (self size <= 2sz).
     public virtual method isImmediate32 => Boolean := self isImmediate && (self size <= 4sz).
@@ -167,7 +168,7 @@ public final class AsmImmediateSymbolWithAddend superclass: AsmImmediate; defini
     }.
 
     public override method nextPutIPRelativeI32WithExtraOffset: (extraOffset: Int32) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
-        let shouldAvoidRelocation := symbol isPrivate && symbol section isNotNil && symbol section == codeStream activeSection.
+        let shouldAvoidRelocation := symbol isPrivate && symbol section isNotNil && (symbol section == codeStream activeSection).
         shouldAvoidRelocation ifTrue:{
             codeStream nextPutInt32: symbol value asInt32 - codeStream activeSection writeOffset asInt32 + addend asInt32 - extraOffset.
             return: void
@@ -438,6 +439,7 @@ public final class AsmImmediateConstantChar8 superclass: AsmImmediateConstant; d
     public field value => Char8.
 
     public override method isImmediateValue1 => Boolean := value = 1c8.
+    public override method isImmediateValue0 => Boolean := value = 0c8.
     public override method isImmediateConstantChar8 => Boolean := true.
     public override method size => Size := 1sz.
 
@@ -460,6 +462,7 @@ public final class AsmImmediateConstantUInt8 superclass: AsmImmediateConstant; d
     public field value => UInt8.
 
     public override method isImmediateValue1 => Boolean := value = 1u8.
+    public override method isImmediateValue0 => Boolean := value = 0u8.
 
     public override method isImmediateConstantUInt8 => Boolean := true.
     public override method size => Size := 1sz.
@@ -482,6 +485,7 @@ public final class AsmImmediateConstantInt8 superclass: AsmImmediateConstant; de
     public field value => Int8.
     
     public override method isImmediateValue1 => Boolean := value = 1i8.
+    public override method isImmediateValue0 => Boolean := value = 0i8.
 
     public override method isImmediateSigned8 => Boolean := true.
     public override method isImmediateConstantInt8 => Boolean := true.
@@ -508,6 +512,9 @@ public final class AsmImmediateConstantChar16 superclass: AsmImmediateConstant; 
     public field value => Char16.
 
     public override method isImmediateConstantChar16 => Boolean := true.
+    public override method isImmediateValue0 => Boolean := value = 0c16.
+    public override method isImmediateValue1 => Boolean := value = 1c16.
+
     public override method size => Size := 2sz.
 
     public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
@@ -528,6 +535,8 @@ public final class AsmImmediateConstantUInt16 superclass: AsmImmediateConstant; 
     public field value => UInt16.
 
     public override method isImmediateConstantUInt16 => Boolean := true.
+    public override method isImmediateValue0 => Boolean := value = 0u16.
+    public override method isImmediateValue1 => Boolean := value = 1u16.
     public override method size => Size := 2sz.
 
     public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
@@ -548,6 +557,8 @@ public final class AsmImmediateConstantInt16 superclass: AsmImmediateConstant; d
     public field value => Int16.
     
     public override method isImmediateConstantInt16 => Boolean := true.
+    public override method isImmediateValue0 => Boolean := value = 0i16.
+    public override method isImmediateValue1 => Boolean := value = 1i16.
     public override method size => Size := 2sz.
 
     public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
@@ -568,6 +579,8 @@ public final class AsmImmediateConstantChar32 superclass: AsmImmediateConstant; 
     public field value => Char32.
 
     public override method isImmediateConstantChar32 => Boolean := true.
+    public override method isImmediateValue0 => Boolean := value = 0c32.
+    public override method isImmediateValue1 => Boolean := value = 1c32.
     public override method size => Size := 4sz.
 
     public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
@@ -588,6 +601,8 @@ public final class AsmImmediateConstantUInt32 superclass: AsmImmediateConstant; 
     public field value => UInt32.
 
     public override method isImmediateConstantUInt32 => Boolean := true.
+    public override method isImmediateValue0 => Boolean := value = 0u32.
+    public override method isImmediateValue1 => Boolean := value = 1u32.
     public override method size => Size := 4sz.
 
     public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
@@ -609,6 +624,8 @@ public final class AsmImmediateConstantInt32 superclass: AsmImmediateConstant; d
     
     public override method isImmediateSigned32 => Boolean := true.
     public override method isImmediateConstantInt32 => Boolean := true.
+    public override method isImmediateValue0 => Boolean := value = 0i32.
+    public override method isImmediateValue1 => Boolean := value = 1i32.
     public override method size => Size := 4sz.
 
     public override method isImmediateSigned8 => Boolean := value asInt8 asInt32 = value.
@@ -632,6 +649,8 @@ public final class AsmImmediateConstantUInt64 superclass: AsmImmediateConstant; 
     public field value => UInt64.
 
     public override method isImmediateConstantUInt64 => Boolean := true.
+    public override method isImmediateValue0 => Boolean := value = 0u64.
+    public override method isImmediateValue1 => Boolean := value = 1u64.
     public override method size => Size := 8sz.
 
     public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
@@ -652,6 +671,8 @@ public final class AsmImmediateConstantInt64 superclass: AsmImmediateConstant; d
     public field value => Int64.
     
     public override method isImmediateConstantInt64 => Boolean := true.
+    public override method isImmediateValue0 => Boolean := value = 0i64.
+    public override method isImmediateValue1 => Boolean := value = 1i64.
     public override method size => Size := 8sz.
 
     public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
@@ -1081,6 +1102,20 @@ public final class AsmStringDirective superclass: AsmStreamElement; definition: 
     }.
 }.
 
+public final class AsmStructureDirective superclass: AsmStreamElement; definition: {
+    public field value => AnyValue.
+    public field size => Size.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".struct "; print: value.
+        self printDebugInfoOn: stream.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutStructure: value withSize: size
+    }.
+}.
+
 public final class AsmByteConstantExpressionDirective superclass: AsmStreamElement; definition: {
     public field expression => AsmConstantExpression.
 
@@ -1441,6 +1476,12 @@ public final class AsmStreamBuilder superclass: Object; definition: {
         := self addElement: (AsmStringDirective new
             value: string;
             nullTerminated: nullTerminated;
+            yourself).
+
+    public method structure: (value: AnyValue) size: (size: Size) ::=> AsmStructureDirective
+        := self addElement: (AsmStructureDirective new
+            value: value;
+            size: size;
             yourself).
 
     public method byteExpression: (expression: AsmConstantExpression) ::=> AsmByteConstantExpressionDirective

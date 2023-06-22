@@ -346,7 +346,14 @@ let primitiveFunctionGenerators := #{
 
     #PointerLikeType::load : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
         let reference := self arguments first generateSSAValueWith: context.
-        context builder load: reference type: self analyzedType
+        self analyzedType isTemporaryReferenceType ifTrue: {
+            let valueType := (self analyzedType downCastTo: ReferenceLikeType) baseType.
+            let temporary := context builder alloca: (context builder literal: valueType) type: self analyzedType.
+            context builder store: (context builder load: reference type: valueType) in: temporary.
+            temporary
+        } ifFalse: {
+            context builder load: reference type: self analyzedType
+        }.
     }.
     #PointerLikeType::store: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
         let reference := self arguments first generateSSAValueWith: context.

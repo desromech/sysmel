@@ -62,6 +62,7 @@ ReferenceType definition: {
         self
             withSelector: #__refLoad__ addMethod: loadValueFunction;
             withSelector: #__refStore__: addMethod: storeValueFunction;
+            withSelector: #":=" addMethod: storeValueFunction;
             withSelector: #address addMethod: ((PointerLikeType::reinterpretCast) copy
                 __type__: (self) => pointerType;
                 yourself).
@@ -92,6 +93,7 @@ TemporaryReferenceType definition: {
         self
             withSelector: #__refLoad__ addMethod: loadValueFunction;
             withSelector: #__refStore__: addMethod: storeValueFunction;
+            withSelector: #":=" addMethod: storeValueFunction;
             withSelector: #address addMethod: ((PointerLikeType::reinterpretCast) copy
                 __type__: (self) => pointerType;
                 yourself);

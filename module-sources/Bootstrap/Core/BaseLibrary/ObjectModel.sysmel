@@ -1311,15 +1311,22 @@ public function ObjectModel::checkAndUnboxFloat64(value: Untyped) => Float64 := 
     }.
 }.
 
-public function ObjectModel::checkAndUnboxPointer(pointerType: Type, value: Untyped) => UIntPointer := {
+public function ObjectModel::checkAndUnboxPointer(pointerType: PointerLikeType, value: Untyped) => UIntPointer := {
     Untyped::==(value, nil) ifTrue: {
         0uptr
     } ifFalse: {
-        RawTuple::type(value) == pointerType ifFalse: {
+        let valueType := RawTuple::type(value).
+        let objectHeader := ObjectModel::getTuplePointerUIntValue(value) reinterpretCastTo: ObjectModel::TupleHeader pointer.
+
+        valueType == pointerType ifFalse: {
+            ## Am I a box for the requested base type?
+            (valueType isDirectSubtypeOf: pointerType baseType) ifTrue: {
+                return: (objectHeader + 1iptr reinterpretCastTo: UIntPointer)
+            }.
+
             error("Expected a pointer with a specific type.").
         }.
 
-        let objectHeader := ObjectModel::getTuplePointerUIntValue(value) reinterpretCastTo: ObjectModel::TupleHeader pointer.
         objectHeader _ isBytes ifTrue: {
             (objectHeader + 1iptr reinterpretCastTo: UIntPointer pointer) load
         } ifFalse: {

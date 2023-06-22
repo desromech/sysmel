@@ -125,7 +125,8 @@ Type
         let: #existent with: (methodDictionary atOrNil: selector).
         if: existent == nil then: {
             methodDictionary at: selector put: newMethod.
-            self flushLookupSelector: selector
+            self flushLookupSelector: selector.
+            newMethod recordBindingWithOwner: self andName: selector
         } else: {
             existent adoptDefinitionOf: newMethod
         }
@@ -281,7 +282,7 @@ Type
         self hasAnyFlag: TypeFlags::Weak.
     } makeFinal withEagerAnalysis;
     withSelector: #isPointerLikeType addMethod: {:(Type)self :: Boolean |
-        self hasAnyFlag: TypeFlags::PointerValue | TypeFlags::ReferenceValue.
+        self hasAnyFlag: (TypeFlags::PointerValue | TypeFlags::ReferenceValue) | TypeFlags::TemporaryReferenceValue.
     } makeFinal withEagerAnalysis;
     withSelector: #basicAllocate addMethod: {:(Type)self :: self |
         <primitive: #basicAllocate>
@@ -2779,6 +2780,16 @@ Type
         self
     } makePure.
 
+PointerType
+    withSelector: #printOn: addMethod: {:(PointerType)self :(Stream)stream :: Void |
+        stream print: self baseType.
+        if: self addressSpace == nil then: {
+            stream nextPutAll: " pointer"
+        } else: {
+            stream nextPutAll: " pointerFor: "; print: self addressSpace
+        }.
+    } makeOverride.
+
 ReferenceType
     withSelector: #printOn: addMethod: {:(ReferenceType)self :(Stream)stream :: Void |
         stream print: self baseType.
@@ -2802,7 +2813,7 @@ ReferenceType
     } makeOverride makePure.
 
 TemporaryReferenceType
-    withSelector: #printOn: addMethod: {:(ReferenceType)self :(Stream)stream :: Void |
+    withSelector: #printOn: addMethod: {:(TemporaryReferenceType)self :(Stream)stream :: Void |
         stream print: self baseType.
         if: self addressSpace == nil then: {
             stream nextPutAll: " tempRef"
@@ -2810,22 +2821,12 @@ TemporaryReferenceType
             stream nextPutAll: " tempRefFor: "; print: self addressSpace
         }.
     } makeOverride;
-    withSelector: #tempRefFor: addMethod: {:(ReferenceType)self :addressSpace :: ReferenceLikeType |
+    withSelector: #tempRefFor: addMethod: {:(TemporaryReferenceType)self :addressSpace :: ReferenceLikeType |
         self baseType refFor: addressSpace
     } makeOverride makePure;
-    withSelector: #tempRef addMethod: {:(ReferenceType)self :: ReferenceLikeType |
+    withSelector: #tempRef addMethod: {:(TemporaryReferenceType)self :: ReferenceLikeType |
         self
     } makeOverride makePure.
-
-PointerType
-    withSelector: #printOn: addMethod: {:(PointerType)self :(Stream)stream :: Void |
-        stream print: self baseType.
-        if: self addressSpace == nil then: {
-            stream nextPutAll: " pointer"
-        } else: {
-            stream nextPutAll: " pointerFor: "; print: self addressSpace
-        }.
-    } makeOverride.
 
 Type
     withSelector: #canonicalTypeForApplicationArgumentWithIndex: addMethod: {:(Type)self :(Size)index :: Type | AnyValue } makeVirtual.
