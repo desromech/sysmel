@@ -57,7 +57,7 @@ Environment definition: {
         public eager method parent: (parent: Environment) analysisQueue: (analysisQueue: AnalysisQueue) ::=> self
             := (self parent: parent) analysisQueue: analysisQueue; yourself.
 
-        public eager method defaultEnvironmentForEvaluation ::=> self
+        public eager method defaultForEvaluation ::=> self
             := self parent: __Global__ analysisQueue: AnalysisQueue default.
     }.
 

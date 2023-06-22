@@ -2120,6 +2120,7 @@ public final class Dwarf::ObjectDebugInformationGenerator superclass: AsmObjectD
         := (self getOrCreateDieForProgramEntity: programEntity) ifNil: compileUnit.
 
     public method setDie: (die: Dwarf::DebugInfoEntry) declarationPosition: (sourcePosition: SourcePosition) ::=> Void := {
+        sourcePosition ifNil: {return: void}.
         let sourceCode := sourcePosition sourceCode.
         sourceCode ifNotNil: {
             die

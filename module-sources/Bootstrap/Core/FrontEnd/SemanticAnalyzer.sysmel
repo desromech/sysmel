@@ -262,12 +262,14 @@ ASTLambdaNode definition: {
                 captureVector at: index put: (environment evaluateSymbolBinding: eachCapture sourceBinding)
             }.
 
-            let closure => Function := functionDefinition analyzedType new.
+            let closure => Function := Function new.
+            closure __type__: functionDefinition analyzedType.
             closure setupWithFunctionDefinition: functionDefinition captureVector: captureVector.
             closure.
         } ifFalse: {
             functionDefinition ensureTypeAnalysis.
-            let closure => Function := functionDefinition analyzedType new.
+            let closure => Function := Function new.
+            closure __type__: functionDefinition analyzedType.
             closure setupWithFunctionDefinition: functionDefinition captureEnvironment: environment.
             environment enqueuePendingAnalysis: closure.
             closure

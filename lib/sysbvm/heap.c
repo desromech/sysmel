@@ -7,7 +7,7 @@
 #define SYSBVM_HEAP_MIN_CHUNK_SIZE (4<<20)
 #define SYSBVM_HEAP_FAST_GROWTH_THRESHOLD (SYSBVM_HEAP_MIN_CHUNK_SIZE*512ull)
 
-#define SYSBVM_HEAP_CODE_ZONE_CHUNK_SIZE SYSBVM_HEAP_MIN_CHUNK_SIZE
+#define SYSBVM_HEAP_CODE_ZONE_SIZE (16<<20)
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -236,8 +236,8 @@ sysbvm_tuple_t *sysbvm_heap_allocateGCRootTableEntry(sysbvm_heap_t *heap)
 {
     if(!heap->gcRootTable)
     {
-        heap->gcRootTable = (sysbvm_tuple_t*)sysbvm_heap_allocateSystemMemory(SYSBVM_HEAP_CODE_ZONE_CHUNK_SIZE);
-        heap->gcRootTableCapacity = SYSBVM_HEAP_CODE_ZONE_CHUNK_SIZE / sizeof(sysbvm_tuple_t);
+        heap->gcRootTable = (sysbvm_tuple_t*)sysbvm_heap_allocateSystemMemory(SYSBVM_HEAP_CODE_ZONE_SIZE);
+        heap->gcRootTableCapacity = SYSBVM_HEAP_CODE_ZONE_SIZE / sizeof(sysbvm_tuple_t);
         heap->gcRootTableSize = 0;
     }
 
@@ -254,11 +254,11 @@ void *sysbvm_heap_allocateAndLockCodeZone(sysbvm_heap_t *heap, size_t size, size
 {
     if(!heap->codeZone)
     {
-        heap->codeZone = (uint8_t*)sysbvm_heap_allocateSystemMemoryForCode(SYSBVM_HEAP_CODE_ZONE_CHUNK_SIZE);
+        heap->codeZone = (uint8_t*)sysbvm_heap_allocateSystemMemoryForCode(SYSBVM_HEAP_CODE_ZONE_SIZE);
         if(!heap->codeZone)
             abort();
 
-        heap->codeZoneCapacity = SYSBVM_HEAP_CODE_ZONE_CHUNK_SIZE;
+        heap->codeZoneCapacity = SYSBVM_HEAP_CODE_ZONE_SIZE;
         heap->codeZoneSize = 0;
     }
 

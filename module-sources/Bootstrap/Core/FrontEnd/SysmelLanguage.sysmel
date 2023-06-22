@@ -1200,7 +1200,7 @@ public class SysmelLanguage superclass: Object; definition: {
     }.
 
     public virtual method analyzeAndEvaluateSourceCode: (sourceCode: SourceCode) ::=> AnyValue
-        := self analyzeAndEvaluateSourceCode: sourceCode withEnvironment: Environment defaultEnvironmentForEvaluation.
+        := self analyzeAndEvaluateSourceCode: sourceCode withEnvironment: Environment defaultForEvaluation.
 }.
 
 public class SysmelLispLanguage superclass: SysmelLanguage; definition: {

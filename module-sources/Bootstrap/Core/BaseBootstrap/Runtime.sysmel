@@ -85,11 +85,51 @@ Function
         self
     } withEagerAnalysis.
 
+ProgramEntity
+    withSelector: #ensureAnalysis addMethod: {:(ProgramEntity)self :: Void |
+        void
+    } makeVirtual.
 
 Type
     withSelector: #=> addMethod: {:(Type)self :(Type)resultType :: SimpleFunctionType |
         SimpleFunctionTypeTemplate((self,), 0bflgs, resultType)
-    } makePure makeFinal withEagerAnalysis.
+    } makePure makeFinal withEagerAnalysis;
+    withSelector: #computeLayout addMethod: {:(Type)self :: Void |
+        void
+    } makeVirtual;
+    withSelector: #ensureLayoutIsComputed addMethod: {:(Type)self :: Void |
+        if: self instanceAlignment = 0sz then: (self computeLayout).
+        void
+    } makeFinal;
+    withSelector: #ensureAnalysis addMethod: {:(Type)self :: Void |
+        void
+    } makeOverride withEagerAnalysis;
+    withSelector: #createBasicInitializeMethod addMethod: {:(Type)self :: Void |
+        void
+    } makeVirtual withEagerAnalysis;
+    withSelector: #validBasicInitializeMethod addMethod: {:(Type)self :: Function |
+        let: #method with: (self __slotNamedAt__: #basicInitializeMethod).
+        if: method == nil then: {
+            self createBasicInitializeMethod.
+            self __slotNamedAt__: #basicInitializeMethod
+        } else: {
+            method
+        }
+    } makeFinal withEagerAnalysis;
+
+    withSelector: #withSelector:replaceMethod: addMethod: {:(Type)self :selector :newMethod :: Void |
+        ((self __slotNamedAt__: #methodDictionary) at: selector) adoptDefinitionOf: newMethod
+    } withEagerAnalysis;
+    withSelector: #withSelector:addOrReplaceMethod: addMethod: {:(Type)self :selector :newMethod :: Void |
+        let: #methodDictionary with: self validMethodDictionary.
+        let: #existent with: (methodDictionary atOrNil: selector).
+        if: existent == nil then: {
+            methodDictionary at: selector put: newMethod.
+            self flushLookupSelector: selector
+        } else: {
+            existent adoptDefinitionOf: newMethod
+        }
+    } withEagerAnalysis.
 
 ValueBox
     withSelector: #loadFrom:atOffset:withType: addMethod: {:(ValueBox)self :(Untyped)containerBase :(IntPointer)offset :(Type)valueType :: valueType |
@@ -110,8 +150,6 @@ TypeSlot
     } makeFinal withEagerAnalysis.
 
 Type
-    withSelector: #basicInitializeInstance: addMethod: {:(Type)self :(AnyValue)instance :: Void |
-    } makeVirtual withEagerAnalysis;
     withSelector: #lookupLocalSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
         let: #methodDictionary with: self methodDictionary.
         if: methodDictionary ~~ nil
@@ -138,7 +176,8 @@ Type
     ensureAnalysisOfMethodWithSelector: #lookupSelector:.
 
 AnyValue
-    withSelector: #basicInitialize addMethod: {:(AnyValue)self :: Void | self __type__ basicInitializeInstance: self } withEagerAnalysis;
+    basicInitializeMethod: {:(AnyValue)self :: Void | void } makeVirtual withEagerAnalysis;
+    withSelector: #basicInitialize addMethod: AnyValue basicInitializeMethod;
     withSelector: #initialize addMethod: {:(AnyValue)self :: Void | } makeVirtual withEagerAnalysis;
     withSelector: #yourself addMethod: {:(AnyValue)self :: self __type__ |
         <primitive: #yourself>
@@ -253,7 +292,10 @@ Type
         result
     } makeVirtual withEagerAnalysis;
     withSelector: #basicNew addMethod: {:(Type)self :: self |
-        self basicAllocate
+        let: #result with: self basicAllocate.
+        let: #basicInitializeMethod with: self validBasicInitializeMethod.
+        if: basicInitializeMethod ~~ nil then: basicInitializeMethod(result).
+        result
     } makeVirtual withEagerAnalysis;
     withSelector: #new addMethod: {:(Type)self :: self |
         self basicNew initialize; yourself
@@ -573,7 +615,7 @@ Type
         extraSlot owner: self.
         extraSlot generateAccessorsOn: self.
     } withEagerAnalysis;
-    withSelector: #basicAllocate addMethod: {:(Type)self :: self |
+    withSelector: #basicAllocate replaceMethod: {:(Type)self :: self |
         let: #result with: (if: self isBytes
             then: RawTuple::byteNew(0sz)
             else: RawTuple::new(self validTotalSlotCount)).
@@ -589,13 +631,13 @@ Type
         if: self isWeak then: RawTuple::markWeak(result).
         result
     } makeVirtual withEagerAnalysis;
-    withSelector: #basicNew addMethod: {:(Type)self :: self |
-        self basicAllocate basicInitialize; yourself
-    } makeVirtual withEagerAnalysis;
     withSelector: #basicNew: addMethod: {:(Type)self :(Size)variableSlotCount :: self |
-        (self basicAllocate: variableSlotCount) basicInitialize; yourself
+        let: #result with: (self basicAllocate: variableSlotCount).
+        let: #basicInitializeMethod with: self validBasicInitializeMethod.
+        if: basicInitializeMethod ~~ nil then: basicInitializeMethod(result).
+        result
     } makeVirtual withEagerAnalysis;
-    withSelector: #new addMethod: {:(Type)self :: self |
+    withSelector: #new replaceMethod: {:(Type)self :: self |
         self basicNew initialize; yourself
     } makeVirtual withEagerAnalysis;
     withSelector: #new: addMethod: {:(Type)self :(Size)variableSlotCount :: self |
@@ -2385,6 +2427,30 @@ TypeSlot
             }.
         }
     } withEagerAnalysis;
+    withSelector: #initialValueExpression addMethod: {:(TypeSlot)self :: ASTNode |
+        let: #initialValueBlock with: self initialValueBlock.
+        if: initialValueBlock ~~ nil then: {
+            error("Generate initialValueBlock application")
+        } else: {
+            let: #type with: self type.
+            ASTLiteralNode new
+                sourcePosition: self sourcePosition;
+                value: (if: type ~~ nil then: type defaultValue else: nil);
+                yourself
+        }
+    };
+    withSelector: #basicInitializeInstanceReference: addMethod: {:(TypeSlot)self :(Untyped)instanceReference :: Void |
+        let: #initialValueBlock with: self initialValueBlock.
+        if: initialValueBlock ~~ nil then: {
+            let: #initialValue with: initialValueBlock(instanceReference).
+            (RawTuple::refTypeSlotAt:put:)(instanceReference, self, initialValue)
+        } else: {
+            let: #type with: self type.
+            if: type ~~ nil then: {
+                (RawTuple::refTypeSlotAt:put:)(instanceReference, self, type defaultValue)
+            }.
+        }
+    } withEagerAnalysis;
     withSelector: #validOffset addMethod: {:(TypeSlot)self :: Size |
         let: #owner with: self owner.
         if: owner ~~ nil then: ((owner downCastTo: Type) ensureLayoutIsComputed).
@@ -2411,20 +2477,76 @@ Type
             self slotsWithBasicInitialization: result asArray
         }.
         self slotsWithBasicInitialization
-    }.
+    };
+    ensureAnalysisOfMethodWithSelector: #validSlotsWithBasicInitialization.
 
-Array validSlotsWithBasicInitialization.
-OrderedCollection validSlotsWithBasicInitialization.
+{
+    let: #createBasicInitializeMethod with: {:(Type)self :: Void |
+        let: #ReceiverType with: self.## asReceiverType.
+        let: #slots with: self validSlotsWithBasicInitialization.
+        let: #slotCount with: slots size.
+
+        let: #methodNode with: (ASTLambdaNode new
+            arguments: (Array with: (ASTArgumentNode new
+                isForAll: false;
+                name: (ASTLiteralNode new
+                    value: #self;
+                    yourself);
+                type: (ASTLiteralNode new
+                    value: ReceiverType;
+                    yourself);
+                yourself));
+            resultType: (ASTLiteralNode new
+                value: Void;
+                yourself);
+            body: (ASTSequenceNode new
+                expressions: (slots collect: {:(TypeSlot)eachSlot :: ASTNode |
+                    ASTTupleSlotNamedAtPutNode new
+                        sourcePosition: eachSlot sourcePosition;
+                        tupleExpression: (ASTIdentifierReferenceNode new
+                            sourcePosition: eachSlot sourcePosition;
+                            value: #self;
+                            yourself);
+                        valueExpression: eachSlot initialValueExpression;
+                        boundSlot: eachSlot;
+                        yourself
+                });
+                yourself);
+            flags: (if: self supertype ~~ nil
+                then: FunctionFlags::Override
+                else: FunctionFlags::Virtual);
+            hasLazyAnalysis: false;
+            yourself).
+        let: #methodFromAST with: (methodNode analyzeAndEvaluateWithEnvironment: Environment defaultForEvaluation).
+
+        self basicInitializeMethod: methodFromAST.
+        self withSelector: #basicInitialize addOrReplaceMethod: self basicInitializeMethod.
+    } makeVirtual withEagerAnalysis.
+
+    createBasicInitializeMethod(Object).
+    createBasicInitializeMethod(Array).
+    createBasicInitializeMethod(Environment).
+    createBasicInitializeMethod(OrderedCollection).
+    createBasicInitializeMethod(Function).
+    createBasicInitializeMethod(FunctionDefinition).
+    createBasicInitializeMethod(String).
+    createBasicInitializeMethod(StringSymbol).
+    createBasicInitializeMethod(SymbolArgumentBinding).
+    createBasicInitializeMethod(SymbolCaptureBinding).
+    createBasicInitializeMethod(SymbolLocalBinding).
+    createBasicInitializeMethod(SimpleFunctionType).
+    createBasicInitializeMethod(ASTArgumentNode).
+    createBasicInitializeMethod(ASTIdentifierReferenceNode).
+    createBasicInitializeMethod(ASTLambdaNode).
+    createBasicInitializeMethod(ASTFunctionApplicationNode).
+    createBasicInitializeMethod(ASTLocalDefinitionNode).
+    createBasicInitializeMethod(ASTLiteralNode).
+    createBasicInitializeMethod(ASTSequenceNode).
+    createBasicInitializeMethod(ASTTupleSlotNamedAtPutNode).
+    Type withSelector: #createBasicInitializeMethod replaceMethod: createBasicInitializeMethod
+}.
 
 Type
-    withSelector: #basicInitializeInstance: addMethod: {:(Type)self :(AnyValue)instance :: Void |
-        let: #validSlots with: self validSlotsWithBasicInitialization.
-        let: #slotCount with: validSlots size.
-        let: #i mutableWith: 0sz.
-        while: (i < slotCount) do: (
-            (validSlots at: i) basicInitializeInstance: instance
-        ) continueWith: (i := i + 1sz)
-    } makeVirtual withEagerAnalysis;
     withSelector: #validSubtypeList addMethod: {:(Type)self :: WeakOrderedCollection |
         if: self subtypes == nil then: (self subtypes: WeakOrderedCollection new).
         self subtypes
@@ -2537,7 +2659,7 @@ Metatype
 
 ## Construct the subtype links
 BootstrapEnv::IntrinsicTypes do: {:(Type)each :: Void |
-    each registerInSupertype
+    each registerInSupertype 
 }.
 
 TypeSlot
@@ -3079,10 +3201,7 @@ TypeSlot
     } makeFinal.
 
 Type
-    withSelector: #ensureLayoutIsComputed addMethod: {:(Type)self :: Void |
-        if: self instanceAlignment = 0sz then: (self computeLayout)
-    } makeFinal;
-    withSelector: #computeLayout addMethod: {:(Type)self :: Void |
+    withSelector: #computeLayout replaceMethod: {:(Type)self :: Void |
         self instanceSize: 0sz.
         self instanceAlignment: 1sz.
 
@@ -3142,17 +3261,22 @@ PrimitiveUnsignedInteger __type__ withSelector: #isPrimitiveUnsignedIntegerType 
 Type
     validInstanceAlignment;
     validInstanceSize;
-    withSelector: #basicAllocate addMethod: {:(Type)self :: self |
+    withSelector: #basicAllocate replaceMethod: {:(Type)self :: self |
         (RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:)(
             self, self validInstanceSize, self validInstanceAlignment, self validTotalSlotCount, 0sz,
             self isBytes, self isWeak
         )
     } makeVirtual withEagerAnalysis;
-    withSelector: #basicAllocate: addMethod: {:(Type)self :(Size)variableSize :: self |
+    withSelector: #basicAllocate: replaceMethod: {:(Type)self :(Size)variableSize :: self |
         (RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:)(
             self, self validInstanceSize, self validInstanceAlignment, self validTotalSlotCount, variableSize,
             self isBytes, self isWeak
         )
+    } makeVirtual withEagerAnalysis;
+    withSelector: #ensureAnalysis replaceMethod: {:(Type)self :: Void |
+        self validSlots.
+        self validBasicInitializeMethod.
+        self ensureLayoutIsComputed.
     } makeVirtual withEagerAnalysis.
 
 PointerLikeType

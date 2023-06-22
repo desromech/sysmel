@@ -526,9 +526,9 @@ Integer definition: {
 
 print adoptDefinitionOf: {:(Array)elements... :: Void |
     elements do: {:each :: Void | each asString writeOntoStdout}
-}.
+} withEagerAnalysis.
 
 printLine adoptDefinitionOf: {:(Array)elements... :: Void |
     elements do: {:each :: Void | each asString writeOntoStdout}.
     "\n" writeOntoStdout
-}.
+} withEagerAnalysis.

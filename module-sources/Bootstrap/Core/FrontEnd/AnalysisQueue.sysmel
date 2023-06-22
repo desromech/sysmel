@@ -1,9 +1,3 @@
-ProgramEntity definition:{
-    public virtual eager method ensureAnalysis => Void := {
-        ## By default do nothing
-    }.
-}.
-
 AnalysisQueueEntry definition: {
     public method waitPendingAnalysis => Void := {
         programEntity ensureAnalysis

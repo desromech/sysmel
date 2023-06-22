@@ -4462,22 +4462,31 @@ static sysbvm_tuple_t sysbvm_astTupleSlotNamedAtPutNode_primitiveAnalyze(sysbvm_
     gcFrame.analyzedTupleExpression = sysbvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.tupleSlotNamedAtPutNode->tupleExpression, *environment);
     gcFrame.tupleSlotNamedAtPutNode->tupleExpression = gcFrame.analyzedTupleExpression;
 
-    gcFrame.analyzedNameExpression = sysbvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.tupleSlotNamedAtPutNode->nameExpression, context->roots.symbolType, *environment);
-    gcFrame.tupleSlotNamedAtPutNode->nameExpression = gcFrame.analyzedNameExpression;
+    if(gcFrame.tupleSlotNamedAtPutNode->nameExpression)
+    {
+        gcFrame.analyzedNameExpression = sysbvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.tupleSlotNamedAtPutNode->nameExpression, context->roots.symbolType, *environment);
+        gcFrame.tupleSlotNamedAtPutNode->nameExpression = gcFrame.analyzedNameExpression;
+        if(!sysbvm_astNode_isLiteralNode(context, gcFrame.analyzedNameExpression))
+            sysbvm_error("Expected a literal slot name.");
 
-    if(!sysbvm_astNode_isLiteralNode(context, gcFrame.analyzedNameExpression))
-        sysbvm_error("Expected a literal slot name.");
+        gcFrame.slotName = sysbvm_astLiteralNode_getValue(gcFrame.analyzedNameExpression);
 
-    gcFrame.slotName = sysbvm_astLiteralNode_getValue(gcFrame.analyzedNameExpression);
-    gcFrame.analyzedTupleExpressionType = sysbvm_astNode_getAnalyzedType(gcFrame.analyzedTupleExpression);
-    SYSBVM_ASSERT(gcFrame.analyzedTupleExpressionType);
+        gcFrame.analyzedTupleExpressionType = sysbvm_astNode_getAnalyzedType(gcFrame.analyzedTupleExpression);
+        SYSBVM_ASSERT(gcFrame.analyzedTupleExpressionType);
 
-    gcFrame.slot = sysbvm_type_lookupSlot(context, gcFrame.analyzedTupleExpressionType, gcFrame.slotName);
-    if(!gcFrame.slot)
-        sysbvm_error("Type does not have a slot with the specified name.");
+        gcFrame.slot = sysbvm_type_lookupSlot(context, gcFrame.analyzedTupleExpressionType, gcFrame.slotName);
+        if(!gcFrame.slot)
+            sysbvm_error("Type does not have a slot with the specified name.");
 
-    gcFrame.tupleSlotNamedAtPutNode->boundSlot = gcFrame.slot;
-    gcFrame.tupleSlotNamedAtPutNode->super.analyzedType = sysbvm_typeSlot_getType(gcFrame.slot);
+        gcFrame.tupleSlotNamedAtPutNode->boundSlot = gcFrame.slot;
+    }
+    else
+    {
+        if(!gcFrame.tupleSlotNamedAtPutNode->boundSlot)
+            sysbvm_error("A name or bound slot is required.");
+    }
+
+    gcFrame.tupleSlotNamedAtPutNode->super.analyzedType = sysbvm_typeSlot_getType(gcFrame.tupleSlotNamedAtPutNode->boundSlot);
     if(!gcFrame.tupleSlotNamedAtPutNode->super.analyzedType)
         gcFrame.tupleSlotNamedAtPutNode->super.analyzedType = context->roots.anyValueType;
 

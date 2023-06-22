@@ -49,11 +49,20 @@ public class FixedArrayType superclass: ValueType; definition: {
         result
     }.
 
-    public override method basicInitializeInstance: instance ::=> Void := {
-        let i mutable := 0sz.
-        while: (i < size) do: (
-            (RawTuple::slotAt:put:)(instance, i, elementType defaultValue)
-        ) continueWith: (i := i + 1sz)
+    public override method createBasicInitializeMethod => Void := {
+        let elementCount := self size.
+        let defaultValue := elementType defaultValue.
+        let ReceiverType := self.## asReceiverType.
+        basicInitializeMethod := {:(ReceiverType)self :: Void |
+            <primitive: #zeroInitialization>
+            if: ObjectModel::isLogical() then: {
+                let i mutable := 0sz.
+                while: (i < elementCount) do: (
+                    ##(RawTuple::refSlotAt:put:)(self, i, defaultValue)
+                    (RawTuple::slotAt:put:)(self, i, defaultValue)
+                ) continueWith: (i := i + 1sz)
+            }
+        } makeOverride makeFinal recompileAndOptimize
     }.
 
     public override method defaultValue => self
