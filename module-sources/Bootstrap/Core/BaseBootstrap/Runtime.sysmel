@@ -143,10 +143,10 @@ ValueBox
 
 TypeSlot
     withSelector: #loadFrom:atOffset:withType: addMethod: {:(TypeSlot)self :(Untyped)containerBase :(IntPointer)offset :(Type)valueType :: valueType |
-        (RawTuple::slotAt:)(containerBase, (tuple: self slotNamedAt: #index))
+        (RawTuple::typeSlotAt:)(containerBase, self)
     } makeFinal withEagerAnalysis;
     withSelector: #store:in:atOffset:withType: addMethod: {:(TypeSlot)self :(Untyped)value :(Untyped)containerBase :(IntPointer)offset :(Type)valueType :: Void |
-        RawTuple::slotAt:put:(containerBase, (tuple: self slotNamedAt: #index), value).
+        (RawTuple::typeSlotAt:put:)(containerBase, self, value).
         void
     } makeFinal withEagerAnalysis.
 
@@ -1284,23 +1284,15 @@ WeakValueAssociation
     };
     withSelector: #value: addMethod: {:(WeakValueAssociation)self :(Untyped)newValue :: Void |
         (RawTuple::slotAt:put:)(self, 1sz, newValue)
-    }.
+    };
+    withSelector: #printOn: addMethod: {:(WeakValueAssociation)self :(Stream)stream :: Void |
+        stream print: self key; nextPutAll: " -> "; print: self value
+    } makeOverride.
 
 Object
     withSelector:#-> addMethod: {:(Object)self :value :: Association |
         Association key: self value: value
     }.
-
-WeakValueAssociation
-    withSelector: #value addMethod: {:(WeakValueAssociation)self |
-        (RawTuple::slotAt:)(self, 1sz)
-    } makePure; makeFinal;
-    withSelector: #value: addMethod: {:(WeakValueAssociation)self :newValue :: Void |
-        RawTuple::slotAt:put:(self, 1sz, newValue)
-    } makePure; makeFinal;
-    withSelector: #printOn: addMethod: {:(WeakValueAssociation)self :(Stream)stream :: Void |
-        stream print: self key; nextPutAll: " -> "; print: self value
-    } makeOverride.
 
 Dictionary
     withSelector: #do: addMethod: {:(Dictionary)self :aBlock :: Void |

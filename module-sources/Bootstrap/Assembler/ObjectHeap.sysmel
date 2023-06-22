@@ -393,7 +393,7 @@ ObjectModelVariant64 extend: {
             let byteSize := RawTuple::byteSize(object).
             let i mutable := 0sz.
             while: i < byteSize do: {
-                destination at: offset + headerSize + i put: (RawTuple::slotAt:)(object, i).
+                destination at: offset + headerSize + i put: (RawTuple::byteSlotAt:)(object, i).
             } continueWith: (i := i + 1sz).
         } ifFalse: {
             let slotCount := RawTuple::size(object).
