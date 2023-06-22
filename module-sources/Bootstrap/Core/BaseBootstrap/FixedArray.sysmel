@@ -10,7 +10,8 @@ public class FixedArrayType superclass: ValueType; definition: {
             supertype: AnyValue;
             slots: #();
             totalSlotCount: 0sz;
-            generatePublicAccessors.
+            generatePublicAccessors;
+            createBasicInitializeMethod.
     }.
 
     public override method generatePublicAccessors => Void := {
@@ -52,7 +53,7 @@ public class FixedArrayType superclass: ValueType; definition: {
     public override method createBasicInitializeMethod => Void := {
         let elementCount := self size.
         let defaultValue := elementType defaultValue.
-        let ReceiverType := self.## asReceiverType.
+        let ReceiverType := self asReceiverType.
         basicInitializeMethod := {:(ReceiverType)self :: Void |
             <primitive: #zeroInitialization>
             if: ObjectModel::isLogical() then: {

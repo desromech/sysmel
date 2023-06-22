@@ -384,9 +384,12 @@ SYSBVM_API sysbvm_tuple_t sysbvm_tuple_send(sysbvm_context_t *context, sysbvm_tu
 {
     SYSBVM_ASSERT(argumentCount > 0); // We need a receiver for performing the lookup.
     struct {
+        sysbvm_tuple_t selector;
         sysbvm_tuple_t method;
         sysbvm_tuple_t receiverType;
-    } gcFrame = {0};
+    } gcFrame = {
+        .selector = selector
+    };
 
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     gcFrame.receiverType = sysbvm_tuple_getType(context, arguments[0]);
@@ -394,7 +397,9 @@ SYSBVM_API sysbvm_tuple_t sysbvm_tuple_send(sysbvm_context_t *context, sysbvm_tu
     if(!gcFrame.method)
     {
         sysbvm_tuple_t receiverTypeName = sysbvm_tuple_printString(context, gcFrame.receiverType);
-        sysbvm_errorWithMessageTuple(sysbvm_string_concat(context, sysbvm_string_createWithCString(context, "Message notUnderstood by "), receiverTypeName));
+        sysbvm_errorWithMessageTuple(sysbvm_string_concat(context, gcFrame.selector,
+            sysbvm_string_concat(context, sysbvm_string_createWithCString(context, "Message notUnderstood by object of type "), receiverTypeName))
+        );
     }
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     

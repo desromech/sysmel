@@ -226,7 +226,7 @@ Type
     withSelector: #asDecayedType addMethod: {:(Type)self :: Type |
         self
     } makePure makeVirtual withEagerAnalysis;
-    withSelector: #decayReferenceForReceiverType: addMethod: {:(Type)self :(ReferenceType)reference :: Type |
+    withSelector: #decayReferenceLikeForReceiverType: addMethod: {:(Type)self :(ReferenceLikeType)reference :: Type |
         self
     } makePure makeVirtual withEagerAnalysis;
     withSelector: #asDecayedReceiverType addMethod: {:(Type)self :: Type |
@@ -284,6 +284,7 @@ Type
         self hasAnyFlag: TypeFlags::PointerValue | TypeFlags::ReferenceValue.
     } makeFinal withEagerAnalysis;
     withSelector: #basicAllocate addMethod: {:(Type)self :: self |
+        <primitive: #basicAllocate>
         let: #result with: (if: self isBytes
             then: RawTuple::byteNew(0sz)
             else: RawTuple::new(self totalSlotCount)).
@@ -292,17 +293,22 @@ Type
         result
     } makeVirtual withEagerAnalysis;
     withSelector: #basicNew addMethod: {:(Type)self :: self |
+        <primitive: #basicNew>
         let: #result with: self basicAllocate.
         let: #basicInitializeMethod with: self validBasicInitializeMethod.
         if: basicInitializeMethod ~~ nil then: basicInitializeMethod(result).
         result
     } makeVirtual withEagerAnalysis;
     withSelector: #new addMethod: {:(Type)self :: self |
+        <primitive: #new>
         self basicNew initialize; yourself
     } withEagerAnalysis;
     withSelector: #asReceiverType addMethod: {:(Type)self :: Type |
         self
-    } makeVirtual withEagerAnalysis;
+    } makePure makeVirtual withEagerAnalysis;
+    withSelector: #asResultType addMethod: {:(Type)self :: Type |
+        self
+    } makePure makeVirtual withEagerAnalysis;
     withSelector: #lookupLocalMacroSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
         let: #methodDictionary with: self macroMethodDictionary.
         if: methodDictionary ~~ nil
@@ -485,7 +491,9 @@ Type
         then: (sourceType coerceASTNode: astNode into: self withEnvironment: environment)
         else: astNode
     } makeVirtual withEagerAnalysis;
+    withSelector: #isReferenceLikeType addMethod: {:(Type)self :: Boolean | false } makeVirtual makePure withEagerAnalysis;
     withSelector: #isReferenceType addMethod: {:(Type)self :: Boolean | false } makeVirtual makePure withEagerAnalysis;
+    withSelector: #isTemporaryReferenceType addMethod: {:(Type)self :: Boolean | false } makeVirtual makePure withEagerAnalysis;
 
     withSelector: #addFlags: addMethod: {:(Type)self :(Bitflags)flag :: Void |
         self flags: self flags | flag
@@ -616,6 +624,7 @@ Type
         extraSlot generateAccessorsOn: self.
     } withEagerAnalysis;
     withSelector: #basicAllocate replaceMethod: {:(Type)self :: self |
+        <primitive: #basicAllocate>
         let: #result with: (if: self isBytes
             then: RawTuple::byteNew(0sz)
             else: RawTuple::new(self validTotalSlotCount)).
@@ -638,6 +647,7 @@ Type
         result
     } makeVirtual withEagerAnalysis;
     withSelector: #new replaceMethod: {:(Type)self :: self |
+        <primitive: #new>
         self basicNew initialize; yourself
     } makeVirtual withEagerAnalysis;
     withSelector: #new: addMethod: {:(Type)self :(Size)variableSlotCount :: self |
@@ -673,25 +683,19 @@ UndefinedObject class
         else: error("Cannot coerce nil into non-nullable type " -- targetType printString)
     } makeOverride.
 
-ReferenceType
-    withSelector: #isReferenceType addMethod: {:(ReferenceType)self :: Boolean | true } makeOverride makePure;
-    withSelector: #asDecayedType addMethod: {:(ReferenceType)self :: Type |
-        self baseType
+ReferenceLikeType
+    withSelector: #isReferenceLikeType addMethod: {:(ReferenceType)self :: Boolean | true } makeOverride makePure;
+    withSelector: #asDecayedType addMethod: {:(ReferenceLikeType)self :: Type |
+        self baseType asDecayedType
     } makePure makeOverride withEagerAnalysis;
-    withSelector: #asDecayedReceiverType addMethod: {:(ReferenceType)self :: Type |
-        self baseType decayReferenceForReceiverType: self
+    withSelector: #asDecayedReceiverType addMethod: {:(ReferenceLikeType)self :: Type |
+        self baseType decayReferenceLikeForReceiverType: self
     } makePure makeOverride withEagerAnalysis;
-    withSelector: #asCanonicalPendingInstanceType addMethod: {:(ReferenceType)self :: Type |
-        let: #baseType with: self baseType.
-        if: baseType ~~ nil
-            then: (baseType asCanonicalPendingInstanceType refFor: self addressSpace)
-            else: (AnyValue refFor: self addressSpace).
-    } makePure makeOverride;
-    withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(ReferenceType)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
+    withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(ReferenceLikeType)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
         if: (self isSubtypeOf: targetType)
         then: astNode
         else: {
-            if: targetType isReferenceType then: {
+            if: targetType isReferenceLikeType then: {
                 error("TODO: Implement coercion between two reference types.")
             } else: {
                 let: #sourcePosition with: astNode sourcePosition.
@@ -715,6 +719,24 @@ ReferenceType
             }
         }.
     } makeOverride withEagerAnalysis.
+
+ReferenceType
+    withSelector: #isReferenceType addMethod: {:(ReferenceType)self :: Boolean | true } makeOverride makePure;
+    withSelector: #asCanonicalPendingInstanceType addMethod: {:(ReferenceType)self :: Type |
+        let: #baseType with: self baseType.
+        if: baseType ~~ nil
+            then: (baseType asCanonicalPendingInstanceType refFor: self addressSpace)
+            else: (AnyValue refFor: self addressSpace).
+    } makePure makeOverride.
+
+TemporaryReferenceType
+    withSelector: #isTemporaryReferenceType addMethod: {:(TemporaryReferenceType)self :: Boolean | true } makeOverride makePure;
+    withSelector: #asCanonicalPendingInstanceType addMethod: {:(TemporaryReferenceType)self :: Type |
+        let: #baseType with: self baseType.
+        if: baseType ~~ nil
+            then: (baseType asCanonicalPendingInstanceType tempRefFor: self addressSpace)
+            else: (AnyValue tempRefFor: self addressSpace).
+    } makePure makeOverride.
 
 Array ensureAnalysisOfMethodWithSelector: #doWithIndex:.
 
@@ -958,7 +980,7 @@ ProgramEntity
 
 Type
     withSelector: #coerceValue:intoType: addMethod: {:(Type)self :(Untyped)value :(Type)targetType :: Untyped |
-        error("Cannot coerce value into the expected target type")
+        error((("Cannot coerce value " -- value printString) -- " into the expected target type ") -- targetType printString)
     };
 
     withSelector: #coerceValue: addMethod: {:(Type)self :(Untyped)value :: Untyped |
@@ -1190,14 +1212,14 @@ Collection
         }
     } makeVirtual;
 
-    withSelector: #select: addMethod: {:(Collection)self :aBlock :: Collection |
+    withSelector: #select: addMethod: {:(Collection)self :aBlock :: OrderedCollection |
         let: #result with: OrderedCollection new.
         self do: {:each :: Void |
             if: aBlock(each) then: (result add: each)
         }.
         result
     };
-    withSelector: #reject: addMethod: {:(Collection)self :aBlock :: Collection |
+    withSelector: #reject: addMethod: {:(Collection)self :aBlock :: OrderedCollection |
         let: #result with: OrderedCollection new.
         self do: {:each :: Void |
             if: aBlock(each) not then: (result add: each)
@@ -2157,6 +2179,9 @@ Type
     withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Type)self :value :(ByteArray)bytes :(Size)offset :: Void |
         self subclassResponsibility
     } makeAbstract;
+    withSelector: #encodeValueIn:atTypeSlot:inBytes:atOffset: addMethod: {:(Type)self :(Untyped)valueOwner :(TypeSlot)typeSlot :(ByteArray)bytes :(Size)offset :: Void |
+        self encodeValue: (RawTuple::typeSlotAt:)(valueOwner, typeSlot) inBytes: bytes atOffset: offset
+    } makeVirtual;
     withSelector: #canDecodeValueFromBytes addMethod: {:(Type)self :: Boolean | false } makeVirtual;
     withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Type)self :(ByteArray)bytes :(Size)offset :: self |
         self subclassResponsibility
@@ -2415,18 +2440,6 @@ TypeSlot
         let: #type with: self type.
         (self initialValueBlock ~~ nil) || ((type ~~ nil) && (type isNullable not))
     } withEagerAnalysis;
-    withSelector: #basicInitializeInstance: addMethod: {:(TypeSlot)self :(AnyValue)instance :: Void |
-        let: #initialValueBlock with: self initialValueBlock.
-        if: initialValueBlock ~~ nil then: {
-            let: #initialValue with: initialValueBlock(instance).
-            (RawTuple::typeSlotAt:put:)(instance, self, initialValue)
-        } else: {
-            let: #type with: self type.
-            if: type ~~ nil then: {
-                (RawTuple::typeSlotAt:put:)(instance, self, type defaultValue)
-            }.
-        }
-    } withEagerAnalysis;
     withSelector: #initialValueExpression addMethod: {:(TypeSlot)self :: ASTNode |
         let: #initialValueBlock with: self initialValueBlock.
         if: initialValueBlock ~~ nil then: {
@@ -2439,18 +2452,6 @@ TypeSlot
                 yourself
         }
     };
-    withSelector: #basicInitializeInstanceReference: addMethod: {:(TypeSlot)self :(Untyped)instanceReference :: Void |
-        let: #initialValueBlock with: self initialValueBlock.
-        if: initialValueBlock ~~ nil then: {
-            let: #initialValue with: initialValueBlock(instanceReference).
-            (RawTuple::refTypeSlotAt:put:)(instanceReference, self, initialValue)
-        } else: {
-            let: #type with: self type.
-            if: type ~~ nil then: {
-                (RawTuple::refTypeSlotAt:put:)(instanceReference, self, type defaultValue)
-            }.
-        }
-    } withEagerAnalysis;
     withSelector: #validOffset addMethod: {:(TypeSlot)self :: Size |
         let: #owner with: self owner.
         if: owner ~~ nil then: ((owner downCastTo: Type) ensureLayoutIsComputed).
@@ -2482,9 +2483,29 @@ Type
 
 {
     let: #createBasicInitializeMethod with: {:(Type)self :: Void |
-        let: #ReceiverType with: self.## asReceiverType.
+        let: #ReceiverType with: self asReceiverType.
         let: #slots with: self validSlotsWithBasicInitialization.
         let: #slotCount with: slots size.
+
+        let: #makeTypeSlotNode with: {:(TypeSlot)eachSlot :: ASTNode |
+            ASTTupleSlotNamedAtPutNode new
+                sourcePosition: eachSlot sourcePosition;
+                tupleExpression: (ASTIdentifierReferenceNode new
+                    sourcePosition: eachSlot sourcePosition;
+                    value: #self;
+                    yourself);
+                valueExpression: eachSlot initialValueExpression;
+                boundSlot: eachSlot;
+                yourself
+            }.
+
+        let: #defaultValueSlots with: (slots select: {:(TypeSlot)each :: Boolean | each initialValueBlock == nil}).
+        let: #defaultValueSlotInitialization with: (ASTSequenceNode new
+            expressions: (defaultValueSlots collect: makeTypeSlotNode) asArray;
+            yourself).
+
+        let: #initialValueSlots with: (slots select: {:(TypeSlot)each :: Boolean | each initialValueBlock ~~ nil}).
+        let: #initialValueSlotInitialization with: (initialValueSlots collect: makeTypeSlotNode) asArray.
 
         let: #methodNode with: (ASTLambdaNode new
             arguments: (Array with: (ASTArgumentNode new
@@ -2500,17 +2521,15 @@ Type
                 value: Void;
                 yourself);
             body: (ASTSequenceNode new
-                expressions: (slots collect: {:(TypeSlot)eachSlot :: ASTNode |
-                    ASTTupleSlotNamedAtPutNode new
-                        sourcePosition: eachSlot sourcePosition;
-                        tupleExpression: (ASTIdentifierReferenceNode new
-                            sourcePosition: eachSlot sourcePosition;
-                            value: #self;
+                expressions: (Array with: (ASTIfNode new
+                    conditionExpression: (ASTFunctionApplicationNode new
+                        functionExpression: (ASTLiteralNode new
+                            value: ObjectModel::isLogical;
                             yourself);
-                        valueExpression: eachSlot initialValueExpression;
-                        boundSlot: eachSlot;
-                        yourself
-                });
+                        arguments: #();
+                        yourself);
+                    trueExpression: defaultValueSlotInitialization;
+                    yourself)) -- initialValueSlotInitialization;
                 yourself);
             flags: (if: self supertype ~~ nil
                 then: FunctionFlags::Override
@@ -2537,6 +2556,7 @@ Type
     createBasicInitializeMethod(SimpleFunctionType).
     createBasicInitializeMethod(ASTArgumentNode).
     createBasicInitializeMethod(ASTIdentifierReferenceNode).
+    createBasicInitializeMethod(ASTIfNode).
     createBasicInitializeMethod(ASTLambdaNode).
     createBasicInitializeMethod(ASTFunctionApplicationNode).
     createBasicInitializeMethod(ASTLocalDefinitionNode).
@@ -2733,13 +2753,19 @@ Metaclass
 Type
     withSelector: #refFor: addMethod: {:(Type)self :addressSpace :: ReferenceType |
         ReferenceTypeTemplate(self, addressSpace)
-    } makePure;
+    } makeVirtual makePure;
     withSelector: #ref addMethod: {:(Type)self :: ReferenceType |
         self refFor: nil
-    } makePure;
+    } makeVirtual makePure;
     withSelector: #refForFunction addMethod: {:(Type)self :: ReferenceType |
         self refFor: nil
     } makePure;
+    withSelector: #tempRefFor: addMethod: {:(Type)self :addressSpace :: ReferenceLikeType |
+        TemporaryReferenceTypeTemplate(self, addressSpace)
+    } makeVirtual makePure;
+    withSelector: #tempRef addMethod: {:(Type)self :: ReferenceLikeType |
+        self tempRefFor: nil
+    } makeVirtual makePure;
     withSelector: #pointerFor: addMethod: {:(Type)self :addressSpace :: PointerType |
         PointerTypeTemplate(self, addressSpace)
     } makePure;
@@ -2761,7 +2787,35 @@ ReferenceType
         } else: {
             stream nextPutAll: " refFor: "; print: self addressSpace
         }.
-    } makeOverride.
+    } makeOverride;
+    withSelector: #refFor: addMethod: {:(ReferenceType)self :addressSpace :: ReferenceType |
+        self baseType refFor: addressSpace
+    } makeOverride makePure;
+    withSelector: #ref addMethod: {:(ReferenceType)self :: ReferenceType |
+        self
+    } makeOverride makePure;
+    withSelector: #tempRefFor: addMethod: {:(ReferenceType)self :addressSpace :: ReferenceLikeType |
+        self baseType refFor: addressSpace
+    } makeOverride makePure;
+    withSelector: #tempRef addMethod: {:(ReferenceType)self :: ReferenceLikeType |
+        self baseType ref
+    } makeOverride makePure.
+
+TemporaryReferenceType
+    withSelector: #printOn: addMethod: {:(ReferenceType)self :(Stream)stream :: Void |
+        stream print: self baseType.
+        if: self addressSpace == nil then: {
+            stream nextPutAll: " tempRef"
+        } else: {
+            stream nextPutAll: " tempRefFor: "; print: self addressSpace
+        }.
+    } makeOverride;
+    withSelector: #tempRefFor: addMethod: {:(ReferenceType)self :addressSpace :: ReferenceLikeType |
+        self baseType refFor: addressSpace
+    } makeOverride makePure;
+    withSelector: #tempRef addMethod: {:(ReferenceType)self :: ReferenceLikeType |
+        self
+    } makeOverride makePure.
 
 PointerType
     withSelector: #printOn: addMethod: {:(PointerType)self :(Stream)stream :: Void |
@@ -3094,7 +3148,8 @@ Class
             slots: classSlots;
             totalSlotCount: metaclassSuper validTotalSlotCount + classSlots size;
             registerSlotsInDictionary;
-            generatePublicAccessors.
+            generatePublicAccessors;
+            createBasicInitializeMethod.
         
         let: #class with: metaclass basicNew.
         class
@@ -3112,6 +3167,7 @@ Class
             totalSlotCount: self validTotalSlotCount + instanceSlots size;
             registerSlotsInDictionary;
             generatePublicAccessors;
+            createBasicInitializeMethod;
             yourself
     };
     withSelector: #subclass:classSlots:slots: addMethod: {:(Class)self :(StringSymbol)name :(Array)classSlots :(Array)instanceSlots :: Class |
@@ -3262,6 +3318,7 @@ Type
     validInstanceAlignment;
     validInstanceSize;
     withSelector: #basicAllocate replaceMethod: {:(Type)self :: self |
+        <primitive: #basicAllocate>
         (RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:)(
             self, self validInstanceSize, self validInstanceAlignment, self validTotalSlotCount, 0sz,
             self isBytes, self isWeak
@@ -3274,6 +3331,7 @@ Type
         )
     } makeVirtual withEagerAnalysis;
     withSelector: #ensureAnalysis replaceMethod: {:(Type)self :: Void |
+        (tuple: self withLookupStartingFrom: Type supertype) ensureAnalysis.
         self validSlots.
         self validBasicInitializeMethod.
         self ensureLayoutIsComputed.
@@ -3304,6 +3362,8 @@ PointerLikeType
     }.
 
 ValueType
+    withSelector: #asReceiverType addMethod: {:(Type)self :: Type | self ref } makePure makeOverride;
+    withSelector: #asResultType addMethod: {:(Type)self :: Type | self tempRef } makePure makeOverride;
     withSelector: #valueSize addMethod: {:(ValueType)self :: Size |
         self validInstanceSize
     } makeOverride;
@@ -3312,12 +3372,12 @@ ValueType
     } makeOverride;
     withSelector: #isGarbageCollectedPointerType addMethod: {:(Type)self :: Boolean | false } makeOverride;
     withSelector: #isValueType addMethod: {:(Type)self :: Boolean | true } makeOverride;
-    withSelector: #asReceiverType addMethod: {:(Type)self :: Type | self ref } makeOverride;
-    withSelector: #decayReferenceForReceiverType: addMethod: {:(Type)self :(ReferenceType)reference :: Type | reference } makeOverride.
+    withSelector: #decayReferenceLikeForReceiverType: addMethod: {:(Type)self :(ReferenceLikeType)reference :: Type | reference } makeOverride.
 
 PrimitiveValueType
-    withSelector: #asReceiverType addMethod: {:(Type)self :: Type | self } makeOverride;
-    withSelector: #decayReferenceForReceiverType: addMethod: {:(Type)self :(ReferenceType)reference :: Type | self } makeOverride.
+    withSelector: #asReceiverType addMethod: {:(Type)self :: Type | self } makePure makeOverride;
+    withSelector: #asResultType addMethod: {:(Type)self :: Type | self } makePure makeOverride;
+    withSelector: #decayReferenceLikeForReceiverType: addMethod: {:(Type)self :(ReferenceLikeType)reference :: Type | self } makeOverride.
 
 Environment
     withSelector: #setSymbol:value: addMethod: {:(Environment)self :(Symbol)symbol :value :: value __type__ |
@@ -3337,3 +3397,7 @@ Environment
     withSelector: #withSelector:addFallbackMethod: addMethod: {:(Environment)self :(Symbol)symbol :method :: Void |
         self setSymbol: symbol value: method
     }.
+
+BootstrapEnv::IntrinsicTypes do: {:(Type)each :: Void |
+    each ensureAnalysis
+}.

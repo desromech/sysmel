@@ -12,7 +12,8 @@ public class StructType superclass: ValueType; definition: {
             slots: typeSlots;
             totalSlotCount: metatypeSuper validTotalSlotCount + typeSlots size;
             registerSlotsInDictionary;
-            generatePublicAccessors.
+            generatePublicAccessors;
+            createBasicInitializeMethod.
         
         let: #struct with: metatype basicNew.
         struct
@@ -153,6 +154,10 @@ StructMetaBuilder
         let: #makeStructExpression with: ``(
             (`,(self validSupertypeExpression) substructureWithTypeSlots: `,(self validMetaSlotsExpression) packed: `,packedExpression)
                 addFlags: `,flagsExpression;
+                enqueuePendingAnalysisInEnvironment: `,(ASTLiteralNode new
+                    sourcePosition: self sourcePosition;
+                    value: environment;
+                    yourself);
                 yourself
         ).
 

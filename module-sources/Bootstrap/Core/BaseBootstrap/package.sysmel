@@ -12,6 +12,7 @@ loadSourceNamed: "Enum.sysmel".
 loadSourceNamed: "Struct.sysmel".
 loadSourceNamed: "Namespace.sysmel".
 loadSourceNamed: "PointerLikeType.sysmel".
+loadSourceNamed: "FunctionType.sysmel".
 loadSourceNamed: "SimpleFunctionType.sysmel".
 loadSourceNamed: "PlatformDescription.sysmel".
 loadSourceNamed: "PAL.sysmel".

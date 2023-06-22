@@ -16,11 +16,6 @@ Class
 Object publicSubclass: #MetaBuilder slots: ().
 
 ProgramEntity
-    withSelector: #enqueuePendingAnalysisInThisEnvironment addMacroMethod: {:macroContext :(ProgramEntity)self :: Void |
-        error("enqueuePendingAnalysisInThisEnvironment").
-        ``(enqueuePendingAnalysisInEnvironment: `,(ASTLiteralNode new
-            sourcePosition: macroContext sourcePosition)) 
-    } makeMacro;
     withSelector: #enqueuePendingAnalysisInEnvironment: addMethod: {:(ProgramEntity)self :(Environment)environment :: Void |
         environment enqueuePendingAnalysis: self
     }.
@@ -320,7 +315,7 @@ ClassMetaBuilder
         let: #makeClassExpression with: ``(
             (`,(self validSuperclassExpression) subclassWithClassSlots: `,(self validMetaSlotsExpression))
                 addFlags: `,flagsExpression;
-                enqueuePendingAnalysisInEnvironment: ``(ASTLiteralNode new
+                enqueuePendingAnalysisInEnvironment: `,(ASTLiteralNode new
                     sourcePosition: self sourcePosition;
                     value: environment;
                     yourself);

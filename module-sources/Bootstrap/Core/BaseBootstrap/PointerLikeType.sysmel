@@ -1,3 +1,8 @@
+PointerLikeType definition: {
+    public override method createBasicInitializeMethod => Void := {
+    }
+}.
+
 PointerType definition: {
     public method initializeWithBaseType: (theBaseType: Type) addressSpace: (theAddressSpace: AddressSpace) ::=> Void := {
         flags := TypeFlags::PointerTypeFlags.
@@ -63,6 +68,39 @@ ReferenceType definition: {
     }.
 }.
 
+TemporaryReferenceType definition: {
+    public method initializeWithBaseType: (theBaseType: Type) addressSpace: (theAddressSpace: AddressSpace) ::=> Void := {
+        flags := TypeFlags::TemporaryReferenceTypeFlags.
+        totalSlotCount := 0sz.
+        supertype := AnyPointer.
+        instanceAlignment := UIntPointer valueAlignment.
+        instanceSize := UIntPointer valueSize.
+
+        baseType := theBaseType.
+        addressSpace := theAddressSpace.
+
+        let pointerType := PointerTypeTemplate(theBaseType, theAddressSpace).
+        loadValueFunction := (PointerLikeType::load) copy
+            __type__: (self) => baseType;
+            yourself.
+        storeValueFunction := (PointerLikeType::store:) copy
+            __type__: (self, baseType) => Void;
+            yourself.
+
+        let referenceType := ReferenceTypeTemplate(theBaseType, theAddressSpace).
+
+        self
+            withSelector: #__refLoad__ addMethod: loadValueFunction;
+            withSelector: #__refStore__: addMethod: storeValueFunction;
+            withSelector: #address addMethod: ((PointerLikeType::reinterpretCast) copy
+                __type__: (self) => pointerType;
+                yourself);
+            withSelector: #__tempRefAsRef__ addMethod: ((PointerLikeType::reinterpretCast) copy
+                __type__: (self) => referenceType;
+                yourself).
+    }.
+}.
+
 private pure template pointerTypeTemplate(baseType: Type, addressSpace: AddressSpace) => PointerType := {
     let result := PointerType basicNew.
     __templateResult__ value: result.
@@ -79,5 +117,14 @@ private pure template referenceTypeTemplate(baseType: Type, addressSpace: Addres
         yourself
 }.
 
+private pure template temporaryReferenceType(baseType: Type, addressSpace: AddressSpace) => TemporaryReferenceType := {
+    let result := TemporaryReferenceType basicNew.
+    __templateResult__ value: result.
+    result
+        initializeWithBaseType: baseType addressSpace: addressSpace;
+        yourself
+}.
+
 PointerTypeTemplate adoptDefinitionOf: pointerTypeTemplate.
 ReferenceTypeTemplate adoptDefinitionOf: referenceTypeTemplate.
+TemporaryReferenceTypeTemplate adoptDefinitionOf: temporaryReferenceType.

@@ -60,6 +60,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t storeSelector;
     sysbvm_tuple_t refLoadSelector;
     sysbvm_tuple_t refStoreSelector;
+    sysbvm_tuple_t tempRefAsRefSelector;
 
     sysbvm_tuple_t pointerLikeLoadPrimitive;
     sysbvm_tuple_t pointerLikeStorePrimitive;
@@ -67,6 +68,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t pointerLikeElementAt;
     sysbvm_tuple_t pointerTypeTemplate;
     sysbvm_tuple_t referenceTypeTemplate;
+    sysbvm_tuple_t temporaryReferenceTypeTemplate;
     sysbvm_tuple_t simpleFunctionTypeTemplate;
     sysbvm_tuple_t sequenceTupleTypeTemplate;
     
@@ -162,6 +164,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t pragmaType;
     sysbvm_tuple_t primitiveValueType;
     sysbvm_tuple_t programEntityType;
+    sysbvm_tuple_t referenceLikeType;
     sysbvm_tuple_t referenceType;
     sysbvm_tuple_t sequenceableCollectionType;
     sysbvm_tuple_t setType;
@@ -181,6 +184,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t symbolMacroValueBindingType;
     sysbvm_tuple_t symbolValueBindingType;
     sysbvm_tuple_t tombstoneType;
+    sysbvm_tuple_t temporaryReferenceType;
     sysbvm_tuple_t trueType;
     sysbvm_tuple_t typeType;
     sysbvm_tuple_t metatypeType;

@@ -1120,7 +1120,7 @@ SimpleFunctionType definition: {
 
         node
             arguments: analyzedArguments;
-            analyzedType: resultType;
+            analyzedType: self canonicalResultType asResultType;
             applicationFlags: node applicationFlags | (isMemoizedTemplate ifTrue: 0bflgs ifFalse: FunctionApplicationFlags::NoTypecheck) | FunctionApplicationFlags::VariadicExpanded;
             optimizePureApplicationWithEnvironment: environment
     }.
@@ -1128,7 +1128,7 @@ SimpleFunctionType definition: {
     public override eager method analyzeAndTypeCheckSolvedMessageSendNode: (node: ASTMessageSendNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
         let firstArgumentIndex := node receiver ifNil: 0sz ifNotNil: 1sz.
         node
-            analyzedType: self canonicalResultType;
+            analyzedType: self canonicalResultType asResultType;
             receiver: (node receiver ifNotNil: (environment analyze: node receiver withExpectedType: argumentTypes first));
             arguments: (node arguments collectWithIndex: {:(ASTNode)eachArgument :(Size)eachArgumentIndex :: ASTNode |
                 environment analyze: eachArgument withExpectedType: (argumentTypes at: firstArgumentIndex + eachArgumentIndex)
@@ -1261,7 +1261,7 @@ DependentFunctionType definition: {
             ifNil: AnyValue
             ifNotNil: (resultTypeNode evaluateWithEnvironment: applicationEnvironment).
         applicationNode
-            analyzedType: (self canonicalizeDependentResultType: resultType);
+            analyzedType: (self canonicalizeDependentResultType: resultType) asResultType;
             applicationFlags: applicationNode applicationFlags | (isMemoizedTemplate ifTrue: 0bflgs ifFalse: FunctionApplicationFlags::NoTypecheck);
             optimizePureApplicationWithEnvironment: environment
     }.
@@ -1315,7 +1315,7 @@ DependentFunctionType definition: {
             ifNil: AnyValue
             ifNotNil: (resultTypeNode evaluateWithEnvironment: applicationEnvironment).
         sendNode
-            analyzedType: (self canonicalizeDependentResultType: resultType);
+            analyzedType: (self canonicalizeDependentResultType: resultType) asResultType;
             yourself
     }.
 }.

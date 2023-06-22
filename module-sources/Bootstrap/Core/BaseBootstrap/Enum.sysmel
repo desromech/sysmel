@@ -13,17 +13,19 @@ public class EnumType superclass: ValueType; definition: {
                 slots: typeSlots;
                 totalSlotCount: metatypeSuper validTotalSlotCount + typeSlots size;
                 registerSlotsInDictionary;
-                generatePublicAccessors.
+                generatePublicAccessors;
+                createBasicInitializeMethod.
             
             let: #enum with: metatype basicNew.
             enum
                 flags: TypeFlags::EnumDefaultFlags;
                 supertype: AnyValue;
                 valueType: valueType;
-                slots: (TypeSlot publicNamed: #methodFlags type: Bitflags,);
+                slots: (Array with: (TypeSlot publicNamed: #__value__ type: valueType));
                 totalSlotCount: 1;
                 registerSlotsInDictionary;
-                generatePublicAccessors.
+                generatePublicAccessors;
+                createBasicInitializeMethod.
             metatype thisType: enum.
             enum
         }.
@@ -60,6 +62,10 @@ EnumMetaBuilder
         let: #makeEnumExpression with: ``(
             (EnumType makeWithValueType: `,(self validValueTypeExpression) typeSlots: `,(self validMetaSlotsExpression))
                 addFlags: `,flagsExpression;
+                enqueuePendingAnalysisInEnvironment: `,(ASTLiteralNode new
+                    sourcePosition: self sourcePosition;
+                    value: environment;
+                    yourself);
                 yourself
         ).
 

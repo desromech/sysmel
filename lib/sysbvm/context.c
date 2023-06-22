@@ -439,6 +439,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.storeSelector = sysbvm_symbol_internWithCString(context, "store:");
     context->roots.refLoadSelector = sysbvm_symbol_internWithCString(context, "__refLoad__");
     context->roots.refStoreSelector = sysbvm_symbol_internWithCString(context, "__refStore__:");
+    context->roots.tempRefAsRefSelector = sysbvm_symbol_internWithCString(context, "__tempRefAsRef__");
 
     context->roots.astNodeAnalysisSelector = sysbvm_symbol_internWithCString(context, "analyzeWithEnvironment:");
     context->roots.astNodeEvaluationSelector = sysbvm_symbol_internWithCString(context, "evaluateWithEnvironment:");
@@ -512,9 +513,11 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.anyReferenceType = sysbvm_type_createAnonymous(context);
     sysbvm_type_setSupertype(context->roots.anyReferenceType, context->roots.untypedType);
 
-    context->roots.pointerLikeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.valueType);
+    context->roots.pointerLikeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.primitiveValueType);
     context->roots.pointerType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.pointerLikeType);
-    context->roots.referenceType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.pointerLikeType);
+    context->roots.referenceLikeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.pointerLikeType);
+    context->roots.referenceType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.referenceLikeType);
+    context->roots.temporaryReferenceType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.referenceLikeType);
 
     // Some basic types
     context->roots.voidType = sysbvm_context_createIntrinsicPrimitiveValueType(context, "Void", context->roots.anyValueType, 0, 1);
@@ -649,7 +652,9 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "storeValueFunction", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.functionType,
         SYSBVM_NULL_TUPLE);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.pointerType, "PointerType", SYSBVM_NULL_TUPLE, NULL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.referenceLikeType, "ReferenceLikeType", SYSBVM_NULL_TUPLE, NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.referenceType, "ReferenceType", SYSBVM_NULL_TUPLE, NULL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.temporaryReferenceType, "TemporaryReferenceType", SYSBVM_NULL_TUPLE, NULL);
 
     context->roots.analysisQueueEntryType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.valueType);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.analysisQueueEntryType, "AnalysisQueueEntry", context->roots.objectType,

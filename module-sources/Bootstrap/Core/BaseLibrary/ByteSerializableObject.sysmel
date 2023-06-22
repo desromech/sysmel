@@ -4,7 +4,7 @@ public class ByteSerializableObject superclass: Object; definition: {
             self ensureLayoutIsComputed.
 
             self allSlotsDo: {:(TypeSlot)eachSlot :: Void |
-                eachSlot type encodeValue: (RawTuple::typeSlotAt:)(value, eachSlot) inBytes: bytes atOffset: offset + eachSlot offset
+                eachSlot type encodeValueIn: value atTypeSlot: eachSlot inBytes: bytes atOffset: offset + eachSlot offset
             }
         }.
         public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> self := {
@@ -31,7 +31,7 @@ public class ByteSerializablePackedObject superclass: Object; definition: {
             let destOffset mutable := offset.
 
             self allSlotsDo: {:(TypeSlot)eachSlot :: Void |
-                eachSlot type encodeValue: (RawTuple::typeSlotAt:)(value, eachSlot) inBytes: bytes atOffset: destOffset.
+                eachSlot type encodeValueIn: value atTypeSlot: eachSlot inBytes: bytes atOffset: offset + eachSlot offset.
                 destOffset := destOffset + eachSlot type valueSize
             }
         }.

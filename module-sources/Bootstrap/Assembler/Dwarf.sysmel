@@ -2348,6 +2348,11 @@ ReferenceType extend: {
         := Dwarf::DW_TAG_reference_type.
 }.
 
+TemporaryReferenceType extend: {
+    public override method dwarf::programEntityTag => Dwarf::Constant
+        := Dwarf::DW_TAG_rvalue_reference_type.
+}.
+
 PrimitiveValueType extend: {
     public override method dwarf::hasSeparateDieForType => Boolean
         := true.

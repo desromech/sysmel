@@ -1,0 +1,5 @@
+FunctionType definition: {
+    public override method createBasicInitializeMethod => Void := {
+        self basicInitializeMethod: Function validBasicInitializeMethod
+    }
+}.

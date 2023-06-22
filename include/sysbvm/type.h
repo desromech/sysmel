@@ -104,6 +104,11 @@ typedef struct sysbvm_referenceType_s
     sysbvm_pointerLikeType_t super;
 } sysbvm_referenceType_t;
 
+typedef struct sysbvm_temporaryReferenceType_s
+{
+    sysbvm_pointerLikeType_t super;
+} sysbvm_temporaryReferenceType_t;
+
 typedef struct sysbvm_metatype_s
 {
     sysbvm_type_tuple_t super;
@@ -308,14 +313,14 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createPointerType(sysbvm_context_t *contex
 SYSBVM_API sysbvm_tuple_t sysbvm_type_createReferenceType(sysbvm_context_t *context, sysbvm_tuple_t baseType, sysbvm_tuple_t addressSpace);
 
 /**
+ * Creates a temporary reference type.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_type_createTemporaryReferenceType(sysbvm_context_t *context, sysbvm_tuple_t baseType, sysbvm_tuple_t addressSpace);
+
+/**
  * Creates a function local reference type.
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_type_createFunctionLocalReferenceType(sysbvm_context_t *context, sysbvm_tuple_t baseType);
-
-/**
- * Creates a pointer type.
- */
-SYSBVM_API sysbvm_tuple_t sysbvm_type_createPointerType(sysbvm_context_t *context, sysbvm_tuple_t baseType, sysbvm_tuple_t addressSpace);
 
 /**
  * Creates a value box with the given value.

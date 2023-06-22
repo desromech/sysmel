@@ -111,7 +111,7 @@ ObjectModelVariant32 definition: {
         let isDummyValue := RawTuple::isDummyValue(object).
         let headerSize := ObjectModel::TupleHeader32 valueSize.
 
-        let header mutable => ObjectModel::TupleHeader32 := ObjectModel::TupleHeader32 new.
+        let header mutable := ObjectModel::TupleHeader32 basicNew.
         header
             isBytes: isBytes;
             isWeak: isWeak;
@@ -145,7 +145,7 @@ ObjectModelVariant64 definition: {
         let isDummyValue := RawTuple::isDummyValue(object).
         let headerSize := ObjectModel::TupleHeader64 valueSize.
 
-        let header mutable => ObjectModel::TupleHeader64 := ObjectModel::TupleHeader64 new.
+        let header mutable := ObjectModel::TupleHeader64 basicNew.
         header
             isBytes: isBytes;
             isWeak: isWeak;
