@@ -618,7 +618,7 @@ static sysbvm_tuple_t sysbvm_function_primitive_adoptDefinitionOf(sysbvm_context
         (*functionObject)->annotations = (*definitionFunctionObject)->annotations;
     }
 
-    if((*functionObject)->super.owner)
+    if((*functionObject)->super.owner || (*functionObject)->super.name)
         sysbvm_programEntity_recordBindingWithOwnerAndName(context, (*functionObject)->definition, (*functionObject)->super.owner, (*functionObject)->super.name);
     sysbvm_tuple_setType((sysbvm_object_tuple_t*)*functionObject, sysbvm_tuple_getType(context, (sysbvm_tuple_t)*definitionFunctionObject));
     return SYSBVM_VOID_TUPLE;

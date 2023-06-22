@@ -1747,7 +1747,7 @@ ASTUseNamedSlotsOfNode definition: {
     }.
 
     public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
-        let usedTuple := self tupleExpression analyzeAndEvaluateWithEnvironment: environment.
+        let usedTuple := self tupleExpression evaluateWithEnvironment: environment.
         environment setBinding: self binding activationValue: usedTuple.
         void
     }.

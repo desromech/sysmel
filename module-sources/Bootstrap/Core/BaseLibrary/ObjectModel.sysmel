@@ -1354,7 +1354,7 @@ public function ObjectModel::typecheckValue(expectedType: Type, value: Untyped) 
     let valueType := RawTuple::type(value).
     (valueType isDirectSubtypeOf: expectedType) ifTrue: (return: value).
 
-    error("Value with unexpected type.").
+    error("Value with unexpected type " -- valueType printString -- " instead of " -- expectedType printString).
 }.
 
 public function ObjectModel::typecheckNullableValue(expectedType: Type, value: Untyped) => Void := {
@@ -1395,19 +1395,67 @@ public function ObjectModel::interpretFunctionWithArguments(function: Function, 
     := function interpretWithArgument: arguments.
 
 ## Generate the trampolines via macro metaprogramming.
-public global ObjectModel::DirectFunctionApplicationTrampolines := Array new: 16.
-public global ObjectModel::CheckedFunctionApplicationTrampolines := Array new: 16.
-public global ObjectModel::SendWithReceiverTypeTrampolines := Array new: 16.
+public global ObjectModel::DirectFunctionApplicationTrampolines := Array new: 17.
+public global ObjectModel::CheckedFunctionApplicationTrampolines := Array new: 17.
+public global ObjectModel::SendWithReceiverTypeTrampolines := Array new: 17.
 public global ObjectModel::SendTrampolines := Array new: 16.
 
-(0sz until: 16sz) macroDo: {:ArgumentCount |
+public struct ObjectModel::InlineCacheEntry definition: {
+    public field type => Type.
+    public field foundMethod => AnyValue.
+}.
+
+public global ObjectModel::PolymorphicInlineCache::Size := 4sz.
+public global ObjectModel::PolymorphicInlineCache::SizeMask := 3sz.
+public struct ObjectModel::PolymorphicInlineCache definition: {
+    public field preSequence => UInt32.
+    public field postSequence => UInt32.
+    public field selector => Symbol.
+    public field entries => ObjectModel::InlineCacheEntry[ObjectModel::PolymorphicInlineCache::Size].
+
+    public inline method lookForType: (type: Type) ::=> AnyValue := {
+        let matchingEntryIndex mutable := ObjectModel::PolymorphicInlineCache::Size.
+        let readStartSequence := preSequence. ## TODO: Use atomic load operations here.
+        entries[0sz] type == type ifTrue: (matchingEntryIndex := 0sz) ifFalse: (
+        entries[1sz] type == type ifTrue: (matchingEntryIndex := 1sz) ifFalse: (
+        entries[2sz] type == type ifTrue: (matchingEntryIndex := 2sz) ifFalse: (
+        entries[3sz] type == type ifTrue: (matchingEntryIndex := 3sz)))).
+
+        matchingEntryIndex < ObjectModel::PolymorphicInlineCache::Size ifFalse: {
+            return: nil
+        }.
+
+        let matchingMethod := entries[matchingEntryIndex] foundMethod.
+        let readEndSequece := postSequence.
+
+        readStartSequence = readEndSequece ifTrue: {
+            matchingMethod
+        } ifFalse: {
+            nil
+        }
+    }.
+
+    public inline method addEntry: (foundMethod) forType: (type: Type) ::=> Void := {
+        ## TODO: Hold a write mutex here.
+
+        ## FIXME: Use atomic fetch and add here
+        let entryIndex := preSequence asSize & ObjectModel::PolymorphicInlineCache::SizeMask asSize.
+        preSequence := preSequence + 1u32.
+
+        entries[entryIndex] type: type.
+        entries[entryIndex] foundMethod: foundMethod.
+
+        ## FIXME: Use atomic fetch and add here
+        postSequence := postSequence + 1u32.
+    }.
+}.
+
+(0sz until: 17sz) macroDo: {:ArgumentCount |
     let argumentNames := (0sz until: ArgumentCount) collect: {:(Size)each | ("arg" -- each asString) asSymbol}.
     let argumentNodes := argumentNames collect: {:(Symbol)eachName | eachName asMacroArgumentWithType: Untyped asMacroLiteral}.
     let argumentIdentifiers := argumentNames collect: {:(Symbol)eachName | eachName asMacroIdentifier}.
     let applyDirectName := ("ObjectModel::applyDirect" -- ArgumentCount asString) asSymbol.
     let applyName := ("ObjectModel::apply" -- ArgumentCount asString) asSymbol.
-    let sendWithReceiverTypeName := ("ObjectModel::sendWithReceiverType" -- ArgumentCount asString) asSymbol.
-    let sendName := ("ObjectModel::send" -- ArgumentCount asString) asSymbol.
     let checkedEntryPointArgumentTypes := (Array new: 1sz + ArgumentCount) atAllPut: Untyped; yourself.
     let checkedEntryPointPointerType := (checkedEntryPointArgumentTypes => Untyped) pointer.
 
@@ -1430,7 +1478,7 @@ public global ObjectModel::SendTrampolines := Array new: 16.
         }.
         ObjectModel::DirectFunctionApplicationTrampolines at: `,(ArgumentCount asMacroLiteral) put: `,(applyDirectName asMacroIdentifier).
 
-        public function `,(applyName asMacroLiteral)(functional: Untyped, `@argumentNodes) => Untyped := {
+        public function `,(applyName asMacroLiteral)(functional: AnyValue, `@argumentNodes) => Untyped := {
             ObjectModel::isFunction(functional) ifTrue: {
                 let function := ObjectModel::tupleAsFunction(functional).
                 function requiresArgumentExpansionDuringApplication ifFalse: {
@@ -1452,21 +1500,32 @@ public global ObjectModel::SendTrampolines := Array new: 16.
             functional applyWithArguments: (`@argumentIdentifiers,)
         }.
         ObjectModel::CheckedFunctionApplicationTrampolines at: `,(ArgumentCount asMacroLiteral) put: `,(applyName asMacroIdentifier).
+    } macroEvalHere
+}.
 
+(0sz until: 16sz) macroDo: {:ArgumentCount |
+    let argumentNames := (0sz until: ArgumentCount) collect: {:(Size)each | ("arg" -- each asString) asSymbol}.
+    let argumentNodes := argumentNames collect: {:(Symbol)eachName | eachName asMacroArgumentWithType: Untyped asMacroLiteral}.
+    let argumentIdentifiers := argumentNames collect: {:(Symbol)eachName | eachName asMacroIdentifier}.
+    let applyName := ("ObjectModel::apply" -- (ArgumentCount  + 1sz) asString) asSymbol.
+    let sendWithReceiverTypeName := ("ObjectModel::sendWithReceiverType" -- ArgumentCount asString) asSymbol.
+    let sendName := ("ObjectModel::send" -- ArgumentCount asString) asSymbol.
+
+    ``{
         public function `,(sendWithReceiverTypeName asMacroLiteral)(receiver: Untyped, receiverType: Type, selector: Symbol, `@argumentNodes) => Untyped := {
             let foundMethod := (receiverType ifNil: Untyped) lookupSelector: selector.
             foundMethod ifNotNil: {
-                foundMethod(receiver, `@argumentIdentifiers)
-            } ifNil: {
-                if: (1sz = `,(ArgumentCount asMacroLiteral)) && (selector == #doesNotUnderstand:) then: {
-                    error("Message not understood")
-                }.
+                return: `,(applyName asMacroIdentifier)(foundMethod, receiver, `@argumentIdentifiers)
+            }
 
-                ObjectModel::sendWithReceiverType1(receiver, receiverType, #doesNotUnderstand:, Message basicAllocate
-                    selector: selector;
-                    arguments: (`@argumentIdentifiers,);
-                    yourself)
+            if: (1sz = `,(ArgumentCount asMacroLiteral)) && (selector == #doesNotUnderstand:) then: {
+                error("Message not understood")
             }.
+
+            ObjectModel::sendWithReceiverType1(receiver, receiverType, #doesNotUnderstand:, Message basicAllocate
+                selector: selector;
+                arguments: (`@argumentIdentifiers,);
+                yourself)
         }.
         ObjectModel::SendWithReceiverTypeTrampolines at: `,(ArgumentCount asMacroLiteral) put: `,(sendWithReceiverTypeName asMacroIdentifier).
 
