@@ -142,6 +142,25 @@ Untyped::identityHash adoptDefinitionOf: {:(Untyped)value :: Size |
     primitiveFailedError()
 }.
 
+(PointerLikeType::reinterpretCast) adoptDefinitionOf: {:(Untyped)pointer :: Untyped |
+    <primitive: #PointerLikeType::reinterpretCast>
+    <targetDefinedPrimitive>
+    primitiveFailedError()
+}.
+
+{
+    let: #EnsureBlockType with: SimpleFunctionTypeTemplate(#(), 0bflgs, Void).
+    (Function::ensure:) adoptDefinitionOf: {:body :(EnsureBlockType)cleanUp :: AnyValue |
+        <targetDefinedPrimitive>
+        primitiveFailedError()
+    }.
+
+    (Function::on:do:) adoptDefinitionOf: {:body :exceptionFilter :exceptionBlock :: AnyValue |
+        <targetDefinedPrimitive>
+        primitiveFailedError()
+    }.
+}.
+
 Void::fromAnyValue adoptDefinitionOf: {:(Untyped)value :: Void |
     <targetDefinedPrimitive>
     void

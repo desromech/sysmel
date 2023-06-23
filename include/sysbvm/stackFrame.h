@@ -126,6 +126,8 @@ typedef struct sysbvm_stackFrameLandingPadRecord_s
     sysbvm_tuple_t exceptionFilter;
     sysbvm_tuple_t stackTrace;
     sysbvm_tuple_t exception;
+    sysbvm_tuple_t action;
+    sysbvm_tuple_t actionResult;
     jmp_buf jmpbuffer;
 } sysbvm_stackFrameLandingPadRecord_t;
 

@@ -327,7 +327,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_ordinaryFunction_apply(sysbvm_context_t *contex
                 sysbvm_string_createWithCString(context, "Applying function with cyclic pending lazy analysis process "),
                 sysbvm_tuple_printString(context, functionObject->super.name)
             );
-            sysbvm_stackFrame_raiseException(errorTuple);
+            sysbvm_errorWithMessageTuple(errorTuple);
         }
 
         struct {

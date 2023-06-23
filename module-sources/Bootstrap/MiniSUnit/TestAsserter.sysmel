@@ -1,19 +1,19 @@
 public class TestAsserter superclass: Object; definition: {
     public method assert: value equals: expectedValue ::=> Void := {
         value = expectedValue ifFalse: {
-            self error: value printString -- " is not equal to the expected value of " -- expectedValue printString
+            AssertionFailure signal: value printString -- " is not equal to the expected value of " -- expectedValue printString
         }
     }.
 
     public method assert: value notEquals: expectedValue ::=> Void := {
         value ~= expectedValue ifFalse: {
-            self error: value printString -- " is equal to the unexpected value of " -- expectedValue printString
+            AssertionFailure signal: value printString -- " is equal to the unexpected value of " -- expectedValue printString
         }
     }.
 
     public method deny: (expression: Boolean) ::=> Void := {
         expression ifTrue: {
-            self error: "Denied expression."
+            AssertionFailure signal: "Denied expression."
         }
     }.
 }.

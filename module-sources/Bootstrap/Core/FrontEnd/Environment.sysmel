@@ -332,13 +332,15 @@ AnalysisAndEvaluationEnvironment definition: {
         := self applyCoercionToASTNode: (self analyzeIfNeeded: node) intoExpectedType: expectedType.
 
     public eager method analyze: (node: ASTNode) withExpectedType: (newExpectedType: Type) ::=> ASTNode := {
-        ## FIXME: use an ensure block here.
         let oldExpectedType := expectedType.
         expectedType := newExpectedType ifNil: DecayedTypeInferenceType.
 
-        let analyzedNode := self analyzeWithCurrentExpectedType: node.
+        let analyzedNode := {|
+            self analyzeWithCurrentExpectedType: node
+        } ensure: {:: Void |
+            expectedType := oldExpectedType.
+        }.
 
-        expectedType := oldExpectedType.
         analyzedNode
     }.
 

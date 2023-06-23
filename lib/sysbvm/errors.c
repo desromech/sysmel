@@ -1,4 +1,5 @@
 #include "sysbvm/errors.h"
+#include "sysbvm/exceptions.h"
 #include "sysbvm/assert.h"
 #include "sysbvm/context.h"
 #include "sysbvm/function.h"
@@ -9,7 +10,15 @@
 
 SYSBVM_API void sysbvm_errorWithMessageTuple(sysbvm_tuple_t message)
 {
-    sysbvm_stackFrame_raiseException(message);
+    sysbvm_context_t *activeContext = sysbvm_stackFrame_getActiveContext();
+    if(!activeContext)
+    {
+        fprintf(stderr, "Cannot raise error with the specified message.\n");
+        abort();
+    }
+
+    sysbvm_tuple_t errorException = sysbvm_error_createWithMessageText(activeContext, message);
+    sysbvm_exception_signal(activeContext, errorException);
 }
 
 SYSBVM_API void sysbvm_error(const char *message)
@@ -22,7 +31,8 @@ SYSBVM_API void sysbvm_error(const char *message)
     }
 
     sysbvm_tuple_t errorString = sysbvm_string_createWithCString(activeContext, message);
-    sysbvm_stackFrame_raiseException(errorString);
+    sysbvm_tuple_t errorException = sysbvm_error_createWithMessageText(activeContext, errorString);
+    sysbvm_exception_signal(activeContext, errorException);
 }
 
 SYSBVM_API void sysbvm_error_accessDummyValue()
@@ -96,7 +106,7 @@ static sysbvm_tuple_t sysbvm_errors_primitive_error(sysbvm_context_t *context, s
     (void)closure;
     if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
 
-    sysbvm_stackFrame_raiseException(arguments[0]);
+    sysbvm_errorWithMessageTuple(arguments[0]);
     return SYSBVM_VOID_TUPLE;
 }
 

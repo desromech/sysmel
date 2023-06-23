@@ -26,6 +26,7 @@ extern void sysbvm_byteStream_registerPrimitives(void);
 extern void sysbvm_dictionary_registerPrimitives(void);
 extern void sysbvm_errors_registerPrimitives(void);
 extern void sysbvm_environment_registerPrimitives(void);
+extern void sysbvm_exceptions_registerPrimitives(void);
 extern void sysbvm_filesystem_registerPrimitives(void);
 extern void sysbvm_float_registerPrimitives(void);
 extern void sysbvm_function_registerPrimitives(void);
@@ -51,6 +52,7 @@ extern void sysbvm_byteStream_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_dictionary_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_errors_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_environment_setupPrimitives(sysbvm_context_t *context);
+extern void sysbvm_exceptions_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_filesystem_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_float_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_function_setupPrimitives(sysbvm_context_t *context);
@@ -84,6 +86,7 @@ void sysbvm_context_registerPrimitives(void)
     sysbvm_dictionary_registerPrimitives();
     sysbvm_errors_registerPrimitives();
     sysbvm_environment_registerPrimitives();
+    sysbvm_exceptions_registerPrimitives();
     sysbvm_filesystem_registerPrimitives();
     sysbvm_float_registerPrimitives();
     sysbvm_function_registerPrimitives();
@@ -1164,6 +1167,30 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "bindingDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.dictionaryType,
         NULL);
     
+    context->roots.exceptionType = sysbvm_context_createIntrinsicClass(context, "Exception", context->roots.objectType,
+        "messageText", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,
+        NULL);
+    context->roots.errorType = sysbvm_context_createIntrinsicClass(context, "Error", context->roots.exceptionType, NULL);
+    context->roots.argumentsCountMismatchType = sysbvm_context_createIntrinsicClass(context, "ArgumentsCountMismatch", context->roots.errorType, NULL);
+    context->roots.arithmeticErrorType = sysbvm_context_createIntrinsicClass(context, "ArithmeticError", context->roots.errorType, NULL);
+    context->roots.domainErrorType = sysbvm_context_createIntrinsicClass(context, "DomainError", context->roots.arithmeticErrorType, NULL);
+    context->roots.zeroDivideType = sysbvm_context_createIntrinsicClass(context, "ZeroDivide", context->roots.zeroDivideType,
+        "dividend", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anyValueType,
+        NULL);
+    context->roots.assertionFailureType = sysbvm_context_createIntrinsicClass(context, "AssertionFailure", context->roots.errorType,
+        NULL);
+    context->roots.cannotReturnType = sysbvm_context_createIntrinsicClass(context, "CannotReturn", context->roots.errorType,
+        "result", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.untypedType,
+        NULL);
+    context->roots.modificationForbiddenType = sysbvm_context_createIntrinsicClass(context, "ModificationForbidden", context->roots.errorType,
+        "object", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.untypedType,
+        NULL);
+    context->roots.messageNotUnderstoodType = sysbvm_context_createIntrinsicClass(context, "MessageNotUnderstood", context->roots.errorType,
+        "message", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.messageType,
+        "receiver", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.untypedType,
+        "reachedDefaultHandler", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        NULL);
+
     // Fill the immediate type table.
     context->roots.immediateTypeTable[SYSBVM_TUPLE_TAG_NIL] = context->roots.undefinedObjectType;
     context->roots.immediateTypeTable[SYSBVM_TUPLE_TAG_INTEGER] = context->roots.smallIntegerType;
@@ -1286,6 +1313,7 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_createWithOptions(sysbvm_contextCrea
     sysbvm_dictionary_setupPrimitives(context);
     sysbvm_errors_setupPrimitives(context);
     sysbvm_environment_setupPrimitives(context);
+    sysbvm_exceptions_setupPrimitives(context);
     sysbvm_filesystem_setupPrimitives(context);
     sysbvm_float_setupPrimitives(context);
     sysbvm_function_setupPrimitives(context);

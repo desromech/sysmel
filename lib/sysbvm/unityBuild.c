@@ -24,6 +24,7 @@
 #include "dictionary.c"
 #include "environment.c"
 #include "errors.c"
+#include "exceptions.c"
 #include "filesystem.c"
 #include "float.c"
 #include "function.c"

@@ -93,11 +93,12 @@ FunctionBytecodeDirectCompiler definition: {
         self breakLabel: newBreakLabel.
         self continueLabel: newContinueLabel.
 
-        ## FIXME: Wrap this on an ensure.
-        aBlock().
-
-        self breakLabel: oldBreakLabel.
-        self continueLabel: oldContinueLabel.
+        {|
+            aBlock().
+        } ensure: {:: Void |
+            self breakLabel: oldBreakLabel.
+            self continueLabel: oldContinueLabel.
+        }
     }.
 }.
 

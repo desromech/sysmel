@@ -18,7 +18,6 @@ public abstract class TestCase superclass: TestAsserter; definition: {
         }.
 
         public method runWithMetrics: (metrics: TestMetrics) ::=> Void := {
-            printLine(name).
             self testSelectors do: {:(Symbol)eachTestSelector :: Void |
                 self run: eachTestSelector withMetrics: metrics.
             }.
@@ -28,10 +27,21 @@ public abstract class TestCase superclass: TestAsserter; definition: {
             print("-- ", testSelector asString).
 
             let testTime := {|
-                self new
-                    setUp;
-                    perform: testSelector;
-                    tearDown.
+                { :: Void |
+                    { :: Void |
+                        self new
+                            setUp;
+                            perform: testSelector;
+                            tearDown.
+                        metrics countPassingTest.
+                    } on: AssertionFailure do: {:e |
+                        metrics countFailedTest.
+                        printLine("\nAssertion failure: ", e).
+                    }
+                } on: Error do: {:e |
+                    metrics countErrorTest.
+                    printLine("\nError: ", e).
+                }
             } timeToRunInMicroseconds.
 
             printLine(" ", testTime asFloat64 * 0.001, " ms").

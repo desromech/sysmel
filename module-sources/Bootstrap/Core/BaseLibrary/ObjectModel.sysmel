@@ -1401,6 +1401,7 @@ public global ObjectModel::SendWithReceiverTypeTrampolines := Array new: 17.
 public global ObjectModel::SendTrampolines := Array new: 16.
 
 public struct ObjectModel::InlineCacheEntry definition: {
+    public field selector => Symbol.
     public field type => Type.
     public field foundMethod => AnyValue.
 }.
@@ -1410,16 +1411,15 @@ public global ObjectModel::PolymorphicInlineCache::SizeMask := 3sz.
 public struct ObjectModel::PolymorphicInlineCache definition: {
     public field preSequence => UInt32.
     public field postSequence => UInt32.
-    public field selector => Symbol.
     public field entries => ObjectModel::InlineCacheEntry[ObjectModel::PolymorphicInlineCache::Size].
 
-    public inline method lookForType: (type: Type) ::=> AnyValue := {
+    public inline method lookForSelector: (selector: Symbol) type: (type: Type) ::=> AnyValue := {
         let matchingEntryIndex mutable := ObjectModel::PolymorphicInlineCache::Size.
         let readStartSequence := preSequence. ## TODO: Use atomic load operations here.
-        entries[0sz] type == type ifTrue: (matchingEntryIndex := 0sz) ifFalse: (
-        entries[1sz] type == type ifTrue: (matchingEntryIndex := 1sz) ifFalse: (
-        entries[2sz] type == type ifTrue: (matchingEntryIndex := 2sz) ifFalse: (
-        entries[3sz] type == type ifTrue: (matchingEntryIndex := 3sz)))).
+        (entries[0sz] selector == selector) && (entries[0sz] type == type) ifTrue: (matchingEntryIndex := 0sz) ifFalse: (
+        (entries[1sz] selector == selector) && (entries[1sz] type == type) ifTrue: (matchingEntryIndex := 1sz) ifFalse: (
+        (entries[2sz] selector == selector) && (entries[2sz] type == type) ifTrue: (matchingEntryIndex := 2sz) ifFalse: (
+        (entries[3sz] selector == selector) && (entries[3sz] type == type) ifTrue: (matchingEntryIndex := 3sz)))).
 
         matchingEntryIndex < ObjectModel::PolymorphicInlineCache::Size ifFalse: {
             return: nil
@@ -1435,13 +1435,14 @@ public struct ObjectModel::PolymorphicInlineCache definition: {
         }
     }.
 
-    public inline method addEntry: (foundMethod) forType: (type: Type) ::=> Void := {
+    public inline method addEntry: (foundMethod) forSelector: (selector: Symbol) type: (type: Type) ::=> Void := {
         ## TODO: Hold a write mutex here.
 
         ## FIXME: Use atomic fetch and add here
         let entryIndex := preSequence asSize & ObjectModel::PolymorphicInlineCache::SizeMask asSize.
         preSequence := preSequence + 1u32.
 
+        entries[entryIndex] selector: selector.
         entries[entryIndex] type: type.
         entries[entryIndex] foundMethod: foundMethod.
 

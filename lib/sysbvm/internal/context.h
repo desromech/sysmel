@@ -289,6 +289,17 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t astQuasiUnquoteNodeType;
     sysbvm_tuple_t astSpliceNodeType;
 
+    sysbvm_tuple_t exceptionType;
+    sysbvm_tuple_t errorType;
+    sysbvm_tuple_t argumentsCountMismatchType;
+    sysbvm_tuple_t arithmeticErrorType;
+    sysbvm_tuple_t domainErrorType;
+    sysbvm_tuple_t zeroDivideType;
+    sysbvm_tuple_t assertionFailureType;
+    sysbvm_tuple_t cannotReturnType;
+    sysbvm_tuple_t modificationForbiddenType;
+    sysbvm_tuple_t messageNotUnderstoodType;
+
     sysbvm_tuple_t bytecodeCompilerType;
     sysbvm_tuple_t bytecodeCompilerInstructionOperandType;
     sysbvm_tuple_t bytecodeCompilerInstructionType;

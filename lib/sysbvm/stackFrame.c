@@ -137,6 +137,8 @@ SYSBVM_API void sysbvm_stackFrame_iterateGCRootsInRecordWith(sysbvm_stackFrameRe
             iterationFunction(userdata, &landingPadRecord->exceptionFilter);
             iterationFunction(userdata, &landingPadRecord->stackTrace);
             iterationFunction(userdata, &landingPadRecord->exception);
+            iterationFunction(userdata, &landingPadRecord->action);
+            iterationFunction(userdata, &landingPadRecord->actionResult);
         }   
         break;
     case SYSBVM_STACK_FRAME_RECORD_TYPE_CLEANUP:
@@ -172,8 +174,16 @@ SYSBVM_API void sysbvm_stackFrame_raiseException(sysbvm_tuple_t exception)
 
     // Find the landing pad record.
     sysbvm_stackFrameRecord_t *stackFrameRecord = exceptionRecord;
-    while(stackFrameRecord && stackFrameRecord->type != SYSBVM_STACK_FRAME_RECORD_TYPE_LANDING_PAD)
+    while(stackFrameRecord)
+    {
+        if(stackFrameRecord->type == SYSBVM_STACK_FRAME_RECORD_TYPE_LANDING_PAD)
+        {
+            sysbvm_stackFrameLandingPadRecord_t *landingPadRecord = (sysbvm_stackFrameLandingPadRecord_t*)stackFrameRecord;
+            if(!landingPadRecord->exceptionFilter || sysbvm_tuple_isKindOf(context, exception, landingPadRecord->exceptionFilter))
+                break;
+        }
         stackFrameRecord = stackFrameRecord->previous;
+    }
 
     // Did we find it?
     if(!stackFrameRecord)
@@ -187,6 +197,15 @@ SYSBVM_API void sysbvm_stackFrame_raiseException(sysbvm_tuple_t exception)
     // We found it, transfer the control flow onto it.
     sysbvm_stackFrameLandingPadRecord_t *landingPadRecord = (sysbvm_stackFrameLandingPadRecord_t*)stackFrameRecord;
     landingPadRecord->exception = exception;
+
+    // Do we have an action on it?
+    if(landingPadRecord->action)
+    {
+        // Invoke the action.
+        landingPadRecord->actionResult = sysbvm_function_apply1(context, landingPadRecord->action, landingPadRecord->exception);
+        exception = landingPadRecord->exception;
+    }
+
     if(landingPadRecord->keepStackTrace)
         landingPadRecord->stackTrace = sysbvm_stackFrame_buildStackTraceUpTo((sysbvm_stackFrameRecord_t*)landingPadRecord);
 

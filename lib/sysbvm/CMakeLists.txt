@@ -14,6 +14,7 @@ set(sysbvm_sources
     dictionary.c
     environment.c
     errors.c
+    exceptions.c
     filesystem.c
     float.c
     function.c

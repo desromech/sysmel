@@ -1,14 +1,32 @@
 public class TestMetrics superclass: Object; definition: {
     public field testCount => Size.
+    public field passingCount => Size.
+    public field failureCount => Size.
+    public field errorCount => Size.
+
     public field totalRunningTime => Int64.
 
-    public method countTestWithRunningTime: (runningTime: Int64) ::=> Void := {
+    public final method countTestWithRunningTime: (runningTime: Int64) ::=> Void := {
         testCount := testCount + 1sz.
         totalRunningTime := totalRunningTime + runningTime
     }.
 
+    public final method countPassingTest => Void := {
+        passingCount := passingCount + 1sz.
+    }.
+
+    public final method countFailedTest => Void := {
+        failureCount := failureCount + 1sz.
+    }.
+
+    public final method countErrorTest => Void := {
+        errorCount := errorCount + 1sz.
+    }.
+
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: "Run "; print: testCount; nextPutAll: " test. Running time ";
-            print: totalRunningTime asFloat64 * 0.001; nextPutAll: " ms.".
+        stream nextPutAll: "Run "; print: testCount; nextPutAll: " tests. In "; print: totalRunningTime asFloat64 * 0.001; nextPutAll: " ms";
+            nl; nextPutAll: "Passing "; print: passingCount;
+            space; nextPutAll: "Failed "; print: failureCount;
+            space; nextPutAll: "Error "; print: errorCount
     }.
 }.

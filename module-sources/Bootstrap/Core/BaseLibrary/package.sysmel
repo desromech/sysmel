@@ -16,7 +16,7 @@ loadSourceNamed: "ObjectModel.sysmel".
 loadSourceNamed: "Function.sysmel".
 
 loadSourceNamed: "ByteStream.sysmel".
-loadSourceNamed: "Error.sysmel".
+loadSourceNamed: "Exception.sysmel".
 loadSourceNamed: "IO.sysmel".
 loadSourceNamed: "FileSystem.sysmel".
 loadSourceNamed: "Math.sysmel".
