@@ -2312,6 +2312,9 @@ ValueType extend: {
 }.
 
 PointerLikeType extend: {
+    public override method dwarf::hasSeparateDieForType => Boolean
+        := false.
+        
     public override method dwarf::canHaveMemberFields => Boolean
         := false.
 

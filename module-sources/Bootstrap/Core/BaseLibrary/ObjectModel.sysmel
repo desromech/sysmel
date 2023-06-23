@@ -1504,6 +1504,24 @@ public struct ObjectModel::PolymorphicInlineCache definition: {
     } macroEvalHere
 }.
 
+public inline function ObjectModel::lookupMethodWithInlineCache(inlineCache: ObjectModel::PolymorphicInlineCache pointer, type: Type, selector: Symbol) => AnyValue := {
+    inlineCache ifNil: {
+        return: ((type ifNil: Untyped) lookupSelector: selector)
+    }.
+
+    let cachedEntry := inlineCache _ lookForSelector: selector type: type.
+    cachedEntry ifNotNil: {
+        return: cachedEntry
+    }.
+
+    let lookupResult := (type ifNil: Untyped) lookupSelector: selector.
+    lookupResult ifNotNil: {
+        inlineCache _ addEntry: lookupResult forSelector: selector type: type
+    }.
+
+    lookupResult
+}.
+
 (0sz until: 16sz) macroDo: {:ArgumentCount |
     let argumentNames := (0sz until: ArgumentCount) collect: {:(Size)each | ("arg" -- each asString) asSymbol}.
     let argumentNodes := argumentNames collect: {:(Symbol)eachName | eachName asMacroArgumentWithType: Untyped asMacroLiteral}.
@@ -1513,25 +1531,25 @@ public struct ObjectModel::PolymorphicInlineCache definition: {
     let sendName := ("ObjectModel::send" -- ArgumentCount asString) asSymbol.
 
     ``{
-        public function `,(sendWithReceiverTypeName asMacroLiteral)(receiver: Untyped, receiverType: Type, selector: Symbol, `@argumentNodes) => Untyped := {
-            let foundMethod := (receiverType ifNil: Untyped) lookupSelector: selector.
+        public function `,(sendWithReceiverTypeName asMacroLiteral)(inlineCache: ObjectModel::PolymorphicInlineCache pointer, receiver: Untyped, receiverType: Type, selector: Symbol, `@argumentNodes) => Untyped := {
+            let foundMethod := ObjectModel::lookupMethodWithInlineCache(inlineCache, receiverType, selector).
             foundMethod ifNotNil: {
                 return: `,(applyName asMacroIdentifier)(foundMethod, receiver, `@argumentIdentifiers)
             }
 
             if: (1sz = `,(ArgumentCount asMacroLiteral)) && (selector == #doesNotUnderstand:) then: {
                 error("Message not understood")
-            }.
-
-            ObjectModel::sendWithReceiverType1(receiver, receiverType, #doesNotUnderstand:, Message basicAllocate
-                selector: selector;
-                arguments: (`@argumentIdentifiers,);
-                yourself)
+            } else: {
+                ObjectModel::sendWithReceiverType1(inlineCache, receiver, receiverType, #doesNotUnderstand:, Message basicAllocate
+                    selector: selector;
+                    arguments: (`@argumentIdentifiers,);
+                    yourself)
+            }
         }.
         ObjectModel::SendWithReceiverTypeTrampolines at: `,(ArgumentCount asMacroLiteral) put: `,(sendWithReceiverTypeName asMacroIdentifier).
 
-        public function `,(sendName asMacroLiteral)(receiver: Untyped, selector: Symbol, `@argumentNodes) => Untyped
-            := `,(sendWithReceiverTypeName asMacroIdentifier)(receiver, RawTuple::type(receiver), selector, `@argumentIdentifiers).
+        public function `,(sendName asMacroLiteral)(inlineCache: ObjectModel::PolymorphicInlineCache pointer, receiver: Untyped, selector: Symbol, `@argumentNodes) => Untyped
+            := `,(sendWithReceiverTypeName asMacroIdentifier)(inlineCache, receiver, RawTuple::type(receiver), selector, `@argumentIdentifiers).
 
         ObjectModel::SendTrampolines at: `,(ArgumentCount asMacroLiteral) put: `,(sendName asMacroIdentifier).
     } macroEvalHere

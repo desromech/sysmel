@@ -396,6 +396,19 @@ public final class TACGenericObjectPointerConstant superclass: TACConstant; defi
     }.
 }.
 
+public final class TACPolymorphicInlineCache superclass: TACConstant; definition: {
+    public override method alignment => Size := UIntPointer valueAlignment.
+    public override method size => Size := UIntPointer valueSize.
+    public override method type => Type := ObjectModel::PolymorphicInlineCache.
+
+    public override method physicalLocationClass => TACPhysicalLocation class
+        := TACPhysicalIntegerRegister.
+
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: "polymorphicInlineCache"
+    }.
+}.
+
 public final class TACStringLiteralPointerConstant superclass: TACConstant; definition: {
     public field string => String.
     public field size => Size.

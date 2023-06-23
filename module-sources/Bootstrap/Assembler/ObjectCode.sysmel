@@ -101,6 +101,7 @@ AsmObjectCodeSection definition: {
     public field writeable => Boolean.
     public field readable => Boolean.
     public field loaded => Boolean.
+    public field nobits => Boolean.
 
     public field relocations => Array.
     public field frameDescriptions => Array.
@@ -168,6 +169,10 @@ AsmObjectCodeSection definition: {
         loaded := loaded || flag
     }.
 
+    public method addNoBits: (flag: Boolean) ::=> Boolean := {
+        nobits := nobits || flag
+    }.
+
     public method nextPut: (value: UInt8) ::=> Void := {
         data at: writeOffset put: value.
         writeOffset := writeOffset + 1sz.
@@ -175,7 +180,7 @@ AsmObjectCodeSection definition: {
 
     public method nextPutString: (string: String) ::=> Void := {
         let byteCount := string size.
-        data replaceBytesFrom: writeOffset count: byteCount with: string startingAt: 0sz.
+        data ifNotNil: (data replaceBytesFrom: writeOffset count: byteCount with: string startingAt: 0sz).
         writeOffset := writeOffset + byteCount.
     }.
 
@@ -184,54 +189,58 @@ AsmObjectCodeSection definition: {
         writeOffset := writeOffset + structureSize
     }.
 
+    public method nextReserveBytes: (size: Size) ::=> Void := {
+        writeOffset := writeOffset + size
+    }.
+
     public method nextPutAll: (bytes: ByteArray) ::=> Void := {
         let byteCount := bytes size.
-        data replaceBytesFrom: writeOffset count: byteCount with: bytes startingAt: 0sz.
+        data ifNotNil: (data replaceBytesFrom: writeOffset count: byteCount with: bytes startingAt: 0sz).
         writeOffset := writeOffset + byteCount.
     }.
 
     public method nextPutInt8: (value: Int8) ::=> Void := {
-        data int8At: writeOffset put: value.
+        data ifNotNil: (data int8At: writeOffset put: value).
         writeOffset := writeOffset + 1sz.
     }.
 
     public method nextPutUInt16: (value: UInt16) ::=> Void := {
-        data uint16At: writeOffset put: value.
+        data ifNotNil: (data uint16At: writeOffset put: value).
         writeOffset := writeOffset + 2sz.
     }.
 
     public method nextPutInt16: (value: Int16) ::=> Void := {
-        data int16At: writeOffset put: value.
+        data ifNotNil: (data int16At: writeOffset put: value).
         writeOffset := writeOffset + 2sz.
     }.
 
     public method nextPutUInt32: (value: UInt32) ::=> Void := {
-        data uint32At: writeOffset put: value.
+        data ifNotNil: (data uint32At: writeOffset put: value).
         writeOffset := writeOffset + 4sz.
     }.
 
     public method nextPutInt32: (value: Int32) ::=> Void := {
-        data int32At: writeOffset put: value.
+        data ifNotNil: (data int32At: writeOffset put: value).
         writeOffset := writeOffset + 4sz.
     }.
 
     public method nextPutUInt64: (value: UInt64) ::=> Void := {
-        data uint64At: writeOffset put: value.
+        data ifNotNil: (data uint64At: writeOffset put: value).
         writeOffset := writeOffset + 8sz.
     }.
 
     public method nextPutInt64: (value: Int64) ::=> Void := {
-        data int64At: writeOffset put: value.
+        data ifNotNil: (data int64At: writeOffset put: value).
         writeOffset := writeOffset + 8sz.
     }.
 
     public method nextPutFloat32: (value: Float32) ::=> Void := {
-        data float32At: writeOffset put: value.
+        data ifNotNil: (data float32At: writeOffset put: value).
         writeOffset := writeOffset + 4sz.
     }.
 
     public method nextPutFloat64: (value: Float64) ::=> Void := {
-        data float64At: writeOffset put: value.
+        data ifNotNil: (data float64At: writeOffset put: value).
         writeOffset := writeOffset + 8sz.
     }.
 
@@ -245,7 +254,9 @@ AsmObjectCodeSection definition: {
 
     public method allocateMemoryForWriting => Void := {
         size := size alignedTo: alignment.
-        data := ByteArray new: size.
+        nobits ifFalse: {
+            data := ByteArray new: size.
+        }.
         newRelocations := OrderedCollection new.
         newFrameDescriptions := OrderedCollection new.
         writeOffset := 0sz.
@@ -855,6 +866,9 @@ AsmObjectCodeStream definition: {
     public abstract method nextPutStructure: (structure: AnyValue) withSize: (structureSize: Size) ::=> Void
         := self subclassResponsibility.
 
+    public abstract method nextReserveBytes: (size: Size) ::=> Void
+        := self subclassResponsibility.
+
     public abstract method recordSymbol: (symbol: AsmSymbol) ::=> Void
         := self subclassResponsibility.
 
@@ -932,9 +946,12 @@ AsmObjectCodeSizeStream definition: {
         activeSection increaseSizeBy: string size
     }.
     
-    public abstract method nextPutStructure: (structure: AnyValue) withSize: (structureSize: Size) ::=> Void := {
+    public override method nextPutStructure: (structure: AnyValue) withSize: (structureSize: Size) ::=> Void := {
         activeSection increaseSizeBy: structureSize
+    }.
 
+    public override method nextReserveBytes: (size: Size) ::=> Void := {
+        activeSection increaseSizeBy: size
     }.
 
     public override method recordSymbol: (symbol: AsmSymbol) ::=> Void := {
@@ -1008,6 +1025,10 @@ AsmObjectCodeWriteStream definition: {
 
     public override method nextPutStructure: (structure: AnyValue) withSize: (structureSize: Size) ::=> Void := {
         activeSection nextPutStructure: structure withSize: structureSize
+    }.
+
+    public override method nextReserveBytes: (size: Size) ::=> Void := {
+        activeSection nextReserveBytes: size
     }.
 
     public override method nextPutAll: (bytes: ByteArray) ::=> Void := {

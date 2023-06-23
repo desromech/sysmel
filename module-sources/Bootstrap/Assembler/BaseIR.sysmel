@@ -891,6 +891,7 @@ public final class AsmSectionDirective superclass: AsmStreamElement; definition:
     public field readable => Boolean.
     public field loaded => Boolean.
     public field debugging => Boolean.
+    public field nobits => Boolean.
 
     public override method isSectionDirective => Boolean := false.
     public override method isFormattedWithIndentation => Boolean := false.
@@ -908,7 +909,8 @@ public final class AsmSectionDirective superclass: AsmStreamElement; definition:
             addExecutable: executable;
             addWriteable: writeable;
             addReadable: readable;
-            addLoaded: loaded
+            addLoaded: loaded;
+            addNoBits: nobits
     }.
 }.
 
@@ -1113,6 +1115,19 @@ public final class AsmStructureDirective superclass: AsmStreamElement; definitio
 
     public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
         stream nextPutStructure: value withSize: size
+    }.
+}.
+
+public final class AsmReserveBytesDirective superclass: AsmStreamElement; definition: {
+    public field size => Size.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".resb "; print: size.
+        self printDebugInfoOn: stream.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextReserveBytes: size
     }.
 }.
 
@@ -1410,6 +1425,7 @@ public final class AsmStreamBuilder superclass: Object; definition: {
             machoSegmentName: #__DATA;
             readable: true;
             writeable: true;
+            nobits: true;
             yourself).
 
     public method byte: (value: UInt8) ::=> AsmByteDirective
@@ -1481,6 +1497,11 @@ public final class AsmStreamBuilder superclass: Object; definition: {
     public method structure: (value: AnyValue) size: (size: Size) ::=> AsmStructureDirective
         := self addElement: (AsmStructureDirective new
             value: value;
+            size: size;
+            yourself).
+
+    public method reserveBytes: (size: Size) ::=> AsmReserveBytesDirective
+        := self addElement: (AsmReserveBytesDirective new
             size: size;
             yourself).
 

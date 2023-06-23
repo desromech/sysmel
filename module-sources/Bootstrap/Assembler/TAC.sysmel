@@ -54,12 +54,16 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
 
     protected field objectHeap => AsmObjectHeap.
 
+    protected field picTableDictionary => Dictionary.
+    protected field picTableSymbol => AsmSymbol.
+
     public override method initialize => Void := {
         programEntitySymbolMap := Dictionary new.
         compiledProgramEntitySymbolMap := Dictionary new.
         objectHeap := AsmObjectHeap new.
         stringTableList := OrderedCollection new.
         stringTableDictionary := Dictionary new.
+        picTableDictionary := IdentityDictionary new. 
     }.
 
     public method asmTarget => AsmCompilationTarget := asmTarget.
@@ -128,6 +132,7 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
                 yourself)
         }.
 
+        self buildPICTable.
         self buildStringLiterals.
         asmTarget debugInformationGenerator ifNotNil: {:(AsmObjectDebugInformationGenerator class)generatorClass :: Void |
             let generator := generatorClass new.
@@ -145,6 +150,30 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
 
     public method gcRootObjectTableSymbol ::=> AsmSymbol
         := objectHeap rootObjectTableSymbol.
+
+    public method picTableSymbol ::=> AsmSymbol
+        := picTableSymbol ifNil: { picTableSymbol := AsmSymbol new
+            name: #sysmelPICTable;
+            makePublic;
+            yourself
+        }.
+
+    public method offsetOfPICTableEntryFor: (picEntry: TACPolymorphicInlineCache) ::=> Size
+        := picTableDictionary at: picEntry ifAbsentPut: { :: Size |
+            picTableDictionary size * ObjectModel::PolymorphicInlineCache instanceSize
+        }.
+
+    public method buildPICTable => Void := {
+        picTableDictionary isEmpty ifTrue: (return: void).
+
+        let picTable := targetModule newProgramEntity.
+        let picTableSection := picTable newStreamBuilder
+            bssSection;
+            align: ObjectModel::PolymorphicInlineCache instanceAlignment;
+            label: self picTableSymbol;
+            reserveBytes: picTableDictionary size * ObjectModel::PolymorphicInlineCache instanceSize;
+            endLabel: self picTableSymbol
+    }.
 
     public method buildStringLiterals => Void := {
         stringTableList size = 0sz ifTrue: (return: void).

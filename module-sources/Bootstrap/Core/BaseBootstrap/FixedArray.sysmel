@@ -28,7 +28,7 @@ public class FixedArrayType superclass: ValueType; definition: {
                 (RawTuple::refSlotAt:)(self, index)
             } makeFinal recompileAndOptimize;
             withSelector: #"[]:" addMethod: {:(ReceiverType)self :(Size)index :: elementReferenceType |
-                <primitive: #FixedArray::referenceAt:>
+                <primitive: #FixedArray::refAt:>
                 if: index >= size then: error("Index is out of bounds.").
                 error("TODO: Implement reference at").
             } makeFinal recompileAndOptimize;

@@ -383,7 +383,7 @@ let primitiveFunctionGenerators := #{
             store: value in: elementReference;
             literal: void
     }.
-    #"FixedArray::[]:" : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+    #FixedArray::refAt: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
         let reference := self arguments first generateSSAValueWith: context.
         let index := self arguments second generateSSAValueWith: context.
         context builder reference: reference elementAt: index type: self analyzedType

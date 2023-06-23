@@ -2378,13 +2378,13 @@ SSASendInstruction extend: {
             let trampoline := codegen translateRuntimeFunction: (ObjectModel::SendTrampolines at: self arguments size).
             self type
                 emitTacUnboxingCall: trampoline convention: trampoline callingConvention
-                withArguments: (Array with: tacReceiver with: tacSelector) -- tacArguments into: tacValue
+                withArguments: (Array with: TACPolymorphicInlineCache new with: tacReceiver with: tacSelector) -- tacArguments into: tacValue
                 withSSACodeGenerator: codegen.
         } ifNotNil: {
             let trampoline := codegen translateRuntimeFunction: (ObjectModel::SendWithReceiverTypeTrampolines at: self arguments size).
             self type
                 emitTacUnboxingCall: trampoline convention: trampoline callingConvention
-                withArguments: (Array with: tacReceiver with: tacReceiverLookupType with: tacSelector) -- tacArguments into: tacValue
+                withArguments: (Array with: TACPolymorphicInlineCache new with: tacReceiver with: tacReceiverLookupType with: tacSelector) -- tacArguments into: tacValue
                 withSSACodeGenerator: codegen.
         }.
     }.

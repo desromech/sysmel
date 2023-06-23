@@ -974,8 +974,23 @@ TACGenericObjectPointerConstant extend: {
         codegen textSection x86::mov: (register x86::int64For: codegen) src: (codegen x86_64::pointerForGCRootObjectTableEntryFor: self object).
     }.
 
-    public override method x86::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+    public override method x86_64::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::push: (codegen x86_64::pointerForGCRootObjectTableEntryFor: self object)
+    }.
+}.
+
+TACPolymorphicInlineCache extend: {
+    public override method x86_64::moveIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::lea: (register x86::int64For: codegen) src: (codegen x86_64::pointerForPICEntry: self).
+    }.
+
+    public override method x86_64::movePointerIntoRegister: (register: TACPhysicalLocation) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::lea: (register x86::int64For: codegen) src: (codegen x86_64::pointerForPICEntry: self).
+    }.
+
+    public override method x86_64::pushWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+        self error: "TODO: Select a suitable scratch register here."
+        ##codegen textSection x86::push: (codegen x86_64::pointerForGCRootObjectTableEntryFor: self object)
     }.
 }.
 
@@ -1008,6 +1023,11 @@ TACFunctionAsmCodeGenerator extend: {
             let offset := moduleGenerator offsetOfGCRootObjectTableEntryFor: object.
             AsmX86RegisterAddress size: target pointerSize asUInt8 displacement: moduleGenerator gcRootObjectTableSymbol qword + offset asInt64
         }.
+    }.
+
+    public method x86_64::pointerForPICEntry: (picEntry: TACPolymorphicInlineCache) ::=> AsmInstructionOperand := {
+        let offset := moduleGenerator offsetOfPICTableEntryFor: picEntry.
+        AsmX86RegisterAddress size: target pointerSize asUInt8 displacement: moduleGenerator picTableSymbol qword + offset asInt64
     }.
 }.
 
