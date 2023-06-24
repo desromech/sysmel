@@ -45,8 +45,17 @@ public class LogicalImageSegmentWriter superclass: ImageSegmentWriter; definitio
             let slotCount := RawTuple::size(object).
             let i mutable := 0sz.
             let destOffset mutable := offset.
-            while: (i < slotCount) do: {
+            let strongRefCount => Size := RawTuple::isWeak(object)
+                ifTrue: (RawTuple::type(object) ifNil: Untyped) validTotalSlotCount
+                ifFalse: slotCount.
+
+            while: (i < strongRefCount) do: {
                 self writeReference: (RawTuple::slotAt:)(object, i) atOffset: destOffset.
+                destOffset := destOffset + pointerSize
+            } continueWith: {i := i + 1sz}.
+
+            while: (i < slotCount) do: {
+                self writeReferenceOrTombstone: (RawTuple::slotAt:)(object, i) atOffset: destOffset.
                 destOffset := destOffset + pointerSize
             } continueWith: {i := i + 1sz}
         }.
@@ -54,6 +63,10 @@ public class LogicalImageSegmentWriter superclass: ImageSegmentWriter; definitio
 
     public method writeReference: (reference: Untyped) atOffset: (offset: Size) ::=> Void := {
         objectModel logicalImageSegmentWriter::writeReference: reference in: self at: offset
+    }.
+
+    public method writeReferenceOrTombstone: (reference: Untyped) atOffset: (offset: Size) ::=> Void := {
+        objectModel logicalImageSegmentWriter::writeReferenceOrTombstone: reference in: self at: offset
     }.
 
     public method uint32At: (offset: Size) put: (value: UInt32) ::=> Void := {
@@ -75,8 +88,23 @@ public class LogicalImageSegmentWriter superclass: ImageSegmentWriter; definitio
         }.
     }.
 
+    public method uint32PointerValueForObjectReferenceOrTombstone: (value: Untyped) ::=> UInt32 := {
+        let indexOrNil := objectTrace objectIndexDictionary atOrNil: value.
+        indexOrNil ifNil: {
+            ObjectTombstone encodeImmediateReference32: __tombstone__
+        } ifNotNil: {
+            let index => UInt32 := indexOrNil.
+            let offset => UInt64 := objectOffsetTable at: index asSize.
+            baseVirtualAddress asUInt32 + offset asUInt32.
+        }.
+    }.
+
     public method uint32ReferenceAt: (offset: Size) put: (value: Untyped) ::=> Void := {
         segmentData uint32At: offset put: (self uint32PointerValueForObjectReference: value).
+    }.
+
+    public method uint32ReferenceOrTombstoneAt: (offset: Size) put: (value: Untyped) ::=> Void := {
+        segmentData uint32At: offset put: (self uint32PointerValueForObjectReferenceOrTombstone: value).
     }.
 
     public method uint64PointerValueForObjectReference: (value: Untyped) ::=> UInt64 := {
@@ -90,13 +118,31 @@ public class LogicalImageSegmentWriter superclass: ImageSegmentWriter; definitio
         }.
     }.
 
+    public method uint64PointerValueForObjectReferenceOrTombstone: (value: Untyped) ::=> UInt64 := {
+        let indexOrNil := objectTrace objectIndexDictionary atOrNil: value.
+        indexOrNil ifNil: {
+            ObjectTombstone encodeImmediateReference64: __tombstone__
+        } ifNotNil: {
+            let index => UInt32 := indexOrNil.
+            let offset => UInt64 := objectOffsetTable at: index asSize.
+            baseVirtualAddress asUInt64 + offset asUInt64.
+        }.
+    }.
+
     public method uint64ReferenceAt: (offset: Size) put: (value: Untyped) ::=> Void := {
         segmentData uint64At: offset put: (self uint64PointerValueForObjectReference: value)
+    }.
+
+    public method uint64ReferenceOrTombstoneAt: (offset: Size) put: (value: Untyped) ::=> Void := {
+        segmentData uint64At: offset put: (self uint64PointerValueForObjectReferenceOrTombstone: value)
     }.
 }.
 
 ObjectModelVariant definition: {
     public abstract method logicalImageSegmentWriter::writeReference: (reference: Untyped) in: (writer: LogicalImageSegmentWriter) at: (offset: Size) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method logicalImageSegmentWriter::writeReferenceOrTombstone: (reference: Untyped) in: (writer: LogicalImageSegmentWriter) at: (offset: Size) ::=> Void
         := self subclassResponsibility.
 
     public abstract method logicalImageSegmentWriter::writeObject: (reference: Untyped) headerIn: (writer: LogicalImageSegmentWriter) at: (offset: Size) ::=> Void
@@ -135,6 +181,15 @@ ObjectModelVariant32 definition: {
             writer uint32ReferenceAt: offset put: reference
         }.
     }.
+
+    public override method logicalImageSegmentWriter::writeReferenceOrTombstone: (reference: Untyped) in: (writer: LogicalImageSegmentWriter) at: (offset: Size) ::=> Void := {
+        (self isImmediateReference: reference) ifTrue: {
+            let immediateValue := RawTuple::type(reference) encodeImmediateReference32: reference.
+            writer uint32At: offset put: immediateValue
+        } ifFalse: {
+            writer uint32ReferenceOrTombstoneAt: offset put: reference
+        }.
+    }.
 }.
 
 ObjectModelVariant64 definition: {
@@ -167,6 +222,15 @@ ObjectModelVariant64 definition: {
             writer uint64At: offset put: immediateValue
         } ifFalse: {
             writer uint64ReferenceAt: offset put: reference
+        }.
+    }.
+
+    public override method logicalImageSegmentWriter::writeReferenceOrTombstone: (reference: Untyped) in: (writer: LogicalImageSegmentWriter) at: (offset: Size) ::=> Void := {
+        (self isImmediateReference: reference) ifTrue: {
+            let immediateValue := RawTuple::type(reference) encodeImmediateReference64: reference.
+            writer uint64At: offset put: immediateValue
+        } ifFalse: {
+            writer uint64ReferenceOrTombstoneAt: offset put: reference
         }.
     }.
 }.

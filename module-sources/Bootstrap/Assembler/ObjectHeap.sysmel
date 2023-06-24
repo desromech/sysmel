@@ -252,6 +252,26 @@ AsmObjectHeap definition: {
         }
     }.
 
+    public method writeReference64OrTombstone: (value: Untyped) at: (offset: Size) ::=> Void := {
+        let objectModel := compilationTarget objectModel.
+        (objectModel isImmediateReference: value) ifTrue: {
+            let immediateValue := RawTuple::type(value) encodeImmediateReference64: value.
+            serializedObjectData uint64At: offset put: immediateValue
+        } ifFalse: {
+            (objectTrace objectIndexDictionary untypedIncludesKey: value) ifTrue: {
+                let objectIndex => UInt32 := objectTrace objectIndexDictionary untypedAt: value.
+                let objectOffset => Size := objectOffsetList at: objectIndex asSize.
+                serializedObjectDataRelocations add: (AsmObjectCodeRelocationAbsoluteInt64 new
+                    symbol: self objectSectionSymbol;
+                    offset: offset;
+                    addend: objectOffset asInt64;
+                    yourself)
+            } ifFalse: {
+                let immediateValue := ObjectTombstone encodeImmediateReference64: __tombstone__.
+                serializedObjectData uint64At: offset put: immediateValue
+            }
+        }
+    }.
     public method writeSymbolReference64: (symbol: AsmSymbol) at: (offset: Size) ::=> Void := {
         serializedObjectDataRelocations add: (AsmObjectCodeRelocationAbsoluteInt64 new
             symbol: symbol;
@@ -402,7 +422,11 @@ ObjectModelVariant64 extend: {
 
             while: i < slotCount do: {
                 let value => Untyped := (RawTuple::slotAt:) (object, i).
-                heap writeReference64: value at: slotOffset.
+                isWeak ifTrue: {
+                    heap writeReference64OrTombstone: value at: slotOffset.
+                } ifFalse: {
+                    heap writeReference64: value at: slotOffset.
+                }.
                 slotOffset := slotOffset + 8sz.
             } continueWith: (i := i + 1sz)
         }.

@@ -75,6 +75,9 @@ public class ImageBuilderObjectTraceStrategyNoSourceDefinition superclass: Image
 
 Type extend: {
     public virtual method imageBuilder::traceNonLayoutReferencesOf: (object: Untyped) startingFrom: (startSlotIndex: Size) with: (imageBuilder: ImageBuilder) ::=> Void := {
+        ## Do not trace the weak references.
+        RawTuple::isWeak(object) ifTrue: (return: void).
+
         let slotCount => Size := RawTuple::size(object).
         let i mutable := startSlotIndex.
         while: (i < slotCount) do: {
