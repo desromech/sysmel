@@ -236,25 +236,25 @@ void sysbvm_primitiveInteger_setupPrimitives(sysbvm_context_t *context)
 
     if(sizeof(sysbvm_bitflags_t) == 4)
     {
-        sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Bitflags::fromInteger", context->roots.integerType, "bflgs", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_uint32_primitive_fromInteger);
+        sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.integerType, "bflgs", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_uint32_primitive_fromInteger);
     }
     else
     {
-        sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Bitflags::fromInteger", context->roots.integerType, "bflgs", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_uint64_primitive_fromInteger);
+        sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.integerType, "bflgs", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_uint64_primitive_fromInteger);
     }
 
     if(context->roots.sizeType == context->roots.uint32Type)
     {
-        sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "UIntPointer::fromInteger", context->roots.integerType, "uptr", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_uint32_primitive_fromInteger);
-        sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IntPointer::fromInteger", context->roots.integerType, "iptr", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_int32_primitive_fromInteger);
-        sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Size::fromInteger", context->roots.integerType, "sz", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_uint32_primitive_fromInteger);
+        sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.integerType, "uptr", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_uint32_primitive_fromInteger);
+        sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.integerType, "iptr", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_int32_primitive_fromInteger);
+        sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.integerType, "sz", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_uint32_primitive_fromInteger);
         sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "Size::+"), sysbvm_type_lookupSelector(context, context->roots.uint32Type, sysbvm_symbol_internWithCString(context, "+")));
     }
     else
     {
-        sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "UIntPointer::fromInteger", context->roots.integerType, "uptr", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_uint64_primitive_fromInteger);
-        sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IntPointer::fromInteger", context->roots.integerType, "iptr", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_int64_primitive_fromInteger);
-        sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Size::fromInteger", context->roots.integerType, "sz", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_uint64_primitive_fromInteger);
+        sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.integerType, "uptr", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_uint64_primitive_fromInteger);
+        sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.integerType, "iptr", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_int64_primitive_fromInteger);
+        sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.integerType, "sz", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_uint64_primitive_fromInteger);
         sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "Size::+"), sysbvm_type_lookupSelector(context, context->roots.uint64Type, sysbvm_symbol_internWithCString(context, "+")));
     }
 }

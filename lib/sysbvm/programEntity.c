@@ -33,5 +33,5 @@ void sysbvm_programEntity_registerPrimitives(void)
 
 void sysbvm_programEntity_setupPrimitives(sysbvm_context_t *context)
 {
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ProgramEntity::recordBindingWithOwner:andName:", context->roots.programEntityType, "recordBindingWithOwner:andName:", 3, SYSBVM_FUNCTION_FLAGS_VIRTUAL, NULL, sysbvm_programEntity_primitive_recordBindingWithOwnerAndName);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.programEntityType, "recordBindingWithOwner:andName:", 3, SYSBVM_FUNCTION_FLAGS_VIRTUAL, NULL, sysbvm_programEntity_primitive_recordBindingWithOwnerAndName);
 }

@@ -94,6 +94,6 @@ void sysbvm_sourcePosition_registerPrimitives(void)
 
 void sysbvm_sourcePosition_setupPrimitives(sysbvm_context_t *context)
 {
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "SourcePosition::hash", context->roots.sourcePositionType, "hash", 1, SYSBVM_FUNCTION_FLAGS_OVERRIDE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_sourcePosition_primitive_hash);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "SourcePosition::=", context->roots.sourcePositionType, "=", 2, SYSBVM_FUNCTION_FLAGS_OVERRIDE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_sourcePosition_primitive_equals);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.sourcePositionType, "hash", 1, SYSBVM_FUNCTION_FLAGS_OVERRIDE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_sourcePosition_primitive_hash);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.sourcePositionType, "=", 2, SYSBVM_FUNCTION_FLAGS_OVERRIDE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_sourcePosition_primitive_equals);
 }

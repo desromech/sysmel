@@ -827,13 +827,13 @@ void sysbvm_environment_registerPrimitives(void)
 
 void sysbvm_environment_setupPrimitives(sysbvm_context_t *context)
 {
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "AnalysisQueue::waitPendingAnalysis", context->roots.analysisQueueType, "waitPendingAnalysis", 1, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_analysisQueue_primitive_waitPendingAnalysis);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Environment::enqueuePendingAnalysis:", context->roots.environmentType, "enqueuePendingAnalysis:", 2, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_environment_primitive_enqueuePendingAnalysis);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Environment::defaultForEvaluation", sysbvm_tuple_getType(context, context->roots.environmentType), "defaultForEvaluation", 1, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_environment_primitive_defaultForEvaluation);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.analysisQueueType, "waitPendingAnalysis", 1, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_analysisQueue_primitive_waitPendingAnalysis);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.environmentType, "enqueuePendingAnalysis:", 2, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_environment_primitive_enqueuePendingAnalysis);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, sysbvm_tuple_getType(context, context->roots.environmentType), "defaultForEvaluation", 1, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_environment_primitive_defaultForEvaluation);
 
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Environment::setNewBinding:", context->roots.environmentType, "setNewBinding:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_environment_primitive_setNewBinding);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Environment::setBinding:", context->roots.environmentType, "setBinding:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_environment_primitive_setBinding);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.environmentType, "setNewBinding:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_environment_primitive_setNewBinding);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.environmentType, "setBinding:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_environment_primitive_setBinding);
     
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Environment::setNewSymbol:bindingWithValue:", context->roots.environmentType, "setNewSymbol:bindingWithValue:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_environment_primitive_setNewSymbolBindingWithValue);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Environment::setSymbol:bindingWithValue:", context->roots.environmentType, "setSymbol:bindingWithValue:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_environment_primitive_setSymbolBindingWithValue);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.environmentType, "setNewSymbol:bindingWithValue:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_environment_primitive_setNewSymbolBindingWithValue);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.environmentType, "setSymbol:bindingWithValue:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_environment_primitive_setSymbolBindingWithValue);
 }

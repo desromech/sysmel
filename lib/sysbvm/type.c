@@ -1533,13 +1533,13 @@ void sysbvm_type_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IntPointer::reinterpretCastTo:", context->roots.intptrType, "reinterpretCastTo:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_type_primitive_pointerLikeTypeReinterpretCastTo);
 
     context->roots.anyValueToVoidPrimitive = sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "Void::fromAnyValue", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_NO_TYPECHECK_ARGUMENTS, NULL, sysbvm_void_primitive_anyValueToVoid);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Void::coerceASTNode:withEnvironment:", sysbvm_tuple_getType(context, context->roots.voidType), "coerceASTNode:withEnvironment:", 3, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_void_primitive_coerceASTNodeWithEnvironment);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, sysbvm_tuple_getType(context, context->roots.voidType), "coerceASTNode:withEnvironment:", 3, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_void_primitive_coerceASTNodeWithEnvironment);
     
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Type::coerceASTNode:withEnvironment:", context->roots.typeType, "coerceASTNode:withEnvironment:", 3, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_type_primitive_coerceASTNodeWithEnvironment);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.typeType, "coerceASTNode:withEnvironment:", 3, SYSBVM_FUNCTION_FLAGS_NONE, NULL, sysbvm_type_primitive_coerceASTNodeWithEnvironment);
 
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Type::flushLookupSelector:", context->roots.typeType, "flushLookupSelector:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_type_primitive_flushLookupSelector);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Type::flushMacroLookupSelector:", context->roots.typeType, "flushMacroLookupSelector:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_type_primitive_flushMacroLookupSelector);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Type::flushFallbackLookupSelector:", context->roots.typeType, "flushFallbackLookupSelector:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_type_primitive_flushFallbackLookupSelector);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.typeType, "flushLookupSelector:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_type_primitive_flushLookupSelector);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.typeType, "flushMacroLookupSelector:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_type_primitive_flushMacroLookupSelector);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.typeType, "flushFallbackLookupSelector:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_type_primitive_flushFallbackLookupSelector);
     // Export the type flags.
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::None", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_NONE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::Nullable", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_NULLABLE));

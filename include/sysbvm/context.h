@@ -107,9 +107,14 @@ SYSBVM_API void sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(sysbvm_co
 SYSBVM_API sysbvm_tuple_t sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(sysbvm_context_t *context, const char *symbolString, size_t argumentCount, sysbvm_bitflags_t flags, void *userdata, sysbvm_functionEntryPoint_t entryPoint);
 
 /**
- * Sets an intrinsic symbol binding with primitive function.
+ * Sets an intrinsic symbol binding and primitive method.
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(sysbvm_context_t *context, const char *symbolString, sysbvm_tuple_t ownerClass, const char *selectorString, size_t argumentCount, sysbvm_bitflags_t flags, void *userdata, sysbvm_functionEntryPoint_t entryPoint);
+
+/**
+ * Sets an intrinsic symbol binding and primitive method.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_context_setIntrinsicPrimitiveMethod(sysbvm_context_t *context, sysbvm_tuple_t ownerClass, const char *selectorString, size_t argumentCount, sysbvm_bitflags_t flags, void *userdata, sysbvm_functionEntryPoint_t entryPoint);
 
 /**
  * Registers a function in the global primitive table.

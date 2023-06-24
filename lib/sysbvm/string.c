@@ -392,11 +392,11 @@ void sysbvm_string_setupPrimitives(sysbvm_context_t *context)
         sysbvm_type_setPrintStringFunction(context, context->roots.stringSymbolType, sysbvm_function_createPrimitive(context, 1, SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_symbol_primitive_asString));
     }
 
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::printString", context->roots.anyValueType, "printString", 1, SYSBVM_FUNCTION_FLAGS_VIRTUAL, NULL, sysbvm_tuple_primitive_defaultPrintString);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::asString", context->roots.anyValueType, "asString", 1, SYSBVM_FUNCTION_FLAGS_VIRTUAL, NULL, sysbvm_tuple_primitive_defaultAsString);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.anyValueType, "printString", 1, SYSBVM_FUNCTION_FLAGS_VIRTUAL, NULL, sysbvm_tuple_primitive_defaultPrintString);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.anyValueType, "asString", 1, SYSBVM_FUNCTION_FLAGS_VIRTUAL, NULL, sysbvm_tuple_primitive_defaultAsString);
     sysbvm_type_setMethodWithSelector(context, context->roots.stringType, sysbvm_symbol_internWithCString(context, "="), context->roots.stringEqualsFunction);
     sysbvm_type_setMethodWithSelector(context, context->roots.stringType, sysbvm_symbol_internWithCString(context, "hash"), context->roots.stringHashFunction);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "String::concat:", context->roots.stringType, "--", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_string_primitive_concat);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "String::withoutSuffix:", context->roots.stringType, "withoutSuffix:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_string_primitive_withoutSuffix);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "StringSymbol::intern", context->roots.stringType, "asSymbol", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_symbol_primitive_intern);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.stringType, "--", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_string_primitive_concat);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.stringType, "withoutSuffix:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_string_primitive_withoutSuffix);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.stringType, "asSymbol", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_symbol_primitive_intern);
 }

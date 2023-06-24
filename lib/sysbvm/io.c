@@ -192,8 +192,8 @@ void sysbvm_io_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "printLine", 1, SYSBVM_FUNCTION_FLAGS_VARIADIC, NULL, sysbvm_io_primitive_printLine);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "print", 1, SYSBVM_FUNCTION_FLAGS_VARIADIC, NULL, sysbvm_io_primitive_print);
 
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IO::writeOntoStdout", context->roots.stringType, "writeOntoStdout", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_io_primitive_writeOntoStdout);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "IO::writeOntoStderr", context->roots.stringType, "writeOntoStderr", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_io_primitive_writeOntoStderr);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.stringType, "writeOntoStdout", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_io_primitive_writeOntoStdout);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.stringType, "writeOntoStderr", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_io_primitive_writeOntoStderr);
 
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "IO::readWholeFileNamedAsString", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_io_primitive_readWholeFileNamedAsString);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "IO::readWholeFileNamedAsByteArray", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_io_primitive_readWholeFileNamedAsByteArray);

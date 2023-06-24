@@ -31,6 +31,6 @@ void sysbvm_boolean_registerPrimitives(void)
 
 void sysbvm_boolean_setupPrimitives(sysbvm_context_t *context)
 {
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Boolean::not", context->roots.booleanType, "not", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_boolean_primitive_not);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Boolean::xor:", context->roots.booleanType, "xor:",2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_boolean_primitive_xor);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.booleanType, "not", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_boolean_primitive_not);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.booleanType, "xor:",2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_boolean_primitive_xor);
 }

@@ -33,33 +33,13 @@ primitiveFailedError __type__: (SimpleFunctionTypeTemplate((), 0bflgs, Unwinds))
 (RawTuple::firstInstanceWithType) __type__: (SimpleFunctionTypeTemplate((Type,), 0bflgs, Untyped)).
 (RawTuple::nextInstanceWithSameType) __type__: (SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Untyped)).
 
-(Boolean::not) __type__: (SimpleFunctionTypeTemplate((Boolean,), 0bflgs, Boolean)).
-
 (OrderedCollection::new) __type__: (SimpleFunctionTypeTemplate((), 0bflgs, OrderedCollection)).
-(OrderedCollection::add:) __type__: (SimpleFunctionTypeTemplate((OrderedCollection, AnyValue), 0bflgs, Void)).
-(OrderedCollection::asArray) __type__: (SimpleFunctionTypeTemplate((OrderedCollection,), 0bflgs, Array)).
-(OrderedCollection::identityIncludes:) __type__: (SimpleFunctionTypeTemplate((OrderedCollection, AnyValue), 0bflgs, Boolean)).
-
-(Function::adoptDefinitionOf:) __type__: (SimpleFunctionTypeTemplate((Function, Function), 0bflgs, Function)).
-(Function::isBootstrapPrimitive) __type__: (SimpleFunctionTypeTemplate((Function,), 0bflgs, Boolean)).
-(Function::hasVirtualDispatch) __type__: (SimpleFunctionTypeTemplate((Function,), 0bflgs, Boolean)).
-(Function::hasOverrideDispatch) __type__: (SimpleFunctionTypeTemplate((Function,), 0bflgs, Boolean)).
+(MethodDictionary::new) __type__: (SimpleFunctionTypeTemplate((), 0bflgs, MethodDictionary)).
 
 (Time::Timestamp::microsecondsNow) __type__: (SimpleFunctionTypeTemplate((), 0bflgs, Int64)).
 (Time::Timestamp::nanosecondsNow) __type__: (SimpleFunctionTypeTemplate((), 0bflgs, Int64)).
 
-(MethodDictionary::new) __type__: (SimpleFunctionTypeTemplate((), 0bflgs, MethodDictionary)).
-(MethodDictionary::at:) __type__: (SimpleFunctionTypeTemplate((MethodDictionary, AnyValue), 0bflgs, AnyValue)).
-(MethodDictionary::atOrNil:) __type__: (SimpleFunctionTypeTemplate((MethodDictionary, AnyValue), 0bflgs, AnyValue)).
-(MethodDictionary::at:put:) __type__: (SimpleFunctionTypeTemplate((MethodDictionary, AnyValue, AnyValue), 0bflgs, Void)).
-
 (FileSystem::joinPath:) __type__: (SimpleFunctionTypeTemplate((String, String), 0bflgs, String)).
-(String::concat:) __type__: (SimpleFunctionTypeTemplate((String, SequenceableCollection), 0bflgs, String)).
-(StringStream::asString) __type__: (SimpleFunctionTypeTemplate((StringStream,), 0bflgs, String)).
-
-(Type::flushMacroLookupSelector:) __type__: (SimpleFunctionTypeTemplate((Type,Symbol), 0bflgs, Void)).
-(Type::flushLookupSelector:) __type__: (SimpleFunctionTypeTemplate((Type,Symbol), 0bflgs, Void)).
-(Type::flushFallbackLookupSelector:) __type__: (SimpleFunctionTypeTemplate((Type,Symbol), 0bflgs, Void)).
 
 print __type__: (SimpleFunctionTypeTemplate((Array,), FunctionFlags::Variadic, Void)). 
 printLine __type__: (SimpleFunctionTypeTemplate((Array,), FunctionFlags::Variadic, Void)). 
@@ -68,7 +48,28 @@ let: #methodWithSelectorAt with: {:(Type)type :(Symbol)selector |
     (type __slotNamedAt__: #methodDictionary) atOrNil: selector
 }.
 
+methodWithSelectorAt(Boolean, #not) __type__: (SimpleFunctionTypeTemplate((Boolean,), 0bflgs, Boolean)).
+
+methodWithSelectorAt(Function, #adoptDefinitionOf:) __type__: (SimpleFunctionTypeTemplate((Function, Function), 0bflgs, Function)).
+methodWithSelectorAt(Function, #isBootstrapPrimitive) __type__: (SimpleFunctionTypeTemplate((Function,), 0bflgs, Boolean)).
+methodWithSelectorAt(Function, #hasVirtualDispatch) __type__: (SimpleFunctionTypeTemplate((Function,), 0bflgs, Boolean)).
+methodWithSelectorAt(Function, #hasOverrideDispatch) __type__: (SimpleFunctionTypeTemplate((Function,), 0bflgs, Boolean)).
+
 methodWithSelectorAt(Dictionary, #scanFor:) __type__: (SimpleFunctionTypeTemplate((Dictionary, Untyped,), 0bflgs, IntPointer)).
+methodWithSelectorAt(IdentityDictionary, #scanFor:) __type__: (SimpleFunctionTypeTemplate((IdentityDictionary, Untyped,), 0bflgs, IntPointer)).
+methodWithSelectorAt(MethodDictionary, #scanFor:) __type__: (SimpleFunctionTypeTemplate((MethodDictionary, Untyped,), 0bflgs, IntPointer)).
+
+methodWithSelectorAt(OrderedCollection, #add:) __type__: (SimpleFunctionTypeTemplate((OrderedCollection, AnyValue), 0bflgs, Void)).
+methodWithSelectorAt(OrderedCollection, #asArray) __type__: (SimpleFunctionTypeTemplate((OrderedCollection,), 0bflgs, Array)).
+methodWithSelectorAt(OrderedCollection, #identityIncludes:) __type__: (SimpleFunctionTypeTemplate((OrderedCollection, AnyValue), 0bflgs, Boolean)).
+
+methodWithSelectorAt(MethodDictionary, #at:) __type__: (SimpleFunctionTypeTemplate((MethodDictionary, AnyValue), 0bflgs, AnyValue)).
+methodWithSelectorAt(MethodDictionary, #atOrNil:) __type__: (SimpleFunctionTypeTemplate((MethodDictionary, AnyValue), 0bflgs, AnyValue)).
+methodWithSelectorAt(MethodDictionary, #at:put:) __type__: (SimpleFunctionTypeTemplate((MethodDictionary, AnyValue, AnyValue), 0bflgs, Void)).
+
+methodWithSelectorAt(Type, #flushMacroLookupSelector:) __type__: (SimpleFunctionTypeTemplate((Type,Symbol), 0bflgs, Void)).
+methodWithSelectorAt(Type, #flushLookupSelector:) __type__: (SimpleFunctionTypeTemplate((Type,Symbol), 0bflgs, Void)).
+methodWithSelectorAt(Type, #flushFallbackLookupSelector:) __type__: (SimpleFunctionTypeTemplate((Type,Symbol), 0bflgs, Void)).
 
 methodWithSelectorAt(Int8, #printString) __type__: (SimpleFunctionTypeTemplate((Int8,), 0bflgs, String)).
 methodWithSelectorAt(Int16, #printString) __type__: (SimpleFunctionTypeTemplate((Int16,), 0bflgs, String)).
@@ -80,6 +81,9 @@ methodWithSelectorAt(UInt32, #printString) __type__: (SimpleFunctionTypeTemplate
 methodWithSelectorAt(UInt64, #printString) __type__: (SimpleFunctionTypeTemplate((UInt64,), 0bflgs, String)).
 methodWithSelectorAt(Float32, #printString) __type__: (SimpleFunctionTypeTemplate((Float32,), 0bflgs, String)).
 methodWithSelectorAt(Float64, #printString) __type__: (SimpleFunctionTypeTemplate((Float64,), 0bflgs, String)).
+
+methodWithSelectorAt(String, #--) __type__: (SimpleFunctionTypeTemplate((String, SequenceableCollection), 0bflgs, String)).
+methodWithSelectorAt(StringStream, #asString) __type__: (SimpleFunctionTypeTemplate((StringStream,), 0bflgs, String)).
 
 (==) adoptDefinitionOf: {:(AnyValue)left :(AnyValue)right :: Boolean |
     <primitive: #== >
@@ -182,28 +186,28 @@ ObjectModel::isNative adoptDefinitionOf: {:: Boolean |
     let: #equalityComparisonFunctionType with: SimpleFunctionTypeTemplate((UInt32, AnyValue), 0bflgs, Boolean).
     let: #comparisonFunctionType with: SimpleFunctionTypeTemplate((UInt32, UInt32), 0bflgs, Boolean).
 
-    UInt32::negated __type__: unaryFunctionType.
-    UInt32::bitInvert __type__: unaryFunctionType.
-    UInt32::highBit __type__: unaryFunctionType.
-    UInt32::lowBit __type__: unaryFunctionType.
+    methodWithSelectorAt(UInt32, #negated) __type__: unaryFunctionType.
+    methodWithSelectorAt(UInt32, #bitInvert) __type__: unaryFunctionType.
+    methodWithSelectorAt(UInt32, #highBit) __type__: unaryFunctionType.
+    methodWithSelectorAt(UInt32, #lowBit) __type__: unaryFunctionType.
 
-    UInt32::+ __type__: binaryFunctionType.
-    UInt32::- __type__: binaryFunctionType.
-    UInt32::* __type__: binaryFunctionType.
-    UInt32::/ __type__: binaryFunctionType.
-    UInt32::% __type__: binaryFunctionType.
+    methodWithSelectorAt(UInt32, #+) __type__: binaryFunctionType.
+    methodWithSelectorAt(UInt32, #-) __type__: binaryFunctionType.
+    methodWithSelectorAt(UInt32, #"*") __type__: binaryFunctionType.
+    methodWithSelectorAt(UInt32, #/) __type__: binaryFunctionType.
+    methodWithSelectorAt(UInt32, #%) __type__: binaryFunctionType.
 
-    UInt32::& __type__: binaryFunctionType.
-    UInt32::| __type__: binaryFunctionType.
-    UInt32::<< __type__: binaryFunctionType.
-    UInt32::>> __type__: binaryFunctionType.
+    methodWithSelectorAt(UInt32, #&) __type__: binaryFunctionType.
+    methodWithSelectorAt(UInt32, #|) __type__: binaryFunctionType.
+    methodWithSelectorAt(UInt32, #<<) __type__: binaryFunctionType.
+    methodWithSelectorAt(UInt32, #>>) __type__: binaryFunctionType.
 
-    UInt32::= __type__: equalityComparisonFunctionType.
-    UInt32::~= __type__: equalityComparisonFunctionType.
-    UInt32::< __type__: comparisonFunctionType.
-    UInt32::<= __type__: comparisonFunctionType.
-    UInt32::>= __type__: comparisonFunctionType.
-    UInt32::> __type__: comparisonFunctionType.
+    methodWithSelectorAt(UInt32, #=) __type__: equalityComparisonFunctionType.
+    methodWithSelectorAt(UInt32, #~=) __type__: equalityComparisonFunctionType.
+    methodWithSelectorAt(UInt32, #<) __type__: comparisonFunctionType.
+    methodWithSelectorAt(UInt32, #<=) __type__: comparisonFunctionType.
+    methodWithSelectorAt(UInt32, #>=) __type__: comparisonFunctionType.
+    methodWithSelectorAt(UInt32, #>) __type__: comparisonFunctionType.
 }.
 
 {
@@ -212,26 +216,26 @@ ObjectModel::isNative adoptDefinitionOf: {:: Boolean |
     let: #equalityComparisonFunctionType with: SimpleFunctionTypeTemplate((UInt64, AnyValue), 0bflgs, Boolean).
     let: #comparisonFunctionType with: SimpleFunctionTypeTemplate((UInt64, UInt64), 0bflgs, Boolean).
 
-    UInt64::negated __type__: unaryFunctionType.
-    UInt64::bitInvert __type__: unaryFunctionType.
-    UInt64::highBit __type__: unaryFunctionType.
-    UInt64::lowBit __type__: unaryFunctionType.
+    methodWithSelectorAt(UInt64, #negated) __type__: unaryFunctionType.
+    methodWithSelectorAt(UInt64, #bitInvert) __type__: unaryFunctionType.
+    methodWithSelectorAt(UInt64, #highBit) __type__: unaryFunctionType.
+    methodWithSelectorAt(UInt64, #lowBit) __type__: unaryFunctionType.
 
-    UInt64::+ __type__: binaryFunctionType.
-    UInt64::- __type__: binaryFunctionType.
-    UInt64::* __type__: binaryFunctionType.
-    UInt64::/ __type__: binaryFunctionType.
-    UInt64::% __type__: binaryFunctionType.
+    methodWithSelectorAt(UInt64, #+) __type__: binaryFunctionType.
+    methodWithSelectorAt(UInt64, #-) __type__: binaryFunctionType.
+    methodWithSelectorAt(UInt64, #"*") __type__: binaryFunctionType.
+    methodWithSelectorAt(UInt64, #/) __type__: binaryFunctionType.
+    methodWithSelectorAt(UInt64, #%) __type__: binaryFunctionType.
 
-    UInt64::& __type__: binaryFunctionType.
-    UInt64::| __type__: binaryFunctionType.
-    UInt64::<< __type__: binaryFunctionType.
-    UInt64::>> __type__: binaryFunctionType.
+    methodWithSelectorAt(UInt64, #&) __type__: binaryFunctionType.
+    methodWithSelectorAt(UInt64, #|) __type__: binaryFunctionType.
+    methodWithSelectorAt(UInt64, #<<) __type__: binaryFunctionType.
+    methodWithSelectorAt(UInt64, #>>) __type__: binaryFunctionType.
 
-    UInt64::= __type__: equalityComparisonFunctionType.
-    UInt64::~= __type__: equalityComparisonFunctionType.
-    UInt64::< __type__: comparisonFunctionType.
-    UInt64::<= __type__: comparisonFunctionType.
-    UInt64::>= __type__: comparisonFunctionType.
-    UInt64::> __type__: comparisonFunctionType.
+    methodWithSelectorAt(UInt64, #=) __type__: equalityComparisonFunctionType.
+    methodWithSelectorAt(UInt64, #~=) __type__: equalityComparisonFunctionType.
+    methodWithSelectorAt(UInt64, #<) __type__: comparisonFunctionType.
+    methodWithSelectorAt(UInt64, #<=) __type__: comparisonFunctionType.
+    methodWithSelectorAt(UInt64, #>=) __type__: comparisonFunctionType.
+    methodWithSelectorAt(UInt64, #>) __type__: comparisonFunctionType.
 }.

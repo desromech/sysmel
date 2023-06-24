@@ -198,10 +198,10 @@ void sysbvm_byteStream_registerPrimitives(void)
 
 void sysbvm_byteStream_setupPrimitives(sysbvm_context_t *context)
 {
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteStream::nextPut:", context->roots.byteStreamType, "nextPut:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_byteStream_primitive_nextPut);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteStream::nextPutAll:", context->roots.byteStreamType, "nextPutAll:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_byteStream_primitive_nextPutAll);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteStream::nextPutString:", context->roots.byteStreamType, "nextPutString:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_byteStream_primitive_nextPutString);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteStream::asByteArray", context->roots.byteStreamType, "asByteArray", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteStream_primitive_asByteArray);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteStream::asString", context->roots.byteStreamType, "asString", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteStream_primitive_asString);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "ByteStream::asSymbol", context->roots.byteStreamType, "asSymbol", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteStream_primitive_asSymbol);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.byteStreamType, "nextPut:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_byteStream_primitive_nextPut);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.byteStreamType, "nextPutAll:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_byteStream_primitive_nextPutAll);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.byteStreamType, "nextPutString:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_byteStream_primitive_nextPutString);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.byteStreamType, "asByteArray", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteStream_primitive_asByteArray);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.byteStreamType, "asString", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteStream_primitive_asString);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.byteStreamType, "asSymbol", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteStream_primitive_asSymbol);
 }

@@ -315,6 +315,25 @@ SYSBVM_API sysbvm_tuple_t sysbvm_context_setIntrinsicSymbolBindingValueWithPrimi
     return gcFrame.primitiveFunction;
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_context_setIntrinsicPrimitiveMethod(sysbvm_context_t *context, sysbvm_tuple_t ownerClass, const char *selectorString, size_t argumentCount, sysbvm_bitflags_t flags, void *userdata, sysbvm_functionEntryPoint_t entryPoint)
+{
+    struct {
+        sysbvm_tuple_t symbol;
+        sysbvm_tuple_t selector;
+        sysbvm_tuple_t primitiveFunction;
+        sysbvm_tuple_t ownerClass;
+    } gcFrame = {
+        .ownerClass = ownerClass
+    };
+
+    SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    gcFrame.primitiveFunction = sysbvm_function_createPrimitive(context, argumentCount, flags, userdata, entryPoint);
+    gcFrame.selector = sysbvm_symbol_internWithCString(context, selectorString);
+    sysbvm_type_setMethodWithSelector(context, gcFrame.ownerClass, gcFrame.selector, gcFrame.primitiveFunction);
+    SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.primitiveFunction;
+}
+
 static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
 {
     // Make a circular base type.
