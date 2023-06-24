@@ -556,8 +556,8 @@ ASTIfNode extend: {
         let builder := context builder.
 
         ## Condition
-        let condition := self conditionExpression
-            ifNotNil: {:condition :: SSAValue | condition generateSSAValueWith: context}
+        let condition := conditionExpression
+            ifNotNil: (conditionExpression generateSSAValueWith: context)
             ifNil: (builder literal: false).
 
         ## Optimize out true constant literal.

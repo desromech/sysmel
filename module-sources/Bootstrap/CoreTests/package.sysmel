@@ -7,3 +7,5 @@ loadSourceNamed: "SysmelParserTestCase.sysmel".
 
 loadSourceNamed: "SysmelLispInterpreterTestCase.sysmel".
 loadSourceNamed: "SysmelInterpreterTestCase.sysmel".
+
+loadSourceNamed: "TypeCoercionTestCase.sysmel".

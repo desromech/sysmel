@@ -1,0 +1,12 @@
+public class TypeCoercionTestCase superclass: TestCase; definition: {
+    public method testConditionCoercionType => Void := {
+        self assert: (Integer computeConditionCoercionTypeWith: UndefinedObject) equals: Integer.
+        self assert: (UndefinedObject computeConditionCoercionTypeWith: Integer) equals: Integer.
+
+        self assert: (False computeConditionCoercionTypeWith: False) equals: False.
+        self assert: (True computeConditionCoercionTypeWith: True) equals: True.
+        self assert: (False computeConditionCoercionTypeWith: True) equals: Boolean.
+        self assert: (True computeConditionCoercionTypeWith: False) equals: Boolean.
+    }.
+}.
+

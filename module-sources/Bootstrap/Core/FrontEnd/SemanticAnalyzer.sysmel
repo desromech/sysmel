@@ -1804,7 +1804,7 @@ Type definition: {
         let leftType mutable := self.
         let leftTypeDepth mutable := leftType computeTypeHierarchyDepth.
 
-        let rightType mutable := self.
+        let rightType mutable := otherType.
         let rightTypeDepth mutable := rightType computeTypeHierarchyDepth.
 
         while: leftTypeDepth > rightTypeDepth do: {
@@ -1812,7 +1812,7 @@ Type definition: {
             leftTypeDepth := leftTypeDepth - 1i32.
         }.
 
-        while: rightTypeDepth > rightTypeDepth do: {
+        while: rightTypeDepth > leftTypeDepth do: {
             rightType := rightType supertype.
             rightTypeDepth := rightTypeDepth - 1i32.
         }.
