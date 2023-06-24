@@ -1,0 +1,25 @@
+let: #printString with: {:(SourcePosition)self :: String |
+    let: #sourceCode with: (self __slotNamedAt__: #sourceCode).
+    let: #sourcePath with: (if: sourceCode == nil then: "unknown" else: {
+        let: #sourceDirectory with: (sourceCode __slotNamedAt__: #directory).
+        let: #sourceName with: (sourceCode __slotNamedAt__: #name).
+        sourceDirectory FileSystem::joinPath: sourceName
+    }).
+
+    let: #startLine with: (self __slotNamedAt__: #startLine).
+    let: #startColumn with: (self __slotNamedAt__: #startColumn).
+
+    let: #endLine with: (self __slotNamedAt__: #endLine).
+    let: #endColumn with: (self __slotNamedAt__: #endColumn).
+
+    ((sourcePath -- ":")
+        -- ((startLine asString -- ".") -- startColumn asString))
+        -- ("-" -- ((endLine asString -- ".") -- endColumn asString))
+}.
+
+printString __slotNamedAt__: #flags put: FunctionFlags::Override.
+if: (SourcePosition __slotNamedAt__: #methodDictionary) == nil then: {
+    SourcePosition __slotNamedAt__: #methodDictionary put: MethodDictionary::new()
+}.
+
+(SourcePosition __slotNamedAt__: #methodDictionary) at: #printString put: printString.

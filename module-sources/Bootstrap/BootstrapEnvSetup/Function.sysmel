@@ -1,0 +1,86 @@
+Function
+    withSelector: #withEagerAnalysis addMethod: {:(Function)self :: Function |
+        self ensureAnalysis.
+        self
+    }.
+
+FunctionDefinition
+    withSelector: #addFlags: addMethod: {:(FunctionDefinition)self :(Bitflags)flag :: Void |
+        self __slotNamedAt__: #flags put: (self __slotNamedAt__: #flags) | flag
+    } withEagerAnalysis.
+
+Function
+    withSelector: #addFlags: addMethod: {:(Function)self :(Bitflags)flag :: Void |
+        self __slotNamedAt__: #flags put: (self __slotNamedAt__: #flags) | flag.
+        let: #definition with: (self __slotNamedAt__: #definition).
+        if: definition ~~ nil then: (definition addFlags: flag).
+    } withEagerAnalysis.
+
+Function
+    withSelector: #makeMacro addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::Macro.
+        self
+    } withEagerAnalysis;
+    withSelector: #makePure addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::Pure.
+        self
+    } withEagerAnalysis;
+    withSelector: #makeFinal addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::Final.
+        self
+    } withEagerAnalysis;
+    withSelector: #makeVirtual addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::Virtual.
+        self
+    } withEagerAnalysis;
+    withSelector: #makeAbstract addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::Abstract.
+        self
+    } withEagerAnalysis;
+    withSelector: #makeOverride addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::Override.
+        self
+    } withEagerAnalysis;
+    withSelector: #makeStatic addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::Static.
+        self
+    } withEagerAnalysis;
+
+    withSelector: #makeMemoized addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::Memoized.
+        self
+    } withEagerAnalysis;
+    withSelector: #makeTemplate addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::Template.
+        self
+    } withEagerAnalysis;
+    withSelector: #makeMemoizedTemplate addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::Memoized | FunctionFlags::Template.
+        self
+    } withEagerAnalysis;
+
+    withSelector: #makeExternC addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::ExternC.
+        self
+    } withEagerAnalysis;
+    withSelector: #makeDLLExport addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::DLLExport.
+        self
+    } withEagerAnalysis;
+    withSelector: #makeDLLImport addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::DLLExport.
+        self
+    } withEagerAnalysis;
+
+    withSelector: #makeInline addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::Inline.
+        self
+    } withEagerAnalysis;
+    withSelector: #makeAlwaysInline addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::AlwaysInline.
+        self
+    } withEagerAnalysis;
+    withSelector: #makeNeverInline addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::NeverInline.
+        self
+    } withEagerAnalysis.

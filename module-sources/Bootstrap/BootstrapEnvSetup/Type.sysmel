@@ -1,0 +1,73 @@
+Type
+    withSelector: #hasAnyFlag: addMethod: {:(Type)self :(Bitflags)flag :: Boolean |
+        ((self __slotNamedAt__: #flags) & flag) ~= 0bflgs
+    } makeFinal withEagerAnalysis;
+    withSelector: #isDynamic addMethod: {:(Type)self :: Boolean |
+        self hasAnyFlag: TypeFlags::Dynamic.
+    } makeFinal withEagerAnalysis;
+    withSelector: #isBytes addMethod: {:(Type)self :: Boolean |
+        self hasAnyFlag: TypeFlags::Bytes.
+    } makeFinal withEagerAnalysis;
+    withSelector: #isWeak addMethod: {:(Type)self :: Boolean |
+        self hasAnyFlag: TypeFlags::Weak.
+    } makeFinal withEagerAnalysis;
+    withSelector: #isPointerLikeType addMethod: {:(Type)self :: Boolean |
+        self hasAnyFlag: (TypeFlags::PointerValue | TypeFlags::ReferenceValue) | TypeFlags::TemporaryReferenceValue.
+    } makeFinal withEagerAnalysis;
+    withSelector: #asCanonicalPendingInstanceType addMethod: {:(Type)self :: Type |
+        AnyValue
+    } makePure makeVirtual withEagerAnalysis;
+    withSelector: #asCanonicalType addMethod: {:(Type)self :: Type |
+        self
+    } makePure makeVirtual withEagerAnalysis;
+    withSelector: #asDecayedType addMethod: {:(Type)self :: Type |
+        self
+    } makePure makeVirtual withEagerAnalysis;
+    withSelector: #asReceiverType addMethod: {:(Type)self :: Type |
+        self
+    } makePure makeVirtual withEagerAnalysis;
+    withSelector: #asResultType addMethod: {:(Type)self :: Type |
+        self
+    } makePure makeVirtual withEagerAnalysis;
+    withSelector: #decayReferenceLikeForReceiverType: addMethod: {:(Type)self :(ReferenceLikeType)reference :: Type |
+        self
+    } makePure makeVirtual withEagerAnalysis;
+    withSelector: #asDecayedReceiverType addMethod: {:(Type)self :: Type |
+        self
+    } makePure makeVirtual withEagerAnalysis;
+    withSelector: #isDirectSubtypeOf: addMethod: {:(Type)self :(Type)expectedParent :: Boolean |
+        if: self == expectedParent
+        then: true
+        else: {
+            let: #supertype with: (self __slotNamedAt__: #supertype).
+            if: supertype ~~ nil
+                then: (supertype isDirectSubtypeOf: expectedParent )
+                else: false
+        }
+    } makePure;
+    ensureAnalysisOfMethodWithSelector: #isDirectSubtypeOf:;
+    withSelector: #isSubtypeOf: addMethod: {:(Type)self :(Type)expectedParent :: Boolean |
+        if: self == expectedParent
+        then: true
+        else: {
+            let: #supertype with: (self __slotNamedAt__: #supertype).
+            if: supertype ~~ nil
+                then: (supertype isSubtypeOf: expectedParent )
+                else: false
+        }
+    } makePure;
+    ensureAnalysisOfMethodWithSelector: #isSubtypeOf:;
+    withSelector: #>> addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
+        self lookupLocalSelector: selector
+    } makeFinal withEagerAnalysis.
+
+Boolean __type__ withSelector: #asCanonicalType addMethod: {:(Type)self :: Type | Boolean } makePure makeOverride withEagerAnalysis.
+Integer __type__ withSelector: #asCanonicalType addMethod: {:(Type)self :: Type | Integer } makePure makeOverride withEagerAnalysis.
+
+AnyValue
+    withSelector: #isKindOf: addMethod: {:(AnyValue)self :(Type)expectedType :: Boolean |
+        self __type__ isSubtypeOf: expectedType
+    } makePure makeFinal withEagerAnalysis;
+    withSelector: #answersTo: addMethod: {:(AnyValue)self :(Symbol)selector :: Boolean |
+        (self __type__ lookupSelector: selector) ~~ nil
+    } makePure makeFinal withEagerAnalysis.

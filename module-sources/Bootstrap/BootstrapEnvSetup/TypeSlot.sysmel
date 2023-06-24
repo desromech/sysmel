@@ -1,0 +1,43 @@
+TypeSlot
+    withSelector: #hasAnyFlags: addMethod: {:(TypeSlot)self :(Bitflags)flags :: Boolean |
+        ((self __slotNamedAt__: #flags) & flags) ~= 0bflgs
+    } withEagerAnalysis;
+    withSelector: #isPublic addMethod: {:(TypeSlot)self :: Boolean |
+        self hasAnyFlags: TypeSlotFlags::Public
+    } withEagerAnalysis;
+    withSelector: #isReadonly addMethod: {:(TypeSlot)self :: Boolean |
+        self hasAnyFlags: TypeSlotFlags::ReadOnly
+    } withEagerAnalysis;
+    withSelector: #getterSelector addMethod: {:(TypeSlot)self :: Symbol | self __slotNamedAt__: #name };
+    withSelector: #setterSelector addMethod: {:(TypeSlot)self :: Symbol | ((self __slotNamedAt__: #name) asString -- ":") asSymbol };
+    withSelector: #generateGetterWithReceiver:on: addMethod: {:(TypeSlot)self :(Type)ReceiverType :(Type)ownerType :: Void |
+        let: #SlotType with: (self __slotNamedAt__: #type).
+        ownerType withSelector: self getterSelector addMaybeVirtualMethod: ({:(ReceiverType)receiver :: SlotType |
+            (RawTuple::typeSlotAt:)(receiver, self)
+        } makePure makeFinal makeAlwaysInline recompileAndOptimize)
+    };
+    withSelector: #generateSetterWithReceiver:on: addMethod: {:(TypeSlot)self :(Type)ReceiverType :(Type)ownerType :: Void |
+        let: #SlotType with: (self __slotNamedAt__: #type).
+        ownerType withSelector: self setterSelector addMaybeVirtualMethod: ({:(ReceiverType)receiver :(SlotType)value :: Void |
+            (RawTuple::typeSlotAt:put:)(receiver, self, value)
+        } makeFinal makeAlwaysInline recompileAndOptimize)
+    };
+    withSelector: #generateAccessorsOn: addMethod: {:(TypeSlot)self :(Type)type :: Void |
+        if: self isPublic then: {
+            let: #receiverType with: type asReceiverType.
+            receiverType ReceiverType::generateGetterFor: self on: type.
+
+            if: self isReadonly not then: {
+                receiverType ReceiverType::generateSetterFor: self on: type
+            }
+        }.
+        void
+    }.
+
+Type
+    withSelector: #ReceiverType::generateGetterFor:on: addMethod: {:(Type)self :(TypeSlot)typeSlot :(Type)ownerType :: Void |
+        typeSlot generateGetterWithReceiver: self on: ownerType.
+    } makeVirtual;
+    withSelector: #ReceiverType::generateSetterFor:on: addMethod: {:(Type)self :(TypeSlot)typeSlot :(Type)ownerType :: Void |
+        typeSlot generateSetterWithReceiver: self on: ownerType.
+    } makeVirtual.

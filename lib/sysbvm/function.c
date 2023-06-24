@@ -683,9 +683,6 @@ void sysbvm_function_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::recompileAndOptimize", context->roots.functionType, "recompileAndOptimize", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_function_primitive_recompileAndOptimize);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "Function::recordBindingWithOwner:andName:", context->roots.functionType, "recordBindingWithOwner:andName:", 3, SYSBVM_FUNCTION_FLAGS_OVERRIDE, NULL, sysbvm_function_primitive_recordBindingWithOwnerAndName);
 
-    // Export the function. This is used by the bootstraping algorithm for creating the accessors.
-    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "Function::Layout::flags", sysbvm_tuple_size_encode(context, SYSBVM_SLOT_INDEX_FOR_STRUCTURE_MEMBER(sysbvm_function_t, flags)));
-
     // Export the function flags.
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::None", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_NONE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::Macro", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_MACRO));
@@ -705,9 +702,6 @@ void sysbvm_function_setupPrimitives(sysbvm_context_t *context)
 
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::NoTypecheckArguments", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_NO_TYPECHECK_ARGUMENTS));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::AllowReferenceInReceiver", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_ALLOW_REFERENCE_IN_RECEIVER));
-
-    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::GetterFlags", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_GETTER_FLAGS));
-    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::SetterFlags", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_SETTER_FLAGS));
 
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::ExternC", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_EXTERN_C));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::DLLImport", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_DLLIMPORT));

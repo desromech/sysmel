@@ -1,90 +1,3 @@
-Function
-    withSelector: #withEagerAnalysis addMethod: {:(Function)self :: Function |
-        self ensureAnalysis.
-        self
-    }.
-
-FunctionDefinition
-    withSelector: #addFlags: addMethod: {:(FunctionDefinition)self :(Bitflags)flag :: Void |
-        self flags: self flags | flag
-    } withEagerAnalysis.
-
-Function
-    withSelector: #addFlags: addMethod: {:(Function)self :(Bitflags)flag :: Void |
-        self flags: self flags | flag.
-        let: #definition with: self definition.
-        if: definition ~~ nil then: (definition addFlags: flag).
-    } withEagerAnalysis.
-
-Function
-    withSelector: #makeMacro addMethod: {:(Function)self :: Function |
-        self addFlags: FunctionFlags::Macro.
-        self
-    } withEagerAnalysis;
-    withSelector: #makePure addMethod: {:(Function)self :: Function |
-        self addFlags: FunctionFlags::Pure.
-        self
-    } withEagerAnalysis;
-    withSelector: #makeFinal addMethod: {:(Function)self :: Function |
-        self addFlags: FunctionFlags::Final.
-        self
-    } withEagerAnalysis;
-    withSelector: #makeVirtual addMethod: {:(Function)self :: Function |
-        self addFlags: FunctionFlags::Virtual.
-        self
-    } withEagerAnalysis;
-    withSelector: #makeAbstract addMethod: {:(Function)self :: Function |
-        self addFlags: FunctionFlags::Abstract.
-        self
-    } withEagerAnalysis;
-    withSelector: #makeOverride addMethod: {:(Function)self :: Function |
-        self addFlags: FunctionFlags::Override.
-        self
-    } withEagerAnalysis;
-    withSelector: #makeStatic addMethod: {:(Function)self :: Function |
-        self addFlags: FunctionFlags::Static.
-        self
-    } withEagerAnalysis;
-
-    withSelector: #makeMemoized addMethod: {:(Function)self :: Function |
-        self addFlags: FunctionFlags::Memoized.
-        self
-    } withEagerAnalysis;
-    withSelector: #makeTemplate addMethod: {:(Function)self :: Function |
-        self addFlags: FunctionFlags::Template.
-        self
-    } withEagerAnalysis;
-    withSelector: #makeMemoizedTemplate addMethod: {:(Function)self :: Function |
-        self addFlags: FunctionFlags::Memoized | FunctionFlags::Template.
-        self
-    } withEagerAnalysis;
-
-    withSelector: #makeExternC addMethod: {:(Function)self :: Function |
-        self addFlags: FunctionFlags::ExternC.
-        self
-    } withEagerAnalysis;
-    withSelector: #makeDLLExport addMethod: {:(Function)self :: Function |
-        self addFlags: FunctionFlags::DLLExport.
-        self
-    } withEagerAnalysis;
-    withSelector: #makeDLLImport addMethod: {:(Function)self :: Function |
-        self addFlags: FunctionFlags::DLLExport.
-        self
-    } withEagerAnalysis;
-
-    withSelector: #makeInline addMethod: {:(Function)self :: Function |
-        self addFlags: FunctionFlags::Inline.
-        self
-    } withEagerAnalysis;
-    withSelector: #makeAlwaysInline addMethod: {:(Function)self :: Function |
-        self addFlags: FunctionFlags::AlwaysInline.
-        self
-    } withEagerAnalysis;
-    withSelector: #makeNeverInline addMethod: {:(Function)self :: Function |
-        self addFlags: FunctionFlags::NeverInline.
-        self
-    } withEagerAnalysis.
-
 ProgramEntity
     withSelector: #ensureAnalysis addMethod: {:(ProgramEntity)self :: Void |
         void
@@ -115,22 +28,7 @@ Type
         } else: {
             method
         }
-    } makeFinal withEagerAnalysis;
-
-    withSelector: #withSelector:replaceMethod: addMethod: {:(Type)self :selector :newMethod :: Void |
-        ((self __slotNamedAt__: #methodDictionary) at: selector) adoptDefinitionOf: newMethod
-    } withEagerAnalysis;
-    withSelector: #withSelector:addOrReplaceMethod: addMethod: {:(Type)self :selector :newMethod :: Void |
-        let: #methodDictionary with: self validMethodDictionary.
-        let: #existent with: (methodDictionary atOrNil: selector).
-        if: existent == nil then: {
-            methodDictionary at: selector put: newMethod.
-            self flushLookupSelector: selector.
-            newMethod recordBindingWithOwner: self andName: selector
-        } else: {
-            existent adoptDefinitionOf: newMethod
-        }
-    } withEagerAnalysis.
+    } makeFinal withEagerAnalysis.
 
 ValueBox
     withSelector: #loadFrom:atOffset:withType: addMethod: {:(ValueBox)self :(Untyped)containerBase :(IntPointer)offset :(Type)valueType :: valueType |
@@ -149,32 +47,6 @@ TypeSlot
         (RawTuple::typeSlotAt:put:)(containerBase, self, value).
         void
     } makeFinal withEagerAnalysis.
-
-Type
-    withSelector: #lookupLocalSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
-        let: #methodDictionary with: self methodDictionary.
-        if: methodDictionary ~~ nil
-            then: (methodDictionary atOrNil: selector)
-            else: nil
-    } makeFinal withEagerAnalysis;
-    withSelector: #ensureAnalysisOfMethodWithSelector: addMethod: {:(Type)self :(Symbol)selector :: Void |
-        (self methodDictionary at: selector) ensureAnalysis
-    } withEagerAnalysis;
-    withSelector: #>> addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
-        self lookupLocalSelector: selector
-    } makeFinal withEagerAnalysis;
-    withSelector: #lookupSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
-        let: #method with: (self lookupLocalSelector: selector).
-        if: method ~~ nil
-        then: method
-        else: {
-            let: #supertype with: self supertype.
-            if: supertype ~~ nil
-                then: (supertype lookupSelector: selector)
-                else: (nil)
-        }
-    } makeFinal;
-    ensureAnalysisOfMethodWithSelector: #lookupSelector:.
 
 AnyValue
     basicInitializeMethod: {:(AnyValue)self :: Void | void } makeVirtual withEagerAnalysis;
@@ -217,73 +89,8 @@ Object
         error((self __type__ printString -- " doesNotUnderstand: ") -- message selector printString)
     } makeVirtual withEagerAnalysis.
 
-Type
-    withSelector: #asCanonicalPendingInstanceType addMethod: {:(Type)self :: Type |
-        AnyValue
-    } makePure makeVirtual withEagerAnalysis;
-    withSelector: #asCanonicalType addMethod: {:(Type)self :: Type |
-        self
-    } makePure makeVirtual withEagerAnalysis;
-    withSelector: #asDecayedType addMethod: {:(Type)self :: Type |
-        self
-    } makePure makeVirtual withEagerAnalysis;
-    withSelector: #decayReferenceLikeForReceiverType: addMethod: {:(Type)self :(ReferenceLikeType)reference :: Type |
-        self
-    } makePure makeVirtual withEagerAnalysis;
-    withSelector: #asDecayedReceiverType addMethod: {:(Type)self :: Type |
-        self
-    } makePure makeVirtual withEagerAnalysis;
-    withSelector: #isDirectSubtypeOf: addMethod: {:(Type)self :(Type)expectedParent :: Boolean |
-        if: self == expectedParent
-        then: true
-        else: {
-            let: #supertype with: self supertype.
-            if: supertype ~~ nil
-                then: (supertype isDirectSubtypeOf: expectedParent )
-                else: false
-        }
-    } makePure;
-    ensureAnalysisOfMethodWithSelector: #isDirectSubtypeOf:;
-    withSelector: #isSubtypeOf: addMethod: {:(Type)self :(Type)expectedParent :: Boolean |
-        if: self == expectedParent
-        then: true
-        else: {
-            let: #supertype with: self supertype.
-            if: supertype ~~ nil
-                then: (supertype isSubtypeOf: expectedParent )
-                else: false
-        }
-    } makePure;
-    ensureAnalysisOfMethodWithSelector: #isSubtypeOf:.
-
-Boolean __type__ withSelector: #asCanonicalType addMethod: {:(Type)self :: Type | Boolean } makePure makeOverride withEagerAnalysis.
-Integer __type__ withSelector: #asCanonicalType addMethod: {:(Type)self :: Type | Integer } makePure makeOverride withEagerAnalysis.
-
-AnyValue
-    withSelector: #isKindOf: addMethod: {:(AnyValue)self :(Type)expectedType :: Boolean |
-        self __type__ isSubtypeOf: expectedType
-    } makePure makeFinal withEagerAnalysis;
-    withSelector: #answersTo: addMethod: {:(AnyValue)self :(Symbol)selector :: Boolean |
-        (self __type__ lookupSelector: selector) ~~ nil
-    } makePure makeFinal withEagerAnalysis.
-
 ## Early new implementation
 Type
-    withSelector: #hasAnyFlag: addMethod: {:(Type)self :(Bitflags)flag :: Boolean |
-        (self flags & flag) ~= 0bflgs
-    } makeFinal withEagerAnalysis;
-    withSelector: #isDynamic addMethod: {:(Type)self :: Boolean |
-        self hasAnyFlag: TypeFlags::Dynamic.
-    } makeFinal withEagerAnalysis;
-    withSelector: #isBytes addMethod: {:(Type)self :: Boolean |
-        self hasAnyFlag: TypeFlags::Bytes.
-    } makeFinal withEagerAnalysis;
-    withSelector: #isWeak addMethod: {:(Type)self :: Boolean |
-        self hasAnyFlag: TypeFlags::Weak.
-    } makeFinal withEagerAnalysis;
-    withSelector: #isPointerLikeType addMethod: {:(Type)self :: Boolean |
-        self hasAnyFlag: (TypeFlags::PointerValue | TypeFlags::ReferenceValue) | TypeFlags::TemporaryReferenceValue.
-    } makeFinal withEagerAnalysis;
     withSelector: #basicAllocate addMethod: {:(Type)self :: self |
         <primitive: #basicAllocate>
         let: #result with: (if: self isBytes
@@ -303,47 +110,7 @@ Type
     withSelector: #new addMethod: {:(Type)self :: self |
         <primitive: #new>
         self basicNew initialize; yourself
-    } withEagerAnalysis;
-    withSelector: #asReceiverType addMethod: {:(Type)self :: Type |
-        self
-    } makePure makeVirtual withEagerAnalysis;
-    withSelector: #asResultType addMethod: {:(Type)self :: Type |
-        self
-    } makePure makeVirtual withEagerAnalysis;
-    withSelector: #lookupLocalMacroSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
-        let: #methodDictionary with: self macroMethodDictionary.
-        if: methodDictionary ~~ nil
-            then: (methodDictionary atOrNil: selector)
-            else: nil
-    } makeFinal;
-    withSelector: #lookupMacroSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
-        let: #method with: (self lookupLocalMacroSelector: selector).
-        if: method ~~ nil
-        then: method
-        else: {
-            let: #supertype with: self supertype.
-            if: supertype ~~ nil
-                then: (supertype lookupMacroSelector: selector)
-                else: (nil)
-        }
-    } makeFinal;
-    withSelector: #lookupLocalFallbackSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
-        let: #methodDictionary with: self fallbackMethodDictionary.
-        if: methodDictionary ~~ nil
-            then: (methodDictionary atOrNil: selector)
-            else: nil
-    } makeFinal;
-    withSelector: #lookupFallbackSelector: addMethod: {:(Type)self :(Symbol)selector :: AnyValue |
-        let: #method with: (self lookupLocalFallbackSelector: selector).
-        if: method ~~ nil
-        then: method
-        else: {
-            let: #supertype with: self supertype.
-            if: supertype ~~ nil
-                then: (supertype lookupFallbackSelector: selector)
-                else: (nil)
-        }
-    } makeFinal.
+    } withEagerAnalysis.
 
 ASTDownCastNode __type__
     withSelector: #makeForASTNode:targetType: addMethod: {:(ASTDownCastNode __type__)self :(ASTNode)astNode :(Type)targetType :: self |
@@ -371,15 +138,6 @@ Untyped __type__
     } withEagerAnalysis.
     
 TypeSlot
-    withSelector: #hasAnyFlags: addMethod: {:(TypeSlot)self :(Bitflags)flags :: Boolean |
-        (self flags & flags) ~= 0bflgs
-    } withEagerAnalysis;
-    withSelector: #isPublic addMethod: {:(TypeSlot)self :: Boolean |
-        self hasAnyFlags: TypeSlotFlags::Public
-    } withEagerAnalysis;
-    withSelector: #isReadonly addMethod: {:(TypeSlot)self :: Boolean |
-        self hasAnyFlags: TypeSlotFlags::ReadOnly
-    } withEagerAnalysis;
     withSelector: #isNoRTTIExcluded addMethod: {:(TypeSlot)self :: Boolean |
         self hasAnyFlags: (TypeSlotFlags::NoRTTIExcluded | TypeSlotFlags::MinRTTIExcluded) | TypeSlotFlags::NoSourceDefinitionExcluded
     } withEagerAnalysis;
@@ -397,54 +155,6 @@ TypeSlot
     } withEagerAnalysis;
     withSelector: #isJitSpecific addMethod: {:(TypeSlot)self :: Boolean |
         self hasAnyFlags: TypeSlotFlags::JitSpecific
-    } withEagerAnalysis;
-    withSelector: #generateAccessorsOn: addMethod: {:(TypeSlot)typeSlot :(Type)type :: Void |
-        if: typeSlot isPublic then: {
-            let: #slotType with: typeSlot type.
-            let: #getterName with: typeSlot name.
-            let: #receiverType with: type asReceiverType.
-
-            if: receiverType isPointerLikeType then: {
-                ## Getter.
-                let: #getterMethod with: ({:(receiverType)self :: slotType |
-                    (RawTuple::refTypeSlotAt:)(self, typeSlot)
-                } makePure makeFinal makeAlwaysInline recompileAndOptimize).
-
-                if: type supertype isNotNil then: (if: (type supertype lookupSelector: getterName) isNotNil then: (getterMethod makeOverride)).
-                type withSelector: getterName addMethod: getterMethod.
-
-                ## Setter
-                if: typeSlot isReadonly not then: {
-                    let: #setterMethod with: ({:(receiverType)self :(slotType)value :: Void |
-                        (RawTuple::refTypeSlotAt:put:)(self, typeSlot, value)
-                    } makeFinal makeAlwaysInline recompileAndOptimize).
-
-                    let: #setterName with: (typeSlot name asString -- ":") asSymbol.
-                    if: type supertype isNotNil then: (if: (type supertype lookupSelector: setterName) isNotNil then: (setterMethod makeOverride)).
-
-                    type withSelector: setterName addMethod: setterMethod.
-                }
-            } else: {
-                ## Getter.
-                let: #getterMethod with: ({:(receiverType)self :: slotType |
-                    (RawTuple::typeSlotAt:)(self, typeSlot)
-                } makePure makeFinal makeAlwaysInline recompileAndOptimize).
-
-                if: type supertype isNotNil then: (if: (type supertype lookupSelector: getterName) isNotNil then: (getterMethod makeOverride)).
-                type withSelector: getterName addMethod: getterMethod.
-
-                ## Setter
-                if: typeSlot isReadonly not then: {
-                    let: #setterMethod with: ({:(receiverType)self :(slotType)value :: Void |
-                        (RawTuple::typeSlotAt:put:)(self, typeSlot, value)
-                    } makeFinal makeAlwaysInline recompileAndOptimize).
-                    let: #setterName with: (typeSlot name asString -- ":") asSymbol.
-
-                    if: type supertype isNotNil then: (if: (type supertype lookupSelector: setterName) isNotNil then: (setterMethod makeOverride)).
-                    type withSelector: setterName addMethod: setterMethod.
-                }
-            }.
-        }
     } withEagerAnalysis.
 
 Array
@@ -3090,7 +2800,7 @@ SourcePosition
         let: #sourceCode with: self sourceCode.
 
         stream
-            nextPutAll: (sourceCode directory FileSystem::joinPath: sourceCode name);
+            nextPutAll: (if: sourceCode == nil then: "unknown" else: (sourceCode directory FileSystem::joinPath: sourceCode name));
             nextPut: ':'c8;
             print: self startLine;
             nextPut: '.'c8;

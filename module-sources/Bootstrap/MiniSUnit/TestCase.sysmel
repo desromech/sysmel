@@ -1,6 +1,6 @@
 public abstract class TestCase superclass: TestAsserter; definition: {
     __Meta__ definition: {
-        public method withAllSubclassesRun ::=> Void := {
+        public method runWithAllSubclasses ::=> Void := {
             let metrics := TestMetrics new.
             self withAllSubtypesDo: {:(TestCase class)eachClass :: Void |
                 eachClass isAbstract ifFalse: {

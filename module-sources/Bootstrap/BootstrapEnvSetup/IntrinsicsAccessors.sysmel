@@ -1,0 +1,33 @@
+## from:until:do:
+let: #from:until:do: with: {:(Size)start :(Size)stop :aBlock :: Void |
+    if: start < stop then: {
+        aBlock(start).
+        from: start + 1sz until: stop do: aBlock
+    } else: {
+        void
+    }.
+}.
+
+## Generate the accessors for the bootstrap types.
+let: #makeTypeAccessors with: {:(Type)type :: Void |
+    let: #typeName with: (type __slotNamedAt__: #name) asString.
+
+    let: #slots with: (type __slotNamedAt__: #slots).
+    let: #slotCount with: RawTuple::size(slots).
+
+    from: 0sz until: slotCount do: {:(Size)localSlotIndex :: Void |
+        let: #slot type: TypeSlot with: (RawTuple::slotAt:)(slots, localSlotIndex).
+        slot generateAccessorsOn: type
+    }
+}.
+
+## Construct the bootstrap type accessors.
+{
+    let: #intrinsicTypeCount with: (BootstrapEnv::IntrinsicTypes __slotNamedAt__: #size).
+    let: #intrinsicTypes with: (BootstrapEnv::IntrinsicTypes __slotNamedAt__: #storage).
+    from: 0sz until: intrinsicTypeCount do: {:(Size)i :: Void |
+        let: #type with: (RawTuple::slotAt:)(intrinsicTypes, i).
+        makeTypeAccessors(type).
+        void
+    }.
+}.

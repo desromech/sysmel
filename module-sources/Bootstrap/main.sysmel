@@ -1,0 +1,18 @@
+## Primitive definitions.
+loadSourceNamed: "BootstrapEnvSetup/package.sysmel".
+loadSourceNamed: "Core/package.sysmel".
+
+loadPackageNamed: "MiniSUnit".
+loadPackageNamed: "CoreTests".
+
+loadPackageNamed: "ImageBuilder".
+
+loadPackageNamed: "Bytecode".
+loadPackageNamed: "TAC".
+loadPackageNamed: "Assembler".
+loadPackageNamed: "AssemblerX86".
+loadPackageNamed: "AssemblerArm".
+loadPackageNamed: "AssemblerAArch64".
+loadPackageNamed: "SSA".
+
+printLine("Bootstrap package loading finished.").

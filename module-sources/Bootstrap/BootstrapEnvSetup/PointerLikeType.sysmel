@@ -1,0 +1,21 @@
+TypeSlot
+    withSelector: #generateGetterWithPointerLikeReceiver:on: addMethod: {:(TypeSlot)self :(Type)ReceiverType :(Type)ownerType :: Void |
+        let: #SlotType with: (self __slotNamedAt__: #type).
+        ownerType withSelector: self getterSelector addMaybeVirtualMethod: ({:(ReceiverType)receiver :: SlotType |
+            (RawTuple::refTypeSlotAt:)(receiver, self)
+        } makePure makeFinal makeAlwaysInline recompileAndOptimize)
+    };
+    withSelector: #generateSetterWithPointerLikeReceiver:on: addMethod: {:(TypeSlot)self :(Type)ReceiverType :(Type)ownerType :: Void |
+        let: #SlotType with: (self __slotNamedAt__: #type).
+        ownerType withSelector: self setterSelector addMaybeVirtualMethod: ({:(ReceiverType)receiver :(SlotType)value :: Void |
+            (RawTuple::refTypeSlotAt:put:)(receiver, self, value)
+        } makeFinal makeAlwaysInline recompileAndOptimize)
+    }.
+    
+PointerLikeType
+    withSelector: #ReceiverType::generateGetterFor:on: addMethod: {:(Type)self :(TypeSlot)typeSlot :(Type)ownerType :: Void |
+        typeSlot generateGetterWithPointerLikeReceiver: self on: ownerType.
+    } makeVirtual;
+    withSelector: #ReceiverType::generateSetterFor:on: addMethod: {:(Type)self :(TypeSlot)typeSlot :(Type)ownerType :: Void |
+        typeSlot generateSetterWithPointerLikeReceiver: self on: ownerType.
+    } makeOverride.

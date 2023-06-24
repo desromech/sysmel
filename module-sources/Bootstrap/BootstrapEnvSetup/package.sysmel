@@ -1,0 +1,11 @@
+## Primitive definitions.
+loadSourceNamed: "PrimitiveFunctionTypeDefinitions.sysmel".
+
+## Define the source position print string method first, so that we can know where we are getting the errors.
+loadSourceNamed: "SourcePosition.sysmel".
+loadSourceNamed: "MethodDefinition.sysmel".
+loadSourceNamed: "Function.sysmel".
+loadSourceNamed: "Type.sysmel".
+loadSourceNamed: "TypeSlot.sysmel".
+loadSourceNamed: "PointerLikeType.sysmel".
+loadSourceNamed: "IntrinsicsAccessors.sysmel".
