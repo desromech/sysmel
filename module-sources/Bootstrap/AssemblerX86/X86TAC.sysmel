@@ -2984,7 +2984,7 @@ TAC::Operation::SignExtendInt8ToInt64
 TAC::Operation::SignExtendInt16ToInt32
     forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegisterConstraints;
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
-        codegen textSection x86::movsx: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen)
+        codegen textSection x86::movsx: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int16For: codegen)
     }.
 
 TAC::Operation::SignExtendInt8ToInt32
@@ -3020,7 +3020,7 @@ TAC::Operation::ZeroExtendInt8ToInt64
 TAC::Operation::ZeroExtendInt16ToInt32
     forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegisterConstraints;
     forTargets: #(x86 x86_64) generateWith: {:(TACInstruction)instruction :(TACFunctionAsmCodeGenerator)codegen :: Void |
-        codegen textSection x86::movsx: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen)
+        codegen textSection x86::movzx: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int16For: codegen)
     }.
 
 TAC::Operation::ZeroExtendInt8ToInt32

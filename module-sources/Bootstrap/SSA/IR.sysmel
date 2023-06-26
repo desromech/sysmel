@@ -111,33 +111,32 @@ public final class SSAUndefinedConstant superclass: SSAConstant; definition: {
 }.
 
 public final class SSALiteralConstant superclass: SSAConstant; definition: {
-    public field value.
+    public field value => Untyped.
     public field isBoxed => Boolean.
 
     public override method isLiteralConstant => Boolean := true.
-    public override method isLiteralConstantTrue => Boolean := value == true.
-    public override method isLiteralConstantFalse => Boolean := value == false.
+    public override method isLiteralConstantTrue => Boolean := (Untyped::==)(value, true).
+    public override method isLiteralConstantFalse => Boolean := (Untyped::==)(value, false).
 
     public method asBoxedLiteralConstant => SSALiteralConstant
-        := isBoxed || value __type__ isValueType not
+        := isBoxed || RawTuple::type(self __slotNamedAt__: #value) isValueType not
             ifTrue: (self)
             ifFalse: (self copy
                 isBoxed: true;
                 yourself).
 
     public override method primitiveName => Symbol := {
-        let value := self value.
-
-        if: (value __type__ isSubtypeOf: Function)
-        then: value primitiveName
+        if: (RawTuple::type(self __slotNamedAt__: #value) isSubtypeOf: Function)
+        then: (self __slotNamedAt__: #value) primitiveName
         else: nil
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        RawTuple::isBytes(self value) || (self value __type__ isSubtypeOf: ValueType) ifTrue: {
-            stream nextPutAll: (isBoxed ifTrue: "BoxedLiteral" ifFalse: "Literal("); print: self value __type__; nextPutAll: " => "; print: self type; nextPut: ')'c8
+        let valueType := RawTuple::type(self __slotNamedAt__: #value).
+        RawTuple::isBytes(self __slotNamedAt__: #value) || (valueType isSubtypeOf: ValueType) ifTrue: {
+            stream nextPutAll: (isBoxed ifTrue: "BoxedLiteral" ifFalse: "Literal("); print: valueType; nextPutAll: " => "; print: self type; nextPut: ')'c8
         } ifFalse: {
-            stream nextPutAll: (isBoxed ifTrue: "BoxedLiteral" ifFalse: "Literal("); print: self value __type__; nextPut: ')'c8
+            stream nextPutAll: (isBoxed ifTrue: "BoxedLiteral" ifFalse: "Literal("); print: valueType; nextPut: ')'c8
         }.
     }.
 }.
@@ -1091,7 +1090,7 @@ public final class SSATypeSlotAtPutInstruction superclass: SSAInstruction; defin
     public override method isTypeSlotAtInstruction => Boolean := true.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream print: self; nextPutAll: "typedSlotOf "; print: self tuple;
+        stream print: self; nextPutAll: " typedSlotOf "; print: self tuple;
             nextPutAll: " at "; print: self typeSlot;
             nextPutAll: " put "; print: self value
     }.

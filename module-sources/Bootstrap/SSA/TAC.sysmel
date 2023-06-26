@@ -673,8 +673,7 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
     public method translateBoxedValue: (value: SSAValue) ::=> TACValue := {
         boxedValueDictionary ifNil: (boxedValueDictionary := Dictionary new).
         boxedValueDictionary at: value ifAbsentPut: {:: TACValue |
-            ## FIXME: Support this in a proper way.
-            value isLiteralConstant && false ifTrue: {
+            value isLiteralConstant ifTrue: {
                 self translateValue: (value downCastTo: SSALiteralConstant) asBoxedLiteralConstant
             } ifFalse: {
                 let translatedValue := self translateValue: value.
@@ -857,6 +856,14 @@ Type extend: {
     public virtual method emitTacStore: (value: TACValue) intoPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: TACBlockBuilder) ::=> Void := {
         builder storePointer: value into: pointer constantOffset: constantOffset
     }.
+
+    public virtual method emitTacEquals: (left: TACValue) with: (right: TACValue) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder)  ::=> Void := {
+        builder pointerEquals: left with: right into: result
+    }.
+
+    public virtual method emitTacNotEquals: (left: TACValue) with: (right: TACValue) into: (result: TACValue) withBlockBuilder: (builder: TACBlockBuilder)  ::=> Void := {
+        builder pointerNotEquals: left with: right into: result
+    }.
 }.
 
 ObjectModelVariant extend: {
@@ -950,6 +957,15 @@ ValueType extend: {
 
     #*public override method translateSSALiteralConstant: (constant: SSALiteralConstant) intoTacWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := codegen translateStructureConstant: constant value.*#
+
+    public virtual method emitTacEquals: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> Void := {
+        self subclassResponsibility
+    }.
+
+    public virtual method emitTacNotEquals: (left: TACValue) with: (right: TACValue) into: (result: TACValue) ::=> Void := {
+        self subclassResponsibility
+    }.
+
 }.
 
 PointerLikeType extend: {
@@ -1560,7 +1576,7 @@ SSAValue extend: {
 SSALiteralConstant extend: {
     public override method translateIntoTacValueWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
         := isBoxed
-            ifTrue: (codegen setValue: self translationInto: (codegen translateGenericObjectPointer: value))
+            ifTrue: (codegen setValue: self translationInto: (codegen translateGenericObjectPointer: (self __slotNamedAt__: #value)))
             ifFalse: (codegen setValue: self translationInto: (type translateSSALiteralConstant: self intoTacWith: codegen)).
 }.
 
@@ -1670,11 +1686,23 @@ public global SSATacPrimitiveCallGenerationTable := #{
 
     ## Identity equals/not-equals
     #== : {:(Array)arguments :(TACValue)result :(SSAFunctionDefinitionTACCodeGenerator)codegen :: Boolean |
-        codegen blockBuilder pointerEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second) into: result.
+        let leftType := arguments first type.
+        let rightType := arguments second type.
+        leftType == rightType && leftType isValueType ifTrue: {
+            leftType emitTacEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second) into: result withBlockBuilder: codegen blockBuilder
+        } ifFalse: {
+            codegen blockBuilder pointerEquals: (codegen translateBoxedValue: arguments first) with: (codegen translateBoxedValue: arguments second) into: result
+        }.
         true
     }.
     #~~ : {:(Array)arguments :(TACValue)result :(SSAFunctionDefinitionTACCodeGenerator)codegen :: Boolean |
-        codegen blockBuilder pointerNotEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second) into: result.
+        let leftType := arguments first type.
+        let rightType := arguments second type.
+        leftType == rightType && leftType isValueType ifTrue: {
+            leftType emitTacNotEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second) into: result withBlockBuilder: codegen blockBuilder
+        } ifFalse: {
+            codegen blockBuilder pointerNotEquals: (codegen translateBoxedValue: arguments first) with: (codegen translateBoxedValue: arguments second) into: result
+        }.
         true
     }.
 

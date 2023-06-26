@@ -32,7 +32,7 @@ public global ObjectModel::Tag::Trivial := 15u8.
 
 public global ObjectModel::ImmediateTagTypeTable := (
     UndefinedObject,
-    Integer, Int8, Int16, Int32, Int64,
+    SmallInteger, Int8, Int16, Int32, Int64,
     Char8, UInt8,
     Char16, UInt16,
     Char32, UInt32,
