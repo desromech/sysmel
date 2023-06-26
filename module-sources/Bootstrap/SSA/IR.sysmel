@@ -112,10 +112,18 @@ public final class SSAUndefinedConstant superclass: SSAConstant; definition: {
 
 public final class SSALiteralConstant superclass: SSAConstant; definition: {
     public field value.
+    public field isBoxed => Boolean.
 
     public override method isLiteralConstant => Boolean := true.
     public override method isLiteralConstantTrue => Boolean := value == true.
     public override method isLiteralConstantFalse => Boolean := value == false.
+
+    public method asBoxedLiteralConstant => SSALiteralConstant
+        := isBoxed || value __type__ isValueType not
+            ifTrue: (self)
+            ifFalse: (self copy
+                isBoxed: true;
+                yourself).
 
     public override method primitiveName => Symbol := {
         let value := self value.
@@ -127,9 +135,9 @@ public final class SSALiteralConstant superclass: SSAConstant; definition: {
 
     public override method printOn: (stream: Stream) ::=> Void := {
         RawTuple::isBytes(self value) || (self value __type__ isSubtypeOf: ValueType) ifTrue: {
-            stream nextPutAll: "Literal("; print: self value __type__; nextPutAll: " => "; print: self type; nextPut: ')'c8
+            stream nextPutAll: (isBoxed ifTrue: "BoxedLiteral" ifFalse: "Literal("); print: self value __type__; nextPutAll: " => "; print: self type; nextPut: ')'c8
         } ifFalse: {
-            stream nextPutAll: "Literal("; print: self value __type__; nextPut: ')'c8
+            stream nextPutAll: (isBoxed ifTrue: "BoxedLiteral" ifFalse: "Literal("); print: self value __type__; nextPut: ')'c8
         }.
     }.
 }.

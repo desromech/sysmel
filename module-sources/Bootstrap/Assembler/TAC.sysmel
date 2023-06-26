@@ -103,10 +103,8 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
         := objectHeap objectTrace.
 
     public method compileModule: (module: TACModule) ::=> Void := {
-        ## Use the module image object trace for the object heap.
-        module imageObjectTrace ifNotNil: {
-            objectHeap objectTrace: module imageObjectTrace
-        }.
+        ## Use the module image base object trace for constructing the object heap.
+        objectHeap baseObjectTracer: module baseObjectTracer.
 
         targetModule contentSymbol ifNil: {
             let compileUnitSymbol := AsmSymbol new name: #compileUnit; makePrivate; yourself.
@@ -124,7 +122,7 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
         }.
 
         module functionDefinitionPatches do: {:(TACFunctionDefinitionPatch)tacPatch :: Void |
-            objectHeap objectTrace addObject: tacPatch functionDefinition patch: (ImageFunctionDefinitionEntryPointAsmPatch new
+            objectHeap tracer addObject: tacPatch functionDefinition patch: (ImageFunctionDefinitionEntryPointAsmPatch new
                 functionDefinition: tacPatch functionDefinition;
                 checkedEntryPoint: (compiledProgramEntitySymbolMap atOrNil: tacPatch checkedEntryPoint);
                 uncheckedEntryPoint: (compiledProgramEntitySymbolMap atOrNil: tacPatch uncheckedEntryPoint);

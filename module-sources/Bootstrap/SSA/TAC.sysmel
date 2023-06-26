@@ -673,8 +673,13 @@ public final class SSAFunctionDefinitionTACCodeGenerator superclass: SSATACCodeG
     public method translateBoxedValue: (value: SSAValue) ::=> TACValue := {
         boxedValueDictionary ifNil: (boxedValueDictionary := Dictionary new).
         boxedValueDictionary at: value ifAbsentPut: {:: TACValue |
-            let translatedValue := self translateValue: value.
-            value type emitTacBox: translatedValue withSSACodeGenerator: self
+            ## FIXME: Support this in a proper way.
+            value isLiteralConstant && false ifTrue: {
+                self translateValue: (value downCastTo: SSALiteralConstant) asBoxedLiteralConstant
+            } ifFalse: {
+                let translatedValue := self translateValue: value.
+                value type emitTacBox: translatedValue withSSACodeGenerator: self
+            }.
         }
     }.
 
@@ -1554,7 +1559,9 @@ SSAValue extend: {
 
 SSALiteralConstant extend: {
     public override method translateIntoTacValueWith: (codegen: SSAModuleTACCodeGenerator) ::=> TACValue
-        := codegen setValue: self translationInto: (type translateSSALiteralConstant: self intoTacWith: codegen).
+        := isBoxed
+            ifTrue: (codegen setValue: self translationInto: (codegen translateGenericObjectPointer: value))
+            ifFalse: (codegen setValue: self translationInto: (type translateSSALiteralConstant: self intoTacWith: codegen)).
 }.
 
 SSAUndefinedConstant extend: {

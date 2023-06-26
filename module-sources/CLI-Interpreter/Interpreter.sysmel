@@ -20,6 +20,11 @@ public class CLISysmelInterpreter definition: {
                     self evaluateString: (arguments at: i).
                     continue()
                 }.
+                argument = "-p" ifTrue: {
+                    i := i + 1sz.
+                    printLine(self evaluateString: (arguments at: i)).
+                    continue()
+                }.
             } ifFalse: {
                 self evaluateFileNamed: argument
             }
@@ -37,7 +42,7 @@ public class CLISysmelInterpreter definition: {
         SysmelLanguage analyzeAndEvaluateSourceCode: sourceCode
     }.
 
-    public method evaluateString: (sourceString: String) ::=> Void := {
+    public method evaluateString: (sourceString: String) ::=> AnyValue := {
         SysmelLanguage analyzeAndEvaluateSourceCode: (SourceCode text: sourceString directory: "" name: "<cli>" language: #sysmel)
     }.
 

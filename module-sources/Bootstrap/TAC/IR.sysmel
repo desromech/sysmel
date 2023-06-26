@@ -392,7 +392,7 @@ public final class TACGenericObjectPointerConstant superclass: TACConstant; defi
         := TACPhysicalIntegerRegister.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: "genericObjectPointerConstant("; print: object; nextPut: ')'c8
+        stream nextPutAll: "genericObjectPointerConstant("; print: RawTuple::type(object); nextPut: ')'c8
     }.
 }.
 
@@ -1734,7 +1734,7 @@ public final class TACFunctionDefinitionPatch superclass: Object; definition: {
 
 public final class TACModule superclass: TACProgramEntity; definition: {
     public field programEntities => OrderedCollection.
-    public field imageObjectTrace => ImageObjectTrace.
+    public field baseObjectTracer => ImageTracer.
     public field functionDefinitionPatches => OrderedCollection.
 
     public override method initialize => Void := {

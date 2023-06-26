@@ -775,8 +775,8 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
         let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
         let contents := header + 1iptr.
-        let isBytes := header _ isBytes.
-        isBytes ifFalse: (error("Expected a byte tuple.")).
+        header _ isBytes ifFalse: (error("Expected a byte tuple.")).
+        index < header _ objectSize ifFalse: (error("Out of bounds access")).
 
         (contents reinterpretCastTo: UInt8 pointer)[index asIntPointer] := value
     } ifFalse: {

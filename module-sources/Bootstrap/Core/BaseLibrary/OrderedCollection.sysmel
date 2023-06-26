@@ -52,4 +52,7 @@ OrderedCollection definition: {
         := storage isNil || (size = 0sz)
             ifTrue: #()
             ifFalse: (storage first: size).
+
+    public method untypedAt: (index: Size) ::=> Untyped
+        := storage untypedAt: index.
 }.

@@ -6,7 +6,7 @@ public class ImageBuilderSSATACTarget superclass: ImageBuilderSSATarget; definit
         {|
             ssaImage ssaModule: ((SSAModuleCompilationContext forTarget: compilationTarget)
                     exclusiveCompilationMode: true;
-                    compileFunctions: builder tracedFunctions definitions: builder tracedFunctionDefinitions;
+                    compileFunctions: builder tracer tracedFunctions definitions: builder tracer tracedFunctionDefinitions;
                     exportMainEntryPointFunction: builder entryPointFunction;
                     finish).
         } printTimeToRunInMicrosecondsWithTitle: "SSA Module".
@@ -14,13 +14,13 @@ public class ImageBuilderSSATACTarget superclass: ImageBuilderSSATarget; definit
         {|
             ssaImage tacModule: (SSAModuleTACCodeGenerator new
                 initializeWithTarget: ssaTacCompilation tacCompilationTarget;
-                compileSSAModule: ssaImage ssaModule patchingFunctions: builder requiredTracedReflectiveFunctions definitions: builder requiredTracedReflectiveFunctionDefinitions;
+                compileSSAModule: ssaImage ssaModule patchingFunctions: builder tracer requiredTracedReflectiveFunctions definitions: builder tracer requiredTracedReflectiveFunctionDefinitions;
                 finish).
         } printTimeToRunInMicrosecondsWithTitle: "TAC Module".
 
         {|
             ssaImage targetIR: (ssaImage tacModule
-                    imageObjectTrace: (builder objectTrace lock; yourself);
+                    baseObjectTracer: builder tracer;
                     asTargetIR).
         } printTimeToRunInMicrosecondsWithTitle: "Assembly code".
 

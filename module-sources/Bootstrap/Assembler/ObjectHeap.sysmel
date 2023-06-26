@@ -7,12 +7,12 @@ public abstract class AsmObjectHeapRootTableEntry superclass: Object; definition
 }.
 
 public abstract class AsmObjectHeapRootTableEntryObjectPointer superclass: AsmObjectHeapRootTableEntry; definition: {
-    public field objectIndex => Size.
+    public field index => Size.
 }.
 
 public final class AsmObjectHeapRootTableEntryObjectPointer32 superclass: AsmObjectHeapRootTableEntryObjectPointer; definition: {
     public override method writeIn: (asmHeap: AsmObjectHeap) rootTableOffset: (offset: Size) ::=> Void := {
-        let objectOffset := asmHeap objectOffsetList at: objectIndex.
+        let objectOffset := asmHeap offsetForRootTableElementWithIndex: index.
         asmHeap serializedRootTableRelocations add: (AsmObjectCodeRelocationAbsoluteInt32 new
             symbol: asmHeap objectSectionSymbol;
             offset: offset;
@@ -23,7 +23,7 @@ public final class AsmObjectHeapRootTableEntryObjectPointer32 superclass: AsmObj
 
 public final class AsmObjectHeapRootTableEntryObjectPointer64 superclass: AsmObjectHeapRootTableEntryObjectPointer; definition: {
     public override method writeIn: (asmHeap: AsmObjectHeap) rootTableOffset: (offset: Size) ::=> Void := {
-        let objectOffset := asmHeap objectOffsetList at: objectIndex.
+        let objectOffset := asmHeap offsetForRootTableElementWithIndex: index.
         asmHeap serializedRootTableRelocations add: (AsmObjectCodeRelocationAbsoluteInt64 new
             symbol: asmHeap objectSectionSymbol;
             offset: offset;
@@ -54,6 +54,7 @@ AsmObjectHeap definition: {
 
     protected field objectSectionSymbol => AsmSymbol.
     protected field objectSectionEndSymbol => AsmSymbol.
+    public field tracer => ImageTracer.
     public field objectTrace => ImageObjectTrace.
     public field objectOffsetList => Array.
 
@@ -65,19 +66,32 @@ AsmObjectHeap definition: {
 
     protected field rootObjectTableSymbol => AsmSymbol.
     public field rootObjectList => OrderedCollection.
+    public field rootTableEntries => OrderedCollection.
     protected field rootOffsetTable => IdentityDictionary.
 
     public override method initialize => Void := {
-        objectTrace := ImageObjectTrace new.
-
         rootObjectList := OrderedCollection new.
+        rootTableEntries := OrderedCollection new.
         rootOffsetTable := IdentityDictionary new.
+        self baseObjectTracer: nil.
+    }.
+
+    public method baseObjectTracer: (baseTracer: ImageTracer) ::=> Void := {
+        tracer := tracer
+            ifNil: (ImageTracer new)
+            ifNotNil: (baseTracer copy)
     }.
 
     public method buildIn: (targetModule: AsmProgramEntity) ::=> Void := {
-        objectTrace isLocked ifFalse: {
-            ## TODO: remove this part when is not gonna be needed anymore.
-            self traceObjectSet
+        rootTableEntries isEmpty ifTrue: {return: void}.
+
+        ## (Pontentially second) object trace that includes the code literal objects.
+        objectTrace ifNil: {
+            objectTrace := tracer
+                addUntypedRootObjects: rootObjectList;
+                traceObjectSet;
+                emitTraceReport;
+                objectTrace.
         }.
 
         self
@@ -85,24 +99,6 @@ AsmObjectHeap definition: {
             serializeRootTable;
             buildGCObjectDataSectionIn: targetModule;
             buildGCObjectRootTableIn: targetModule.
-    }.
-
-    public method traceObjectSet => Void := {
-        let objectModel := compilationTarget objectModel.
-
-        objectTrace objectList do: {:(Untyped)eachObject :: Void |
-            objectModel traceReferencesOfObject: eachObject forAsmHeap: self
-        }.
-    }.
-
-    public method traceReference: (reference: Untyped) ::=> Void := {
-        (compilationTarget objectModel isImmediateReference: reference) ifFalse: {
-            self indexOfGCObjectEntryFor: reference
-        }
-    }.
-
-    public method traceType: (type: Type) ::=> Void := {
-        self traceReference: type
     }.
 
     public method serializeObjects => Void := {
@@ -134,29 +130,26 @@ AsmObjectHeap definition: {
     }.
 
     public method serializeRootTable => Void := {
-        serializedRootTable := ByteArray new: rootObjectList size * compilationTarget pointerSize.
+        serializedRootTable := ByteArray new: rootTableEntries size * compilationTarget pointerSize.
         serializedRootTableRelocations := OrderedCollection new.
         let pointerSize := compilationTarget pointerSize.
         let offset mutable := 0sz.
-        rootObjectList do: {:(AsmObjectHeapRootTableEntry)entry :: Void |
+        rootTableEntries do: {:(AsmObjectHeapRootTableEntry)entry :: Void |
             entry writeIn: self rootTableOffset: offset.
             offset := offset + pointerSize 
         }
     }.
 
-    public method indexOfGCObjectEntryFor: (object: Untyped) ::=> Size := {
-        objectTrace isLocked ifTrue: {
-            let index => UInt32 := objectTrace objectIndexDictionary untypedAt: object.
-            index asSize
-        } ifFalse: {
-            (objectTrace addObject: object) asSize
-        }
+    public method offsetForRootTableElementWithIndex: (index: Size) ::=> UInt64 := {
+        let objectIndex => UInt32 := objectTrace objectIndexDictionary untypedAt: (rootObjectList untypedAt: index).
+        objectOffsetList at: objectIndex asSize
     }.
 
     public method offsetOfGCRootObjectTableEntryFor: (object: Untyped) ::=> Size := {
         rootOffsetTable untypedAt: object ifAbsentPut: { :: Size |
-            let tableOffset := (rootObjectList size * compilationTarget pointerSize) asSize.
-            rootObjectList add: (compilationTarget objectModel makeObject: object asmHeapRootTableEntryIn: self).
+            let tableOffset := (rootTableEntries size * compilationTarget pointerSize) asSize.
+            rootObjectList untypedAdd: object.
+            rootTableEntries add: (compilationTarget objectModel makeObject: object asmHeapRootTableEntryWithIndex: rootTableEntries size).
             tableOffset
         }.
     }.
@@ -289,15 +282,6 @@ Type extend: {
 }.
 
 TypeSlot extend: {
-    public method traceReferenceOfObject: (object: Untyped) forAsmHeap: (heap: AsmObjectHeap) ::=> Void := {
-        self isMinRTTIExcluded not || heap hasFullRTTI ifTrue: {
-            type isNil || type isValueType not ifTrue: {
-                let referenceValue => Untyped := (RawTuple::typeSlotAt:)(object, self).
-                heap traceReference: referenceValue
-            }
-        }
-    }.
-
     public method writeReference64OrValueOf: (object: Untyped) inAsmHeap: (heap: AsmObjectHeap) at: (objectBaseOffset: Size) ::=> Void := {
         self isJitSpecific ifTrue: {return: void}.
 
@@ -312,37 +296,10 @@ TypeSlot extend: {
 }.
 
 ObjectModelVariant extend: {
-    public virtual method traceLayoutReferencesOfObject: (object: Untyped) forAsmHeap: (heap: AsmObjectHeap) ::=> Size := {
-        let type => Type := RawTuple::type(object).
-        type ifNil: {
-            0sz
-        } ifNotNil: {
-            type allSlotsDo: {:(TypeSlot)eachSlot :: Void |
-                eachSlot traceReferenceOfObject: object forAsmHeap: heap
-            }.
-            type totalSlotCount
-        }
-    }.
-
-    public virtual method traceReferencesOfObject: (object: Untyped) forAsmHeap: (heap: AsmObjectHeap) ::=> Void := {
-        heap traceType: RawTuple::type(object).
-        let isBytes := RawTuple::isBytes(object).
-        isBytes ifFalse: {
-            let slotCount := RawTuple::size(object).
-            let fixedLayoutSlotCount := self traceLayoutReferencesOfObject: object forAsmHeap: heap.
-
-            ## Trace the variant references.
-            let i mutable := fixedLayoutSlotCount.
-            while: (i < slotCount) do: {
-                heap traceReference: (RawTuple::slotAt:)(object, i)
-            } continueWith: (i := i + 1sz)
-        }.
-    }.
-
     public abstract method serializeObject: (object: Untyped) inAsmHeap: (heap: AsmObjectHeap) at: (offset: Size) ::=> Void
         := self subclassResponsibility.
 
-    public abstract method makeObject: (object: Untyped) asmHeapRootTableEntryIn: (heap: AsmObjectHeap) ::=> AsmObjectHeapRootTableEntry
+    public abstract method makeObject: (object: Untyped) asmHeapRootTableEntryWithIndex: (tableIndex: Size) ::=> AsmObjectHeapRootTableEntry
         := self subclassResponsibility.
 }.
 
@@ -432,9 +389,9 @@ ObjectModelVariant64 extend: {
         }.
     }.
 
-    public override method makeObject: (object: Untyped) asmHeapRootTableEntryIn: (heap: AsmObjectHeap) ::=> AsmObjectHeapRootTableEntry := {
+    public override method makeObject: (object: Untyped) asmHeapRootTableEntryWithIndex: (tableIndex: Size) ::=> AsmObjectHeapRootTableEntry := {
         AsmObjectHeapRootTableEntryObjectPointer64 new
-            objectIndex: (heap indexOfGCObjectEntryFor: object);
+            index: tableIndex;
             yourself
     }.
 
@@ -459,7 +416,7 @@ public final class AsmObjectSectionDirective superclass: AsmStreamElement; defin
 public final class AsmRootObjectPointerTableDirective superclass: AsmStreamElement; definition: {
     public field heap => AsmObjectHeap.
 
-    public method tableSize => Size := heap rootObjectList size.
+    public method tableSize => Size := heap rootTableEntries size.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".rootObjectPointerTable "; print: self tableSize.

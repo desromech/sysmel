@@ -19,7 +19,7 @@ public class ImageBuilderSSATarget superclass: ImageBuilderTarget; definition: {
         ssaImage
             ssaModule: ((SSAModuleCompilationContext forTarget: compilationTarget)
                 exclusiveCompilationMode: true;
-                compileFunctions: builder tracedFunctions definitions: builder tracedFunctionDefinitions;
+                compileFunctions: builder tracer tracedFunctions definitions: builder tracer tracedFunctionDefinitions;
                 exportMainEntryPointFunction: builder entryPointFunction;
                 finish);
             yourself

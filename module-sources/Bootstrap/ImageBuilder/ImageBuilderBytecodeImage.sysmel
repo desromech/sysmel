@@ -4,7 +4,7 @@ public class ImageBuilderBytecodeImage superclass: ImageBuilderTargetImage; defi
     public method constructWithBuilder: (builder: ImageBuilder) ::=> Void := {
         let writer := LogicalImageSegmentWriter new
             objectModel: builder objectModel;
-            serializeObjectTrace: builder objectTrace;
+            serializeObjectTrace: builder tracer objectTrace;
             yourself.
 
         let byteStream := ByteStream new.

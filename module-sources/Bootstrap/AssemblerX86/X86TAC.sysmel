@@ -1017,12 +1017,8 @@ TACFunctionAsmCodeGenerator extend: {
     }.
 
     public method x86_64::pointerForGCRootObjectTableEntryFor: (object: Untyped) ::=> AsmInstructionOperand := {
-        moduleGenerator imageObjectTrace isLocked && (moduleGenerator imageObjectTrace includesObject: object) not ifTrue: {
-            0u32 asAsmImmediate
-        } ifFalse: {
-            let offset := moduleGenerator offsetOfGCRootObjectTableEntryFor: object.
-            AsmX86RegisterAddress size: target pointerSize asUInt8 displacement: moduleGenerator gcRootObjectTableSymbol qword + offset asInt64
-        }.
+        let offset := moduleGenerator offsetOfGCRootObjectTableEntryFor: object.
+        AsmX86RegisterAddress size: target pointerSize asUInt8 displacement: moduleGenerator gcRootObjectTableSymbol qword + offset asInt64
     }.
 
     public method x86_64::pointerForPICEntry: (picEntry: TACPolymorphicInlineCache) ::=> AsmInstructionOperand := {
