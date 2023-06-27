@@ -3,6 +3,10 @@
 #include <string.h>
 #include <stdio.h>
 
+#ifdef USE_BOEHM_GC
+#include <gc.h>
+#endif
+
 SYSMEL_PAL_EXTERN_C void sysmel_pal_abort(void)
 {
     abort();
@@ -18,6 +22,12 @@ SYSMEL_PAL_EXTERN_C void sysmel_pal_free(void *pointer)
     return free(pointer);
 }
 
+#ifdef USE_BOEHM_GC
+SYSMEL_PAL_EXTERN_C void* sysmel_pal_gcalloc(size_t size)
+{
+    return GC_malloc(size);
+}
+#else
 static const size_t ChunkSize = 4<<20;
 static uint8_t *currentChunk;
 static size_t currentChunkSize;
@@ -38,6 +48,7 @@ SYSMEL_PAL_EXTERN_C void* sysmel_pal_gcalloc(size_t size)
     currentChunkSize += alignedSize;
     return result;
 }
+#endif
 
 SYSMEL_PAL_EXTERN_C double sysmel_pal_parseFloat64(size_t stringSize, const char *string)
 {

@@ -1686,8 +1686,16 @@ public global SSATacPrimitiveCallGenerationTable := #{
 
     ## Identity equals/not-equals
     #== : {:(Array)arguments :(TACValue)result :(SSAFunctionDefinitionTACCodeGenerator)codegen :: Boolean |
-        let leftType := arguments first type.
-        let rightType := arguments second type.
+        let leftType => Type := arguments first type.
+        let rightType => Type  := arguments second type.
+        let hasUndefined := (leftType == UndefinedObject) || (rightType == UndefinedObject).
+        let hasPointer := leftType isPointerType || rightType isPointerType.
+
+        (hasUndefined && hasPointer) || (leftType isPointerType && rightType isPointerType) ifTrue: {
+            codegen blockBuilder pointerEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second) into: result.
+            return: true
+        }.
+
         leftType == rightType && leftType isValueType ifTrue: {
             leftType emitTacEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second) into: result withBlockBuilder: codegen blockBuilder
         } ifFalse: {
@@ -1696,8 +1704,16 @@ public global SSATacPrimitiveCallGenerationTable := #{
         true
     }.
     #~~ : {:(Array)arguments :(TACValue)result :(SSAFunctionDefinitionTACCodeGenerator)codegen :: Boolean |
-        let leftType := arguments first type.
-        let rightType := arguments second type.
+        let leftType => Type := arguments first type.
+        let rightType => Type  := arguments second type.
+        let hasUndefined := (leftType == UndefinedObject) || (rightType == UndefinedObject).
+        let hasPointer := leftType isPointerType || rightType isPointerType.
+
+        (hasUndefined && hasPointer) || (leftType isPointerType && rightType isPointerType) ifTrue: {
+            codegen blockBuilder pointerNotEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second) into: result.
+            return: true
+        }.
+
         leftType == rightType && leftType isValueType ifTrue: {
             leftType emitTacNotEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second) into: result withBlockBuilder: codegen blockBuilder
         } ifFalse: {
