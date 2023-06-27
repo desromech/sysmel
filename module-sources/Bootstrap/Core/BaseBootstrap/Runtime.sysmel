@@ -32,10 +32,10 @@ Type
 
 ValueBox
     withSelector: #loadFrom:atOffset:withType: addMethod: {:(ValueBox)self :(Untyped)containerBase :(IntPointer)offset :(Type)valueType :: valueType |
-        (RawTuple::slotAt:)(self, 0sz)
+        self __slotNamedAt__: #value
     } makeFinal withEagerAnalysis;
     withSelector: #store:in:atOffset:withType: addMethod: {:(ValueBox)self :(Untyped)value :(Untyped)containerBase :(IntPointer)offset :(Type)valueType :: Void |
-        RawTuple::slotAt:put:(self, 0sz, value).
+        self __slotNamedAt__: #value put: value.
         void
     } makeFinal withEagerAnalysis.
 
@@ -302,6 +302,15 @@ Type
 
         if: self slots == nil then: (self slots: #()).
         self slots
+    } makeFinal;
+    withSelector: #allValidSlots addMethod: {:(Type)self :: Array |
+        if: self allSlots == nil then: {
+            let: #supertype with: self supertype.
+            let: #supertypeSlots with: (if: supertype ~~ nil then: supertype allValidSlots else: #()).
+            self allSlots: supertypeSlots -- self validSlots
+        }.
+
+        self allSlots
     } makeFinal;
     withSelector: #validTotalSlotCount addMethod: {:(Type)self :: Size |
         let: #totalSlotCount with: self totalSlotCount.
@@ -3033,7 +3042,7 @@ Type
     } makeVirtual withEagerAnalysis;
     withSelector: #ensureAnalysis replaceMethod: {:(Type)self :: Void |
         (tuple: self withLookupStartingFrom: Type supertype) ensureAnalysis.
-        self validSlots.
+        self allValidSlots.
         self validBasicInitializeMethod.
         self ensureLayoutIsComputed.
     } makeVirtual withEagerAnalysis.

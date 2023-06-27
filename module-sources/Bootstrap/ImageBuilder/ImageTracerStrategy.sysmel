@@ -77,6 +77,10 @@ Type extend: {
 
         let slotCount => Size := RawTuple::size(object).
         let i mutable := startSlotIndex.
+        (startSlotIndex > 0sz) && (startSlotIndex < slotCount) ifTrue: {
+            printLine("Fixed variable.")
+        }.
+
         while: (i < slotCount) do: {
             tracer enqueueObjectTrace: (RawTuple::slotAt:)(object, i)
         } continueWith: (i := i + 1sz).
@@ -86,7 +90,7 @@ Type extend: {
         tracer traceType: self.
         RawTuple::isDummyValue(object) || RawTuple::isBytes(object) ifTrue: {return: void}.
 
-        self allSlotsDo: {:(TypeSlot)eachSlot :: Void |
+        self allValidSlots do: {:(TypeSlot)eachSlot :: Void |
             (tracer shouldEmitTypeSlot: eachSlot) ifTrue: {
                 tracer enqueueObjectTrace: (RawTuple::typeSlotAt:)(object, eachSlot)
             }.

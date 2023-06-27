@@ -669,7 +669,19 @@ RawTuple::size adoptDefinitionOf: {:(Untyped)self :: Size |
     <primitive: #RawTuple::size>
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
-        (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ slotCount
+        let type := (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ typePointer reinterpretCastTo: Type.
+        let objectSize := (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ objectSize.
+        type ifNotNil: {
+            let fixedSize := type instanceSize.
+            let fixedSlotCount => Size := type totalSlotCount.
+            let variableSlotCount := objectSize > fixedSize
+                ifTrue: (objectSize - fixedSize) / ObjectModel::PointerSize
+                ifFalse: 0sz.
+            fixedSlotCount + variableSlotCount
+        } ifNil: {
+            objectSize / ObjectModel::PointerSize
+        }.
+
     } ifFalse: {
         0sz
     }.
@@ -718,11 +730,26 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
         let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
-        let contents := header + 1iptr.
         header _ isBytes ifTrue: {
-            ((contents reinterpretCastTo: UInt8 pointer)[index asIntPointer] asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::UInt8 asUIntPointer reinterpretCastTo: Untyped
+            let contents := header + 1iptr reinterpretCastTo: UInt8 pointer.
+            (contents[index asIntPointer] asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::UInt8 asUIntPointer reinterpretCastTo: Untyped
         } ifFalse: {
-            (contents reinterpretCastTo: Untyped pointer)[index asIntPointer] __refLoad__
+            let type := (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ typePointer reinterpretCastTo: Type.
+            type ifNil: {
+                let contents := header + 1iptr reinterpretCastTo: Untyped pointer.
+                contents[index asIntPointer] __refLoad__
+            } ifNotNil: {
+                let fixedSlotCount => Size := type totalSlotCount.
+                index < fixedSlotCount ifTrue: {
+                    let typeSlot => TypeSlot := type allValidSlots at: index.
+                    let slotPointerValue := pointerValue + ObjectModel::TupleHeaderSize + typeSlot offset.
+                    (typeSlot type ifNil: Untyped) loadValueFromPointer: (slotPointerValue reinterpretCastTo: Void const pointer)
+                } ifFalse: {
+                    let baseOffset := type instanceSize.
+                    let contents := pointerValue + ObjectModel::TupleHeaderSize + baseOffset reinterpretCastTo: Untyped pointer.
+                    contents[(index - fixedSlotCount) asIntPointer] __refLoad__
+                }
+            }
         }.
     } ifFalse: {
         let shiftAmount := (index asUIntPointer * 8uptr) + ObjectModel::Tag::Bits asUIntPointer.
@@ -745,7 +772,22 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
         header _ isBytes ifTrue: {
             (contents reinterpretCastTo: UInt8 pointer)[index asIntPointer] := (ObjectModel::getTuplePointerUIntValue(value) >> ObjectModel::Tag::Bits asUIntPointer) asUInt8
         } ifFalse: {
-            (contents reinterpretCastTo: Untyped pointer)[index asIntPointer] := value
+            let type := (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ typePointer reinterpretCastTo: Type.
+            type ifNil: {
+                let contents := header + 1iptr reinterpretCastTo: Untyped pointer.
+                contents[index asIntPointer] __refLoad__
+            } ifNotNil: {
+                let fixedSlotCount => Size := type totalSlotCount.
+                index < fixedSlotCount ifTrue: {
+                    let typeSlot => TypeSlot := type allValidSlots at: index.
+                    let slotPointerValue := pointerValue + ObjectModel::TupleHeaderSize + typeSlot offset.
+                    (typeSlot type ifNil: Untyped) storeValue: value inPointer: (slotPointerValue reinterpretCastTo: Void pointer)
+                } ifFalse: {
+                    let baseOffset := type instanceSize.
+                    let contents := pointerValue + ObjectModel::TupleHeaderSize + baseOffset reinterpretCastTo: Untyped pointer.
+                    contents[(index - fixedSlotCount) asIntPointer] := value
+                }
+            }
         }
     }
 } withEagerAnalysis.

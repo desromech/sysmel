@@ -13,6 +13,7 @@ typedef struct sysbvm_type_tuple_s
     sysbvm_tuple_t supertype;
     sysbvm_tuple_t slots;
     sysbvm_tuple_t slotsWithBasicInitialization;
+    sysbvm_tuple_t allSlots;
     sysbvm_tuple_t basicInitializeMethod;
     sysbvm_tuple_t totalSlotCount;
     sysbvm_tuple_t instanceSize;
