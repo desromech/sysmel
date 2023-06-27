@@ -2531,12 +2531,10 @@ TemporaryReferenceType
     } makeOverride makePure.
 
 Type
-    withSelector: #canonicalTypeForApplicationArgumentWithIndex: addMethod: {:(Type)self :(Size)index :: Type | AnyValue } makeVirtual.
+    withSelector: #canonicalTypeForApplicationArgumentWithIndex: addMethod: {:(Type)self :(Size)index :: Type | AnyValue } makeVirtual;
+    withSelector: #canonicalResultType addMethod: {:(Type)self :: Type | AnyValue } makeVirtual.
 
 FunctionType
-    withSelector: #canonicalResultType addMethod: {:(FunctionType)self :: Type |
-        self subclassResponsibility
-    } makeVirtual;
     withSelector: #hasFunctionFlags: addMethod: {:(FunctionType)self :(Bitflags)flag :: Boolean |
         (self functionFlags & flag) = flag
     };

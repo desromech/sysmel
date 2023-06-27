@@ -18,6 +18,27 @@ SYSMEL_PAL_EXTERN_C void sysmel_pal_free(void *pointer)
     return free(pointer);
 }
 
+static const size_t ChunkSize = 4<<20;
+static uint8_t *currentChunk;
+static size_t currentChunkSize;
+
+SYSMEL_PAL_EXTERN_C void* sysmel_pal_gcalloc(size_t size)
+{
+    size_t alignedSize = (size + 15) & (-(size_t)16);
+    if(alignedSize >= ChunkSize / 4)
+        return (uint8_t*)malloc(alignedSize);
+
+    if(!currentChunk || currentChunkSize + alignedSize > ChunkSize)
+    {
+        currentChunk = (uint8_t*)malloc(ChunkSize);
+        currentChunkSize = 0;
+    }
+
+    uint8_t *result = currentChunk + currentChunkSize;
+    currentChunkSize += alignedSize;
+    return result;
+}
+
 SYSMEL_PAL_EXTERN_C double sysmel_pal_parseFloat64(size_t stringSize, const char *string)
 {
     char *buffer = (char*)malloc(stringSize + 1);

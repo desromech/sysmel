@@ -801,7 +801,7 @@ RawTuple::byteSize adoptDefinitionOf: {:(Untyped)self :: Size |
     let variableDataSize := isBytes ifTrue: variableSize ifFalse: variableSize * ObjectModel::PointerSize.
     let contentSize := instanceSize + variableDataSize.
     let allocationSize := ObjectModel::TupleHeaderSize + contentSize.
-    let allocationPointer := sysmel_pal_malloc(allocationSize).
+    let allocationPointer := sysmel_pal_gcalloc(allocationSize).
     memset(allocationPointer, 0i8, allocationSize).
 
     let objectHeader := allocationPointer reinterpretCastTo: ObjectModel::TupleHeader pointer.
@@ -820,7 +820,7 @@ RawTuple::new adoptDefinitionOf: {:(Size)slotCount :: Untyped |
     let contentSize := slotCount * ObjectModel::PointerSize.
 
     let allocationSize := ObjectModel::TupleHeaderSize + contentSize.
-    let allocationPointer := sysmel_pal_malloc(allocationSize).
+    let allocationPointer := sysmel_pal_gcalloc(allocationSize).
     memset(allocationPointer, 0i8, allocationSize).
 
     let objectHeader := allocationPointer reinterpretCastTo: ObjectModel::TupleHeader pointer.
@@ -837,7 +837,7 @@ RawTuple::byteNew adoptDefinitionOf: {:(Size)slotCount :: Untyped |
     let contentSize := slotCount.
 
     let allocationSize := ObjectModel::TupleHeaderSize + contentSize.
-    let allocationPointer := sysmel_pal_malloc(allocationSize).
+    let allocationPointer := sysmel_pal_gcalloc(allocationSize).
     memset(allocationPointer, 0i8, allocationSize).
 
     let objectHeader := allocationPointer reinterpretCastTo: ObjectModel::TupleHeader pointer.
@@ -856,7 +856,7 @@ RawTuple::shallowCopy adoptDefinitionOf: {:(Untyped)sourceObject :: Untyped |
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
         let sourceObjectSize := ObjectModel::TupleHeaderSize + (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ objectSize.
 
-        let allocationPointer := sysmel_pal_malloc(sourceObjectSize).
+        let allocationPointer := sysmel_pal_gcalloc(sourceObjectSize).
         memcpy(allocationPointer, (pointerValue reinterpretCastTo: Void const pointer), sourceObjectSize).
 
         (allocationPointer reinterpretCastTo: ObjectModel::TupleHeader pointer) _
@@ -933,7 +933,7 @@ public function ObjectModel::isFunction(value: Untyped) => Boolean := {
 ## Boxing methods.
 public function ObjectModel::allocateBoxForValueOfTypeWithSize(type: Type, contentSize: Size) => ObjectModel::TupleHeader pointer := {
     let allocationSize := ObjectModel::TupleHeaderSize + contentSize.
-    let allocationPointer := sysmel_pal_malloc(allocationSize).
+    let allocationPointer := sysmel_pal_gcalloc(allocationSize).
     memset(allocationPointer, 0i8, allocationSize).
 
     let objectHeader := allocationPointer reinterpretCastTo: ObjectModel::TupleHeader pointer.
@@ -1376,7 +1376,7 @@ public function ObjectModel::makeClosureWithCaptureVector(functionDefinition: Fu
 }.
 
 public function ObjectModel::allocaGC(size: Size, elementType: Type) => Void pointer := {
-    let result := sysmel_pal_malloc(size).
+    let result := sysmel_pal_gcalloc(size).
     memset(result, 0i8, size).
     result
 }.
