@@ -55,4 +55,8 @@ OrderedCollection definition: {
 
     public method untypedAt: (index: Size) ::=> Untyped
         := storage untypedAt: index.
+
+    public method removeAll => Void := {
+        size := 0sz.
+    }
 }.

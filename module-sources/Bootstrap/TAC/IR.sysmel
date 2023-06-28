@@ -727,6 +727,9 @@ TACInstruction definition: {
     public field operandRegisters => Array.
     public field scratchRegisters => Array.
 
+    public field preOperations => Array.
+    public field postOperations => Array.
+
     public field captureVectorPointerRegister => TACPhysicalLocation.
 
     public field callingConvention => TACCallingConvention.
@@ -736,6 +739,8 @@ TACInstruction definition: {
     public override method initialize => Void := {
         super initialize.
         operands := #().
+        preOperations := #().
+        postOperations := #().
     }.
 
     public method isTerminator => Boolean
@@ -771,6 +776,8 @@ TACInstruction definition: {
         resultRegister := nil.
         operandRegisters := operands size > 0sz ifTrue: (Array new: operands size) ifFalse: #().
         scratchRegisters := #().
+        preOperations := #().
+        postOperations := #().
     }.
 
     public method firstOperandRegister => TACPhysicalLocation := operandRegisters first.
@@ -781,6 +788,8 @@ TACInstruction definition: {
     public method firstScratchRegister => TACPhysicalLocation := scratchRegisters first.
     public method secondScratchRegister => TACPhysicalLocation := scratchRegisters first.
 }.
+
+public abstract class TACInstructionSurroundingOperation superclass: Object.
 
 public global TAC::Operation::Branch := TACOperation terminatorNamed: #branch.
 public global TAC::Operation::ConditionalBranch := TACOperation terminatorNamed: #condBranch.

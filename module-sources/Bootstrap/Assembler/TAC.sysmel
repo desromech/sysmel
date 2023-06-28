@@ -340,7 +340,7 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
     }.
 
     public method performRegisterAllocation => Void := {
-        registerAllocator := TACTrivialRegisterAllocator new.
+        registerAllocator := TACSimpleRegisterAllocator new.
         registerAllocator allocateRegistersIn: function withTarget: moduleGenerator target.
     }.
 
@@ -430,6 +430,10 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
         }.
 
         self textSection useDebugInfoOfTACValue: instruction.
+        instruction preOperations do: {:(TACInstructionSurroundingOperation)each :: Void |
+            each emitAssemblyWith: self
+        }.
+
         self loadCaptureVectorPointerIfNeededFor: instruction.
         instruction resultRegister isNotNil && instruction resultRegister isRegisterWithPointer ifTrue: {
             self emitMoveValue: instruction result intoLocation: instruction resultRegister
@@ -441,6 +445,10 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
         ## Do we need to support multiple result values?
         instruction resultRegister isNotNil && instruction resultRegister isRegisterWithPointer not && instruction result isNotNil ifTrue: {
             self emitMoveRegister: instruction resultRegister intoValue: instruction result
+        }.
+
+        instruction postOperations do: {:(TACInstructionSurroundingOperation)each :: Void |
+            each emitAssemblyWith: self
         }.
 
         captureVectorPointerRegister := nil.
@@ -599,6 +607,12 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
             self rodataSection align: 8sz; label: symbol; double: constant.
             symbol
         }.
+}.
+
+TACInstructionSurroundingOperation definition: {
+    public virtual method emitAssemblyWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+
+    }.
 }.
 
 public final class TACGlobalDataAsmCodeGenerator superclass: TACAsmCodeGenerator; definition: {
