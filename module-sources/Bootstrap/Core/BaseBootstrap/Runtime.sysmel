@@ -159,16 +159,16 @@ TypeSlot
 
 Array
     withSelector: #at: addMethod: {:(Array)self :(Size)index |
-        self __slotAt__: index
+        self __uncheckedSlotAt__: index
     } makeVirtual makeFinal withEagerAnalysis;
     withSelector: #at:put: addMethod: {:(Array)self :(Size)index :value :: Void |
-        self __slotAt__: index put: value
+        self __uncheckedSlotAt__: index put: value
     } makeVirtual makeFinal withEagerAnalysis;
     withSelector: #untypedAt: addMethod: {:(Array)self :(Size)index :: Untyped |
-        self __slotAt__: index
+        self __uncheckedSlotAt__: index
     } makeVirtual makeFinal withEagerAnalysis;
     withSelector: #untypedAt:put: addMethod: {:(Array)self :(Size)index :(Untyped)value :: Void |
-        self __slotAt__: index put: value
+        self __uncheckedSlotAt__: index put: value
     } makeVirtual makeFinal withEagerAnalysis;
     withSelector: #size addMethod: {:(Array)self :: Size |
         self __size__
@@ -999,10 +999,10 @@ WeakValueAssociation
         self new key: key; value: value; yourself
     };
     withSelector: #value addMethod: {:(WeakValueAssociation)self :: Untyped |
-        (RawTuple::slotAt:)(self, 1sz)
+        (RawTuple::uncheckedSlotAt:)(self, 1sz)
     };
     withSelector: #value: addMethod: {:(WeakValueAssociation)self :(Untyped)newValue :: Void |
-        (RawTuple::slotAt:put:)(self, 1sz, newValue)
+        (RawTuple::uncheckedSlotAt:put:)(self, 1sz, newValue)
     };
     withSelector: #printOn: addMethod: {:(WeakValueAssociation)self :(Stream)stream :: Void |
         stream print: self key; nextPutAll: " -> "; print: self value
@@ -2688,25 +2688,50 @@ SimpleFunctionType
 (Float64 >> #asIEEEFloat64Encoding) __type__: (Float64 => UInt64).
 (UInt64 >> #asIEEEFloat64Decoded) __type__: (UInt64 => Float64).
 
+let: #UInt32HashMultiplicationConstant with: 1103515245u32.
 let: #UInt32HashBitCount with: 32u32 - 4u32.
 let: #UInt32HashBitMask with: (1u32 << UInt32HashBitCount) - 1u32.
+let: #UInt32IdentityHashBitCount with: 22u32.
+let: #UInt32IdentityHashBitMask with: (1u32 << UInt32IdentityHashBitCount) - 1u32.
+
+let: #UInt64HashMultiplicationConstant with: 1103515245u64.
 let: #UInt64HashBitCount with: 64u64 - 4u64.
 let: #UInt64HashBitMask with: (1u64 << UInt64HashBitCount) - 1u64.
+let: #UInt64IdentityHashBitCount with: 22u64.
+let: #UInt64IdentityHashBitMask with: (1u64 << UInt64IdentityHashBitCount) - 1u64.
 
 UInt32
     withSelector: #hashMultiply addMethod: {:(UInt32)self :: UInt32 |
-        (self * 1103515245u32) & UInt32HashBitMask
+        (self * UInt32HashMultiplicationConstant) & UInt32HashBitMask
     } makePure makeFinal withEagerAnalysis;
     withSelector: #hashConcatenate: addMethod: {:(UInt32)self :(UInt32)next :: UInt32 |
         (self hashMultiply + next) & UInt32HashBitMask
+    } makePure makeFinal withEagerAnalysis;
+    withSelector: #identityHashMasked addMethod: {:(UInt32)self :: UInt32 |
+        self & UInt32IdentityHashBitMask
+    } makePure makeFinal withEagerAnalysis;
+    withSelector: #identityHashMultiply addMethod: {:(UInt32)self :: UInt32 |
+        (self * UInt32HashMultiplicationConstant) & UInt32IdentityHashBitMask
+    } makePure makeFinal withEagerAnalysis;
+    withSelector: #identityHashConcatenate: addMethod: {:(UInt32)self :(UInt32)next :: UInt32 |
+        (self identityHashMultiply + next) & UInt32IdentityHashBitMask
     } makePure makeFinal withEagerAnalysis.
 
 UInt64
     withSelector: #hashMultiply addMethod: {:(UInt64)self :: UInt64 |
-        (self * 1103515245u64) & UInt64HashBitMask
+        (self * UInt64HashMultiplicationConstant) & UInt64HashBitMask
     } makePure makeFinal withEagerAnalysis;
     withSelector: #hashConcatenate: addMethod: {:(UInt64)self :(UInt64)next :: UInt64 |
         (self hashMultiply + next) & UInt64HashBitMask
+    } makePure makeFinal withEagerAnalysis;
+    withSelector: #identityHashMasked addMethod: {:(UInt64)self :: UInt64 |
+        self & UInt64IdentityHashBitMask
+    } makePure makeFinal withEagerAnalysis;
+    withSelector: #identityHashMultiply addMethod: {:(UInt64)self :: UInt64 |
+        (self * UInt64HashMultiplicationConstant) & UInt64IdentityHashBitMask
+    } makePure makeFinal withEagerAnalysis;
+    withSelector: #identityHashConcatenate: addMethod: {:(UInt64)self :(UInt64)next :: UInt64 |
+        (self identityHashMultiply + next) & UInt64IdentityHashBitMask
     } makePure makeFinal withEagerAnalysis.
 
 FunctionDefinition
@@ -3054,7 +3079,7 @@ PointerLikeType
     } makeOverride;
     withSelector: #withStorage: addMethod: {:(PointerLikeType)self :storage :: self |
         let: #result with: (RawTuple::new(1sz)).
-        (RawTuple::slotAt:put:)(result, 0sz, storage).
+        (RawTuple::uncheckedSlotAt:put:)(result, 0sz, storage).
         (RawTuple::type:)(result, self).
         result
     };
@@ -3063,7 +3088,7 @@ PointerLikeType
     };
     withSelector: #untypedWithStorage: addMethod: {:(PointerLikeType)self :storage :: Untyped |
         let: #result with: (RawTuple::new(1sz)).
-        (RawTuple::slotAt:put:)(result, 0sz, storage).
+        (RawTuple::uncheckedSlotAt:put:)(result, 0sz, storage).
         (RawTuple::type:)(result, self).
         result
     };

@@ -1,5 +1,5 @@
 let InternedSymbolSet := BootstrapEnv::InternedSymbolSet.
-let hashFunction := {:(String)string :: Size | string hash}.
+let hashFunction := {:(String)string :: Size | string hash identityHashMasked }.
 let equalsFunction := {:(String)string :(StringSymbol)symbol :: Boolean |
     string equalsStringSymbol: symbol
 }.

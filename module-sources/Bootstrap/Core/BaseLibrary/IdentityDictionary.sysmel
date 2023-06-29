@@ -7,16 +7,16 @@ IdentityDictionary definition: {
 
         let i mutable := naturalIndex.
         while: (i < capacity) do: {
-            let association := storage at: i.
-            if: association isNil || (Untyped::==)((RawTuple::slotAt:)(association, 0sz), key) then: {
+            let association => LookupKey := storage at: i.
+            if: association isNil || (Untyped::==)(association key, key) then: {
                 return: i asIntPointer
             }
         } continueWith: (i := i + 1sz).
 
         i := 0sz.
         while: (i < naturalIndex) do: {
-            let association := storage at: i.
-            if: association isNil || (Untyped::==)((RawTuple::slotAt:)(association, 0sz), key) then: {
+            let association => LookupKey := storage at: i.
+            if: association isNil || (Untyped::==)(association key, key) then: {
                 return: i asIntPointer
             }
         } continueWith: (i := i + 1sz).

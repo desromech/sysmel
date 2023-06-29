@@ -189,6 +189,16 @@ SYSBVM_API sysbvm_tuple_t sysbvm_tuple_slotAt(sysbvm_context_t *context, sysbvm_
     return SYSBVM_NULL_TUPLE;
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_tuple_uncheckedSlotAt(sysbvm_context_t *context, sysbvm_tuple_t tuple, size_t slotIndex)
+{
+    (void)context;
+    if(!sysbvm_tuple_isNonNullPointer(tuple)) sysbvm_error_modifyImmediateValue();
+    if(sysbvm_tuple_isBytes(tuple)) sysbvm_error("uncheckedSlotAt used with byte tuple.");
+    if(slotIndex >= sysbvm_tuple_getSizeInSlots(tuple)) sysbvm_error_outOfBoundsSlotAccess();
+    
+    return SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->pointers[slotIndex];
+}
+
 SYSBVM_API uint8_t sysbvm_tuple_byteSlotAt(sysbvm_context_t *context, sysbvm_tuple_t tuple, size_t slotIndex)
 {
     (void)context;
@@ -230,6 +240,15 @@ static sysbvm_tuple_t sysbvm_tuple_primitive_slotAt(sysbvm_context_t *context, s
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     return sysbvm_tuple_slotAt(context, arguments[0], sysbvm_tuple_anySize_decode(arguments[1]));
+}
+
+static sysbvm_tuple_t sysbvm_tuple_primitive_uncheckedSlotAt(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    return sysbvm_tuple_uncheckedSlotAt(context, arguments[0], sysbvm_tuple_anySize_decode(arguments[1]));
 }
 
 static sysbvm_tuple_t sysbvm_tuple_primitive_byteSlotAt(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -294,6 +313,16 @@ SYSBVM_API void sysbvm_tuple_slotAtPut(sysbvm_context_t *context, sysbvm_tuple_t
     }
 }
 
+SYSBVM_API void sysbvm_tuple_uncheckedSlotAtPut(sysbvm_context_t *context, sysbvm_tuple_t tuple, size_t slotIndex, sysbvm_tuple_t value)
+{
+    (void)context;
+    if(!sysbvm_tuple_isNonNullPointer(tuple)) sysbvm_error_modifyImmediateValue();
+    if(sysbvm_tuple_isBytes(tuple)) sysbvm_error("uncheckedSlotAt used with byte tuple.");
+    if(slotIndex >= sysbvm_tuple_getSizeInSlots(tuple)) sysbvm_error_outOfBoundsSlotAccess();
+    
+    SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->pointers[slotIndex] = value;
+}
+
 SYSBVM_API void sysbvm_tuple_byteSlotAtPut(sysbvm_context_t *context, sysbvm_tuple_t tuple, size_t slotIndex, uint8_t value)
 {
     (void)context;
@@ -338,6 +367,16 @@ static sysbvm_tuple_t sysbvm_tuple_primitive_slotAtPut(sysbvm_context_t *context
     if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
 
     sysbvm_tuple_slotAtPut(context, arguments[0], sysbvm_tuple_anySize_decode(arguments[1]), arguments[2]);
+    return SYSBVM_VOID_TUPLE;
+}
+
+static sysbvm_tuple_t sysbvm_tuple_primitive_uncheckedSlotAtPut(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
+
+    sysbvm_tuple_uncheckedSlotAtPut(context, arguments[0], sysbvm_tuple_anySize_decode(arguments[1]), arguments[2]);
     return SYSBVM_VOID_TUPLE;
 }
 
@@ -569,6 +608,8 @@ void sysbvm_tuple_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_setIdentityHash, "RawTuple::identityHash:");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_slotAt, "RawTuple::slotAt:");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_slotAtPut, "RawTuple::slotAt:put:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_uncheckedSlotAt, "RawTuple::uncheckedSlotAt:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_uncheckedSlotAtPut, "RawTuple::uncheckedSlotAt:put:");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_byteSlotAt, "RawTuple::byteSlotAt:");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_byteSlotAtPut, "RawTuple::byteSlotAt:put:");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_refSlotAt, "RawTuple::refSlotAt:");
@@ -602,6 +643,8 @@ void sysbvm_tuple_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::identityHash:", context->roots.anyValueType, "__identityHash__:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_setIdentityHash);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::slotAt:", context->roots.anyValueType, "__slotAt__:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_slotAt);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::slotAt:put:", context->roots.anyValueType, "__slotAt__:put:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_slotAtPut);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::uncheckedSlotAt:", context->roots.anyValueType, "__uncheckedSlotAt__:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_uncheckedSlotAt);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::uncheckedSlotAt:put:", context->roots.anyValueType, "__uncheckedSlotAt__:put:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_uncheckedSlotAtPut);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::byteSlotAt:", context->roots.anyValueType, "__byteSlotAt__:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_byteSlotAt);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::byteSlotAt:put:", context->roots.anyValueType, "__byteSlotAt__:put:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_byteSlotAtPut);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::refSlotAt:", context->roots.anyValueType, "__refSlotAt__:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_refSlotAt);

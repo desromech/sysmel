@@ -37,6 +37,6 @@ IdentitySet definition: {
 
     public override pure final eager method includes: element ::=> Boolean := {
         let index := self scanFor: element.
-        (index >= 0iptr) && element == (storage untypedAt: index asSize)
+        (index >= 0iptr) && (element == (storage untypedAt: index asSize))
     }.
 }.

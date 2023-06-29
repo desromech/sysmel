@@ -947,7 +947,7 @@ SYSBVM_INLINE bool sysbvm_tuple_boolean_decode(sysbvm_tuple_t value)
  */
 SYSBVM_INLINE size_t sysbvm_tuple_identityHash(sysbvm_tuple_t tuple)
 {
-    return sysbvm_tuple_isNonNullPointer(tuple) ? (SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags >> SYSBVM_TUPLE_TAG_BIT_COUNT) : sysbvm_hashMultiply(tuple);
+    return sysbvm_tuple_isNonNullPointer(tuple) ? (SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags >> SYSBVM_TUPLE_TAG_BIT_COUNT) : sysbvm_identityHashMultiply(tuple);
 }
 
 /**
@@ -955,7 +955,7 @@ SYSBVM_INLINE size_t sysbvm_tuple_identityHash(sysbvm_tuple_t tuple)
  */
 SYSBVM_INLINE void sysbvm_tuple_setIdentityHash(sysbvm_object_tuple_t *objectTuple, size_t newIdentityHash)
 {
-    objectTuple->header.identityHashAndFlags = (objectTuple->header.identityHashAndFlags & SYSBVM_TUPLE_TAG_BIT_MASK) | (newIdentityHash << SYSBVM_TUPLE_TAG_BIT_COUNT);
+    objectTuple->header.identityHashAndFlags = (objectTuple->header.identityHashAndFlags & SYSBVM_TUPLE_TAG_BIT_MASK) | ((newIdentityHash & SYSBVM_IDENTITY_HASH_BIT_MASK) << SYSBVM_TUPLE_TAG_BIT_COUNT);
 }
 
 /**

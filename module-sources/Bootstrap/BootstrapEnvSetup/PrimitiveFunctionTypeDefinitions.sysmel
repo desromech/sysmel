@@ -15,6 +15,8 @@ primitiveFailedError __type__: (SimpleFunctionTypeTemplate((), 0bflgs, Unwinds))
 
 (RawTuple::slotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size), 0bflgs, Untyped)).
 (RawTuple::slotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size, Untyped), 0bflgs, Void)).
+(RawTuple::uncheckedSlotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size), 0bflgs, Untyped)).
+(RawTuple::uncheckedSlotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size, Untyped), 0bflgs, Void)).
 (RawTuple::byteSlotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size), 0bflgs, UInt8)).
 (RawTuple::byteSlotAt:put:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size, UInt8), 0bflgs, Void)).
 (RawTuple::refSlotAt:) __type__: (SimpleFunctionTypeTemplate((Untyped, Size), 0bflgs, Untyped)).

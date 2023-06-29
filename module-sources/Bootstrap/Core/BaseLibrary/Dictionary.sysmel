@@ -8,16 +8,16 @@ Dictionary definition: {
 
         let i mutable := naturalIndex.
         while: (i < capacity) do: {
-            let association := storage at: i.
-            if: association isNil || ((RawTuple::slotAt:)(association, 0sz) = key) then: {
+            let association => LookupKey := storage at: i.
+            if: association isNil || (association key = key) then: {
                 return: i asIntPointer
             }
         } continueWith: (i := i + 1sz).
 
         i := 0sz.
         while: (i < naturalIndex) do: {
-            let association := storage at: i.
-            if: association isNil || ((RawTuple::slotAt:)(association, 0sz) = key) then: {
+            let association => LookupKey := storage at: i.
+            if: association isNil || (association key = key) then: {
                 return: i asIntPointer
             }
         } continueWith: (i := i + 1sz).
@@ -25,9 +25,8 @@ Dictionary definition: {
         -1iptr
     }.
 
-    public eager method addAssociationNoCheck: (association: Untyped) ::=> Void := {
-        let key => Untyped := (RawTuple::slotAt:)(association, 0sz).
-        let index := self scanFor: key.
+    public eager method addAssociationNoCheck: (association: LookupKey) ::=> Void := {
+        let index := self scanFor: association key.
         self assert: index >= 0iptr.
         storage at: index asSize put: association
     }.
@@ -57,8 +56,8 @@ Dictionary definition: {
         }
     }.
 
-    public virtual eager method add: association ::=> Void := {
-        let key => Untyped := (RawTuple::slotAt:)(association, 0sz).
+    public virtual eager method add: (association: LookupKey) ::=> Void := {
+        let key := association key.
         let index mutable := self scanFor: key.
         index < 0iptr ifTrue: {
             self increaseCapacity.

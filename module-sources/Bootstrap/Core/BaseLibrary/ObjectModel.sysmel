@@ -70,6 +70,9 @@ public global ObjectModel::ImmediateTrivialTypeTable := (
     False, True, Void, HashtableEmpty, ObjectTombstone, PendingMemoizationValue
 ).
 
+public global ObjectModel::IdentityHash::Bits := 22u32.
+public global ObjectModel::IdentityHash::Mask := (1u32 << ObjectModel::IdentityHash::Bits) - 1u32.
+
 public global ObjectModel::TypePointerFlag::GCColorMask := 3uptr.
 public global ObjectModel::TypePointerFlag::Bytes := 4uptr.
 public global ObjectModel::TypePointerFlag::Weak := 8uptr.
@@ -595,7 +598,7 @@ identityHash adoptDefinitionOf: {:(AnyValue)self :: Size |
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
         (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ identityHashAndFlags >> 4uptr
     } ifFalse: {
-        pointerValue asSize hashMultiply
+        pointerValue asSize identityHashMultiply
     }
 } makePure makeFinal withEagerAnalysis.
 
@@ -605,7 +608,7 @@ Untyped::identityHash adoptDefinitionOf: {:(Untyped)self :: Size |
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
         (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ identityHashAndFlags >> 4uptr
     } ifFalse: {
-        pointerValue asSize hashMultiply
+        pointerValue asSize identityHashMultiply
     }
 } makePure makeFinal withEagerAnalysis.
 
@@ -790,6 +793,22 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
             }
         }
     }
+} withEagerAnalysis.
+
+(RawTuple::uncheckedSlotAt:) adoptDefinitionOf: {:(Untyped)self :(Size)index :: Untyped |
+    <primitive: #RawTuple::uncheckedSlotAt:>
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
+    let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
+    let contents := header + 1iptr reinterpretCastTo: Untyped pointer.
+    contents[index asIntPointer] __refLoad__
+} withEagerAnalysis.
+
+(RawTuple::uncheckedSlotAt:put:) adoptDefinitionOf: {:(Untyped)self :(Size)index :(Untyped)value :: Void |
+    <primitive: #RawTuple::uncheckedSlotAt:put:>
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
+    let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
+    let contents := header + 1iptr reinterpretCastTo: Untyped pointer.
+    contents[index asIntPointer] := value
 } withEagerAnalysis.
 
 (RawTuple::byteSlotAt:) adoptDefinitionOf: {:(Untyped)self :(Size)index :: UInt8 |

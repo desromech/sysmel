@@ -388,7 +388,9 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.dependentFunctionTypeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.functionTypeType);
     context->roots.simpleFunctionTypeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.functionTypeType);
 
-    context->roots.symbolBindingType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.lookupKeyType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+
+    context->roots.symbolBindingType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.lookupKeyType);
     context->roots.symbolAnalysisBindingType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolBindingType);
     context->roots.symbolArgumentBindingType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolAnalysisBindingType);
     context->roots.symbolCaptureBindingType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolAnalysisBindingType);
@@ -729,10 +731,14 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         NULL);
     context->roots.localAnalysisEnvironmentType = sysbvm_context_createIntrinsicClass(context, "LocalAnalysisEnvironment", context->roots.analysisEnvironmentType,
         NULL);
+
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.lookupKeyType, "LookupKey", SYSBVM_NULL_TUPLE,
+        "key", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.untypedType,
+        NULL);
+
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolBindingType, "SymbolBinding", SYSBVM_NULL_TUPLE,
-        "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
-        "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
-        "type", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
+        "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sourcePositionType,
+        "type", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolAnalysisBindingType, "SymbolAnalysisBinding", SYSBVM_NULL_TUPLE,
         "ownerFunction", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
@@ -879,12 +885,10 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "size", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         NULL);
     sysbvm_typeAndMetatype_setFlags(context, context->roots.arraySliceType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);
-    context->roots.associationType = sysbvm_context_createIntrinsicClass(context, "Association", SYSBVM_NULL_TUPLE,
-        "key", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.untypedType,
+    context->roots.associationType = sysbvm_context_createIntrinsicClass(context, "Association", context->roots.lookupKeyType,
         "value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.untypedType,
         NULL);
-    context->roots.weakValueAssociationType = sysbvm_context_createIntrinsicClass(context, "WeakValueAssociation", SYSBVM_NULL_TUPLE,
-        "key", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.untypedType,
+    context->roots.weakValueAssociationType = sysbvm_context_createIntrinsicClass(context, "WeakValueAssociation", context->roots.lookupKeyType,
         //"value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_WEAK, SYSBVM_NULL_TUPLE,
         NULL);
     sysbvm_typeAndMetatype_setFlags(context, context->roots.associationType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);
@@ -1423,8 +1427,8 @@ sysbvm_heap_t *sysbvm_context_getHeap(sysbvm_context_t *context)
 
 static size_t sysbvm_context_generateIdentityHash(sysbvm_context_t *context)
 {
-    context->identityHashSeed = sysbvm_hashMultiply(context->identityHashSeed) + 12345;
-    return context->identityHashSeed & SYSBVM_HASH_BIT_MASK;
+    context->identityHashSeed = sysbvm_identityHashMultiply(context->identityHashSeed) + 12345;
+    return context->identityHashSeed & SYSBVM_IDENTITY_HASH_BIT_MASK;
 }
 
 sysbvm_object_tuple_t *sysbvm_context_allocateByteTuple(sysbvm_context_t *context, sysbvm_tuple_t type, size_t byteSize)

@@ -152,6 +152,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t largePositiveIntegerType;
     sysbvm_tuple_t largeNegativeIntegerType;
     sysbvm_tuple_t localAnalysisEnvironmentType;
+    sysbvm_tuple_t lookupKeyType;
     sysbvm_tuple_t macroContextType;
     sysbvm_tuple_t messageType;
     sysbvm_tuple_t metaclassType;

@@ -1,4 +1,11 @@
 SymbolBinding definition: {
+    public eager final inline method name => Symbol
+        := self __slotNamedAt__: #key.
+
+    public eager final inline method name: (newName: Symbol) ::=> Void := {
+        self __slotNamedAt__: #key put: newName
+    }.
+
     public eager virtual method isAnalysisBinding => Boolean := false.
 
     public eager abstract method evaluateInEnvironment: (environment: Environment) ::=> Untyped

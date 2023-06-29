@@ -7,6 +7,13 @@
 
 typedef struct sysbvm_context_s sysbvm_context_t;
 
+typedef struct sysbvm_lookupKey_s
+{
+    sysbvm_tuple_header_t header;
+    sysbvm_tuple_t key;
+    sysbvm_tuple_t value;
+} sysbvm_lookupKey_t;
+
 typedef struct sysbvm_association_s
 {
     sysbvm_tuple_header_t header;
