@@ -562,17 +562,6 @@ public global ObjectModel::getTuplePointerIntValue := {:(Untyped)object :: IntPo
     0iptr
 }.
 
-public global ObjectModel::tupleAsType := {:(Untyped)object :: Type |
-    <primitive: #PointerLikeType::reinterpretCast>
-    object downCastTo: Type
-}.
-
-
-public global ObjectModel::tupleAsFunction := {:(Untyped)object :: Function |
-    <primitive: #PointerLikeType::reinterpretCast>
-    object downCastTo: Function
-}.
-
 public global ObjectModel::getTupleHeaderPointerOf := {:(Untyped)object :: ObjectModel::TupleHeader pointer |
     <primitive: #PointerLikeType::reinterpretCast>
     nil
@@ -705,9 +694,9 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
     } ifFalse: {
         tag = 15uptr ifTrue: {
             let trivialTypeIndex := pointerValue >> 4uptr.
-            ObjectModel::tupleAsType(ObjectModel::ImmediateTrivialTypeTable at: trivialTypeIndex asSize)
+            (ObjectModel::ImmediateTrivialTypeTable at: trivialTypeIndex asSize) uncheckedDownCastTo: Type
         } ifFalse: {
-            ObjectModel::tupleAsType(ObjectModel::ImmediateTagTypeTable at: tag asSize)
+            (ObjectModel::ImmediateTagTypeTable at: tag asSize) uncheckedDownCastTo: Type
         }
     }
 } withEagerAnalysis.
@@ -1122,6 +1111,143 @@ public function ObjectModel::boxPointer(pointerType: Type, value: UIntPointer) =
 }.
 
 ## Unboxing methods.
+public function ObjectModel::unboxChar8(value: Untyped) => Char8 := {
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
+    (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asChar8
+}.
+
+public function ObjectModel::unboxUInt8(value: Untyped) => UInt8 := {
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
+    (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt8
+}.
+
+public function ObjectModel::unboxInt8(value: Untyped) => Int8 := {
+    let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+    (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asInt8
+}.
+
+public function ObjectModel::unboxBoolean(value: Untyped) => Boolean := {
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
+    pointerValue = ObjectModel::ImmediateTrivialConstant::True asUIntPointer
+}.
+
+public function ObjectModel::unboxChar16(value: Untyped) => Char16 := {
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
+    let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
+    (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asChar16
+}.
+
+public function ObjectModel::unboxUInt16(value: Untyped) => UInt16 := {
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
+    let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
+    (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt16
+}.
+
+public function ObjectModel::unboxInt16(value: Untyped) => Int16 := {
+    let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+    let tag := pointerValue & ObjectModel::Tag::Mask asIntPointer.
+    (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asInt16
+}.
+
+if: ObjectModel::PointerSize = 4sz then: {
+    public function ObjectModel::unboxChar32(value: Untyped) => Char32 := {
+        let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
+        let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
+        (tag ~= 0uptr) || (pointerValue = 0uptr) ifTrue: {
+            (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asChar32
+        } ifFalse: {
+            let objectHeader := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
+            (objectHeader + 1iptr reinterpretCastTo: Char32 pointer) load
+        }.
+    }.
+
+    public function ObjectModel::unboxUInt32(value: Untyped) => UInt32 := {
+        let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
+        let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
+        (tag ~= 0uptr) || (pointerValue = 0uptr) ifTrue: {
+            (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt32
+        } ifFalse: {
+            let objectHeader := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
+            (objectHeader + 1iptr reinterpretCastTo: UInt32 pointer) load
+        }.
+    }.
+
+    public function ObjectModel::unboxInt32(value: Untyped) => Int32 := {
+        let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+        let tag := pointerValue & ObjectModel::Tag::Mask asIntPointer.
+        (tag ~= 0uptr) || (pointerValue = 0uptr) ifTrue: {
+            (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asUInt32
+        } ifFalse: {
+            let objectHeader := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
+            (objectHeader + 1iptr reinterpretCastTo: Int32 pointer) load
+        }.
+    }.
+
+    public function ObjectModel::unboxFloat32(value: Untyped) => Float32 := {
+        let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
+        let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
+        (tag ~= 0uptr) || (pointerValue = 0uptr) ifTrue: {
+            (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt32 asIEEEFloat32Decoded
+        } ifFalse: {
+            let objectHeader := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
+            (objectHeader + 1iptr reinterpretCastTo: Float32 pointer) load
+        }.
+    }.
+} else: {
+    public function ObjectModel::unboxChar32(value: Untyped) => Char32 := {
+        let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
+        (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asChar32
+    }.
+
+    public function ObjectModel::unboxUInt32(value: Untyped) => UInt32 := {
+        let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
+        (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt32
+    }.
+
+    public function ObjectModel::unboxInt32(value: Untyped) => Int32 := {
+        let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+        (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asInt32
+    }.
+
+    public function ObjectModel::unboxFloat32(value: Untyped) => Float32 := {
+        let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
+        (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt32 asIEEEFloat32Decoded
+    }.
+}.
+
+public function ObjectModel::unboxUInt64(value: Untyped) => UInt64 := {
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
+    let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
+    (tag ~= 0uptr) || (pointerValue = 0uptr) ifTrue: {
+        (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt64
+    } ifFalse: {
+        let objectHeader := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
+        (objectHeader + 1iptr reinterpretCastTo: UInt64 pointer) load
+    }.
+}.
+
+public function ObjectModel::unboxInt64(value: Untyped) => Int64 := {
+    let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+    let tag := pointerValue & ObjectModel::Tag::Mask asIntPointer.
+    (tag ~= 0iptr) || (pointerValue = 0iptr) ifTrue: {
+        (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asInt64
+    } ifFalse: {
+        let objectHeader := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
+        (objectHeader + 1iptr reinterpretCastTo: Int64 pointer) load
+    }.
+}.
+
+public function ObjectModel::unboxFloat64(value: Untyped) => Float64 := {
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
+    let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
+    (tag ~= 0uptr) || (pointerValue = 0uptr) ifTrue: {
+        (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt64 asIEEEFloat64Decoded
+    } ifFalse: {
+        let objectHeader := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
+        (objectHeader + 1iptr reinterpretCastTo: Float64 pointer) load
+    }.
+}.
+
 public function ObjectModel::checkAndUnboxChar8(value: Untyped) => Char8 := {
     let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
     let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
@@ -1546,7 +1672,7 @@ public struct ObjectModel::PolymorphicInlineCache definition: {
 
         public function `,(applyName asMacroLiteral)(functional: AnyValue, `@argumentNodes) => Untyped := {
             ObjectModel::isFunction(functional) ifTrue: {
-                let function := ObjectModel::tupleAsFunction(functional).
+                let function := functional uncheckedDownCastTo: Function.
                 function requiresArgumentExpansionDuringApplication ifFalse: {
                     let definition := function definition.
                     definition ifNotNil: {

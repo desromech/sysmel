@@ -310,6 +310,7 @@ let: #parseLambdaSignatureArguments with: {:(Array)argumentsSExpression :: Array
         sourcePosition: macroContext sourcePosition;
         valueExpression: tupleExpression;
         typeExpression: typeExpression;
+        isUnchecked: false;
         yourself.
 } makeMacro withEagerAnalysis.
 

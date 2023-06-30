@@ -61,6 +61,7 @@ typedef struct sysbvm_astDownCastNode_s
     sysbvm_astNode_t super;
     sysbvm_tuple_t typeExpression;
     sysbvm_tuple_t valueExpression;
+    sysbvm_tuple_t isUnchecked;
 } sysbvm_astDownCastNode_t;
 
 typedef struct sysbvm_astErrorNode_s

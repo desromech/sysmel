@@ -1004,6 +1004,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.astDownCastNodeType = sysbvm_context_createIntrinsicClass(context, "ASTDownCastNode", context->roots.astNodeType,
         "typeExpression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "valueExpression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "isUnchecked", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         NULL);
     context->roots.astErrorNodeType = sysbvm_context_createIntrinsicClass(context, "ASTErrorNode", context->roots.astNodeType,
         "errorMessage", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,

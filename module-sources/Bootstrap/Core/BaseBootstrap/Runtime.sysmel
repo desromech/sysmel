@@ -125,6 +125,7 @@ ASTDownCastNode __type__
                 value: targetType;
                 yourself);
             valueExpression: astNode;
+            isUnchecked: false;
             yourself
     } withEagerAnalysis.
 
@@ -188,8 +189,6 @@ Type
         then: astNode
         else: {
             if: self isDynamic then: {
-                ## TODO: Add a downcast node.
-                ##astNode.
                 ASTDownCastNode makeForASTNode: astNode targetType: targetType
             } else: {
                 error((((astNode sourcePosition printString -- ": Cannot coerce node from type ") -- self printString) -- " into type ") -- targetType printString)
@@ -524,6 +523,15 @@ AnyValue
             sourcePosition: macroContext sourcePosition;
             typeExpression: targetTypeExpression;
             valueExpression: self;
+            isUnchecked: false;
+            yourself
+    } makeMacro;
+    withSelector: #uncheckedDownCastTo: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)targetTypeExpression :: ASTDownCastNode |
+        ASTDownCastNode new
+            sourcePosition: macroContext sourcePosition;
+            typeExpression: targetTypeExpression;
+            valueExpression: self;
+            isUnchecked: true;
             yourself
     } makeMacro;
 

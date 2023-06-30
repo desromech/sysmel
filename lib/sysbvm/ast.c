@@ -273,6 +273,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_astDownCastNode_create(sysbvm_context_t *contex
     result->super.sourcePosition = sourcePosition;
     result->typeExpression = typeExpression;
     result->valueExpression = valueExpression;
+    result->isUnchecked = SYSBVM_FALSE_TUPLE;
     return (sysbvm_tuple_t)result;
 }
 

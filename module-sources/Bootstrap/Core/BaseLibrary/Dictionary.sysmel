@@ -8,7 +8,7 @@ Dictionary definition: {
 
         let i mutable := naturalIndex.
         while: (i < capacity) do: {
-            let association => LookupKey := storage at: i.
+            let association := (storage at: i) uncheckedDownCastTo: LookupKey.
             if: association isNil || (association key = key) then: {
                 return: i asIntPointer
             }
@@ -16,7 +16,7 @@ Dictionary definition: {
 
         i := 0sz.
         while: (i < naturalIndex) do: {
-            let association => LookupKey := storage at: i.
+            let association := (storage at: i) uncheckedDownCastTo: LookupKey.
             if: association isNil || (association key = key) then: {
                 return: i asIntPointer
             }

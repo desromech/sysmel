@@ -961,11 +961,14 @@ public final class SSAConditionalBranchInstruction superclass: SSAInstruction; d
 public final class SSADownCastInstruction superclass: SSAInstruction; definition: {
     public field targetType => SSAValue.
     public field value => SSAValue.
+    public field isUnchecked => Boolean.
 
     public override method isDownCastInstruction => Boolean := true.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream print: self; nextPutAll: " := downcast "; print: value; nextPutAll: " into "; print: targetType
+        stream print: self;
+            nextPutAll: (isUnchecked ifTrue: " := uncheckedDowncast " ifFalse: " := downcast ");
+            print: value; nextPutAll: " into "; print: targetType
     }.
 
     public override method usedValuesDo: aBlock ::=> Void := {
@@ -1643,7 +1646,7 @@ SSAInstructionBuilder definition: {
             registerInUsedValues;
             yourself).
 
-    public method downCast: (value: SSAValue) into: (targetType: SSAValue) type: (type: Type) ::=> SSAValue := {
+    public method unchecked: (isUnchecked: Boolean) downCast: (value: SSAValue) into: (targetType: SSAValue) type: (type: Type) ::=> SSAValue := {
         (value type isSubtypeOf: ControlFlowEscapeType) ifTrue: {
             return: (self undefined: type)
         }.
@@ -1654,11 +1657,15 @@ SSAInstructionBuilder definition: {
             self addInstruction: (SSADownCastInstruction new
                 value: value;
                 targetType: targetType;
+                isUnchecked: isUnchecked;
                 type: type;
             registerInUsedValues;
                 yourself)
         }.
     }.
+
+    public method downCast: (value: SSAValue) into: (targetType: SSAValue) type: (type: Type) ::=> SSAValue
+        := self unchecked: false downCast: value into: targetType type: type.
 
     public method undefined: (type: Type) ::=> SSAUndefinedConstant
         := SSAUndefinedConstant new
