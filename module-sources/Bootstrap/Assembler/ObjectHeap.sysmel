@@ -342,16 +342,15 @@ ObjectModelVariant64 extend: {
 
         let header mutable := ObjectModel::TupleHeader64 basicNew.
         header
-            isBytes: isBytes;
-            isWeak: isWeak;
+            objectType: (isBytes ifTrue: ObjectModel::ObjectType::Bytes
+                ifFalse: (isWeak ifTrue: ObjectModel::ObjectType::WeakPointers
+                ifFalse: ObjectModel::ObjectType::Pointers));
             isDummyValue: isDummyValue;
-            identityHashValue: identityHash(object) asUInt64;
-            objectSize: (self computeSizeOfObjectInstanceContent: object).
+            identityHashValue: Untyped::identityHash(object) asUInt32;
+            objectSize: (self computeSizeOfObjectInstanceContent: object) asUInt32.
 
         type ifNotNil: {
-            let typePointerFlags := header typePointerAndFlags.
-            header typePointerAndFlags: 0u64.
-            heap writeReference64: type at: offset extraAddend: typePointerFlags asUInt64.
+            heap writeReference64: type at: offset.
         }.
 
         ObjectModel::isLogical() ifTrue: {

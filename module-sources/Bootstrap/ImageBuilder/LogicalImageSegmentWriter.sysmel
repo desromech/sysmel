@@ -159,17 +159,16 @@ ObjectModelVariant32 definition: {
 
         let header mutable := ObjectModel::TupleHeader32 basicNew.
         header
-            isBytes: isBytes;
-            isWeak: isWeak;
+            objectType: (isBytes ifTrue: ObjectModel::ObjectType::Bytes
+                ifFalse: (isWeak ifTrue: ObjectModel::ObjectType::WeakPointers
+                ifFalse: ObjectModel::ObjectType::Pointers));
             isDummyValue: isDummyValue;
-            identityHashValue: identityHash(object) asUInt32;
+            identityHashValue: Untyped::identityHash(object) asUInt32;
             objectSize: (writer computeSizeOfObjectContent: object) asUInt32.
         header encodeInBytes: writer segmentData atOffset: offset.
 
         type ifNotNil: {
-            let typePointerFlags := header typePointerAndFlags.
-            let typeReferenceValue := writer uint32PointerValueForObjectReference: type.
-            writer uint32At: offset put: typeReferenceValue | typePointerFlags
+            writer uint32At: offset put: (writer uint32PointerValueForObjectReference: type)
         }.
     }.
 
@@ -202,17 +201,16 @@ ObjectModelVariant64 definition: {
 
         let header mutable := ObjectModel::TupleHeader64 basicNew.
         header
-            isBytes: isBytes;
-            isWeak: isWeak;
+            objectType: (isBytes ifTrue: ObjectModel::ObjectType::Bytes
+                ifFalse: (isWeak ifTrue: ObjectModel::ObjectType::WeakPointers
+                ifFalse: ObjectModel::ObjectType::Pointers));
             isDummyValue: isDummyValue;
-            identityHashValue: identityHash(object) asUInt64;
-            objectSize: (writer computeSizeOfObjectContent: object).
+            identityHashValue: Untyped::identityHash(object) asUInt32;
+            objectSize: (writer computeSizeOfObjectContent: object) asUInt32.
         header encodeInBytes: writer segmentData atOffset: offset.
 
         type ifNotNil: {
-            let typePointerFlags := header typePointerAndFlags.
-            let typeReferenceValue := writer uint64PointerValueForObjectReference: type.
-            writer uint64At: offset put: typeReferenceValue | typePointerFlags
+            writer uint64At: offset put: (writer uint64PointerValueForObjectReference: type)
         }.
     }.
 
