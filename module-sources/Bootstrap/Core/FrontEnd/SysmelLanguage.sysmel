@@ -31,7 +31,7 @@ SysmelToken definition: {
 }.
 
 let Scanner::Whitespace := MonadicParser white plus withoutValue.
-let Scanner::NotNewline := MonadicParser predicate: {:character :: Boolean | ('\n'c8 ~= character) && ('\r'c8 ~= character)} errorMessage: "Newline found".
+let Scanner::NotNewline := MonadicParser predicate: {:(Char8)character :: Boolean | ('\n'c8 ~= character) && ('\r'c8 ~= character)} errorMessage: "Newline found".
 let Scanner::SingleLineComment := ("##" asMonadicParser -- Scanner::NotNewline star withoutValue) withoutValue.
 let Scanner::MultiLineComment := ("#*" asMonadicParser -- "*#" asMonadicParser negate star withoutValue -- "*#" asMonadicParser) withoutValue.
 

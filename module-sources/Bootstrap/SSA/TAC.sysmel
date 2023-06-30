@@ -782,7 +782,7 @@ Type extend: {
     }.
 
     public virtual method emitTacCheckAndUnbox: (value: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> TACValue := {
-        self == Untyped ifFalse: {
+        (self == Untyped) || (self == AnyValue) ifFalse: {
             let typecheckFunction := codegen translateRuntimeFunction: (self isNullable
                 ifTrue: ObjectModel::typecheckNullableValue
                 ifFalse: ObjectModel::typecheckValue
@@ -797,7 +797,7 @@ Type extend: {
         := value.
 
     public virtual method emitTacCheckThenUnbox: (value: TACValue) into: (resultValue: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
-        self == Untyped ifFalse: {
+        (self == Untyped) || (self == AnyValue) ifFalse: {
             let typecheckFunction := codegen translateRuntimeFunction: (self isNullable
                 ifTrue: ObjectModel::typecheckNullableValue
                 ifFalse: ObjectModel::typecheckValue
@@ -821,7 +821,7 @@ Type extend: {
     }.
 
     public virtual method emitTacUnboxingCall: (function: TACValue) convention: (callingConvention: TACCallingConvention) withArguments: (arguments: Array) into: (result: TACValue) withSSACodeGenerator: (codegen: SSAFunctionDefinitionTACCodeGenerator) ::=> Void := {
-        self == Untyped ifTrue: {
+        (self == Untyped) || (self == AnyValue) ifTrue: {
             codegen blockBuilder callPointer: function convention: callingConvention arguments: arguments result: result.
             return: void.
         }.

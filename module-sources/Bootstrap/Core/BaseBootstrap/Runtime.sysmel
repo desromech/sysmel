@@ -1321,13 +1321,19 @@ SequenceableCollection
         let: #size with: self size.
         let: #otherSize with: other size.
         let: #result with: (self species new: size + otherSize ).
-        
-        self doWithIndex: {:element :(Size)index :: Void |
-            result at: index put: element
+
+        {
+            let: #i mutableWith: 0sz.
+            while: i < size do: {
+                result at: i put: (self at: i)
+            } continueWith: (i := i + 1sz).
         }.
 
-        other doWithIndex: {:element :(Size)index :: Void |
-            result at: size + index put: element
+        {
+            let: #i mutableWith: 0sz.
+            while: i < otherSize do: {
+                result at: size + i put: (other at: i)
+            } continueWith: (i := i + 1sz).
         }.
 
         result

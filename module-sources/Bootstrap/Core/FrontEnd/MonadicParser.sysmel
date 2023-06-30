@@ -25,11 +25,11 @@ public class MonadicParserState definition: {
                 yourself.
     }.
 
-    public abstract method memento => Size
+    public inline method memento => Size
         := position.
 
-    public abstract method restoreMemento: (memento: Size) ::=> Void := {
-        position := memento downCastTo: Size
+    public inline method restoreMemento: (memento: Size) ::=> Void := {
+        position := memento
     }.
 
     public method remainingSize => Size
@@ -154,7 +154,7 @@ public abstract class MonadicParser definition: {
             } errorMessage: "Expected an alphabetic character.".
 
         public method identifierMiddle ::=> MonadicParser
-            := self predicate: {:character :: Boolean |
+            := self predicate: {:(Char8)character :: Boolean |
                 (('A'c8 <= character) && (character <= 'Z'c8)) ||
                 (('a'c8 <= character) && (character <= 'z'c8)) ||
                 (('0'c8 <= character) && (character <= '9'c8)) ||

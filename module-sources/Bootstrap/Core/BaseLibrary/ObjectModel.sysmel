@@ -671,7 +671,7 @@ RawTuple::size adoptDefinitionOf: {:(Untyped)self :: Size |
         let objectSize := (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ objectSize asSize.
         type ifNotNil: {
             let fixedSize := type instanceSize.
-            let fixedSlotCount => Size := type totalSlotCount.
+            let fixedSlotCount := type totalSlotCount uncheckedDownCastTo: Size.
             let variableSlotCount := objectSize > fixedSize
                 ifTrue: (objectSize - fixedSize) / ObjectModel::PointerSize
                 ifFalse: 0sz.
