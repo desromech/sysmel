@@ -2896,6 +2896,38 @@ MIR::Operation::UInt64GreaterOrEqualsBranch
             x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
     }.
 
+MIR::Operation::PointerEqualsBranch
+    forTarget: #x86 registerConstraintsWith: x86::integerComparisonBranchInt32RegisterConstraints;
+    forTarget: #x86 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen);
+            x86::jnz: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    };
+    forTarget: #x86_64 registerConstraintsWith: x86::integerComparisonBranchInt64RegisterConstraints;
+    forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::immediateS32OrInt64For: codegen);
+            x86::jnz: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
+MIR::Operation::PointerNotEqualsBranch
+    forTarget: #x86 registerConstraintsWith: x86::integerComparisonBranchInt32RegisterConstraints;
+    forTarget: #x86 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen);
+            x86::jz: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    };
+    forTarget: #x86_64 registerConstraintsWith: x86::integerComparisonBranchInt64RegisterConstraints;
+    forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::cmp: (instruction firstOperandRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::immediateS32OrInt64For: codegen);
+            x86::jz: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
+            x86::jmp: (instruction thirdOperandRegister x86::relCall32OrInt32For: codegen)
+    }.
+
 let x86::moveIntegerRegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterForInstructionResult: instruction;

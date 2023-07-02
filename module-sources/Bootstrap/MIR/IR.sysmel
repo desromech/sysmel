@@ -109,6 +109,7 @@ Float64 class extend: {
 }.
 
 MIRValue definition: {
+    private field users => WeakOrderedCollection.
     public field debugSourcePosition => SourcePosition.
     public field debugSourceNode => ASTNode.
     public field debugSourceEnvironment => Environment.
@@ -176,13 +177,47 @@ MIRValue definition: {
     public virtual method markWriteAt: (writeIndex: UInt32) ::=> Void := {}.
     public virtual method markSpillingRequired ::=> Void := {}.
 
-    public virtual method isLastUsedIn: (instruction: MIRInstruction) ::=> Boolean := false.
-
     public method printDebugInfoOn: (stream: Stream) ::=> Void := {
         debugSourcePosition isNotNil && PrintingDebugInfo ifTrue: {
             stream space; nextPutAll: "# at"; print: debugSourcePosition
         }
     }.
+
+    public virtual method usedValuesDo: (aBlock: (MIRValue) => Void) ::=> Void := {}.
+
+    public method usersDo: (aBlock: (MIRValue) => Void) ::=> Void := {
+        users ifNotNil: {:users | users do: aBlock }
+    }.
+
+    public method registerInUsedValues => Void := {
+        self usedValuesDo: {:(MIRValue)each :: Void | each registerUser: self }
+    }.
+
+    public method unregisterFromUsedValues => Void := {
+        self usedValuesDo: {:(MIRValue)each :: Void | each unregisterUser: self }
+    }.
+
+    public method registerUser: (user: MIRValue) ::=> Void := {
+        users ifNil: {
+            users := WeakOrderedCollection new
+        }.
+
+        users add: user
+    }.
+
+    public method unregisterUser: (user: MIRValue) ::=> Void := {
+        users ifNotNil: {
+            users removeAllOcurrencesOf: user
+        }.
+    }.
+
+    public override method postCopy => Void := {
+        super postCopy.
+        users := nil
+    }.
+
+    public method userCount => Size
+        := users ifNil: 0sz ifNotNil: users size.
 }.
 
 public final class MIRBasicBlock superclass: MIRLocalValue.
@@ -316,6 +351,7 @@ MIRLocalValue definition: {
         needsSpilling := true.
     }.
 
+    ## TODO: Handle the temporary variables in a proper way here.
     public method needsStackAllocation => Boolean
         := needsSpilling || registerAssignment isNil.
 
@@ -338,15 +374,11 @@ MIRLocalValue definition: {
         lastWriteIndex := writeIndex asInt32
     }.
 
-    public override method isLastUsedIn: (instruction: MIRInstruction) ::=> Boolean
-        := lastUsageIndex = instruction index asInt32.
-
     public override method isLocalValue => Boolean := true.
 
     public override method isFloatingPoint => Boolean := type asDecayedType isPrimitiveFloatType.
     public override method isVector => Boolean := type asDecayedType isPrimitiveVectorType.
 
-    public method hasSingleUser => Boolean := false.
     public method hasValidType => Boolean := type isVoidType not.
 }.
 
@@ -827,6 +859,10 @@ MIRInstruction definition: {
         self printDebugInfoOn: stream.
     }.
 
+    public override method usedValuesDo: (aBlock: (MIRValue) => Void) ::=> Void := {
+        operands do: aBlock
+    }.
+
     public method usesCapture => Boolean
         := operands anySatisfy: {:(MIRValue)operand :: Boolean | operand isCaptureValue}.
 
@@ -1236,6 +1272,7 @@ public final class MIRBlockBuilder superclass: Object; definition: {
         self addInstruction: ((MIRInstruction withType: type compilationTarget: self compilationTarget)
              operation: operation;
              operands: operands;
+             registerInUsedValues;
              yourself)
     }.
 
@@ -1270,6 +1307,7 @@ public final class MIRBlockBuilder superclass: Object; definition: {
         := self addInstruction: ((MIRInstruction withType: type compilationTarget: self compilationTarget)
             operation: callOperation;
             operands: (Array with: function) -- arguments;
+            registerInUsedValues;
             callingConvention: callingConvention;
             yourself).
 
@@ -1542,6 +1580,7 @@ public final class MIRBlockBuilder superclass: Object; definition: {
         := self addInstruction: ((MIRInstruction withType: Void compilationTarget: self compilationTarget)
             operation: MIR::Operation::DebugSetBindingValue;
             operands: (Array with: value);
+            registerInUsedValues;
             sourceBinding: binding;
             yourself).
 
@@ -1549,6 +1588,7 @@ public final class MIRBlockBuilder superclass: Object; definition: {
         := self addInstruction: ((MIRInstruction withType: Void compilationTarget: self compilationTarget)
             operation: MIR::Operation::DebugSetMutableBindingValue;
             operands: (Array with: value);
+            registerInUsedValues;
             sourceBinding: binding;
             yourself).
 }.
@@ -1732,7 +1772,6 @@ MIRFunction definition: {
     }.
 
     public method fuseComparisonAndBranches => Void := {
-        self computeLiveRanges.
         self basicBlocksDo: {:(MIRBasicBlock)eachBasicBlock :: Void |
             let position mutable := eachBasicBlock firstInstruction.
             while: position isNotNil do: {
@@ -1740,14 +1779,17 @@ MIRFunction definition: {
                 nextPosition isNotNil &&
                 (nextPosition operation == MIR::Operation::ConditionalBranch) &&
                 (nextPosition operands first == position) && 
-                (position hasSingleUser) ifTrue: {
+                (position userCount = 1sz) ifTrue: {
                     let positionOperation := position operation.
                     let comparisonAndBranchOperation => MIROperation := ComparisonOperationToBranchMap atOrNil: positionOperation.
                     comparisonAndBranchOperation ifNotNil: {
+                        nextPosition unregisterFromUsedValues.
                         position
                             initializeWithType: Void compilationTarget: self compilationTarget;
                             operation: comparisonAndBranchOperation;
+                            unregisterFromUsedValues;
                             operands: position operands -- nextPosition operands allButFirst;
+                            registerInUsedValues;
                             next: nextPosition next.
                         eachBasicBlock lastInstruction == nextPosition ifTrue: {
                             eachBasicBlock lastInstruction: position
