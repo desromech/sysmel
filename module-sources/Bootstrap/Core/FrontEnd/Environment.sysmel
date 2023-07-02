@@ -1,3 +1,11 @@
+Symbol extend: {
+    public virtual method isGeneratedSymbol => Boolean := false.
+}.
+
+GeneratedSymbol extend: {
+    public override method isGeneratedSymbol => Boolean := true.
+}.
+
 SymbolBinding definition: {
     public eager final inline method name => Symbol
         := self __slotNamedAt__: #key.
@@ -13,6 +21,9 @@ SymbolBinding definition: {
 
     public abstract method setValue: (value: Untyped) inFunctionActivationEnvironment: (environment: FunctionActivationEnvironment) ::=> Void
         := self subclassResponsibility.
+
+    public method hasValidNameForDebugging => Boolean
+        := self name isNotNil && self name isGeneratedSymbol not.
 }.
 
 SymbolValueBinding definition: {
