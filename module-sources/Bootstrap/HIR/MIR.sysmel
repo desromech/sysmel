@@ -1577,14 +1577,14 @@ let translateBinaryPrimitiveInto := {:(MIROperation)operation :: ((Array, Type, 
     }
 }.
 
+let translateYourselfPrimitive := {:(Array)arguments :(Type)type :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: MIRValue |
+    codegen translateValue: arguments first
+}.
+
 public global HIRTacPrimitiveCallGenerationTable := #{
     ## Pointer primitive
-    #PointerLikeType::reinterpretCast : {:(Array)arguments :(Type)type :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: MIRValue |
-        codegen translateValue: arguments first
-    }.
-    #PointerLikeType::reinterpretCastTo: : {:(Array)arguments :(Type)type :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: MIRValue |
-        codegen translateValue: arguments first
-    }.
+    #PointerLikeType::reinterpretCast : translateYourselfPrimitive.
+    #PointerLikeType::reinterpretCastTo: : translateYourselfPrimitive.
 
     ## Identity equals/not-equals
     #== : {:(Array)arguments :(Type)type :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: MIRValue |
@@ -1645,9 +1645,9 @@ public global HIRTacPrimitiveCallGenerationTable := #{
     #Char8::> : translateBinaryPrimitiveInto(MIR::Operation::UInt8GreaterThan).
     #Char8::>= : translateBinaryPrimitiveInto(MIR::Operation::UInt8GreaterOrEquals).
 
-    #Char8::asChar8 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt8).
-    #Char8::asInt8 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt8).
-    #Char8::asUInt8 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt8).
+    #Char8::asChar8 : translateYourselfPrimitive.
+    #Char8::asInt8 : translateYourselfPrimitive.
+    #Char8::asUInt8 : translateYourselfPrimitive.
     #Char8::asChar16 : translateUnaryPrimitiveInto(MIR::Operation::ZeroExtendInt8ToInt16).
     #Char8::asInt16 : translateUnaryPrimitiveInto(MIR::Operation::ZeroExtendInt8ToInt16).
     #Char8::asUInt16 : translateUnaryPrimitiveInto(MIR::Operation::ZeroExtendInt8ToInt16).
@@ -1683,9 +1683,9 @@ public global HIRTacPrimitiveCallGenerationTable := #{
     #UInt8::> : translateBinaryPrimitiveInto(MIR::Operation::UInt8GreaterThan).
     #UInt8::>= : translateBinaryPrimitiveInto(MIR::Operation::UInt8GreaterOrEquals).
 
-    #UInt8::asChar8 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt8).
-    #UInt8::asInt8 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt8).
-    #UInt8::asUInt8 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt8).
+    #UInt8::asChar8 : translateYourselfPrimitive.
+    #UInt8::asInt8 : translateYourselfPrimitive.
+    #UInt8::asUInt8 : translateYourselfPrimitive.
     #UInt8::asChar16 : translateUnaryPrimitiveInto(MIR::Operation::ZeroExtendInt8ToInt16).
     #UInt8::asInt16 : translateUnaryPrimitiveInto(MIR::Operation::ZeroExtendInt8ToInt16).
     #UInt8::asUInt16 : translateUnaryPrimitiveInto(MIR::Operation::ZeroExtendInt8ToInt16).
@@ -1721,9 +1721,9 @@ public global HIRTacPrimitiveCallGenerationTable := #{
     #Int8::> : translateBinaryPrimitiveInto(MIR::Operation::Int8GreaterThan).
     #Int8::>= : translateBinaryPrimitiveInto(MIR::Operation::Int8GreaterOrEquals).
 
-    #Int8::asChar8 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt8).
-    #Int8::asInt8 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt8).
-    #Int8::asUInt8 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt8).
+    #Int8::asChar8 : translateYourselfPrimitive.
+    #Int8::asInt8 : translateYourselfPrimitive.
+    #Int8::asUInt8 : translateYourselfPrimitive.
     #Int8::asChar16 : translateUnaryPrimitiveInto(MIR::Operation::ZeroExtendInt8ToInt16).
     #Int8::asInt16 : translateUnaryPrimitiveInto(MIR::Operation::SignExtendInt8ToInt16).
     #Int8::asUInt16 : translateUnaryPrimitiveInto(MIR::Operation::ZeroExtendInt8ToInt16).
@@ -1763,9 +1763,9 @@ public global HIRTacPrimitiveCallGenerationTable := #{
     #Char16::asChar8 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt16ToInt8).
     #Char16::asInt8 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt16ToInt8).
     #Char16::asUInt8 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt16ToInt8).
-    #Char16::asChar16 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt16).
-    #Char16::asInt16 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt16).
-    #Char16::asUInt16 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt16).
+    #Char16::asChar16 : translateYourselfPrimitive.
+    #Char16::asInt16 : translateYourselfPrimitive.
+    #Char16::asUInt16 : translateYourselfPrimitive.
     #Char16::asChar32 : translateUnaryPrimitiveInto(MIR::Operation::ZeroExtendInt16ToInt32).
     #Char16::asInt32 : translateUnaryPrimitiveInto(MIR::Operation::ZeroExtendInt16ToInt32).
     #Char16::asUInt32 : translateUnaryPrimitiveInto(MIR::Operation::ZeroExtendInt16ToInt32).
@@ -1802,9 +1802,9 @@ public global HIRTacPrimitiveCallGenerationTable := #{
     #UInt16::asChar8 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt16ToInt8).
     #UInt16::asInt8 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt16ToInt8).
     #UInt16::asUInt8 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt16ToInt8).
-    #UInt16::asChar16 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt16).
-    #UInt16::asInt16 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt16).
-    #UInt16::asUInt16 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt16).
+    #UInt16::asChar16 : translateYourselfPrimitive.
+    #UInt16::asInt16 : translateYourselfPrimitive.
+    #UInt16::asUInt16 : translateYourselfPrimitive.
     #UInt16::asChar32 : translateUnaryPrimitiveInto(MIR::Operation::ZeroExtendInt16ToInt32).
     #UInt16::asInt32 : translateUnaryPrimitiveInto(MIR::Operation::ZeroExtendInt16ToInt32).
     #UInt16::asUInt32 : translateUnaryPrimitiveInto(MIR::Operation::ZeroExtendInt16ToInt32).
@@ -1841,9 +1841,9 @@ public global HIRTacPrimitiveCallGenerationTable := #{
     #Int16::asChar8 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt16ToInt8).
     #Int16::asInt8 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt16ToInt8).
     #Int16::asUInt8 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt16ToInt8).
-    #Int16::asChar16 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt16).
-    #Int16::asInt16 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt16).
-    #Int16::asUInt16 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt16).
+    #Int16::asChar16 : translateYourselfPrimitive.
+    #Int16::asInt16 : translateYourselfPrimitive.
+    #Int16::asUInt16 : translateYourselfPrimitive.
     #Int16::asChar32 : translateUnaryPrimitiveInto(MIR::Operation::ZeroExtendInt16ToInt32).
     #Int16::asInt32 : translateUnaryPrimitiveInto(MIR::Operation::SignExtendInt16ToInt32).
     #Int16::asUInt32 : translateUnaryPrimitiveInto(MIR::Operation::ZeroExtendInt16ToInt32).
@@ -1883,9 +1883,9 @@ public global HIRTacPrimitiveCallGenerationTable := #{
     #Char32::asChar16 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt32ToInt16).
     #Char32::asInt16 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt32ToInt16).
     #Char32::asUInt16 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt32ToInt16).
-    #Char32::asChar32 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt32).
-    #Char32::asInt32 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt32).
-    #Char32::asUInt32 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt32).
+    #Char32::asChar32 : translateYourselfPrimitive.
+    #Char32::asInt32 : translateYourselfPrimitive.
+    #Char32::asUInt32 : translateYourselfPrimitive.
     #Char32::asInt64 : translateUnaryPrimitiveInto(MIR::Operation::ZeroExtendInt32ToInt64).
     #Char32::asUInt64 : translateUnaryPrimitiveInto(MIR::Operation::ZeroExtendInt32ToInt64).
     #Char32::asFloat32 : translateUnaryPrimitiveInto(MIR::Operation::UInt32ToFloat32).
@@ -1922,9 +1922,9 @@ public global HIRTacPrimitiveCallGenerationTable := #{
     #UInt32::asChar16 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt32ToInt16).
     #UInt32::asInt16 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt32ToInt16).
     #UInt32::asUInt16 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt32ToInt16).
-    #UInt32::asChar32 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt32).
-    #UInt32::asInt32 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt32).
-    #UInt32::asUInt32 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt32).
+    #UInt32::asChar32 : translateYourselfPrimitive.
+    #UInt32::asInt32 : translateYourselfPrimitive.
+    #UInt32::asUInt32 : translateYourselfPrimitive.
     #UInt32::asInt64 : translateUnaryPrimitiveInto(MIR::Operation::ZeroExtendInt32ToInt64).
     #UInt32::asUInt64 : translateUnaryPrimitiveInto(MIR::Operation::ZeroExtendInt32ToInt64).
     #UInt32::asFloat32 : translateUnaryPrimitiveInto(MIR::Operation::UInt32ToFloat32).
@@ -1962,9 +1962,9 @@ public global HIRTacPrimitiveCallGenerationTable := #{
     #Int32::asChar16 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt32ToInt16).
     #Int32::asInt16 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt32ToInt16).
     #Int32::asUInt16 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt32ToInt16).
-    #Int32::asChar32 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt32).
-    #Int32::asInt32 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt32).
-    #Int32::asUInt32 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt32).
+    #Int32::asChar32 : translateYourselfPrimitive.
+    #Int32::asInt32 : translateYourselfPrimitive.
+    #Int32::asUInt32 : translateYourselfPrimitive.
     #Int32::asInt64 : translateUnaryPrimitiveInto(MIR::Operation::SignExtendInt32ToInt64).
     #Int32::asUInt64 : translateUnaryPrimitiveInto(MIR::Operation::ZeroExtendInt32ToInt64).
     #Int32::asFloat32 : translateUnaryPrimitiveInto(MIR::Operation::Int32ToFloat32).
@@ -2004,8 +2004,8 @@ public global HIRTacPrimitiveCallGenerationTable := #{
     #Int64::asChar32 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt64ToInt32).
     #Int64::asInt32 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt64ToInt32).
     #Int64::asUInt32 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt64ToInt32).
-    #Int64::asInt64 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt64).
-    #Int64::asUInt64 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt64).
+    #Int64::asInt64 : translateYourselfPrimitive.
+    #Int64::asUInt64 : translateYourselfPrimitive.
     #Int64::asFloat32 : translateUnaryPrimitiveInto(MIR::Operation::Int64ToFloat32).
     #Int64::asFloat64 : translateUnaryPrimitiveInto(MIR::Operation::Int64ToFloat64).
 
@@ -2043,8 +2043,8 @@ public global HIRTacPrimitiveCallGenerationTable := #{
     #UInt64::asChar32 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt64ToInt32).
     #UInt64::asInt32 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt64ToInt32).
     #UInt64::asUInt32 : translateUnaryPrimitiveInto(MIR::Operation::TruncateInt64ToInt32).
-    #UInt64::asInt64 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt64).
-    #UInt64::asUInt64 : translateUnaryPrimitiveInto(MIR::Operation::MoveInt64).
+    #UInt64::asInt64 : translateYourselfPrimitive.
+    #UInt64::asUInt64 : translateYourselfPrimitive.
     #UInt64::asFloat32 : translateUnaryPrimitiveInto(MIR::Operation::UInt64ToFloat32).
     #UInt64::asFloat64 : translateUnaryPrimitiveInto(MIR::Operation::UInt64ToFloat64).
     #UInt64::asIEEEFloat64Decoded : translateUnaryPrimitiveInto(MIR::Operation::IEEEUInt64ToFloat64). 
@@ -2077,7 +2077,7 @@ public global HIRTacPrimitiveCallGenerationTable := #{
     #Float32::asUInt32 : translateUnaryPrimitiveInto(MIR::Operation::Float32ToUInt32).
     #Float32::asInt64 : translateUnaryPrimitiveInto(MIR::Operation::Float32ToInt64).
     #Float32::asUInt64 : translateUnaryPrimitiveInto(MIR::Operation::Float32ToUInt64).
-    #Float32::asFloat32 : translateUnaryPrimitiveInto(MIR::Operation::MoveFloat32).
+    #Float32::asFloat32 : translateYourselfPrimitive.
     #Float32::asFloat64 : translateUnaryPrimitiveInto(MIR::Operation::Float32ToFloat64).
     #Float32::asIEEEFloat32Encoding : translateUnaryPrimitiveInto(MIR::Operation::Float32ToIEEEUInt32). 
 
@@ -2110,7 +2110,7 @@ public global HIRTacPrimitiveCallGenerationTable := #{
     #Float64::asInt64 : translateUnaryPrimitiveInto(MIR::Operation::Float64ToInt64).
     #Float64::asUInt64 : translateUnaryPrimitiveInto(MIR::Operation::Float64ToUInt64).
     #Float64::asFloat32 : translateUnaryPrimitiveInto(MIR::Operation::Float64ToFloat32).
-    #Float64::asFloat64 : translateUnaryPrimitiveInto(MIR::Operation::MoveFloat64).
+    #Float64::asFloat64 : translateYourselfPrimitive.
     #Float64::asIEEEFloat64Encoding : translateUnaryPrimitiveInto(MIR::Operation::Float64ToIEEEUInt64). 
 }.
 

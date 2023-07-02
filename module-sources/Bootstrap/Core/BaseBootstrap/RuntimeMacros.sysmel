@@ -1,30 +1,30 @@
 MacroContext
-    withSelector: #gensym: addMethod: {:(MacroContext)self :value |
+    withSelector: #gensym: addMethod: {:(MacroContext)self :value :: Symbol |
         GeneratedSymbol new
             value: value;
             sourcePosition: self sourcePosition;
             yourself
     };
-    withSelector: #gensymIdentifier: addMethod: {:(MacroContext)self :value |
+    withSelector: #gensymIdentifier: addMethod: {:(MacroContext)self :value :: ASTIdentifierReferenceNode |
         ASTIdentifierReferenceNode new
             sourcePosition: self sourcePosition;
             value: (self gensym: value);
             yourself
     };
-    withSelector: #literal: addMethod: {:(MacroContext)self :(Untyped)value |
+    withSelector: #literal: addMethod: {:(MacroContext)self :(Untyped)value :: ASTLiteralNode|
         ASTLiteralNode new
             sourcePosition: self sourcePosition;
             value: value;
             yourself
     };
-    withSelector: #let:with: addMethod: {:(MacroContext)self :(ASTNode)nameExpression :(ASTNode)valueExpression |
+    withSelector: #let:with: addMethod: {:(MacroContext)self :(ASTNode)nameExpression :(ASTNode)valueExpression :: ASTLocalDefinitionNode|
         ASTLocalDefinitionNode new
             sourcePosition: self sourcePosition;
             nameExpression: nameExpression;
             valueExpression: valueExpression;
             yourself
     };
-    withSelector: #condition:ifTrue:ifFalse: addMethod: {:(MacroContext)self :(ASTNode)conditionExpression :(ASTNode)trueExpression :(ASTNode)falseExpression |
+    withSelector: #condition:ifTrue:ifFalse: addMethod: {:(MacroContext)self :(ASTNode)conditionExpression :(ASTNode)trueExpression :(ASTNode)falseExpression :: ASTIfNode|
         ASTIfNode new
             sourcePosition: self sourcePosition;
             conditionExpression: conditionExpression;
@@ -32,13 +32,19 @@ MacroContext
             falseExpression: falseExpression;
             yourself
     };
-    withSelector: #sexpression: addMethod: {:(MacroContext)self :(Array)elements |
+    withSelector: #lexicalBlock: addMethod: {:(MacroContext)self :(ASTNode)body :: ASTLexicalBlockNode|
+        ASTLexicalBlockNode new
+            sourcePosition: self sourcePosition;
+            body: body;
+            yourself
+    };
+    withSelector: #sexpression: addMethod: {:(MacroContext)self :(Array)elements :: ASTUnexpandedSExpressionNode |
         ASTUnexpandedSExpressionNode new
             sourcePosition: self sourcePosition;
             elements: elements;
             yourself
     };
-    withSelector: #sequence: addMethod: {:(MacroContext)self :(Array)expressions |
+    withSelector: #sequence: addMethod: {:(MacroContext)self :(Array)expressions :: ASTSequenceNode|
         ASTSequenceNode new
             sourcePosition: self sourcePosition;
             expressions: expressions;
@@ -414,56 +420,43 @@ ASTLambdaNode
 AnyValue
     withSelector: #ifNil: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)nilExpression :: ASTNode |
         let: #receiver with: (macroContext gensymIdentifier: #ifNilReceiver).
-        
-        ``{
-            let: `,(receiver asLiteralNode) with: `,self.
-            if: `,receiver == nil then: `,nilExpression else: `,receiver
-        }
+        macroContext lexicalBlock: (macroContext sequence: (
+            macroContext let: receiver asLiteralNode with: self,
+            macroContext
+                condition: (macroContext sexpression: (Array with: (macroContext literal: (==)) with: receiver with: (macroContext literal: nil)))
+                ifTrue: nilExpression
+                ifFalse: receiver
+        ))
     } makeMacro;
     withSelector: #ifNotNil: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)notNilExpression :: ASTNode |
-        notNilExpression isLambdaNode ifTrue: {
-            let: #receiver with: (macroContext gensymIdentifier: #ifNotNilReceiver).
-            
-            ``{
-                let: `,(receiver asLiteralNode) with: `,self.
-                if: `,receiver ~~ nil then: `,(notNilExpression cullExpressionWith: receiver at: macroContext sourcePosition) else: nil
-            }
-        } ifFalse: {
+        let: #receiver with: (macroContext gensymIdentifier: #ifNotNilReceiver).
+        macroContext lexicalBlock: (macroContext sequence: (
+            macroContext let: receiver asLiteralNode with: self,
             macroContext
-                condition: (macroContext sexpression: (Array with: (macroContext literal: (~~)) with: self with: (macroContext literal: nil)))
-                ifTrue: notNilExpression
+                condition: (macroContext sexpression: (Array with: (macroContext literal: (~~)) with: receiver with: (macroContext literal: nil)))
+                ifTrue: (notNilExpression cullExpressionWith: receiver at: macroContext sourcePosition)
                 ifFalse: (macroContext literal: nil)
-        }.
+        ))
     } makeMacro;
     withSelector: #ifNil:ifNotNil: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)nilExpression :(ASTNode)notNilExpression :: ASTNode |
-        let: #receiver with: (macroContext gensymIdentifier: #ifNilIfNotNilReceiver).
-        
-        notNilExpression isLambdaNode ifTrue: {
-            ``{
-                let: `,(receiver asLiteralNode) with: `,self.
-                if: `,receiver == nil then: `,nilExpression else: `,(notNilExpression cullExpressionWith: receiver at: macroContext sourcePosition)
-            }
-        } ifFalse: {
+        let: #receiver with: (macroContext gensymIdentifier: #ifNotNilReceiver).
+        macroContext lexicalBlock: (macroContext sequence: (
+            macroContext let: receiver asLiteralNode with: self,
             macroContext
-                condition: (macroContext sexpression: (Array with: (macroContext literal: (==)) with: self with: (macroContext literal: nil)))
+                condition: (macroContext sexpression: (Array with: (macroContext literal: (==)) with: receiver with: (macroContext literal: nil)))
                 ifTrue: nilExpression
-                ifFalse: notNilExpression
-        }
+                ifFalse: (notNilExpression cullExpressionWith: receiver at: macroContext sourcePosition)
+        ))
     } makeMacro;
     withSelector: #ifNotNil:ifNil: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)notNilExpression :(ASTNode)nilExpression :: ASTNode |
-        let: #receiver with: (macroContext gensymIdentifier: #ifNotNilIfNilReceiver).
-        
-        notNilExpression isLambdaNode ifTrue: {
-            ``{
-                let: `,(receiver asLiteralNode) with: `,self.
-                if: `,receiver ~~ nil then: `,(notNilExpression cullExpressionWith: receiver at: macroContext sourcePosition) else: `,nilExpression
-            }
-        } ifFalse: {
+        let: #receiver with: (macroContext gensymIdentifier: #ifNotNilReceiver).
+        macroContext lexicalBlock: (macroContext sequence: (
+            macroContext let: receiver asLiteralNode with: self,
             macroContext
-                condition: (macroContext sexpression: (Array with: (macroContext literal: (~~)) with: self with: (macroContext literal: nil)))
-                ifTrue: notNilExpression
+                condition: (macroContext sexpression: (Array with: (macroContext literal: (~~)) with: receiver with: (macroContext literal: nil)))
+                ifTrue: (notNilExpression cullExpressionWith: receiver at: macroContext sourcePosition)
                 ifFalse: nilExpression
-        }
+        ))
     } makeMacro.
 
 ASTNode
