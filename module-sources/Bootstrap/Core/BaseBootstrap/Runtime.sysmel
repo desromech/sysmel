@@ -204,6 +204,7 @@ Type
     withSelector: #isReferenceLikeType addMethod: {:(Type)self :: Boolean | false } makeVirtual makePure withEagerAnalysis;
     withSelector: #isReferenceType addMethod: {:(Type)self :: Boolean | false } makeVirtual makePure withEagerAnalysis;
     withSelector: #isTemporaryReferenceType addMethod: {:(Type)self :: Boolean | false } makeVirtual makePure withEagerAnalysis;
+    withSelector: #isVoidType addMethod: {:(Type)self :: Boolean | false } makeVirtual makePure withEagerAnalysis;
 
     withSelector: #addFlags: addMethod: {:(Type)self :(Bitflags)flag :: Void |
         self flags: self flags | flag
@@ -737,7 +738,9 @@ Void class
             arguments: (astNode,);
             yourself)
     } makeOverride withEagerAnalysis;
-    withSelector: #coerceValue: addMethod: {:(Void class)self :value :: Void | void } makeOverride.
+    withSelector: #coerceValue: addMethod: {:(Void class)self :value :: Void | void } makeOverride;
+    withSelector: #isVoidType addMethod: {:(Type)self :: Boolean | true } makeOverride makePure withEagerAnalysis.
+
 Void
     withSelector: #printString addMethod: {:(Void)self :: String | "void" } makeOverride;
     withSelector: #printOn: addMethod: {:(Void)self :(Stream)stream :: Void | stream nextPutAll: "void" } makeOverride.

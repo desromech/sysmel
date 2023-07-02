@@ -1,5 +1,4 @@
 printLine("Hello World from Sysmel in Tuuvm").
-printLine(Integer::+(42, 1)).
 
 printLine(42 identityHash).
 printLine(42 __type__).

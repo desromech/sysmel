@@ -17,6 +17,15 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
     public abstract method allocateRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) operandPointerAt: (operandIndex: Size) ::=> Void
         := self subclassResponsibility.
 
+    public abstract method allocateCloberredRegister: (register: MIRPhysicalLocation) forInstructionResultPointer: (instruction: MIRInstruction) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method allocateCloberredRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method allocateCloberredRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) operandPointerAt: (operandIndex: Size) ::=> Void
+        := self subclassResponsibility.
+
     public abstract method allocateRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) scratchAt: (operandIndex: Size) ::=> Void
         := self subclassResponsibility.
 
@@ -289,6 +298,9 @@ MIRCallingConvention extend: {
     public abstract method registerConstraintsOfCallInt64: (instruction: MIRInstruction) with: (registerAllocator: MIRRegisterAllocator) ::=> Void
         := self subclassResponsibility.
 
+    public abstract method registerConstraintsOfCallPointer: (instruction: MIRInstruction) with: (registerAllocator: MIRRegisterAllocator) ::=> Void
+        := self subclassResponsibility.
+
     public abstract method registerConstraintsOfCallFloat32: (instruction: MIRInstruction) with: (registerAllocator: MIRRegisterAllocator) ::=> Void
         := self subclassResponsibility.
 
@@ -447,31 +459,29 @@ public final class MIRSimpleRegisterAllocator superclass: MIRRegisterAllocator; 
     }.
 
     public override method allocateRegisterForInstructionResult: (instruction: MIRInstruction) ::=> Void := {
-        let result := instruction result.
-        result ifNotNil: {
-            instruction resultRegister: (self allocateRegisterForOperand: result).
-            result markSpillingRequired
+        instruction hasValidType ifTrue: {
+            instruction resultRegister: (self allocateRegisterForOperand: instruction).
+            instruction markSpillingRequired
         }
     }.
 
     public override method allocateRegister8ForInstructionResult: (instruction: MIRInstruction) ::=> Void := {
-        let result := instruction result.
-        result ifNotNil: {
-            instruction resultRegister: (self allocateRegister8ForOperand: result).
-            result markSpillingRequired
+        instruction hasValidType ifTrue: {
+            instruction resultRegister: (self allocateRegister8ForOperand: instruction).
+            instruction markSpillingRequired
         }
     }.
 
     public override method allocateRegister: (register: MIRPhysicalLocation) forInstructionResult: (instruction: MIRInstruction) ::=> Void := {
         instruction resultRegister: register.
-        instruction result markSpillingRequired.
-        self makeActiveRegister: register withResultValue: instruction result.
+        instruction markSpillingRequired.
+        self makeActiveRegister: register withResultValue: instruction.
     }.
 
     public override method allocateRegister: (register: MIRPhysicalLocation) forInstructionResultPointer: (instruction: MIRInstruction) ::=> Void := {
         instruction resultRegister: (MIRPhysicalLocationRegisterWithPointer new register: register; yourself).
-        instruction result markSpillingRequired.
-        self makeActiveRegister: register withValuePointer: instruction result.
+        instruction markSpillingRequired.
+        self makeActiveRegister: register withValuePointer: instruction.
     }.
 
     public override method allocateRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
@@ -488,6 +498,26 @@ public final class MIRSimpleRegisterAllocator superclass: MIRRegisterAllocator; 
         self makeActiveRegister: register withValuePointer: operand
     }.
 
+    public override method allocateCloberredRegister: (register: MIRPhysicalLocation) forInstructionResultPointer: (instruction: MIRInstruction) ::=> Void := {
+        instruction resultRegister: (MIRPhysicalLocationRegisterWithPointer new register: register; yourself).
+        instruction markSpillingRequired.
+        self makeActiveRegister: register withValuePointer: instruction.
+    }.
+
+    public override method allocateCloberredRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        instruction operandRegisters at: operandIndex put: register.
+        let operand => MIRValue := instruction operands at: operandIndex.
+        operand markSpillingRequired.
+        self makeActiveRegister: register withValue: operand
+    }.
+
+    public override method allocateCloberredRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) operandPointerAt: (operandIndex: Size) ::=> Void := {
+        instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationRegisterWithPointer new register: register; yourself).
+        let operand => MIRValue := instruction operands at: operandIndex.
+        operand markSpillingRequired.
+        self makeActiveRegister: register withValuePointer: operand
+    }.
+
     public override method allocateRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) scratchAt: (scratchIndex: Size) ::=> Void := {
         ##instruction scratchRegisters at: scratchIndex put: register.
         self makeActiveRegister: register withValue: nil
@@ -498,7 +528,7 @@ public final class MIRSimpleRegisterAllocator superclass: MIRRegisterAllocator; 
         let register :=
             (operandIndex == 0sz) &&
             (instruction resultRegister isNotNil) &&
-            (instruction result physicalLocationClass == instruction operands first physicalLocationClass)
+            (instruction physicalLocationClass == instruction operands first physicalLocationClass)
             ifTrue: (instruction resultRegister)
             ifFalse: (self allocateRegisterForOperand: operand).
         instruction operandRegisters at: operandIndex put: register.
@@ -510,7 +540,7 @@ public final class MIRSimpleRegisterAllocator superclass: MIRRegisterAllocator; 
         let register :=
             (operandIndex == 0sz) &&
             (instruction resultRegister isNotNil) &&
-            (instruction result physicalLocationClass == instruction operands first physicalLocationClass)
+            (instruction physicalLocationClass == instruction operands first physicalLocationClass)
             ifTrue: (instruction resultRegister)
             ifFalse: (self allocateRegister8ForOperand: operand).
         instruction operandRegisters at: operandIndex put: register.

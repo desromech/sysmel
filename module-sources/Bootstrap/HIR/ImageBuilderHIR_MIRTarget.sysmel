@@ -12,14 +12,14 @@ public class ImageBuilderHIR_MIRTarget superclass: ImageBuilderHIRTarget; defini
         } printTimeToRunInMicrosecondsWithTitle: "HIR Module".
 
         {|
-            ssaImage tacModule: (HIRModuleMIRCodeGenerator new
-                initializeWithTarget: ssaTacCompilation tacCompilationTarget;
+            ssaImage mirModule: (HIRModuleMIRCodeGenerator new
+                initializeWithTarget: ssaTacCompilation mirCompilationTarget;
                 compileHIRModule: ssaImage ssaModule patchingFunctions: builder tracer requiredTracedReflectiveFunctions definitions: builder tracer requiredTracedReflectiveFunctionDefinitions;
                 finish).
         } printTimeToRunInMicrosecondsWithTitle: "MIR Module".
 
         {|
-            ssaImage targetIR: (ssaImage tacModule
+            ssaImage targetIR: (ssaImage mirModule
                     baseObjectTracer: builder tracer;
                     asTargetIR).
         } printTimeToRunInMicrosecondsWithTitle: "Assembly code".

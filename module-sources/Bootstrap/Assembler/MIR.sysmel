@@ -223,7 +223,7 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         captureVectorPointerRegister
     }.
 
-    public field closureArgument => MIRArgumentVariable.
+    public field closureArgument => MIRArgumentValue.
     public field captureVectorDataOffset => Size.
     public field closureCaptureVectorMemberOffset => Size.
 
@@ -322,6 +322,9 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         public abstract method asm::generateCallInt64: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
+        public abstract method asm::generateCallPointer: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
         public abstract method asm::generateCallFloat32: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
@@ -385,23 +388,27 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
     }.
 
     public method generateStackMap => Void := {
-        function arguments do: {:(MIRLocalVariable)eachLocal :: Void |
+        function arguments do: {:(MIRLocalValue)eachLocal :: Void |
             eachLocal sourceBinding ifNotNil: {:(SymbolBinding)binding :: Void |
                 let location := eachLocal asm::makeStackMapLocationWith: self.
-                stackMap addArgumentBindingMap: (stackMap setBinding: binding location: location)
+                location ifNotNil: {
+                    stackMap addArgumentBindingMap: (stackMap setBinding: binding location: location)
+                }.
             }
         }.
 
-        function captures do: {:(MIRLocalVariable)eachLocal :: Void |
+        function captures do: {:(MIRLocalValue)eachLocal :: Void |
             eachLocal sourceBinding ifNotNil: {:(SymbolBinding)binding :: Void |
                 let location := eachLocal asm::makeStackMapLocationWith: self.
-                stackMap addCaptureBindingMap: (stackMap setBinding: binding location: location)
+                location ifNotNil: {
+                    stackMap addCaptureBindingMap: (stackMap setBinding: binding location: location)
+                }.
             }
         }.
     }.
 
     public method emitSpillRegisterArgumentsInStackFrame => Void := {
-        function arguments do: {:(MIRArgumentVariable)eachArgument :: Void |
+        function arguments do: {:(MIRArgumentValue)eachArgument :: Void |
             let passingRegister := eachArgument passingRegister.
             (passingRegister isNotNil && eachArgument needsStackAllocation) ifTrue: {
                 self emitMoveRegister: passingRegister intoValue: eachArgument
@@ -436,15 +443,15 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
 
         self loadCaptureVectorPointerIfNeededFor: instruction.
         instruction resultRegister isNotNil && instruction resultRegister isRegisterWithPointer ifTrue: {
-            self emitMoveValue: instruction result intoLocation: instruction resultRegister
+            self emitMoveValue: instruction intoLocation: instruction resultRegister
         }.
         self emitMoveValues: instruction operands intoRegisters: instruction operandRegisters.
 
         moduleGenerator target emitInstruction: instruction with: self.
 
         ## Do we need to support multiple result values?
-        instruction resultRegister isNotNil && instruction resultRegister isRegisterWithPointer not && instruction result isNotNil ifTrue: {
-            self emitMoveRegister: instruction resultRegister intoValue: instruction result
+        instruction resultRegister isNotNil && instruction resultRegister isRegisterWithPointer not && instruction hasValidType ifTrue: {
+            self emitMoveRegister: instruction resultRegister intoValue: instruction
         }.
 
         instruction postOperations do: {:(MIRInstructionSurroundingOperation)each :: Void |
@@ -864,7 +871,7 @@ MIRConstantInt64 definition: {
         := value asAsmImmediate.
 }.
 
-MIRLocalVariable definition: {
+MIRLocalValue definition: {
     public override method asm::makeStackMapLocationWith: (codegen: MIRAsmCodeGenerator) ::=> AsmStackMapLocation := {
         self needsStackAllocation ifTrue: {
             AsmStackMapLocationFrameOffset new offset: offset; yourself

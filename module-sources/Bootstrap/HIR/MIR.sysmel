@@ -1,16 +1,16 @@
 let IgnoreNotYetImplementedErrors := true.
 
 public class HIRMIRCompilationTarget superclass: HIRCompilationTarget; definition: {
-    public field tacCompilationTarget => MIRCompilationTarget.
+    public field mirCompilationTarget => MIRCompilationTarget.
 
     public override method objectModel => ObjectModelVariant
-        := tacCompilationTarget objectModel.
+        := mirCompilationTarget objectModel.
 
     public override method pointerSize => Size
-        := tacCompilationTarget pointerSize.
+        := mirCompilationTarget pointerSize.
 
     public override method pointerAlignment => Size
-        := tacCompilationTarget pointerAlignment.
+        := mirCompilationTarget pointerAlignment.
 
     public override method hasLogicalObjectModel => Boolean
         := false.
@@ -25,7 +25,7 @@ public abstract class HIRMIRCodeGenerator superclass: Object; definition: {
 
 MIRCompilationTarget extend: {
     public method asHIRCompilationTarget => HIRCompilationTarget
-        := HIRMIRCompilationTarget new tacCompilationTarget: self; yourself.
+        := HIRMIRCompilationTarget new mirCompilationTarget: self; yourself.
 }.
 
 public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; definition: {
@@ -121,7 +121,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
 
     public method translateValue: (value: HIRValue) ::=> MIRValue
         := globalValueDictionary at: value ifAbsent: {|
-        value translateIntoTacValueWith: self
+        value translateIntoMirValueWith: self
     }.
 
     public method translateFunction: (function: HIRFunction) ::=> MIRValue
@@ -264,9 +264,9 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
         }.
     }.
 
-    public method setValue: (value: HIRValue) translationInto: (tacValue: MIRValue) ::=> MIRValue := {
-        globalValueDictionary at: value put: tacValue.
-        tacValue
+    public method setValue: (value: HIRValue) translationInto: (mirValue: MIRValue) ::=> MIRValue := {
+        globalValueDictionary at: value put: mirValue.
+        mirValue
     }.
 
     public method shouldCompileFunctionDefinition: (definition: HIRFunctionDefinition) ::=> Boolean
@@ -347,7 +347,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
 
     public method translateGenericObjectPointer: (object: Untyped) ::=> MIRValue := {
         (compilationTarget objectModel isImmediateReference: object) ifTrue: {
-            compilationTarget objectModel tacImmediateReferenceFor: object 
+            compilationTarget objectModel mirImmediateReferenceFor: object 
         } ifFalse: {
             MIRGenericObjectPointerConstant new
                 size: compilationTarget pointerSize;
@@ -381,7 +381,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
 public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeGenerator; definition: {
     public field moduleCodeGenerator => HIRModuleMIRCodeGenerator.
     public field ssaFunctionDefinition => HIRFunctionDefinition.
-    public field tacFunction => MIRFunction.
+    public field mirFunction => MIRFunction.
     public field functionBuilder => MIRFunctionBuilder.
     public field blockBuilder => MIRBlockBuilder.
     protected field isCapturelessEntryPoint => Boolean.
@@ -403,13 +403,13 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
         isCapturelessEntryPoint := true.
 
         entryPoint build: {:(MIRFunctionBuilder)functionBuilder :: Void |
-            tacFunction := functionBuilder function.
+            mirFunction := functionBuilder function.
             self functionBuilder: functionBuilder.
-            moduleCodeGenerator capturelessUncheckedEntryPointDictionary at: ssaFunctionDefinition put: tacFunction.
+            moduleCodeGenerator capturelessUncheckedEntryPointDictionary at: ssaFunctionDefinition put: mirFunction.
 
             self compileDefinition.
 
-            tacFunction
+            mirFunction
         }.
     }.
 
@@ -418,13 +418,13 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
         isCapturelessEntryPoint := false.
 
         entryPoint build: {:(MIRFunctionBuilder)functionBuilder :: Void |
-            tacFunction := functionBuilder function.
+            mirFunction := functionBuilder function.
             self functionBuilder: functionBuilder.
-            moduleCodeGenerator uncheckedEntryPointDictionary at: ssaFunctionDefinition put: tacFunction.
+            moduleCodeGenerator uncheckedEntryPointDictionary at: ssaFunctionDefinition put: mirFunction.
 
             self compileDefinition.
 
-            tacFunction
+            mirFunction
         }.
     }.
 
@@ -442,131 +442,125 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
                 let callArguments := (Array with: closure) -- arguments.
 
                 let canonicalResultType := ssaFunction definition functionType canonicalResultType.
-                let result := canonicalResultType makeTacTemporaryValueNamed: #result withFunctionBuilder: functionBuilder.
-                canonicalResultType emitTacCall: uncheckedEntryPoint convention: moduleCodeGenerator compilationTarget defaultCallingConvention
-                    withArguments: callArguments into: result withBlockBuilder: asm.
+                let result := canonicalResultType emitMirCall: uncheckedEntryPoint convention: moduleCodeGenerator compilationTarget defaultCallingConvention
+                    withArguments: callArguments withBlockBuilder: asm.
 
-                canonicalResultType emitTacReturn: result withBlockBuilder: asm
+                canonicalResultType emitMirReturn: result withBlockBuilder: asm
             }.
         }.
     }.
 
     public method compileHIRFunctionDefinition: (ssaFunctionDefinition: HIRFunctionDefinition) uncheckedEntryPoint: (uncheckedEntryPoint: MIRFunction) into: (capturelessEntryPoint: MIRProgramEntity) ::=> Void := {
-        let tacArguments := OrderedCollection new.
+        let mirArguments := OrderedCollection new.
         functionArgument := uncheckedEntryPoint newArgument: #closure withType: Function.
-        tacArguments add: functionArgument.
+        mirArguments add: functionArgument.
 
         let calledArguments := ssaFunctionDefinition arguments collect: {:(HIRFunctionArgument)argument :: MIRValue |
-            let tacArgument := uncheckedEntryPoint newArgument: argument name withType: argument type sourceBinding: argument sourceBinding.
-            tacArguments add: tacArgument.
-            tacArgument
+            let mirArgument := uncheckedEntryPoint newArgument: argument name withType: argument type sourceBinding: argument sourceBinding.
+            mirArguments add: mirArgument.
+            mirArgument
         }.
-        uncheckedEntryPoint arguments: tacArguments asArray.
+        uncheckedEntryPoint arguments: mirArguments asArray.
         uncheckedEntryPoint trampolineTarget: capturelessEntryPoint.
 
         uncheckedEntryPoint build: {:(MIRFunctionBuilder)functionBuilder :: Void |
-            tacFunction := functionBuilder function.
+            mirFunction := functionBuilder function.
             self functionBuilder: functionBuilder.
 
             functionBuilder basicBlock: #wrapper build: {:(MIRBlockBuilder)asm :: Void |
                 let canonicalResultType := ssaFunctionDefinition functionType canonicalResultType.
-                let result := canonicalResultType makeTacTemporaryValueNamed: #result withFunctionBuilder: functionBuilder.
+                let result := canonicalResultType emitMirCall: capturelessEntryPoint convention: capturelessEntryPoint callingConvention
+                    withArguments: calledArguments withBlockBuilder: asm.
 
-                canonicalResultType emitTacCall: capturelessEntryPoint convention: capturelessEntryPoint callingConvention
-                    withArguments: calledArguments into: result withBlockBuilder: asm.
-
-                canonicalResultType emitTacReturn: result withBlockBuilder: asm.
+                canonicalResultType emitMirReturn: result withBlockBuilder: asm.
             }.
         }
     }.
 
     public method compileHIRFunctionDefinition: (ssaFunctionDefinition: HIRFunctionDefinition) checkedEntryPoint: (checkedEntryPoint: MIRFunction) into: (uncheckedEntryPoint: MIRProgramEntity) isCaptureless: (isCaptureless: Boolean) ::=> Void := {
-        let tacArguments := OrderedCollection new.
+        let mirArguments := OrderedCollection new.
         functionArgument := checkedEntryPoint newArgument: #closure withType: Function.
-        tacArguments add: functionArgument.
+        mirArguments add: functionArgument.
 
         let uncheckedArguments := ssaFunctionDefinition arguments collect: {:(HIRFunctionArgument)argument :: MIRValue |
-            let tacArgument := checkedEntryPoint newArgument: argument name withType: Untyped sourceBinding: argument sourceBinding.
-            tacArguments add: tacArgument.
-            tacArgument
+            let mirArgument := checkedEntryPoint newArgument: argument name withType: Untyped sourceBinding: argument sourceBinding.
+            mirArguments add: mirArgument.
+            mirArgument
         }.
 
-        checkedEntryPoint arguments: tacArguments asArray.
+        checkedEntryPoint arguments: mirArguments asArray.
         checkedEntryPoint trampolineTarget: uncheckedEntryPoint.
 
         checkedEntryPoint build: {:(MIRFunctionBuilder)functionBuilder :: Void |
-            tacFunction := functionBuilder function.
+            mirFunction := functionBuilder function.
             self functionBuilder: functionBuilder.
 
             functionBuilder basicBlock: #wrapper build: {:(MIRBlockBuilder)asm :: Void |
                 self blockBuilder: asm.
                 let checkedAndConvertedArguments := ssaFunctionDefinition arguments collectWithIndex: {:(HIRFunctionArgument)argument :(Size)index :: MIRValue |
-                    let tacArgument => MIRValue := tacArguments at: index + 1sz.
-                    argument type emitTacCheckAndUnbox: tacArgument withHIRCodeGenerator: self
+                    let mirArgument => MIRValue := mirArguments at: index + 1sz.
+                    argument type emitMirCheckAndUnbox: mirArgument withHIRCodeGenerator: self
                 }.
 
                 let canonicalResultType := ssaFunctionDefinition functionType canonicalResultType.
-                let result := canonicalResultType makeTacTemporaryValueNamed: #result withFunctionBuilder: functionBuilder.
-                isCaptureless ifTrue: {
-                    canonicalResultType emitTacCall: uncheckedEntryPoint convention: uncheckedEntryPoint callingConvention
-                        withArguments: checkedAndConvertedArguments into: result withBlockBuilder: asm.
+                let result := isCaptureless ifTrue: {
+                    canonicalResultType emitMirCall: uncheckedEntryPoint convention: uncheckedEntryPoint callingConvention
+                        withArguments: checkedAndConvertedArguments withBlockBuilder: asm.
                 } ifFalse: {
-                    canonicalResultType emitTacCall: uncheckedEntryPoint convention: uncheckedEntryPoint callingConvention
-                        withArguments: (Array with: functionArgument) -- checkedAndConvertedArguments into: result withBlockBuilder: asm.
+                    canonicalResultType emitMirCall: uncheckedEntryPoint convention: uncheckedEntryPoint callingConvention
+                        withArguments: (Array with: functionArgument) -- checkedAndConvertedArguments withBlockBuilder: asm.
                 }.
 
-                let boxedResult := canonicalResultType emitTacBox: result withHIRCodeGenerator: self.
+                let boxedResult := canonicalResultType emitMirBox: result withHIRCodeGenerator: self.
                 asm returnPointer: boxedResult
             }.
         }
     }.
 
     public method compileUncheckedInterpreterTrampolineWithSignature: (signature: Array) into: (trampoline: MIRFunction) ::=> Void := {
-        let tacArguments := OrderedCollection new.
+        let mirArguments := OrderedCollection new.
         functionArgument := trampoline newArgument: #closure withType: Function.
-        tacArguments add: functionArgument.
+        mirArguments add: functionArgument.
 
         let argumentTypes := signature allButLast.
         let resultType => Type := signature last.
 
         let uncheckedArguments := argumentTypes collect: {:(Type)argumentType :: MIRValue |
-            let tacArgument := trampoline newArgumentWithType: argumentType.
-            tacArguments add: tacArgument.
-            tacArgument
+            let mirArgument := trampoline newArgumentWithType: argumentType.
+            mirArguments add: mirArgument.
+            mirArgument
         }.
 
-        trampoline arguments: tacArguments asArray.
+        trampoline arguments: mirArguments asArray.
 
         trampoline build: {:(MIRFunctionBuilder)functionBuilder :: Void |
-            tacFunction := functionBuilder function.
+            mirFunction := functionBuilder function.
             self functionBuilder: functionBuilder.
 
             functionBuilder basicBlock: #trampoline build: {:(MIRBlockBuilder)asm :: Void |
                 self blockBuilder: asm.
 
                 ## Allocate the boxed argument vector.
-                let boxedArgumentVector := tacFunction newTemporary: #boxedArgumentVector withType: Array.
-                asm callPointer: (self translateRuntimeFunction: ObjectModel::makeArrayWithSize)
+                let boxedArgumentVector := asm callPointer: (self translateRuntimeFunction: ObjectModel::makeArrayWithSize)
                     with: (asm pointerConstantWith: uncheckedArguments size asUInt64)
-                    result: boxedArgumentVector.
+                    type: Array.
 
                 ## Box the arguments and store them in the vecotr
                 let headerSize := (Array objectHeaderSizeForObjectModel: self compilationTarget objectModel) asInt64.
                 let pointerSize := self compilationTarget pointerSize asInt64.
                 uncheckedArguments doWithIndex: {:(MIRValue)unboxedArgument :(Size)index :: Void |
                     let argumentType := argumentTypes at: index.
-                    let boxedArgument := argumentType emitTacBox: unboxedArgument withHIRCodeGenerator: self.
+                    let boxedArgument := argumentType emitMirBox: unboxedArgument withHIRCodeGenerator: self.
                     asm storePointer: boxedArgument into: boxedArgumentVector constantOffset: headerSize + (index asInt64 * pointerSize)
                 }.
 
                 ## Call the interpreter.
-                let boxedResult := tacFunction newTemporary: #boxedResult withType: Untyped.
-                asm callPointer: (self translateRuntimeFunction: ObjectModel::interpretFunctionWithArguments)
-                    with: functionArgument with: boxedArgumentVector result: boxedResult.
+                let boxedResult := asm callPointer: (self translateRuntimeFunction: ObjectModel::interpretFunctionWithArguments)
+                    with: functionArgument with: boxedArgumentVector type: Untyped.
 
                 ## Unbox and store the result.
-                let unboxedResult := resultType emitTacCheckAndUnbox: boxedResult withHIRCodeGenerator: self.
-                resultType emitTacReturn: unboxedResult withBlockBuilder: asm.
+                let unboxedResult := resultType emitMirCheckAndUnbox: boxedResult withHIRCodeGenerator: self.
+                resultType emitMirReturn: unboxedResult withBlockBuilder: asm.
             }
         }
     }.
@@ -588,85 +582,84 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
                 compileBasicBlocks.
         }.
 
-        tacFunction performBasicOptimizations.
+        mirFunction performBasicOptimizations.
     }.
 
     public method declareArguments => Void := {
-        let tacArguments := OrderedCollection new.
+        let mirArguments := OrderedCollection new.
         isCapturelessEntryPoint ifFalse: {
-            functionArgument := tacFunction newArgument: #closure withType: Function.
-            tacArguments add: functionArgument.
+            functionArgument := mirFunction newArgument: #closure withType: Function.
+            mirArguments add: functionArgument.
         }.
         
         ssaFunctionDefinition arguments do: {:(HIRFunctionArgument)argument :: Void |
-            let tacArgument := tacFunction newArgument: argument name withType: argument type sourceBinding: argument sourceBinding.
-            valueDictionary at: argument put: tacArgument.
-            tacArguments add: tacArgument.
+            let mirArgument := mirFunction newArgument: argument name withType: argument type sourceBinding: argument sourceBinding.
+            valueDictionary at: argument put: mirArgument.
+            mirArguments add: mirArgument.
         }.
 
-        tacFunction arguments: tacArguments asArray.
+        mirFunction arguments: mirArguments asArray.
     }.
 
     public method directArguments => Array
         := isCapturelessEntryPoint
-            ifTrue: tacFunction arguments
-            ifFalse: tacFunction arguments allButFirst.
+            ifTrue: mirFunction arguments
+            ifFalse: mirFunction arguments allButFirst.
 
     public method declareCaptures => Void := {
-        let tacCaptures := OrderedCollection new.
+        let mirCaptures := OrderedCollection new.
         ssaFunctionDefinition captures do: {:(HIRFunctionCapture)capture :: Void |
-            let tacCapture := tacFunction newCapture: capture name withType: capture type.
-            valueDictionary at: capture put: tacCapture.
-            tacCaptures add: tacCapture.
+            let mirCapture := mirFunction newCapture: capture name withType: capture type.
+            valueDictionary at: capture put: mirCapture.
+            mirCaptures add: mirCapture.
         }.
 
-        tacFunction
-            captures: tacCaptures asArray;
+        mirFunction
+            captures: mirCaptures asArray;
             computeCaptureVectorLayout
     }.
 
     public method declareValues => Void := {
         ssaFunctionDefinition basicBlocksDo: {:(HIRBasicBlock)eachBlock :: Void |
-            let tacBlock := MIRBasicBlock new
+            let mirBlock := MIRBasicBlock new
                 name: eachBlock name;
                 debugSourcePosition: eachBlock sourcePosition;
                 debugSourceNode: eachBlock sourceASTNode;
                 debugSourceEnvironment: eachBlock sourceEnvironment;
                 yourself.
 
-            tacFunction addBasicBlock: tacBlock.
-            valueDictionary at: eachBlock put: tacBlock.
+            mirFunction addBasicBlock: mirBlock.
+            valueDictionary at: eachBlock put: mirBlock.
 
-            eachBlock instructionsDo: {:(HIRInstruction)each :: Void |
-                functionBuilder useDebugInfoOfHIRValue: each.
-                let tacValue := each makeTacValueForResultWith: self.
-                valueDictionary at: each put: tacValue.
-            }
         }
     }.
 
     public method compileBasicBlocks => Void := {
         ssaFunctionDefinition basicBlocksDo: {:(HIRBasicBlock)eachBlock :: Void |
-            let tacBlock := valueDictionary at: eachBlock.
-            self compileBasicBlock: eachBlock into: tacBlock
+            let mirBlock := valueDictionary at: eachBlock.
+            self compileBasicBlock: eachBlock into: mirBlock
         }.
+
+        ## TODO: Fix the Phi instruction references.
     }.
 
-    public method compileBasicBlock: (ssaBasicBlock: HIRBasicBlock) into: (tacBlock: MIRBasicBlock) ::=> Void := {
+    public method compileBasicBlock: (ssaBasicBlock: HIRBasicBlock) into: (mirBlock: MIRBasicBlock) ::=> Void := {
         blockBuilder := MIRBlockBuilder new
-            block: tacBlock;
-            function: tacFunction;
+            block: mirBlock;
+            function: mirFunction;
             yourself.
         boxedValueDictionary := nil.
         ssaBasicBlock instructionsDo: {:(HIRInstruction)eachInstruction :: Void |
             functionBuilder useDebugInfoOfHIRValue: eachInstruction.
             blockBuilder useDebugInfoOfHIRValue: eachInstruction.
-            eachInstruction compileIntoTacValue: (valueDictionary at: eachInstruction) with: self
+            let instructionValue := eachInstruction compileIntoMIRWith: self.
+            valueDictionary at: eachInstruction put: instructionValue
         }
     }.
 
     public method translateValue: (value: HIRValue) ::=> MIRValue
         := valueDictionary at: value ifAbsent: {|
+            self assert: value isFunctionLocalValue not.
             moduleCodeGenerator translateValue: value
         }.
     
@@ -677,7 +670,7 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
                 self translateValue: (value downCastTo: HIRLiteralConstant) asBoxedLiteralConstant
             } ifFalse: {
                 let translatedValue := self translateValue: value.
-                value type emitTacBox: translatedValue withHIRCodeGenerator: self
+                value type emitMirBox: translatedValue withHIRCodeGenerator: self
             }.
         }
     }.
@@ -691,7 +684,7 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
                 self translateBoxedValue: value
             } ifFalse: {
                 self assert: value type isValueType not && expectedType isValueType.
-                expectedType emitTacCheckAndUnbox: (self translateValue: value) withHIRCodeGenerator: self
+                expectedType emitMirCheckAndUnbox: (self translateValue: value) withHIRCodeGenerator: self
             }
         }
     }.
@@ -701,7 +694,6 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
 
     public method translateUncheckedFunctionEntryPoint: (value: HIRValue) functionType: (functionType: Type) resultType: (resultType: Type) argumentCount: (argumentCount: Size) ::=> MIRValue := {
         (moduleCodeGenerator translateUncheckedFunctionEntryPointOrNil: value) ifNil: {
-            let entryPoint := tacFunction newTemporary: #uncheckedEntryPoint withType: value type.
             let trampolineTypeSignature := Array new: argumentCount + 1sz.
             {
                 let i mutable := 0sz.
@@ -716,8 +708,7 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
 
             blockBuilder callPointer: (self translateRuntimeFunction: ObjectModel::fetchUncheckedEntryPointOrInterpreterTrampoline)
                 with: (self translateValue: value) with: interpreterTrampoline
-                result: entryPoint.
-            entryPoint
+                type: Void pointer
         }
     }.
 
@@ -727,7 +718,7 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
     public method translateRuntimeFunction: (function: Function) ::=> MIRProgramEntity
         := moduleCodeGenerator translateRuntimeFunction: function.
 
-    public method notYetImplementedError: (error: String) ::=> Void := {
+    public method notYetImplementedError: (error: String) ::=> MIRValue := {
         IgnoreNotYetImplementedErrors ifTrue: {
             blockBuilder trap
         } ifFalse: {
@@ -754,7 +745,7 @@ MIRBlockBuilder extend: {
 }.
 
 Type extend: {
-    public virtual method emitTacCoerceInto: (targetType: MIRValue) thenUnbox: (value: MIRValue) into: (resultValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
+    public virtual method emitMirCoerceInto: (targetType: MIRValue) thenUnbox: (value: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         let coerceFunction := codegen translateRuntimeFunction: (self isNullable
             ifTrue: ObjectModel::coerceNullableValue
             ifFalse: ObjectModel::coerceValue
@@ -763,40 +754,23 @@ Type extend: {
         codegen blockBuilder
             callPointer: (codegen translateRuntimeFunction: ObjectModel::coerceValue)
             with: targetType with: value
-            result: resultValue
+            type: self
     }.
 
-    public virtual method emitTacCheckInto: (targetType: MIRValue) thenUnbox: (value: MIRValue) into: (resultValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
+    public virtual method emitMirCheckInto: (targetType: MIRValue) thenUnbox: (value: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         let typecheckFunction := codegen translateRuntimeFunction: (self isNullable
             ifTrue: ObjectModel::typecheckNullableValue
             ifFalse: ObjectModel::typecheckValue
         ).
 
-        codegen blockBuilder
-            callVoid: typecheckFunction with: targetType with: value;
-            movePointer: value into: resultValue.
-    }.
-
-    public virtual method emitTacUncheckedUnbox: (value: MIRValue) into: (resultValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder movePointer: value into: resultValue.
-    }.
-
-    public virtual method emitTacCheckAndUnbox: (value: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
-        (self == Untyped) || (self == AnyValue) ifFalse: {
-            let typecheckFunction := codegen translateRuntimeFunction: (self isNullable
-                ifTrue: ObjectModel::typecheckNullableValue
-                ifFalse: ObjectModel::typecheckValue
-            ).
-            codegen blockBuilder callVoid: typecheckFunction with: (codegen moduleCodeGenerator translateGenericObjectPointer: self) with: value.
-        }.
-
+        codegen blockBuilder callVoid: typecheckFunction with: targetType with: value.
         value
     }.
 
-    public virtual method emitTacUncheckedUnbox: (value: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+    public virtual method emitMirUncheckedUnbox: (value: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
         := value.
 
-    public virtual method emitTacCheckThenUnbox: (value: MIRValue) into: (resultValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
+    public virtual method emitMirCheckAndUnbox: (value: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         (self == Untyped) || (self == AnyValue) ifFalse: {
             let typecheckFunction := codegen translateRuntimeFunction: (self isNullable
                 ifTrue: ObjectModel::typecheckNullableValue
@@ -805,38 +779,33 @@ Type extend: {
             codegen blockBuilder callVoid: typecheckFunction with: (codegen moduleCodeGenerator translateGenericObjectPointer: self) with: value.
         }.
 
-        codegen blockBuilder movePointer: value into: resultValue
-    }.
-
-    public virtual method emitTacBox: (value: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         value
     }.
 
-    public virtual method emitTacReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder returnPointer: value.
-    }.
+    public virtual method emitMirBox: (value: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := value.
 
-    public virtual method emitTacCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder callPointer: function convention: callingConvention arguments: arguments result: result
-    }.
+    public virtual method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder returnPointer: value.
 
-    public virtual method emitTacUnboxingCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) into: (result: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        (self == Untyped) || (self == AnyValue) ifTrue: {
-            codegen blockBuilder callPointer: function convention: callingConvention arguments: arguments result: result.
-            return: void.
+    public virtual method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder callPointer: function convention: callingConvention arguments: arguments type: self.
+
+    public virtual method emitMirUnboxingCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
+        let result := codegen blockBuilder callPointer: function convention: callingConvention arguments: arguments type: self.
+
+        (self == Untyped) || (self == AnyValue) ifFalse: {
+            let typecheckFunction := codegen translateRuntimeFunction: (self isNullable
+                ifTrue: ObjectModel::typecheckNullableValue
+                ifFalse: ObjectModel::typecheckValue
+            ).
+            codegen blockBuilder callVoid: typecheckFunction with: (codegen moduleCodeGenerator translateGenericObjectPointer: self) with: result
         }.
 
-        let typecheckFunction := codegen translateRuntimeFunction: (self isNullable
-            ifTrue: ObjectModel::typecheckNullableValue
-            ifFalse: ObjectModel::typecheckValue
-        ).
-
-        codegen blockBuilder
-            callPointer: function convention: callingConvention arguments: arguments result: result;
-            callVoid: typecheckFunction with: (codegen moduleCodeGenerator translateGenericObjectPointer: self) with: result
+        result
     }.
 
-    public abstract method emitTacReference: (reference: MIRValue) elementPointerAt: (elementIndex: MIRValue) into: (elementPointer: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void
+    public abstract method emitMirReference: (reference: MIRValue) elementPointerAt: (elementIndex: MIRValue) type: (type: Type) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := self subclassResponsibility.
 
 
@@ -852,39 +821,31 @@ Type extend: {
     public virtual method translateHIRLiteralConstant: (constant: HIRLiteralConstant) pointerType: (pointerType: PointerLikeType) storage: storage base: base offset: (offset: IntPointer) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := codegen translateGenericObjectPointer: constant value.
 
-    public virtual method emitTacMove: (sourceValue: MIRValue) into: (targetValue: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder movePointer: sourceValue into: targetValue
-    }.
+    public virtual method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder loadPointer: pointer constantOffset: constantOffset type: self.
 
-    public virtual method emitTacLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder loadPointer: pointer constantOffset: constantOffset into: result
-    }.
+    public virtual method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder storePointer: value into: pointer constantOffset: constantOffset.
 
-    public virtual method emitTacStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder storePointer: value into: pointer constantOffset: constantOffset
-    }.
+    public virtual method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder pointerEquals: left with: right.
 
-    public virtual method emitTacEquals: (left: MIRValue) with: (right: MIRValue) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder)  ::=> Void := {
-        builder pointerEquals: left with: right into: result
-    }.
-
-    public virtual method emitTacNotEquals: (left: MIRValue) with: (right: MIRValue) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder)  ::=> Void := {
-        builder pointerNotEquals: left with: right into: result
-    }.
+    public virtual method emitMirNotEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder pointerNotEquals: left with: right.
 }.
 
 ObjectModelVariant extend: {
-    public abstract method tacImmediateReferenceFor: (object: Untyped) ::=> MIRValue
+    public abstract method mirImmediateReferenceFor: (object: Untyped) ::=> MIRValue
         := self subclassResponsibility.
 }.
 
 ObjectModelVariant32 extend: {
-    public override method tacImmediateReferenceFor: (object: Untyped) ::=> MIRValue
+    public override method mirImmediateReferenceFor: (object: Untyped) ::=> MIRValue
         := (RawTuple::type(object) encodeImmediateReference32: object) asTacConstant.
 }.
 
 ObjectModelVariant64 extend: {
-    public override method tacImmediateReferenceFor: (object: Untyped) ::=> MIRValue
+    public override method mirImmediateReferenceFor: (object: Untyped) ::=> MIRValue
         := (RawTuple::type(object) encodeImmediateReference64: object) asTacConstant.
 }.
 
@@ -899,90 +860,59 @@ String class extend: {
 }.
 
 ValueType extend: {
-    public override method emitTacCoerceInto: (targetType: MIRValue) thenUnbox: (value: MIRValue) into: (resultValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        self emitTacCheckInto: targetType thenUnbox: value into: resultValue withHIRCodeGenerator: codegen
-    }.
+    public override method emitMirCoerceInto: (targetType: MIRValue) thenUnbox: (value: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := self emitMirCheckInto: targetType thenUnbox: value withHIRCodeGenerator: codegen.
 
-    public override method emitTacCheckInto: (targetType: MIRValue) thenUnbox: (value: MIRValue) into: (resultValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
+    public override method emitMirCheckInto: (targetType: MIRValue) thenUnbox: (value: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         let typecheckFunction := codegen translateRuntimeFunction: (self isNullable
             ifTrue: ObjectModel::typecheckNullableValue
             ifFalse: ObjectModel::typecheckValue
         ).
 
         codegen blockBuilder callVoid: typecheckFunction with: targetType with: value.
-        self emitTacCheckThenUnbox: value into: resultValue withHIRCodeGenerator: codegen.
+        self emitMirUncheckedUnbox: value withHIRCodeGenerator: codegen.
     }.
 
-    public override method emitTacCheckThenUnbox: (value: MIRValue) into: (resultValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
+    public override method emitMirCheckAndUnbox: (value: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         ## TODO: Implement this via some kind of memcpy for the generic case.
         codegen notYetImplementedError: "Generic value type unbox"
     }.
 
-    public override method emitTacUncheckedUnbox: (value: MIRValue) into: (resultValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
+    public override method emitMirUncheckedUnbox: (value: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         ## TODO: Implement this via some kind of memcpy for the generic case.
         codegen notYetImplementedError: "Generic value type unbox"
     }.
 
-    public override method emitTacCheckAndUnbox: (value: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
-        let unboxedTemporary := codegen blockBuilder function newTemporary: #unboxed withType: self.
-        self emitTacCheckThenUnbox: value into: unboxedTemporary withHIRCodeGenerator: codegen.
-        unboxedTemporary.
-    }.
-    
-    public override method emitTacUncheckedUnbox: (value: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
-        let unboxedTemporary := codegen blockBuilder function newTemporary: #unboxed withType: self.
-        self emitTacUncheckedUnbox: value into: unboxedTemporary withHIRCodeGenerator: codegen.
-        unboxedTemporary.
-    }.
-
-    public virtual method emitTacBox: (value: MIRValue) into: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
+    public override method emitMirBox: (value: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         ## TODO: Implement this via some kind of memcpy.
         codegen notYetImplementedError: "Generic value type box"
     }.
 
-    public override method emitTacBox: (value: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
-        let boxedTemporary := codegen blockBuilder function newTemporary: #boxed withType: Untyped.
-        self emitTacBox: value into: boxedTemporary withHIRCodeGenerator: codegen.
-        boxedTemporary.
+    public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder callStruct: function convention: callingConvention arguments: arguments type: self.
+
+    public override method emitMirUnboxingCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
+        let boxedTemporary := codegen blockBuilder callPointer: function convention: callingConvention arguments: arguments type: Untyped.
+        self emitMirCheckAndUnbox: boxedTemporary withHIRCodeGenerator: codegen
     }.
 
-    public override method emitTacCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder callStruct: function convention: callingConvention arguments: arguments result: result
-    }.
+    public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder returnStruct: value.
 
-    public override method emitTacUnboxingCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) into: (result: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        let boxedTemporary := codegen blockBuilder function newTemporary: #boxed withType: Untyped.
-        codegen blockBuilder callPointer: function convention: callingConvention arguments: arguments result: boxedTemporary.
-        self emitTacCheckThenUnbox: boxedTemporary into: result withHIRCodeGenerator: codegen
-    }.
+    public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder loadStruct: pointer constantOffset: constantOffset type: self.
 
-    public override method emitTacReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder returnStruct: value
-    }.
-
-    public override method emitTacMove: (sourceValue: MIRValue) into: (targetValue: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder moveStruct: sourceValue into: targetValue
-    }.
-
-    public override method emitTacLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder loadStruct: pointer constantOffset: constantOffset into: result
-    }.
-
-    public override method emitTacStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder storeStruct: value into: pointer constantOffset: constantOffset
-    }.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder storeStruct: value into: pointer constantOffset: constantOffset.
 
     #*public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := codegen translateStructureConstant: constant value.*#
 
-    public virtual method emitTacEquals: (left: MIRValue) with: (right: MIRValue) into: (result: MIRValue) ::=> Void := {
-        self subclassResponsibility
-    }.
+    public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := self subclassResponsibility.
 
-    public virtual method emitTacNotEquals: (left: MIRValue) with: (right: MIRValue) into: (result: MIRValue) ::=> Void := {
-        self subclassResponsibility
-    }.
-
+    public override method emitMirNotEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := self subclassResponsibility.
 }.
 
 PointerLikeType extend: {
@@ -1001,77 +931,62 @@ PointerLikeType extend: {
         }
     }.
 
-    public virtual method emitTacCheckThenUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder
+    public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder
             callPointer: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxPointer)
-            with: (codegen moduleCodeGenerator translateGenericObjectPointer: self) with: boxedValue result: unboxedValue
-    }.
+            with: (codegen moduleCodeGenerator translateGenericObjectPointer: self) with: boxedValue type: self.
 
-    public virtual method emitTacBox: (unboxedValue: MIRValue) into: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder
+    public override method emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder
             callPointer: (codegen translateRuntimeFunction: ObjectModel::boxPointer)
-            with: (codegen moduleCodeGenerator translateGenericObjectPointer: self) with: unboxedValue result: boxedValue
-    }.
+            with: (codegen moduleCodeGenerator translateGenericObjectPointer: self) with: unboxedValue type: self.
 
-    public override method emitTacCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder callPointer: function convention: callingConvention arguments: arguments result: result
-    }.
+    public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder callPointer: function convention: callingConvention arguments: arguments type: self.
 
-    public override method emitTacReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder returnPointer: value
-    }.
+    public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder returnPointer: value.
 
-    public override method emitTacMove: (sourceValue: MIRValue) into: (targetValue: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder movePointer: sourceValue into: targetValue
-    }.
+    public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder loadPointer: pointer constantOffset: constantOffset type: self.
 
-    public override method emitTacLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder loadPointer: pointer constantOffset: constantOffset into: result
-    }.
-
-    public override method emitTacStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder storePointer: value into: pointer constantOffset: constantOffset
-    }.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder storePointer: value into: pointer constantOffset: constantOffset.
 }.
 
 FixedArrayType definition: {
-    public override method emitTacReference: (reference: MIRValue) elementPointerAt: (elementIndex: MIRValue) into: (elementPointer: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder loadEffectiveAddress: reference index: elementIndex constantScale: elementType alignedValueSize asInt64 into: elementPointer
+    public override method emitMirReference: (reference: MIRValue) elementPointerAt: (elementIndex: MIRValue) type: (type: Type) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue := {
+        builder loadEffectiveAddress: reference index: elementIndex constantScale: elementType alignedValueSize asInt64 type: type
     }.
 }.
 
 Char8 __type__ extend: {
-    public override method emitTacUncheckedUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt8: (codegen translateRuntimeFunction: ObjectModel::unboxChar8) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt8: (codegen translateRuntimeFunction: ObjectModel::unboxChar8) with: boxedValue type: self.
 
-    public override method emitTacCheckThenUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt8: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxChar8) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt8: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxChar8) with: boxedValue type: self.
 
-    public override method emitTacBox: (unboxedValue: MIRValue) into: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxChar8) with: unboxedValue result: boxedValue
-    }.
+    public override method emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxChar8) with: unboxedValue type: AnyValue.
 
-    public override method emitTacCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder callInt32: function convention: callingConvention arguments: arguments result: result
-    }.
+    public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder callInt8: function convention: callingConvention arguments: arguments type: self.
 
-    public override method emitTacReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder returnInt32: value
-    }.
+    public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder returnInt8: value.
 
-    public override method emitTacMove: (sourceValue: MIRValue) into: (targetValue: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder moveInt8: sourceValue into: targetValue
-    }.
+    public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder loadUInt8: pointer constantOffset: constantOffset.
 
-    public override method emitTacLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder loadUInt8: pointer constantOffset: constantOffset into: result
-    }.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder storeInt8: value into: pointer constantOffset: constantOffset.
 
-    public override method emitTacStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder storeInt8: value into: pointer constantOffset: constantOffset
-    }.
+    public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int8Equals: left with: right.
+
+    public override method emitMirNotEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int8NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := 0u8 asTacConstant.
@@ -1081,117 +996,102 @@ Char8 __type__ extend: {
 }.
 
 Int8 __type__ extend: {
-    public override method emitTacUncheckedUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt8: (codegen translateRuntimeFunction: ObjectModel::unboxInt8) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt8: (codegen translateRuntimeFunction: ObjectModel::unboxInt8) with: boxedValue type: self.
 
-    public override method emitTacCheckThenUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt8: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxInt8) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt8: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxInt8) with: boxedValue type: self.
 
-    public override method emitTacBox: (unboxedValue: MIRValue) into: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxInt8) with: unboxedValue result: boxedValue
-    }.
+    public override method emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxInt8) with: unboxedValue type: AnyValue.
 
-    public override method emitTacCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder callInt8: function convention: callingConvention arguments: arguments result: result
-    }.
+    public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder callInt8: function convention: callingConvention arguments: arguments type: self.
 
-    public override method emitTacReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder returnInt8: value
-    }.
+    public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder returnInt8: value.
 
-    public override method emitTacMove: (sourceValue: MIRValue) into: (targetValue: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder moveInt8: sourceValue into: targetValue
-    }.
+    public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder loadInt8: pointer constantOffset: constantOffset.
 
-    public override method emitTacLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder loadInt8: pointer constantOffset: constantOffset into: result
-    }.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder storeInt8: value into: pointer constantOffset: constantOffset.
 
-    public override method emitTacStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder storeInt8: value into: pointer constantOffset: constantOffset
-    }.
+    public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int8Equals: left with: right.
+
+    public override method emitMirNotEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int8NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := 0i8 asTacConstant.
 
     public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := constant value asTacConstant.
+        := constant value asInt8 asTacConstant.
 }.
 
 UInt8 __type__ extend: {
-    public override method emitTacUncheckedUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt8: (codegen translateRuntimeFunction: ObjectModel::unboxUInt8) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt8: (codegen translateRuntimeFunction: ObjectModel::unboxUInt8) with: boxedValue type: self.
 
-    public override method emitTacCheckThenUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt8: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxUInt8) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt8: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxUInt8) with: boxedValue type: self.
 
-    public override method emitTacBox: (unboxedValue: MIRValue) into: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxUInt8) with: unboxedValue result: boxedValue
-    }.
+    public override method emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxUInt8) with: unboxedValue type: AnyValue.
 
-    public override method emitTacCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder callInt8: function convention: callingConvention arguments: arguments result: result
-    }.
+    public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder callInt8: function convention: callingConvention arguments: arguments type: self.
 
-    public override method emitTacReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder returnInt8: value
-    }.
+    public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder returnInt8: value.
 
-    public override method emitTacMove: (sourceValue: MIRValue) into: (targetValue: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder moveInt8: sourceValue into: targetValue
-    }.
+    public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder loadUInt8: pointer constantOffset: constantOffset.
 
-    public override method emitTacLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder loadUInt8: pointer constantOffset: constantOffset into: result
-    }.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder storeInt8: value into: pointer constantOffset: constantOffset.
 
-    public override method emitTacStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder storeInt8: value into: pointer constantOffset: constantOffset
-    }.
+    public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int8Equals: left with: right.
+
+    public override method emitMirNotEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int8NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := 0u8 asTacConstant.
 
     public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := constant value asTacConstant.
+        := constant value asUInt8 asTacConstant.
 }.
 
 Boolean __type__ extend: {
-    public override method emitTacUncheckedUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt8: (codegen translateRuntimeFunction: ObjectModel::unboxBoolean) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt8: (codegen translateRuntimeFunction: ObjectModel::unboxBoolean) with: boxedValue type: self.
 
-    public override method emitTacCheckThenUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt8: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxBoolean) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt8: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxBoolean) with: boxedValue type: self.
 
-    public override method emitTacBox: (unboxedValue: MIRValue) into: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxBoolean) with: unboxedValue result: boxedValue
-    }.
+    public override method emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxBoolean) with: unboxedValue type: AnyValue.
 
-    public override method emitTacCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder callInt8: function convention: callingConvention arguments: arguments result: result
-    }.
+    public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder callInt8: function convention: callingConvention arguments: arguments type: self.
 
-    public override method emitTacReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder returnInt8: value
-    }.
+    public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder returnInt8: value.
 
-    public override method emitTacMove: (sourceValue: MIRValue) into: (targetValue: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder moveInt8: sourceValue into: targetValue
-    }.
+    public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder loadUInt8: pointer constantOffset: constantOffset.
 
-    public override method emitTacLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder loadUInt8: pointer constantOffset: constantOffset into: result
-    }.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder storeInt8: value into: pointer constantOffset: constantOffset.
 
-    public override method emitTacStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder storeInt8: value into: pointer constantOffset: constantOffset
-    }.
+    public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int8Equals: left with: right.
+
+    public override method emitMirNotEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int8NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := 0u8 asTacConstant.
@@ -1209,456 +1109,392 @@ True __type__ extend: {
 }.
 
 Char16 __type__ extend: {
-    public override method emitTacUncheckedUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt16: (codegen translateRuntimeFunction: ObjectModel::unboxChar16) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt16: (codegen translateRuntimeFunction: ObjectModel::unboxChar16) with: boxedValue type: self.
 
-    public override method emitTacCheckThenUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt16: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxChar16) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt16: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxChar16) with: boxedValue type: self.
 
-    public override method emitTacBox: (unboxedValue: MIRValue) into: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxChar16) with: unboxedValue result: boxedValue
-    }.
+    public override method emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxChar16) with: unboxedValue type: AnyValue.
 
-    public override method emitTacCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder callInt16: function convention: callingConvention arguments: arguments result: result
-    }.
+    public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder callInt16: function convention: callingConvention arguments: arguments type: self.
 
-    public override method emitTacReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder returnInt16: value
-    }.
+    public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder returnInt16: value.
 
-    public override method emitTacMove: (sourceValue: MIRValue) into: (targetValue: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder moveInt16: sourceValue into: targetValue
-    }.
+    public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder loadUInt16: pointer constantOffset: constantOffset.
 
-    public override method emitTacLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder loadUInt16: pointer constantOffset: constantOffset into: result
-    }.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder storeInt16: value into: pointer constantOffset: constantOffset.
 
-    public override method emitTacStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder storeInt16: value into: pointer constantOffset: constantOffset
-    }.
+    public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int16Equals: left with: right.
+
+    public override method emitMirNotEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int16NotEquals: left with: right.
+
+    public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+        := 0u16 asTacConstant.
 
     public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := constant value asUInt16 asTacConstant.
-
-    public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := 0u16 asTacConstant.
 }.
 
 Int16 __type__ extend: {
-    public override method emitTacUncheckedUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt16: (codegen translateRuntimeFunction: ObjectModel::unboxInt16) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt16: (codegen translateRuntimeFunction: ObjectModel::unboxInt16) with: boxedValue type: self.
 
-    public override method emitTacCheckThenUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt16: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxInt16) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt16: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxInt16) with: boxedValue type: self.
 
-    public override method emitTacBox: (unboxedValue: MIRValue) into: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxInt16) with: unboxedValue result: boxedValue
-    }.
+    public override method emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxInt16) with: unboxedValue type: AnyValue.
 
-    public override method emitTacCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder callInt16: function convention: callingConvention arguments: arguments result: result
-    }.
+    public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder callInt16: function convention: callingConvention arguments: arguments type: self.
 
-    public override method emitTacReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder returnInt16: value
-    }.
+    public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder returnInt16: value.
 
-    public override method emitTacMove: (sourceValue: MIRValue) into: (targetValue: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder moveInt16: sourceValue into: targetValue
-    }.
+    public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder loadInt16: pointer constantOffset: constantOffset.
 
-    public override method emitTacLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder loadInt16: pointer constantOffset: constantOffset into: result
-    }.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder storeInt16: value into: pointer constantOffset: constantOffset.
 
-    public override method emitTacStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder storeInt16: value into: pointer constantOffset: constantOffset
-    }.
+    public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int16Equals: left with: right.
 
-    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := constant value asTacConstant.
+    public override method emitMirNotEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int16NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := 0i16 asTacConstant.
+
+    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+        := constant value asInt16 asTacConstant.
 }.
 
 UInt16 __type__ extend: {
-    public override method emitTacUncheckedUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt16: (codegen translateRuntimeFunction: ObjectModel::unboxUInt16) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt16: (codegen translateRuntimeFunction: ObjectModel::unboxUInt16) with: boxedValue type: self.
 
-    public override method emitTacCheckThenUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt16: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxUInt16) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt16: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxUInt16) with: boxedValue type: self.
 
-    public override method emitTacBox: (unboxedValue: MIRValue) into: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxUInt16) with: unboxedValue result: boxedValue
-    }.
+    public override method emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxUInt16) with: unboxedValue type: AnyValue.
 
-    public override method emitTacCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder callInt16: function convention: callingConvention arguments: arguments result: result
-    }.
+    public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder callInt16: function convention: callingConvention arguments: arguments type: self.
 
-    public override method emitTacReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder returnInt16: value
-    }.
+    public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder returnInt16: value.
 
-    public override method emitTacMove: (sourceValue: MIRValue) into: (targetValue: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder moveInt16: sourceValue into: targetValue
-    }.
+    public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder loadUInt16: pointer constantOffset: constantOffset.
 
-    public override method emitTacLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder loadUInt16: pointer constantOffset: constantOffset into: result
-    }.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder storeInt16: value into: pointer constantOffset: constantOffset.
 
-    public override method emitTacStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder storeInt16: value into: pointer constantOffset: constantOffset
-    }.
+    public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int16Equals: left with: right.
 
-    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := constant value asTacConstant.
+    public override method emitMirNotEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int16NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := 0u16 asTacConstant.
+
+    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+        := constant value asUInt16 asTacConstant.
 }.
 
 Char32 __type__ extend: {
-    public override method emitTacUncheckedUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt32: (codegen translateRuntimeFunction: ObjectModel::unboxChar32) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt32: (codegen translateRuntimeFunction: ObjectModel::unboxChar32) with: boxedValue type: self.
 
-    public override method emitTacCheckThenUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt32: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxChar32) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt32: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxChar32) with: boxedValue type: self.
 
-    public override method emitTacBox: (unboxedValue: MIRValue) into: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxChar32) with: unboxedValue result: boxedValue
-    }.
+    public override method emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxChar32) with: unboxedValue type: AnyValue.
 
-    public override method emitTacCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder callInt32: function convention: callingConvention arguments: arguments result: result
-    }.
+    public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder callInt32: function convention: callingConvention arguments: arguments type: self.
 
-    public override method emitTacReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder returnInt32: value
-    }.
+    public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder returnInt32: value.
 
-    public override method emitTacMove: (sourceValue: MIRValue) into: (targetValue: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder moveInt32: sourceValue into: targetValue
-    }.
+    public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder loadUInt32: pointer constantOffset: constantOffset.
 
-    public override method emitTacLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder loadUInt32: pointer constantOffset: constantOffset into: result
-    }.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder storeInt32: value into: pointer constantOffset: constantOffset.
 
-    public override method emitTacStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder storeInt32: value into: pointer constantOffset: constantOffset
-    }.
+    public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int32Equals: left with: right.
+
+    public override method emitMirNotEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int32NotEquals: left with: right.
+
+    public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+        := 0u32 asTacConstant.
 
     public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := constant value asUInt32 asTacConstant.
-
-    public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := 0u32 asTacConstant.
 }.
 
 Int32 __type__ extend: {
-    public override method emitTacUncheckedUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt32: (codegen translateRuntimeFunction: ObjectModel::unboxInt32) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt32: (codegen translateRuntimeFunction: ObjectModel::unboxInt32) with: boxedValue type: self.
 
-    public override method emitTacCheckThenUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt32: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxInt32) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt32: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxInt32) with: boxedValue type: self.
 
-    public override method emitTacBox: (unboxedValue: MIRValue) into: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxInt32) with: unboxedValue result: boxedValue
-    }.
+    public override method emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxInt32) with: unboxedValue type: AnyValue.
 
-    public override method emitTacCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder callInt32: function convention: callingConvention arguments: arguments result: result
-    }.
+    public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder callInt32: function convention: callingConvention arguments: arguments type: self.
 
-    public override method emitTacReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder returnInt32: value
-    }.
+    public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder returnInt32: value.
 
-    public override method emitTacMove: (sourceValue: MIRValue) into: (targetValue: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder moveInt32: sourceValue into: targetValue
-    }.
+    public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder loadInt32: pointer constantOffset: constantOffset.
 
-    public override method emitTacLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder loadInt32: pointer constantOffset: constantOffset into: result
-    }.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder storeInt32: value into: pointer constantOffset: constantOffset.
 
-    public override method emitTacStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder storeInt32: value into: pointer constantOffset: constantOffset
-    }.
+    public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int32Equals: left with: right.
 
-    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := constant value asTacConstant.
+    public override method emitMirNotEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int32NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := 0i32 asTacConstant.
+
+    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+        := constant value asInt32 asTacConstant.
 }.
 
 UInt32 __type__ extend: {
-    public override method emitTacUncheckedUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt32: (codegen translateRuntimeFunction: ObjectModel::unboxUInt32) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt32: (codegen translateRuntimeFunction: ObjectModel::unboxUInt32) with: boxedValue type: self.
 
-    public override method emitTacCheckThenUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt32: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxUInt32) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt32: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxUInt32) with: boxedValue type: self.
 
-    public override method emitTacBox: (unboxedValue: MIRValue) into: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxUInt32) with: unboxedValue result: boxedValue
-    }.
+    public override method emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxUInt32) with: unboxedValue type: AnyValue.
 
-    public override method emitTacCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder callInt32: function convention: callingConvention arguments: arguments result: result
-    }.
+    public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder callInt32: function convention: callingConvention arguments: arguments type: self.
 
-    public override method emitTacReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder returnInt32: value
-    }.
+    public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder returnInt32: value.
 
-    public override method emitTacMove: (sourceValue: MIRValue) into: (targetValue: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder moveInt32: sourceValue into: targetValue
-    }.
+    public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder loadUInt32: pointer constantOffset: constantOffset.
 
-    public override method emitTacLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder loadUInt32: pointer constantOffset: constantOffset into: result
-    }.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder storeInt32: value into: pointer constantOffset: constantOffset.
 
-    public override method emitTacStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder storeInt32: value into: pointer constantOffset: constantOffset
-    }.
+    public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int32Equals: left with: right.
 
-    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := constant value asTacConstant.
+    public override method emitMirNotEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int32NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := 0u32 asTacConstant.
+
+    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+        := constant value asUInt32 asTacConstant.
 }.
 
 Int64 __type__ extend: {
-    public override method emitTacUncheckedUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt64: (codegen translateRuntimeFunction: ObjectModel::unboxInt64) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt64: (codegen translateRuntimeFunction: ObjectModel::unboxInt64) with: boxedValue type: self.
 
-    public override method emitTacCheckThenUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt64: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxInt64) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt64: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxInt64) with: boxedValue type: self.
 
-    public override method emitTacBox: (unboxedValue: MIRValue) into: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxInt64) with: unboxedValue result: boxedValue
-    }.
+    public override method emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxInt64) with: unboxedValue type: AnyValue.
 
-    public override method emitTacCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder callInt64: function convention: callingConvention arguments: arguments result: result
-    }.
+    public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder callInt64: function convention: callingConvention arguments: arguments type: self.
 
-    public override method emitTacReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder returnInt64: value
-    }.
+    public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder returnInt64: value.
 
-    public override method emitTacMove: (sourceValue: MIRValue) into: (targetValue: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder moveInt64: sourceValue into: targetValue
-    }.
+    public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder loadInt64: pointer constantOffset: constantOffset.
 
-    public override method emitTacLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder loadInt64: pointer constantOffset: constantOffset into: result
-    }.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder storeInt64: value into: pointer constantOffset: constantOffset.
 
-    public override method emitTacStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder storeInt64: value into: pointer constantOffset: constantOffset
-    }.
+    public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int64Equals: left with: right.
 
-    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := constant value asTacConstant.
+    public override method emitMirNotEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int64NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := 0i64 asTacConstant.
+
+    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+        := constant value asInt64 asTacConstant.
 }.
 
 UInt64 __type__ extend: {
-    public override method emitTacUncheckedUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt64: (codegen translateRuntimeFunction: ObjectModel::unboxUInt64) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt64: (codegen translateRuntimeFunction: ObjectModel::unboxUInt64) with: boxedValue type: self.
 
-    public override method emitTacCheckThenUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callInt64: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxUInt64) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callInt64: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxUInt64) with: boxedValue type: self.
 
-    public override method emitTacBox: (unboxedValue: MIRValue) into: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxUInt64) with: unboxedValue result: boxedValue
-    }.
+    public override method emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxUInt64) with: unboxedValue type: AnyValue.
 
-    public override method emitTacCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder callInt64: function convention: callingConvention arguments: arguments result: result
-    }.
+    public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder callInt64: function convention: callingConvention arguments: arguments type: self.
 
-    public override method emitTacReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder returnInt64: value
-    }.
+    public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder returnInt64: value.
 
-    public override method emitTacMove: (sourceValue: MIRValue) into: (targetValue: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder moveInt64: sourceValue into: targetValue
-    }.
+    public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder loadUInt64: pointer constantOffset: constantOffset.
 
-    public override method emitTacLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder loadUInt64: pointer constantOffset: constantOffset into: result
-    }.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder storeInt64: value into: pointer constantOffset: constantOffset.
 
-    public override method emitTacStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder storeInt64: value into: pointer constantOffset: constantOffset
-    }.
+    public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int64Equals: left with: right.
 
-    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := constant value asTacConstant.
+    public override method emitMirNotEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder int64NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := 0u32 asTacConstant.
+        := 0u64 asTacConstant.
+
+    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+        := constant value asUInt64 asTacConstant.
 }.
 
 Float32 __type__ extend: {
-    public override method emitTacUncheckedUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callFloat32: (codegen translateRuntimeFunction: ObjectModel::unboxFloat32) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callFloat32: (codegen translateRuntimeFunction: ObjectModel::unboxFloat32) with: boxedValue.
 
-    public override method emitTacCheckThenUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callFloat32: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxFloat32) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callFloat32: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxFloat32) with: boxedValue.
 
-    public override method emitTacBox: (unboxedValue: MIRValue) into: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxFloat32) with: unboxedValue result: boxedValue
-    }.
+    public override method emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxFloat32) with: unboxedValue type: AnyValue.
 
-    public override method emitTacCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder callFloat32: function convention: callingConvention arguments: arguments result: result
-    }.
+    public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder callFloat32: function convention: callingConvention arguments: arguments.
 
-    public override method emitTacReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder returnFloat32: value
-    }.
+    public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder returnFloat32: value.
 
-    public override method emitTacMove: (sourceValue: MIRValue) into: (targetValue: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder moveFloat32: sourceValue into: targetValue
-    }.
+    public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder loadFloat32: pointer constantOffset: constantOffset.
 
-    public override method emitTacLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder loadFloat32: pointer constantOffset: constantOffset into: result
-    }.
-
-    public override method emitTacStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder storeFloat32: value into: pointer constantOffset: constantOffset
-    }.
-
-    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := constant value asTacConstant.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder storeFloat32: value into: pointer constantOffset: constantOffset.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := 0.0f32 asTacConstant.
+
+    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue := {
+        let floatValue => Float32 := constant value.
+        floatValue asTacConstant
+    }.
 }.
 
 Float64 __type__ extend: {
-    public override method emitTacUncheckedUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callFloat64: (codegen translateRuntimeFunction: ObjectModel::unboxFloat64) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callFloat64: (codegen translateRuntimeFunction: ObjectModel::unboxFloat64) with: boxedValue.
 
-    public override method emitTacCheckThenUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callFloat64: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxFloat64) with: boxedValue result: unboxedValue
-    }.
+    public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callFloat64: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxFloat64) with: boxedValue.
 
-    public override method emitTacBox: (unboxedValue: MIRValue) into: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxFloat64) with: unboxedValue result: boxedValue
-    }.
+    public override method emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::boxFloat64) with: unboxedValue type: AnyValue.
 
-    public override method emitTacCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder callFloat64: function convention: callingConvention arguments: arguments result: result
-    }.
+    public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder callFloat64: function convention: callingConvention arguments: arguments.
 
-    public override method emitTacReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder returnFloat64: value
-    }.
+    public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder returnFloat64: value.
 
-    public override method emitTacMove: (sourceValue: MIRValue) into: (targetValue: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder moveFloat64: sourceValue into: targetValue
-    }.
+    public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder loadFloat64: pointer constantOffset: constantOffset.
 
-    public override method emitTacLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder loadFloat64: pointer constantOffset: constantOffset into: result
-    }.
-
-    public override method emitTacStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder storeFloat64: value into: pointer constantOffset: constantOffset
-    }.
-
-    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := constant value asTacConstant.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder storeFloat64: value into: pointer constantOffset: constantOffset.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := 0.0 asTacConstant.
+
+    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue := {
+        let floatValue => Float64 := constant value.
+        floatValue asTacConstant
+    }.
 }.
 
 Void __type__ extend: {
-    public override method emitTacUncheckedUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        ## Nothing is required here.
+    public override method emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := void asTacConstant.
+
+    public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := void asTacConstant.
+
+    public override method emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen moduleCodeGenerator translateGenericObjectPointer: void.
+
+    public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue := {
+        builder callVoid: function convention: callingConvention arguments: arguments.
+        void asTacConstant
     }.
 
-    public override method emitTacCheckThenUnbox: (boxedValue: MIRValue) into: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        ## Nothing is required here.
-    }.
+    public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder returnVoid.
 
-    public override method emitTacBox: (unboxedValue: MIRValue) into: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder movePointer: (codegen moduleCodeGenerator translateGenericObjectPointer: void) into: boxedValue.
-    }.
-    public override method emitTacCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder callVoid: function convention: callingConvention arguments: arguments
-    }.
+    public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Float64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := void asTacConstant.
 
-    public virtual method emitTacUnboxingCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder callVoid: function convention: callingConvention arguments: arguments
-    }.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Float64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := void asTacConstant.
 
-    public override method emitTacReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-        builder returnVoid
-    }.
+    public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+        := void asTacConstant.
 
-    public override method emitTacMove: (sourceValue: MIRValue) into: (targetValue: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-    }.
-
-    public override method emitTacLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (result: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-    }.
-
-    public override method emitTacStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> Void := {
-    }.
-
-    public override method makeTacTemporaryValueNamed: (name: Symbol) withFunctionBuilder: (functionBuilder: MIRFunctionBuilder) ::=> MIRValue
-        := nil.
+    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoTacWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+        := void asTacConstant.
 }.
 
 HIRValue extend: {
-    public abstract method translateIntoTacValueWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+    public abstract method translateIntoMirValueWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := self subclassResponsibility.
 }.
 
 HIRLiteralConstant extend: {
-    public override method translateIntoTacValueWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+    public override method translateIntoMirValueWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := isBoxed
             ifTrue: (codegen setValue: self translationInto: (codegen translateGenericObjectPointer: (self __slotNamedAt__: #value)))
             ifFalse: (codegen setValue: self translationInto: (type translateHIRLiteralConstant: self intoTacWith: codegen)).
 }.
 
 HIRUndefinedConstant extend: {
-    public override method translateIntoTacValueWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+    public override method translateIntoMirValueWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := codegen setValue: self translationInto: (type translateUndefinedConstant: self intoTacWith: codegen).
 }.
 
@@ -1667,7 +1503,7 @@ HIRGlobalValue extend: {
 }.
 
 HIRFunction extend: {
-    public override method translateIntoTacValueWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+    public override method translateIntoMirValueWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := codegen translateGenericObjectPointer: self sourceObject.
 
     public override method compileDirectTacTranslationWith: (codegen: HIRModuleMIRCodeGenerator) ::=> Void := {
@@ -1676,7 +1512,7 @@ HIRFunction extend: {
 }.
 
 HIRFunctionDefinition extend: {
-    public override method translateIntoTacValueWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+    public override method translateIntoMirValueWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := codegen translateGenericObjectPointer: self sourceObject.
 
     public override method compileDirectTacTranslationWith: (codegen: HIRModuleMIRCodeGenerator) ::=> Void := {
@@ -1688,44 +1524,37 @@ HIRInstruction extend: {
     public virtual method makeTacValueForResultWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
         := type makeTacTemporaryValueNamed: self name withFunctionBuilder: codegen functionBuilder.
 
-    public abstract method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void
+    public abstract method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
         := self subclassResponsibility.
 }.
 
 HIRAllocaInstruction extend: {
-    public override method makeTacValueForResultWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
-        self isLocalOnlyAlloca ifTrue: {
-            let baseType := (self type downCastTo: PointerLikeType) baseType.
-            let localVariable := baseType makeTacTemporaryValueNamed: self name withFunctionBuilder: codegen functionBuilder.
-            codegen localOnlyAllocaDictionary at: self put: localVariable.
-            nil
-        } ifFalse: {
-            super makeTacValueForResultWith: codegen
-        }.
-    }.
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
+        let resultPointerType := self type downCastTo: PointerLikeType.
+        let valueType := resultPointerType baseType.
 
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        tacValue ifNotNil: {
-            self assert: self type isPointerLikeType.
-            let resultPointerType := self type downCastTo: PointerLikeType.
-            let requiredAllocaSize := resultPointerType baseType valueSize.
+        self isLocalOnlyAlloca ifTrue: {
+            let allocaStorage := codegen functionBuilder newTemporary: self name withType: valueType.
+            allocaStorage asValuePointer
+        } ifFalse: {
+            let requiredAllocaSize := valueType  valueSize.
             codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::allocaGC)
                 with: (codegen blockBuilder pointerConstantWith: requiredAllocaSize)
                 with: (codegen translateValue: self valueType)
-                result: tacValue.
+                type: self type
         }
     }.
 }.
 
 HIRBranchInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         let destination := codegen translateValue: self destination.
         codegen blockBuilder branch: destination
     }.
 }.
 
 HIRConditionalBranchInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         let condition := codegen translateValue: self condition.
         let trueDestination := codegen translateValue: self trueDestination.
         let falseDestination := codegen translateValue: self falseDestination.
@@ -1733,70 +1562,63 @@ HIRConditionalBranchInstruction extend: {
     }.
 }.
 
-let translateUnaryPrimitiveInto := {:(MIROperation)operation :: ((Array, MIRValue, HIRFunctionDefinitionMIRCodeGenerator) => Boolean) |
-    {:(Array)arguments :(MIRValue)result :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: Boolean |
+let translateUnaryPrimitiveInto := {:(MIROperation)operation :: ((Array, Type, HIRFunctionDefinitionMIRCodeGenerator) => MIRValue) |
+    {:(Array)arguments :(Type)type :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: MIRValue |
         let operand := codegen translateValue: arguments first.
-        codegen blockBuilder operation: operation with: operand result: result.
-        true
+        codegen blockBuilder operation: operation with: operand type: type
     }
 }.
 
-let translateBinaryPrimitiveInto := {:(MIROperation)operation :: ((Array, MIRValue, HIRFunctionDefinitionMIRCodeGenerator) => Boolean) |
-    {:(Array)arguments :(MIRValue)result :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: Boolean |
+let translateBinaryPrimitiveInto := {:(MIROperation)operation :: ((Array, Type, HIRFunctionDefinitionMIRCodeGenerator) => MIRValue) |
+    {:(Array)arguments :(Type)type :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: MIRValue |
         let left := codegen translateValue: arguments first.
         let right := codegen translateValue: arguments second.
-        codegen blockBuilder operation: operation with: left with: right result: result.
-        true
+        codegen blockBuilder operation: operation with: left with: right type: type
     }
 }.
 
 public global HIRTacPrimitiveCallGenerationTable := #{
     ## Pointer primitive
-    #PointerLikeType::reinterpretCast : {:(Array)arguments :(MIRValue)result :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: Boolean |
-        codegen blockBuilder movePointer: (codegen translateValue: arguments first) into: result.
-        true
+    #PointerLikeType::reinterpretCast : {:(Array)arguments :(Type)type :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: MIRValue |
+        codegen translateValue: arguments first
     }.
-    #PointerLikeType::reinterpretCastTo: : {:(Array)arguments :(MIRValue)result :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: Boolean |
-        codegen blockBuilder movePointer: (codegen translateValue: arguments first) into: result.
-        true
+    #PointerLikeType::reinterpretCastTo: : {:(Array)arguments :(Type)type :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: MIRValue |
+        codegen translateValue: arguments first
     }.
 
     ## Identity equals/not-equals
-    #== : {:(Array)arguments :(MIRValue)result :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: Boolean |
+    #== : {:(Array)arguments :(Type)type :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: MIRValue |
         let leftType => Type := arguments first type.
         let rightType => Type  := arguments second type.
         let hasUndefined := (leftType == UndefinedObject) || (rightType == UndefinedObject).
         let hasPointer := leftType isPointerType || rightType isPointerType.
 
         (hasUndefined && hasPointer) || (leftType isPointerType && rightType isPointerType) ifTrue: {
-            codegen blockBuilder pointerEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second) into: result.
-            return: true
-        }.
-
-        leftType == rightType && leftType isValueType ifTrue: {
-            leftType emitTacEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second) into: result withBlockBuilder: codegen blockBuilder
+            codegen blockBuilder pointerEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second)
         } ifFalse: {
-            codegen blockBuilder pointerEquals: (codegen translateBoxedValue: arguments first) with: (codegen translateBoxedValue: arguments second) into: result
-        }.
-        true
+            leftType == rightType && leftType isValueType ifTrue: {
+                leftType emitMirEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second) withBlockBuilder: codegen blockBuilder
+            } ifFalse: {
+                codegen blockBuilder pointerEquals: (codegen translateBoxedValue: arguments first) with: (codegen translateBoxedValue: arguments second)
+            }
+        }
+
     }.
-    #~~ : {:(Array)arguments :(MIRValue)result :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: Boolean |
+    #~~ : {:(Array)arguments :(Type)type :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: MIRValue |
         let leftType => Type := arguments first type.
         let rightType => Type  := arguments second type.
         let hasUndefined := (leftType == UndefinedObject) || (rightType == UndefinedObject).
         let hasPointer := leftType isPointerType || rightType isPointerType.
 
         (hasUndefined && hasPointer) || (leftType isPointerType && rightType isPointerType) ifTrue: {
-            codegen blockBuilder pointerNotEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second) into: result.
-            return: true
-        }.
-
-        leftType == rightType && leftType isValueType ifTrue: {
-            leftType emitTacNotEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second) into: result withBlockBuilder: codegen blockBuilder
+            codegen blockBuilder pointerNotEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second)
         } ifFalse: {
-            codegen blockBuilder pointerNotEquals: (codegen translateBoxedValue: arguments first) with: (codegen translateBoxedValue: arguments second) into: result
-        }.
-        true
+            leftType == rightType && leftType isValueType ifTrue: {
+                leftType emitMirNotEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second) withBlockBuilder: codegen blockBuilder
+            } ifFalse: {
+                codegen blockBuilder pointerNotEquals: (codegen translateBoxedValue: arguments first) with: (codegen translateBoxedValue: arguments second)
+            }
+        }
     }.
 
     ## Char8 primitives
@@ -2295,83 +2117,83 @@ public global HIRTacPrimitiveCallGenerationTable := #{
 HIRFunctionDefinitionMIRCodeGenerator extend: {
     public method compilePrimitiveFunctionBody => Boolean := {
         ## Attempt to use the primitive generator first.
-        let primitiveGenerator := HIRTacPrimitiveCallGenerationTable atOrNil: ssaFunctionDefinition primitiveName.
-        let hasGeneratedPrimitive mutable := false.
+        let primitiveGenerator type: (Array, Type, HIRFunctionDefinitionMIRCodeGenerator) => MIRValue := HIRTacPrimitiveCallGenerationTable atOrNil: ssaFunctionDefinition primitiveName.
+        let primitiveResultValue mutable => MIRValue := nil.
         primitiveGenerator ifNotNil: {
             functionBuilder basicBlock: #primitive build: {:(MIRBlockBuilder)asm :: Void |
                 self blockBuilder: asm.
                 let canonicalResultType := ssaFunctionDefinition functionType canonicalResultType.
-                let result := canonicalResultType makeTacTemporaryValueNamed: #result withFunctionBuilder: functionBuilder.
-                hasGeneratedPrimitive := primitiveGenerator(ssaFunctionDefinition arguments, result, self).
-                canonicalResultType emitTacReturn: result withBlockBuilder: asm
+                primitiveResultValue := primitiveGenerator(ssaFunctionDefinition arguments, canonicalResultType, self).
+                primitiveResultValue ifNotNil: {
+                    canonicalResultType emitMirReturn: primitiveResultValue withBlockBuilder: asm
+                }.
             }.
         }.
 
-        hasGeneratedPrimitive
+        primitiveResultValue ~~ nil
     }.
 
-    public method compileCall: (calledFunction: HIRValue) withArguments: (arguments: Array) unchecked: (isUnchecked: Boolean) into: (tacValue: MIRValue) type: (resultType: Type)::=> Void := {
+    public method compileCall: (calledFunction: HIRValue) withArguments: (arguments: Array) unchecked: (isUnchecked: Boolean) type: (resultType: Type) ::=> MIRValue := {
         ## Attempt to use the primitive generator first.
-        let primitiveGenerator := HIRTacPrimitiveCallGenerationTable atOrNil: calledFunction primitiveName.
+        let primitiveGenerator type: (Array, Type, HIRFunctionDefinitionMIRCodeGenerator) => MIRValue := HIRTacPrimitiveCallGenerationTable atOrNil: calledFunction primitiveName.
         primitiveGenerator ifNotNil: {
-            primitiveGenerator(arguments, tacValue, self) ifTrue: {
-                return: void
+            let primitiveValue := primitiveGenerator(arguments, resultType, self).
+            primitiveValue ifNotNil: {
+                return: primitiveValue
             }
         }.
 
         ## If this is a pointer like type, then we must perform a direct call.
         calledFunction type isPointerLikeType ifTrue: {
             let entryPoint := self translateValue: calledFunction.
-            let tacArguments := arguments collect: {:(HIRValue)eachArgument :: MIRValue | self translateValue: eachArgument}.
-            resultType
-                emitTacCall: entryPoint convention: self tacFunction compilationTarget defaultCallingConvention
-                withArguments: tacArguments into: tacValue
-                withBlockBuilder: self blockBuilder.
-            return: void.
+            let mirArguments := arguments collect: {:(HIRValue)eachArgument :: MIRValue | self translateValue: eachArgument}.
+            return: (resultType
+                emitMirCall: entryPoint convention: self mirFunction compilationTarget defaultCallingConvention
+                withArguments: mirArguments
+                withBlockBuilder: self blockBuilder)
         }.
 
         isUnchecked ifTrue: {
             let calledFunctionType := calledFunction type.
             let canonicalResultType := calledFunctionType canonicalResultType.
-            let canonicalResult := canonicalResultType == resultType
-                ifTrue: (tacValue)
-                ifFalse: (self tacFunction newTemporary: #callCanonicalResult withType: canonicalResultType).
 
-            calledFunction isCaptureless ifTrue: {
+            let canonicalResult := calledFunction isCaptureless ifTrue: {
                 let entryPoint := self translateCapturelessUncheckedFunctionEntryPoint: calledFunction.
-                let tacArguments := arguments collectWithIndex: {:(HIRValue)eachArgument :(Size)index :: MIRValue |
+                let mirArguments := arguments collectWithIndex: {:(HIRValue)eachArgument :(Size)index :: MIRValue |
                     self translateValue: eachArgument withExpectedType: (calledFunctionType canonicalTypeForApplicationArgumentWithIndex: index)
                 }.
 
                 canonicalResultType
-                    emitTacCall: entryPoint convention: self tacFunction compilationTarget defaultCallingConvention
-                    withArguments: tacArguments into: canonicalResult
+                    emitMirCall: entryPoint convention: self mirFunction compilationTarget defaultCallingConvention
+                    withArguments: mirArguments
                     withBlockBuilder: self blockBuilder
 
             } ifFalse: {
-                let tacCalledFunction := self translateValue: calledFunction.
+                let mirCalledFunction := self translateValue: calledFunction.
                 let entryPoint := self translateUncheckedFunctionEntryPoint: calledFunction functionType: calledFunctionType resultType: resultType argumentCount: arguments size.
-                let tacArguments := arguments collectWithIndex: {:(HIRValue)eachArgument :(Size)index :: MIRValue |
+                let mirArguments := arguments collectWithIndex: {:(HIRValue)eachArgument :(Size)index :: MIRValue |
                     self translateValue: eachArgument withExpectedType: (calledFunctionType canonicalTypeForApplicationArgumentWithIndex: index)
                 }.
 
                 canonicalResultType
-                    emitTacCall: entryPoint convention: self tacFunction compilationTarget defaultCallingConvention
-                    withArguments: (Array with: tacCalledFunction) -- tacArguments into: canonicalResult
+                    emitMirCall: entryPoint convention: self mirFunction compilationTarget defaultCallingConvention
+                    withArguments: (Array with: mirCalledFunction) -- mirArguments
                     withBlockBuilder: self blockBuilder
             }.
 
-            canonicalResult ~~ tacValue ifTrue: {
-                resultType emitTacCheckThenUnbox: canonicalResult into: tacValue withHIRCodeGenerator: self
+            canonicalResultType == resultType ifTrue: {
+                canonicalResult
+            } ifFalse: {
+                resultType emitMirCheckAndUnbox: canonicalResult withHIRCodeGenerator: self
             }
         } ifFalse: {
-            let tacCalledFunction := self translateBoxedValue: calledFunction.
+            let mirCalledFunction := self translateBoxedValue: calledFunction.
             let entryPoint := self translateCheckedFunctionEntryPoint: calledFunction argumentCount: arguments size.
-            let tacArguments := arguments collect: {:(HIRValue)eachArgument :: MIRValue | self translateBoxedValue: eachArgument}.
+            let mirArguments := arguments collect: {:(HIRValue)eachArgument :: MIRValue | self translateBoxedValue: eachArgument}.
             entryPoint ifNotNil: {
                 resultType
-                    emitTacUnboxingCall: entryPoint convention: self tacFunction compilationTarget defaultCallingConvention
-                    withArguments: (Array with: tacCalledFunction) -- tacArguments into: tacValue
+                    emitMirUnboxingCall: entryPoint convention: self mirFunction compilationTarget defaultCallingConvention
+                    withArguments: (Array with: mirCalledFunction) -- mirArguments
                     withHIRCodeGenerator: self.
             } ifNil: {
                 self blockBuilder trap
@@ -2381,78 +2203,75 @@ HIRFunctionDefinitionMIRCodeGenerator extend: {
 }.
 
 HIRCallInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen compileCall: calledFunction withArguments: arguments unchecked: isUnchecked into: tacValue type: self type
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
+        codegen compileCall: calledFunction withArguments: arguments unchecked: isUnchecked type: self type
     }.
 }.
 
 HIRBitcastInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         ## FIXME: Add support for non-pointer values.
-        codegen blockBuilder movePointer: (codegen translateValue: self value) into: tacValue
+        codegen translateValue: self value
     }.
 }.
 
 HIRCoerceValueInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        self type emitTacCoerceInto: (codegen translateValue: self targetType) thenUnbox: (codegen translateValue: self value) into: tacValue withHIRCodeGenerator: codegen
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
+        self type emitMirCoerceInto: (codegen translateValue: self targetType) thenUnbox: (codegen translateValue: self value) withHIRCodeGenerator: codegen
     }.
 }.
 
 HIRDownCastInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         isUnchecked ifTrue: {
-            self type emitTacUncheckedUnbox: (codegen translateValue: self value) into: tacValue withHIRCodeGenerator: codegen
+            self type emitMirUncheckedUnbox: (codegen translateValue: self value) withHIRCodeGenerator: codegen
         } ifFalse: {
             self targetType isLiteralConstant ifTrue: {
-                self type emitTacCheckThenUnbox: (codegen translateValue: self value) into: tacValue withHIRCodeGenerator: codegen
+                self type emitMirCheckAndUnbox: (codegen translateValue: self value) withHIRCodeGenerator: codegen
             } ifFalse: {
-                self type emitTacCheckInto: (codegen translateValue: self targetType) thenUnbox: (codegen translateValue: self value) into: tacValue withHIRCodeGenerator: codegen
+                self type emitMirCheckInto: (codegen translateValue: self targetType) thenUnbox: (codegen translateValue: self value) withHIRCodeGenerator: codegen
             }.
         }
     }.
 }.
 
 HIRLoadInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        (codegen localOnlyAllocaDictionary atOrNil: self storage) ifNotNil: {:(MIRValue)localOnlyAlloca :: Void | 
-            self type emitTacMove: localOnlyAlloca into: tacValue withBlockBuilder: codegen blockBuilder
-        } ifNil: {
-            self type emitTacLoadFromPointer: (codegen translateValue: self storage) constantOffset: 0i64 into: tacValue withBlockBuilder: codegen blockBuilder
-        }
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
+        self type emitMirLoadFromPointer: (codegen translateValue: self storage) constantOffset: 0i64 withBlockBuilder: codegen blockBuilder
     }.
 }.
 
 HIRMakeArrayInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::makeArrayWithSize)
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
+        let array := codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::makeArrayWithSize)
             with: (codegen blockBuilder pointerConstantWith: self elements size asUInt64)
-            result: tacValue.
+            type: Array.
 
         let headerSize := (self type objectHeaderSizeForObjectModel: codegen compilationTarget objectModel) asInt64.
         let pointerSize := codegen compilationTarget pointerSize asInt64.
 
         self elements doWithIndex: {:(HIRValue)eachElement :(Size)eachElementIndex :: Void |
             let eachElementValue := codegen translateBoxedValue: eachElement.
-            codegen blockBuilder storePointer: eachElementValue into: tacValue constantOffset: headerSize + (eachElementIndex asInt64 * pointerSize)
+            codegen blockBuilder storePointer: eachElementValue into: array constantOffset: headerSize + (eachElementIndex asInt64 * pointerSize)
         }.
+
+        array
     }.
 }.
 
 HIRMakeAssociationInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::makeAssociation)
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::makeAssociation)
             with: (codegen translateBoxedValue: self key)
             with: (codegen translateBoxedValue: self value)
-            result: tacValue.
-    }.
+            type: self type.
 }.
 
 HIRMakeByteArrayInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::makeByteArrayWithSize)
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
+        let byteArray := codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::makeByteArrayWithSize)
             with: (codegen blockBuilder pointerConstantWith: self elements size asUInt64)
-            result: tacValue.
+            type: self type.
 
         let headerSize := (self type objectHeaderSizeForObjectModel: codegen compilationTarget objectModel) asInt64.
         let pointerSize := codegen compilationTarget pointerSize asInt64.
@@ -2460,154 +2279,153 @@ HIRMakeByteArrayInstruction extend: {
         self elements doWithIndex: {:(HIRValue)eachElement :(Size)eachElementIndex :: Void |
             let eachElementValue := codegen translateValue: eachElement.
 
-            codegen blockBuilder storeInt8: eachElementValue into: tacValue constantOffset: headerSize + (eachElementIndex asInt64 * pointerSize)
+            codegen blockBuilder storeInt8: eachElementValue into: byteArray constantOffset: headerSize + (eachElementIndex asInt64 * pointerSize)
         }.
+
+        byteArray
     }.
 }.
 
 HIRMakeClosureInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         let captureVectorType := SequenceTupleTypeTemplate(self captures collect: {:(HIRValue)eachCapture :: Type | eachCapture type ifNil: Untyped}).
-        let tacCaptureVector := codegen blockBuilder function newTemporary: #captureVector withType: captureVectorType.
 
         ## Allocate the capture vector.
-        codegen blockBuilder
+        let captureVector := codegen blockBuilder
             callPointer: (codegen translateRuntimeFunction: ObjectModel::allocateCaptureVectorOfType)
             with: (codegen moduleCodeGenerator translateGenericObjectPointer: captureVectorType)
-            result: tacCaptureVector.
+            type: captureVectorType.
 
         ## Fill the capture vector.
         let headerSize := captureVectorType objectHeaderSizeForObjectModel: codegen compilationTarget objectModel.
         self captures doWithIndex: {:(HIRValue)eachCapture :(Size)eachCaptureIndex :: Void |
             let captureVectorSlot := captureVectorType slots at: eachCaptureIndex.
             eachCapture type
-                emitTacStore: (codegen translateValue: eachCapture)
-                intoPointer: tacCaptureVector constantOffset: headerSize asInt64 + captureVectorSlot validOffset asInt64
+                emitMirStore: (codegen translateValue: eachCapture)
+                intoPointer: captureVector constantOffset: headerSize asInt64 + captureVectorSlot validOffset asInt64
                 withBlockBuilder: codegen blockBuilder
         }.
 
         ## Create the closure.
         codegen blockBuilder
             callPointer: (codegen translateRuntimeFunction: ObjectModel::makeClosureWithCaptureVector)
-            with: (codegen translateValue: functionDefinition) with: tacCaptureVector
-            result: tacValue
+            with: (codegen translateValue: functionDefinition) with: captureVector
+            type: self type
     }.
 }.
 
 HIRMakeDictionaryInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::makeByteArrayWithSize)
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
+        let dictionary := codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::makeByteArrayWithSize)
             with: (codegen blockBuilder pointerConstantWith: self elements size asUInt64)
-            result: tacValue.
+            type: Dictionary.
 
         let addFunction := codegen translateRuntimeFunction: ObjectModel::Dictionary::add.
         self elements do: {:(HIRValue)eachElement :(Size)eachElementIndex :: Void |
             let eachElementValue := codegen translateValue: eachElement.
-            codegen blockBuilder callVoid: addFunction with: tacValue with: eachElementValue
+            codegen blockBuilder callVoid: addFunction with: dictionary with: eachElementValue
         }.
+
+        dictionary
     }.
 }.
 
 HIRSendInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        let tacReceiver := codegen translateBoxedValue: self receiver.
-        let tacReceiverLookupType := self receiverLookupType ifNotNil: (codegen translateBoxedValue: self receiverLookupType).
-        let tacSelector := codegen translateBoxedValue: self selector.
-        let tacArguments := self arguments collect: {:(HIRValue)eachArgument :: MIRValue | codegen translateBoxedValue: eachArgument}.
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
+        let mirReceiver := codegen translateBoxedValue: self receiver.
+        let mirReceiverLookupType := self receiverLookupType ifNotNil: (codegen translateBoxedValue: self receiverLookupType).
+        let mirSelector := codegen translateBoxedValue: self selector.
+        let mirArguments := self arguments collect: {:(HIRValue)eachArgument :: MIRValue | codegen translateBoxedValue: eachArgument}.
 
-        tacReceiverLookupType ifNil: {
+        mirReceiverLookupType ifNil: {
             let trampoline := codegen translateRuntimeFunction: (ObjectModel::SendTrampolines at: self arguments size).
             self type
-                emitTacUnboxingCall: trampoline convention: trampoline callingConvention
-                withArguments: (Array with: MIRPolymorphicInlineCache new with: tacReceiver with: tacSelector) -- tacArguments into: tacValue
+                emitMirUnboxingCall: trampoline convention: trampoline callingConvention
+                withArguments: (Array with: MIRPolymorphicInlineCache new with: mirReceiver with: mirSelector) -- mirArguments
                 withHIRCodeGenerator: codegen.
         } ifNotNil: {
             let trampoline := codegen translateRuntimeFunction: (ObjectModel::SendWithReceiverTypeTrampolines at: self arguments size).
             self type
-                emitTacUnboxingCall: trampoline convention: trampoline callingConvention
-                withArguments: (Array with: MIRPolymorphicInlineCache new with: tacReceiver with: tacReceiverLookupType with: tacSelector) -- tacArguments into: tacValue
+                emitMirUnboxingCall: trampoline convention: trampoline callingConvention
+                withArguments: (Array with: MIRPolymorphicInlineCache new with: mirReceiver with: mirReceiverLookupType with: mirSelector) -- mirArguments
                 withHIRCodeGenerator: codegen.
         }.
     }.
 }.
 
 HIRSetDebugValueForBindingInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        (codegen localOnlyAllocaDictionary atOrNil: self value) ifNotNil: {:(MIRValue)localOnlyAlloca :: Void | 
-            codegen blockBuilder debugSetMutableBinding: self binding value: localOnlyAlloca
-        } ifNil: {
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
+        self value isAllocaInstruction ifTrue: {
+            codegen blockBuilder debugSetMutableBinding: self binding value: (codegen translateValue: self value)
+        } ifFalse: {
             codegen blockBuilder debugSetBinding: self binding value: (codegen translateValue: self value)
-        }.
-    }.
-}.
-
-HIRStoreInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        let pointerType := self storage type.
-        self assert: pointerType isPointerLikeType.
-        let baseType := (pointerType downCastTo: PointerLikeType) baseType.
-        let valueToStore := codegen translateValue: self value withExpectedType: baseType.
-        valueToStore ifNil: {return: void}.
-
-        (codegen localOnlyAllocaDictionary atOrNil: self storage) ifNotNil: {:(MIRValue)localOnlyAlloca :: Void | 
-            baseType emitTacMove: valueToStore into: localOnlyAlloca withBlockBuilder: codegen blockBuilder
-        } ifNil: {
-            baseType emitTacStore: valueToStore intoPointer: (codegen translateValue: self storage) constantOffset: 0i64 withBlockBuilder: codegen blockBuilder
         }
     }.
 }.
 
+HIRStoreInstruction extend: {
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
+        let pointerType := self storage type.
+        self assert: pointerType isPointerLikeType.
+        let baseType := (pointerType downCastTo: PointerLikeType) baseType.
+        let valueToStore := codegen translateValue: self value withExpectedType: baseType.
+        self assert: valueToStore isNotNil.
+
+        baseType emitMirStore: valueToStore intoPointer: (codegen translateValue: self storage) constantOffset: 0i64 withBlockBuilder: codegen blockBuilder
+    }.
+}.
+
 HIRPointerElementAtInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         let pointerValue := codegen translateValue: self pointer.
         let indexValue := codegen translateValue: self index.
         let elementSize := (self pointer type downCastTo: PointerLikeType) baseType alignedValueSize.
-        codegen blockBuilder loadEffectiveAddress: pointerValue index: indexValue constantScale: elementSize asInt64 into: tacValue
+        codegen blockBuilder loadEffectiveAddress: pointerValue index: indexValue constantScale: elementSize asInt64 type: self type
     }.
 }.
 
 HIRReferenceElementAtInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         let referenceValue := codegen translateValue: self reference.
         let indexValue := codegen translateValue: self index.
         let referencedType := (self reference type downCastTo: PointerLikeType) baseType.
-        referencedType emitTacReference: referenceValue elementPointerAt: indexValue into: tacValue withBlockBuilder: codegen blockBuilder
+        referencedType emitMirReference: referenceValue elementPointerAt: indexValue type: self type withBlockBuilder: codegen blockBuilder
     }.
 }.
 
 HIRTypeSlotReferenceAtInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         let pointerValue := codegen translateValue: self tuple.
         let headerSize := (self tuple type ifNil: AnyValue) objectHeaderSizeForObjectModel: codegen compilationTarget objectModel.
-        codegen blockBuilder addPointer: pointerValue constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 into: tacValue
+        codegen blockBuilder pointerAdd: pointerValue constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 type: self type
     }.
 }.
 
 HIRTypeSlotAtInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         let headerSize := (self tuple type ifNil: AnyValue) objectHeaderSizeForObjectModel: codegen compilationTarget objectModel.
-        self type emitTacLoadFromPointer: (codegen translateValue: self tuple) constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 into: tacValue withBlockBuilder: codegen blockBuilder
+        self type emitMirLoadFromPointer: (codegen translateValue: self tuple) constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 withBlockBuilder: codegen blockBuilder
     }.
 }.
 
 HIRTypeSlotAtPutInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         let headerSize := (self tuple type ifNil: AnyValue) objectHeaderSizeForObjectModel: codegen compilationTarget objectModel.
-        self value type emitTacStore: (codegen translateValue: self value) intoPointer: (codegen translateValue: self tuple) constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 withBlockBuilder: codegen blockBuilder
+        self value type emitMirStore: (codegen translateValue: self value) intoPointer: (codegen translateValue: self tuple) constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 withBlockBuilder: codegen blockBuilder
     }.
 }.
 
 HIRReturnInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
-        (self value type isSubtypeOf: ControlFlowEscapeType) ifTrue: {return: void}.
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
+        (self value type isSubtypeOf: ControlFlowEscapeType) ifTrue: {return: void asTacConstant}.
 
         let canonicalResultType := codegen ssaFunctionDefinition functionType canonicalResultType.
-        canonicalResultType emitTacReturn: (codegen translateValue: self value withExpectedType: canonicalResultType) withBlockBuilder: codegen blockBuilder
+        canonicalResultType emitMirReturn: (codegen translateValue: self value withExpectedType: canonicalResultType) withBlockBuilder: codegen blockBuilder
     }.
 }.
 
 HIRUnreachableInstruction extend: {
-    public override method compileIntoTacValue: (tacValue: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> Void := {
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         codegen blockBuilder unreachableTrap
     }.
 }.

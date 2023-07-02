@@ -7,11 +7,8 @@ let addFunction := module build: #add function: {:(MIRFunctionBuilder)functionBu
     let y := function newArgument: #y withType: Int32.
     function arguments: (x, y).
 
-    functionBuilder basicBlock: #entry build: {:(MIRBlockBuilder)asm :: Void |
-        let result := asm temporaryInt32.
-        asm
-            int32Add: x with: y into: result;
-            returnInt32: result
+    functionBuilder basicBlock: #entry build: {:(MIRBlockBuilder)mir :: Void |
+        mir returnInt32: (mir int32Add: x with: y type: Int32)
     }
 }.
 
@@ -21,11 +18,8 @@ let floatAddFunction := module build: #floatAdd function: {:(MIRFunctionBuilder)
     let y := function newArgument: #y withType: Float32.
     function arguments: (x, y).
 
-    functionBuilder basicBlock: #entry build: {:(MIRBlockBuilder)asm :: Void |
-        let result := asm temporaryFloat32.
-        asm
-            float32Add: x with: y into: result;
-            returnFloat32: result
+    functionBuilder basicBlock: #entry build: {:(MIRBlockBuilder)mir :: Void |
+        mir returnFloat32: (mir float32Add: x with: y type: Float32)
     }
 }.
 
@@ -35,21 +29,14 @@ let doubleAddFunction := module build: #doubleAdd function: {:(MIRFunctionBuilde
     let y := function newArgument: #y withType: Float64.
     function arguments: (x, y).
 
-    functionBuilder basicBlock: #entry build: {:(MIRBlockBuilder)asm :: Void |
-        let result := asm temporaryFloat64.
-        asm
-            float64Add: x with: y into: result;
-            returnFloat64: result
+    functionBuilder basicBlock: #entry build: {:(MIRBlockBuilder)mir :: Void |
+        mir returnFloat64: (mir float64Add: x with: y type: Float64)
     }
 }.
 
 module build: #main function: {:(MIRFunctionBuilder)functionBuilder :: Void |
-    functionBuilder basicBlock: #entry build: {:(MIRBlockBuilder)asm :: Void |
-        let result := asm temporaryInt32.
-
-        asm
-            callInt32: addFunction arguments: (42i32 asTacConstant, -5i32 asTacConstant) result: result;
-            returnInt32: result
+    functionBuilder basicBlock: #entry build: {:(MIRBlockBuilder)mir :: Void |
+        mir returnInt32: (mir callInt32: addFunction arguments: (42i32 asTacConstant, -5i32 asTacConstant) type: Int32)
     }
 }.
 

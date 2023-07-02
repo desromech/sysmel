@@ -59,16 +59,16 @@ MIRPhysicalLocation extend: {
     public virtual method x86::relCall32OrInt64For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 relativeCall32 immediate or int64 register".
 
-    public virtual method x86::loadFromVariable: (local: MIRVariable) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
+    public virtual method x86::loadFromVariable: (local: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self shouldBeImplemented.
 
-    public virtual method x86::storeInVariable: (local: MIRVariable) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
+    public virtual method x86::storeInVariable: (local: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self shouldBeImplemented.
 
-    public virtual method x86_64::loadFromVariable: (local: MIRVariable) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
+    public virtual method x86_64::loadFromVariable: (local: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self shouldBeImplemented.
 
-    public virtual method x86_64::storeInVariable: (local: MIRVariable) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
+    public virtual method x86_64::storeInVariable: (local: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self shouldBeImplemented.
 }.
 
@@ -126,7 +126,7 @@ public final class MIRX86IntegerRegister superclass: MIRPhysicalIntegerRegister;
             := self new int8: int8; int16: int16; int32: int32; yourself.
     }.
 
-    public override method x86::loadFromVariable: (variable: MIRVariable) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+    public override method x86::loadFromVariable: (variable: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         let variableSize := variable size.
         let isSignedExtended := variable isSignedExtended.
         self assert: (variableSize = 1sz) || (variableSize = 2sz) || (variableSize = 4sz).
@@ -139,7 +139,7 @@ public final class MIRX86IntegerRegister superclass: MIRPhysicalIntegerRegister;
         variableSize = 4u64 ifTrue: (codegen textSection x86::mov: self x86::int32 src: variablePointer).
     }.
 
-    public override method x86::storeInVariable: (variable: MIRVariable) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+    public override method x86::storeInVariable: (variable: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         let variableSize := variable size.
         self assert: (variableSize = 1u64) || (variableSize = 2u64) || (variableSize = 4u64).
         
@@ -204,7 +204,7 @@ public final class MIRX86_64IntegerRegister superclass: MIRPhysicalIntegerRegist
             := self new int8: int8; int16: int16; int32: int32; int64: int64; yourself.
     }.
 
-    public override method x86_64::loadFromVariable: (variable: MIRVariable) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+    public override method x86_64::loadFromVariable: (variable: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         let variableSize := variable size.
         variableSize = 0sz ifTrue: {return: void}.
 
@@ -220,7 +220,7 @@ public final class MIRX86_64IntegerRegister superclass: MIRPhysicalIntegerRegist
         variableSize = 8u64 ifTrue: (codegen textSection x86::mov: self x86::int64 src: variablePointer).
     }.
 
-    public override method x86_64::storeInVariable: (variable: MIRVariable) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+    public override method x86_64::storeInVariable: (variable: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         let variableSize := variable size.
         variableSize = 0sz ifTrue: {return: void}.
 
@@ -253,7 +253,7 @@ public final class MIRX86VectorRegister superclass: MIRPhysicalVectorRegister; d
     public virtual method x86::vector128For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
         := register.
 
-    public override method x86::loadFromVariable: (variable: MIRVariable) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+    public override method x86::loadFromVariable: (variable: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         let variableSize := variable size.
         variableSize = 0sz ifTrue: {return: void}.
 
@@ -267,7 +267,7 @@ public final class MIRX86VectorRegister superclass: MIRPhysicalVectorRegister; d
         variableSize = 16u64 ifTrue: (codegen textSection x86::movaps: self register src: variablePointer).
     }.
 
-    public virtual method x86::storeInVariable: (variable: MIRVariable) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+    public virtual method x86::storeInVariable: (variable: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         let variableSize := variable size.
         variableSize = 0sz ifTrue: {return: void}.
 
@@ -281,7 +281,7 @@ public final class MIRX86VectorRegister superclass: MIRPhysicalVectorRegister; d
         variableSize = 16u64 ifTrue: (codegen textSection x86::movaps: variablePointer src: register).
     }.
 
-    public override method x86_64::loadFromVariable: (variable: MIRVariable) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+    public override method x86_64::loadFromVariable: (variable: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         let variableSize := variable size.
         variableSize = 0sz ifTrue: {return: void}.
 
@@ -295,7 +295,7 @@ public final class MIRX86VectorRegister superclass: MIRPhysicalVectorRegister; d
         variableSize = 16u64 ifTrue: (codegen textSection x86::movaps: self register src: variablePointer).
     }.
 
-    public virtual method x86_64::storeInVariable: (variable: MIRVariable) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+    public virtual method x86_64::storeInVariable: (variable: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         let variableSize := variable size.
         variableSize = 0sz ifTrue: {return: void}.
 
@@ -517,7 +517,7 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRCallingConventi
         let argumentBaseOffset := 16u64.
         let stackArgumentAlignment := 8u64.
 
-        function arguments do: {:(MIRArgumentVariable)argument :: Void |
+        function arguments do: {:(MIRArgumentValue)argument :: Void |
             let register := registerAssignmentState assignRegisterToValue: argument.
             register ifNotNil: {
                 argument passingRegister: register
@@ -548,6 +548,11 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRCallingConventi
     }.
 
     public override method registerConstraintsOfCallInt64: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
+        self registerConstraintsOfCall: instruction with: allocator.
+        allocator allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction.
+    }.
+
+    public override method registerConstraintsOfCallPointer: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
         self registerConstraintsOfCall: instruction with: allocator.
         allocator allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction.
     }.
@@ -629,6 +634,10 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRCallingConventi
     }.
 
     public override method asm::generateCallInt64: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        self asm::generateCall: instruction with: codegen
+    }.
+
+    public override method asm::generateCallPointer: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         self asm::generateCall: instruction with: codegen
     }.
 
@@ -736,6 +745,12 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
 }.
 
 MIRValue extend: {
+    public abstract method x86::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress
+        := self subclassResponsibility.
+
+    public abstract method x86_64::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress
+        := self subclassResponsibility.
+
     public abstract method x86::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self subclassResponsibility.
 
@@ -784,12 +799,6 @@ MIRProgramEntity extend: {
 }.
 
 MIRVariable extend: {
-    public virtual method x86::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress
-        := self subclassResponsibility.
-
-    public virtual method x86_64::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress
-        := self subclassResponsibility.
-
     public override method x86_64::pushWith: (codegen: MIRFunctionAsmCodeGenerator) scratchRegister: (scratchRegister: AsmInstructionOperand)::=> Void := {
         let variableSize := self size.
         (variableSize = 1sz) || (variableSize = 2sz) || (variableSize = 4sz) || (variableSize = 8sz) ifTrue: {
@@ -838,12 +847,69 @@ MIRVariable extend: {
     }.
 }.
 
-MIRLocalVariable extend: {
+MIRLocalValue extend: {
+    public override method x86_64::pushWith: (codegen: MIRFunctionAsmCodeGenerator) scratchRegister: (scratchRegister: AsmInstructionOperand)::=> Void := {
+        let variableSize := self size.
+        (variableSize = 1sz) || (variableSize = 2sz) || (variableSize = 4sz) || (variableSize = 8sz) ifTrue: {
+            let isSignedExtended := self isSignedExtended.
+
+            let variablePointer := self x86_64::pointerWithCodegen: codegen.
+            variableSize = 1u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: scratchRegister src: variablePointer).
+            variableSize = 1u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: scratchRegister src: variablePointer).
+            variableSize = 2u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: scratchRegister src: variablePointer).
+            variableSize = 2u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: scratchRegister src: variablePointer).
+            variableSize = 4u64 ifTrue: (codegen textSection x86::mov: scratchRegister src: variablePointer).
+            variableSize = 8u64 ifTrue: {
+                codegen textSection x86::push: variablePointer
+            } ifFalse: {
+                codegen textSection x86::push: scratchRegister
+            }.
+            codegen textSection cfiStackSizeAdvance: 8i64.
+        } ifFalse: {
+            ## TODO: Implement this
+            codegen textSection x86::int3; x86::nop
+        }
+    }.
+    
     public override method x86::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress
         := AsmX86RegisterAddress base: X86::EBP size: self size asUInt8 displacement: self offset asInt32 asAsmImmediate.
 
     public override method x86_64::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress
         := AsmX86RegisterAddress base: X86::RBP size: self size asUInt8 displacement: self offset asInt32 asAsmImmediate.
+
+    public override method x86::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        register x86::loadFromVariable: self with: codegen
+    }.
+
+    public override method x86::moveFromRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        register x86::storeInVariable: self with: codegen
+    }.
+
+    public override method x86::movePointerIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::lea: (register x86::int32For: codegen) src: (self x86::pointerWithCodegen: codegen)
+    }.
+
+    public override method x86_64::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        register x86_64::loadFromVariable: self with: codegen
+    }.
+
+    public override method x86_64::moveFromRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        register x86_64::storeInVariable: self with: codegen
+    }.
+
+    public override method x86_64::movePointerIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::lea: (register x86::int64For: codegen) src: (self x86_64::pointerWithCodegen: codegen)
+    }.
+}.
+
+MIRValuePointer extend: {
+    public override method x86::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::lea: (register x86::int64For: codegen) src: (value x86::pointerWithCodegen: codegen)
+    }.
+
+    public override method x86_64::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::lea: (register x86::int64For: codegen) src: (value x86_64::pointerWithCodegen: codegen)
+    }.
 }.
 
 MIRCaptureVariable extend: {
@@ -1360,6 +1426,34 @@ MIR::Operation::Int64Compare
         codegen textSection x86::int3
     }.
 
+MIR::Operation::PointerAdd
+    forTarget: #x86 registerConstraintsWith: x86::integerAluInt32RegisterConstraints;
+    forTarget: #x86 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen);
+            x86::add: (instruction resultRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen)
+    };
+    forTarget: #x86_64 registerConstraintsWith: x86::integerAluInt64RegisterConstraints;
+    forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen);
+            x86::add: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::immediateS32OrInt64For: codegen)
+    }.
+
+MIR::Operation::PointerSub
+    forTarget: #x86 registerConstraintsWith: x86::integerAluInt32RegisterConstraints;
+    forTarget: #x86 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen);
+            x86::sub: (instruction resultRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen)
+    };
+    forTarget: #x86_64 registerConstraintsWith: x86::integerAluInt64RegisterConstraints;
+    forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen);
+            x86::sub: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::immediateS32OrInt64For: codegen)
+    }.
+
 let x86::integerMul32RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterForInstructionResult: instruction;
@@ -1406,17 +1500,31 @@ MIR::Operation::Int64Mul
             x86::imul: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::int64For: codegen)
     }.
 
+MIR::Operation::PointerMul
+    forTarget: #x86 registerConstraintsWith: x86::integerMul32RegisterConstraints;
+    forTarget: #x86 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen);
+            x86::imul: (instruction resultRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen)
+    };
+    forTarget: #x86_64 registerConstraintsWith: x86::integerMul64RegisterConstraints;
+    forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen);
+            x86::imul: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::int64For: codegen)
+    }.
+
 MIR::Operation::Int8UDiv
     forTarget: #x86 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86::EAX forInstructionResult: instruction;
+            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister8ForInstruction: instruction operandAt: 1sz
     };
     forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction;
+            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister8ForInstruction: instruction operandAt: 1sz
     };
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
@@ -1427,14 +1535,14 @@ MIR::Operation::Int8UDiv
 MIR::Operation::Int8URem
     forTarget: #x86 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86::EAX forInstructionResult: instruction;
+            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister8ForInstruction: instruction operandAt: 1sz
     };
     forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction;
+            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister8ForInstruction: instruction operandAt: 1sz
     };
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
@@ -1446,14 +1554,14 @@ MIR::Operation::Int8URem
 MIR::Operation::Int8SDiv
     forTarget: #x86 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86::EAX forInstructionResult: instruction;
+            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister8ForInstruction: instruction operandAt: 1sz
     };
     forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction;
+            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister8ForInstruction: instruction operandAt: 1sz
     };
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
@@ -1464,14 +1572,14 @@ MIR::Operation::Int8SDiv
 MIR::Operation::Int8SRem
     forTarget: #x86 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86::EAX forInstructionResult: instruction;
+            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister8ForInstruction: instruction operandAt: 1sz
     };
     forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction;
+            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister8ForInstruction: instruction operandAt: 1sz
     };
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
@@ -1483,15 +1591,15 @@ MIR::Operation::Int8SRem
 MIR::Operation::Int16UDiv
     forTarget: #x86 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86::EAX forInstructionResult: instruction;
+            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86::EDX forInstruction: instruction scratchAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
     forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction;
+            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
@@ -1504,15 +1612,15 @@ MIR::Operation::Int16UDiv
 MIR::Operation::Int16URem
     forTarget: #x86 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86::EDX forInstructionResult: instruction;
+            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86::EDX forInstruction: instruction scratchAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
     forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RDX forInstructionResult: instruction;
+            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
@@ -1525,15 +1633,15 @@ MIR::Operation::Int16URem
 MIR::Operation::Int16SDiv
     forTarget: #x86 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86::EAX forInstructionResult: instruction;
+            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86::EDX forInstruction: instruction scratchAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
     forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction;
+            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
@@ -1546,15 +1654,15 @@ MIR::Operation::Int16SDiv
 MIR::Operation::Int16SRem
     forTarget: #x86 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86::EDX forInstructionResult: instruction;
+            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86::EDX forInstruction: instruction scratchAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
     forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RDX forInstructionResult: instruction;
+            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
@@ -1567,15 +1675,15 @@ MIR::Operation::Int16SRem
 MIR::Operation::Int32UDiv
     forTarget: #x86 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86::EAX forInstructionResult: instruction;
+            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86::EDX forInstruction: instruction scratchAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
     forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction;
+            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
@@ -1588,15 +1696,15 @@ MIR::Operation::Int32UDiv
 MIR::Operation::Int32URem
     forTarget: #x86 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86::EDX forInstructionResult: instruction;
+            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86::EDX forInstruction: instruction scratchAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
     forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RDX forInstructionResult: instruction;
+            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
@@ -1609,15 +1717,15 @@ MIR::Operation::Int32URem
 MIR::Operation::Int32SDiv
     forTarget: #x86 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86::EAX forInstructionResult: instruction;
+            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86::EDX forInstruction: instruction scratchAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
     forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction;
+            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
@@ -1630,15 +1738,15 @@ MIR::Operation::Int32SDiv
 MIR::Operation::Int32SRem
     forTarget: #x86 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86::EDX forInstructionResult: instruction;
+            allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86::EDX forInstruction: instruction scratchAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
     forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RDX forInstructionResult: instruction;
+            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
@@ -1651,8 +1759,8 @@ MIR::Operation::Int32SRem
 MIR::Operation::Int64UDiv
     forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction;
+            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
@@ -1665,8 +1773,8 @@ MIR::Operation::Int64UDiv
 MIR::Operation::Int64URem
     forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RDX forInstructionResult: instruction;
+            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
@@ -1679,8 +1787,8 @@ MIR::Operation::Int64URem
 MIR::Operation::Int64SDiv
     forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction;
+            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
@@ -1693,8 +1801,8 @@ MIR::Operation::Int64SDiv
 MIR::Operation::Int64SRem
     forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RDX forInstructionResult: instruction;
+            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateRegister: MIR::X86_64::RDX forInstruction: instruction scratchAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
@@ -2622,6 +2730,38 @@ MIR::Operation::UInt64GreaterOrEquals
             x86::setae: (instruction resultRegister x86::int8For: codegen)
     }.
 
+MIR::Operation::PointerEquals
+    forTarget: #x86 registerConstraintsWith: x86::integerComparisonInt32RegisterConstraints;
+    forTarget: #x86 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen);
+            x86::cmp: (instruction resultRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen);
+            x86::sete: (instruction resultRegister x86::int8For: codegen)
+    };
+    forTarget: #x86_64 registerConstraintsWith: x86::integerComparisonInt64RegisterConstraints;
+    forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen);
+            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::immediateS32OrInt64For: codegen);
+            x86::sete: (instruction resultRegister x86::int8For: codegen)
+    }.
+
+MIR::Operation::PointerNotEquals
+    forTarget: #x86 registerConstraintsWith: x86::integerComparisonInt32RegisterConstraints;
+    forTarget: #x86 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen);
+            x86::cmp: (instruction resultRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen);
+            x86::setne: (instruction resultRegister x86::int8For: codegen)
+    };
+    forTarget: #x86_64 registerConstraintsWith: x86::integerComparisonInt64RegisterConstraints;
+    forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen);
+            x86::cmp: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::immediateS32OrInt64For: codegen);
+            x86::setne: (instruction resultRegister x86::int8For: codegen)
+    }.
+
 let x86::integerComparisonBranchInt64RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterForInstruction: instruction operandAt: 0sz;
@@ -2798,11 +2938,20 @@ MIR::Operation::MoveInt64
         codegen textSection x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen)
     }.
 
+MIR::Operation::MovePointer
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegisterConstraints;
+    forTarget: #x86 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen)
+    };
+    forTargets: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen)
+    }.
+
 MIR::Operation::MoveStruct
     forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86_64::RDI forInstructionResultPointer: instruction;
-            allocateRegister: MIR::X86_64::RSI forInstruction: instruction operandPointerAt: 0sz;
+            allocateCloberredRegister: MIR::X86_64::RDI forInstructionResultPointer: instruction;
+            allocateCloberredRegister: MIR::X86_64::RSI forInstruction: instruction operandPointerAt: 0sz;
             allocateRegister: MIR::X86_64::RCX forInstruction: instruction scratchAt: 0sz
     };
     forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
@@ -2866,11 +3015,20 @@ MIR::Operation::LoadUInt64
         codegen textSection x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64PointerWithOffset: instruction secondOperandRegister for: codegen)
     }.
 
+MIR::Operation::LoadPointer
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::loadPointerRegisterContraints;
+    forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32PointerWithOffset: instruction secondOperandRegister for: codegen)
+    };
+    forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64PointerWithOffset: instruction secondOperandRegister for: codegen)
+    }.
+
 MIR::Operation::LoadStruct
     forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86_64::RDI forInstructionResultPointer: instruction;
-            allocateRegister: MIR::X86_64::RSI forInstruction: instruction operandAt: 0sz;
+            allocateCloberredRegister: MIR::X86_64::RDI forInstructionResultPointer: instruction;
+            allocateCloberredRegister: MIR::X86_64::RSI forInstruction: instruction operandAt: 0sz;
             allocateImmediate32ForInstruction: instruction operandAt: 1sz;
             allocateRegister: MIR::X86_64::RCX forInstruction: instruction scratchAt: 0sz
     };
@@ -2912,11 +3070,20 @@ MIR::Operation::StoreInt64
         codegen textSection x86::mov: (instruction secondOperandRegister x86::int64PointerWithOffset: instruction thirdOperandRegister for: codegen) src: (instruction firstOperandRegister x86::int64For: codegen)
     }.
 
+MIR::Operation::StorePointer
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::storePointerRegisterContraints;
+    forTarget: #x86 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction secondOperandRegister x86::int32PointerWithOffset: instruction thirdOperandRegister for: codegen) src: (instruction firstOperandRegister x86::int32For: codegen)
+    };
+    forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::mov: (instruction secondOperandRegister x86::int64PointerWithOffset: instruction thirdOperandRegister for: codegen) src: (instruction firstOperandRegister x86::int64For: codegen)
+    }.
+
 MIR::Operation::StoreStruct
     forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegister: MIR::X86_64::RSI forInstruction: instruction operandPointerAt: 0sz;
-            allocateRegister: MIR::X86_64::RDI forInstruction: instruction operandAt: 1sz;
+            allocateCloberredRegister: MIR::X86_64::RSI forInstruction: instruction operandPointerAt: 0sz;
+            allocateCloberredRegister: MIR::X86_64::RDI forInstruction: instruction operandAt: 1sz;
             allocateImmediate32ForInstruction: instruction operandAt: 2sz;
             allocateRegister: MIR::X86_64::RCX forInstruction: instruction scratchAt: 0sz
     };
@@ -3745,6 +3912,14 @@ MIR::Operation::CallInt64
         instruction callingConvention asm::generateCallInt64: instruction with: codegen
     }.
 
+MIR::Operation::CallPointer
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+        instruction callingConvention registerConstraintsOfCallPointer: instruction with: allocator
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        instruction callingConvention asm::generateCallPointer: instruction with: codegen
+    }.
+
 MIR::Operation::CallFloat32
     forTargets: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         instruction callingConvention registerConstraintsOfCallFloat32: instruction with: allocator
@@ -3804,6 +3979,19 @@ MIR::Operation::ReturnInt16
     }.
 
 MIR::Operation::ReturnInt32
+    forTarget: #x86 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+        allocator allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz
+    };
+    forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+        allocator allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen emitEpilogue.
+        codegen textSection x86::ret.
+        codegen stackFrameLayout isRequired ifTrue: (codegen textSection cfiEndEpilogue).
+    }.
+
+MIR::Operation::ReturnPointer
     forTarget: #x86 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator allocateRegister: MIR::X86::EAX forInstruction: instruction operandAt: 0sz
     };

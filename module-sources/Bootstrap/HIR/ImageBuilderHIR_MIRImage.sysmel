@@ -1,12 +1,12 @@
 public class ImageBuilderHIR_MIRImage superclass: ImageBuilderHIRImage; definition: {
-    public field tacModule => MIRModule.
+    public field mirModule => MIRModule.
     public field targetIR.
     
     public override method saveTo: (filename: String) ::=> Boolean := {
         (super saveTo: filename) ifFalse: {return: false}.
 
         {|
-            let tacTextIR := tacModule fullPrintString.
+            let tacTextIR := mirModule fullPrintString.
             ##printLine(tacTextIR).
             IO::writeWholeFileNamedWithString(filename -- ".tac", tacTextIR)
         } printTimeToRunInMicrosecondsWithTitle: "MIR text IR".

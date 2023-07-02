@@ -16,23 +16,27 @@ public final class MIRStackFrameLayout superclass: Object; definition: {
         stackFrameAlignment := compilationTarget stackFrameAlignment asUInt64.
 
         ## We might need to assign a local offset in case the argument is passed through a register and we need to spill it.
-        function arguments do: {:(MIRArgumentVariable)eachArgument :: Void |
-            eachArgument offset = 0i64 ifTrue: (self assignNextLocationToLocalVariable: eachArgument).
+        function arguments do: {:(MIRArgumentValue)eachArgument :: Void |
+            eachArgument offset = 0i64 ifTrue: (self assignNextLocationToLocalValue: eachArgument).
         }.
 
         function temporaries do: {:(MIRTemporaryVariable)eachLocal :: Void |
-            self assignNextLocationToLocalVariable: eachLocal
+            self assignNextLocationToLocalValue: eachLocal
+        }.
+
+        function instructionsDo: {:(MIRInstruction)eachInstruction :: Void |
+            self assignNextLocationToLocalValue: eachInstruction
         }.
 
         stackFrameSize := stackFrameSize alignedTo: stackFrameAlignment
     }.
 
-    public method assignNextLocationToLocalVariable: (localVariable: MIRLocalVariable) ::=> Void := {
-        localVariable needsStackAllocation ifFalse: (return: void).
+    public method assignNextLocationToLocalValue: (localValue: MIRLocalValue) ::=> Void := {
+        localValue needsStackAllocation ifFalse: (return: void).
 
-        let localAlignment := localVariable alignment.
-        stackFrameSize := stackFrameSize + localVariable size alignedTo: localAlignment.
+        let localAlignment := localValue alignment.
+        stackFrameSize := stackFrameSize + localValue size alignedTo: localAlignment.
         stackFrameAlignment := stackFrameAlignment max: localAlignment.
-        localVariable offset: stackFrameSize asInt64 negated.
+        localValue offset: stackFrameSize asInt64 negated.
     }.
 }.
