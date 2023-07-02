@@ -1,11 +1,11 @@
 let PrintingDebugInfo := false.
 
-public abstract class TACCompilationTarget superclass: Object.
-public abstract class TACCallingConvention superclass: Object.
-public abstract class TACValue superclass: Object.
-public final class TACInstruction superclass: TACValue.
+public abstract class MIRCompilationTarget superclass: Object.
+public abstract class MIRCallingConvention superclass: Object.
+public abstract class MIRValue superclass: Object.
+public final class MIRInstruction superclass: MIRValue.
 
-public abstract class TACPhysicalLocation superclass: Object; definition: {
+public abstract class MIRPhysicalLocation superclass: Object; definition: {
     public virtual method isMemory => Boolean := false.
     public virtual method isImmediate => Boolean := false.
     public virtual method isRegister => Boolean := false.
@@ -16,43 +16,43 @@ public abstract class TACPhysicalLocation superclass: Object; definition: {
     public virtual method canBeUsedForByte => Boolean := false.
 }.
 
-public abstract class TACPhysicalLocationMemory superclass: TACPhysicalLocation; definition: {
+public abstract class MIRPhysicalLocationMemory superclass: MIRPhysicalLocation; definition: {
     public virtual method isMemory => Boolean := true.
 
     __Meta__ definition: {
-        let singleton := TACPhysicalLocationMemory new.
-        public method uniqueInstance => TACPhysicalLocationMemory
+        let singleton := MIRPhysicalLocationMemory new.
+        public method uniqueInstance => MIRPhysicalLocationMemory
             := singleton.
     }
 }.
 
-public abstract class TACPhysicalLocationRegisterWithPointer superclass: TACPhysicalLocation; definition: {
+public abstract class MIRPhysicalLocationRegisterWithPointer superclass: MIRPhysicalLocation; definition: {
     public virtual method isRegisterWithPointer => Boolean := true.
 
-    public field register => TACPhysicalLocation.
+    public field register => MIRPhysicalLocation.
 }.
 
-public abstract class TACPhysicalLocationRegister superclass: TACPhysicalLocation; definition: {
+public abstract class MIRPhysicalLocationRegister superclass: MIRPhysicalLocation; definition: {
     public virtual method isRegister => Boolean := true.
 }.
 
-public abstract class TACPhysicalIntegerRegister superclass: TACPhysicalLocationRegister; definition: {
+public abstract class MIRPhysicalIntegerRegister superclass: MIRPhysicalLocationRegister; definition: {
     public virtual method isIntegerRegister => Boolean := true.
 }.
 
-public abstract class TACPhysicalFloatRegister superclass: TACPhysicalLocationRegister; definition: {
+public abstract class MIRPhysicalFloatRegister superclass: MIRPhysicalLocationRegister; definition: {
     public virtual method isFloatRegister => Boolean := true.
 }.
 
-public abstract class TACPhysicalVectorRegister superclass: TACPhysicalLocationRegister; definition: {
+public abstract class MIRPhysicalVectorRegister superclass: MIRPhysicalLocationRegister; definition: {
     public virtual method isVectorRegister => Boolean := true.
 }.
 
-public class TACPhysicalLocationImmediate superclass: TACPhysicalLocation; definition: {
-    public field value => TACValue.
+public class MIRPhysicalLocationImmediate superclass: MIRPhysicalLocation; definition: {
+    public field value => MIRValue.
 
     __Meta__ definition: {
-        public method for: (value: TACValue) ::=> self
+        public method for: (value: MIRValue) ::=> self
             := self new value: value; yourself
     }.
 
@@ -60,23 +60,23 @@ public class TACPhysicalLocationImmediate superclass: TACPhysicalLocation; defin
 }.
 
 Type extend: {
-    public virtual method valueSizeForTacTarget: (target: TACCompilationTarget) ::=> Size
+    public virtual method valueSizeForTacTarget: (target: MIRCompilationTarget) ::=> Size
         := target pointerSize.
 
-    public virtual method valueAlignmentForTacTarget: (target: TACCompilationTarget) ::=> Size
+    public virtual method valueAlignmentForTacTarget: (target: MIRCompilationTarget) ::=> Size
         := target pointerAlignment.
 
-    public virtual method valueTacPhysicalLocationClass => TACPhysicalLocation class
-        := TACPhysicalIntegerRegister.
+    public virtual method valueTacPhysicalLocationClass => MIRPhysicalLocation class
+        := MIRPhysicalIntegerRegister.
 
     public virtual method valueIsSignedExtended => Boolean := false.
 }.
 
 ValueType extend: {
-    public override method valueSizeForTacTarget: (target: TACCompilationTarget) ::=> Size
+    public override method valueSizeForTacTarget: (target: MIRCompilationTarget) ::=> Size
         := self valueSize.
 
-    public override method valueAlignmentForTacTarget: (target: TACCompilationTarget) ::=> Size
+    public override method valueAlignmentForTacTarget: (target: MIRCompilationTarget) ::=> Size
         := self valueAlignment.
 
 }.
@@ -98,16 +98,16 @@ Int64 class extend: {
 }.
 
 Float32 class extend: {
-    public override method valueTacPhysicalLocationClass => TACPhysicalLocation class
-        := TACPhysicalFloatRegister.
+    public override method valueTacPhysicalLocationClass => MIRPhysicalLocation class
+        := MIRPhysicalFloatRegister.
 }.
 
 Float64 class extend: {
-    public override method valueTacPhysicalLocationClass => TACPhysicalLocation class
-        := TACPhysicalFloatRegister.
+    public override method valueTacPhysicalLocationClass => MIRPhysicalLocation class
+        := MIRPhysicalFloatRegister.
 }.
 
-TACValue definition: {
+MIRValue definition: {
     public field debugSourcePosition => SourcePosition.
     public field debugSourceNode => ASTNode.
     public field debugSourceEnvironment => Environment.
@@ -116,7 +116,7 @@ TACValue definition: {
     public virtual method type => Type
         := self subclassResponsibility.
 
-    public virtual method physicalLocationClass => TACPhysicalLocation class
+    public virtual method physicalLocationClass => MIRPhysicalLocation class
         := self subclassResponsibility.
 
     public virtual method size => UInt64
@@ -173,7 +173,7 @@ TACValue definition: {
     public virtual method markWriteAt: (writeIndex: UInt32) ::=> Void := {}.
     public virtual method markSpillingRequired ::=> Void := {}.
 
-    public virtual method isLastUsedIn: (instruction: TACInstruction) ::=> Boolean := false.
+    public virtual method isLastUsedIn: (instruction: MIRInstruction) ::=> Boolean := false.
 
     public method printDebugInfoOn: (stream: Stream) ::=> Void := {
         debugSourcePosition isNotNil && PrintingDebugInfo ifTrue: {
@@ -182,11 +182,11 @@ TACValue definition: {
     }.
 }.
 
-public final class TACBasicBlock superclass: TACValue.
+public final class MIRBasicBlock superclass: MIRValue.
 
-public abstract class TACProgramEntity superclass: TACValue; definition: {
+public abstract class MIRProgramEntity superclass: MIRValue; definition: {
     public field name => Symbol.
-    public field compilationTarget => TACCompilationTarget.
+    public field compilationTarget => MIRCompilationTarget.
     public field exportedSymbols => Array.
 
     ## TODO: Add proper support for the different visibility levels.
@@ -204,7 +204,7 @@ public abstract class TACProgramEntity superclass: TACValue; definition: {
 
     public override method isProgramEntity => Boolean := true.
 
-    public virtual method callingConvention => TACCallingConvention
+    public virtual method callingConvention => MIRCallingConvention
         := self error: "Not a function with a defined calling convention.".
 
     public override method initialize => Void := {
@@ -216,24 +216,24 @@ public abstract class TACProgramEntity superclass: TACValue; definition: {
     }.
 }.
 
-public abstract class TACImportedProgramEntity superclass: TACProgramEntity; definition: {
-    public field callingConvention => TACCallingConvention.
+public abstract class MIRImportedProgramEntity superclass: MIRProgramEntity; definition: {
+    public field callingConvention => MIRCallingConvention.
     public field alternativeSymbols => Array.
 
-    public override method physicalLocationClass => TACPhysicalLocation class
-        := TACPhysicalIntegerRegister.
+    public override method physicalLocationClass => MIRPhysicalLocation class
+        := MIRPhysicalIntegerRegister.
 }.
 
-public final class TACImportedVariable superclass: TACImportedProgramEntity; definition: {
+public final class MIRImportedVariable superclass: MIRImportedProgramEntity; definition: {
     public field type => Type.
     public field size => UInt64.
     public field alignment => UInt64.
-    public field physicalLocationClass => TACPhysicalLocation class.
+    public field physicalLocationClass => MIRPhysicalLocation class.
 }.
 
-public final class TACImportedFunction superclass: TACImportedProgramEntity; definition: {
-    public override method physicalLocationClass => TACPhysicalLocation class
-        := TACPhysicalIntegerRegister.
+public final class MIRImportedFunction superclass: MIRImportedProgramEntity; definition: {
+    public override method physicalLocationClass => MIRPhysicalLocation class
+        := MIRPhysicalIntegerRegister.
 
     public override method isRelativeImmediate32 => Boolean := true.
 
@@ -253,11 +253,11 @@ public final class TACImportedFunction superclass: TACImportedProgramEntity; def
     }.
 }.
 
-public abstract class TACVariable superclass: TACProgramEntity; definition: {
+public abstract class MIRVariable superclass: MIRProgramEntity; definition: {
     public field type => Type.
     public field size => UInt64.
     public field alignment => UInt64.
-    public field physicalLocationClass => TACPhysicalLocation class.
+    public field physicalLocationClass => MIRPhysicalLocation class.
     public field isSignedExtended => Boolean.
     public field isGCRoot => Boolean.
 
@@ -267,10 +267,10 @@ public abstract class TACVariable superclass: TACProgramEntity; definition: {
     public override method isVector => Boolean := type asDecayedType isPrimitiveVectorType.
 }.
 
-public final class TACLocalVariable superclass: TACVariable; definition: {
+public final class MIRLocalVariable superclass: MIRVariable; definition: {
     public field offset => Int64.
     public field index => UInt32.
-    public field registerAssignment => TACPhysicalLocation.
+    public field registerAssignment => MIRPhysicalLocation.
 
     public field needsSpilling => Boolean.
     public field firstUsageIndex => Int32.
@@ -306,12 +306,12 @@ public final class TACLocalVariable superclass: TACVariable; definition: {
         lastWriteIndex := writeIndex asInt32
     }.
 
-    public override method isLastUsedIn: (instruction: TACInstruction) ::=> Boolean
+    public override method isLastUsedIn: (instruction: MIRInstruction) ::=> Boolean
         := lastUsageIndex = instruction index asInt32.
 }.
 
-public final class TACArgumentVariable superclass: TACLocalVariable; definition: {
-    public field passingRegister => TACPhysicalLocation.
+public final class MIRArgumentVariable superclass: MIRLocalVariable; definition: {
+    public field passingRegister => MIRPhysicalLocation.
 
     public override method isArgumentVariable => Boolean := true.
 
@@ -321,7 +321,7 @@ public final class TACArgumentVariable superclass: TACLocalVariable; definition:
     }.
 }.
 
-public final class TACCaptureVariable superclass: TACLocalVariable; definition: {
+public final class MIRCaptureVariable superclass: MIRLocalVariable; definition: {
     public override method isCaptureVariable => Boolean := true.
     public override method isCaptureVariableOrPointer => Boolean := true.
 
@@ -331,7 +331,7 @@ public final class TACCaptureVariable superclass: TACLocalVariable; definition: 
     }.
 }.
 
-public final class TACTemporaryVariable superclass: TACLocalVariable; definition: {
+public final class MIRTemporaryVariable superclass: MIRLocalVariable; definition: {
     public override method isTemporaryVariable => Boolean := true.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -340,7 +340,7 @@ public final class TACTemporaryVariable superclass: TACLocalVariable; definition
     }.
 }.
 
-public final class TACGlobalVariable superclass: TACVariable; definition: {
+public final class MIRGlobalVariable superclass: MIRVariable; definition: {
     public override method isGlobalVariable => Boolean := true.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -354,91 +354,91 @@ public final class TACGlobalVariable superclass: TACVariable; definition: {
     }.
 }.
 
-public final class TACVariablePointer superclass: TACValue; definition: {
-    public field variable => TACVariable.
+public final class MIRVariablePointer superclass: MIRValue; definition: {
+    public field variable => MIRVariable.
 
     public override method isVariablePointer => Boolean := true.
     public override method isCaptureVariableOrPointer => Boolean := variable isCaptureVariable.
 
-    public override method physicalLocationClass => TACPhysicalLocation class
-        := TACPhysicalIntegerRegister.
+    public override method physicalLocationClass => MIRPhysicalLocation class
+        := MIRPhysicalIntegerRegister.
 }.
 
-TACVariable definition: {
-    public method asVariablePointer => TACVariablePointer
-        := TACVariablePointer new
+MIRVariable definition: {
+    public method asVariablePointer => MIRVariablePointer
+        := MIRVariablePointer new
             variable: self;
             yourself.
 }.
 
-public abstract class TACConstant superclass: TACValue; definition: {
+public abstract class MIRConstant superclass: MIRValue; definition: {
     public override method isConstant => Boolean := true.
 }.
 
-public abstract class TACConstantInteger superclass: TACValue; definition: {
+public abstract class MIRConstantInteger superclass: MIRValue; definition: {
     public override method isConstant => Boolean := true.
 
-    public override method physicalLocationClass => TACPhysicalLocation class
-        := TACPhysicalIntegerRegister.
+    public override method physicalLocationClass => MIRPhysicalLocation class
+        := MIRPhysicalIntegerRegister.
 }.
 
-public final class TACGenericObjectPointerConstant superclass: TACConstant; definition: {
+public final class MIRGenericObjectPointerConstant superclass: MIRConstant; definition: {
     public field object => Untyped.
     public field size => Size.
     public field alignment => Size.
     public field type => Type.
 
-    public override method physicalLocationClass => TACPhysicalLocation class
-        := TACPhysicalIntegerRegister.
+    public override method physicalLocationClass => MIRPhysicalLocation class
+        := MIRPhysicalIntegerRegister.
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "genericObjectPointerConstant("; print: RawTuple::type(object); nextPut: ')'c8
     }.
 }.
 
-public final class TACPolymorphicInlineCache superclass: TACConstant; definition: {
+public final class MIRPolymorphicInlineCache superclass: MIRConstant; definition: {
     public override method alignment => Size := UIntPointer valueAlignment.
     public override method size => Size := UIntPointer valueSize.
     public override method type => Type := ObjectModel::PolymorphicInlineCache.
 
-    public override method physicalLocationClass => TACPhysicalLocation class
-        := TACPhysicalIntegerRegister.
+    public override method physicalLocationClass => MIRPhysicalLocation class
+        := MIRPhysicalIntegerRegister.
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "polymorphicInlineCache"
     }.
 }.
 
-public final class TACStringLiteralPointerConstant superclass: TACConstant; definition: {
+public final class MIRStringLiteralPointerConstant superclass: MIRConstant; definition: {
     public field string => String.
     public field size => Size.
     public field alignment => Size.
     public field type => Type.
     public field nullTerminated => Boolean.
 
-    public override method physicalLocationClass => TACPhysicalLocation class
-        := TACPhysicalIntegerRegister.
+    public override method physicalLocationClass => MIRPhysicalLocation class
+        := MIRPhysicalIntegerRegister.
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "stringLiteralPointerConstant("; print: string; nextPut: ')'c8
     }.
 }.
 
-public final class TACStructureConstant superclass: TACConstant; definition: {
+public final class MIRStructureConstant superclass: MIRConstant; definition: {
     public field value => AnyValue.
     public field size => Size.
     public field alignment => Size.
     public field type => Type.
 
-    public override method physicalLocationClass => TACPhysicalLocation class
-        := TACPhysicalLocationMemory.
+    public override method physicalLocationClass => MIRPhysicalLocation class
+        := MIRPhysicalLocationMemory.
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "structureConstant("; print: value; nextPut: ')'c8
     }.
 }.
 
-public final class TACConstantInt8 superclass: TACConstantInteger; definition: {
+public final class MIRConstantInt8 superclass: MIRConstantInteger; definition: {
     public field value => Int8.
 
     public override method isSignedExtended => Boolean := true.
@@ -459,12 +459,12 @@ public final class TACConstantInt8 superclass: TACConstantInteger; definition: {
     }.
 
     Int8 extend: {
-        public method asTacConstant => TACConstantInt8
-            := TACConstantInt8 new value: self; yourself
+        public method asTacConstant => MIRConstantInt8
+            := MIRConstantInt8 new value: self; yourself
     }
 }.
 
-public final class TACConstantUInt8 superclass: TACConstantInteger; definition: {
+public final class MIRConstantUInt8 superclass: MIRConstantInteger; definition: {
     public field value => UInt8.
 
     public override method isConstantUInt8 => Boolean := true.
@@ -484,12 +484,12 @@ public final class TACConstantUInt8 superclass: TACConstantInteger; definition: 
     }.
 
     UInt8 extend: {
-        public method asTacConstant => TACConstantUInt8
-            := TACConstantUInt8 new value: self; yourself
+        public method asTacConstant => MIRConstantUInt8
+            := MIRConstantUInt8 new value: self; yourself
     }
 }.
 
-public final class TACConstantInt16 superclass: TACConstantInteger; definition: {
+public final class MIRConstantInt16 superclass: MIRConstantInteger; definition: {
     public field value => Int16.
 
     public override method isSignedExtended => Boolean := true.
@@ -509,12 +509,12 @@ public final class TACConstantInt16 superclass: TACConstantInteger; definition: 
     }.
 
     Int16 extend: {
-        public method asTacConstant => TACConstantInt16
-            := TACConstantInt16 new value: self; yourself
+        public method asTacConstant => MIRConstantInt16
+            := MIRConstantInt16 new value: self; yourself
     }
 }.
 
-public final class TACConstantUInt16 superclass: TACConstantInteger; definition: {
+public final class MIRConstantUInt16 superclass: MIRConstantInteger; definition: {
     public field value => UInt16.
 
     public override method isConstantUInt16 => Boolean := true.
@@ -533,12 +533,12 @@ public final class TACConstantUInt16 superclass: TACConstantInteger; definition:
     }.
 
     UInt16 extend: {
-        public method asTacConstant => TACConstantUInt16
-            := TACConstantUInt16 new value: self; yourself
+        public method asTacConstant => MIRConstantUInt16
+            := MIRConstantUInt16 new value: self; yourself
     }
 }.
 
-public final class TACConstantInt32 superclass: TACConstantInteger; definition: {
+public final class MIRConstantInt32 superclass: MIRConstantInteger; definition: {
     public field value => Int32.
 
     public override method isSignedExtended => Boolean := true.
@@ -558,12 +558,12 @@ public final class TACConstantInt32 superclass: TACConstantInteger; definition: 
     }.
 
     Int32 extend: {
-        public method asTacConstant => TACConstantInt32
-            := TACConstantInt32 new value: self; yourself
+        public method asTacConstant => MIRConstantInt32
+            := MIRConstantInt32 new value: self; yourself
     }
 }.
 
-public final class TACConstantUInt32 superclass: TACConstantInteger; definition: {
+public final class MIRConstantUInt32 superclass: MIRConstantInteger; definition: {
     public field value => UInt32.
 
     public override method isConstantUInt32 => Boolean := true.
@@ -582,12 +582,12 @@ public final class TACConstantUInt32 superclass: TACConstantInteger; definition:
     }.
 
     UInt32 extend: {
-        public method asTacConstant => TACConstantUInt32
-            := TACConstantUInt32 new value: self; yourself
+        public method asTacConstant => MIRConstantUInt32
+            := MIRConstantUInt32 new value: self; yourself
     }
 }.
 
-public final class TACConstantInt64 superclass: TACConstantInteger; definition: {
+public final class MIRConstantInt64 superclass: MIRConstantInteger; definition: {
     public field value => Int64.
 
     public override method isSignedExtended => Boolean := true.
@@ -607,12 +607,12 @@ public final class TACConstantInt64 superclass: TACConstantInteger; definition: 
     }.
 
     Int64 extend: {
-        public method asTacConstant => TACConstantInt64
-            := TACConstantInt64 new value: self; yourself
+        public method asTacConstant => MIRConstantInt64
+            := MIRConstantInt64 new value: self; yourself
     }
 }.
 
-public final class TACConstantUInt64 superclass: TACConstantInteger; definition: {
+public final class MIRConstantUInt64 superclass: MIRConstantInteger; definition: {
     public field value => UInt64.
 
     public override method isConstantUInt64 => Boolean := true.
@@ -631,20 +631,20 @@ public final class TACConstantUInt64 superclass: TACConstantInteger; definition:
     }.
 
     UInt64 extend: {
-        public method asTacConstant => TACConstantUInt64
-            := TACConstantUInt64 new value: self; yourself
+        public method asTacConstant => MIRConstantUInt64
+            := MIRConstantUInt64 new value: self; yourself
     }.
 }.
 
-public final class TACConstantFloatingPoint superclass: TACConstant; definition: {
+public final class MIRConstantFloatingPoint superclass: MIRConstant; definition: {
     public override method isFloatingPoint => Boolean := true.
     public override method isConstantFloat => Boolean := true.
 
-    public override method physicalLocationClass => TACPhysicalLocation class
-        := TACPhysicalFloatRegister.
+    public override method physicalLocationClass => MIRPhysicalLocation class
+        := MIRPhysicalFloatRegister.
 }.
 
-public final class TACConstantFloat32 superclass: TACConstantFloatingPoint; definition: {
+public final class MIRConstantFloat32 superclass: MIRConstantFloatingPoint; definition: {
     public field value => Float32.
 
     public override method isConstantFloat32 => Boolean := true.
@@ -659,12 +659,12 @@ public final class TACConstantFloat32 superclass: TACConstantFloatingPoint; defi
     }.
 
     Float32 extend: {
-        public method asTacConstant => TACConstantFloat32
-            := TACConstantFloat32 new value: self; yourself
+        public method asTacConstant => MIRConstantFloat32
+            := MIRConstantFloat32 new value: self; yourself
     }.
 }.
 
-public final class TACConstantFloat64 superclass: TACConstantFloatingPoint; definition: {
+public final class MIRConstantFloat64 superclass: MIRConstantFloatingPoint; definition: {
     public field value => Float64.
 
     public override method isConstantFloat64 => Boolean := true.
@@ -679,12 +679,12 @@ public final class TACConstantFloat64 superclass: TACConstantFloatingPoint; defi
     }.
 
     Float64 extend: {
-        public method asTacConstant => TACConstantFloat64
-            := TACConstantFloat64 new value: self; yourself
+        public method asTacConstant => MIRConstantFloat64
+            := MIRConstantFloat64 new value: self; yourself
     }.
 }.
 
-public final class TACOperation superclass: Object; definition: {
+public final class MIROperation superclass: Object; definition: {
     public field name => Symbol.
     public field isTerminator => Boolean.
     public field isDebug => Boolean.
@@ -713,26 +713,26 @@ public final class TACOperation superclass: Object; definition: {
     }.
 }.
 
-TACInstruction definition: {
-    public field previous => TACInstruction.
-    public field next => TACInstruction.
+MIRInstruction definition: {
+    public field previous => MIRInstruction.
+    public field next => MIRInstruction.
 
     public field index => UInt32.
 
-    public field operation => TACOperation.
-    public field result => TACValue.
+    public field operation => MIROperation.
+    public field result => MIRValue.
     public field operands => Array.
 
-    public field resultRegister => TACPhysicalLocation.
+    public field resultRegister => MIRPhysicalLocation.
     public field operandRegisters => Array.
     public field scratchRegisters => Array.
 
     public field preOperations => Array.
     public field postOperations => Array.
 
-    public field captureVectorPointerRegister => TACPhysicalLocation.
+    public field captureVectorPointerRegister => MIRPhysicalLocation.
 
-    public field callingConvention => TACCallingConvention.
+    public field callingConvention => MIRCallingConvention.
 
     public field sourceBinding => SymbolBinding.
 
@@ -751,12 +751,12 @@ TACInstruction definition: {
 
     public method usesCapture => Boolean
         := (result isNotNil && result isCaptureVariableOrPointer) ||
-        (operands anySatisfy: {:(TACValue)operand :: Boolean | operand isCaptureVariable}).
+        (operands anySatisfy: {:(MIRValue)operand :: Boolean | operand isCaptureVariable}).
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         result ifNotNil: (stream print: result; nextPutAll: " := ").
         stream print: operation.
-        operands doWithIndex: {:(TACValue)eachOperand :(Size)index :: Void |
+        operands doWithIndex: {:(MIRValue)eachOperand :(Size)index :: Void |
             index = 0sz
                 ifTrue: (stream space)
                 ifFalse: (stream nextPutAll: ", ").
@@ -767,7 +767,7 @@ TACInstruction definition: {
 
     public method markLiveRange => Void := {
         result ifNotNil: (result markWriteAt: index).
-        operands do: {:(TACValue)value :: Void |
+        operands do: {:(MIRValue)value :: Void |
             value markUsageAt: index
         }
     }.
@@ -780,89 +780,89 @@ TACInstruction definition: {
         postOperations := #().
     }.
 
-    public method firstOperandRegister => TACPhysicalLocation := operandRegisters first.
-    public method secondOperandRegister => TACPhysicalLocation := operandRegisters second.
-    public method thirdOperandRegister => TACPhysicalLocation := operandRegisters third.
-    public method fourthOperandRegister => TACPhysicalLocation := operandRegisters fourth.
+    public method firstOperandRegister => MIRPhysicalLocation := operandRegisters first.
+    public method secondOperandRegister => MIRPhysicalLocation := operandRegisters second.
+    public method thirdOperandRegister => MIRPhysicalLocation := operandRegisters third.
+    public method fourthOperandRegister => MIRPhysicalLocation := operandRegisters fourth.
 
-    public method firstScratchRegister => TACPhysicalLocation := scratchRegisters first.
-    public method secondScratchRegister => TACPhysicalLocation := scratchRegisters first.
+    public method firstScratchRegister => MIRPhysicalLocation := scratchRegisters first.
+    public method secondScratchRegister => MIRPhysicalLocation := scratchRegisters first.
 }.
 
-public abstract class TACInstructionSurroundingOperation superclass: Object.
+public abstract class MIRInstructionSurroundingOperation superclass: Object.
 
-public global TAC::Operation::Branch := TACOperation terminatorNamed: #branch.
-public global TAC::Operation::ConditionalBranch := TACOperation terminatorNamed: #condBranch.
+public global MIR::Operation::Branch := MIROperation terminatorNamed: #branch.
+public global MIR::Operation::ConditionalBranch := MIROperation terminatorNamed: #condBranch.
 
-public global TAC::Operation::MoveInt8 := TACOperation named: #moveInt8.
-public global TAC::Operation::MoveInt16 := TACOperation named: #moveInt16.
-public global TAC::Operation::MoveInt32 := TACOperation named: #moveInt32.
-public global TAC::Operation::MoveInt64 := TACOperation named: #moveInt64.
-public global TAC::Operation::MoveFloat32 := TACOperation named: #moveFloat32.
-public global TAC::Operation::MoveFloat64 := TACOperation named: #moveFloat64.
-public global TAC::Operation::MoveStruct := TACOperation named: #moveStruct.
+public global MIR::Operation::MoveInt8 := MIROperation named: #moveInt8.
+public global MIR::Operation::MoveInt16 := MIROperation named: #moveInt16.
+public global MIR::Operation::MoveInt32 := MIROperation named: #moveInt32.
+public global MIR::Operation::MoveInt64 := MIROperation named: #moveInt64.
+public global MIR::Operation::MoveFloat32 := MIROperation named: #moveFloat32.
+public global MIR::Operation::MoveFloat64 := MIROperation named: #moveFloat64.
+public global MIR::Operation::MoveStruct := MIROperation named: #moveStruct.
 
-public global TAC::Operation::LoadInt8 := TACOperation named: #loadInt8.
-public global TAC::Operation::LoadInt16 := TACOperation named: #loadInt16.
-public global TAC::Operation::LoadInt32 := TACOperation named: #loadInt32.
-public global TAC::Operation::LoadInt64 := TACOperation named: #loadInt64.
-public global TAC::Operation::LoadUInt8 := TACOperation named: #loadUInt8.
-public global TAC::Operation::LoadUInt16 := TACOperation named: #loadUInt16.
-public global TAC::Operation::LoadUInt32 := TACOperation named: #loadUInt32.
-public global TAC::Operation::LoadUInt64 := TACOperation named: #loadUInt64.
-public global TAC::Operation::LoadFloat32 := TACOperation named: #loadFloat32.
-public global TAC::Operation::LoadFloat64 := TACOperation named: #loadFloat64.
-public global TAC::Operation::LoadStruct := TACOperation named: #loadStruct.
+public global MIR::Operation::LoadInt8 := MIROperation named: #loadInt8.
+public global MIR::Operation::LoadInt16 := MIROperation named: #loadInt16.
+public global MIR::Operation::LoadInt32 := MIROperation named: #loadInt32.
+public global MIR::Operation::LoadInt64 := MIROperation named: #loadInt64.
+public global MIR::Operation::LoadUInt8 := MIROperation named: #loadUInt8.
+public global MIR::Operation::LoadUInt16 := MIROperation named: #loadUInt16.
+public global MIR::Operation::LoadUInt32 := MIROperation named: #loadUInt32.
+public global MIR::Operation::LoadUInt64 := MIROperation named: #loadUInt64.
+public global MIR::Operation::LoadFloat32 := MIROperation named: #loadFloat32.
+public global MIR::Operation::LoadFloat64 := MIROperation named: #loadFloat64.
+public global MIR::Operation::LoadStruct := MIROperation named: #loadStruct.
 
-public global TAC::Operation::StoreInt8 := TACOperation named: #storeInt8.
-public global TAC::Operation::StoreInt16 := TACOperation named: #storeInt16.
-public global TAC::Operation::StoreInt32 := TACOperation named: #storeInt32.
-public global TAC::Operation::StoreInt64 := TACOperation named: #storeInt64.
-public global TAC::Operation::StoreFloat32 := TACOperation named: #storeFloat32.
-public global TAC::Operation::StoreFloat64 := TACOperation named: #storeFloat64.
-public global TAC::Operation::StoreStruct := TACOperation named: #storeStruct.
+public global MIR::Operation::StoreInt8 := MIROperation named: #storeInt8.
+public global MIR::Operation::StoreInt16 := MIROperation named: #storeInt16.
+public global MIR::Operation::StoreInt32 := MIROperation named: #storeInt32.
+public global MIR::Operation::StoreInt64 := MIROperation named: #storeInt64.
+public global MIR::Operation::StoreFloat32 := MIROperation named: #storeFloat32.
+public global MIR::Operation::StoreFloat64 := MIROperation named: #storeFloat64.
+public global MIR::Operation::StoreStruct := MIROperation named: #storeStruct.
 
-public global TAC::Operation::CallInt8 := TACOperation named: #callInt8.
-public global TAC::Operation::CallInt16 := TACOperation named: #callInt16.
-public global TAC::Operation::CallInt32 := TACOperation named: #callInt32.
-public global TAC::Operation::CallInt64 := TACOperation named: #callInt64.
-public global TAC::Operation::CallFloat32 := TACOperation named: #callFloat32.
-public global TAC::Operation::CallFloat64 := TACOperation named: #callFloat64.
-public global TAC::Operation::CallStruct := TACOperation named: #callStruct.
-public global TAC::Operation::CallVoid := TACOperation named: #callVoid.
+public global MIR::Operation::CallInt8 := MIROperation named: #callInt8.
+public global MIR::Operation::CallInt16 := MIROperation named: #callInt16.
+public global MIR::Operation::CallInt32 := MIROperation named: #callInt32.
+public global MIR::Operation::CallInt64 := MIROperation named: #callInt64.
+public global MIR::Operation::CallFloat32 := MIROperation named: #callFloat32.
+public global MIR::Operation::CallFloat64 := MIROperation named: #callFloat64.
+public global MIR::Operation::CallStruct := MIROperation named: #callStruct.
+public global MIR::Operation::CallVoid := MIROperation named: #callVoid.
 
-public global TAC::Operation::ReturnInt8 := TACOperation terminatorNamed: #returnInt8.
-public global TAC::Operation::ReturnInt16 := TACOperation terminatorNamed: #returnInt16.
-public global TAC::Operation::ReturnInt32 := TACOperation terminatorNamed: #returnInt32.
-public global TAC::Operation::ReturnInt64 := TACOperation terminatorNamed: #returnInt64.
-public global TAC::Operation::ReturnFloat32 := TACOperation terminatorNamed: #returnFloat32.
-public global TAC::Operation::ReturnFloat64 := TACOperation terminatorNamed: #returnFloat64.
-public global TAC::Operation::ReturnStruct := TACOperation terminatorNamed: #returnStruct.
-public global TAC::Operation::ReturnVoid := TACOperation terminatorNamed: #returnVoid.
+public global MIR::Operation::ReturnInt8 := MIROperation terminatorNamed: #returnInt8.
+public global MIR::Operation::ReturnInt16 := MIROperation terminatorNamed: #returnInt16.
+public global MIR::Operation::ReturnInt32 := MIROperation terminatorNamed: #returnInt32.
+public global MIR::Operation::ReturnInt64 := MIROperation terminatorNamed: #returnInt64.
+public global MIR::Operation::ReturnFloat32 := MIROperation terminatorNamed: #returnFloat32.
+public global MIR::Operation::ReturnFloat64 := MIROperation terminatorNamed: #returnFloat64.
+public global MIR::Operation::ReturnStruct := MIROperation terminatorNamed: #returnStruct.
+public global MIR::Operation::ReturnVoid := MIROperation terminatorNamed: #returnVoid.
 
-public global TAC::Operation::Trap := TACOperation named: #trap.
-public global TAC::Operation::UnreachableTrap := TACOperation terminatorNamed: #unreachableTrap.
+public global MIR::Operation::Trap := MIROperation named: #trap.
+public global MIR::Operation::UnreachableTrap := MIROperation terminatorNamed: #unreachableTrap.
 
-public global TAC::Operation::DebugSetBindingValue := TACOperation debugNamed: #debugSetBindingValue.
-public global TAC::Operation::DebugSetMutableBindingValue := TACOperation debugNamed: #debugSetMutableBindingValue.
+public global MIR::Operation::DebugSetBindingValue := MIROperation debugNamed: #debugSetBindingValue.
+public global MIR::Operation::DebugSetMutableBindingValue := MIROperation debugNamed: #debugSetMutableBindingValue.
 
-TACBasicBlock definition: {
+MIRBasicBlock definition: {
     public field name => Symbol.
     public field index => UInt32.
 
-    public field previous => TACBasicBlock.
-    public field next => TACBasicBlock.
+    public field previous => MIRBasicBlock.
+    public field next => MIRBasicBlock.
 
-    public field firstInstruction => TACInstruction.
-    public field lastInstruction => TACInstruction.
+    public field firstInstruction => MIRInstruction.
+    public field lastInstruction => MIRInstruction.
 
-    public override method physicalLocationClass => TACPhysicalLocation class
-        := TACPhysicalIntegerRegister.
+    public override method physicalLocationClass => MIRPhysicalLocation class
+        := MIRPhysicalIntegerRegister.
 
     public override method isRelativeImmediate32 => Boolean := true.
 
 
-    public method addInstruction: (instruction: TACInstruction) before: (position: TACInstruction) ::=> Void := {
+    public method addInstruction: (instruction: MIRInstruction) before: (position: MIRInstruction) ::=> Void := {
         let before := position ifNotNil: position previous ifNil: lastInstruction.
         let after := position.
 
@@ -884,7 +884,7 @@ TACBasicBlock definition: {
         }.
     }.
 
-    public method addInstruction: (instruction: TACInstruction) ::=> Void := {
+    public method addInstruction: (instruction: MIRInstruction) ::=> Void := {
         self addInstruction: instruction before: nil
     }.
 
@@ -906,31 +906,31 @@ TACBasicBlock definition: {
         stream print: self; nextPut: ':'c8.
         self printDebugInfoOn: stream.
         stream nl.
-        self instructionsDo: {:(TACInstruction)each :: Void |
+        self instructionsDo: {:(MIRInstruction)each :: Void |
             stream nextPutAll: "    "; fullPrint: each; nl
         }.
     }.
 }.
 
-public final class TACFunction superclass: TACProgramEntity; definition: {
-    public field callingConvention => TACCallingConvention.
+public final class MIRFunction superclass: MIRProgramEntity; definition: {
+    public field callingConvention => MIRCallingConvention.
 
     public field arguments => Array.
     public field captures => Array.
     public field temporaries => OrderedCollection.
 
-    public field firstBasicBlock => TACBasicBlock.
-    public field lastBasicBlock => TACBasicBlock.
+    public field firstBasicBlock => MIRBasicBlock.
+    public field lastBasicBlock => MIRBasicBlock.
 
-    public field trampolineTarget => TACProgramEntity.
+    public field trampolineTarget => MIRProgramEntity.
 
     public field captureVectorSize => UInt64.
     public field captureVectorAlignment => UInt64.
 
     public override method isFunction => Boolean := true.
 
-    public override method physicalLocationClass => TACPhysicalLocation class
-        := TACPhysicalIntegerRegister.
+    public override method physicalLocationClass => MIRPhysicalLocation class
+        := MIRPhysicalIntegerRegister.
 
     public override method isRelativeImmediate32 => Boolean := true.
 
@@ -947,13 +947,13 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
         temporaries := OrderedCollection new
     }.
 
-    public method addTemporary: (temporary: TACTemporaryVariable) ::=> TACTemporaryVariable := {
+    public method addTemporary: (temporary: MIRTemporaryVariable) ::=> MIRTemporaryVariable := {
         temporaries add: temporary.
         temporary
     }.
 
-    public method newArgument: (name: Symbol) withType: (type: Type) sourceBinding: (sourceBinding: SymbolBinding)::=> TACArgumentVariable
-        := TACArgumentVariable new
+    public method newArgument: (name: Symbol) withType: (type: Type) sourceBinding: (sourceBinding: SymbolBinding)::=> MIRArgumentVariable
+        := MIRArgumentVariable new
             name: name;
             type: type;
             size: (type valueSizeForTacTarget: compilationTarget) asUInt64;
@@ -963,14 +963,14 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
             sourceBinding: sourceBinding;
             yourself.
 
-    public method newArgument: (name: Symbol) withType: (type: Type) ::=> TACArgumentVariable
+    public method newArgument: (name: Symbol) withType: (type: Type) ::=> MIRArgumentVariable
         := self newArgument: name withType: type sourceBinding: nil.
 
-    public method newArgumentWithType: (type: Type) ::=> TACArgumentVariable
+    public method newArgumentWithType: (type: Type) ::=> MIRArgumentVariable
         := self newArgument: nil withType: type.
 
-    public method newCapture: (name: Symbol) withType: (type: Type) ::=> TACCaptureVariable
-        := TACCaptureVariable new
+    public method newCapture: (name: Symbol) withType: (type: Type) ::=> MIRCaptureVariable
+        := MIRCaptureVariable new
             name: name;
             type: type;
             size: (type valueSizeForTacTarget: compilationTarget) asUInt64;
@@ -979,11 +979,11 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
             physicalLocationClass: type valueTacPhysicalLocationClass;
             yourself.
 
-    public method newCaptureWithType: (type: Type) ::=> TACCaptureVariable
+    public method newCaptureWithType: (type: Type) ::=> MIRCaptureVariable
         := self newCapture: nil withType: type.
 
-    public method newTemporary: (name: Symbol) withType: (type: Type) ::=> TACTemporaryVariable
-        := self addTemporary: (TACTemporaryVariable new
+    public method newTemporary: (name: Symbol) withType: (type: Type) ::=> MIRTemporaryVariable
+        := self addTemporary: (MIRTemporaryVariable new
             name: name;
             type: type;
             size: (type valueSizeForTacTarget: compilationTarget) asUInt64;
@@ -992,50 +992,50 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
             physicalLocationClass: type valueTacPhysicalLocationClass;
             yourself).
 
-    public method newTemporaryWithType: (type: Type) ::=> TACTemporaryVariable
+    public method newTemporaryWithType: (type: Type) ::=> MIRTemporaryVariable
         := self newTemporary: nil withType: type.
 
-    public method newTemporaryUInt8 => TACTemporaryVariable
+    public method newTemporaryUInt8 => MIRTemporaryVariable
         := self newTemporaryWithType: UInt8.
 
-    public method newTemporaryInt8 => TACTemporaryVariable
+    public method newTemporaryInt8 => MIRTemporaryVariable
         := self newTemporaryWithType: Int8.
 
-    public method newTemporaryUInt16 => TACTemporaryVariable
+    public method newTemporaryUInt16 => MIRTemporaryVariable
         := self newTemporaryWithType: UInt16.
 
-    public method newTemporaryInt16 => TACTemporaryVariable
+    public method newTemporaryInt16 => MIRTemporaryVariable
         := self newTemporaryWithType: Int8.
 
-    public method newTemporaryUInt32 => TACTemporaryVariable
+    public method newTemporaryUInt32 => MIRTemporaryVariable
         := self newTemporaryWithType: UInt32.
 
-    public method newTemporaryInt32 => TACTemporaryVariable
+    public method newTemporaryInt32 => MIRTemporaryVariable
         := self newTemporaryWithType: Int32.
 
-    public method newTemporaryUInt64 => TACTemporaryVariable
+    public method newTemporaryUInt64 => MIRTemporaryVariable
         := self newTemporaryWithType: UInt64.
 
-    public method newTemporaryInt64 => TACTemporaryVariable
+    public method newTemporaryInt64 => MIRTemporaryVariable
         := self newTemporaryWithType: Int64.
 
-    public method newTemporaryUIntPointer => TACTemporaryVariable
+    public method newTemporaryUIntPointer => MIRTemporaryVariable
         := compilationTarget pointerSize = 8sz
             ifTrue: (self newTemporaryUInt64)
             ifFalse: (self newTemporaryUInt32).
 
-    public method newTemporaryIntPointer => TACTemporaryVariable
+    public method newTemporaryIntPointer => MIRTemporaryVariable
         := compilationTarget pointerSize = 8sz
             ifTrue: (self newTemporaryInt64)
             ifFalse: (self newTemporaryInt32).
 
-    public method newTemporaryFloat32 => TACTemporaryVariable
+    public method newTemporaryFloat32 => MIRTemporaryVariable
         := self newTemporaryWithType: Float32.
 
-    public method newTemporaryFloat64 => TACTemporaryVariable
+    public method newTemporaryFloat64 => MIRTemporaryVariable
         := self newTemporaryWithType: Float64.
 
-    public method addBasicBlock: (basicBlock: TACBasicBlock) before: (position: TACBasicBlock) ::=> Void := {
+    public method addBasicBlock: (basicBlock: MIRBasicBlock) before: (position: MIRBasicBlock) ::=> Void := {
         let before := position ifNotNil: position previous ifNil: lastBasicBlock.
         let after := position.
 
@@ -1054,11 +1054,11 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
         }.
     }.
 
-    public method addBasicBlock: (basicBlock: TACBasicBlock) ::=> Void := {
+    public method addBasicBlock: (basicBlock: MIRBasicBlock) ::=> Void := {
         self addBasicBlock: basicBlock before: nil
     }.
 
-    public method basicBlocksDo: (aBlock: (TACBasicBlock) => Void) ::=> Void := {
+    public method basicBlocksDo: (aBlock: (MIRBasicBlock) => Void) ::=> Void := {
         let position mutable := firstBasicBlock.
         while: (position isNotNil) do: {
             let nextPosition := position next.
@@ -1069,27 +1069,27 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
 
     public method enumerateBlocks => Void := {
         let index mutable := 0u32.
-        self basicBlocksDo: {:(TACBasicBlock)each :: Void |
+        self basicBlocksDo: {:(MIRBasicBlock)each :: Void |
             each index: index.
             index := index + 1u32.
         }.
     }.
 
-    public method instructionsDo: (aBlock: (TACInstruction) => Void) ::=> Void := {
-        self basicBlocksDo: {:(TACBasicBlock)each :: Void |
+    public method instructionsDo: (aBlock: (MIRInstruction) => Void) ::=> Void := {
+        self basicBlocksDo: {:(MIRBasicBlock)each :: Void |
             each instructionsDo: aBlock
         }.
     }.
 
     public method enumerateInstructions => Void := {
         let index mutable := 1u32.
-        self instructionsDo: {:(TACInstruction)each :: Void |
+        self instructionsDo: {:(MIRInstruction)each :: Void |
             each index: index.
             index := index + 1u32
         }
     }.
 
-    public method allLocalVariablesDo: (aBlock: (TACLocalVariable) => Void) ::=> Void := {
+    public method allLocalVariablesDo: (aBlock: (MIRLocalVariable) => Void) ::=> Void := {
         arguments do: aBlock.
         captures do: aBlock.
         temporaries do: aBlock.
@@ -1097,7 +1097,7 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
 
     public method enumerateLocals => Void := {
         let index mutable := 0u32.
-        self allLocalVariablesDo: {:(TACLocalVariable)each :: Void |
+        self allLocalVariablesDo: {:(MIRLocalVariable)each :: Void |
             each index: index.
             index := index + 1u32
         }
@@ -1105,10 +1105,10 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
 
     public method computeLiveRanges => Void := {
         self enumerateInstructions.
-        self allLocalVariablesDo: {:(TACLocalVariable)eachLocal :: Void |
+        self allLocalVariablesDo: {:(MIRLocalVariable)eachLocal :: Void |
             eachLocal resetLiveRange
         }.
-        self instructionsDo: {:(TACInstruction)eachInstruction :: Void |
+        self instructionsDo: {:(MIRInstruction)eachInstruction :: Void |
             eachInstruction markLiveRange
         }.
     }.
@@ -1116,7 +1116,7 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
     public method computeCaptureVectorLayout => Void := {
         let offset mutable := 0u64.
         let alignment mutable := 1u64.
-        captures do: {:(TACCaptureVariable)each :: Void |
+        captures do: {:(MIRCaptureVariable)each :: Void |
             offset := offset alignedTo: each alignment.
             alignment := alignment max: each alignment.
 
@@ -1139,23 +1139,23 @@ public final class TACFunction superclass: TACProgramEntity; definition: {
         self printDebugInfoOn: stream.
         stream nl.
         self enumerateBlocks; enumerateLocals.
-        self basicBlocksDo: {:(TACBasicBlock)each :: Void |
+        self basicBlocksDo: {:(MIRBasicBlock)each :: Void |
             stream fullPrint: each
         }.
         stream nextPut: '}'c8; nl.
     }.
 }.
 
-public final class TACBlockBuilder superclass: Object; definition: {
-    public field block => TACBasicBlock.
-    public field function => TACFunction.
+public final class MIRBlockBuilder superclass: Object; definition: {
+    public field block => MIRBasicBlock.
+    public field function => MIRFunction.
 
     ## Debugging information
     public field debugSourcePosition => SourcePosition.
     public field debugSourceNode => ASTNode.
     public field debugSourceEnvironment => Environment.
 
-    public method addInstruction: (instruction: TACInstruction) ::=> TACInstruction := {
+    public method addInstruction: (instruction: MIRInstruction) ::=> MIRInstruction := {
         block addInstruction: instruction.
         instruction
             debugSourcePosition: debugSourcePosition;
@@ -1164,237 +1164,237 @@ public final class TACBlockBuilder superclass: Object; definition: {
         instruction
     }.
 
-    public method temporaryUInt8 => TACTemporaryVariable := function newTemporaryUInt8.
-    public method temporaryInt8 => TACTemporaryVariable := function newTemporaryInt8.
-    public method temporaryUInt16 => TACTemporaryVariable := function newTemporaryUInt16.
-    public method temporaryInt16 => TACTemporaryVariable := function newTemporaryInt16.
-    public method temporaryUInt32 => TACTemporaryVariable := function newTemporaryUInt32.
-    public method temporaryInt32 => TACTemporaryVariable := function newTemporaryInt32.
-    public method temporaryUInt64 => TACTemporaryVariable := function newTemporaryUInt64.
-    public method temporaryInt64 => TACTemporaryVariable := function newTemporaryInt64.
-    public method temporaryUIntPointer => TACTemporaryVariable := function newTemporaryUIntPointer.
-    public method temporaryFloat32 => TACTemporaryVariable := function newTemporaryFloat32.
-    public method temporaryFloat64 => TACTemporaryVariable := function newTemporaryFloat64.
+    public method temporaryUInt8 => MIRTemporaryVariable := function newTemporaryUInt8.
+    public method temporaryInt8 => MIRTemporaryVariable := function newTemporaryInt8.
+    public method temporaryUInt16 => MIRTemporaryVariable := function newTemporaryUInt16.
+    public method temporaryInt16 => MIRTemporaryVariable := function newTemporaryInt16.
+    public method temporaryUInt32 => MIRTemporaryVariable := function newTemporaryUInt32.
+    public method temporaryInt32 => MIRTemporaryVariable := function newTemporaryInt32.
+    public method temporaryUInt64 => MIRTemporaryVariable := function newTemporaryUInt64.
+    public method temporaryInt64 => MIRTemporaryVariable := function newTemporaryInt64.
+    public method temporaryUIntPointer => MIRTemporaryVariable := function newTemporaryUIntPointer.
+    public method temporaryFloat32 => MIRTemporaryVariable := function newTemporaryFloat32.
+    public method temporaryFloat64 => MIRTemporaryVariable := function newTemporaryFloat64.
 
-    public method compilationTarget => TACCompilationTarget := function compilationTarget.
+    public method compilationTarget => MIRCompilationTarget := function compilationTarget.
     public method pointerSize => Size := function compilationTarget pointerSize.
     public method uintPointerType => Type := function compilationTarget uintPointerType.
     public method has64BitsPointers => Boolean := self pointerSize = 8sz.
 
-    public method operation: (operation: TACOperation) ::=> TACInstruction
-        := self addInstruction: (TACInstruction new operation: operation; yourself).
+    public method operation: (operation: MIROperation) ::=> MIRInstruction
+        := self addInstruction: (MIRInstruction new operation: operation; yourself).
 
-    public method operation: (operation: TACOperation) withOperands: (operands: Array) result: (result: TACValue) ::=> TACInstruction := {
+    public method operation: (operation: MIROperation) withOperands: (operands: Array) result: (result: MIRValue) ::=> MIRInstruction := {
         self assert: (operands allSatisfy: {:each :: Boolean | each isNotNil}).
-        self addInstruction: (TACInstruction new operation: operation; operands: operands; result: result; yourself)
+        self addInstruction: (MIRInstruction new operation: operation; operands: operands; result: result; yourself)
     }.
 
-    public method operation: (operation: TACOperation) withOperands: (operands: Array) ::=> TACInstruction
+    public method operation: (operation: MIROperation) withOperands: (operands: Array) ::=> MIRInstruction
         := self operation: operation withOperands: operands result: nil.
 
-    public method operation: (operation: TACOperation) with: (operand: TACValue) ::=> TACInstruction
+    public method operation: (operation: MIROperation) with: (operand: MIRValue) ::=> MIRInstruction
         := self operation: operation withOperands: (Array with: operand).
 
-    public method operation: (operation: TACOperation) with: (operand: TACValue) result: (result: TACValue)::=> TACInstruction
+    public method operation: (operation: MIROperation) with: (operand: MIRValue) result: (result: MIRValue)::=> MIRInstruction
         := self operation: operation withOperands: (Array with: operand) result: result.
 
-    public method operation: (operation: TACOperation) with: (firstOperand: TACValue) with: (secondOperand: TACValue) ::=> TACInstruction
+    public method operation: (operation: MIROperation) with: (firstOperand: MIRValue) with: (secondOperand: MIRValue) ::=> MIRInstruction
         := self operation: operation withOperands: (Array with: firstOperand with: secondOperand)..
 
-    public method operation: (operation: TACOperation) with: (firstOperand: TACValue) with: (secondOperand: TACValue) result: (result: TACValue) ::=> TACInstruction
+    public method operation: (operation: MIROperation) with: (firstOperand: MIRValue) with: (secondOperand: MIRValue) result: (result: MIRValue) ::=> MIRInstruction
         := self operation: operation withOperands: (Array with: firstOperand with: secondOperand) result: result.
 
-    public method operation: (operation: TACOperation) with: (firstOperand: TACValue) with: (secondOperand: TACValue) with: (thirdOperand: TACValue) ::=> TACInstruction
+    public method operation: (operation: MIROperation) with: (firstOperand: MIRValue) with: (secondOperand: MIRValue) with: (thirdOperand: MIRValue) ::=> MIRInstruction
         := self operation: operation withOperands: (Array with: firstOperand with: secondOperand with: thirdOperand).
 
-    public method operation: (operation: TACOperation) with: (firstOperand: TACValue) with: (secondOperand: TACValue) with: (thirdOperand: TACValue) with: (fourthOperand: TACValue) ::=> TACInstruction
+    public method operation: (operation: MIROperation) with: (firstOperand: MIRValue) with: (secondOperand: MIRValue) with: (thirdOperand: MIRValue) with: (fourthOperand: MIRValue) ::=> MIRInstruction
         := self operation: operation withOperands: (Array with: firstOperand with: secondOperand with: thirdOperand with: fourthOperand).
 
-    public method branch: (destination: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::Branch with: destination.
+    public method branch: (destination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::Branch with: destination.
 
-    public method when: (condition: TACValue) branchIfTrue: (trueDestination: TACValue) branchIfFalse: (falseDestination: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::ConditionalBranch with: condition with: trueDestination with: falseDestination.
+    public method when: (condition: MIRValue) branchIfTrue: (trueDestination: MIRValue) branchIfFalse: (falseDestination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::ConditionalBranch with: condition with: trueDestination with: falseDestination.
 
-    public method call: (function: TACValue) operation: (callOperation: TACOperation) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
-        := self addInstruction: (TACInstruction new
+    public method call: (function: MIRValue) operation: (callOperation: MIROperation) convention: (callingConvention: MIRCallingConvention) arguments: (arguments: Array) result: (result: MIRValue) ::=> MIRInstruction
+        := self addInstruction: (MIRInstruction new
             operation: callOperation;
             operands: (Array with: function) -- arguments;
             callingConvention: callingConvention;
             result: result;
             yourself).
 
-    public method callInt8: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
-        := self call: function operation: TAC::Operation::CallInt8 convention: callingConvention arguments: arguments result: result.
+    public method callInt8: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) arguments: (arguments: Array) result: (result: MIRValue) ::=> MIRInstruction
+        := self call: function operation: MIR::Operation::CallInt8 convention: callingConvention arguments: arguments result: result.
 
-    public method callInt8: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+    public method callInt8: (function: MIRValue) arguments: (arguments: Array) result: (result: MIRValue) ::=> MIRInstruction
         := self callInt8: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
 
-    public method callInt8: (function: TACValue) with: (firstArgument: TACValue) result: (result: TACValue) ::=> TACInstruction
+    public method callInt8: (function: MIRValue) with: (firstArgument: MIRValue) result: (result: MIRValue) ::=> MIRInstruction
         := self callInt8: function arguments: (Array with: firstArgument) result: result.
 
-    public method callInt16: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
-        := self call: function operation: TAC::Operation::CallInt16 convention: callingConvention arguments: arguments result: result.
+    public method callInt16: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) arguments: (arguments: Array) result: (result: MIRValue) ::=> MIRInstruction
+        := self call: function operation: MIR::Operation::CallInt16 convention: callingConvention arguments: arguments result: result.
 
-    public method callInt16: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+    public method callInt16: (function: MIRValue) arguments: (arguments: Array) result: (result: MIRValue) ::=> MIRInstruction
         := self callInt16: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
 
-    public method callInt16: (function: TACValue) with: (firstArgument: TACValue) result: (result: TACValue) ::=> TACInstruction
+    public method callInt16: (function: MIRValue) with: (firstArgument: MIRValue) result: (result: MIRValue) ::=> MIRInstruction
         := self callInt16: function arguments: (Array with: firstArgument) result: result.
 
-    public method callInt32: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
-        := self call: function operation: TAC::Operation::CallInt32 convention: callingConvention arguments: arguments result: result.
+    public method callInt32: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) arguments: (arguments: Array) result: (result: MIRValue) ::=> MIRInstruction
+        := self call: function operation: MIR::Operation::CallInt32 convention: callingConvention arguments: arguments result: result.
 
-    public method callInt32: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+    public method callInt32: (function: MIRValue) arguments: (arguments: Array) result: (result: MIRValue) ::=> MIRInstruction
         := self callInt32: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
 
-    public method callInt32: (function: TACValue) with: (firstArgument: TACValue) result: (result: TACValue) ::=> TACInstruction
+    public method callInt32: (function: MIRValue) with: (firstArgument: MIRValue) result: (result: MIRValue) ::=> MIRInstruction
         := self callInt32: function arguments: (Array with: firstArgument) result: result.
 
-    public method callInt64: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
-        := self call: function operation: TAC::Operation::CallInt64 convention: callingConvention arguments: arguments result: result.
+    public method callInt64: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) arguments: (arguments: Array) result: (result: MIRValue) ::=> MIRInstruction
+        := self call: function operation: MIR::Operation::CallInt64 convention: callingConvention arguments: arguments result: result.
 
-    public method callInt64: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+    public method callInt64: (function: MIRValue) arguments: (arguments: Array) result: (result: MIRValue) ::=> MIRInstruction
         := self callInt64: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
 
-    public method callInt64: (function: TACValue) with: (firstArgument: TACValue) result: (result: TACValue) ::=> TACInstruction
+    public method callInt64: (function: MIRValue) with: (firstArgument: MIRValue) result: (result: MIRValue) ::=> MIRInstruction
         := self callInt64: function arguments: (Array with: firstArgument) result: result.
 
-    public method callPointer: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+    public method callPointer: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) arguments: (arguments: Array) result: (result: MIRValue) ::=> MIRInstruction
         := self call: function
-            operation: (self has64BitsPointers ifTrue: (TAC::Operation::CallInt64) ifFalse: (TAC::Operation::CallInt32))
+            operation: (self has64BitsPointers ifTrue: (MIR::Operation::CallInt64) ifFalse: (MIR::Operation::CallInt32))
             convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
 
-    public method callPointer: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+    public method callPointer: (function: MIRValue) arguments: (arguments: Array) result: (result: MIRValue) ::=> MIRInstruction
         := self callPointer: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
 
-    public method callPointer: (function: TACValue) with: (firstArgument: TACValue) result: (result: TACValue) ::=> TACInstruction
+    public method callPointer: (function: MIRValue) with: (firstArgument: MIRValue) result: (result: MIRValue) ::=> MIRInstruction
         := self callPointer: function arguments: (Array with: firstArgument) result: result.
 
-    public method callPointer: (function: TACValue) with: (firstArgument: TACValue) with: (secondArgument: TACValue) result: (result: TACValue) ::=> TACInstruction
+    public method callPointer: (function: MIRValue) with: (firstArgument: MIRValue) with: (secondArgument: MIRValue) result: (result: MIRValue) ::=> MIRInstruction
         := self callPointer: function arguments: (Array with: firstArgument with: secondArgument) result: result.
 
-    public method callPointer: (function: TACValue) with: (firstArgument: TACValue) with: (secondArgument: TACValue) with: (thirdArgument: TACValue) result: (result: TACValue) ::=> TACInstruction
+    public method callPointer: (function: MIRValue) with: (firstArgument: MIRValue) with: (secondArgument: MIRValue) with: (thirdArgument: MIRValue) result: (result: MIRValue) ::=> MIRInstruction
         := self callPointer: function arguments: (Array with: firstArgument with: secondArgument with: thirdArgument) result: result.
 
-    public method callFloat32: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
-        := self call: function operation: TAC::Operation::CallFloat32 convention: callingConvention arguments: arguments result: result.
+    public method callFloat32: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) arguments: (arguments: Array) result: (result: MIRValue) ::=> MIRInstruction
+        := self call: function operation: MIR::Operation::CallFloat32 convention: callingConvention arguments: arguments result: result.
 
-    public method callFloat32: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+    public method callFloat32: (function: MIRValue) arguments: (arguments: Array) result: (result: MIRValue) ::=> MIRInstruction
         := self callFloat32: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
 
-    public method callFloat32: (function: TACValue) with: (firstArgument: TACValue) result: (result: TACValue) ::=> TACInstruction
+    public method callFloat32: (function: MIRValue) with: (firstArgument: MIRValue) result: (result: MIRValue) ::=> MIRInstruction
         := self callFloat32: function arguments: (Array with: firstArgument) result: result.
 
-    public method callFloat64: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
-        := self call: function operation: TAC::Operation::CallFloat64 convention: callingConvention arguments: arguments result: result.
+    public method callFloat64: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) arguments: (arguments: Array) result: (result: MIRValue) ::=> MIRInstruction
+        := self call: function operation: MIR::Operation::CallFloat64 convention: callingConvention arguments: arguments result: result.
 
-    public method callFloat64: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+    public method callFloat64: (function: MIRValue) arguments: (arguments: Array) result: (result: MIRValue) ::=> MIRInstruction
         := self callFloat64: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
 
-    public method callFloat64: (function: TACValue) with: (firstArgument: TACValue) result: (result: TACValue) ::=> TACInstruction
+    public method callFloat64: (function: MIRValue) with: (firstArgument: MIRValue) result: (result: MIRValue) ::=> MIRInstruction
         := self callFloat64: function arguments: (Array with: firstArgument) result: result.
 
-    public method callStruct: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
-        := self call: function operation: TAC::Operation::CallStruct convention: callingConvention arguments: arguments result: result.
+    public method callStruct: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) arguments: (arguments: Array) result: (result: MIRValue) ::=> MIRInstruction
+        := self call: function operation: MIR::Operation::CallStruct convention: callingConvention arguments: arguments result: result.
 
-    public method callStruct: (function: TACValue) arguments: (arguments: Array) result: (result: TACValue) ::=> TACInstruction
+    public method callStruct: (function: MIRValue) arguments: (arguments: Array) result: (result: MIRValue) ::=> MIRInstruction
         := self callStruct: function convention: self compilationTarget defaultCallingConvention arguments: arguments result: result.
 
-    public method callVoid: (function: TACValue) convention: (callingConvention: TACCallingConvention) arguments: (arguments: Array) ::=> TACInstruction
-        := self call: function operation: TAC::Operation::CallVoid convention: callingConvention arguments: arguments result: nil.
+    public method callVoid: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) arguments: (arguments: Array) ::=> MIRInstruction
+        := self call: function operation: MIR::Operation::CallVoid convention: callingConvention arguments: arguments result: nil.
 
-    public method callVoid: (function: TACValue) arguments: (arguments: Array) ::=> TACInstruction
+    public method callVoid: (function: MIRValue) arguments: (arguments: Array) ::=> MIRInstruction
         := self callVoid: function convention: self compilationTarget defaultCallingConvention arguments: arguments.
 
-    public method callVoid: (function: TACValue) with: (firstArgument: TACValue) ::=> TACInstruction
+    public method callVoid: (function: MIRValue) with: (firstArgument: MIRValue) ::=> MIRInstruction
         := self callVoid: function arguments: (Array with: firstArgument).
 
-    public method callVoid: (function: TACValue) with: (firstArgument: TACValue) with: (secondArgument: TACValue) ::=> TACInstruction
+    public method callVoid: (function: MIRValue) with: (firstArgument: MIRValue) with: (secondArgument: MIRValue) ::=> MIRInstruction
         := self callVoid: function arguments: (Array with: firstArgument with: secondArgument).
 
-    public method callVoid: (function: TACValue) with: (firstArgument: TACValue) with: (secondArgument: TACValue) with: (thirdArgument: TACValue) ::=> TACInstruction
+    public method callVoid: (function: MIRValue) with: (firstArgument: MIRValue) with: (secondArgument: MIRValue) with: (thirdArgument: MIRValue) ::=> MIRInstruction
         := self callVoid: function arguments: (Array with: firstArgument with: secondArgument with: thirdArgument).
 
-    public method moveInt8: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::MoveInt8 with: source result: destination.
+    public method moveInt8: (source: MIRValue) into: (destination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::MoveInt8 with: source result: destination.
 
-    public method moveInt16: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::MoveInt16 with: source result: destination.
+    public method moveInt16: (source: MIRValue) into: (destination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::MoveInt16 with: source result: destination.
 
-    public method moveInt32: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::MoveInt32 with: source result: destination.
+    public method moveInt32: (source: MIRValue) into: (destination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::MoveInt32 with: source result: destination.
 
-    public method moveInt64: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::MoveInt64 with: source result: destination.
+    public method moveInt64: (source: MIRValue) into: (destination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::MoveInt64 with: source result: destination.
 
-    public method moveStruct: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::MoveStruct with: source result: destination.
+    public method moveStruct: (source: MIRValue) into: (destination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::MoveStruct with: source result: destination.
 
-    public method movePointer: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
-        := self operation: (self has64BitsPointers ifTrue: (TAC::Operation::MoveInt64) ifFalse: (TAC::Operation::MoveInt32))
+    public method movePointer: (source: MIRValue) into: (destination: MIRValue) ::=> MIRInstruction
+        := self operation: (self has64BitsPointers ifTrue: (MIR::Operation::MoveInt64) ifFalse: (MIR::Operation::MoveInt32))
             with: source result: destination.
 
-    public method moveFloat32: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::MoveFloat32 with: source result: destination.
+    public method moveFloat32: (source: MIRValue) into: (destination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::MoveFloat32 with: source result: destination.
 
-    public method moveFloat64: (source: TACValue) into: (destination: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::MoveFloat64 with: source result: destination.
+    public method moveFloat64: (source: MIRValue) into: (destination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::MoveFloat64 with: source result: destination.
 
-    public method constantOffsetImmediateFor: (constantOffset: Int64) ::=> TACValue
+    public method constantOffsetImmediateFor: (constantOffset: Int64) ::=> MIRValue
         := self has64BitsPointers && (constantOffset asInt32 asInt64 ~= constantOffset)
             ifTrue: (constantOffset asTacConstant)
             ifFalse: (constantOffset asInt32 asTacConstant).
 
-    public method loadInt8: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::LoadInt8 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+    public method loadInt8: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (destination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::LoadInt8 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
 
-    public method loadInt16: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::LoadInt16 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+    public method loadInt16: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (destination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::LoadInt16 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
 
-    public method loadInt32: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::LoadInt32 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+    public method loadInt32: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (destination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::LoadInt32 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
 
-    public method loadInt64: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::LoadInt64 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+    public method loadInt64: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (destination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::LoadInt64 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
 
-    public method loadUInt8: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::LoadUInt8 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+    public method loadUInt8: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (destination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::LoadUInt8 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
 
-    public method loadUInt16: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::LoadUInt16 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+    public method loadUInt16: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (destination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::LoadUInt16 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
 
-    public method loadUInt32: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::LoadUInt32 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+    public method loadUInt32: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (destination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::LoadUInt32 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
 
-    public method loadUInt64: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::LoadUInt64 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+    public method loadUInt64: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (destination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::LoadUInt64 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
 
-    public method loadFloat32: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::LoadFloat32 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+    public method loadFloat32: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (destination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::LoadFloat32 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
 
-    public method loadFloat64: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::LoadFloat64 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+    public method loadFloat64: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (destination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::LoadFloat64 with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
 
-    public method addPointer: (pointer: TACValue) with: (offset: TACValue) into: (destination: TACValue) ::=> TACInstruction
+    public method addPointer: (pointer: MIRValue) with: (offset: MIRValue) into: (destination: MIRValue) ::=> MIRInstruction
         := self has64BitsPointers
                 ifTrue: (self int64Add: pointer with: offset into: destination)
                 ifFalse: (self int32Add: pointer with: offset into: destination).
 
-    public method subPointer: (pointer: TACValue) with: (offset: TACValue) into: (destination: TACValue) ::=> TACInstruction
+    public method subPointer: (pointer: MIRValue) with: (offset: MIRValue) into: (destination: MIRValue) ::=> MIRInstruction
         := self has64BitsPointers
                 ifTrue: (self int64Sub: pointer with: offset into: destination)
                 ifFalse: (self int32Sub: pointer with: offset into: destination).
 
-    public method multiplyPointerIndex: (index: TACValue) with: (scale: TACValue) into: (destination: TACValue) ::=> TACInstruction
+    public method multiplyPointerIndex: (index: MIRValue) with: (scale: MIRValue) into: (destination: MIRValue) ::=> MIRInstruction
         := self has64BitsPointers
                 ifTrue: (self int64Mul: index with: scale into: destination)
                 ifFalse: (self int32Mul: index with: scale into: destination).
 
-    public method multiplyPointerIndex: (index: TACValue) constantScale: (constantScale: Int64) into: (destination: TACValue) ::=> TACInstruction
+    public method multiplyPointerIndex: (index: MIRValue) constantScale: (constantScale: Int64) into: (destination: MIRValue) ::=> MIRInstruction
         := self multiplyPointerIndex: index with: (self constantOffsetImmediateFor: constantScale) into: destination.
 
-    public method addPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction := {
+    public method addPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (destination: MIRValue) ::=> MIRInstruction := {
         constantOffset = 0i64 ifTrue: {
             self movePointer: pointer into: destination
         } ifFalse: {
@@ -1402,56 +1402,56 @@ public final class TACBlockBuilder superclass: Object; definition: {
         }
     }.
 
-    public method pointerEquals: (left: TACValue) with: (right: TACValue) into: (destination: TACValue) ::=> TACInstruction
+    public method pointerEquals: (left: MIRValue) with: (right: MIRValue) into: (destination: MIRValue) ::=> MIRInstruction
         := self has64BitsPointers
             ifTrue: (self int64Equals: left with: right into: destination)
             ifFalse: (self int32Equals: left with: right into: destination).
 
-    public method pointerNotEquals: (left: TACValue) with: (right: TACValue) into: (destination: TACValue) ::=> TACInstruction
+    public method pointerNotEquals: (left: MIRValue) with: (right: MIRValue) into: (destination: MIRValue) ::=> MIRInstruction
         := self has64BitsPointers
             ifTrue: (self int64NotEquals: left with: right into: destination)
             ifFalse: (self int32NotEquals: left with: right into: destination).
 
-    public method loadPointer: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
+    public method loadPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (destination: MIRValue) ::=> MIRInstruction
         := self has64BitsPointers
             ifTrue: (self loadUInt64: pointer constantOffset: constantOffset into: destination)
             ifFalse: (self loadUInt32: pointer constantOffset: constantOffset into: destination).
 
-    public method loadStruct: (pointer: TACValue) constantOffset: (constantOffset: Int64) into: (destination: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::LoadStruct with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
+    public method loadStruct: (pointer: MIRValue) constantOffset: (constantOffset: Int64) into: (destination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::LoadStruct with: pointer with: (self constantOffsetImmediateFor: constantOffset) result: destination.
 
-    public method pointerConstantWith: (value: UInt64) ::=> TACValue
+    public method pointerConstantWith: (value: UInt64) ::=> MIRValue
         := self has64BitsPointers
             ifTrue: (value asTacConstant)
             ifFalse: (value asUInt32 asTacConstant).
 
-    public method storeInt8: (value: TACValue) into: (pointer: TACValue) constantOffset: (constantOffset: Int64) ::=> TACInstruction
-        := self operation: TAC::Operation::StoreInt8 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
+    public method storeInt8: (value: MIRValue) into: (pointer: MIRValue) constantOffset: (constantOffset: Int64) ::=> MIRInstruction
+        := self operation: MIR::Operation::StoreInt8 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
 
-    public method storeInt16: (value: TACValue) into: (pointer: TACValue) constantOffset: (constantOffset: Int64) ::=> TACInstruction
-        := self operation: TAC::Operation::StoreInt16 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
+    public method storeInt16: (value: MIRValue) into: (pointer: MIRValue) constantOffset: (constantOffset: Int64) ::=> MIRInstruction
+        := self operation: MIR::Operation::StoreInt16 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
 
-    public method storeInt32: (value: TACValue) into: (pointer: TACValue) constantOffset: (constantOffset: Int64) ::=> TACInstruction
-        := self operation: TAC::Operation::StoreInt32 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
+    public method storeInt32: (value: MIRValue) into: (pointer: MIRValue) constantOffset: (constantOffset: Int64) ::=> MIRInstruction
+        := self operation: MIR::Operation::StoreInt32 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
 
-    public method storeInt64: (value: TACValue) into: (pointer: TACValue) constantOffset: (constantOffset: Int64) ::=> TACInstruction
-        := self operation: TAC::Operation::StoreInt64 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
+    public method storeInt64: (value: MIRValue) into: (pointer: MIRValue) constantOffset: (constantOffset: Int64) ::=> MIRInstruction
+        := self operation: MIR::Operation::StoreInt64 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
 
-    public method storePointer: (value: TACValue) into: (pointer: TACValue) constantOffset: (constantOffset: Int64) ::=> TACInstruction
+    public method storePointer: (value: MIRValue) into: (pointer: MIRValue) constantOffset: (constantOffset: Int64) ::=> MIRInstruction
         := self has64BitsPointers
             ifTrue: (self storeInt64: value into: pointer constantOffset: constantOffset)
             ifFalse: (self storeInt32: value into: pointer constantOffset: constantOffset).
 
-    public method storeFloat32: (value: TACValue) into: (pointer: TACValue) constantOffset: (constantOffset: Int64) ::=> TACInstruction
-        := self operation: TAC::Operation::StoreFloat32 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
+    public method storeFloat32: (value: MIRValue) into: (pointer: MIRValue) constantOffset: (constantOffset: Int64) ::=> MIRInstruction
+        := self operation: MIR::Operation::StoreFloat32 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
 
-    public method storeFloat64: (value: TACValue) into: (pointer: TACValue) constantOffset: (constantOffset: Int64) ::=> TACInstruction
-        := self operation: TAC::Operation::StoreFloat64 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
+    public method storeFloat64: (value: MIRValue) into: (pointer: MIRValue) constantOffset: (constantOffset: Int64) ::=> MIRInstruction
+        := self operation: MIR::Operation::StoreFloat64 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
 
-    public method storeStruct: (value: TACValue) into: (pointer: TACValue) constantOffset: (constantOffset: Int64) ::=> TACInstruction
-        := self operation: TAC::Operation::StoreStruct with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
+    public method storeStruct: (value: MIRValue) into: (pointer: MIRValue) constantOffset: (constantOffset: Int64) ::=> MIRInstruction
+        := self operation: MIR::Operation::StoreStruct with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
 
-    public method loadEffectiveAddress: (basePointer: TACValue) index: (indexValue: TACValue) constantScale: (constantScale: Int64) into: (result: TACValue) ::=> TACInstruction := {
+    public method loadEffectiveAddress: (basePointer: MIRValue) index: (indexValue: MIRValue) constantScale: (constantScale: Int64) into: (result: MIRValue) ::=> MIRInstruction := {
         constantScale = 0i64 ifTrue: {
             self movePointer: basePointer into: result
         } ifFalse: {
@@ -1473,78 +1473,78 @@ public final class TACBlockBuilder superclass: Object; definition: {
         }.
     }.
 
-    public method returnVoid ::=> TACInstruction
-        := self operation: TAC::Operation::ReturnVoid.
+    public method returnVoid ::=> MIRInstruction
+        := self operation: MIR::Operation::ReturnVoid.
 
-    public method returnInt8: (value: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::ReturnInt8 with: value.
+    public method returnInt8: (value: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::ReturnInt8 with: value.
 
-    public method returnInt16: (value: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::ReturnInt16 with: value.
+    public method returnInt16: (value: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::ReturnInt16 with: value.
 
-    public method returnInt32: (value: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::ReturnInt32 with: value.
+    public method returnInt32: (value: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::ReturnInt32 with: value.
 
-    public method returnInt64: (value: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::ReturnInt64 with: value.
+    public method returnInt64: (value: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::ReturnInt64 with: value.
 
-    public method returnPointer: (value: TACValue) ::=> TACInstruction
+    public method returnPointer: (value: MIRValue) ::=> MIRInstruction
         := self has64BitsPointers
             ifTrue: (self returnInt64: value)
             ifFalse: (self returnInt32: value).
 
-    public method returnFloat32: (value: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::ReturnFloat32 with: value.
+    public method returnFloat32: (value: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::ReturnFloat32 with: value.
 
-    public method returnFloat64: (value: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::ReturnFloat64 with: value.
+    public method returnFloat64: (value: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::ReturnFloat64 with: value.
 
-    public method returnStruct: (value: TACValue) ::=> TACInstruction
-        := self operation: TAC::Operation::ReturnStruct with: value.
+    public method returnStruct: (value: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::ReturnStruct with: value.
 
-    public method trap ::=> TACInstruction
-        := self operation: TAC::Operation::Trap.
+    public method trap ::=> MIRInstruction
+        := self operation: MIR::Operation::Trap.
 
-    public method unreachableTrap ::=> TACInstruction
-        := self operation: TAC::Operation::UnreachableTrap.
+    public method unreachableTrap ::=> MIRInstruction
+        := self operation: MIR::Operation::UnreachableTrap.
 
-    public method debugSetBinding: (binding: SymbolBinding) value: (value: TACValue) ::=> TACInstruction
-        := self addInstruction: (TACInstruction new
-            operation: TAC::Operation::DebugSetBindingValue;
+    public method debugSetBinding: (binding: SymbolBinding) value: (value: MIRValue) ::=> MIRInstruction
+        := self addInstruction: (MIRInstruction new
+            operation: MIR::Operation::DebugSetBindingValue;
             operands: (Array with: value);
             sourceBinding: binding;
             yourself).
 
-    public method debugSetMutableBinding: (binding: SymbolBinding) value: (value: TACValue) ::=> TACInstruction
-        := self addInstruction: (TACInstruction new
-            operation: TAC::Operation::DebugSetMutableBindingValue;
+    public method debugSetMutableBinding: (binding: SymbolBinding) value: (value: MIRValue) ::=> MIRInstruction
+        := self addInstruction: (MIRInstruction new
+            operation: MIR::Operation::DebugSetMutableBindingValue;
             operands: (Array with: value);
             sourceBinding: binding;
             yourself).
 }.
 
-public final class TACFunctionBuilder superclass: Object; definition: {
-    public field function => TACFunction.
+public final class MIRFunctionBuilder superclass: Object; definition: {
+    public field function => MIRFunction.
 
     ## Debugging information
     public field debugSourcePosition => SourcePosition.
     public field debugSourceNode => ASTNode.
     public field debugSourceEnvironment => Environment.
 
-    TACFunction extend: {
-        public method build: (aBlock: (TACFunctionBuilder) => Void) ::=> Void := {
-            let builder := TACFunctionBuilder new
+    MIRFunction extend: {
+        public method build: (aBlock: (MIRFunctionBuilder) => Void) ::=> Void := {
+            let builder := MIRFunctionBuilder new
                 function: self;
                 yourself.
             aBlock(builder).
         }.
     }.
 
-    public method basicBlock: (name: Symbol) build: (aBlock: (TACBlockBuilder) => Void) ::=> Void := {
-        let block := TACBasicBlock new name: name; yourself.
+    public method basicBlock: (name: Symbol) build: (aBlock: (MIRBlockBuilder) => Void) ::=> Void := {
+        let block := MIRBasicBlock new name: name; yourself.
         function addBasicBlock: block.
 
-        let blockBuilder := TACBlockBuilder new
+        let blockBuilder := MIRBlockBuilder new
             block: block;
             function: function;
             yourself.
@@ -1552,14 +1552,14 @@ public final class TACFunctionBuilder superclass: Object; definition: {
         block.
     }.
 
-    public method setValueDebugInfo: (value: TACValue) ::=> Void := {
+    public method setValueDebugInfo: (value: MIRValue) ::=> Void := {
         value
             debugSourcePosition: debugSourcePosition;
             debugSourceNode: debugSourceNode;
             debugSourceEnvironment: debugSourceEnvironment
     }.
 
-    public method newTemporary: (name: Symbol) withType: (type: Type) ::=> TACTemporaryVariable := {
+    public method newTemporary: (name: Symbol) withType: (type: Type) ::=> MIRTemporaryVariable := {
         let temporary := function newTemporary: name withType: type.
         self setValueDebugInfo: temporary.
         temporary
@@ -1599,11 +1599,11 @@ public final class TACFunctionBuilder superclass: Object; definition: {
     let operationNameString := operationName asString.
     let lowerOperationNameString := operationNameString first asLowercase asString -- operationNameString allButFirst.
     let lowerOperationName := lowerOperationNameString asSymbol.
-    let operation := TACOperation named: lowerOperationName.
-    let globalName := ("TAC::Operation::" -- operationNameString) asSymbol.
+    let operation := MIROperation named: lowerOperationName.
+    let globalName := ("MIR::Operation::" -- operationNameString) asSymbol.
 
-    TACBlockBuilder
-        withSelector: (lowerOperationNameString -- ":into:") asSymbol addMethod: {:(TACBlockBuilder)self :(TACValue)operand :(TACValue)result :: TACInstruction |
+    MIRBlockBuilder
+        withSelector: (lowerOperationNameString -- ":into:") asSymbol addMethod: {:(MIRBlockBuilder)self :(MIRValue)operand :(MIRValue)result :: MIRInstruction |
             self operation: operation with: operand result: result.
         } makeFinal recompileAndOptimize.
     __OwnerProgramEntity__ setPublicSymbol: globalName value: operation
@@ -1637,11 +1637,11 @@ public final class TACFunctionBuilder superclass: Object; definition: {
     let operationNameString := operationName asString.
     let lowerOperationNameString := operationNameString first asLowercase asString -- operationNameString allButFirst.
     let lowerOperationName := lowerOperationNameString asSymbol.
-    let operation := TACOperation named: lowerOperationName.
-    let globalName := ("TAC::Operation::" -- operationNameString) asSymbol.
+    let operation := MIROperation named: lowerOperationName.
+    let globalName := ("MIR::Operation::" -- operationNameString) asSymbol.
 
-    TACBlockBuilder
-        withSelector: (lowerOperationNameString -- ":with:into:") asSymbol addMethod: {:(TACBlockBuilder)self :(TACValue)left :(TACValue)right :(TACValue)result :: TACInstruction |
+    MIRBlockBuilder
+        withSelector: (lowerOperationNameString -- ":with:into:") asSymbol addMethod: {:(MIRBlockBuilder)self :(MIRValue)left :(MIRValue)right :(MIRValue)result :: MIRInstruction |
             self operation: operation with: left with: right result: result.
         } makeFinal recompileAndOptimize.
     __OwnerProgramEntity__ setPublicSymbol: globalName value: operation
@@ -1676,17 +1676,17 @@ let ComparisonOperationToBranchMap := Dictionary new.
     let branchOperationNameString := operationNameString -- "Branch".
     let lowerBranchOperationNameString := branchOperationNameString first asLowercase asString -- branchOperationNameString allButFirst.
 
-    let operation := TACOperation named: lowerOperationNameString asSymbol.
-    let globalName := ("TAC::Operation::" -- operationNameString) asSymbol.
+    let operation := MIROperation named: lowerOperationNameString asSymbol.
+    let globalName := ("MIR::Operation::" -- operationNameString) asSymbol.
 
-    let branchOperation := TACOperation terminatorNamed: lowerBranchOperationNameString asSymbol.
-    let branchGlobalName := ("TAC::Operation::" -- branchOperationNameString) asSymbol.
+    let branchOperation := MIROperation terminatorNamed: lowerBranchOperationNameString asSymbol.
+    let branchGlobalName := ("MIR::Operation::" -- branchOperationNameString) asSymbol.
 
-    TACBlockBuilder
-        withSelector: (lowerOperationNameString -- ":with:into:") asSymbol addMethod: {:(TACBlockBuilder)self :(TACValue)left :(TACValue)right :(TACValue)result :: TACInstruction |
+    MIRBlockBuilder
+        withSelector: (lowerOperationNameString -- ":with:into:") asSymbol addMethod: {:(MIRBlockBuilder)self :(MIRValue)left :(MIRValue)right :(MIRValue)result :: MIRInstruction |
             self operation: operation with: left with: right result: result.
         } makeFinal recompileAndOptimize;
-        withSelector: (lowerOperationNameString -- ":with:branchIfTrue:branchIfFalse:") asSymbol addMethod: {:(TACBlockBuilder)self :(TACValue)left :(TACValue)right :(TACValue)trueDestination :(TACValue)falseDestination :: TACInstruction |
+        withSelector: (lowerOperationNameString -- ":with:branchIfTrue:branchIfFalse:") asSymbol addMethod: {:(MIRBlockBuilder)self :(MIRValue)left :(MIRValue)right :(MIRValue)trueDestination :(MIRValue)falseDestination :: MIRInstruction |
             self operation: branchOperation with: left with: right with: trueDestination with: falseDestination.
         } makeFinal recompileAndOptimize.
 
@@ -1696,24 +1696,24 @@ let ComparisonOperationToBranchMap := Dictionary new.
         setPublicSymbol: branchGlobalName value: branchOperation
 }.
 
-TACFunction definition: {
+MIRFunction definition: {
     public method performBasicOptimizations => Void := {
         self fuseComparisonAndBranches
     }.
 
     public method fuseComparisonAndBranches => Void := {
         self computeLiveRanges.
-        self basicBlocksDo: {:(TACBasicBlock)eachBasicBlock :: Void |
+        self basicBlocksDo: {:(MIRBasicBlock)eachBasicBlock :: Void |
             let position mutable := eachBasicBlock firstInstruction.
             while: position isNotNil do: {
                 let nextPosition mutable := position next.
                 nextPosition isNotNil &&
-                (nextPosition operation == TAC::Operation::ConditionalBranch) &&
+                (nextPosition operation == MIR::Operation::ConditionalBranch) &&
                 (nextPosition operands first == position result) && 
                 position result isNotNil && 
                 (position result isLastUsedIn: nextPosition) ifTrue: {
                     let positionOperation := position operation.
-                    let comparisonAndBranchOperation => TACOperation := ComparisonOperationToBranchMap atOrNil: positionOperation.
+                    let comparisonAndBranchOperation => MIROperation := ComparisonOperationToBranchMap atOrNil: positionOperation.
                     comparisonAndBranchOperation ifNotNil: {
                         position
                             operation: comparisonAndBranchOperation;
@@ -1734,14 +1734,14 @@ TACFunction definition: {
     }.
 }.
 
-public final class TACFunctionDefinitionPatch superclass: Object; definition: {
+public final class MIRFunctionDefinitionPatch superclass: Object; definition: {
     public field functionDefinition => FunctionDefinition.
-    public field checkedEntryPoint => TACProgramEntity.
-    public field uncheckedEntryPoint => TACProgramEntity.
-    public field uncheckedCapturelessEntryPoint => TACProgramEntity.
+    public field checkedEntryPoint => MIRProgramEntity.
+    public field uncheckedEntryPoint => MIRProgramEntity.
+    public field uncheckedCapturelessEntryPoint => MIRProgramEntity.
 }.
 
-public final class TACModule superclass: TACProgramEntity; definition: {
+public final class MIRModule superclass: MIRProgramEntity; definition: {
     public field programEntities => OrderedCollection.
     public field baseObjectTracer => ImageTracer.
     public field functionDefinitionPatches => OrderedCollection.
@@ -1752,12 +1752,12 @@ public final class TACModule superclass: TACProgramEntity; definition: {
         functionDefinitionPatches := OrderedCollection new.
     }.
 
-    public method addProgramEntity: (programEntity: TACProgramEntity) ::=> Void := {
+    public method addProgramEntity: (programEntity: MIRProgramEntity) ::=> Void := {
         programEntities add: programEntity
     }.
 
-    public method build: (name: Symbol) function: (aBlock: (TACFunctionBuilder) => Void) ::=> TACFunction := {
-        let function := TACFunction new
+    public method build: (name: Symbol) function: (aBlock: (MIRFunctionBuilder) => Void) ::=> MIRFunction := {
+        let function := MIRFunction new
             compilationTarget: compilationTarget;
             callingConvention: compilationTarget defaultCallingConvention;
             name: name;
@@ -1767,21 +1767,21 @@ public final class TACModule superclass: TACProgramEntity; definition: {
     }.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
-        self programEntities do: {:(TACProgramEntity)each :: Void |
+        self programEntities do: {:(MIRProgramEntity)each :: Void |
             stream fullPrint: each; nl
         }
     }.
 
     public method asTargetIR => AnyValue
-        := compilationTarget generateTargetIRForTACModule: self
+        := compilationTarget generateTargetIRForMIRModule: self
 }.
 
-TACCallingConvention definition: {
-    public abstract method computeArgumentPassingLayoutOf: (function: TACFunction) ::=> Void
+MIRCallingConvention definition: {
+    public abstract method computeArgumentPassingLayoutOf: (function: MIRFunction) ::=> Void
         := self subclassResponsibility.
 }.
 
-TACCompilationTarget definition: {
+MIRCompilationTarget definition: {
     public abstract method name => Symbol
         := self subclassResponsibility.
 
@@ -1818,10 +1818,10 @@ TACCompilationTarget definition: {
     public abstract method usesVectorRegistersForFloatOperations => Boolean
         := self subclassResponsibility.
 
-    public abstract method generateTargetIRForTACModule: (module: TACModule) ::=> AnyValue
+    public abstract method generateTargetIRForMIRModule: (module: MIRModule) ::=> AnyValue
         := self subclassResponsibility.
 
-    public abstract method defaultCallingConvention => TACCallingConvention
+    public abstract method defaultCallingConvention => MIRCallingConvention
         := self subclassResponsibility.
 
     public virtual method objectModel => ObjectModelVariant

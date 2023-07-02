@@ -1,10 +1,10 @@
-public class ImageBuilderSSATarget superclass: ImageBuilderTarget; definition: {
+public class ImageBuilderHIRTarget superclass: ImageBuilderTarget; definition: {
     __Meta__ definition: {
-        public method for: (compilationTarget: SSACompilationTarget) ::=> self
+        public method for: (compilationTarget: HIRCompilationTarget) ::=> self
             := self new compilationTarget: compilationTarget; yourself.
     }.
 
-    public field compilationTarget => SSACompilationTarget.
+    public field compilationTarget => HIRCompilationTarget.
 
     public override method initialize => Void := {
         super initialize.
@@ -14,10 +14,10 @@ public class ImageBuilderSSATarget superclass: ImageBuilderTarget; definition: {
         := compilationTarget objectModel.
 
     public override method buildTargetImageWith: (builder: ImageBuilder) ::=> ImageBuilderTargetImage := {
-        let ssaImage := ImageBuilderSSAImage new.
+        let ssaImage := ImageBuilderHIRImage new.
         
         ssaImage
-            ssaModule: ((SSAModuleCompilationContext forTarget: compilationTarget)
+            ssaModule: ((HIRModuleCompilationContext forTarget: compilationTarget)
                 exclusiveCompilationMode: true;
                 compileFunctions: builder tracer tracedFunctions definitions: builder tracer tracedFunctionDefinitions;
                 exportMainEntryPointFunction: builder entryPointFunction;
@@ -26,7 +26,7 @@ public class ImageBuilderSSATarget superclass: ImageBuilderTarget; definition: {
     }.
 }.
 
-SSACompilationTarget definition: {
-    public virtual method asImageBuilderTarget => ImageBuilderSSATarget
-        := ImageBuilderSSATarget for: self
+HIRCompilationTarget definition: {
+    public virtual method asImageBuilderTarget => ImageBuilderHIRTarget
+        := ImageBuilderHIRTarget for: self
 }.

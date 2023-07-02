@@ -98,10 +98,10 @@ printLine((TestClass >> #myTestMethod) definition analyzedBodyNode).
 
 let: #theAnswer with: {:: Int32 | 42i32 }.
 printLine(theAnswer, " ", theAnswer()).
-printLine(theAnswer asSSAModule fullPrintString).
+printLine(theAnswer asHIRModule fullPrintString).
 
 printLine(square).
-printLine(square asSSAModule fullPrintString).
+printLine(square asHIRModule fullPrintString).
 
 let: #min with: {:(Int32)x :(Int32)y :: Int32 |
     if: x < y then: x else: y
@@ -112,10 +112,10 @@ let: #max with: {:(Int32)x :(Int32)y :: Int32 |
 }.
 
 printLine(min).
-printLine(min asSSAModule fullPrintString).
+printLine(min asHIRModule fullPrintString).
 
 printLine(max).
-printLine(max asSSAModule fullPrintString).
+printLine(max asHIRModule fullPrintString).
 
 let: #withLocal with: {:(Int32)x :: Int32 |
     let y => Int32 := x.
@@ -123,14 +123,14 @@ let: #withLocal with: {:(Int32)x :: Int32 |
 }.
 
 printLine(withLocal).
-printLine(withLocal asSSAModule fullPrintString).
+printLine(withLocal asHIRModule fullPrintString).
 
 let: #withLocal2 with: {:(Int32)x :: Int32 |
     let y := x.
     y + 2i32
 }.
 printLine(withLocal2).
-printLine(withLocal2 asSSAModule fullPrintString).
+printLine(withLocal2 asHIRModule fullPrintString).
 
 
 let: #withReturn with: {:(Int32)x :: Int32 |
@@ -138,17 +138,17 @@ let: #withReturn with: {:(Int32)x :: Int32 |
     4i32
 }.
 printLine(withReturn).
-printLine(withReturn asSSAModule fullPrintString).
+printLine(withReturn asHIRModule fullPrintString).
 
 let: #makePlusN with: {:(Int32)n :: Function |
     {:(Int32)x :: Int32 | x + n}
 }.
 printLine(makePlusN).
-printLine(makePlusN asSSAModule fullPrintString).
+printLine(makePlusN asHIRModule fullPrintString).
 
 let: #sequenceableCollectionDo with: SequenceableCollection >> #do:.
 printLine(sequenceableCollectionDo).
-printLine(sequenceableCollectionDo asSSAModule fullPrintString).
+printLine(sequenceableCollectionDo asHIRModule fullPrintString).
 
 let: #whileDo with: {:(Size)n :: Size |
     let i mutable := 0sz.
@@ -161,7 +161,7 @@ let: #whileDo with: {:(Size)n :: Size |
 }.
 
 printLine(whileDo, " ", whileDo(5sz)).
-printLine(whileDo asSSAModule fullPrintString).
+printLine(whileDo asHIRModule fullPrintString).
 
 let: #whileDoContinueWith with: {:(Size)n :: Size |
     let i mutable := 0sz.
@@ -173,7 +173,7 @@ let: #whileDoContinueWith with: {:(Size)n :: Size |
 }.
 
 printLine(whileDoContinueWith, " ", whileDoContinueWith(5sz)).
-printLine(whileDoContinueWith asSSAModule fullPrintString).
+printLine(whileDoContinueWith asHIRModule fullPrintString).
 
 let: #doWhileContinueWith with: {:(Size)n :: Size |
     let i mutable := 0sz.
@@ -185,7 +185,7 @@ let: #doWhileContinueWith with: {:(Size)n :: Size |
 }.
 
 printLine(doWhileContinueWith, " ", doWhileContinueWith(5sz)).
-printLine(doWhileContinueWith asSSAModule fullPrintString).
+printLine(doWhileContinueWith asHIRModule fullPrintString).
 
 let: #doWhile with: {:(Size)n :: Size |
     let i mutable := 0sz.
@@ -198,12 +198,12 @@ let: #doWhile with: {:(Size)n :: Size |
 }.
 
 printLine(doWhile, " ", doWhileContinueWith(5sz)).
-printLine(doWhile asSSAModule fullPrintString).
+printLine(doWhile asHIRModule fullPrintString).
 
 
 let: #valueBoxWith with: ValueBox class >> #with:.
 printLine(valueBoxWith, " ", doWhileContinueWith(5sz)).
-printLine(valueBoxWith asSSAModule fullPrintString).
+printLine(valueBoxWith asHIRModule fullPrintString).
 
 let: #memoized with: {:(Int32)x :(Int32)y :: Int32 | x + y } makeMemoized.
 printLine(memoized memoizationTable).
@@ -221,7 +221,7 @@ let: #functionWithMutableLocal with: {:(Int32)x :: Int32 |
 ##printLine(ReferenceTypeTemplate, ": ", ReferenceTypeTemplate memoizationTable).
 ##printLine(PointerTypeTemplate, ": ", ReferenceTypeTemplate memoizationTable).
 
-printLine(functionWithMutableLocal asSSAModule fullPrintString).
+printLine(functionWithMutableLocal asHIRModule fullPrintString).
 printLine(functionWithMutableLocal(1i32)).
 
 printLine(#{}).
@@ -233,7 +233,7 @@ printLine(#{#test : 42}).
 ##printLine(#(-5 3 4 8 5 -7 0 5 2 1 42 90 -80) sorted).
 
 ## Min
-printLine(min asSSAModule runPasses: (SSADestroySSAFunctionPass,); fullPrintString).
+printLine(min asHIRModule runPasses: (HIRDestroyHIRFunctionPass,); fullPrintString).
 
-printLine(doWhile asSSAModule runPasses: (SSADestroySSAFunctionPass,); fullPrintString).
+printLine(doWhile asHIRModule runPasses: (HIRDestroyHIRFunctionPass,); fullPrintString).
 

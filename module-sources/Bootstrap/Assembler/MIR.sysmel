@@ -1,12 +1,12 @@
 AsmStreamBuilder extend: {
-    public method useDebugInfoOfTACValue: (value: TACValue) ::=> Void := {
+    public method useDebugInfoOfMIRValue: (value: MIRValue) ::=> Void := {
         debugSourcePosition := value debugSourcePosition.
         debugSourceNode := value debugSourceNode.
         debugSourceEnvironment := value debugSourceEnvironment.
     }
 }.
 
-public abstract class TACAsmCompilationTarget superclass: TACCompilationTarget; definition: {
+public abstract class MIRAsmCompilationTarget superclass: MIRCompilationTarget; definition: {
     public field asmCompilationTarget => AsmCompilationTarget.
 
     public override method pointerSize => Size
@@ -21,8 +21,8 @@ public abstract class TACAsmCompilationTarget superclass: TACCompilationTarget; 
     public override method stackFrameAlignment => Size
         := asmCompilationTarget stackFrameAlignment.
 
-    public override method generateTargetIRForTACModule: (module: TACModule) ::=> AnyValue := {
-        let codeGenerator := TACModuleAsmCodeGenerator new
+    public override method generateTargetIRForMIRModule: (module: MIRModule) ::=> AnyValue := {
+        let codeGenerator := MIRModuleAsmCodeGenerator new
             target: self;
             asmTarget: asmCompilationTarget;
             targetModule: (AsmProgramEntity new
@@ -33,17 +33,17 @@ public abstract class TACAsmCompilationTarget superclass: TACCompilationTarget; 
     }.
 }.
 
-public abstract class TACAsmCodeGenerator superclass: Object; definition: {
-    public field target => TACAsmCompilationTarget.
+public abstract class MIRAsmCodeGenerator superclass: Object; definition: {
+    public field target => MIRAsmCompilationTarget.
 
-    public abstract method symbolForProgramEntity: (programEntity: TACProgramEntity) ::=> AsmSymbol
+    public abstract method symbolForProgramEntity: (programEntity: MIRProgramEntity) ::=> AsmSymbol
         := self subclassResponsibility.
 
-    public abstract method symbolForBasicBlock: (basicBlock: TACBasicBlock) ::=> AsmSymbol
+    public abstract method symbolForBasicBlock: (basicBlock: MIRBasicBlock) ::=> AsmSymbol
         := self subclassResponsibility.
 }.
 
-public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; definition: {
+public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; definition: {
     public field targetModule => AsmProgramEntity.
     protected field asmTarget => AsmCompilationTarget.
     public field programEntitySymbolMap => Dictionary.
@@ -72,7 +72,7 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
         objectHeap compilationTarget: target.
     }.
 
-    public override method symbolForProgramEntity: (programEntity: TACProgramEntity) ::=> AsmSymbol := {
+    public override method symbolForProgramEntity: (programEntity: MIRProgramEntity) ::=> AsmSymbol := {
         programEntitySymbolMap at: programEntity ifAbsentPut: {:: AsmSymbol |
             programEntity generateAssemblySymbolWith: self
         }
@@ -90,7 +90,7 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
         }
     }.
 
-    public method compileProgramEntity: (programEntity: TACProgramEntity) ::=> AsmSymbol := {
+    public method compileProgramEntity: (programEntity: MIRProgramEntity) ::=> AsmSymbol := {
         compiledProgramEntitySymbolMap at: programEntity ifAbsent: {:: AsmSymbol |
             let symbol := self symbolForProgramEntity: programEntity.
             compiledProgramEntitySymbolMap at: programEntity put: symbol.
@@ -102,7 +102,7 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
     public method imageObjectTrace => ImageObjectTrace
         := objectHeap objectTrace.
 
-    public method compileModule: (module: TACModule) ::=> Void := {
+    public method compileModule: (module: MIRModule) ::=> Void := {
         ## Use the module image base object trace for constructing the object heap.
         objectHeap baseObjectTracer: module baseObjectTracer.
 
@@ -117,11 +117,11 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
             targetModule contentSymbol: compileUnitSymbol.
         }.
 
-        module programEntities do: {:(TACProgramEntity)eachProgramEntity :: Void |
+        module programEntities do: {:(MIRProgramEntity)eachProgramEntity :: Void |
             self compileProgramEntity: eachProgramEntity
         }.
 
-        module functionDefinitionPatches do: {:(TACFunctionDefinitionPatch)tacPatch :: Void |
+        module functionDefinitionPatches do: {:(MIRFunctionDefinitionPatch)tacPatch :: Void |
             objectHeap tracer addObject: tacPatch functionDefinition patch: (ImageFunctionDefinitionEntryPointAsmPatch new
                 functionDefinition: tacPatch functionDefinition;
                 checkedEntryPoint: (compiledProgramEntitySymbolMap atOrNil: tacPatch checkedEntryPoint);
@@ -156,7 +156,7 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
             yourself
         }.
 
-    public method offsetOfPICTableEntryFor: (picEntry: TACPolymorphicInlineCache) ::=> Size
+    public method offsetOfPICTableEntryFor: (picEntry: MIRPolymorphicInlineCache) ::=> Size
         := picTableDictionary at: picEntry ifAbsentPut: { :: Size |
             picTableDictionary size * ObjectModel::PolymorphicInlineCache instanceSize
         }.
@@ -193,15 +193,15 @@ public final class TACModuleAsmCodeGenerator superclass: TACAsmCodeGenerator; de
     }.
 }.
 
-public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; definition: {
-    public field moduleGenerator => TACModuleAsmCodeGenerator.
-    public field function => TACFunction.
+public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; definition: {
+    public field moduleGenerator => MIRModuleAsmCodeGenerator.
+    public field function => MIRFunction.
     public field asmFunction => AsmProgramEntity.
     public field stackMap => AsmStackMap.
     private field basicBlockSymbolDictionary => IdentityDictionary.
 
-    public field registerAllocator => TACRegisterAllocator.
-    public field stackFrameLayout => TACStackFrameLayout.
+    public field registerAllocator => MIRRegisterAllocator.
+    public field stackFrameLayout => MIRStackFrameLayout.
     private field constantSymbolDictionary => Dictionary.
 
     protected field textSection => AsmStreamBuilder.
@@ -216,18 +216,18 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
             rodataSection;
             yourself).
 
-    protected field captureVectorPointerRegister => TACPhysicalLocation.
+    protected field captureVectorPointerRegister => MIRPhysicalLocation.
 
-    public method validCaptureVectorPointerRegister => TACPhysicalLocation := {
+    public method validCaptureVectorPointerRegister => MIRPhysicalLocation := {
         captureVectorPointerRegister ifNil: (self error: "Cannot use unloaded capture vector pointer register").
         captureVectorPointerRegister
     }.
 
-    public field closureArgument => TACArgumentVariable.
+    public field closureArgument => MIRArgumentVariable.
     public field captureVectorDataOffset => Size.
     public field closureCaptureVectorMemberOffset => Size.
 
-    public method generateFunction: (functionToGenerate: TACFunction) withSymbol: (symbol: AsmSymbol) ::=> Void := {
+    public method generateFunction: (functionToGenerate: MIRFunction) withSymbol: (symbol: AsmSymbol) ::=> Void := {
         function := functionToGenerate.
         asmFunction := moduleGenerator targetModule newProgramEntity.
         stackMap := AsmStackMap new.
@@ -248,7 +248,7 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
 
         self textSection
             align: moduleGenerator asmTarget indirectBranchTargetAlignment unreachable: true;
-            useDebugInfoOfTACValue: functionToGenerate;
+            useDebugInfoOfMIRValue: functionToGenerate;
             label: symbol;
             yourself.
 
@@ -271,7 +271,7 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
             emitStackFrameConstruction;
             generateStackMap.
 
-        function basicBlocksDo: {:(TACBasicBlock)basicBlock :: Void |
+        function basicBlocksDo: {:(MIRBasicBlock)basicBlock :: Void |
             self generateBasicBlock: basicBlock
         }.
 
@@ -283,55 +283,55 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
         }.
     }.
 
-    TACAsmCompilationTarget extend: {
-        public abstract method emitFunctionPrologueWith: (generator: TACFunctionAsmCodeGenerator) ::=> Void
+    MIRAsmCompilationTarget extend: {
+        public abstract method emitFunctionPrologueWith: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
-        public abstract method emitStackFrameConstructionWith: (generator: TACFunctionAsmCodeGenerator) ::=> Void
+        public abstract method emitStackFrameConstructionWith: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
-        public abstract method emitFunctionEpilogueWith: (generator: TACFunctionAsmCodeGenerator) ::=> Void
+        public abstract method emitFunctionEpilogueWith: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
         
-        public virtual method emitInstruction: (instruction: TACInstruction) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
+        public virtual method emitInstruction: (instruction: MIRInstruction) with: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
             := instruction operation generate: instruction for: self with: generator.
         
-        public abstract method emitMoveValue: (value: TACValue) intoLocation: (register: TACPhysicalLocation) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
+        public abstract method emitMoveValue: (value: MIRValue) intoLocation: (register: MIRPhysicalLocation) with: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
-        public abstract method emitMoveValuePointer: (value: TACValue) intoLocation: (register: TACPhysicalLocation) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
+        public abstract method emitMoveValuePointer: (value: MIRValue) intoLocation: (register: MIRPhysicalLocation) with: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
-        public abstract method emitMoveRegister: (register: TACPhysicalLocation) intoValue: (value: TACValue) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
+        public abstract method emitMoveRegister: (register: MIRPhysicalLocation) intoValue: (value: MIRValue) with: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
-        public abstract method emitLoadCaptureVectorPointerFromClosure: (closureArgument: TACValue) intoRegister: (register: TACPhysicalLocation) with: (generator: TACFunctionAsmCodeGenerator) ::=> Void
+        public abstract method emitLoadCaptureVectorPointerFromClosure: (closureArgument: MIRValue) intoRegister: (register: MIRPhysicalLocation) with: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
     }.
 
-    TACCallingConvention extend: {
-        public abstract method asm::generateCallInt8: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+    MIRCallingConvention extend: {
+        public abstract method asm::generateCallInt8: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
-        public abstract method asm::generateCallInt16: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+        public abstract method asm::generateCallInt16: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
-        public abstract method asm::generateCallInt32: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+        public abstract method asm::generateCallInt32: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
-        public abstract method asm::generateCallInt64: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+        public abstract method asm::generateCallInt64: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
-        public abstract method asm::generateCallFloat32: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+        public abstract method asm::generateCallFloat32: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
-        public abstract method asm::generateCallFloat64: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+        public abstract method asm::generateCallFloat64: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
-        public abstract method asm::generateCallStruct: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+        public abstract method asm::generateCallStruct: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
-        public abstract method asm::generateCallVoid: (instruction: TACInstruction) with: (codegen: TACFunctionAsmCodeGenerator) ::=> Void
+        public abstract method asm::generateCallVoid: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
     }.
 
@@ -340,12 +340,12 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
     }.
 
     public method performRegisterAllocation => Void := {
-        registerAllocator := TACSimpleRegisterAllocator new.
+        registerAllocator := MIRSimpleRegisterAllocator new.
         registerAllocator allocateRegistersIn: function withTarget: moduleGenerator target.
     }.
 
     public method buildStackFrameLayout => Void := {
-        stackFrameLayout := TACStackFrameLayout new.
+        stackFrameLayout := MIRStackFrameLayout new.
         stackFrameLayout buildLayoutForFunction: function registerAllocator: registerAllocator withTarget: moduleGenerator target
     }.
 
@@ -364,7 +364,7 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
 
         ## Generate a private label per basic block.
         basicBlockSymbolDictionary := IdentityDictionary new.
-        function basicBlocksDo: {:(TACBasicBlock)basicBlock :: Void |
+        function basicBlocksDo: {:(MIRBasicBlock)basicBlock :: Void |
             basicBlockSymbolDictionary at: basicBlock put: (AsmSymbol new
                 name: basicBlock name;
                 makePrivate;
@@ -385,14 +385,14 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
     }.
 
     public method generateStackMap => Void := {
-        function arguments do: {:(TACLocalVariable)eachLocal :: Void |
+        function arguments do: {:(MIRLocalVariable)eachLocal :: Void |
             eachLocal sourceBinding ifNotNil: {:(SymbolBinding)binding :: Void |
                 let location := eachLocal asm::makeStackMapLocationWith: self.
                 stackMap addArgumentBindingMap: (stackMap setBinding: binding location: location)
             }
         }.
 
-        function captures do: {:(TACLocalVariable)eachLocal :: Void |
+        function captures do: {:(MIRLocalVariable)eachLocal :: Void |
             eachLocal sourceBinding ifNotNil: {:(SymbolBinding)binding :: Void |
                 let location := eachLocal asm::makeStackMapLocationWith: self.
                 stackMap addCaptureBindingMap: (stackMap setBinding: binding location: location)
@@ -401,7 +401,7 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
     }.
 
     public method emitSpillRegisterArgumentsInStackFrame => Void := {
-        function arguments do: {:(TACArgumentVariable)eachArgument :: Void |
+        function arguments do: {:(MIRArgumentVariable)eachArgument :: Void |
             let passingRegister := eachArgument passingRegister.
             (passingRegister isNotNil && eachArgument needsStackAllocation) ifTrue: {
                 self emitMoveRegister: passingRegister intoValue: eachArgument
@@ -409,28 +409,28 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
         }.
     }.
 
-    public method generateBasicBlock: (basicBlock: TACBasicBlock) ::=> Void := {
+    public method generateBasicBlock: (basicBlock: MIRBasicBlock) ::=> Void := {
         let blockSymbol := basicBlockSymbolDictionary at: basicBlock.
         self textSection
-            useDebugInfoOfTACValue: basicBlock;
+            useDebugInfoOfMIRValue: basicBlock;
             label: blockSymbol.
-        basicBlock instructionsDo: {:(TACInstruction)eachInstruction :: Void |
+        basicBlock instructionsDo: {:(MIRInstruction)eachInstruction :: Void |
             self generateInstruction: eachInstruction
         }.
 
         self textSection
-            useDebugInfoOfTACValue: basicBlock;
+            useDebugInfoOfMIRValue: basicBlock;
             endLabel: blockSymbol.
     }.
 
-    public method generateInstruction: (instruction: TACInstruction) ::=> Void := {
+    public method generateInstruction: (instruction: MIRInstruction) ::=> Void := {
         instruction isDebug ifTrue: {
             self processDebugInstruction: instruction.
             return: void
         }.
 
-        self textSection useDebugInfoOfTACValue: instruction.
-        instruction preOperations do: {:(TACInstructionSurroundingOperation)each :: Void |
+        self textSection useDebugInfoOfMIRValue: instruction.
+        instruction preOperations do: {:(MIRInstructionSurroundingOperation)each :: Void |
             each emitAssemblyWith: self
         }.
 
@@ -447,66 +447,66 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
             self emitMoveRegister: instruction resultRegister intoValue: instruction result
         }.
 
-        instruction postOperations do: {:(TACInstructionSurroundingOperation)each :: Void |
+        instruction postOperations do: {:(MIRInstructionSurroundingOperation)each :: Void |
             each emitAssemblyWith: self
         }.
 
         captureVectorPointerRegister := nil.
     }.
 
-    public method loadCaptureVectorPointerIfNeededFor: (instruction: TACInstruction) ::=> Void := {
+    public method loadCaptureVectorPointerIfNeededFor: (instruction: MIRInstruction) ::=> Void := {
         captureVectorPointerRegister := instruction captureVectorPointerRegister.
         captureVectorPointerRegister ifNil: {return: void}.
 
         moduleGenerator target emitLoadCaptureVectorPointerFromClosure: closureArgument intoRegister: captureVectorPointerRegister with: self.
     }.
 
-    public method processDebugInstruction: (debugInstruction: TACInstruction) ::=> Void := {
-        self assert: (debugInstruction operation = TAC::Operation::DebugSetBindingValue)
-            || (debugInstruction operation = TAC::Operation::DebugSetMutableBindingValue).
+    public method processDebugInstruction: (debugInstruction: MIRInstruction) ::=> Void := {
+        self assert: (debugInstruction operation = MIR::Operation::DebugSetBindingValue)
+            || (debugInstruction operation = MIR::Operation::DebugSetMutableBindingValue).
         let value := debugInstruction operands first.
         let binding := debugInstruction sourceBinding.
 
         let location := value asm::makeStackMapLocationWith: self.
         location ifNotNil: {
-            stackMap addLocalBindingMap: (stackMap setBinding: binding isMutable: debugInstruction operation = TAC::Operation::DebugSetMutableBindingValue location: location)
+            stackMap addLocalBindingMap: (stackMap setBinding: binding isMutable: debugInstruction operation = MIR::Operation::DebugSetMutableBindingValue location: location)
         }.
     }.
 
     public method emitMoveValues: (values: Array) intoRegisters: (registers: Array) ::=> Void := {
-        values doWithIndex: {:(TACValue)eachValue :(Size)valueIndex :: Void |
+        values doWithIndex: {:(MIRValue)eachValue :(Size)valueIndex :: Void |
             self emitMoveValue: eachValue intoLocation: (registers at: valueIndex)
         }
     }.
 
-    public method emitMoveValue: (value: TACValue) intoLocation: (location: TACPhysicalLocation) ::=> Void := {
+    public method emitMoveValue: (value: MIRValue) intoLocation: (location: MIRPhysicalLocation) ::=> Void := {
         location isRegister ifTrue: {
             moduleGenerator target emitMoveValue: value intoLocation: location with: self.
         }.
         location isRegisterWithPointer ifTrue: {
-            moduleGenerator target emitMoveValuePointer: value intoLocation: (location downCastTo: TACPhysicalLocationRegisterWithPointer) register with: self.
+            moduleGenerator target emitMoveValuePointer: value intoLocation: (location downCastTo: MIRPhysicalLocationRegisterWithPointer) register with: self.
         }.
     }.
 
-    public method emitMoveRegister: (location: TACPhysicalLocation) intoValue: (value: TACValue) ::=> Void := {
+    public method emitMoveRegister: (location: MIRPhysicalLocation) intoValue: (value: MIRValue) ::=> Void := {
         location isRegister ifTrue: {
             moduleGenerator target emitMoveRegister: location intoValue: value with: self.
         }
     }.
 
-    public override method symbolForProgramEntity: (programEntity: TACProgramEntity) ::=> AsmSymbol := {
+    public override method symbolForProgramEntity: (programEntity: MIRProgramEntity) ::=> AsmSymbol := {
         basicBlockSymbolDictionary at: programEntity ifAbsent: {|
             moduleGenerator symbolForProgramEntity: programEntity
         }
     }.
 
-    public override method symbolForBasicBlock: (basicBlock: TACBasicBlock) ::=> AsmSymbol
+    public override method symbolForBasicBlock: (basicBlock: MIRBasicBlock) ::=> AsmSymbol
         := basicBlockSymbolDictionary at: basicBlock.
 
     public method symbolOfStringLiteral: (string: String) nullTerminated: (nullTerminated: Boolean) ::=> AsmSymbol
         := moduleGenerator symbolOfStringLiteral: string nullTerminated: nullTerminated.
 
-    public method symbolOfStructureConstant: (structureConstant: TACStructureConstant) ::=> AsmSymbol
+    public method symbolOfStructureConstant: (structureConstant: MIRStructureConstant) ::=> AsmSymbol
         := constantSymbolDictionary at: (#uint8, structureConstant) ifAbsentPut: {:: AsmSymbol |
             let symbol := AsmSymbol new
                 name: #structConstant;
@@ -609,18 +609,18 @@ public final class TACFunctionAsmCodeGenerator superclass: TACAsmCodeGenerator; 
         }.
 }.
 
-TACInstructionSurroundingOperation definition: {
-    public virtual method emitAssemblyWith: (codegen: TACFunctionAsmCodeGenerator) ::=> Void := {
+MIRInstructionSurroundingOperation definition: {
+    public virtual method emitAssemblyWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
 
     }.
 }.
 
-public final class TACGlobalDataAsmCodeGenerator superclass: TACAsmCodeGenerator; definition: {
-    public field moduleGenerator => TACModuleAsmCodeGenerator.
+public final class MIRGlobalDataAsmCodeGenerator superclass: MIRAsmCodeGenerator; definition: {
+    public field moduleGenerator => MIRModuleAsmCodeGenerator.
     public field asmVariable => AsmProgramEntity.
     public field dataStream => AsmStreamBuilder.
 
-    public method generateGlobalVariable: (globalToGenerate: TACGlobalVariable) withSymbol: (symbol: AsmSymbol) ::=> Void := {
+    public method generateGlobalVariable: (globalToGenerate: MIRGlobalVariable) withSymbol: (symbol: AsmSymbol) ::=> Void := {
         asmVariable := moduleGenerator targetModule newProgramEntity.
         asmVariable
             debugSourcePosition: globalToGenerate debugSourcePosition;
@@ -641,50 +641,50 @@ public final class TACGlobalDataAsmCodeGenerator superclass: TACAsmCodeGenerator
     }
 }.
 
-TACOperation extend: {
-    public method forTarget: (target: Symbol) generateWith: (codeGenerationBlock: (TACInstruction, TACFunctionAsmCodeGenerator) => Void) ::=> Void := {
+MIROperation extend: {
+    public method forTarget: (target: Symbol) generateWith: (codeGenerationBlock: (MIRInstruction, MIRFunctionAsmCodeGenerator) => Void) ::=> Void := {
         perTargetCodeGenerators at: target put: codeGenerationBlock
     }.
     
-    public method forTargets: (targets: Array) generateWith: (codeGenerationBlock: (TACInstruction, TACFunctionAsmCodeGenerator) => Void) ::=> Void := {
+    public method forTargets: (targets: Array) generateWith: (codeGenerationBlock: (MIRInstruction, MIRFunctionAsmCodeGenerator) => Void) ::=> Void := {
         targets do: {:(Symbol)eachTarget :: Void |
             self forTarget: eachTarget generateWith: codeGenerationBlock
         }
     }.
 
-    public method generate: (instruction: TACInstruction) for: (target: TACAsmCompilationTarget) with: (functionGenerator: TACFunctionAsmCodeGenerator) ::=> Void := {
+    public method generate: (instruction: MIRInstruction) for: (target: MIRAsmCompilationTarget) with: (functionGenerator: MIRFunctionAsmCodeGenerator) ::=> Void := {
         let targetName := target name.
         (perTargetCodeGenerators at: targetName ifAbsent: {|
-            self error: "Missing code generation for TAC operation '" -- name printString -- "' in " -- targetName asString -- "."
+            self error: "Missing code generation for MIR operation '" -- name printString -- "' in " -- targetName asString -- "."
         }) (instruction, functionGenerator).
     }.
 }.
 
-TACValue definition: {
-    public virtual method asm::immediate8For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+MIRValue definition: {
+    public virtual method asm::immediate8For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := self error: "Not an immediate 8 value.".
 
-    public virtual method asm::immediate16For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public virtual method asm::immediate16For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := self error: "Not an immediate 16 value.".
 
-    public virtual method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public virtual method asm::immediate32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := self error: "Not an immediate 32 value.".
 
-    public virtual method asm::immediateS32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public virtual method asm::immediateS32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := self error: "Not an immediate signed 32 value.".
 
-    public virtual method asm::immediateCall32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public virtual method asm::immediateCall32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := self asm::immediate32For: codegen.
 
-    public virtual method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public virtual method asm::immediate64For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := self error: self printString -- " is not an immediate 64 value.".
 
-    public virtual method asm::makeStackMapLocationWith: (codegen: TACAsmCodeGenerator) ::=> AsmStackMapLocation
+    public virtual method asm::makeStackMapLocationWith: (codegen: MIRAsmCodeGenerator) ::=> AsmStackMapLocation
         := nil.
 }.
 
-TACProgramEntity definition: {
-    public virtual method generateAssemblySymbolWith: (moduleGenerator: TACModuleAsmCodeGenerator) ::=> AsmSymbol := {
+MIRProgramEntity definition: {
+    public virtual method generateAssemblySymbolWith: (moduleGenerator: MIRModuleAsmCodeGenerator) ::=> AsmSymbol := {
         let symbol := AsmSymbol new
             name: name;
             yourself.
@@ -697,175 +697,175 @@ TACProgramEntity definition: {
         symbol
     }.
 
-    public abstract method generateAssemblyWith: (moduleGenerator: TACModuleAsmCodeGenerator) symbol: (symbol: AsmSymbol) ::=> Void
+    public abstract method generateAssemblyWith: (moduleGenerator: MIRModuleAsmCodeGenerator) symbol: (symbol: AsmSymbol) ::=> Void
         := self subclassResponsibility.
 
-    public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediate32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := (codegen symbolForProgramEntity: self) dword.
 
-    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediate64For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := (codegen symbolForProgramEntity: self) qword.
 }.
 
-TACImportedProgramEntity definition: {
-    public override method generateAssemblyWith: (moduleGenerator: TACModuleAsmCodeGenerator) symbol: (symbol: AsmSymbol) ::=> Void := {
+MIRImportedProgramEntity definition: {
+    public override method generateAssemblyWith: (moduleGenerator: MIRModuleAsmCodeGenerator) symbol: (symbol: AsmSymbol) ::=> Void := {
         moduleGenerator targetModule addImportedSymbol: symbol
     }.
 
-    public override method asm::immediateCall32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediateCall32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := (codegen symbolForProgramEntity: self) dword makeAtPLT; yourself.
 }.
 
-TACBasicBlock definition: {
-    public override method asm::immediateCall32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+MIRBasicBlock definition: {
+    public override method asm::immediateCall32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := (codegen symbolForBasicBlock: self) dword.
 }.
 
-TACFunction definition: {
-    public override method generateAssemblySymbolWith: (moduleGenerator: TACModuleAsmCodeGenerator) ::=> AsmSymbol := {
+MIRFunction definition: {
+    public override method generateAssemblySymbolWith: (moduleGenerator: MIRModuleAsmCodeGenerator) ::=> AsmSymbol := {
         (super generateAssemblySymbolWith: moduleGenerator)
             makeFunction;
             yourself
     }.
 
-    public override method generateAssemblyWith: (moduleGenerator: TACModuleAsmCodeGenerator) symbol: (symbol: AsmSymbol) ::=> Void := {
-        TACFunctionAsmCodeGenerator new
+    public override method generateAssemblyWith: (moduleGenerator: MIRModuleAsmCodeGenerator) symbol: (symbol: AsmSymbol) ::=> Void := {
+        MIRFunctionAsmCodeGenerator new
             target: moduleGenerator target;
             moduleGenerator: moduleGenerator;
             generateFunction: self withSymbol: symbol
     }.
 }.
 
-TACGlobalVariable definition: {
-    public override method generateAssemblyWith: (moduleGenerator: TACModuleAsmCodeGenerator) symbol: (symbol: AsmSymbol) ::=> Void := {
-        TACGlobalDataAsmCodeGenerator new
+MIRGlobalVariable definition: {
+    public override method generateAssemblyWith: (moduleGenerator: MIRModuleAsmCodeGenerator) symbol: (symbol: AsmSymbol) ::=> Void := {
+        MIRGlobalDataAsmCodeGenerator new
             target: moduleGenerator target;
             moduleGenerator: moduleGenerator;
             generateGlobalVariable: self withSymbol: symbol
     }.
 }.
 
-TACConstantUInt8 definition: {
-    public override method asm::immediate8For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+MIRConstantUInt8 definition: {
+    public override method asm::immediate8For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asAsmImmediate.
 
-    public override method asm::immediate16For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediate16For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asUInt16 asAsmImmediate.
 
-    public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediate32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asUInt32 asAsmImmediate.
 
-    public override method asm::immediateS32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediateS32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asInt32 asAsmImmediate.
 
-    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediate64For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asUInt64 asAsmImmediate.
 }.
 
-TACConstantInt8 definition: {
-    public override method asm::immediate8For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+MIRConstantInt8 definition: {
+    public override method asm::immediate8For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asAsmImmediate.
 
-    public override method asm::immediate16For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediate16For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asInt16 asAsmImmediate.
 
-    public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediate32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asInt32 asAsmImmediate.
 
-    public override method asm::immediateS32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediateS32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asInt32 asAsmImmediate.
 
-    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediate64For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asInt64 asAsmImmediate.
 }.
 
-TACConstantUInt16 definition: {
-    public override method asm::immediate8For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+MIRConstantUInt16 definition: {
+    public override method asm::immediate8For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asUInt8 asAsmImmediate.
 
-    public override method asm::immediate16For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediate16For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asAsmImmediate.
 
-    public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediate32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asUInt32 asAsmImmediate.
 
-    public override method asm::immediateS32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediateS32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asInt32 asAsmImmediate.
 
-    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediate64For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asUInt64 asAsmImmediate.
 }.
 
-TACConstantInt16 definition: {
-    public override method asm::immediate8For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+MIRConstantInt16 definition: {
+    public override method asm::immediate8For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asUInt8 asAsmImmediate.
 
-    public override method asm::immediate16For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediate16For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asAsmImmediate.
 
-    public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediate32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asInt32 asAsmImmediate.
 
-    public override method asm::immediateS32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediateS32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asInt32 asAsmImmediate.
 
-    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediate64For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asInt64 asAsmImmediate.
 }.
 
-TACConstantUInt32 definition: {
-    public override method asm::immediate8For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+MIRConstantUInt32 definition: {
+    public override method asm::immediate8For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asUInt8 asAsmImmediate.
 
-    public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediate32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asAsmImmediate.
 
-    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediate64For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asUInt64 asAsmImmediate.
 }.
 
-TACConstantInt32 definition: {
-    public override method asm::immediate8For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+MIRConstantInt32 definition: {
+    public override method asm::immediate8For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asUInt8 asAsmImmediate.
 
-    public override method asm::immediate32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediate32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asAsmImmediate.
 
-    public override method asm::immediateS32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediateS32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asAsmImmediate.
 
-    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediate64For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asInt64 asAsmImmediate.
 }.
 
-TACConstantUInt64 definition: {
-    public override method asm::immediate8For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+MIRConstantUInt64 definition: {
+    public override method asm::immediate8For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asUInt8 asAsmImmediate.
 
-    public override method asm::immediateS32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate := {
+    public override method asm::immediateS32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate := {
         self assert: value asInt32 asInt64 asUInt64 = value.
         value asInt32 asAsmImmediate
     }.
 
-    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediate64For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asAsmImmediate.
 }.
 
-TACConstantInt64 definition: {
-    public override method asm::immediate8For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+MIRConstantInt64 definition: {
+    public override method asm::immediate8For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asUInt8 asAsmImmediate.
 
-    public override method asm::immediateS32For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate := {
+    public override method asm::immediateS32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate := {
         self assert: value asInt32 asInt64 = value.
         value asInt32 asAsmImmediate
     }.
 
-    public override method asm::immediate64For: (codegen: TACAsmCodeGenerator) ::=> AsmImmediate
+    public override method asm::immediate64For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
         := value asAsmImmediate.
 }.
 
-TACLocalVariable definition: {
-    public override method asm::makeStackMapLocationWith: (codegen: TACAsmCodeGenerator) ::=> AsmStackMapLocation := {
+MIRLocalVariable definition: {
+    public override method asm::makeStackMapLocationWith: (codegen: MIRAsmCodeGenerator) ::=> AsmStackMapLocation := {
         self needsStackAllocation ifTrue: {
             AsmStackMapLocationFrameOffset new offset: offset; yourself
         } ifFalse: {
@@ -874,8 +874,8 @@ TACLocalVariable definition: {
     }
 }.
 
-TACCaptureVariable definition: {
-    public override method asm::makeStackMapLocationWith: (codegen: TACAsmCodeGenerator) ::=> AsmStackMapLocation := {
+MIRCaptureVariable definition: {
+    public override method asm::makeStackMapLocationWith: (codegen: MIRAsmCodeGenerator) ::=> AsmStackMapLocation := {
         ##AsmStackMapLocationCaptureOffset new offset: offset; yourself
         nil
     }

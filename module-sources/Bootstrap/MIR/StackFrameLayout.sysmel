@@ -1,5 +1,5 @@
-public final class TACStackFrameLayout superclass: Object; definition: {
-    protected field compilationTarget => TACCompilationTarget.
+public final class MIRStackFrameLayout superclass: Object; definition: {
+    protected field compilationTarget => MIRCompilationTarget.
 
     public field stackFrameSize => UInt64.
     public field stackFrameAlignment => UInt64.
@@ -10,24 +10,24 @@ public final class TACStackFrameLayout superclass: Object; definition: {
     public method temporaryFrameSize => UInt64
         := stackFrameSize.
 
-    public method buildLayoutForFunction: (function: TACFunction) registerAllocator: (registerAllocator: TACRegisterAllocator) withTarget: (target: TACCompilationTarget) ::=> Void := {
+    public method buildLayoutForFunction: (function: MIRFunction) registerAllocator: (registerAllocator: MIRRegisterAllocator) withTarget: (target: MIRCompilationTarget) ::=> Void := {
         compilationTarget := target.
 
         stackFrameAlignment := compilationTarget stackFrameAlignment asUInt64.
 
         ## We might need to assign a local offset in case the argument is passed through a register and we need to spill it.
-        function arguments do: {:(TACArgumentVariable)eachArgument :: Void |
+        function arguments do: {:(MIRArgumentVariable)eachArgument :: Void |
             eachArgument offset = 0i64 ifTrue: (self assignNextLocationToLocalVariable: eachArgument).
         }.
 
-        function temporaries do: {:(TACTemporaryVariable)eachLocal :: Void |
+        function temporaries do: {:(MIRTemporaryVariable)eachLocal :: Void |
             self assignNextLocationToLocalVariable: eachLocal
         }.
 
         stackFrameSize := stackFrameSize alignedTo: stackFrameAlignment
     }.
 
-    public method assignNextLocationToLocalVariable: (localVariable: TACLocalVariable) ::=> Void := {
+    public method assignNextLocationToLocalVariable: (localVariable: MIRLocalVariable) ::=> Void := {
         localVariable needsStackAllocation ifFalse: (return: void).
 
         let localAlignment := localVariable alignment.

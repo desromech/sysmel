@@ -1,13 +1,13 @@
-let module := TACModule new
+let module := MIRModule new
     compilationTarget: AsmCompilationTarget x86_64 useElf asTacCompilationTarget;
     yourself.
-let addFunction := module build: #add function: {:(TACFunctionBuilder)functionBuilder :: Void |
+let addFunction := module build: #add function: {:(MIRFunctionBuilder)functionBuilder :: Void |
     let function := functionBuilder function.
     let x := function newArgument: #x withType: Int32.
     let y := function newArgument: #y withType: Int32.
     function arguments: (x, y).
 
-    functionBuilder basicBlock: #entry build: {:(TACBlockBuilder)asm :: Void |
+    functionBuilder basicBlock: #entry build: {:(MIRBlockBuilder)asm :: Void |
         let result := asm temporaryInt32.
         asm
             int32Add: x with: y into: result;
@@ -15,13 +15,13 @@ let addFunction := module build: #add function: {:(TACFunctionBuilder)functionBu
     }
 }.
 
-let floatAddFunction := module build: #floatAdd function: {:(TACFunctionBuilder)functionBuilder :: Void |
+let floatAddFunction := module build: #floatAdd function: {:(MIRFunctionBuilder)functionBuilder :: Void |
     let function := functionBuilder function.
     let x := function newArgument: #x withType: Float32.
     let y := function newArgument: #y withType: Float32.
     function arguments: (x, y).
 
-    functionBuilder basicBlock: #entry build: {:(TACBlockBuilder)asm :: Void |
+    functionBuilder basicBlock: #entry build: {:(MIRBlockBuilder)asm :: Void |
         let result := asm temporaryFloat32.
         asm
             float32Add: x with: y into: result;
@@ -29,13 +29,13 @@ let floatAddFunction := module build: #floatAdd function: {:(TACFunctionBuilder)
     }
 }.
 
-let doubleAddFunction := module build: #doubleAdd function: {:(TACFunctionBuilder)functionBuilder :: Void |
+let doubleAddFunction := module build: #doubleAdd function: {:(MIRFunctionBuilder)functionBuilder :: Void |
     let function := functionBuilder function.
     let x := function newArgument: #x withType: Float64.
     let y := function newArgument: #y withType: Float64.
     function arguments: (x, y).
 
-    functionBuilder basicBlock: #entry build: {:(TACBlockBuilder)asm :: Void |
+    functionBuilder basicBlock: #entry build: {:(MIRBlockBuilder)asm :: Void |
         let result := asm temporaryFloat64.
         asm
             float64Add: x with: y into: result;
@@ -43,8 +43,8 @@ let doubleAddFunction := module build: #doubleAdd function: {:(TACFunctionBuilde
     }
 }.
 
-module build: #main function: {:(TACFunctionBuilder)functionBuilder :: Void |
-    functionBuilder basicBlock: #entry build: {:(TACBlockBuilder)asm :: Void |
+module build: #main function: {:(MIRFunctionBuilder)functionBuilder :: Void |
+    functionBuilder basicBlock: #entry build: {:(MIRBlockBuilder)asm :: Void |
         let result := asm temporaryInt32.
 
         asm
@@ -56,4 +56,4 @@ module build: #main function: {:(TACFunctionBuilder)functionBuilder :: Void |
 printLine(module fullPrintString).
 let targetAssembly := module asTargetIR.
 printLine(targetAssembly fullPrintString).
-targetAssembly assemble writeObjectToFileNamed: "testTAC.x86_64.elf64".
+targetAssembly assemble writeObjectToFileNamed: "testMIR.x86_64.elf64".

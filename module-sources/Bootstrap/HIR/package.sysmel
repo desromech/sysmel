@@ -1,0 +1,8 @@
+loadSourceNamed: "IR.sysmel".
+loadSourceNamed: "FrontEnd.sysmel".
+loadSourceNamed: "FunctionPasses.sysmel".
+loadSourceNamed: "MIR.sysmel".
+loadSourceNamed: "ImageBuilderHIRImage.sysmel".
+loadSourceNamed: "ImageBuilderHIRTarget.sysmel".
+loadSourceNamed: "ImageBuilderHIR_MIRTarget.sysmel".
+loadSourceNamed: "ImageBuilderHIR_MIRImage.sysmel".

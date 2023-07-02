@@ -1,19 +1,19 @@
-public abstract class SSACompilationTarget superclass: Object.
+public abstract class HIRCompilationTarget superclass: Object.
 
-public class SSAValue superclass: Object.
-public class SSAConstant superclass: SSAValue.
-public class SSAGlobalValue superclass: SSAConstant.
-public class SSAFunction superclass: SSAGlobalValue.
-public class SSAFunctionDefinition superclass: SSAGlobalValue.
-public class SSAFunctionLocalValue superclass: SSAValue.
-public final class SSAFunctionArgument superclass: SSAFunctionLocalValue.
-public final class SSAFunctionCapture superclass: SSAFunctionLocalValue.
-public class SSABasicBlock superclass: SSAFunctionLocalValue.
-public class SSAInstruction superclass: SSAFunctionLocalValue.
-public final class SSAPhiInstruction superclass: SSAInstruction.
-public final class SSAInstructionBuilder superclass: Object.
+public class HIRValue superclass: Object.
+public class HIRConstant superclass: HIRValue.
+public class HIRGlobalValue superclass: HIRConstant.
+public class HIRFunction superclass: HIRGlobalValue.
+public class HIRFunctionDefinition superclass: HIRGlobalValue.
+public class HIRFunctionLocalValue superclass: HIRValue.
+public final class HIRFunctionArgument superclass: HIRFunctionLocalValue.
+public final class HIRFunctionCapture superclass: HIRFunctionLocalValue.
+public class HIRBasicBlock superclass: HIRFunctionLocalValue.
+public class HIRInstruction superclass: HIRFunctionLocalValue.
+public final class HIRPhiInstruction superclass: HIRInstruction.
+public final class HIRInstructionBuilder superclass: Object.
 
-SSAValue definition: {
+HIRValue definition: {
     public field type => Type.
     public field sourcePosition => SourcePosition.
     public field sourceASTNode => ASTNode.
@@ -59,15 +59,15 @@ SSAValue definition: {
         users ifNotNil: {:users | users do: aBlock }
     }.
 
-    public virtual method replaceWith: (replacement: SSAValue) ::=> Void := {
+    public virtual method replaceWith: (replacement: HIRValue) ::=> Void := {
         users ifNotNil: {
-            users do: {:(SSAValue)user :: Void |
+            users do: {:(HIRValue)user :: Void |
                 user replaceUsedValue: self with: replacement.
                 replacement registerUser: user
             }.
         }.
 
-        self usedValuesDo: {:(SSAValue)usedValue :: Void |
+        self usedValuesDo: {:(HIRValue)usedValue :: Void |
             usedValue unregisterUser: self
         }.
     }.
@@ -76,10 +76,10 @@ SSAValue definition: {
     public virtual method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {}.
 
     public method registerInUsedValues => Void := {
-        self usedValuesDo: {:(SSAValue)each :: Void | each registerUser: self }
+        self usedValuesDo: {:(HIRValue)each :: Void | each registerUser: self }
     }.
 
-    public method registerUser: (user: SSAValue) ::=> Void := {
+    public method registerUser: (user: HIRValue) ::=> Void := {
         users ifNil: {
             users := WeakOrderedCollection new
         }.
@@ -87,7 +87,7 @@ SSAValue definition: {
         users add: user
     }.
 
-    public method unregisterUser: (user: SSAValue) ::=> Void := {
+    public method unregisterUser: (user: HIRValue) ::=> Void := {
         users ifNotNil: {:userList :: Void |
             userList removeAllOcurrencesOf: self
         }.
@@ -99,18 +99,18 @@ SSAValue definition: {
     }.
 }.
 
-SSAConstant definition: {
+HIRConstant definition: {
     public override method isConstant => Boolean := true.
 }.
 
-public final class SSAUndefinedConstant superclass: SSAConstant; definition: {
+public final class HIRUndefinedConstant superclass: HIRConstant; definition: {
     public override method isUndefinedConstant => Boolean := true.
 
     public override method printOn: (stream: Stream) ::=> Void
         := stream nextPutAll: "undefined "; print: self type.
 }.
 
-public final class SSALiteralConstant superclass: SSAConstant; definition: {
+public final class HIRLiteralConstant superclass: HIRConstant; definition: {
     public field value => Untyped.
     public field isBoxed => Boolean.
 
@@ -118,7 +118,7 @@ public final class SSALiteralConstant superclass: SSAConstant; definition: {
     public override method isLiteralConstantTrue => Boolean := (Untyped::==)(value, true).
     public override method isLiteralConstantFalse => Boolean := (Untyped::==)(value, false).
 
-    public method asBoxedLiteralConstant => SSALiteralConstant
+    public method asBoxedLiteralConstant => HIRLiteralConstant
         := isBoxed || RawTuple::type(self __slotNamedAt__: #value) isValueType not
             ifTrue: (self)
             ifFalse: (self copy
@@ -141,16 +141,16 @@ public final class SSALiteralConstant superclass: SSAConstant; definition: {
     }.
 }.
 
-SSAGlobalValue definition: {
+HIRGlobalValue definition: {
     public field name => Symbol.
 
     public virtual method sourceObject := nil.
 }.
 
-SSAFunction definition: {
+HIRFunction definition: {
     public field sourceObject => Function.
     public field captures => Array.
-    public field definition => SSAFunctionDefinition.
+    public field definition => HIRFunctionDefinition.
     public field primitiveName => Symbol.
     public field exportedSymbols => Array.
 
@@ -177,28 +177,28 @@ SSAFunction definition: {
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self.
         stream nextPutAll: " captures [".
-        captures doWithIndex: {:(SSAValue)capture :(Size)index :: Void |
+        captures doWithIndex: {:(HIRValue)capture :(Size)index :: Void |
             index > 0sz ifTrue: (stream nextPutAll: ", ").
             stream print: capture
         }.
 
         stream nextPut: ']'c8.
-        definition ifNotNil: {:(SSAValue)definition :: Void |
+        definition ifNotNil: {:(HIRValue)definition :: Void |
             stream nextPutAll: " definition ".
             stream print: definition
         }
     }.
 }.
 
-SSAFunctionCapture definition: {
+HIRFunctionCapture definition: {
     public field sourceBinding => SymbolBinding.
 }.
 
-SSAFunctionArgument definition: {
+HIRFunctionArgument definition: {
     public field sourceBinding => SymbolBinding.
 }.
 
-SSAFunctionDefinition definition: {
+HIRFunctionDefinition definition: {
     public field sourceObject => FunctionDefinition.
     public field arguments => Array.
     public field captures => Array.
@@ -206,8 +206,8 @@ SSAFunctionDefinition definition: {
     public field importedSymbols => Array.
     public field primitiveName => Symbol.
 
-    public field firstBasicBlock => SSABasicBlock.
-    public field lastBasicBlock => SSABasicBlock.
+    public field firstBasicBlock => HIRBasicBlock.
+    public field lastBasicBlock => HIRBasicBlock.
 
     public override method isFunctionDefinition => Boolean := true.
 
@@ -223,19 +223,19 @@ SSAFunctionDefinition definition: {
         importedSymbols := #().
     }.
 
-    SSAValue extend: {
-        public virtual method asSSAFunctionDefinitionOrNil => SSAFunctionDefinition := nil
+    HIRValue extend: {
+        public virtual method asHIRFunctionDefinitionOrNil => HIRFunctionDefinition := nil
     }.
 
-    SSAFunction extend: {
-        public override method asSSAFunctionDefinitionOrNil => SSAFunctionDefinition := definition.
+    HIRFunction extend: {
+        public override method asHIRFunctionDefinitionOrNil => HIRFunctionDefinition := definition.
     }.
 
-    public override method asSSAFunctionDefinitionOrNil => SSAFunctionDefinition := self.
+    public override method asHIRFunctionDefinitionOrNil => HIRFunctionDefinition := self.
 
     public override method isCaptureless => Boolean := captures isEmpty.
 
-    public method addBasicBlock: (basicBlock: SSABasicBlock) before: (position: SSABasicBlock) ::=> Void := {
+    public method addBasicBlock: (basicBlock: HIRBasicBlock) before: (position: HIRBasicBlock) ::=> Void := {
         self assert: basicBlock parent isNil.
 
         let before := position ifNotNil: position previousBlock ifNil: self lastBasicBlock.
@@ -258,7 +258,7 @@ SSAFunctionDefinition definition: {
         basicBlock parent: self
     }.
 
-    public method addBasicBlock: (basicBlock: SSABasicBlock) after: (position: SSABasicBlock) ::=> Void := {
+    public method addBasicBlock: (basicBlock: HIRBasicBlock) after: (position: HIRBasicBlock) ::=> Void := {
         self assert: basicBlock parent isNil.
 
         let before := position .
@@ -281,10 +281,10 @@ SSAFunctionDefinition definition: {
         basicBlock parent: self
     }.
 
-    public method addBasicBlock: (basicBlock: SSABasicBlock) ::=> Void
+    public method addBasicBlock: (basicBlock: HIRBasicBlock) ::=> Void
         := self addBasicBlock: basicBlock before: nil.
 
-    public method addFirstBasicBlock: (basicBlock: SSABasicBlock) ::=> Void
+    public method addFirstBasicBlock: (basicBlock: HIRBasicBlock) ::=> Void
         := self addBasicBlock: basicBlock after: nil.
 
     public method basicBlocksDo: aBlock ::=> Void := {
@@ -307,7 +307,7 @@ SSAFunctionDefinition definition: {
 
     public method allLocalValues ::=> Array := {
         let result := OrderedCollection new.
-        self localValuesDo: {:(SSAFunctionLocalValue)localValue :: Void |
+        self localValuesDo: {:(HIRFunctionLocalValue)localValue :: Void |
             result add: localValue
         }.
         result asArray
@@ -322,18 +322,18 @@ SSAFunctionDefinition definition: {
     }.
 
     public method computeControlFlowAndNormalizeBasicBlocks => Void := {
-        self basicBlocksDo: {:(SSABasicBlock)basicBlock :: Void |
+        self basicBlocksDo: {:(HIRBasicBlock)basicBlock :: Void |
             basicBlock
                 computeSuccessors;
                 resetPredecessors;
                 markWhite.
         }.
 
-        self firstBasicBlock ifNotNil: {:(SSABasicBlock)entryBlock :: Void |
+        self firstBasicBlock ifNotNil: {:(HIRBasicBlock)entryBlock :: Void |
             self traverseBasicBlockForLiveness: entryBlock from: nil
         }.
 
-        self basicBlocksDo: {:(SSABasicBlock)eachBasicBlock :: Void |
+        self basicBlocksDo: {:(HIRBasicBlock)eachBasicBlock :: Void |
             if: eachBasicBlock isBlack then: {
                 eachBasicBlock normalizePhiInstructions
             } else: {
@@ -344,19 +344,19 @@ SSAFunctionDefinition definition: {
     }.
 
     public method fixCriticalEdges => Void := {
-        self basicBlocksDo: {:(SSABasicBlock)eachBasicBlock :: Void |
+        self basicBlocksDo: {:(HIRBasicBlock)eachBasicBlock :: Void |
             eachBasicBlock fixCriticalEdges
         }
     }.
 
-    public method traverseBasicBlockForLiveness: (basicBlock: SSABasicBlock) from: (predecessor: SSABasicBlock) ::=> Void := {
+    public method traverseBasicBlockForLiveness: (basicBlock: HIRBasicBlock) from: (predecessor: HIRBasicBlock) ::=> Void := {
         predecessor ifNotNil: {
             basicBlock addPredecessor: predecessor isBackEdge: basicBlock isGray.
         }.
 
         if: basicBlock isWhite then: {
             basicBlock markGray.
-            basicBlock successors do: {:(SSABasicBlock)eachSuccessor :: Void|
+            basicBlock successors do: {:(HIRBasicBlock)eachSuccessor :: Void|
                 self traverseBasicBlockForLiveness: eachSuccessor from: basicBlock
             }.
 
@@ -364,7 +364,7 @@ SSAFunctionDefinition definition: {
         }.
     }.
 
-    public method removeBasicBlock: (basicBlock: SSABasicBlock) ::=> Void := {
+    public method removeBasicBlock: (basicBlock: HIRBasicBlock) ::=> Void := {
         self assert: basicBlock parent == self.
 
         let previousBlock := basicBlock previousBlock.
@@ -393,8 +393,8 @@ SSAFunctionDefinition definition: {
 
         let oldLocalValues := self allLocalValues.
 
-        self arguments: (self arguments collect: {:(SSAFunctionArgument)each | each copy}).
-        self captures: (self captures collect: {:(SSAFunctionCapture)each | each copy}).
+        self arguments: (self arguments collect: {:(HIRFunctionArgument)each | each copy}).
+        self captures: (self captures collect: {:(HIRFunctionCapture)each | each copy}).
 
         let nextBasicBlockToAdd mutable := firstBasicBlock.
         firstBasicBlock := nil.
@@ -409,12 +409,12 @@ SSAFunctionDefinition definition: {
         self assert: oldLocalValues size = newLocalValues size.
 
         let replacementDictionary := Dictionary new.
-        oldLocalValues doWithIndex: {:(SSAFunctionLocalValue)oldValue :(Size)index :: Void |
+        oldLocalValues doWithIndex: {:(HIRFunctionLocalValue)oldValue :(Size)index :: Void |
             let newValue := newLocalValues at: index.
             replacementDictionary at: oldValue put: newValue
         }.
 
-        self localValuesDo: {:(SSAFunctionLocalValue)each :: Void |
+        self localValuesDo: {:(HIRFunctionLocalValue)each :: Void |
             each
                 replaceUsedValuesWith: replacementDictionary;
                 registerInUsedValues
@@ -438,32 +438,32 @@ SSAFunctionDefinition definition: {
         self printOn: stream.
         
         stream nextPut: '('c8.
-        self arguments doWithIndex: {:(SSAFunctionArgument)argument :(Size)index :: Void |
+        self arguments doWithIndex: {:(HIRFunctionArgument)argument :(Size)index :: Void |
             index > 0sz ifTrue: (stream nextPutAll: ", ").
             stream print: argument
         }.
         stream nextPut: ')'c8.
         stream nextPut: '['c8.
-        self captures doWithIndex: {:(SSAFunctionCapture)capture :(Size)index :: Void |
+        self captures doWithIndex: {:(HIRFunctionCapture)capture :(Size)index :: Void |
             index > 0sz ifTrue: (stream nextPutAll: ", ").
             stream print: capture
         }.
         stream nextPut: ']'c8.
 
         stream nextPutAll: " := {"; nl.
-        self basicBlocksDo: {:(SSABasicBlock)basicBlock :: Void |
+        self basicBlocksDo: {:(HIRBasicBlock)basicBlock :: Void |
             basicBlock fullPrintOn: stream
         }.
         stream nextPutAll: "}"; nl.
     }.
 
     public method computeBasicBlockPredecessors => Void := {
-        self basicBlocksDo: {:(SSABasicBlock)each :: Void |
+        self basicBlocksDo: {:(HIRBasicBlock)each :: Void |
         }.
     }.
 }.
 
-SSAFunctionLocalValue definition: {
+HIRFunctionLocalValue definition: {
     public field name.
     public field localValueIndex => Size.
 
@@ -486,14 +486,14 @@ SSAFunctionLocalValue definition: {
     }.
 }.
 
-SSABasicBlock definition: {
-    public field parent => SSAFunctionDefinition.
+HIRBasicBlock definition: {
+    public field parent => HIRFunctionDefinition.
 
-    public field previousBlock => SSABasicBlock.
-    public field nextBlock => SSABasicBlock.
+    public field previousBlock => HIRBasicBlock.
+    public field nextBlock => HIRBasicBlock.
 
-    public field firstInstruction => SSAInstruction.
-    public field lastInstruction => SSAInstruction.
+    public field firstInstruction => HIRInstruction.
+    public field lastInstruction => HIRInstruction.
 
     public field traversalColor => UInt8.
     public field predecessors => OrderedCollection.
@@ -525,12 +525,12 @@ SSABasicBlock definition: {
         self predecessorKinds: OrderedCollection new.
     }.
 
-    public method addPredecessor: (predecessor: SSABasicBlock) isBackEdge: (isBackEdge: Boolean) ::=> Void := {
+    public method addPredecessor: (predecessor: HIRBasicBlock) isBackEdge: (isBackEdge: Boolean) ::=> Void := {
         self predecessors add: predecessor.
         self predecessorKinds add: isBackEdge.
     }.
 
-    public method addInstruction: (instruction: SSAInstruction) before: (position: SSAInstruction) ::=> Void := {
+    public method addInstruction: (instruction: HIRInstruction) before: (position: HIRInstruction) ::=> Void := {
         self assert: instruction parent isNil.
 
         let before := position ifNotNil: position previousInstruction ifNil: lastInstruction.
@@ -553,7 +553,7 @@ SSABasicBlock definition: {
         instruction parent: self
     }.
 
-    public method addInstruction: (instruction: SSAInstruction) after: (position: SSAInstruction) ::=> Void := {
+    public method addInstruction: (instruction: HIRInstruction) after: (position: HIRInstruction) ::=> Void := {
         self assert: instruction parent isNil.
 
         let before := position .
@@ -576,10 +576,10 @@ SSABasicBlock definition: {
         instruction parent: self
     }.
 
-    public method addInstruction: (instruction: SSAInstruction) ::=> Void
+    public method addInstruction: (instruction: HIRInstruction) ::=> Void
         := self addInstruction: instruction before: nil.
 
-    public method addFirstInstruction: (instruction: SSAInstruction) ::=> Void
+    public method addFirstInstruction: (instruction: HIRInstruction) ::=> Void
         := self addInstruction: instruction after: nil.
 
     public method instructionsDo: aBlock ::=> Void := {
@@ -600,7 +600,7 @@ SSABasicBlock definition: {
         }
     }.
 
-    public method findAllocaInsertionPoint => SSAInstruction := {
+    public method findAllocaInsertionPoint => HIRInstruction := {
         let position mutable := firstInstruction.
         while: position isNotNil && position isAllocaInstruction do: (
             position := position nextInstruction
@@ -609,7 +609,7 @@ SSABasicBlock definition: {
         position
     }.
 
-    public method findPhiLoadInsertionPoint => SSAInstruction := {
+    public method findPhiLoadInsertionPoint => HIRInstruction := {
         let position mutable := firstInstruction.
         while: position isNotNil && position isPhiInstruction do: (
             position := position nextInstruction
@@ -629,11 +629,11 @@ SSABasicBlock definition: {
 
     public method normalizePhiInstructions => Void := {
         let predecessors := self predecessors.
-        self phiInstructionsDo: {:(SSAPhiInstruction)phi :: Void |
-            let newIncomingBlocksAndValues := predecessors collect: {:(SSABasicBlock)eachRequiredPredecessor :: Association |
+        self phiInstructionsDo: {:(HIRPhiInstruction)phi :: Void |
+            let newIncomingBlocksAndValues := predecessors collect: {:(HIRBasicBlock)eachRequiredPredecessor :: Association |
                 (phi findIncomingBlockAndValueFor: eachRequiredPredecessor)
                     ifNotNil: {:(Association)found | found }
-                    ifNil: { eachRequiredPredecessor -> (SSAUndefinedConstant new type: phi type; yourself) }.
+                    ifNil: { eachRequiredPredecessor -> (HIRUndefinedConstant new type: phi type; yourself) }.
             } as: Array.
 
             phi incomingBlocksAndValues: newIncomingBlocksAndValues
@@ -643,7 +643,7 @@ SSABasicBlock definition: {
     public method fixCriticalEdges => Void := {
         ## We require at least two predecessors in order for having a critical edge.
         if: self predecessors size > 1sz then: {
-            self predecessors doWithIndex: {:(SSABasicBlock)predecessor :(Size)predecessorIndex :: Void |
+            self predecessors doWithIndex: {:(HIRBasicBlock)predecessor :(Size)predecessorIndex :: Void |
                 if: predecessor successors size > 1sz then: {
                     self fixCriticalEdge: predecessor index: predecessorIndex.
                 }
@@ -651,12 +651,12 @@ SSABasicBlock definition: {
         }.
     }.
 
-    public method fixCriticalEdge: (incomingBlock: SSABasicBlock) index: (incomingBlockIndex: Size) ::=> Void := {
+    public method fixCriticalEdge: (incomingBlock: HIRBasicBlock) index: (incomingBlockIndex: Size) ::=> Void := {
         self assert: self predecessors size > 1sz.
         self assert: incomingBlock successors size > 1sz.
         self assert: incomingBlock lastInstruction isTerminatorInstruction.
 
-        let builder := SSAInstructionBuilder new
+        let builder := HIRInstructionBuilder new
             function: incomingBlock parent;
             useSourceInformationOfValue: incomingBlock lastInstruction;
             yourself.
@@ -677,12 +677,12 @@ SSABasicBlock definition: {
         incomingBlock replaceSuccessor: self with: incomingBlock.
         self predecessors at: incomingBlockIndex put: intermediateBlock.
 
-        self phiInstructionsDo: {:(SSAPhiInstruction)each :: Void |
+        self phiInstructionsDo: {:(HIRPhiInstruction)each :: Void |
             each replaceIncomingBlock: incomingBlock with: intermediateBlock
         }
     }.
 
-    public method removeInstruction: (instruction: SSAInstruction) ::=> Void := {
+    public method removeInstruction: (instruction: HIRInstruction) ::=> Void := {
         self assert: instruction parent == self.
 
         let previousInstruction := instruction previousInstruction.
@@ -706,8 +706,8 @@ SSABasicBlock definition: {
             nextInstruction: nil
     }.
 
-    public method replaceSuccessor: (oldSuccessor: SSABasicBlock) with: (newSuccessor: SSABasicBlock) ::=> Void := {
-        self successors doWithIndex: {:(SSABasicBlock)eachSuccessor :(Size)index :: Void |
+    public method replaceSuccessor: (oldSuccessor: HIRBasicBlock) with: (newSuccessor: HIRBasicBlock) ::=> Void := {
+        self successors doWithIndex: {:(HIRBasicBlock)eachSuccessor :(Size)index :: Void |
             if: eachSuccessor = oldSuccessor then: (self successors at: index put: newSuccessor)
         }
     }.
@@ -720,7 +720,7 @@ SSABasicBlock definition: {
         super postCopy.
         self parent: nil.
 
-        let nextInstructionToAdd mutable => SSAInstruction := self firstInstruction.
+        let nextInstructionToAdd mutable => HIRInstruction := self firstInstruction.
         self firstInstruction: nil.
         self lastInstruction: nil.
 
@@ -729,7 +729,7 @@ SSABasicBlock definition: {
         } continueWith: (nextInstructionToAdd := nextInstructionToAdd nextInstruction)
     }.
 
-    public override method replaceWith: (replacement: SSAValue) ::=> Void := {
+    public override method replaceWith: (replacement: HIRValue) ::=> Void := {
         super replaceWith: replacement.
         self parent ifNotNil: {:parent :: Void | parent removeBasicBlock: self }
     }.
@@ -739,13 +739,13 @@ SSABasicBlock definition: {
         stream nextPutAll: ":".
         if: (self predecessors ~~ nil) && self predecessors isNotEmpty then: {
             stream nextPutAll: " ## Predecessors".
-            self predecessors do: {:(SSABasicBlock)each :: Void |
+            self predecessors do: {:(HIRBasicBlock)each :: Void |
                 stream nextPut: ' 'c8; print: each
             }
         }.
 
         stream nl.
-        self instructionsDo: {:(SSAInstruction)instruction :: Void |
+        self instructionsDo: {:(HIRInstruction)instruction :: Void |
             stream nextPutAll: "    ".
             instruction fullPrintOn: stream.
             stream nl.
@@ -753,20 +753,20 @@ SSABasicBlock definition: {
     }.
 }.
 
-SSAInstruction definition: {
-    public field parent => SSABasicBlock.
+HIRInstruction definition: {
+    public field parent => HIRBasicBlock.
 
-    public field previousInstruction => SSAInstruction.
-    public field nextInstruction => SSAInstruction.
+    public field previousInstruction => HIRInstruction.
+    public field nextInstruction => HIRInstruction.
 
-    public method parentFunction => SSAFunctionDefinition
-        := self parent ifNil: nil ifNotNil: {:(SSABasicBlock)parentBlock | parentBlock parent }.
+    public method parentFunction => HIRFunctionDefinition
+        := self parent ifNil: nil ifNotNil: {:(HIRBasicBlock)parentBlock | parentBlock parent }.
 
     public override method isInstruction => Boolean := true.
 
     public method isCapturedInClosure => Boolean
-        := users isNotNil && (users anySatisfy: {:(SSAValue)user :: Boolean |
-            user isMakeClosureInstruction && ((user downCastTo: SSAMakeClosureInstruction) captures includes: self)
+        := users isNotNil && (users anySatisfy: {:(HIRValue)user :: Boolean |
+            user isMakeClosureInstruction && ((user downCastTo: HIRMakeClosureInstruction) captures includes: self)
         }).
 
     public override method postCopy => Void := {
@@ -776,25 +776,25 @@ SSAInstruction definition: {
         nextInstruction := nil.
     }.
 
-    public override method replaceWith: (replacement: SSAValue) ::=> Void := {
+    public override method replaceWith: (replacement: HIRValue) ::=> Void := {
         super replaceWith: replacement.
         parent ifNotNil: {parent removeInstruction: self }
     }.
 
-    public virtual method replaceDestination: (oldDestination: SSABasicBlock) with: (newDestination: SSABasicBlock) ::=> Void
+    public virtual method replaceDestination: (oldDestination: HIRBasicBlock) with: (newDestination: HIRBasicBlock) ::=> Void
         := self error: "Not a branch instruction.".
 
     public virtual method successors => Array
         := self error: "Non terminator instruction is present at the end of a basic block " -- self fullPrintString
 }.
 
-public final class SSAAllocaInstruction superclass: SSAInstruction; definition: {
-    public field valueType => SSAValue.
+public final class HIRAllocaInstruction superclass: HIRInstruction; definition: {
+    public field valueType => HIRValue.
 
     public override method isAllocaInstruction => Boolean := true.
 
     public method isLocalOnlyAlloca => Boolean
-        := users isNil || (users allSatisfy: {:(SSAValue)each :: Boolean | each isLoadStoreOrDebugBindingInstruction }).
+        := users isNil || (users allSatisfy: {:(HIRValue)each :: Boolean | each isLoadStoreOrDebugBindingInstruction }).
 
     public override method fullPrintOn: (stream: Stream) ::=> Void
         := stream print: self; nextPutAll: " := alloca: "; print: self valueType.
@@ -808,12 +808,12 @@ public final class SSAAllocaInstruction superclass: SSAInstruction; definition: 
     }.
 
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self valueType ifPresent: {:(SSAValue)replacement :: Void | self valueType: replacement}.
+        replacementDictionary at: self valueType ifPresent: {:(HIRValue)replacement :: Void | self valueType: replacement}.
     }.
 }.
 
-public final class SSABranchInstruction superclass: SSAInstruction; definition: {
-    public field destination => SSABasicBlock.
+public final class HIRBranchInstruction superclass: HIRInstruction; definition: {
+    public field destination => HIRBasicBlock.
 
     public override method isTerminatorInstruction => Boolean := true.
 
@@ -831,17 +831,17 @@ public final class SSABranchInstruction superclass: SSAInstruction; definition: 
         if: self destination = replacedValue then: (self destination: replacement)
     }.
 
-    public override method replaceDestination: (oldDestination: SSABasicBlock) with: (newDestination: SSABasicBlock) ::=> Void := {
+    public override method replaceDestination: (oldDestination: HIRBasicBlock) with: (newDestination: HIRBasicBlock) ::=> Void := {
         if: self destination = oldDestination then: (self destination: newDestination)
     }.
 
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self destination ifPresent: {:(SSABasicBlock)replacement :: Void | self destination: replacement}.
+        replacementDictionary at: self destination ifPresent: {:(HIRBasicBlock)replacement :: Void | self destination: replacement}.
     }.
 }.
 
-public final class SSACallInstruction superclass: SSAInstruction; definition: {
-    public field calledFunction => SSAValue.
+public final class HIRCallInstruction superclass: HIRInstruction; definition: {
+    public field calledFunction => HIRValue.
     public field arguments => Array.
     public field isUnchecked => Boolean.
 
@@ -849,7 +849,7 @@ public final class SSACallInstruction superclass: SSAInstruction; definition: {
         stream
             print: self; nextPutAll: " := ";
             nextPutAll: "call "; print: self calledFunction.
-        self arguments do: {:(SSAValue)argument :: Void |
+        self arguments do: {:(HIRValue)argument :: Void |
             stream nextPutAll: ", ".
             stream print: argument
         }
@@ -866,14 +866,14 @@ public final class SSACallInstruction superclass: SSAInstruction; definition: {
     }.
 
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self calledFunction ifPresent: {:(SSAValue)replacement :: Void | self calledFunction: replacement}.
+        replacementDictionary at: self calledFunction ifPresent: {:(HIRValue)replacement :: Void | self calledFunction: replacement}.
         arguments replaceAllWithDictionary: replacementDictionary
     }.
 }.
 
-public final class SSABitcastInstruction superclass: SSAInstruction; definition: {
-    public field value => SSAValue.
-    public field targetType => SSAValue.
+public final class HIRBitcastInstruction superclass: HIRInstruction; definition: {
+    public field value => HIRValue.
+    public field targetType => HIRValue.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void
         := stream print: self; nextPutAll: " := bitcast: "; print: self value;
@@ -890,14 +890,14 @@ public final class SSABitcastInstruction superclass: SSAInstruction; definition:
     }.
 
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
-        replacementDictionary at: self targetType ifPresent: {:(SSAValue)replacement :: Void | self targetType: replacement}.
+        replacementDictionary at: self value ifPresent: {:(HIRValue)replacement :: Void | self value: replacement}.
+        replacementDictionary at: self targetType ifPresent: {:(HIRValue)replacement :: Void | self targetType: replacement}.
     }.
 }.
 
-public final class SSACoerceValueInstruction superclass: SSAInstruction; definition: {
-    public field value => SSAValue.
-    public field targetType => SSAValue.
+public final class HIRCoerceValueInstruction superclass: HIRInstruction; definition: {
+    public field value => HIRValue.
+    public field targetType => HIRValue.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void
         := stream print: self; nextPutAll: " := coerceValue: "; print: self value;
@@ -914,15 +914,15 @@ public final class SSACoerceValueInstruction superclass: SSAInstruction; definit
     }.
 
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
-        replacementDictionary at: self targetType ifPresent: {:(SSAValue)replacement :: Void | self targetType: replacement}.
+        replacementDictionary at: self value ifPresent: {:(HIRValue)replacement :: Void | self value: replacement}.
+        replacementDictionary at: self targetType ifPresent: {:(HIRValue)replacement :: Void | self targetType: replacement}.
     }.
 }.
 
-public final class SSAConditionalBranchInstruction superclass: SSAInstruction; definition: {
-    public field condition => SSAValue.
-    public field trueDestination => SSABasicBlock.
-    public field falseDestination => SSABasicBlock.
+public final class HIRConditionalBranchInstruction superclass: HIRInstruction; definition: {
+    public field condition => HIRValue.
+    public field trueDestination => HIRBasicBlock.
+    public field falseDestination => HIRBasicBlock.
 
     public override method isTerminatorInstruction => Boolean := true.
 
@@ -947,20 +947,20 @@ public final class SSAConditionalBranchInstruction superclass: SSAInstruction; d
     }.
 
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self condition ifPresent: {:(SSAValue)replacement :: Void | self condition: replacement}.
-        replacementDictionary at: self trueDestination ifPresent: {:(SSABasicBlock)replacement :: Void | self trueDestination: replacement}.
-        replacementDictionary at: self falseDestination ifPresent: {:(SSABasicBlock)replacement :: Void | self falseDestination: replacement}.
+        replacementDictionary at: self condition ifPresent: {:(HIRValue)replacement :: Void | self condition: replacement}.
+        replacementDictionary at: self trueDestination ifPresent: {:(HIRBasicBlock)replacement :: Void | self trueDestination: replacement}.
+        replacementDictionary at: self falseDestination ifPresent: {:(HIRBasicBlock)replacement :: Void | self falseDestination: replacement}.
     }.
 
-    public override method replaceDestination: (oldDestination: SSABasicBlock) with: (newDestination: SSABasicBlock) ::=> Void := {
+    public override method replaceDestination: (oldDestination: HIRBasicBlock) with: (newDestination: HIRBasicBlock) ::=> Void := {
         if: self trueDestination = oldDestination then: (self trueDestination: newDestination).
         if: self falseDestination = oldDestination then: (self falseDestination: newDestination)
     }.
 }.
 
-public final class SSADownCastInstruction superclass: SSAInstruction; definition: {
-    public field targetType => SSAValue.
-    public field value => SSAValue.
+public final class HIRDownCastInstruction superclass: HIRInstruction; definition: {
+    public field targetType => HIRValue.
+    public field value => HIRValue.
     public field isUnchecked => Boolean.
 
     public override method isDownCastInstruction => Boolean := true.
@@ -982,14 +982,14 @@ public final class SSADownCastInstruction superclass: SSAInstruction; definition
     }.
 
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self targetType ifPresent: {:(SSAValue)replacement :: Void | self targetType: replacement}.
-        replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
+        replacementDictionary at: self targetType ifPresent: {:(HIRValue)replacement :: Void | self targetType: replacement}.
+        replacementDictionary at: self value ifPresent: {:(HIRValue)replacement :: Void | self value: replacement}.
     }.
 }.
 
-public final class SSAReferenceElementAtInstruction superclass: SSAInstruction; definition: {
-    public field reference => SSAValue.
-    public field index => SSAValue.
+public final class HIRReferenceElementAtInstruction superclass: HIRInstruction; definition: {
+    public field reference => HIRValue.
+    public field index => HIRValue.
 
     public override method isReferenceElementAtInstruction => Boolean := true.
 
@@ -1008,14 +1008,14 @@ public final class SSAReferenceElementAtInstruction superclass: SSAInstruction; 
     }.
 
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self reference ifPresent: {:(SSAValue)replacement :: Void | self reference: replacement}.
-        replacementDictionary at: self index ifPresent: {:(SSAValue)replacement :: Void | self index: replacement}.
+        replacementDictionary at: self reference ifPresent: {:(HIRValue)replacement :: Void | self reference: replacement}.
+        replacementDictionary at: self index ifPresent: {:(HIRValue)replacement :: Void | self index: replacement}.
     }.
 }.
 
-public final class SSAPointerElementAtInstruction superclass: SSAInstruction; definition: {
-    public field pointer => SSAValue.
-    public field index => SSAValue.
+public final class HIRPointerElementAtInstruction superclass: HIRInstruction; definition: {
+    public field pointer => HIRValue.
+    public field index => HIRValue.
 
     public override method isPointerElementAtInstruction => Boolean := true.
 
@@ -1034,13 +1034,13 @@ public final class SSAPointerElementAtInstruction superclass: SSAInstruction; de
     }.
 
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self pointer ifPresent: {:(SSAValue)replacement :: Void | self pointer: replacement}.
-        replacementDictionary at: self index ifPresent: {:(SSAValue)replacement :: Void | self index: replacement}.
+        replacementDictionary at: self pointer ifPresent: {:(HIRValue)replacement :: Void | self pointer: replacement}.
+        replacementDictionary at: self index ifPresent: {:(HIRValue)replacement :: Void | self index: replacement}.
     }.
 }.
 
-public final class SSATypeSlotAtInstruction superclass: SSAInstruction; definition: {
-    public field tuple => SSAValue.
+public final class HIRTypeSlotAtInstruction superclass: HIRInstruction; definition: {
+    public field tuple => HIRValue.
     public field typeSlot => TypeSlot.
 
     public override method isTypeSlotAtInstruction => Boolean := true.
@@ -1058,12 +1058,12 @@ public final class SSATypeSlotAtInstruction superclass: SSAInstruction; definiti
     }.
 
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self tuple ifPresent: {:(SSAValue)replacement :: Void | self tuple: replacement}.
+        replacementDictionary at: self tuple ifPresent: {:(HIRValue)replacement :: Void | self tuple: replacement}.
     }.
 }.
 
-public final class SSATypeSlotReferenceAtInstruction superclass: SSAInstruction; definition: {
-    public field tuple => SSAValue.
+public final class HIRTypeSlotReferenceAtInstruction superclass: HIRInstruction; definition: {
+    public field tuple => HIRValue.
     public field typeSlot => TypeSlot.
 
     public override method isTypeSlotAtInstruction => Boolean := true.
@@ -1081,13 +1081,13 @@ public final class SSATypeSlotReferenceAtInstruction superclass: SSAInstruction;
     }.
 
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self tuple ifPresent: {:(SSAValue)replacement :: Void | self tuple: replacement}.
+        replacementDictionary at: self tuple ifPresent: {:(HIRValue)replacement :: Void | self tuple: replacement}.
     }.
 }.
 
-public final class SSATypeSlotAtPutInstruction superclass: SSAInstruction; definition: {
-    public field tuple => SSAValue.
-    public field value => SSAValue.
+public final class HIRTypeSlotAtPutInstruction superclass: HIRInstruction; definition: {
+    public field tuple => HIRValue.
+    public field value => HIRValue.
     public field typeSlot => TypeSlot.
 
     public override method isTypeSlotAtInstruction => Boolean := true.
@@ -1109,13 +1109,13 @@ public final class SSATypeSlotAtPutInstruction superclass: SSAInstruction; defin
     }.
 
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self tuple ifPresent: {:(SSAValue)replacement :: Void | self tuple: replacement}.
-        replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
+        replacementDictionary at: self tuple ifPresent: {:(HIRValue)replacement :: Void | self tuple: replacement}.
+        replacementDictionary at: self value ifPresent: {:(HIRValue)replacement :: Void | self value: replacement}.
     }.
 }.
 
-public final class SSALoadInstruction superclass: SSAInstruction; definition: {
-    public field storage => SSAValue.
+public final class HIRLoadInstruction superclass: HIRInstruction; definition: {
+    public field storage => HIRValue.
 
     public override method isLoadInstruction => Boolean := true.
     public override method isLoadStoreOrDebugBindingInstruction => Boolean := true.
@@ -1133,13 +1133,13 @@ public final class SSALoadInstruction superclass: SSAInstruction; definition: {
     }.
 
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self storage ifPresent: {:(SSAValue)replacement :: Void | self storage: replacement}.
+        replacementDictionary at: self storage ifPresent: {:(HIRValue)replacement :: Void | self storage: replacement}.
     }.
 }.
 
-public final class SSAMakeAssociationInstruction superclass: SSAInstruction; definition: {
-    public field key => SSAValue.
-    public field value => SSAValue.
+public final class HIRMakeAssociationInstruction superclass: HIRInstruction; definition: {
+    public field key => HIRValue.
+    public field value => HIRValue.
 
     public override method isMakeAssociationInstruction => Boolean := true.
 
@@ -1159,19 +1159,19 @@ public final class SSAMakeAssociationInstruction superclass: SSAInstruction; def
     }.
 
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self key ifPresent: {:(SSAValue)replacement :: Void | self key: replacement}.
-        replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
+        replacementDictionary at: self key ifPresent: {:(HIRValue)replacement :: Void | self key: replacement}.
+        replacementDictionary at: self value ifPresent: {:(HIRValue)replacement :: Void | self value: replacement}.
     }.
 }.
 
-public final class SSAMakeArrayInstruction superclass: SSAInstruction; definition: {
+public final class HIRMakeArrayInstruction superclass: HIRInstruction; definition: {
     public field elements => Array.
 
     public override method isMakeArrayInstruction => Boolean := true.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := makeArray".
-        self elements do: {:(SSAValue)element :: Void |
+        self elements do: {:(HIRValue)element :: Void |
             stream nextPutAll: " "; print: element
         }
     }.
@@ -1189,14 +1189,14 @@ public final class SSAMakeArrayInstruction superclass: SSAInstruction; definitio
     }.
 }.
 
-public final class SSAMakeByteArrayInstruction superclass: SSAInstruction; definition: {
+public final class HIRMakeByteArrayInstruction superclass: HIRInstruction; definition: {
     public field elements => Array.
 
     public override method isMakeByteArrayInstruction => Boolean := true.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := makeByteArray".
-        self elements do: {:(SSAValue)element :: Void |
+        self elements do: {:(HIRValue)element :: Void |
             stream nextPutAll: " "; print: element
         }
     }.
@@ -1214,15 +1214,15 @@ public final class SSAMakeByteArrayInstruction superclass: SSAInstruction; defin
     }.
 }.
 
-public final class SSAMakeClosureInstruction superclass: SSAInstruction; definition: {
-    public field functionDefinition => SSAValue.
+public final class HIRMakeClosureInstruction superclass: HIRInstruction; definition: {
+    public field functionDefinition => HIRValue.
     public field captures => Array.
 
     public override method isMakeClosureInstruction => Boolean := true.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := makeClosure "; print: self functionDefinition.
-        self captures do: {:(SSAValue)capture :: Void |
+        self captures do: {:(HIRValue)capture :: Void |
             stream nextPutAll: ", "; print: capture
         }
     }.
@@ -1238,19 +1238,19 @@ public final class SSAMakeClosureInstruction superclass: SSAInstruction; definit
     }.
 
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self functionDefinition ifPresent: {:(SSAValue)replacement :: Void | self functionDefinition: replacement}.
+        replacementDictionary at: self functionDefinition ifPresent: {:(HIRValue)replacement :: Void | self functionDefinition: replacement}.
         self captures replaceAllWithDictionary: replacementDictionary
     }.
 }.
 
-public final class SSAMakeDictionaryInstruction superclass: SSAInstruction; definition: {
+public final class HIRMakeDictionaryInstruction superclass: HIRInstruction; definition: {
     public field elements => Array.
 
     public override method isMakeDictionaryInstruction => Boolean := true.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := makeDictionary".
-        self elements do: {:(SSAValue)element :: Void |
+        self elements do: {:(HIRValue)element :: Void |
             stream nextPutAll: " "; print: element
         }
     }.
@@ -1268,7 +1268,7 @@ public final class SSAMakeDictionaryInstruction superclass: SSAInstruction; defi
     }.
 }.
 
-SSAPhiInstruction definition: {
+HIRPhiInstruction definition: {
     public field incomingBlocksAndValues => Array.
 
     public override method isPhiInstruction => Boolean := true.
@@ -1287,13 +1287,13 @@ SSAPhiInstruction definition: {
         stream nextPutAll: "    ]"
     }.
 
-    public method addValue: (value: SSAValue) incomingFrom: (block: SSABasicBlock) ::=> Void := {
+    public method addValue: (value: HIRValue) incomingFrom: (block: HIRBasicBlock) ::=> Void := {
         self incomingBlocksAndValues: self incomingBlocksAndValues -- (Array with: block -> value).
         value registerUser: self.
         block registerUser: self.
     }.
 
-    public method findIncomingBlockAndValueFor: (expectedBlock: SSABasicBlock) ::=> Association
+    public method findIncomingBlockAndValueFor: (expectedBlock: HIRBasicBlock) ::=> Association
         := self incomingBlocksAndValues detect: {:(Association)each | each key = expectedBlock } ifNone: {: nil}.
 
     public method incomingBlocksAndValuesDo: aBlock ::=> Void := {
@@ -1318,20 +1318,20 @@ SSAPhiInstruction definition: {
 
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         self incomingBlocksAndValues do: {:(Association)association :: Void |
-            replacementDictionary at: association key ifPresent: {:(SSAValue)replacement :: Void | association key: replacement}.
-            replacementDictionary at: association value ifPresent: {:(SSAValue)replacement :: Void | association value: replacement}.
+            replacementDictionary at: association key ifPresent: {:(HIRValue)replacement :: Void | association key: replacement}.
+            replacementDictionary at: association value ifPresent: {:(HIRValue)replacement :: Void | association value: replacement}.
         }
     }.
 
-    public method replaceIncomingBlock: (oldIncomingBlock: SSABasicBlock) with: (newIncomingBlock: SSABasicBlock) ::=> Void := {
+    public method replaceIncomingBlock: (oldIncomingBlock: HIRBasicBlock) with: (newIncomingBlock: HIRBasicBlock) ::=> Void := {
         self incomingBlocksAndValues do: {:(Association)association :: Void |
             if: association key = oldIncomingBlock then: (association key: newIncomingBlock).
         }
     }.
 }.
 
-public final class SSAReturnInstruction superclass: SSAInstruction; definition: {
-    public field value => SSAValue.
+public final class HIRReturnInstruction superclass: HIRInstruction; definition: {
+    public field value => HIRValue.
 
     public override method isTerminatorInstruction => Boolean := true.
 
@@ -1350,14 +1350,14 @@ public final class SSAReturnInstruction superclass: SSAInstruction; definition: 
     }.
 
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
+        replacementDictionary at: self value ifPresent: {:(HIRValue)replacement :: Void | self value: replacement}.
     }.
 }.
 
-public final class SSASendInstruction superclass: SSAInstruction; definition: {
-    public field receiver => SSAValue.
-    public field receiverLookupType => SSAValue.
-    public field selector => SSAValue.
+public final class HIRSendInstruction superclass: HIRInstruction; definition: {
+    public field receiver => HIRValue.
+    public field receiverLookupType => HIRValue.
+    public field selector => HIRValue.
     public field arguments => Array.
     public field isUnchecked => Boolean.
 
@@ -1365,13 +1365,13 @@ public final class SSASendInstruction superclass: SSAInstruction; definition: {
         stream
             print: self; nextPutAll: " := ";
             nextPutAll: "send "; print: self receiver.
-        self receiverLookupType ifNotNil: {:(SSAValue)receiverLookupType :: Void |
+        self receiverLookupType ifNotNil: {:(HIRValue)receiverLookupType :: Void |
             stream nextPutAll: " lookupFrom: "; print: self receiverLookupType.
         }.
 
         stream nextPutAll: ", "; print: self selector.
 
-        #*self arguments doWithIndex: {:(SSAValue)argument :(Size)index :: Void |
+        #*self arguments doWithIndex: {:(HIRValue)argument :(Size)index :: Void |
             index = 0sz
                 ifTrue: (stream nextPut: ' 'c8)
                 ifFalse: (stream nextPutAll: ", ").
@@ -1394,15 +1394,15 @@ public final class SSASendInstruction superclass: SSAInstruction; definition: {
     }.
 
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self receiver ifPresent: {:(SSAValue)replacement :: Void | self receiver: replacement}.
-        replacementDictionary at: self receiverLookupType ifPresent: {:(SSAValue)replacement :: Void | self receiverLookupType: replacement}.
-        replacementDictionary at: self selector ifPresent: {:(SSAValue)replacement :: Void | self selector: replacement}.
+        replacementDictionary at: self receiver ifPresent: {:(HIRValue)replacement :: Void | self receiver: replacement}.
+        replacementDictionary at: self receiverLookupType ifPresent: {:(HIRValue)replacement :: Void | self receiverLookupType: replacement}.
+        replacementDictionary at: self selector ifPresent: {:(HIRValue)replacement :: Void | self selector: replacement}.
         self arguments replaceAllWithDictionary: replacementDictionary
     }.
 }.
 
-public final class SSASetDebugValueForBindingInstruction superclass: SSAInstruction; definition: {
-    public field value => SSAValue.
+public final class HIRSetDebugValueForBindingInstruction superclass: HIRInstruction; definition: {
+    public field value => HIRValue.
     public field binding => SymbolBinding.
 
     public override method isLoadStoreOrDebugBindingInstruction => Boolean := true.
@@ -1425,13 +1425,13 @@ public final class SSASetDebugValueForBindingInstruction superclass: SSAInstruct
     }.
 
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
+        replacementDictionary at: self value ifPresent: {:(HIRValue)replacement :: Void | self value: replacement}.
     }.
 }.
 
-public final class SSAStoreInstruction superclass: SSAInstruction; definition: {
-    public field storage => SSAValue.
-    public field value => SSAValue.
+public final class HIRStoreInstruction superclass: HIRInstruction; definition: {
+    public field storage => HIRValue.
+    public field value => HIRValue.
 
     public override method isStoreInstruction => Boolean := true.
     public override method isLoadStoreOrDebugBindingInstruction => Boolean := true.
@@ -1456,12 +1456,12 @@ public final class SSAStoreInstruction superclass: SSAInstruction; definition: {
     }.
 
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self storage ifPresent: {:(SSAValue)replacement :: Void | self storage: replacement}.
-        replacementDictionary at: self value ifPresent: {:(SSAValue)replacement :: Void | self value: replacement}.
+        replacementDictionary at: self storage ifPresent: {:(HIRValue)replacement :: Void | self storage: replacement}.
+        replacementDictionary at: self value ifPresent: {:(HIRValue)replacement :: Void | self value: replacement}.
     }.
 }.
 
-public final class SSAUnreachableInstruction superclass: SSAInstruction; definition: {
+public final class HIRUnreachableInstruction superclass: HIRInstruction; definition: {
     public override method isUnreachableInstruction => Boolean := true.
 
     public override method isTerminatorInstruction => Boolean := true.
@@ -1473,7 +1473,7 @@ public final class SSAUnreachableInstruction superclass: SSAInstruction; definit
         := stream nextPutAll: "unreachable".
 }.
 
-public final class SSAModule superclass: Object; definition: {
+public final class HIRModule superclass: Object; definition: {
     public field globalValues => OrderedCollection.
     private field globalValueDictionary => IdentityDictionary.
 
@@ -1482,42 +1482,42 @@ public final class SSAModule superclass: Object; definition: {
         globalValueDictionary := IdentityDictionary new.
     }.
 
-    public method addGlobalValue: (globalValue: SSAGlobalValue) ::=> Void := {
+    public method addGlobalValue: (globalValue: HIRGlobalValue) ::=> Void := {
         globalValues add: globalValue.
         globalValue sourceObject ifNotNil: {
             globalValueDictionary at: globalValue sourceObject put: globalValue
         }
     }.
 
-    public method getGlobalValueFor: value ::=> SSAValue
+    public method getGlobalValueFor: value ::=> HIRValue
         := globalValueDictionary at: value.
 
-    public method getGlobalValueOrNilFor: value ::=> SSAValue
+    public method getGlobalValueOrNilFor: value ::=> HIRValue
         := globalValueDictionary atOrNil: value.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
-        globalValues do: {:(SSAGlobalValue)eachValue :: Void |
+        globalValues do: {:(HIRGlobalValue)eachValue :: Void |
             stream fullPrint: eachValue; nl
         }
     }.
 }.
 
-SSAInstructionBuilder definition: {
+HIRInstructionBuilder definition: {
     public field sourcePosition => SourcePosition.
     public field sourceASTNode => ASTNode.
     public field sourceEnvironment => Environment.
 
-    public field function => SSAFunctionDefinition.
-    public field basicBlock => SSABasicBlock.
-    public field insertionPoint => SSAInstruction.
+    public field function => HIRFunctionDefinition.
+    public field basicBlock => HIRBasicBlock.
+    public field insertionPoint => HIRInstruction.
 
     __Meta__ definition: {
-        public method for: (function: SSAFunctionDefinition)
+        public method for: (function: HIRFunctionDefinition)
             := self new function: function; yourself.
     }.
 
-    public method newBasicBlockNamed: name ::=> SSABasicBlock := {
-        let newBasicBlock := SSABasicBlock new
+    public method newBasicBlockNamed: name ::=> HIRBasicBlock := {
+        let newBasicBlock := HIRBasicBlock new
             name: name;
             sourcePosition: self sourcePosition;
             sourceASTNode: self sourceASTNode;
@@ -1526,24 +1526,24 @@ SSAInstructionBuilder definition: {
         newBasicBlock
     }.
 
-    public method beginBasicBlock: (newBasicBlock: SSABasicBlock) ::=> SSABasicBlock := {
+    public method beginBasicBlock: (newBasicBlock: HIRBasicBlock) ::=> HIRBasicBlock := {
         self basicBlock: newBasicBlock.
         self insertionPoint: nil.
         self function addBasicBlock: newBasicBlock.
         newBasicBlock
     }.
 
-    public method beginInsertingInBasicBlock: (newBasicBlock: SSABasicBlock) ::=> SSABasicBlock := {
+    public method beginInsertingInBasicBlock: (newBasicBlock: HIRBasicBlock) ::=> HIRBasicBlock := {
         self function: newBasicBlock parent.
         self basicBlock: newBasicBlock.
         self insertionPoint: nil.
         newBasicBlock
     }.
 
-    public method beginBasicBlockNamed: name ::=> SSABasicBlock
+    public method beginBasicBlockNamed: name ::=> HIRBasicBlock
         := self beginBasicBlock: (self newBasicBlockNamed: name).
 
-    public method addInstruction: (instruction: SSAInstruction) ::=> instruction __type__ := {
+    public method addInstruction: (instruction: HIRInstruction) ::=> instruction __type__ := {
         instruction
             sourcePosition: self sourcePosition;
             sourceASTNode: self sourceASTNode;
@@ -1552,7 +1552,7 @@ SSAInstructionBuilder definition: {
         instruction
     }.
 
-    public method useSourceInformationOfValue: (value: SSAValue) ::=> Void := {
+    public method useSourceInformationOfValue: (value: HIRValue) ::=> Void := {
         self sourcePosition: value sourcePosition.
         self sourceASTNode: value sourceASTNode.
         self sourceEnvironment: value sourceEnvironment.
@@ -1582,36 +1582,36 @@ SSAInstructionBuilder definition: {
         result
     }.
 
-    public method alloca: (valueType: SSAValue) type: (type: Type) ::=> SSAAllocaInstruction
-        := self addInstruction: (SSAAllocaInstruction new
+    public method alloca: (valueType: HIRValue) type: (type: Type) ::=> HIRAllocaInstruction
+        := self addInstruction: (HIRAllocaInstruction new
             valueType: valueType;
             type: type;
             registerInUsedValues;
             yourself).
 
-    public method branch: (destination: SSABasicBlock) ::=> SSABranchInstruction
-        := self addInstruction: (SSABranchInstruction new
+    public method branch: (destination: HIRBasicBlock) ::=> HIRBranchInstruction
+        := self addInstruction: (HIRBranchInstruction new
             destination: destination;
             type: Void;
             registerInUsedValues;
             yourself).
 
-    public method call: (calledFunction: SSAValue) arguments: (arguments: Array) resultType: (resultType: Type) ::=> SSACallInstruction
-        := self addInstruction: (SSACallInstruction new
+    public method call: (calledFunction: HIRValue) arguments: (arguments: Array) resultType: (resultType: Type) ::=> HIRCallInstruction
+        := self addInstruction: (HIRCallInstruction new
             calledFunction: calledFunction;
             arguments: arguments;
             type: resultType;
             registerInUsedValues;
             yourself).
 
-    public method call: (receiver: SSAValue) arguments: (arguments: Array) ::=> SSACallInstruction
+    public method call: (receiver: HIRValue) arguments: (arguments: Array) ::=> HIRCallInstruction
         := self call: receiver arguments: arguments resultType: nil.
 
-    public method bitcast: (value: SSAValue) into: (targetType: SSAValue) type: (type: Type) ::=> SSAValue := {
-        (targetType == nil) || (targetType isLiteralConstant && (value type == (targetType downCastTo: SSALiteralConstant) value)) ifTrue: {
+    public method bitcast: (value: HIRValue) into: (targetType: HIRValue) type: (type: Type) ::=> HIRValue := {
+        (targetType == nil) || (targetType isLiteralConstant && (value type == (targetType downCastTo: HIRLiteralConstant) value)) ifTrue: {
             value
         } ifFalse: {
-            self addInstruction: (SSABitcastInstruction new
+            self addInstruction: (HIRBitcastInstruction new
                 value: value;
                 targetType: targetType;
                 type: type;
@@ -1620,15 +1620,15 @@ SSAInstructionBuilder definition: {
         }.
     }.
 
-    public method coerceValue: (value: SSAValue) into: (targetType: SSAValue) type: (type: Type) ::=> SSAValue := {
+    public method coerceValue: (value: HIRValue) into: (targetType: HIRValue) type: (type: Type) ::=> HIRValue := {
         (value type isSubtypeOf: ControlFlowEscapeType) ifTrue: {
             return: (self undefined: type)
         }.
 
-        (targetType == nil) || (targetType isLiteralConstant && (value type == (targetType downCastTo: SSALiteralConstant) value)) ifTrue: {
+        (targetType == nil) || (targetType isLiteralConstant && (value type == (targetType downCastTo: HIRLiteralConstant) value)) ifTrue: {
             value
         } ifFalse: {
-            self addInstruction: (SSACoerceValueInstruction new
+            self addInstruction: (HIRCoerceValueInstruction new
                 value: value;
                 targetType: targetType;
                 type: type;
@@ -1637,8 +1637,8 @@ SSAInstructionBuilder definition: {
         }.
     }.
 
-    public method conditionalBranch: (condition: SSAValue) trueDestination: (trueDestination: SSABasicBlock) falseDestination: (falseDestination: SSABasicBlock) ::=> SSAConditionalBranchInstruction
-        := self addInstruction: (SSAConditionalBranchInstruction new
+    public method conditionalBranch: (condition: HIRValue) trueDestination: (trueDestination: HIRBasicBlock) falseDestination: (falseDestination: HIRBasicBlock) ::=> HIRConditionalBranchInstruction
+        := self addInstruction: (HIRConditionalBranchInstruction new
             condition: condition;
             trueDestination: trueDestination;
             falseDestination: falseDestination;
@@ -1646,15 +1646,15 @@ SSAInstructionBuilder definition: {
             registerInUsedValues;
             yourself).
 
-    public method unchecked: (isUnchecked: Boolean) downCast: (value: SSAValue) into: (targetType: SSAValue) type: (type: Type) ::=> SSAValue := {
+    public method unchecked: (isUnchecked: Boolean) downCast: (value: HIRValue) into: (targetType: HIRValue) type: (type: Type) ::=> HIRValue := {
         (value type isSubtypeOf: ControlFlowEscapeType) ifTrue: {
             return: (self undefined: type)
         }.
 
-        (targetType == nil) || (targetType isLiteralConstant && (value type == (targetType downCastTo: SSALiteralConstant) value)) ifTrue: {
+        (targetType == nil) || (targetType isLiteralConstant && (value type == (targetType downCastTo: HIRLiteralConstant) value)) ifTrue: {
             value
         } ifFalse: {
-            self addInstruction: (SSADownCastInstruction new
+            self addInstruction: (HIRDownCastInstruction new
                 value: value;
                 targetType: targetType;
                 isUnchecked: isUnchecked;
@@ -1664,27 +1664,27 @@ SSAInstructionBuilder definition: {
         }.
     }.
 
-    public method downCast: (value: SSAValue) into: (targetType: SSAValue) type: (type: Type) ::=> SSAValue
+    public method downCast: (value: HIRValue) into: (targetType: HIRValue) type: (type: Type) ::=> HIRValue
         := self unchecked: false downCast: value into: targetType type: type.
 
-    public method undefined: (type: Type) ::=> SSAUndefinedConstant
-        := SSAUndefinedConstant new
+    public method undefined: (type: Type) ::=> HIRUndefinedConstant
+        := HIRUndefinedConstant new
             sourcePosition: self sourcePosition;
             sourceASTNode: self sourceASTNode;
             sourceEnvironment: self sourceEnvironment;
             type: type;
             yourself.
 
-    public method unreachable ::=> SSAUnreachableInstruction
-        := self addInstruction: (SSAUnreachableInstruction new
+    public method unreachable ::=> HIRUnreachableInstruction
+        := self addInstruction: (HIRUnreachableInstruction new
             sourcePosition: self sourcePosition;
             sourceASTNode: self sourceASTNode;
             sourceEnvironment: self sourceEnvironment;
             type: Void;
             yourself).
 
-    public method literal: value type: (type: Type) ::=> SSALiteralConstant
-        := SSALiteralConstant new
+    public method literal: value type: (type: Type) ::=> HIRLiteralConstant
+        := HIRLiteralConstant new
             sourcePosition: self sourcePosition;
             sourceASTNode: self sourceASTNode;
             sourceEnvironment: self sourceEnvironment;
@@ -1692,21 +1692,21 @@ SSAInstructionBuilder definition: {
             type: type;
             yourself.
 
-    public method literal: value ::=> SSALiteralConstant
+    public method literal: value ::=> HIRLiteralConstant
         := self literal: value type: value __type__.
 
-    public method load: (storage: SSAValue) type: (type: Type) ::=> SSALoadInstruction
-        := self addInstruction: (SSALoadInstruction new
+    public method load: (storage: HIRValue) type: (type: Type) ::=> HIRLoadInstruction
+        := self addInstruction: (HIRLoadInstruction new
             storage: storage;
             type: type;
             registerInUsedValues;
             yourself).
 
-    public method makeArray: (elements: Array) ::=> SSAValue := {
+    public method makeArray: (elements: Array) ::=> HIRValue := {
         elements isEmpty ifTrue: {
             self literal: #()
         } ifFalse: {
-            self addInstruction: (SSAMakeArrayInstruction new
+            self addInstruction: (HIRMakeArrayInstruction new
                 elements: elements;
                 type: Array;
                 registerInUsedValues;
@@ -1714,11 +1714,11 @@ SSAInstructionBuilder definition: {
         }
     }.
 
-    public method makeByteArray: (elements: Array) ::=> SSAValue := {
+    public method makeByteArray: (elements: Array) ::=> HIRValue := {
         elements isEmpty ifTrue: {
             self literal: #[]
         } ifFalse: {
-            self addInstruction: (SSAMakeByteArrayInstruction new
+            self addInstruction: (HIRMakeByteArrayInstruction new
                 elements: elements;
                 type: ByteArray;
                 registerInUsedValues;
@@ -1726,47 +1726,47 @@ SSAInstructionBuilder definition: {
         }
     }.
 
-    public method makeAssociationWithKey: (key: SSAValue) value: (value: SSAValue) ::=> SSAMakeAssociationInstruction
-        := self addInstruction: (SSAMakeAssociationInstruction new
+    public method makeAssociationWithKey: (key: HIRValue) value: (value: HIRValue) ::=> HIRMakeAssociationInstruction
+        := self addInstruction: (HIRMakeAssociationInstruction new
             key: key;
             value: value;
             type: Association;
             registerInUsedValues;
             yourself).
 
-    public method makeDictionary: (elements: Array) ::=> SSAMakeDictionaryInstruction
-        := self addInstruction: (SSAMakeDictionaryInstruction new
+    public method makeDictionary: (elements: Array) ::=> HIRMakeDictionaryInstruction
+        := self addInstruction: (HIRMakeDictionaryInstruction new
             elements: elements;
             type: Dictionary;
             registerInUsedValues;
             yourself).
 
-    public method makeClosure: (functionDefinition: SSAValue) captures: (captures: Array) type: (type: Type) ::=> SSAMakeClosureInstruction
-        := self addInstruction: (SSAMakeClosureInstruction new
+    public method makeClosure: (functionDefinition: HIRValue) captures: (captures: Array) type: (type: Type) ::=> HIRMakeClosureInstruction
+        := self addInstruction: (HIRMakeClosureInstruction new
             functionDefinition: functionDefinition;
             captures: captures;
             type: type;
             registerInUsedValues;
             yourself).
 
-    public method phi: (type: Type) ::=> SSAPhiInstruction
-        := self addInstruction: (SSAPhiInstruction new
+    public method phi: (type: Type) ::=> HIRPhiInstruction
+        := self addInstruction: (HIRPhiInstruction new
             type: type;
             registerInUsedValues;
             yourself).
 
-    public method return: (value: SSAValue) ::=> SSAReturnInstruction
-        := self addInstruction: (SSAReturnInstruction new
+    public method return: (value: HIRValue) ::=> HIRReturnInstruction
+        := self addInstruction: (HIRReturnInstruction new
             type: Void;
             value: value;
             registerInUsedValues;
             yourself).
 
-    public method returnVoid ::=> SSAReturnInstruction
+    public method returnVoid ::=> HIRReturnInstruction
         := self return: (self literal: void).
 
-    public method send: (receiver: SSAValue) receiverLookupType: (receiverLookupType: SSAValue) selector: (selector: SSAValue) arguments: (arguments: Array) resultType: (resultType: Type) ::=> SSASendInstruction
-        := self addInstruction: (SSASendInstruction new
+    public method send: (receiver: HIRValue) receiverLookupType: (receiverLookupType: HIRValue) selector: (selector: HIRValue) arguments: (arguments: Array) resultType: (resultType: Type) ::=> HIRSendInstruction
+        := self addInstruction: (HIRSendInstruction new
             receiver: receiver;
             receiverLookupType: receiverLookupType;
             selector: selector;
@@ -1775,60 +1775,60 @@ SSAInstructionBuilder definition: {
             registerInUsedValues;
             yourself).
 
-    public method send: (receiver: SSAValue) selector: (selector: SSAValue) arguments: (arguments: Array) resultType: (resultType: Type) ::=> SSASendInstruction
+    public method send: (receiver: HIRValue) selector: (selector: HIRValue) arguments: (arguments: Array) resultType: (resultType: Type) ::=> HIRSendInstruction
         := self send: receiver receiverLookupType: nil selector: selector arguments: arguments resultType: resultType.
 
-    public method send: (receiver: SSAValue) selector: (selector: SSAValue) arguments: (arguments: Array) ::=> SSASendInstruction
+    public method send: (receiver: HIRValue) selector: (selector: HIRValue) arguments: (arguments: Array) ::=> HIRSendInstruction
         := self send: receiver receiverLookupType: nil selector: selector arguments: arguments resultType: nil.
 
-    public method setDebugValue: (value: SSAValue) forBinding: (binding: SymbolBinding) ::=> SSASetDebugValueForBindingInstruction
-        := self addInstruction: (SSASetDebugValueForBindingInstruction new
+    public method setDebugValue: (value: HIRValue) forBinding: (binding: SymbolBinding) ::=> HIRSetDebugValueForBindingInstruction
+        := self addInstruction: (HIRSetDebugValueForBindingInstruction new
             value: value;
             binding: binding;
             registerInUsedValues;
             yourself).
 
-    public method store: (value: SSAValue) in: (storage: SSAValue) ::=> SSAStoreInstruction
-        := self addInstruction: (SSAStoreInstruction new
+    public method store: (value: HIRValue) in: (storage: HIRValue) ::=> HIRStoreInstruction
+        := self addInstruction: (HIRStoreInstruction new
             value: value;
             storage: storage;
             registerInUsedValues;
             yourself).
 
-    public method reference: (reference: SSAValue) elementAt: (index: SSAValue) type: (type: Type) ::=> SSAReferenceElementAtInstruction
-        := self addInstruction: (SSAReferenceElementAtInstruction new
+    public method reference: (reference: HIRValue) elementAt: (index: HIRValue) type: (type: Type) ::=> HIRReferenceElementAtInstruction
+        := self addInstruction: (HIRReferenceElementAtInstruction new
             reference: reference;
             index: index;
             type: type;
             registerInUsedValues;
             yourself).
 
-    public method pointer: (pointer: SSAValue) elementAt: (index: SSAValue) type: (type: Type) ::=> SSAPointerElementAtInstruction
-        := self addInstruction: (SSAPointerElementAtInstruction new
+    public method pointer: (pointer: HIRValue) elementAt: (index: HIRValue) type: (type: Type) ::=> HIRPointerElementAtInstruction
+        := self addInstruction: (HIRPointerElementAtInstruction new
             pointer: pointer;
             index: index;
             type: type;
             registerInUsedValues;
             yourself).
 
-    public method tuple: (tuple: SSAValue) typedSlotAt: (typeSlot: TypeSlot) ::=> SSATypeSlotAtInstruction
-        := self addInstruction: (SSATypeSlotAtInstruction new
+    public method tuple: (tuple: HIRValue) typedSlotAt: (typeSlot: TypeSlot) ::=> HIRTypeSlotAtInstruction
+        := self addInstruction: (HIRTypeSlotAtInstruction new
             tuple: tuple;
             typeSlot: typeSlot;
             type: typeSlot type;
             registerInUsedValues;
             yourself).
 
-    public method tuple: (tuple: SSAValue) typedSlotReferenceAt: (typeSlot: TypeSlot) ::=> SSATypeSlotReferenceAtInstruction
-        := self addInstruction: (SSATypeSlotReferenceAtInstruction new
+    public method tuple: (tuple: HIRValue) typedSlotReferenceAt: (typeSlot: TypeSlot) ::=> HIRTypeSlotReferenceAtInstruction
+        := self addInstruction: (HIRTypeSlotReferenceAtInstruction new
             tuple: tuple;
             typeSlot: typeSlot;
             type: typeSlot referenceType;
             registerInUsedValues;
             yourself).
 
-    public method tuple: (tuple: SSAValue) typedSlotAt: (typeSlot: TypeSlot) put: (value: SSAValue) ::=> SSATypeSlotAtPutInstruction
-        := self addInstruction: (SSATypeSlotAtPutInstruction new
+    public method tuple: (tuple: HIRValue) typedSlotAt: (typeSlot: TypeSlot) put: (value: HIRValue) ::=> HIRTypeSlotAtPutInstruction
+        := self addInstruction: (HIRTypeSlotAtPutInstruction new
             tuple: tuple;
             typeSlot: typeSlot;
             value: value;
@@ -1836,8 +1836,8 @@ SSAInstructionBuilder definition: {
             registerInUsedValues;
             yourself).
 
-    public method lastInstruction => SSAInstruction
-        := self basicBlock ifNotNil: {:basicBlock :: SSAInstruction | basicBlock lastInstruction }.
+    public method lastInstruction => HIRInstruction
+        := self basicBlock ifNotNil: {:basicBlock :: HIRInstruction | basicBlock lastInstruction }.
 
     public method isLastTerminator => Boolean
         := self lastInstruction
@@ -1845,7 +1845,7 @@ SSAInstructionBuilder definition: {
             ifNotNil: {:instruction :: Boolean | instruction isTerminatorInstruction }.
 }.
 
-SSACompilationTarget definition: {
+HIRCompilationTarget definition: {
     public abstract method objectModel => ObjectModelVariant
         := self subclassResponsibility.
 
@@ -1862,9 +1862,9 @@ SSACompilationTarget definition: {
         := self subclassResponsibility.
 }.
 
-public class SSATupleVMCompilationTarget superclass: SSACompilationTarget; definition: {
-    SSACompilationTarget class extend: {
-        public method default => self := SSATupleVMCompilationTarget new.
+public class HIRTupleVMCompilationTarget superclass: HIRCompilationTarget; definition: {
+    HIRCompilationTarget class extend: {
+        public method default => self := HIRTupleVMCompilationTarget new.
     }.
 
     public override method hasLogicalObjectModel => Boolean

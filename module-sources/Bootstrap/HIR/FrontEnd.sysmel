@@ -1,33 +1,33 @@
-public final class SSAModuleCompilationContext superclass: Object; definition: {
-    public field compilationTarget => SSACompilationTarget.
-    public field ssaModule => SSAModule.
+public final class HIRModuleCompilationContext superclass: Object; definition: {
+    public field compilationTarget => HIRCompilationTarget.
+    public field ssaModule => HIRModule.
     public field usedModules => OrderedCollection.
     public field exclusiveCompilationMode => Boolean.
 
     protected field translatedValueDictionary => IdentityDictionary.
 
     __Meta__ extend: {
-        public method forTarget: (compilationTarget: SSACompilationTarget) ::=> self
+        public method forTarget: (compilationTarget: HIRCompilationTarget) ::=> self
             := self new
                 initializeWithTarget: compilationTarget;
                 yourself.
 
         public method forDefaultTarget => self
-            := self forTarget: SSACompilationTarget default.
+            := self forTarget: HIRCompilationTarget default.
     }.
 
-    public method initializeWithTarget: (theCompilationTarget: SSACompilationTarget) ::=> Void := {
+    public method initializeWithTarget: (theCompilationTarget: HIRCompilationTarget) ::=> Void := {
         compilationTarget := theCompilationTarget.
-        ssaModule := SSAModule new.
+        ssaModule := HIRModule new.
         translatedValueDictionary := IdentityDictionary new.
         usedModules := OrderedCollection new.
     }.
 
-    public method addUsedModule: (usedModule: SSAModule) ::=> Void := {
+    public method addUsedModule: (usedModule: HIRModule) ::=> Void := {
         usedModules add: usedModule.
     }.
 
-    public method findValueInUsedModule: value ::=> SSAValue := {
+    public method findValueInUsedModule: value ::=> HIRValue := {
         let i mutable := 0sz.
         while: (i < usedModules size) do: {
             let module := usedModules at: i.
@@ -40,7 +40,7 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
     }.
 
     public method compileFunctions: (functions: SequenceableCollection) definitions: (functionDefinitions: SequenceableCollection) ::=> Void := {
-        let ssaFunctionDefinitions := functionDefinitions collect: {:(FunctionDefinition)eachFunctionDefinition :: SSAFunctionDefinition |
+        let ssaFunctionDefinitions := functionDefinitions collect: {:(FunctionDefinition)eachFunctionDefinition :: HIRFunctionDefinition |
             self declareFunctionDefinition: eachFunctionDefinition
         }.
 
@@ -48,9 +48,9 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
             self declareFunction: eachFunction
         }.
 
-        ssaFunctionDefinitions doWithIndex: {:(SSAFunctionDefinition)eachSSAFunctionDefinition :(Size)index :: Void |
+        ssaFunctionDefinitions doWithIndex: {:(HIRFunctionDefinition)eachHIRFunctionDefinition :(Size)index :: Void |
             let eachFunctionDefinition => FunctionDefinition := functionDefinitions at: index.
-            self compileFunctionDefinition: eachFunctionDefinition into: eachSSAFunctionDefinition
+            self compileFunctionDefinition: eachFunctionDefinition into: eachHIRFunctionDefinition
         }.
     }.
 
@@ -60,34 +60,34 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
     }.
 
     public method exportMainEntryPointFunction: (entryPointFunction: Function) ::=> Void := {
-        let ssaEntryPointFunction => SSAFunction := translatedValueDictionary atOrNil: entryPointFunction.
+        let ssaEntryPointFunction => HIRFunction := translatedValueDictionary atOrNil: entryPointFunction.
         ssaEntryPointFunction ifNil: {return: void}.
 
         ssaEntryPointFunction exportedSymbols: ssaEntryPointFunction exportedSymbols -- (Array with: #main).
     }.
 
-    public method generateArgumentForNode: (argumentNode: ASTArgumentNode) ::=> SSAFunctionArgument := {
+    public method generateArgumentForNode: (argumentNode: ASTArgumentNode) ::=> HIRFunctionArgument := {
         let binding := argumentNode binding.
         self assert: binding isNotNil.
 
-        SSAFunctionArgument new
+        HIRFunctionArgument new
             name: binding name;
             type: binding type;
             sourceBinding: binding;
             yourself
     }.
 
-    public method generateCaptureForBinding: (captureBinding: SymbolCaptureBinding) ::=> SSAFunctionCapture := {
-        SSAFunctionCapture new
+    public method generateCaptureForBinding: (captureBinding: SymbolCaptureBinding) ::=> HIRFunctionCapture := {
+        HIRFunctionCapture new
             name: captureBinding name;
             type: captureBinding type;
             sourceBinding: captureBinding;
             yourself
     }.
 
-    public method declareFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> SSAFunctionDefinition := {
+    public method declareFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> HIRFunctionDefinition := {
         functionDefinition ensureAnalysis.
-        let translatedValue := SSAFunctionDefinition new
+        let translatedValue := HIRFunctionDefinition new
             type: FunctionDefinition;
             sourceObject: functionDefinition;
             name: functionDefinition programEntityQualifiedNameSymbol;
@@ -95,10 +95,10 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
             importedSymbols: functionDefinition importedSymbols asArray;
             primitiveName: functionDefinition analyzedPrimitiveName;
             sourcePosition: functionDefinition sourcePosition;
-            arguments: (functionDefinition analyzedArgumentNodes collect: {:(ASTArgumentNode)argumentNode :: SSAFunctionArgument |
+            arguments: (functionDefinition analyzedArgumentNodes collect: {:(ASTArgumentNode)argumentNode :: HIRFunctionArgument |
                 self generateArgumentForNode: argumentNode
             }) asArray;
-            captures: (functionDefinition analyzedCaptures collect: {:(SymbolCaptureBinding)captureBinding :: SSAFunctionCapture |
+            captures: (functionDefinition analyzedCaptures collect: {:(SymbolCaptureBinding)captureBinding :: HIRFunctionCapture |
                 self generateCaptureForBinding: captureBinding
             }) asArray;
             yourself.
@@ -108,15 +108,15 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
         translatedValue
     }.
 
-    public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) into: (ssaFunctionDefinition: SSAFunctionDefinition) ::=> Void := {
-        SSAFunctionCompilationContext new
+    public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) into: (ssaFunctionDefinition: HIRFunctionDefinition) ::=> Void := {
+        HIRFunctionCompilationContext new
             moduleCompilationContext: self;
             compileFunctionDefinition: functionDefinition into: ssaFunctionDefinition.
     }.
 
-    public method declareFunction: (function: Function) ::=> SSAFunction := {
+    public method declareFunction: (function: Function) ::=> HIRFunction := {
         function ensureAnalysis.
-        let translatedValue := SSAFunction new
+        let translatedValue := HIRFunction new
             sourceObject: function;
             name: function programEntityQualifiedNameSymbol;
             primitiveName: function primitiveName;
@@ -134,8 +134,8 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
         translatedValue
     }.
 
-    public method translateFunction: (function: Function) withBuilder: (builder: SSAInstructionBuilder) ::=> SSAValue := {
-        translatedValueDictionary at: function ifAbsent: { :: SSAValue |
+    public method translateFunction: (function: Function) withBuilder: (builder: HIRInstructionBuilder) ::=> HIRValue := {
+        translatedValueDictionary at: function ifAbsent: { :: HIRValue |
             let importedValue := self findValueInUsedModule: function.
             importedValue ifNotNil: {
                 translatedValueDictionary at: function put: importedValue.
@@ -150,16 +150,16 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
         }
     }.
 
-    public method translateFunction: (function: Function) ::=> SSAValue
+    public method translateFunction: (function: Function) ::=> HIRValue
         := self translateFunction: function withBuilder: nil.
 
-    public method translateFunctionDefinition: (functionDefinition: FunctionDefinition) withBuilder: (builder: SSAInstructionBuilder) ::=> SSAFunctionDefinition := {
+    public method translateFunctionDefinition: (functionDefinition: FunctionDefinition) withBuilder: (builder: HIRInstructionBuilder) ::=> HIRFunctionDefinition := {
         functionDefinition ensureAnalysis.
-        translatedValueDictionary at: functionDefinition ifAbsent: { :: SSAValue |
+        translatedValueDictionary at: functionDefinition ifAbsent: { :: HIRValue |
             let importedValue := self findValueInUsedModule: functionDefinition.
             importedValue ifNotNil: {
                 translatedValueDictionary at: functionDefinition put: importedValue.
-                importedValue downCastTo: SSAFunctionDefinition
+                importedValue downCastTo: HIRFunctionDefinition
             } ifNil: {
                 exclusiveCompilationMode ifTrue: {
                     builder ifNotNil: (builder literal: functionDefinition type: functionDefinition class)
@@ -172,36 +172,36 @@ public final class SSAModuleCompilationContext superclass: Object; definition: {
         }
     }.
 
-    public method translateFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> SSAFunctionDefinition
+    public method translateFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> HIRFunctionDefinition
         := self translateFunctionDefinition: functionDefinition withBuilder: nil.
 
-    public method finish => SSAModule := {
+    public method finish => HIRModule := {
         ssaModule
     }.
 }.
 
-public final class SSAFunctionCompilationContext superclass: Object.
+public final class HIRFunctionCompilationContext superclass: Object.
 
 let primitiveFunctionContentGenerator := #{
-    #ObjectModel::isLogical : {:(SSAFunctionCompilationContext)context :: SSAValue |
+    #ObjectModel::isLogical : {:(HIRFunctionCompilationContext)context :: HIRValue |
         context builder literal: context compilationTarget hasLogicalObjectModel
     }.
-    #ObjectModel::isNative : {:(SSAFunctionCompilationContext)context :: SSAValue |
+    #ObjectModel::isNative : {:(HIRFunctionCompilationContext)context :: HIRValue |
         context builder literal: context compilationTarget hasNativeObjectModel
     }.
 }.
 
-SSAFunctionCompilationContext definition: {
-    public field moduleCompilationContext => SSAModuleCompilationContext.
+HIRFunctionCompilationContext definition: {
+    public field moduleCompilationContext => HIRModuleCompilationContext.
     public field functionDefinition => FunctionDefinition.
-    public field ssaFunction => SSAFunctionDefinition.
-    public field builder => SSAInstructionBuilder.
+    public field ssaFunction => HIRFunctionDefinition.
+    public field builder => HIRInstructionBuilder.
     protected field bindingDictionary => IdentityDictionary.
 
-    public field breakDestination => SSABasicBlock.
-    public field continueDestination => SSABasicBlock.
+    public field breakDestination => HIRBasicBlock.
+    public field continueDestination => HIRBasicBlock.
 
-    public method compilationTarget => SSACompilationTarget
+    public method compilationTarget => HIRCompilationTarget
         := moduleCompilationContext compilationTarget.
 
     public override method initialize => Void := {
@@ -209,22 +209,22 @@ SSAFunctionCompilationContext definition: {
         bindingDictionary := IdentityDictionary new.
     }.
 
-    public method setValue: (value: SSAValue) forBinding: (binding: SymbolBinding) ::=> Void := {
+    public method setValue: (value: HIRValue) forBinding: (binding: SymbolBinding) ::=> Void := {
         self assert: binding isNotNil.
         bindingDictionary at: binding put: value.
     }.
 
-    public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) into: (ssaFunction: SSAFunctionDefinition) ::=> Void := {
+    public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) into: (ssaFunction: HIRFunctionDefinition) ::=> Void := {
         functionDefinition ensureAnalysis.
         self functionDefinition: functionDefinition.
         self ssaFunction: ssaFunction.
 
-        ssaFunction arguments do: {:(SSAFunctionArgument)eachArgument :: Void |
+        ssaFunction arguments do: {:(HIRFunctionArgument)eachArgument :: Void |
             eachArgument sourceBinding ifNotNil: {
                 self setValue: eachArgument forBinding: eachArgument sourceBinding
             }
         }.
-        ssaFunction captures do: {:(SSAFunctionCapture)eachCapture :: Void |
+        ssaFunction captures do: {:(HIRFunctionCapture)eachCapture :: Void |
             eachCapture sourceBinding ifNotNil: {
                 self setValue: eachCapture forBinding: eachCapture sourceBinding
             }
@@ -232,7 +232,7 @@ SSAFunctionCompilationContext definition: {
 
         functionDefinition importedSymbols size = 0sz ifTrue: {
             functionDefinition analyzedBodyNode ifNotNil: {:bodyNode |
-                self builder: (SSAInstructionBuilder new
+                self builder: (HIRInstructionBuilder new
                     sourcePosition: bodyNode sourcePosition;
                     function: ssaFunction;
                     beginBasicBlockNamed: #entry;
@@ -242,20 +242,20 @@ SSAFunctionCompilationContext definition: {
                 let resultValue := primitiveGenerator ifNotNil: {
                     primitiveGenerator(self)
                 } ifNil: {
-                    bodyNode generateSSAValueWith: self.
+                    bodyNode generateHIRValueWith: self.
                 }.
                 self builder isLastTerminator ifFalse: (self builder return: resultValue).
             }.
         }.
     }.
 
-    public method getValueForLocalBinding: (localBinding: SymbolAnalysisBinding) ::=> SSAValue
+    public method getValueForLocalBinding: (localBinding: SymbolAnalysisBinding) ::=> HIRValue
         := bindingDictionary at: localBinding.
 
-    public method functionDefinitionValueFor: (functionDefinition: FunctionDefinition) ::=> SSAValue
+    public method functionDefinitionValueFor: (functionDefinition: FunctionDefinition) ::=> HIRValue
         := self builder literal: functionDefinition.
 
-    public method withBreakDestination: (breakDestination: SSABasicBlock) continueDestination: (continueDestination: SSABasicBlock) do: aBlock := {
+    public method withBreakDestination: (breakDestination: HIRBasicBlock) continueDestination: (continueDestination: HIRBasicBlock) do: aBlock := {
         let oldBreakDestination := self breakDestination.
         let oldContinueDestination := self continueDestination.
 
@@ -274,17 +274,17 @@ SSAFunctionCompilationContext definition: {
 }.
 
 ASTNode extend: {
-    public method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := context builder withSourceASTNode: self do: {:: SSAValue |
-            self doGenerateSSAValueWith: context
+    public method generateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+        := context builder withSourceASTNode: self do: {:: HIRValue |
+            self doGenerateHIRValueWith: context
     }.
 
-    public abstract method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+    public abstract method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
         := self subclassResponsibility.
 }.
 
 ASTBreakNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
         context breakDestination ifNil: (self error: "Invalid break at this location.").
         context builder branch: context breakDestination.
         context builder literal: void
@@ -292,15 +292,15 @@ ASTBreakNode extend: {
 }.
 
 ASTCoerceValueNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
-        let type := self typeExpression generateSSAValueWith: context.
-        let value := self valueExpression generateSSAValueWith: context.
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+        let type := self typeExpression generateHIRValueWith: context.
+        let value := self valueExpression generateHIRValueWith: context.
         context builder coerceValue: value into: type type: self analyzedType
     }.        
 }.
 
 ASTContinueNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
         context continueDestination ifNil: (self error: "Invalid continue at this location.").
         context builder branch: context continueDestination.
         context builder literal: void
@@ -308,44 +308,44 @@ ASTContinueNode extend: {
 }.
 
 ASTDownCastNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
-        let type := self typeExpression generateSSAValueWith: context.
-        let value := self valueExpression generateSSAValueWith: context.
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+        let type := self typeExpression generateHIRValueWith: context.
+        let value := self valueExpression generateHIRValueWith: context.
         context builder unchecked: self isUnchecked downCast: value into: type type: self analyzedType
     }.        
 }.
 
 let primitiveFunctionGenerators := #{
-    #PointerType::reinterpretCastTo: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
-        let pointer := self arguments first generateSSAValueWith: context.
-        let targetType := self arguments second generateSSAValueWith: context.
+    #PointerType::reinterpretCastTo: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+        let pointer := self arguments first generateHIRValueWith: context.
+        let targetType := self arguments second generateHIRValueWith: context.
         context builder bitcast: pointer into: targetType type: self analyzedType
     }.
-    #UIntPointer::reinterpretCastTo: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
-        let pointer := self arguments first generateSSAValueWith: context.
-        let targetType := self arguments second generateSSAValueWith: context.
+    #UIntPointer::reinterpretCastTo: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+        let pointer := self arguments first generateHIRValueWith: context.
+        let targetType := self arguments second generateHIRValueWith: context.
         context builder bitcast: pointer into: targetType type: self analyzedType
     }.
-    #IntPointer::reinterpretCastTo: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
-        let pointer := self arguments first generateSSAValueWith: context.
-        let targetType := self arguments second generateSSAValueWith: context.
+    #IntPointer::reinterpretCastTo: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+        let pointer := self arguments first generateHIRValueWith: context.
+        let targetType := self arguments second generateHIRValueWith: context.
         context builder bitcast: pointer into: targetType type: self analyzedType
     }.
 
-    #PointerLikeType::reinterpretCast : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
-        let pointer := self arguments first generateSSAValueWith: context.
+    #PointerLikeType::reinterpretCast : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+        let pointer := self arguments first generateHIRValueWith: context.
         let targetType := self analyzedType.
         context builder bitcast: pointer into: (context builder literal: targetType) type: targetType
     }.
 
-    #PointerLikeType::at: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
-        let pointer := self arguments first generateSSAValueWith: context.
-        let index := self arguments second generateSSAValueWith: context.
+    #PointerLikeType::at: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+        let pointer := self arguments first generateHIRValueWith: context.
+        let index := self arguments second generateHIRValueWith: context.
         context builder pointer: pointer elementAt: index type: self analyzedType
     }.
 
-    #PointerLikeType::load : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
-        let reference := self arguments first generateSSAValueWith: context.
+    #PointerLikeType::load : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+        let reference := self arguments first generateHIRValueWith: context.
         self analyzedType isTemporaryReferenceType ifTrue: {
             let valueType := (self analyzedType downCastTo: ReferenceLikeType) baseType.
             let temporary := context builder alloca: (context builder literal: valueType) type: self analyzedType.
@@ -355,26 +355,26 @@ let primitiveFunctionGenerators := #{
             context builder load: reference type: self analyzedType
         }.
     }.
-    #PointerLikeType::store: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
-        let reference := self arguments first generateSSAValueWith: context.
-        let value := self arguments second generateSSAValueWith: context.
+    #PointerLikeType::store: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+        let reference := self arguments first generateHIRValueWith: context.
+        let value := self arguments second generateHIRValueWith: context.
         context builder store: value in: reference.
         reference
     }.
 
-    #FixedArray::at: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
-        let reference := self arguments first generateSSAValueWith: context.
-        let index := self arguments second generateSSAValueWith: context.
+    #FixedArray::at: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+        let reference := self arguments first generateHIRValueWith: context.
+        let index := self arguments second generateHIRValueWith: context.
         let referenceType => PointerLikeType := self arguments first analyzedType.
         let fixedArrayType := referenceType baseType downCastTo: FixedArrayType.
         let elementReferenceType := fixedArrayType elementType refFor: referenceType addressSpace.
         let elementReference := context builder reference: reference elementAt: index type: elementReferenceType.
         context builder load: elementReference type: self analyzedType
     }.
-    #FixedArray::at:put: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
-        let reference := self arguments first generateSSAValueWith: context.
-        let index := self arguments second generateSSAValueWith: context.
-        let value := self arguments third generateSSAValueWith: context.
+    #FixedArray::at:put: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+        let reference := self arguments first generateHIRValueWith: context.
+        let index := self arguments second generateHIRValueWith: context.
+        let value := self arguments third generateHIRValueWith: context.
         let referenceType => PointerLikeType := self arguments first analyzedType.
         let fixedArrayType := referenceType baseType downCastTo: FixedArrayType.
         let elementReferenceType := fixedArrayType elementType refFor: referenceType addressSpace.
@@ -383,23 +383,23 @@ let primitiveFunctionGenerators := #{
             store: value in: elementReference;
             literal: void
     }.
-    #FixedArray::refAt: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
-        let reference := self arguments first generateSSAValueWith: context.
-        let index := self arguments second generateSSAValueWith: context.
+    #FixedArray::refAt: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+        let reference := self arguments first generateHIRValueWith: context.
+        let index := self arguments second generateHIRValueWith: context.
         context builder reference: reference elementAt: index type: self analyzedType
     }.
 
-    #Void::fromAnyValue : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
-        self arguments do: {:(ASTNode)each :: Void | each generateSSAValueWith: context }.
+    #Void::fromAnyValue : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+        self arguments do: {:(ASTNode)each :: Void | each generateHIRValueWith: context }.
         context builder literal: void
     }.
-    #yourself : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
-        self arguments first generateSSAValueWith: context
+    #yourself : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+        self arguments first generateHIRValueWith: context
     }.
-    #RawTuple::typeSlotAt: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+    #RawTuple::typeSlotAt: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
 
         self arguments second isLiteralNode ifTrue: {
-            let tuple := self arguments first generateSSAValueWith: context.
+            let tuple := self arguments first generateHIRValueWith: context.
             let typeSlot => TypeSlot := self arguments second value.
             
             context builder tuple: tuple typedSlotAt: typeSlot.
@@ -407,20 +407,20 @@ let primitiveFunctionGenerators := #{
             nil
         }.
     }.
-    #RawTuple::typeSlotAt:put: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+    #RawTuple::typeSlotAt:put: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
         self arguments second isLiteralNode ifTrue: {
-            let tuple := self arguments first generateSSAValueWith: context.
+            let tuple := self arguments first generateHIRValueWith: context.
             let typeSlot => TypeSlot := self arguments second value.
-            let value := self arguments third generateSSAValueWith: context.
+            let value := self arguments third generateHIRValueWith: context.
             
             context builder tuple: tuple typedSlotAt: typeSlot put: value.
         } ifFalse: {
             nil
         }.
     }.
-    #RawTuple::refTypeSlotAt: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+    #RawTuple::refTypeSlotAt: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
         self arguments second isLiteralNode ifTrue: {
-            let tuple := self arguments first generateSSAValueWith: context.
+            let tuple := self arguments first generateHIRValueWith: context.
             let typeSlot => TypeSlot := self arguments second value.
             
             context builder tuple: tuple typedSlotAt: typeSlot.
@@ -428,11 +428,11 @@ let primitiveFunctionGenerators := #{
             nil
         }.
     }.
-    #RawTuple::refTypeSlotAt:put: : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+    #RawTuple::refTypeSlotAt:put: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
         self arguments second isLiteralNode ifTrue: {
-            let tuple := self arguments first generateSSAValueWith: context.
+            let tuple := self arguments first generateHIRValueWith: context.
             let typeSlot => TypeSlot := self arguments second value.
-            let value := self arguments third generateSSAValueWith: context.
+            let value := self arguments third generateHIRValueWith: context.
             
             context builder tuple: tuple typedSlotAt: typeSlot put: value.
         } ifFalse: {
@@ -440,23 +440,23 @@ let primitiveFunctionGenerators := #{
         }.
     }.
 
-    #ObjectModel::isLogical : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+    #ObjectModel::isLogical : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
         context builder literal: context compilationTarget hasLogicalObjectModel
     }.
-    #ObjectModel::isNative : {:(ASTFunctionApplicationNode)self :(SSAFunctionCompilationContext)context :: SSAValue |
+    #ObjectModel::isNative : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
         context builder literal: context compilationTarget hasNativeObjectModel
     }.
 }.
 
 ASTFunctionApplicationNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
         let primitiveGenerator := primitiveFunctionGenerators atOrNil: self functionExpression literalFunctionPrimitiveName.
         (primitiveGenerator ifNotNil: {
             primitiveGenerator(self, context)
         }) ifNil: {
-            let functionExpression := self functionExpression generateSSAValueWith: context.
+            let functionExpression := self functionExpression generateHIRValueWith: context.
             let callInstruction := context builder call: functionExpression
-                arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
+                arguments: (self arguments collect: {:(ASTNode)each :: HIRValue | each generateHIRValueWith: context }) asArray
                 resultType: self analyzedType.
             
             callInstruction isUnchecked: self isNoTypechecked.
@@ -475,38 +475,38 @@ ASTFunctionApplicationNode extend: {
 }.
 
 ASTLexicalBlockNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := context builder withSourceEnvironment: self bodyEnvironment do: {:: SSAValue | self body generateSSAValueWith: context }.
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+        := context builder withSourceEnvironment: self bodyEnvironment do: {:: HIRValue | self body generateHIRValueWith: context }.
 }.
 
 Type extend: {
-    public virtual method translateASTLiteralNode: (literalNode: ASTLiteralNode) intoSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+    public virtual method translateASTLiteralNode: (literalNode: ASTLiteralNode) intoHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
         := context builder literal: literalNode value type: literalNode analyzedType.
 }.
 
 FunctionType extend: {
-    public override method translateASTLiteralNode: (literalNode: ASTLiteralNode) intoSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+    public override method translateASTLiteralNode: (literalNode: ASTLiteralNode) intoHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
         := context moduleCompilationContext translateFunction: literalNode value withBuilder: context builder.
 }.
 
 FunctionDefinition class extend: {
-    public override method translateASTLiteralNode: (literalNode: ASTLiteralNode) intoSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+    public override method translateASTLiteralNode: (literalNode: ASTLiteralNode) intoHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
         := context moduleCompilationContext translateFunctionDefinition: literalNode value withBuilder: context builder.
 }.
 
 ASTLiteralNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := self analyzedType translateASTLiteralNode: self intoSSAValueWith: context.
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+        := self analyzedType translateASTLiteralNode: self intoHIRValueWith: context.
 }.
 
 ASTLambdaNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
         let functionDefinition := self functionDefinition.
         functionDefinition ensureAnalysis.
 
         let functionDefinitionValue := context functionDefinitionValueFor: functionDefinition.
 
-        let captures := functionDefinition analyzedCaptures collect: {:(SymbolCaptureBinding)capture :: SSAValue |
+        let captures := functionDefinition analyzedCaptures collect: {:(SymbolCaptureBinding)capture :: HIRValue |
             context getValueForLocalBinding: capture sourceBinding
         }.
 
@@ -515,10 +515,10 @@ ASTLambdaNode extend: {
 }.
 
 ASTLocalDefinitionNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
         let builder := context builder.
 
-        let value := self valueExpression generateSSAValueWith: context.
+        let value := self valueExpression generateHIRValueWith: context.
 
         self isMutable ifTrue: {
             let localVariable := builder alloca: (builder literal: self analyzedValueType) type: self analyzedType.
@@ -535,35 +535,35 @@ ASTLocalDefinitionNode extend: {
 }.
 
 SymbolAnalysisBinding extend: {
-    public virtual method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
+    public virtual method generateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
         := context getValueForLocalBinding: self.
 }.
 
 SymbolTupleSlotBinding extend: {
-    public override method generateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
-        let tupleValue := tupleBinding generateSSAValueWith: context.
+    public override method generateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+        let tupleValue := tupleBinding generateHIRValueWith: context.
         context builder tuple: tupleValue typedSlotReferenceAt: typeSlot.
     }
 }.
 
 ASTIdentifierReferenceNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := self binding generateSSAValueWith: context.
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+        := self binding generateHIRValueWith: context.
 }.
 
 ASTIfNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
         let builder := context builder.
 
         ## Condition
         let condition := conditionExpression
-            ifNotNil: (conditionExpression generateSSAValueWith: context)
+            ifNotNil: (conditionExpression generateHIRValueWith: context)
             ifNil: (builder literal: false).
 
         ## Optimize out true constant literal.
         condition isLiteralConstantTrue ifTrue: {
             return: (trueExpression ifNotNil: {
-                trueExpression generateSSAValueWith: context
+                trueExpression generateHIRValueWith: context
             } ifNil: {
                 builder literal: void
             })
@@ -572,7 +572,7 @@ ASTIfNode extend: {
         ## Optimize out false constant literal.
         condition isLiteralConstantFalse ifTrue: {
             return: (falseExpression ifNotNil: {
-                falseExpression generateSSAValueWith: context
+                falseExpression generateHIRValueWith: context
             } ifNil: {
                 builder literal: void
             })
@@ -594,13 +594,13 @@ ASTIfNode extend: {
         builder conditionalBranch: condition trueDestination: trueDestination falseDestination: falseDestination.
 
         ## True branch
-        let trueResult mutable => SSAValue := nil.
+        let trueResult mutable => HIRValue := nil.
         let trueResultBlock mutable := conditionBlock.
         let trueResultIsTerminator mutable := false.
 
         trueExpression ifNotNil: {
             builder beginBasicBlock: trueDestination.
-            trueResult := trueExpression generateSSAValueWith: context.
+            trueResult := trueExpression generateHIRValueWith: context.
             trueResultBlock := builder basicBlock.
 
             let isTerminator := builder isLastTerminator.
@@ -613,12 +613,12 @@ ASTIfNode extend: {
         }.
 
         ## False branch
-        let falseResult mutable => SSAValue := nil.
+        let falseResult mutable => HIRValue := nil.
         let falseResultBlock mutable := conditionBlock.
         let falseResultIsTerminator mutable := false.
         falseExpression ifNotNil: {
             builder beginBasicBlock: falseDestination.
-            falseResult := falseExpression generateSSAValueWith: context.
+            falseResult := falseExpression generateHIRValueWith: context.
             falseResultBlock := builder basicBlock.
 
             let isTerminator := builder isLastTerminator.
@@ -652,7 +652,7 @@ ASTIfNode extend: {
 }.
 
 ASTDoWhileContinueWithNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
         let builder := context builder.
 
         let conditionExpression := self conditionExpression.
@@ -673,7 +673,7 @@ ASTDoWhileContinueWithNode extend: {
         ## Emit the body.
         bodyExpression ifNotNil: {
             context withBreakDestination: mergeBlock continueDestination: continueBlock do: {:: Void |
-                bodyExpression generateSSAValueWith: context.
+                bodyExpression generateHIRValueWith: context.
                 builder isLastTerminator ifFalse: {
                     builder branch: conditionBlock
                 }.
@@ -685,7 +685,7 @@ ASTDoWhileContinueWithNode extend: {
         conditionExpression ifNil: {
             builder branch: continueBlock
         } ifNotNil: {
-            let condition := conditionExpression generateSSAValueWith: context.
+            let condition := conditionExpression generateHIRValueWith: context.
             builder isLastTerminator ifFalse: {
                 builder conditionalBranch: condition trueDestination: continueBlock falseDestination: mergeBlock
             }
@@ -694,7 +694,7 @@ ASTDoWhileContinueWithNode extend: {
         ## Emit the optional continue expression.
         continueExpression ifNotNil: {
             builder beginBasicBlock: continueBlock.
-            continueExpression generateSSAValueWith: context.
+            continueExpression generateHIRValueWith: context.
             builder isLastTerminator ifFalse: {
                 builder branch: entryBlock
             }.
@@ -706,7 +706,7 @@ ASTDoWhileContinueWithNode extend: {
 }.
 
 ASTWhileContinueWithNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
         let builder := context builder.
 
         let conditionExpression := self conditionExpression.
@@ -728,7 +728,7 @@ ASTWhileContinueWithNode extend: {
         conditionExpression ifNil: {
             builder branch: bodyBlock
         } ifNotNil: {
-            let condition := conditionExpression generateSSAValueWith: context.
+            let condition := conditionExpression generateHIRValueWith: context.
             builder isLastTerminator ifFalse: {
                 builder conditionalBranch: condition trueDestination: bodyBlock falseDestination: mergeBlock
             }
@@ -738,7 +738,7 @@ ASTWhileContinueWithNode extend: {
         builder beginBasicBlock: bodyBlock.
         bodyExpression ifNotNil: {
             context withBreakDestination: mergeBlock continueDestination: continueBlock do: {:: Void |
-                bodyExpression generateSSAValueWith: context.
+                bodyExpression generateHIRValueWith: context.
                 builder isLastTerminator ifFalse: {
                     builder branch: continueBlock
                 }.
@@ -748,7 +748,7 @@ ASTWhileContinueWithNode extend: {
         ## Emit the optional continue expression.
         continueExpression ifNotNil: {
             builder beginBasicBlock: continueBlock.
-            continueExpression generateSSAValueWith: context.
+            continueExpression generateHIRValueWith: context.
             builder isLastTerminator ifFalse: {
                 builder branch: entryBlock
             }.
@@ -760,34 +760,34 @@ ASTWhileContinueWithNode extend: {
 }.
 
 ASTMakeArrayNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := context builder makeArray: (self elements collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }).
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+        := context builder makeArray: (self elements collect: {:(ASTNode)each :: HIRValue | each generateHIRValueWith: context }).
 }.
 
 ASTMakeAssociationNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := context builder makeAssociationWithKey: (self key generateSSAValueWith: context)
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+        := context builder makeAssociationWithKey: (self key generateHIRValueWith: context)
             value: (self value
-                ifNotNil: (self value generateSSAValueWith: context)
+                ifNotNil: (self value generateHIRValueWith: context)
                 ifNil: (context builder literal: nil)).
 }.
 
 ASTMakeByteArrayNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := context builder makeByteArray: (self elements collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }).
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+        := context builder makeByteArray: (self elements collect: {:(ASTNode)each :: HIRValue | each generateHIRValueWith: context }).
 }.
 
 ASTMakeDictionaryNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := context builder makeDictionary: (self elements collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context })
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+        := context builder makeDictionary: (self elements collect: {:(ASTNode)each :: HIRValue | each generateHIRValueWith: context })
 }.
 
 ASTMessageSendNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
-        let sendInstruction := context builder send: (self receiver generateSSAValueWith: context)
-            receiverLookupType: (self receiverLookupType ifNotNil: {:(ASTNode)lookupTypeExpression :: SSAValue | lookupTypeExpression generateSSAValueWith: context })
-            selector: (self selector generateSSAValueWith: context)
-            arguments: (self arguments collect: {:(ASTNode)each :: SSAValue | each generateSSAValueWith: context }) asArray
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+        let sendInstruction := context builder send: (self receiver generateHIRValueWith: context)
+            receiverLookupType: (self receiverLookupType ifNotNil: {:(ASTNode)lookupTypeExpression :: HIRValue | lookupTypeExpression generateHIRValueWith: context })
+            selector: (self selector generateHIRValueWith: context)
+            arguments: (self arguments collect: {:(ASTNode)each :: HIRValue | each generateHIRValueWith: context }) asArray
             resultType: self analyzedType.
 
         sendInstruction isUnchecked: self isNoTypechecked.
@@ -805,19 +805,19 @@ ASTMessageSendNode extend: {
 }.
 
 ASTReturnNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue
-        := context builder return: (self expression generateSSAValueWith: context)
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+        := context builder return: (self expression generateHIRValueWith: context)
 }.
 
 ASTSequenceNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
         let voidLiteral :=  context builder literal: void.
-        let result mutable => SSAValue := voidLiteral.
+        let result mutable => HIRValue := voidLiteral.
         self expressions do: {:(ASTNode)expression :: Void |
             context builder isLastTerminator ifTrue: {
                 result := voidLiteral
             } ifFalse: {
-                result := expression generateSSAValueWith: context
+                result := expression generateHIRValueWith: context
             }
         }.
 
@@ -826,54 +826,54 @@ ASTSequenceNode extend: {
 }.
 
 ASTTupleSlotNamedAtNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
-        context builder tuple: (self tupleExpression generateSSAValueWith: context) typedSlotAt: self boundSlot.
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+        context builder tuple: (self tupleExpression generateHIRValueWith: context) typedSlotAt: self boundSlot.
     }.
 }.
 
 ASTTupleSlotNamedReferenceAtNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
-        context builder tuple: (self tupleExpression generateSSAValueWith: context) typedSlotReferenceAt: self boundSlot.
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+        context builder tuple: (self tupleExpression generateHIRValueWith: context) typedSlotReferenceAt: self boundSlot.
     }.
 }.
 
 ASTTupleSlotNamedAtPutNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
-        context builder tuple: (self tupleExpression generateSSAValueWith: context) typedSlotAt: self boundSlot put: (self valueExpression generateSSAValueWith: context).
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+        context builder tuple: (self tupleExpression generateHIRValueWith: context) typedSlotAt: self boundSlot put: (self valueExpression generateHIRValueWith: context).
     }.
 }.
 
 ASTUseNamedSlotsOfNode extend: {
-    public override method doGenerateSSAValueWith: (context: SSAFunctionCompilationContext) ::=> SSAValue := {
-        context setValue: (self tupleExpression generateSSAValueWith: context) forBinding: self binding.
+    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+        context setValue: (self tupleExpression generateHIRValueWith: context) forBinding: self binding.
         context builder literal: void.
     }.
 }.
 
 FunctionDefinition extend: {
-    public method asSSAModuleForTarget: (compilationTarget: SSACompilationTarget) ::=> SSAModule
-        := (SSAModuleCompilationContext forTarget: compilationTarget)
+    public method asHIRModuleForTarget: (compilationTarget: HIRCompilationTarget) ::=> HIRModule
+        := (HIRModuleCompilationContext forTarget: compilationTarget)
             exclusiveCompilationMode: true;
             compileFunctionDefinition: self;
             finish.
 
-    public method asSSAModule => SSAModule
-        := SSAModuleCompilationContext forDefaultTarget
+    public method asHIRModule => HIRModule
+        := HIRModuleCompilationContext forDefaultTarget
             exclusiveCompilationMode: true;
             compileFunctionDefinition: self;
             finish.
 }.
 
 Function extend: {
-    public method asSSAModuleForTarget: (compilationTarget: SSACompilationTarget) ::=> SSAModule
-        := (SSAModuleCompilationContext forTarget: compilationTarget)
+    public method asHIRModuleForTarget: (compilationTarget: HIRCompilationTarget) ::=> HIRModule
+        := (HIRModuleCompilationContext forTarget: compilationTarget)
             exclusiveCompilationMode: true;
             declareFunction: self;
             compileFunctionDefinition: self definition;
             finish.
 
-    public method asSSAModule => SSAModule
-        := SSAModuleCompilationContext forDefaultTarget
+    public method asHIRModule => HIRModule
+        := HIRModuleCompilationContext forDefaultTarget
             exclusiveCompilationMode: true;
             declareFunction: self;
             compileFunctionDefinition: self definition;

@@ -1,0 +1,90 @@
+public class HIRTransformationPass superclass: Object; definition: {
+    __Meta__ definition:{
+        public method runInModule: (module: HIRModule) ::=> self
+            := self new runInModule: module; yourself.
+
+        public method runInFunctionDefinition: (function: HIRFunctionDefinition) ::=> self
+            := self new runInFunctionDefinition: function; yourself.
+    }.
+
+    public abstract method runInModule: (module: HIRModule) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method runInFunctionDefinition: (function: HIRFunctionDefinition) ::=> Void
+        := self subclassResponsibility.
+}.
+
+public class HIRFunctionDefinitionPass superclass: HIRTransformationPass; definition: {
+    public override method runInModule: (module: HIRModule) ::=> Void := {
+        module globalValues do: {:(HIRGlobalValue)each :: Void |
+            each isFunctionDefinition ifTrue: {
+                self runInFunctionDefinition: (each downCastTo: HIRFunctionDefinition)
+            }
+        }
+    }.
+}.
+
+HIRModule extend: {
+    public method runPasses: passes ::=> Void := {
+        passes do: {:(HIRTransformationPass)each :: Void | each runInModule: self }
+    }.
+}.
+
+HIRFunctionDefinition extend: {
+    public method runPasses: passes ::=> Void := {
+        passes do: {:(HIRTransformationPass)each :: Void | each runInFunctionDefinition: self }
+    }.
+}.
+
+## Promote alloca
+public class HIRPromoteAllocaPass superclass: HIRFunctionDefinitionPass; definition: {
+    public override method runInFunctionDefinition: (function: HIRFunctionDefinition) ::=> Void := {
+        printLine("TODO: HIRPromoteAllocaPass")
+    }.
+}.
+
+## Destroy HIR pass. This pass destroys the phi nodes by inserting alloca instructions.
+public class HIRDestroyHIRFunctionPass superclass: HIRFunctionDefinitionPass; definition: {
+    public override method runInFunctionDefinition: (function: HIRFunctionDefinition) ::=> Void := {
+        function firstBasicBlock ifNil: (return: void).
+        function
+            computeControlFlowAndNormalizeBasicBlocks;
+            fixCriticalEdges.
+
+        let allocaBuilder := HIRInstructionBuilder new
+            beginInsertingInBasicBlock: function firstBasicBlock;
+            insertionPoint: function firstBasicBlock findAllocaInsertionPoint;
+            yourself.
+
+        let storeBuilder := HIRInstructionBuilder new.
+        let loadBuilder := HIRInstructionBuilder new.
+
+        function basicBlocksDo: {:(HIRBasicBlock)basicBlock :: Void |
+            loadBuilder 
+                beginInsertingInBasicBlock: basicBlock;
+                insertionPoint: basicBlock findPhiLoadInsertionPoint;
+                yourself.
+
+            basicBlock phiInstructionsDo: {:(HIRPhiInstruction)phi :: Void |
+                allocaBuilder useSourceInformationOfValue: phi.
+
+                let valueType := phi type.
+                let pointerType := PointerTypeTemplate(valueType, nil).
+                
+                let temporary := allocaBuilder alloca: (allocaBuilder literal: valueType) type: pointerType.
+                phi incomingBlocksAndValuesDo: {:(HIRBasicBlock)incomingBlock :(HIRValue)incomingValue :: Void |
+                    storeBuilder
+                        beginInsertingInBasicBlock: incomingBlock;
+                        insertionPoint: incomingBlock lastInstruction;
+                        useSourceInformationOfValue: phi;
+                        store: incomingValue in: temporary
+                }.
+
+                let load := loadBuilder
+                    useSourceInformationOfValue: phi;
+                    load: temporary type: valueType.
+                phi replaceWith: load.
+            }
+        }.
+    }.
+}.

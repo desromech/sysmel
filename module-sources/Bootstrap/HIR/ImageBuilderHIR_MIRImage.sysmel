@@ -1,5 +1,5 @@
-public class ImageBuilderSSATACImage superclass: ImageBuilderSSAImage; definition: {
-    public field tacModule => TACModule.
+public class ImageBuilderHIR_MIRImage superclass: ImageBuilderHIRImage; definition: {
+    public field tacModule => MIRModule.
     public field targetIR.
     
     public override method saveTo: (filename: String) ::=> Boolean := {
@@ -9,7 +9,7 @@ public class ImageBuilderSSATACImage superclass: ImageBuilderSSAImage; definitio
             let tacTextIR := tacModule fullPrintString.
             ##printLine(tacTextIR).
             IO::writeWholeFileNamedWithString(filename -- ".tac", tacTextIR)
-        } printTimeToRunInMicrosecondsWithTitle: "TAC text IR".
+        } printTimeToRunInMicrosecondsWithTitle: "MIR text IR".
 
         {|
             let targetTextIR := targetIR fullPrintString.

@@ -1,9 +1,9 @@
-public class ImageBuilderSSAImage superclass: ImageBuilderTargetImage; definition: {
-    public field ssaModule => SSAModule.
+public class ImageBuilderHIRImage superclass: ImageBuilderTargetImage; definition: {
+    public field ssaModule => HIRModule.
     
     public override method saveTo: (filename: String) ::=> Boolean := {
         {
-            printLine("Writing SSA text IR").
+            printLine("Writing HIR text IR").
             let ssaTextIR := ssaModule fullPrintString.
             ##printLine(ssaTextIR).
             IO::writeWholeFileNamedWithString(filename -- ".ssa", ssaTextIR)
