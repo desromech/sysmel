@@ -318,6 +318,7 @@ MIRLocalValue definition: {
 
     public field offset => Int64.
     public field registerAssignment => MIRPhysicalLocation.
+    public field requiredRegisters => Array.
 
     public field needsSpilling => Boolean.
     public field firstUsageIndex => Int32.
@@ -356,6 +357,11 @@ MIRLocalValue definition: {
         := needsSpilling || registerAssignment isNil.
 
     public override method isLocalVariable => Boolean := true.
+
+    public virtual method resetRegisterAllocation => Void := {
+        registerAssignment := nil.
+    }.
+
 
     public method resetLiveRange => Void := {
         firstUsageIndex := -1i32.
@@ -437,6 +443,9 @@ public final class MIRValuePointer superclass: MIRValue; definition: {
 
     public override method physicalLocationClass => MIRPhysicalLocation class
         := MIRPhysicalIntegerRegister.
+
+    public override method markSpillingRequired ::=> Void
+        := value markSpillingRequired.
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: " address".
@@ -866,7 +875,8 @@ MIRInstruction definition: {
     public method usesCapture => Boolean
         := operands anySatisfy: {:(MIRValue)operand :: Boolean | operand isCaptureValue}.
 
-    public method resetRegisterAllocation => Void := {
+    public override method resetRegisterAllocation => Void := {
+        super resetRegisterAllocation.
         resultRegister := nil.
         operandRegisters := Array new: operands size.
         scratchRegisters := #().
