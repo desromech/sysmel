@@ -343,7 +343,7 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
     }.
 
     public method performRegisterAllocation => Void := {
-        registerAllocator := MIRSimpleRegisterAllocator new.
+        registerAllocator := MIRLinearScanRegisterAllocator new.
         registerAllocator allocateRegistersIn: function withTarget: moduleGenerator target.
     }.
 
@@ -437,9 +437,6 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         }.
 
         self textSection useDebugInfoOfMIRValue: instruction.
-        instruction preOperations do: {:(MIRInstructionSurroundingOperation)each :: Void |
-            each emitAssemblyWith: self
-        }.
 
         self loadCaptureVectorPointerIfNeededFor: instruction.
         instruction resultRegister isNotNil && instruction resultRegister isRegisterWithPointer ifTrue: {
@@ -450,12 +447,9 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         moduleGenerator target emitInstruction: instruction with: self.
 
         ## Do we need to support multiple result values?
-        instruction resultRegister isNotNil && instruction resultRegister isRegisterWithPointer not && instruction hasValidType ifTrue: {
+        instruction resultRegister isNotNil && instruction resultRegister isRegisterWithPointer not
+        && instruction hasValidType && (instruction userCount > 0sz) ifTrue: {
             self emitMoveRegister: instruction resultRegister intoValue: instruction
-        }.
-
-        instruction postOperations do: {:(MIRInstructionSurroundingOperation)each :: Void |
-            each emitAssemblyWith: self
         }.
 
         captureVectorPointerRegister := nil.

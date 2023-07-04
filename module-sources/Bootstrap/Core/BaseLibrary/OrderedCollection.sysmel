@@ -56,7 +56,37 @@ OrderedCollection definition: {
     public method untypedAt: (index: Size) ::=> Untyped
         := storage untypedAt: index.
 
+    public method remove: element ::=> Void := {
+        let size := self size.
+        let destIndex mutable := 0sz.
+        let i mutable := 0sz.
+        while: (i < size) do: {
+            let storageElement := storage at: i.
+            storageElement = element ifFalse: {
+                storage at: destIndex put: storageElement.
+                destIndex := destIndex + 1sz.
+            }
+        } continueWith: (i := i + 1sz).
+        
+        size = destIndex ifTrue: (self error: "Element to remove not found.").
+        self size: destIndex.
+    }.
+
     public method removeAll => Void := {
         size := 0sz.
-    }
+    }.
+
+    public method removeAt: (index: Size) ::=> Void := {
+        let i mutable := index.
+        while: (i < size) do: {
+            storage at: i put: (storage at: i + 1sz)
+        } continueWith: (i := i + 1sz).
+
+        size := size - 1sz.
+    }.
+
+    public method removeLast := {
+        size = 0sz ifTrue: (self error: "Cannot remove the last element on empty ordered collection.").
+        storage at: (size := size - 1sz).
+    }.
 }.

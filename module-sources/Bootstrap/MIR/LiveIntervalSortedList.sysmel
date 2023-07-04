@@ -16,7 +16,29 @@ public final class MIRLiveIntervalSortedList definition: {
         } continueWith: (i := i - 1sz)
     }.
 
-    public method expireUntil: (deadPoint: Int32) doing: (aBlock: (MIRLiveInterval) => Void) ::=> Void := {
+    public method expireUntil: (deadPoint: UInt32) doing: (aBlock: (MIRLiveInterval) => Void) ::=> Void := {
+        let size := self size.
+        let destIndex mutable := 0sz.
+        let i mutable := 0sz.
+        while: i < size do: {
+            let interval := self at: i.
+            interval end < deadPoint ifTrue: {
+                aBlock(interval)
+            } ifFalse: {
+                elements at: destIndex put: interval.
+                destIndex := destIndex + 1sz.
+            }.
+
+        } continueWith: (i := i + 1sz).
+
+        elements size: destIndex
+    }.
+
+    public method expireUntil: (deadPoint: UInt32) ::=> Void := {
+        self expireUntil: deadPoint doing: {:(MIRLiveInterval)interval :: Void |}
+    }.
+
+    public method expireAt: (deadPoint: UInt32) doing: (aBlock: (MIRLiveInterval) => Void) ::=> Void := {
         let size := self size.
         let destIndex mutable := 0sz.
         let i mutable := 0sz.
@@ -34,10 +56,44 @@ public final class MIRLiveIntervalSortedList definition: {
         elements size: destIndex
     }.
 
-    public method expireUntil: (deadPoint: Int32) ::=> Void := {
-        self expireUntil: deadPoint doing: {:(MIRLiveInterval)interval :: Void |}
+    public method expireAt: (deadPoint: UInt32) ::=> Void := {
+        self expireAt: deadPoint doing: {:(MIRLiveInterval)interval :: Void |}
     }.
-    
+
+    public method expireAllThat: (predicate: (MIRLiveInterval) => Boolean) doing: (aBlock: (MIRLiveInterval) => Void) ::=> Void := {
+        let size := self size.
+        let destIndex mutable := 0sz.
+        let i mutable := 0sz.
+        while: i < size do: {
+            let interval := self at: i.
+            predicate(interval) ifTrue: {
+                aBlock(interval)
+            } ifFalse: {
+                elements at: destIndex put: interval.
+                destIndex := destIndex + 1sz.
+            }.
+
+        } continueWith: (i := i + 1sz).
+
+        elements size: destIndex
+    }.
+
+    public method expireAnyThat: (predicate: (MIRLiveInterval) => Boolean) doing: (aBlock: (MIRLiveInterval) => Void) ::=> Boolean := {
+        let i mutable := elements size.
+        while: i > 0sz do: {
+            i := i - 1sz.
+            let interval := self at: i.
+            predicate(interval) ifTrue: {
+                elements removeAt: i.
+                aBlock(interval).
+                return: true
+            }
+
+        } continueWith: (i := i + 1sz).
+
+        false
+    }.
+
     public method at: (index: Size) ::=> MIRLiveInterval
         := (elements at: index) uncheckedDownCastTo: MIRLiveInterval.
 
@@ -46,4 +102,11 @@ public final class MIRLiveIntervalSortedList definition: {
     }.
 
     public method size => Size := elements size.
+
+    public method removeAll => Void := {
+        elements removeAll
+    }.
+
+    public method removeLast => MIRLiveInterval
+        := elements removeLast uncheckedDownCastTo: MIRLiveInterval.
 }.

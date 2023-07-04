@@ -5,6 +5,7 @@ public abstract class MIRCallingConvention superclass: Object.
 public abstract class MIRValue superclass: Object.
 public abstract class MIRLocalValue superclass: MIRValue.
 public abstract class MIRInstruction superclass: MIRLocalValue.
+public final class MIRLiveInterval superclass: Object.
 
 public abstract class MIRPhysicalLocation superclass: Object; definition: {
     public virtual method isMemory => Boolean := false.
@@ -173,9 +174,9 @@ MIRValue definition: {
     public virtual method getConstantValue64 => Int64
         := self error: "Not an immediate 64 constant".
 
-    public virtual method markUsageAt: (usageIndex: UInt32) ::=> Void := {}.
-    public virtual method markWriteAt: (writeIndex: UInt32) ::=> Void := {}.
-    public virtual method markSpillingRequired ::=> Void := {}.
+    public virtual method assignedRegister => MIRPhysicalLocation := nil.
+    public virtual method clearAssignedRegister => Void := {}.
+    public virtual method markMemoryCopyRequired => Void := {}.
 
     public method printDebugInfoOn: (stream: Stream) ::=> Void := {
         debugSourcePosition isNotNil && PrintingDebugInfo ifTrue: {
@@ -316,15 +317,13 @@ MIRLocalValue definition: {
     public field isSignedExtended => Boolean.
     public field isGCRoot => Boolean.
 
+    public field hasValidStackOffset => Boolean.
     public field offset => Int64.
-    public field registerAssignment => MIRPhysicalLocation.
-    public field requiredRegisters => Array.
+    public field assignedRegister => MIRPhysicalLocation.
 
     public field needsSpilling => Boolean.
-    public field firstUsageIndex => Int32.
-    public field lastUsageIndex => Int32.
-    public field firstWriteIndex => Int32.
-    public field lastWriteIndex => Int32.
+    public field liveInterval => MIRLiveInterval.
+    public field hasPointerUsage => Boolean.
 
     public field sourceBinding => SymbolBinding.
 
@@ -348,36 +347,36 @@ MIRLocalValue definition: {
         physicalLocationClass := type valueTacPhysicalLocationClass.
     }.
 
-    public override method markSpillingRequired ::=> Void := {
+    public override method clearAssignedRegister => Void := {
+        assignedRegister := nil.
+    }.
+
+    public override method markMemoryCopyRequired ::=> Void := {
         needsSpilling := true.
     }.
 
-    ## TODO: Handle the temporary variables in a proper way here.
     public method needsStackAllocation => Boolean
-        := true.##needsSpilling || registerAssignment isNil.
+        := self hasValidType && (self hasPointerUsage || self needsSpilling || (assignedRegister isNil && self userCount > 0sz)).
 
     public override method isLocalVariable => Boolean := true.
 
     public virtual method resetRegisterAllocation => Void := {
-        registerAssignment := nil.
+        assignedRegister := nil.
     }.
 
+    public virtual method computeLiveInterval => Void := {
+        liveInterval := MIRLiveInterval for: self.
 
-    public method resetLiveRange => Void := {
-        firstUsageIndex := -1i32.
-        lastUsageIndex := -1i32.
-        firstWriteIndex := -1i32.
-        lastWriteIndex := -1i32.
-    }.
-
-    public override method markUsageAt: (usageIndex: UInt32) ::=> Void := {
-        firstUsageIndex < 0i32 ifTrue: (firstWriteIndex := usageIndex asInt32).
-        lastUsageIndex := usageIndex asInt32
-    }.
-
-    public override method markWriteAt: (writeIndex: UInt32) ::=> Void := {
-        firstWriteIndex < 0i32 ifTrue: (firstWriteIndex := writeIndex asInt32).
-        lastWriteIndex := writeIndex asInt32
+        hasPointerUsage := false.
+        self usersDo: {:(MIRValue)each :: Void |
+            each isLocalValue ifTrue: {
+                liveInterval insertUsage: (each downCastTo: MIRLocalValue) index.
+            } ifFalse: {
+                each isValuePointer ifTrue: {
+                    hasPointerUsage := true.
+                }
+            }
+        }.
     }.
 
     public override method isLocalValue => Boolean := true.
@@ -441,11 +440,12 @@ public final class MIRValuePointer superclass: MIRValue; definition: {
     public override method isValuePointer => Boolean := true.
     public override method isCaptureValueOrPointer => Boolean := value isCaptureValue.
 
+    public override method usedValuesDo: (aBlock: (MIRValue) => Void) ::=> Void := {
+        aBlock(value)
+    }.
+
     public override method physicalLocationClass => MIRPhysicalLocation class
         := MIRPhysicalIntegerRegister.
-
-    public override method markSpillingRequired ::=> Void
-        := value markSpillingRequired.
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: " address".
@@ -456,6 +456,7 @@ MIRVariable definition: {
     public method asValuePointer => MIRValuePointer
         := MIRValuePointer new
             value: self;
+            registerInUsedValues;
             yourself.
 }.
 
@@ -463,6 +464,7 @@ MIRLocalValue definition: {
     public method asValuePointer => MIRValuePointer
         := MIRValuePointer new
             value: self;
+            registerInUsedValues;
             yourself.
 }.
 
@@ -826,17 +828,9 @@ MIRInstruction definition: {
     public field captureVectorPointerRegister => MIRPhysicalLocation.
     public field callingConvention => MIRCallingConvention.
 
-    public field preOperations => Array.
-    public field postOperations => Array.
-
-    public abstract method markLiveRange => Void
-        := self subclassResponsibility.
-
     public override method initialize => Void := {
         super initialize.
         operands := #().
-        preOperations := #().
-        postOperations := #().
     }.
 
     public method firstOperandRegister => MIRPhysicalLocation := operandRegisters first.
@@ -876,6 +870,11 @@ MIRInstruction definition: {
         operands do: aBlock
     }.
 
+    public override method computeLiveInterval => Void := {
+        super computeLiveInterval.
+        liveInterval insertUsage: index
+    }.
+
     public method usesCapture => Boolean
         := operands anySatisfy: {:(MIRValue)operand :: Boolean | operand isCaptureValue}.
 
@@ -884,14 +883,6 @@ MIRInstruction definition: {
         resultRegister := nil.
         operandRegisters := Array new: operands size.
         scratchRegisters := #().
-        preOperations := #().
-        postOperations := #().
-    }.
-
-    public method markLiveRange => Void := {
-        operands do: {:(MIRValue)value :: Void |
-            value markUsageAt: index
-        }
     }.
 }.
 
@@ -1026,6 +1017,8 @@ public final class MIRFunction superclass: MIRProgramEntity; definition: {
     public field arguments => Array.
     public field captures => Array.
     public field temporaries => OrderedCollection.
+
+    public field touchedCallPreservedRegisters => Array.
 
     public field firstBasicBlock => MIRBasicBlock.
     public field lastBasicBlock => MIRBasicBlock.
@@ -1169,14 +1162,6 @@ public final class MIRFunction superclass: MIRProgramEntity; definition: {
         }.
     }.
 
-    public method enumerateInstructions => Void := {
-        let index mutable := 1u32.
-        self instructionsDo: {:(MIRInstruction)each :: Void |
-            each index: index.
-            index := index + 1u32
-        }
-    }.
-
     public method allLocalValuesDo: (aBlock: (MIRLocalValue) => Void) ::=> Void := {
         arguments do: aBlock.
         captures do: aBlock.
@@ -1198,13 +1183,10 @@ public final class MIRFunction superclass: MIRProgramEntity; definition: {
         
     }.
 
-    public method computeLiveRanges => Void := {
-        self enumerateInstructions.
+    public method computeLiveIntervals => Void := {
+        self enumerateLocals.
         self allLocalValuesDo: {:(MIRLocalValue)eachLocal :: Void |
-            eachLocal resetLiveRange
-        }.
-        self instructionsDo: {:(MIRInstruction)eachInstruction :: Void |
-            eachInstruction markLiveRange
+            eachLocal computeLiveInterval
         }.
     }.
 
@@ -1863,6 +1845,9 @@ public final class MIRModule superclass: MIRProgramEntity; definition: {
 
 MIRCallingConvention definition: {
     public abstract method computeArgumentPassingLayoutOf: (function: MIRFunction) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method integerCallPreservedRegisters => Array
         := self subclassResponsibility.
 }.
 

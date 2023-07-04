@@ -1,87 +1,176 @@
 public final class MIRRegisterAllocationFile superclass: Object; definition: {
-    public field registers => Array.
-    public field usedRegisters => Array.
-    public field activeRegisters => Array.
-    public field spillOperations => OrderedCollection.
-    public field unspillOperations => OrderedCollection.
-    public field storeOperations => OrderedCollection.
+    public field usedRegisterSet => IdentitySet.
+    public field availableRegisters => OrderedCollection.
+    public field activeScratchRegisters => OrderedCollection.
+
+    public field activeIntervals => MIRLiveIntervalSortedList.
+    private field currentValueIndex => UInt32.
+    private field hasExpiredEnteringIntervals => Boolean.
+    private field hasExpiredOperandIntervals => Boolean.
 
     __Meta__ definition: {
         public method for: (registers: Array) ::=> self
-            := self new
-                registers: registers;
-                usedRegisters: ((Array new: registers size)
-                    atAllPut: false;
-                    yourself);
-                activeRegisters: ((Array new: registers size)
-                    atAllPut: false;
-                    yourself);
-                yourself
-
+            := self new initializeWithRegisters: registers; yourself
     }.
 
-    public override method initialize => Void := {
-        super initialize.
-        spillOperations := OrderedCollection new.
-        unspillOperations := OrderedCollection new.
-        storeOperations := OrderedCollection new.
+    public method initializeWithRegisters: (allocatableRegisterList: Array) ::=> Void := {
+        activeIntervals := MIRLiveIntervalSortedList new.
+        availableRegisters := OrderedCollection new.
+        allocatableRegisterList reverseDo: {:each :: Void | availableRegisters add: each}.
+        usedRegisterSet := IdentitySet new.
+        activeScratchRegisters := OrderedCollection new.
     }.
 
-    public method reset => Void := {
-        activeRegisters atAllPut: false.
+    public method usesRegister: (register: MIRPhysicalLocation) ::=> Boolean
+        := usedRegisterSet includes: register.
+
+    public method beginValueAtIndex: (valueIndex: UInt32) ::=> Void := {
+        currentValueIndex := valueIndex.
+        hasExpiredEnteringIntervals := false.
+        hasExpiredOperandIntervals := false.
+        self expireOldLiveIntervals.
     }.
 
-    public method resetOperations => Void := {
-        spillOperations removeAll.
-        unspillOperations removeAll.
-        storeOperations removeAll.
+    public method expireOldLiveIntervals => Void := {
+        hasExpiredEnteringIntervals ifTrue: (return: void).
+        hasExpiredEnteringIntervals := true.
+
+        availableRegisters addAll: activeScratchRegisters.
+        activeScratchRegisters removeAll.
+
+        activeIntervals expireUntil: currentValueIndex doing: {:(MIRLiveInterval)interval :: Void |
+            interval register ifNotNil: {
+                availableRegisters add: interval register
+            }
+        }.
     }.
 
-    public method preOperations => Array
-        := spillOperations asArray -- unspillOperations asArray.
+    public method expireOperandLiveIntervals => Void := {
+        hasExpiredEnteringIntervals ifTrue: (return: void).
+        hasExpiredEnteringIntervals := true.
 
-    public method postOperations => Array
-        := storeOperations asArray.
+        availableRegisters addAll: activeScratchRegisters.
+        activeScratchRegisters removeAll.
 
-    public method makeActiveRegister: (usedRegister: MIRPhysicalLocation) ::=> Void
-        := self makeActiveRegister: usedRegister withValue: nil.
+        activeIntervals expireAt: currentValueIndex doing: {:(MIRLiveInterval)interval :: Void |
+            availableRegisters add: interval register
+        }.
+    }.
 
-    public method makeActiveRegister: (usedRegister: MIRPhysicalLocation) withValue: (value: MIRValue) ::=> Void := {
-        let foundIndex := registers indexOf: usedRegister.
-        self assert: foundIndex >= 0iptr.
+    public method spillRegistersIfNeededExceptFor: (registerList: Array) ::=> Void := {
+        activeIntervals
+            expireAllThat: {:(MIRLiveInterval)interval :: Boolean | (registerList includes: interval register) not }
+            doing: {:(MIRLiveInterval)interval :: Void |
+                availableRegisters add: interval register.
+                interval spill.
+            }
+    }.
+
+    public method spillIfNeededAndAllocateRegister: (usedRegister: MIRPhysicalLocation) ::=> Void
+        := self spillIfNeededAndAllocateRegister: usedRegister withValue: nil.
+
+    public method spillIfNeededAndAllocateRegister: (usedRegister: MIRPhysicalLocation) withValue: (value: MIRValue) ::=> Void := {
+        value isNotNil && (value assignedRegister == usedRegister) ifTrue: {
+            return: void
+        }.
+
+        activeIntervals
+            expireAllThat: {:(MIRLiveInterval)interval :: Boolean | interval register == usedRegister }
+            doing: {:(MIRLiveInterval)interval :: Void |
+                availableRegisters add: interval register.
+                interval spill.
+            }.
+
+        availableRegisters remove: usedRegister.
+        activeScratchRegisters add: usedRegister.
+        usedRegisterSet add: usedRegister.
+    }.
+
+    public method spillIfNeededAndAllocateRegister: (usedRegister: MIRPhysicalLocation) withValuePointer: (value: MIRValue) ::=> Void
+        := self spillIfNeededAndAllocateRegister: usedRegister withValue: nil.
+
+    public method spillIfNeededAndAllocateRegister: (usedRegister: MIRPhysicalLocation) withResultValue: (value: MIRValue) ::=> Void := {
+        value isNotNil && (value assignedRegister == usedRegister) || (activeScratchRegisters includes: usedRegister) ifTrue: {
+            return: void
+        }.
+
+        activeIntervals
+            expireAllThat: {:(MIRLiveInterval)interval :: Boolean | interval register == usedRegister }
+            doing: {:(MIRLiveInterval)interval :: Void |
+                availableRegisters add: interval register.
+                interval spill.
+            }.
+
+        availableRegisters remove: usedRegister.
+        activeScratchRegisters add: usedRegister.
+        usedRegisterSet add: usedRegister.
+    }.
+
+    public method ensureAvailableRegister => Void := {
+        availableRegisters isEmpty ifTrue: {
+            let interval := activeIntervals removeLast.
+            availableRegisters add: interval register.
+            interval spill.
+        }.
+    }.
+
+    public method ensureAvailableByteRegister => Void := {
+        (availableRegisters anySatisfy: {:(MIRPhysicalLocation)each :: Boolean | each canBeUsedForByte }) ifFalse: {
+            (activeIntervals
+                expireAnyThat: {:(MIRLiveInterval)interval :: Boolean | interval register canBeUsedForByte }
+                doing: {:(MIRLiveInterval)interval :: Void |
+                    interval register ifNotNil: {
+                        availableRegisters add: interval register.
+                        interval spill.
+                    }
+                }) ifFalse: {
+                self error: "Failed to spill byte register"
+            }
+        }.
+    }.
+
+    public method allocateForValue: (value: MIRValue) ::=> MIRPhysicalLocation := {
+        self ensureAvailableRegister.
+        let register => MIRPhysicalLocation := availableRegisters removeLast.
+        activeScratchRegisters add: register.
+        usedRegisterSet add: register.
+        register
+    }.
+
+    public method allocate => MIRPhysicalLocation
+        := self allocateForValue: nil.
+
+    public method allocateForResultValue: (value: MIRValue) ::=> MIRPhysicalLocation := {
+        self expireOperandLiveIntervals.
+        self allocateForValue: value
+    }.
+
+    public method allocateForByteValue: (value: MIRValue) ::=> MIRPhysicalLocation := {
+        self ensureAvailableByteRegister.
         
-        let index := foundIndex asSize.
-        activeRegisters at: index put: true.
-        usedRegisters at: index put: true.
+        let availableCount := availableRegisters size.
+        let i mutable := availableCount.
+        while: (i > 0sz) do: {
+            i := i - 1sz.
+            let register => MIRPhysicalLocation := availableRegisters at: i.
+            register canBeUsedForByte ifTrue: {
+                availableRegisters removeAt: i.
+                activeScratchRegisters add: register.
+                usedRegisterSet add: register.
+                return: register
+            }.
+        }.
+
+        self error: "Failed to allocate byte register.".
     }.
 
-    public method makeActiveRegister: (usedRegister: MIRPhysicalLocation) withValuePointer: (value: MIRValue) ::=> Void
-        := self makeActiveRegister: usedRegister withValue: value.
+    public method allocateForByte => MIRPhysicalLocation
+        := self allocateForByteValue: nil.
 
-    public method makeActiveRegister: (usedRegister: MIRPhysicalLocation) withResultValue: (value: MIRValue) ::=> Void
-        := self makeActiveRegister: usedRegister withValue: value.
-
-    public method allocate => MIRPhysicalLocation := {
-        let nextRegisterIndex := activeRegisters indexOf: false.
-        self assert: nextRegisterIndex >= 0iptr.
-
-        let index := nextRegisterIndex asSize.
-        activeRegisters at: index put: true.
-        usedRegisters at: index put: true.
-        registers at: index
+    public method allocateForByteResultValue: (value: MIRValue) ::=> MIRPhysicalLocation := {
+        self expireOperandLiveIntervals.
+        self allocateForByteValue: value
     }.
-
-    public method allocateForByte => MIRPhysicalLocation := {
-        let result := self allocate.
-        self assert: result canBeUsedForByte.
-        result
-    }.
-
-    public method allocateForValue: (value: MIRValue) ::=> MIRPhysicalLocation
-        := self allocate.
-
-    public method allocateForByteValue: (value: MIRValue) ::=> MIRPhysicalLocation
-        := self allocateForByte.
 
     public method allocateForCaptureVector => MIRPhysicalLocation
         := self allocate.

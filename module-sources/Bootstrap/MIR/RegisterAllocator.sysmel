@@ -124,55 +124,67 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
     public abstract method allocateIntegerRegisterForValue: (value: MIRValue) ::=> MIRPhysicalLocation
         := self subclassResponsibility.
 
+    public abstract method allocateIntegerRegisterForResultValue: (value: MIRLocalValue) ::=> MIRPhysicalLocation
+        := self subclassResponsibility.
+
     public abstract method allocateIntegerRegister8ForValue: (value: MIRValue) ::=> MIRPhysicalLocation
+        := self subclassResponsibility.
+
+    public abstract method allocateIntegerRegister8ForResultValue: (value: MIRValue) ::=> MIRPhysicalLocation
         := self subclassResponsibility.
 
     public abstract method allocateFloatRegisterForValue: (value: MIRValue) ::=> MIRPhysicalLocation
         := self subclassResponsibility.
 
+    public abstract method allocateFloatRegisterForResultValue: (value: MIRLocalValue) ::=> MIRPhysicalLocation
+        := self subclassResponsibility.
+
     public abstract method allocateVectorRegisterForValue: (value: MIRValue) ::=> MIRPhysicalLocation
         := self subclassResponsibility.
 
-    public abstract method spillIntegerRegistersAcrossCall: (registers: Array) ::=> Void
+    public abstract method allocateVectorRegisterForResultValue: (value: MIRLocalValue) ::=> MIRPhysicalLocation
         := self subclassResponsibility.
 
-    public method makeActiveRegister: (register: MIRPhysicalLocation) withValue: (value: MIRValue) ::=> Void := {
+    public abstract method spillIntegerRegistersExceptFor: (registers: Array) ::=> Void
+        := self subclassResponsibility.
+
+    public method spillIfNeededAndAllocateRegister: (register: MIRPhysicalLocation) withValue: (value: MIRValue) ::=> Void := {
         register makeActiveWithValue: value inRegisterAllocator: self
     }.
 
-    public method makeActiveRegister: (register: MIRPhysicalLocation) withValuePointer: (value: MIRValue) ::=> Void := {
+    public method spillIfNeededAndAllocateRegister: (register: MIRPhysicalLocation) withValuePointer: (value: MIRValue) ::=> Void := {
         register makeActiveWithValuePointer: value inRegisterAllocator: self
     }.
 
-    public method makeActiveRegister: (register: MIRPhysicalLocation) withResultValue: (value: MIRValue) ::=> Void := {
+    public method spillIfNeededAndAllocateRegister: (register: MIRPhysicalLocation) withResultValue: (value: MIRValue) ::=> Void := {
         register makeActiveWithResultValue: value inRegisterAllocator: self
     }.
 
-    public abstract method makeActiveIntegerRegister: (register: MIRPhysicalIntegerRegister) withValue: (value: MIRValue) ::=> Void
+    public abstract method spillIfNeededAndAllocateIntegerRegister: (register: MIRPhysicalIntegerRegister) withValue: (value: MIRValue) ::=> Void
         := self subclassResponsibility.
 
-    public abstract method makeActiveIntegerRegister: (register: MIRPhysicalIntegerRegister) withValuePointer: (value: MIRValue) ::=> Void
+    public abstract method spillIfNeededAndAllocateIntegerRegister: (register: MIRPhysicalIntegerRegister) withValuePointer: (value: MIRValue) ::=> Void
         := self subclassResponsibility.
 
-    public abstract method makeActiveIntegerRegister: (register: MIRPhysicalIntegerRegister) withResultValue: (value: MIRValue) ::=> Void
+    public abstract method spillIfNeededAndAllocateIntegerRegister: (register: MIRPhysicalIntegerRegister) withResultValue: (value: MIRValue) ::=> Void
         := self subclassResponsibility.
 
-    public abstract method makeActiveFloatRegister: (register: MIRPhysicalFloatRegister) withValue: (value: MIRValue) ::=> Void
+    public abstract method spillIfNeededAndAllocateFloatRegister: (register: MIRPhysicalFloatRegister) withValue: (value: MIRValue) ::=> Void
         := self subclassResponsibility.
 
-    public abstract method makeActiveFloatRegister: (register: MIRPhysicalFloatRegister) withValuePointer: (value: MIRValue) ::=> Void
+    public abstract method spillIfNeededAndAllocateFloatRegister: (register: MIRPhysicalFloatRegister) withValuePointer: (value: MIRValue) ::=> Void
         := self subclassResponsibility.
 
-    public abstract method makeActiveFloatRegister: (register: MIRPhysicalFloatRegister) withResultValue: (value: MIRValue) ::=> Void
+    public abstract method spillIfNeededAndAllocateFloatRegister: (register: MIRPhysicalFloatRegister) withResultValue: (value: MIRValue) ::=> Void
         := self subclassResponsibility.
 
-    public abstract method makeActiveVectorRegister: (register: MIRPhysicalVectorRegister) withValue: (value: MIRValue) ::=> Void
+    public abstract method spillIfNeededAndAllocateVectorRegister: (register: MIRPhysicalVectorRegister) withValue: (value: MIRValue) ::=> Void
         := self subclassResponsibility.
 
-    public abstract method makeActiveVectorRegister: (register: MIRPhysicalVectorRegister) withValuePointer: (value: MIRValue) ::=> Void
+    public abstract method spillIfNeededAndAllocateVectorRegister: (register: MIRPhysicalVectorRegister) withValuePointer: (value: MIRValue) ::=> Void
         := self subclassResponsibility.
 
-    public abstract method makeActiveVectorRegister: (register: MIRPhysicalVectorRegister) withResultValue: (value: MIRValue) ::=> Void
+    public abstract method spillIfNeededAndAllocateVectorRegister: (register: MIRPhysicalVectorRegister) withResultValue: (value: MIRValue) ::=> Void
         := self subclassResponsibility.
 
     public virtual method allocateRegisterOrMemoryForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
@@ -183,6 +195,9 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
 MIRPhysicalLocation extend: {
     __Meta__ extend: {
         public abstract method allocateRegisterForValue: (value: MIRValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
+            := self subclassResponsibility.
+
+        public abstract method allocateRegisterForResultValue: (value: MIRLocalValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
             := self subclassResponsibility.
     }.
 
@@ -200,18 +215,21 @@ MIRPhysicalIntegerRegister extend: {
     __Meta__ extend: {
         public override method allocateRegisterForValue: (value: MIRValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
             := registerAllocator allocateIntegerRegisterForValue: value.
+
+        public override method allocateRegisterForResultValue: (value: MIRLocalValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
+            := registerAllocator allocateIntegerRegisterForResultValue: value.
     }.
 
     public override method makeActiveWithValue: (value: MIRValue) inRegisterAllocator: (registerAllocator: MIRRegisterAllocator) ::=> Void := {
-        registerAllocator makeActiveIntegerRegister: self withValue: value
+        registerAllocator spillIfNeededAndAllocateIntegerRegister: self withValue: value
     }.
 
     public override method makeActiveWithValuePointer: (value: MIRValue) inRegisterAllocator: (registerAllocator: MIRRegisterAllocator) ::=> Void := {
-        registerAllocator makeActiveIntegerRegister: self withValuePointer: value
+        registerAllocator spillIfNeededAndAllocateIntegerRegister: self withValuePointer: value
     }.
 
     public override method makeActiveWithResultValue: (value: MIRValue) inRegisterAllocator: (registerAllocator: MIRRegisterAllocator) ::=> Void := {
-        registerAllocator makeActiveIntegerRegister: self withResultValue: value
+        registerAllocator spillIfNeededAndAllocateIntegerRegister: self withResultValue: value
     }.
 }.
 
@@ -219,18 +237,21 @@ MIRPhysicalFloatRegister extend: {
     __Meta__ extend: {
         public override method allocateRegisterForValue: (value: MIRValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
             := registerAllocator allocateFloatRegisterForValue: value.
+
+        public override method allocateRegisterForResultValue: (value: MIRLocalValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
+            := registerAllocator allocateFloatRegisterForResultValue: value.
     }.
 
     public override method makeActiveWithValue: (value: MIRValue) inRegisterAllocator: (registerAllocator: MIRRegisterAllocator) ::=> Void := {
-        registerAllocator makeActiveFloatRegister: self withValue: value
+        registerAllocator spillIfNeededAndAllocateFloatRegister: self withValue: value
     }.
 
     public override method makeActiveWithValuePointer: (value: MIRValue) inRegisterAllocator: (registerAllocator: MIRRegisterAllocator) ::=> Void := {
-        registerAllocator makeActiveFloatRegister: self withValuePointer: value
+        registerAllocator spillIfNeededAndAllocateFloatRegister: self withValuePointer: value
     }.
 
     public override method makeActiveWithResultValue: (value: MIRValue) inRegisterAllocator: (registerAllocator: MIRRegisterAllocator) ::=> Void := {
-        registerAllocator makeActiveFloatRegister: self withResultValue: value
+        registerAllocator spillIfNeededAndAllocateFloatRegister: self withResultValue: value
     }.
 }.
 
@@ -238,18 +259,21 @@ MIRPhysicalVectorRegister extend: {
     __Meta__ extend: {
         public override method allocateRegisterForValue: (value: MIRValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
             := registerAllocator allocateVectorRegisterForValue: value.
+
+        public override method allocateRegisterForResultValue: (value: MIRLocalValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
+            := registerAllocator allocateVectorRegisterForResultValue: value.
     }.
 
     public override method makeActiveWithValue: (value: MIRValue) inRegisterAllocator: (registerAllocator: MIRRegisterAllocator) ::=> Void := {
-        registerAllocator makeActiveVectorRegister: self withValue: value
+        registerAllocator spillIfNeededAndAllocateVectorRegister: self withValue: value
     }.
 
     public override method makeActiveWithValuePointer: (value: MIRValue) inRegisterAllocator: (registerAllocator: MIRRegisterAllocator) ::=> Void := {
-        registerAllocator makeActiveVectorRegister: self withValuePointer: value
+        registerAllocator spillIfNeededAndAllocateVectorRegister: self withValuePointer: value
     }.
 
     public override method makeActiveWithResultValue: (value: MIRValue) inRegisterAllocator: (registerAllocator: MIRRegisterAllocator) ::=> Void := {
-        registerAllocator makeActiveVectorRegister: self withResultValue: value
+        registerAllocator spillIfNeededAndAllocateVectorRegister: self withResultValue: value
     }.
 }.
 

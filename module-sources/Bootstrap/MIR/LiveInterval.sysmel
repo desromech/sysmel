@@ -1,17 +1,46 @@
-public final class MIRLiveInterval superclass: Object; definition: {
+MIRLiveInterval definition: {
     public field value => MIRLocalValue.
-    public field start => Int32.
-    public field end => Int32.
+    public field register => MIRPhysicalLocation.
+    public field isSpilled => Boolean.
+    public field start => UInt32.
+    public field end => UInt32.
 
     __Meta__ definition: {
-        public method for: (value: MIRLocalValue) from: (start: Int32) until: (end: Int32) ::=> self
+        public method for: (value: MIRLocalValue) from: (start: UInt32) until: (end: UInt32) ::=> self
             := self new value: value; start: start; end: end; yourself.
 
-        public method from: (start: Int32) until: (end: Int32) ::=> self
+        public method for: (value: MIRLocalValue) ::=> self
+            := self for: value from: 16rFFFF_FFFF u32 until: 0u32.
+
+        public method empty ::=> self
+            := self for: nil.
+
+        public method from: (start: UInt32) until: (end: UInt32) ::=> self
             := self for: nil from: start until: end.
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream nextPut: '['c8; print: start; nextPutAll: ", "; print: end; nextPut: ')'c8
+        stream nextPut: '['c8; print: start; nextPutAll: ", "; print: end; nextPut: ']'c8
+    }.
+
+    public method insertUsage: (usage: UInt32) ::=> Void := {
+        start := start min: usage.
+        end := end max: usage.
+    }.
+
+    public method includes: (element: UInt32) ::=> Boolean
+        := (start <= element) && (element <= end).
+
+    public method isEmpty => Boolean := start > end.
+
+    public method spill => Void := {
+        value ifNotNil: {
+            value
+                clearAssignedRegister;
+                markMemoryCopyRequired
+        }.
+        
+        register := nil.
+        isSpilled := true.
     }.
 }.

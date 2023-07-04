@@ -29,4 +29,13 @@ SequenceableCollection definition: {
 
     public virtual pure method withoutSuffix: (suffix: SequenceableCollection) ::=> self species
         := self allButLast: ((self endsWith: suffix) ifTrue: suffix size ifFalse: 0sz).
+
+    public method reverseDo: aBlock ::=> Void := {
+        let i mutable := 0sz,
+        let size := self size.
+        while: (i < size) do: {
+            aBlock(self at: size - i - 1sz)
+        } continueWith: (i := i + 1sz)
+    }.
+
 }.

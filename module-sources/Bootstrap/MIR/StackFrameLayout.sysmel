@@ -1,6 +1,7 @@
 public final class MIRStackFrameLayout superclass: Object; definition: {
     protected field compilationTarget => MIRCompilationTarget.
 
+    public field callPreservedRegisterAreaSize => UInt64.
     public field stackFrameSize => UInt64.
     public field stackFrameAlignment => UInt64.
 
@@ -8,12 +9,14 @@ public final class MIRStackFrameLayout superclass: Object; definition: {
         := stackFrameSize > 0u64.
 
     public method temporaryFrameSize => UInt64
-        := stackFrameSize.
+        := stackFrameSize - callPreservedRegisterAreaSize.
 
     public method buildLayoutForFunction: (function: MIRFunction) withTarget: (target: MIRCompilationTarget) ::=> Void := {
         compilationTarget := target.
 
         stackFrameAlignment := compilationTarget stackFrameAlignment asUInt64.
+        callPreservedRegisterAreaSize := function touchedCallPreservedRegisters size * compilationTarget pointerSize.
+        stackFrameSize := callPreservedRegisterAreaSize.
 
         ## We might need to assign a local offset in case the argument is passed through a register and we need to spill it.
         function arguments do: {:(MIRArgumentValue)eachArgument :: Void |
@@ -37,6 +40,8 @@ public final class MIRStackFrameLayout superclass: Object; definition: {
         let localAlignment := localValue alignment.
         stackFrameSize := stackFrameSize + localValue size alignedTo: localAlignment.
         stackFrameAlignment := stackFrameAlignment max: localAlignment.
-        localValue offset: stackFrameSize asInt64 negated.
+        localValue
+            hasValidStackOffset: true;
+            offset: stackFrameSize asInt64 negated.
     }.
 }.

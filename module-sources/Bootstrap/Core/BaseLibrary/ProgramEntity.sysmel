@@ -81,7 +81,7 @@ ProgramEntity definition: {
         self printQualifiedNameOn: stream.
         stream nextPutAll: ".S"; string: self programEntityKindName.
         stream nextPut: '_'c8.
-        self identityHash printHexOn: stream.
+        self identityHash asUInt32 printHexOn: stream.
     }.
 
     public virtual method printQualifiedNameOn: (stream: Stream) ::=> Void := {
