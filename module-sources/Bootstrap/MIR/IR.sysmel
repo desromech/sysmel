@@ -396,6 +396,15 @@ MIRLocalValue definition: {
     public method hasValidType => Boolean := type isVoidType not.
 }.
 
+public class MIRSpecialLocalValue superclass: MIRLocalValue; definition: {
+}.
+
+public final class MIRCaptureVectorPointerValue superclass: MIRSpecialLocalValue; definition: {
+    public field closure => MIRLocalValue.
+    public field closureRegister => MIRPhysicalLocation.
+    public field loadRegister => MIRPhysicalLocation.
+}.
+
 public final class MIRLocalVariable superclass: MIRLocalValue; definition: {
 }.
 
@@ -835,7 +844,10 @@ MIRInstruction definition: {
     public field resultRegister => MIRPhysicalLocation.
     public field operandRegisters => Array.
     public field scratchRegisters => Array.
+
+    public field captureVectorPointerValue => MIRCaptureVectorPointerValue.
     public field captureVectorPointerRegister => MIRPhysicalLocation.
+
     public field callingConvention => MIRCallingConvention.
 
     public override method initialize => Void := {
@@ -896,11 +908,12 @@ MIRInstruction definition: {
     }.
 
     public method usesCapture => Boolean
-        := operands anySatisfy: {:(MIRValue)operand :: Boolean | operand isCaptureValue}.
+        := operands anySatisfy: {:(MIRValue)operand :: Boolean | operand isCaptureValueOrPointer }.
 
     public override method resetRegisterAllocation => Void := {
         super resetRegisterAllocation.
         resultRegister := nil.
+        captureVectorPointerRegister := nil.
         operandRegisters := Array new: operands size.
         scratchRegisters := #().
     }.
@@ -1117,6 +1130,7 @@ MIRFunction definition: {
 
     public field trampolineTarget => MIRProgramEntity.
 
+    public field captureVectorPointerValue => MIRCaptureVectorPointerValue.
     public field captureVectorSize => UInt64.
     public field captureVectorAlignment => UInt64.
 
@@ -1284,6 +1298,7 @@ MIRFunction definition: {
 
     public method allLocalValuesDo: (aBlock: (MIRLocalValue) => Void) ::=> Void := {
         arguments do: aBlock.
+        captureVectorPointerValue ifNotNil: aBlock(captureVectorPointerValue).
         captures do: aBlock.
         temporaries do: aBlock.
         self basicBlocksDo: {:(MIRBasicBlock)eachBasicBlock :: Void |
@@ -1349,6 +1364,23 @@ MIRFunction definition: {
         }.
     }.
 
+    public method ensureCaptureVectorPointerValue => Void := {
+        captures isEmpty ifTrue: {
+            captureVectorPointerValue := nil
+        } ifFalse: {
+            captureVectorPointerValue := MIRCaptureVectorPointerValue withType: AnyValue compilationTarget: compilationTarget,
+            captureVectorPointerValue closure: arguments first.
+            captureVectorPointerValue closure registerUser: captureVectorPointerValue.
+        }.
+
+        self instructionsDo: {:(MIRInstruction)each :: Void |
+            each captureVectorPointerValue: captureVectorPointerValue.
+            captureVectorPointerValue ifNotNil: {
+                captureVectorPointerValue registerUser: each
+            }
+        }.
+    }.
+
     public method enumerateLocals => Void := {
         let index mutable := 0u32.
         self allLocalValuesDo: {:(MIRLocalValue)each :: Void |
@@ -1375,15 +1407,11 @@ MIRFunction definition: {
     public method computeLiveIntervals => Void := {
         self
             basicBlockToposort;
+            ensureCaptureVectorPointerValue;
             enumerateLocals.
+
         self allLocalValuesDo: {:(MIRLocalValue)eachLocal :: Void |
             eachLocal computeLiveInterval
-        }.
-
-        ## TODO: Add an extra value for the actual capture vector pointer.
-        self captures do: {:(MIRLocalValue)eachCapture :: Void |
-            let closure => MIRLocalValue := arguments first.
-            closure liveInterval insertUsage: eachCapture liveInterval end + 1u32.
         }.
     }.
 

@@ -330,6 +330,10 @@ public final class MIRX86VectorRegister superclass: MIRPhysicalVectorRegister; d
         variableSize = 8u64 ifTrue: (codegen textSection x86::movsd: variablePointer src: register).
         variableSize = 16u64 ifTrue: (codegen textSection x86::movaps: variablePointer src: register).
     }.
+
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream print: register
+    }.
 }.
 
 public global MIR::X86::EAX => MIRX86IntegerRegister := MIRX86IntegerRegister int8: X86::AL int16: X86::AX int32: X86::EAX.
@@ -465,6 +469,10 @@ public final class MIRX86CompilationTarget superclass: MIRAsmCompilationTarget; 
 
     public override method emitMoveValue: (value: MIRValue) intoLocation: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         value x86::moveIntoRegister: register with: codegen
+    }.
+
+    public override method emitUnspillValue: (value: MIRValue) intoLocation: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        value x86::unspillIntoRegister: register with: codegen
     }.
 
     public override method emitMoveRegister: (register: MIRPhysicalLocation) intoValue: (value: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
@@ -754,7 +762,9 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
         }.
         codegen textSection cfiEndPrologue.
         
-        codegen emitSpillRegisterArgumentsInStackFrame.
+        codegen
+            emitSpillRegisterArgumentsInStackFrame;
+            emitUnspillEntryValuesFromStackFrame
     }.
 
     public override method emitFunctionEpilogueWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
@@ -793,6 +803,10 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
         value x86_64::moveIntoRegister: register with: codegen
     }.
 
+    public override method emitUnspillValue: (value: MIRValue) intoLocation: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        value x86_64::unspillIntoRegister: register with: codegen
+    }.
+
     public override method emitMoveValuePointer: (value: MIRValue) intoLocation: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         value x86_64::movePointerIntoRegister: register with: codegen
     }.
@@ -801,10 +815,10 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
         value x86_64::moveFromRegister: register with: codegen
     }.
 
-    public override method emitLoadCaptureVectorPointerFromClosure: (closureArgument: MIRValue) intoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        closureArgument x86_64::moveIntoRegister: register with: codegen.
+    public override method emitLoadCaptureVectorPointerFromClosure: (closurePointer: MIRPhysicalLocation) intoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        let closurePointerRegister := (closurePointer x86::int64For: codegen) downCastTo: AsmX86IntRegister.
         let reg := (register x86::int64For: codegen) downCastTo: AsmX86IntRegister.
-        codegen textSection x86::mov: reg src: reg x86::qword + codegen closureCaptureVectorMemberOffset asInt32 asAsmImmediate
+        codegen textSection x86::mov: reg src: closurePointerRegister x86::qword + codegen closureCaptureVectorMemberOffset asInt32 asAsmImmediate
     }.
 }.
 
@@ -818,6 +832,9 @@ MIRValue extend: {
     public abstract method x86::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self subclassResponsibility.
 
+    public virtual method x86::unspillIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
+        := self x86::moveIntoRegister: register with: codegen.
+
     public abstract method x86::movePointerIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self subclassResponsibility.
 
@@ -829,6 +846,9 @@ MIRValue extend: {
 
     public virtual method x86_64::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self x86::moveIntoRegister: register with: codegen.
+
+    public virtual method x86_64::unspillIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
+        := self x86_64::moveIntoRegister: register with: codegen.
 
     public virtual method x86_64::movePointerIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self x86::movePointerIntoRegister: register with: codegen.
@@ -953,6 +973,10 @@ MIRLocalValue extend: {
         }
     }.
 
+    public override method x86::unspillIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        register x86::loadFromVariable: self with: codegen
+    }.
+
     public override method x86::moveFromRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         assignedRegister ifNotNil: {
             assignedRegister x86::loadFromRegister: register with: codegen.
@@ -974,6 +998,10 @@ MIRLocalValue extend: {
         } ifNil: {
             register x86_64::loadFromVariable: self with: codegen
         }
+    }.
+
+    public override method x86_64::unspillIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        register x86_64::loadFromVariable: self with: codegen
     }.
 
     public override method x86_64::moveFromRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {

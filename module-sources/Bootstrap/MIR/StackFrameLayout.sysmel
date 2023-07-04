@@ -23,6 +23,10 @@ public final class MIRStackFrameLayout superclass: Object; definition: {
             eachArgument offset = 0i64 ifTrue: (self assignNextLocationToLocalValue: eachArgument).
         }.
 
+        function captureVectorPointerValue ifNotNil: {
+            self assignNextLocationToLocalValue: function captureVectorPointerValue
+        }.
+
         function temporaries do: {:(MIRTemporaryVariable)eachLocal :: Void |
             self assignNextLocationToLocalValue: eachLocal
         }.

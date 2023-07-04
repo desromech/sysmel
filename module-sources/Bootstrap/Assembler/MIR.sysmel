@@ -299,13 +299,16 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         public abstract method emitMoveValue: (value: MIRValue) intoLocation: (register: MIRPhysicalLocation) with: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
+        public abstract method emitUnspillValue: (value: MIRValue) intoLocation: (register: MIRPhysicalLocation) with: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
         public abstract method emitMoveValuePointer: (value: MIRValue) intoLocation: (register: MIRPhysicalLocation) with: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
         public abstract method emitMoveRegister: (register: MIRPhysicalLocation) intoValue: (value: MIRValue) with: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
-        public abstract method emitLoadCaptureVectorPointerFromClosure: (closureArgument: MIRValue) intoRegister: (register: MIRPhysicalLocation) with: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
+        public abstract method emitLoadCaptureVectorPointerFromClosure: (closurePointer: MIRPhysicalLocation) intoRegister: (register: MIRPhysicalLocation) with: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
     }.
 
@@ -410,10 +413,37 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
     public method emitSpillRegisterArgumentsInStackFrame => Void := {
         function arguments do: {:(MIRArgumentValue)eachArgument :: Void |
             let passingRegister := eachArgument passingRegister.
-            (passingRegister isNotNil && eachArgument needsStackAllocation) ifTrue: {
+            passingRegister isNotNil && eachArgument needsStackAllocation ifTrue: {
                 self emitMoveRegister: passingRegister intoValue: eachArgument
             }.
         }.
+    }.
+
+    public method emitUnspillEntryValuesFromStackFrame => Void := {
+        let unspillValue := {:(MIRLocalValue)eachLocal :: Void |
+            eachLocal assignedRegister ifNil: {return: void}.
+
+            eachLocal isArgumentVariable ifTrue: {
+                let argument := eachLocal downCastTo: MIRArgumentValue.
+                argument passingRegister ifNotNil: {
+                    ## Case already handled by emitSpillRegisterArgumentsInStackFrame
+                    return: void
+                }.
+            }.
+
+            self emitUnspillValue: eachLocal intoLocation: eachLocal assignedRegister.
+        }.
+
+        function arguments do: unspillValue.
+        function captureVectorPointerValue ifNotNil: {
+            let captureVectorPointer := function captureVectorPointerValue.
+            self emitMoveValue: function arguments first intoLocation: captureVectorPointer closureRegister.
+            moduleGenerator target emitLoadCaptureVectorPointerFromClosure: captureVectorPointer closureRegister intoRegister: captureVectorPointer loadRegister with: self.
+            self emitMoveRegister: captureVectorPointer loadRegister intoValue: captureVectorPointer.
+            captureVectorPointerRegister := captureVectorPointer loadRegister.
+        }.
+        function captures do: unspillValue.
+        captureVectorPointerRegister := nil.
     }.
 
     public method generateBasicBlock: (basicBlock: MIRBasicBlock) ::=> Void := {
@@ -438,7 +468,10 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
 
         self textSection useDebugInfoOfMIRValue: instruction.
 
-        self loadCaptureVectorPointerIfNeededFor: instruction.
+        captureVectorPointerRegister := instruction captureVectorPointerRegister.
+        captureVectorPointerRegister ifNotNil: {
+            self emitMoveValue: instruction captureVectorPointerValue intoLocation: captureVectorPointerRegister.
+        }.
         instruction resultRegister isNotNil && instruction resultRegister isRegisterWithPointer ifTrue: {
             self emitMoveValue: instruction intoLocation: instruction resultRegister
         }.
@@ -453,13 +486,6 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         }.
 
         captureVectorPointerRegister := nil.
-    }.
-
-    public method loadCaptureVectorPointerIfNeededFor: (instruction: MIRInstruction) ::=> Void := {
-        captureVectorPointerRegister := instruction captureVectorPointerRegister.
-        captureVectorPointerRegister ifNil: {return: void}.
-
-        moduleGenerator target emitLoadCaptureVectorPointerFromClosure: closureArgument intoRegister: captureVectorPointerRegister with: self.
     }.
 
     public method processDebugInstruction: (debugInstruction: MIRInstruction) ::=> Void := {
@@ -487,6 +513,11 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         location isRegisterWithPointer ifTrue: {
             moduleGenerator target emitMoveValuePointer: value intoLocation: (location downCastTo: MIRPhysicalLocationRegisterWithPointer) register with: self.
         }.
+    }.
+
+    public method emitUnspillValue: (value: MIRValue) intoLocation: (location: MIRPhysicalLocation) ::=> Void := {
+        self assert: location isRegister.
+        moduleGenerator target emitUnspillValue: value intoLocation: location with: self.
     }.
 
     public method emitMoveRegister: (location: MIRPhysicalLocation) intoValue: (value: MIRValue) ::=> Void := {

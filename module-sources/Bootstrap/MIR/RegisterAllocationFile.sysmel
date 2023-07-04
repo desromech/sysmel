@@ -60,6 +60,9 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
                     localValue assignedRegister: register.
                     interval register: register.
                     activeIntervals add: interval.
+                    (activeScratchRegisters includes: register) ifTrue: {
+                        activeScratchRegisters remove: register
+                    }.
                     return: void.
                 }
             }
@@ -179,7 +182,4 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
         ##self expireOperandLiveIntervals.
         self allocateForByteValue: value
     }.
-
-    public method allocateForCaptureVector => MIRPhysicalLocation
-        := self allocate.
 }.

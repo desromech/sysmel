@@ -2,6 +2,7 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
     protected field integerRegisterFile => MIRRegisterAllocationFile.
     protected field floatRegisterFile => MIRRegisterAllocationFile.
     protected field vectorRegisterFile => MIRRegisterAllocationFile.
+    protected field captureVectorPointerValue => MIRCaptureVectorPointerValue.
     protected field functionArguments => Array.
 
     public override method allocateRegistersIn: (function: MIRFunction) withTarget: (target: MIRCompilationTarget) ::=> Void := {
@@ -17,6 +18,7 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
 
         ## Compute the live intervals.
         function computeLiveIntervals.
+        captureVectorPointerValue := function captureVectorPointerValue.
 
         ## Precolor the the arguments.
         functionArguments := function arguments.
@@ -24,6 +26,12 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
             eachArgument passingRegister ifNotNil: {
                 self spillIfNeededAndAllocateRegister: eachArgument passingRegister withResultValue: eachArgument.
             }.
+        }.
+
+        captureVectorPointerValue ifNotNil: {
+            self assert: captureVectorPointerValue closure isNotNil.
+            captureVectorPointerValue closureRegister: (integerRegisterFile allocateForValue: captureVectorPointerValue closure).
+            captureVectorPointerValue loadRegister: (integerRegisterFile allocateForValue: captureVectorPointerValue).
         }.
 
         function basicBlocksDo: {:(MIRBasicBlock)basicBlock :: Void |
@@ -48,10 +56,8 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
 
         instruction resetRegisterAllocation.
         instruction operation computeRegisterConstraintsOf: instruction with: self.
-        instruction usesCapture ifTrue: {
-            ## FIXME: Add a proper temporary for the capture vector.
-            functionArguments first markMemoryCopyRequired.
-            instruction captureVectorPointerRegister: integerRegisterFile allocateForCaptureVector
+        instruction captureVectorPointerValue ifNotNil: {
+            instruction captureVectorPointerRegister: (integerRegisterFile allocateForValue: instruction captureVectorPointerValue)
         }.
     }.
 
