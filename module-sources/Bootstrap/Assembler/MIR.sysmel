@@ -41,6 +41,12 @@ public abstract class MIRAsmCodeGenerator superclass: Object; definition: {
 
     public abstract method symbolForBasicBlock: (basicBlock: MIRBasicBlock) ::=> AsmSymbol
         := self subclassResponsibility.
+
+    public virtual method captureVectorPointerStackMapLocation => AsmStackMapLocation
+        := nil.
+
+    public abstract method captureVectorDataOffset => Size
+        := self subclassResponsibility.
 }.
 
 public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; definition: {
@@ -390,6 +396,10 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         moduleGenerator target emitStackFrameConstructionWith: self
     }.
 
+    protected field captureVectorPointerStackMapLocation => AsmStackMapLocation.
+    
+    public override method captureVectorPointerStackMapLocation => AsmStackMapLocation := captureVectorPointerStackMapLocation.
+
     public method generateStackMap => Void := {
         function arguments do: {:(MIRLocalValue)eachLocal :: Void |
             eachLocal sourceBinding ifNotNil: {:(SymbolBinding)binding :: Void |
@@ -398,6 +408,11 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
                     stackMap addArgumentBindingMap: (stackMap setBinding: binding location: location)
                 }.
             }
+        }.
+
+        ## Make the capture vector pointer stack map location.
+        function captureVectorPointerValue ifNotNil: {
+            captureVectorPointerStackMapLocation := function captureVectorPointerValue asm::makeStackMapLocationWith: self.
         }.
 
         function captures do: {:(MIRLocalValue)eachLocal :: Void |
@@ -896,12 +911,21 @@ MIRConstantInt64 definition: {
         := value asAsmImmediate.
 }.
 
+MIRPhysicalLocation definition: {
+    public virtual method asm::canonicalRegister => AsmRegister
+        := self error: "Not a register location."
+}.
+
 MIRLocalValue definition: {
     public override method asm::makeStackMapLocationWith: (codegen: MIRAsmCodeGenerator) ::=> AsmStackMapLocation := {
-        self needsStackAllocation ifTrue: {
-            AsmStackMapLocationFrameOffset new offset: offset; yourself
-        } ifFalse: {
-            nil
+        assignedRegister ifNotNil: {
+            AsmStackMapLocationRegister new register: (assignedRegister asm::canonicalRegister); yourself
+        } ifNil: {
+            self needsStackAllocation ifTrue: {
+                AsmStackMapLocationFrameOffset new offset: offset; yourself
+            } ifFalse: {
+                nil
+            }
         }
     }
 }.
@@ -913,7 +937,16 @@ MIRValuePointer definition: {
 
 MIRCaptureVariable definition: {
     public override method asm::makeStackMapLocationWith: (codegen: MIRAsmCodeGenerator) ::=> AsmStackMapLocation := {
-        ##AsmStackMapLocationCaptureOffset new offset: offset; yourself
-        nil
+        assignedRegister ifNotNil: {
+            AsmStackMapLocationRegister new register: (assignedRegister asm::canonicalRegister); yourself
+        } ifNil: {
+            let captureVectorPointerLocation := codegen captureVectorPointerStackMapLocation.
+            captureVectorPointerLocation ifNotNil: {
+                AsmStackMapLocationCaptureOffset new
+                    captureVectorPointer: captureVectorPointerLocation;
+                    offset: codegen captureVectorDataOffset asInt64 + offset;
+                    yourself
+            }
+        }
     }
 }.

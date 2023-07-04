@@ -610,6 +610,7 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
         let mirCaptures := OrderedCollection new.
         ssaFunctionDefinition captures do: {:(HIRFunctionCapture)capture :: Void |
             let mirCapture := mirFunction newCapture: capture name withType: capture type.
+            mirCapture sourceBinding: capture sourceBinding.
             valueDictionary at: capture put: mirCapture.
             mirCaptures add: mirCapture.
         }.

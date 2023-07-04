@@ -125,6 +125,8 @@ public final class MIRX86IntegerRegister superclass: MIRPhysicalIntegerRegister;
     public override method x86::int16For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand := int16.
     public override method x86::int32For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand := int32.
 
+    public override method asm::canonicalRegister ::=> AsmRegister := int32.
+
     public override method x86::rel32OrInt32For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand := int32.
 
     __Meta__ definition: {
@@ -173,6 +175,8 @@ public final class MIRX86_64IntegerRegister superclass: MIRPhysicalIntegerRegist
     public override method x86::int16For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand := int16.
     public override method x86::int32For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand := int32.
     public override method x86::int64For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand := int64.
+
+    public override method asm::canonicalRegister ::=> AsmRegister := int64.
 
     public override method x86::immediateS32OrInt64For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
         := int64.
@@ -259,6 +263,8 @@ public final class MIRX86VectorRegister superclass: MIRPhysicalVectorRegister; d
         public method register: (reg: AsmX86VectorRegister) ::=> self
             := self new register: reg; yourself.
     }.
+
+    public override method asm::canonicalRegister ::=> AsmRegister := register.
 
     public override method x86_64::loadFromRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         self assert: register isVectorRegister.

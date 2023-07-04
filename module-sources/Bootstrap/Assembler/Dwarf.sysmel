@@ -284,6 +284,7 @@ public final class Dwarf::Constant superclass: AsmConstantExpressionInteger; def
     (DW_OP_over 20 '0' '')
     (DW_OP_pick 21 '1' '1-byte stack index')
     (DW_OP_swap 22 '0' '')
+    (DW_OP_plus 16r22 '0' '')
     (DW_OP_reg0 16r50 '0' '')
     (DW_OP_breg0 16r70 '1' '')
     (DW_OP_regx 16r90 '1' '')
@@ -540,6 +541,13 @@ public abstract class Dwarf::ExpressionInstruction superclass: Object; definitio
 
 public final class Dwarf::ExpressionInstructionOpcode superclass: Dwarf::ExpressionInstruction; definition: {
     public field opcode => UInt8.
+
+    public override method computeSizeForWritingWith: (writer: Dwarf::AsmWriter) ::=> Size
+        := 1sz.
+
+    public override method writeWith: (writer: Dwarf::AsmWriter) ::=> Void := {
+        writer activeStream byte: opcode
+    }.
 }.
 
 public final class Dwarf::ExpressionInstructionRegister superclass: Dwarf::ExpressionInstruction; definition: {
@@ -562,6 +570,19 @@ public final class Dwarf::ExpressionInstructionFrameOffset superclass: Dwarf::Ex
         writer activeStream 
             byte: Dwarf::DW_OP_fbreg value asUInt8;
             sleb128: offset.
+    }.
+}.
+
+public final class Dwarf::ExpressionSignedLiteral superclass: Dwarf::ExpressionInstruction; definition: {
+    public field value => Int64.
+
+    public override method computeSizeForWritingWith: (writer: Dwarf::AsmWriter) ::=> Size
+        := 1sz + (writer sleb128Size: value).
+
+    public override method writeWith: (writer: Dwarf::AsmWriter) ::=> Void := {
+        writer activeStream 
+            byte: Dwarf::DW_OP_consts value asUInt8;
+            sleb128: value.
     }.
 }.
 
@@ -591,6 +612,16 @@ public final class Dwarf::ExpressionBuilder superclass: Object; definition: {
     public method frameOffset: (offset: Int64) ::=> Void := {
         instructions add: (Dwarf::ExpressionInstructionFrameOffset new offset: offset; yourself)
     }.
+
+    public method deref ::=> Void
+        := self opcode: Dwarf::DW_OP_deref value asUInt8.
+
+    public method signedLiteral: (value: Int64) ::=> Void := {
+        instructions add: (Dwarf::ExpressionSignedLiteral new value: value; yourself)
+    }.
+
+    public method plus ::=> Void
+        := self opcode: Dwarf::DW_OP_plus value asUInt8.
 }.
 
 public abstract class Dwarf::DebugInfoEntryAttribute superclass: Object; definition: {
@@ -2504,6 +2535,7 @@ AsmStackMap extend: {
         }.
 
         captures do: {:(AsmSymbolBindingLocationMap)each :: Void |
+            self dwarf::generateProgramEntityForBindingLocationMap: each subprogram: subprogram with: debugGenerator
         }.
 
         locals do: {:(AsmSymbolBindingLocationMap)each :: Void |
@@ -2550,6 +2582,9 @@ AsmStackMapLocation extend: {
 
     public abstract method dwarf::buildExpression: (builder: Dwarf::ExpressionBuilder) forStackMap: (stackMap: AsmStackMap) target: (compilationTarget: AsmCompilationTarget) ::=> Void
         := self subclassResponsibility.
+
+    public virtual method dwarf::buildValueExpression: (builder: Dwarf::ExpressionBuilder) forStackMap: (stackMap: AsmStackMap) target: (compilationTarget: AsmCompilationTarget) ::=> Void
+        := self dwarf::buildExpression: builder forStackMap: stackMap target: compilationTarget.
 }.
 
 AsmRegister extend: {
@@ -2566,6 +2601,20 @@ AsmStackMapLocationRegister extend: {
 AsmStackMapLocationFrameOffset extend: {
     public override method dwarf::buildExpression: (builder: Dwarf::ExpressionBuilder) forStackMap: (stackMap: AsmStackMap) target: (compilationTarget: AsmCompilationTarget) ::=> Void := {
         builder frameOffset: offset
+    }.
+
+    public override method dwarf::buildValueExpression: (builder: Dwarf::ExpressionBuilder) forStackMap: (stackMap: AsmStackMap) target: (compilationTarget: AsmCompilationTarget) ::=> Void := {
+        self dwarf::buildExpression: builder forStackMap: stackMap target: compilationTarget.
+        builder deref
+    }.
+}.
+
+AsmStackMapLocationCaptureOffset extend: {
+    public override method dwarf::buildExpression: (builder: Dwarf::ExpressionBuilder) forStackMap: (stackMap: AsmStackMap) target: (compilationTarget: AsmCompilationTarget) ::=> Void := {
+        captureVectorPointer dwarf::buildValueExpression: builder forStackMap: stackMap target: compilationTarget.
+        builder
+            signedLiteral: offset;
+            plus
     }.
 }.
 
