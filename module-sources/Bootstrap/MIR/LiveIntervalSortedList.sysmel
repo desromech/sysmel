@@ -1,0 +1,49 @@
+public final class MIRLiveIntervalSortedList definition: {
+    public field elements => OrderedCollection.
+
+    public override method initialize => Void := {
+        elements := OrderedCollection new.
+    }.
+
+    public method add: (interval: MIRLiveInterval) ::=> Void := {
+        elements add: interval.
+        
+        let i mutable := self size - 1sz.
+        while: (i > 0sz) && ((self at: i - 1sz) end > (self at: i) end) do: {
+            let temp := self at: i - 1sz.
+            self at: i - 1sz put: (self at: i).
+            self at: i put: temp.
+        } continueWith: (i := i - 1sz)
+    }.
+
+    public method expireUntil: (deadPoint: Int32) doing: (aBlock: (MIRLiveInterval) => Void) ::=> Void := {
+        let size := self size.
+        let destIndex mutable := 0sz.
+        let i mutable := 0sz.
+        while: i < size do: {
+            let interval := self at: i.
+            interval end <= deadPoint ifTrue: {
+                aBlock(interval)
+            } ifFalse: {
+                elements at: destIndex put: interval.
+                destIndex := destIndex + 1sz.
+            }.
+
+        } continueWith: (i := i + 1sz).
+
+        elements size: destIndex
+    }.
+
+    public method expireUntil: (deadPoint: Int32) ::=> Void := {
+        self expireUntil: deadPoint doing: {:(MIRLiveInterval)interval :: Void |}
+    }.
+    
+    public method at: (index: Size) ::=> MIRLiveInterval
+        := (elements at: index) uncheckedDownCastTo: MIRLiveInterval.
+
+    public method at: (index: Size) put: (value: MIRLiveInterval) ::=> Void := {
+        elements at: index put: value
+    }.
+
+    public method size => Size := elements size.
+}.

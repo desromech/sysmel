@@ -1,3 +1,11 @@
 loadSourceNamed: "IR.sysmel".
-loadSourceNamed: "RegisterAllocation.sysmel".
 loadSourceNamed: "StackFrameLayout.sysmel".
+
+loadSourceNamed: "RegisterAllocator.sysmel".
+loadSourceNamed: "RegisterOperation.sysmel".
+loadSourceNamed: "RegisterAllocationFile.sysmel".
+
+loadSourceNamed: "SimpleRegisterAllocator.sysmel".
+
+loadSourceNamed: "LiveInterval.sysmel".
+loadSourceNamed: "LiveIntervalSortedList.sysmel".

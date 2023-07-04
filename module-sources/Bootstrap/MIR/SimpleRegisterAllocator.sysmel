@@ -1,0 +1,199 @@
+public final class MIRSimpleRegisterAllocator superclass: MIRRegisterAllocator; definition: {
+    protected field integerRegisterFile => MIRRegisterAllocationFile.
+    protected field floatRegisterFile => MIRRegisterAllocationFile.
+    protected field vectorRegisterFile => MIRRegisterAllocationFile.
+
+    public override method allocateRegistersIn: (function: MIRFunction) withTarget: (target: MIRCompilationTarget) ::=> Void := {
+        compilationTarget := target.
+
+        integerRegisterFile := MIRRegisterAllocationFile for: target allocableIntegerRegisters.
+        vectorRegisterFile := MIRRegisterAllocationFile for: target allocableVectorRegisters.
+        target usesVectorRegistersForFloatOperations ifTrue: {
+            floatRegisterFile := vectorRegisterFile
+        } ifFalse: {
+            floatRegisterFile := MIRRegisterAllocationFile for: target allocableFloatRegisters.
+        }.
+
+        function basicBlocksDo: {:(MIRBasicBlock)basicBlock :: Void |
+            self allocateRegistersInBasicBlock: basicBlock
+        }
+    }.
+
+    public method allocateRegistersInBasicBlock: (basicBlock: MIRBasicBlock) ::=> Void := {
+        basicBlock instructionsDo: {:(MIRInstruction)instruction :: Void |
+            self allocateInstructionRegisters: instruction
+        }
+    }.
+
+    public method allocateInstructionRegisters: (instruction: MIRInstruction) ::=> Void := {
+        instruction isDebug ifTrue: {
+            ## FIXME: Avoid requiring this spilling.
+            instruction operands first markSpillingRequired.
+            return: void.
+        }.
+
+        self resetRegisterFiles.
+        self resetRegisterFilesInstructionOperations.
+        instruction resetRegisterAllocation.
+        instruction operation computeRegisterConstraintsOf: instruction with: self.
+        instruction usesCapture ifTrue: {
+            instruction captureVectorPointerRegister: integerRegisterFile allocateForCaptureVector
+        }.
+    }.
+
+    public method resetRegisterFiles => Void := {
+        integerRegisterFile reset.
+        floatRegisterFile ifNotNil: (floatRegisterFile reset).
+        vectorRegisterFile ifNotNil: (vectorRegisterFile reset).
+    }.
+
+    public method resetRegisterFilesInstructionOperations => Void := {
+        integerRegisterFile resetOperations.
+        floatRegisterFile ifNotNil: (floatRegisterFile resetOperations).
+        vectorRegisterFile ifNotNil: (vectorRegisterFile resetOperations).
+    }.
+
+    public override method allocateRegisterForInstructionResult: (instruction: MIRInstruction) ::=> Void := {
+        instruction hasValidType ifTrue: {
+            instruction resultRegister: (self allocateRegisterForOperand: instruction).
+            instruction markSpillingRequired
+        }
+    }.
+
+    public override method allocateRegister8ForInstructionResult: (instruction: MIRInstruction) ::=> Void := {
+        instruction hasValidType ifTrue: {
+            instruction resultRegister: (self allocateRegister8ForOperand: instruction).
+            instruction markSpillingRequired
+        }
+    }.
+
+    public override method allocateRegister: (register: MIRPhysicalLocation) forInstructionResult: (instruction: MIRInstruction) ::=> Void := {
+        instruction resultRegister: register.
+        instruction markSpillingRequired.
+        self makeActiveRegister: register withResultValue: instruction.
+    }.
+
+    public override method allocateRegister: (register: MIRPhysicalLocation) forInstructionResultPointer: (instruction: MIRInstruction) ::=> Void := {
+        instruction resultRegister: (MIRPhysicalLocationRegisterWithPointer new register: register; yourself).
+        instruction markSpillingRequired.
+        self makeActiveRegister: register withValuePointer: instruction.
+    }.
+
+    public override method allocateRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        instruction operandRegisters at: operandIndex put: register.
+        let operand => MIRValue := instruction operands at: operandIndex.
+        operand markSpillingRequired.
+        self makeActiveRegister: register withValue: operand
+    }.
+
+    public override method allocateRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) operandPointerAt: (operandIndex: Size) ::=> Void := {
+        instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationRegisterWithPointer new register: register; yourself).
+        let operand => MIRValue := instruction operands at: operandIndex.
+        operand markSpillingRequired.
+        self makeActiveRegister: register withValuePointer: operand
+    }.
+
+    public override method allocateCloberredRegister: (register: MIRPhysicalLocation) forInstructionResultPointer: (instruction: MIRInstruction) ::=> Void := {
+        instruction resultRegister: (MIRPhysicalLocationRegisterWithPointer new register: register; yourself).
+        instruction markSpillingRequired.
+        self makeActiveRegister: register withValuePointer: instruction.
+    }.
+
+    public override method allocateCloberredRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        instruction operandRegisters at: operandIndex put: register.
+        let operand => MIRValue := instruction operands at: operandIndex.
+        operand markSpillingRequired.
+        self makeActiveRegister: register withValue: operand
+    }.
+
+    public override method allocateCloberredRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) operandPointerAt: (operandIndex: Size) ::=> Void := {
+        instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationRegisterWithPointer new register: register; yourself).
+        let operand => MIRValue := instruction operands at: operandIndex.
+        operand markSpillingRequired.
+        self makeActiveRegister: register withValuePointer: operand
+    }.
+
+    public override method allocateRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) scratchAt: (scratchIndex: Size) ::=> Void := {
+        ##instruction scratchRegisters at: scratchIndex put: register.
+        self makeActiveRegister: register withValue: nil
+    }.
+
+    public override method allocateRegisterForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        let operand => MIRValue := instruction operands at: operandIndex.
+        let register :=
+            (operandIndex == 0sz) &&
+            (instruction resultRegister isNotNil) &&
+            (instruction physicalLocationClass == instruction operands first physicalLocationClass)
+            ifTrue: (instruction resultRegister)
+            ifFalse: (self allocateRegisterForOperand: operand).
+        instruction operandRegisters at: operandIndex put: register.
+        operand markSpillingRequired.
+    }.
+    
+    public override method allocateRegister8ForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        let operand => MIRValue  := instruction operands at: operandIndex.
+        let register :=
+            (operandIndex == 0sz) &&
+            (instruction resultRegister isNotNil) &&
+            (instruction physicalLocationClass == instruction operands first physicalLocationClass)
+            ifTrue: (instruction resultRegister)
+            ifFalse: (self allocateRegister8ForOperand: operand).
+        instruction operandRegisters at: operandIndex put: register.
+        operand markSpillingRequired.
+    }.
+
+    public method allocateRegisterForOperand: (operand: MIRValue) ::=> MIRPhysicalLocation := {
+        operand physicalLocationClass allocateRegisterForValue: operand with: self
+    }.
+
+    public method allocateRegister8ForOperand: (operand: MIRValue) ::=> MIRPhysicalLocation
+        := self allocateIntegerRegister8ForValue: operand.
+
+    public override method allocateIntegerRegisterForValue: (value: MIRValue) ::=> MIRPhysicalLocation
+        := integerRegisterFile allocateForValue: value.
+
+    public override method allocateIntegerRegister8ForValue: (value: MIRValue) ::=> MIRPhysicalLocation
+        := integerRegisterFile allocateForByteValue: value.
+
+    public override method makeActiveIntegerRegister: (register: MIRPhysicalIntegerRegister) withValue: (value: MIRValue) ::=> Void := {
+        integerRegisterFile makeActiveRegister: register withValue: value
+    }.
+
+    public override method makeActiveIntegerRegister: (register: MIRPhysicalIntegerRegister) withValuePointer: (value: MIRValue) ::=> Void := {
+        integerRegisterFile makeActiveRegister: register withValuePointer: value
+    }.
+
+    public override method makeActiveIntegerRegister: (register: MIRPhysicalIntegerRegister) withResultValue: (value: MIRValue) ::=> Void := {
+        integerRegisterFile makeActiveRegister: register withResultValue: value
+    }.
+
+    public override method allocateFloatRegisterForValue: (value: MIRValue) ::=> MIRPhysicalLocation
+        := floatRegisterFile allocateForValue: value.
+
+    public override method makeActiveFloatRegister: (register: MIRPhysicalFloatRegister) withValue: (value: MIRValue) ::=> Void := {
+        floatRegisterFile makeActiveRegister: register withValue: value
+    }.
+
+    public override method makeActiveFloatRegister: (register: MIRPhysicalFloatRegister) withValuePointer: (value: MIRValue) ::=> Void := {
+        floatRegisterFile makeActiveRegister: register withValuePointer: value
+    }.
+
+    public override method makeActiveFloatRegister: (register: MIRPhysicalFloatRegister) withResultValue: (value: MIRValue) ::=> Void := {
+        floatRegisterFile makeActiveRegister: register withResultValue: value
+    }.
+
+    public override method allocateVectorRegisterForValue: (value: MIRValue) ::=> MIRPhysicalLocation
+        := vectorRegisterFile allocateForValue: value.
+
+    public override method makeActiveVectorRegister: (register: MIRPhysicalVectorRegister) withValue: (value: MIRValue) ::=> Void := {
+        vectorRegisterFile makeActiveRegister: register withValue: value
+    }.
+
+    public override method makeActiveVectorRegister: (register: MIRPhysicalVectorRegister) withValuePointer: (value: MIRValue) ::=> Void := {
+        vectorRegisterFile makeActiveRegister: register withValuePointer: value
+    }.
+
+    public override method makeActiveVectorRegister: (register: MIRPhysicalVectorRegister) withResultValue: (value: MIRValue) ::=> Void := {
+        vectorRegisterFile makeActiveRegister: register withResultValue: value
+    }.
+}.

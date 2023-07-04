@@ -9,6 +9,8 @@ loadPackageNamed: "ImageBuilder".
 
 loadPackageNamed: "Bytecode".
 loadPackageNamed: "MIR".
+loadPackageNamed: "MIRTests".
+
 loadPackageNamed: "Assembler".
 loadPackageNamed: "AssemblerX86".
 loadPackageNamed: "AssemblerArm".

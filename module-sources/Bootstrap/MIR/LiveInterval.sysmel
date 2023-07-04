@@ -1,0 +1,17 @@
+public final class MIRLiveInterval superclass: Object; definition: {
+    public field value => MIRLocalValue.
+    public field start => Int32.
+    public field end => Int32.
+
+    __Meta__ definition: {
+        public method for: (value: MIRLocalValue) from: (start: Int32) until: (end: Int32) ::=> self
+            := self new value: value; start: start; end: end; yourself.
+
+        public method from: (start: Int32) until: (end: Int32) ::=> self
+            := self for: nil from: start until: end.
+    }.
+
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream nextPut: '['c8; print: start; nextPutAll: ", "; print: end; nextPut: ')'c8
+    }.
+}.

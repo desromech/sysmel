@@ -10,7 +10,7 @@ public final class MIRStackFrameLayout superclass: Object; definition: {
     public method temporaryFrameSize => UInt64
         := stackFrameSize.
 
-    public method buildLayoutForFunction: (function: MIRFunction) registerAllocator: (registerAllocator: MIRRegisterAllocator) withTarget: (target: MIRCompilationTarget) ::=> Void := {
+    public method buildLayoutForFunction: (function: MIRFunction) withTarget: (target: MIRCompilationTarget) ::=> Void := {
         compilationTarget := target.
 
         stackFrameAlignment := compilationTarget stackFrameAlignment asUInt64.

@@ -349,7 +349,7 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
 
     public method buildStackFrameLayout => Void := {
         stackFrameLayout := MIRStackFrameLayout new.
-        stackFrameLayout buildLayoutForFunction: function registerAllocator: registerAllocator withTarget: moduleGenerator target
+        stackFrameLayout buildLayoutForFunction: function withTarget: moduleGenerator target
     }.
 
     public method prepareToGenerateFunction => Void := {

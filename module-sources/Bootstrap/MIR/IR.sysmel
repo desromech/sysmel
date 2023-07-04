@@ -354,7 +354,7 @@ MIRLocalValue definition: {
 
     ## TODO: Handle the temporary variables in a proper way here.
     public method needsStackAllocation => Boolean
-        := needsSpilling || registerAssignment isNil.
+        := true.##needsSpilling || registerAssignment isNil.
 
     public override method isLocalVariable => Boolean := true.
 

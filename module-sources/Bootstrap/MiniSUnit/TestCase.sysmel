@@ -18,8 +18,12 @@ public abstract class TestCase superclass: TestAsserter; definition: {
         }.
 
         public method runWithMetrics: (metrics: TestMetrics) ::=> Void := {
-            self testSelectors do: {:(Symbol)eachTestSelector :: Void |
-                self run: eachTestSelector withMetrics: metrics.
+            let testSelectors := self testSelectors.
+            testSelectors isNotEmpty ifTrue: {
+                printLine("Running tests in ", self).
+                testSelectors do: {:(Symbol)eachTestSelector :: Void |
+                    self run: eachTestSelector withMetrics: metrics.
+                }
             }.
         }.
 
