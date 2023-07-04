@@ -368,7 +368,7 @@ MIRLocalValue definition: {
         assignedRegister := nil.
     }.
 
-    public virtual method parent => MIRBasicBlock := nil.
+    public virtual method parentBlock => MIRBasicBlock := nil.
 
     public virtual method usageIndexFor: (usedValue: MIRLocalValue) ::=> UInt32
         := index.
@@ -825,7 +825,7 @@ Void extend: {
 }.
 
 MIRInstruction definition: {
-    public field parent => MIRBasicBlock.
+    public field parentBlock => MIRBasicBlock.
     public field previous => MIRInstruction.
     public field next => MIRInstruction.
 
@@ -886,10 +886,10 @@ MIRInstruction definition: {
     }.
 
     public override method usageIndexFor: (usedValue: MIRLocalValue) ::=> UInt32 := {
-        self assert: parent isNotNil.
-        usedValue parent ~~ parent ifTrue: {
+        self assert: parentBlock isNotNil.
+        usedValue parentBlock ~~ parentBlock ifTrue: {
             ## This is needed for values used inside of loops.
-            index max: parent maxPredecessorIndex
+            index max: parentBlock maxPredecessorIndex
         } ifFalse: {
             index
         }
@@ -1048,7 +1048,7 @@ MIRBasicBlock definition: {
     public override method isRelativeImmediate32 => Boolean := true.
 
     public method addInstruction: (instruction: MIRInstruction) before: (position: MIRInstruction) ::=> Void := {
-        self assert: instruction parent isNil.
+        self assert: instruction parentBlock isNil.
         let before := position ifNotNil: position previous ifNil: lastInstruction.
         let after := position.
 
@@ -1069,7 +1069,7 @@ MIRBasicBlock definition: {
             lastInstruction := instruction
         }.
 
-        instruction parent: self
+        instruction parentBlock: self
     }.
 
     public method addInstruction: (instruction: MIRInstruction) ::=> Void := {
