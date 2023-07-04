@@ -114,7 +114,7 @@ public final class MIRSimpleRegisterAllocator superclass: MIRRegisterAllocator; 
     }.
 
     public override method allocateRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) scratchAt: (scratchIndex: Size) ::=> Void := {
-        ##instruction scratchRegisters at: scratchIndex put: register.
+        instruction scratchRegisters at: scratchIndex put: register.
         self makeActiveRegister: register withValue: nil
     }.
 
@@ -154,6 +154,10 @@ public final class MIRSimpleRegisterAllocator superclass: MIRRegisterAllocator; 
 
     public override method allocateIntegerRegister8ForValue: (value: MIRValue) ::=> MIRPhysicalLocation
         := integerRegisterFile allocateForByteValue: value.
+
+    public override method spillIntegerRegistersAcrossCall: (registers: Array) ::=> Void := {
+
+    }.
 
     public override method makeActiveIntegerRegister: (register: MIRPhysicalIntegerRegister) withValue: (value: MIRValue) ::=> Void := {
         integerRegisterFile makeActiveRegister: register withValue: value

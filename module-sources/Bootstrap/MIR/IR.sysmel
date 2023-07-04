@@ -850,6 +850,10 @@ MIRInstruction definition: {
     public method isTerminator => Boolean := operation isTerminator.
     public method isDebug => Boolean := operation isDebug.
 
+    public method scratchRegisterCount: (count: Size) ::=> Void := {
+        scratchRegisters := Array new: count
+    }.
+
     public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: '$'c8; print: index
     }.

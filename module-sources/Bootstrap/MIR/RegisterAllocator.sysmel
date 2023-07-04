@@ -133,6 +133,9 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
     public abstract method allocateVectorRegisterForValue: (value: MIRValue) ::=> MIRPhysicalLocation
         := self subclassResponsibility.
 
+    public abstract method spillIntegerRegistersAcrossCall: (registers: Array) ::=> Void
+        := self subclassResponsibility.
+
     public method makeActiveRegister: (register: MIRPhysicalLocation) withValue: (value: MIRValue) ::=> Void := {
         register makeActiveWithValue: value inRegisterAllocator: self
     }.
