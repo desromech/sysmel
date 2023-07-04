@@ -875,6 +875,11 @@ MIRLocalValue definition: {
     }
 }.
 
+MIRValuePointer definition: {
+    public override method asm::makeStackMapLocationWith: (codegen: MIRAsmCodeGenerator) ::=> AsmStackMapLocation
+        := value asm::makeStackMapLocationWith: codegen.
+}.
+
 MIRCaptureVariable definition: {
     public override method asm::makeStackMapLocationWith: (codegen: MIRAsmCodeGenerator) ::=> AsmStackMapLocation := {
         ##AsmStackMapLocationCaptureOffset new offset: offset; yourself

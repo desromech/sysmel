@@ -15,6 +15,9 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
             floatRegisterFile := MIRRegisterAllocationFile for: target allocableFloatRegisters.
         }.
 
+        ## Compute the live intervals.
+        function computeLiveIntervals.
+
         ## Precolor the the arguments.
         functionArguments := function arguments.
         functionArguments do: {:(MIRArgumentValue)eachArgument :: Void |
@@ -23,7 +26,6 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
             }.
         }.
 
-        function computeLiveIntervals.
         function basicBlocksDo: {:(MIRBasicBlock)basicBlock :: Void |
             self allocateRegistersInBasicBlock: basicBlock
         }.

@@ -70,6 +70,7 @@ Set definition: {
         while: (i < oldCapacity) do: {
             let oldElement := oldStorage untypedAt: i.
             (Untyped::==)(oldElement, __hashtableEmptyElement__) ifFalse: {
+                self addNoCheck: oldElement
             }
         } continueWith: (i := i + 1sz)
     }.
@@ -89,7 +90,7 @@ Set definition: {
             self assert: index >= 0iptr
         }.
         
-        let isNewElement := (Untyped::~~)(storage untypedAt: index asSize , __hashtableEmptyElement__).
+        let isNewElement := (Untyped::==)(storage untypedAt: index asSize , __hashtableEmptyElement__).
         storage at: index asSize put: element.
         isNewElement ifTrue: {
             size := size + 1sz.

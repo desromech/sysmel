@@ -580,6 +580,19 @@ AsmObjectCodeStream definition: {
         }
     }.
 
+    public method nextPutX86RexSizeWithBytes: (operandSize: Size) rm: (rm: AsmInstructionOperand) reg: (reg: AsmInstructionOperand) ::=> Void := {
+        let wBit := if: operandSize = 8sz then: 1u8 else: 0u8.
+        let regBit := reg x86::rexRegBit.
+        let baseBit := rm x86::rexBaseBit.
+        let indexBit := rm x86::rexIndexBit.
+
+        let lowBits := ((wBit << 3u8) | (regBit << 2u8)) | ((indexBit << 1u8) | (baseBit)).
+        (lowBits ~= 0u8) || (self isInX86LongMode && (reg x86::rexByteRequired || rm x86::rexByteRequired)) ifTrue: { 
+            self assert: self isInX86LongMode.
+            self nextPut: 16r40 u8 | lowBits
+        }
+    }.
+
     public method nextPutX86RexSize: (operandSize: Size) ::=> Void := {
         let wBit := if: operandSize = 8sz then: 1u8 else: 0u8.
         let lowBits := (wBit << 3u8).
@@ -1194,10 +1207,11 @@ let instructionTemplateTable := #{
         writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
             let register := instruction firstOperand.
             let registerAddress := instruction secondOperand.
-            let operandSize := register size.
+            let wordSize := register size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
-                nextPutX86RexSize: operandSize rm: registerAddress reg: register;
+                nextPutX86SizeOverride: wordSize;
+                nextPutX86RexSizeWithBytes: wordSize rm: registerAddress reg: register;
                 nextPutAll: templ opcode;
                 nextPutX86ModRM: registerAddress reg: register
         };

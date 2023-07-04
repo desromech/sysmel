@@ -17,7 +17,7 @@ MIRPhysicalLocation extend: {
     public virtual method x86::float64For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 register with float64 section.".
 
-    public virtual method x86::vectorFor: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method x86::vector128For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 register with vector128 section.".
 
     public virtual method x86::int8PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
@@ -260,13 +260,19 @@ public final class MIRX86VectorRegister superclass: MIRPhysicalVectorRegister; d
             := self new register: reg; yourself.
     }.
 
-    public virtual method x86::float32For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public override method x86_64::loadFromRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        self assert: register isVectorRegister.
+
+        codegen textSection x86::movaps: self register src: (register x86::vector128For: codegen).
+    }.
+
+    public override method x86::float32For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
         := register.
 
-    public virtual method x86::float64For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public override method x86::float64For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
         := register.
 
-    public virtual method x86::vector128For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public override method x86::vector128For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
         := register.
 
     public override method x86::loadFromVariable: (variable: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
@@ -1200,9 +1206,9 @@ let x86::integerAluUnaryInt64RegisterConstraints := x86::integerAluUnaryInt32Reg
 
 let x86::integerAluInt8RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
-        allocateRegisterForInstructionResult: instruction;
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
-        allocateRegisterOrImmediate8ForInstruction: instruction operandAt: 1sz
+        allocateRegisterOrImmediate8ForInstruction: instruction operandAt: 1sz;
+        allocateRegisterForInstructionResult: instruction
 }.
 
 let x86::integerAluInt16RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |

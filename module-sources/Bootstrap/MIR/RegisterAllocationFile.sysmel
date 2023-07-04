@@ -5,8 +5,6 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
 
     public field activeIntervals => MIRLiveIntervalSortedList.
     private field currentValueIndex => UInt32.
-    private field hasExpiredEnteringIntervals => Boolean.
-    private field hasExpiredOperandIntervals => Boolean.
 
     __Meta__ definition: {
         public method for: (registers: Array) ::=> self
@@ -26,15 +24,10 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
 
     public method beginValueAtIndex: (valueIndex: UInt32) ::=> Void := {
         currentValueIndex := valueIndex.
-        hasExpiredEnteringIntervals := false.
-        hasExpiredOperandIntervals := false.
         self expireOldLiveIntervals.
     }.
 
     public method expireOldLiveIntervals => Void := {
-        hasExpiredEnteringIntervals ifTrue: (return: void).
-        hasExpiredEnteringIntervals := true.
-
         availableRegisters addAll: activeScratchRegisters.
         activeScratchRegisters removeAll.
 
@@ -42,18 +35,6 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
             interval register ifNotNil: {
                 availableRegisters add: interval register
             }
-        }.
-    }.
-
-    public method expireOperandLiveIntervals => Void := {
-        hasExpiredEnteringIntervals ifTrue: (return: void).
-        hasExpiredEnteringIntervals := true.
-
-        availableRegisters addAll: activeScratchRegisters.
-        activeScratchRegisters removeAll.
-
-        activeIntervals expireAt: currentValueIndex doing: {:(MIRLiveInterval)interval :: Void |
-            availableRegisters add: interval register
         }.
     }.
 
@@ -69,6 +50,26 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
     public method spillIfNeededAndAllocateRegister: (usedRegister: MIRPhysicalLocation) ::=> Void
         := self spillIfNeededAndAllocateRegister: usedRegister withValue: nil.
 
+    public method addActiveRegister: (register: MIRPhysicalLocation) withValue: (value: MIRValue) ::=> Void := {
+        usedRegisterSet add: register.
+        false && value isNotNil && value isLocalValue ifTrue: {
+            let localValue := value uncheckedDownCastTo: MIRLocalValue.
+            localValue assignedRegister ifNil: {
+                let interval := localValue liveInterval.
+                interval isSpilled ifFalse: {
+                    localValue assignedRegister: register.
+                    interval register: register.
+                    activeIntervals add: interval.
+                    return: void.
+                }
+            }
+        }.
+
+        (activeScratchRegisters includes: register) ifFalse: {
+            activeScratchRegisters add: register
+        }.
+    }.
+
     public method spillIfNeededAndAllocateRegister: (usedRegister: MIRPhysicalLocation) withValue: (value: MIRValue) ::=> Void := {
         value isNotNil && (value assignedRegister == usedRegister) ifTrue: {
             return: void
@@ -82,15 +83,19 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
             }.
 
         availableRegisters remove: usedRegister.
-        activeScratchRegisters add: usedRegister.
-        usedRegisterSet add: usedRegister.
+        self addActiveRegister: usedRegister withValue: value
     }.
 
     public method spillIfNeededAndAllocateRegister: (usedRegister: MIRPhysicalLocation) withValuePointer: (value: MIRValue) ::=> Void
         := self spillIfNeededAndAllocateRegister: usedRegister withValue: nil.
 
     public method spillIfNeededAndAllocateRegister: (usedRegister: MIRPhysicalLocation) withResultValue: (value: MIRValue) ::=> Void := {
-        value isNotNil && (value assignedRegister == usedRegister) || (activeScratchRegisters includes: usedRegister) ifTrue: {
+        value isNotNil && (value assignedRegister == usedRegister) ifTrue: {
+            return: void
+        }.
+
+        (activeScratchRegisters includes: usedRegister) ifTrue: {
+            self addActiveRegister: usedRegister withValue: value.
             return: void
         }.
 
@@ -102,8 +107,7 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
             }.
 
         availableRegisters remove: usedRegister.
-        activeScratchRegisters add: usedRegister.
-        usedRegisterSet add: usedRegister.
+        self addActiveRegister: usedRegister withValue: value
     }.
 
     public method ensureAvailableRegister => Void := {
@@ -130,22 +134,27 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
     }.
 
     public method allocateForValue: (value: MIRValue) ::=> MIRPhysicalLocation := {
-        self ensureAvailableRegister.
-        let register => MIRPhysicalLocation := availableRegisters removeLast.
-        activeScratchRegisters add: register.
-        usedRegisterSet add: register.
-        register
+        let existentAsignment := value ifNotNil: value assignedRegister.
+        existentAsignment ifNil: {
+            self ensureAvailableRegister.
+            let register => MIRPhysicalLocation := availableRegisters removeLast.
+            self addActiveRegister: register withValue: value.
+            register
+        }.
     }.
 
     public method allocate => MIRPhysicalLocation
         := self allocateForValue: nil.
 
     public method allocateForResultValue: (value: MIRValue) ::=> MIRPhysicalLocation := {
-        self expireOperandLiveIntervals.
+        ##self expireOperandLiveIntervals.
         self allocateForValue: value
     }.
 
     public method allocateForByteValue: (value: MIRValue) ::=> MIRPhysicalLocation := {
+        let existentAsignment := value ifNotNil: value assignedRegister.
+        existentAsignment ifNotNil: {return: existentAsignment}.
+
         self ensureAvailableByteRegister.
         
         let availableCount := availableRegisters size.
@@ -155,8 +164,7 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
             let register => MIRPhysicalLocation := availableRegisters at: i.
             register canBeUsedForByte ifTrue: {
                 availableRegisters removeAt: i.
-                activeScratchRegisters add: register.
-                usedRegisterSet add: register.
+                self addActiveRegister: register withValue: value.
                 return: register
             }.
         }.
@@ -168,7 +176,7 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
         := self allocateForByteValue: nil.
 
     public method allocateForByteResultValue: (value: MIRValue) ::=> MIRPhysicalLocation := {
-        self expireOperandLiveIntervals.
+        ##self expireOperandLiveIntervals.
         self allocateForByteValue: value
     }.
 

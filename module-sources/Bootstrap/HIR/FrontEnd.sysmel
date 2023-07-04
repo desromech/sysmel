@@ -464,6 +464,7 @@ ASTFunctionApplicationNode extend: {
             (callInstruction type isSubtypeOf: ControlFlowEscapeType) ifTrue: {
                 context builder
                     unreachable;
+                    beginBasicBlockNamed: #deadCode;
                     literal: void
             } ifFalse: {
                 (callInstruction type isSubtypeOf: Void)
@@ -799,6 +800,7 @@ ASTMessageSendNode extend: {
         (sendInstruction type isSubtypeOf: ControlFlowEscapeType) ifTrue: {
             context builder
                 unreachable;
+                beginBasicBlockNamed: #deadCode;
                 literal: void
         } ifFalse: {
             (sendInstruction type isSubtypeOf: Void)

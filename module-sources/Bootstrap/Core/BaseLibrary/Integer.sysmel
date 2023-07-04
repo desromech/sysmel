@@ -1,52 +1,3 @@
-Char8 definition: {
-    public pure final eager method asInteger ::=> Integer := {
-        <primitive: #Char8::asInteger>
-        self asUInt32 asInteger
-    }.
-}.
-
-UInt8 definition: {
-    public pure final eager method asInteger ::=> Integer := {
-        <primitive: #UInt8::asInteger>
-        self asUInt32 asInteger
-    }.
-}.
-
-Int8 definition: {
-    public pure final eager method asInteger ::=> Integer := {
-        <primitive: #Int8::asInteger>
-        self asInt32 asInteger
-    }.
-}.
-
-Char16 definition: {
-    public pure final eager method asInteger ::=> Integer := {
-        <primitive: #Char16::asInteger>
-        self asUInt32 asInteger
-    }.
-}.
-
-UInt16 definition: {
-    public pure final eager method asInteger ::=> Integer := {
-        <primitive: #UInt16::asInteger>
-        self asUInt32 asInteger
-    }.
-}.
-
-Int16 definition: {
-    public pure final eager method asInteger ::=> Integer := {
-        <primitive: #Int16::asInteger>
-        self asInt32 asInteger
-    }.
-}.
-
-Char32 definition: {
-    public pure final eager method asInteger ::=> Integer := {
-        <primitive: #Char32::asInteger>
-        self asUInt32 asInteger
-    }.
-}.
-
 if: ObjectModel::PointerSize = 4sz then: {
     UInt32 definition: {
         public pure final eager method asInteger ::=> Integer := {
@@ -112,6 +63,55 @@ Int64 definition: {
             (box + 1iptr reinterpretCastTo: Int64 pointer) store: (self < 0i64 ifTrue: self negated ifFalse: self).
             box reinterpretCastTo: Integer
         }
+    }.
+}.
+
+Char8 definition: {
+    public pure final eager method asInteger ::=> Integer := {
+        <primitive: #Char8::asInteger>
+        self asUInt32 asInteger
+    }.
+}.
+
+UInt8 definition: {
+    public pure final eager method asInteger ::=> Integer := {
+        <primitive: #UInt8::asInteger>
+        self asUInt32 asInteger
+    }.
+}.
+
+Int8 definition: {
+    public pure final eager method asInteger ::=> Integer := {
+        <primitive: #Int8::asInteger>
+        self asInt32 asInteger
+    }.
+}.
+
+Char16 definition: {
+    public pure final eager method asInteger ::=> Integer := {
+        <primitive: #Char16::asInteger>
+        self asUInt32 asInteger
+    }.
+}.
+
+UInt16 definition: {
+    public pure final eager method asInteger ::=> Integer := {
+        <primitive: #UInt16::asInteger>
+        self asUInt32 asInteger
+    }.
+}.
+
+Int16 definition: {
+    public pure final eager method asInteger ::=> Integer := {
+        <primitive: #Int16::asInteger>
+        self asInt32 asInteger
+    }.
+}.
+
+Char32 definition: {
+    public pure final eager method asInteger ::=> Integer := {
+        <primitive: #Char32::asInteger>
+        self asUInt32 asInteger
     }.
 }.
 

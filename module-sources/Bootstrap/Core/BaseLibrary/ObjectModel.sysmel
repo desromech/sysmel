@@ -1726,7 +1726,7 @@ public inline function ObjectModel::lookupMethodWithInlineCache(inlineCache: Obj
             let foundMethod := ObjectModel::lookupMethodWithInlineCache(inlineCache, receiverType, selector).
             foundMethod ifNotNil: {
                 return: `,(applyName asMacroIdentifier)(foundMethod, receiver, `@argumentIdentifiers)
-            }
+            }.
 
             if: (1sz = `,(ArgumentCount asMacroLiteral)) && (selector == #doesNotUnderstand:) then: {
                 error("Message not understood")
