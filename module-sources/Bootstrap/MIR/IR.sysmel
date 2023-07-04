@@ -982,6 +982,7 @@ MIRBasicBlock definition: {
     public field predecessorKinds => OrderedCollection.
     public field successors => Array.
     public field maxPredecessorIndex => UInt32.
+    public field maxIndexAtEnd => UInt32.
 
     public override method isBasicBlock => Boolean := true.
 
@@ -1097,6 +1098,9 @@ MIRBasicBlock definition: {
             stream nextPutAll: "    "; fullPrint: each; nl
         }.
     }.
+
+    public method indexAtEnd => UInt32
+        := lastInstruction ifNotNil: lastInstruction index + 1u32 ifNil: index.
 }.
 
 MIRFunction definition: {
@@ -1352,13 +1356,19 @@ MIRFunction definition: {
             index := index + 1u32
         }.
 
+        ## TODO: Check the correctness of this algorithm.
+        self basicBlocksDo: {:(MIRBasicBlock)each :: Void |
+            each maxIndexAtEnd: each indexAtEnd.
+        }.
+
         self basicBlocksDo: {:(MIRBasicBlock)each :: Void |
             let maxPredIndex mutable := 0u32.
             each predecessors do: {:(MIRBasicBlock)eachPred :: Void |
-                maxPredIndex := maxPredIndex max: eachPred index
+                maxPredIndex := maxPredIndex max: eachPred maxIndexAtEnd
             }.
 
             each maxPredecessorIndex: maxPredIndex.
+            each maxIndexAtEnd: (each maxIndexAtEnd max: each maxPredecessorIndex).
         }.
     }.
 
@@ -1368,6 +1378,12 @@ MIRFunction definition: {
             enumerateLocals.
         self allLocalValuesDo: {:(MIRLocalValue)eachLocal :: Void |
             eachLocal computeLiveInterval
+        }.
+
+        ## TODO: Add an extra value for the actual capture vector pointer.
+        self captures do: {:(MIRLocalValue)eachCapture :: Void |
+            let closure => MIRLocalValue := arguments first.
+            closure liveInterval insertUsage: eachCapture liveInterval end + 1u32.
         }.
     }.
 
