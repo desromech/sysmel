@@ -1038,18 +1038,19 @@ MIRBasicBlock definition: {
         self predecessorKinds add: isBackEdge.
     }.
 
-    public method traverseBasicBlockForLiveness: (basicBlock: MIRBasicBlock) from: (predecessor: MIRBasicBlock) ::=> Void := {
+    public method traverseForConnectivityAndLivenessFrom: (predecessor: MIRBasicBlock) sortingInto: (sortedBlocks: OrderedCollection) ::=> Void := {
         predecessor ifNotNil: {
-            basicBlock addPredecessor: predecessor isBackEdge: basicBlock isGray.
+            self addPredecessor: predecessor isBackEdge: self isGray.
         }.
 
-        if: basicBlock isWhite then: {
-            basicBlock markGray.
-            basicBlock successors do: {:(MIRBasicBlock)eachSuccessor :: Void|
-                self traverseBasicBlockForLiveness: eachSuccessor from: basicBlock
+        if: self isWhite then: {
+            self markGray.
+            self successors do: {:(MIRBasicBlock)eachSuccessor :: Void|
+                eachSuccessor traverseForConnectivityAndLivenessFrom: self sortingInto: sortedBlocks
             }.
 
-            basicBlock markBlack.
+            self markBlack.
+            sortedBlocks add: self.
         }.
     }.
 
@@ -1334,8 +1335,9 @@ MIRFunction definition: {
             each resetConnectivityWithSucessors
         }.
 
+        let sortedBlocks := OrderedCollection new.
         firstBasicBlock ifNotNil: {
-            firstBasicBlock traverseBasicBlockForLiveness: firstBasicBlock from: nil
+            firstBasicBlock traverseForConnectivityAndLivenessFrom: nil sortingInto: sortedBlocks
         }.
 
         self basicBlocksDo: {:(MIRBasicBlock)eachBasicBlock :: Void |
@@ -1346,40 +1348,15 @@ MIRFunction definition: {
                 self removeBasicBlock: eachBasicBlock
             }
         }.
-    }.
 
-    public method basicBlockToposortFrom: (basicBlock: MIRBasicBlock) visitedSet: (visitedSet: IdentitySet) sortedBlocks: (sortedBlocks: OrderedCollection) ::=> Void := {
-        (visitedSet includes: basicBlock) ifTrue: (return: void).
-        visitedSet add: basicBlock.
-
-        basicBlock predecessors doWithIndex: {:(MIRBasicBlock)each :(Size)index :: Void |
-            let isBackEdge => Boolean := basicBlock predecessorKinds at: index.
-            isBackEdge ifFalse: {
-                self basicBlockToposortFrom: each visitedSet: visitedSet sortedBlocks: sortedBlocks
-            }
-        }.
-
-        sortedBlocks add: basicBlock
-    }.
-
-    public method basicBlockToposort => Void := {
-        self computeBasicBlockConnectivityAndNormalize.
-
-        let visitedSet := IdentitySet new.
-        let sortedBlocks := OrderedCollection new.
-        self basicBlocksDo: {:(MIRBasicBlock)each :: Void |
-            self basicBlockToposortFrom: each visitedSet: visitedSet sortedBlocks: sortedBlocks
-        }.
-
-        ## Re-add the sorted basic blocks.
-        self assert: visitedSet size = sortedBlocks size.
+        ## Use the new sorted order.
         sortedBlocks do: {:(MIRBasicBlock)each :: Void |
             each parent: nil; previous: nil; next: nil.
         }.
         firstBasicBlock := nil.
         lastBasicBlock := nil.
 
-        sortedBlocks do: {:(MIRBasicBlock)each :: Void |
+        sortedBlocks reverseDo: {:(MIRBasicBlock)each :: Void |
             self addBasicBlock: each
         }.
     }.
@@ -1426,7 +1403,7 @@ MIRFunction definition: {
 
     public method computeLiveIntervals => Void := {
         self
-            basicBlockToposort;
+            computeBasicBlockConnectivityAndNormalize;
             ensureCaptureVectorPointerValue;
             enumerateLocals.
 
