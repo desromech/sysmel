@@ -121,10 +121,19 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
         instruction resultRegister: MIRPhysicalLocationMemory uniqueInstance
     }.
 
+    public abstract method allocateCaptureVectorPointerRegisterForInstruction: (instruction: MIRInstruction) ::=> Void
+        := self subclassResponsibility.
+
     public abstract method allocateIntegerRegisterForValue: (value: MIRValue) ::=> MIRPhysicalLocation
         := self subclassResponsibility.
 
+    public abstract method allocateIntegerRegisterForValuePointer: (value: MIRValue) ::=> MIRPhysicalLocation
+        := self subclassResponsibility.
+
     public abstract method allocateIntegerRegisterForResultValue: (value: MIRLocalValue) ::=> MIRPhysicalLocation
+        := self subclassResponsibility.
+
+    public abstract method allocateIntegerRegisterForResultValuePointer: (value: MIRLocalValue) ::=> MIRPhysicalLocation
         := self subclassResponsibility.
 
     public abstract method allocateIntegerRegister8ForValue: (value: MIRValue) ::=> MIRPhysicalLocation
@@ -230,6 +239,16 @@ MIRPhysicalIntegerRegister extend: {
 
     public override method makeActiveWithResultValue: (value: MIRValue) inRegisterAllocator: (registerAllocator: MIRRegisterAllocator) ::=> Void := {
         registerAllocator spillIfNeededAndAllocateIntegerRegister: self withResultValue: value
+    }.
+}.
+
+MIRPhysicalLocationMemory extend: {
+    __Meta__ extend: {
+        public override method allocateRegisterForValue: (value: MIRValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
+            := registerAllocator allocateIntegerRegisterForValuePointer: value.
+
+        public override method allocateRegisterForResultValue: (value: MIRLocalValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
+            := registerAllocator allocateIntegerRegisterForResultValuePointer: value.
     }.
 }.
 

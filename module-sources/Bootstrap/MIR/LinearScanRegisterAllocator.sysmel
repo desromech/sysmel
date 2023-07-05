@@ -8,12 +8,12 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
     public override method allocateRegistersIn: (function: MIRFunction) withTarget: (target: MIRCompilationTarget) ::=> Void := {
         compilationTarget := target.
 
-        integerRegisterFile := MIRRegisterAllocationFile for: target allocableIntegerRegisters.
-        vectorRegisterFile := MIRRegisterAllocationFile for: target allocableVectorRegisters.
+        integerRegisterFile := MIRRegisterAllocationFile for: function callingConvention allocableIntegerRegisters.
+        vectorRegisterFile := MIRRegisterAllocationFile for: function callingConvention allocableVectorRegisters.
         target usesVectorRegistersForFloatOperations ifTrue: {
             floatRegisterFile := vectorRegisterFile
         } ifFalse: {
-            floatRegisterFile := MIRRegisterAllocationFile for: target allocableFloatRegisters.
+            floatRegisterFile := MIRRegisterAllocationFile for: function callingConvention allocableFloatRegisters.
         }.
 
         ## Compute the live intervals.
@@ -23,15 +23,37 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
         ## Precolor the the arguments.
         functionArguments := function arguments.
         functionArguments do: {:(MIRArgumentValue)eachArgument :: Void |
-            eachArgument passingRegister ifNotNil: {
+            eachArgument resetRegisterAllocation.
+            self beginValueAtIndex: eachArgument index.
+            eachArgument passingRegister ifNil: {
+                self allocateRegisterForOperand: eachArgument.
+            } ifNotNil: {
                 self spillIfNeededAndAllocateRegister: eachArgument passingRegister withResultValue: eachArgument.
             }.
         }.
 
         captureVectorPointerValue ifNotNil: {
+            self beginValueAtIndex: captureVectorPointerValue index.
             self assert: captureVectorPointerValue closure isNotNil.
-            captureVectorPointerValue closureRegister: (integerRegisterFile allocateForValue: captureVectorPointerValue closure).
-            captureVectorPointerValue loadRegister: (integerRegisterFile allocateForValue: captureVectorPointerValue).
+            let preferredRegister := function callingConvention preferredRegisterForCaptureVectorPointer,
+            preferredRegister ifNotNil: {
+                captureVectorPointerValue loadRegister: preferredRegister.
+                integerRegisterFile spillIfNeededAndAllocateRegister: preferredRegister withResultValue: captureVectorPointerValue.
+                captureVectorPointerValue closureRegister: (integerRegisterFile allocateForValue: captureVectorPointerValue closure).
+            } ifNil: {
+                captureVectorPointerValue closureRegister: (integerRegisterFile allocateForValue: captureVectorPointerValue closure).
+                captureVectorPointerValue loadRegister: (integerRegisterFile allocateForResultValue: captureVectorPointerValue).
+            }.
+        }.
+
+        function captures do: {:(MIRCaptureVariable)eachCapture :: Void |
+            self beginValueAtIndex: eachCapture index.
+            self allocateRegisterForOperand: eachCapture.
+        }.
+
+        function temporaries do: {:(MIRTemporaryVariable)eachTemporary :: Void |
+            self beginValueAtIndex: eachTemporary index.
+            self allocateRegisterForOperand: eachTemporary.
         }.
 
         function basicBlocksDo: {:(MIRBasicBlock)basicBlock :: Void |
@@ -56,15 +78,19 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
 
         instruction resetRegisterAllocation.
         instruction operation computeRegisterConstraintsOf: instruction with: self.
-        instruction captureVectorPointerValue ifNotNil: {
-            instruction captureVectorPointerRegister: (integerRegisterFile allocateForValue: instruction captureVectorPointerValue)
-        }.
+        self allocateCaptureVectorPointerRegisterForInstruction: instruction
     }.
 
     public method beginValueAtIndex: (deadPoint: UInt32) ::=> Void := {
         integerRegisterFile beginValueAtIndex: deadPoint.
         floatRegisterFile ifNotNil: (floatRegisterFile beginValueAtIndex: deadPoint).
         vectorRegisterFile ifNotNil: (vectorRegisterFile beginValueAtIndex: deadPoint).
+    }.
+
+    public override method allocateCaptureVectorPointerRegisterForInstruction: (instruction: MIRInstruction) ::=> Void := {
+        instruction captureVectorPointerValue isNotNil && instruction captureVectorPointerRegister isNil ifTrue: {
+            instruction captureVectorPointerRegister: (integerRegisterFile allocateForValue: instruction captureVectorPointerValue)
+        }.
     }.
 
     public override method allocateRegisterForInstructionResult: (instruction: MIRInstruction) ::=> Void := {
@@ -145,8 +171,14 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
     public override method allocateIntegerRegisterForValue: (value: MIRValue) ::=> MIRPhysicalLocation
         := integerRegisterFile allocateForValue: value.
 
+    public override method allocateIntegerRegisterForValuePointer: (value: MIRValue) ::=> MIRPhysicalLocation
+        := integerRegisterFile allocateForValuePointer: value.
+
     public override method allocateIntegerRegisterForResultValue: (value: MIRLocalValue) ::=> MIRPhysicalLocation
         := integerRegisterFile allocateForResultValue: value.
+
+    public override method allocateIntegerRegisterForResultValuePointer: (value: MIRLocalValue) ::=> MIRPhysicalLocation
+        := integerRegisterFile allocateForResultValuePointer: value.
 
     public override method allocateIntegerRegister8ForValue: (value: MIRValue) ::=> MIRPhysicalLocation
         := integerRegisterFile allocateForByteValue: value.

@@ -52,11 +52,11 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
 
     public method addActiveRegister: (register: MIRPhysicalLocation) withValue: (value: MIRValue) ::=> Void := {
         usedRegisterSet add: register.
-        false && value isNotNil && value isLocalValue ifTrue: {
+        value isNotNil && value isLocalValue ifTrue: {
             let localValue := value uncheckedDownCastTo: MIRLocalValue.
             localValue assignedRegister ifNil: {
                 let interval := localValue liveInterval.
-                interval isSpilled ifFalse: {
+                interval isSpilled not && localValue hasPointerUsage not && localValue physicalLocationClass isRegister ifTrue: {
                     localValue assignedRegister: register.
                     interval register: register.
                     activeIntervals add: interval.
@@ -146,13 +146,17 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
         }.
     }.
 
+    public method allocateForValuePointer: (value: MIRValue) ::=> MIRPhysicalLocation
+        := self allocateForValue: nil.
+
     public method allocate => MIRPhysicalLocation
         := self allocateForValue: nil.
 
-    public method allocateForResultValue: (value: MIRValue) ::=> MIRPhysicalLocation := {
-        ##self expireOperandLiveIntervals.
-        self allocateForValue: value
-    }.
+    public method allocateForResultValue: (value: MIRValue) ::=> MIRPhysicalLocation 
+        := self allocateForValue: value.
+
+    public method allocateForResultValuePointer: (value: MIRValue) ::=> MIRPhysicalLocation
+        := self allocateForValue: nil.
 
     public method allocateForByteValue: (value: MIRValue) ::=> MIRPhysicalLocation := {
         let existentAsignment := value ifNotNil: value assignedRegister.
@@ -178,8 +182,6 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
     public method allocateForByte => MIRPhysicalLocation
         := self allocateForByteValue: nil.
 
-    public method allocateForByteResultValue: (value: MIRValue) ::=> MIRPhysicalLocation := {
-        ##self expireOperandLiveIntervals.
-        self allocateForByteValue: value
-    }.
+    public method allocateForByteResultValue: (value: MIRValue) ::=> MIRPhysicalLocation
+        := self allocateForByteValue: value.
 }.

@@ -397,7 +397,6 @@ public global MIR::X86_64::VectorRegisters => Array := (
     MIR::X86::XMM4, MIR::X86::XMM5, MIR::X86::XMM6, MIR::X86::XMM7,
     MIR::X86_64::XMM8, MIR::X86_64::XMM9, MIR::X86_64::XMM10, MIR::X86_64::XMM11,
     MIR::X86_64::XMM12, MIR::X86_64::XMM13, MIR::X86_64::XMM14, MIR::X86_64::XMM15).
-public global MIR::X86_64::AllocableVectorRegisters => Array := MIR::X86_64::VectorRegisters.
 
 public global MIR::X86_64::IntegerRegisters => Array := (
     MIR::X86_64::RAX, MIR::X86_64::RCX, MIR::X86_64::RDX, MIR::X86_64::RBX,
@@ -406,12 +405,25 @@ public global MIR::X86_64::IntegerRegisters => Array := (
     MIR::X86_64::R12, MIR::X86_64::R13, MIR::X86_64::R14, MIR::X86_64::R15
 ).
 
-public global MIR::X86_64::AllocableIntegerRegisters => Array := (
-    MIR::X86_64::RAX, MIR::X86_64::RCX, MIR::X86_64::RDX, MIR::X86_64::RBX,
-    MIR::X86_64::RSI, MIR::X86_64::RDI,
-    MIR::X86_64::R8, MIR::X86_64::R9, MIR::X86_64::R10, MIR::X86_64::R11,
-    MIR::X86_64::R12, MIR::X86_64::R13, MIR::X86_64::R14, MIR::X86_64::R15
+public global MIR::X86_64::SysV::AllocableIntegerRegisters => Array := (
+    ## Scratch registers
+    MIR::X86_64::RAX, MIR::X86_64::R11,
+    
+    ## Parameters
+    MIR::X86_64::RSI, MIR::X86_64::RDI, MIR::X86_64::RCX, MIR::X86_64::RDX,
+    MIR::X86_64::R8, MIR::X86_64::R9,
+
+    ## Call Preserved
+    MIR::X86_64::RBX, MIR::X86_64::R12, MIR::X86_64::R13, MIR::X86_64::R14,
+    
+    ## Static chain pointer
+    MIR::X86_64::R10,
+
+    ## GOT base pointer
+    MIR::X86_64::R15
 ).
+
+public global MIR::X86_64::SysV::AllocableVectorRegisters => Array := MIR::X86_64::VectorRegisters.
 
 public abstract class MIRSX86StackBasedCallingConvention superclass: MIRCallingConvention; definition: {
     public method asm::generateCall: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
@@ -421,6 +433,14 @@ public abstract class MIRSX86StackBasedCallingConvention superclass: MIRCallingC
 }.
 
 public final class MIRSX86CDeclCallingConvention superclass: MIRSX86StackBasedCallingConvention; definition: {
+    public override method allocableIntegerRegisters => Array
+        := MIR::X86::AllocableIntegerRegisters.
+
+    public override method allocableVectorRegisters => Array
+        := MIR::X86::AllocableVectorRegisters.
+
+    public override method preferredRegisterForCaptureVectorPointer => MIRPhysicalLocationRegister
+        := MIR::X86_64::R10.
 }.
 
 public global MIR::X86::CDeclCallingConvention := MIRSX86CDeclCallingConvention new.
@@ -432,14 +452,9 @@ public final class MIRX86CompilationTarget superclass: MIRAsmCompilationTarget; 
     public override method allIntegerRegisters => Array
         := MIR::X86::IntegerRegisters.
 
-    public override method allocableIntegerRegisters => Array
-        := MIR::X86::AllocableIntegerRegisters.
 
     public override method allVectorRegisters => Array
         := MIR::X86::VectorRegisters.
-
-    public override method allocableVectorRegisters => Array
-        := MIR::X86::AllocableVectorRegisters.
 
     public override method usesVectorRegistersForFloatOperations => Boolean
         := true.
@@ -540,6 +555,15 @@ public final class MIRSysVX86_64RegisterAssignmentState superclass: Object; defi
 }.
 
 public final class MIRSysVX86_64CallingConvention superclass: MIRCallingConvention; definition: {
+    public override method allocableIntegerRegisters => Array
+        := MIR::X86_64::SysV::AllocableIntegerRegisters.
+
+    public override method allocableVectorRegisters => Array
+        := MIR::X86_64::SysV::AllocableVectorRegisters.
+
+    public override method preferredRegisterForCaptureVectorPointer => MIRPhysicalIntegerRegister
+        := nil.
+
     public method registerConstraintsOfCall: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
         instruction scratchRegisterCount: 1sz.
         allocator
@@ -555,7 +579,9 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRCallingConventi
                 ifNil: (allocator allocateMemoryForInstruction: instruction operandAt: operandIndex)
         }.
 
-        allocator spillIntegerRegistersExceptFor: X86_64::SysV::CallPreservedRegister
+        allocator
+            allocateCaptureVectorPointerRegisterForInstruction: instruction;
+            spillIntegerRegistersExceptFor: X86_64::SysV::CallPreservedRegister
     }.
 
     public override method integerCallPreservedRegisters => Array
@@ -719,14 +745,9 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
     public override method allIntegerRegisters => Array
         := MIR::X86_64::IntegerRegisters.
 
-    public override method allocableIntegerRegisters => Array
-        := MIR::X86_64::AllocableIntegerRegisters.
-
     public override method allVectorRegisters => Array
         := MIR::X86::VectorRegisters.
 
-    public override method allocableVectorRegisters => Array
-        := MIR::X86::AllocableVectorRegisters.
 
     public override method usesVectorRegistersForFloatOperations => Boolean
         := true.

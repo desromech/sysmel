@@ -8,6 +8,10 @@ public abstract class MIRInstruction superclass: MIRLocalValue.
 public final class MIRLiveInterval superclass: Object.
 
 public abstract class MIRPhysicalLocation superclass: Object; definition: {
+    __Meta__ definition: {
+        public virtual method isRegister => Boolean := false.
+    }.
+
     public virtual method isMemory => Boolean := false.
     public virtual method isImmediate => Boolean := false.
     public virtual method isRegister => Boolean := false.
@@ -19,7 +23,7 @@ public abstract class MIRPhysicalLocation superclass: Object; definition: {
 }.
 
 public abstract class MIRPhysicalLocationMemory superclass: MIRPhysicalLocation; definition: {
-    public virtual method isMemory => Boolean := true.
+    public override method isMemory => Boolean := true.
 
     __Meta__ definition: {
         let singleton := MIRPhysicalLocationMemory new.
@@ -29,25 +33,29 @@ public abstract class MIRPhysicalLocationMemory superclass: MIRPhysicalLocation;
 }.
 
 public abstract class MIRPhysicalLocationRegisterWithPointer superclass: MIRPhysicalLocation; definition: {
-    public virtual method isRegisterWithPointer => Boolean := true.
+    public override method isRegisterWithPointer => Boolean := true.
 
     public field register => MIRPhysicalLocation.
 }.
 
 public abstract class MIRPhysicalLocationRegister superclass: MIRPhysicalLocation; definition: {
-    public virtual method isRegister => Boolean := true.
+    __Meta__ definition: {
+        public override method isRegister => Boolean := true.
+    }.
+
+    public override method isRegister => Boolean := true.
 }.
 
 public abstract class MIRPhysicalIntegerRegister superclass: MIRPhysicalLocationRegister; definition: {
-    public virtual method isIntegerRegister => Boolean := true.
+    public override method isIntegerRegister => Boolean := true.
 }.
 
 public abstract class MIRPhysicalFloatRegister superclass: MIRPhysicalLocationRegister; definition: {
-    public virtual method isFloatRegister => Boolean := true.
+    public override method isFloatRegister => Boolean := true.
 }.
 
 public abstract class MIRPhysicalVectorRegister superclass: MIRPhysicalLocationRegister; definition: {
-    public virtual method isVectorRegister => Boolean := true.
+    public override method isVectorRegister => Boolean := true.
 }.
 
 public class MIRPhysicalLocationImmediate superclass: MIRPhysicalLocation; definition: {
@@ -81,6 +89,28 @@ ValueType extend: {
     public override method valueAlignmentForTacTarget: (target: MIRCompilationTarget) ::=> Size
         := self valueAlignment.
 
+    public override method valueTacPhysicalLocationClass => MIRPhysicalLocation class
+        := MIRPhysicalLocationMemory.
+}.
+
+PointerLikeType extend: {
+    public override method valueTacPhysicalLocationClass => MIRPhysicalLocation class
+        := MIRPhysicalIntegerRegister.
+}.
+
+PrimitiveInteger class extend: {
+    public override method valueTacPhysicalLocationClass => MIRPhysicalLocation class
+        := MIRPhysicalIntegerRegister.
+}.
+
+Boolean class extend: {
+    public override method valueTacPhysicalLocationClass => MIRPhysicalLocation class
+        := MIRPhysicalIntegerRegister.
+}.
+
+PrimitiveFloat class extend: {
+    public override method valueTacPhysicalLocationClass => MIRPhysicalLocation class
+        := MIRPhysicalFloatRegister.
 }.
 
 Int8 class extend: {
@@ -97,16 +127,6 @@ Int32 class extend: {
 
 Int64 class extend: {
     public override method valueIsSignedExtended => Boolean := true.
-}.
-
-Float32 class extend: {
-    public override method valueTacPhysicalLocationClass => MIRPhysicalLocation class
-        := MIRPhysicalFloatRegister.
-}.
-
-Float64 class extend: {
-    public override method valueTacPhysicalLocationClass => MIRPhysicalLocation class
-        := MIRPhysicalFloatRegister.
 }.
 
 MIRValue definition: {
@@ -2075,6 +2095,18 @@ MIRCallingConvention definition: {
 
     public abstract method integerCallPreservedRegisters => Array
         := self subclassResponsibility.
+
+    public abstract method allocableIntegerRegisters => Array
+        := self subclassResponsibility.
+
+    public abstract method allocableFloatRegisters => Array
+        := self subclassResponsibility.
+
+    public abstract method allocableVectorRegisters => Array
+        := self subclassResponsibility.
+
+    public virtual method preferredRegisterForCaptureVectorPointer => MIRPhysicalIntegerRegister
+        := nil.
 }.
 
 MIRCompilationTarget definition: {
@@ -2096,19 +2128,10 @@ MIRCompilationTarget definition: {
     public abstract method allIntegerRegisters => Array
         := self subclassResponsibility.
 
-    public abstract method allocableIntegerRegisters => Array
-        := self subclassResponsibility.
-
     public abstract method allFloatRegisters => Array
         := self subclassResponsibility.
 
-    public abstract method allocableFloatRegisters => Array
-        := self subclassResponsibility.
-
     public abstract method allVectorRegisters => Array
-        := self subclassResponsibility.
-
-    public abstract method allocableVectorRegisters => Array
         := self subclassResponsibility.
 
     public abstract method usesVectorRegistersForFloatOperations => Boolean
