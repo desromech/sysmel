@@ -269,6 +269,9 @@ AsmX86RegisterAddress definition: {
     public method hasSmallDisplacement => Boolean
         := displacement isNil || displacement isImmediateSigned8.
 
+    public method hasDisplacement => Boolean
+        := displacement isNotNil && displacement isImmediateValue0 not.
+
     public method hasNoDisplacement => Boolean
         := displacement isNil || displacement isImmediateValue0.
 
@@ -345,9 +348,20 @@ AsmX86RegisterAddress definition: {
                 displacement: nextRegisterAddress displacement;
                 yourself
         } ifFalse: {
-            self copy
-                displacement: (nextComponent downCastTo: AsmImmediate);
-                yourself
+            self assert: nextComponent isImmediate.
+            self hasDisplacement ifTrue: {
+                nextComponent isImmediateValue0 ifTrue: {
+                    self copy
+                } ifFalse: {
+                    self copy
+                        displacement: (displacement sumSigned32With: (nextComponent downCastTo: AsmImmediate));
+                        yourself
+                }
+            } ifFalse: {
+                self copy
+                    displacement: (nextComponent downCastTo: AsmImmediate);
+                    yourself
+            }.
         }
     }.
 
@@ -363,7 +377,7 @@ AsmX86RegisterAddress definition: {
             stream print: index; nextPut: '*'c8; print: self scale.
             hasPrevious := true.
         }.
-        self hasNoDisplacement ifFalse: {
+        self hasDisplacement ifTrue: {
             hasPrevious ifTrue: (stream nextPutAll: " + ").
             stream print: displacement.
         }.

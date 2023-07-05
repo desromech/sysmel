@@ -69,6 +69,24 @@ public class MIRPhysicalLocationImmediate superclass: MIRPhysicalLocation; defin
     public virtual method isImmediate => Boolean := true.
 }.
 
+public class MIRPhysicalLocationValuePointerOrAssignedRegister superclass: MIRPhysicalLocation; definition: {
+    public field value => MIRValue.
+
+    __Meta__ definition: {
+        public method for: (value: MIRValue) ::=> self
+            := self new value: value; yourself
+    }.
+}.
+
+public class MIRPhysicalLocationValuePointer superclass: MIRPhysicalLocation; definition: {
+    public field value => MIRValue.
+
+    __Meta__ definition: {
+        public method for: (value: MIRValue) ::=> self
+            := self new value: value; yourself
+    }.
+}.
+
 Type extend: {
     public virtual method valueSizeForTacTarget: (target: MIRCompilationTarget) ::=> Size
         := target pointerSize.

@@ -940,6 +940,11 @@ PointerLikeType extend: {
             callPointer: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxPointer)
             with: (codegen moduleCodeGenerator translateGenericObjectPointer: self) with: boxedValue type: self.
 
+    public override method emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder
+            callPointer: (codegen translateRuntimeFunction: ObjectModel::unboxPointer)
+            with: boxedValue type: self.
+
     public override method emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
         := codegen blockBuilder
             callPointer: (codegen translateRuntimeFunction: ObjectModel::boxPointer)

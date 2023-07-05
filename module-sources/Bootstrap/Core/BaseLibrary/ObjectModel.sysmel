@@ -1248,6 +1248,27 @@ public function ObjectModel::unboxFloat64(value: Untyped) => Float64 := {
     }.
 }.
 
+public function ObjectModel::unboxPointer(value: Untyped) => UIntPointer := {
+    Untyped::==(value, nil) ifTrue: {
+        0uptr
+    } ifFalse: {
+        let valueType := RawTuple::type(value).
+        let objectHeader := ObjectModel::getTuplePointerUIntValue(value) reinterpretCastTo: ObjectModel::TupleHeader pointer.
+
+        valueType isPointerLikeType ifFalse: {
+            return: (objectHeader + 1iptr reinterpretCastTo: UIntPointer)
+        }.
+
+        objectHeader _ isBytes ifTrue: {
+            (objectHeader + 1iptr reinterpretCastTo: UIntPointer pointer) load
+        } ifFalse: {
+            let slotCount := objectHeader _ slotCount.
+            let slots := objectHeader + 1iptr reinterpretCastTo: AnyValue pointer.
+            error("TODO: Unbox object oriented pointer.").
+        }
+    }.
+}.
+
 public function ObjectModel::checkAndUnboxChar8(value: Untyped) => Char8 := {
     let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
     let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.

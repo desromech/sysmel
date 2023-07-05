@@ -20,25 +20,25 @@ MIRPhysicalLocation extend: {
     public virtual method x86::vector128For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 register with vector128 section.".
 
-    public virtual method x86::int8PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method x86::int8PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 pointer.".
 
-    public virtual method x86::int16PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method x86::int16PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 pointer.".
 
-    public virtual method x86::int32PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method x86::int32PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 pointer.".
 
-    public virtual method x86::int64PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method x86::int64PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 pointer.".
 
-    public virtual method x86::float32PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method x86::float32PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 pointer.".
 
-    public virtual method x86::float64PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method x86::float64PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 pointer.".
 
-    public virtual method x86::vector128PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method x86::vector128PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 pointer.".
 
     public virtual method x86::immediate32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
@@ -108,6 +108,115 @@ MIRPhysicalLocationImmediate extend: {
 
     public override method x86::relCall32OrInt64For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
         := value asm::immediateCall32For: codegen.
+}.
+
+MIRPhysicalLocationValuePointer extend: {
+    public override method x86::int8PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
+        := (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
+                size: 1sz;
+                yourself.
+
+    public override method x86::int16PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
+        := (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
+                size: 2sz;
+                yourself.
+
+    public override method x86::int32PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
+        := (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
+                size: 4sz;
+                yourself.
+
+    public override method x86::int64PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
+        := (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
+                size: 8sz;
+                yourself.
+
+    public override method x86::float32PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
+        := (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
+                size: 4sz;
+                yourself.
+
+    public override method x86::float64PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
+        := (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
+                size: 8sz;
+                yourself.
+
+    public override method x86::vector128PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
+        := (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
+                size: 16sz;
+                yourself.
+}.
+
+MIRPhysicalLocationValuePointerOrAssignedRegister extend: {
+    public override method x86::int8PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
+        value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
+            register x86::int8PointerWithOffset: offset for: codegen
+        } ifNil: {
+            (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
+                size: 1sz;
+                yourself
+        }
+    }.
+
+    public override method x86::int16PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
+        value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
+            register x86::int16PointerWithOffset: offset for: codegen
+        } ifNil: {
+            (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
+                size: 2sz;
+                yourself
+        }
+    }.
+
+    public override method x86::int32PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
+        value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
+            register x86::int32PointerWithOffset: offset for: codegen
+        } ifNil: {
+            (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
+                size: 4sz;
+                yourself
+        }
+    }.
+
+    public override method x86::int64PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
+        value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
+            register x86::int64PointerWithOffset: offset for: codegen
+        } ifNil: {
+            (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
+                size: 8sz;
+                yourself
+        }
+    }.
+
+    public override method x86::float32PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
+        value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
+            register x86::float32PointerWithOffset: offset for: codegen
+        } ifNil: {
+            (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
+                size: 4sz;
+                yourself
+        }
+    }.
+
+    public override method x86::float64PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
+        value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
+            register x86::float64PointerWithOffset: offset for: codegen
+        } ifNil: {
+            (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
+                size: 8sz;
+                yourself
+        }
+    }.
+
+    public override method x86::vector128PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
+        value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
+            register x86::vector128PointerWithOffset: offset for: codegen
+        } ifNil: {
+            (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
+                size: 16sz;
+                yourself
+        }
+    }.
 }.
 
 public final class MIRX86IntegerRegister superclass: MIRPhysicalIntegerRegister; definition: {
@@ -181,25 +290,25 @@ public final class MIRX86_64IntegerRegister superclass: MIRPhysicalIntegerRegist
     public override method x86::immediateS32OrInt64For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
         := int64.
 
-    public override method x86::int8PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public override method x86::int8PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := AsmX86RegisterAddress base: int64 size: 1u8 displacement: (offset x86::immediate32For: codegen).
 
-    public override method x86::int16PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public override method x86::int16PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := AsmX86RegisterAddress base: int64 size: 2u8 displacement: (offset x86::immediate32For: codegen).
 
-    public override method x86::int32PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public override method x86::int32PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := AsmX86RegisterAddress base: int64 size: 4u8 displacement: (offset x86::immediate32For: codegen).
 
-    public override method x86::int64PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public override method x86::int64PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := AsmX86RegisterAddress base: int64 size: 8u8 displacement: (offset x86::immediate32For: codegen).
 
-    public virtual method x86::float32PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method x86::float32PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := AsmX86RegisterAddress base: int64 size: 4u8 displacement: (offset x86::immediate32For: codegen).
 
-    public virtual method x86::float64PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method x86::float64PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := AsmX86RegisterAddress base: int64 size: 8u8 displacement: (offset x86::immediate32For: codegen).
 
-    public virtual method x86::vector128PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method x86::vector128PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := AsmX86RegisterAddress base: int64 size: 16u8 displacement: (offset x86::immediate32For: codegen).
 
     public override method x86::rel32OrInt64For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
@@ -889,6 +998,11 @@ MIRValue extend: {
     public virtual method x86_64::pushWith: (codegen: MIRFunctionAsmCodeGenerator) scratchRegister: (scratchRegister: AsmInstructionOperand)::=> Void := {
         self x86_64::pushWith: codegen
     }.
+
+    public method x86_x86_64::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress
+        := codegen target pointerSize = 8sz
+            ifTrue: (self x86_64::pointerWithCodegen: codegen)
+            ifFalse: (self x86::pointerWithCodegen: codegen).
 }.
 
 MIRProgramEntity extend: {
@@ -3161,7 +3275,7 @@ MIR::Operation::MoveStruct
 
 let x86::loadPointerRegisterContraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
-        allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
+        allocateRegisterOrImmediate32PointerForInstruction: instruction operandAt: 0sz;
         allocateImmediate32ForInstruction: instruction operandAt: 1sz;
         allocateRegisterForInstructionResult: instruction
 }.
@@ -3242,7 +3356,7 @@ MIR::Operation::LoadStruct
 let x86::storePointerRegisterContraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
-        allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 1sz;
+        allocateRegisterOrImmediate32PointerForInstruction: instruction operandAt: 1sz;
         allocateImmediate32ForInstruction: instruction operandAt: 2sz
 }.
 

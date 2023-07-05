@@ -110,8 +110,20 @@ public class AsmRegisterAddress superclass: AsmInstructionOperand; definition: {
     public override method isVectorRegisterOrRegisterAddress => Boolean := true.
 }.
 
-public class AsmImmediate superclass: AsmInstructionOperand; definition: {
+public class AsmImmediate superclass: AsmInstructionOperand.
+public final class AsmImmediateSymbolWithAddend superclass: AsmImmediate.
+
+AsmImmediate definition: {
     public override method isImmediate => Boolean := true.
+
+    public abstract method sumSigned32With: (other: AsmImmediate) ::=> AsmImmediate
+        := self subclassResponsibility.
+
+    public abstract method sumSigned32WithInt32: (next: Int32) ::=> AsmImmediate
+        := self subclassResponsibility.
+
+    public virtual method sumSigned32WithSymbolWithAddend: (next: AsmImmediateSymbolWithAddend) ::=> AsmImmediate
+        := self sumSigned32With: next.
 }.
 
 public global AsmSymbol::RelocationMode::None := 0u8.
@@ -119,7 +131,7 @@ public global AsmSymbol::RelocationMode::GOT := 1u8.
 public global AsmSymbol::RelocationMode::PLT := 2u8.
 public global AsmSymbol::RelocationMode::SectionRelative := 3u8.
 
-public final class AsmImmediateSymbolWithAddend superclass: AsmImmediate; definition: {
+AsmImmediateSymbolWithAddend definition: {
     public field symbol => AsmSymbol.
     public field size => Size.
     public field addend => Int64.
@@ -145,6 +157,12 @@ public final class AsmImmediateSymbolWithAddend superclass: AsmImmediate; defini
         := self copy
             addend: addend + extraAddend;
             yourself.
+
+    public override method sumSigned32WithInt32: (next: Int32) ::=> AsmImmediate
+        := self + next asInt64.
+
+    public override method sumSigned32WithSymbolWithAddend: (next: AsmImmediateSymbolWithAddend) ::=> AsmImmediate
+        := self error: "Cannot sum two symbols.".
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: symbol.
@@ -634,6 +652,12 @@ public final class AsmImmediateConstantInt32 superclass: AsmImmediateConstant; d
 
     public override method isImmediateSigned8 => Boolean := value asInt8 asInt32 = value.
     public override method asImmediateSigned8Value => Int8 := value asInt8.
+
+    public override method sumSigned32With: (other: AsmImmediate) ::=> AsmImmediate
+        := other sumSigned32WithInt32: value.
+
+    public override method sumSigned32WithInt32: (next: Int32) ::=> AsmImmediate
+        := (value + next) asAsmImmediate.
 
     public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
         codeStream nextPutInt32: value withSize: requiredSize
