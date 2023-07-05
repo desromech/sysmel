@@ -1045,7 +1045,7 @@ MIRBasicBlock definition: {
 
         if: self isWhite then: {
             self markGray.
-            self successors do: {:(MIRBasicBlock)eachSuccessor :: Void|
+            self successors reverseDo: {:(MIRBasicBlock)eachSuccessor :: Void|
                 eachSuccessor traverseForConnectivityAndLivenessFrom: self sortingInto: sortedBlocks
             }.
 

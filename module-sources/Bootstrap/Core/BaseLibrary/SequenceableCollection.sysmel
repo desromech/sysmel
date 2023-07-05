@@ -37,5 +37,4 @@ SequenceableCollection definition: {
             aBlock(self at: size - i - 1sz)
         } continueWith: (i := i + 1sz)
     }.
-
 }.

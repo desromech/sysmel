@@ -353,13 +353,34 @@ HIRFunctionDefinition definition: {
         firstBasicBlock := nil.
         lastBasicBlock := nil.
 
+        let dfsIndex mutable := 0u32.
         sortedBlocks reverseDo: {:(HIRBasicBlock)each :: Void |
-            self addBasicBlock: each
+            self addBasicBlock: each.
+            each dfsIndex: dfsIndex.
+            dfsIndex := dfsIndex + 1u32.
         }.
 
         ## Normalize the phi instructions.
         self basicBlocksDo: {:(HIRBasicBlock)eachBasicBlock :: Void |
             eachBasicBlock normalizePhiInstructions
+        }.
+
+        ## Compute the dominance.
+        sortedBlocks do: {:(HIRBasicBlock)each :: Void |
+            each resetDominance.
+        }.
+
+        sortedBlocks do: {:(HIRBasicBlock)each :: Void |
+            each computeDominanceFirstPass.
+        }.
+
+        sortedBlocks do: {:(HIRBasicBlock)each :: Void |
+            each computeDominanceSecondPass.
+        }.
+
+        ## Compute the dominance frontier.
+        firstBasicBlock ifNotNil: {
+            firstBasicBlock computeDominanceFrontier
         }.
     }.
 
@@ -514,6 +535,18 @@ HIRBasicBlock definition: {
     public field predecessorKinds => OrderedCollection.
     public field successors => Array.
 
+    public field dfsParent => HIRBasicBlock.
+    public field dfsIndex => UInt32.
+
+    public field semiDominator => HIRBasicBlock.
+    public field dominanceAncestor => HIRBasicBlock.
+    private field dominanceAncestorWithLowestSemiDominator => HIRBasicBlock.
+    public field immediateDominator => HIRBasicBlock.
+    public field dominatorTreeChildren => OrderedCollection.
+    public field sameDominator => HIRBasicBlock.
+    public field dominanceBucket => OrderedCollection.
+    public field dominanceFrontier => OrderedCollection.
+
     public override method isBasicBlock => Boolean := true.
 
     public method markWhite => Void := {
@@ -546,13 +579,126 @@ HIRBasicBlock definition: {
 
         if: self isWhite then: {
             self markGray.
-            self successors do: {:(HIRBasicBlock)eachSuccessor :: Void|
+            self dfsParent: predecessor.
+
+            self successors reverseDo: {:(HIRBasicBlock)eachSuccessor :: Void|
                 eachSuccessor traverseForConnectivityAndLivenessFrom: self sortingInto: sortedBlocks
             }.
 
             self markBlack.
             sortedBlocks add: self
         }.
+    }.
+
+    public method resetDominance => Void := {
+        semiDominator := nil.
+        dominanceAncestor := nil.
+        dominanceAncestorWithLowestSemiDominator := nil.
+        immediateDominator := nil.
+        sameDominator := nil.
+        dominanceBucket := OrderedCollection new.
+        dominanceFrontier := nil.
+        dominatorTreeChildren := OrderedCollection new.
+    }.
+
+    public method ancestorWithLowestSemiDominator => HIRBasicBlock := {
+        dominanceAncestor dominanceAncestor ifNotNil: {
+            let newBest := dominanceAncestor ancestorWithLowestSemiDominator.
+            dominanceAncestor := dominanceAncestor dominanceAncestor.
+
+            newBest semiDominator dfsIndex < dominanceAncestorWithLowestSemiDominator semiDominator dfsIndex ifTrue: {
+                dominanceAncestorWithLowestSemiDominator := newBest
+            }
+        }.
+
+        dominanceAncestorWithLowestSemiDominator
+    }.
+
+    public method dominanceLinkWithAncestor: (newAncestor: HIRBasicBlock) ::=> Void := {
+        dominanceAncestor := newAncestor.
+        dominanceAncestorWithLowestSemiDominator := self.
+    }.
+
+    public method computeDominanceFirstPass => Void := {
+        ## Lengauer-Tarjan algorithm from Moden Compiler Implementation in C
+        let parent := self dfsParent.
+        parent ifNil: {return: void}.
+
+        let newSemiDominator mutable := parent.
+
+        self predecessors do: {:(HIRBasicBlock)pred :: Void |
+            let semiDominatorCandidate := pred dfsIndex <= self dfsIndex
+                ifTrue: pred
+                ifFalse: pred ancestorWithLowestSemiDominator semiDominator.
+            semiDominatorCandidate dfsIndex < newSemiDominator dfsIndex ifTrue: {
+                newSemiDominator := semiDominatorCandidate
+            }.
+        }.
+
+        self semiDominator: newSemiDominator.
+        newSemiDominator dominanceBucket add: self.
+
+        self dominanceLinkWithAncestor: parent.
+
+        parent dominanceBucket do: {:(HIRBasicBlock)child :: Void |
+            let ancestor := child ancestorWithLowestSemiDominator.
+            ancestor semiDominator == child semiDominator ifTrue: {
+                child immediateDominator: parent
+            } ifFalse: {
+                child sameDominator: ancestor
+            }
+        }.
+
+        parent dominanceBucket removeAll.
+    }.
+
+    public method computeDominanceSecondPass => Void := {
+        self dfsParent ifNil: {return: void}.
+
+        self sameDominator ifNotNil: {
+            self immediateDominator: self sameDominator immediateDominator
+        }.
+
+        immediateDominator dominatorTreeChildren add: self.
+        dominanceBucket := nil.
+    }.
+
+    public method dominates: (other: HIRBasicBlock) ::=> Boolean := {
+        let position mutable := other.
+        while: (position isNotNil) do: {
+            position == self ifTrue: {
+                return: true
+            }
+        } continueWith: (position := position immediateDominator).
+
+        false
+    }.
+
+    public method computeDominanceFrontier => Void := {
+        let set := IdentitySet new.
+        let list := OrderedCollection new.
+        self successors do: {:(HIRBasicBlock)succ :: Void |
+            succ immediateDominator ~~ self ifTrue: {
+                (set includes: succ) ifFalse: {
+                    set add: succ.
+                    list add: succ
+                }
+            }
+        }.
+
+        dominatorTreeChildren do: {:(HIRBasicBlock)child :: Void |
+            child computeDominanceFrontier.
+            child dominanceFrontier do: {:(HIRBasicBlock)w :: Void |
+                (self dominates: w) ifFalse: {
+                    (set includes: w) ifFalse: {
+                        set add: w.
+                        list add: w
+                    }
+                }
+            }
+        }.
+
+        dominanceFrontier := list
     }.
 
     public method addPredecessor: (predecessor: HIRBasicBlock) isBackEdge: (isBackEdge: Boolean) ::=> Void := {
@@ -795,6 +941,17 @@ HIRBasicBlock definition: {
         if: (self predecessors ~~ nil) && self predecessors isNotEmpty then: {
             stream nextPutAll: " ## Predecessors".
             self predecessors do: {:(HIRBasicBlock)each :: Void |
+                stream nextPut: ' 'c8; print: each
+            }
+        }.
+
+        immediateDominator ifNotNil: {
+            stream nextPutAll: " IDom "; print: immediateDominator.
+        }.
+
+        dominanceFrontier isNotNil && dominanceFrontier isNotEmpty ifTrue: {
+            stream nextPutAll: " DomFr".
+            dominanceFrontier do: {:(HIRBasicBlock)each :: Void |
                 stream nextPut: ' 'c8; print: each
             }
         }.
