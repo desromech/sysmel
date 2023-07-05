@@ -1,23 +1,23 @@
 MIRPhysicalLocation extend: {
-    public virtual method x86::int8For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method x86::int8For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 register with int8 section.".
 
-    public virtual method x86::int16For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method x86::int16For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 register with int16 section.".
 
-    public virtual method x86::int32For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method x86::int32For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 register with int32 section.".
 
-    public virtual method x86::int64For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method x86::int64For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 register with int64 section.".
 
-    public virtual method x86::float32For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method x86::float32For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 register with float32 section.".
 
-    public virtual method x86::float64For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method x86::float64For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 register with float64 section.".
 
-    public virtual method x86::vector128For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public virtual method x86::vector128For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 register with vector128 section.".
 
     public virtual method x86::int8PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
@@ -79,13 +79,13 @@ MIRPhysicalLocation extend: {
 }.
 
 MIRPhysicalLocationImmediate extend: {
-    public override method x86::int8For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public override method x86::int8For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := value asm::immediate8For: codegen.
 
-    public override method x86::int16For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public override method x86::int16For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := value asm::immediate16For: codegen.
 
-    public override method x86::int32For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public override method x86::int32For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := value asm::immediate32For: codegen.
 
     public override method x86::immediate32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
@@ -94,7 +94,7 @@ MIRPhysicalLocationImmediate extend: {
     public override method x86::immediateS32OrInt64For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
         := value asm::immediateS32For: codegen.
 
-    public override method x86::int64For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public override method x86::int64For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := value asm::immediate64For: codegen.
 
     public override method x86::rel32OrInt32For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
@@ -148,72 +148,82 @@ MIRPhysicalLocationValuePointer extend: {
 }.
 
 MIRPhysicalLocationValuePointerOrAssignedRegister extend: {
-    public override method x86::int8PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
+    public override method x86::int8For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
         value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
-            register x86::int8PointerWithOffset: offset for: codegen
+            register x86::int8For: codegen
         } ifNil: {
-            (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
+            (value x86_x86_64::pointerWithCodegen: codegen) copy
                 size: 1sz;
                 yourself
         }
     }.
 
-    public override method x86::int16PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
+    public override method x86::int16For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
         value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
-            register x86::int16PointerWithOffset: offset for: codegen
+            register x86::int16For: codegen
         } ifNil: {
-            (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
+            (value x86_x86_64::pointerWithCodegen: codegen) copy
                 size: 2sz;
                 yourself
         }
     }.
 
-    public override method x86::int32PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
+    public override method x86::int32For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
         value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
-            register x86::int32PointerWithOffset: offset for: codegen
+            register x86::int32For: codegen
         } ifNil: {
-            (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
+            (value x86_x86_64::pointerWithCodegen: codegen) copy
                 size: 4sz;
                 yourself
         }
     }.
 
-    public override method x86::int64PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
+    public override method x86::int64For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
         value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
-            register x86::int64PointerWithOffset: offset for: codegen
+            register x86::int64For: codegen
         } ifNil: {
-            (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
+            (value x86_x86_64::pointerWithCodegen: codegen) copy
                 size: 8sz;
                 yourself
         }
     }.
 
-    public override method x86::float32PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
+    public override method x86::float32For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
         value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
-            register x86::float32PointerWithOffset: offset for: codegen
+            register x86::float32For: codegen
         } ifNil: {
-            (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
+            (value x86_x86_64::pointerWithCodegen: codegen) copy
                 size: 4sz;
                 yourself
         }
     }.
 
-    public override method x86::float64PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
+    public override method x86::float64For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
         value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
-            register x86::float64PointerWithOffset: offset for: codegen
+            register x86::float64For: codegen
         } ifNil: {
-            (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
+            (value x86_x86_64::pointerWithCodegen: codegen) copy
                 size: 8sz;
                 yourself
         }
     }.
 
-    public override method x86::vector128PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
+    public override method x86::vector128For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
         value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
-            register x86::vector128PointerWithOffset: offset for: codegen
+            register x86::vector128For: codegen
         } ifNil: {
-            (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
+            (value x86_x86_64::pointerWithCodegen: codegen) copy
                 size: 16sz;
+                yourself
+        }
+    }.
+
+    public override method x86::immediateS32OrInt64For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
+        value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
+            register x86::immediateS32OrInt64For: codegen
+        } ifNil: {
+            (value x86_x86_64::pointerWithCodegen: codegen) copy
+                size: 8sz;
                 yourself
         }
     }.
@@ -230,9 +240,9 @@ public final class MIRX86IntegerRegister superclass: MIRPhysicalIntegerRegister;
 
     public override method canBeUsedForByte => Boolean := int8 value < 4u8.
     
-    public override method x86::int8For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand := int8.
-    public override method x86::int16For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand := int16.
-    public override method x86::int32For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand := int32.
+    public override method x86::int8For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := int8.
+    public override method x86::int16For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := int16.
+    public override method x86::int32For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := int32.
 
     public override method asm::canonicalRegister ::=> AsmRegister := int32.
 
@@ -280,10 +290,10 @@ public final class MIRX86_64IntegerRegister superclass: MIRPhysicalIntegerRegist
 
     public override method canBeUsedForByte => Boolean := true.
 
-    public override method x86::int8For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand := int8.
-    public override method x86::int16For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand := int16.
-    public override method x86::int32For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand := int32.
-    public override method x86::int64For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand := int64.
+    public override method x86::int8For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := int8.
+    public override method x86::int16For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := int16.
+    public override method x86::int32For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := int32.
+    public override method x86::int64For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := int64.
 
     public override method asm::canonicalRegister ::=> AsmRegister := int64.
 
@@ -381,13 +391,13 @@ public final class MIRX86VectorRegister superclass: MIRPhysicalVectorRegister; d
         codegen textSection x86::movaps: self register src: (register x86::vector128For: codegen).
     }.
 
-    public override method x86::float32For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public override method x86::float32For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := register.
 
-    public override method x86::float64For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public override method x86::float64For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := register.
 
-    public override method x86::vector128For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
+    public override method x86::vector128For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := register.
 
     public override method x86::loadFromVariable: (variable: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
@@ -1367,7 +1377,7 @@ let x86::integerAluUnaryInt16RegisterConstraints := {:(MIRInstruction)instructio
 
 let x86::integerAluUnaryInt32RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
-        allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
+        allocateRegisterImmediate32OrDirectPointerForInstruction: instruction operandAt: 0sz;
         allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
@@ -1376,28 +1386,28 @@ let x86::integerAluUnaryInt64RegisterConstraints := x86::integerAluUnaryInt32Reg
 let x86::integerAluInt8RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
-        allocateRegisterOrImmediate8ForInstruction: instruction operandAt: 1sz;
+        allocateRegisterImmediate8OrDirectPointerForInstruction: instruction operandAt: 1sz;
         allocateRegister8ForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
 let x86::integerAluInt16RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
-        allocateRegisterOrImmediate16ForInstruction: instruction operandAt: 1sz;
+        allocateRegisterImmediate16OrDirectPointerForInstruction: instruction operandAt: 1sz;
         allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
 let x86::integerAluInt32RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
-        allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
-        allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 1sz;
+        allocateRegisterImmediate32OrDirectPointerForInstruction: instruction operandAt: 0sz;
+        allocateRegisterImmediate32OrDirectPointerForInstruction: instruction operandAt: 1sz;
         allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
 let x86::integerAluInt64RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
-        allocateRegisterOrImmediate64ForInstruction: instruction operandAt: 0sz;
-        allocateRegisterOrImmediateS32ForInstruction: instruction operandAt: 1sz;
+        allocateRegisterImmediate64OrDirectPointerForInstruction: instruction operandAt: 0sz;
+        allocateRegisterImmediateS32OrDirectPointerForInstruction: instruction operandAt: 1sz;
         allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
@@ -1717,7 +1727,7 @@ MIR::Operation::PointerSub
 let x86::integerMul32RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
-        allocateRegisterForInstruction: instruction operandAt: 1sz;
+        allocateRegisterOrDirectPointerForInstruction: instruction operandAt: 1sz;
         allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
@@ -1727,7 +1737,7 @@ MIR::Operation::Int8Mul
     forTargets: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
             allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
-            allocateRegister8ForInstruction: instruction operandAt: 1sz;
+            allocateRegister8OrDirectPointerForInstruction: instruction operandAt: 1sz;
             allocateRegister8ForInstructionResult: instruction trySharingWithOperandAt: 0sz
     };
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
@@ -2222,7 +2232,7 @@ MIR::Operation::Int64LogicalShiftRight
 let x86::integerComparisonInt8RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
-        allocateRegisterOrImmediate8ForInstruction: instruction operandAt: 1sz;
+        allocateRegisterImmediate8OrDirectPointerForInstruction: instruction operandAt: 1sz;
         allocateRegisterForInstructionResult: instruction
 }.
 
@@ -2319,7 +2329,7 @@ MIR::Operation::UInt8GreaterOrEquals
 let x86::integerComparisonBranchInt8RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterForInstruction: instruction operandAt: 0sz;
-        allocateRegisterOrImmediate8ForInstruction: instruction operandAt: 1sz;
+        allocateRegisterImmediate8OrDirectPointerForInstruction: instruction operandAt: 1sz;
         allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 2sz;
         allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 3sz
 }.
@@ -2453,7 +2463,7 @@ MIR::Operation::UInt8GreaterOrEqualsBranch
 let x86::integerComparisonInt16RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
-        allocateRegisterOrImmediate16ForInstruction: instruction operandAt: 1sz;
+        allocateRegisterImmediate16OrDirectPointerForInstruction: instruction operandAt: 1sz;
         allocateRegisterForInstructionResult: instruction
 }.
 
@@ -2550,7 +2560,7 @@ MIR::Operation::UInt16GreaterOrEquals
 let x86::integerComparisonBranchInt16RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterForInstruction: instruction operandAt: 0sz;
-        allocateRegisterOrImmediate16ForInstruction: instruction operandAt: 1sz;
+        allocateRegisterImmediate16OrDirectPointerForInstruction: instruction operandAt: 1sz;
         allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 2sz;
         allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 3sz
 }.
@@ -2684,7 +2694,7 @@ MIR::Operation::UInt16GreaterOrEqualsBranch
 let x86::integerComparisonInt32RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
-        allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 1sz;
+        allocateRegisterImmediate32OrDirectPointerForInstruction: instruction operandAt: 1sz;
         allocateRegisterForInstructionResult: instruction
 }.
 
@@ -2781,7 +2791,7 @@ MIR::Operation::UInt32GreaterOrEquals
 let x86::integerComparisonBranchInt32RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterForInstruction: instruction operandAt: 0sz;
-        allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 1sz;
+        allocateRegisterImmediate32OrDirectPointerForInstruction: instruction operandAt: 1sz;
         allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 2sz;
         allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 3sz
 }.
@@ -2916,7 +2926,7 @@ MIR::Operation::UInt32GreaterOrEqualsBranch
 let x86::integerComparisonInt64RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate64ForInstruction: instruction operandAt: 0sz;
-        allocateRegisterOrImmediateS32ForInstruction: instruction operandAt: 1sz;
+        allocateRegisterImmediateS32OrDirectPointerForInstruction: instruction operandAt: 1sz;
         allocateRegisterForInstructionResult: instruction
 }.
 
@@ -3045,7 +3055,7 @@ MIR::Operation::PointerNotEquals
 let x86::integerComparisonBranchInt64RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterForInstruction: instruction operandAt: 0sz;
-        allocateRegisterOrImmediateS32ForInstruction: instruction operandAt: 1sz;
+        allocateRegisterImmediateS32OrDirectPointerForInstruction: instruction operandAt: 1sz;
         allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 2sz;
         allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 3sz
 }.
@@ -3210,7 +3220,7 @@ MIR::Operation::PointerNotEqualsBranch
 
 let x86::moveIntegerRegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
-        allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
+        allocateRegisterImmediate32OrDirectPointerForInstruction: instruction operandAt: 0sz;
         allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
@@ -3227,13 +3237,13 @@ let x86::moveIntegerRegister8Constraints := {:(MIRInstruction)instruction :(MIRR
 }.
 
 MIR::Operation::MoveInt8
-    forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegisterConstraints;
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegister8Constraints;
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen)
     }.
 
 MIR::Operation::MoveInt16
-    forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegisterConstraints;
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::moveIntegerRegister16Constraints;
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen)
     }.

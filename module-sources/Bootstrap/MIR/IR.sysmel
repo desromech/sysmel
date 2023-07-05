@@ -177,6 +177,7 @@ MIRValue definition: {
     public virtual method isBasicBlock => Boolean := false.
 
     public virtual method isVariable => Boolean := false.
+    public virtual method isLocalValueOrVariable => Boolean := false.
 
     public virtual method isLocalValue => Boolean := false.
     public virtual method isArgumentVariable => Boolean := false.
@@ -343,6 +344,7 @@ public abstract class MIRVariable superclass: MIRProgramEntity; definition: {
     public field isGCRoot => Boolean.
 
     public override method isVariable => Boolean := true.
+    public override method isLocalValueOrVariable => Boolean := true.
 
     public override method isFloatingPoint => Boolean := type asDecayedType isPrimitiveFloatType.
     public override method isVector => Boolean := type asDecayedType isPrimitiveVectorType.
@@ -427,6 +429,7 @@ MIRLocalValue definition: {
     }.
 
     public override method isLocalValue => Boolean := true.
+    public override method isLocalValueOrVariable => Boolean := true.
 
     public override method isFloatingPoint => Boolean := type asDecayedType isPrimitiveFloatType.
     public override method isVector => Boolean := type asDecayedType isPrimitiveVectorType.

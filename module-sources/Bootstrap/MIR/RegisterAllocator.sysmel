@@ -47,6 +47,22 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
     public abstract method allocateRegister8ForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void
         := self subclassResponsibility.
 
+    public virtual method allocateRegisterOrDirectPointerForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        let operand => MIRValue := instruction operands at: operandIndex.
+        self allocateRegisterForInstruction: instruction operandAt: operandIndex.
+        operand isLocalValueOrVariable ifTrue: {
+            instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationValuePointerOrAssignedRegister for: operand)
+        }.
+    }.
+
+    public virtual method allocateRegister8OrDirectPointerForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        let operand => MIRValue := instruction operands at: operandIndex.
+        self allocateRegister8ForInstruction: instruction operandAt: operandIndex.
+        operand isLocalValueOrVariable ifTrue: {
+            instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationValuePointerOrAssignedRegister for: operand)
+        }
+    }.
+
     public virtual method allocateRegister: (requiredRegister: MIRPhysicalLocation) orImmediateU8ForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
         let operand := instruction operands at: operandIndex.
         operand isImmediateU8 ifTrue: {
@@ -61,7 +77,16 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
         operand isImmediate8 ifTrue: {
             instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationImmediate for: operand)
         } ifFalse: {
-            self allocateRegisterForInstruction: instruction operandAt: operandIndex
+            self allocateRegister8ForInstruction: instruction operandAt: operandIndex
+        }
+    }.
+
+    public virtual method allocateRegisterImmediate8OrDirectPointerForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        let operand := instruction operands at: operandIndex.
+        operand isImmediate16 ifTrue: {
+            instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationImmediate for: operand)
+        } ifFalse: {
+            self allocateRegister8OrDirectPointerForInstruction: instruction operandAt: operandIndex
         }
     }.
 
@@ -71,6 +96,15 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
             instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationImmediate for: operand)
         } ifFalse: {
             self allocateRegisterForInstruction: instruction operandAt: operandIndex
+        }
+    }.
+
+    public virtual method allocateRegisterImmediate16OrDirectPointerForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        let operand := instruction operands at: operandIndex.
+        operand isImmediate16 ifTrue: {
+            instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationImmediate for: operand)
+        } ifFalse: {
+            self allocateRegisterOrDirectPointerForInstruction: instruction operandAt: operandIndex
         }
     }.
 
@@ -92,8 +126,22 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
         }
     }.
 
-    public virtual method allocateRegisterOrDirectPointerForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
-        self allocateRegisterForInstruction: instruction operandAt: operandIndex
+    public virtual method allocateRegisterImmediateS32OrDirectPointerForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        let operand := instruction operands at: operandIndex.
+        operand isImmediateS32 ifTrue: {
+            instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationImmediate for: operand)
+        } ifFalse: {
+            self allocateRegisterOrDirectPointerForInstruction: instruction operandAt: operandIndex
+        }
+    }.
+
+    public virtual method allocateRegisterImmediate64OrDirectPointerForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        let operand := instruction operands at: operandIndex.
+        operand isImmediate64 ifTrue: {
+            instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationImmediate for: operand)
+        } ifFalse: {
+            self allocateRegisterOrDirectPointerForInstruction: instruction operandAt: operandIndex
+        }
     }.
 
     public virtual method allocateRegisterOrImmediate32PointerForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
