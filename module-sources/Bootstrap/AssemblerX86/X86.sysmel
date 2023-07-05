@@ -269,6 +269,9 @@ AsmX86RegisterAddress definition: {
     public method hasSmallDisplacement => Boolean
         := displacement isNil || displacement isImmediateSigned8.
 
+    public method hasNoDisplacement => Boolean
+        := displacement isNil || displacement isImmediateValue0.
+
     public override method x86::encodeModRMWithRegOpcode: (opcode: UInt8) immediateSize: (immediateSize: Size)
         longMode: (longMode: Boolean) into: (codeStream: AsmObjectCodeStream) ::=> Void := {
 
@@ -291,7 +294,7 @@ AsmX86RegisterAddress definition: {
             hasSmallDisplacement := self hasSmallDisplacement.
             mod := hasSmallDisplacement ifTrue: 1u8 ifFalse: 2u8
         } ifFalse: {
-            displacement isNil && (base x86::valueLow ~= 5u8) ifTrue: {
+            self hasNoDisplacement && (base x86::valueLow ~= 5u8) ifTrue: {
                 mod := 0u8
             } ifFalse: {
                 hasDisplacement := true.
@@ -891,12 +894,15 @@ let instructionTemplateTable := #{
         writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
             let register := instruction firstOperand.
             let immediate := instruction secondOperand.
+            let operandSize := register size = 8sz && immediate isImmediateUnsigned32
+                ifTrue: 4sz
+                ifFalse: register size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
-                nextPutX86SizeOverride: register size;
-                nextPutX86RexSize: register size rm: register;
+                nextPutX86SizeOverride: operandSize;
+                nextPutX86RexSize: operandSize rm: register;
                 nextPutX86Opcode: templ opcode first plusRegister: register;
-                nextPutImmediate: immediate withSize: register size
+                nextPutImmediate: immediate withSize: operandSize
         };
         yourself).
 

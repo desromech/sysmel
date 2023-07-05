@@ -60,7 +60,11 @@ AsmInstructionOperand definition: {
     public virtual method isImmediateSigned32 => Boolean := false.
     public virtual method isImmediateSigned64 => Boolean := false.
 
+    public virtual method isImmediateUnsigned32 => Boolean := false.
+
     public virtual method asImmediateSigned8Value => Int8 := self error: "Not an immediate signed 8".
+    public virtual method asImmediateSigned32Value => Int32 := self error: "Not an immediate signed 8".
+    public virtual method asImmediateUnsigned32Value => Int32 := self error: "Not an immediate unsigned 8".
 
     public virtual method isImmediateConstantChar8 => Boolean := false.
     public virtual method isImmediateConstantUInt8 => Boolean := false.
@@ -653,6 +657,14 @@ public final class AsmImmediateConstantUInt64 superclass: AsmImmediateConstant; 
     public override method isImmediateValue1 => Boolean := value = 1u64.
     public override method size => Size := 8sz.
 
+    public override method isImmediateSigned8 => Boolean := value asInt8 asInt64 asUInt64 = value.
+    public override method isImmediateSigned32 => Boolean := value asInt32 asInt64 asUInt64 = value.
+
+    public override method isImmediateUnsigned32 => Boolean := value asUInt32 asUInt64 = value.
+
+    public override method asImmediateSigned8Value => Int8 := value asInt8.
+
+
     public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
         codeStream nextPutUInt64: value withSize: requiredSize
     }.
@@ -674,6 +686,13 @@ public final class AsmImmediateConstantInt64 superclass: AsmImmediateConstant; d
     public override method isImmediateValue0 => Boolean := value = 0i64.
     public override method isImmediateValue1 => Boolean := value = 1i64.
     public override method size => Size := 8sz.
+
+    public override method isImmediateSigned8 => Boolean := value asInt8 asInt64 = value.
+    public override method isImmediateSigned32 => Boolean := value asInt32 asInt64 = value.
+
+    public override method isImmediateUnsigned32 => Boolean := value asUInt32 asUInt64 asInt64 = value.
+
+    public override method asImmediateSigned8Value => Int8 := value asInt8.
 
     public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
         codeStream nextPutInt64: value withSize: requiredSize
