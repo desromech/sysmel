@@ -768,8 +768,11 @@ Type extend: {
         value
     }.
 
-    public virtual method emitMirUncheckedUnbox: (value: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
-        := value.
+    public virtual method emitMirUncheckedUnbox: (value: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
+        value type ~~ self
+            ifTrue: (codegen blockBuilder movePointer: value type: self)
+            ifFalse: value
+    }.
 
     public virtual method emitMirCheckAndUnbox: (value: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         (self == Untyped) || (self == AnyValue) ifFalse: {
@@ -2185,7 +2188,7 @@ HIRFunctionDefinitionMIRCodeGenerator extend: {
             canonicalResultType == resultType ifTrue: {
                 canonicalResult
             } ifFalse: {
-                resultType emitMirCheckAndUnbox: canonicalResult withHIRCodeGenerator: self
+                resultType emitMirUncheckedUnbox: canonicalResult withHIRCodeGenerator: self
             }
         } ifFalse: {
             let mirCalledFunction := self translateBoxedValue: calledFunction.
@@ -2211,8 +2214,17 @@ HIRCallInstruction extend: {
 
 HIRBitcastInstruction extend: {
     public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
-        ## FIXME: Add support for non-pointer values.
-        codegen translateValue: self value
+        let resultValue := codegen translateValue: self value.
+        let valueType := resultValue type.
+
+        valueType ~~ type ifTrue: {
+            self assert: valueType valueSize = self type valueSize.
+            self assert: valueType isPrimitiveFloatType not && self type isPrimitiveFloatType not.
+            ## FIXME: Support bitcast between non-pointer types.
+            codegen blockBuilder movePointer: resultValue type: self type
+        } ifFalse: {
+            resultValue
+        }
     }.
 }.
 

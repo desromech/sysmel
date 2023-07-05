@@ -72,7 +72,6 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
     public method allocateInstructionRegisters: (instruction: MIRInstruction) ::=> Void := {
         self beginValueAtIndex: instruction index.
         instruction isDebug ifTrue: {
-            instruction operands first markMemoryCopyRequired.
             return: void.
         }.
 
