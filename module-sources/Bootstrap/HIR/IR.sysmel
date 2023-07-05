@@ -333,17 +333,33 @@ HIRFunctionDefinition definition: {
                 markWhite.
         }.
 
+        let sortedBlocks := OrderedCollection new.
         self firstBasicBlock ifNotNil: {:(HIRBasicBlock)entryBlock :: Void |
-            self traverseBasicBlockForLiveness: entryBlock from: nil
+            entryBlock traverseForConnectivityAndLivenessFrom: nil sortingInto: sortedBlocks
         }.
 
+        ## Delete the unreachable basic blocks.
         self basicBlocksDo: {:(HIRBasicBlock)eachBasicBlock :: Void |
-            if: eachBasicBlock isBlack then: {
-                eachBasicBlock normalizePhiInstructions
-            } else: {
+            eachBasicBlock isBlack ifFalse: {
                 self assert: eachBasicBlock isWhite.
-                self removeBasicBlock: eachBasicBlock
+                self deleteBasicBlock: eachBasicBlock
             }
+        }.
+
+        ## Use the new sorted order.
+        sortedBlocks do: {:(HIRBasicBlock)each :: Void |
+            each parent: nil; previousBlock: nil; nextBlock: nil.
+        }.
+        firstBasicBlock := nil.
+        lastBasicBlock := nil.
+
+        sortedBlocks reverseDo: {:(HIRBasicBlock)each :: Void |
+            self addBasicBlock: each
+        }.
+
+        ## Normalize the phi instructions.
+        self basicBlocksDo: {:(HIRBasicBlock)eachBasicBlock :: Void |
+            eachBasicBlock normalizePhiInstructions
         }.
     }.
 
@@ -351,21 +367,6 @@ HIRFunctionDefinition definition: {
         self basicBlocksDo: {:(HIRBasicBlock)eachBasicBlock :: Void |
             eachBasicBlock fixCriticalEdges
         }
-    }.
-
-    public method traverseBasicBlockForLiveness: (basicBlock: HIRBasicBlock) from: (predecessor: HIRBasicBlock) ::=> Void := {
-        predecessor ifNotNil: {
-            basicBlock addPredecessor: predecessor isBackEdge: basicBlock isGray.
-        }.
-
-        if: basicBlock isWhite then: {
-            basicBlock markGray.
-            basicBlock successors do: {:(HIRBasicBlock)eachSuccessor :: Void|
-                self traverseBasicBlockForLiveness: eachSuccessor from: basicBlock
-            }.
-
-            basicBlock markBlack.
-        }.
     }.
 
     public method removeBasicBlock: (basicBlock: HIRBasicBlock) ::=> Void := {
@@ -390,6 +391,15 @@ HIRFunctionDefinition definition: {
             parent: nil;
             previousBlock: nil;
             nextBlock: nil
+    }.
+
+    public method deleteBasicBlock: (basicBlock: HIRBasicBlock) ::=> Void := {
+        basicBlock
+            removeFromControlFlow;
+            deleteInstructions;
+            unregisterFromUsedValues.
+
+        self removeBasicBlock: basicBlock.
     }.
 
     public override method postCopy => Void := {
@@ -529,9 +539,37 @@ HIRBasicBlock definition: {
         self predecessorKinds: OrderedCollection new.
     }.
 
+    public method traverseForConnectivityAndLivenessFrom: (predecessor: HIRBasicBlock) sortingInto: (sortedBlocks: OrderedCollection) ::=> Void := {
+        predecessor ifNotNil: {
+            self addPredecessor: predecessor isBackEdge: self isGray.
+        }.
+
+        if: self isWhite then: {
+            self markGray.
+            self successors do: {:(HIRBasicBlock)eachSuccessor :: Void|
+                eachSuccessor traverseForConnectivityAndLivenessFrom: self sortingInto: sortedBlocks
+            }.
+
+            self markBlack.
+            sortedBlocks add: self
+        }.
+    }.
+
     public method addPredecessor: (predecessor: HIRBasicBlock) isBackEdge: (isBackEdge: Boolean) ::=> Void := {
         self predecessors add: predecessor.
         self predecessorKinds add: isBackEdge.
+    }.
+
+    public method removePredecessor: (predecessor: HIRBasicBlock) ::=> Void := {
+        let index := self predecessors indexOf: predecessor.
+        index >= 0iptr ifTrue: {
+            self predecessors removeAt: index asSize.
+            self predecessorKinds removeAt: index asSize.
+        }.
+
+        self phiInstructionsDo: {:(HIRPhiInstruction)phi :: Void |
+            phi removeIncomingBlock: predecessor
+        }
     }.
 
     public method addInstruction: (instruction: HIRInstruction) before: (position: HIRInstruction) ::=> Void := {
@@ -585,6 +623,19 @@ HIRBasicBlock definition: {
 
     public method addFirstInstruction: (instruction: HIRInstruction) ::=> Void
         := self addInstruction: instruction after: nil.
+
+    public method removeFromControlFlow => Void := {
+        self successors do: {:(HIRBasicBlock)succ :: Void |
+            succ removePredecessor: self
+        }
+    }.
+
+    public method deleteInstructions => Void := {
+        self instructionsDo: {:(HIRInstruction)instruction :: Void |
+            instruction unregisterFromUsedValues
+        }.
+        firstInstruction := lastInstruction := nil.
+    }.
 
     public method instructionsDo: aBlock ::=> Void := {
         let position mutable := firstInstruction.
@@ -1295,6 +1346,24 @@ HIRPhiInstruction definition: {
         self incomingBlocksAndValues: self incomingBlocksAndValues -- (Array with: block -> value).
         value registerUser: self.
         block registerUser: self.
+    }.
+
+    public method indexOfIncomingBlock: (block: HIRBasicBlock) ::=> IntPointer := {
+        let i mutable := 0sz.
+        while: i < incomingBlocksAndValues size do: {
+            let assoc => Association := incomingBlocksAndValues at: i.
+            assoc key = block ifTrue: {
+                return: i asIntPointer
+            }
+        } continueWith: (i := i + 1sz).
+        -1iptr
+    }.
+
+    public method removeIncomingBlock: (block: HIRBasicBlock) ::=> Void := {
+        let blockIndex := self indexOfIncomingBlock: block.
+        blockIndex >= 0iptr ifTrue: {
+            incomingBlocksAndValues := incomingBlocksAndValues copyWithoutElementAt: blockIndex asSize
+        }.
     }.
 
     public method findIncomingBlockAndValueFor: (expectedBlock: HIRBasicBlock) ::=> Association

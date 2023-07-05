@@ -25,4 +25,21 @@ Array definition: {
 
         return: true
     }.
+
+    public final method copyWithoutElementAt: (removedIndex: Size) ::=> self class := {
+        let size := self size.
+        removedIndex >= size ifTrue: {return: self}.
+
+        let result := self class basicAllocate: size - 1sz.
+        let destIndex mutable := 0sz.
+        let i mutable := 0sz.
+        while: (i < size) do: {
+            i = removedIndex ifFalse: {
+                result at: destIndex put: (self at: i).
+                destIndex := destIndex + 1sz
+            }.
+        } continueWith:(i := i + 1sz).
+
+        result 
+    }.
 }.
