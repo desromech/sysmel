@@ -334,8 +334,9 @@ HIRFunctionDefinition definition: {
         }.
 
         let sortedBlocks := OrderedCollection new.
+        let dfsBlocks := OrderedCollection new.
         self firstBasicBlock ifNotNil: {:(HIRBasicBlock)entryBlock :: Void |
-            entryBlock traverseForConnectivityAndLivenessFrom: nil sortingInto: sortedBlocks
+            entryBlock traverseForConnectivityAndLivenessFrom: nil sortingInto: sortedBlocks dfsBlocks: dfsBlocks
         }.
 
         ## Delete the unreachable basic blocks.
@@ -353,11 +354,8 @@ HIRFunctionDefinition definition: {
         firstBasicBlock := nil.
         lastBasicBlock := nil.
 
-        let dfsIndex mutable := 0u32.
         sortedBlocks reverseDo: {:(HIRBasicBlock)each :: Void |
-            self addBasicBlock: each.
-            each dfsIndex: dfsIndex.
-            dfsIndex := dfsIndex + 1u32.
+            self addBasicBlock: each
         }.
 
         ## Normalize the phi instructions.
@@ -366,15 +364,15 @@ HIRFunctionDefinition definition: {
         }.
 
         ## Compute the dominance.
-        sortedBlocks do: {:(HIRBasicBlock)each :: Void |
+        dfsBlocks do: {:(HIRBasicBlock)each :: Void |
             each resetDominance.
         }.
 
-        sortedBlocks do: {:(HIRBasicBlock)each :: Void |
+        dfsBlocks reverseDo: {:(HIRBasicBlock)each :: Void |
             each computeDominanceFirstPass.
         }.
 
-        sortedBlocks do: {:(HIRBasicBlock)each :: Void |
+        dfsBlocks do: {:(HIRBasicBlock)each :: Void |
             each computeDominanceSecondPass.
         }.
 
@@ -572,7 +570,7 @@ HIRBasicBlock definition: {
         self predecessorKinds: OrderedCollection new.
     }.
 
-    public method traverseForConnectivityAndLivenessFrom: (predecessor: HIRBasicBlock) sortingInto: (sortedBlocks: OrderedCollection) ::=> Void := {
+    public method traverseForConnectivityAndLivenessFrom: (predecessor: HIRBasicBlock) sortingInto: (sortedBlocks: OrderedCollection) dfsBlocks: (dfsBlocks: OrderedCollection) ::=> Void := {
         predecessor ifNotNil: {
             self addPredecessor: predecessor isBackEdge: self isGray.
         }.
@@ -580,9 +578,11 @@ HIRBasicBlock definition: {
         if: self isWhite then: {
             self markGray.
             self dfsParent: predecessor.
+            self dfsIndex: dfsBlocks size asUInt32.
+            dfsBlocks add: self.
 
             self successors reverseDo: {:(HIRBasicBlock)eachSuccessor :: Void|
-                eachSuccessor traverseForConnectivityAndLivenessFrom: self sortingInto: sortedBlocks
+                eachSuccessor traverseForConnectivityAndLivenessFrom: self sortingInto: sortedBlocks dfsBlocks: dfsBlocks
             }.
 
             self markBlack.
@@ -659,6 +659,8 @@ HIRBasicBlock definition: {
             self immediateDominator: self sameDominator immediateDominator
         }.
 
+        immediateDominator ifNil: {printLine(parent fullPrintString)}.
+        self assert: immediateDominator isNotNil.
         immediateDominator dominatorTreeChildren add: self.
         dominanceBucket := nil.
     }.
