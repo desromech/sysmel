@@ -152,8 +152,26 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
     public method allocate => MIRPhysicalLocation
         := self allocateForValue: nil.
 
-    public method allocateForResultValue: (value: MIRValue) ::=> MIRPhysicalLocation 
-        := self allocateForValue: value.
+    public method allocateForResultValue: (value: MIRValue) trySharingWith: (sharingValue: MIRValue) ::=> MIRPhysicalLocation := {
+        value isNotNil && value isLocalValue && sharingValue isNotNil && sharingValue isLocalValue ifTrue: {
+            let localValue := value downCastTo: MIRLocalValue.
+            let sharingLocalValue := sharingValue downCastTo: MIRLocalValue.
+            let sharingInterval := sharingLocalValue liveInterval.
+
+            (localValue physicalLocationClass == sharingLocalValue physicalLocationClass) && 
+            sharingInterval isSpilled not &&
+            sharingInterval register isNotNil && 
+            (sharingInterval end <= currentValueIndex) ifTrue: {
+                activeIntervals
+                expireAllThat: {:(MIRLiveInterval)interval :: Boolean | interval == sharingInterval }
+                doing: {:(MIRLiveInterval)interval :: Void |
+                    availableRegisters add: interval register.
+                }
+            }
+        }.
+
+        self allocateForValue: value.
+    }.
 
     public method allocateForResultValuePointer: (value: MIRValue) ::=> MIRPhysicalLocation
         := self allocateForValue: nil.
@@ -182,6 +200,6 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
     public method allocateForByte => MIRPhysicalLocation
         := self allocateForByteValue: nil.
 
-    public method allocateForByteResultValue: (value: MIRValue) ::=> MIRPhysicalLocation
+    public method allocateForByteResultValue: (value: MIRValue) trySharingWith: (sharingValue: MIRValue) ::=> MIRPhysicalLocation
         := self allocateForByteValue: value.
 }.

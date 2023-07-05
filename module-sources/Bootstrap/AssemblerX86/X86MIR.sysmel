@@ -1241,20 +1241,20 @@ MIRFunctionAsmCodeGenerator extend: {
 let x86::integerAluUnaryInt8RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
-        allocateRegisterForInstructionResult: instruction
+        allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
         
 }.
 
 let x86::integerAluUnaryInt16RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
-        allocateRegisterForInstructionResult: instruction
+        allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
 let x86::integerAluUnaryInt32RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
-        allocateRegisterForInstructionResult: instruction
+        allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
 let x86::integerAluUnaryInt64RegisterConstraints := x86::integerAluUnaryInt32RegisterConstraints.
@@ -1263,28 +1263,28 @@ let x86::integerAluInt8RegisterConstraints := {:(MIRInstruction)instruction :(MI
     allocator
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
         allocateRegisterOrImmediate8ForInstruction: instruction operandAt: 1sz;
-        allocateRegisterForInstructionResult: instruction
+        allocateRegister8ForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
 let x86::integerAluInt16RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
         allocateRegisterOrImmediate16ForInstruction: instruction operandAt: 1sz;
-        allocateRegisterForInstructionResult: instruction
+        allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
 let x86::integerAluInt32RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 1sz;
-        allocateRegisterForInstructionResult: instruction
+        allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
 let x86::integerAluInt64RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate64ForInstruction: instruction operandAt: 0sz;
         allocateRegisterOrImmediateS32ForInstruction: instruction operandAt: 1sz;
-        allocateRegisterForInstructionResult: instruction
+        allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
 MIR::Operation::Int8Negate
@@ -1604,7 +1604,7 @@ let x86::integerMul32RegisterConstraints := {:(MIRInstruction)instruction :(MIRR
     allocator
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
         allocateRegisterForInstruction: instruction operandAt: 1sz;
-        allocateRegisterForInstructionResult: instruction
+        allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
 let x86::integerMul64RegisterConstraints := x86::integerMul32RegisterConstraints.
@@ -1614,7 +1614,7 @@ MIR::Operation::Int8Mul
         allocator
             allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
             allocateRegister8ForInstruction: instruction operandAt: 1sz;
-            allocateRegister8ForInstructionResult: instruction
+            allocateRegister8ForInstructionResult: instruction trySharingWithOperandAt: 0sz
     };
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
@@ -1989,14 +1989,14 @@ let x86::integerShiftRegisterConstraints := {:(MIRInstruction)instruction :(MIRR
     allocator
         allocateRegister: MIR::X86::ECX orImmediateU8ForInstruction: instruction operandAt: 1sz;
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
-        allocateRegisterForInstructionResult: instruction
+        allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
 let x86_64::integerShiftRegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegister: MIR::X86_64::RCX orImmediateU8ForInstruction: instruction operandAt: 1sz;
         allocateRegisterOrImmediate64ForInstruction: instruction operandAt: 0sz;
-        allocateRegisterForInstructionResult: instruction
+        allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
 MIR::Operation::Int8ArithmeticShiftRight
@@ -3097,19 +3097,19 @@ MIR::Operation::PointerNotEqualsBranch
 let x86::moveIntegerRegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
-        allocateRegisterForInstructionResult: instruction
+        allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
 let x86::moveIntegerRegister16Constraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate16ForInstruction: instruction operandAt: 0sz;
-        allocateRegisterForInstructionResult: instruction
+        allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
 let x86::moveIntegerRegister8Constraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate8ForInstruction: instruction operandAt: 0sz;
-        allocateRegisterForInstructionResult: instruction
+        allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
 MIR::Operation::MoveInt8
@@ -3406,7 +3406,7 @@ MIR::Operation::ZeroExtendInt8ToInt16
 let x86::vectorMoveRegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrMemoryForInstruction: instruction operandAt: 0sz;
-        allocateRegisterForInstructionResult: instruction
+        allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
 let x86::vectorStorePointerRegisterContraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
@@ -3455,14 +3455,14 @@ MIR::Operation::StoreFloat64
 let x86::vectorUnaryAluRegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrMemoryForInstruction: instruction operandAt: 0sz;
-        allocateRegisterForInstructionResult: instruction
+        allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
 let x86::vectorAluRegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrMemoryForInstruction: instruction operandAt: 0sz;
         allocateRegisterOrMemoryForInstruction: instruction operandAt: 1sz;
-        allocateRegisterForInstructionResult: instruction
+        allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
 let x86::vectorScalarComparisonRegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |

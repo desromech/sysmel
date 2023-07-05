@@ -32,11 +32,17 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
     public abstract method allocateRegisterForInstructionResult: (instruction: MIRInstruction) ::=> Void
         := self subclassResponsibility.
 
+    public virtual method allocateRegisterForInstructionResult: (instruction: MIRInstruction) trySharingWithOperandAt: (operandIndex: Size) ::=> Void
+        := self allocateRegisterForInstructionResult: instruction.
+
     public abstract method allocateRegisterForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void
         := self subclassResponsibility.
 
     public abstract method allocateRegister8ForInstructionResult: (instruction: MIRInstruction) ::=> Void
         := self subclassResponsibility.
+
+    public virtual method allocateRegister8ForInstructionResult: (instruction: MIRInstruction) trySharingWithOperandAt: (operandIndex: Size)  ::=> Void
+        := self allocateRegister8ForInstructionResult: instruction.
 
     public abstract method allocateRegister8ForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void
         := self subclassResponsibility.
@@ -130,7 +136,7 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
     public abstract method allocateIntegerRegisterForValuePointer: (value: MIRValue) ::=> MIRPhysicalLocation
         := self subclassResponsibility.
 
-    public abstract method allocateIntegerRegisterForResultValue: (value: MIRLocalValue) ::=> MIRPhysicalLocation
+    public abstract method allocateIntegerRegisterForResultValue: (value: MIRLocalValue) trySharingWith: (sharingValue: MIRValue) ::=> MIRPhysicalLocation
         := self subclassResponsibility.
 
     public abstract method allocateIntegerRegisterForResultValuePointer: (value: MIRLocalValue) ::=> MIRPhysicalLocation
@@ -139,19 +145,19 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
     public abstract method allocateIntegerRegister8ForValue: (value: MIRValue) ::=> MIRPhysicalLocation
         := self subclassResponsibility.
 
-    public abstract method allocateIntegerRegister8ForResultValue: (value: MIRValue) ::=> MIRPhysicalLocation
+    public abstract method allocateIntegerRegister8ForResultValue: (value: MIRValue) trySharingWith: (sharingValue: MIRValue) ::=> MIRPhysicalLocation
         := self subclassResponsibility.
 
     public abstract method allocateFloatRegisterForValue: (value: MIRValue) ::=> MIRPhysicalLocation
         := self subclassResponsibility.
 
-    public abstract method allocateFloatRegisterForResultValue: (value: MIRLocalValue) ::=> MIRPhysicalLocation
+    public abstract method allocateFloatRegisterForResultValue: (value: MIRLocalValue) trySharingWith: (sharingValue: MIRValue) ::=> MIRPhysicalLocation
         := self subclassResponsibility.
 
     public abstract method allocateVectorRegisterForValue: (value: MIRValue) ::=> MIRPhysicalLocation
         := self subclassResponsibility.
 
-    public abstract method allocateVectorRegisterForResultValue: (value: MIRLocalValue) ::=> MIRPhysicalLocation
+    public abstract method allocateVectorRegisterForResultValue: (value: MIRLocalValue) trySharingWith: (sharingValue: MIRValue) ::=> MIRPhysicalLocation
         := self subclassResponsibility.
 
     public abstract method spillIntegerRegistersExceptFor: (registers: Array) ::=> Void
@@ -206,7 +212,7 @@ MIRPhysicalLocation extend: {
         public abstract method allocateRegisterForValue: (value: MIRValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
             := self subclassResponsibility.
 
-        public abstract method allocateRegisterForResultValue: (value: MIRLocalValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
+        public abstract method allocateRegisterForResultValue: (value: MIRLocalValue) trySharingWith: (sharingValue: MIRValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
             := self subclassResponsibility.
     }.
 
@@ -225,8 +231,8 @@ MIRPhysicalIntegerRegister extend: {
         public override method allocateRegisterForValue: (value: MIRValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
             := registerAllocator allocateIntegerRegisterForValue: value.
 
-        public override method allocateRegisterForResultValue: (value: MIRLocalValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
-            := registerAllocator allocateIntegerRegisterForResultValue: value.
+        public override method allocateRegisterForResultValue: (value: MIRLocalValue) trySharingWith: (sharingValue: MIRValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
+            := registerAllocator allocateIntegerRegisterForResultValue: value  trySharingWith: sharingValue.
     }.
 
     public override method makeActiveWithValue: (value: MIRValue) inRegisterAllocator: (registerAllocator: MIRRegisterAllocator) ::=> Void := {
@@ -247,7 +253,7 @@ MIRPhysicalLocationMemory extend: {
         public override method allocateRegisterForValue: (value: MIRValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
             := registerAllocator allocateIntegerRegisterForValuePointer: value.
 
-        public override method allocateRegisterForResultValue: (value: MIRLocalValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
+        public override method allocateRegisterForResultValue: (value: MIRLocalValue) trySharingWith: (sharingValue: MIRValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
             := registerAllocator allocateIntegerRegisterForResultValuePointer: value.
     }.
 }.
@@ -257,8 +263,8 @@ MIRPhysicalFloatRegister extend: {
         public override method allocateRegisterForValue: (value: MIRValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
             := registerAllocator allocateFloatRegisterForValue: value.
 
-        public override method allocateRegisterForResultValue: (value: MIRLocalValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
-            := registerAllocator allocateFloatRegisterForResultValue: value.
+        public override method allocateRegisterForResultValue: (value: MIRLocalValue) trySharingWith: (sharingValue: MIRValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
+            := registerAllocator allocateFloatRegisterForResultValue: value trySharingWith: sharingValue.
     }.
 
     public override method makeActiveWithValue: (value: MIRValue) inRegisterAllocator: (registerAllocator: MIRRegisterAllocator) ::=> Void := {
@@ -279,8 +285,8 @@ MIRPhysicalVectorRegister extend: {
         public override method allocateRegisterForValue: (value: MIRValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
             := registerAllocator allocateVectorRegisterForValue: value.
 
-        public override method allocateRegisterForResultValue: (value: MIRLocalValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
-            := registerAllocator allocateVectorRegisterForResultValue: value.
+        public override method allocateRegisterForResultValue: (value: MIRLocalValue) trySharingWith: (sharingValue: MIRValue) with: (registerAllocator: MIRRegisterAllocator) ::=> MIRPhysicalLocation
+            := registerAllocator allocateVectorRegisterForResultValue: value trySharingWith: sharingValue.
     }.
 
     public override method makeActiveWithValue: (value: MIRValue) inRegisterAllocator: (registerAllocator: MIRRegisterAllocator) ::=> Void := {
