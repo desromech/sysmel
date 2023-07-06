@@ -1903,10 +1903,6 @@ public final class HIRModule superclass: Object; definition: {
             stream fullPrint: eachValue; nl
         }
     }.
-
-    public method performStandardOptimizations => Void := {
-        HIRPromoteAllocaPass runInModule: self.
-    }.
 }.
 
 HIRInstructionBuilder definition: {

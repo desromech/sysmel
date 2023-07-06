@@ -3,6 +3,7 @@ loadSourceNamed: "FrontEnd.sysmel".
 loadSourceNamed: "TransformationPasses.sysmel".
 loadSourceNamed: "PromoteAllocaPass.sysmel".
 loadSourceNamed: "DestroySSAPass.sysmel".
+loadSourceNamed: "StandardOptimizations.sysmel".
 loadSourceNamed: "MIR.sysmel".
 loadSourceNamed: "ImageBuilderHIRImage.sysmel".
 loadSourceNamed: "ImageBuilderHIRTarget.sysmel".
