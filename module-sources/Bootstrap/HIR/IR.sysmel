@@ -328,15 +328,19 @@ HIRFunctionDefinition definition: {
     public method computeControlFlowAndNormalizeBasicBlocks => Void := {
         self basicBlocksDo: {:(HIRBasicBlock)basicBlock :: Void |
             basicBlock
-                computeSuccessors;
                 resetPredecessors;
                 markWhite.
         }.
 
+        self basicBlocksDo: {:(HIRBasicBlock)basicBlock :: Void |
+            basicBlock computeSuccessorsAddingIntoPredecessors.
+        }.
+
+        self fixCriticalEdges.
+
         let sortedBlocks := OrderedCollection new.
-        let dfsBlocks := OrderedCollection new.
         self firstBasicBlock ifNotNil: {:(HIRBasicBlock)entryBlock :: Void |
-            entryBlock traverseForConnectivityAndLivenessFrom: nil sortingInto: sortedBlocks dfsBlocks: dfsBlocks
+            entryBlock traverseForConnectivityAndLivenessFrom: nil sortingInto: sortedBlocks
         }.
 
         ## Delete the unreachable basic blocks.
@@ -361,6 +365,19 @@ HIRFunctionDefinition definition: {
         ## Normalize the phi instructions.
         self basicBlocksDo: {:(HIRBasicBlock)eachBasicBlock :: Void |
             eachBasicBlock normalizePhiInstructions
+        }.
+    }.
+
+    public method computeDominance => Void := {
+        self computeControlFlowAndNormalizeBasicBlocks.
+        
+        self basicBlocksDo: {:(HIRBasicBlock)basicBlock :: Void |
+            basicBlock markWhite.
+        }.
+
+        let dfsBlocks := OrderedCollection new.
+        self firstBasicBlock ifNotNil: {:(HIRBasicBlock)entryBlock :: Void |
+            entryBlock dfsEnumerateFrom: nil sortingInto: dfsBlocks
         }.
 
         ## Compute the dominance.
@@ -570,24 +587,36 @@ HIRBasicBlock definition: {
         self predecessorKinds: OrderedCollection new.
     }.
 
-    public method traverseForConnectivityAndLivenessFrom: (predecessor: HIRBasicBlock) sortingInto: (sortedBlocks: OrderedCollection) dfsBlocks: (dfsBlocks: OrderedCollection) ::=> Void := {
+    public method traverseForConnectivityAndLivenessFrom: (predecessor: HIRBasicBlock) sortingInto: (sortedBlocks: OrderedCollection) ::=> Void := {
         predecessor ifNotNil: {
-            self addPredecessor: predecessor isBackEdge: self isGray.
+            predecessorKinds at: (predecessors indexOf: predecessor) asSize put: self isGray.
         }.
 
-        if: self isWhite then: {
-            self markGray.
-            self dfsParent: predecessor.
-            self dfsIndex: dfsBlocks size asUInt32.
-            dfsBlocks add: self.
+        self isWhite ifFalse: {return: void}.
 
-            self successors reverseDo: {:(HIRBasicBlock)eachSuccessor :: Void|
-                eachSuccessor traverseForConnectivityAndLivenessFrom: self sortingInto: sortedBlocks dfsBlocks: dfsBlocks
-            }.
+        self markGray.
 
-            self markBlack.
-            sortedBlocks add: self
+        self successors reverseDo: {:(HIRBasicBlock)eachSuccessor :: Void|
+            eachSuccessor traverseForConnectivityAndLivenessFrom: self sortingInto: sortedBlocks
         }.
+
+        self markBlack.
+        sortedBlocks add: self
+    }.
+
+    public method dfsEnumerateFrom: (predecessor: HIRBasicBlock) sortingInto: (sortedBlocks: OrderedCollection) ::=> Void := {
+        self isWhite ifFalse: {return: void}.
+
+        self markGray.
+        self dfsParent: predecessor.
+        self dfsIndex: sortedBlocks size asUInt32.
+        sortedBlocks add: self.
+
+        self successors reverseDo: {:(HIRBasicBlock)eachSuccessor :: Void|
+            eachSuccessor dfsEnumerateFrom: self sortingInto: sortedBlocks
+        }.
+
+        self markBlack.
     }.
 
     public method resetDominance => Void := {
@@ -706,6 +735,10 @@ HIRBasicBlock definition: {
     public method addPredecessor: (predecessor: HIRBasicBlock) isBackEdge: (isBackEdge: Boolean) ::=> Void := {
         self predecessors add: predecessor.
         self predecessorKinds add: isBackEdge.
+    }.
+
+    public method addPredecessor: (predecessor: HIRBasicBlock) ::=> Void := {
+        self addPredecessor: predecessor isBackEdge: false
     }.
 
     public method removePredecessor: (predecessor: HIRBasicBlock) ::=> Void := {
@@ -877,7 +910,7 @@ HIRBasicBlock definition: {
             branch: self.
         
         incomingBlock lastInstruction replaceDestination: self with: intermediateBlock.
-        incomingBlock replaceSuccessor: self with: incomingBlock.
+        incomingBlock replaceSuccessor: self with: intermediateBlock.
         self predecessors at: incomingBlockIndex put: intermediateBlock.
 
         self phiInstructionsDo: {:(HIRPhiInstruction)each :: Void |
@@ -910,13 +943,15 @@ HIRBasicBlock definition: {
     }.
 
     public method replaceSuccessor: (oldSuccessor: HIRBasicBlock) with: (newSuccessor: HIRBasicBlock) ::=> Void := {
-        self successors doWithIndex: {:(HIRBasicBlock)eachSuccessor :(Size)index :: Void |
-            if: eachSuccessor = oldSuccessor then: (self successors at: index put: newSuccessor)
-        }
+        let index := self successors indexOf: oldSuccessor.
+        self successors at: index asSize put: newSuccessor.
     }.
 
-    public method computeSuccessors => Void := {
-        self successors: self lastInstruction successors
+    public method computeSuccessorsAddingIntoPredecessors => Void := {
+        self successors: self lastInstruction successors.
+        self successors do: {:(HIRBasicBlock)succ :: Void |
+            succ addPredecessor: self
+        }
     }.
 
     public override method postCopy => Void := {

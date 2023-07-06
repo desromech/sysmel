@@ -2,9 +2,7 @@
 public class HIRDestroySSAFunctionPass superclass: HIRFunctionDefinitionPass; definition: {
     public override method runInFunctionDefinition: (function: HIRFunctionDefinition) ::=> Void := {
         function firstBasicBlock ifNil: (return: void).
-        function
-            computeControlFlowAndNormalizeBasicBlocks;
-            fixCriticalEdges.
+        function computeControlFlowAndNormalizeBasicBlocks.
 
         let allocaBuilder := HIRInstructionBuilder new
             beginInsertingInBasicBlock: function firstBasicBlock;
