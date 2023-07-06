@@ -1,5 +1,18 @@
 {
-function mySelect(switch: Int32, x: Int32, y: Int32, z: Int32) => Int32 := {
+function returnVar() => Int32 := {
+    let var mutable => Int32 := 1i32.
+    var
+}.
+
+let module := returnVar asHIRModule.
+printLine(module fullPrintString).
+
+HIRPromoteAllocaPass runInModule: module.
+printLine(module fullPrintString).
+}.
+
+{
+function mySelect(switch: Int32, x: Int32, y: Int32, z: Int32, w: Int32) => Int32 := {
     let result mutable := x.
     switch = 0i32 ifFalse: {
         switch = 1i32 ifTrue: {
@@ -7,6 +20,10 @@ function mySelect(switch: Int32, x: Int32, y: Int32, z: Int32) => Int32 := {
         } ifFalse: {
             result := z
         }
+    }.
+
+    switch = 3i32 ifTrue: {
+        result := result + w
     }.
 
     result
@@ -17,4 +34,38 @@ printLine(module fullPrintString).
 
 HIRPromoteAllocaPass runInModule: module.
 printLine(module fullPrintString).
-}
+}.
+
+{
+function myLoop(N: Int32) => Int32 := {
+    let count mutable := 0i32.
+    while: count < N do: {
+        count := count + 2i32.
+    }.
+
+    count
+}.
+
+let module := myLoop asHIRModule.
+printLine(module fullPrintString).
+
+HIRPromoteAllocaPass runInModule: module.
+printLine(module fullPrintString).
+}.
+
+{
+function myDoWhileLoop(N: Int32) => Int32 := {
+    let count mutable := 0i32.
+    do: {
+        count := count + 2i32.
+    } while: (count < N).
+
+    count
+}.
+
+let module := myDoWhileLoop asHIRModule.
+printLine(module fullPrintString).
+
+HIRPromoteAllocaPass runInModule: module.
+printLine(module fullPrintString).
+}.

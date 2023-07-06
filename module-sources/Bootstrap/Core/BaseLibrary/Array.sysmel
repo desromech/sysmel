@@ -42,4 +42,10 @@ Array definition: {
 
         result 
     }.
+
+    public method swap: (firstIndex: Size) with: (secondIndex: Size) ::=> Void := {
+        let temp := self untypedAt: secondIndex.
+        self untypedAt: secondIndex put: (self untypedAt: firstIndex).
+        self untypedAt: firstIndex put: temp.
+    }.
 }.

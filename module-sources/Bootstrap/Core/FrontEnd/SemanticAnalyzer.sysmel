@@ -419,6 +419,7 @@ ASTLocalDefinitionNode definition: {
             let binding := environment setNewSymbol: evaluatedName localBindingOfType: evaluatedType at: result sourcePosition.
             result
                 analyzedType: evaluatedType;
+                analyzedValueType: evaluatedValueType;
                 binding: binding;
                 yourself
         }.

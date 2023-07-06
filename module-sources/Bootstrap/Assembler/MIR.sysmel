@@ -505,13 +505,14 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
 
     public method processDebugInstruction: (debugInstruction: MIRInstruction) ::=> Void := {
         self assert: (debugInstruction operation = MIR::Operation::DebugSetBindingValue)
-            || (debugInstruction operation = MIR::Operation::DebugSetMutableBindingValue).
+            || (debugInstruction operation = MIR::Operation::DebugSetMutableBindingValue)
+            || (debugInstruction operation = MIR::Operation::DebugSetMutableBindingSpecificValue).
         let value := debugInstruction operands first.
         let binding := debugInstruction sourceBinding.
 
         let location := value asm::makeStackMapLocationWith: self.
         location ifNotNil: {
-            stackMap addLocalBindingMap: (stackMap setBinding: binding isMutable: debugInstruction operation = MIR::Operation::DebugSetMutableBindingValue location: location)
+            stackMap addLocalBindingMap: (stackMap setBinding: binding isMutable: debugInstruction operation ~= MIR::Operation::DebugSetBindingValue location: location)
         }.
     }.
 

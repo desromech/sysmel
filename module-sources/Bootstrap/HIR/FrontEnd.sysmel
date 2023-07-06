@@ -348,6 +348,7 @@ let primitiveFunctionGenerators := #{
         let reference := self arguments first generateHIRValueWith: context.
         self analyzedType isTemporaryReferenceType ifTrue: {
             let valueType := (self analyzedType downCastTo: ReferenceLikeType) baseType.
+            self assert: valueType isNotNil.
             let temporary := context builder alloca: (context builder literal: valueType) type: self analyzedType.
             context builder store: (context builder load: reference type: valueType) in: temporary.
             temporary
@@ -522,6 +523,7 @@ ASTLocalDefinitionNode extend: {
         let value := self valueExpression generateHIRValueWith: context.
 
         self isMutable ifTrue: {
+            self assert: self analyzedValueType isNotNil.
             let localVariable := builder alloca: (builder literal: self analyzedValueType) type: self analyzedType.
             builder store: value in: localVariable.
             context setValue: localVariable forBinding: self binding.

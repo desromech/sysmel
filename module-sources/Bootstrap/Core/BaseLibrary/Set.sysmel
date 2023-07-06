@@ -121,4 +121,40 @@ Set definition: {
         }
     }.
 
+    public method addAll: (collection: Collection) ::=> Void := {
+        collection do: {:each :: Void | self add: each}
+    }.
+
+    public method fixCollisionsFrom: (start: Size) ::=> Void := {
+        let capacity := storage size.
+        let index mutable := (start + 1sz) % capacity.
+
+        while: (Untyped::~~)((let element := storage untypedAt: index), __hashtableEmptyElement__) do: {
+            let newIndex := self scanFor: element.
+            newIndex asSize = index ifFalse: {
+                storage swap: index with: newIndex asSize
+            }.
+
+            index := (index + 1sz) % capacity
+        }.
+    }.
+
+    public method remove: element ifAbsent: aBlock := {
+        let index := self scanFor: element.
+        index < 0iptr ifTrue: {return: aBlock()}.
+
+        let foundElement := storage untypedAt: index asSize.
+        (Untyped::==)(foundElement, __hashtableEmptyElement__) ifTrue: {
+            return: aBlock()
+        }.
+        
+        storage untypedAt: index asSize put: __hashtableEmptyElement__.
+        size := size - 1sz.
+        self fixCollisionsFrom: index asSize.
+
+        foundElement
+    }.
+
+    public method remove: element ::=> Void
+        := self remove: element ifAbsent: {| self error: "Element not found"}.
 }.

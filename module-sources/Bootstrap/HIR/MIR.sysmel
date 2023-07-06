@@ -2376,7 +2376,11 @@ HIRSetDebugValueForBindingInstruction extend: {
         self value isAllocaInstruction ifTrue: {
             codegen blockBuilder debugSetMutableBinding: self binding value: (codegen translateValue: self value)
         } ifFalse: {
-            codegen blockBuilder debugSetBinding: self binding value: (codegen translateValue: self value)
+            self promotedFromAlloca ifTrue: {
+                codegen blockBuilder debugSetMutableBindingSpecificValue: self binding value: (codegen translateValue: self value)
+            } ifFalse: {
+                codegen blockBuilder debugSetBinding: self binding value: (codegen translateValue: self value)
+            }.
         }
     }.
 }.

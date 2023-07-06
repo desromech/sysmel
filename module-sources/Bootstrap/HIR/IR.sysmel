@@ -48,6 +48,7 @@ HIRValue definition: {
     public virtual method isMakeByteArrayInstruction => Boolean := false.
     public virtual method isMakeDictionaryInstruction => Boolean := false.
     public virtual method isMakeClosureInstruction => Boolean := false.
+    public virtual method isSetDebugValueForBindingInstruction => Boolean := false.
     public virtual method isStoreInstruction => Boolean := false.
     public virtual method isTypeSlotAtInstruction => Boolean := false.
     public virtual method isTerminatorInstruction => Boolean := false.
@@ -56,6 +57,9 @@ HIRValue definition: {
     public virtual method primitiveName => Symbol := nil.
 
     public virtual method usedValuesDo: (aBlock: (HIRValue) => Void) ::=> Void := {}.
+
+    public method userCount => Size
+        := users ifNil: 0sz ifNotNil: users size.
 
     public method usersDo: (aBlock: (HIRValue) => Void) ::=> Void := {
         users ifNotNil: {:users | users do: aBlock }
@@ -102,6 +106,12 @@ HIRValue definition: {
     public override method postCopy => Void := {
         super postCopy.
         users := nil
+    }.
+
+    public method useSourceInformationOfValue: (value: HIRValue) ::=> Void := {
+        self sourcePosition: value sourcePosition.
+        self sourceASTNode: value sourceASTNode.
+        self sourceEnvironment: value sourceEnvironment.
     }.
 }.
 
@@ -302,6 +312,15 @@ HIRFunctionDefinition definition: {
         }
     }.
 
+    public method instructionsDo: aBlock ::=> Void := {
+        let position mutable := firstBasicBlock.
+        while: position isNotNil do: {
+            let nextPosition := position nextBlock.
+            position instructionsDo: aBlock.
+            position := nextPosition
+        }
+    }.
+
     public method localValuesDo: aBlock ::=> Void := {
         arguments do: aBlock.
         captures do: aBlock.
@@ -418,6 +437,10 @@ HIRFunctionDefinition definition: {
     }.
 
     public method mergeBlock: (previousBlock: HIRBasicBlock) withSuccessor: (mergeBlock: HIRBasicBlock) ::=> Void := {
+        mergeBlock firstInstruction isPhiInstruction ifTrue: {
+            return: void
+        }.
+
         self assert: mergeBlock firstInstruction isPhiInstruction not.
         self assert: previousBlock lastInstruction isBranchInstruction.
         self removeBasicBlock: mergeBlock.
@@ -737,7 +760,6 @@ HIRBasicBlock definition: {
             self immediateDominator: self sameDominator immediateDominator
         }.
 
-        immediateDominator ifNil: {printLine(parent fullPrintString)}.
         self assert: immediateDominator isNotNil.
         immediateDominator dominatorTreeChildren add: self.
         dominanceBucket := nil.
@@ -912,6 +934,15 @@ HIRBasicBlock definition: {
         }
     }.
 
+    public method firstInstructionAfterPhi => HIRInstruction := {
+        let position mutable := firstInstruction.
+        while: position isNotNil && position isPhiInstruction do: {
+            position := position nextInstruction
+        }.
+
+        position
+    }.
+
     public method normalizePhiInstructions => Void := {
         let predecessors := self predecessors.
         self phiInstructionsDo: {:(HIRPhiInstruction)phi :: Void |
@@ -999,6 +1030,7 @@ HIRBasicBlock definition: {
     }.
 
     public method deleteInstruction: (instruction: HIRInstruction) ::=> Void := {
+        self assert: instruction userCount = 0sz.
         self removeInstruction: instruction.
         instruction unregisterFromUsedValues
     }.
@@ -1119,7 +1151,10 @@ HIRInstruction definition: {
         := self error: "Not a branch instruction.".
 
     public virtual method successors => Array
-        := self error: "Non terminator instruction is present at the end of a basic block " -- self fullPrintString
+        := self error: "Non terminator instruction is present at the end of a basic block " -- self fullPrintString.
+    
+    public method deleteFromParent => Void
+        := parent deleteInstruction: self.
 }.
 
 public final class HIRAllocaInstruction superclass: HIRInstruction; definition: {
@@ -1682,6 +1717,18 @@ HIRPhiInstruction definition: {
             if: association key = oldIncomingBlock then: (association key: newIncomingBlock).
         }
     }.
+
+    public method simplify => Void := {
+        incomingBlocksAndValues size = 0sz ifTrue: {
+            self replaceWith: (HIRUndefinedConstant new type: self type; yourself).
+            return: void
+        }.
+
+        let expectedValue => HIRValue := incomingBlocksAndValues first value.
+        (incomingBlocksAndValues allSatisfy: {:(Association)each :: Boolean | expectedValue = each value}) ifTrue: {
+            self replaceWith: expectedValue
+        }
+    }.
 }.
 
 public final class HIRReturnInstruction superclass: HIRInstruction; definition: {
@@ -1758,8 +1805,10 @@ public final class HIRSendInstruction superclass: HIRInstruction; definition: {
 public final class HIRSetDebugValueForBindingInstruction superclass: HIRInstruction; definition: {
     public field value => HIRValue.
     public field binding => SymbolBinding.
+    public field promotedFromAlloca => Boolean.
 
     public override method isLoadStoreOrDebugBindingInstruction => Boolean := true.
+    public override method isSetDebugValueForBindingInstruction => Boolean := true.
 
     public override method initialize => Void := {
         super initialize.
@@ -1856,7 +1905,7 @@ public final class HIRModule superclass: Object; definition: {
     }.
 
     public method performStandardOptimizations => Void := {
-
+        HIRPromoteAllocaPass runInModule: self.
     }.
 }.
 

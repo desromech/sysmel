@@ -1021,6 +1021,7 @@ public global MIR::Operation::UnreachableTrap := MIROperation terminatorNamed: #
 
 public global MIR::Operation::DebugSetBindingValue := MIROperation debugNamed: #debugSetBindingValue.
 public global MIR::Operation::DebugSetMutableBindingValue := MIROperation debugNamed: #debugSetMutableBindingValue.
+public global MIR::Operation::DebugSetMutableBindingSpecificValue := MIROperation debugNamed: #debugSetMutableBindingSpecificValue.
 
 MIRBasicBlock definition: {
     public field parent => MIRFunction.
@@ -1826,6 +1827,14 @@ public final class MIRBlockBuilder superclass: Object; definition: {
     public method debugSetMutableBinding: (binding: SymbolBinding) value: (value: MIRValue) ::=> MIRInstruction
         := self addInstruction: ((MIRInstruction withType: Void compilationTarget: self compilationTarget)
             operation: MIR::Operation::DebugSetMutableBindingValue;
+            operands: (Array with: value);
+            registerInUsedValues;
+            sourceBinding: binding;
+            yourself).
+
+    public method debugSetMutableBindingSpecificValue: (binding: SymbolBinding) value: (value: MIRValue) ::=> MIRInstruction
+        := self addInstruction: ((MIRInstruction withType: Void compilationTarget: self compilationTarget)
+            operation: MIR::Operation::DebugSetMutableBindingSpecificValue;
             operands: (Array with: value);
             registerInUsedValues;
             sourceBinding: binding;
