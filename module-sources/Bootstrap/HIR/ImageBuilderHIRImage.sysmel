@@ -1,12 +1,12 @@
 public class ImageBuilderHIRImage superclass: ImageBuilderTargetImage; definition: {
-    public field ssaModule => HIRModule.
+    public field hirModule => HIRModule.
     
     public override method saveTo: (filename: String) ::=> Boolean := {
         {
             printLine("Writing HIR text IR").
-            let ssaTextIR := ssaModule fullPrintString.
+            let ssaTextIR := hirModule fullPrintString.
             ##printLine(ssaTextIR).
-            IO::writeWholeFileNamedWithString(filename -- ".ssa", ssaTextIR)
+            IO::writeWholeFileNamedWithString(filename -- ".hir", ssaTextIR)
         }.
         
         true

@@ -8,7 +8,7 @@ public class ImageBuilderHIR_MIRImage superclass: ImageBuilderHIRImage; definiti
         {|
             let tacTextIR := mirModule fullPrintString.
             ##printLine(tacTextIR).
-            IO::writeWholeFileNamedWithString(filename -- ".tac", tacTextIR)
+            IO::writeWholeFileNamedWithString(filename -- ".mir", tacTextIR)
         } printTimeToRunInMicrosecondsWithTitle: "MIR text IR".
 
         {|

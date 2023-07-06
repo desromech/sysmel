@@ -1,0 +1,6 @@
+## Promote alloca
+public class HIRPromoteAllocaPass superclass: HIRFunctionDefinitionPass; definition: {
+    public override method runInFunctionDefinition: (function: HIRFunctionDefinition) ::=> Void := {
+        printLine("TODO: HIRPromoteAllocaPass")
+    }.
+}.

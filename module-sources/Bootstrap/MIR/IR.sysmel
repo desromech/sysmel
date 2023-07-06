@@ -88,46 +88,46 @@ public class MIRPhysicalLocationValuePointer superclass: MIRPhysicalLocation; de
 }.
 
 Type extend: {
-    public virtual method valueSizeForTacTarget: (target: MIRCompilationTarget) ::=> Size
+    public virtual method valueSizeForMirTarget: (target: MIRCompilationTarget) ::=> Size
         := target pointerSize.
 
-    public virtual method valueAlignmentForTacTarget: (target: MIRCompilationTarget) ::=> Size
+    public virtual method valueAlignmentForMirTarget: (target: MIRCompilationTarget) ::=> Size
         := target pointerAlignment.
 
-    public virtual method valueTacPhysicalLocationClass => MIRPhysicalLocation class
+    public virtual method valueMirPhysicalLocationClass => MIRPhysicalLocation class
         := MIRPhysicalIntegerRegister.
 
     public virtual method valueIsSignedExtended => Boolean := false.
 }.
 
 ValueType extend: {
-    public override method valueSizeForTacTarget: (target: MIRCompilationTarget) ::=> Size
+    public override method valueSizeForMirTarget: (target: MIRCompilationTarget) ::=> Size
         := self valueSize.
 
-    public override method valueAlignmentForTacTarget: (target: MIRCompilationTarget) ::=> Size
+    public override method valueAlignmentForMirTarget: (target: MIRCompilationTarget) ::=> Size
         := self valueAlignment.
 
-    public override method valueTacPhysicalLocationClass => MIRPhysicalLocation class
+    public override method valueMirPhysicalLocationClass => MIRPhysicalLocation class
         := MIRPhysicalLocationMemory.
 }.
 
 PointerLikeType extend: {
-    public override method valueTacPhysicalLocationClass => MIRPhysicalLocation class
+    public override method valueMirPhysicalLocationClass => MIRPhysicalLocation class
         := MIRPhysicalIntegerRegister.
 }.
 
 PrimitiveInteger class extend: {
-    public override method valueTacPhysicalLocationClass => MIRPhysicalLocation class
+    public override method valueMirPhysicalLocationClass => MIRPhysicalLocation class
         := MIRPhysicalIntegerRegister.
 }.
 
 Boolean class extend: {
-    public override method valueTacPhysicalLocationClass => MIRPhysicalLocation class
+    public override method valueMirPhysicalLocationClass => MIRPhysicalLocation class
         := MIRPhysicalIntegerRegister.
 }.
 
 PrimitiveFloat class extend: {
-    public override method valueTacPhysicalLocationClass => MIRPhysicalLocation class
+    public override method valueMirPhysicalLocationClass => MIRPhysicalLocation class
         := MIRPhysicalFloatRegister.
 }.
 
@@ -385,10 +385,10 @@ MIRLocalValue definition: {
     public virtual method initializeWithType: (newType: Type) compilationTarget: (compilationTarget: MIRCompilationTarget) ::=> Void := {
         self assert: newType isNotNil.
         type := newType.
-        size := (type valueSizeForTacTarget: compilationTarget) asUInt64.
-        alignment := (type valueAlignmentForTacTarget: compilationTarget) asUInt64.
+        size := (type valueSizeForMirTarget: compilationTarget) asUInt64.
+        alignment := (type valueAlignmentForMirTarget: compilationTarget) asUInt64.
         isGCRoot := type isGarbageCollectedPointerType.
-        physicalLocationClass := type valueTacPhysicalLocationClass.
+        physicalLocationClass := type valueMirPhysicalLocationClass.
     }.
 
     public override method clearAssignedRegister => Void := {
@@ -615,7 +615,7 @@ public final class MIRConstantInt8 superclass: MIRConstantInteger; definition: {
     }.
 
     Int8 extend: {
-        public method asTacConstant => MIRConstantInt8
+        public method asMirConstant => MIRConstantInt8
             := MIRConstantInt8 new value: self; yourself
     }.
 }.
@@ -640,7 +640,7 @@ public final class MIRConstantUInt8 superclass: MIRConstantInteger; definition: 
     }.
 
     UInt8 extend: {
-        public method asTacConstant => MIRConstantUInt8
+        public method asMirConstant => MIRConstantUInt8
             := MIRConstantUInt8 new value: self; yourself
     }
 }.
@@ -665,7 +665,7 @@ public final class MIRConstantInt16 superclass: MIRConstantInteger; definition: 
     }.
 
     Int16 extend: {
-        public method asTacConstant => MIRConstantInt16
+        public method asMirConstant => MIRConstantInt16
             := MIRConstantInt16 new value: self; yourself
     }
 }.
@@ -689,7 +689,7 @@ public final class MIRConstantUInt16 superclass: MIRConstantInteger; definition:
     }.
 
     UInt16 extend: {
-        public method asTacConstant => MIRConstantUInt16
+        public method asMirConstant => MIRConstantUInt16
             := MIRConstantUInt16 new value: self; yourself
     }
 }.
@@ -714,7 +714,7 @@ public final class MIRConstantInt32 superclass: MIRConstantInteger; definition: 
     }.
 
     Int32 extend: {
-        public method asTacConstant => MIRConstantInt32
+        public method asMirConstant => MIRConstantInt32
             := MIRConstantInt32 new value: self; yourself
     }
 }.
@@ -738,7 +738,7 @@ public final class MIRConstantUInt32 superclass: MIRConstantInteger; definition:
     }.
 
     UInt32 extend: {
-        public method asTacConstant => MIRConstantUInt32
+        public method asMirConstant => MIRConstantUInt32
             := MIRConstantUInt32 new value: self; yourself
     }
 }.
@@ -763,7 +763,7 @@ public final class MIRConstantInt64 superclass: MIRConstantInteger; definition: 
     }.
 
     Int64 extend: {
-        public method asTacConstant => MIRConstantInt64
+        public method asMirConstant => MIRConstantInt64
             := MIRConstantInt64 new value: self; yourself
     }
 }.
@@ -787,7 +787,7 @@ public final class MIRConstantUInt64 superclass: MIRConstantInteger; definition:
     }.
 
     UInt64 extend: {
-        public method asTacConstant => MIRConstantUInt64
+        public method asMirConstant => MIRConstantUInt64
             := MIRConstantUInt64 new value: self; yourself
     }.
 }.
@@ -815,7 +815,7 @@ public final class MIRConstantFloat32 superclass: MIRConstantFloatingPoint; defi
     }.
 
     Float32 extend: {
-        public method asTacConstant => MIRConstantFloat32
+        public method asMirConstant => MIRConstantFloat32
             := MIRConstantFloat32 new value: self; yourself
     }.
 }.
@@ -835,7 +835,7 @@ public final class MIRConstantFloat64 superclass: MIRConstantFloatingPoint; defi
     }.
 
     Float64 extend: {
-        public method asTacConstant => MIRConstantFloat64
+        public method asMirConstant => MIRConstantFloat64
             := MIRConstantFloat64 new value: self; yourself
     }.
 }.
@@ -870,8 +870,8 @@ public final class MIROperation superclass: Object; definition: {
 }.
 
 Void extend: {
-    public method asTacConstant => MIRConstant
-        := 0u8 asTacConstant.
+    public method asMirConstant => MIRConstant
+        := 0u8 asMirConstant.
 }.
 
 MIRInstruction definition: {
@@ -1678,8 +1678,8 @@ public final class MIRBlockBuilder superclass: Object; definition: {
 
     public method constantOffsetImmediateFor: (constantOffset: Int64) ::=> MIRValue
         := self has64BitsPointers && (constantOffset asInt32 asInt64 ~= constantOffset)
-            ifTrue: (constantOffset asTacConstant)
-            ifFalse: (constantOffset asInt32 asTacConstant).
+            ifTrue: (constantOffset asMirConstant)
+            ifFalse: (constantOffset asInt32 asMirConstant).
 
     public method loadInt8: (pointer: MIRValue) constantOffset: (constantOffset: Int64) ::=> MIRInstruction
         := self operation: MIR::Operation::LoadInt8 with: pointer with: (self constantOffsetImmediateFor: constantOffset) type: Int8.
@@ -1730,8 +1730,8 @@ public final class MIRBlockBuilder superclass: Object; definition: {
 
     public method pointerConstantWith: (value: UInt64) ::=> MIRValue
         := self has64BitsPointers
-            ifTrue: (value asTacConstant)
-            ifFalse: (value asUInt32 asTacConstant).
+            ifTrue: (value asMirConstant)
+            ifFalse: (value asUInt32 asMirConstant).
 
     public method storeInt8: (value: MIRValue) into: (pointer: MIRValue) constantOffset: (constantOffset: Int64) ::=> MIRInstruction
         := self operation: MIR::Operation::StoreInt8 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
@@ -2084,7 +2084,11 @@ public final class MIRModule superclass: MIRProgramEntity; definition: {
     }.
 
     public method asTargetIR => AnyValue
-        := compilationTarget generateTargetIRForMIRModule: self
+        := compilationTarget generateTargetIRForMIRModule: self.
+
+    public method performStandardOptimizations => Void := {
+
+    }.
 }.
 
 MIRCallingConvention definition: {

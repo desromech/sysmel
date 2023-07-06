@@ -4396,11 +4396,11 @@ MIR::Operation::UnreachableTrap
     }.
 
 AsmX86CompilationTarget extend: {
-    public method asTacCompilationTarget => MIRX86CompilationTarget
+    public method asMirCompilationTarget => MIRX86CompilationTarget
         := MIRX86CompilationTarget new asmCompilationTarget: self; yourself
 }.
 
 AsmX86_64CompilationTarget extend: {
-    public method asTacCompilationTarget => MIRX86_64CompilationTarget
+    public method asMirCompilationTarget => MIRX86_64CompilationTarget
         := MIRX86_64CompilationTarget new asmCompilationTarget: self; yourself.
 }.

@@ -1,6 +1,6 @@
 public final class HIRModuleCompilationContext superclass: Object; definition: {
     public field compilationTarget => HIRCompilationTarget.
-    public field ssaModule => HIRModule.
+    public field hirModule => HIRModule.
     public field usedModules => OrderedCollection.
     public field exclusiveCompilationMode => Boolean.
 
@@ -18,7 +18,7 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
 
     public method initializeWithTarget: (theCompilationTarget: HIRCompilationTarget) ::=> Void := {
         compilationTarget := theCompilationTarget.
-        ssaModule := HIRModule new.
+        hirModule := HIRModule new.
         translatedValueDictionary := IdentityDictionary new.
         usedModules := OrderedCollection new.
     }.
@@ -103,7 +103,7 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
             }) asArray;
             yourself.
 
-        ssaModule addGlobalValue: translatedValue.
+        hirModule addGlobalValue: translatedValue.
         translatedValueDictionary at: functionDefinition put: translatedValue.
         translatedValue
     }.
@@ -124,7 +124,7 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
             type: function __type__;
             yourself.
 
-        ssaModule addGlobalValue: translatedValue.
+        hirModule addGlobalValue: translatedValue.
         translatedValueDictionary at: function put: translatedValue.
 
         function definition ifNotNil: {
@@ -176,7 +176,7 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
         := self translateFunctionDefinition: functionDefinition withBuilder: nil.
 
     public method finish => HIRModule := {
-        ssaModule
+        hirModule
     }.
 }.
 

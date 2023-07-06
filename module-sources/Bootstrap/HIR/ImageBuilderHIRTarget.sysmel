@@ -14,10 +14,10 @@ public class ImageBuilderHIRTarget superclass: ImageBuilderTarget; definition: {
         := compilationTarget objectModel.
 
     public override method buildTargetImageWith: (builder: ImageBuilder) ::=> ImageBuilderTargetImage := {
-        let ssaImage := ImageBuilderHIRImage new.
+        let hirImage := ImageBuilderHIRImage new.
         
-        ssaImage
-            ssaModule: ((HIRModuleCompilationContext forTarget: compilationTarget)
+        hirImage
+            hirModule: ((HIRModuleCompilationContext forTarget: compilationTarget)
                 exclusiveCompilationMode: true;
                 compileFunctions: builder tracer tracedFunctions definitions: builder tracer tracedFunctionDefinitions;
                 exportMainEntryPointFunction: builder entryPointFunction;
