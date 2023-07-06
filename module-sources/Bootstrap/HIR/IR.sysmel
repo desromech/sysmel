@@ -35,6 +35,8 @@ HIRValue definition: {
     
     public virtual method isInstruction => Boolean := false.
     public virtual method isAllocaInstruction => Boolean := false.
+    public virtual method isBranchInstruction => Boolean := false.
+    public virtual method isConditionalBranchInstruction => Boolean := false.
     public virtual method isDownCastInstruction => Boolean := false.
     public virtual method isPhiInstruction => Boolean := false.
     public virtual method isReferenceElementAtInstruction => Boolean := false.
@@ -336,7 +338,9 @@ HIRFunctionDefinition definition: {
             basicBlock computeSuccessorsAddingIntoPredecessors.
         }.
 
-        self fixCriticalEdges.
+        self
+            fixCriticalEdges;
+            simplifyEdges.
 
         let sortedBlocks := OrderedCollection new.
         self firstBasicBlock ifNotNil: {:(HIRBasicBlock)entryBlock :: Void |
@@ -370,7 +374,7 @@ HIRFunctionDefinition definition: {
 
     public method computeDominance => Void := {
         self computeControlFlowAndNormalizeBasicBlocks.
-        
+
         self basicBlocksDo: {:(HIRBasicBlock)basicBlock :: Void |
             basicBlock markWhite.
         }.
@@ -402,6 +406,43 @@ HIRFunctionDefinition definition: {
     public method fixCriticalEdges => Void := {
         self basicBlocksDo: {:(HIRBasicBlock)eachBasicBlock :: Void |
             eachBasicBlock fixCriticalEdges
+        }
+    }.
+
+    public method mergeBlock: (previousBlock: HIRBasicBlock) withSuccessor: (mergeBlock: HIRBasicBlock) ::=> Void := {
+        self assert: mergeBlock firstInstruction isPhiInstruction not.
+        self assert: previousBlock lastInstruction isBranchInstruction.
+        self removeBasicBlock: mergeBlock.
+
+        previousBlock deleteInstruction: previousBlock lastInstruction.
+        mergeBlock instructionsDo: {:(HIRInstruction)eachInstruction :: Void |
+            eachInstruction parent: nil; previousInstruction: nil; nextInstruction: nil.
+            previousBlock addInstruction: eachInstruction.
+        }.
+
+        previousBlock successors: previousBlock lastInstruction successors.
+        previousBlock successors do: {:(HIRBasicBlock)oldSuccessor :: Void |
+            oldSuccessor replacePredecessor: mergeBlock with: previousBlock
+        }.
+    }.
+
+    public method simplifyEdges => Void := {
+        let position mutable := firstBasicBlock.
+        while: (position isNotNil) do: {
+            (position successors size = 1sz) && position lastInstruction isBranchInstruction ifTrue: {
+                let mergedBlock => HIRBasicBlock := position successors first.
+
+                mergedBlock predecessors size = 1sz ifTrue: {
+                    self assert: mergedBlock predecessors first == position.
+
+                    ## Avoid introducing a new critical edge.
+                    (position predecessors size >= 2sz) && (mergedBlock successors size >= 2sz) ifFalse: {
+                        self mergeBlock: position withSuccessor: mergedBlock
+                    }
+                }
+            }.
+
+            position := position nextBlock
         }
     }.
 
@@ -918,6 +959,19 @@ HIRBasicBlock definition: {
         }
     }.
 
+    public method replacePredecessor: (oldPredecessor: HIRBasicBlock) with: (newPredecessor: HIRBasicBlock) ::=> Void := {
+        self predecessors at: (self predecessors indexOf: oldPredecessor) asSize put: newPredecessor.
+        
+        self phiInstructionsDo: {:(HIRPhiInstruction)each :: Void |
+            each replaceIncomingBlock: oldPredecessor with: newPredecessor
+        }
+    }.
+
+    public method deleteInstruction: (instruction: HIRInstruction) ::=> Void := {
+        self removeInstruction: instruction.
+        instruction unregisterFromUsedValues
+    }.
+
     public method removeInstruction: (instruction: HIRInstruction) ::=> Void := {
         self assert: instruction parent == self.
 
@@ -1064,6 +1118,7 @@ public final class HIRAllocaInstruction superclass: HIRInstruction; definition: 
 public final class HIRBranchInstruction superclass: HIRInstruction; definition: {
     public field destination => HIRBasicBlock.
 
+    public override method isBranchInstruction => Boolean := true.
     public override method isTerminatorInstruction => Boolean := true.
 
     public override method successors => Array
@@ -1173,6 +1228,7 @@ public final class HIRConditionalBranchInstruction superclass: HIRInstruction; d
     public field trueDestination => HIRBasicBlock.
     public field falseDestination => HIRBasicBlock.
 
+    public override method isConditionalBranchInstruction => Boolean := false.
     public override method isTerminatorInstruction => Boolean := true.
 
     public override method successors => Array
