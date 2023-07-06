@@ -1896,9 +1896,7 @@ ASTIfNode definition: {
         result trueExpression isNotNil && result falseExpression isNotNil ifTrue: {
             result analyzedType: (result trueExpression analyzedType computeConditionCoercionTypeWith: result falseExpression analyzedType)
         } ifFalse: {
-            (result trueExpression isNil || result falseExpression isNil) ifTrue: {
-                result analyzedType: Void
-            }
+            result analyzedType: Void
         }.
 
         result

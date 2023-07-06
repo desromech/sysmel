@@ -2151,7 +2151,7 @@ static sysbvm_tuple_t sysbvm_astIfNode_primitiveAnalyze(sysbvm_context_t *contex
                 gcFrame.ifNode->super.analyzedType = context->roots.anyValueType;
         }
     }
-    else if(!gcFrame.ifNode->trueExpression || !gcFrame.ifNode->trueExpression)
+    else if(!gcFrame.ifNode->trueExpression || !gcFrame.ifNode->falseExpression)
     {
         gcFrame.ifNode->super.analyzedType = context->roots.voidType;
     }

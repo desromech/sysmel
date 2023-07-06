@@ -78,11 +78,12 @@ OrderedCollection definition: {
 
     public method removeAt: (index: Size) ::=> Void := {
         let i mutable := index.
-        while: (i < size) do: {
+        let newSize := size - 1sz.
+        while: (i < newSize) do: {
             storage at: i put: (storage at: i + 1sz)
         } continueWith: (i := i + 1sz).
 
-        size := size - 1sz.
+        size := newSize.
     }.
 
     public method removeLast := {

@@ -121,8 +121,8 @@ public final class HIRLiteralConstant superclass: HIRConstant; definition: {
     public field isBoxed => Boolean.
 
     public override method isLiteralConstant => Boolean := true.
-    public override method isLiteralConstantTrue => Boolean := (Untyped::==)(value, true).
-    public override method isLiteralConstantFalse => Boolean := (Untyped::==)(value, false).
+    public override method isLiteralConstantTrue => Boolean := (Untyped::==)(self __slotNamedAt__: #value, true).
+    public override method isLiteralConstantFalse => Boolean := (Untyped::==)(self __slotNamedAt__: #value, false).
 
     public method asBoxedLiteralConstant => HIRLiteralConstant
         := isBoxed || RawTuple::type(self __slotNamedAt__: #value) isValueType not
@@ -334,13 +334,15 @@ HIRFunctionDefinition definition: {
                 markWhite.
         }.
 
+        self simplifyOutgoingEdges.
+
         self basicBlocksDo: {:(HIRBasicBlock)basicBlock :: Void |
             basicBlock computeSuccessorsAddingIntoPredecessors.
         }.
 
         self
             fixCriticalEdges;
-            simplifyEdges.
+            mergeBasicBlocks.
 
         let sortedBlocks := OrderedCollection new.
         self firstBasicBlock ifNotNil: {:(HIRBasicBlock)entryBlock :: Void |
@@ -403,6 +405,12 @@ HIRFunctionDefinition definition: {
         }.
     }.
 
+    public method simplifyOutgoingEdges => Void := {
+        self basicBlocksDo: {:(HIRBasicBlock)eachBasicBlock :: Void |
+            eachBasicBlock simplifyOutgoingEdges
+        }.
+    }.
+
     public method fixCriticalEdges => Void := {
         self basicBlocksDo: {:(HIRBasicBlock)eachBasicBlock :: Void |
             eachBasicBlock fixCriticalEdges
@@ -426,7 +434,7 @@ HIRFunctionDefinition definition: {
         }.
     }.
 
-    public method simplifyEdges => Void := {
+    public method mergeBasicBlocks => Void := {
         let position mutable := firstBasicBlock.
         while: (position isNotNil) do: {
             (position successors size = 1sz) && position lastInstruction isBranchInstruction ifTrue: {
@@ -915,6 +923,29 @@ HIRBasicBlock definition: {
 
             phi incomingBlocksAndValues: newIncomingBlocksAndValues
         }.
+    }.
+
+    public method incomingBranchDestinationReplacement => HIRBasicBlock := {
+        firstInstruction isNotNil && lastInstruction isNotNil && firstInstruction isBranchInstruction ifTrue: {
+            let branch := firstInstruction downCastTo: HIRBranchInstruction.
+            let branchDestination := branch destination.
+            branchDestination firstInstruction isNil || branchDestination firstInstruction isPhiInstruction not ifTrue: {
+                return: branchDestination incomingBranchDestinationReplacement
+            }
+        }.
+
+        self
+    }.
+
+    public method simplifyOutgoingEdges => Void := {
+        lastInstruction isNotNil && lastInstruction isTerminatorInstruction ifFalse: {return: void}.
+
+        lastInstruction successors do: {:(HIRBasicBlock)eachSuccessor :: Void |
+            let actualDestination := eachSuccessor incomingBranchDestinationReplacement.
+            eachSuccessor == actualDestination ifFalse: {
+                lastInstruction replaceDestination: eachSuccessor with: actualDestination
+            }
+        }
     }.
 
     public method fixCriticalEdges => Void := {

@@ -1,0 +1,20 @@
+{
+function mySelect(switch: Int32, x: Int32, y: Int32, z: Int32) => Int32 := {
+    let result mutable := x.
+    switch = 0i32 ifFalse: {
+        switch = 1i32 ifTrue: {
+            result := y
+        } ifFalse: {
+            result := z
+        }
+    }.
+
+    result
+}.
+
+let module := mySelect asHIRModule.
+printLine(module fullPrintString).
+
+HIRPromoteAllocaPass runInModule: module.
+printLine(module fullPrintString).
+}
