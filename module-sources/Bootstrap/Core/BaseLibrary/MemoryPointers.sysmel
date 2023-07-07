@@ -15,18 +15,6 @@ ValueType extend: {
     public override method storeValue: (value: Untyped) inPointer: (pointer: Void pointer) ::=> Void := {
         self subclassResponsibility
     }.
-
-    public override method encodeValueIn: (owner: Untyped) atTypeSlot: (typeSlot: TypeSlot) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
-        ObjectModel::isLogical() ifTrue: {
-            self encodeValue: (RawTuple::typeSlotAt:)(owner, typeSlot) inBytes: bytes atOffset: offset
-        } ifFalse: {
-            memcpy(
-                ((bytes __rawContentsPointer__ reinterpretCastTo: UInt8 pointer) + offset asIntPointer) reinterpretCastTo: Void pointer,
-                ((owner __rawContentsPointer__ reinterpretCastTo: UInt8 pointer) + typeSlot validOffset asIntPointer) reinterpretCastTo: Void const pointer,
-                self validInstanceSize
-            ).
-        }.
-    }.
 }.
 
 Boolean __type__ extend: {

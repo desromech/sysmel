@@ -1,0 +1,306 @@
+AnyValue definition: {
+    public virtual method sizeOfByteEncoding => Size
+        := self __type__ alignedValueSize.
+
+    public virtual method canEncodeInBytes => Boolean
+        := self __type__ canEncodeValueInBytes.
+
+    public virtual method offsetOfEncodedElementInByteStream: (offset: Size) ::=> Void := {}.
+    public virtual method encodeInBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
+        self __type__ encodeValue: self inBytes: bytes atOffset: offset
+    }.
+
+    public virtual method encodedInByteArray => ByteArray := {
+        let result := ByteArray basicAllocate: self sizeOfByteEncoding.
+        self encodeInBytes: result atOffset: 0sz.
+        result
+    }
+}.
+
+Type definition: {
+    public virtual method canEncodeValueInBytes => Boolean := false.
+
+    public abstract method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void
+        := self subclassResponsibility.
+
+    public virtual method encodeValueIn: (valueOwner: Untyped) atTypeSlot: (typeSlot: TypeSlot) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
+        self encodeValue: (RawTuple::typeSlotAt:)(valueOwner, typeSlot) inBytes: bytes atOffset: offset
+    }.
+
+    public virtual method canDecodeValueFromBytes => Boolean := false.
+
+    public abstract method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> self
+        := self subclassResponsibility.
+
+    public virtual method encodeValueAsByteArray: (value: Untyped) ::=> ByteArray := {
+        let result := ByteArray basicAllocate: self alignedValueSize.
+        self encodeValue: value inBytes: result atOffset: 0sz.
+        result
+    }.
+
+    public virtual method decodeValueFromByteArray: (bytes: ByteArray) ::=> self
+        := self decodeValueFromBytes: bytes atOffset: 0sz.
+}.
+
+ValueType definition: {
+    public override method encodeValueIn: (owner: Untyped) atTypeSlot: (typeSlot: TypeSlot) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
+        ObjectModel::isLogical() ifTrue: {
+            self encodeValue: (RawTuple::typeSlotAt:)(owner, typeSlot) inBytes: bytes atOffset: offset
+        } ifFalse: {
+            memcpy(
+                ((bytes __rawContentsPointer__ reinterpretCastTo: UInt8 pointer) + offset asIntPointer) reinterpretCastTo: Void pointer,
+                ((owner __rawContentsPointer__ reinterpretCastTo: UInt8 pointer) + typeSlot validOffset asIntPointer) reinterpretCastTo: Void const pointer,
+                self validInstanceSize
+            ).
+        }.
+    }.
+}.
+
+FixedArrayType definition: {
+    public override method canEncodeValueInBytes => Boolean
+        := elementType canEncodeValueInBytes.
+
+    public override method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
+        let i mutable := 0sz.
+        let elementOffset mutable := offset.
+        let elementSize := elementType alignedValueSize.
+        while: (i < size) do: (
+            elementType encodeValue: (RawTuple::slotAt:)(value, i) inBytes: bytes atOffset: elementOffset 
+        ) continueWith: {
+            i := i + 1sz.
+            elementOffset := elementOffset + elementSize
+        }.
+    }.
+
+    public override method canDecodeValueFromBytes => Boolean
+        := elementType canDecodeValueFromBytes.
+
+    public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> self := {
+        let result := self basicAllocate.
+        let i mutable := 0sz.
+        let elementOffset mutable := offset.
+        let elementSize := elementType alignedValueSize.
+        while: (i < size) do: (
+            (RawTuple::slotAt:put:)(result, i, elementType decodeValueFromBytes: bytes atOffset: elementOffset)
+        ) continueWith: {
+            i := i + 1sz.
+            elementOffset := elementOffset + elementSize
+        }.
+
+        result
+    }.
+}.
+
+StructType definition: {
+    public override method canEncodeValueInBytes => Boolean := {
+        canEncodeValueInBytes ifNil: {
+            canEncodeValueInBytes := true.
+            supertype ifNotNil: {
+                canEncodeValueInBytes := canEncodeValueInBytes && supertype canEncodeValueInBytes
+            }.
+            
+            canEncodeValueInBytes := canEncodeValueInBytes && (self validSlots allSatisfy: {:(TypeSlot)eachSlot :: Boolean |
+                (eachSlot type ~~ nil) && (eachSlot type canEncodeValueInBytes)
+            })
+        }.
+
+        canEncodeValueInBytes
+    }.
+
+    public override method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
+        self ensureLayoutIsComputed.
+
+        self allSlotsDo: {:(TypeSlot)eachSlot :: Void |
+            eachSlot type encodeValue: (RawTuple::typeSlotAt:)(value, eachSlot) inBytes: bytes atOffset: offset + eachSlot offset
+        }
+    }.
+
+    public override method canDecodeValueFromBytes => Boolean := {
+        canDecodeValueFromBytes ifNil: {
+            canDecodeValueFromBytes := true.
+            supertype ifNotNil: {
+                canDecodeValueFromBytes := canDecodeValueFromBytes && supertype canDecodeValueFromBytes
+            }.
+            
+            canDecodeValueFromBytes := canDecodeValueFromBytes && (self validSlots allSatisfy: {:(TypeSlot)eachSlot :: Boolean |
+                (eachSlot type ~~ nil) && (eachSlot type canDecodeValueFromBytes)
+            })
+        }.
+
+        canDecodeValueFromBytes
+    }.
+
+    public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> self := {
+        let result := self basicAllocate.
+        self ensureLayoutIsComputed.
+
+        self allSlotsDo: {:(TypeSlot)eachSlot :: Void |
+            (RawTuple::typeSlotAt:put:)(result, eachSlot,
+                eachSlot type decodeValueFromBytes: bytes atOffset: offset + eachSlot offset
+            )
+        }.
+
+        result
+    }.
+}.
+
+Char8 class definition: {
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void
+        := bytes char8At: offset put: (tuple: value uncheckedDownCastTo: Char8).
+
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Untyped
+        := bytes char8At: offset.
+}.
+
+UInt8 class definition: {
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void
+        := bytes uint8At: offset put: (tuple: value uncheckedDownCastTo: UInt8).
+
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Untyped
+        := bytes uint8At: offset.
+}.
+
+Int8 class definition: {
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void
+        := bytes int8At: offset put: (tuple: value uncheckedDownCastTo: Int8).
+
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Untyped
+        := bytes int8At: offset.
+}.
+
+Char16 class definition: {
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void
+        := bytes char16At: offset put: (tuple: value uncheckedDownCastTo: Char16).
+
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Untyped
+        := bytes char16At: offset.
+}.
+
+UInt16 class definition: {
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void
+        := bytes uint16At: offset put: (tuple: value uncheckedDownCastTo: UInt16).
+
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Untyped
+        := bytes uint16At: offset.
+}.
+
+Int16 class definition: {
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void
+        := bytes int16At: offset put: (tuple: value uncheckedDownCastTo: Int16).
+
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Untyped
+        := bytes int16At: offset.
+}.
+
+Char32 class definition: {
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void
+        := bytes char32At: offset put: (tuple: value uncheckedDownCastTo: Char32).
+
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Untyped
+        := bytes char32At: offset.
+}.
+
+UInt32 class definition: {
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void
+        := bytes uint32At: offset put: (tuple: value uncheckedDownCastTo: UInt32).
+
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Untyped
+        := bytes uint32At: offset.
+}.
+
+Int32 class definition: {
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void
+        := bytes int32At: offset put: (tuple: value uncheckedDownCastTo: Int32).
+
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Untyped
+        := bytes int32At: offset.
+}.
+
+UInt64 class definition: {
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void
+        := bytes uint64At: offset put: (tuple: value uncheckedDownCastTo: UInt64).
+
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Untyped
+        := bytes uint64At: offset.
+}.
+
+Int64 class definition: {
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void
+        := bytes int64At: offset put: (tuple: value uncheckedDownCastTo: Int64).
+
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Untyped
+        := bytes int64At: offset.
+}.
+
+Float32 class definition: {
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void
+        := bytes float32At: offset put: (tuple: value uncheckedDownCastTo: Float32).
+
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Untyped
+        := bytes float32At: offset.
+}.
+
+Float64 class definition: {
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void
+        := bytes float64At: offset put: (tuple: value uncheckedDownCastTo: Float64).
+
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Untyped
+        := bytes float64At: offset.
+}.
+
+Boolean class definition: {
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void
+        := bytes uint8At: offset put: (if: (tuple: value uncheckedDownCastTo: Boolean) then: 1u8 else: 0u8).
+
+    public override method canEncodeValueInBytes => Boolean := true.
+    public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Untyped
+        := (bytes uint8At: offset) ~= 0u8.
+}.
+
+SequenceableCollection definition: {
+    public method computeOffsetsOfEncodedElementsInByteStream => Size := {
+        let offset mutable := 0sz.
+        self do: {:each :: Void |
+            each offsetOfEncodedElementInByteStream: offset.
+            offset := offset + each sizeOfByteEncoding
+        }.
+        offset
+    }.
+
+    public method encodedElementsInByteArray => ByteArray := {
+        let result := ByteArray basicAllocate: self computeOffsetsOfEncodedElementsInByteStream.
+        let offset mutable := 0sz.
+        self do: {:each :: Void |
+            each encodeInBytes: result atOffset: offset.
+            offset := offset + each sizeOfByteEncoding
+        }.
+        result
+    }.
+}.

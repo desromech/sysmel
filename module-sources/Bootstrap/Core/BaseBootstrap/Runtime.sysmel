@@ -458,7 +458,26 @@ TemporaryReferenceType
             else: (AnyValue tempRefFor: self addressSpace).
     } makePure makeOverride.
 
+
 Array ensureAnalysisOfMethodWithSelector: #doWithIndex:.
+
+__Global__
+    setSymbol: #tuple:downCastTo: bindingWithValue: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)targetTypeExpression :: ASTDownCastNode |
+        ASTDownCastNode new
+            sourcePosition: macroContext sourcePosition;
+            typeExpression: targetTypeExpression;
+            valueExpression: self;
+            isUnchecked: false;
+            yourself
+    } makeMacro;
+    setSymbol: #tuple:uncheckedDownCastTo: bindingWithValue: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)targetTypeExpression :: ASTDownCastNode |
+        ASTDownCastNode new
+            sourcePosition: macroContext sourcePosition;
+            typeExpression: targetTypeExpression;
+            valueExpression: self;
+            isUnchecked: true;
+            yourself
+    } makeMacro.
 
 AnyValue
     withSelector: #isNil addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :: ASTMessageSendNode |
@@ -519,22 +538,8 @@ AnyValue
             valueExpression: self;
             yourself
     } makeMacro;
-    withSelector: #downCastTo: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)targetTypeExpression :: ASTDownCastNode |
-        ASTDownCastNode new
-            sourcePosition: macroContext sourcePosition;
-            typeExpression: targetTypeExpression;
-            valueExpression: self;
-            isUnchecked: false;
-            yourself
-    } makeMacro;
-    withSelector: #uncheckedDownCastTo: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)targetTypeExpression :: ASTDownCastNode |
-        ASTDownCastNode new
-            sourcePosition: macroContext sourcePosition;
-            typeExpression: targetTypeExpression;
-            valueExpression: self;
-            isUnchecked: true;
-            yourself
-    } makeMacro;
+    withSelector: #downCastTo: addMacroMethod: (tuple:downCastTo:);
+    withSelector: #uncheckedDownCastTo: addMacroMethod: (tuple:uncheckedDownCastTo:);
 
     withSelector: #ifTrue: addMacroMethod: {:(MacroContext)macroContext :(ASTNode)self :(ASTNode)trueExpression :: ASTIfNode |
         ASTIfNode new
@@ -1917,137 +1922,38 @@ MethodDictionary
         }
     } makeOverride.
 
-## Byte encoding
-Type
-    withSelector: #canEncodeValueInBytes addMethod: {:(Type)self :: Boolean | false } makeVirtual;
-    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Type)self :value :(ByteArray)bytes :(Size)offset :: Void |
-        self subclassResponsibility
-    } makeAbstract;
-    withSelector: #encodeValueIn:atTypeSlot:inBytes:atOffset: addMethod: {:(Type)self :(Untyped)valueOwner :(TypeSlot)typeSlot :(ByteArray)bytes :(Size)offset :: Void |
-        self encodeValue: (RawTuple::typeSlotAt:)(valueOwner, typeSlot) inBytes: bytes atOffset: offset
-    } makeVirtual;
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Type)self :: Boolean | false } makeVirtual;
-    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Type)self :(ByteArray)bytes :(Size)offset :: self |
-        self subclassResponsibility
-    } makeAbstract;
-    
-    withSelector: #encodeValueAsByteArray: addMethod: {:(Type)self :value :: ByteArray |
-        let: #result with: (ByteArray new: self alignedValueSize).
-        self encodeValue: value inBytes: result atOffset: 0sz.
-        result
-    } makeVirtual;
-    withSelector: #decodeValueFromByteArray: addMethod: {:(Type)self :(ByteArray)bytes :: self |
-        self decodeValueFromBytes: bytes atOffset: 0sz
-    } makeVirtual.
-
-AnyValue
-    withSelector: #sizeOfByteEncoding addMethod: {:self :: Size | self __type__ alignedValueSize } makeVirtual;
-    withSelector: #canEncodeInBytes addMethod: {:self :: Boolean | self __type__ canEncodeValueInBytes } makeVirtual;
-    withSelector: #offsetOfEncodedElementInByteStream: addMethod: {:self :(Size)offset :: Void | } makeVirtual;
-    withSelector: #encodeInBytes:atOffset: addMethod: {:self :(ByteArray)bytes :(Size)offset :: Void |
-        self __type__ encodeValue: self inBytes: bytes atOffset: offset
-    } makeVirtual;
-    withSelector: #encodedInByteArray addMethod: {:self :: ByteArray |
-        let: #result with: (ByteArray new: self sizeOfByteEncoding).
-        self encodeInBytes: result atOffset: 0sz.
-        result
-    } makeVirtual.
-
 ## Primitive numbers meta methods.
 Char8 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(Char8 class)self :: Boolean | true } makeOverride;
-    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Char8 class)self :(Char8)value :(ByteArray)bytes :(Size)offset :: Void |
-        bytes char8At: offset put: value
-    } makeOverride;
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Char8 class)self :: Boolean | true } makeOverride;
-    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Char8 class)self :(ByteArray)bytes :(Size)offset :: Char8 |
-        bytes char8At: offset
-    } makeOverride;
-
     withSelector: #defaultValue addMethod: {:(Char8 class)self :: Char8 | 0c8 } makeOverride;
     withSelector: #zero addMethod: {:(Char8 class)self :: Char8 | 0c8 } makePure makeFinal;
     withSelector: #one addMethod: {:(Char8 class)self :: Char8 | 1c8 } makePure makeFinal.
 
 UInt8 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(UInt8 class)self :: Boolean | true } makeOverride;
-    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(UInt8 class)self :(UInt8)value :(ByteArray)bytes :(Size)offset :: Void |
-        bytes uint8At: offset put: value
-    } makeOverride;
-    withSelector: #canDecodeValueFromBytes addMethod: {:(UInt8 class)self :: Boolean | true } makeOverride;
-    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(UInt8 class)self :(ByteArray)bytes :(Size)offset :: UInt8 |
-        bytes uint8At: offset
-    } makeOverride;
-
     withSelector: #defaultValue addMethod: {:(UInt8 class)self :: UInt8 | 0u8 } makeOverride;
     withSelector: #zero addMethod: {:(UInt8 class)self :: UInt8 | 0u8 } makePure makeFinal;
     withSelector: #one addMethod: {:(UInt8 class)self :: UInt8 | 1u8 } makePure makeFinal.
 
 Int8 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(Int8 class)self :: Boolean | true } makeOverride;
-    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Int8 class)self :(Int8)value :(ByteArray)bytes :(Size)offset :: Void |
-        bytes int8At: offset put: value
-    } makeOverride;
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Int8 class)self :: Boolean | true } makeOverride;
-    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Int8 class)self :(ByteArray)bytes :(Size)offset :: Int8 |
-        bytes int8At: offset
-    } makeOverride;
-
     withSelector: #defaultValue addMethod: {:(Int8 class)self :: Int8 | 0i8 } makeOverride;
     withSelector: #zero addMethod: {:(Int8 class)self :: Int8 | 0i8 } makePure makeFinal;
     withSelector: #one addMethod: {:(Int8 class)self :: Int8 | 1i8 } makePure makeFinal.
 
 Char16 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(Char16 class)self :: Boolean | true } makeOverride;
-    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Char16 class)self :(Char16)value :(ByteArray)bytes :(Size)offset :: Void |
-        bytes char16At: offset put: value
-    } makeOverride;
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Char16 class)self :: Boolean | true } makeOverride;
-    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Char16 class)self :(ByteArray)bytes :(Size)offset :: Char16 |
-        bytes char16At: offset
-    } makeOverride;
-
     withSelector: #defaultValue addMethod: {:(Char16 class)self :: Char16 | 0c16 } makeOverride;
     withSelector: #zero addMethod: {:(Char16 class)self :: Char16 | 0c16 } makePure makeFinal;
     withSelector: #one addMethod: {:(Char16 class)self :: Char16 | 1c16 } makePure makeFinal.
 
 UInt16 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(UInt16 class)self :: Boolean | true } makeOverride;
-    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(UInt16 class)self :(UInt16)value :(ByteArray)bytes :(Size)offset :: Void |
-        bytes uint16At: offset put: value
-    } makeOverride;
-    withSelector: #canDecodeValueFromBytes addMethod: {:(UInt16 class)self :: Boolean | true } makeOverride;
-    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(UInt16 class)self :(ByteArray)bytes :(Size)offset :: UInt16 |
-        bytes uint16At: offset
-    } makeOverride;
-
     withSelector: #defaultValue addMethod: {:(UInt16 class)self :: UInt16 | 0u16 } makeOverride;
     withSelector: #zero addMethod: {:(UInt16 class)self :: UInt16 | 0u16 } makePure makeFinal;
     withSelector: #one addMethod: {:(UInt16 class)self :: UInt16 | 1u16 } makePure makeFinal.
 
 Int16 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(Int16 class)self :: Boolean | true } makeOverride;
-    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Int16 class)self :(Int16)value :(ByteArray)bytes :(Size)offset :: Void |
-        bytes int16At: offset put: value
-    } makeOverride;
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Int16 class)self :: Boolean | true } makeOverride;
-    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Int16 class)self :(ByteArray)bytes :(Size)offset :: Int16 |
-        bytes int16At: offset
-    } makeOverride;
-
     withSelector: #defaultValue addMethod: {:(Int16 class)self :: Int16 | 0i16 } makeOverride;
     withSelector: #zero addMethod: {:(Int16 class)self :: Int16 | 0i16 } makePure makeFinal;
     withSelector: #one addMethod: {:(Int16 class)self :: Int16 | 1i16 } makePure makeFinal.
 
 Char32 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(Char32 class)self :: Boolean | true } makeOverride;
-    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Char32 class)self :(Char32)value :(ByteArray)bytes :(Size)offset :: Void |
-        bytes char32At: offset put: value
-    } makeOverride;
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Char32 class)self :: Boolean | true } makeOverride;
-    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Char32 class)self :(ByteArray)bytes :(Size)offset :: Char32 |
-        bytes char32At: offset
-    } makeOverride;
-
     withSelector: #defaultValue addMethod: {:(Char32 class)self :: Char32 | 0c32 } makeOverride;
     withSelector: #zero addMethod: {:(Char32 class)self :: Char32 | 0c32 } makePure makeFinal;
     withSelector: #one addMethod: {:(Char32 class)self :: Char32 | 1c32 } makePure makeFinal.
@@ -2058,29 +1964,11 @@ Char32
     withSelector: #c32 addMethod: Char32 >> #asChar32.
 
 UInt32 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(UInt32 class)self :: Boolean | true } makeOverride;
-    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(UInt32 class)self :(UInt32)value :(ByteArray)bytes :(Size)offset :: Void |
-        bytes uint32At: offset put: value
-    } makeOverride;
-    withSelector: #canDecodeValueFromBytes addMethod: {:(UInt32 class)self :: Boolean | true } makeOverride;
-    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(UInt32 class)self :(ByteArray)bytes :(Size)offset :: UInt32 |
-        bytes uint32At: offset
-    } makeOverride;
-
     withSelector: #defaultValue addMethod: {:(UInt32 class)self :: UInt32 | 0u32 } makeOverride;
     withSelector: #zero addMethod: {:(UInt32 class)self :: UInt32 | 0u32 } makePure makeFinal;
     withSelector: #one addMethod: {:(UInt32 class)self :: UInt32 | 1u32 } makePure makeFinal.
 
 Int32 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(Int32 class)self :: Boolean | true } makeOverride;
-    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Int32 class)self :(Int32)value :(ByteArray)bytes :(Size)offset :: Void |
-        bytes int32At: offset put: value
-    } makeOverride;
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Int32 class)self :: Boolean | true } makeOverride;
-    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Int32 class)self :(ByteArray)bytes :(Size)offset :: Int32 |
-        bytes int32At: offset
-    } makeOverride;
-
     withSelector: #defaultValue addMethod: {:(Int32 class)self :: Int32 | 0i32 } makeOverride;
     withSelector: #zero addMethod: {:(Int32 class)self :: Int32 | 0i32 } makePure makeFinal;
     withSelector: #one addMethod: {:(Int32 class)self :: Int32 | 1i32 } makePure makeFinal;
@@ -2088,57 +1976,21 @@ Int32 class
     withSelector: #maxVal addMethod: {:(Int32 class)self :: Int32 | 16r7FFFFFFF i32 } makePure makeFinal.
 
 Int64 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(Int64 class)self :: Boolean | true } makeOverride;
-    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Int64 class)self :(Int64)value :(ByteArray)bytes :(Size)offset :: Void |
-        bytes int64At: offset put: value
-    } makeOverride;
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Int64 class)self :: Boolean | true } makeOverride;
-    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Int64 class)self :(ByteArray)bytes :(Size)offset :: Int64 |
-        bytes int64At: offset
-    } makeOverride;
-
     withSelector: #defaultValue addMethod: {:(Int64 class)self :: Int64 | 0i64 } makeOverride;
     withSelector: #zero addMethod: {:(Int64 class)self :: Int64 | 0i64 } makePure makeFinal;
     withSelector: #one addMethod: {:(Int64 class)self :: Int64 | 1i64 } makePure makeFinal.
 
 UInt64 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(UInt64 class)self :: Boolean | true } makeOverride;
-    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(UInt64 class)self :(UInt64)value :(ByteArray)bytes :(Size)offset :: Void |
-        bytes uint64At: offset put: value
-    } makeOverride;
-    withSelector: #canDecodeValueFromBytes addMethod: {:(UInt64 class)self :: Boolean | true } makeOverride;
-    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(UInt64 class)self :(ByteArray)bytes :(Size)offset :: UInt64 |
-        bytes uint64At: offset
-    } makeOverride;
-
     withSelector: #defaultValue addMethod: {:(UInt64 class)self :: UInt64 | 0u64 } makeOverride;
     withSelector: #zero addMethod: {:(UInt64 class)self :: UInt64 | 0u64 } makePure makeFinal;
     withSelector: #one addMethod: {:(UInt64 class)self :: UInt64 | 1u64 } makePure makeFinal.
 
 Float32 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(Float32 class)self :: Boolean | true } makeOverride;
-    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Float32 class)self :(Float32)value :(ByteArray)bytes :(Size)offset :: Void |
-        bytes float32At: offset put: value
-    } makeOverride;
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Float32 class)self :: Boolean | true } makeOverride;
-    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Float32 class)self :(ByteArray)bytes :(Size)offset :: Float32 |
-        bytes float32At: offset
-    } makeOverride;
-
     withSelector: #defaultValue addMethod: {:(Float32 class)self :: Float32 | 0.0f32 } makeOverride;
     withSelector: #zero addMethod: {:(Float32 class)self :: Float32 | 0.0f32 } makePure makeFinal;
     withSelector: #one addMethod: {:(Float32 class)self :: Float32 | 1.0f32 } makePure makeFinal.
 
 Float64 class
-    withSelector: #canEncodeValueInBytes addMethod: {:(Float64 class)self :: Boolean | true } makeOverride;
-    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Float64 class)self :(Float64)value :(ByteArray)bytes :(Size)offset :: Void |
-        bytes float64At: offset put: value
-    } makeOverride;
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Float64 class)self :: Boolean | true } makeOverride;
-    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Float64 class)self :(ByteArray)bytes :(Size)offset :: Float64 |
-        bytes float64At: offset
-    } makeOverride;
-
     withSelector: #defaultValue addMethod: {:(Float64 class)self :: Float64 | 0.0 } makeOverride;
     withSelector: #zero addMethod: {:(Float64 class)self :: Float64 | 0.0 } makePure makeFinal;
     withSelector: #one addMethod: {:(Float64 class)self :: Float64 | 1.0 } makePure makeFinal.
@@ -2149,35 +2001,7 @@ Integer class
     withSelector: #one addMethod: {:(Integer class)self :: Integer | 1 } makePure makeFinal.
 
 Boolean class
-    withSelector: #canEncodeValueInBytes addMethod: {:(Boolean class)self :: Boolean | true } makeOverride;
-    withSelector: #encodeValue:inBytes:atOffset: addMethod: {:(Boolean class)self :(Boolean)value :(ByteArray)bytes :(Size)offset :: Void |
-        bytes at: offset put: (if: value then: 1u8 else: 0u8)
-    } makeOverride;
-    withSelector: #canDecodeValueFromBytes addMethod: {:(Boolean class)self :: Boolean | true } makeOverride;
-    withSelector: #decodeValueFromBytes:atOffset: addMethod: {:(Boolean class)self :(ByteArray)bytes :(Size)offset :: Boolean |
-        (bytes at: offset) ~= 0u8
-    } makeOverride;
-
     withSelector: #defaultValue addMethod: {:(Boolean class)self :: Boolean | false } makeOverride makePure makeFinal.
-
-SequenceableCollection
-    withSelector: #computeOffsetsOfEncodedElementsInByteStream addMethod: {:(SequenceableCollection)self :: Size |
-        let: #offset mutableWith: 0sz.
-        self do: {:each :: Void |
-            each offsetOfEncodedElementInByteStream: offset.
-            offset := offset + each sizeOfByteEncoding
-        }.
-        offset
-    };
-    withSelector: #encodedElementsInByteArray addMethod: {:(SequenceableCollection)self :: ByteArray |
-        let: #result with: (ByteArray new: self computeOffsetsOfEncodedElementsInByteStream).
-        let: #offset mutableWith: 0sz.
-        self do: {:each :: Void |
-            each encodeInBytes: result atOffset: offset.
-            offset := offset + each sizeOfByteEncoding
-        }.
-        result
-    }.
 
 TypeSlot
     withSelector: #requiresBasicInitialization addMethod: {:(TypeSlot)self :: Boolean |

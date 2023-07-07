@@ -32,57 +32,7 @@ public class StructType superclass: ValueType; definition: {
         := self basicNew.
 
     protected field canEncodeValueInBytes.
-    public override method canEncodeValueInBytes => Boolean := {
-        canEncodeValueInBytes ifNil: {
-            canEncodeValueInBytes := true.
-            supertype ifNotNil: {
-                canEncodeValueInBytes := canEncodeValueInBytes && supertype canEncodeValueInBytes
-            }.
-            
-            canEncodeValueInBytes := canEncodeValueInBytes && (self validSlots allSatisfy: {:(TypeSlot)eachSlot :: Boolean |
-                (eachSlot type ~~ nil) && (eachSlot type canEncodeValueInBytes)
-            })
-        }.
-
-        canEncodeValueInBytes
-    }.
-
-    public override method encodeValue: (value: self) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
-        self ensureLayoutIsComputed.
-
-        self allSlotsDo: {:(TypeSlot)eachSlot :: Void |
-            eachSlot type encodeValue: (RawTuple::typeSlotAt:)(value, eachSlot) inBytes: bytes atOffset: offset + eachSlot offset
-        }
-    }.
-
     protected field canDecodeValueFromBytes.
-    public override method canDecodeValueFromBytes => Boolean := {
-        canDecodeValueFromBytes ifNil: {
-            canDecodeValueFromBytes := true.
-            supertype ifNotNil: {
-                canDecodeValueFromBytes := canDecodeValueFromBytes && supertype canDecodeValueFromBytes
-            }.
-            
-            canDecodeValueFromBytes := canDecodeValueFromBytes && (self validSlots allSatisfy: {:(TypeSlot)eachSlot :: Boolean |
-                (eachSlot type ~~ nil) && (eachSlot type canDecodeValueFromBytes)
-            })
-        }.
-
-        canDecodeValueFromBytes
-    }.
-
-    public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> self := {
-        let result := self basicAllocate.
-        self ensureLayoutIsComputed.
-
-        self allSlotsDo: {:(TypeSlot)eachSlot :: Void |
-            (RawTuple::typeSlotAt:put:)(result, eachSlot,
-                eachSlot type decodeValueFromBytes: bytes atOffset: offset + eachSlot offset
-            )
-        }.
-
-        result
-    }.
 
     public override method computeLayout => Void := {
         self isPacked ifTrue: {

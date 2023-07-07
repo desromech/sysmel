@@ -147,6 +147,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_function_createClosureWithCaptureEnvironment(sy
     result->argumentCount = functionDefinitionObject->argumentCount; 
     result->captureEnvironment = captureEnviroment;
     result->definition = functionDefinition;
+    result->primitiveTableIndex = sysbvm_tuple_uint32_encode(context, 0);
     return (sysbvm_tuple_t)result;
 }
 

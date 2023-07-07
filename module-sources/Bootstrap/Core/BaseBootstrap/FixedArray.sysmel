@@ -77,38 +77,7 @@ public class FixedArrayType superclass: ValueType; definition: {
         instanceAlignment := elementType valueAlignment.
     }.
 
-    public override method canEncodeValueInBytes => Boolean
-        := elementType canEncodeValueInBytes.
 
-    public override method encodeValue: (value: self) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
-        let i mutable := 0sz.
-        let elementOffset mutable := offset.
-        let elementSize := elementType alignedValueSize.
-        while: (i < size) do: (
-            elementType encodeValue: (RawTuple::slotAt:)(value, i) inBytes: bytes atOffset: elementOffset 
-        ) continueWith: {
-            i := i + 1sz.
-            elementOffset := elementOffset + elementSize
-        }.
-    }.
-
-    public override method canDecodeValueFromBytes => Boolean
-        := elementType canDecodeValueFromBytes.
-
-    public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> self := {
-        let result := self basicAllocate.
-        let i mutable := 0sz.
-        let elementOffset mutable := offset.
-        let elementSize := elementType alignedValueSize.
-        while: (i < size) do: (
-            (RawTuple::slotAt:put:)(result, i, elementType decodeValueFromBytes: bytes atOffset: elementOffset)
-        ) continueWith: {
-            i := i + 1sz.
-            elementOffset := elementOffset + elementSize
-        }.
-
-        result
-    }.
 }.
 
 public template FixedArrayTypeTemplate(elementType: Type, size: Size) => FixedArrayType := {

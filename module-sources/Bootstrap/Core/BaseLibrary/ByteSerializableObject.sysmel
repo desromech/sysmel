@@ -7,6 +7,7 @@ public class ByteSerializableObject superclass: Object; definition: {
                 eachSlot type encodeValueIn: value atTypeSlot: eachSlot inBytes: bytes atOffset: offset + eachSlot offset
             }
         }.
+
         public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> self := {
             let result := self basicAllocate.
             self ensureLayoutIsComputed.
