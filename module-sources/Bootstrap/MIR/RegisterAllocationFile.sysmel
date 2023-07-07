@@ -85,6 +85,10 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
                 interval spill.
             }.
 
+        (availableRegisters includes: usedRegister) ifFalse: {
+            self error: "Failed to allocate register " -- usedRegister printString.
+        }.
+
         availableRegisters remove: usedRegister.
         self addActiveRegister: usedRegister withValue: value
     }.

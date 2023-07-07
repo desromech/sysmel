@@ -81,6 +81,7 @@ printLine(module fullPrintString).
 }.
 *#
 
+#*
 {
 
 public inline pure function fibonacci(n: Int32) => Int32 := {
@@ -122,4 +123,21 @@ HIRInliningPass new
 
 printLine(module fullPrintString).
 
+}
+
+*#
+{
+let module := HIRModuleCompilationContext forDefaultTarget
+    exclusiveCompilationMode: true;
+    compileFunctionsWithDefinitions: (ObjectModel::lookupMethodWithInlineCache, ObjectModel::sendWithReceiverType2);
+    finish.
+
+printLine(module fullPrintString).
+
+##HIRInliningPass runInModule: module.
+HIRInliningPass new
+    functionPasses: HIRStandardFunctionOptimizationPasses;
+    runInModule: module.
+
+printLine(module fullPrintString).
 }

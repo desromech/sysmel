@@ -172,7 +172,7 @@ Function definition: {
         interpretationStrategy interpretFunction: self withArguments: arguments
     }.
 
-    public method ensureIsReadyForEvaluation => Void := {
+    public inline method ensureIsReadyForEvaluation => Void := {
         captureEnvironment ifNotNil: {
             self doEnsureAnalysis
         }.

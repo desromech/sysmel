@@ -549,7 +549,7 @@ public global ObjectModel::TupleHeader := if: ObjectModel::PointerSize = 4sz
     else: ObjectModel::TupleHeader64.
 public global ObjectModel::TupleHeaderSize := ObjectModel::TupleHeader valueSize.
 
-public function ObjectModel::isNonNullPointerValue(value: UIntPointer) => Boolean
+public inline function ObjectModel::isNonNullPointerValue(value: UIntPointer) => Boolean
     := (value ~= 0uptr) && ((value & 15uptr) = 0uptr).
 
 public global ObjectModel::getTuplePointerUIntValue := {:(Untyped)object :: UIntPointer |
@@ -595,7 +595,7 @@ identityHash adoptDefinitionOf: {:(AnyValue)self :: Size |
     } ifFalse: {
         pointerValue asSize identityHashMultiply
     }
-} makePure makeFinal withEagerAnalysis.
+} makePure makeFinal makeAlwaysInline makeWithoutSourceDebugging withEagerAnalysis.
 
 Untyped::identityHash adoptDefinitionOf: {:(Untyped)self :: Size |
     <primitive: #identityHash >
@@ -605,7 +605,7 @@ Untyped::identityHash adoptDefinitionOf: {:(Untyped)self :: Size |
     } ifFalse: {
         pointerValue asSize identityHashMultiply
     }
-} makePure makeFinal withEagerAnalysis.
+} makePure makeFinal makeAlwaysInline makeWithoutSourceDebugging withEagerAnalysis.
 
 (RawTuple::identityHash:) adoptDefinitionOf: {:(Untyped)self :(Size)newHash :: Void |
     <primitive: #RawTuple::isBytes>
@@ -684,6 +684,17 @@ RawTuple::size adoptDefinitionOf: {:(Untyped)self :: Size |
         0sz
     }.
 } withEagerAnalysis.
+
+RawTuple::uncheckedPointersSize adoptDefinitionOf: {:(Untyped)self :: Size |
+    <primitive: #RawTuple::uncheckedSize>
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
+    ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
+        let type := (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ type.
+        (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ objectSize asSize / ObjectModel::PointerSize
+    } ifFalse: {
+        0sz
+    }.
+} makeFinal makeAlwaysInline makeWithoutSourceDebugging withEagerAnalysis.
 
 RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
     <primitive: #RawTuple::type>
@@ -794,7 +805,7 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
     let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
     let contents := header + 1iptr reinterpretCastTo: Untyped pointer.
     contents[index asIntPointer] __refLoad__
-} withEagerAnalysis.
+} makeFinal makeAlwaysInline makeWithoutSourceDebugging withEagerAnalysis.
 
 (RawTuple::uncheckedSlotAt:put:) adoptDefinitionOf: {:(Untyped)self :(Size)index :(Untyped)value :: Void |
     <primitive: #RawTuple::uncheckedSlotAt:put:>
@@ -802,7 +813,7 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
     let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
     let contents := header + 1iptr reinterpretCastTo: Untyped pointer.
     contents[index asIntPointer] := value
-} withEagerAnalysis.
+} makeFinal makeAlwaysInline makeWithoutSourceDebugging withEagerAnalysis.
 
 (RawTuple::byteSlotAt:) adoptDefinitionOf: {:(Untyped)self :(Size)index :: UInt8 |
     <primitive: #RawTuple::byteSlotAt:>
@@ -838,6 +849,22 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
     }
 } withEagerAnalysis.
 
+(RawTuple::uncheckedByteSlotAt:) adoptDefinitionOf: {:(Untyped)self :(Size)index :: UInt8 |
+    <primitive: #RawTuple::uncheckedSlotAt:>
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
+    let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
+    let contents := header + 1iptr reinterpretCastTo: UInt8 pointer.
+    contents[index asIntPointer] __refLoad__
+} makeFinal makeAlwaysInline makeWithoutSourceDebugging withEagerAnalysis.
+
+(RawTuple::uncheckedByteSlotAt:put:) adoptDefinitionOf: {:(Untyped)self :(Size)index :(UInt8)value :: Void |
+    <primitive: #RawTuple::uncheckedSlotAt:put:>
+    let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
+    let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
+    let contents := header + 1iptr reinterpretCastTo: UInt8 pointer.
+    contents[index asIntPointer] := value
+} makeFinal makeAlwaysInline makeWithoutSourceDebugging withEagerAnalysis.
+
 RawTuple::byteSize adoptDefinitionOf: {:(Untyped)self :: Size |
     <primitive: #RawTuple::byteSize>
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
@@ -846,7 +873,7 @@ RawTuple::byteSize adoptDefinitionOf: {:(Untyped)self :: Size |
     } ifFalse: {
         0sz
     }
-} withEagerAnalysis.
+} makeFinal makeAlwaysInline withEagerAnalysis makeWithoutSourceDebugging.
 
 (RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:) adoptDefinitionOf: {
     :(Type)type :(Size)instanceSize :(Size)instanceAlignment :(Size)slotCount :(Size)variableSize :(Boolean)isBytes :(Boolean)isWeak :: Untyped |
@@ -978,7 +1005,7 @@ public function ObjectModel::makeDictionaryWithCapacity(initialCapacity: Size) =
 public function ObjectModel::Dictionary::add(dictionary: Dictionary, association: Association) => Void
     := dictionary add: association.
 
-public function ObjectModel::isFunction(value: Untyped) => Boolean := {
+public inline function ObjectModel::isFunction(value: Untyped) => Boolean := {
     let type := RawTuple::type(value).
     type isNotNil && type isFunction
 }.

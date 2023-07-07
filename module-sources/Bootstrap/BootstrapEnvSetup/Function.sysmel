@@ -83,4 +83,9 @@ Function
     withSelector: #makeNeverInline addMethod: {:(Function)self :: Function |
         self addFlags: FunctionFlags::NeverInline.
         self
+    } withEagerAnalysis;
+
+    withSelector: #makeWithoutSourceDebugging addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::WithoutSourceDebugging.
+        self
     } withEagerAnalysis.

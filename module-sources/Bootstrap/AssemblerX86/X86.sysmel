@@ -418,6 +418,9 @@ public class AsmX86IntRegister superclass: AsmX86Register; definition: {
 
     public method x86::qword => AsmX86RegisterAddress
         := AsmX86RegisterAddress base: self size: 8u8.
+
+    public method x86::oword => AsmX86RegisterAddress
+        := AsmX86RegisterAddress base: self size: 16u8.
 }.
 
 public class AsmX86Int8Register superclass: AsmX86IntRegister; definition: {

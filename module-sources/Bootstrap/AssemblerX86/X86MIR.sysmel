@@ -68,6 +68,9 @@ MIRPhysicalLocation extend: {
     public abstract method x86::storeInVariable: (local: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self shouldBeImplemented.
 
+    public abstract method x86::pushWith: (codegen: MIRFunctionAsmCodeGenerator) valueSize: (size: UInt64)::=> Void
+        := self shouldBeImplemented.
+
     public abstract method x86_64::loadFromRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self shouldBeImplemented.
 
@@ -75,6 +78,9 @@ MIRPhysicalLocation extend: {
         := self shouldBeImplemented.
 
     public abstract method x86_64::storeInVariable: (local: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
+        := self shouldBeImplemented.
+
+    public abstract method x86_64::pushWith: (codegen: MIRFunctionAsmCodeGenerator) valueSize: (size: UInt64)::=> Void
         := self shouldBeImplemented.
 }.
 
@@ -275,6 +281,10 @@ public final class MIRX86IntegerRegister superclass: MIRPhysicalIntegerRegister;
         variableSize = 2u64 ifTrue: (codegen textSection x86::mov: variablePointer src: self x86::int16).
         variableSize = 4u64 ifTrue: (codegen textSection x86::mov: variablePointer src: self x86::int32).
     }.
+
+    public override method x86::pushWith: (codegen: MIRFunctionAsmCodeGenerator) valueSize: (size: UInt64)::=> Void := {
+        codegen textSection x86::push: self x86::int32
+    }.
 }.
 
 public final class MIRX86_64IntegerRegister superclass: MIRPhysicalIntegerRegister; definition: {
@@ -370,6 +380,10 @@ public final class MIRX86_64IntegerRegister superclass: MIRPhysicalIntegerRegist
         variableSize = 8u64 ifTrue: (codegen textSection x86::mov: variablePointer src: self x86::int64).
     }.
 
+    public override method x86_64::pushWith: (codegen: MIRFunctionAsmCodeGenerator) valueSize: (size: UInt64)::=> Void := {
+        codegen textSection x86::push: self x86::int64
+    }.
+
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: int64
     }.
@@ -454,6 +468,24 @@ public final class MIRX86VectorRegister superclass: MIRPhysicalVectorRegister; d
         variableSize = 4u64 ifTrue: (codegen textSection x86::movss: variablePointer src: register).
         variableSize = 8u64 ifTrue: (codegen textSection x86::movsd: variablePointer src: register).
         variableSize = 16u64 ifTrue: (codegen textSection x86::movaps: variablePointer src: register).
+    }.
+
+    public override method x86_64::pushWith: (codegen: MIRFunctionAsmCodeGenerator) valueSize: (size: UInt64)::=> Void := {
+        size <= 8sz ifTrue: {
+            codegen textSection
+                x86::sub: X86::RSP with: 8i8 asAsmImmediate;
+                x86::movsd: X86::RSP x86::qword src: register.
+
+            return: void
+        }.
+        size <= 16sz ifTrue: {
+            codegen textSection
+                x86::sub: X86::RSP with: 16i8 asAsmImmediate;
+                x86::movaps: X86::RSP x86::oword src: register.
+            return: void
+        }.
+
+        self error: "Unsupported push size for vector register"
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -686,8 +718,7 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRCallingConventi
     public method registerConstraintsOfCall: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
         instruction scratchRegisterCount: 1sz.
         allocator
-            allocateRegister: MIR::X86_64::RBX forInstruction: instruction scratchAt: 0sz;
-            allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz.
+            allocateRegister: MIR::X86_64::RBX forInstruction: instruction scratchAt: 0sz.
         
         let registerAssignmentState := MIRSysVX86_64RegisterAssignmentState new.
         1sz until: instruction operands size do: {:(Size)operandIndex :: Void |
@@ -698,6 +729,7 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRCallingConventi
                 ifNil: (allocator allocateMemoryForInstruction: instruction operandAt: operandIndex)
         }.
 
+        allocator allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz.
         allocator
             allocateCaptureVectorPointerRegisterForInstruction: instruction;
             spillIntegerRegistersExceptFor: X86_64::SysV::CallPreservedRegister
@@ -804,7 +836,7 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRCallingConventi
 
         ## Push the arguments onto the stack.
         stackArguments reverseDo: {:(MIRValue)argument :: Void |
-            argument x86_64::pushWith: codegen scratchRegister: X86::RBX
+            argument x86_64::pushWith: codegen scratchRegister: (instruction firstScratchRegister x86::int64For: codegen)
         }.
 
         ## Perform the call.
@@ -1084,6 +1116,11 @@ MIRVariable extend: {
 MIRLocalValue extend: {
     public override method x86_64::pushWith: (codegen: MIRFunctionAsmCodeGenerator) scratchRegister: (scratchRegister: AsmInstructionOperand)::=> Void := {
         let variableSize := self size.
+        assignedRegister ifNotNil: {
+            assignedRegister x86_64::pushWith: codegen valueSize: variableSize.
+            return: void.
+        }.
+
         (variableSize = 1sz) || (variableSize = 2sz) || (variableSize = 4sz) || (variableSize = 8sz) ifTrue: {
             let isSignedExtended := self isSignedExtended.
 

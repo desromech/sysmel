@@ -92,7 +92,9 @@ public final class HIRInlinerState definition: {
 
     public method inlineCallInstruction: (call: HIRCallInstruction) in: (functionDefinition: HIRFunctionDefinition)::=> HIRInstruction := {
         let calledFunctionDefinition := call calledFunction evaluateAsHIRFunctionDefinitionOrNil.
-        (calledFunctionDefinition shouldBeInlinedIn: functionDefinition) ifFalse: {return: call}.
+        calledFunctionDefinition isNotNil && (calledFunctionDefinition shouldBeInlinedIn: functionDefinition) ifFalse: {
+            return: call
+        }.
 
         let callArguments => Array := call arguments.
         let calledCaptureValues => Array := call calledFunction evaluateCaptureValueListOrNil.

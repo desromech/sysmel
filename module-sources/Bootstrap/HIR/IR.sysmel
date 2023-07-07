@@ -122,6 +122,12 @@ HIRValue definition: {
         users := nil
     }.
 
+    public method clearSourceInformation => Void := {
+        self sourcePosition: nil.
+        self sourceASTNode: nil.
+        self sourceEnvironment: nil.
+    }.
+
     public method useSourceInformationOfValue: (value: HIRValue) ::=> Void := {
         self sourcePosition: value sourcePosition.
         self sourceASTNode: value sourceASTNode.
@@ -624,6 +630,9 @@ HIRFunctionDefinition definition: {
             && sourceObject isNeverInline not
             && (sourceObject isInline || sourceObject isAlwaysInline).
 
+    public method shouldInlineWithoutSourceDebugging ::=> Boolean
+        := sourceObject isNotNil && sourceObject isWithoutSourceDebugging.
+
     public override method postCopy => Void := {
         super postCopy.
 
@@ -680,6 +689,7 @@ HIRFunctionDefinition definition: {
         }.
 
         ## Second pass: fix the used values.
+        let withoutSourceDebugging := self shouldInlineWithoutSourceDebugging.
         inlinedBasicBlocks do: {:(HIRBasicBlock)eachBasicBlock :: Void |
             self assert: eachBasicBlock parent == targetFunctionDefinition.
             eachBasicBlock instructionsDo: {:(HIRInstruction)eachInstruction |
@@ -687,6 +697,13 @@ HIRFunctionDefinition definition: {
                 eachInstruction
                     replaceUsedValuesWith: replacementDictionary;
                     registerInUsedValues.
+
+                withoutSourceDebugging ifTrue: {
+                    eachInstruction clearSourceInformation.
+                    eachInstruction isSetDebugValueForBindingInstruction ifTrue: {
+                        eachInstruction deleteFromParent
+                    }
+                }.
 
                 ## Fix return instructions.
                 eachInstruction isReturnInstruction ifTrue: {
@@ -711,7 +728,31 @@ HIRFunctionDefinition definition: {
             }.
         }.
 
-        inlinedBasicBlocks first
+        ## Add debug values for the arguments and captures.
+        let firstInlinedBlock => HIRBasicBlock := inlinedBasicBlocks first.
+        withoutSourceDebugging ifFalse: {
+            let debugInsertionPosition := firstInlinedBlock firstInstruction.
+            let addDebugValue := {:(HIRValue)value :(SymbolBinding)sourceBinding :: Void |
+                sourceBinding ifNotNil: {
+                    firstInlinedBlock addInstruction: (HIRSetDebugValueForBindingInstruction new
+                        value: value;
+                        binding: sourceBinding;
+                        type: Void;
+                        registerInUsedValues;
+                        yourself) before: debugInsertionPosition
+                }.
+            }.
+
+            arguments doWithIndex: {:(HIRFunctionArgument)argument :(Size)index :: Void |
+                addDebugValue(inlineArguments at: index, argument sourceBinding)
+            }.
+            captures doWithIndex: {:(HIRFunctionCapture)capture :(Size)index :: Void |
+                addDebugValue(inlineArguments at: index, capture sourceBinding)
+            }.
+        }.
+
+        ## Return the first inlined block.
+        firstInlinedBlock
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -1322,10 +1363,13 @@ HIRBasicBlock definition: {
         } continueWith: (nextInstructionToAdd := nextInstructionToAdd nextInstruction)
     }.
 
-    public method copyRegisteringInReplacementDictionary: (replacementDictionary: Dictionary) ::=> HIRBasicBlock
-        := self shallowCopy
+    public method copyRegisteringInReplacementDictionary: (replacementDictionary: Dictionary) ::=> HIRBasicBlock := {
+        let result := self shallowCopy
             postCopyRegisteringInReplacementDictionary: replacementDictionary;
             yourself.
+        replacementDictionary at: self put: result.
+        result
+    }.
 
     public override method replaceWith: (replacement: HIRValue) ::=> Void := {
         self == replacement ifTrue: (return: void).
@@ -2018,7 +2062,7 @@ HIRPhiInstruction definition: {
 
     public override method postCopy => Void := {
         super postCopy.
-        incomingBlocksAndValues := incomingBlocksAndValues copy.
+        incomingBlocksAndValues := incomingBlocksAndValues collect: {:each | each copy}.
     }.
 
     public override method usedValuesDo: aBlock ::=> Void := {

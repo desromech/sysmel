@@ -1,19 +1,19 @@
 Type
     withSelector: #hasAnyFlag: addMethod: {:(Type)self :(Bitflags)flag :: Boolean |
         ((self __slotNamedAt__: #flags) & flag) ~= 0bflgs
-    } makeFinal withEagerAnalysis;
+    } makeFinal makeAlwaysInline  makeFinal withEagerAnalysis;
     withSelector: #isDynamic addMethod: {:(Type)self :: Boolean |
         self hasAnyFlag: TypeFlags::Dynamic.
-    } makeFinal withEagerAnalysis;
+    } makeFinal makeAlwaysInline  makeFinal withEagerAnalysis;
     withSelector: #isBytes addMethod: {:(Type)self :: Boolean |
         self hasAnyFlag: TypeFlags::Bytes.
-    } makeFinal withEagerAnalysis;
+    } makeFinal makeAlwaysInline  makeFinal withEagerAnalysis;
     withSelector: #isWeak addMethod: {:(Type)self :: Boolean |
         self hasAnyFlag: TypeFlags::Weak.
-    } makeFinal withEagerAnalysis;
+    } makeFinal makeAlwaysInline  makeFinal withEagerAnalysis;
     withSelector: #isPointerLikeType addMethod: {:(Type)self :: Boolean |
         self hasAnyFlag: (TypeFlags::PointerValue | TypeFlags::ReferenceValue) | TypeFlags::TemporaryReferenceValue.
-    } makeFinal withEagerAnalysis;
+    } makeFinal makeAlwaysInline  makeFinal withEagerAnalysis;
     withSelector: #isPointerType addMethod: {:(Type)self :: Boolean |
         self hasAnyFlag: TypeFlags::PointerValue.
     } makeFinal withEagerAnalysis;

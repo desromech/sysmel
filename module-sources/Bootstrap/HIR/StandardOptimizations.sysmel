@@ -2,7 +2,10 @@ public global HIRStandardFunctionOptimizationPasses := (
     HIRPromoteAllocaPass, HIRConstantPropagationPass
 ).
 
-public global HIRStandardModuleOptimizationPasses := HIRStandardFunctionOptimizationPasses.
+public global HIRStandardModuleInliningOptimizationPass := HIRInliningPass new
+    functionPasses: HIRStandardFunctionOptimizationPasses;
+    yourself.
+public global HIRStandardModuleOptimizationPasses := HIRStandardFunctionOptimizationPasses -- (HIRStandardModuleInliningOptimizationPass,).
 
 HIRFunctionDefinition definition: {
     public method performStandardOptimizations => Void := {

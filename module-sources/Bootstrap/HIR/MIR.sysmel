@@ -2433,7 +2433,9 @@ HIRTypeSlotAtInstruction extend: {
 HIRTypeSlotAtPutInstruction extend: {
     public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         let headerSize := (self tuple type ifNil: AnyValue) objectHeaderSizeForObjectModel: codegen compilationTarget objectModel.
-        self value type emitMirStore: (codegen translateValue: self value) intoPointer: (codegen translateValue: self tuple) constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 withBlockBuilder: codegen blockBuilder
+        let slotValueType := typeSlot type.
+        let valueToStore := codegen translateValue: self value withExpectedType: slotValueType.
+        slotValueType emitMirStore: valueToStore intoPointer: (codegen translateValue: self tuple) constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 withBlockBuilder: codegen blockBuilder
     }.
 }.
 

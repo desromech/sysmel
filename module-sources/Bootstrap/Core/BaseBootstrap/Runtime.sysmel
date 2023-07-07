@@ -161,19 +161,19 @@ TypeSlot
 Array
     withSelector: #at: addMethod: {:(Array)self :(Size)index |
         self __uncheckedSlotAt__: index
-    } makeVirtual makeFinal withEagerAnalysis;
+    } makeVirtual makeFinal makeAlwaysInline withEagerAnalysis;
     withSelector: #at:put: addMethod: {:(Array)self :(Size)index :value :: Void |
         self __uncheckedSlotAt__: index put: value
-    } makeVirtual makeFinal withEagerAnalysis;
+    } makeVirtual makeFinal makeAlwaysInline withEagerAnalysis;
     withSelector: #untypedAt: addMethod: {:(Array)self :(Size)index :: Untyped |
         self __uncheckedSlotAt__: index
-    } makeVirtual makeFinal withEagerAnalysis;
+    } makeVirtual makeFinal makeAlwaysInline withEagerAnalysis;
     withSelector: #untypedAt:put: addMethod: {:(Array)self :(Size)index :(Untyped)value :: Void |
         self __uncheckedSlotAt__: index put: value
-    } makeVirtual makeFinal withEagerAnalysis;
+    } makeVirtual makeFinal makeAlwaysInline withEagerAnalysis;
     withSelector: #size addMethod: {:(Array)self :: Size |
-        self __size__
-    } makeVirtual makeFinal withEagerAnalysis;
+        self __uncheckedPointersSize__
+    } makeVirtual makeFinal makeAlwaysInline withEagerAnalysis;
     withSelector: #doWithIndex: addMethod: {:(Array)self :aBlock :: Void |
         let: #i mutableWith: 0sz.
         let: #size with: self size.
@@ -208,7 +208,7 @@ Type
 
     withSelector: #addFlags: addMethod: {:(Type)self :(Bitflags)flag :: Void |
         self flags: self flags | flag
-    } withEagerAnalysis;
+    } makeFinal makeAlwaysInline  withEagerAnalysis;
 
     withSelector: #makeNullable addMethod: {:(Type)self :: Type |
         self addFlags: TypeFlags::Nullable.
@@ -216,7 +216,7 @@ Type
     } withEagerAnalysis;
     withSelector: #isNullable addMethod: {:(Type)self :: Boolean |
         self hasAnyFlag: TypeFlags::Nullable.
-    } withEagerAnalysis;
+    } makeFinal makeAlwaysInline  withEagerAnalysis;
 
     withSelector: #makeBytes addMethod: {:(Type)self :: Type |
         self addFlags: TypeFlags::Bytes.
@@ -234,7 +234,7 @@ Type
     } withEagerAnalysis;
     withSelector: #isImmediate addMethod: {:(Type)self :: Boolean |
         self hasAnyFlag: TypeFlags::Immediate.
-    } withEagerAnalysis;
+    } makeFinal makeAlwaysInline  withEagerAnalysis;
 
     withSelector: #makeFinal addMethod: {:(Type)self :: Type |
         self addFlags: TypeFlags::Final.
@@ -242,7 +242,7 @@ Type
     } withEagerAnalysis;
     withSelector: #isFinal addMethod: {:(Type)self :: Boolean |
         self hasAnyFlag: TypeFlags::Final.
-    } withEagerAnalysis;
+    } makeFinal makeAlwaysInline  withEagerAnalysis;
 
     withSelector: #makeAbstract addMethod: {:(Type)self :: Type |
         self addFlags: TypeFlags::Abstract.
@@ -250,7 +250,7 @@ Type
     } withEagerAnalysis;
     withSelector: #isAbstract addMethod: {:(Type)self :: Boolean |
         self hasAnyFlag: TypeFlags::Abstract.
-    } withEagerAnalysis;
+    } makeFinal makeAlwaysInline  withEagerAnalysis;
 
     withSelector: #makeFunction addMethod: {:(Type)self :: Type |
         self addFlags: TypeFlags::Function.
@@ -258,7 +258,7 @@ Type
     } withEagerAnalysis;
     withSelector: #isFunction addMethod: {:(Type)self :: Boolean |
         self hasAnyFlag: TypeFlags::Function.
-    } withEagerAnalysis;
+    } makeFinal makeAlwaysInline withEagerAnalysis;
 
     withSelector: #defaultValue addMethod: {:(Type)self :: self |
         if: self isNullable
@@ -855,19 +855,22 @@ Function
     } makeFinal makeAlwaysInline;
     withSelector: #isAlwaysInline addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::AlwaysInline
-    };
+    } makeFinal makeAlwaysInline;
     withSelector: #isNeverInline addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::NeverInline
-    };
+    } makeFinal makeAlwaysInline;
+    withSelector: #isWithoutSourceDebugging addMethod: {:(Function)self :: Boolean |
+        self hasAnyFlag: FunctionFlags::WithoutSourceDebugging
+    } makeFinal makeAlwaysInline;
     withSelector: #hasOverrideDispatch addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Override
-    } withEagerAnalysis;
+    } makeFinal makeAlwaysInline withEagerAnalysis;
     withSelector: #hasVirtualDispatch addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: (FunctionFlags::Virtual | FunctionFlags::Abstract) | FunctionFlags::Override
-    } withEagerAnalysis;
+    } makeFinal makeAlwaysInline withEagerAnalysis;
     withSelector: #requiresArgumentExpansionDuringApplication addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Memoized | FunctionFlags::Variadic
-    } withEagerAnalysis;
+    } makeFinal makeAlwaysInline withEagerAnalysis;
 
     withSelector: #hasPragmaNamed: addMethod: {:(Function)self :selector :: Boolean |
         let: #definition with: self definition.
@@ -902,7 +905,7 @@ FunctionDefinition
     } makeFinal makeAlwaysInline;
     withSelector: #requiresArgumentExpansionDuringApplication addMethod: {:(FunctionDefinition)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Memoized | FunctionFlags::Variadic
-    };
+    } makeFinal makeAlwaysInline;
     withSelector: #isInline addMethod: {:(FunctionDefinition)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Inline
     } makeFinal makeAlwaysInline;
@@ -911,6 +914,9 @@ FunctionDefinition
     } makeFinal makeAlwaysInline;
     withSelector: #isNeverInline addMethod: {:(FunctionDefinition)self :: Boolean |
         self hasAnyFlag: FunctionFlags::NeverInline
+    } makeFinal makeAlwaysInline;
+    withSelector: #isWithoutSourceDebugging addMethod: {:(FunctionDefinition)self :: Boolean |
+        self hasAnyFlag: FunctionFlags::WithoutSourceDebugging
     } makeFinal makeAlwaysInline.
 
 ValueBox
@@ -2729,36 +2735,36 @@ let: #UInt64IdentityHashBitMask with: (1u64 << UInt64IdentityHashBitCount) - 1u6
 UInt32
     withSelector: #hashMultiply addMethod: {:(UInt32)self :: UInt32 |
         (self * UInt32HashMultiplicationConstant) & UInt32HashBitMask
-    } makePure makeFinal withEagerAnalysis;
+    } makePure makeFinal makeAlwaysInline withEagerAnalysis;
     withSelector: #hashConcatenate: addMethod: {:(UInt32)self :(UInt32)next :: UInt32 |
         (self hashMultiply + next) & UInt32HashBitMask
-    } makePure makeFinal withEagerAnalysis;
+    } makePure makeFinal makeAlwaysInline withEagerAnalysis;
     withSelector: #identityHashMasked addMethod: {:(UInt32)self :: UInt32 |
         self & UInt32IdentityHashBitMask
-    } makePure makeFinal withEagerAnalysis;
+    } makePure makeFinal makeAlwaysInline withEagerAnalysis;
     withSelector: #identityHashMultiply addMethod: {:(UInt32)self :: UInt32 |
         (self * UInt32HashMultiplicationConstant) & UInt32IdentityHashBitMask
-    } makePure makeFinal withEagerAnalysis;
+    } makePure makeFinal makeAlwaysInline withEagerAnalysis;
     withSelector: #identityHashConcatenate: addMethod: {:(UInt32)self :(UInt32)next :: UInt32 |
         (self identityHashMultiply + next) & UInt32IdentityHashBitMask
-    } makePure makeFinal withEagerAnalysis.
+    } makePure makeFinal makeAlwaysInline withEagerAnalysis.
 
 UInt64
     withSelector: #hashMultiply addMethod: {:(UInt64)self :: UInt64 |
         (self * UInt64HashMultiplicationConstant) & UInt64HashBitMask
-    } makePure makeFinal withEagerAnalysis;
+    } makePure makeFinal makeAlwaysInline withEagerAnalysis;
     withSelector: #hashConcatenate: addMethod: {:(UInt64)self :(UInt64)next :: UInt64 |
         (self hashMultiply + next) & UInt64HashBitMask
-    } makePure makeFinal withEagerAnalysis;
+    } makePure makeFinal makeAlwaysInline withEagerAnalysis;
     withSelector: #identityHashMasked addMethod: {:(UInt64)self :: UInt64 |
         self & UInt64IdentityHashBitMask
-    } makePure makeFinal withEagerAnalysis;
+    } makePure makeFinal makeAlwaysInline withEagerAnalysis;
     withSelector: #identityHashMultiply addMethod: {:(UInt64)self :: UInt64 |
         (self * UInt64HashMultiplicationConstant) & UInt64IdentityHashBitMask
-    } makePure makeFinal withEagerAnalysis;
+    } makePure makeFinal makeAlwaysInline withEagerAnalysis;
     withSelector: #identityHashConcatenate: addMethod: {:(UInt64)self :(UInt64)next :: UInt64 |
         (self identityHashMultiply + next) & UInt64IdentityHashBitMask
-    } makePure makeFinal withEagerAnalysis.
+    } makePure makeFinal makeAlwaysInline withEagerAnalysis.
 
 FunctionDefinition
     withSelector: #validAnnotations addMethod: {:(FunctionDefinition)self :: Dictionary |
