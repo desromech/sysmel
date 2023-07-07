@@ -1,13 +1,16 @@
 {
 function returnVar() => Int32 := {
     let var mutable => Int32 := 1i32.
-    var
+    var + 3i32.
+    var + 5i32
 }.
 
 let module := returnVar asHIRModule.
 printLine(module fullPrintString).
 
 HIRPromoteAllocaPass runInModule: module.
+HIRDeadCodeRemovalPass runInModule: module.
+HIRConstantFoldingAndPropagationPass runInModule: module.
 printLine(module fullPrintString).
 }.
 

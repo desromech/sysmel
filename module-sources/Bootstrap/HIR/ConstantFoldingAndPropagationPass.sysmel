@@ -1,0 +1,26 @@
+public class HIRConstantFoldingAndPropagationPass superclass: HIRFunctionDefinitionPass; definition: {
+    public override method runInFunctionDefinition: (function: HIRFunctionDefinition) ::=> Void := {
+        let pendingWork := OrderedInsertionIdentitySet new.
+
+        let foldInstruction := {:(HIRInstruction)instruction :: Void |
+            instruction parent ifNil: (return: void).
+
+            let folded := instruction evaluateConstantFolding.
+            folded == instruction ifFalse: {
+                instruction usersDo: {:(HIRValue)eachUser :: Void |
+                    eachUser isInstruction ifTrue: {
+                        pendingWork add: eachUser
+                    }
+                }.
+
+                instruction replaceWith: folded.
+            }.
+        }.
+
+        function instructionsDo: foldInstruction.
+        while: pendingWork isNotEmpty do: {
+            let pendingInstruction => HIRInstruction := pendingWork removeLast.
+            foldInstruction(pendingInstruction)
+        }.
+    }.
+}.

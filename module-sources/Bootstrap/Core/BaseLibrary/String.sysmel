@@ -211,6 +211,50 @@ Char8 extend: {
     }.
 }.
 
+Char16 extend: {
+    public final method printCEscapedOn: (stream: Stream) ::=> Void := {
+        self = '\n'c16 ifTrue: {stream nextPutAll: "\\n". return: void}.
+        self = '\r'c16 ifTrue: {stream nextPutAll: "\\r". return: void}.
+        self = '\t'c16 ifTrue: {stream nextPutAll: "\\t". return: void}.
+        self = '\\'c16 ifTrue: {stream nextPutAll: "\\\\". return: void}.
+
+        (self < ' 'c16) || (self >= 128c16) ifTrue: {
+            stream nextPutAll: "u".
+            self asUInt16 printHexOn: stream.
+        } ifFalse: {
+            stream nextPut: self asChar8
+        }
+    }.
+
+    public override final method printOn: (stream: Stream) ::=> Void := {
+        stream nextPut: '\''c8.
+        self printCEscapedOn: stream.
+        stream nextPut: '\''c8.
+    }.
+}.
+
+Char32 extend: {
+    public final method printCEscapedOn: (stream: Stream) ::=> Void := {
+        self = '\n'c32 ifTrue: {stream nextPutAll: "\\n". return: void}.
+        self = '\r'c32 ifTrue: {stream nextPutAll: "\\r". return: void}.
+        self = '\t'c32 ifTrue: {stream nextPutAll: "\\t". return: void}.
+        self = '\\'c32 ifTrue: {stream nextPutAll: "\\\\". return: void}.
+
+        (self < ' 'c32) || (self >= 128c32) ifTrue: {
+            stream nextPutAll: "U".
+            self asUInt32 printHexOn: stream.
+        } ifFalse: {
+            stream nextPut: self asChar8
+        }
+    }.
+
+    public override final method printOn: (stream: Stream) ::=> Void := {
+        stream nextPut: '\''c8.
+        self printCEscapedOn: stream.
+        stream nextPut: '\''c8.
+    }.
+}.
+
 UInt8 extend: {
     public method printHexDigitOn: (stream: Stream) ::=> Void := {
         (0u8 <= self) && (self <= 9u8)

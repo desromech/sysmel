@@ -152,7 +152,16 @@ public final class HIRAllocaPromotionState definition: {
 
     public method addDebugBindingsBefore: (position: HIRInstruction) inBlock: (block: HIRBasicBlock) ::=> Void := {
         self assert: block isNotNil.
-        let value := self validValueAtInstruction: position inBlock: block.
+
+        ## Filter out the undefined case.
+        let value := self valueAtInstruction: position inBlock: block.
+        value isNil || value isUndefinedConstant ifTrue: (return: void).
+        value isPhiInstruction ifTrue: {
+            let phi := value downCastTo: HIRPhiInstruction.
+            phi incomingBlocksAndValues size = 0sz ifTrue: (return: void).
+        }.
+
+        ## Copy the debug bindings onto the new location.
         debugBindings do: {:(HIRSetDebugValueForBindingInstruction)oldDebugBinding :: Void |
             let newDebugBinding := HIRSetDebugValueForBindingInstruction new
                 useSourceInformationOfValue: oldDebugBinding;

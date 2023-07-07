@@ -25,6 +25,7 @@ HIRValue definition: {
     public virtual method isLiteralConstantTrue => Boolean := false.
     public virtual method isLiteralConstantFalse => Boolean := false.
     public virtual method isUndefinedConstant => Boolean := false.
+    public virtual method isEvaluableConstant => Boolean := false.
 
     public virtual method isCaptureless => Boolean := false.
 
@@ -54,9 +55,15 @@ HIRValue definition: {
     public virtual method isTerminatorInstruction => Boolean := false.
     public virtual method isUnreachableInstruction => Boolean := false.
 
+    public virtual method hasSideEffects => Boolean := true.
+    public virtual method isPureFunction => Boolean := false.
+
     public virtual method primitiveName => Symbol := nil.
 
     public virtual method usedValuesDo: (aBlock: (HIRValue) => Void) ::=> Void := {}.
+
+    public abstract method evaluateConstant => Untyped
+        := self subclassResponsibility.
 
     public method userCount => Size
         := users ifNil: 0sz ifNotNil: users size.
@@ -66,6 +73,8 @@ HIRValue definition: {
     }.
 
     public virtual method replaceWith: (replacement: HIRValue) ::=> Void := {
+        self == replacement ifTrue: (return: void).
+        
         users ifNotNil: {
             users do: {:(HIRValue)user :: Void |
                 user replaceUsedValue: self with: replacement.
@@ -117,10 +126,17 @@ HIRValue definition: {
 
 HIRConstant definition: {
     public override method isConstant => Boolean := true.
+
+    public override method hasSideEffects => Boolean := false.
 }.
 
 public final class HIRUndefinedConstant superclass: HIRConstant; definition: {
+    public override method isEvaluableConstant => Boolean := true.
     public override method isUndefinedConstant => Boolean := true.
+
+    public override method hasSideEffects => Boolean := false.
+
+    public override method evaluateConstant => Untyped := self type defaultValue.
 
     public override method printOn: (stream: Stream) ::=> Void
         := stream nextPutAll: "undefined "; print: self type.
@@ -133,6 +149,14 @@ public final class HIRLiteralConstant superclass: HIRConstant; definition: {
     public override method isLiteralConstant => Boolean := true.
     public override method isLiteralConstantTrue => Boolean := (Untyped::==)(self __slotNamedAt__: #value, true).
     public override method isLiteralConstantFalse => Boolean := (Untyped::==)(self __slotNamedAt__: #value, false).
+    public override method isEvaluableConstant => Boolean := true.
+
+    public override method evaluateConstant => Untyped := self __slotNamedAt__: #value.
+
+    public override method isPureFunction => Boolean := {
+        let value := self __slotNamedAt__: #value.
+        (RawTuple::type(value) ifNil: Untyped) isFunction && value isPure
+    }.
 
     public method asBoxedLiteralConstant => HIRLiteralConstant
         := isBoxed || RawTuple::type(self __slotNamedAt__: #value) isValueType not
@@ -148,11 +172,16 @@ public final class HIRLiteralConstant superclass: HIRConstant; definition: {
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        let valueType := RawTuple::type(self __slotNamedAt__: #value).
-        RawTuple::isBytes(self __slotNamedAt__: #value) || (valueType isSubtypeOf: ValueType) ifTrue: {
-            stream nextPutAll: (isBoxed ifTrue: "BoxedLiteral" ifFalse: "Literal("); print: valueType; nextPutAll: " => "; print: self type; nextPut: ')'c8
+        let value := self __slotNamedAt__: #value.
+        let valueType := RawTuple::type(value).
+        RawTuple::isBytes(value) || valueType isValueType ifTrue: {
+            stream nextPutAll: (isBoxed ifTrue: "BoxedLiteral" ifFalse: "Literal("); print: valueType; nextPutAll: " => "; print: value; nextPut: ')'c8
         } ifFalse: {
-            stream nextPutAll: (isBoxed ifTrue: "BoxedLiteral" ifFalse: "Literal("); print: valueType; nextPut: ')'c8
+            (valueType isSubtypeOf: ProgramEntity) ifTrue: {
+                stream nextPutAll: (isBoxed ifTrue: "BoxedLiteral" ifFalse: "Literal("); print: value; nextPut: ')'c8
+            } ifFalse: {
+                stream nextPutAll: (isBoxed ifTrue: "BoxedLiteral" ifFalse: "Literal("); print: valueType; nextPut: ')'c8    
+            }
         }.
     }.
 }.
@@ -177,6 +206,12 @@ HIRFunction definition: {
     }.
 
     public override method isFunction => Boolean := true.
+
+    public override method isPureFunction => Boolean
+        := sourceObject isNotNil && sourceObject isPure.
+
+    public override method evaluateConstant => Untyped
+        := self __slotNamedAt__: #sourceObject.
 
     public override method isCaptureless => Boolean := captures isEmpty.
     public method isTargetDefinedPrimitive => Boolean := sourceObject isNotNil && sourceObject isTargetDefinedPrimitive.
@@ -1085,6 +1120,8 @@ HIRBasicBlock definition: {
     }.
 
     public override method replaceWith: (replacement: HIRValue) ::=> Void := {
+        self == replacement ifTrue: (return: void).
+
         super replaceWith: replacement.
         self parent ifNotNil: {:parent :: Void | parent removeBasicBlock: self }
     }.
@@ -1143,6 +1180,8 @@ HIRInstruction definition: {
     }.
 
     public override method replaceWith: (replacement: HIRValue) ::=> Void := {
+        self == replacement ifTrue: (return: void).
+
         super replaceWith: replacement.
         parent ifNotNil: {parent removeInstruction: self }
     }.
@@ -1152,7 +1191,10 @@ HIRInstruction definition: {
 
     public virtual method successors => Array
         := self error: "Non terminator instruction is present at the end of a basic block " -- self fullPrintString.
-    
+
+    public virtual method evaluateConstantFolding => HIRValue
+        := self.
+
     public method deleteFromParent => Void
         := parent deleteInstruction: self.
 }.
@@ -1161,6 +1203,7 @@ public final class HIRAllocaInstruction superclass: HIRInstruction; definition: 
     public field valueType => HIRValue.
 
     public override method isAllocaInstruction => Boolean := true.
+    public override method hasSideEffects => Boolean := false.
 
     public method isLocalOnlyAlloca => Boolean
         := users isNil || (users allSatisfy: {:(HIRValue)each :: Boolean | each isLoadStoreOrDebugBindingInstruction }).
@@ -1214,6 +1257,26 @@ public final class HIRCallInstruction superclass: HIRInstruction; definition: {
     public field calledFunction => HIRValue.
     public field arguments => Array.
     public field isUnchecked => Boolean.
+    
+    public override method hasSideEffects => Boolean := calledFunction isPureFunction not.
+
+    public override method evaluateConstantFolding => HIRValue := {
+        calledFunction isPureFunction && (arguments allSatisfy: {:(HIRValue)each :: Boolean | each isEvaluableConstant }) ifFalse: {
+            return: self.
+        }.
+
+        let calledFunctionValue := calledFunction evaluateConstant.
+        let argumentValues := Array new: arguments size.
+        arguments doWithIndex: {:(HIRValue)each :(Size)index :: Void |
+            argumentValues untypedAt: index put: (each evaluateConstant)
+        }.
+
+        let evaluatedConstant := calledFunctionValue applyWithArguments: argumentValues.
+        HIRLiteralConstant new
+            value: evaluatedConstant;
+            type: RawTuple::type(evaluatedConstant);
+            yourself
+    }.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream
@@ -1244,6 +1307,8 @@ public final class HIRCallInstruction superclass: HIRInstruction; definition: {
 public final class HIRBitcastInstruction superclass: HIRInstruction; definition: {
     public field value => HIRValue.
     public field targetType => HIRValue.
+
+    public override method hasSideEffects => Boolean := false.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void
         := stream print: self; nextPutAll: " := bitcast: "; print: self value;
@@ -1335,6 +1400,7 @@ public final class HIRDownCastInstruction superclass: HIRInstruction; definition
     public field isUnchecked => Boolean.
 
     public override method isDownCastInstruction => Boolean := true.
+    public override method hasSideEffects => Boolean := isUnchecked not.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self;
@@ -1363,6 +1429,7 @@ public final class HIRReferenceElementAtInstruction superclass: HIRInstruction; 
     public field index => HIRValue.
 
     public override method isReferenceElementAtInstruction => Boolean := true.
+    public override method hasSideEffects => Boolean := false.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := reference "; print: self reference; nextPutAll: " elementAt "; print: self index
@@ -1389,6 +1456,7 @@ public final class HIRPointerElementAtInstruction superclass: HIRInstruction; de
     public field index => HIRValue.
 
     public override method isPointerElementAtInstruction => Boolean := true.
+    public override method hasSideEffects => Boolean := false.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := pointer "; print: self pointer; nextPutAll: " elementAt "; print: self index
@@ -1415,6 +1483,7 @@ public final class HIRTypeSlotAtInstruction superclass: HIRInstruction; definiti
     public field typeSlot => TypeSlot.
 
     public override method isTypeSlotAtInstruction => Boolean := true.
+    public override method hasSideEffects => Boolean := false.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := typedSlotOf "; print: self tuple; nextPutAll: " at "; print: self typeSlot
@@ -1438,6 +1507,7 @@ public final class HIRTypeSlotReferenceAtInstruction superclass: HIRInstruction;
     public field typeSlot => TypeSlot.
 
     public override method isTypeSlotAtInstruction => Boolean := true.
+    public override method hasSideEffects => Boolean := false.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := typedSlotOf "; print: self tuple; nextPutAll: " referenceAt "; print: self typeSlot
@@ -1487,9 +1557,11 @@ public final class HIRTypeSlotAtPutInstruction superclass: HIRInstruction; defin
 
 public final class HIRLoadInstruction superclass: HIRInstruction; definition: {
     public field storage => HIRValue.
+    public field isVolatile => Boolean.
 
     public override method isLoadInstruction => Boolean := true.
     public override method isLoadStoreOrDebugBindingInstruction => Boolean := true.
+    public override method hasSideEffects => Boolean := isVolatile not.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := load "; print: self storage
@@ -1513,6 +1585,7 @@ public final class HIRMakeAssociationInstruction superclass: HIRInstruction; def
     public field value => HIRValue.
 
     public override method isMakeAssociationInstruction => Boolean := true.
+    public override method hasSideEffects => Boolean := false.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := makeAssociation "; print: self key;
@@ -1539,6 +1612,7 @@ public final class HIRMakeArrayInstruction superclass: HIRInstruction; definitio
     public field elements => Array.
 
     public override method isMakeArrayInstruction => Boolean := true.
+    public override method hasSideEffects => Boolean := false.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := makeArray".
@@ -1564,6 +1638,7 @@ public final class HIRMakeByteArrayInstruction superclass: HIRInstruction; defin
     public field elements => Array.
 
     public override method isMakeByteArrayInstruction => Boolean := true.
+    public override method hasSideEffects => Boolean := false.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := makeByteArray".
@@ -1590,6 +1665,7 @@ public final class HIRMakeClosureInstruction superclass: HIRInstruction; definit
     public field captures => Array.
 
     public override method isMakeClosureInstruction => Boolean := true.
+    public override method hasSideEffects => Boolean := false.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := makeClosure "; print: self functionDefinition.
@@ -1618,6 +1694,7 @@ public final class HIRMakeDictionaryInstruction superclass: HIRInstruction; defi
     public field elements => Array.
 
     public override method isMakeDictionaryInstruction => Boolean := true.
+    public override method hasSideEffects => Boolean := false.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := makeDictionary".
@@ -1643,6 +1720,7 @@ HIRPhiInstruction definition: {
     public field incomingBlocksAndValues => Array.
 
     public override method isPhiInstruction => Boolean := true.
+    public override method hasSideEffects => Boolean := false.
 
     public override method initialize => Void := {
         super initialize.
@@ -1718,16 +1796,44 @@ HIRPhiInstruction definition: {
         }
     }.
 
-    public method simplify => Void := {
-        incomingBlocksAndValues size = 0sz ifTrue: {
-            self replaceWith: (HIRUndefinedConstant new type: self type; yourself).
-            return: void
+    public override method evaluateConstantFolding => HIRValue := {
+        let bestResult mutable => HIRValue := nil.
+
+        let valueCount := incomingBlocksAndValues size.
+        valueCount = 1sz ifTrue: {
+            return: incomingBlocksAndValues first value
         }.
 
-        let expectedValue => HIRValue := incomingBlocksAndValues first value.
-        (incomingBlocksAndValues allSatisfy: {:(Association)each :: Boolean | expectedValue = each value}) ifTrue: {
-            self replaceWith: expectedValue
-        }
+        let i mutable := 0sz.
+        while: (i < valueCount) do: {
+            let association => Association := incomingBlocksAndValues at: i.
+            let value => HIRValue := association value.
+
+            bestResult ifNil: {
+                bestResult := value.
+                continue()
+            }.
+
+            value isConstant && bestResult isUndefinedConstant ifTrue: {
+                bestResult := value.
+                continue().
+            }.
+
+            value isUndefinedConstant ifTrue: {
+                continue()
+            }.
+
+            bestResult == value ifFalse: {
+                return: self
+            }.
+        } continueWith: (i := i + 1sz).
+
+        bestResult ifNil: (HIRUndefinedConstant new type: self type; yourself)
+    }.
+
+    public method simplify => Void := {
+        let simplified := self evaluateConstantFolding.
+        self ~~ simplified ifTrue: (self replaceWith: simplified).
     }.
 }.
 
@@ -1835,6 +1941,7 @@ public final class HIRSetDebugValueForBindingInstruction superclass: HIRInstruct
 public final class HIRStoreInstruction superclass: HIRInstruction; definition: {
     public field storage => HIRValue.
     public field value => HIRValue.
+    public field isVolatile => Boolean.
 
     public override method isStoreInstruction => Boolean := true.
     public override method isLoadStoreOrDebugBindingInstruction => Boolean := true.

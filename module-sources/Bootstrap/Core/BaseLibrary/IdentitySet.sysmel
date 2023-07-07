@@ -24,7 +24,7 @@ IdentitySet definition: {
         -1iptr
     }.
 
-    public override pure final eager method untypedAdd: (element: Untyped) ::=> Void
+    public override final eager method untypedAdd: (element: Untyped) ::=> Void
         := super untypedAdd: element.
 
     public override eager method untypedIncludes: (element: Untyped) ::=> Boolean := {
@@ -32,7 +32,7 @@ IdentitySet definition: {
         (index >= 0iptr) && Untyped::==(element, storage untypedAt: index asSize)
     }.
 
-    public override pure final eager method add: element ::=> Void
+    public override final eager method add: element ::=> Void
         := self untypedAdd: element.
 
     public override pure final eager method includes: element ::=> Boolean := {
