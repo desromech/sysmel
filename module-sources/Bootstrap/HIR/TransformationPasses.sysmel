@@ -26,12 +26,12 @@ public class HIRFunctionDefinitionPass superclass: HIRTransformationPass; defini
 
 HIRModule extend: {
     public method runPasses: passes ::=> Void := {
-        passes do: {:(HIRTransformationPass)each :: Void | each runInModule: self }
+        passes do: {:each :: Void | each runInModule: self }
     }.
 }.
 
 HIRFunctionDefinition extend: {
     public method runPasses: passes ::=> Void := {
-        passes do: {:(HIRTransformationPass)each :: Void | each runInFunctionDefinition: self }
+        passes do: {:each :: Void | each runInFunctionDefinition: self }
     }.
 }.
