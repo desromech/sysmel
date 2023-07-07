@@ -822,7 +822,7 @@ public final class AsmStream superclass: Object; definition: {
     public method addFirstElement: (element: AsmStreamElement) ::=> Void
         := self addElement: element after: nil.
 
-    public method elementsDo: aBlock ::=> Void := {
+    public inline method elementsDo: (aBlock: (AsmStreamElement) => Void) ::=> Void := {
         let position mutable := firstElement.
         while: position isNotNil do: {
             let nextPosition := position next.

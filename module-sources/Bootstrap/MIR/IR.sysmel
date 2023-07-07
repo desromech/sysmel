@@ -1132,7 +1132,7 @@ MIRBasicBlock definition: {
         self addInstruction: instruction before: nil
     }.
 
-    public method instructionsDo: aBlock ::=> Void := {
+    public inline method instructionsDo: (aBlock: (MIRInstruction => Void)) ::=> Void := {
         let position mutable := firstInstruction.
         while: (position isNotNil) do: {
             let nextPosition := position next.
@@ -1333,13 +1333,13 @@ MIRFunction definition: {
         }.
     }.
 
-    public method instructionsDo: (aBlock: (MIRInstruction) => Void) ::=> Void := {
+    public inline method instructionsDo: (aBlock: (MIRInstruction) => Void) ::=> Void := {
         self basicBlocksDo: {:(MIRBasicBlock)each :: Void |
             each instructionsDo: aBlock
         }.
     }.
 
-    public method allLocalValuesDo: (aBlock: (MIRLocalValue) => Void) ::=> Void := {
+    public inline method allLocalValuesDo: (aBlock: (MIRLocalValue) => Void) ::=> Void := {
         arguments do: aBlock.
         captureVectorPointerValue ifNotNil: aBlock(captureVectorPointerValue).
         captures do: aBlock.

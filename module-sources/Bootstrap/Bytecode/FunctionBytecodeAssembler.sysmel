@@ -265,7 +265,7 @@ FunctionBytecodeAssembler definition: {
             yourself
     }.
 
-    public method instructionsDo: (aBlock: FunctionBytecodeAssemblerAbstractInstruction => Void) ::=> Void := {
+    public inline method instructionsDo: (aBlock: FunctionBytecodeAssemblerAbstractInstruction => Void) ::=> Void := {
         let position mutable := self firstInstruction.
 
         while: position isNotNil do: {

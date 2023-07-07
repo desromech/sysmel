@@ -377,7 +377,7 @@ HIRFunctionDefinition definition: {
     public method addFirstBasicBlock: (basicBlock: HIRBasicBlock) ::=> Void
         := self addBasicBlock: basicBlock after: nil.
 
-    public method basicBlocksDo: aBlock ::=> Void := {
+    public inline method basicBlocksDo: (aBlock: (HIRBasicBlock) => Void) ::=> Void := {
         let position mutable := firstBasicBlock.
         while: position isNotNil do: {
             let nextPosition := position nextBlock.
@@ -386,7 +386,7 @@ HIRFunctionDefinition definition: {
         }
     }.
 
-    public method instructionsDo: aBlock ::=> Void := {
+    public inline method instructionsDo: (aBlock: (HIRInstruction) => Void) ::=> Void := {
         let position mutable := firstBasicBlock.
         while: position isNotNil do: {
             let nextPosition := position nextBlock.
@@ -395,12 +395,12 @@ HIRFunctionDefinition definition: {
         }
     }.
 
-    public method localValuesDo: aBlock ::=> Void := {
+    public inline method localValuesDo: (aBlock: (HIRFunctionLocalValue => Void)) ::=> Void := {
         arguments do: aBlock.
         captures do: aBlock.
-        self basicBlocksDo: {:basicBlock :: Void |
+        self basicBlocksDo: {:(HIRBasicBlock)basicBlock :: Void |
             aBlock(basicBlock).
-            basicBlock instructionsDo: aBlock
+            basicBlock instructionsDo: {:(HIRInstruction)each :: Void | aBlock(each)}
         }.
     }.
 
@@ -414,7 +414,7 @@ HIRFunctionDefinition definition: {
 
     public method enumerateLocalValueIndices => Void := {
         let index mutable := 0sz.
-        self localValuesDo: {:localValue :: Void |
+        self localValuesDo: {:(HIRFunctionLocalValue)localValue :: Void |
             localValue localValueIndex: index.
             index := index + 1sz
         }
@@ -692,7 +692,7 @@ HIRFunctionDefinition definition: {
         let withoutSourceDebugging := self shouldInlineWithoutSourceDebugging.
         inlinedBasicBlocks do: {:(HIRBasicBlock)eachBasicBlock :: Void |
             self assert: eachBasicBlock parent == targetFunctionDefinition.
-            eachBasicBlock instructionsDo: {:(HIRInstruction)eachInstruction |
+            eachBasicBlock instructionsDo: {:(HIRInstruction)eachInstruction :: Void |
                 self assert: eachInstruction parent == eachBasicBlock.
                 eachInstruction
                     replaceUsedValuesWith: replacementDictionary;
@@ -1147,18 +1147,9 @@ HIRBasicBlock definition: {
         firstInstruction := lastInstruction := nil.
     }.
 
-    public method instructionsDo: aBlock ::=> Void := {
+    public inline method instructionsDo: (aBlock: (HIRInstruction) => Void) ::=> Void := {
         let position mutable := firstInstruction.
         while: position isNotNil do: {
-            let nextPosition := position nextInstruction.
-            aBlock(position).
-            position := nextPosition
-        }
-    }.
-
-    public method firstAllocaInstructionsDo: aBlock ::=> Void := {
-        let position mutable := firstInstruction.
-        while: position isNotNil && position isAllocaInstruction do: {
             let nextPosition := position nextInstruction.
             aBlock(position).
             position := nextPosition
