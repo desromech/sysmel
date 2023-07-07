@@ -90,6 +90,11 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
 
     public method declareFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> HIRFunctionDefinition := {
         functionDefinition ensureAnalysis.
+        ## HACK: Make sure this is properly done by the analysis section.
+        functionDefinition boxDescriptor = 0uptr ifTrue: {
+            functionDefinition boxDescriptor: functionDefinition analyzedType applicationBoxDescriptor
+        }.
+
         let translatedValue := HIRFunctionDefinition new
             type: FunctionDefinition;
             sourceObject: functionDefinition;

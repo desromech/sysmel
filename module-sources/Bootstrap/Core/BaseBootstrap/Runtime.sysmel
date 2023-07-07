@@ -2572,6 +2572,7 @@ TemporaryReferenceType
     } makeOverride makePure.
 
 Type
+    withSelector: #applicationBoxDescriptor addMethod: {:(Type)self :: UIntPointer | 0uptr } makeVirtual;
     withSelector: #canonicalTypeForApplicationArgumentWithIndex: addMethod: {:(Type)self :(Size)index :: Type | AnyValue } makeVirtual;
     withSelector: #canonicalResultType addMethod: {:(Type)self :: Type | AnyValue } makeVirtual.
 
@@ -2590,9 +2591,34 @@ FunctionType
     };
     withSelector: #isMemoizedTemplate addMethod: {:(FunctionType)self :: Boolean |
         self hasFunctionFlags: FunctionFlags::Memoized | FunctionFlags::Template
-    }.
+    };
+    withSelector: #passingArgumentCount addMethod: {:(FunctionType)self :: Size |
+        self subclassResponsibility
+    } makeAbstract;
+    withSelector: #applicationBoxDescriptor addMethod: {:(FunctionType)self :: UIntPointer |
+        let: #descriptor mutableWith: 0uptr.
+        let: #resultType with: self canonicalResultType.
+
+        resultType isValueType && resultType isVoidType not ifTrue: {
+            descriptor := 1uptr.
+        }.
+
+        let: #argumentCount with: self passingArgumentCount.
+        let: #argumentIndex mutableWith: 0sz.
+        while: (argumentIndex < argumentCount) do: {
+            (self canonicalTypeForApplicationArgumentWithIndex: argumentIndex) isValueType ifTrue: {
+                descriptor := descriptor | (1uptr << (argumentIndex asUIntPointer + 1uptr))
+            }
+        } continueWith: (argumentIndex := argumentIndex + 1sz).
+
+        descriptor
+    } makeOverride.
 
 DependentFunctionType
+    withSelector: #passingArgumentCount addMethod: {:(DependentFunctionType)self :: Size |
+        ## FIXME: Implement this properly.
+        self argumentNodes size
+    } makeOverride;
     withSelector: #canonicalResultType addMethod: {:(DependentFunctionType)self :: Type |
         ## FIXME: Implement this properly.
         AnyValue
@@ -2606,6 +2632,9 @@ DependentFunctionType
     } makeOverride.
 
 SimpleFunctionType
+    withSelector: #passingArgumentCount addMethod: {:(SimpleFunctionType)self :: Size |
+        self argumentTypes size
+    } makeOverride;
     withSelector: #canonicalTypeForApplicationArgumentWithIndex: addMethod: {:(SimpleFunctionType)self :(Size)index :: Type |
         if: index < self argumentTypes size
         then: (self argumentTypes at: index)

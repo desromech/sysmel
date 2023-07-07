@@ -1630,6 +1630,16 @@ public function ObjectModel::fetchUncheckedEntryPointOrInterpreterTrampoline(fun
     }
 }.
 
+public function ObjectModel::fetchUncheckedEntryPointMatchingBoxDescriptorOrBoxingTrampoline(function: Function, boxDescriptor: UIntPointer, boxingTrampoline: UIntPointer) => UIntPointer := {
+    let definition := function definition.
+    let result := definition uncheckedEntryPoint asUIntPointer.
+    (result = 0uptr) || (definition boxDescriptor ~= boxDescriptor) ifTrue: {
+        boxingTrampoline
+    } ifFalse: {
+        result
+    }
+}.
+
 public function ObjectModel::interpretFunctionWithArguments(function: Function, arguments: Array) => Untyped
     := function interpretWithArgument: arguments.
 
@@ -1761,6 +1771,13 @@ public inline function ObjectModel::lookupMethodWithInlineCache(inlineCache: Obj
     lookupResult
 }.
 
+public inline function ObjectModel::lookupValidMethodWithReceiverTypeAndInlineCache(inlineCache: ObjectModel::PolymorphicInlineCache pointer, receiver: Untyped, type: Type, selector: Symbol) => AnyValue := {
+    ObjectModel::lookupMethodWithInlineCache(inlineCache, type, selector)
+}.
+
+public inline function ObjectModel::lookupValidMethodWithReceiverAndInlineCache(inlineCache: ObjectModel::PolymorphicInlineCache pointer, receiver: Untyped, selector: Symbol) => AnyValue
+    := ObjectModel::lookupValidMethodWithReceiverTypeAndInlineCache(inlineCache, receiver, RawTuple::type(receiver), selector).
+    
 (0sz until: 16sz) macroDo: {:ArgumentCount |
     let argumentNames := (0sz until: ArgumentCount) collect: {:(Size)each | ("arg" -- each asString) asSymbol}.
     let argumentNodes := argumentNames collect: {:(Symbol)eachName | eachName asMacroArgumentWithType: Untyped asMacroLiteral}.

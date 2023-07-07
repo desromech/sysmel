@@ -798,6 +798,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "analyzedBodyNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.astNodeType,
 
         "bytecode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_BYTECODE, context->roots.functionBytecodeType,
+        "boxDescriptor", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "capturelessUncheckedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
         "uncheckedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
         "checkedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,

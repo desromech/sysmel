@@ -5305,6 +5305,9 @@ static sysbvm_tuple_t sysbvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckMess
     if(applicationArgumentCount != typeArgumentCount)
         sysbvm_error("Expected number of arguments is mismatching.");
 
+    sysbvm_bitflags_t flags = sysbvm_tuple_bitflags_decode((*simpleFunctionType)->super.functionFlags);
+    bool isMemoizedTemplate = (flags & SYSBVM_FUNCTION_FLAGS_MEMOIZED_TEMPLATE) == SYSBVM_FUNCTION_FLAGS_MEMOIZED_TEMPLATE;
+
     // Analyze the receiver
     if(sendArgumentStartIndex > 0)
     {
@@ -5325,6 +5328,9 @@ static sysbvm_tuple_t sysbvm_simpleFunctionType_primitiveAnalyzeAndTypeCheckMess
 
     (*sendNode)->arguments = gcFrame.analyzedArguments;
     (*sendNode)->super.analyzedType = (*simpleFunctionType)->resultType;
+    (*sendNode)->applicationFlags = sysbvm_tuple_bitflags_encode(sysbvm_tuple_bitflags_decode((*sendNode)->applicationFlags)
+        | (isMemoizedTemplate ? 0 : SYSBVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK)
+        | SYSBVM_FUNCTION_APPLICATION_FLAGS_VARIADIC_EXPANDED);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return (sysbvm_tuple_t)*sendNode;
@@ -5527,7 +5533,8 @@ static sysbvm_tuple_t sysbvm_dependentFunctionType_primitiveAnalyzeAndTypeCheckF
     if((*dependentFunctionType)->resultTypeNode)
         gcFrame.resultType = sysbvm_interpreter_evaluateASTWithEnvironment(context, (*dependentFunctionType)->resultTypeNode, gcFrame.applicationEnvironment);
     gcFrame.resultType = sysbvm_type_canonicalizeDependentResultType(context, gcFrame.resultType);
-    gcFrame.functionApplicationNode->applicationFlags = sysbvm_tuple_bitflags_encode(sysbvm_tuple_bitflags_decode(gcFrame.functionApplicationNode->applicationFlags) | SYSBVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK);
+    gcFrame.functionApplicationNode->applicationFlags = sysbvm_tuple_bitflags_encode(sysbvm_tuple_bitflags_decode(gcFrame.functionApplicationNode->applicationFlags)
+        | SYSBVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK | SYSBVM_FUNCTION_APPLICATION_FLAGS_VARIADIC_EXPANDED);
     gcFrame.functionApplicationNode->super.analyzedType = gcFrame.resultType;
 
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
@@ -5625,6 +5632,8 @@ static sysbvm_tuple_t sysbvm_dependentFunctionType_primitiveAnalyzeAndTypeCheckM
         gcFrame.resultType = sysbvm_interpreter_evaluateASTWithEnvironment(context, (*dependentFunctionType)->resultTypeNode, gcFrame.applicationEnvironment);
     gcFrame.resultType = sysbvm_type_canonicalizeDependentResultType(context, gcFrame.resultType);
     gcFrame.sendNode->super.analyzedType = gcFrame.resultType;
+    gcFrame.sendNode->applicationFlags = sysbvm_tuple_bitflags_encode(sysbvm_tuple_bitflags_decode(gcFrame.sendNode->applicationFlags)
+        | SYSBVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK | SYSBVM_FUNCTION_APPLICATION_FLAGS_VARIADIC_EXPANDED);
 
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);

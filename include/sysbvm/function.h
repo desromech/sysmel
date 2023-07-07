@@ -101,6 +101,7 @@ typedef struct sysbvm_functionDefinition_s
     sysbvm_tuple_t analyzedBodyNode;
 
     sysbvm_tuple_t bytecode;
+    sysbvm_tuple_t boxDescriptor;
     sysbvm_tuple_t capturelessUncheckedEntryPoint;
     sysbvm_tuple_t uncheckedEntryPoint;
     sysbvm_tuple_t checkedEntryPoint;

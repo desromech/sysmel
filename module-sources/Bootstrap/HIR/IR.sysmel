@@ -2167,6 +2167,29 @@ public final class HIRSendInstruction superclass: HIRInstruction; definition: {
 
     public override method isSendInstruction => Boolean := true.
 
+    public method applicationBoxDescriptor => UIntPointer := {
+        let descriptor mutable := 0uptr.
+        
+        type isValueType && type isVoidType not ifTrue: {
+            descriptor := 1uptr.
+        }.
+
+        receiver type isValueType ifTrue: {
+            descriptor := descriptor | 2uptr
+        }.
+
+        arguments doWithIndex: {:(HIRValue)eachArgument :(Size)argumentIndex :: Void |
+            eachArgument type isValueType ifTrue: {
+                descriptor := descriptor | (1uptr << (argumentIndex asUIntPointer + 2uptr))
+            }
+        }.
+
+        descriptor
+    }.
+
+    public method boxingApplicationSignature => Array
+        := (Array with: receiver type) -- (arguments collect: {:(HIRValue)arg :: Type | arg type}) -- (Array with: self type).
+
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream
             print: self; nextPutAll: " := ";

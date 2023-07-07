@@ -42,6 +42,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
     public field uncheckedEntryPointDictionary => Dictionary.
     public field checkedEntryPointDictionary => Dictionary.
     public field uncheckedInterpreterTrampolinesDictionary => Dictionary.
+    public field boxingApplicationTrampolinesDictionary => Dictionary.
 
     public method initializeWithTarget: (theCompilationTarget: MIRCompilationTarget) ::=> Void := {
         compilationTarget := theCompilationTarget.
@@ -54,6 +55,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
         uncheckedEntryPointDictionary := Dictionary new.
         checkedEntryPointDictionary := Dictionary new.
         uncheckedInterpreterTrampolinesDictionary := Dictionary new.
+        boxingApplicationTrampolinesDictionary := Dictionary new.
     }.
 
     public method compileHIRModule: (module: HIRModule) patchingFunctions: (patchedFunctionList: SequenceableCollection) definitions: (patchedFunctionDefinitionList: SequenceableCollection) ::=> MIRModule := {
@@ -259,6 +261,28 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
             HIRFunctionDefinitionMIRCodeGenerator new
                 moduleCodeGenerator: self;
                 compileUncheckedInterpreterTrampolineWithSignature: signature into: trampoline.
+
+            trampoline
+        }.
+    }.
+
+    public method getOrCreateBoxingApplicationTrampolineWithSignature: (signature: Array) ::=> MIRProgramEntity := {
+        boxingApplicationTrampolinesDictionary at: signature ifAbsent: {|
+            let nameBuilder := StringStream new.
+            nameBuilder nextPutAll: "boxingApplicationTrampoline"; print: signature size; nextPutAll: ".SUIT".
+            signature hash printHexOn: nameBuilder.
+
+            let trampoline := MIRFunction new
+                compilationTarget: compilationTarget;
+                callingConvention: compilationTarget defaultCallingConvention;
+                name: nameBuilder asSymbol;
+                yourself.
+            targetModule addProgramEntity: trampoline.
+            boxingApplicationTrampolinesDictionary at: signature put: trampoline.
+
+            HIRFunctionDefinitionMIRCodeGenerator new
+                moduleCodeGenerator: self;
+                compileBoxingApplicationTrampolineWithSignature: signature into: trampoline.
 
             trampoline
         }.
@@ -549,7 +573,7 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
                 let headerSize := (Array objectHeaderSizeForObjectModel: self compilationTarget objectModel) asInt64.
                 let pointerSize := self compilationTarget pointerSize asInt64.
                 uncheckedArguments doWithIndex: {:(MIRValue)unboxedArgument :(Size)index :: Void |
-                    let argumentType := argumentTypes at: index.
+                    let argumentType => Type := argumentTypes at: index.
                     let boxedArgument := argumentType emitMirBox: unboxedArgument withHIRCodeGenerator: self.
                     asm storePointer: boxedArgument into: boxedArgumentVector constantOffset: headerSize + (index asInt64 * pointerSize)
                 }.
@@ -558,7 +582,44 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
                 let boxedResult := asm callPointer: (self translateRuntimeFunction: ObjectModel::interpretFunctionWithArguments)
                     with: functionArgument with: boxedArgumentVector type: Untyped.
 
-                ## Unbox and store the result.
+                ## Unbox and return the result.
+                let unboxedResult := resultType emitMirCheckAndUnbox: boxedResult withHIRCodeGenerator: self.
+                resultType emitMirReturn: unboxedResult withBlockBuilder: asm.
+            }
+        }
+    }.
+
+    public method compileBoxingApplicationTrampolineWithSignature: (signature: Array) into: (trampoline: MIRFunction) ::=> Void := {
+        let mirArguments := OrderedCollection new.
+        functionArgument := trampoline newArgument: #closure withType: Function.
+        mirArguments add: functionArgument.
+
+        let argumentTypes := signature allButLast.
+        let resultType => Type := signature last.
+
+        let uncheckedArguments := argumentTypes collect: {:(Type)argumentType :: MIRValue |
+            let mirArgument := trampoline newArgumentWithType: argumentType.
+            mirArguments add: mirArgument.
+            mirArgument
+        }.
+
+        trampoline arguments: mirArguments asArray.
+        trampoline build: {:(MIRFunctionBuilder)functionBuilder :: Void |
+            mirFunction := functionBuilder function.
+            self functionBuilder: functionBuilder.
+
+            functionBuilder basicBlock: #trampoline build: {:(MIRBlockBuilder)asm :: Void |
+                self blockBuilder: asm.
+
+                let boxedArguments := uncheckedArguments collectWithIndex: {:(MIRValue)unboxedArgument :(Size)index :: MIRValue |
+                    let argumentType => Type := argumentTypes at: index.
+                    argumentType emitMirBox: unboxedArgument withHIRCodeGenerator: self
+                }.
+
+                let boxedResult := asm callPointer: (self translateRuntimeFunction: (ObjectModel::CheckedFunctionApplicationTrampolines at: uncheckedArguments size))
+                    arguments: (Array with: functionArgument) -- boxedArguments type: Untyped.
+
+                ## Unbox and return the result.
                 let unboxedResult := resultType emitMirCheckAndUnbox: boxedResult withHIRCodeGenerator: self.
                 resultType emitMirReturn: unboxedResult withBlockBuilder: asm.
             }
@@ -2353,6 +2414,38 @@ HIRSendInstruction extend: {
         let mirReceiver := codegen translateBoxedValue: self receiver.
         let mirReceiverLookupType := self receiverLookupType ifNotNil: (codegen translateBoxedValue: self receiverLookupType).
         let mirSelector := codegen translateBoxedValue: self selector.
+
+        isUnchecked ifTrue: {
+            ## Perform the lookup.
+            let foundMethod := mirReceiverLookupType ifNil: {
+                codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::lookupValidMethodWithReceiverAndInlineCache)
+                    with: MIRPolymorphicInlineCache new with: mirReceiver with: mirSelector
+                    type: UIntPointer.
+            } ifNotNil: {
+                codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::lookupValidMethodWithReceiverTypeAndInlineCache)
+                    with: MIRPolymorphicInlineCache new with: mirReceiver with: mirReceiverLookupType with: mirSelector
+                    type: UIntPointer.
+            }.
+
+            ## Get the trampoline for the conversion case.
+            let boxingTrampoline := codegen moduleCodeGenerator getOrCreateBoxingApplicationTrampolineWithSignature: self boxingApplicationSignature.
+            let applicationBoxDescriptor := self applicationBoxDescriptor asMirConstant.
+
+            ## Fetch the entry point to use
+            let entryPoint := codegen blockBuilder
+                callPointer: (codegen translateRuntimeFunction: ObjectModel::fetchUncheckedEntryPointMatchingBoxDescriptorOrBoxingTrampoline)
+                with: foundMethod with: applicationBoxDescriptor with: boxingTrampoline
+                type: UIntPointer.
+
+            let mirValueReceiver := codegen translateValue: self receiver.
+            let mirValueArguments := self arguments collect: {:(HIRValue)eachArgument :: MIRValue | codegen translateValue: eachArgument}.
+
+            return: (self type
+                emitMirCall: entryPoint convention: codegen compilationTarget defaultCallingConvention
+                withArguments: (Array with: foundMethod with: mirValueReceiver) -- mirValueArguments
+                withBlockBuilder: codegen blockBuilder)
+        }.
+    
         let mirArguments := self arguments collect: {:(HIRValue)eachArgument :: MIRValue | codegen translateBoxedValue: eachArgument}.
 
         mirReceiverLookupType ifNil: {

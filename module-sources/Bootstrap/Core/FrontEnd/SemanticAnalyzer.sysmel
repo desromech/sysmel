@@ -1128,12 +1128,14 @@ SimpleFunctionType definition: {
 
     public override eager method analyzeAndTypeCheckSolvedMessageSendNode: (node: ASTMessageSendNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
         let firstArgumentIndex := node receiver ifNil: 0sz ifNotNil: 1sz.
+        let isMemoizedTemplate := self isMemoizedTemplate.
         node
             analyzedType: self canonicalResultType asResultType;
             receiver: (node receiver ifNotNil: (environment analyze: node receiver withExpectedType: argumentTypes first));
             arguments: (node arguments collectWithIndex: {:(ASTNode)eachArgument :(Size)eachArgumentIndex :: ASTNode |
                 environment analyze: eachArgument withExpectedType: (argumentTypes at: firstArgumentIndex + eachArgumentIndex)
             });
+            applicationFlags: node applicationFlags | (isMemoizedTemplate ifTrue: 0bflgs ifFalse: FunctionApplicationFlags::NoTypecheck) | FunctionApplicationFlags::VariadicExpanded;
             yourself
     }.
 }.
@@ -1274,6 +1276,11 @@ DependentFunctionType definition: {
         let directEvaluationArgumentNodeCount := argumentNodeCount.
         let applicationArgumentCount := sendNode arguments size.
 
+        let isMemoizedTemplate := self isMemoizedTemplate.
+        isMemoizedTemplate ifTrue: {
+            error("TODO: Implement this case.").
+        }.
+
         let sourceArgumentIndex mutable := 0sz.
         let hasAnalyzedReceiver mutable := false.
 
@@ -1317,6 +1324,7 @@ DependentFunctionType definition: {
             ifNotNil: (resultTypeNode evaluateWithEnvironment: applicationEnvironment).
         sendNode
             analyzedType: (self canonicalizeDependentResultType: resultType) asResultType;
+            applicationFlags: sendNode applicationFlags | (isMemoizedTemplate ifTrue: 0bflgs ifFalse: FunctionApplicationFlags::NoTypecheck);
             yourself
     }.
 }.

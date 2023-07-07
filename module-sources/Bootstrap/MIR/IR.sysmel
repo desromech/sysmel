@@ -1602,6 +1602,9 @@ public final class MIRBlockBuilder superclass: Object; definition: {
     public method callPointer: (function: MIRValue) with: (firstArgument: MIRValue) with: (secondArgument: MIRValue) with: (thirdArgument: MIRValue) type: (type: Type) ::=> MIRInstruction
         := self callPointer: function arguments: (Array with: firstArgument with: secondArgument with: thirdArgument) type: type.
 
+    public method callPointer: (function: MIRValue) with: (firstArgument: MIRValue) with: (secondArgument: MIRValue) with: (thirdArgument: MIRValue) with: (fourthArgument: MIRValue) type: (type: Type) ::=> MIRInstruction
+        := self callPointer: function arguments: (Array with: firstArgument with: secondArgument with: thirdArgument with: fourthArgument) type: type.
+
     public method callFloat32: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) arguments: (arguments: Array) ::=> MIRInstruction
         := self call: function operation: MIR::Operation::CallFloat32 convention: callingConvention arguments: arguments type: Float32.
 

@@ -79,6 +79,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionDefinition_create(sysbvm_context_t *con
     result->definitionArgumentNodes = argumentNodes;
     result->definitionResultTypeNode = resultTypeNode;
     result->definitionBodyNode = body;
+    result->boxDescriptor = sysbvm_tuple_uintptr_encode(context, 0);
     result->checkedEntryPoint = sysbvm_tuple_systemHandle_encode(context, 0);
     result->uncheckedEntryPoint = sysbvm_tuple_systemHandle_encode(context, 0);
     result->capturelessUncheckedEntryPoint = sysbvm_tuple_systemHandle_encode(context, 0);
