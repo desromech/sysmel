@@ -1,0 +1,39 @@
+public class HIRConstantPropagationPass superclass: HIRFunctionDefinitionPass; definition: {
+    public override method runInFunctionDefinition: (function: HIRFunctionDefinition) ::=> Void := {
+        let pendingWork := OrderedInsertionIdentitySet new.
+
+        let processInstruction := {:(HIRInstruction)instruction :: Void |
+            instruction parent ifNil: (return: void).
+
+            ## Dead code removal.
+            (instruction userCount = 0sz) && instruction hasSideEffects not ifTrue: {
+                instruction usedValuesDo: {:(HIRValue)eachUsedValue :: Void |
+                    eachUsedValue isInstruction && eachUsedValue hasSideEffects not ifTrue: {
+                        pendingWork add: eachUsedValue
+                    }
+                }.
+                
+                instruction deleteFromParent.
+                return: void
+            }.
+
+            ## Constant folding.
+            let folded := instruction evaluateConstantFolding.
+            folded == instruction ifFalse: {
+                instruction usersDo: {:(HIRValue)eachUser :: Void |
+                    eachUser isInstruction ifTrue: {
+                        pendingWork add: eachUser
+                    }
+                }.
+
+                instruction replaceWith: folded.
+            }.
+        }.
+
+        function instructionsDo: processInstruction.
+        while: pendingWork isNotEmpty do: {
+            let pendingInstruction => HIRInstruction := pendingWork removeLast.
+            processInstruction(pendingInstruction)
+        }.
+    }.
+}.

@@ -1,5 +1,5 @@
 public global HIRStandardFunctionOptimizationPasses := (
-    HIRPromoteAllocaPass, HIRConstantFoldingAndPropagationPass, HIRDeadCodeRemovalPass
+    HIRPromoteAllocaPass, HIRConstantPropagationPass
 ).
 
 public global HIRStandardModuleOptimizationPasses := HIRStandardFunctionOptimizationPasses.

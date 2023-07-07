@@ -3,8 +3,7 @@ loadSourceNamed: "FrontEnd.sysmel".
 
 loadSourceNamed: "TransformationPasses.sysmel".
 loadSourceNamed: "PromoteAllocaPass.sysmel".
-loadSourceNamed: "ConstantFoldingAndPropagationPass.sysmel".
-loadSourceNamed: "DeadCodeRemovalPass.sysmel".
+loadSourceNamed: "ConstantPropagationPass.sysmel".
 loadSourceNamed: "DestroySSAPass.sysmel".
 loadSourceNamed: "StandardOptimizations.sysmel".
 
