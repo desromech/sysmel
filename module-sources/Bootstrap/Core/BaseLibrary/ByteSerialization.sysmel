@@ -43,13 +43,25 @@ Type definition: {
 }.
 
 ValueType definition: {
+    public override method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
+        ObjectModel::isLogical() ifTrue: {
+            self subclassResponsibility
+        } ifFalse: {
+            memcpy(
+                (bytes __rawContentsBytePointer__ + offset asIntPointer) reinterpretCastTo: Void pointer,
+                value __rawContentsPointer__ reinterpretCastTo: Void const pointer,
+                self validInstanceSize
+            ).
+        }.
+    }.
+
     public override method encodeValueIn: (owner: Untyped) atTypeSlot: (typeSlot: TypeSlot) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
         ObjectModel::isLogical() ifTrue: {
             self encodeValue: (RawTuple::typeSlotAt:)(owner, typeSlot) inBytes: bytes atOffset: offset
         } ifFalse: {
             memcpy(
-                ((bytes __rawContentsPointer__ reinterpretCastTo: UInt8 pointer) + offset asIntPointer) reinterpretCastTo: Void pointer,
-                ((owner __rawContentsPointer__ reinterpretCastTo: UInt8 pointer) + typeSlot validOffset asIntPointer) reinterpretCastTo: Void const pointer,
+                (bytes __rawContentsBytePointer__ + offset asIntPointer) reinterpretCastTo: Void pointer,
+                (owner __rawContentsBytePointer__ + typeSlot validOffset asIntPointer) reinterpretCastTo: Void const pointer,
                 self validInstanceSize
             ).
         }.
@@ -61,15 +73,19 @@ FixedArrayType definition: {
         := elementType canEncodeValueInBytes.
 
     public override method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
-        let i mutable := 0sz.
-        let elementOffset mutable := offset.
-        let elementSize := elementType alignedValueSize.
-        while: (i < size) do: (
-            elementType encodeValue: (RawTuple::slotAt:)(value, i) inBytes: bytes atOffset: elementOffset 
-        ) continueWith: {
-            i := i + 1sz.
-            elementOffset := elementOffset + elementSize
-        }.
+        ObjectModel::isLogical() ifTrue: {
+            let i mutable := 0sz.
+            let elementOffset mutable := offset.
+            let elementSize := elementType alignedValueSize.
+            while: (i < size) do: (
+                elementType encodeValue: (RawTuple::slotAt:)(value, i) inBytes: bytes atOffset: elementOffset 
+            ) continueWith: {
+                i := i + 1sz.
+                elementOffset := elementOffset + elementSize
+            }
+        } ifFalse: {
+            super encodeValue: value inBytes: bytes atOffset: offset
+        }
     }.
 
     public override method canDecodeValueFromBytes => Boolean
@@ -108,10 +124,14 @@ StructType definition: {
     }.
 
     public override method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
-        self ensureLayoutIsComputed.
+        ObjectModel::isLogical() ifTrue: {
+            self ensureLayoutIsComputed.
 
-        self allSlotsDo: {:(TypeSlot)eachSlot :: Void |
-            eachSlot type encodeValue: (RawTuple::typeSlotAt:)(value, eachSlot) inBytes: bytes atOffset: offset + eachSlot offset
+            self allSlotsDo: {:(TypeSlot)eachSlot :: Void |
+                eachSlot type encodeValue: (RawTuple::typeSlotAt:)(value, eachSlot) inBytes: bytes atOffset: offset + eachSlot offset
+            }
+        } ifFalse: {
+            super encodeValue: value inBytes: bytes atOffset: offset
         }
     }.
 

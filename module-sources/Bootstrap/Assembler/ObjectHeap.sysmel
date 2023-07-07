@@ -357,7 +357,7 @@ ObjectModelVariant64 extend: {
             header encodeInBytes: destination atOffset: offset.
         } ifFalse: {
             memcpy(
-                ((destination __rawContentsPointer__ reinterpretCastTo: UInt8 pointer) + offset asIntPointer) reinterpretCastTo: Void pointer,
+                (destination __rawContentsBytePointer__ + offset asIntPointer) reinterpretCastTo: Void pointer,
                 header address reinterpretCastTo: Void pointer,
                 ObjectModel::TupleHeader64 valueSize
             )

@@ -585,6 +585,9 @@ public global ObjectModel::getTupleHeaderPointerOf := {:(Untyped)object :: Objec
 Untyped extend: {
     public final method __rawContentsPointer__ => Void pointer
         := ObjectModel::getTupleHeaderPointerOf(self) + 1iptr reinterpretCastTo: Void pointer.
+
+    public final method __rawContentsBytePointer__ => UInt8 pointer
+        := ObjectModel::getTupleHeaderPointerOf(self) + 1iptr reinterpretCastTo: UInt8 pointer.
 }.
 
 identityHash adoptDefinitionOf: {:(AnyValue)self :: Size |

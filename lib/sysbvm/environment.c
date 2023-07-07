@@ -168,6 +168,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_symbolTupleSlotBinding_create(sysbvm_context_t 
 {
     sysbvm_symbolTupleSlotBinding_t *result = (sysbvm_symbolTupleSlotBinding_t*)sysbvm_context_allocatePointerTuple(context, context->roots.symbolTupleSlotBindingType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_symbolTupleSlotBinding_t));
     result->super.super.type = sysbvm_typeSlot_getValidReferenceType(context, typeSlot);
+    result->super.vectorIndex = sysbvm_tuple_size_encode(context, 0);
     result->tupleBinding = tupleBinding;
     result->typeSlot = typeSlot;
     return (sysbvm_tuple_t)result;

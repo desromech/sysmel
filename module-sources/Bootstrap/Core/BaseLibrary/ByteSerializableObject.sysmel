@@ -2,10 +2,17 @@ public class ByteSerializableObject superclass: Object; definition: {
     __Meta__ extend: {
         public override method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
             self ensureLayoutIsComputed.
-
-            self allSlotsDo: {:(TypeSlot)eachSlot :: Void |
-                eachSlot type encodeValueIn: value atTypeSlot: eachSlot inBytes: bytes atOffset: offset + eachSlot offset
-            }
+            ObjectModel::isLogical() ifTrue: {
+                self allSlotsDo: {:(TypeSlot)eachSlot :: Void |
+                    eachSlot type encodeValueIn: value atTypeSlot: eachSlot inBytes: bytes atOffset: offset + eachSlot offset
+                }
+            } ifFalse: {
+                memcpy(
+                    (bytes __rawContentsBytePointer__ + offset asIntPointer) reinterpretCastTo: Void pointer,
+                    value __rawContentsPointer__ reinterpretCastTo: Void const pointer,
+                    self validInstanceSize
+                ).
+            }.
         }.
 
         public override method decodeValueFromBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> self := {

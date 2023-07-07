@@ -650,6 +650,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_astQuasiUnquoteNode_create(sysbvm_context_t *co
     sysbvm_astQuasiUnquoteNode_t *result = (sysbvm_astQuasiUnquoteNode_t*)sysbvm_context_allocatePointerTuple(context, context->roots.astQuasiUnquoteNodeType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_astQuasiUnquoteNode_t));
     result->super.sourcePosition = sourcePosition;
     result->expression = expression;
+    result->astTemplateParameterIndex = sysbvm_tuple_size_encode(context, 0);
     return (sysbvm_tuple_t)result;
 }
 
@@ -658,6 +659,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_astSpliceNode_create(sysbvm_context_t *context,
     sysbvm_astSpliceNode_t *result = (sysbvm_astSpliceNode_t*)sysbvm_context_allocatePointerTuple(context, context->roots.astSpliceNodeType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_astSpliceNode_t));
     result->super.sourcePosition = sourcePosition;
     result->expression = expression;
+    result->astTemplateParameterIndex = sysbvm_tuple_size_encode(context, 0);
     return (sysbvm_tuple_t)result;
 }
 

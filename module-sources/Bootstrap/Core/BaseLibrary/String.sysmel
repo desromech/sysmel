@@ -179,8 +179,20 @@ String extend: {
 
     public override final pure method withoutSuffix: (suffix: SequenceableCollection) ::=> String
         := super withoutSuffix: suffix.
-}.
 
+    public method replaceBytesFrom: (startIndex: Size) count: (replacementSize: Size) with: replacement startingAt: (replacementOffset: Size) ::=> Void := {
+        startIndex + replacementSize <= self __byteSize__ ifFalse: (self errorSubscriptBounds: startIndex).
+        replacementOffset + replacementSize <= replacement __byteSize__ ifFalse: (self errorSubscriptBounds: replacementOffset).
+        
+        let i mutable := 0sz.
+        while: (i < replacementSize) do: {
+            self __uncheckedByteSlotAt__: startIndex + i put: (replacement __uncheckedByteSlotAt__: replacementOffset + i)
+        } continueWith: (i := i + 1sz)
+    }.
+
+    public method replaceBytesFrom: (startIndex: Size) count: (replacementSize: Size) with: replacement ::=> Void
+        := self replaceBytesFrom: startIndex count: replacementSize with: replacement startingAt: 0sz.
+}.
 
 Char8 extend: {
     public override final method asString => String
