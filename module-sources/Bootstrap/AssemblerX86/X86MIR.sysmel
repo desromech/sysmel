@@ -925,11 +925,10 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
                     x86::pop: X86::RBP;
                     cfiPopRegister: X86::RBP.
             } ifFalse: {
-                let offset := preservedRegisters size asInt64 * 8i64.
                 codegen textSection
                     cfiBeginEpilogue;
-                    x86::lea: X86::RSP src: X86::RBP x86::qword + offset negated asAsmImmediate;
-                    cfiRestoreFramePointer: X86::RBP offset: offset.
+                    x86::lea: X86::RSP src: X86::RBP x86::qword + (preservedRegisters size asInt64 * -8i64) asAsmImmediate;
+                    cfiRestoreFramePointer: X86::RBP offset: preservedRegisters size asInt64.
                 preservedRegisters do: {:(MIRPhysicalLocation)each :: Void |
                     let reg := (each x86::int64For: codegen) downCastTo: AsmRegister.
                     codegen textSection

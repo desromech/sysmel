@@ -37,6 +37,7 @@ HIRValue definition: {
     public virtual method isInstruction => Boolean := false.
     public virtual method isAllocaInstruction => Boolean := false.
     public virtual method isBranchInstruction => Boolean := false.
+    public virtual method isCallInstruction => Boolean := false.
     public virtual method isConditionalBranchInstruction => Boolean := false.
     public virtual method isDownCastInstruction => Boolean := false.
     public virtual method isPhiInstruction => Boolean := false.
@@ -49,6 +50,8 @@ HIRValue definition: {
     public virtual method isMakeByteArrayInstruction => Boolean := false.
     public virtual method isMakeDictionaryInstruction => Boolean := false.
     public virtual method isMakeClosureInstruction => Boolean := false.
+    public virtual method isReturnInstruction => Boolean := false.
+    public virtual method isSendInstruction => Boolean := false.
     public virtual method isSetDebugValueForBindingInstruction => Boolean := false.
     public virtual method isStoreInstruction => Boolean := false.
     public virtual method isTypeSlotAtInstruction => Boolean := false.
@@ -59,6 +62,8 @@ HIRValue definition: {
     public virtual method isPureFunction => Boolean := false.
 
     public virtual method primitiveName => Symbol := nil.
+    public virtual method evaluateAsHIRFunctionDefinitionOrNil => HIRFunctionDefinition := nil.
+    public virtual method evaluateCaptureValueListOrNil => Array := nil.
 
     public virtual method usedValuesDo: (aBlock: (HIRValue) => Void) ::=> Void := {}.
 
@@ -216,6 +221,11 @@ HIRFunction definition: {
     public override method isCaptureless => Boolean := captures isEmpty.
     public method isTargetDefinedPrimitive => Boolean := sourceObject isNotNil && sourceObject isTargetDefinedPrimitive.
 
+    public override method evaluateAsHIRFunctionDefinitionOrNil => HIRFunctionDefinition
+        := definition.
+    public override method evaluateCaptureValueListOrNil => Array
+        := captures.
+
     public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: '@'c8.
         name ifNil: {
@@ -260,7 +270,12 @@ HIRFunctionDefinition definition: {
     public field firstBasicBlock => HIRBasicBlock.
     public field lastBasicBlock => HIRBasicBlock.
 
+    public field calledFunctionDefinitions => Array.
+    public field traversalColor => UInt8.
+    public field hasRecursiveCalls => Boolean.
+
     public override method isFunctionDefinition => Boolean := true.
+    public override method evaluateAsHIRFunctionDefinitionOrNil => HIRFunctionDefinition := self.
 
     public method isTargetDefinedPrimitive => Boolean := sourceObject isNotNil && sourceObject isTargetDefinedPrimitive.
 
@@ -282,6 +297,24 @@ HIRFunctionDefinition definition: {
         public override method asHIRFunctionDefinitionOrNil => HIRFunctionDefinition := definition.
     }.
 
+    public method markWhite => Void := {
+        self traversalColor: 0u8
+    }.
+
+    public method isWhite => Boolean := self traversalColor == 0u8.
+
+    public method markGray => Void := {
+        self traversalColor: 1u8
+    }.
+
+    public method isGray => Boolean := self traversalColor == 1u8.
+
+    public method markBlack => Void := {
+        self traversalColor: 2u8
+    }.
+
+    public method isBlack => Boolean := self traversalColor == 2u8.
+    
     public override method asHIRFunctionDefinitionOrNil => HIRFunctionDefinition := self.
 
     public override method isCaptureless => Boolean := captures isEmpty.
@@ -381,24 +414,15 @@ HIRFunctionDefinition definition: {
         }
     }.
 
-    public method computeControlFlowAndNormalizeBasicBlocks => Void := {
+    public method traverseAndKeepLiveBasicBlocks => OrderedCollection := {
+        let sortedBlocks := OrderedCollection new.
         self basicBlocksDo: {:(HIRBasicBlock)basicBlock :: Void |
             basicBlock
                 resetPredecessors;
+                computeSuccessors;
                 markWhite.
         }.
 
-        self simplifyOutgoingEdges.
-
-        self basicBlocksDo: {:(HIRBasicBlock)basicBlock :: Void |
-            basicBlock computeSuccessorsAddingIntoPredecessors.
-        }.
-
-        self
-            fixCriticalEdges;
-            mergeBasicBlocks.
-
-        let sortedBlocks := OrderedCollection new.
         self firstBasicBlock ifNotNil: {:(HIRBasicBlock)entryBlock :: Void |
             entryBlock traverseForConnectivityAndLivenessFrom: nil sortingInto: sortedBlocks
         }.
@@ -411,6 +435,10 @@ HIRFunctionDefinition definition: {
             }
         }.
 
+        sortedBlocks
+    }.
+
+    public method useBasicBlockSortingOrder: (sortedBlocks: OrderedCollection) ::=> Void := {
         ## Use the new sorted order.
         sortedBlocks do: {:(HIRBasicBlock)each :: Void |
             each parent: nil; previousBlock: nil; nextBlock: nil.
@@ -422,10 +450,25 @@ HIRFunctionDefinition definition: {
             self addBasicBlock: each
         }.
 
+
+    }.
+
+    public method normalizePhiInstructions => Void := {
         ## Normalize the phi instructions.
         self basicBlocksDo: {:(HIRBasicBlock)eachBasicBlock :: Void |
             eachBasicBlock normalizePhiInstructions
         }.
+    }.
+
+    public method computeControlFlowAndNormalizeBasicBlocks => Void := {
+        self simplifyOutgoingEdges.
+        self traverseAndKeepLiveBasicBlocks.
+
+        self fixCriticalEdges.
+        self mergeBasicBlocks.
+
+        self useBasicBlockSortingOrder: self traverseAndKeepLiveBasicBlocks.
+        self normalizePhiInstructions.
     }.
 
     public method computeDominance => Void := {
@@ -471,9 +514,9 @@ HIRFunctionDefinition definition: {
         }
     }.
 
-    public method mergeBlock: (previousBlock: HIRBasicBlock) withSuccessor: (mergeBlock: HIRBasicBlock) ::=> Void := {
+    public method mergeBlock: (previousBlock: HIRBasicBlock) withSuccessor: (mergeBlock: HIRBasicBlock) ::=> Boolean := {
         mergeBlock firstInstruction isPhiInstruction ifTrue: {
-            return: void
+            return: false
         }.
 
         self assert: mergeBlock firstInstruction isPhiInstruction not.
@@ -490,11 +533,14 @@ HIRFunctionDefinition definition: {
         previousBlock successors do: {:(HIRBasicBlock)oldSuccessor :: Void |
             oldSuccessor replacePredecessor: mergeBlock with: previousBlock
         }.
+
+        true
     }.
 
     public method mergeBasicBlocks => Void := {
         let position mutable := firstBasicBlock.
         while: (position isNotNil) do: {
+            let nextPosition mutable := position nextBlock.
             (position successors size = 1sz) && position lastInstruction isBranchInstruction ifTrue: {
                 let mergedBlock => HIRBasicBlock := position successors first.
 
@@ -503,12 +549,14 @@ HIRFunctionDefinition definition: {
 
                     ## Avoid introducing a new critical edge.
                     (position predecessors size >= 2sz) && (mergedBlock successors size >= 2sz) ifFalse: {
-                        self mergeBlock: position withSuccessor: mergedBlock
+                        (self mergeBlock: position withSuccessor: mergedBlock) ifTrue: {
+                            nextPosition := position
+                        }.
                     }
                 }
             }.
 
-            position := position nextBlock
+            position := nextPosition
         }
     }.
 
@@ -545,6 +593,37 @@ HIRFunctionDefinition definition: {
         self removeBasicBlock: basicBlock.
     }.
 
+    public method computeCalledFunctionDefinitionsInto: (set: OrderedInsertionIdentitySet) ::=> Void := {
+        self instructionsDo: {:(HIRInstruction)instruction :: Void |
+            instruction isCallInstruction ifTrue: {
+                let call := instruction downCastTo: HIRCallInstruction.
+                let functionDefinition := call calledFunction evaluateAsHIRFunctionDefinitionOrNil.
+                functionDefinition ifNotNil: {
+                    set add: functionDefinition
+                }
+            }
+        }.
+    }.
+
+    public method computeCalledFunctionDefinitions => Void := {
+        let set := OrderedInsertionIdentitySet new.
+        self computeCalledFunctionDefinitionsInto: set.
+        calledFunctionDefinitions := set asArray
+    }.
+
+    public method computeNewCalledFunctionDefinitions => Void := {
+        let set := OrderedInsertionIdentitySet new.
+        set addAll: calledFunctionDefinitions.
+        self computeCalledFunctionDefinitionsInto: set.
+        calledFunctionDefinitions := set asArray
+    }.
+
+    public method shouldBeInlinedIn: (callerFunction: HIRFunctionDefinition) ::=> Boolean
+        := hasRecursiveCalls not && firstBasicBlock isNotNil
+            && sourceObject isNotNil
+            && sourceObject isNeverInline not
+            && (sourceObject isInline || sourceObject isAlwaysInline).
+
     public override method postCopy => Void := {
         super postCopy.
 
@@ -576,6 +655,63 @@ HIRFunctionDefinition definition: {
                 replaceUsedValuesWith: replacementDictionary;
                 registerInUsedValues
         }.
+    }.
+
+    public method inlineInto: (targetFunctionDefinition: HIRFunctionDefinition) before: (targetPosition: HIRBasicBlock) arguments: (inlineArguments: Array) captures: (inlineCaptures: Array) exitBlock: (exitBlock: HIRBasicBlock) resultPhi: (resultPhi: HIRPhiInstruction) ::=> HIRBasicBlock := {
+        self assert: arguments size = inlineArguments size.
+        self assert: captures size = inlineCaptures size.
+
+        let replacementDictionary := Dictionary new.
+        arguments doWithIndex: {:(HIRValue)argument :(Size)index :: Void |
+            replacementDictionary at: argument put: (inlineArguments at: index)
+        }.
+
+        captures doWithIndex: {:(HIRValue)capture :(Size)index :: Void |
+            replacementDictionary at: capture put: (inlineCaptures at: index)
+        }.
+
+        ## First pass: copy the basic blocks and their instructions.
+        let inlinedBasicBlocks := OrderedCollection new.
+        self basicBlocksDo: {:(HIRBasicBlock)eachBasicBlock :: Void |
+            let inlinedBlock := eachBasicBlock copyRegisteringInReplacementDictionary: replacementDictionary.
+            self assert: inlinedBlock ~~ eachBasicBlock.
+            targetFunctionDefinition addBasicBlock: inlinedBlock before: targetPosition.
+            inlinedBasicBlocks add: inlinedBlock
+        }.
+
+        ## Second pass: fix the used values.
+        inlinedBasicBlocks do: {:(HIRBasicBlock)eachBasicBlock :: Void |
+            self assert: eachBasicBlock parent == targetFunctionDefinition.
+            eachBasicBlock instructionsDo: {:(HIRInstruction)eachInstruction |
+                self assert: eachInstruction parent == eachBasicBlock.
+                eachInstruction
+                    replaceUsedValuesWith: replacementDictionary;
+                    registerInUsedValues.
+
+                ## Fix return instructions.
+                eachInstruction isReturnInstruction ifTrue: {
+                    let returnInstruction := eachInstruction downCastTo: HIRReturnInstruction.
+
+                    ## Add the result value onto the phi node.
+                    resultPhi ifNotNil: {
+                        resultPhi addValue: returnInstruction value incomingFrom: returnInstruction parent
+                    }.
+
+                    ## Replace the return with a branch.
+                    let exitBranch := HIRBranchInstruction new
+                        useSourceInformationOfValue: returnInstruction;
+                        destination: exitBlock;
+                        type: Void;
+                        registerInUsedValues;
+                        yourself.
+                    
+                    eachBasicBlock addInstruction: exitBranch before: returnInstruction.
+                    returnInstruction deleteFromParent
+                }.
+            }.
+        }.
+
+        inlinedBasicBlocks first
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -696,7 +832,7 @@ HIRBasicBlock definition: {
 
     public method traverseForConnectivityAndLivenessFrom: (predecessor: HIRBasicBlock) sortingInto: (sortedBlocks: OrderedCollection) ::=> Void := {
         predecessor ifNotNil: {
-            predecessorKinds at: (predecessors indexOf: predecessor) asSize put: self isGray.
+            self addPredecessor: predecessor isBackEdge: self isGray.
         }.
 
         self isWhite ifFalse: {return: void}.
@@ -724,6 +860,17 @@ HIRBasicBlock definition: {
         }.
 
         self markBlack.
+    }.
+
+    public method clearDominance => Void := {
+        semiDominator := nil.
+        dominanceAncestor := nil.
+        dominanceAncestorWithLowestSemiDominator := nil.
+        immediateDominator := nil.
+        sameDominator := nil.
+        dominanceBucket := nil.
+        dominanceFrontier := nil.
+        dominatorTreeChildren := nil.
     }.
 
     public method resetDominance => Void := {
@@ -839,8 +986,10 @@ HIRBasicBlock definition: {
     }.
 
     public method addPredecessor: (predecessor: HIRBasicBlock) isBackEdge: (isBackEdge: Boolean) ::=> Void := {
-        self predecessors add: predecessor.
-        self predecessorKinds add: isBackEdge.
+        (self predecessors includes: predecessor) ifFalse: {
+            self predecessors add: predecessor.
+            self predecessorKinds add: isBackEdge.
+        }.
     }.
 
     public method addPredecessor: (predecessor: HIRBasicBlock) ::=> Void := {
@@ -910,6 +1059,39 @@ HIRBasicBlock definition: {
 
     public method addFirstInstruction: (instruction: HIRInstruction) ::=> Void
         := self addInstruction: instruction after: nil.
+
+    public method splitAfter: (position: HIRInstruction) ::=> HIRBasicBlock := {
+        self assert: position isNotNil && (position parent == self).
+
+        ## Make the new block.
+        let afterBlock := HIRBasicBlock new
+            useSourceInformationOfValue: self;
+            yourself.
+
+        parent ifNotNil: (parent addBasicBlock: afterBlock after: self).
+
+        ## Move 
+        let afterInstruction mutable := position nextInstruction.
+        while: (afterInstruction isNotNil) do: {
+            let next := afterInstruction nextInstruction.
+            afterInstruction parent: nil; previousInstruction: nil; nextInstruction: nil.
+            afterBlock addInstruction: afterInstruction.
+            afterInstruction := next
+        }.
+
+        ## End myself at the position.
+        position nextInstruction: nil.
+        lastInstruction := position.
+
+        ## Fix the succesors
+        afterBlock successors: successors.
+        afterBlock successors do: {:(HIRBasicBlock)succ :: Void |
+            succ replacePredecessor: self with: afterBlock
+        }.
+        successors := #().
+
+        afterBlock
+    }.
 
     public method removeFromControlFlow => Void := {
         self successors do: {:(HIRBasicBlock)succ :: Void |
@@ -1099,11 +1281,8 @@ HIRBasicBlock definition: {
         self successors at: index asSize put: newSuccessor.
     }.
 
-    public method computeSuccessorsAddingIntoPredecessors => Void := {
+    public method computeSuccessors => Void := {
         self successors: self lastInstruction successors.
-        self successors do: {:(HIRBasicBlock)succ :: Void |
-            succ addPredecessor: self
-        }
     }.
 
     public override method postCopy => Void := {
@@ -1113,11 +1292,40 @@ HIRBasicBlock definition: {
         let nextInstructionToAdd mutable => HIRInstruction := self firstInstruction.
         self firstInstruction: nil.
         self lastInstruction: nil.
+        self successors: nil.
+        self predecessors: nil.
+        self predecessorKinds: nil.
+        self clearDominance.
 
         while: nextInstructionToAdd ~~ nil do: {
             self addInstruction: nextInstructionToAdd copy
         } continueWith: (nextInstructionToAdd := nextInstructionToAdd nextInstruction)
     }.
+
+    public method postCopyRegisteringInReplacementDictionary: (replacementDictionary: Dictionary) ::=> Void := {
+        super postCopy.
+
+        self parent: nil.
+
+        let nextInstructionToAdd mutable => HIRInstruction := self firstInstruction.
+        self firstInstruction: nil.
+        self lastInstruction: nil.
+        self successors: nil.
+        self predecessors: nil.
+        self predecessorKinds: nil.
+        self clearDominance.
+
+        while: nextInstructionToAdd ~~ nil do: {
+            let instructionCopy := nextInstructionToAdd copy.
+            replacementDictionary at: nextInstructionToAdd put: instructionCopy.
+            self addInstruction: instructionCopy
+        } continueWith: (nextInstructionToAdd := nextInstructionToAdd nextInstruction)
+    }.
+
+    public method copyRegisteringInReplacementDictionary: (replacementDictionary: Dictionary) ::=> HIRBasicBlock
+        := self shallowCopy
+            postCopyRegisteringInReplacementDictionary: replacementDictionary;
+            yourself.
 
     public override method replaceWith: (replacement: HIRValue) ::=> Void := {
         self == replacement ifTrue: (return: void).
@@ -1132,6 +1340,13 @@ HIRBasicBlock definition: {
         if: (self predecessors ~~ nil) && self predecessors isNotEmpty then: {
             stream nextPutAll: " ## Predecessors".
             self predecessors do: {:(HIRBasicBlock)each :: Void |
+                stream nextPut: ' 'c8; print: each
+            }
+        }.
+
+        if: (self successors ~~ nil) && self successors isNotEmpty then: {
+            stream nextPutAll: " ## Successors".
+            self successors do: {:(HIRBasicBlock)each :: Void |
                 stream nextPut: ' 'c8; print: each
             }
         }.
@@ -1258,6 +1473,7 @@ public final class HIRCallInstruction superclass: HIRInstruction; definition: {
     public field arguments => Array.
     public field isUnchecked => Boolean.
     
+    public override method isCallInstruction => Boolean := true.
     public override method hasSideEffects => Boolean := calledFunction isPureFunction not.
 
     public override method evaluateConstantFolding => HIRValue := {
@@ -1286,6 +1502,11 @@ public final class HIRCallInstruction superclass: HIRInstruction; definition: {
             stream nextPutAll: ", ".
             stream print: argument
         }
+    }.
+
+    public override method postCopy => Void := {
+        super postCopy.
+        arguments := arguments copy.
     }.
 
     public override method usedValuesDo: aBlock ::=> Void := {
@@ -1621,6 +1842,11 @@ public final class HIRMakeArrayInstruction superclass: HIRInstruction; definitio
         }
     }.
 
+    public override method postCopy => Void := {
+        super postCopy.
+        elements := elements copy.
+    }.
+
     public override method usedValuesDo: aBlock ::=> Void := {
         self elements do: aBlock
     }.
@@ -1647,6 +1873,11 @@ public final class HIRMakeByteArrayInstruction superclass: HIRInstruction; defin
         }
     }.
 
+    public override method postCopy => Void := {
+        super postCopy.
+        elements := elements copy.
+    }.
+
     public override method usedValuesDo: aBlock ::=> Void := {
         self elements do: aBlock
     }.
@@ -1667,11 +1898,22 @@ public final class HIRMakeClosureInstruction superclass: HIRInstruction; definit
     public override method isMakeClosureInstruction => Boolean := true.
     public override method hasSideEffects => Boolean := false.
 
+    public override method evaluateAsHIRFunctionDefinitionOrNil => HIRFunctionDefinition
+        := functionDefinition evaluateAsHIRFunctionDefinitionOrNil.
+
+    public override method evaluateCaptureValueListOrNil => Array
+        := captures.
+
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := makeClosure "; print: self functionDefinition.
         self captures do: {:(HIRValue)capture :: Void |
             stream nextPutAll: ", "; print: capture
         }
+    }.
+
+    public override method postCopy => Void := {
+        super postCopy.
+        captures := captures copy.
     }.
 
     public override method usedValuesDo: aBlock ::=> Void := {
@@ -1701,6 +1943,11 @@ public final class HIRMakeDictionaryInstruction superclass: HIRInstruction; defi
         self elements do: {:(HIRValue)element :: Void |
             stream nextPutAll: " "; print: element
         }
+    }.
+
+    public override method postCopy => Void := {
+        super postCopy.
+        elements := elements copy.
     }.
 
     public override method usedValuesDo: aBlock ::=> Void := {
@@ -1767,6 +2014,11 @@ HIRPhiInstruction definition: {
         self incomingBlocksAndValues do: {:(Association)blockAndValue :: Void |
             aBlock(blockAndValue key, blockAndValue value)
         }
+    }.
+
+    public override method postCopy => Void := {
+        super postCopy.
+        incomingBlocksAndValues := incomingBlocksAndValues copy.
     }.
 
     public override method usedValuesDo: aBlock ::=> Void := {
@@ -1840,6 +2092,7 @@ HIRPhiInstruction definition: {
 public final class HIRReturnInstruction superclass: HIRInstruction; definition: {
     public field value => HIRValue.
 
+    public override method isReturnInstruction => Boolean := true.
     public override method isTerminatorInstruction => Boolean := true.
 
     public override method successors => Array
@@ -1868,6 +2121,8 @@ public final class HIRSendInstruction superclass: HIRInstruction; definition: {
     public field arguments => Array.
     public field isUnchecked => Boolean.
 
+    public override method isSendInstruction => Boolean := true.
+
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream
             print: self; nextPutAll: " := ";
@@ -1878,12 +2133,17 @@ public final class HIRSendInstruction superclass: HIRInstruction; definition: {
 
         stream nextPutAll: ", "; print: self selector.
 
-        #*self arguments doWithIndex: {:(HIRValue)argument :(Size)index :: Void |
+        self arguments doWithIndex: {:(HIRValue)argument :(Size)index :: Void |
             index = 0sz
                 ifTrue: (stream nextPut: ' 'c8)
                 ifFalse: (stream nextPutAll: ", ").
             stream print: argument
-        }*#
+        }
+    }.
+
+    public override method postCopy => Void := {
+        super postCopy.
+        arguments := arguments copy.
     }.
 
     public override method usedValuesDo: aBlock ::=> Void := {
@@ -2004,6 +2264,9 @@ public final class HIRModule superclass: Object; definition: {
 
     public method getGlobalValueOrNilFor: value ::=> HIRValue
         := globalValueDictionary atOrNil: value.
+
+    public method functionDefinitions => OrderedCollection
+        := globalValues select: {:(HIRValue)value :: Boolean | value isFunctionDefinition }.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         globalValues do: {:(HIRGlobalValue)eachValue :: Void |

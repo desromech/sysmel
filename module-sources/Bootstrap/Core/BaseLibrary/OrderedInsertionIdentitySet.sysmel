@@ -34,4 +34,7 @@ public final class OrderedInsertionIdentitySet superclass: Collection; definitio
         set remove: result.
         result
     }.
+
+    public override method asArray => Array
+        := elements asArray.
 }.

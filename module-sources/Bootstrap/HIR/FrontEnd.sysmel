@@ -54,6 +54,9 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
         }.
     }.
 
+    public method compileFunctionsWithDefinitions: (functions: SequenceableCollection) ::=> Void 
+        := self compileFunctions: functions definitions: (functions collect: {:(Function)each :: FunctionDefinition | each definition}).
+
     public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> Void := {
         let ssaFunctionDefinition := self declareFunctionDefinition: functionDefinition.
         self compileFunctionDefinition: functionDefinition into: ssaFunctionDefinition
@@ -468,7 +471,7 @@ ASTFunctionApplicationNode extend: {
                     beginBasicBlockNamed: #deadCode;
                     literal: void
             } ifFalse: {
-                (callInstruction type isSubtypeOf: Void)
+                callInstruction type isVoidType
                     ifTrue: (context builder literal: void)
                     ifFalse: callInstruction
             }
@@ -639,7 +642,7 @@ ASTIfNode extend: {
 
         ## Merge
         builder beginBasicBlock: mergeBlock.
-        if: (self analyzedType isSubtypeOf: Void) || (trueResultIsTerminator && falseResultIsTerminator) then: {
+        if: self analyzedType isVoidType || (trueResultIsTerminator && falseResultIsTerminator) then: {
             builder literal: void
         } else: {
             trueResultIsTerminator ifTrue: (
@@ -805,7 +808,7 @@ ASTMessageSendNode extend: {
                 beginBasicBlockNamed: #deadCode;
                 literal: void
         } ifFalse: {
-            (sendInstruction type isSubtypeOf: Void)
+            sendInstruction type isVoidType
                 ifTrue: (context builder literal: void)
                 ifFalse: sendInstruction
         }
@@ -876,6 +879,7 @@ Function extend: {
     public method asHIRModuleForTarget: (compilationTarget: HIRCompilationTarget) ::=> HIRModule
         := (HIRModuleCompilationContext forTarget: compilationTarget)
             exclusiveCompilationMode: true;
+            declareFunctionDefinition: self definition;
             declareFunction: self;
             compileFunctionDefinition: self definition;
             finish.
@@ -883,6 +887,7 @@ Function extend: {
     public method asHIRModule => HIRModule
         := HIRModuleCompilationContext forDefaultTarget
             exclusiveCompilationMode: true;
+            declareFunctionDefinition: self definition;
             declareFunction: self;
             compileFunctionDefinition: self definition;
             finish.

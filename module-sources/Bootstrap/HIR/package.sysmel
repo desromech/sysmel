@@ -4,6 +4,7 @@ loadSourceNamed: "FrontEnd.sysmel".
 loadSourceNamed: "TransformationPasses.sysmel".
 loadSourceNamed: "PromoteAllocaPass.sysmel".
 loadSourceNamed: "ConstantPropagationPass.sysmel".
+loadSourceNamed: "InliningPass.sysmel".
 loadSourceNamed: "DestroySSAPass.sysmel".
 loadSourceNamed: "StandardOptimizations.sysmel".
 

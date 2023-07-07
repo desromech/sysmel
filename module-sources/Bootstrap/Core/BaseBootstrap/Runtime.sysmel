@@ -899,10 +899,19 @@ Function
 FunctionDefinition
     withSelector: #hasAnyFlag: addMethod: {:(FunctionDefinition)self :(Bitflags)flag :: Boolean |
         (self flags & flag) ~= 0bflgs
-    };
+    } makeFinal makeAlwaysInline;
     withSelector: #requiresArgumentExpansionDuringApplication addMethod: {:(FunctionDefinition)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Memoized | FunctionFlags::Variadic
-    }.
+    };
+    withSelector: #isInline addMethod: {:(FunctionDefinition)self :: Boolean |
+        self hasAnyFlag: FunctionFlags::Inline
+    } makeFinal makeAlwaysInline;
+    withSelector: #isAlwaysInline addMethod: {:(FunctionDefinition)self :: Boolean |
+        self hasAnyFlag: FunctionFlags::AlwaysInline
+    } makeFinal makeAlwaysInline;
+    withSelector: #isNeverInline addMethod: {:(FunctionDefinition)self :: Boolean |
+        self hasAnyFlag: FunctionFlags::NeverInline
+    } makeFinal makeAlwaysInline.
 
 ValueBox
     withSelector: #with: addClassMethod: {:(ValueBox class)self :value :: self |

@@ -27,6 +27,9 @@ public class HIRConstantPropagationPass superclass: HIRFunctionDefinitionPass; d
                 }.
 
                 instruction replaceWith: folded.
+                folded isInstruction ifTrue: {
+                    pendingWork add: folded
+                }
             }.
         }.
 
