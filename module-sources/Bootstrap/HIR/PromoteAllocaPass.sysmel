@@ -8,12 +8,10 @@ public final class HIRAllocaPromotionState definition: {
     public field stores => OrderedCollection.
     public field loads => OrderedCollection.
 
-    public field definitionBlockList => OrderedCollection.
-    public field definitionBlockSet => IdentitySet.
+    public field definitionBlockSet => OrderedInsertionIdentitySet.
 
     public field blockPhiDictionary => IdentityDictionary.
-    public field phiSet => IdentitySet.
-    public field phiList => OrderedCollection.
+    public field phiSet => OrderedInsertionIdentitySet.
 
     public field undefinedConstant => HIRUndefinedConstant.
 
@@ -46,29 +44,21 @@ public final class HIRAllocaPromotionState definition: {
         }.
 
         ## Find the set of definition blocks.
-        definitionBlockSet := IdentitySet new.
-        definitionBlockList := OrderedCollection new.
+        definitionBlockSet := OrderedInsertionIdentitySet new.
         let addBlockForDefinition := {:(HIRInstruction)definition :: Void |
             self assert: definition parent isNotNil.
             let block := definition parent.
-            (definitionBlockSet includes: block) ifFalse: {
-                definitionBlockSet add: block.
-                definitionBlockList add: block
-            }.
+            definitionBlockSet add: block
         }.
 
         stores do: addBlockForDefinition.
 
         ## Add the phi nodes.
         blockPhiDictionary := IdentityDictionary new.
-        phiSet := IdentitySet new.
-        phiList := OrderedCollection new.
+        phiSet := OrderedInsertionIdentitySet new.
 
-        let pendingWorkList := OrderedCollection new.
-        let pendingWorkSet := IdentitySet new.
-        pendingWorkList addAll: definitionBlockList.
-        pendingWorkSet addAll: definitionBlockList.
-        self assert: pendingWorkList size = pendingWorkSet size.
+        let pendingWork := OrderedInsertionIdentitySet new.
+        pendingWork addAll: definitionBlockSet.
 
         let addPhiAtBlock := {:(HIRBasicBlock)phiBlockCandidate :: Void |
             (blockPhiDictionary includesKey: phiBlockCandidate) ifFalse: {
@@ -79,22 +69,17 @@ public final class HIRAllocaPromotionState definition: {
                 blockPhiDictionary at: phiBlockCandidate put: phi.
 
                 phiSet add: phi.
-                phiList add: phi.
                 phiBlockCandidate addInstruction: phi before: phiBlockCandidate firstInstruction.
                 (definitionBlockSet includes: phiBlockCandidate) ifFalse: {
-                    (pendingWorkSet includes: phiBlockCandidate) ifFalse: {
-                        pendingWorkList add: phiBlockCandidate.
-                        pendingWorkSet add: phiBlockCandidate
-                    }.
+                    pendingWork add: phiBlockCandidate
                 }
             }
         }.
 
         definitionBlockSet do: addPhiAtBlock.
 
-        while: (pendingWorkList isNotEmpty) do: {
-            let nextBlock => HIRBasicBlock := pendingWorkList removeLast.
-            pendingWorkSet remove: nextBlock.
+        while: (pendingWork isNotEmpty) do: {
+            let nextBlock => HIRBasicBlock := pendingWork removeLast.
             nextBlock dominanceFrontier do: addPhiAtBlock
         }.
 
@@ -104,7 +89,7 @@ public final class HIRAllocaPromotionState definition: {
         }.
 
         ## Add the phi edges.
-        phiList do: {:(HIRPhiInstruction)phi :: Void |
+        phiSet do: {:(HIRPhiInstruction)phi :: Void |
             phi
                 incomingBlocksAndValues: (phi parent predecessors collect: {:(HIRBasicBlock)eachPred :: Association |
                     eachPred -> (self validValueAtInstruction: eachPred lastInstruction inBlock: eachPred)
@@ -113,7 +98,7 @@ public final class HIRAllocaPromotionState definition: {
         }.
 
         ## Add new debug bindings at each definition.
-        phiList do: {:(HIRInstruction)phi :: Void |
+        phiSet do: {:(HIRInstruction)phi :: Void |
             self addDebugBindingsBefore: phi parent firstInstructionAfterPhi inBlock: phi parent
         }.
         stores do: {:(HIRInstruction)store :: Void |
@@ -122,7 +107,7 @@ public final class HIRAllocaPromotionState definition: {
         debugBindings do: {:(HIRInstruction)each :: Void | each deleteFromParent }.
 
         ## Simplify the phi nodes.
-        phiList do: {:(HIRPhiInstruction)phi :: Void |
+        phiSet do: {:(HIRPhiInstruction)phi :: Void |
             phi userCount = 0sz ifTrue: {
                 phi deleteFromParent
             } ifFalse: {

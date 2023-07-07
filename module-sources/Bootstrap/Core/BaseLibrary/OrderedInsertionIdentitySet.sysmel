@@ -1,0 +1,37 @@
+public final class OrderedInsertionIdentitySet superclass: Collection; definition: {
+    private field set => IdentitySet.
+    private field elements => OrderedCollection.
+
+    public override method initialize => Void := {
+        set := IdentitySet new.
+        elements := OrderedCollection new.
+    }.
+
+    public override method size => Size
+        := elements size.
+
+    public method add: element ::=> Void := {
+        (set includes: element) ifFalse: {
+            set add: element.
+            elements add: element
+        }
+    }.
+
+    public method addAll: (aCollection: Collection) ::=> Void := {
+        aCollection do: {:each :: Void |
+            self add: each
+        }
+    }.
+
+    public override method do: aBlock ::=> Void
+        := elements do: aBlock.
+
+    public override method includes: anElement ::=> Boolean
+        := set includes: anElement.
+
+    public method removeLast := {
+        let result := elements removeLast.
+        set remove: result.
+        result
+    }.
+}.
