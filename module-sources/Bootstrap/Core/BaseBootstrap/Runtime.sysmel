@@ -1082,7 +1082,7 @@ Dictionary
         } else: {
             entry value
         }
-    } makeVirtual;
+    };
     withSelector: #includesKey: addMethod: {:(Dictionary)self :(AnyValue)key :: Boolean |
         self ensureStorage.
         let: #entryIndex with: (self scanFor: key) asSize.

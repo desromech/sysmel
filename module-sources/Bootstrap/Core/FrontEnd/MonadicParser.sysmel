@@ -103,10 +103,19 @@ public abstract class MonadicParserResult superclass: Object; definition: {
 
 public class MonadicParserErrorResult superclass: MonadicParserResult; definition: {
     public field message => String.
+    public field messageTemplate => String.
+    public field messageTemplateParameters => Array.
     
     public abstract method isError => Boolean := true.
 
-    public override method errorMessage => String := message.
+    public override method errorMessage => String := {
+        message ifNil: {
+            message := messageTemplate
+                ifNil: ("Unknown error")
+                ifNotNil: (messageTemplate)
+        }.
+        message.
+    }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: startPosition; nextPut: '-'c8; print: endPosition; nextPutAll: ": "; nextPutAll: message
@@ -216,6 +225,15 @@ public abstract class MonadicParser definition: {
             endPosition: state memento;
             yourself.
 
+    public method makeError: (messageTemplate: String) formatWith: (messageTemplateParameters: Array) withState: (state: MonadicParserState) ::=> MonadicParserResult
+        := MonadicParserErrorResult new
+            state: state;
+            messageTemplate: messageTemplate;
+            messageTemplateParameters: messageTemplateParameters;
+            startPosition: state memento;
+            endPosition: state memento;
+            yourself.
+
     public virtual method -- (nextParser: MonadicParser) ::=> MonadicParser
         := MonadicCombinatorSequenceParser new
             parsers: (Array with: self with: nextParser);
@@ -299,7 +317,7 @@ public class MonadicElementParser superclass: MonadicParser; definition: {
             state advance.
             self makeResultFrom: startPosition withState: state.
         } ifFalse: {
-            self makeError: "Expected " -- expectedElement asString withState: state.
+            self makeError: "Expected {0}." formatWith: (Array with: expectedElement) withState: state.
         }.
     }
 }.
@@ -353,7 +371,7 @@ public class MonadicSequenceParser superclass: MonadicParser; definition: {
             state advance: expectedSequence size.
             self makeResultFrom: startPosition withState: state.
         } ifFalse: {
-            self makeError: "Expected " -- expectedSequence asString withState: state.
+            self makeError: "Expected {0}" formatWith: (Array with: expectedSequence) withState: state.
         }.
     }
 }.

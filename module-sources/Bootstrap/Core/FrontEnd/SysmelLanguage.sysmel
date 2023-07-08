@@ -289,10 +289,10 @@ public class SysmelTokenMonadicParser superclass: MonadicParser; definition: {
                 state advance.
                 self makeResult: token from: startPosition withState: state
             } ifFalse: {
-                self makeError: "Expected " -- tokenName -- " instead of the end." withState: state
+                self makeError: "Expected {0} instead of the end." formatWith: (Array with: tokenName) withState: state
             }
         } ifFalse: {
-            self makeError: "Expected " -- tokenName -- "." withState: state
+            self makeError: "Expected {0}." formatWith: (Array with: tokenName) withState: state
         }.
     }
 }.
