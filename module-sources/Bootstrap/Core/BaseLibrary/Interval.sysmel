@@ -8,14 +8,14 @@ public final class Interval superclass: SequenceableCollection; definition: {
     public override method size => Size
         := ((stop - start) // increment) asSize.
 
-    public override method do: aBlock ::=> Void := {
+    public inline override method do: aBlock ::=> Void := {
         let i mutable := start.
         while: (i <= stop) do: (
             aBlock(i)
         ) continueWith: (i := i + increment)
     }.
 
-    public override method doWithIndex: aBlock ::=> Void := {
+    public inline override method doWithIndex: aBlock ::=> Void := {
         let i mutable := start.
         let index mutable := 0sz.
         while: (i <= stop) do: {
@@ -36,14 +36,14 @@ public final class ExclusiveInterval superclass: SequenceableCollection; definit
     public override method size => Size
         := ((stop - start) // increment) asSize.
 
-    public override method do: aBlock ::=> Void := {
+    public inline override method do: aBlock ::=> Void := {
         let i mutable := start.
         while: (i < stop) do: (
             aBlock(i)
         ) continueWith: (i := i + increment)
     }.
 
-    public override method doWithIndex: aBlock ::=> Void := {
+    public inline override method doWithIndex: aBlock ::=> Void := {
         let i mutable := start.
         let index mutable := 0sz.
         while: (i < stop) do: {
@@ -69,14 +69,14 @@ public final class ExclusiveInterval superclass: SequenceableCollection; definit
         public pure method to: (stop: SelfType) by: (increment: SelfType) ::=> Interval
             := Interval new start: self; stop: stop; increment: increment; yourself.
 
-        public method to: (stop: SelfType) by: (increment: SelfType) do: (aBlock: SelfType => Void) ::=> Void := {
+        public inline method to: (stop: SelfType) by: (increment: SelfType) do: (aBlock: SelfType => Void) ::=> Void := {
             let i mutable := self.
             while: (i <= stop) do: (
                 aBlock(i)
             ) continueWith: (i := i + increment)
         }.
 
-        public method to: (stop: SelfType) do: (aBlock: SelfType => Void) ::=> Void := {
+        public inline method to: (stop: SelfType) do: (aBlock: SelfType => Void) ::=> Void := {
             let i mutable := self.
             while: (i <= stop) do: (
                 aBlock(i)
@@ -89,14 +89,14 @@ public final class ExclusiveInterval superclass: SequenceableCollection; definit
         public pure method until: (stop: SelfType) by: (increment: SelfType) ::=> ExclusiveInterval
             := ExclusiveInterval new start: self; stop: stop; increment: increment; yourself.
 
-        public method until: (stop: SelfType) by: (increment: SelfType) do: (aBlock: SelfType => Void) ::=> Void := {
+        public inline method until: (stop: SelfType) by: (increment: SelfType) do: (aBlock: SelfType => Void) ::=> Void := {
             let i mutable := self.
             while: (i < stop) do: (
                 aBlock(i)
             ) continueWith: (i := i + increment)
         }.
 
-        public method until: (stop: SelfType) do: (aBlock: SelfType => Void) ::=> Void := {
+        public inline method until: (stop: SelfType) do: (aBlock: SelfType => Void) ::=> Void := {
             let i mutable := self.
             while: (i < stop) do: (
                 aBlock(i)

@@ -23,8 +23,11 @@ public final class OrderedInsertionIdentitySet superclass: Collection; definitio
         }
     }.
 
-    public override method do: aBlock ::=> Void
+    public override final inline method do: aBlock ::=> Void
         := elements do: aBlock.
+
+    public override final inline method doWithIndex: aBlock ::=> Void
+        := elements doWithIndex: aBlock.
 
     public override method includes: anElement ::=> Boolean
         := set includes: anElement.

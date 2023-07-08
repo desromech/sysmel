@@ -1,4 +1,18 @@
 ByteArray definition: {
+    public final override method copyFrom: (startIndex: Size) until: (endIndex: Size) ::=> ByteArray := {
+        let resultSize := startIndex <= endIndex
+            ifTrue: endIndex - startIndex
+            ifFalse: 0sz.
+
+        let result := ByteArray basicAllocate: resultSize.
+        let i mutable := 0sz.
+        while: i < resultSize do: (
+            result __uncheckedByteSlotAt__: i put: (self __uncheckedByteSlotAt__: startIndex + i)
+        ) continueWith: (i := i + 1sz).
+
+        result
+    }.
+
     public method replaceBytesFrom: (startIndex: Size) count: (replacementSize: Size) with: replacement startingAt: (replacementOffset: Size) ::=> Void := {
         startIndex + replacementSize <= self __byteSize__ ifFalse: (self errorSubscriptBounds: startIndex).
         replacementOffset + replacementSize <= replacement __byteSize__ ifFalse: (self errorSubscriptBounds: replacementOffset).

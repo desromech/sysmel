@@ -10,10 +10,11 @@ OrderedCollection definition: {
 
         let newCapacity := requiredCapacity asLargerPowerOfTwo max: 4sz.
         let newStorage := Array basicAllocate: newCapacity.
+        let oldStorage := storage.
         let currentSize := size.
         let i mutable := 0sz.
         while: (i < currentSize) do: {
-            newStorage at: i put: (storage at: i)
+            newStorage __uncheckedSlotAt__: i put: (oldStorage __uncheckedSlotAt__: i)
         } continueWith: (i := i + 1sz).
 
         storage := newStorage.

@@ -1413,52 +1413,24 @@ SequenceableCollection
         ) continueWith: (i := i + 1sz).
 
         result
-    };
+    } makeVirtual;
 
     withSelector: #first: addMethod: {:(SequenceableCollection)self :(Size)elementsToKeep :: self species |
-        let: #size with: self size.
-        let: #resultSize with: (if: size < elementsToKeep then: size else: elementsToKeep).
-        
-        let: #result with: (self species new: resultSize).
-        let: #i mutableWith: 0sz.
-        while: i < resultSize do: (
-            result at: i put: (self at: i)
-        ) continueWith: (i := i + 1sz).
-
-        result
-    };
+        self copyFrom: 0sz until: elementsToKeep
+    } makeAlwaysInline;
     withSelector: #allButFirst: addMethod: {:(SequenceableCollection)self :(Size)dropCount :: self species |
-        let: #size with: self size.
-        if: dropCount >= size then: (self species new: 0sz)
-        else: {
-            let: #resultSize with: size - dropCount.
-            let: #result with: (self species new: resultSize).
-            let: #i mutableWith: dropCount.
-            while: i < size do: (
-                result at: i - dropCount put: (self at: i)
-            ) continueWith: (i := i + 1sz).
-            result
-        }
-    };
+        self copyFrom: dropCount until: self size
+    } makeAlwaysInline;
     withSelector: #allButFirst addMethod: {:(SequenceableCollection)self :: self species |
         self allButFirst: 1sz
-    };
+    } makeAlwaysInline;
     withSelector: #allButLast: addMethod: {:(SequenceableCollection)self :(Size)dropCount :: self species |
         let: #size with: self size.
-        if: dropCount >= size then: (self species new: 0sz)
-        else: {
-            let: #resultSize with: size - dropCount.
-            let: #result with: (self species new: resultSize).
-            let: #i mutableWith: 0sz.
-            while: i < resultSize do: (
-                result at: i put: (self at: i)
-            ) continueWith: (i := i + 1sz).
-            result
-        }
-    };
+        self copyFrom: 0sz until: (if: dropCount >= size then: 0sz else: size - dropCount)
+    } makeAlwaysInline;
     withSelector: #allButLast addMethod: {:(SequenceableCollection)self :: self species |
         self allButLast: 1sz
-    };
+    } makeAlwaysInline;
 
     withSelector: #insertionSort:from:until: addMethod: {:(SequenceableCollection)self :lessThanComparison :(Size)startIndex :(Size)endIndex :: Void |
         ## Insertion sort algorithm from https://en.wikipedia.org/wiki/Insertion_sort [March 2023]
@@ -2832,7 +2804,29 @@ Type
         self allValidSlots.
         self validBasicInitializeMethod.
         self ensureLayoutIsComputed.
-    } makeVirtual withEagerAnalysis.
+    } makeVirtual withEagerAnalysis;
+
+    ## Non recursive versions, more efficient with our current compiler.
+    withSelector: #isDirectSubtypeOf: replaceMethod: {:(Type)self :(Type)expectedParent :: Boolean |
+        let: #currentType mutableWith: self.
+        
+        do: {
+            if: expectedParent == currentType then: (return: true).
+            currentType := currentType __slotNamedAt__: #supertype
+        } while: (currentType ~~ nil).
+
+        false
+    } makePure withEagerAnalysis;
+    withSelector: #isSubtypeOf: replaceMethod: {:(Type)self :(Type)expectedParent :: Boolean |
+        let: #currentType mutableWith: self.
+        
+        do: {
+            if: expectedParent == currentType then: (return: true).
+            currentType := currentType __slotNamedAt__: #supertype
+        } while: (currentType ~~ nil).
+
+        false
+    } makePure withEagerAnalysis.
 
 PointerLikeType
     withSelector: #computeLayout addMethod: {:(PointerLikeType)self :: Void |

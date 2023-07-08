@@ -101,6 +101,20 @@ String extend: {
     public method >= (other: String) ::=> Boolean
         := (self <=> other) >= 0i32.
 
+    public final override method copyFrom: (startIndex: Size) until: (endIndex: Size) ::=> String := {
+        let resultSize := startIndex <= endIndex
+            ifTrue: endIndex - startIndex
+            ifFalse: 0sz.
+
+        let result := String basicAllocate: resultSize.
+        let i mutable := 0sz.
+        while: i < resultSize do: (
+            result __uncheckedByteSlotAt__: i put: (self __uncheckedByteSlotAt__: startIndex + i)
+        ) continueWith: (i := i + 1sz).
+
+        result
+    }.
+
     public final method writeOntoStdout => Void := {
         sysmel_pal_writeToFile(sysmel_pal_getStdoutFileHandle(), self size, self __rawContentsPointer__).
     }.

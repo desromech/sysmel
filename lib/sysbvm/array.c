@@ -180,6 +180,36 @@ static sysbvm_tuple_t sysbvm_array_primitive_hash(sysbvm_context_t *context, sys
     return sysbvm_tuple_size_encode(context, result);
 }
 
+static sysbvm_tuple_t sysbvm_byteArray_primitive_copyFromUntil(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
+
+    sysbvm_byteArray_t *array = (sysbvm_byteArray_t *)arguments[0];
+    size_t size = sysbvm_tuple_getSizeInBytes(arguments[0]);
+    size_t startIndex = sysbvm_tuple_size_decode(arguments[1]);
+    size_t endIndex = sysbvm_tuple_size_decode(arguments[2]);
+    if(endIndex >= size)
+        endIndex = size;
+    
+    size_t copySize = startIndex <= endIndex ? endIndex - startIndex : 0;
+    sysbvm_tuple_t arrayType = sysbvm_tuple_getType(context, arguments[0]);
+
+    if(copySize == 0)
+    {
+        sysbvm_type_tuple_t *arrayTypeObject = (sysbvm_type_tuple_t*)arrayType;
+        if(!arrayTypeObject->emptyTrivialSingleton)
+            arrayTypeObject->emptyTrivialSingleton = (sysbvm_tuple_t)sysbvm_context_allocateByteTuple(context, arrayType, 0);
+        return arrayTypeObject->emptyTrivialSingleton;
+    }
+
+    sysbvm_byteArray_t *copy = (sysbvm_byteArray_t *)sysbvm_context_allocateByteTuple(context, arrayType, copySize);
+
+    memcpy(copy->elements, array->elements + startIndex, copySize);
+    return (sysbvm_tuple_t)copy;
+}
+
 static sysbvm_tuple_t sysbvm_byteArray_primitive_replaceBytesFromWith(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
@@ -587,6 +617,7 @@ void sysbvm_array_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_array_primitive_equals, "Array::=");
     sysbvm_primitiveTable_registerFunction(sysbvm_array_primitive_hash, "Array::hash");
 
+    sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_copyFromUntil, "ByteArray::copyFrom:until:");
     sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_replaceBytesFromWith, "ByteArray::replaceBytesFrom:count:with:startingAt:");
 
     sysbvm_primitiveTable_registerFunction(sysbvm_byteArray_primitive_char8At, "ByteArray::char8At:");
@@ -623,8 +654,9 @@ void sysbvm_array_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.arrayType, "=", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_array_primitive_equals);
     sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.arrayType, "hash", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_array_primitive_hash);
 
-    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.byteArrayType, "replaceBytesFrom:count:with:startingAt:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_replaceBytesFromWith);
-    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.stringType, "replaceBytesFrom:count:with:startingAt:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_replaceBytesFromWith);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.byteArrayType, "copyFrom:until:", 3, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_copyFromUntil);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.byteArrayType, "replaceBytesFrom:count:with:startingAt:", 5, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_replaceBytesFromWith);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.stringType, "replaceBytesFrom:count:with:startingAt:", 5, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_replaceBytesFromWith);
 
     sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.byteArrayType, "char8At:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_char8At);
     sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.byteArrayType, "uint8At:", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_byteArray_primitive_uint8At);
