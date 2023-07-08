@@ -91,4 +91,19 @@ OrderedCollection definition: {
         size = 0sz ifTrue: (self error: "Cannot remove the last element on empty ordered collection.").
         storage at: (size := size - 1sz).
     }.
+
+    ## FIXME: Fix the inliner bug when inlining these methods.
+    public override final eager method do: aBlock ::=> Void := {
+        let i mutable := 0sz.
+        while: (i < size) do: {
+            aBlock((self __slotNamedAt__: #storage) __uncheckedSlotAt__: i)
+        } continueWith: (i := i + 1sz)
+    }.
+
+    public override final eager method doWithIndex: aBlock ::=> Void := {
+        let i mutable := 0sz.
+        while: (i < size) do: {
+            aBlock((self __slotNamedAt__: #storage) __uncheckedSlotAt__: i, i)
+        } continueWith: (i := i + 1sz)
+    }.
 }.

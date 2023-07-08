@@ -111,6 +111,13 @@ public final class HIRInlinerState definition: {
         exitBlock name: #inlineExit.
         self assert: exitBlock firstInstruction isNotNil.
 
+        let builder := HIRInstructionBuilder new
+            useSourceInformationOfValue: call;
+            function: exitBlock parent;
+            basicBlock: exitBlock;
+            insertionPoint: exitBlock firstInstruction;
+            yourself.
+
         ## Create the result value
         let resultPhi => HIRPhiInstruction := call type isVoidType ifTrue: {
             call userCount > 0sz ifTrue: {
@@ -124,12 +131,7 @@ public final class HIRInlinerState definition: {
 
             nil
         } ifFalse: {
-            let phi := HIRPhiInstruction new
-                useSourceInformationOfValue: call;
-                type: call type;
-                yourself.
-
-            exitBlock addInstruction: phi before: exitBlock firstInstruction.
+            let phi := builder phi: call type.
             call replaceWith: phi.
             phi
         }.
@@ -141,11 +143,9 @@ public final class HIRInlinerState definition: {
         resultPhi ifNotNil: (resultPhi simplify).
 
         ## Make the entry branch.
-        let entryBranch := HIRBranchInstruction new
-            destination: firstInlinedBlock;
-            useSourceInformationOfValue: call;
-            yourself.
-        callingBlock addInstruction: entryBranch.
+        let entryBranch := builder
+            beginInsertingInBasicBlock: callingBlock;
+            branch: firstInlinedBlock.
 
         exitBlock firstInstruction
     }.

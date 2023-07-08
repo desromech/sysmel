@@ -633,6 +633,7 @@ public final class AsmObjectElf64FileWriter superclass: AsmObjectFileWriter; def
         let relSectionHeaders := OrderedCollection new.
         {|
 
+        printLine(objectCode sections).
         objectCode sections doWithIndex: {:(AsmObjectCodeSection)eachSection :(Size)index :: Void |
             let sectionHeaderIndex := index + 1sz.
             let sectionHeader := sectionHeaders at: sectionHeaderIndex.

@@ -671,13 +671,6 @@ HIRFunctionDefinition definition: {
         self assert: captures size = inlineCaptures size.
 
         let replacementDictionary := Dictionary new.
-        arguments doWithIndex: {:(HIRValue)argument :(Size)index :: Void |
-            replacementDictionary at: argument put: (inlineArguments at: index)
-        }.
-
-        captures doWithIndex: {:(HIRValue)capture :(Size)index :: Void |
-            replacementDictionary at: capture put: (inlineCaptures at: index)
-        }.
 
         ## First pass: copy the basic blocks and their instructions.
         let inlinedBasicBlocks := OrderedCollection new.
@@ -690,6 +683,21 @@ HIRFunctionDefinition definition: {
 
         ## Second pass: fix the used values.
         let withoutSourceDebugging := self shouldInlineWithoutSourceDebugging.
+        let firstBasicBlock => HIRBasicBlock := inlinedBasicBlocks first.
+        let builder := HIRInstructionBuilder new
+            function: targetFunctionDefinition;
+            basicBlock: firstBasicBlock;
+            insertionPoint: firstBasicBlock firstInstruction;
+            yourself.
+
+        arguments doWithIndex: {:(HIRValue)argument :(Size)index :: Void |
+            replacementDictionary at: argument put: (builder downCast: (inlineArguments at: index) type: argument type)
+        }.
+
+        captures doWithIndex: {:(HIRValue)capture :(Size)index :: Void |
+            replacementDictionary at: capture put: (builder downCast: (inlineCaptures at: index) type: capture type)
+        }.
+
         inlinedBasicBlocks do: {:(HIRBasicBlock)eachBasicBlock :: Void |
             self assert: eachBasicBlock parent == targetFunctionDefinition.
             eachBasicBlock instructionsDo: {:(HIRInstruction)eachInstruction :: Void |
@@ -2482,7 +2490,7 @@ HIRInstructionBuilder definition: {
             return: (self undefined: type)
         }.
 
-        (targetType == nil) || (targetType isLiteralConstant && (value type == (targetType downCastTo: HIRLiteralConstant) value)) ifTrue: {
+        (targetType == nil) || (targetType isLiteralConstant && (value type isSubtypeOf: (targetType downCastTo: HIRLiteralConstant) value)) ifTrue: {
             value
         } ifFalse: {
             self addInstruction: (HIRDownCastInstruction new
@@ -2497,6 +2505,9 @@ HIRInstructionBuilder definition: {
 
     public method downCast: (value: HIRValue) into: (targetType: HIRValue) type: (type: Type) ::=> HIRValue
         := self unchecked: false downCast: value into: targetType type: type.
+
+    public method downCast: (value: HIRValue) type: (type: Type) ::=> HIRValue
+        := self downCast: value into: (self literal: type) type: type.
 
     public method undefined: (type: Type) ::=> HIRUndefinedConstant
         := HIRUndefinedConstant new

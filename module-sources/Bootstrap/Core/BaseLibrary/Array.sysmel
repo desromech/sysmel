@@ -48,4 +48,21 @@ Array definition: {
         self untypedAt: secondIndex put: (self untypedAt: firstIndex).
         self untypedAt: firstIndex put: temp.
     }.
+
+    ## FIXME: Fix the inliner bug when inlining these methods.
+    public override final eager method do: aBlock ::=> Void := {
+        let size := self size.
+        let i mutable := 0sz.
+        while: (i < size) do: {
+            aBlock(self __uncheckedSlotAt__: i)
+        } continueWith: (i := i + 1sz)
+    }.
+
+    public override final eager method doWithIndex: aBlock ::=> Void := {
+        let size := self size.
+        let i mutable := 0sz.
+        while: (i < size) do: {
+            aBlock(self __uncheckedSlotAt__: i, i)
+        } continueWith: (i := i + 1sz)
+    }.
 }.
