@@ -64,6 +64,8 @@ HIRValue definition: {
     public virtual method primitiveName => Symbol := nil.
     public virtual method evaluateAsHIRFunctionDefinitionOrNil => HIRFunctionDefinition := nil.
     public virtual method evaluateCaptureValueListOrNil => Array := nil.
+    public abstract method evaluateAsConstantType => Type :=
+        self subclassResponsibility.
 
     public virtual method usedValuesDo: (aBlock: (HIRValue) => Void) ::=> Void := {}.
 
@@ -163,6 +165,7 @@ public final class HIRLiteralConstant superclass: HIRConstant; definition: {
     public override method isEvaluableConstant => Boolean := true.
 
     public override method evaluateConstant => Untyped := self __slotNamedAt__: #value.
+    public override method evaluateAsConstantType => Type := self __slotNamedAt__: #value.
 
     public override method isPureFunction => Boolean := {
         let value := self __slotNamedAt__: #value.
@@ -1598,6 +1601,12 @@ public final class HIRCoerceValueInstruction superclass: HIRInstruction; definit
     public field value => HIRValue.
     public field targetType => HIRValue.
 
+    public override method evaluateConstantFolding => HIRValue := {
+        (targetType isLiteralConstant && (value type isSubtypeOf: targetType evaluateAsConstantType))
+            ifTrue: value
+            ifFalse: self
+    }.
+
     public override method fullPrintOn: (stream: Stream) ::=> Void
         := stream print: self; nextPutAll: " := coerceValue: "; print: self value;
             nextPut: ' 'c8; print: self targetType.
@@ -1665,6 +1674,12 @@ public final class HIRDownCastInstruction superclass: HIRInstruction; definition
 
     public override method isDownCastInstruction => Boolean := true.
     public override method hasSideEffects => Boolean := isUnchecked not.
+
+    public override method evaluateConstantFolding => HIRValue := {
+        (targetType isLiteralConstant && (value type isSubtypeOf: targetType evaluateAsConstantType))
+            ifTrue: value
+            ifFalse: self
+    }.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self;
@@ -2447,7 +2462,7 @@ HIRInstructionBuilder definition: {
         := self call: receiver arguments: arguments resultType: nil.
 
     public method bitcast: (value: HIRValue) into: (targetType: HIRValue) type: (type: Type) ::=> HIRValue := {
-        (targetType == nil) || (targetType isLiteralConstant && (value type == (targetType downCastTo: HIRLiteralConstant) value)) ifTrue: {
+        (targetType == nil) || (targetType isLiteralConstant && (value type == targetType evaluateAsConstantType)) ifTrue: {
             value
         } ifFalse: {
             self addInstruction: (HIRBitcastInstruction new
@@ -2464,7 +2479,7 @@ HIRInstructionBuilder definition: {
             return: (self undefined: type)
         }.
 
-        (targetType == nil) || (targetType isLiteralConstant && (value type == (targetType downCastTo: HIRLiteralConstant) value)) ifTrue: {
+        (targetType == nil) || (targetType isLiteralConstant && (value type == targetType evaluateAsConstantType)) ifTrue: {
             value
         } ifFalse: {
             self addInstruction: (HIRCoerceValueInstruction new
@@ -2490,7 +2505,7 @@ HIRInstructionBuilder definition: {
             return: (self undefined: type)
         }.
 
-        (targetType == nil) || (targetType isLiteralConstant && (value type isSubtypeOf: (targetType downCastTo: HIRLiteralConstant) value)) ifTrue: {
+        (targetType == nil) || (targetType isLiteralConstant && (value type isSubtypeOf: targetType evaluateAsConstantType)) ifTrue: {
             value
         } ifFalse: {
             self addInstruction: (HIRDownCastInstruction new

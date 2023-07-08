@@ -1634,13 +1634,22 @@ ByteArray
     withSelector: #new: addClassMethod: {:(ByteArray class)self :(Size)initialSize :: self |
         self basicNew: initialSize
     } makeOverride makeFinal;
-    withSelector: #at: addMethod: {:(ByteArray)self :(Size)index :: UInt8 |
+    withSelector: #uint8At: addMethod: {:(ByteArray)self :(Size)index :: UInt8 |
+        index >= self __byteSize__ ifTrue: (self errorSubscriptBounds: index).
+        self __uncheckedByteSlotAt__: index
+    } makeFinal makeAlwaysInline;
+    withSelector: #uint8At:put: addMethod: {:(ByteArray)self :(Size)index :(UInt8)value :: Void |
+        index >= self __byteSize__ ifTrue: (self errorSubscriptBounds: index).
+        self __uncheckedByteSlotAt__: index put: value
+    } makeFinal makeAlwaysInline;
+
+    withSelector: #at: addMethod: {:(ByteArray)self :(Size)index |
         index >= self __byteSize__ ifTrue: (self errorSubscriptBounds: index).
         self __uncheckedByteSlotAt__: index
     } makeOverride makeFinal makeAlwaysInline;
-    withSelector: #at:put: addMethod: {:(ByteArray)self :(Size)index :(UInt8)value :: Void |
+    withSelector: #at:put: addMethod: {:(ByteArray)self :(Size)index :value :: Void |
         index >= self __byteSize__ ifTrue: (self errorSubscriptBounds: index).
-        self __uncheckedByteSlotAt__: index put: value
+        self __uncheckedByteSlotAt__: index put: (value uncheckedDownCastTo: UInt8)
     } makeOverride makeFinal makeAlwaysInline;
     withSelector: #size addMethod: {:(ByteArray)self :: Size |
         self __byteSize__
@@ -1661,13 +1670,21 @@ String
     withSelector: #new: addClassMethod: {:(String class)self :(Size)initialSize :: self |
         self basicNew: initialSize
     } makeOverride makeFinal;
-    withSelector: #at: addMethod: {:(String)self :(Size)index :: Char8 |
+    withSelector: #char8At: addMethod: {:(String)self :(Size)index :: Char8 |
+        index >= self __byteSize__ ifTrue: (self errorSubscriptBounds: index).
+        (self __uncheckedByteSlotAt__: index) asChar8
+    } makeFinal makeAlwaysInline;
+    withSelector: #char8At:put: addMethod: {:(String)self :(Size)index :(Char8)value :: Void |
+        index >= self __byteSize__ ifTrue: (self errorSubscriptBounds: index).
+        self __uncheckedByteSlotAt__: index put: value asUInt8
+    } makeFinal makeAlwaysInline;
+    withSelector: #at: addMethod: {:(String)self :(Size)index |
         index >= self __byteSize__ ifTrue: (self errorSubscriptBounds: index).
         (self __uncheckedByteSlotAt__: index) asChar8
     } makeOverride makeFinal makeAlwaysInline;
-    withSelector: #at:put: addMethod: {:(String)self :(Size)index :(Char8)value :: Void |
+    withSelector: #at:put: addMethod: {:(String)self :(Size)index :value :: Void |
         index >= self __byteSize__ ifTrue: (self errorSubscriptBounds: index).
-        self __uncheckedByteSlotAt__: index put: value asUInt8
+        self __uncheckedByteSlotAt__: index put: (value uncheckedDownCastTo: Char8) asUInt8
     } makeOverride makeFinal makeAlwaysInline;
     withSelector: #size addMethod: {:(String)self :: Size |
         self __byteSize__
@@ -1681,12 +1698,12 @@ String
 
             let: #i mutableWith: 0sz.
             while: i < paddingSize do: (
-                result at: i put: paddingCharacter
+                result char8At: i put: paddingCharacter
             ) continueWith: (i := i + 1sz).
             
             i := 0sz.
             while: i < size do: (
-                result at: i + paddingSize put: (self at: i)
+                result char8At: i + paddingSize put: (self at: i)
             ) continueWith: (i := i + 1sz).
             result
         }
@@ -1697,11 +1714,13 @@ String
 
 StringSymbol
     withSelector: #at: addMethod: {:(StringSymbol)self :(Size)index :: Char8 |
-        (self __byteSlotAt__: index) asChar8
-    };
+        index >= self __byteSize__ ifTrue: (self errorSubscriptBounds: index).
+        (self __uncheckedByteSlotAt__: index) asChar8
+    } makeFinal makeAlwaysInline;
     withSelector: #at:put: addMethod: {:(StringSymbol)self :(Size)index :(Char8)value :: Void |
-        self __byteSlotAt__: index put: value asUInt8
-    };
+        index >= self __byteSize__ ifTrue: (self errorSubscriptBounds: index).
+        self __uncheckedByteSlotAt__: index put: value asUInt8
+    } makeFinal makeAlwaysInline;
     withSelector: #size addMethod: {:(StringSymbol)self :: Size |
         self __byteSize__
     }.

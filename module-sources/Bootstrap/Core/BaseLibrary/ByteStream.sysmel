@@ -19,7 +19,7 @@ ByteStream definition: {
 
     public override method nextPut: (byte: UInt8) ::=> Void := {
         self ensureCapacityFor: 1sz.
-        storage at: size put: byte.
+        storage uint8At: size put: byte.
         size := size + 1sz.
     }.
 
@@ -29,7 +29,7 @@ ByteStream definition: {
 
         let i mutable := 0sz.
         while: (i < byteCount) do: {
-            storage at: size put: (bytes at: i).
+            storage uint8At: size put: (bytes at: i).
             size := size + 1sz
         } continueWith: (i := i + 1sz).
     }.
@@ -40,7 +40,7 @@ ByteStream definition: {
 
         let i mutable := 0sz.
         while: (i < stringSize) do: {
-            storage at: size put: (string at: i) asUInt8.
+            storage char8At: size put: (string char8At: i).
             size := size + 1sz
         } continueWith: (i := i + 1sz).
     }.
@@ -54,7 +54,7 @@ ByteStream definition: {
 
         let i mutable := 0sz.
         while: (i < stringSize) do: {
-            string at: i put: (storage at: i) asChar8.
+            string char8At: i put: (storage char8At: i).
         } continueWith: (i := i + 1sz).
 
         string

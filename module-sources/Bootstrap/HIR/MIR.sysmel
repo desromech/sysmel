@@ -2296,12 +2296,21 @@ HIRBitcastInstruction extend: {
 
 HIRCoerceValueInstruction extend: {
     public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
+        self targetType isLiteralConstant && (self value type isSubtypeOf: self targetType evaluateAsConstantType) ifTrue: {
+            return: (codegen translateValue: self value)
+        }.
+
         self type emitMirCoerceInto: (codegen translateValue: self targetType) thenUnbox: (codegen translateValue: self value) withHIRCodeGenerator: codegen
     }.
 }.
 
 HIRDownCastInstruction extend: {
     public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
+        ## Nop case.
+        self targetType isLiteralConstant && (self value type isSubtypeOf: self targetType evaluateAsConstantType) ifTrue: {
+            return: (codegen translateValue: self value)
+        }.
+
         isUnchecked ifTrue: {
             self type emitMirUncheckedUnbox: (codegen translateValue: self value) withHIRCodeGenerator: codegen
         } ifFalse: {
