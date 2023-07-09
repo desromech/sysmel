@@ -53,7 +53,7 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
     public method addActiveRegister: (register: MIRPhysicalLocation) withValue: (value: MIRValue) ::=> Void := {
         usedRegisterSet add: register.
         value isNotNil && value isLocalValue ifTrue: {
-            let localValue := value uncheckedDownCastTo: MIRLocalValue.
+            let localValue := (value uncheckedDownCastTo: MIRLocalValue) validCoalescedValue.
             localValue assignedRegister ifNil: {
                 let interval := localValue liveInterval.
                 interval isSpilled not && localValue hasPointerUsage not && localValue physicalLocationClass isRegister ifTrue: {
@@ -74,7 +74,7 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
     }.
 
     public method spillIfNeededAndAllocateRegister: (usedRegister: MIRPhysicalLocation) withValue: (value: MIRValue) ::=> Void := {
-        value isNotNil && (value assignedRegister == usedRegister) ifTrue: {
+        value isNotNil && (value coalescedAssignedRegister == usedRegister) ifTrue: {
             return: void
         }.
 
@@ -97,7 +97,7 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
         := self spillIfNeededAndAllocateRegister: usedRegister withValue: nil.
 
     public method spillIfNeededAndAllocateRegister: (usedRegister: MIRPhysicalLocation) withResultValue: (value: MIRValue) ::=> Void := {
-        value isNotNil && (value assignedRegister == usedRegister) ifTrue: {
+        value isNotNil && (value coalescedAssignedRegister == usedRegister) ifTrue: {
             return: void
         }.
 
@@ -141,7 +141,7 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
     }.
 
     public method allocateForValue: (value: MIRValue) ::=> MIRPhysicalLocation := {
-        let existentAsignment := value ifNotNil: value assignedRegister.
+        let existentAsignment := value ifNotNil: value coalescedAssignedRegister.
         existentAsignment ifNil: {
             self ensureAvailableRegister.
             let register => MIRPhysicalLocation := availableRegisters removeLast.
@@ -181,7 +181,7 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
         := self allocateForValue: nil.
 
     public method allocateForByteValue: (value: MIRValue) ::=> MIRPhysicalLocation := {
-        let existentAsignment := value ifNotNil: value assignedRegister.
+        let existentAsignment := value ifNotNil: value coalescedAssignedRegister.
         existentAsignment ifNotNil: {return: existentAsignment}.
 
         self ensureAvailableByteRegister.

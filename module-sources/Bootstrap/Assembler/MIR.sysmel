@@ -436,7 +436,7 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
 
     public method emitUnspillEntryValuesFromStackFrame => Void := {
         let unspillValue := {:(MIRLocalValue)eachLocal :: Void |
-            eachLocal assignedRegister ifNil: {return: void}.
+            eachLocal coalescedAssignedRegister ifNil: {return: void}.
 
             eachLocal isArgumentVariable ifTrue: {
                 let argument := eachLocal downCastTo: MIRArgumentValue.
@@ -446,7 +446,7 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
                 }.
             }.
 
-            self emitUnspillValue: eachLocal intoLocation: eachLocal assignedRegister.
+            self emitUnspillValue: eachLocal intoLocation: eachLocal coalescedAssignedRegister.
         }.
 
         function arguments do: unspillValue.
@@ -919,8 +919,9 @@ MIRPhysicalLocation definition: {
 
 MIRLocalValue definition: {
     public override method asm::makeStackMapLocationWith: (codegen: MIRAsmCodeGenerator) ::=> AsmStackMapLocation := {
-        assignedRegister ifNotNil: {
-            AsmStackMapLocationRegister new register: (assignedRegister asm::canonicalRegister); yourself
+        let coalescedAssignedRegister := self coalescedAssignedRegister.
+        coalescedAssignedRegister ifNotNil: {
+            AsmStackMapLocationRegister new register: (coalescedAssignedRegister asm::canonicalRegister); yourself
         } ifNil: {
             self needsStackAllocation ifTrue: {
                 AsmStackMapLocationFrameOffset new offset: offset; yourself
@@ -938,8 +939,9 @@ MIRValuePointer definition: {
 
 MIRCaptureVariable definition: {
     public override method asm::makeStackMapLocationWith: (codegen: MIRAsmCodeGenerator) ::=> AsmStackMapLocation := {
-        assignedRegister ifNotNil: {
-            AsmStackMapLocationRegister new register: (assignedRegister asm::canonicalRegister); yourself
+        let coalescedAssignedRegister := self coalescedAssignedRegister.
+        coalescedAssignedRegister ifNotNil: {
+            AsmStackMapLocationRegister new register: (coalescedAssignedRegister asm::canonicalRegister); yourself
         } ifNil: {
             let captureVectorPointerLocation := codegen captureVectorPointerStackMapLocation.
             captureVectorPointerLocation ifNotNil: {

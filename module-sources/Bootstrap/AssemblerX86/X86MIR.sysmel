@@ -155,7 +155,7 @@ MIRPhysicalLocationValuePointer extend: {
 
 MIRPhysicalLocationValuePointerOrAssignedRegister extend: {
     public override method x86::int8For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
-        value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
+        value coalescedAssignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
             register x86::int8For: codegen
         } ifNil: {
             (value x86_x86_64::pointerWithCodegen: codegen) copy
@@ -165,7 +165,7 @@ MIRPhysicalLocationValuePointerOrAssignedRegister extend: {
     }.
 
     public override method x86::int16For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
-        value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
+        value coalescedAssignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
             register x86::int16For: codegen
         } ifNil: {
             (value x86_x86_64::pointerWithCodegen: codegen) copy
@@ -175,7 +175,7 @@ MIRPhysicalLocationValuePointerOrAssignedRegister extend: {
     }.
 
     public override method x86::int32For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
-        value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
+        value coalescedAssignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
             register x86::int32For: codegen
         } ifNil: {
             (value x86_x86_64::pointerWithCodegen: codegen) copy
@@ -185,7 +185,7 @@ MIRPhysicalLocationValuePointerOrAssignedRegister extend: {
     }.
 
     public override method x86::int64For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
-        value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
+        value coalescedAssignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
             register x86::int64For: codegen
         } ifNil: {
             (value x86_x86_64::pointerWithCodegen: codegen) copy
@@ -195,7 +195,7 @@ MIRPhysicalLocationValuePointerOrAssignedRegister extend: {
     }.
 
     public override method x86::float32For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
-        value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
+        value coalescedAssignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
             register x86::float32For: codegen
         } ifNil: {
             (value x86_x86_64::pointerWithCodegen: codegen) copy
@@ -205,7 +205,7 @@ MIRPhysicalLocationValuePointerOrAssignedRegister extend: {
     }.
 
     public override method x86::float64For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
-        value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
+        value coalescedAssignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
             register x86::float64For: codegen
         } ifNil: {
             (value x86_x86_64::pointerWithCodegen: codegen) copy
@@ -215,7 +215,7 @@ MIRPhysicalLocationValuePointerOrAssignedRegister extend: {
     }.
 
     public override method x86::vector128For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
-        value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
+        value coalescedAssignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
             register x86::vector128For: codegen
         } ifNil: {
             (value x86_x86_64::pointerWithCodegen: codegen) copy
@@ -225,7 +225,7 @@ MIRPhysicalLocationValuePointerOrAssignedRegister extend: {
     }.
 
     public override method x86::immediateS32OrInt64For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand := {
-        value assignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
+        value coalescedAssignedRegister ifNotNil: {:(MIRPhysicalLocation)register :: AsmInstructionOperand | 
             register x86::immediateS32OrInt64For: codegen
         } ifNil: {
             (value x86_x86_64::pointerWithCodegen: codegen) copy
@@ -1116,8 +1116,9 @@ MIRVariable extend: {
 MIRLocalValue extend: {
     public override method x86_64::pushWith: (codegen: MIRFunctionAsmCodeGenerator) scratchRegister: (scratchRegister: AsmInstructionOperand)::=> Void := {
         let variableSize := self size.
-        assignedRegister ifNotNil: {
-            assignedRegister x86_64::pushWith: codegen valueSize: variableSize.
+        let coalescedAssignedRegister := self coalescedAssignedRegister.
+        coalescedAssignedRegister ifNotNil: {
+            coalescedAssignedRegister x86_64::pushWith: codegen valueSize: variableSize.
             return: void.
         }.
 
@@ -1143,20 +1144,23 @@ MIRLocalValue extend: {
     }.
     
     public override method x86::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress := {
-        self assert: hasValidStackOffset.
-        AsmX86RegisterAddress base: X86::EBP size: self size asUInt8 displacement: self offset asInt32 asAsmImmediate
+        let coalescedValue := self validCoalescedValue.
+        self assert: coalescedValue hasValidStackOffset.
+        AsmX86RegisterAddress base: X86::EBP size: coalescedValue size asUInt8 displacement: coalescedValue offset asInt32 asAsmImmediate
     }.
 
     public override method x86_64::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress := {
-        self assert: hasValidStackOffset.
-        AsmX86RegisterAddress base: X86::RBP size: self size asUInt8 displacement: self offset asInt32 asAsmImmediate
+        let coalescedValue := self validCoalescedValue.
+        self assert: coalescedValue hasValidStackOffset.
+        AsmX86RegisterAddress base: X86::RBP size: coalescedValue size asUInt8 displacement: coalescedValue offset asInt32 asAsmImmediate
     }.
 
     public override method x86::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        assignedRegister ifNil: {
+        let coalescedRegister := self coalescedAssignedRegister.
+        coalescedRegister ifNil: {
             register x86::loadFromVariable: self with: codegen
         } ifNotNil: {
-            register x86::loadFromRegister: assignedRegister with: codegen
+            register x86::loadFromRegister: coalescedRegister with: codegen
         }
     }.
 
@@ -1165,8 +1169,9 @@ MIRLocalValue extend: {
     }.
 
     public override method x86::moveFromRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        assignedRegister ifNotNil: {
-            assignedRegister x86::loadFromRegister: register with: codegen.
+        let coalescedRegister := self coalescedAssignedRegister.
+        coalescedRegister ifNotNil: {
+            coalescedRegister x86::loadFromRegister: coalescedRegister with: codegen.
             needsSpilling ifTrue: {
                 register x86::storeInVariable: self with: codegen
             }.
@@ -1180,8 +1185,9 @@ MIRLocalValue extend: {
     }.
 
     public override method x86_64::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        assignedRegister ifNotNil: {
-            register x86_64::loadFromRegister: assignedRegister with: codegen
+        let coalescedRegister := self coalescedAssignedRegister.
+        coalescedRegister ifNotNil: {
+            register x86_64::loadFromRegister: coalescedRegister with: codegen
         } ifNil: {
             register x86_64::loadFromVariable: self with: codegen
         }
@@ -1192,8 +1198,9 @@ MIRLocalValue extend: {
     }.
 
     public override method x86_64::moveFromRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        assignedRegister ifNotNil: {
-            assignedRegister x86_64::loadFromRegister: register with: codegen.
+        let coalescedRegister := self coalescedAssignedRegister.
+        coalescedRegister ifNotNil: {
+            coalescedRegister x86_64::loadFromRegister: register with: codegen.
             needsSpilling ifTrue: {
                 register x86_64::storeInVariable: self with: codegen
             }.

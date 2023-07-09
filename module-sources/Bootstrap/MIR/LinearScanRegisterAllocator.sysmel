@@ -123,7 +123,7 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
 
     public override method allocateRegister: (register: MIRPhysicalLocation) forInstructionResultPointer: (instruction: MIRInstruction) ::=> Void := {
         instruction resultRegister: (MIRPhysicalLocationRegisterWithPointer new register: register; yourself).
-        instruction markMemoryCopyRequired.
+        instruction clearCoalescedMemoryCopyRequired.
         self spillIfNeededAndAllocateRegister: register withValuePointer: instruction.
     }.
 
@@ -134,14 +134,14 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
 
     public override method allocateRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) operandPointerAt: (operandIndex: Size) ::=> Void := {
         let operand => MIRLocalValue := instruction operands at: operandIndex.
-        operand markMemoryCopyRequired.
+        operand clearCoalescedMemoryCopyRequired.
         instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationRegisterWithPointer new register: register; yourself).
         self spillIfNeededAndAllocateRegister: register withValuePointer: operand
     }.
 
     public override method allocateCloberredRegister: (register: MIRPhysicalLocation) forInstructionResultPointer: (instruction: MIRInstruction) ::=> Void := {
         instruction resultRegister: (MIRPhysicalLocationRegisterWithPointer new register: register; yourself).
-        instruction markMemoryCopyRequired.
+        instruction clearCoalescedMemoryCopyRequired.
         self spillIfNeededAndAllocateRegister: register withValuePointer: nil.
     }.
 
@@ -153,7 +153,7 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
     public override method allocateCloberredRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) operandPointerAt: (operandIndex: Size) ::=> Void := {
         instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationRegisterWithPointer new register: register; yourself).
         let operand => MIRValue := instruction operands at: operandIndex.
-        operand markMemoryCopyRequired.
+        operand clearCoalescedMemoryCopyRequired.
         self spillIfNeededAndAllocateRegister: register withValuePointer: nil
     }.
 

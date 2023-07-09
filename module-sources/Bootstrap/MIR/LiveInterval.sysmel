@@ -36,8 +36,8 @@ MIRLiveInterval definition: {
     public method spill => Void := {
         value ifNotNil: {
             value
-                clearAssignedRegister;
-                markMemoryCopyRequired
+                clearCoalescedAssignedRegister;
+                clearCoalescedMemoryCopyRequired
         }.
         
         register := nil.

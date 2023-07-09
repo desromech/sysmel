@@ -215,9 +215,9 @@ MIRValue definition: {
     public virtual method getConstantValue64 => Int64
         := self error: "Not an immediate 64 constant".
 
-    public virtual method assignedRegister => MIRPhysicalLocation := nil.
-    public virtual method clearAssignedRegister => Void := {}.
-    public virtual method markMemoryCopyRequired => Void := {}.
+    public virtual method coalescedAssignedRegister => MIRPhysicalLocation := nil.
+    public virtual method clearCoalescedAssignedRegister => Void := {}.
+    public virtual method clearCoalescedMemoryCopyRequired => Void := {}.
 
     public method printDebugInfoOn: (stream: Stream) ::=> Void := {
         debugSourcePosition isNotNil && PrintingDebugInfo ifTrue: {
@@ -370,6 +370,7 @@ MIRLocalValue definition: {
     public field hasPointerUsage => Boolean.
 
     public field sourceBinding => SymbolBinding.
+    public field coalescedParent => MIRLocalValue.
 
     __Meta__ definition: {
         public method withName: (name: Symbol) type: (type: Type) compilationTarget: (compilationTarget: MIRCompilationTarget) ::=> self
@@ -389,20 +390,43 @@ MIRLocalValue definition: {
         alignment := (type valueAlignmentForMirTarget: compilationTarget) asUInt64.
         isGCRoot := type isGarbageCollectedPointerType.
         physicalLocationClass := type valueMirPhysicalLocationClass.
+        coalescedParent := self.
     }.
 
-    public override method clearAssignedRegister => Void := {
-        assignedRegister := nil.
+    public override method coalescedAssignedRegister => MIRPhysicalLocation
+        := self validCoalescedValue assignedRegister.
+
+    public method coalesceWith: (otherValue: MIRLocalValue) ::=> Void := {
+        let leftParent := self validCoalescedValue.
+        let rightParent := otherValue validCoalescedValue.
+        rightParent coalescedParent: leftParent
     }.
 
-    public override method markMemoryCopyRequired ::=> Void := {
-        needsSpilling := true.
+    public method validCoalescedValue => MIRLocalValue := {
+        coalescedParent ~~ self ifTrue: {
+            coalescedParent := coalescedParent validCoalescedValue.
+        }.
+
+        self assert: coalescedParent ~~ nil.
+        coalescedParent
+    }.
+
+    public override method clearCoalescedAssignedRegister => Void := {
+        self validCoalescedValue assignedRegister: nil
+    }.
+
+    public override method clearCoalescedMemoryCopyRequired ::=> Void := {
+        self validCoalescedValue needsSpilling: true
     }.
 
     public method needsStackAllocation => Boolean
         := self hasValidType && (self hasPointerUsage || self needsSpilling || (assignedRegister isNil && (self userCount > 0sz))).
 
     public override method isLocalVariable => Boolean := true.
+
+    public method resetCoalescing => Void := {
+        coalescedParent := self.
+    }.
 
     public virtual method resetRegisterAllocation => Void := {
         assignedRegister := nil.
@@ -842,15 +866,22 @@ public final class MIRConstantFloat64 superclass: MIRConstantFloatingPoint; defi
 
 public final class MIROperation superclass: Object; definition: {
     public field name => Symbol.
+    public field phiMoveOperation => MIROperation.
     public field isTerminator => Boolean.
     public field isDebug => Boolean.
 
     protected field perTargetCodeGenerators => IdentityDictionary.
     protected field perTargetRegisterConstraints => IdentityDictionary.
 
+    public method isPhi => Boolean
+        := phiMoveOperation ~~ nil.
+
     __Meta__ definition: {
         public method named: (name: Symbol) ::=> self
             := self new name: name; yourself.
+
+        public method phiNamed: (name: Symbol) moveOperation: (moveOperation: MIROperation) ::=> self
+            := self new name: name; phiMoveOperation: moveOperation; yourself.
 
         public method terminatorNamed: (name: Symbol) ::=> self
             := self new name: name; isTerminator: true; yourself.
@@ -906,6 +937,7 @@ MIRInstruction definition: {
 
     public method isTerminator => Boolean := operation isTerminator.
     public method isDebug => Boolean := operation isDebug.
+    public method isPhi => Boolean := operation isPhi.
 
     public method scratchRegisterCount: (count: Size) ::=> Void := {
         scratchRegisters := Array new: count
@@ -973,6 +1005,15 @@ public global MIR::Operation::MovePointer := MIROperation named: #movePointer.
 public global MIR::Operation::MoveFloat32 := MIROperation named: #moveFloat32.
 public global MIR::Operation::MoveFloat64 := MIROperation named: #moveFloat64.
 public global MIR::Operation::MoveStruct := MIROperation named: #moveStruct.
+
+public global MIR::Operation::PhiInt8 := MIROperation phiNamed: #phiInt8 moveOperation: MIR::Operation::MoveInt8.
+public global MIR::Operation::PhiInt16 := MIROperation phiNamed: #phiInt16 moveOperation: MIR::Operation::MoveInt16.
+public global MIR::Operation::PhiInt32 := MIROperation phiNamed: #phiInt32 moveOperation: MIR::Operation::MoveInt32.
+public global MIR::Operation::PhiInt64 := MIROperation phiNamed: #phiInt64 moveOperation: MIR::Operation::MoveInt64.
+public global MIR::Operation::PhiPointer := MIROperation phiNamed: #phiPointer moveOperation: MIR::Operation::MovePointer.
+public global MIR::Operation::PhiFloat32 := MIROperation phiNamed: #phiFloat32 moveOperation: MIR::Operation::MoveFloat32.
+public global MIR::Operation::PhiFloat64 := MIROperation phiNamed: #phiFloat64 moveOperation: MIR::Operation::MoveFloat64.
+public global MIR::Operation::PhiStruct := MIROperation phiNamed: #phiStruct moveOperation: MIR::Operation::MoveStruct.
 
 public global MIR::Operation::LoadInt8 := MIROperation named: #loadInt8.
 public global MIR::Operation::LoadInt16 := MIROperation named: #loadInt16.
@@ -1680,6 +1721,42 @@ public final class MIRBlockBuilder superclass: Object; definition: {
     public method moveFloat64: (source: MIRValue) ::=> MIRInstruction
         := self operation: MIR::Operation::MoveFloat64 with: source type: Float32.
 
+    public method phiInt8: (source: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiInt8 with: source type: Int8.
+
+    public method phiInt16: (source: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiInt16 with: source type: Int16.
+
+    public method phiInt32: (source: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiInt32 with: source type: Int32.
+
+    public method phiInt64: (source: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiInt64 with: source type: Int64.
+
+    public method phiUInt8: (source: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiInt8 with: source type: UInt8.
+
+    public method phiUInt16: (source: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiInt16 with: source type: UInt16.
+
+    public method phiUInt32: (source: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiInt32 with: source type: UInt32.
+
+    public method phiUInt64: (source: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiInt64 with: source type: UInt64.
+
+    public method phiStruct: (source: MIRValue) type: (type: Type) ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiStruct with: source type: type.
+
+    public method phiPointer: (source: MIRValue) type: (type: Type) ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiPointer with: source type: type.
+
+    public method phiFloat32: (source: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiFloat32 with: source type: Float32.
+
+    public method phiFloat64: (source: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiFloat64 with: source type: Float32.
+        
     public method constantOffsetImmediateFor: (constantOffset: Int64) ::=> MIRValue
         := self has64BitsPointers && (constantOffset asInt32 asInt64 ~= constantOffset)
             ifTrue: (constantOffset asMirConstant)
