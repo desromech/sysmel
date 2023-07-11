@@ -1560,6 +1560,9 @@ public final class MIRBlockBuilder superclass: Object; definition: {
     public method operation: (operation: MIROperation) withOperands: (operands: Array) ::=> MIRInstruction
         := self operation: operation withOperands: operands type: Void.
 
+    public method operation: (operation: MIROperation)  type: (type: Type) ::=> MIRInstruction
+        := self operation: operation withOperands: #() type: type.
+
     public method operation: (operation: MIROperation) with: (operand: MIRValue) ::=> MIRInstruction
         := self operation: operation withOperands: (Array with: operand).
 
@@ -1721,41 +1724,41 @@ public final class MIRBlockBuilder superclass: Object; definition: {
     public method moveFloat64: (source: MIRValue) ::=> MIRInstruction
         := self operation: MIR::Operation::MoveFloat64 with: source type: Float32.
 
-    public method phiInt8: (source: MIRValue) ::=> MIRInstruction
-        := self operation: MIR::Operation::PhiInt8 with: source type: Int8.
+    public method phiInt8 ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiInt8 type: Int8.
 
-    public method phiInt16: (source: MIRValue) ::=> MIRInstruction
-        := self operation: MIR::Operation::PhiInt16 with: source type: Int16.
+    public method phiInt16 ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiInt16 type: Int16.
 
-    public method phiInt32: (source: MIRValue) ::=> MIRInstruction
-        := self operation: MIR::Operation::PhiInt32 with: source type: Int32.
+    public method phiInt32 ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiInt32 type: Int32.
 
-    public method phiInt64: (source: MIRValue) ::=> MIRInstruction
-        := self operation: MIR::Operation::PhiInt64 with: source type: Int64.
+    public method phiInt64 ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiInt64 type: Int64.
 
-    public method phiUInt8: (source: MIRValue) ::=> MIRInstruction
-        := self operation: MIR::Operation::PhiInt8 with: source type: UInt8.
+    public method phiUInt8 ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiInt8 type: UInt8.
 
-    public method phiUInt16: (source: MIRValue) ::=> MIRInstruction
-        := self operation: MIR::Operation::PhiInt16 with: source type: UInt16.
+    public method phiUInt16 ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiInt16 type: UInt16.
 
-    public method phiUInt32: (source: MIRValue) ::=> MIRInstruction
-        := self operation: MIR::Operation::PhiInt32 with: source type: UInt32.
+    public method phiUInt32 ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiInt32 type: UInt32.
 
-    public method phiUInt64: (source: MIRValue) ::=> MIRInstruction
-        := self operation: MIR::Operation::PhiInt64 with: source type: UInt64.
+    public method phiUInt64 ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiInt64 type: UInt64.
 
-    public method phiStruct: (source: MIRValue) type: (type: Type) ::=> MIRInstruction
-        := self operation: MIR::Operation::PhiStruct with: source type: type.
+    public method phiStruct: (type: Type) ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiStruct type: type.
 
-    public method phiPointer: (source: MIRValue) type: (type: Type) ::=> MIRInstruction
-        := self operation: MIR::Operation::PhiPointer with: source type: type.
+    public method phiPointer: (type: Type) ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiPointer type: type.
 
-    public method phiFloat32: (source: MIRValue) ::=> MIRInstruction
-        := self operation: MIR::Operation::PhiFloat32 with: source type: Float32.
+    public method phiFloat32 ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiFloat32 type: Float32.
 
-    public method phiFloat64: (source: MIRValue) ::=> MIRInstruction
-        := self operation: MIR::Operation::PhiFloat64 with: source type: Float32.
+    public method phiFloat64 ::=> MIRInstruction
+        := self operation: MIR::Operation::PhiFloat64 type: Float32.
         
     public method constantOffsetImmediateFor: (constantOffset: Int64) ::=> MIRValue
         := self has64BitsPointers && (constantOffset asInt32 asInt64 ~= constantOffset)

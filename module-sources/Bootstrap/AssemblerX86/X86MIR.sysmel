@@ -3276,7 +3276,7 @@ let x86::moveIntegerRegister16Constraints := {:(MIRInstruction)instruction :(MIR
 let x86::moveIntegerRegister8Constraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate8ForInstruction: instruction operandAt: 0sz;
-        allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
+        allocateRegister8ForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
 let x86::extendIntegerRegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
@@ -3338,6 +3338,38 @@ MIR::Operation::MoveStruct
             x86::mov: X86::RCX src: instruction operands first size asUInt64 asAsmImmediate;
             x86::rep; x86::movsb
     }.
+
+let x86::phiIntegerRegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+    allocator allocateRegisterForInstructionResult: instruction
+}.
+
+let x86::phiIntegerRegister8Constraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+    allocator allocateRegister8ForInstructionResult: instruction
+}.
+
+MIR::Operation::PhiInt8
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::phiIntegerRegister8Constraints;
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |}.
+
+MIR::Operation::PhiInt16
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::phiIntegerRegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |}.
+
+MIR::Operation::PhiInt32
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::phiIntegerRegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |}.
+
+MIR::Operation::PhiInt64
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::phiIntegerRegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |}.
+
+MIR::Operation::PhiPointer
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::phiIntegerRegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |}.
+
+MIR::Operation::PhiStruct
+    forTarget: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |};
+    forTarget: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |}.
 
 let x86::loadPointerRegisterContraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
