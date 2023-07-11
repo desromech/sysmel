@@ -695,11 +695,42 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
 
     public method compileBasicBlocks => Void := {
         ssaFunctionDefinition basicBlocksDo: {:(HIRBasicBlock)eachBlock :: Void |
-            let mirBlock := valueDictionary at: eachBlock.
+            let mirBlock => MIRBasicBlock := valueDictionary at: eachBlock.
             self compileBasicBlock: eachBlock into: mirBlock
         }.
 
-        ## TODO: Fix the Phi instruction references.
+        ## Fix the Phi instruction incoming references.
+        ssaFunctionDefinition basicBlocksDo: {:(HIRBasicBlock)eachBlock :: Void |
+            eachBlock phiInstructionsDo: {:(HIRPhiInstruction)eachPhi :: Void |
+                self convertPhiIncomingValues: eachPhi
+            }.
+        }.
+    }.
+
+    public method convertPhiIncomingValues: (hirPhi: HIRPhiInstruction) ::=> Void := {
+        let mirPhi => MIRInstruction := valueDictionary at: hirPhi.
+
+        let operands := OrderedCollection new.
+        hirPhi incomingBlocksAndValues do: {:(Association)incomingBlockAndValue :: Void |
+            let incomingHirBlock => HIRBasicBlock := incomingBlockAndValue key.
+            let incomingHirValue => HIRValue := incomingBlockAndValue value.
+
+            let incomingMirBlock => MIRBasicBlock := valueDictionary at: incomingHirBlock.
+            self assert: incomingMirBlock lastInstruction isNotNil && incomingMirBlock lastInstruction isTerminator.
+            blockBuilder
+                block: incomingMirBlock;
+                function: mirFunction;
+                insertionPoint: incomingMirBlock lastInstruction;
+                debugSourcePosition: hirPhi sourcePosition;
+                debugSourceNode: hirPhi sourceASTNode;
+                debugSourceEnvironment: hirPhi sourceEnvironment;
+                yourself.
+
+            let incomingMirValue := self translateValue: incomingHirValue withExpectedType: hirPhi type.
+            operands add: incomingMirBlock; add: incomingMirValue.
+        }.
+
+        mirPhi operands: operands asArray.
     }.
 
     public method compileBasicBlock: (ssaBasicBlock: HIRBasicBlock) into: (mirBlock: MIRBasicBlock) ::=> Void := {

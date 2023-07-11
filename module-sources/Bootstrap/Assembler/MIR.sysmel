@@ -490,7 +490,9 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         instruction resultRegister isNotNil && instruction resultRegister isRegisterWithPointer ifTrue: {
             self emitMoveValue: instruction intoLocation: instruction resultRegister
         }.
-        self emitMoveValues: instruction operands intoRegisters: instruction operandRegisters.
+        instruction isPhi ifFalse: {
+            self emitMoveValues: instruction operands intoRegisters: instruction operandRegisters.
+        }.
 
         moduleGenerator target emitInstruction: instruction with: self.
 

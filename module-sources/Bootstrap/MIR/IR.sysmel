@@ -952,11 +952,22 @@ MIRInstruction definition: {
             stream print: self; nextPutAll: " := ".
         }.
         stream print: operation.
-        operands doWithIndex: {:(MIRValue)eachOperand :(Size)index :: Void |
-            index = 0sz
-                ifTrue: (stream space)
-                ifFalse: (stream nextPutAll: ", ").
-            stream print: eachOperand
+        operation isPhi ifTrue: {
+            operands isEmpty ifFalse: {
+                stream nextPut: '['c8.
+                operands pairsDo: {:(MIRValue)block :(MIRValue)value :: Void |
+                    stream nl; nextPutAll: "        "; print: block; nextPutAll: " -> "; print: value
+                }.
+
+                stream nl; nextPutAll: "    "; nextPut: ']'c8.
+            }.
+        } ifFalse: {
+            operands doWithIndex: {:(MIRValue)eachOperand :(Size)index :: Void |
+                index = 0sz
+                    ifTrue: (stream space)
+                    ifFalse: (stream nextPutAll: ", ").
+                stream print: eachOperand
+            }.
         }.
         self printDebugInfoOn: stream.
     }.
@@ -1511,6 +1522,7 @@ MIRFunction definition: {
 public final class MIRBlockBuilder superclass: Object; definition: {
     public field block => MIRBasicBlock.
     public field function => MIRFunction.
+    public field insertionPoint => MIRInstruction.
 
     ## Debugging information
     public field debugSourcePosition => SourcePosition.
@@ -1518,7 +1530,7 @@ public final class MIRBlockBuilder superclass: Object; definition: {
     public field debugSourceEnvironment => Environment.
 
     public method addInstruction: (instruction: MIRInstruction) ::=> MIRInstruction := {
-        block addInstruction: instruction.
+        block addInstruction: instruction before: insertionPoint.
         instruction
             debugSourcePosition: debugSourcePosition;
             debugSourceNode: debugSourceNode;
