@@ -569,16 +569,19 @@ public global ObjectModel::getTupleHeaderPointerOf := {:(Untyped)object :: Objec
 
 (PointerType::reinterpretCastTo:) adoptDefinitionOf: {:(AnyPointer)self :(Type)targetPointerType :: targetPointerType |
     <primitive: #PointerType::reinterpretCastTo>
+    <targetDefinedPrimitive>
     nil
 }.
 
 (UIntPointer::reinterpretCastTo:) adoptDefinitionOf: {:(UIntPointer)self :(Type)targetPointerType :: targetPointerType |
     <primitive: #UIntPointer::reinterpretCastTo>
+    <targetDefinedPrimitive>
     nil
 }.
 
 (IntPointer::reinterpretCastTo:) adoptDefinitionOf: {:(IntPointer)self :(Type)targetPointerType :: targetPointerType |
     <primitive: #IntPointer::reinterpretCastTo>
+    <targetDefinedPrimitive>
     nil
 }.
 

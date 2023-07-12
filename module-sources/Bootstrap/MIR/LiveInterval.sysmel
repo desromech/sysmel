@@ -37,7 +37,7 @@ MIRLiveInterval definition: {
         value ifNotNil: {
             value
                 clearCoalescedAssignedRegister;
-                clearCoalescedMemoryCopyRequired
+                markCoalescedMemoryCopyRequired
         }.
         
         register := nil.

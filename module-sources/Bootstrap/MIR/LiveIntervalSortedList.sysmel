@@ -109,4 +109,19 @@ public final class MIRLiveIntervalSortedList definition: {
 
     public method removeLast => MIRLiveInterval
         := elements removeLast uncheckedDownCastTo: MIRLiveInterval.
+
+    public method includes: (interval: MIRLiveInterval) ::=> Boolean
+        := elements includes: interval.
+
+    public method findWithRegister: (register: MIRPhysicalLocation) ::=> MIRLiveInterval := {
+        let i mutable := 0sz.
+        while: (i < elements size) do: {
+            let interval => MIRLiveInterval := elements at: i.
+            interval register == register ifTrue: {
+                return: interval
+            }.
+        } continueWith: (i := i + 1sz).
+
+        nil
+    }.
 }.

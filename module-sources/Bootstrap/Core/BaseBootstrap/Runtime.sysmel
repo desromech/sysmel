@@ -206,6 +206,7 @@ Type
     withSelector: #isReferenceType addMethod: {:(Type)self :: Boolean | false } makeVirtual makePure withEagerAnalysis;
     withSelector: #isTemporaryReferenceType addMethod: {:(Type)self :: Boolean | false } makeVirtual makePure withEagerAnalysis;
     withSelector: #isVoidType addMethod: {:(Type)self :: Boolean | false } makeVirtual makePure withEagerAnalysis;
+    withSelector: #isUndefinedType addMethod: {:(Type)self :: Boolean | false } makeVirtual makePure withEagerAnalysis;
 
     withSelector: #addFlags: addMethod: {:(Type)self :(Bitflags)flag :: Void |
         self flags: self flags | flag
@@ -752,6 +753,9 @@ Void class
 Void
     withSelector: #printString addMethod: {:(Void)self :: String | "void" } makeOverride;
     withSelector: #printOn: addMethod: {:(Void)self :(Stream)stream :: Void | stream nextPutAll: "void" } makeOverride.
+
+UndefinedObject class
+    withSelector: #isUndefinedType addMethod: {:(Type)self :: Boolean | true } makeOverride makePure withEagerAnalysis.
 
 UndefinedObject
     withSelector: #doesNotUnderstand: addMethod: {:(UndefinedObject)self :(Message)message |
@@ -2845,7 +2849,10 @@ Type
         } while: (currentType ~~ nil).
 
         false
-    } makePure withEagerAnalysis.
+    } makePure withEagerAnalysis;
+    withSelector: #isDirectlyConversibleTo: addMethod: {:(Type)self :(Type)targetType :: Boolean |
+        (targetType isNullable && self isUndefinedType) || (self isSubtypeOf: targetType)
+    } makePure.
 
 PointerLikeType
     withSelector: #computeLayout addMethod: {:(PointerLikeType)self :: Void |

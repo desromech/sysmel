@@ -53,11 +53,14 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
     public method addActiveRegister: (register: MIRPhysicalLocation) withValue: (value: MIRValue) ::=> Void := {
         usedRegisterSet add: register.
         value isNotNil && value isLocalValue ifTrue: {
-            let localValue := (value uncheckedDownCastTo: MIRLocalValue) validCoalescedValue.
-            localValue assignedRegister ifNil: {
+            let localValue := value uncheckedDownCastTo: MIRLocalValue.
+            let coalescedValue := localValue validCoalescedValue.
+            coalescedValue assignedRegister ifNil: {
                 let interval := localValue liveInterval.
-                interval isSpilled not && localValue hasPointerUsage not && localValue physicalLocationClass isRegister ifTrue: {
-                    localValue assignedRegister: register.
+                let coalescedInterval := coalescedValue liveInterval.
+                interval isSpilled not && coalescedInterval isSpilled not && localValue hasPointerUsage not && localValue physicalLocationClass isRegister ifTrue: {
+                    self assert: coalescedValue assignedRegister isNil.
+                    coalescedValue assignedRegister: register.
                     interval register: register.
                     activeIntervals add: interval.
                     (activeScratchRegisters includes: register) ifTrue: {
@@ -71,6 +74,52 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
         (activeScratchRegisters includes: register) ifFalse: {
             activeScratchRegisters add: register
         }.
+    }.
+
+    public method attemptToCoalesceActiveIntervalFor: (register: MIRPhysicalLocation) withValue: (value: MIRLocalValue) ::=> MIRPhysicalLocation := {
+        let activeInterval := activeIntervals findWithRegister: register.
+        activeInterval ifNotNil: {
+            
+        }.
+
+        nil
+    }.
+
+    public method attemptToEnsureActiveRegister: (register: MIRPhysicalLocation) withValue: (value: MIRValue) ::=> MIRPhysicalLocation := {
+        self assert: value isNotNil.
+        value isLocalValue ifTrue: {
+            let localValue := value uncheckedDownCastTo: MIRLocalValue.
+            let coalescedValue := localValue validCoalescedValue.
+            self assert: coalescedValue assignedRegister == register.
+            
+            let interval := localValue liveInterval.
+            interval isSpilled not && localValue hasPointerUsage not && localValue physicalLocationClass isRegister ifTrue: {
+                (activeIntervals includes: interval) ifFalse: {
+                    let isAvailableRegister := availableRegisters includes: register.
+                    isAvailableRegister ifFalse: {
+                        localValue hasTargetPhi ifTrue: {
+                            return: (self attemptToCoalesceActiveIntervalFor: register withValue: localValue)
+                        } ifFalse: {
+                            return: nil
+                        }.
+                    }.
+
+                    isAvailableRegister ifTrue: {
+                        availableRegisters remove: register.
+                    }.
+
+                    interval register: register.
+                    activeIntervals add: interval.
+                    (activeScratchRegisters includes: register) ifTrue: {
+                        activeScratchRegisters remove: register
+                    }.
+                }.
+
+                interval register == register ifTrue: {return: register}
+            }.
+        }.
+
+        nil
     }.
 
     public method spillIfNeededAndAllocateRegister: (usedRegister: MIRPhysicalLocation) withValue: (value: MIRValue) ::=> Void := {
@@ -135,14 +184,16 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
                         interval spill.
                     }
                 }) ifFalse: {
-                self error: "Failed to spill byte register"
-            }
+                    self error: "Failed to spill byte register"
+                }
         }.
     }.
 
     public method allocateForValue: (value: MIRValue) ::=> MIRPhysicalLocation := {
         let existentAsignment := value ifNotNil: value coalescedAssignedRegister.
-        existentAsignment ifNil: {
+        (existentAsignment ifNotNil: {
+            self attemptToEnsureActiveRegister: existentAsignment withValue: value
+        }) ifNil: {
             self ensureAvailableRegister.
             let register => MIRPhysicalLocation := availableRegisters removeLast.
             self addActiveRegister: register withValue: value.
@@ -167,10 +218,10 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
             sharingInterval register isNotNil && 
             (sharingInterval end <= currentValueIndex) ifTrue: {
                 activeIntervals
-                expireAllThat: {:(MIRLiveInterval)interval :: Boolean | interval == sharingInterval }
-                doing: {:(MIRLiveInterval)interval :: Void |
-                    availableRegisters add: interval register.
-                }
+                    expireAllThat: {:(MIRLiveInterval)interval :: Boolean | interval == sharingInterval }
+                    doing: {:(MIRLiveInterval)interval :: Void |
+                        availableRegisters add: interval register.
+                    }
             }
         }.
 
@@ -182,7 +233,9 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
 
     public method allocateForByteValue: (value: MIRValue) ::=> MIRPhysicalLocation := {
         let existentAsignment := value ifNotNil: value coalescedAssignedRegister.
-        existentAsignment ifNotNil: {return: existentAsignment}.
+        (existentAsignment ifNotNil: {
+            self attemptToEnsureActiveRegister: existentAsignment withValue: value
+        }) ifNotNil: { return: existentAsignment }.
 
         self ensureAvailableByteRegister.
         

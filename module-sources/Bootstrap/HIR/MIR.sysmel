@@ -731,6 +731,7 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
         }.
 
         mirPhi operands: operands asArray.
+        mirPhi registerInUsedValues.
     }.
 
     public method compileBasicBlock: (ssaBasicBlock: HIRBasicBlock) into: (mirBlock: MIRBasicBlock) ::=> Void := {
@@ -1030,10 +1031,15 @@ PointerLikeType extend: {
         }
     }.
 
-    public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
-        := codegen blockBuilder
+    public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
+        boxedValue isConstantZero ifTrue: {
+            return: (codegen compilationTarget pointerSize = 4sz ifTrue: 0u32 asMirConstant ifFalse: 0u64 asMirConstant)
+        }.
+
+        codegen blockBuilder
             callPointer: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxPointer)
             with: (codegen moduleCodeGenerator translateGenericObjectPointer: self) with: boxedValue type: self.
+    }.
 
     public override method emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
         := codegen blockBuilder

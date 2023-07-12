@@ -17,13 +17,17 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
         }.
 
         ## Compute the live intervals.
-        function computeLiveIntervals.
+        function normalizeAndComputeLiveIntervals.
         captureVectorPointerValue := function captureVectorPointerValue.
+
+        ## Reset the register allocation state.
+        function allLocalValuesDo: {:(MIRLocalValue)eachValue :: Void |
+            eachValue resetRegisterAllocation.
+        }.
 
         ## Precolor the the arguments.
         functionArguments := function arguments.
         functionArguments do: {:(MIRArgumentValue)eachArgument :: Void |
-            eachArgument resetRegisterAllocation.
             self beginValueAtIndex: eachArgument index.
             eachArgument passingRegister ifNil: {
                 self allocateRegisterForOperand: eachArgument.
@@ -75,7 +79,6 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
             return: void.
         }.
 
-        instruction resetRegisterAllocation.
         instruction operation computeRegisterConstraintsOf: instruction with: self.
         self allocateCaptureVectorPointerRegisterForInstruction: instruction
     }.
@@ -123,7 +126,7 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
 
     public override method allocateRegister: (register: MIRPhysicalLocation) forInstructionResultPointer: (instruction: MIRInstruction) ::=> Void := {
         instruction resultRegister: (MIRPhysicalLocationRegisterWithPointer new register: register; yourself).
-        instruction clearCoalescedMemoryCopyRequired.
+        instruction markCoalescedMemoryCopyRequired.
         self spillIfNeededAndAllocateRegister: register withValuePointer: instruction.
     }.
 
@@ -134,14 +137,14 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
 
     public override method allocateRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) operandPointerAt: (operandIndex: Size) ::=> Void := {
         let operand => MIRLocalValue := instruction operands at: operandIndex.
-        operand clearCoalescedMemoryCopyRequired.
+        operand markCoalescedMemoryCopyRequired.
         instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationRegisterWithPointer new register: register; yourself).
         self spillIfNeededAndAllocateRegister: register withValuePointer: operand
     }.
 
     public override method allocateCloberredRegister: (register: MIRPhysicalLocation) forInstructionResultPointer: (instruction: MIRInstruction) ::=> Void := {
         instruction resultRegister: (MIRPhysicalLocationRegisterWithPointer new register: register; yourself).
-        instruction clearCoalescedMemoryCopyRequired.
+        instruction markCoalescedMemoryCopyRequired.
         self spillIfNeededAndAllocateRegister: register withValuePointer: nil.
     }.
 
@@ -153,7 +156,7 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
     public override method allocateCloberredRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) operandPointerAt: (operandIndex: Size) ::=> Void := {
         instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationRegisterWithPointer new register: register; yourself).
         let operand => MIRValue := instruction operands at: operandIndex.
-        operand clearCoalescedMemoryCopyRequired.
+        operand markCoalescedMemoryCopyRequired.
         self spillIfNeededAndAllocateRegister: register withValuePointer: nil
     }.
 

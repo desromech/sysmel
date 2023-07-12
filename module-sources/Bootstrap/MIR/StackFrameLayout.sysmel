@@ -39,12 +39,13 @@ public final class MIRStackFrameLayout superclass: Object; definition: {
     }.
 
     public method assignNextLocationToLocalValue: (localValue: MIRLocalValue) ::=> Void := {
-        localValue needsStackAllocation ifFalse: (return: void).
+        let coalescedLocalValue := localValue validCoalescedValue.
+        coalescedLocalValue needsStackAllocation ifFalse: (return: void).
 
-        let localAlignment := localValue alignment.
-        stackFrameSize := stackFrameSize + localValue size alignedTo: localAlignment.
+        let localAlignment := coalescedLocalValue alignment.
+        stackFrameSize := stackFrameSize + coalescedLocalValue size alignedTo: localAlignment.
         stackFrameAlignment := stackFrameAlignment max: localAlignment.
-        localValue
+        coalescedLocalValue
             hasValidStackOffset: true;
             offset: stackFrameSize asInt64 negated.
     }.

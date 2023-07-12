@@ -346,7 +346,9 @@ public final class MIRX86_64IntegerRegister superclass: MIRPhysicalIntegerRegist
     public override method x86_64::loadFromRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         self assert: register isIntegerRegister.
 
-        codegen textSection x86::mov: self x86::int64 src: (register x86::int64For: codegen).
+        self ~~ register ifTrue: {
+            codegen textSection x86::mov: self x86::int64 src: (register x86::int64For: codegen).
+        }.
     }.
 
     public override method x86_64::loadFromVariable: (variable: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
@@ -402,7 +404,9 @@ public final class MIRX86VectorRegister superclass: MIRPhysicalVectorRegister; d
     public override method x86_64::loadFromRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         self assert: register isVectorRegister.
 
-        codegen textSection x86::movaps: self register src: (register x86::vector128For: codegen).
+        self ~~ register ifTrue: {
+            codegen textSection x86::movaps: self register src: (register x86::vector128For: codegen)
+        }.
     }.
 
     public override method x86::float32For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
@@ -3621,6 +3625,10 @@ let x86::vectorMoveRegisterConstraints := {:(MIRInstruction)instruction :(MIRReg
         allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
+let x86::vectorPhiRegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+    allocator allocateRegisterForInstructionResult: instruction
+}.
+
 let x86::vectorStorePointerRegisterContraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 1sz;
@@ -3639,6 +3647,14 @@ MIR::Operation::MoveFloat64
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection x86::movsd: (instruction resultRegister x86::float64For: codegen) src: (instruction firstOperandRegister x86::float64For: codegen)
     }.
+
+MIR::Operation::PhiFloat32
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::vectorPhiRegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |}.
+
+MIR::Operation::PhiFloat64
+    forTargets: #(x86 x86_64) registerConstraintsWith: x86::vectorPhiRegisterConstraints;
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |}.
 
 MIR::Operation::LoadFloat32
     forTargets: #(x86 x86_64) registerConstraintsWith: x86::loadPointerRegisterContraints;

@@ -483,6 +483,8 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
 
         self textSection useDebugInfoOfMIRValue: instruction.
 
+        instruction isPhiInstruction ifTrue: {return: void}.
+
         captureVectorPointerRegister := instruction captureVectorPointerRegister.
         captureVectorPointerRegister ifNotNil: {
             self emitMoveValue: instruction captureVectorPointerValue intoLocation: captureVectorPointerRegister.
@@ -490,9 +492,7 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         instruction resultRegister isNotNil && instruction resultRegister isRegisterWithPointer ifTrue: {
             self emitMoveValue: instruction intoLocation: instruction resultRegister
         }.
-        instruction isPhi ifFalse: {
-            self emitMoveValues: instruction operands intoRegisters: instruction operandRegisters.
-        }.
+        self emitMoveValues: instruction operands intoRegisters: instruction operandRegisters.
 
         moduleGenerator target emitInstruction: instruction with: self.
 

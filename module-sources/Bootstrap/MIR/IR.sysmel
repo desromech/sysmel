@@ -185,10 +185,14 @@ MIRValue definition: {
     public virtual method isCaptureValueOrPointer => Boolean := false.
     public virtual method isTemporaryVariable => Boolean := false.
     public virtual method isGlobalVariable => Boolean := false.
+    public virtual method isInstruction => Boolean := false.
+    public virtual method isPhiInstruction => Boolean := false.
+    public virtual method hasTargetPhi => Boolean := false.
 
     public virtual method isValuePointer => Boolean := false.
 
     public virtual method isConstant => Boolean := false.
+    public virtual method isConstantZero => Boolean := false.
     public virtual method isConstantInt8 => Boolean := false.
     public virtual method isConstantUInt8 => Boolean := false.
     public virtual method isConstantInt16 => Boolean := false.
@@ -200,8 +204,6 @@ MIRValue definition: {
     public virtual method isConstantFloat => Boolean := false.
     public virtual method isConstantFloat32 => Boolean := false.
     public virtual method isConstantFloat64 => Boolean := false.
-
-    public virtual method isImmediateValue1 => Boolean := false.
 
     public virtual method isImmediate8 => Boolean := false.
     public virtual method isImmediate16 => Boolean := false.
@@ -217,7 +219,7 @@ MIRValue definition: {
 
     public virtual method coalescedAssignedRegister => MIRPhysicalLocation := nil.
     public virtual method clearCoalescedAssignedRegister => Void := {}.
-    public virtual method clearCoalescedMemoryCopyRequired => Void := {}.
+    public virtual method markCoalescedMemoryCopyRequired => Void := {}.
 
     public method printDebugInfoOn: (stream: Stream) ::=> Void := {
         debugSourcePosition isNotNil && PrintingDebugInfo ifTrue: {
@@ -229,6 +231,16 @@ MIRValue definition: {
 
     public method usersDo: (aBlock: (MIRValue) => Void) ::=> Void := {
         users ifNotNil: {:users | users do: aBlock }
+    }.
+
+    public method replaceUser: (oldUser: MIRValue) with: (newUser: MIRValue) ::=> Void := {
+        users ifNotNil: {
+            (users includes: oldUser) ifTrue: {
+                users replaceAll: oldUser with: newUser
+            } ifFalse: {
+                self registerUser: newUser
+            }.
+        }
     }.
 
     public method registerInUsedValues => Void := {
@@ -399,7 +411,7 @@ MIRLocalValue definition: {
     public method coalesceWith: (otherValue: MIRLocalValue) ::=> Void := {
         let leftParent := self validCoalescedValue.
         let rightParent := otherValue validCoalescedValue.
-        rightParent coalescedParent: leftParent
+        leftParent coalescedParent: rightParent
     }.
 
     public method validCoalescedValue => MIRLocalValue := {
@@ -415,7 +427,7 @@ MIRLocalValue definition: {
         self validCoalescedValue assignedRegister: nil
     }.
 
-    public override method clearCoalescedMemoryCopyRequired ::=> Void := {
+    public override method markCoalescedMemoryCopyRequired ::=> Void := {
         self validCoalescedValue needsSpilling: true
     }.
 
@@ -442,13 +454,15 @@ MIRLocalValue definition: {
 
         hasPointerUsage := false.
         self usersDo: {:(MIRValue)each :: Void |
-            each isLocalValue ifTrue: {
-                liveInterval insertUsage: ((each downCastTo: MIRLocalValue) usageIndexFor: self).
-            } ifFalse: {
-                each isValuePointer ifTrue: {
-                    hasPointerUsage := true.
+            each isPhiInstruction ifFalse: {
+                each isLocalValue ifTrue: {
+                    liveInterval insertUsage: ((each downCastTo: MIRLocalValue) usageIndexFor: self).
+                } ifFalse: {
+                    each isValuePointer ifTrue: {
+                        hasPointerUsage := true.
+                    }
                 }
-            }
+            }.
         }.
     }.
 
@@ -628,6 +642,8 @@ public final class MIRConstantInt8 superclass: MIRConstantInteger; definition: {
     public override method isImmediate16 => Boolean := true.
     public override method isImmediate32 => Boolean := true.
 
+    public override method isConstantZero => Boolean := value = 0i8.
+
     public override method type => Type := Int8.
     public override method size => UInt64 := 1u64.
     public override method alignment => UInt64 := 1u64.
@@ -652,6 +668,8 @@ public final class MIRConstantUInt8 superclass: MIRConstantInteger; definition: 
     public override method isImmediateU8 => Boolean := true.
     public override method isImmediate16 => Boolean := true.
     public override method isImmediate32 => Boolean := true.
+
+    public override method isConstantZero => Boolean := value = 0u8.
 
     public override method type => Type := UInt8.
     public override method size => UInt64 := 1u64.
@@ -678,6 +696,8 @@ public final class MIRConstantInt16 superclass: MIRConstantInteger; definition: 
     public override method isImmediate16 => Boolean := true.
     public override method isImmediate32 => Boolean := true.
 
+    public override method isConstantZero => Boolean := value = 0i16.
+
     public override method type => Type := Int16.
     public override method size => UInt64 := 2u64.
     public override method alignment => UInt64 := 2u64.
@@ -701,6 +721,8 @@ public final class MIRConstantUInt16 superclass: MIRConstantInteger; definition:
     public override method isImmediateU8 => Boolean := value <= 16rff u16.
     public override method isImmediate16 => Boolean := true.
     public override method isImmediate32 => Boolean := true.
+
+    public override method isConstantZero => Boolean := value = 0u16.
 
     public override method type => Type := UInt16.
     public override method size => UInt64 := 2u64.
@@ -727,6 +749,8 @@ public final class MIRConstantInt32 superclass: MIRConstantInteger; definition: 
     public override method isImmediate32 => Boolean := true.
     public override method isImmediateS32 => Boolean := true.
 
+    public override method isConstantZero => Boolean := value = 0i32.
+
     public override method type => Type := Int32.
     public override method size => UInt64 := 4u64.
     public override method alignment => UInt64 := 4u64.
@@ -750,6 +774,8 @@ public final class MIRConstantUInt32 superclass: MIRConstantInteger; definition:
     public override method isImmediateU8 => Boolean := value <= 16rff u32.
     public override method isImmediate32 => Boolean := true.
     public override method isImmediateS32 => Boolean := value <= 16r7FFFFFFF u32.
+
+    public override method isConstantZero => Boolean := value = 0u32.
 
     public override method type => Type := UInt32.
     public override method size => UInt64 := 4u64.
@@ -776,6 +802,8 @@ public final class MIRConstantInt64 superclass: MIRConstantInteger; definition: 
     public override method isImmediateU8 => Boolean := (0i64 <= value) && (value <= 16rff i64).
     public override method isImmediateS32 => Boolean := value asInt32 asInt64 = value.
 
+    public override method isConstantZero => Boolean := value = 0i64.
+
     public override method type => Type := Int64.
     public override method alignment => UInt64 := 8u64.
     public override method size => UInt64 := 8u64.
@@ -799,6 +827,8 @@ public final class MIRConstantUInt64 superclass: MIRConstantInteger; definition:
     public override method isImmediateU8 => Boolean := value <= 16rff u64.
     public override method isImmediateS32 => Boolean := value asInt32 asInt64 asUInt64 = value.
     public override method isImmediate64 => Boolean := true.
+
+    public override method isConstantZero => Boolean := value = 0u64.
 
     public override method getConstantValue64 => Int64 := value asInt64.
 
@@ -921,6 +951,7 @@ MIRInstruction definition: {
     public field captureVectorPointerRegister => MIRPhysicalLocation.
 
     public field callingConvention => MIRCallingConvention.
+    public field targetPhi => MIRInstruction.
 
     public override method initialize => Void := {
         super initialize.
@@ -937,7 +968,9 @@ MIRInstruction definition: {
 
     public method isTerminator => Boolean := operation isTerminator.
     public method isDebug => Boolean := operation isDebug.
-    public method isPhi => Boolean := operation isPhi.
+    public override method isInstruction => Boolean := true.
+    public override method isPhiInstruction => Boolean := operation isPhi.
+    public override method hasTargetPhi => Boolean := targetPhi isNotNil.
 
     public method scratchRegisterCount: (count: Size) ::=> Void := {
         scratchRegisters := Array new: count
@@ -954,7 +987,7 @@ MIRInstruction definition: {
         stream print: operation.
         operation isPhi ifTrue: {
             operands isEmpty ifFalse: {
-                stream nextPut: '['c8.
+                stream nextPutAll: " [".
                 operands pairsDo: {:(MIRValue)block :(MIRValue)value :: Void |
                     stream nl; nextPutAll: "        "; print: block; nextPutAll: " -> "; print: value
                 }.
@@ -969,6 +1002,20 @@ MIRInstruction definition: {
                 stream print: eachOperand
             }.
         }.
+
+        self validCoalescedValue ~~ self ifTrue: {
+            stream nextPutAll: " ## Coalesced with "; print: self validCoalescedValue
+        }.
+
+        let register := self coalescedAssignedRegister.
+        register ifNotNil: {
+            stream nextPutAll: " ## Register "; print: register
+        }.
+
+        liveInterval ifNotNil: {
+            stream nextPutAll: " ## Interval "; print: liveInterval
+        }.
+
         self printDebugInfoOn: stream.
     }.
 
@@ -978,7 +1025,10 @@ MIRInstruction definition: {
 
     public override method computeLiveInterval => Void := {
         super computeLiveInterval.
-        liveInterval insertUsage: index
+        liveInterval insertUsage: index.
+        targetPhi ifNotNil: {
+            liveInterval insertUsage: parentBlock lastInstruction index + 1u32
+        }
     }.
 
     public override method usageIndexFor: (usedValue: MIRLocalValue) ::=> UInt32 := {
@@ -993,6 +1043,19 @@ MIRInstruction definition: {
 
     public method usesCapture => Boolean
         := operands anySatisfy: {:(MIRValue)operand :: Boolean | operand isCaptureValueOrPointer }.
+
+    public method phiIncomingBlocksAndValuesDoReplacingValues: (aBlock: (MIRBasicBlock, MIRValue) => MIRValue) ::=> Void := {
+        self assert: self isPhiInstruction.
+        let i mutable := 0sz.
+        let operandCount := operands size.
+
+        while: (i < operandCount) do: {
+            let block => MIRBasicBlock := operands at: i.
+            let oldValue => MIRValue := operands at: i + 1sz.
+            let newValue := aBlock(block, oldValue).
+            operands at: i + 1sz put: newValue
+        } continueWith: (i := i + 2sz).
+    }.
 
     public override method resetRegisterAllocation => Void := {
         super resetRegisterAllocation.
@@ -1415,9 +1478,7 @@ MIRFunction definition: {
         }.
 
         self basicBlocksDo: {:(MIRBasicBlock)eachBasicBlock :: Void |
-            if: eachBasicBlock isBlack then: {
-                ##eachBasicBlock normalizePhiInstructions
-            } else: {
+            eachBasicBlock isBlack ifFalse: {
                 self assert: eachBasicBlock isWhite.
                 self removeBasicBlock: eachBasicBlock
             }
@@ -1471,18 +1532,70 @@ MIRFunction definition: {
             }.
 
             each maxPredecessorIndex: maxPredIndex.
+            
+            ## CheckMe: This line does not seem to be required.
             each maxIndexAtEnd: (each maxIndexAtEnd max: each maxPredecessorIndex).
         }.
     }.
 
-    public method computeLiveIntervals => Void := {
+    public method normalizeAndComputeLiveIntervals => Void := {
         self
-            computeBasicBlockConnectivityAndNormalize;
-            ensureCaptureVectorPointerValue;
-            enumerateLocals.
+            computeBasicBlockConnectivityAndNormalize.
 
         self allLocalValuesDo: {:(MIRLocalValue)eachLocal :: Void |
+            eachLocal resetCoalescing.
+            eachLocal isPhiInstruction ifTrue: {
+                self normalizePhiInstruction: (eachLocal downCastTo: MIRInstruction)
+            }.
+        }.
+
+        self coalescePhiIncomingValues.
+        self ensureCaptureVectorPointerValue.
+
+        self enumerateLocals.
+        self allLocalValuesDo: {:(MIRLocalValue)eachLocal :: Void |
             eachLocal computeLiveInterval
+        }.
+    }.
+
+    public method coalescePhiIncomingValues => Void := {
+        self allLocalValuesDo: {:(MIRLocalValue)eachLocal :: Void |
+            eachLocal isInstruction ifTrue: {
+                let instruction := eachLocal downCastTo: MIRInstruction.
+                instruction targetPhi ifNotNil: {
+                    instruction coalesceWith: instruction targetPhi
+                }
+            }
+        }.
+    }.
+
+    public method normalizePhiInstruction: (instruction: MIRInstruction) ::=> Void := {
+        self assert: instruction isPhiInstruction.
+
+        instruction phiIncomingBlocksAndValuesDoReplacingValues: {:(MIRBasicBlock)incomingBlock :(MIRValue)incomingValue :: MIRValue |
+            incomingValue isInstruction ifTrue: {
+                let incomingInstruction := incomingValue downCastTo: MIRInstruction.
+                incomingInstruction targetPhi == instruction ifTrue: {
+                    self assert: incomingInstruction parentBlock == incomingBlock.
+                    self assert: incomingInstruction operation == instruction operation phiMoveOperation.
+                    return: incomingInstruction
+                }
+            }.
+
+            self assert: incomingBlock lastInstruction isNotNil && incomingBlock lastInstruction isTerminator.
+
+            let moveInstruction := (MIRInstruction withType: instruction type compilationTarget: self compilationTarget)
+                operation: instruction operation phiMoveOperation;
+                operands: (Array with: incomingValue);
+                targetPhi: instruction;
+                debugSourcePosition: instruction debugSourcePosition;
+                debugSourceNode: instruction debugSourceNode;
+                debugSourceEnvironment: instruction debugSourceEnvironment;
+                yourself.
+            incomingValue replaceUser: instruction with: moveInstruction.
+            moveInstruction registerUser: instruction.
+            incomingBlock addInstruction: moveInstruction before: incomingBlock lastInstruction.
+            moveInstruction
         }.
     }.
 

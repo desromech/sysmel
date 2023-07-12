@@ -2479,7 +2479,9 @@ HIRInstructionBuilder definition: {
             return: (self undefined: type)
         }.
 
-        (targetType == nil) || (targetType isLiteralConstant && (value type == targetType evaluateAsConstantType)) ifTrue: {
+        (targetType == nil)
+            || (targetType isLiteralConstant && (value type isDirectlyConversibleTo: targetType evaluateAsConstantType))
+            || (targetType isLiteralConstant not && value type isUndefinedType) ifTrue: {
             value
         } ifFalse: {
             self addInstruction: (HIRCoerceValueInstruction new
@@ -2505,7 +2507,7 @@ HIRInstructionBuilder definition: {
             return: (self undefined: type)
         }.
 
-        (targetType == nil) || (targetType isLiteralConstant && (value type isSubtypeOf: targetType evaluateAsConstantType)) ifTrue: {
+        (targetType == nil) || (targetType isLiteralConstant && (value type isDirectlyConversibleTo: targetType evaluateAsConstantType)) ifTrue: {
             value
         } ifFalse: {
             self addInstruction: (HIRDownCastInstruction new
