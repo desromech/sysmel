@@ -187,7 +187,6 @@ MIRValue definition: {
     public virtual method isGlobalVariable => Boolean := false.
     public virtual method isInstruction => Boolean := false.
     public virtual method isPhiInstruction => Boolean := false.
-    public virtual method hasTargetPhi => Boolean := false.
 
     public virtual method isValuePointer => Boolean := false.
 
@@ -454,15 +453,13 @@ MIRLocalValue definition: {
 
         hasPointerUsage := false.
         self usersDo: {:(MIRValue)each :: Void |
-            each isPhiInstruction ifFalse: {
-                each isLocalValue ifTrue: {
-                    liveInterval insertUsage: ((each downCastTo: MIRLocalValue) usageIndexFor: self).
-                } ifFalse: {
-                    each isValuePointer ifTrue: {
-                        hasPointerUsage := true.
-                    }
+            each isLocalValue ifTrue: {
+                liveInterval insertUsage: ((each downCastTo: MIRLocalValue) usageIndexFor: self).
+            } ifFalse: {
+                each isValuePointer ifTrue: {
+                    hasPointerUsage := true.
                 }
-            }.
+            }
         }.
     }.
 
@@ -970,7 +967,6 @@ MIRInstruction definition: {
     public method isDebug => Boolean := operation isDebug.
     public override method isInstruction => Boolean := true.
     public override method isPhiInstruction => Boolean := operation isPhi.
-    public override method hasTargetPhi => Boolean := targetPhi isNotNil.
 
     public method scratchRegisterCount: (count: Size) ::=> Void := {
         scratchRegisters := Array new: count
@@ -1026,9 +1022,6 @@ MIRInstruction definition: {
     public override method computeLiveInterval => Void := {
         super computeLiveInterval.
         liveInterval insertUsage: index.
-        targetPhi ifNotNil: {
-            liveInterval insertUsage: parentBlock lastInstruction index + 1u32
-        }
     }.
 
     public override method usageIndexFor: (usedValue: MIRLocalValue) ::=> UInt32 := {
@@ -1506,10 +1499,12 @@ MIRFunction definition: {
         }.
 
         self instructionsDo: {:(MIRInstruction)each :: Void |
-            each captureVectorPointerValue: captureVectorPointerValue.
-            captureVectorPointerValue ifNotNil: {
-                captureVectorPointerValue registerUser: each
-            }
+            each usesCapture ifTrue: {
+                each captureVectorPointerValue: captureVectorPointerValue.
+                captureVectorPointerValue ifNotNil: {
+                    captureVectorPointerValue registerUser: each
+                }
+            }.
         }.
     }.
 
@@ -1549,23 +1544,11 @@ MIRFunction definition: {
             }.
         }.
 
-        self coalescePhiIncomingValues.
         self ensureCaptureVectorPointerValue.
 
         self enumerateLocals.
         self allLocalValuesDo: {:(MIRLocalValue)eachLocal :: Void |
             eachLocal computeLiveInterval
-        }.
-    }.
-
-    public method coalescePhiIncomingValues => Void := {
-        self allLocalValuesDo: {:(MIRLocalValue)eachLocal :: Void |
-            eachLocal isInstruction ifTrue: {
-                let instruction := eachLocal downCastTo: MIRInstruction.
-                instruction targetPhi ifNotNil: {
-                    instruction coalesceWith: instruction targetPhi
-                }
-            }
         }.
     }.
 

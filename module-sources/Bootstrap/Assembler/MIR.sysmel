@@ -461,11 +461,14 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         captureVectorPointerRegister := nil.
     }.
 
+    protected field firstPhiMoveInstruction => MIRInstruction.
+
     public method generateBasicBlock: (basicBlock: MIRBasicBlock) ::=> Void := {
         let blockSymbol := basicBlockSymbolDictionary at: basicBlock.
         self textSection
             useDebugInfoOfMIRValue: basicBlock;
             label: blockSymbol.
+        firstPhiMoveInstruction := nil.
         basicBlock instructionsDo: {:(MIRInstruction)eachInstruction :: Void |
             self generateInstruction: eachInstruction
         }.
@@ -485,6 +488,16 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
 
         instruction isPhiInstruction ifTrue: {return: void}.
 
+        instruction targetPhi ifNil: {
+            firstPhiMoveInstruction ifNotNil: {
+                self generatePhiMoves
+            }
+        } ifNotNil: {
+            firstPhiMoveInstruction ifNil: {
+                firstPhiMoveInstruction := instruction
+            }
+        }.
+
         captureVectorPointerRegister := instruction captureVectorPointerRegister.
         captureVectorPointerRegister ifNotNil: {
             self emitMoveValue: instruction captureVectorPointerValue intoLocation: captureVectorPointerRegister.
@@ -503,6 +516,37 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         }.
 
         captureVectorPointerRegister := nil.
+    }.
+
+    public method generatePhiMoves => Void := {
+        let position mutable := firstPhiMoveInstruction.
+        while: (position isNotNil && position targetPhi isNotNil) do: {
+            self copyFrom: position intoPhi: position targetPhi.
+            position := position next
+        }.
+
+        firstPhiMoveInstruction := nil.
+    }.
+
+    public method copyFrom: (sourceValue: MIRInstruction) intoPhi: (targetPhi: MIRInstruction) ::=> Void := {
+        ## Register into value case.
+        (sourceValue resultRegister isNotNil && sourceValue resultRegister isRegisterWithPointer not) ifTrue: {
+            sourceValue assignedRegister ifNil: {
+                self emitMoveValue: sourceValue intoLocation: sourceValue resultRegister
+            }.
+
+            self emitMoveRegister: sourceValue resultRegister intoValue: targetPhi.
+            return: void.
+        }.
+
+        ## Value into register case.
+        (targetPhi resultRegister isNotNil && targetPhi resultRegister isRegisterWithPointer not) ifTrue: {
+            self emitMoveValue: sourceValue intoLocation: targetPhi resultRegister.
+            return: void.
+        }.
+
+        ## Memory - Memory copy.
+        self error: "TODO: Phi memory memory copy".
     }.
 
     public method processDebugInstruction: (debugInstruction: MIRInstruction) ::=> Void := {
