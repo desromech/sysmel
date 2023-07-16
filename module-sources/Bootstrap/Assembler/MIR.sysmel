@@ -529,24 +529,21 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
     }.
 
     public method copyFrom: (sourceValue: MIRInstruction) intoPhi: (targetPhi: MIRInstruction) ::=> Void := {
-        ## Register into value case.
-        (sourceValue resultRegister isNotNil && sourceValue resultRegister isRegisterWithPointer not) ifTrue: {
-            sourceValue assignedRegister ifNil: {
-                self emitMoveValue: sourceValue intoLocation: sourceValue resultRegister
-            }.
-
-            self emitMoveRegister: sourceValue resultRegister intoValue: targetPhi.
-            return: void.
+        targetPhi resultRegister ifNil: {
+            ## Memory - Memory copy.
+            self error: "TODO: Phi memory memory copy".
         }.
 
-        ## Value into register case.
-        (targetPhi resultRegister isNotNil && targetPhi resultRegister isRegisterWithPointer not) ifTrue: {
-            self emitMoveValue: sourceValue intoLocation: targetPhi resultRegister.
-            return: void.
+        sourceValue assignedRegister ifNotNil: {
+            self emitMoveRegister: sourceValue assignedRegister intoValue: targetPhi.
+            return: void
         }.
 
-        ## Memory - Memory copy.
-        self error: "TODO: Phi memory memory copy".
+        ## Use the target phi register as a scratch register.
+        self emitMoveValue: sourceValue intoLocation: targetPhi resultRegister.
+        targetPhi assignedRegister ifNil: {
+            self emitMoveRegister: targetPhi resultRegister intoValue: targetPhi.
+        }.
     }.
 
     public method processDebugInstruction: (debugInstruction: MIRInstruction) ::=> Void := {

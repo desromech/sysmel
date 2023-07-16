@@ -1125,8 +1125,10 @@ let instructionTemplateTable := #{
     OpRmwIw: (AsmX86InstructionTemplate new
         when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
             (instruction operandCount = 2sz) &&
-            instruction firstOperand isRegisterOrRegisterAddress && 
-            instruction secondOperand isImmediate32
+            instruction firstOperand isRegisterOrRegisterAddress &&
+            (instruction firstOperand size = 8sz
+                ifTrue: instruction secondOperand isImmediateSigned32
+                ifFalse: instruction secondOperand isImmediate32)
         };
         writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
             let registerAddress := instruction firstOperand.
@@ -1135,25 +1137,6 @@ let instructionTemplateTable := #{
             stream 
                 nextPutAll: templ mandatoryPrefix;
                 nextPutX86SizeOverride: operandSize;
-                nextPutX86RexSize: operandSize rm: registerAddress;
-                nextPutAll: templ opcode;
-                nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode immediateSize: immediate size;
-                nextPutX86ImmediateWord: immediate withSize: operandSize
-        };
-        yourself).
-    OpRmqIsd: (AsmX86InstructionTemplate new
-        when: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :: Boolean |
-            (instruction operandCount = 2sz) &&
-            instruction firstOperand isRegisterOrRegisterAddress && 
-            (instruction firstOperand size = 8sz) &&
-            instruction secondOperand isImmediateSigned32
-        };
-        writeWith: {:(AsmX86InstructionTemplate)templ :(AsmX86Instruction)instruction :(AsmObjectCodeStream)stream :: Void |
-            let registerAddress := instruction firstOperand.
-            let immediate := instruction secondOperand.
-            let operandSize := registerAddress size.
-            stream 
-                nextPutAll: templ mandatoryPrefix;
                 nextPutX86RexSize: operandSize rm: registerAddress;
                 nextPutAll: templ opcode;
                 nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode immediateSize: immediate size;
@@ -1560,10 +1543,9 @@ let instructionDefinitionTable := #(
 
     (mov (dst src) "Move values"
 		(OppRbIb #[] #[16rB0] 0)
-		(OpRmqIsd #[] #[16rC7] 0)
-		(OppRwIww #[] #[16rB8])
 		(OpRmbIb #[] #[16rC6] 0)
 		(OpRmwIw #[] #[16rC7] 0)
+		(OppRwIww #[] #[16rB8])
 
         (OpRmbRb #[] #[16r88])
         (OpRmwRw #[] #[16r89])
