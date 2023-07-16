@@ -965,7 +965,7 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
                     cfiBeginEpilogue;
                     x86::lea: X86::RSP src: X86::RBP x86::qword + (preservedRegisters size asInt64 * -8i64) asAsmImmediate;
                     cfiRestoreFramePointer: X86::RBP offset: preservedRegisters size asInt64.
-                preservedRegisters do: {:(MIRPhysicalLocation)each :: Void |
+                preservedRegisters reverseDo: {:(MIRPhysicalLocation)each :: Void |
                     let reg := (each x86::int64For: codegen) downCastTo: AsmRegister.
                     codegen textSection
                         x86::pop: reg;
