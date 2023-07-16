@@ -1779,6 +1779,10 @@ public global HIRMirPrimitiveCallGenerationTable := #{
         }
     }.
 
+    ## Boolean primitives
+    #Boolean::not : translateUnaryPrimitiveInto(MIR::Operation::BooleanNot).
+    #Boolean::xor: : translateBinaryPrimitiveInto(MIR::Operation::BooleanXor).
+
     ## Char8 primitives
     #Char8::negated : translateUnaryPrimitiveInto(MIR::Operation::Int8Negate).
     #Char8::bitInvert : translateUnaryPrimitiveInto(MIR::Operation::Int8BitNot).

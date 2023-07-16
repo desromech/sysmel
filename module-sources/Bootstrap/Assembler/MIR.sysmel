@@ -558,7 +558,7 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
 
         let location := value asm::makeStackMapLocationWith: self.
         location ifNotNil: {
-            stackMap addLocalBindingMap: (stackMap setBinding: binding isMutable: debugInstruction operation ~= MIR::Operation::DebugSetBindingValue location: location)
+            stackMap setLocalBinding: binding isMutable: debugInstruction operation ~= MIR::Operation::DebugSetBindingValue location: location
         }.
     }.
 

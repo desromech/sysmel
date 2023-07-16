@@ -6,7 +6,7 @@ Boolean definition: {
     }.
 
     public final pure eager method xor: (other: Boolean) ::=> Boolean := {
-        <primitive: #Boolean::xor>
+        <primitive: #Boolean::xor:>
         <targetDefinedPrimitive>
         if: self == other then: false else: true
     }.

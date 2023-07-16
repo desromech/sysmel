@@ -515,8 +515,8 @@ public global X86::R14D := AsmX86Int32Register name: #R14D value: 14u8 dwarf64: 
 public global X86::R15D := AsmX86Int32Register name: #R15D value: 15u8 dwarf64: 15u32.
 
 public global X86::RAX := AsmX86Int64Register name: #RAX value:  0u8 dwarf32: 0u32 dwarf64: 0u32.
-public global X86::RCX := AsmX86Int64Register name: #RCX value:  1u8 dwarf32: 1u32 dwarf64: 1u32.
-public global X86::RDX := AsmX86Int64Register name: #RDX value:  2u8 dwarf32: 2u32 dwarf64: 2u32.
+public global X86::RCX := AsmX86Int64Register name: #RCX value:  1u8 dwarf32: 1u32 dwarf64: 2u32.
+public global X86::RDX := AsmX86Int64Register name: #RDX value:  2u8 dwarf32: 2u32 dwarf64: 1u32.
 public global X86::RBX := AsmX86Int64Register name: #RBX value:  3u8 dwarf32: 3u32 dwarf64: 3u32.
 public global X86::RSP := AsmX86Int64Register name: #RSP value:  4u8 dwarf32: 4u32 dwarf64: 7u32.
 public global X86::RBP := AsmX86Int64Register name: #RBP value:  5u8 dwarf32: 5u32 dwarf64: 6u32.

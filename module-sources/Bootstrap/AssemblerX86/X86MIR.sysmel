@@ -1412,8 +1412,7 @@ MIRFunctionAsmCodeGenerator extend: {
 let x86::integerAluUnaryInt8RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
-        allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
-        
+        allocateRegister8ForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
 
 let x86::integerAluUnaryInt16RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
@@ -1457,6 +1456,34 @@ let x86::integerAluInt64RegisterConstraints := {:(MIRInstruction)instruction :(M
         allocateRegisterImmediateS32OrDirectPointerForInstruction: instruction operandAt: 1sz;
         allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
 }.
+
+MIR::Operation::BooleanNot
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
+            allocateRegister8ForInstructionResult: instruction
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        let result := instruction resultRegister x86::int32For: codegen.
+        let operand := instruction firstOperandRegister x86::int32For: codegen.
+        codegen textSection
+            x86::xor: result with: result;
+            x86::test: operand with: operand;
+            x86::sete: (instruction resultRegister x86::int8For: codegen)
+    }.
+
+MIR::Operation::BooleanXor
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;
+            allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 1sz;
+            allocateRegisterForInstructionResult: instruction trySharingWithOperandAt: 0sz
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen);
+            x86::xor: (instruction resultRegister x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen)
+    }.
 
 MIR::Operation::Int8Negate
     forTargets: #(x86 x86_64) registerConstraintsWith: x86::integerAluUnaryInt8RegisterConstraints;

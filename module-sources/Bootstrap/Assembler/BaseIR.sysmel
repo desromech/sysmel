@@ -1899,7 +1899,15 @@ public final class AsmStackMapLocationCaptureOffset superclass: AsmStackMapLocat
 public final class AsmSymbolBindingLocationMap superclass: Object; definition: {
     public field binding => SymbolBinding.
     public field isMutable => Boolean.
-    public field location => AsmStackMapLocation.
+    public field locations => OrderedCollection.
+
+    public override method initialize => Void := {
+        locations := OrderedCollection new.
+    }.
+
+    public method addLocation: (location: AsmStackMapLocation) ::=> Void := {
+        locations add: location
+    }.
 }.
 
 AsmStackMap definition: {
@@ -1925,13 +1933,16 @@ AsmStackMap definition: {
         := bindingDictionary atOrNil: binding.
 
     public method setBinding: (binding: SymbolBinding) isMutable: (isMutable: Boolean) location: (location: AsmStackMapLocation) ::=> AsmSymbolBindingLocationMap := {
-        let map := AsmSymbolBindingLocationMap new
-            binding: binding;
-            isMutable: isMutable;
-            location: location;
-            yourself.
-        bindingDictionary at: binding put: map.
-        bindings add: map.
+        let map => AsmSymbolBindingLocationMap := bindingDictionary at: binding ifAbsentPut: {:: AsmSymbolBindingLocationMap |
+            let newMap := AsmSymbolBindingLocationMap new
+                binding: binding;
+                isMutable: isMutable;
+                yourself.
+            bindings add: newMap.
+            newMap
+        }.
+
+        map addLocation: location.
         map
     }.
 
@@ -1949,6 +1960,15 @@ AsmStackMap definition: {
     public method addLocalBindingMap: (bindingMap: AsmSymbolBindingLocationMap) ::=> Void := {
         locals add: bindingMap
     }.
+
+    public method setLocalBinding: (binding: SymbolBinding) isMutable: (isMutable: Boolean) location: (location: AsmStackMapLocation) ::=> Void := {
+        let isExistingMap := bindingDictionary includesKey: binding.
+        let map := self setBinding: binding isMutable: isMutable location: location.
+        isExistingMap ifFalse: {
+            self addLocalBindingMap: map
+        }
+    }.
+
 }.
 
 AsmCompilationTarget definition: {

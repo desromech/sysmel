@@ -1316,7 +1316,7 @@ Dwarf::AsmWriter definition: {
 
         let currentValue mutable := value.
         while: more do: {
-            let byte mutable := (currentValue & 127i64) asInt8.
+            let byte := (currentValue & 127i64) asInt8.
             currentValue := currentValue >> 7i64.
             
             let byteHasSign := (byte & 16r40 i8) ~= 0i8.
@@ -2547,30 +2547,34 @@ AsmStackMap extend: {
         let binding := localDIE sourceBinding.
         let bindingMap := self getMapOrNilForBinding: binding.
 
-        bindingMap ifNotNil: {
-            localDIE location: (bindingMap location dwarf::buildExpressionForStackMap: self target: debugGenerator compilationTarget)
+        bindingMap isNotNil && bindingMap locations isNotEmpty ifTrue: {
+            ## FIXME: Emit a proper location list.
+            localDIE location: (bindingMap locations first dwarf::buildExpressionForStackMap: self target: debugGenerator compilationTarget)
         }.
     }.
 
     public method dwarf::generateProgramEntityForBindingLocationMap: (bindingLocationMap: AsmSymbolBindingLocationMap) subprogram: (subprogram: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
-        let binding := bindingLocationMap binding.
-        let variable := Dwarf::DebugInfoEntry tag: Dwarf::DW_TAG_variable.
-        variable sourceBinding: binding.
-        subprogram addChild: variable.
+        ## FIXME: Emit a proper location list.
+        bindingLocationMap locations do: {:(AsmStackMapLocation)eachLocation :: Void |
+            let binding := bindingLocationMap binding.
+            let variable := Dwarf::DebugInfoEntry tag: Dwarf::DW_TAG_variable.
+            variable sourceBinding: binding.
+            subprogram addChild: variable.
 
-        binding name ifNotNil: (variable name: binding name asString).
-        binding type ifNotNil: {
-            let bindingType := binding type.
-            bindingLocationMap isMutable && bindingType isReferenceType ifTrue: {
-                let valueType := (bindingType downCastTo: ReferenceType) baseType.
-                variable type: (debugGenerator getOrCreateDieForType: valueType).
-            } ifFalse: {
-                variable type: (debugGenerator getOrCreateDieForType: bindingType).
+            binding name ifNotNil: (variable name: binding name asString).
+            binding type ifNotNil: {
+                let bindingType := binding type.
+                bindingLocationMap isMutable && bindingType isReferenceType ifTrue: {
+                    let valueType := (bindingType downCastTo: ReferenceType) baseType.
+                    variable type: (debugGenerator getOrCreateDieForType: valueType).
+                } ifFalse: {
+                    variable type: (debugGenerator getOrCreateDieForType: bindingType).
+                }.
             }.
-        }.
 
-        debugGenerator setDie: variable declarationPosition: binding sourcePosition.
-        variable location: (bindingLocationMap location dwarf::buildExpressionForStackMap: self target: debugGenerator compilationTarget)
+            debugGenerator setDie: variable declarationPosition: binding sourcePosition.
+            variable location: (eachLocation dwarf::buildExpressionForStackMap: self target: debugGenerator compilationTarget)
+        }
     }.
 }.
 

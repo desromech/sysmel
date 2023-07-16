@@ -1,6 +1,25 @@
 public function MySelect(condition: Boolean, a: Int32, b: Int32) => Int32
     := condition ifTrue: a ifFalse: b.
 
+public function sleb128Size(value: Int64) => Size := {
+    let result mutable := 0sz.
+    let more mutable := true.
+
+    let currentValue mutable := value.
+    while: more do: {
+        let byte := (currentValue & 127i64) asInt8.
+        currentValue := currentValue >> 7i64.
+        
+        let byteHasSign := (byte & 16r40 i8) ~= 0i8.
+        ((currentValue = 0i64) && byteHasSign not) || (currentValue == -1i64 && byteHasSign) ifTrue: {
+            more := false
+        }.
+
+        result := result + 1sz.
+    }.
+    result
+}.
+
 public function MySum(N: Int32, alpha: Int32) => Int32 := {
     let result mutable := 0i32.
     let i mutable := 0i32.
@@ -11,8 +30,10 @@ public function MySum(N: Int32, alpha: Int32) => Int32 := {
 }.
 
 public function NoRttiImageMain(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
-    MySelect(false, 1i32, 2i32).
-    MySum(100i32, 3i32).
+    sleb128Size(42i64).
+    sleb128Size(-42i64).
+    ##MySelect(false, 1i32, 2i32).
+    ##MySum(100i32, 3i32).
     ##memset(nil, 0i8, 32sz).
     0i32
 }.

@@ -2076,6 +2076,7 @@ public final class MIRFunctionBuilder superclass: Object; definition: {
 }.
 
 #(
+    BooleanNot BooleanXor
     Int8BitNot Int16BitNot Int32BitNot Int64BitNot
     Int8Negate Int16Negate Int32Negate Int64Negate
     Int8LowBit Int16LowBit Int32LowBit Int64LowBit
