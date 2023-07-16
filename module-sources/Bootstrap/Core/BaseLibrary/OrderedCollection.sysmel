@@ -92,15 +92,14 @@ OrderedCollection definition: {
         storage at: (size := size - 1sz).
     }.
 
-    ## FIXME: Fix the inliner bug when inlining these methods.
-    public override final eager method do: aBlock ::=> Void := {
+    public override final inline eager method do: aBlock ::=> Void := {
         let i mutable := 0sz.
         while: (i < size) do: {
             aBlock((self __slotNamedAt__: #storage) __uncheckedSlotAt__: i)
         } continueWith: (i := i + 1sz)
     }.
 
-    public override final eager method doWithIndex: aBlock ::=> Void := {
+    public override final inline eager method doWithIndex: aBlock ::=> Void := {
         let i mutable := 0sz.
         while: (i < size) do: {
             aBlock((self __slotNamedAt__: #storage) __uncheckedSlotAt__: i, i)
