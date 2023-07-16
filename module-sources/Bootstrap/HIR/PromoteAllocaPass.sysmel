@@ -63,7 +63,6 @@ public final class HIRAllocaPromotionState definition: {
         let addPhiAtBlock := {:(HIRBasicBlock)phiBlockCandidate :: Void |
             (blockPhiDictionary includesKey: phiBlockCandidate) ifFalse: {
                 let phi := HIRPhiInstruction new
-                    useSourceInformationOfValue: alloca;
                     type: valueType;
                     yourself.
                 blockPhiDictionary at: phiBlockCandidate put: phi.
@@ -164,7 +163,7 @@ public final class HIRAllocaPromotionState definition: {
         ## Copy the debug bindings onto the new location.
         debugBindings do: {:(HIRSetDebugValueForBindingInstruction)oldDebugBinding :: Void |
             let newDebugBinding := HIRSetDebugValueForBindingInstruction new
-                useSourceInformationOfValue: oldDebugBinding;
+                useSourceInformationOfValue: position;
                 value: value;
                 binding: oldDebugBinding binding;
                 promotedFromAlloca: true;
