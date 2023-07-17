@@ -667,34 +667,58 @@ AsmObjectCodeRelocation definition: {
 
 public final class AsmObjectCodeRelocationAbsoluteInt8 superclass: AsmObjectCodeRelocation; definition: {
     public field addend => Int8.
+
+    public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) withExtraAddend: (extraAddend: Int64) ::=> Void
+        := targetSection data int8At: offset put: addend + extraAddend asInt8.
 }.
 
 public final class AsmObjectCodeRelocationAbsoluteInt16 superclass: AsmObjectCodeRelocation; definition: {
     public field addend => Int16.
+
+    public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) withExtraAddend: (extraAddend: Int64) ::=> Void
+        := targetSection data int16At: offset put: addend + extraAddend asInt16.
 }.
 
 public final class AsmObjectCodeRelocationAbsoluteInt32 superclass: AsmObjectCodeRelocation; definition: {
     public field addend => Int32.
+
+    public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) withExtraAddend: (extraAddend: Int64) ::=> Void
+        := targetSection data int32At: offset put: addend + extraAddend asInt32.
 }.
 
 public final class AsmObjectCodeRelocationAbsoluteInt64 superclass: AsmObjectCodeRelocation; definition: {
     public field addend => Int64.
+
+    public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) withExtraAddend: (extraAddend: Int64) ::=> Void
+        := targetSection data int64At: offset put: addend + extraAddend asInt64.
 }.
 
 public final class AsmObjectCodeRelocationSectionRelativeInt32 superclass: AsmObjectCodeRelocation; definition: {
     public field addend => Int32.
+
+    public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) withExtraAddend: (extraAddend: Int64) ::=> Void
+        := targetSection data int32At: offset put: addend + extraAddend asInt32.
 }.
 
 public final class AsmObjectCodeRelocationSectionRelativeInt64 superclass: AsmObjectCodeRelocation; definition: {
     public field addend => Int64.
+
+    public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) withExtraAddend: (extraAddend: Int64) ::=> Void
+        := targetSection data int64At: offset put: addend + extraAddend.
 }.
 
 public final class AsmObjectCodeRelocationRelativeInt8 superclass: AsmObjectCodeRelocation; definition: {
     public field addend => Int8.
+
+    public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) withExtraAddend: (extraAddend: Int64) ::=> Void
+        := targetSection data int8At: offset put: addend + extraAddend asInt8.
 }.
 
 public final class AsmObjectCodeRelocationRelativeInt16 superclass: AsmObjectCodeRelocation; definition: {
     public field addend => Int16.
+
+    public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) withExtraAddend: (extraAddend: Int64) ::=> Void
+        := targetSection data int16At: offset put: addend + extraAddend asInt16.
 }.
 
 public final class AsmObjectCodeRelocationRelativeInt32 superclass: AsmObjectCodeRelocation; definition: {

@@ -2838,7 +2838,7 @@ Type
         } continueWith: (position := position __slotNamedAt__: #supertype).
 
         nil
-    };
+    } withEagerAnalysis;
     withSelector: #isDirectSubtypeOf: replaceMethod: {:(Type)self :(Type)expectedParent :: Boolean |
         let: #currentType mutableWith: self.
         

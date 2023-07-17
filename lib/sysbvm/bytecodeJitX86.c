@@ -1278,7 +1278,7 @@ static void sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *codeZonePoi
 #ifdef _WIN32
     RUNTIME_FUNCTION *runtimeFunction = (RUNTIME_FUNCTION*)unwindInfoZonePointer;
     runtimeFunction->UnwindInfoAddress = (DWORD)(sizeof(RUNTIME_FUNCTION) + unwindInfoZonePointer - codeZonePointer);
-    if(RtlAddFunctionTable(runtimeFunction, 1, (DWORD64)(uintptr_t)unwindInfoZonePointer))
+    if(RtlAddFunctionTable(runtimeFunction, 1, (DWORD64)(uintptr_t)codeZonePointer))
     {
         // Store the handle in the context for cleanup.
     }

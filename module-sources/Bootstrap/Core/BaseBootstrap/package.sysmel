@@ -4,6 +4,7 @@ __DefaultAnalysisQueueValueBox__ value waitPendingAnalysis.
 
 loadSourceNamed: "RuntimeMacros.sysmel".
 loadSourceNamed: "MetaBuilders.sysmel".
+loadSourceNamed: "Exception.sysmel".
 loadSourceNamed: "PackageMacro.sysmel".
 loadSourceNamed: "ProgramEntity.sysmel".
 loadSourceNamed: "SequenceTuple.sysmel".
@@ -16,4 +17,3 @@ loadSourceNamed: "FunctionType.sysmel".
 loadSourceNamed: "SimpleFunctionType.sysmel".
 loadSourceNamed: "PlatformDescription.sysmel".
 loadSourceNamed: "PAL.sysmel".
-__DefaultAnalysisQueueValueBox__ value waitPendingAnalysis.

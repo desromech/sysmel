@@ -144,7 +144,7 @@ static void sysbvm_bytecodeJit_uwop_alloc(sysbvm_bytecodeJit_t *jit, size_t amou
         SYSBVM_ASSERT(encodedAmount <= 0xFFFF);
         sysbvm_bytecodeJit_uwop(jit, /* UWOP_ALLOC_LARGE */3, 0);
         uint16_t encodedAmountU16 = (uint16_t)encodedAmount;
-        sysbvm_bytecodeJit_addUnwindInfoBytes(jit, 2, (uint8_t*)&encodedAmountU16);
+        sysbvm_dynarray_addAll(&jit->unwindInfoBytecode, 2, &encodedAmountU16);
     }
     else
     {

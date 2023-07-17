@@ -7,35 +7,10 @@ Exception definition: {
             := self new messageText: messageText; signal
     }.
 
-    public virtual method defaultMessageText => String
-        := "an " -- self class printString.
-
-    public override method asString => String
-        := messageText ifNil: self defaultMessageText.
-
-    public override method printString => String
-        := messageText ifNil: self defaultMessageText.
-
-    public override method printOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: (messageText ifNil: self defaultMessageText)
-    }.
-
     public method signal => Unwinds := {
         printLine("Exception: ", self).
         sysmel_pal_abort().
     }.
-}.
-
-(Function::ensure:) adoptDefinitionOf: {:body :(() => Void)cleanUp :: AnyValue |
-    <primitive: #Function::ensure: >
-    let result := body().
-    cleanUp().
-    result.
-}.
-
-(Function::on:do:) adoptDefinitionOf: {:body :exceptionFilter :exceptionBlock :: AnyValue |
-    <primitive: #Function::on:do: >
-    body()
 }.
 
 error adoptDefinitionOf: {:(String)message :: Unwinds |

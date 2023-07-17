@@ -271,6 +271,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_tuple_defaultPrintString(sysbvm_context_t *cont
 SYSBVM_API sysbvm_tuple_t sysbvm_tuple_asString(sysbvm_context_t *context, sysbvm_tuple_t tuple)
 {
     sysbvm_tuple_t type = sysbvm_tuple_getType(context, tuple);
+    if(type == context->roots.stringType)
+        return tuple;
     sysbvm_tuple_t asStringFunction = sysbvm_type_getAsStringFunction(context, type);
     if(asStringFunction == SYSBVM_NULL_TUPLE)
         return sysbvm_tuple_defaultAsString(context, tuple);
