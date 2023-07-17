@@ -2830,6 +2830,15 @@ Type
     } makeVirtual withEagerAnalysis;
 
     ## Non recursive versions, more efficient with our current compiler.
+    withSelector: #lookupSelector: replaceMethod: {:(Type)self :(Symbol)selector :: AnyValue |
+        let: #position mutableWith: self.
+        while: (position ~~ nil) do: {
+            let: #method with: (position lookupLocalSelector: selector).
+            if: method ~~ nil then: (return: method)
+        } continueWith: (position := position __slotNamedAt__: #supertype).
+
+        nil
+    };
     withSelector: #isDirectSubtypeOf: replaceMethod: {:(Type)self :(Type)expectedParent :: Boolean |
         let: #currentType mutableWith: self.
         
@@ -2853,6 +2862,8 @@ Type
     withSelector: #isDirectlyConversibleTo: addMethod: {:(Type)self :(Type)targetType :: Boolean |
         (targetType isNullable && self isUndefinedType) || (self isSubtypeOf: targetType)
     } makePure.
+
+(Type >> #lookupLocalSelector:) makeInline. ## To speed-up method lookup.
 
 PointerLikeType
     withSelector: #computeLayout addMethod: {:(PointerLikeType)self :: Void |

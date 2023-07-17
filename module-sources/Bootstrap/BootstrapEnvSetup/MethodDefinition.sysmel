@@ -12,6 +12,7 @@
     }.
 
     validMethodDictionary(Type) at: #validMethodDictionary put: validMethodDictionary.
+    validMethodDictionary recordBindingWithOwner: Type andName: #validMethodDictionary.
 }.
 
 ## Type::validVirtualMethodSelectorList
@@ -25,6 +26,7 @@ Type validMethodDictionary at: #validVirtualMethodSelectorList put: {:(Type)self
         existent
     }.
 }.
+(Type validMethodDictionary at: #validVirtualMethodSelectorList) recordBindingWithOwner: Type andName: #validVirtualMethodSelectorList.
 
 Type validMethodDictionary at: #lookupLocalSelector: put: {:(Type)self :(Symbol)selector |
     let: #methodDictionary with: (self __slotNamedAt__: #methodDictionary).
@@ -32,6 +34,7 @@ Type validMethodDictionary at: #lookupLocalSelector: put: {:(Type)self :(Symbol)
         then: nil
         else: (methodDictionary atOrNil: selector)
 }.
+(Type validMethodDictionary at: #lookupLocalSelector:) recordBindingWithOwner: Type andName: #lookupLocalSelector:.
 
 Type validMethodDictionary at: #checkNoOverridenSelector: put: {:(Type)self :(Symbol)selector |
     let: #method with: (self lookupLocalSelector: selector).
@@ -42,6 +45,7 @@ Type validMethodDictionary at: #checkNoOverridenSelector: put: {:(Type)self :(Sy
         error("Overriding non-virtual method with selector " -- selector printString)
     }
 }.
+(Type validMethodDictionary at: #checkNoOverridenSelector:) recordBindingWithOwner: Type andName: #checkNoOverridenSelector:.
 
 Type validMethodDictionary at: #checkVirtualDispatchSelectorExistence: put: {:(Type)self :(Symbol)selector |
     let: #method with: (self lookupLocalSelector: selector).
@@ -56,6 +60,7 @@ Type validMethodDictionary at: #checkVirtualDispatchSelectorExistence: put: {:(T
         }
     }
 }.
+(Type validMethodDictionary at: #checkVirtualDispatchSelectorExistence:) recordBindingWithOwner: Type andName: #checkVirtualDispatchSelectorExistence:.
 
 Type validMethodDictionary at: #checkConstraintsForAddingMethod:withSelector: put: {:(Type)self :newMethod :(Symbol)selector |
     let: #supertype with: (self __slotNamedAt__: #supertype).
@@ -76,6 +81,7 @@ Type validMethodDictionary at: #checkConstraintsForAddingMethod:withSelector: pu
         }
     }
 }.
+(Type validMethodDictionary at: #checkConstraintsForAddingMethod:withSelector:) recordBindingWithOwner: Type andName: #checkConstraintsForAddingMethod:withSelector:.
 
 Type validMethodDictionary at: #withSelector:addMethod: put: {:(Type)self :(Symbol)selector :newMethod |
     let: #methodDict with: self validMethodDictionary.
@@ -92,6 +98,7 @@ Type validMethodDictionary at: #withSelector:addMethod: put: {:(Type)self :(Symb
     self flushLookupSelector: selector.
     newMethod
 }.
+(Type validMethodDictionary at: #withSelector:addMethod:) recordBindingWithOwner: Type andName: #withSelector:addMethod:.
 
 Type
     withSelector: #validMacroMethodDictionary addMethod: {:(Type)self :: MethodDictionary |

@@ -261,6 +261,7 @@ AsmX86RegisterAddress definition: {
         scale = 1u8 ifTrue: (scaleShift := 0u8).
         scale = 2u8 ifTrue: (scaleShift := 1u8).
         scale = 4u8 ifTrue: (scaleShift := 2u8).
+        scale = 8u8 ifTrue: (scaleShift := 3u8).
     }.
 
     public method needsSibByte => Boolean
