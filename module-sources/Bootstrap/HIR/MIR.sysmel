@@ -639,8 +639,6 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
                 declareValues;
                 compileBasicBlocks.
         }.
-
-        mirFunction performBasicOptimizations.
     }.
 
     public method declareArguments => Void := {

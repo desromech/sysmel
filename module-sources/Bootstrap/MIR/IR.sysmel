@@ -305,6 +305,10 @@ public abstract class MIRProgramEntity superclass: MIRValue; definition: {
     public method addExportedSymbols: (extraSymbols: Array) ::=> Void := {
         exportedSymbols := exportedSymbols -- extraSymbols
     }.
+
+    public virtual method performStandardOptimizations => Void := {
+
+    }.
 }.
 
 public final class MIRFunction superclass: MIRProgramEntity.
@@ -2215,7 +2219,7 @@ let ComparisonOperationToBranchMap := Dictionary new.
 }.
 
 MIRFunction definition: {
-    public method performBasicOptimizations => Void := {
+    public override method performStandardOptimizations => Void := {
         self fuseComparisonAndBranches
     }.
 
@@ -2295,8 +2299,11 @@ public final class MIRModule superclass: MIRProgramEntity; definition: {
     public method asTargetIR => AnyValue
         := compilationTarget generateTargetIRForMIRModule: self.
 
-    public method performStandardOptimizations => Void := {
-
+    public override method performStandardOptimizations => Void := {
+        super performStandardOptimizations.
+        programEntities do: {:(MIRProgramEntity)each :: Void |
+            each performStandardOptimizations
+        }
     }.
 }.
 
