@@ -8,6 +8,7 @@ loadSourceNamed: "Set.sysmel".
 loadSourceNamed: "SequenceableCollection.sysmel".
 loadSourceNamed: "IdentitySet.sysmel".
 loadSourceNamed: "Dictionary.sysmel".
+loadSourceNamed: "PluggableDictionary.sysmel".
 loadSourceNamed: "IdentityDictionary.sysmel".
 loadSourceNamed: "WeakValueDictionary.sysmel".
 loadSourceNamed: "MethodDictionary.sysmel".

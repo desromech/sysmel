@@ -1,0 +1,66 @@
+public class PluggableDictionary superclass: Dictionary; definition: {
+    public field hashFunction => ((AnyValue) => Size).
+    public field equalsFunction => ((AnyValue, AnyValue) => Boolean).
+
+    public override method initialize => Void := {
+        hashFunction := {:key :: Size | key hash}.
+        equalsFunction := {:a :b :: Boolean | a = b}.
+    }.
+
+    public override method scanFor: (key: Untyped) ::=> IntPointer := {
+        storage ifNil: { return: -1iptr }.
+
+        let capacity := storage size.
+        let keyHash => Size := hashFunction(key).
+        let naturalIndex := keyHash % capacity.
+
+        let i mutable := naturalIndex.
+        while: (i < capacity) do: {
+            let association := (storage at: i) uncheckedDownCastTo: LookupKey.
+            if: association isNil || equalsFunction(association key, key) then: {
+                return: i asIntPointer
+            }
+        } continueWith: (i := i + 1sz).
+
+        i := 0sz.
+        while: (i < naturalIndex) do: {
+            let association := (storage at: i) uncheckedDownCastTo: LookupKey.
+            if: association isNil || equalsFunction(association key, key) then: {
+                return: i asIntPointer
+            }
+        } continueWith: (i := i + 1sz).
+
+        -1iptr
+    }.
+
+    public override eager method at: key := {
+        let index := self scanFor: key.
+        index >= 0iptr ifTrue: {
+            let association := storage at: index asSize.
+            association ifNil: {self error: "Key not found in method dictionary."}.
+
+            (storage at: index asSize) value
+        } ifFalse: {
+            self error: "Key not found in method dictionary."
+        }
+    }.
+
+    public override eager method at: key put: value ::=> Void := {
+        let index mutable := self scanFor: key.
+        index < 0iptr ifTrue: {
+            self increaseCapacity.
+            index := self scanFor: key.
+            self assert: index >= 0iptr.
+        }.
+
+        let association := storage at: index asSize.
+        association ifNotNil: {
+            association value: value
+        } ifNil: {
+            let newAssociation := Association key: key value: value.
+            storage at: index asSize put: newAssociation.
+            size := size + 1sz.
+            self checkCapacityIncreaseCondition
+        }.
+    }.
+}.

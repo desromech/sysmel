@@ -629,6 +629,12 @@ public abstract class Dwarf::DebugInfoEntryAttribute superclass: Object; definit
 
     public field next => Dwarf::DebugInfoEntryAttribute.
 
+    public method abbreviationHash => Size
+        := self class identityHash hashConcatenate: name value hash.
+
+    public method abbreviationEquals: (other: Dwarf::DebugInfoEntryAttribute) ::=> Boolean
+        := (self class == other class) && (name value = other name value).
+
     public method writeAbbreviationWith: (writer: Dwarf::AsmWriter) ::=> Void := {
         writer activeStream uleb128Expression: name.
         self writeAbbreviationFormWith: writer
@@ -835,6 +841,34 @@ Dwarf::DebugInfoEntry definition: {
         while: attribute isNotNil do: {
             aBlock(attribute)
         } continueWith: (attribute := attribute next)
+    }.
+
+    public method abbreviationHash => Size := {
+        let result mutable := self class identityHash.
+
+        self attributesDo: {:(Dwarf::DebugInfoEntryAttribute)attribute :: Void |
+            result hashConcatenate: attribute abbreviationHash
+        }.
+
+        result hashConcatenate: self shouldEmitSiblingAttribute hash
+    }.
+
+    public method abbreviationEquals: (other: Dwarf::DebugInfoEntry) ::=> Boolean := {
+        self class == other class ifFalse: {return: false}.
+
+        let myAttribute mutable := firstAttribute.
+        let otherAttribute mutable := other firstAttribute.
+
+        while: (myAttribute isNotNil && otherAttribute isNotNil) do: {
+            (myAttribute abbreviationEquals: otherAttribute) ifFalse: {
+                return: false
+            }.
+        } continueWith: {
+            myAttribute := myAttribute next.
+            otherAttribute := otherAttribute next
+        }.
+
+        myAttribute isNil && otherAttribute isNil && (self shouldEmitSiblingAttribute = other shouldEmitSiblingAttribute)
     }.
 
     public method writeAbbreviationWith: (writer: Dwarf::AsmWriter) ::=> Void := {
@@ -1103,7 +1137,7 @@ Dwarf::AsmWriter definition: {
     public field version => UInt8.
     public field stringTable => OrderedCollection.
     public field stringTableDictionary => Dictionary.
-    public field abbreviationsDictionary => Dictionary.
+    public field abbreviationsDictionary => PluggableDictionary.
     public field abbreviations => OrderedCollection.
     public field debugInformationEntrySymbolDictionary => IdentityDictionary.
 
@@ -1119,7 +1153,10 @@ Dwarf::AsmWriter definition: {
         stringTable := OrderedCollection new.
         stringTableDictionary := Dictionary new.
         debugInformationEntrySymbolDictionary := IdentityDictionary new.
-        abbreviationsDictionary := Dictionary new. ## FIXME: Use a pluggable dictionary here.
+        abbreviationsDictionary := PluggableDictionary new
+            hashFunction: {:(AnyValue)key :: Size | (key downCastTo: Dwarf::DebugInfoEntry) abbreviationHash };
+            equalsFunction: {:(AnyValue)a :(AnyValue)b :: Boolean | (a downCastTo: Dwarf::DebugInfoEntry) abbreviationEquals: (b downCastTo: Dwarf::DebugInfoEntry)};
+            yourself.
         abbreviations := OrderedCollection new.
     }.
     
