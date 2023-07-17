@@ -67,7 +67,6 @@ static void sysbvm_jit_x86_mov64Absolute(sysbvm_bytecodeJit_t *jit, sysbvm_x86_r
 static void sysbvm_jit_moveRegisterToOperand(sysbvm_bytecodeJit_t *jit, int16_t operand, sysbvm_x86_register_t reg);
 static void sysbvm_jit_moveOperandToRegister(sysbvm_bytecodeJit_t *jit, sysbvm_x86_register_t reg, int16_t operand);
 static void sysbvm_jit_moveOperandToOperand(sysbvm_bytecodeJit_t *jit, int16_t destinationOperand, int16_t sourceOperand);
-static void sysbvm_jit_pushOperand(sysbvm_bytecodeJit_t *jit, int16_t operand);
 static void sysbvm_jit_moveOperandToCallArgumentVector(sysbvm_bytecodeJit_t *jit, int16_t operand, int32_t callArgumentVectorIndex);
 
 static uint8_t sysbvm_jit_x86_modRM(int8_t rm, uint8_t regOpcode, uint8_t mod)
@@ -156,27 +155,6 @@ static void sysbvm_jit_x86_pushRegister(sysbvm_bytecodeJit_t *jit, sysbvm_x86_re
     sysbvm_bytecodeJit_addByte(jit, 0x50 + (reg & SYSBVM_X86_REG_HALF_MASK));
 }
 
-static void sysbvm_jit_x86_pushImmediate32(sysbvm_bytecodeJit_t *jit, int32_t immediate)
-{
-    uint8_t instruction[] = {
-        0x68,
-        immediate & 0xFF, (immediate >> 8) & 0xFF, (immediate >> 16) & 0xFF, (immediate >> 24) & 0xFF,
-    };
-
-    sysbvm_bytecodeJit_addBytes(jit, sizeof(instruction), instruction);
-}
-
-static void sysbvm_jit_x86_pushFromMemoryWithOffset(sysbvm_bytecodeJit_t *jit, sysbvm_x86_register_t reg, int32_t offset)
-{
-    uint8_t instruction[] = {
-        0xFF,
-        sysbvm_jit_x86_modRM(reg, 6, 2),
-        offset & 0xFF, (offset >> 8) & 0xFF, (offset >> 16) & 0xFF, (offset >> 24) & 0xFF,
-    };
-
-    sysbvm_bytecodeJit_addBytes(jit, sizeof(instruction), instruction);
-}
-
 static void sysbvm_jit_x86_popRegister(sysbvm_bytecodeJit_t *jit, sysbvm_x86_register_t reg)
 {
     if(reg > SYSBVM_X86_REG_HALF_MASK)
@@ -216,21 +194,6 @@ static void sysbvm_jit_x86_mov64Absolute(sysbvm_bytecodeJit_t *jit, sysbvm_x86_r
         0xB8 + (destination & SYSBVM_X86_REG_HALF_MASK),
         value & 0xFF, (value >> 8) & 0xFF, (value >> 16) & 0xFF, (value >> 24) & 0xFF,
         (value >> 32) & 0xFF, (value >> 40) & 0xFF, (value >> 48) & 0xFF, (value >> 56) & 0xFF,
-    };
-
-    sysbvm_bytecodeJit_addBytes(jit, sizeof(instruction), instruction);
-}
-
-static void sysbvm_jit_x86_addImmediate32(sysbvm_bytecodeJit_t *jit, sysbvm_x86_register_t destination, int32_t value)
-{
-    if(value == 0)
-        return;
-
-    uint8_t instruction[] = {
-        sysbvm_jit_x86_rex(true, false, false, destination > SYSBVM_X86_REG_HALF_MASK),
-        0x81,
-        sysbvm_jit_x86_modRMRegister(destination, 0),
-        value & 0xFF, (value >> 8) & 0xFF, (value >> 16) & 0xFF, (value >> 24) & 0xFF,
     };
 
     sysbvm_bytecodeJit_addBytes(jit, sizeof(instruction), instruction);
@@ -1101,38 +1064,6 @@ static void sysbvm_jit_moveOperandToRegister(sysbvm_bytecodeJit_t *jit, sysbvm_x
         break;
     case SYSBVM_OPERAND_VECTOR_LOCAL:
         sysbvm_jit_x86_mov64FromMemoryWithOffset(jit, reg, SYSBVM_X86_RBP, jit->localVectorOffset + vectorOffset);
-        break;
-    }
-}
-
-static void sysbvm_jit_pushOperand(sysbvm_bytecodeJit_t *jit, int16_t operand)
-{
-    sysbvm_operandVectorName_t vectorType = (sysbvm_operandVectorName_t) (operand & SYSBVM_OPERAND_VECTOR_BITMASK);
-    int16_t vectorIndex = operand >> SYSBVM_OPERAND_VECTOR_BITS;
-    if(vectorIndex < 0)
-    {
-        sysbvm_jit_x86_pushImmediate32(jit, 0);
-        return;
-    }
-
-    int32_t vectorOffset = vectorIndex * sizeof(void*);
-    sysbvm_x86_register_t scratchRegister = SYSBVM_X86_RAX;
-    switch(vectorType)
-    {
-    case SYSBVM_OPERAND_VECTOR_ARGUMENTS:
-        sysbvm_jit_x86_mov64FromMemoryWithOffset(jit, scratchRegister, SYSBVM_X86_RBP, jit->argumentVectorOffset);
-        sysbvm_jit_x86_pushFromMemoryWithOffset(jit, scratchRegister, vectorOffset);
-        break;
-    case SYSBVM_OPERAND_VECTOR_CAPTURES:
-        sysbvm_jit_x86_mov64FromMemoryWithOffset(jit, scratchRegister, SYSBVM_X86_RBP, jit->captureVectorOffset);
-        sysbvm_jit_x86_pushFromMemoryWithOffset(jit, scratchRegister, sizeof(sysbvm_tuple_header_t) + vectorOffset);
-        break;
-    case SYSBVM_OPERAND_VECTOR_LITERAL:
-        sysbvm_jit_x86_mov64FromMemoryWithOffset(jit, scratchRegister, SYSBVM_X86_RBP, jit->literalVectorOffset);
-        sysbvm_jit_x86_pushFromMemoryWithOffset(jit, scratchRegister, sizeof(sysbvm_tuple_header_t) + vectorOffset);
-        break;
-    case SYSBVM_OPERAND_VECTOR_LOCAL:
-        sysbvm_jit_x86_pushFromMemoryWithOffset(jit, SYSBVM_X86_RBP, jit->localVectorOffset + vectorOffset);
         break;
     }
 }
