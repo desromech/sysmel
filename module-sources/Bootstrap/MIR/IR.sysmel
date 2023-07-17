@@ -1104,6 +1104,9 @@ public global MIR::Operation::StoreFloat32 := MIROperation named: #storeFloat32.
 public global MIR::Operation::StoreFloat64 := MIROperation named: #storeFloat64.
 public global MIR::Operation::StoreStruct := MIROperation named: #storeStruct.
 
+public global MIR::Operation::Memcpy := MIROperation named: #memcpy.
+public global MIR::Operation::Memset := MIROperation named: #memset.
+
 public global MIR::Operation::CallInt8 := MIROperation named: #callInt8.
 public global MIR::Operation::CallInt16 := MIROperation named: #callInt16.
 public global MIR::Operation::CallInt32 := MIROperation named: #callInt32.
@@ -1528,7 +1531,6 @@ MIRFunction definition: {
 
             each maxPredecessorIndex: maxPredIndex.
             
-            ## CheckMe: This line does not seem to be required.
             each maxIndexAtEnd: (each maxIndexAtEnd max: each maxPredecessorIndex).
         }.
     }.
@@ -1948,6 +1950,12 @@ public final class MIRBlockBuilder superclass: Object; definition: {
 
     public method storeStruct: (value: MIRValue) into: (pointer: MIRValue) constantOffset: (constantOffset: Int64) ::=> MIRInstruction
         := self operation: MIR::Operation::StoreStruct with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
+
+    public method memcpy: (destination: MIRValue) source: (source: MIRValue) size: (size: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::Memcpy with: destination with: source with: size.
+
+    public method memset: (destination: MIRValue) value: (value: MIRValue) size: (size: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::Memset with: destination with: value with: size.
 
     public method loadEffectiveAddress: (basePointer: MIRValue) index: (indexValue: MIRValue) constantScale: (constantScale: Int64) type: (type: Type) ::=> MIRValue := {
         constantScale = 0i64 ifTrue: {

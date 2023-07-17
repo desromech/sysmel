@@ -1778,6 +1778,12 @@ public global HIRMirPrimitiveCallGenerationTable := #{
             }
         }
     }.
+    #memcpy : {:(Array)arguments :(Type)type :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: MIRValue |
+        codegen blockBuilder memcpy: (codegen translateValue: arguments first) source: (codegen translateValue: arguments second) size: (codegen translateValue: arguments third).
+    }.
+    #memset : {:(Array)arguments :(Type)type :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: MIRValue |
+        codegen blockBuilder memset: (codegen translateValue: arguments first) value: (codegen translateValue: arguments second) size: (codegen translateValue: arguments third).
+    }.
 
     ## Boolean primitives
     #Boolean::not : translateUnaryPrimitiveInto(MIR::Operation::BooleanNot).

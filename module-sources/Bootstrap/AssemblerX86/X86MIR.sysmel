@@ -3538,6 +3538,30 @@ MIR::Operation::StoreStruct
             x86::rep; x86::movsb
     }.
 
+MIR::Operation::Memcpy
+    forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+        allocator
+            allocateCloberredRegister: MIR::X86_64::RDI forInstruction: instruction operandAt: 0sz;
+            allocateCloberredRegister: MIR::X86_64::RSI forInstruction: instruction operandAt: 1sz;
+            allocateCloberredRegister: MIR::X86_64::RCX forInstruction: instruction operandAt: 2sz.
+    };
+    forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::rep; x86::movsb
+    }.
+
+MIR::Operation::Memset
+    forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+        allocator
+            allocateCloberredRegister: MIR::X86_64::RDI forInstruction: instruction operandAt: 0sz;
+            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 1sz;
+            allocateCloberredRegister: MIR::X86_64::RCX forInstruction: instruction operandAt: 2sz.
+    };
+    forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::rep; x86::stosb
+    }.
+
 MIR::Operation::TruncateInt64ToInt32
     forTarget: #x86_64 registerConstraintsWith: x86::moveIntegerRegisterConstraints;
     forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
