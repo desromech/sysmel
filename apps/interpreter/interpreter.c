@@ -145,7 +145,7 @@ int mainWithContext(int startArgumentIndex, int argc, const char *argv[])
 
 int main(int argc, const char *argv[])
 {
-    sysbvm_contextCreationOptions_t contextOptions = {};
+    sysbvm_contextCreationOptions_t contextOptions = {0};
 
     // Allow creating the context by loading it from an image.
     int startArgumentIndex = 1;

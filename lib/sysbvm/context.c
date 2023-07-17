@@ -1362,7 +1362,7 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_createWithOptions(sysbvm_contextCrea
 
 SYSBVM_API sysbvm_context_t *sysbvm_context_create(void)
 {
-    sysbvm_contextCreationOptions_t emptyOptions = {};
+    sysbvm_contextCreationOptions_t emptyOptions = {0};
     return sysbvm_context_createWithOptions(&emptyOptions);
 }
 
