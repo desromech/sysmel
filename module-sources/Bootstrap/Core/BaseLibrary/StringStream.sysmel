@@ -7,42 +7,52 @@ StringStream definition: {
         requiredCapacity <= self capacity ifTrue: {return: void}.
 
         let newCapacity := requiredCapacity asLargerPowerOfTwo max: 16sz.
+        let oldStorage := storage.
         let newStorage := String basicAllocate: newCapacity.
         let currentSize := size.
-        let i mutable := 0sz.
-        while: (i < currentSize) do: {
-            newStorage at: i put: (storage at: i)
-        } continueWith: (i := i + 1sz).
+        ObjectModel::isLogical() ifTrue: {
+            let i mutable := 0sz.
+            while: (i < currentSize) do: {
+                newStorage char8At: i put: (oldStorage char8At: i)
+            } continueWith: (i := i + 1sz).
+        } ifFalse: {
+            memcpy(newStorage __rawContentsPointer__, oldStorage __rawContentsPointer__, currentSize).
+        }.
 
         storage := newStorage.
     }.
 
-    public override method nextPut: (character: Char8) ::=> Void := {
+    public override method nextPut: character ::=> Void := {
         self ensureCapacityFor: 1sz.
-        storage at: size put: character.
+        storage char8At: size put: (character uncheckedDownCastTo: Char8).
         size := size + 1sz.
     }.
 
-    public override method nextPutAll: (string: String) ::=> Void := {
-        let charCount := string size.
-        self ensureCapacityFor: charCount.
-
-        let i mutable := 0sz.
-        while: (i < charCount) do: {
-            storage at: size put: (string at: i).
-            size := size + 1sz
-        } continueWith: (i := i + 1sz).
+    public override method nextPutAll: aCollection ::=> Void := {
+        RawTuple::isBytes(aCollection) ifTrue: {
+            self nextPutAllBytesOf: aCollection
+        } ifFalse: {
+            self ensureCapacityFor: aCollection size.
+            super nextPutAll: aCollection
+        }.
     }.
 
     public override method nextPutAllBytesOf: anObject ::=> Void := {
         let byteCount := RawTuple::byteSize(anObject).
         self ensureCapacityFor: byteCount.
 
-        let i mutable := 0sz.
-        while: (i < byteCount) do: {
-            storage at: size put: (RawTuple::byteSlotAt:)(anObject, i) asChar8.
-            size := size + 1sz
-        } continueWith: (i := i + 1sz).
+        ObjectModel::isLogical() ifTrue: {
+            let i mutable := 0sz.
+            while: (i < byteCount) do: {
+                storage at: size put: (RawTuple::byteSlotAt:)(anObject, i) asChar8.
+                size := size + 1sz
+            } continueWith: (i := i + 1sz).
+        } ifFalse: {
+            memcpy((self __slotNamedAt__: #storage) __rawContentsBytePointer__ + size asIntPointer reinterpretCastTo: Void pointer,
+                anObject __rawContentsPointer__,
+                byteCount).
+            size := size + byteCount
+        }
     }.
 
     public method asByteArray => ByteArray := {
@@ -51,7 +61,7 @@ StringStream definition: {
 
         let i mutable := 0sz.
         while: (i < byteArraySize) do: {
-            byteArray at: i put: (storage at: i) asUInt8
+            byteArray uint8At: i put: (storage char8At: i) asUInt8
         } continueWith: (i := i + 1sz).
 
         byteArray

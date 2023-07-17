@@ -5,6 +5,7 @@ MethodDictionary definition: {
         := self storage size / 2sz.
 
     public final eager method scanFor: key ::=> IntPointer := {
+        let storage := self __slotNamedAt__: #storage.
         storage ifNil: { return: -1iptr }.
 
         let capacity := storage size / 2sz.
@@ -12,16 +13,16 @@ MethodDictionary definition: {
 
         let i mutable := naturalIndex.
         while: (i < capacity) do: {
-            let storageKey := storage at: i*2sz.
-            if: (storageKey == key) || (storageKey == __hashtableEmptyElement__) then: {
+            let storageKey := storage __uncheckedSlotAt__: i*2sz.
+            if: (key == storageKey) || (__hashtableEmptyElement__ == storageKey) then: {
                 return: i asIntPointer
             }
         } continueWith: (i := i + 1sz).
 
         i := 0sz.
         while: (i < naturalIndex) do: {
-            let storageKey := storage at: i*2sz.
-            if: (storageKey == key) || (storageKey == __hashtableEmptyElement__) then: {
+            let storageKey := storage __uncheckedSlotAt__: i*2sz.
+            if: (key == storageKey) || (__hashtableEmptyElement__ == storageKey) then: {
                 return: i asIntPointer
             }
         } continueWith: (i := i + 1sz).

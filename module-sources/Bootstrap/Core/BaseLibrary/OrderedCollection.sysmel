@@ -4,7 +4,7 @@ OrderedCollection definition: {
     public eager method capacity => Size
         := storage ifNil: 0sz ifNotNil: storage size.
 
-    public eager method ensureCapacityForAtLeast: (additionalRequiredCapacity: Size) ::=> Void := {
+    public method ensureCapacityForAtLeast: (additionalRequiredCapacity: Size) ::=> Void := {
         let requiredCapacity := size + additionalRequiredCapacity.
         requiredCapacity <= self capacity ifTrue: {return: void}.
 
@@ -12,10 +12,14 @@ OrderedCollection definition: {
         let newStorage := Array basicAllocate: newCapacity.
         let oldStorage := storage.
         let currentSize := size.
-        let i mutable := 0sz.
-        while: (i < currentSize) do: {
-            newStorage __uncheckedSlotAt__: i put: (oldStorage __uncheckedSlotAt__: i)
-        } continueWith: (i := i + 1sz).
+        ObjectModel::isLogical() ifTrue: {
+            let i mutable := 0sz.
+            while: (i < currentSize) do: {
+                newStorage __uncheckedSlotAt__: i put: (oldStorage __uncheckedSlotAt__: i)
+            } continueWith: (i := i + 1sz).
+        } ifFalse: {
+            memcpy(newStorage __rawContentsPointer__, oldStorage __rawContentsPointer__, currentSize * ObjectModel::PointerSize).
+        }.
 
         storage := newStorage.
     }.

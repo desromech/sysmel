@@ -7,31 +7,52 @@ ByteStream definition: {
         requiredCapacity <= self capacity ifTrue: {return: void}.
 
         let newCapacity := requiredCapacity asLargerPowerOfTwo max: 16sz.
+        let oldStorage := storage.
         let newStorage := ByteArray basicAllocate: newCapacity.
         let currentSize := size.
-        let i mutable := 0sz.
-        while: (i < currentSize) do: {
-            newStorage at: i put: (storage at: i)
-        } continueWith: (i := i + 1sz).
+        ObjectModel::isLogical() ifTrue: {
+            let i mutable := 0sz.
+            while: (i < currentSize) do: {
+                newStorage uint8At: i put: (oldStorage uint8At: i)
+            } continueWith: (i := i + 1sz).
+        } ifFalse: {
+            memcpy(newStorage __rawContentsPointer__, oldStorage __rawContentsPointer__, currentSize).
+        }.
 
         storage := newStorage.
     }.
 
-    public override method nextPut: (byte: UInt8) ::=> Void := {
+    public override method nextPut: byte ::=> Void := {
         self ensureCapacityFor: 1sz.
-        storage uint8At: size put: byte.
+        storage uint8At: size put: (byte uncheckedDownCastTo: UInt8).
         size := size + 1sz.
     }.
 
-    public override method nextPutAll: (bytes: ByteArray) ::=> Void := {
-        let byteCount := bytes size.
+    public override method nextPutAll: aCollection ::=> Void := {
+        RawTuple::isBytes(aCollection) ifTrue: {
+            self nextPutAllBytesOf: aCollection
+        } ifFalse: {
+            self ensureCapacityFor: aCollection size.
+            super nextPutAll: aCollection
+        }
+    }.
+
+    public override method nextPutAllBytesOf: anObject ::=> Void := {
+        let byteCount := RawTuple::byteSize(anObject).
         self ensureCapacityFor: byteCount.
 
-        let i mutable := 0sz.
-        while: (i < byteCount) do: {
-            storage uint8At: size put: (bytes at: i).
-            size := size + 1sz
-        } continueWith: (i := i + 1sz).
+        ObjectModel::isLogical() ifTrue: {
+            let i mutable := 0sz.
+            while: (i < byteCount) do: {
+                storage uint8At: size put: (RawTuple::byteSlotAt:)(anObject, i) asUInt8.
+                size := size + 1sz
+            } continueWith: (i := i + 1sz).
+        } ifFalse: {
+            memcpy((self __slotNamedAt__: #storage) __rawContentsBytePointer__ + size asIntPointer reinterpretCastTo: Void pointer,
+                anObject __rawContentsPointer__,
+                byteCount).
+            size := size + byteCount
+        }
     }.
 
     public method nextPutString: (string: String) ::=> Void := {
