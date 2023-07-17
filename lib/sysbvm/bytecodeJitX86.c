@@ -916,9 +916,11 @@ static void sysbvm_jit_cfi_pushRBP(sysbvm_bytecodeJit_t *jit)
     sysbvm_bytecodeJit_uwop_pushNonVol(jit, 5);
 }
 
-static void sysbvm_jit_cfi_storeStackInFramePointer(sysbvm_bytecodeJit_t *jit)
+static void sysbvm_jit_cfi_storeStackInFramePointer(sysbvm_bytecodeJit_t *jit, int32_t offset)
 {
-    sysbvm_bytecodeJit_uwop_setFPReg(jit, 0);
+    SYSBVM_ASSERT((offset % 16) == 0);
+    jit->cfiFrameOffset = offset / 16;
+    sysbvm_bytecodeJit_uwop_setFPReg(jit);
 }
 
 static void sysbvm_jit_cfi_subtract(sysbvm_bytecodeJit_t *jit, size_t subtractionAmount)
@@ -932,9 +934,10 @@ static void sysbvm_jit_cfi_pushRBP(sysbvm_bytecodeJit_t *jit)
     (void)jit;
 }
 
-static void sysbvm_jit_cfi_storeStackInFramePointer(sysbvm_bytecodeJit_t *jit)
+static void sysbvm_jit_cfi_storeStackInFramePointer(sysbvm_bytecodeJit_t *jit, int offset)
 {
     (void)jit;
+    (void)offset;
 }
 
 static void sysbvm_jit_cfi_subtract(sysbvm_bytecodeJit_t *jit, size_t subtractionAmount)
@@ -944,27 +947,6 @@ static void sysbvm_jit_cfi_subtract(sysbvm_bytecodeJit_t *jit, size_t subtractio
 }
 
 #endif
-
-static void sysbvm_jit_cfi_pushImmediate(sysbvm_bytecodeJit_t *jit)
-{
-    sysbvm_jit_cfi_subtract(jit, sizeof(void*));
-}
-
-static void sysbvm_jit_cfi_pushArg(sysbvm_bytecodeJit_t *jit, int index)
-{
-    (void)index;
-    sysbvm_jit_cfi_pushImmediate(jit);
-}
-
-static void sysbvm_jit_cfi_pushCaptureVectorPointer(sysbvm_bytecodeJit_t *jit)
-{
-    sysbvm_jit_cfi_pushImmediate(jit);
-}
-
-static void sysbvm_jit_cfi_pushLiteralVectorPointer(sysbvm_bytecodeJit_t *jit)
-{
-    sysbvm_jit_cfi_pushImmediate(jit);
-}
 
 static void sysbvm_jit_cfi_endPrologue(sysbvm_bytecodeJit_t *jit)
 {
@@ -987,16 +969,20 @@ static void sysbvm_jit_prologue(sysbvm_bytecodeJit_t *jit)
     jit->stackFrameSize = (requiredStackSize + 15) & (-16);
     jit->stackFrameRecordOffset = 0;
 
+#ifdef _WIN32
+    jit->stackCallReservationSize = SYSBVM_X86_64_CALL_SHADOW_SPACE + 16;
+    sysbvm_jit_x86_subImmediate32(jit, SYSBVM_X86_RSP, jit->stackFrameSize + jit->stackCallReservationSize);
+    sysbvm_jit_cfi_subtract(jit, jit->stackFrameSize + jit->stackCallReservationSize);
+
+    sysbvm_jit_x86_leaRegisterWithOffset(jit, SYSBVM_X86_RBP, SYSBVM_X86_RSP, jit->stackCallReservationSize);
+    sysbvm_jit_cfi_storeStackInFramePointer(jit, jit->stackCallReservationSize);
+
+#else
     sysbvm_jit_x86_subImmediate32(jit, SYSBVM_X86_RSP, jit->stackFrameSize);
     sysbvm_jit_cfi_subtract(jit, jit->stackFrameSize);
 
     sysbvm_jit_x86_mov64Register(jit, SYSBVM_X86_RBP, SYSBVM_X86_RSP);
-    sysbvm_jit_cfi_storeStackInFramePointer(jit);
-
-#ifdef _WIN32
-    jit->stackCallReservationSize = SYSBVM_X86_64_CALL_SHADOW_SPACE + 16;
-    sysbvm_jit_x86_subImmediate32(jit, SYSBVM_X86_RSP, jit->stackCallReservationSize);
-    sysbvm_jit_cfi_subtract(jit, jit->stackCallReservationSize);
+    sysbvm_jit_cfi_storeStackInFramePointer(jit, 0);
 #endif
 
     sysbvm_jit_cfi_endPrologue(jit);
@@ -1220,12 +1206,26 @@ static void sysbvm_jit_emitUnwindInfo(sysbvm_bytecodeJit_t *jit)
     sysbvm_bytecodeJit_addUnwindInfoBytes(jit, sizeof(runtimeFunction), (uint8_t*)&runtimeFunction);
 
     // Unwind_info
+    size_t codeCount = jit->unwindInfoBytecode.size/2;
+    int frameRegister = /* RBP */ 5;
+    int frameOffset = jit->cfiFrameOffset;
+
     sysbvm_bytecodeJit_addUnwindInfoByte(jit, /*Version*/1  | (/* Flags*/0 << 3));
     sysbvm_bytecodeJit_addUnwindInfoByte(jit, (uint8_t)jit->prologueSize);
-    sysbvm_bytecodeJit_addUnwindInfoByte(jit, (uint8_t)(jit->unwindInfoBytecode.size/2));
-    sysbvm_bytecodeJit_addUnwindInfoByte(jit, (/* Frame register RBP */ 5) | (/* Frame register offset. */ 0 << 4));
-    //sysbvm_bytecodeJit_addUnwindInfoByte(jit, 0);
-    sysbvm_dynarray_addAll(&jit->unwindInfo, jit->unwindInfoBytecode.size, jit->unwindInfoBytecode.data);
+    sysbvm_bytecodeJit_addUnwindInfoByte(jit, (uint8_t)codeCount);
+    sysbvm_bytecodeJit_addUnwindInfoByte(jit, (frameRegister) | (frameOffset << 4));
+
+    // Unwind codes must be sorted in descending order.
+    uint16_t *unwindCodes = (uint16_t *)jit->unwindInfoBytecode.data;
+    for(size_t i = 0; i < codeCount; ++i)
+        sysbvm_dynarray_addAll(&jit->unwindInfo, 2, unwindCodes + codeCount - i - 1);
+
+    if((codeCount % 2) != 0)
+    {
+        sysbvm_bytecodeJit_addUnwindInfoByte(jit, 0);
+        sysbvm_bytecodeJit_addUnwindInfoByte(jit, 0);
+    }
+        
 #else
     // TODO: Implement this for linux and mac.
     (void)jit;

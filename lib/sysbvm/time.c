@@ -23,7 +23,7 @@ SYSBVM_API int64_t sysbvm_time_microsecondsTimestamp(void)
     if(!QueryPerformanceCounter(&timestamp) || !QueryPerformanceFrequency(&timestampFrequency))
         return 0;
 
-    int64_t frequencyDivisor = timestamp.QuadPart / (int64_t)1000000;
+    int64_t frequencyDivisor = timestampFrequency.QuadPart / (int64_t)1000000;
     return timestamp.QuadPart / frequencyDivisor;
 #else
     struct timespec ts = {};
@@ -40,7 +40,7 @@ SYSBVM_API int64_t sysbvm_time_nanosecondsTimestamp(void)
     if(!QueryPerformanceCounter(&timestamp) || !QueryPerformanceFrequency(&timestampFrequency))
         return 0;
 
-    int64_t frequencyDivisor = timestamp.QuadPart / (int64_t)1000000000;
+    int64_t frequencyDivisor = timestampFrequency.QuadPart / (int64_t)1000000000;
     return timestamp.QuadPart / frequencyDivisor;
 #else
     struct timespec ts = {};

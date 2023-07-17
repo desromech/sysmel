@@ -50,6 +50,7 @@ typedef struct sysbvm_bytecodeJit_s
     int32_t callArgumentVectorOffset;
     int32_t stackFrameSize;
     int32_t stackCallReservationSize;
+    int32_t cfiFrameOffset;
 
     sysbvm_dynarray_t instructions;
     sysbvm_dynarray_t constants;
@@ -114,9 +115,9 @@ static size_t sysbvm_bytecodeJit_addUnwindInfoByte(sysbvm_bytecodeJit_t *jit, ui
 static void sysbvm_bytecodeJit_uwop(sysbvm_bytecodeJit_t *jit, uint8_t opcode, uint8_t operationInfo)
 {
     uint8_t prologueOffset = (uint8_t)jit->instructions.size;
-    uint8_t operation = (opcode << 4) | operation;
-    sysbvm_dynarray_add(&jit->unwindInfoBytecode, &prologueOffset);
-    sysbvm_dynarray_add(&jit->unwindInfoBytecode, &operation);
+    uint8_t operation = (operationInfo << 4) | opcode;
+    uint16_t code = prologueOffset | (operation << 8);
+    sysbvm_dynarray_addAll(&jit->unwindInfoBytecode, 2, &code);
 }
 
 static void sysbvm_bytecodeJit_uwop_pushNonVol(sysbvm_bytecodeJit_t *jit, uint8_t reg)
@@ -124,9 +125,9 @@ static void sysbvm_bytecodeJit_uwop_pushNonVol(sysbvm_bytecodeJit_t *jit, uint8_
     sysbvm_bytecodeJit_uwop(jit, /*UWOP_PUSH_NONVOL */0 , reg);
 }
 
-static void sysbvm_bytecodeJit_uwop_setFPReg(sysbvm_bytecodeJit_t *jit, uint8_t offset)
+static void sysbvm_bytecodeJit_uwop_setFPReg(sysbvm_bytecodeJit_t *jit)
 {
-    sysbvm_bytecodeJit_uwop(jit, /* UWOP_SET_FPREG */3, offset);
+    sysbvm_bytecodeJit_uwop(jit, /* UWOP_SET_FPREG */3, 0);
 }
 
 static void sysbvm_bytecodeJit_uwop_alloc(sysbvm_bytecodeJit_t *jit, size_t amount)
@@ -136,15 +137,15 @@ static void sysbvm_bytecodeJit_uwop_alloc(sysbvm_bytecodeJit_t *jit, size_t amou
     SYSBVM_ASSERT((amount % 8) == 0);
     if(amount <= 128)
     {
-        sysbvm_bytecodeJit_uwop(jit, /* UWOP_ALLOC_SMALL */2, (uint8_t)((amount - 8) / 8));
+        sysbvm_bytecodeJit_uwop(jit, /* UWOP_ALLOC_SMALL */2, (uint8_t)(amount/8 - 1));
     }
-    else if(amount <= 512*1024)
+    else if(amount <= 512*1024 - 8)
     {
-        size_t encodedAmount = (amount - 8) / 8;
+        size_t encodedAmount = amount / 8;
         SYSBVM_ASSERT(encodedAmount <= 0xFFFF);
-        sysbvm_bytecodeJit_uwop(jit, /* UWOP_ALLOC_LARGE */3, 0);
         uint16_t encodedAmountU16 = (uint16_t)encodedAmount;
         sysbvm_dynarray_addAll(&jit->unwindInfoBytecode, 2, &encodedAmountU16);
+        sysbvm_bytecodeJit_uwop(jit, /* UWOP_ALLOC_LARGE */1, 0);
     }
     else
     {
