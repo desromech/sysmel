@@ -126,10 +126,29 @@ printLine(module fullPrintString).
 }
 
 *#
+
+#*
 {
 let module := HIRModuleCompilationContext forDefaultTarget
     exclusiveCompilationMode: true;
     compileFunctionsWithDefinitions: (ObjectModel::lookupMethodWithInlineCache, ObjectModel::sendWithReceiverType2);
+    finish.
+
+printLine(module fullPrintString).
+
+##HIRInliningPass runInModule: module.
+HIRInliningPass new
+    functionPasses: HIRStandardFunctionOptimizationPasses;
+    runInModule: module.
+
+printLine(module fullPrintString).
+}
+*#
+
+{
+let module := HIRModuleCompilationContext forDefaultTarget
+    exclusiveCompilationMode: true;
+    compileFunctionsWithDefinitions: (RawTuple::type,);
     finish.
 
 printLine(module fullPrintString).

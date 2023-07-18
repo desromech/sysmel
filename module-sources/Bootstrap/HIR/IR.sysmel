@@ -1289,6 +1289,23 @@ HIRBasicBlock definition: {
         }
     }.
 
+    public method replaceSuccessorsWith: (newSuccessors: Array) ::=> Void := {
+        ## Remove from the deleted predecessors.
+        let oldSuccessors := self successors.
+        self successors do: {:(HIRBasicBlock)oldSuccesor :: Void |
+            (newSuccessors includes: oldSuccesor) ifFalse: {
+                oldSuccesor removePredecessor: self
+            }
+        }.
+
+        ## Add the new predecessors.
+        newSuccessors do: {:(HIRBasicBlock)newSuccessor :: Void |
+            (oldSuccessors includes: newSuccessor) ifFalse: {
+                newSuccessor addPredecessor: self
+            }
+        }.
+    }.
+
     public method deleteInstruction: (instruction: HIRInstruction) ::=> Void := {
         self assert: instruction userCount = 0sz.
         self removeInstruction: instruction.
@@ -1512,6 +1529,10 @@ public final class HIRBranchInstruction superclass: HIRInstruction; definition: 
     public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
         replacementDictionary at: self destination ifPresent: {:(HIRBasicBlock)replacement :: Void | self destination: replacement}.
     }.
+
+    public override method evaluateConstantFolding => HIRValue := {
+        self
+    }.
 }.
 
 public final class HIRCallInstruction superclass: HIRInstruction; definition: {
@@ -1647,6 +1668,30 @@ public final class HIRConditionalBranchInstruction superclass: HIRInstruction; d
         aBlock(self condition).
         aBlock(self trueDestination).
         aBlock(self falseDestination).
+    }.
+
+    public override method evaluateConstantFolding => HIRValue := {
+        self condition isLiteralConstantTrue ifTrue: {
+            let newBranch := HIRBranchInstruction new
+                useSourceInformationOfValue: self;
+                destination: trueDestination;
+                registerInUsedValues;
+                yourself.
+            self parent addInstruction: newBranch after: self.
+            return: newBranch
+        }.
+
+        self condition isLiteralConstantFalse ifTrue: {
+            let newBranch := HIRBranchInstruction new
+                useSourceInformationOfValue: self;
+                destination: falseDestination;
+                registerInUsedValues;
+                yourself.
+            self parent addInstruction: newBranch after: self.
+            return: newBranch
+        }.
+
+        self
     }.
 
     public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
