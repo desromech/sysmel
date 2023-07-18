@@ -720,19 +720,33 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRCallingConventi
         := nil.
 
     public method registerConstraintsOfCall: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
-        instruction scratchRegisterCount: 1sz.
-        allocator
-            allocateRegister: MIR::X86_64::RBX forInstruction: instruction scratchAt: 0sz.
-        
+        let registerArguments := OrderedCollection new.
+        let stackArguments := OrderedCollection new.
+        let hasStackIntegerArgument mutable := false.
+        let hasStackFloatOrVectorArgument mutable := false.
+
         let registerAssignmentState := MIRSysVX86_64RegisterAssignmentState new.
         1sz until: instruction operands size do: {:(Size)operandIndex :: Void |
             let operand := instruction operands at: operandIndex.
             let register := registerAssignmentState assignRegisterToValue: operand.
-            register
-                ifNotNil: (allocator allocateRegister: register forInstruction: instruction operandAt: operandIndex)
-                ifNil: (allocator allocateMemoryForInstruction: instruction operandAt: operandIndex)
+            register ifNotNil: {
+                registerArguments add: operandIndex; add: register
+            } ifNil: {
+                stackArguments add: operandIndex
+            }
         }.
 
+        instruction scratchRegisterCount: 1sz.
+        allocator
+            allocateRegister: MIR::X86_64::RBX forInstruction: instruction scratchAt: 0sz.
+
+        registerArguments pairsDo: {:(Size)operandIndex :register :: Void |
+            allocator allocateRegister: register forInstruction: instruction operandAt: operandIndex
+        }.
+        stackArguments do: {:(Size)operandIndex :: Void |
+            allocator allocateMemoryForInstruction: instruction operandAt: operandIndex
+        }.
+        
         allocator allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz.
         allocator
             allocateCaptureVectorPointerRegisterForInstruction: instruction;

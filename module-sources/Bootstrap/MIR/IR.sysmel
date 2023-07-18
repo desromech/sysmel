@@ -13,6 +13,7 @@ public abstract class MIRPhysicalLocation superclass: Object; definition: {
     }.
 
     public virtual method isMemory => Boolean := false.
+    public virtual method isSpecificMemoryLocation => Boolean := false.
     public virtual method isImmediate => Boolean := false.
     public virtual method isRegister => Boolean := false.
     public virtual method isRegisterWithPointer => Boolean := false.
@@ -30,6 +31,17 @@ public abstract class MIRPhysicalLocationMemory superclass: MIRPhysicalLocation;
         public method uniqueInstance => MIRPhysicalLocationMemory
             := singleton.
     }
+}.
+
+public abstract class MIRSpecificPhysicalMemoryLocation superclass: MIRPhysicalLocation; definition: {
+    public field offset => Int64.
+    public field scratchRegisters => Array.
+
+    public override method isMemory => Boolean := true.
+    public override method isSpecificMemoryLocation => Boolean := true.
+}.
+
+public final class MIRPhysicalLocationSpecificStackPointerOffset superclass: MIRSpecificPhysicalMemoryLocation; definition: {
 }.
 
 public abstract class MIRPhysicalLocationRegisterWithPointer superclass: MIRPhysicalLocation; definition: {
