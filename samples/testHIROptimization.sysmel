@@ -153,10 +153,7 @@ let module := HIRModuleCompilationContext forDefaultTarget
 
 printLine(module fullPrintString).
 
-##HIRInliningPass runInModule: module.
-HIRInliningPass new
-    functionPasses: HIRStandardFunctionOptimizationPasses;
-    runInModule: module.
+module performStandardOptimizations.
 
 printLine(module fullPrintString).
 }

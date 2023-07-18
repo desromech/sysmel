@@ -52,6 +52,20 @@ public class HIRConstantPropagationPass superclass: HIRFunctionDefinitionPass; d
                 pendingWork addAll: basicBlock successors.
                 function deleteBasicBlock: basicBlock
             } ifFalse: {
+                ## Merge basic blocks.
+                (basicBlock successors size = 1sz) && basicBlock lastInstruction isBranchInstruction ifTrue: {
+                    let mergedBlock => HIRBasicBlock := basicBlock successors first.
+
+                    mergedBlock parent isNotNil && mergedBlock predecessors size = 1sz ifTrue: {
+                        self assert: mergedBlock predecessors first == basicBlock.
+
+                        ## Avoid introducing a new critical edge.
+                        (basicBlock predecessors size >= 2sz) && (mergedBlock successors size >= 2sz) ifFalse: {
+                            function mergeBlock: basicBlock withSuccessor: mergedBlock
+                        }
+                    }
+                }.
+
                 basicBlock instructionsDo: processInstruction
             }.
         }.

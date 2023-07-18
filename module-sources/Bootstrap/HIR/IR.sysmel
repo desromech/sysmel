@@ -1217,11 +1217,45 @@ HIRBasicBlock definition: {
     }.
 
     public method incomingBranchDestinationReplacementIncomingFrom: (incomingEdge: HIRBasicBlock) ::=> HIRBasicBlock := {
+        let shouldReturnDestinationWithNextDestination := {:(HIRBasicBlock)destination :(HIRBasicBlock)nextDestination :: Boolean |
+            destination firstInstruction isNil || destination firstInstruction isPhiInstruction not || (destination ~~ nextDestination)
+        }.
+
         firstInstruction isNotNil && lastInstruction isNotNil && firstInstruction isBranchInstruction ifTrue: {
             let branch := firstInstruction downCastTo: HIRBranchInstruction.
             let branchDestination := branch destination.
-            branchDestination firstInstruction isNil || branchDestination firstInstruction isPhiInstruction not ifTrue: {
-                return: (branchDestination incomingBranchDestinationReplacementIncomingFrom: self)
+            let nextBranchDestination := branchDestination incomingBranchDestinationReplacementIncomingFrom: self.
+
+            ## We cannot jump directly onto the phi instruction because we need to fix the incoming block references.
+            shouldReturnDestinationWithNextDestination(branchDestination, nextBranchDestination) ifTrue: {
+                return: nextBranchDestination
+            }
+        }.
+
+        firstInstruction isNotNil && firstInstruction isPhiInstruction &&
+        (firstInstruction userCount = 1sz) &&
+        firstInstruction nextInstruction isConditionalBranchInstruction ifTrue: {
+            self assert: firstInstruction nextInstruction == lastInstruction.
+            let phi := firstInstruction downCastTo: HIRPhiInstruction.
+            let condBranch := lastInstruction downCastTo: HIRConditionalBranchInstruction.
+            let incomingBlockAndValue := phi findIncomingBlockAndValueFor: incomingEdge.
+            incomingBlockAndValue isNotNil && (condBranch condition == phi) ifTrue: {
+                let incomingValue => HIRValue := incomingBlockAndValue value.
+                incomingValue isLiteralConstantFalse ifTrue: {
+                    let branchDestination := condBranch falseDestination.
+                    let nextBranchDestination := branchDestination incomingBranchDestinationReplacementIncomingFrom: self.
+                    shouldReturnDestinationWithNextDestination(branchDestination, nextBranchDestination) ifTrue: {
+                        return: nextBranchDestination
+                    }.
+                }.
+
+                incomingValue isLiteralConstantTrue ifTrue: {
+                    let branchDestination := condBranch trueDestination.
+                    let nextBranchDestination := branchDestination incomingBranchDestinationReplacementIncomingFrom: self.
+                    shouldReturnDestinationWithNextDestination(branchDestination, nextBranchDestination) ifTrue: {
+                        return: nextBranchDestination
+                    }.
+                }.
             }
         }.
 
@@ -1668,7 +1702,7 @@ public final class HIRConditionalBranchInstruction superclass: HIRInstruction; d
     public field trueDestination => HIRBasicBlock.
     public field falseDestination => HIRBasicBlock.
 
-    public override method isConditionalBranchInstruction => Boolean := false.
+    public override method isConditionalBranchInstruction => Boolean := true.
     public override method isTerminatorInstruction => Boolean := true.
 
     public override method successors => Array
