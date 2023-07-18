@@ -1216,12 +1216,12 @@ HIRBasicBlock definition: {
         }.
     }.
 
-    public method incomingBranchDestinationReplacement => HIRBasicBlock := {
+    public method incomingBranchDestinationReplacementIncomingFrom: (incomingEdge: HIRBasicBlock) ::=> HIRBasicBlock := {
         firstInstruction isNotNil && lastInstruction isNotNil && firstInstruction isBranchInstruction ifTrue: {
             let branch := firstInstruction downCastTo: HIRBranchInstruction.
             let branchDestination := branch destination.
             branchDestination firstInstruction isNil || branchDestination firstInstruction isPhiInstruction not ifTrue: {
-                return: branchDestination incomingBranchDestinationReplacement
+                return: (branchDestination incomingBranchDestinationReplacementIncomingFrom: self)
             }
         }.
 
@@ -1232,7 +1232,7 @@ HIRBasicBlock definition: {
         lastInstruction isNotNil && lastInstruction isTerminatorInstruction ifFalse: {return: void}.
 
         lastInstruction successors do: {:(HIRBasicBlock)eachSuccessor :: Void |
-            let actualDestination := eachSuccessor incomingBranchDestinationReplacement.
+            let actualDestination := eachSuccessor incomingBranchDestinationReplacementIncomingFrom: self.
             eachSuccessor == actualDestination ifFalse: {
                 lastInstruction replaceDestination: eachSuccessor with: actualDestination
             }
@@ -1531,6 +1531,21 @@ public final class HIRBranchInstruction superclass: HIRInstruction; definition: 
     }.
 
     public override method evaluateConstantFolding => HIRValue := {
+        let ownerBlock := parent.
+        self assert: ownerBlock isNotNil.
+
+        let actualDestination := destination incomingBranchDestinationReplacementIncomingFrom: ownerBlock.
+
+        destination ~~ actualDestination ifTrue: {
+            let newBranch := HIRBranchInstruction new
+                useSourceInformationOfValue: self;
+                destination: actualDestination;
+                registerInUsedValues;
+                yourself.
+            ownerBlock addInstruction: newBranch after: self.
+            return: newBranch
+        }.
+
         self
     }.
 }.
@@ -1671,13 +1686,15 @@ public final class HIRConditionalBranchInstruction superclass: HIRInstruction; d
     }.
 
     public override method evaluateConstantFolding => HIRValue := {
+        let ownerBlock := parent.
+        self assert: ownerBlock isNotNil.
         self condition isLiteralConstantTrue ifTrue: {
             let newBranch := HIRBranchInstruction new
                 useSourceInformationOfValue: self;
                 destination: trueDestination;
                 registerInUsedValues;
                 yourself.
-            self parent addInstruction: newBranch after: self.
+            ownerBlock addInstruction: newBranch after: self.
             return: newBranch
         }.
 
@@ -1687,7 +1704,22 @@ public final class HIRConditionalBranchInstruction superclass: HIRInstruction; d
                 destination: falseDestination;
                 registerInUsedValues;
                 yourself.
-            self parent addInstruction: newBranch after: self.
+            ownerBlock addInstruction: newBranch after: self.
+            return: newBranch
+        }.
+
+        let actualTrueDestination := trueDestination incomingBranchDestinationReplacementIncomingFrom: ownerBlock.
+        let actualFalseDestination := falseDestination incomingBranchDestinationReplacementIncomingFrom: ownerBlock.
+
+        (trueDestination ~~ actualTrueDestination) || (falseDestination ~~ actualFalseDestination) ifTrue: {
+            let newBranch := HIRConditionalBranchInstruction new
+                useSourceInformationOfValue: self;
+                condition: condition;
+                trueDestination: actualTrueDestination;
+                falseDestination: actualFalseDestination;
+                registerInUsedValues;
+                yourself.
+            ownerBlock addInstruction: newBranch after: self.
             return: newBranch
         }.
 
