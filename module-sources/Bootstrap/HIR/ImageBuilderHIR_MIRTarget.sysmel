@@ -32,6 +32,10 @@ public class ImageBuilderHIR_MIRTarget superclass: ImageBuilderHIRTarget; defini
                     asTargetIR).
         } printTimeToRunInMicrosecondsWithTitle: "Assembly code".
 
+        {|
+            hirImage targetIR performStandardOptimizations
+        } printTimeToRunInMicrosecondsWithTitle: "Assembly code optimizations".
+
         printLine("Image data generated").
         hirImage
     }.

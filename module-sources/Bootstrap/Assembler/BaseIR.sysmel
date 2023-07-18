@@ -18,6 +18,7 @@ public class AsmStreamElement superclass: Object; definition: {
     public field debugSourceNode => ASTNode.
     public field debugSourceEnvironment => Environment.
 
+    public virtual method isLabel => Boolean := false.
     public virtual method isSectionDirective => Boolean := false.
 
     public method printDebugInfoOn: (stream: Stream) ::=> Void := {
@@ -41,6 +42,28 @@ public class AsmStreamElement superclass: Object; definition: {
 
     public virtual method selectEncodingAlternatives => Void := {
         ## By default do nothing
+    }.
+
+    public virtual method isUnneededStreamElement => Boolean := false.
+    public virtual method isMetadataStreamElement => Boolean := false.
+    public virtual method isMetadataOrAlignStreamElement => Boolean := self isMetadataStreamElement.
+
+    public method nextNonMetadataStreamElement => AsmStreamElement := {
+        let position mutable := next.
+        while: (position isNotNil && position isMetadataStreamElement) do: {
+            position := position next
+        }.
+
+        position
+    }.
+
+    public method nextNonMetadataOrAlignStreamElement => AsmStreamElement := {
+        let position mutable := next.
+        while: (position isNotNil && position isMetadataOrAlignStreamElement) do: {
+            position := position next
+        }.
+
+        position
     }.
 }.
 
@@ -89,6 +112,9 @@ AsmInstructionOperand definition: {
     public virtual method isVectorRegister => Boolean := false.
     public virtual method isVectorRegisterOrRegisterAddress => Boolean := false.
     public virtual method isRegisterAddress => Boolean := false.
+
+    public virtual method matchesStreamElement: (streamElement: AsmStreamElement) ::=> Boolean
+        := false.
 
     public abstract method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void
         := self subclassResponsibility.
@@ -238,6 +264,15 @@ AsmImmediateSymbolWithAddend definition: {
 
     public method makeSectionRelative => Void :={
         relocationMode := AsmSymbol::RelocationMode::SectionRelative
+    }.
+
+    public override method matchesStreamElement: (streamElement: AsmStreamElement) ::=> Boolean := {
+        (addend = 0i64) && streamElement isLabel ifTrue: { 
+            let label := streamElement uncheckedDownCastTo: AsmLabel.
+            label symbol == symbol
+        } ifFalse: {
+            false
+        }
     }.
 }.
 
@@ -840,6 +875,32 @@ public final class AsmStream superclass: Object; definition: {
         }
     }.
 
+    public inline method elementsReverseDo: (aBlock: (AsmStreamElement) => Void) ::=> Void := {
+        let position mutable := lastElement.
+        while: position isNotNil do: {
+            let nextPosition := position previous.
+            aBlock(position).
+            position := nextPosition
+        }
+    }.
+
+    public method removeElement: (element: AsmStreamElement) ::=> Void := {
+        let previousElement := element previous.
+        let nextElement := element next.
+
+        previousElement ifNotNil: {
+            previousElement next: nextElement
+        } ifNil: {
+            firstElement := nextElement
+        }.
+
+        nextElement ifNotNil: {
+            nextElement previous: previousElement
+        } ifNil: {
+            lastElement := previousElement
+        }.
+    }.
+
     public method selectElementsEncodingAlternatives ::=> Void := {
         self elementsDo: {:(AsmStreamElement)each :: Void |
             each selectEncodingAlternatives.
@@ -855,6 +916,14 @@ public final class AsmStream superclass: Object; definition: {
 
     public method prepareToAssemble => Void := {
         self selectElementsEncodingAlternatives.
+    }.
+
+    public method performStandardOptimizations => Void := {
+        self elementsReverseDo: {:(AsmStreamElement)each :: Void |
+            each isUnneededStreamElement ifTrue: {
+                self removeElement: each
+            }
+        }.
     }.
 
     public method assembleFirstPassWith: (objectCodeBuilder: AsmObjectCodeBuilder) ::=> Void := {
@@ -892,6 +961,7 @@ public final class AsmAlignDirective superclass: AsmStreamElement; definition: {
     public field unreachable => Boolean.
 
     public override method isFormattedWithIndentation => Boolean := false.
+    public override method isMetadataOrAlignStreamElement => Boolean := true.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".align "; print: alignment.
@@ -907,6 +977,7 @@ public final class AsmLabel superclass: AsmStreamElement; definition: {
     public field symbol => AsmSymbol.
 
     public override method isFormattedWithIndentation => Boolean := false.
+    public override method isLabel => Boolean := true.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: symbol; nextPut: ':'c8.
@@ -922,6 +993,7 @@ public final class AsmLabelEnd superclass: AsmStreamElement; definition: {
     public field symbol => AsmSymbol.
 
     public override method isFormattedWithIndentation => Boolean := false.
+    public override method isMetadataStreamElement => Boolean := true.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "/* "; print: symbol; nextPutAll: " end */".
@@ -1267,6 +1339,8 @@ public final class AsmULEB128ConstantExpressionDirective superclass: AsmStreamEl
 }.
 
 public final class AsmCFIBeginProcedureDirective superclass: AsmStreamElement; definition: {
+    public override method isMetadataStreamElement => Boolean := true.
+
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".cfiBeginProcedure".
         self printDebugInfoOn: stream.
@@ -1278,6 +1352,8 @@ public final class AsmCFIBeginProcedureDirective superclass: AsmStreamElement; d
 }.
 
 public final class AsmCFIEndProcedureDirective superclass: AsmStreamElement; definition: {
+    public override method isMetadataStreamElement => Boolean := true.
+
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".cfiEndProcedure".
         self printDebugInfoOn: stream.
@@ -1289,6 +1365,8 @@ public final class AsmCFIEndProcedureDirective superclass: AsmStreamElement; def
 }.
 
 public final class AsmCFIEndPrologueDirective superclass: AsmStreamElement; definition: {
+    public override method isMetadataStreamElement => Boolean := true.
+
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".cfiEndPrologue".
         self printDebugInfoOn: stream.
@@ -1300,6 +1378,8 @@ public final class AsmCFIEndPrologueDirective superclass: AsmStreamElement; defi
 }.
 
 public final class AsmCFIBeginEpilogueDirective superclass: AsmStreamElement; definition: {
+    public override method isMetadataStreamElement => Boolean := true.
+
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".cfiBeginEpilogue".
         self printDebugInfoOn: stream.
@@ -1311,6 +1391,8 @@ public final class AsmCFIBeginEpilogueDirective superclass: AsmStreamElement; de
 }.
 
 public final class AsmCFIEndEpilogueDirective superclass: AsmStreamElement; definition: {
+    public override method isMetadataStreamElement => Boolean := true.
+    
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".cfiEndEpilogue".
         self printDebugInfoOn: stream.
@@ -1323,6 +1405,8 @@ public final class AsmCFIEndEpilogueDirective superclass: AsmStreamElement; defi
 
 public final class AsmCFIPushRegisterDirective superclass: AsmStreamElement; definition: {
     public field register => AsmRegister.
+    
+    public override method isMetadataStreamElement => Boolean := true.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".cfiPushRegister "; print: register.
@@ -1337,6 +1421,8 @@ public final class AsmCFIPushRegisterDirective superclass: AsmStreamElement; def
 public final class AsmCFIPopRegisterDirective superclass: AsmStreamElement; definition: {
     public field register => AsmRegister.
 
+    public override method isMetadataStreamElement => Boolean := true.
+
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".cfiPopRegister "; print: register.
         self printDebugInfoOn: stream.
@@ -1349,6 +1435,8 @@ public final class AsmCFIPopRegisterDirective superclass: AsmStreamElement; defi
 
 public final class AsmCFISaveFramePointerDirective superclass: AsmStreamElement; definition: {
     public field register => AsmRegister.
+
+    public override method isMetadataStreamElement => Boolean := true.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".cfiSaveFramePointer "; print: register.
@@ -1364,6 +1452,8 @@ public final class AsmCFIRestoreFramePointerDirective superclass: AsmStreamEleme
     public field register => AsmRegister.
     public field offset => Int64.
 
+    public override method isMetadataStreamElement => Boolean := true.
+
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".cfiRestoreFramePointer "; print: register; space; print: offset.
         self printDebugInfoOn: stream.
@@ -1376,6 +1466,8 @@ public final class AsmCFIRestoreFramePointerDirective superclass: AsmStreamEleme
 
 public final class AsmCFIStackSizeAdvanceDirective superclass: AsmStreamElement; definition: {
     public field increment => Int64.
+
+    public override method isMetadataStreamElement => Boolean := true.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: ".cfiStackSizeAdvance "; print: increment.
@@ -1721,6 +1813,21 @@ public final class AsmProgramEntity superclass: Object; definition: {
         endStreams do: {:(AsmStream)eachStream :: Void |
             stream fullPrint: eachStream
         }.
+    }.
+
+    public method performStandardOptimizations => Void := {
+        streams do: {:(AsmStream)eachStream :: Void |
+            eachStream performStandardOptimizations
+        }.
+
+        children do: {:(AsmProgramEntity)eachChild :: Void |
+            eachChild performStandardOptimizations
+        }.
+
+        endStreams do: {:(AsmStream)eachStream :: Void |
+            eachStream performStandardOptimizations
+        }.
+
     }.
 
     public method prepareToAssemble => Void := {

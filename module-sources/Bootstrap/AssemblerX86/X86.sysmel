@@ -57,6 +57,9 @@ public final class AsmX86CompilationTarget superclass: AsmAbstractX86Compilation
     public override method indirectBranchTargetAlignment => Size
         := 16sz.
 
+    public override method loopEntryBranchTargetAlignment => Size
+        := 16sz.
+
     public override method uintPointerType => Type
         := UInt32.
 
@@ -92,6 +95,9 @@ public final class AsmX86_64CompilationTarget superclass: AsmAbstractX86Compilat
     public override method indirectBranchTargetAlignment => Size
         := 16sz.
 
+    public override method loopEntryBranchTargetAlignment => Size
+        := 16sz.
+        
     public override method elfMachine => UInt16
         := Elf::Machine::X86_64.
 
@@ -554,6 +560,7 @@ public final class AsmX86InstructionDefinition superclass: Object; definition: {
     public field operandNames => Array.
     public field description => String.
     public field alternatives => Array.
+    public field isRelativeJump => Boolean.
 }.
 
 public final class AsmX86InstructionTemplate superclass: Object; definition: {
@@ -743,6 +750,15 @@ public final class AsmX86InstructionWithSingleOperand superclass: AsmX86Instruct
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream string: definition mnemonic; space; print: firstOperand.
         self printDebugInfoOn: stream.
+    }.
+
+    public override method isUnneededStreamElement => Boolean := {
+        definition isRelativeJump ifTrue: {
+            let nextStreamElement := self nextNonMetadataOrAlignStreamElement.
+            firstOperand matchesStreamElement: nextStreamElement
+        } ifFalse: {
+            false
+        }.
     }.
 }.
 
@@ -2062,6 +2078,7 @@ instructionDefinitionTable do: {:instructionDescription :: Void |
         operandNames: operandNames;
         description: description;
         alternatives: parsedAlternatives;
+        isRelativeJump: (#(jmp jb jae jz jnz jbe ja jl jge jle jg) includes: mnemonic);
         yourself.
 
     definition generateStreamBuilderMethod.

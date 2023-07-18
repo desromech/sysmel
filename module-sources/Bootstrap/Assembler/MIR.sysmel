@@ -465,6 +465,17 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
 
     public method generateBasicBlock: (basicBlock: MIRBasicBlock) ::=> Void := {
         let blockSymbol := basicBlockSymbolDictionary at: basicBlock.
+
+        let alignment := basicBlock hasBackEdge ifTrue: {
+            moduleGenerator asmTarget loopEntryBranchTargetAlignment
+        } ifFalse: {
+            moduleGenerator asmTarget directBranchTargetAlignment
+        }.
+
+        alignment > 1sz ifTrue: {
+            self textSection align: alignment unreachable: false
+        }.
+
         self textSection
             useDebugInfoOfMIRValue: basicBlock;
             label: blockSymbol.

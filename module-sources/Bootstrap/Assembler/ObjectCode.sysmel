@@ -41,6 +41,9 @@ public abstract class AsmCompilationTarget superclass: Object; definition: {
     public virtual method directBranchTargetAlignment => Size
         := 1sz.
 
+    public virtual method loopEntryBranchTargetAlignment => Size
+        := 1sz.
+        
     public virtual method functionEntryPointAlignment => Size
         := self indirectBranchTargetAlignment.
 

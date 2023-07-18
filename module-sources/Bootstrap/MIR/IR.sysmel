@@ -1175,6 +1175,9 @@ MIRBasicBlock definition: {
         self predecessorKinds add: isBackEdge.
     }.
 
+    public method hasBackEdge => Boolean
+        := (predecessorKinds indexOf: true) >= 0iptr.
+
     public method traverseForConnectivityAndLivenessFrom: (predecessor: MIRBasicBlock) sortingInto: (sortedBlocks: OrderedCollection) ::=> Void := {
         predecessor ifNotNil: {
             self addPredecessor: predecessor isBackEdge: self isGray.
