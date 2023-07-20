@@ -620,7 +620,7 @@ public final class MIRX86CompilationTarget superclass: MIRAsmCompilationTarget; 
     public override method emitFunctionPrologueWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::endbr32.
 
-        codegen stackFrameLayout isRequired ifTrue: {
+        codegen stackFrameLayout hasRequiredConstruction ifTrue: {
             codegen textSection
                 x86::push: X86::EBP;
                 cfiPushRegister: X86::EBP;
@@ -636,7 +636,7 @@ public final class MIRX86CompilationTarget superclass: MIRAsmCompilationTarget; 
     }.
 
     public override method emitFunctionEpilogueWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        codegen stackFrameLayout isRequired ifTrue: {
+        codegen stackFrameLayout hasRequiredConstruction ifTrue: {
             codegen textSection
                 x86::mov: X86::ESP src: X86::EBP;
                 x86::pop: X86::EBP.
@@ -725,16 +725,36 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRCallingConventi
         let hasStackIntegerArgument mutable := false.
         let hasStackFloatOrVectorArgument mutable := false.
 
+        let stackArgumentAlignment := 8u64.
+        let stackSize mutable := 0u64.
+        let stackAlignment mutable := 16u64.
+
         let registerAssignmentState := MIRSysVX86_64RegisterAssignmentState new.
         1sz until: instruction operands size do: {:(Size)operandIndex :: Void |
-            let operand := instruction operands at: operandIndex.
+            let operand => MIRValue := instruction operands at: operandIndex.
             let register := registerAssignmentState assignRegisterToValue: operand.
             register ifNotNil: {
                 registerArguments add: operandIndex; add: register
             } ifNil: {
-                stackArguments add: operandIndex
+                let operandAlignment := operand alignment max: stackArgumentAlignment.
+                let operandSize := operand size alignedTo: operandAlignment.
+                let argumentOffset := stackSize alignedTo: operandAlignment.
+
+                stackSize := argumentOffset + operandSize.
+                stackAlignment := stackAlignment max: operandAlignment.
+                
+                (operand isFloatingPoint || operand isVector) ifTrue: {
+                    hasStackFloatOrVectorArgument := true
+                } ifFalse: {
+                    hasStackIntegerArgument := true
+                }.
+
+                stackArguments add: operandIndex; add: argumentOffset
             }
         }.
+
+        stackSize := stackSize alignedTo: stackAlignment.
+        allocator addRequiredCalloutSize: stackSize withAlignment: stackAlignment.
 
         instruction scratchRegisterCount: 1sz.
         allocator
@@ -743,7 +763,7 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRCallingConventi
         registerArguments pairsDo: {:(Size)operandIndex :register :: Void |
             allocator allocateRegister: register forInstruction: instruction operandAt: operandIndex
         }.
-        stackArguments do: {:(Size)operandIndex :: Void |
+        stackArguments pairsDo: {:(Size)operandIndex :(UInt64)stackOffset :: Void |
             allocator allocateMemoryForInstruction: instruction operandAt: operandIndex
         }.
         
@@ -759,7 +779,6 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRCallingConventi
     public override method computeArgumentPassingLayoutOf: (function: MIRFunction) ::=> Void := {
         let registerAssignmentState := MIRSysVX86_64RegisterAssignmentState new.
         let stackSize mutable := 0u64.
-        let argumentBaseOffset := 16u64.
         let stackArgumentAlignment := 8u64.
 
         function arguments do: {:(MIRArgumentValue)argument :: Void |
@@ -772,11 +791,16 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRCallingConventi
                 let argumentOffset := stackSize alignedTo: argumentAlignment.
 
                 argument
-                    offset: (stackSize + argumentBaseOffset) asInt64;
-                    hasValidStackOffset: true.
+                    stackSegment: MIRStackFrameSegment::ArgumentPassingZone;
+                    stackSegmentOffset: stackSize;
+                    hasValidStackSegmentOffset: true.
                 stackSize := argumentOffset + argumentSize
             }
-        }
+        }.
+
+        function
+            argumentPassingStackAlignment: stackArgumentAlignment;
+            argumentPassingStackSize: (stackSize alignedTo: stackArgumentAlignment)
     }.
 
     public override method registerConstraintsOfCallInt8: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
@@ -928,7 +952,7 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
         codegen textSection x86::endbr64.
 
         let stackFrameLayout := codegen stackFrameLayout.
-        stackFrameLayout isRequired ifTrue: {
+        stackFrameLayout hasRequiredConstruction ifTrue: {
             codegen textSection
                 x86::push: X86::RBP;
                 cfiPushRegister: X86::RBP;
@@ -946,14 +970,14 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
 
     public override method emitStackFrameConstructionWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         let stackFrameLayout := codegen stackFrameLayout.
-        stackFrameLayout isRequired ifTrue: {
+        stackFrameLayout hasRequiredConstruction ifTrue: {
             codegen stackMap frameBase: (AsmStackMapLocationRegister for: X86::RBP)
         }.
 
-        let frameSize := stackFrameLayout temporaryFrameSize.
+        let frameSize := stackFrameLayout frameAllocationSize.
         frameSize > 0u64 ifTrue: {
             codegen textSection
-                x86::sub: X86::RSP with: codegen stackFrameLayout temporaryFrameSize asInt32 asAsmImmediate;
+                x86::sub: X86::RSP with: frameSize asInt32 asAsmImmediate;
                 cfiStackSizeAdvance: frameSize asInt64
         }.
         codegen textSection cfiEndPrologue.
@@ -965,7 +989,7 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
 
     public override method emitFunctionEpilogueWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         let stackFrameLayout := codegen stackFrameLayout.
-        stackFrameLayout isRequired ifTrue: {
+        stackFrameLayout hasRequiredConstruction ifTrue: {
             let preservedRegisters := codegen function touchedCallPreservedRegisters.
             preservedRegisters isEmpty ifTrue: {
                 codegen textSection
@@ -1163,13 +1187,13 @@ MIRLocalValue extend: {
     
     public override method x86::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress := {
         let coalescedValue := self validCoalescedValue.
-        self assert: coalescedValue hasValidStackOffset.
+        self assert: coalescedValue hasValidStackAnchorOffset.
         AsmX86RegisterAddress base: X86::EBP size: coalescedValue size asUInt8 displacement: coalescedValue offset asInt32 asAsmImmediate
     }.
 
     public override method x86_64::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress := {
         let coalescedValue := self validCoalescedValue.
-        self assert: coalescedValue hasValidStackOffset.
+        self assert: coalescedValue hasValidStackAnchorOffset.
         AsmX86RegisterAddress base: X86::RBP size: coalescedValue size asUInt8 displacement: coalescedValue offset asInt32 asAsmImmediate
     }.
 
@@ -4462,7 +4486,7 @@ MIR::Operation::ReturnInt8
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
         codegen textSection x86::ret.
-        codegen stackFrameLayout isRequired ifTrue: (codegen textSection cfiEndEpilogue).
+        codegen stackFrameLayout hasRequiredConstruction ifTrue: (codegen textSection cfiEndEpilogue).
     }.
 
 MIR::Operation::ReturnInt16
@@ -4475,7 +4499,7 @@ MIR::Operation::ReturnInt16
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
         codegen textSection x86::ret.
-        codegen stackFrameLayout isRequired ifTrue: (codegen textSection cfiEndEpilogue).
+        codegen stackFrameLayout hasRequiredConstruction ifTrue: (codegen textSection cfiEndEpilogue).
     }.
 
 MIR::Operation::ReturnInt32
@@ -4488,7 +4512,7 @@ MIR::Operation::ReturnInt32
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
         codegen textSection x86::ret.
-        codegen stackFrameLayout isRequired ifTrue: (codegen textSection cfiEndEpilogue).
+        codegen stackFrameLayout hasRequiredConstruction ifTrue: (codegen textSection cfiEndEpilogue).
     }.
 
 MIR::Operation::ReturnPointer
@@ -4501,7 +4525,7 @@ MIR::Operation::ReturnPointer
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
         codegen textSection x86::ret.
-        codegen stackFrameLayout isRequired ifTrue: (codegen textSection cfiEndEpilogue).
+        codegen stackFrameLayout hasRequiredConstruction ifTrue: (codegen textSection cfiEndEpilogue).
     }.
 
 MIR::Operation::ReturnInt64
@@ -4511,7 +4535,7 @@ MIR::Operation::ReturnInt64
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
         codegen textSection x86::ret.
-        codegen stackFrameLayout isRequired ifTrue: (codegen textSection cfiEndEpilogue).
+        codegen stackFrameLayout hasRequiredConstruction ifTrue: (codegen textSection cfiEndEpilogue).
     }.
 
 MIR::Operation::ReturnFloat32
@@ -4524,7 +4548,7 @@ MIR::Operation::ReturnFloat32
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
         codegen textSection x86::ret.
-        codegen stackFrameLayout isRequired ifTrue: (codegen textSection cfiEndEpilogue).
+        codegen stackFrameLayout hasRequiredConstruction ifTrue: (codegen textSection cfiEndEpilogue).
     }.
 
 MIR::Operation::ReturnFloat64
@@ -4537,7 +4561,7 @@ MIR::Operation::ReturnFloat64
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
         codegen textSection x86::ret.
-        codegen stackFrameLayout isRequired ifTrue: (codegen textSection cfiEndEpilogue).
+        codegen stackFrameLayout hasRequiredConstruction ifTrue: (codegen textSection cfiEndEpilogue).
     }.
 
 MIR::Operation::ReturnStruct
@@ -4547,7 +4571,7 @@ MIR::Operation::ReturnStruct
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
         codegen textSection x86::ret.
-        codegen stackFrameLayout isRequired ifTrue: (codegen textSection cfiEndEpilogue).
+        codegen stackFrameLayout hasRequiredConstruction ifTrue: (codegen textSection cfiEndEpilogue).
     }.
 
 MIR::Operation::ReturnVoid
@@ -4555,7 +4579,7 @@ MIR::Operation::ReturnVoid
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         codegen emitEpilogue.
         codegen textSection x86::ret.
-        codegen stackFrameLayout isRequired ifTrue: (codegen textSection cfiEndEpilogue).
+        codegen stackFrameLayout hasRequiredConstruction ifTrue: (codegen textSection cfiEndEpilogue).
     }.
 
 MIR::Operation::Trap

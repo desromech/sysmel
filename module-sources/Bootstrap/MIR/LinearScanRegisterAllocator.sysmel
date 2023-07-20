@@ -5,8 +5,21 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
     protected field captureVectorPointerValue => MIRCaptureVectorPointerValue.
     protected field functionArguments => Array.
 
+    protected field performsCallouts => Boolean.
+    protected field maxCalloutSize => UInt64.
+    protected field maxCalloutAlignment => UInt64.
+
+    public override method addRequiredCalloutSize: (calloutSize: UInt64) withAlignment: (calloutAlignment: UInt64) ::=> Void := {
+        performsCallouts := true.
+        maxCalloutSize := maxCalloutSize max: calloutSize.
+        maxCalloutAlignment := maxCalloutAlignment max: calloutAlignment.
+    }.
+
     public override method allocateRegistersIn: (function: MIRFunction) withTarget: (target: MIRCompilationTarget) ::=> Void := {
         compilationTarget := target.
+        performsCallouts := false.
+        maxCalloutSize := 0u64.
+        maxCalloutAlignment := 1u64.
 
         integerRegisterFile := MIRRegisterAllocationFile for: function callingConvention allocableIntegerRegisters.
         vectorRegisterFile := MIRRegisterAllocationFile for: function callingConvention allocableVectorRegisters.
@@ -64,7 +77,11 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
             self allocateRegistersInBasicBlock: basicBlock
         }.
 
-        function touchedCallPreservedRegisters: (function callingConvention integerCallPreservedRegisters select: {:(MIRPhysicalLocation)register | integerRegisterFile usesRegister: register }) asArray
+        function
+            performsCallouts: performsCallouts;
+            maxCalloutSize: maxCalloutSize;
+            maxCalloutAlignment: maxCalloutAlignment;
+            touchedCallPreservedRegisters: (function callingConvention integerCallPreservedRegisters select: {:(MIRPhysicalLocation)register | integerRegisterFile usesRegister: register }) asArray
     }.
 
     public method allocateRegistersInBasicBlock: (basicBlock: MIRBasicBlock) ::=> Void := {

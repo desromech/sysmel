@@ -1,41 +1,166 @@
+public global MIRStackFrameSegment::ArgumentPassingZone := 0u8.
+public global MIRStackFrameSegment::CallPreservedZone := 1u8.
+public global MIRStackFrameSegment::ObjectAllocationZone := 2u8.
+public global MIRStackFrameSegment::TemporaryGCZone := 3u8.
+public global MIRStackFrameSegment::TemporaryGCFatPointerZone := 4u8.
+public global MIRStackFrameSegment::TemporaryNonGCZone := 5u8.
+public global MIRStackFrameSegment::FrameMetadata := 6u8.
+public global MIRStackFrameSegment::CallArgumentPassingZone := 7u8.
+public global MIRStackFrameSegment::Count := 8u8.
+
+public final class MIRStackFrameSegment superclass: Object; definition: {
+    public field paddingGoesBelow => Boolean.
+    public field segmentIndex => UInt8.
+    public field alignment => UInt64.
+    public field size => UInt64.
+    public field offset => UInt64.
+    public field alignedSize => UInt64.
+    public field padding => UInt64.
+    public field framePointerOffset => UInt64.
+    public field returnPointerOffset => UInt64.
+    public field offsetFromFrameOrStackPointer => Int64.
+    public field values => OrderedCollection.
+
+    public override method initialize => Void := {
+        values := OrderedCollection new.
+        alignment := 1u64.
+    }.
+
+    public method addReturnPointer: (pointerSize: UInt64) ::=> Void := {
+        size := size alignedTo: pointerSize.
+        returnPointerOffset := size.
+        
+        size := size + pointerSize.
+        alignment := alignment max: pointerSize.
+    }.
+
+    public method addFramePointer: (pointerSize: UInt64) ::=> Void := {
+        size := size alignedTo: pointerSize.
+        framePointerOffset := size.
+
+        size := size + pointerSize.
+        alignment := alignment max: pointerSize.
+    }.
+
+    public method addPreservedRegisters: (registers: Array) pointerSize: (pointerSize: UInt64) ::=> Void := {
+        registers isNotEmpty ifTrue: {
+            size := (size alignedTo: pointerSize) + (registers size * pointerSize).
+            alignment := alignment max: pointerSize.
+        }
+    }.
+
+    public method addValueWithValidSegmentOffset: (value: MIRLocalValue) ::=> Void := {
+        self assert: value hasValidStackSegmentOffset.
+        values add: value
+    }.
+
+    public method addLocalValue: (value: MIRLocalValue) ::=> Void := {
+        self assert: value hasValidStackSegmentOffset not.
+        let offset := size alignedTo: value alignment.
+        value
+            stackSegment: segmentIndex;
+            stackSegmentOffset: offset;
+            hasValidStackSegmentOffset: true.
+        size := offset + value size.
+        alignment := alignment max: value alignment.
+
+        values add: value
+    }.
+
+    public method applyAlignmentToSize => Void := {
+        alignedSize := size alignedTo: alignment.
+        padding := alignedSize - size.
+    }.
+
+    public method computeOffsetsOfValuesUsingAnchorOffset: (anchorOffset: UInt64) ::=> Void := {
+        let displacement := offset asInt64 - anchorOffset asInt64.
+        values do: {:(MIRLocalValue)eachLocalValue :: Void |
+            self assert: eachLocalValue hasValidStackSegmentOffset.
+            eachLocalValue
+                offset: eachLocalValue stackSegmentOffset asInt64 + displacement;
+                hasValidStackAnchorOffset: true.
+        }.
+    }.
+}.
+
 public final class MIRStackFrameLayout superclass: Object; definition: {
     protected field compilationTarget => MIRCompilationTarget.
 
-    public field callPreservedRegisterAreaSize => UInt64.
-    public field stackFrameSize => UInt64.
+    public field segments => Array.
+
+    public field hasRequiredConstruction => Boolean.
+    public field hasFramePointer => Boolean.
+    public field framePointerAnchorIsAtBottom => Boolean.
+
+    public field frameOrStackPointerAnchorOffset => UInt64.
+
     public field stackFrameAlignment => UInt64.
+    public field stackFrameSize => UInt64.
 
-    public method isRequired => Boolean
-        := stackFrameSize > 0u64.
+    public method allocateSegments => Void := {
+        segments := Array new: MIRStackFrameSegment::Count asSize.
+        0u8 until: MIRStackFrameSegment::Count do: {:(UInt8)i :: Void |
+            segments at: i asSize put: (MIRStackFrameSegment new
+                segmentIndex: i;
+                yourself)
+        }.
+    }.
 
-    public method temporaryFrameSize => UInt64
-        := stackFrameSize - callPreservedRegisterAreaSize.
+    public method argumentPassingZone => MIRStackFrameSegment := segments first.
+    public method callPreservedZone => MIRStackFrameSegment := segments second.
+    public method objectAllocationZone => MIRStackFrameSegment := segments third.
+    public method temporaryGCZone => MIRStackFrameSegment := segments fourth.
+    public method temporaryGCFatPointerZone => MIRStackFrameSegment := segments fifth.
+    public method temporaryNonGCZone => MIRStackFrameSegment := segments sixth.
+    public method frameMetadata => MIRStackFrameSegment := segments seventh.
+    public method callArgumentPassingZone => MIRStackFrameSegment := segments eighth.
+
+    public method frameAllocationSize => UInt64 := {
+        hasRequiredConstruction ifTrue: {
+            self callPreservedZone offset
+        } ifFalse: {
+            0u64
+        }
+    }.
 
     public method buildLayoutForFunction: (function: MIRFunction) withTarget: (target: MIRCompilationTarget) ::=> Void := {
         compilationTarget := target.
+        framePointerAnchorIsAtBottom := function callingConvention framePointerAnchorIsAtBottom.
 
-        stackFrameAlignment := compilationTarget stackFrameAlignment asUInt64.
-        callPreservedRegisterAreaSize := function touchedCallPreservedRegisters size * compilationTarget pointerSize.
-        stackFrameSize := callPreservedRegisterAreaSize.
+        self allocateSegments.
+
+        self argumentPassingZone
+            alignment: function argumentPassingStackAlignment;
+            size: function argumentPassingStackSize.
+
+        self callPreservedZone
+            paddingGoesBelow: true;
+            alignment: compilationTarget stackFrameAlignment;
+            addPreservedRegisters: function touchedCallPreservedRegisters pointerSize: compilationTarget pointerSize.
+
+        hasRequiredConstruction := function performsCallouts.
+        self callArgumentPassingZone
+            alignment: (function maxCalloutAlignment max: compilationTarget stackFrameAlignment);
+            size: function maxCalloutSize.
 
         ## We might need to assign a local offset in case the argument is passed through a register and we need to spill it.
         function arguments do: {:(MIRArgumentValue)eachArgument :: Void |
-            eachArgument offset = 0i64 ifTrue: (self assignNextLocationToLocalValue: eachArgument).
+            self assignLocationToArgument: eachArgument.
         }.
 
         function captureVectorPointerValue ifNotNil: {
-            self assignNextLocationToLocalValue: function captureVectorPointerValue
+            self assignLocationToLocalValue: function captureVectorPointerValue.
         }.
 
         function temporaries do: {:(MIRTemporaryVariable)eachLocal :: Void |
-            self assignNextLocationToLocalValue: eachLocal
+            self assignLocationToLocalValue: eachLocal.
         }.
 
         function instructionsDo: {:(MIRInstruction)eachInstruction :: Void |
-            self assignNextLocationToLocalValue: eachInstruction
+            self assignLocationToLocalValue: eachInstruction.
         }.
 
-        stackFrameSize := stackFrameSize alignedTo: stackFrameAlignment
+        self finishConstructingSegmentStructure
     }.
 
     public method assignNextLocationToLocalValue: (localValue: MIRLocalValue) ::=> Void := {
@@ -43,10 +168,75 @@ public final class MIRStackFrameLayout superclass: Object; definition: {
         coalescedLocalValue needsStackAllocation ifFalse: (return: void).
 
         let localAlignment := coalescedLocalValue alignment.
+
         stackFrameSize := stackFrameSize + coalescedLocalValue size alignedTo: localAlignment.
         stackFrameAlignment := stackFrameAlignment max: localAlignment.
         coalescedLocalValue
-            hasValidStackOffset: true;
+            hasValidStackAnchorOffset: true;
             offset: stackFrameSize asInt64 negated.
+    }.
+
+    public method assignLocationToArgument: (argument: MIRArgumentValue) ::=> Void := {
+        argument hasValidStackSegmentOffset ifTrue: {
+            self argumentPassingZone addValueWithValidSegmentOffset: argument
+        } ifFalse: {
+            self assignLocationToLocalValue: argument
+        }
+    }.
+
+    public method assignLocationToLocalValue: (localValue: MIRLocalValue) ::=> Void := {
+        let coalescedLocalValue := localValue validCoalescedValue.
+        coalescedLocalValue needsStackAllocation ifFalse: (return: void).
+
+        ## TODO: Select the most adequate segment for the value.
+        self temporaryNonGCZone addLocalValue: coalescedLocalValue
+    }.
+
+    public method finishConstructingSegmentStructure => Void := {
+        self computeSegmentsLayout.
+
+        hasRequiredConstruction := hasRequiredConstruction || (self argumentPassingZone offset > 0u64).
+
+        ## Store the frame pointer.
+        hasRequiredConstruction ifTrue: {
+            hasFramePointer := true.
+            self callPreservedZone addFramePointer: compilationTarget pointerSize.
+        }.
+
+        ## Store the return pointer.
+        hasRequiredConstruction || compilationTarget passesReturnPointerThroughStack ifTrue: {
+            self callPreservedZone addReturnPointer: compilationTarget pointerSize.
+        }.
+
+        self computeSegmentsLayout.
+        self computeValueOffsets.
+    }.
+
+    public method computeSegmentsLayout => Void := {
+        stackFrameAlignment := compilationTarget stackFrameAlignment.
+        stackFrameSize := 0u64.
+        segments reverseDo: {:(MIRStackFrameSegment)segment :: Void |
+            segment applyAlignmentToSize.
+            let offset := stackFrameSize alignedTo: segment alignment.
+            segment offset: (segment paddingGoesBelow ifTrue: segment padding + offset ifFalse: offset).
+            stackFrameSize := offset + segment alignedSize.
+            stackFrameAlignment := stackFrameAlignment max: segment alignment.
+        }.
+    }.
+
+    public method computeValueOffsets => Void := {
+        hasFramePointer ifTrue: {
+            framePointerAnchorIsAtBottom ifTrue: {
+                frameOrStackPointerAnchorOffset := self callArgumentPassingZone size
+            } ifFalse: {
+                frameOrStackPointerAnchorOffset := self callPreservedZone framePointerOffset + self callPreservedZone offset
+            }
+        } ifFalse: {
+            frameOrStackPointerAnchorOffset := 0u64.
+        }.
+
+        segments do: {:(MIRStackFrameSegment)segment :: Void |
+            segment computeOffsetsOfValuesUsingAnchorOffset: frameOrStackPointerAnchorOffset
+        }.
     }.
 }.

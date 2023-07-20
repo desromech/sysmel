@@ -9,6 +9,9 @@ AsmStreamBuilder extend: {
 public abstract class MIRAsmCompilationTarget superclass: MIRCompilationTarget; definition: {
     public field asmCompilationTarget => AsmCompilationTarget.
 
+    public override method passesReturnPointerThroughStack => Boolean
+        := asmCompilationTarget passesReturnPointerThroughStack.
+
     public override method pointerSize => Size
         := asmCompilationTarget pointerSize.
 

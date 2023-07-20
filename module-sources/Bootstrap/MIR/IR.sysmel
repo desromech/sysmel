@@ -388,8 +388,12 @@ MIRLocalValue definition: {
     public field isSignedExtended => Boolean.
     public field isGCRoot => Boolean.
 
-    public field hasValidStackOffset => Boolean.
-    public field offset => Int64.
+    public field hasValidStackSegmentOffset => Boolean.
+    public field stackSegment => UInt8.
+    public field stackSegmentOffset => UInt64.
+
+    public field hasValidStackAnchorOffset => Boolean.
+    public field offset => Int64. ## Offset from frame pointer or stack pointer.
     public field assignedRegister => MIRPhysicalLocation.
 
     public field needsSpilling => Boolean.
@@ -1307,6 +1311,13 @@ MIRFunction definition: {
     public field captureVectorSize => UInt64.
     public field captureVectorAlignment => UInt64.
 
+    public field argumentPassingStackAlignment => UInt64.
+    public field argumentPassingStackSize => UInt64.
+
+    public field maxCalloutAlignment => UInt64.
+    public field maxCalloutSize => UInt64.
+    public field performsCallouts => Boolean.
+
     public override method isFunction => Boolean := true.
 
     public override method physicalLocationClass => MIRPhysicalLocation class
@@ -1324,7 +1335,9 @@ MIRFunction definition: {
         super initialize.
         arguments := #().
         captures := #().
-        temporaries := OrderedCollection new
+        temporaries := OrderedCollection new.
+        maxCalloutAlignment := 1u64.
+        maxCalloutSize := 0u64.
     }.
 
     public method addTemporary: (temporary: MIRTemporaryVariable) ::=> MIRTemporaryVariable := {
@@ -2340,12 +2353,18 @@ MIRCallingConvention definition: {
 
     public virtual method preferredRegisterForCaptureVectorPointer => MIRPhysicalIntegerRegister
         := nil.
+
+    public virtual method framePointerAnchorIsAtBottom => Boolean ## Required by the Win64 calling convention.
+        := false.
 }.
 
 MIRCompilationTarget definition: {
     public abstract method name => Symbol
         := self subclassResponsibility.
 
+    public virtual method passesReturnPointerThroughStack => Boolean
+        := false.
+        
     public abstract method pointerSize => Size
         := self subclassResponsibility.
 

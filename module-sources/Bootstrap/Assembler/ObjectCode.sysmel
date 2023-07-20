@@ -20,6 +20,9 @@ public abstract class AsmCompilationTarget superclass: Object; definition: {
     public virtual method hasPositionIndependentCode => Boolean
         := false.
 
+    public virtual method passesReturnPointerThroughStack => Boolean
+        := false.
+
     public abstract method pointerSize => Size
         := self subclassResponsibility.
 
