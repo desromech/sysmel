@@ -637,6 +637,20 @@ public global MIR::X86_64::SysV::AllocableIntegerRegisters => Array := (
 
 public global MIR::X86_64::SysV::AllocableVectorRegisters => Array := MIR::X86_64::VectorRegisters.
 
+public global MIR::X86_64::Win64::AllocableIntegerRegisters => Array := (
+    ## Scratch registers
+    MIR::X86_64::RAX, MIR::X86_64::R10, MIR::X86_64::R11,
+    
+    ## Parameters
+    MIR::X86_64::RCX, MIR::X86_64::RDX, MIR::X86_64::R8, MIR::X86_64::R9,
+
+    ## Call Preserved
+    MIR::X86_64::RDI, MIR::X86_64::RSI, MIR::X86_64::RBX, MIR::X86_64::R12, MIR::X86_64::R13, MIR::X86_64::R14, MIR::X86_64::R15
+).
+
+public global MIR::X86_64::Win64::AllocableVectorRegisters => Array := MIR::X86_64::VectorRegisters.
+
+
 public abstract class MIRSX86StackBasedCallingConvention superclass: MIRCallingConvention; definition: {
     public method asm::generateCall: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection
@@ -763,7 +777,96 @@ public final class MIRSysVX86_64RegisterAssignmentState superclass: Object; defi
     }.
 }.
 
-public final class MIRSysVX86_64CallingConvention superclass: MIRCallingConvention; definition: {
+public abstract class MIRX86_64CallingConvention superclass: MIRCallingConvention; definition: {
+    public abstract method registerConstraintsOfCall: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void
+        := self subclassResponsibility.
+
+    public override method registerConstraintsOfCallInt8: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
+        self registerConstraintsOfCall: instruction with: allocator.
+        allocator allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction.
+    }.
+
+    public override method registerConstraintsOfCallInt16: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
+        self registerConstraintsOfCall: instruction with: allocator.
+        allocator allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction.
+    }.
+
+    public override method registerConstraintsOfCallInt32: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
+        self registerConstraintsOfCall: instruction with: allocator.
+        allocator allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction.
+    }.
+
+    public override method registerConstraintsOfCallInt64: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
+        self registerConstraintsOfCall: instruction with: allocator.
+        allocator allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction.
+    }.
+
+    public override method registerConstraintsOfCallPointer: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
+        self registerConstraintsOfCall: instruction with: allocator.
+        allocator allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction.
+    }.
+
+    public override method registerConstraintsOfCallFloat32: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
+        self registerConstraintsOfCall: instruction with: allocator.
+        allocator allocateRegister: MIR::X86::XMM0 forInstructionResult: instruction.
+    }.
+
+    public override method registerConstraintsOfCallFloat64: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
+        self registerConstraintsOfCall: instruction with: allocator.
+        allocator allocateRegister: MIR::X86::XMM0 forInstructionResult: instruction.
+    }.
+
+    public override method registerConstraintsOfCallStruct: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
+        self registerConstraintsOfCall: instruction with: allocator.
+        allocator allocateMemoryForInstructionResult: instruction.
+    }.
+
+    public override method registerConstraintsOfCallVoid: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
+        self registerConstraintsOfCall: instruction with: allocator
+    }.
+
+    public method asm::generateCall: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::call: (instruction firstOperandRegister x86::relCall32OrInt64For: codegen).
+    }.
+
+    public override method asm::generateCallInt8: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        self asm::generateCall: instruction with: codegen
+    }.
+
+    public override method asm::generateCallInt16: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        self asm::generateCall: instruction with: codegen
+    }.
+
+    public override method asm::generateCallInt32: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        self asm::generateCall: instruction with: codegen
+    }.
+
+    public override method asm::generateCallInt64: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        self asm::generateCall: instruction with: codegen
+    }.
+
+    public override method asm::generateCallPointer: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        self asm::generateCall: instruction with: codegen
+    }.
+
+    public override method asm::generateCallFloat32: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        self asm::generateCall: instruction with: codegen
+    }.
+
+    public override method asm::generateCallFloat64: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        self asm::generateCall: instruction with: codegen
+    }.
+
+    public override method asm::generateCallStruct: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        self asm::generateCall: instruction with: codegen
+    }.
+
+    public override method asm::generateCallVoid: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        self asm::generateCall: instruction with: codegen
+    }.
+}.
+
+public final class MIRSysVX86_64CallingConvention superclass: MIRX86_64CallingConvention; definition: {
     public override method allocableIntegerRegisters => Array
         := MIR::X86_64::SysV::AllocableIntegerRegisters.
 
@@ -773,7 +876,7 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRCallingConventi
     public override method preferredRegisterForCaptureVectorPointer => MIRPhysicalIntegerRegister
         := nil.
 
-    public method registerConstraintsOfCall: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
+    public override method registerConstraintsOfCall: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
         let registerArguments := OrderedCollection new.
         let stackArguments := OrderedCollection new.
         let hasStackIntegerArgument mutable := false.
@@ -895,93 +998,173 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRCallingConventi
             argumentPassingStackAlignment: stackArgumentAlignment;
             argumentPassingStackSize: (stackSize alignedTo: stackArgumentAlignment)
     }.
+}.
 
-    public override method registerConstraintsOfCallInt8: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
-        self registerConstraintsOfCall: instruction with: allocator.
-        allocator allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction.
+public global X86_64::Win64::IntegerArgumentRegisters := (
+    MIR::X86_64::RCX, MIR::X86_64::RDX, MIR::X86_64::R8, MIR::X86_64::R9
+).
+
+public global X86_64::Win64::VectorArgumentRegisters := (
+    MIR::X86::XMM0, MIR::X86::XMM1, MIR::X86::XMM2, MIR::X86::XMM3
+).
+
+public global X86_64::Win64::CallPreservedRegister := (
+    MIR::X86_64::RBX, MIR::X86_64::RSP, MIR::X86_64::RBP, MIR::X86_64::RDI, MIR::X86_64::RSI,
+    MIR::X86_64::R12, MIR::X86_64::R13, MIR::X86_64::R14, MIR::X86_64::R15,
+    MIR::X86::XMM6, MIR::X86::XMM7, MIR::X86_64::XMM8, MIR::X86_64::XMM9, MIR::X86_64::XMM10, MIR::X86_64::XMM11, MIR::X86_64::XMM12,
+    MIR::X86_64::XMM13, MIR::X86_64::XMM14, MIR::X86_64::XMM15 
+).
+
+public final class MIRWinX64RegisterAssignmentState superclass: Object; definition: {
+    public field usedRegisterCount => Size.
+
+    public method allocateIntegerRegister => MIRPhysicalLocation := {
+        usedRegisterCount < 4sz ifTrue: {
+            let register := X86_64::Win64::IntegerArgumentRegisters at: usedRegisterCount.
+            usedRegisterCount := usedRegisterCount + 1sz.
+            register
+        } ifFalse: {
+            nil
+        }
     }.
 
-    public override method registerConstraintsOfCallInt16: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
-        self registerConstraintsOfCall: instruction with: allocator.
-        allocator allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction.
+    public method allocateVectorRegister => MIRPhysicalLocation := {
+        usedRegisterCount < 4sz ifTrue: {
+            let register := X86_64::Win64::VectorArgumentRegisters at: usedRegisterCount.
+            usedRegisterCount := usedRegisterCount + 1sz.
+            register
+        } ifFalse: {
+            nil
+        }
     }.
 
-    public override method registerConstraintsOfCallInt32: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
-        self registerConstraintsOfCall: instruction with: allocator.
-        allocator allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction.
+    public method allocateIntegerOfSize: (size: UInt64) alignment: (alignment: UInt64) ::=> MIRPhysicalLocation
+        := size <= 8u64 ifTrue: (self allocateIntegerRegister) ifFalse: nil.
+
+    public method allocateVectorOfSize: (size: UInt64) alignment: (alignment: UInt64) ::=> MIRPhysicalLocation
+        := size <= 16u64 ifTrue: (self allocateVectorRegister) ifFalse: nil.
+
+    public method assignRegisterToValue: (value: MIRValue) ::=> MIRPhysicalLocation := {
+        (value isFloatingPoint || value isVector)
+            ifTrue: (self allocateVectorOfSize: value size alignment: value alignment)
+            ifFalse: (self allocateIntegerOfSize: value size alignment: value alignment).
+    }.
+}.
+
+public final class MIRWinX64CallingConvention superclass: MIRX86_64CallingConvention; definition: {
+    public override method allocableIntegerRegisters => Array
+        := MIR::X86_64::Win64::AllocableIntegerRegisters.
+
+    public override method allocableVectorRegisters => Array
+        := MIR::X86_64::Win64::AllocableVectorRegisters.
+
+    public override method preferredRegisterForCaptureVectorPointer => MIRPhysicalIntegerRegister
+        := nil.
+
+    public override method registerConstraintsOfCall: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
+        let registerArguments := OrderedCollection new.
+        let stackArguments := OrderedCollection new.
+        let hasStackIntegerArgument mutable := false.
+        let hasStackFloatOrVectorArgument mutable := false.
+        let hasStructureArgument mutable := false.
+        let structureSizeThreshold := 8u64.
+
+        let stackArgumentAlignment := 8u64.
+        let stackSize mutable := 0u64.
+        let stackAlignment mutable := 16u64.
+
+        let registerAssignmentState := MIRWinX64RegisterAssignmentState new.
+        1sz until: instruction operands size do: {:(Size)operandIndex :: Void |
+            let operand => MIRValue := instruction operands at: operandIndex.
+            let register := registerAssignmentState assignRegisterToValue: operand.
+            register ifNotNil: {
+                registerArguments add: operandIndex; add: register
+            } ifNil: {
+                let operandAlignment := operand alignment max: stackArgumentAlignment.
+                let operandSize := operand size alignedTo: operandAlignment.
+                let argumentOffset := stackSize alignedTo: operandAlignment.
+
+                stackSize := argumentOffset + operandSize.
+                stackAlignment := stackAlignment max: operandAlignment.
+                
+                (operand isFloatingPoint || operand isVector) ifTrue: {
+                    hasStackFloatOrVectorArgument := true
+                } ifFalse: {
+                    hasStackIntegerArgument := true
+                }.
+
+                stackArguments add: operandIndex; add: argumentOffset
+            }
+        }.
+
+        stackSize := (stackSize max: 32u64) alignedTo: stackAlignment.
+        allocator addRequiredCalloutSize: stackSize withAlignment: stackAlignment.
+
+        instruction scratchRegisterCount: 2sz.
+        registerArguments pairsDo: {:(Size)operandIndex :register :: Void |
+            allocator allocateRegister: register forInstruction: instruction operandAt: operandIndex
+        }.
+
+        hasStackIntegerArgument ifTrue: {
+            allocator allocateIntegerRegisterForInstruction: instruction scratchAt: 0sz
+        }.
+
+        hasStackFloatOrVectorArgument ifTrue: {
+            allocator allocateVectorRegisterForInstruction: instruction scratchAt: 1sz
+        }.
+
+        stackArguments pairsDo: {:(Size)operandIndex :(UInt64)stackOffset :: Void |
+            let operand => MIRValue := instruction operands at: operandIndex.
+            (operand isFloatingPoint || operand isVector) ifTrue: {
+                allocator allocateSpecificCallStackPointerOffset: stackOffset asInt64 forInstruction: instruction operandAt: operandIndex scratchRegister: instruction scratchRegisters fourth
+            } ifFalse: {
+                operand size <= structureSizeThreshold ifTrue: {
+                    allocator allocateSpecificCallStackPointerOffset: stackOffset asInt64 forInstruction: instruction operandAt: operandIndex scratchRegister: instruction scratchRegisters first
+                } ifFalse: {
+                    error("TODO: Pass value pointer.")
+                }
+            }.
+        }.
+                
+        allocator allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz.
+        allocator
+            allocateCaptureVectorPointerRegisterForInstruction: instruction;
+            spillIntegerRegistersExceptFor: X86_64::SysV::CallPreservedRegister
     }.
 
-    public override method registerConstraintsOfCallInt64: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
-        self registerConstraintsOfCall: instruction with: allocator.
-        allocator allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction.
-    }.
+    public override method integerCallPreservedRegisters => Array
+        := X86_64::Win64::CallPreservedRegister.
 
-    public override method registerConstraintsOfCallPointer: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
-        self registerConstraintsOfCall: instruction with: allocator.
-        allocator allocateRegister: MIR::X86_64::RAX forInstructionResult: instruction.
-    }.
+    public override method computeArgumentPassingLayoutOf: (function: MIRFunction) ::=> Void := {
+        let registerAssignmentState := MIRWinX64RegisterAssignmentState new.
+        let stackSize mutable := 0u64.
+        let stackArgumentAlignment := 8u64.
 
-    public override method registerConstraintsOfCallFloat32: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
-        self registerConstraintsOfCall: instruction with: allocator.
-        allocator allocateRegister: MIR::X86::XMM0 forInstructionResult: instruction.
-    }.
+        function arguments do: {:(MIRArgumentValue)argument :: Void |
+            let register := registerAssignmentState assignRegisterToValue: argument.
+            register ifNotNil: {
+                argument passingRegister: register
+            }.
 
-    public override method registerConstraintsOfCallFloat64: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
-        self registerConstraintsOfCall: instruction with: allocator.
-        allocator allocateRegister: MIR::X86::XMM0 forInstructionResult: instruction.
-    }.
+            let argumentAlignment := argument alignment max: stackArgumentAlignment.
+            let argumentSize := argument size alignedTo: argumentAlignment.
+            let argumentOffset := stackSize alignedTo: argumentAlignment.
 
-    public override method registerConstraintsOfCallStruct: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
-        self registerConstraintsOfCall: instruction with: allocator.
-        allocator allocateMemoryForInstructionResult: instruction.
-    }.
+            argument
+                stackSegment: MIRStackFrameSegment::ArgumentPassingZone;
+                stackSegmentOffset: stackSize;
+                hasValidStackSegmentOffset: true.
+            stackSize := argumentOffset + argumentSize
+        }.
 
-    public override method registerConstraintsOfCallVoid: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
-        self registerConstraintsOfCall: instruction with: allocator
-    }.
-
-    public method asm::generateCall: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        codegen textSection x86::call: (instruction firstOperandRegister x86::relCall32OrInt64For: codegen).
-    }.
-
-    public override method asm::generateCallInt8: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        self asm::generateCall: instruction with: codegen
-    }.
-
-    public override method asm::generateCallInt16: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        self asm::generateCall: instruction with: codegen
-    }.
-
-    public override method asm::generateCallInt32: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        self asm::generateCall: instruction with: codegen
-    }.
-
-    public override method asm::generateCallInt64: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        self asm::generateCall: instruction with: codegen
-    }.
-
-    public override method asm::generateCallPointer: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        self asm::generateCall: instruction with: codegen
-    }.
-
-    public override method asm::generateCallFloat32: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        self asm::generateCall: instruction with: codegen
-    }.
-
-    public override method asm::generateCallFloat64: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        self asm::generateCall: instruction with: codegen
-    }.
-
-    public override method asm::generateCallStruct: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        self asm::generateCall: instruction with: codegen
-    }.
-
-    public override method asm::generateCallVoid: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        self asm::generateCall: instruction with: codegen
+        function
+            argumentPassingStackAlignment: (stackArgumentAlignment max: 16u64);
+            argumentPassingStackSize: ((stackSize alignedTo: stackArgumentAlignment) max: 32u64)
     }.
 }.
 
 public global MIR::X86_64::SysVCallingConvention := MIRSysVX86_64CallingConvention new.
+public global MIR::X86_64::Win64CallingConvention := MIRWinX64CallingConvention new.
 
 public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarget; definition: {
     public override method name => Symbol
@@ -997,10 +1180,14 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
         := true.
 
     public override method defaultCallingConvention => MIRCallingConvention
-        := MIR::X86_64::SysVCallingConvention.
+        := asmCompilationTarget isWindows
+            ifTrue: MIR::X86_64::Win64CallingConvention
+            ifFalse: MIR::X86_64::SysVCallingConvention.
 
     public override method emitFunctionPrologueWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        codegen textSection x86::endbr64.
+        asmCompilationTarget isWindows ifFalse: {
+            codegen textSection x86::endbr64
+        }.
 
         let stackFrameLayout := codegen stackFrameLayout.
         stackFrameLayout hasRequiredConstruction ifTrue: {
