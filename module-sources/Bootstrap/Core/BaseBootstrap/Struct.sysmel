@@ -31,6 +31,9 @@ public class StructType superclass: ValueType; definition: {
     public override method defaultValue => self
         := self basicNew.
 
+    public override method literalConstantRequiresShallowCopy => Boolean
+        := true.
+
     protected field canEncodeValueInBytes.
     protected field canDecodeValueFromBytes.
 

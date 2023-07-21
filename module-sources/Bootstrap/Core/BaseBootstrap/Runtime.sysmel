@@ -268,6 +268,8 @@ Type
             else: (self error: "A proper default value must be defined for " -- self printString).
     } makeVirtual withEagerAnalysis;
 
+    withSelector: #literalConstantRequiresShallowCopy addMethod: {:(Type)self :: Boolean | false} makeVirtual withEagerAnalysis;
+
     withSelector: #validSlotDictionary addMethod: {:(Type)self :: MethodDictionary |
         if: self slotDictionary == nil then: (self slotDictionary: MethodDictionary new).
         self slotDictionary
@@ -1885,10 +1887,21 @@ TypeSlot
             error("Generate initialValueBlock application")
         } else: {
             let: #type with: self type.
-            ASTLiteralNode new
+            let: #initialValueLiteral with: (ASTLiteralNode new
                 sourcePosition: self sourcePosition;
                 value: (if: type ~~ nil then: type defaultValue else: nil);
-                yourself
+                yourself).
+            if: type literalConstantRequiresShallowCopy
+            then: (ASTFunctionApplicationNode new
+                sourcePosition: self sourcePosition;
+                functionExpression: (ASTLiteralNode new
+                    sourcePosition: self sourcePosition;
+                    value: RawTuple::shallowCopy;
+                    yourself);
+                arguments: (Array with: initialValueLiteral);
+                applicationFlags: 0bflgs;
+                yourself)
+            else: initialValueLiteral
         }
     };
     withSelector: #validOffset addMethod: {:(TypeSlot)self :: Size |

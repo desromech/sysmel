@@ -69,6 +69,9 @@ public class FixedArrayType superclass: ValueType; definition: {
     public override method defaultValue => self
         := self basicNew.
 
+    public override method literalConstantRequiresShallowCopy => Boolean
+        := true.
+
     public override method computeLayout => Void := {
         instanceSize := 0sz.
         instanceAlignment := 1sz.
