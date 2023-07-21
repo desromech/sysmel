@@ -1161,6 +1161,8 @@ public final class MIRWinX64CallingConvention superclass: MIRX86_64CallingConven
             argumentPassingStackAlignment: (stackArgumentAlignment max: 16u64);
             argumentPassingStackSize: ((stackSize alignedTo: stackArgumentAlignment) max: 32u64)
     }.
+
+    public override method framePointerAnchorIsAtBottom => Boolean := true.
 }.
 
 public global MIR::X86_64::SysVCallingConvention := MIRSysVX86_64CallingConvention new.
@@ -1193,15 +1195,21 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
         stackFrameLayout hasRequiredConstruction ifTrue: {
             codegen textSection
                 x86::push: X86::RBP;
-                cfiPushRegister: X86::RBP;
-                x86::mov: X86::RBP src: X86::RSP;
-                cfiSaveFramePointer: X86::RBP.
+                cfiPushRegister: X86::RBP.
+
+            stackFrameLayout framePointerAnchorIsAtBottom ifFalse: {
+                codegen textSection
+                    x86::mov: X86::RBP src: X86::RSP;
+                    cfiSaveFramePointer: X86::RBP.
+            }.
 
             codegen function touchedCallPreservedRegisters do: {:(MIRPhysicalLocation)each :: Void |
-                let reg := (each x86::int64For: codegen) downCastTo: AsmRegister.
-                codegen textSection
-                    x86::push: reg;
-                    cfiPushRegister: reg.
+                each isIntegerRegister ifTrue: {
+                    let reg := (each x86::int64For: codegen) downCastTo: AsmRegister.
+                    codegen textSection
+                        x86::push: reg;
+                        cfiPushRegister: reg.
+                }.
             }.
         }.
     }.
@@ -1218,6 +1226,19 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
                 x86::sub: X86::RSP with: frameSize asInt32 asAsmImmediate;
                 cfiStackSizeAdvance: frameSize asInt64
         }.
+
+        stackFrameLayout framePointerAnchorIsAtBottom ifTrue: {
+            stackFrameLayout frameOrStackPointerAnchorOffset > 0u64 ifTrue: {
+                codegen textSection
+                    x86::lea: X86::RBP src: X86::RSP x86::qword + stackFrameLayout frameOrStackPointerAnchorOffset asAsmImmediate;
+                    cfiSaveFramePointer: X86::RBP offset: stackFrameLayout frameOrStackPointerAnchorOffset asInt64.
+            } ifFalse: {
+                codegen textSection
+                    x86::mov: X86::RBP src: X86::RSP;
+                    cfiSaveFramePointer: X86::RBP.
+            }.
+        }.
+
         codegen textSection cfiEndPrologue.
         
         codegen
@@ -1229,30 +1250,47 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
         let stackFrameLayout := codegen stackFrameLayout.
         stackFrameLayout hasRequiredConstruction ifTrue: {
             let preservedRegisters := codegen function touchedCallPreservedRegisters.
-            preservedRegisters isEmpty ifTrue: {
+            stackFrameLayout framePointerAnchorIsAtBottom ifTrue: {
+                let restoreSize := stackFrameLayout callPreservedZone offset - stackFrameLayout frameOrStackPointerAnchorOffset.
                 codegen textSection
                     cfiBeginEpilogue;
-                    x86::mov: X86::RSP src: X86::RBP;
-                    cfiRestoreFramePointer: X86::RBP offset: 0i64;
-                    x86::pop: X86::RBP;
-                    cfiPopRegister: X86::RBP.
-            } ifFalse: {
-                codegen textSection
-                    cfiBeginEpilogue;
-                    x86::lea: X86::RSP src: X86::RBP x86::qword + (preservedRegisters size asInt64 * -8i64) asAsmImmediate;
-                    cfiRestoreFramePointer: X86::RBP offset: preservedRegisters size asInt64.
-                preservedRegisters reverseDo: {:(MIRPhysicalLocation)each :: Void |
-                    let reg := (each x86::int64For: codegen) downCastTo: AsmRegister.
+                        x86::lea: X86::RSP src: X86::RBP x86::qword + restoreSize asAsmImmediate;
+                        cfiRestoreFramePointer: X86::RBP offset: restoreSize asInt64.
+                    preservedRegisters reverseDo: {:(MIRPhysicalLocation)each :: Void |
+                        let reg := (each x86::int64For: codegen) downCastTo: AsmRegister.
+                        codegen textSection
+                            x86::pop: reg;
+                            cfiPopRegister: reg.
+                    }.
+
                     codegen textSection
-                        x86::pop: reg;
-                        cfiPopRegister: reg.
-                }.
+                        x86::pop: X86::RBP;
+                        cfiPopRegister: X86::RBP.
+            } ifFalse: {
+                preservedRegisters isEmpty ifTrue: {
+                    codegen textSection
+                        cfiBeginEpilogue;
+                        x86::mov: X86::RSP src: X86::RBP;
+                        cfiRestoreFramePointer: X86::RBP offset: 0i64;
+                        x86::pop: X86::RBP;
+                        cfiPopRegister: X86::RBP.
+                } ifFalse: {
+                    codegen textSection
+                        cfiBeginEpilogue;
+                        x86::lea: X86::RSP src: X86::RBP x86::qword + (preservedRegisters size asInt64 * -8i64) asAsmImmediate;
+                        cfiRestoreFramePointer: X86::RBP offset: preservedRegisters size asInt64.
+                    preservedRegisters reverseDo: {:(MIRPhysicalLocation)each :: Void |
+                        let reg := (each x86::int64For: codegen) downCastTo: AsmRegister.
+                        codegen textSection
+                            x86::pop: reg;
+                            cfiPopRegister: reg.
+                    }.
 
-                codegen textSection
-                    x86::pop: X86::RBP;
-                    cfiPopRegister: X86::RBP.
-            }.
-
+                    codegen textSection
+                        x86::pop: X86::RBP;
+                        cfiPopRegister: X86::RBP.
+                }
+            }
         }.
     }.
 

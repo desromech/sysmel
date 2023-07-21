@@ -72,6 +72,7 @@ public final class AsmCallFrameInformationPopRegisterInstruction superclass: Asm
 
 public final class AsmCallFrameInformationSaveFramePointerInstruction superclass: AsmCallFrameInformationInstruction; definition: {
     public field register => AsmRegister.
+    public field offset => Int64.
 }.
 
 public final class AsmCallFrameInformationRestoreFramePointerInstruction superclass: AsmCallFrameInformationInstruction; definition: {
@@ -429,10 +430,11 @@ AsmObjectCodeSection definition: {
             yourself).
     }.
 
-    public method cfiSaveFramePointer: (register: AsmRegister) ::=> Void := {
+    public method cfiSaveFramePointer: (register: AsmRegister) offset: (offset: Int64) ::=> Void := {
         currentFrameDescription instructions add: (AsmCallFrameInformationSaveFramePointerInstruction new
             address: writeOffset asUInt64;
             register: register;
+            offset: offset;
             yourself).
     }.
 
@@ -918,7 +920,7 @@ AsmObjectCodeStream definition: {
     public virtual method cfiEndEpilogue => Void := {}.
     public virtual method cfiPushRegister: (register: AsmRegister) ::=> Void := {}.
     public virtual method cfiPopRegister: (register: AsmRegister) ::=> Void := {}.
-    public virtual method cfiSaveFramePointer: (register: AsmRegister) ::=> Void := {}.
+    public virtual method cfiSaveFramePointer: (register: AsmRegister) offset: (offset: Int64) ::=> Void := {}.
     public virtual method cfiRestoreFramePointer: (register: AsmRegister) offset: (offset: Int64) ::=> Void := {}.
     public virtual method cfiStackSizeAdvance: (increment: Int64) ::=> Void := {}.
 }.
@@ -1114,8 +1116,8 @@ AsmObjectCodeWriteStream definition: {
         activeSection cfiPopRegister: register
     }.
 
-    public override method cfiSaveFramePointer: (register: AsmRegister) ::=> Void := {
-        activeSection cfiSaveFramePointer: register
+    public override method cfiSaveFramePointer: (register: AsmRegister) offset: (offset: Int64) ::=> Void := {
+        activeSection cfiSaveFramePointer: register offset: offset
     }.
 
     public override method cfiRestoreFramePointer: (register: AsmRegister) offset: (offset: Int64) ::=> Void := {
