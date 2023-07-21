@@ -223,7 +223,7 @@ public class AsmX86Register superclass: AsmRegister; definition: {
 
 AsmX86RegisterAddress definition: {
     public field scaleShift => UInt8.
-    public field size => Size.
+    public field size => UInt8.
 
     public field base => AsmX86Register.
     public field index => AsmX86Register.
@@ -232,14 +232,14 @@ AsmX86RegisterAddress definition: {
     __Meta__ definition: {
         public method size: (size: UInt8) displacement: (displacement: AsmImmediate) ::=> self
             := self new
-                size: size asSize;
+                size: size;
                 displacement: displacement;
                 yourself.
 
         public method base: (base: AsmX86Register) size: (size: UInt8) displacement: (displacement: AsmImmediate) ::=> self
             := self new
                 base: base;
-                size: size asSize;
+                size: size;
                 displacement: displacement;
                 yourself.
     }.
@@ -255,15 +255,15 @@ AsmX86RegisterAddress definition: {
 
     __Meta__ definition: {
         public method base: (base: AsmX86Register) size: (size: UInt8) ::=> self
-            := self new base: base; size: size asSize; yourself.
+            := self new base: base; size: size; yourself.
     }.
 
     let sizeNameTable := #{
-        1sz : "byte ptr".
-        2sz : "word ptr".
-        4sz : "dword ptr".
-        8sz : "qword ptr".
-        16sz : "oword ptr".
+        1u8 : "byte ptr".
+        2u8 : "word ptr".
+        4u8 : "dword ptr".
+        8u8 : "qword ptr".
+        16u8 : "oword ptr".
     }.
 
     public method scale => UInt8
@@ -397,6 +397,21 @@ AsmX86RegisterAddress definition: {
 
         stream nextPutAll: "]".
     }.
+
+    public method byte => SelfType
+        := self copy size: 1u8; yourself.
+
+    public method word => SelfType
+        := self copy size: 2u8; yourself.
+
+    public method dword => SelfType
+        := self copy size: 4u8; yourself.
+
+    public method qword => SelfType
+        := self copy size: 8u8; yourself.
+
+    public method oword => SelfType
+        := self copy size: 16u8; yourself.
 }.
 
 AsmSymbol extend: {

@@ -38,6 +38,11 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
         }.
     }.
 
+    public method freeAllocatedScratchRegisters => Void := {
+        availableRegisters addAll: activeScratchRegisters.
+        activeScratchRegisters removeAll.
+    }.
+
     public method spillRegistersIfNeededExceptFor: (registerList: Array) ::=> Void := {
         activeIntervals
             expireAllThat: {:(MIRLiveInterval)interval :: Boolean | (registerList includes: interval register) not }

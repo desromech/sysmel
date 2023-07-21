@@ -34,11 +34,16 @@ public abstract class MIRPhysicalLocationMemory superclass: MIRPhysicalLocation;
 }.
 
 public abstract class MIRSpecificPhysicalMemoryLocation superclass: MIRPhysicalLocation; definition: {
+    public field isCallArgument => Boolean.
+    public field isStructure => Boolean.
     public field offset => Int64.
     public field scratchRegisters => Array.
 
     public override method isMemory => Boolean := true.
     public override method isSpecificMemoryLocation => Boolean := true.
+
+    public method firstScratchRegister => MIRPhysicalLocation
+        := scratchRegisters first.
 }.
 
 public final class MIRPhysicalLocationSpecificStackPointerOffset superclass: MIRSpecificPhysicalMemoryLocation; definition: {
@@ -1042,6 +1047,12 @@ MIRInstruction definition: {
     public override method computeLiveInterval => Void := {
         super computeLiveInterval.
         liveInterval insertUsage: index.
+
+        operation isPhi ifTrue: {
+            operands pairsDo: {:(MIRBasicBlock)incomingBlock :(MIRValue)incomingValue :: Void |
+                liveInterval insertUsage: incomingBlock indexAtEnd
+            }
+        }
     }.
 
     public override method usageIndexFor: (usedValue: MIRLocalValue) ::=> UInt32 := {

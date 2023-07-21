@@ -308,6 +308,9 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         public abstract method emitMoveValue: (value: MIRValue) intoLocation: (register: MIRPhysicalLocation) with: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
+        public abstract method emitMoveValue: (value: MIRValue) intoSpecificMemoryLocation: (memoryLocation: MIRSpecificPhysicalMemoryLocation) with: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
         public abstract method emitUnspillValue: (value: MIRValue) intoLocation: (register: MIRPhysicalLocation) with: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
@@ -509,7 +512,7 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         } ifNotNil: {
             firstPhiMoveInstruction ifNil: {
                 firstPhiMoveInstruction := instruction
-            }
+            }.
         }.
 
         captureVectorPointerRegister := instruction captureVectorPointerRegister.
@@ -575,16 +578,30 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
 
     public method emitMoveValues: (values: Array) intoRegisters: (registers: Array) ::=> Void := {
         values doWithIndex: {:(MIRValue)eachValue :(Size)valueIndex :: Void |
-            self emitMoveValue: eachValue intoLocation: (registers at: valueIndex)
+            let targetLocation => MIRPhysicalLocation := registers at: valueIndex.
+            targetLocation isSpecificMemoryLocation ifTrue: {
+                self emitMoveValue: eachValue intoLocation: targetLocation
+            }
+        }.
+
+        values doWithIndex: {:(MIRValue)eachValue :(Size)valueIndex :: Void |
+            let targetLocation => MIRPhysicalLocation := registers at: valueIndex.
+            targetLocation isSpecificMemoryLocation ifFalse: {
+                self emitMoveValue: eachValue intoLocation: targetLocation
+            }
         }
     }.
 
     public method emitMoveValue: (value: MIRValue) intoLocation: (location: MIRPhysicalLocation) ::=> Void := {
+        ## FIXME: Use a double dispatch here.
         location isRegister ifTrue: {
             moduleGenerator target emitMoveValue: value intoLocation: location with: self.
         }.
         location isRegisterWithPointer ifTrue: {
             moduleGenerator target emitMoveValuePointer: value intoLocation: (location downCastTo: MIRPhysicalLocationRegisterWithPointer) register with: self.
+        }.
+        location isSpecificMemoryLocation ifTrue: {
+            moduleGenerator target emitMoveValue: value intoSpecificMemoryLocation: (location downCastTo: MIRSpecificPhysicalMemoryLocation) with: self.
         }.
     }.
 

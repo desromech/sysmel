@@ -106,6 +106,12 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
         vectorRegisterFile ifNotNil: (vectorRegisterFile beginValueAtIndex: deadPoint).
     }.
 
+    public override method freeAllocatedScratchRegisters => Void := {
+        integerRegisterFile freeAllocatedScratchRegisters.
+        floatRegisterFile ifNotNil: (floatRegisterFile freeAllocatedScratchRegisters).
+        vectorRegisterFile ifNotNil: (vectorRegisterFile freeAllocatedScratchRegisters).
+    }.
+
     public override method allocateCaptureVectorPointerRegisterForInstruction: (instruction: MIRInstruction) ::=> Void := {
         instruction captureVectorPointerValue isNotNil && instruction captureVectorPointerRegister isNil ifTrue: {
             instruction captureVectorPointerRegister: (integerRegisterFile allocateForValue: instruction captureVectorPointerValue)
@@ -180,6 +186,14 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
     public override method allocateRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) scratchAt: (scratchIndex: Size) ::=> Void := {
         instruction scratchRegisters at: scratchIndex put: register.
         self spillIfNeededAndAllocateRegister: register withValue: nil
+    }.
+
+    public override method allocateIntegerRegisterForInstruction: (instruction: MIRInstruction) scratchAt: (scratchIndex: Size) ::=> Void := {
+        instruction scratchRegisters at: scratchIndex put: (self allocateIntegerRegisterForValue: nil)
+    }.
+
+    public override method allocateVectorRegisterForInstruction: (instruction: MIRInstruction) scratchAt: (scratchIndex: Size) ::=> Void := {
+        instruction scratchRegisters at: scratchIndex put: (self allocateVectorRegisterForValue: nil)
     }.
 
     public override method allocateRegisterForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {

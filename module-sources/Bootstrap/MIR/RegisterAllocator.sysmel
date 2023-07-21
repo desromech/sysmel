@@ -32,6 +32,12 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
     public abstract method allocateRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) scratchAt: (operandIndex: Size) ::=> Void
         := self subclassResponsibility.
 
+    public abstract method allocateIntegerRegisterForInstruction: (instruction: MIRInstruction) scratchAt: (operandIndex: Size) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method allocateVectorRegisterForInstruction: (instruction: MIRInstruction) scratchAt: (operandIndex: Size) ::=> Void
+        := self subclassResponsibility.
+
     public abstract method allocateRegisterForInstructionResult: (instruction: MIRInstruction) ::=> Void
         := self subclassResponsibility.
 
@@ -48,6 +54,9 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
         := self allocateRegister8ForInstructionResult: instruction.
 
     public abstract method allocateRegister8ForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method freeAllocatedScratchRegisters => Void
         := self subclassResponsibility.
 
     public virtual method allocateRegisterOrDirectPointerForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
@@ -202,6 +211,23 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
 
     public virtual method allocateMemoryForInstructionResult: (instruction: MIRInstruction) ::=> Void := {
         instruction resultRegister: MIRPhysicalLocationMemory uniqueInstance
+    }.
+
+    public virtual method allocateSpecificCallStackPointerOffset: (stackOffset: Int64) forInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) scratchRegister: (scratchRegister: MIRPhysicalLocation) ::=> Void := {
+        instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationSpecificStackPointerOffset new
+            isCallArgument: true;
+            offset: stackOffset;
+            scratchRegisters: (Array with: scratchRegister);
+            yourself)
+    }.
+
+    public virtual method allocateSpecificCallStackPointerOffset: (stackOffset: Int64) forInstruction: (instruction: MIRInstruction) structureOperandAt: (operandIndex: Size) ::=> Void := {
+        instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationSpecificStackPointerOffset new
+            isCallArgument: true;
+            isStructure: true;
+            offset: stackOffset;
+            scratchRegisters: instruction scratchRegisters;
+            yourself)
     }.
 
     public abstract method allocateCaptureVectorPointerRegisterForInstruction: (instruction: MIRInstruction) ::=> Void

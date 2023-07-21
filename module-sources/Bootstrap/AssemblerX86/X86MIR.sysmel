@@ -59,26 +59,50 @@ MIRPhysicalLocation extend: {
     public virtual method x86::relCall32OrInt64For: (codegen: MIRAsmCodeGenerator) ::=> AsmInstructionOperand
         := self error: "Not a x86 relativeCall32 immediate or int64 register".
 
-    public abstract method x86::loadFromVariable: (local: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
+    public abstract method x86::loadFromValue: (value: MIRValue) pointer: (valuePointer: AsmX86RegisterAddress) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self shouldBeImplemented.
+
+    public abstract method x86::loadFromVariable: (local: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        local size = 0sz ifFalse: {
+            self x86::loadFromValue: local pointer: (local x86::pointerWithCodegen: codegen) with: codegen
+        }.
+    }.
 
     public abstract method x86::loadFromRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self shouldBeImplemented.
 
-    public abstract method x86::storeInVariable: (local: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
+    public abstract method x86::storeValue: (value: MIRValue) inPointer: (valuePointer: AsmX86RegisterAddress) isCallArgument: (isCallArgument: Boolean) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self shouldBeImplemented.
 
+    public abstract method x86::storeInVariable: (local: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        local size = 0sz ifFalse: {
+            self x86::storeValue: local inPointer: (local x86::pointerWithCodegen: codegen) isCallArgument: false with: codegen
+        }
+    }.
+
     public abstract method x86::pushWith: (codegen: MIRFunctionAsmCodeGenerator) valueSize: (size: UInt64)::=> Void
+        := self shouldBeImplemented.
+
+    public abstract method x86_64::loadFromValue: (value: MIRValue) pointer: (valuePointer: AsmX86RegisterAddress) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self shouldBeImplemented.
 
     public abstract method x86_64::loadFromRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self shouldBeImplemented.
 
-    public abstract method x86_64::loadFromVariable: (local: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
+    public virtual method x86_64::loadFromVariable: (local: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        local size = 0sz ifFalse: {
+            self x86_64::loadFromValue: local pointer: (local x86_64::pointerWithCodegen: codegen) with: codegen
+        }.
+    }.
+
+    public abstract method x86_64::storeValue: (value: MIRValue) inPointer: (valuePointer: AsmX86RegisterAddress) isCallArgument: (isCallArgument: Boolean) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self shouldBeImplemented.
 
-    public abstract method x86_64::storeInVariable: (local: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
-        := self shouldBeImplemented.
+    public virtual method x86_64::storeInVariable: (local: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        local size = 0sz ifFalse: {
+            self x86_64::storeValue: local inPointer: (local x86_64::pointerWithCodegen: codegen) isCallArgument: false with: codegen
+        }
+    }.
 
     public abstract method x86_64::pushWith: (codegen: MIRFunctionAsmCodeGenerator) valueSize: (size: UInt64)::=> Void
         := self shouldBeImplemented.
@@ -119,37 +143,37 @@ MIRPhysicalLocationImmediate extend: {
 MIRPhysicalLocationValuePointer extend: {
     public override method x86::int8PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
-                size: 1sz;
+                size: 1u8;
                 yourself.
 
     public override method x86::int16PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
-                size: 2sz;
+                size: 2u8;
                 yourself.
 
     public override method x86::int32PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
-                size: 4sz;
+                size: 4u8;
                 yourself.
 
     public override method x86::int64PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
-                size: 8sz;
+                size: 8u8;
                 yourself.
 
     public override method x86::float32PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
-                size: 4sz;
+                size: 4u8;
                 yourself.
 
     public override method x86::float64PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
-                size: 8sz;
+                size: 8u8;
                 yourself.
 
     public override method x86::vector128PointerWithOffset: (offset: MIRPhysicalLocation) for: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := (value x86_x86_64::pointerWithCodegen: codegen) + (offset x86::immediate32For: codegen)
-                size: 16sz;
+                size: 16u8;
                 yourself.
 }.
 
@@ -159,7 +183,7 @@ MIRPhysicalLocationValuePointerOrAssignedRegister extend: {
             register x86::int8For: codegen
         } ifNil: {
             (value x86_x86_64::pointerWithCodegen: codegen) copy
-                size: 1sz;
+                size: 1u8;
                 yourself
         }
     }.
@@ -169,7 +193,7 @@ MIRPhysicalLocationValuePointerOrAssignedRegister extend: {
             register x86::int16For: codegen
         } ifNil: {
             (value x86_x86_64::pointerWithCodegen: codegen) copy
-                size: 2sz;
+                size: 2u8;
                 yourself
         }
     }.
@@ -179,7 +203,7 @@ MIRPhysicalLocationValuePointerOrAssignedRegister extend: {
             register x86::int32For: codegen
         } ifNil: {
             (value x86_x86_64::pointerWithCodegen: codegen) copy
-                size: 4sz;
+                size: 4u8;
                 yourself
         }
     }.
@@ -189,7 +213,7 @@ MIRPhysicalLocationValuePointerOrAssignedRegister extend: {
             register x86::int64For: codegen
         } ifNil: {
             (value x86_x86_64::pointerWithCodegen: codegen) copy
-                size: 8sz;
+                size: 8u8;
                 yourself
         }
     }.
@@ -199,7 +223,7 @@ MIRPhysicalLocationValuePointerOrAssignedRegister extend: {
             register x86::float32For: codegen
         } ifNil: {
             (value x86_x86_64::pointerWithCodegen: codegen) copy
-                size: 4sz;
+                size: 4u8;
                 yourself
         }
     }.
@@ -209,7 +233,7 @@ MIRPhysicalLocationValuePointerOrAssignedRegister extend: {
             register x86::float64For: codegen
         } ifNil: {
             (value x86_x86_64::pointerWithCodegen: codegen) copy
-                size: 8sz;
+                size: 8u8;
                 yourself
         }
     }.
@@ -219,7 +243,7 @@ MIRPhysicalLocationValuePointerOrAssignedRegister extend: {
             register x86::vector128For: codegen
         } ifNil: {
             (value x86_x86_64::pointerWithCodegen: codegen) copy
-                size: 16sz;
+                size: 16u8;
                 yourself
         }
     }.
@@ -229,9 +253,27 @@ MIRPhysicalLocationValuePointerOrAssignedRegister extend: {
             register x86::immediateS32OrInt64For: codegen
         } ifNil: {
             (value x86_x86_64::pointerWithCodegen: codegen) copy
-                size: 8sz;
+                size: 8u8;
                 yourself
         }
+    }.
+}.
+
+MIRSpecificPhysicalMemoryLocation extend: {
+    public abstract method x86::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress
+        := self subclassResponsibility.
+
+    public abstract method x86_64::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress
+        := self subclassResponsibility.
+}.
+
+MIRPhysicalLocationSpecificStackPointerOffset extend: {
+    public override method x86::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress := {
+        AsmX86RegisterAddress base: X86::ESP size: 1u8 displacement: offset asInt32 asAsmImmediate
+    }.
+
+    public override method x86_64::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress := {
+        AsmX86RegisterAddress base: X86::RSP size: 1u8 displacement: offset asInt32 asAsmImmediate
     }.
 }.
 
@@ -351,35 +393,52 @@ public final class MIRX86_64IntegerRegister superclass: MIRPhysicalIntegerRegist
         }.
     }.
 
-    public override method x86_64::loadFromVariable: (variable: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        let variableSize := variable size.
-        variableSize = 0sz ifTrue: {return: void}.
+    public override method x86_64::loadFromValue: (value: MIRValue) pointer: (valuePointer: AsmX86RegisterAddress) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        let valueSize := value size.
+        valueSize = 0sz ifTrue: {return: void}.
 
-        let isSignedExtended := variable isSignedExtended.
-        self assert: (variableSize = 1sz) || (variableSize = 2sz) || (variableSize = 4sz) || (variableSize = 8sz).
+        let isSignedExtended := value isSignedExtended.
+        self assert: valueSize <= 8sz.
 
-        let variablePointer := variable x86_64::pointerWithCodegen: codegen.
-        variableSize = 1u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: self x86::int32 src: variablePointer).
-        variableSize = 1u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: self x86::int32 src: variablePointer).
-        variableSize = 2u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: self x86::int32 src: variablePointer).
-        variableSize = 2u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: self x86::int32 src: variablePointer).
-        variableSize = 4u64 ifTrue: (codegen textSection x86::mov: self x86::int32 src: variablePointer).
-        variableSize = 8u64 ifTrue: (codegen textSection x86::mov: self x86::int64 src: variablePointer).
-    }.
-
-    public override method x86_64::storeInVariable: (variable: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        let variableSize := variable size.
-        variableSize = 0sz ifTrue: {return: void}.
-
-        (variableSize = 1u64) || (variableSize = 2u64) || (variableSize = 4u64) || (variableSize = 8u64) ifFalse: {
-            self error: (variable printString -- " " -- variable type printString -- " invalid variable size " -- variableSize asString -- " for integer register")
+        valueSize <= 1u64 ifTrue: {
+            isSignedExtended
+                ifTrue: (codegen textSection x86::movsx: self x86::int32 src: valuePointer byte)
+                ifFalse:  (codegen textSection x86::movzx: self x86::int32 src: valuePointer byte).
+            return: void
         }.
 
-        let variablePointer := variable x86_64::pointerWithCodegen: codegen.
-        variableSize = 1u64 ifTrue: (codegen textSection x86::mov: variablePointer src: self x86::int8).
-        variableSize = 2u64 ifTrue: (codegen textSection x86::mov: variablePointer src: self x86::int16).
-        variableSize = 4u64 ifTrue: (codegen textSection x86::mov: variablePointer src: self x86::int32).
-        variableSize = 8u64 ifTrue: (codegen textSection x86::mov: variablePointer src: self x86::int64).
+        valueSize <= 2u64 ifTrue: {
+            isSignedExtended
+                ifTrue: (codegen textSection x86::movsx: self x86::int32 src: valuePointer word)
+                ifFalse:  (codegen textSection x86::movzx: self x86::int32 src: valuePointer word).
+            return: void
+        }.
+
+        valueSize <= 4u64 ifTrue: {
+            codegen textSection x86::mov: self x86::int32 src: valuePointer dword.
+            return: void
+        }.
+
+        codegen textSection x86::mov: self x86::int64 src: valuePointer qword
+    }.
+
+    public override method x86_64::storeValue: (value: MIRValue) inPointer: (valuePointer: AsmX86RegisterAddress) isCallArgument: (isCallArgument: Boolean) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        isCallArgument ifTrue: {
+            codegen textSection x86::mov: valuePointer qword src: self x86::int64.
+            return: void
+        }.
+
+        let valueSize := value size.
+        valueSize = 0sz ifTrue: {return: void}.
+
+        (valueSize = 1u64) || (valueSize = 2u64) || (valueSize = 4u64) || (valueSize = 8u64) ifFalse: {
+            self error: (value printString -- " " -- value type printString -- " invalid value size " -- valueSize asString -- " for integer register")
+        }.
+
+        valueSize = 1u64 ifTrue: (codegen textSection x86::mov: valuePointer byte src: self x86::int8).
+        valueSize = 2u64 ifTrue: (codegen textSection x86::mov: valuePointer word src: self x86::int16).
+        valueSize = 4u64 ifTrue: (codegen textSection x86::mov: valuePointer dword src: self x86::int32).
+        valueSize = 8u64 ifTrue: (codegen textSection x86::mov: valuePointer qword src: self x86::int64).
     }.
 
     public override method x86_64::pushWith: (codegen: MIRFunctionAsmCodeGenerator) valueSize: (size: UInt64)::=> Void := {
@@ -418,60 +477,58 @@ public final class MIRX86VectorRegister superclass: MIRPhysicalVectorRegister; d
     public override method x86::vector128For: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmInstructionOperand
         := register.
 
-    public override method x86::loadFromVariable: (variable: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        let variableSize := variable size.
-        variableSize = 0sz ifTrue: {return: void}.
+    public override method x86::loadFromValue: (value: MIRValue) pointer: (valuePointer: AsmX86RegisterAddress) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        let valueSize := value size.
+        valueSize = 0sz ifTrue: {return: void}.
 
-        (variableSize = 4u64) || (variableSize = 8u64) || (variableSize = 16u64) ifFalse: {
-            self error: (variable printString -- " " -- variable type printString -- " invalid variable size " -- variableSize asString -- " for vector register")
+        (valueSize = 4u64) || (valueSize = 8u64) || (valueSize = 16u64) ifFalse: {
+            self error: (value printString -- " " -- value type printString -- " invalid value size " -- valueSize asString -- " for vector register")
         }.
 
-        let variablePointer := variable x86_64::pointerWithCodegen: codegen.
-        variableSize = 4u64 ifTrue: (codegen textSection x86::movss: self register src: variablePointer).
-        variableSize = 8u64 ifTrue: (codegen textSection x86::movsd: self register src: variablePointer).
-        variableSize = 16u64 ifTrue: (codegen textSection x86::movaps: self register src: variablePointer).
+        let valuePointer := value x86_64::pointerWithCodegen: codegen.
+        valueSize = 4u64 ifTrue: (codegen textSection x86::movss: self register src: valuePointer dword).
+        valueSize = 8u64 ifTrue: (codegen textSection x86::movsd: self register src: valuePointer qword).
+        valueSize = 16u64 ifTrue: (codegen textSection x86::movaps: self register src: valuePointer oword).
     }.
 
-    public virtual method x86::storeInVariable: (variable: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        let variableSize := variable size.
-        variableSize = 0sz ifTrue: {return: void}.
+    public override method x86::storeValue: (value: MIRValue) inPointer: (valuePointer: AsmX86RegisterAddress) isCallArgument: (isCallArgument: Boolean) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        let valueSize := value size.
+        valueSize = 0sz ifTrue: {return: void}.
 
-        (variableSize = 4u64) || (variableSize = 8u64) || (variableSize = 16u64) ifFalse: {
-            self error: (variable printString -- " " -- variable type printString -- " invalid variable size " -- variableSize asString -- " for vector register")
+        (valueSize = 4u64) || (valueSize = 8u64) || (valueSize = 16u64) ifFalse: {
+            self error: (value printString -- " " -- value type printString -- " invalid value size " -- valueSize asString -- " for vector register")
         }.
 
-        let variablePointer := variable x86_64::pointerWithCodegen: codegen.
-        variableSize = 4u64 ifTrue: (codegen textSection x86::movss: variablePointer src: register).
-        variableSize = 8u64 ifTrue: (codegen textSection x86::movsd: variablePointer src: register).
-        variableSize = 16u64 ifTrue: (codegen textSection x86::movaps: variablePointer src: register).
+        let valuePointer := value x86_64::pointerWithCodegen: codegen.
+        valueSize = 4u64 ifTrue: (codegen textSection x86::movss: valuePointer dword src: register).
+        valueSize = 8u64 ifTrue: (codegen textSection x86::movsd: valuePointer qword src: register).
+        valueSize = 16u64 ifTrue: (codegen textSection x86::movaps: valuePointer oword src: register).
     }.
 
-    public override method x86_64::loadFromVariable: (variable: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        let variableSize := variable size.
-        variableSize = 0sz ifTrue: {return: void}.
+    public override method x86_64::loadFromValue: (value: MIRValue) pointer: (valuePointer: AsmX86RegisterAddress) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        let valueSize := value size.
+        valueSize = 0sz ifTrue: {return: void}.
 
-        (variableSize = 4u64) || (variableSize = 8u64) || (variableSize = 16u64) ifFalse: {
-            self error: (variable printString -- " " -- variable type printString -- " invalid variable size " -- variableSize asString -- " for vector register")
+        (valueSize = 4u64) || (valueSize = 8u64) || (valueSize = 16u64) ifFalse: {
+            self error: (value printString -- " " -- value type printString -- " invalid value size " -- valueSize asString -- " for vector register")
         }.
 
-        let variablePointer := variable x86_64::pointerWithCodegen: codegen.
-        variableSize = 4u64 ifTrue: (codegen textSection x86::movss: self register src: variablePointer).
-        variableSize = 8u64 ifTrue: (codegen textSection x86::movsd: self register src: variablePointer).
-        variableSize = 16u64 ifTrue: (codegen textSection x86::movaps: self register src: variablePointer).
+        valueSize = 4u64 ifTrue: (codegen textSection x86::movss: self register src: valuePointer dword).
+        valueSize = 8u64 ifTrue: (codegen textSection x86::movsd: self register src: valuePointer qword).
+        valueSize = 16u64 ifTrue: (codegen textSection x86::movaps: self register src: valuePointer oword).
     }.
 
-    public virtual method x86_64::storeInVariable: (variable: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        let variableSize := variable size.
-        variableSize = 0sz ifTrue: {return: void}.
+    public override method x86_64::storeValue: (value: MIRValue) inPointer: (valuePointer: AsmX86RegisterAddress) isCallArgument: (isCallArgument: Boolean) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        let valueSize := value size.
+        valueSize = 0sz ifTrue: {return: void}.
 
-        (variableSize = 4u64) || (variableSize = 8u64) || (variableSize = 16u64) ifFalse: {
-            self error: (variable printString -- " " -- variable type printString -- " invalid variable size " -- variableSize asString -- " for vector register")
+        (valueSize = 4u64) || (valueSize = 8u64) || (valueSize = 16u64) ifFalse: {
+            self error: (value printString -- " " -- value type printString -- " invalid value size " -- valueSize asString -- " for vector register")
         }.
 
-        let variablePointer := variable x86_64::pointerWithCodegen: codegen.
-        variableSize = 4u64 ifTrue: (codegen textSection x86::movss: variablePointer src: register).
-        variableSize = 8u64 ifTrue: (codegen textSection x86::movsd: variablePointer src: register).
-        variableSize = 16u64 ifTrue: (codegen textSection x86::movaps: variablePointer src: register).
+        valueSize = 4u64 ifTrue: (codegen textSection x86::movss: valuePointer dword src: register).
+        valueSize = 8u64 ifTrue: (codegen textSection x86::movsd: valuePointer qword src: register).
+        valueSize = 16u64 ifTrue: (codegen textSection x86::movaps: valuePointer oword src: register).
     }.
 
     public override method x86_64::pushWith: (codegen: MIRFunctionAsmCodeGenerator) valueSize: (size: UInt64)::=> Void := {
@@ -607,7 +664,6 @@ public final class MIRX86CompilationTarget superclass: MIRAsmCompilationTarget; 
     public override method allIntegerRegisters => Array
         := MIR::X86::IntegerRegisters.
 
-
     public override method allVectorRegisters => Array
         := MIR::X86::VectorRegisters.
 
@@ -627,11 +683,9 @@ public final class MIRX86CompilationTarget superclass: MIRAsmCompilationTarget; 
                 x86::mov: X86::EBP src: X86::ESP;
                 cfiSaveFramePointer: X86::EBP.
         }.
-
     }.
 
     public override method emitStackFrameConstructionWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-
         codegen textSection cfiEndPrologue
     }.
 
@@ -724,6 +778,8 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRCallingConventi
         let stackArguments := OrderedCollection new.
         let hasStackIntegerArgument mutable := false.
         let hasStackFloatOrVectorArgument mutable := false.
+        let hasStructureArgument mutable := false.
+        let structureSizeThreshold := 8u64.
 
         let stackArgumentAlignment := 8u64.
         let stackSize mutable := 0u64.
@@ -746,7 +802,11 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRCallingConventi
                 (operand isFloatingPoint || operand isVector) ifTrue: {
                     hasStackFloatOrVectorArgument := true
                 } ifFalse: {
-                    hasStackIntegerArgument := true
+                    operandSize <= structureSizeThreshold ifTrue: {
+                        hasStackIntegerArgument := true
+                    } ifFalse: {
+                        hasStructureArgument := true
+                    }.
                 }.
 
                 stackArguments add: operandIndex; add: argumentOffset
@@ -756,17 +816,50 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRCallingConventi
         stackSize := stackSize alignedTo: stackAlignment.
         allocator addRequiredCalloutSize: stackSize withAlignment: stackAlignment.
 
-        instruction scratchRegisterCount: 1sz.
-        allocator
-            allocateRegister: MIR::X86_64::RBX forInstruction: instruction scratchAt: 0sz.
+        instruction scratchRegisterCount: 4sz.
+        hasStructureArgument ifTrue: {
+            ## We need these specific registers for using rep movs.
+            allocator
+                allocateRegister: MIR::X86_64::RDI forInstruction: instruction scratchAt: 0sz;
+                allocateRegister: MIR::X86_64::RSI forInstruction: instruction scratchAt: 1sz;
+                allocateRegister: MIR::X86_64::RCX forInstruction: instruction scratchAt: 2sz.
 
-        registerArguments pairsDo: {:(Size)operandIndex :register :: Void |
-            allocator allocateRegister: register forInstruction: instruction operandAt: operandIndex
+            hasStackFloatOrVectorArgument ifTrue: {
+                allocator allocateVectorRegisterForInstruction: instruction scratchAt: 3sz
+            }.
+
+            allocator freeAllocatedScratchRegisters.
+
+            registerArguments pairsDo: {:(Size)operandIndex :register :: Void |
+                allocator allocateRegister: register forInstruction: instruction operandAt: operandIndex
+            }.
+        } ifFalse: {
+            registerArguments pairsDo: {:(Size)operandIndex :register :: Void |
+                allocator allocateRegister: register forInstruction: instruction operandAt: operandIndex
+            }.
+
+            hasStackIntegerArgument ifTrue: {
+                allocator allocateIntegerRegisterForInstruction: instruction scratchAt: 0sz
+            }.
+
+            hasStackFloatOrVectorArgument ifTrue: {
+                allocator allocateVectorRegisterForInstruction: instruction scratchAt: 3sz
+            }
         }.
+
         stackArguments pairsDo: {:(Size)operandIndex :(UInt64)stackOffset :: Void |
-            allocator allocateMemoryForInstruction: instruction operandAt: operandIndex
+            let operand => MIRValue := instruction operands at: operandIndex.
+            (operand isFloatingPoint || operand isVector) ifTrue: {
+                allocator allocateSpecificCallStackPointerOffset: stackOffset asInt64 forInstruction: instruction operandAt: operandIndex scratchRegister: instruction scratchRegisters fourth
+            } ifFalse: {
+                operand size <= structureSizeThreshold ifTrue: {
+                    allocator allocateSpecificCallStackPointerOffset: stackOffset asInt64 forInstruction: instruction operandAt: operandIndex scratchRegister: instruction scratchRegisters first
+                } ifFalse: {
+                    allocator allocateSpecificCallStackPointerOffset: stackOffset asInt64 forInstruction: instruction structureOperandAt: operandIndex
+                }
+            }.
         }.
-        
+                
         allocator allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz.
         allocator
             allocateCaptureVectorPointerRegisterForInstruction: instruction;
@@ -848,48 +941,7 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRCallingConventi
     }.
 
     public method asm::generateCall: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        let stackArguments := OrderedCollection new.
-        let stackArgumentAlignment := 8u64.
-        let stackSize mutable := 0u64.
-        let stackAlignment mutable := 16u64.
-
-        ## Select the arguments that are passed through the stack.
-        1sz until: instruction operands size do: {:(Size)operandIndex :: Void |
-            let argument => MIRValue := instruction operands at: operandIndex.
-            let register => MIRPhysicalLocation := instruction operandRegisters at: operandIndex.
-            register isMemory ifTrue: {
-                let operandAlignment := argument alignment max: stackArgumentAlignment.
-                let operandSize := argument size alignedTo: operandAlignment.
-                let argumentOffset := stackSize alignedTo: operandAlignment.
-
-                stackSize := argumentOffset + operandSize.
-                stackAlignment := stackAlignment max: operandAlignment.
-                
-                stackArguments add: argument
-            }.
-        }.
-
-        ## Compute the required argument padding.
-        let alignedStackSize := stackSize alignedTo: stackAlignment.
-        let stackPadding := alignedStackSize - stackSize.
-        stackPadding > 0u64 ifTrue: {
-            codegen textSection x86::sub: X86::RSP with: stackPadding asInt32 asAsmImmediate
-        }.
-
-        ## Push the arguments onto the stack.
-        stackArguments reverseDo: {:(MIRValue)argument :: Void |
-            argument x86_64::pushWith: codegen scratchRegister: (instruction firstScratchRegister x86::int64For: codegen)
-        }.
-
-        ## Perform the call.
         codegen textSection x86::call: (instruction firstOperandRegister x86::relCall32OrInt64For: codegen).
-
-        ## Clear the stack arguments.
-        alignedStackSize > 0u64 ifTrue: {
-            codegen textSection
-                x86::add: X86::RSP with: alignedStackSize asInt32 asAsmImmediate;
-                cfiStackSizeAdvance: alignedStackSize asInt64 negated
-        }.
     }.
 
     public override method asm::generateCallInt8: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
@@ -940,7 +992,6 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
 
     public override method allVectorRegisters => Array
         := MIR::X86::VectorRegisters.
-
 
     public override method usesVectorRegistersForFloatOperations => Boolean
         := true.
@@ -1022,6 +1073,10 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
         value x86_64::moveIntoRegister: register with: codegen
     }.
 
+    public override method emitMoveValue: (value: MIRValue) intoSpecificMemoryLocation: (memoryLocation: MIRSpecificPhysicalMemoryLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        value x86_64::moveIntoSpecificMemoryLocation: memoryLocation with: codegen
+    }.
+
     public override method emitUnspillValue: (value: MIRValue) intoLocation: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         value x86_64::unspillIntoRegister: register with: codegen
     }.
@@ -1051,6 +1106,9 @@ MIRValue extend: {
     public abstract method x86::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self subclassResponsibility.
 
+    public abstract method x86::moveIntoSpecificMemoryLocation: (memoryLocation: MIRSpecificPhysicalMemoryLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
+        := self subclassResponsibility.
+
     public virtual method x86::unspillIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self x86::moveIntoRegister: register with: codegen.
 
@@ -1065,6 +1123,9 @@ MIRValue extend: {
 
     public virtual method x86_64::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self x86::moveIntoRegister: register with: codegen.
+
+    public virtual method x86_64::moveIntoSpecificMemoryLocation: (memoryLocation: MIRSpecificPhysicalMemoryLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
+        := self x86::moveIntoSpecificMemoryLocation: memoryLocation with: codegen.
 
     public virtual method x86_64::unspillIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self x86_64::moveIntoRegister: register with: codegen.
@@ -1093,6 +1154,13 @@ MIRProgramEntity extend: {
         codegen textSection x86::mov: (register x86::int32For: codegen) src: (codegen symbolForProgramEntity: self) dword
     }.
 
+    public override method x86::moveIntoSpecificMemoryLocation: (memoryLocation: MIRSpecificPhysicalMemoryLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        let scratch := memoryLocation firstScratchRegister.
+        codegen textSection
+            x86::lea: (scratch x86::int32For: codegen) src: (codegen symbolForProgramEntity: self) dword;
+            x86::mov: (memoryLocation x86::pointerWithCodegen: codegen) dword src: (scratch x86::int32For: codegen)
+    }.
+
     public override method x86::movePointerIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::mov: (register x86::int32For: codegen) src: (codegen symbolForProgramEntity: self) dword
     }.
@@ -1101,35 +1169,19 @@ MIRProgramEntity extend: {
         codegen textSection x86::lea: (register x86::int64For: codegen) src: (codegen symbolForProgramEntity: self) x86::qwordPtr
     }.
 
+    public override method x86_64::moveIntoSpecificMemoryLocation: (memoryLocation: MIRSpecificPhysicalMemoryLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        let scratch := memoryLocation firstScratchRegister.
+        codegen textSection
+            x86::lea: (scratch x86::int64For: codegen) src: (codegen symbolForProgramEntity: self) qword;
+            x86::mov: (memoryLocation x86_64::pointerWithCodegen: codegen) qword src: (scratch x86::int64For: codegen)
+    }.
+
     public override method x86_64::movePointerIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::lea: (register x86::int64For: codegen) src: (codegen symbolForProgramEntity: self) x86::qwordPtr
     }.
 }.
 
 MIRVariable extend: {
-    public override method x86_64::pushWith: (codegen: MIRFunctionAsmCodeGenerator) scratchRegister: (scratchRegister: AsmInstructionOperand)::=> Void := {
-        let variableSize := self size.
-        (variableSize = 1sz) || (variableSize = 2sz) || (variableSize = 4sz) || (variableSize = 8sz) ifTrue: {
-            let isSignedExtended := self isSignedExtended.
-
-            let variablePointer := self x86_64::pointerWithCodegen: codegen.
-            variableSize = 1u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: scratchRegister src: variablePointer).
-            variableSize = 1u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: scratchRegister src: variablePointer).
-            variableSize = 2u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: scratchRegister src: variablePointer).
-            variableSize = 2u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: scratchRegister src: variablePointer).
-            variableSize = 4u64 ifTrue: (codegen textSection x86::mov: scratchRegister src: variablePointer).
-            variableSize = 8u64 ifTrue: {
-                codegen textSection x86::push: variablePointer
-            } ifFalse: {
-                codegen textSection x86::push: scratchRegister
-            }.
-            codegen textSection cfiStackSizeAdvance: 8i64.
-        } ifFalse: {
-            ## TODO: Implement this
-            codegen textSection x86::int3; x86::nop
-        }
-    }.
-
     public override method x86::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         register x86::loadFromVariable: self with: codegen
     }.
@@ -1156,35 +1208,6 @@ MIRVariable extend: {
 }.
 
 MIRLocalValue extend: {
-    public override method x86_64::pushWith: (codegen: MIRFunctionAsmCodeGenerator) scratchRegister: (scratchRegister: AsmInstructionOperand)::=> Void := {
-        let variableSize := self size.
-        let coalescedAssignedRegister := self coalescedAssignedRegister.
-        coalescedAssignedRegister ifNotNil: {
-            coalescedAssignedRegister x86_64::pushWith: codegen valueSize: variableSize.
-            return: void.
-        }.
-
-        (variableSize = 1sz) || (variableSize = 2sz) || (variableSize = 4sz) || (variableSize = 8sz) ifTrue: {
-            let isSignedExtended := self isSignedExtended.
-
-            let variablePointer := self x86_64::pointerWithCodegen: codegen.
-            variableSize = 1u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: scratchRegister src: variablePointer).
-            variableSize = 1u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: scratchRegister src: variablePointer).
-            variableSize = 2u64 && isSignedExtended ifTrue: (codegen textSection x86::movsx: scratchRegister src: variablePointer).
-            variableSize = 2u64 && isSignedExtended not ifTrue: (codegen textSection x86::movzx: scratchRegister src: variablePointer).
-            variableSize = 4u64 ifTrue: (codegen textSection x86::mov: scratchRegister src: variablePointer).
-            variableSize = 8u64 ifTrue: {
-                codegen textSection x86::push: variablePointer
-            } ifFalse: {
-                codegen textSection x86::push: scratchRegister
-            }.
-            codegen textSection cfiStackSizeAdvance: 8i64.
-        } ifFalse: {
-            ## TODO: Implement this
-            codegen textSection x86::int3; x86::nop
-        }
-    }.
-    
     public override method x86::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress := {
         let coalescedValue := self validCoalescedValue.
         self assert: coalescedValue hasValidStackAnchorOffset.
@@ -1203,6 +1226,27 @@ MIRLocalValue extend: {
             register x86::loadFromVariable: self with: codegen
         } ifNotNil: {
             register x86::loadFromRegister: coalescedRegister with: codegen
+        }
+    }.
+
+    public override method x86::moveIntoSpecificMemoryLocation: (memoryLocation: MIRSpecificPhysicalMemoryLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        let coalescedRegister := self coalescedAssignedRegister.
+        let targetPointer := memoryLocation x86_64::pointerWithCodegen: codegen.
+        coalescedRegister ifNotNil: {
+            coalescedRegister x86::storeValue: self inPointer: targetPointer isCallArgument: memoryLocation isCallArgument with: codegen
+        } ifNil: {
+            memoryLocation isStructure ifTrue: {
+                codegen textSection
+                    x86::lea: X86::EDI src: (memoryLocation x86::pointerWithCodegen: codegen);
+                    x86::lea: X86::ESI src: (self x86::pointerWithCodegen: codegen);
+                    x86::mov: X86::ECX src: self size asAsmImmediate;
+                    x86::rep; x86::movsb
+            } ifFalse: {
+                let scratchRegister := memoryLocation firstScratchRegister.
+                scratchRegister
+                    x86::loadFromVariable: self with: codegen;
+                    x86::storeValue: self inPointer: targetPointer isCallArgument: memoryLocation isCallArgument with: codegen
+            }.
         }
     }.
 
@@ -1232,6 +1276,27 @@ MIRLocalValue extend: {
             register x86_64::loadFromRegister: coalescedRegister with: codegen
         } ifNil: {
             register x86_64::loadFromVariable: self with: codegen
+        }
+    }.
+
+    public override method x86_64::moveIntoSpecificMemoryLocation: (memoryLocation: MIRSpecificPhysicalMemoryLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        let coalescedRegister := self coalescedAssignedRegister.
+        let targetPointer := memoryLocation x86_64::pointerWithCodegen: codegen.
+        coalescedRegister ifNotNil: {
+            coalescedRegister x86_64::storeValue: self inPointer: targetPointer isCallArgument: memoryLocation isCallArgument with: codegen
+        } ifNil: {
+            memoryLocation isStructure ifTrue: {
+                codegen textSection
+                    x86::lea: X86::RDI src: (memoryLocation x86::pointerWithCodegen: codegen);
+                    x86::lea: X86::RSI src: (self x86::pointerWithCodegen: codegen);
+                    x86::mov: X86::RCX src: self size asAsmImmediate;
+                    x86::rep; x86::movsb
+            } ifFalse: {
+                let scratchRegister := memoryLocation firstScratchRegister.
+                scratchRegister
+                    x86_64::loadFromVariable: self with: codegen;
+                    x86_64::storeValue: self inPointer: targetPointer isCallArgument: memoryLocation isCallArgument with: codegen
+            }.
         }
     }.
 
@@ -1286,6 +1351,10 @@ MIRConstant extend: {
 }.
 
 MIRConstantInt8 extend: {
+    public override method x86::moveIntoSpecificMemoryLocation: (memoryLocation: MIRSpecificPhysicalMemoryLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: (memoryLocation x86::pointerWithCodegen: codegen) byte src: value asAsmImmediate
+    }.
+
     public override method x86::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::mov: (register x86::int32For: codegen) src: value asUInt32 asAsmImmediate.
     }.
@@ -1296,6 +1365,10 @@ MIRConstantInt8 extend: {
 }.
 
 MIRConstantUInt8 extend: {
+    public override method x86::moveIntoSpecificMemoryLocation: (memoryLocation: MIRSpecificPhysicalMemoryLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: (memoryLocation x86::pointerWithCodegen: codegen) byte src: value asAsmImmediate
+    }.
+
     public override method x86::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::mov: (register x86::int32For: codegen) src: value asUInt32 asAsmImmediate.
     }.
@@ -1306,6 +1379,10 @@ MIRConstantUInt8 extend: {
 }.
 
 MIRConstantInt16 extend: {
+    public override method x86::moveIntoSpecificMemoryLocation: (memoryLocation: MIRSpecificPhysicalMemoryLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: (memoryLocation x86::pointerWithCodegen: codegen) word src: value asAsmImmediate
+    }.
+
     public override method x86::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::mov: (register x86::int32For: codegen) src: value asUInt32 asAsmImmediate.
     }.
@@ -1316,6 +1393,10 @@ MIRConstantInt16 extend: {
 }.
 
 MIRConstantUInt16 extend: {
+    public override method x86::moveIntoSpecificMemoryLocation: (memoryLocation: MIRSpecificPhysicalMemoryLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: (memoryLocation x86::pointerWithCodegen: codegen) word src: value asAsmImmediate
+    }.
+
     public override method x86::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::mov: (register x86::int32For: codegen) src: value asUInt32 asAsmImmediate.
     }.
@@ -1326,6 +1407,10 @@ MIRConstantUInt16 extend: {
 }.
 
 MIRConstantInt32 extend: {
+    public override method x86::moveIntoSpecificMemoryLocation: (memoryLocation: MIRSpecificPhysicalMemoryLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: (memoryLocation x86::pointerWithCodegen: codegen) dword src: value asAsmImmediate
+    }.
+    
     public override method x86::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::mov: (register x86::int32For: codegen) src: value asAsmImmediate.
     }.
@@ -1336,6 +1421,10 @@ MIRConstantInt32 extend: {
 }.
 
 MIRConstantUInt32 extend: {
+    public override method x86::moveIntoSpecificMemoryLocation: (memoryLocation: MIRSpecificPhysicalMemoryLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: (memoryLocation x86::pointerWithCodegen: codegen) dword src: value asAsmImmediate
+    }.
+
     public override method x86::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::mov: (register x86::int32For: codegen) src: value asAsmImmediate.
     }.
@@ -1346,6 +1435,10 @@ MIRConstantUInt32 extend: {
 }.
 
 MIRConstantInt64 extend: {
+    public override method x86_64::moveIntoSpecificMemoryLocation: (memoryLocation: MIRSpecificPhysicalMemoryLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: (memoryLocation x86_64::pointerWithCodegen: codegen) qword src: value asAsmImmediate
+    }.
+
     public override method x86_64::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::mov: (register x86::int64For: codegen) src: value asAsmImmediate.
     }.
@@ -1356,6 +1449,10 @@ MIRConstantInt64 extend: {
 }.
 
 MIRConstantUInt64 extend: {
+    public override method x86_64::moveIntoSpecificMemoryLocation: (memoryLocation: MIRSpecificPhysicalMemoryLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: (memoryLocation x86_64::pointerWithCodegen: codegen) qword src: value asAsmImmediate
+    }.
+
     public override method x86_64::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::mov: (register x86::int64For: codegen) src: value asAsmImmediate.
     }.
@@ -1366,6 +1463,10 @@ MIRConstantUInt64 extend: {
 }.
 
 MIRConstantFloat32 extend: {
+    public override method x86::moveIntoSpecificMemoryLocation: (memoryLocation: MIRSpecificPhysicalMemoryLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: (memoryLocation x86::pointerWithCodegen: codegen) dword src: value asIEEEFloat32Encoding asAsmImmediate
+    }.
+
     public override method x86_64::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::movss: (register x86::float32For: codegen) src: (codegen symbolForFloat32Constant: value) x86::dwordPtr
     }.
@@ -1380,6 +1481,10 @@ MIRConstantFloat64 extend: {
         codegen textSection x86::movsd: (register x86::float64For: codegen) src: (codegen symbolForFloat64Constant: value) x86::qwordPtr
     }.
 
+    public override method x86_64::moveIntoSpecificMemoryLocation: (memoryLocation: MIRSpecificPhysicalMemoryLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::mov: (memoryLocation x86::pointerWithCodegen: codegen) qword src: value asIEEEFloat64Encoding asAsmImmediate
+    }.
+
     public override method x86_64::pushWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::push: (codegen symbolForFloat64Constant: value) x86::qwordPtr
     }.
@@ -1388,6 +1493,13 @@ MIRConstantFloat64 extend: {
 MIRGenericObjectPointerConstant extend: {
     public override method x86_64::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::mov: (register x86::int64For: codegen) src: (codegen x86_64::pointerForGCRootObjectTableEntryFor: self object).
+    }.
+
+    public override method x86_64::moveIntoSpecificMemoryLocation: (memoryLocation: MIRSpecificPhysicalMemoryLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        let scratch := memoryLocation firstScratchRegister.
+        codegen textSection
+            x86::mov: (scratch x86::int64For: codegen) src: (codegen x86_64::pointerForGCRootObjectTableEntryFor: self object);
+            x86::mov: (memoryLocation x86_64::pointerWithCodegen: codegen) qword src: (scratch x86::int64For: codegen)
     }.
 
     public override method x86_64::movePointerIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
@@ -1404,13 +1516,15 @@ MIRPolymorphicInlineCache extend: {
         codegen textSection x86::lea: (register x86::int64For: codegen) src: (codegen x86_64::pointerForPICEntry: self).
     }.
 
-    public override method x86_64::movePointerIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        codegen textSection x86::lea: (register x86::int64For: codegen) src: (codegen x86_64::pointerForPICEntry: self).
+    public override method x86_64::moveIntoSpecificMemoryLocation: (memoryLocation: MIRSpecificPhysicalMemoryLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        let scratch := memoryLocation firstScratchRegister.
+        codegen textSection
+            x86::lea: (scratch x86::int64For: codegen) src: (codegen x86_64::pointerForPICEntry: self);
+            x86::mov: (memoryLocation x86_64::pointerWithCodegen: codegen) qword src: (scratch x86::int64For: codegen)
     }.
 
-    public override method x86_64::pushWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        self error: "TODO: Select a suitable scratch register here."
-        ##codegen textSection x86::push: (codegen x86_64::pointerForGCRootObjectTableEntryFor: self object)
+    public override method x86_64::movePointerIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection x86::lea: (register x86::int64For: codegen) src: (codegen x86_64::pointerForPICEntry: self).
     }.
 }.
 
@@ -3651,7 +3765,7 @@ MIR::Operation::SignExtendInt16ToInt64
 MIR::Operation::SignExtendInt8ToInt64
     forTarget: #x86_64 registerConstraintsWith: x86::extendIntegerRegister8Constraints;
     forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
-        codegen textSection x86::movsx: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int16For: codegen)
+        codegen textSection x86::movsx: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int8For: codegen)
     }.
 
 MIR::Operation::SignExtendInt16ToInt32
@@ -3687,7 +3801,7 @@ MIR::Operation::ZeroExtendInt16ToInt64
 MIR::Operation::ZeroExtendInt8ToInt64
     forTarget: #x86_64 registerConstraintsWith: x86::extendIntegerRegister8Constraints;
     forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
-        codegen textSection x86::movzx: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int16For: codegen)
+        codegen textSection x86::movzx: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister x86::int8For: codegen)
     }.
 
 MIR::Operation::ZeroExtendInt16ToInt32
