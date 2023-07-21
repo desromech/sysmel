@@ -86,6 +86,7 @@ public final class Coff::StringTable superclass: Object; definition: {
     public override method initialize => Void := {
         stringStream := StringStream new.
         stringIndexTable := Dictionary new.
+        size := 4sz.
         self addString: "".
     }.
 
@@ -102,7 +103,7 @@ public final class Coff::StringTable superclass: Object; definition: {
         size := data size.
     }.
 
-    public override method sizeOfByteEncoding => Size := 4sz + size.
+    public override method sizeOfByteEncoding => Size := size.
     public override method canEncodeInBytes => Boolean := true.
 
     public override method encodeInBytes: (destination: ByteArray) atOffset: (destinationOffset: Size) ::=> Void := {
