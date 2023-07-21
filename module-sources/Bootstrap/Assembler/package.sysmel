@@ -5,5 +5,8 @@ loadSourceNamed: "ObjectHeap.sysmel".
 loadSourceNamed: "Coff.sysmel".
 loadSourceNamed: "Elf.sysmel".
 loadSourceNamed: "MachO.sysmel".
+loadSourceNamed: "Linux.sysmel".
+loadSourceNamed: "MacOS.sysmel".
+loadSourceNamed: "Windows.sysmel".
 loadSourceNamed: "ImageFunctionDefinitionEntryPointAsmPatch.sysmel".
 loadSourceNamed: "MIR.sysmel".

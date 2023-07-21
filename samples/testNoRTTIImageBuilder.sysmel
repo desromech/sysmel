@@ -78,10 +78,28 @@ ImageBuilder new
 *#
 
 ImageBuilder new
-    target: AsmCompilationTarget x86_64 useElf useDwarf asImageBuilderTarget;
+    target: AsmCompilationTarget x86_64 setForLinux asImageBuilderTarget;
     beNoRTTI;
     withoutInProcessDebugInformation;
     ##useDefaultTypeTables;
     addNativeEntryPoint: NoRttiImageMain;
     build;
     saveTo: "testNoRTTI.x86_64.elf".
+
+ImageBuilder new
+    target: AsmCompilationTarget x86_64 setForWindows asImageBuilderTarget;
+    beNoRTTI;
+    withoutInProcessDebugInformation;
+    ##useDefaultTypeTables;
+    addNativeEntryPoint: NoRttiImageMain;
+    build;
+    saveTo: "testNoRTTI.x86_64.obj".
+
+ImageBuilder new
+    target: AsmCompilationTarget x86_64 setForMacOS asImageBuilderTarget;
+    beNoRTTI;
+    withoutInProcessDebugInformation;
+    ##useDefaultTypeTables;
+    addNativeEntryPoint: NoRttiImageMain;
+    build;
+    saveTo: "testNoRTTI.x86_64.macho".
