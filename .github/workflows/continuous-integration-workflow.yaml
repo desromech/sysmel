@@ -1,0 +1,22 @@
+name: Continuous integration
+on: [push, pull_request]
+
+jobs:
+    build-unixes:
+        name: Build Linux
+        runs-on: ${{ matrix.variant.os }}
+        strategy:
+            matrix:
+                variant:
+                    - os: ubuntu-latest
+                      platformName: linux64
+                      buildMode: RelWithDebInfo
+        env:
+            PLATFORM_NAME: ${{ matrix.variant.platformName }}
+            BUILD_MODE: ${{ matrix.variant.buildMode }}
+            PROJECT_NAME: sysmel
+        steps:
+            - uses: actions/checkout@v1
+
+            - name: CI Build
+              run: ./scripts/buildAll.sh
