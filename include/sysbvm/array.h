@@ -10,13 +10,13 @@ typedef struct sysbvm_context_s sysbvm_context_t;
 typedef struct sysbvm_array_s
 {
     sysbvm_tuple_header_t header;
-    sysbvm_tuple_t elements[];
+    sysbvm_tuple_t elements[1];
 } sysbvm_array_t;
 
 typedef struct sysbvm_byteArray_s
 {
     sysbvm_tuple_header_t header;
-    uint8_t elements[];
+    uint8_t elements[1];
 } sysbvm_byteArray_t;
 
 /**

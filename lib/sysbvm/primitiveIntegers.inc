@@ -90,7 +90,7 @@ static sysbvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_highBit)(sysbvm_conte
     if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
 
     integer_t operand = primitiveInteger_decode(arguments[0]);
-    return primitiveInteger_encode(primitiveInteger_highBit(operand));
+    return primitiveInteger_encode((integer_t)primitiveInteger_highBit(operand));
 }
 
 static sysbvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_lowBit)(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -100,7 +100,7 @@ static sysbvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_lowBit)(sysbvm_contex
     if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
 
     integer_t operand = primitiveInteger_decode(arguments[0]);
-    return primitiveInteger_encode(primitiveInteger_lowBit(operand));
+    return primitiveInteger_encode((integer_t)primitiveInteger_lowBit(operand));
 }
 
 static sysbvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_multiply)(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)

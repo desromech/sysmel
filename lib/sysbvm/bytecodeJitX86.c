@@ -928,7 +928,7 @@ static void sysbvm_jit_prologue(sysbvm_bytecodeJit_t *jit)
 
     // Allocate the stack storage.
     size_t requiredStackSize = jit->localVectorSize * sizeof(intptr_t)
-        + sizeof(sysbvm_stackFrameBytecodeFunctionJitActivationRecord_t);
+        + (sizeof(sysbvm_stackFrameBytecodeFunctionJitActivationRecord_t) - sizeof(intptr_t));
     jit->stackFrameSize = (requiredStackSize + 15) & (-16);
     jit->stackFrameRecordOffset = 0;
 
@@ -1144,7 +1144,7 @@ static void sysbvm_jit_emitUnwindInfo(sysbvm_bytecodeJit_t *jit)
     sysbvm_bytecodeJit_addUnwindInfoByte(jit, /*Version*/1  | (/* Flags*/0 << 3));
     sysbvm_bytecodeJit_addUnwindInfoByte(jit, (uint8_t)jit->prologueSize);
     sysbvm_bytecodeJit_addUnwindInfoByte(jit, (uint8_t)codeCount);
-    sysbvm_bytecodeJit_addUnwindInfoByte(jit, (frameRegister) | (frameOffset << 4));
+    sysbvm_bytecodeJit_addUnwindInfoByte(jit, (uint8_t) ((frameRegister) | (frameOffset << 4)));
 
     // Unwind codes must be sorted in descending order.
     uint16_t *unwindCodes = (uint16_t *)jit->unwindInfoBytecode.data;

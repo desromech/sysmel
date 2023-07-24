@@ -11,7 +11,7 @@ CLISysmelInterpreter definition: {
                 build.
 
         public method buildNativeInterpreterImage ::=> ImageBuilderTargetImage
-            := self buildNativeInterpreterImageFor: AsmCompilationTarget x86_64 useElf useDwarf asImageBuilderTarget.
+            := self buildNativeInterpreterImageFor: PlatformDescription currentHostPlatformDescription asImageBuilderTarget.
 
         public method buildFullNativeInterpreterImageFor: (target: ImageBuilderTarget) ::=> ImageBuilderTargetImage
             := ImageBuilder new
@@ -24,6 +24,6 @@ CLISysmelInterpreter definition: {
                 build.
 
         public method buildFullNativeInterpreterImage ::=> ImageBuilderTargetImage
-            := self buildFullNativeInterpreterImageFor: AsmCompilationTarget x86_64 useElf useDwarf asImageBuilderTarget.
+            := self buildFullNativeInterpreterImageFor: PlatformDescription currentHostPlatformDescription asImageBuilderTarget.
     }
 }.

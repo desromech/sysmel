@@ -12,6 +12,11 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4127)
+#endif
+
 typedef struct sysbvm_context_s sysbvm_context_t;
 
 typedef uint8_t sysbvm_char8_t;
@@ -462,12 +467,12 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_integer_encodeUInt64(sysbvm_context_t 
 /**
  * Encodes an integer as a tuple.
  */
-SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_integer_decodeSize(sysbvm_context_t *context, size_t value)
+SYSBVM_INLINE sysbvm_size_t sysbvm_tuple_integer_decodeSize(sysbvm_context_t *context, size_t value)
 {
     if(sizeof(uint32_t) == sizeof(size_t))
         return sysbvm_tuple_integer_decodeUInt32(context, value);
     else
-        return sysbvm_tuple_integer_decodeUInt64(context, value);
+        return (sysbvm_size_t)sysbvm_tuple_integer_decodeUInt64(context, value);
 }
 
 /**
@@ -670,7 +675,7 @@ SYSBVM_INLINE int32_t sysbvm_tuple_int32_decode(sysbvm_tuple_t tuple)
     return *((int32_t*)SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->bytes);
 }
 
-#ifndef _MSC_VER
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wtype-limits"
 #endif
@@ -708,7 +713,7 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_int32_encode(sysbvm_context_t *context
         return sysbvm_tuple_int32_encodeBig(context, value);
 }
 
-#ifndef _MSC_VER
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
 
@@ -837,7 +842,7 @@ SYSBVM_INLINE sysbvm_size_t sysbvm_tuple_size_decode(sysbvm_tuple_t tuple)
     if(sizeof(sysbvm_size_t) == sizeof(uint32_t))
         return sysbvm_tuple_uint32_decode(tuple);
     else
-        return sysbvm_tuple_uint64_decode(tuple);
+        return (sysbvm_size_t)sysbvm_tuple_uint64_decode(tuple);
 }
 
 /**
@@ -859,7 +864,7 @@ SYSBVM_INLINE sysbvm_uintptr_t sysbvm_tuple_uintptr_decode(sysbvm_tuple_t tuple)
     if(sizeof(sysbvm_uintptr_t) == sizeof(uint32_t))
         return sysbvm_tuple_uint32_decode(tuple);
     else
-        return sysbvm_tuple_uint64_decode(tuple);
+        return (sysbvm_uintptr_t)sysbvm_tuple_uint64_decode(tuple);
 }
 
 /**
@@ -881,7 +886,7 @@ SYSBVM_INLINE sysbvm_intptr_t sysbvm_tuple_intptr_decode(sysbvm_tuple_t tuple)
     if(sizeof(sysbvm_intptr_t) == sizeof(int32_t))
         return sysbvm_tuple_int32_decode(tuple);
     else
-        return sysbvm_tuple_int64_decode(tuple);
+        return (sysbvm_intptr_t)sysbvm_tuple_int64_decode(tuple);
 }
 
 /**
@@ -903,7 +908,7 @@ SYSBVM_INLINE sysbvm_intptr_t sysbvm_tuple_systemHandle_decode(sysbvm_tuple_t tu
     if(sizeof(sysbvm_systemHandle_t) == sizeof(int32_t))
         return sysbvm_tuple_int32_decode(tuple);
     else
-        return sysbvm_tuple_int64_decode(tuple);
+        return (sysbvm_intptr_t)sysbvm_tuple_int64_decode(tuple);
 }
 
 /**
@@ -1053,5 +1058,9 @@ SYSBVM_API bool sysbvm_tuple_isTypeSatisfiedWithValue(sysbvm_context_t *context,
  * Typechecks the given value
  */
 SYSBVM_API void sysbvm_tuple_typecheckValue(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t value);
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #endif //SYSBVM_TUPLE_H

@@ -395,7 +395,7 @@ static sysbvm_tuple_t sysbvm_tuple_primitive_byteSlotAtPut(sysbvm_context_t *con
     (void)closure;
     if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
 
-    sysbvm_tuple_byteSlotAtPut(context, arguments[0], sysbvm_tuple_anySize_decode(arguments[1]), sysbvm_tuple_anySize_decode(arguments[2]));
+    sysbvm_tuple_byteSlotAtPut(context, arguments[0], sysbvm_tuple_anySize_decode(arguments[1]), (uint8_t)sysbvm_tuple_anySize_decode(arguments[2]));
     return SYSBVM_VOID_TUPLE;
 }
 
@@ -405,7 +405,7 @@ static sysbvm_tuple_t sysbvm_tuple_primitive_uncheckedByteSlotAtPut(sysbvm_conte
     (void)closure;
     if(argumentCount != 3) sysbvm_error_argumentCountMismatch(3, argumentCount);
 
-    sysbvm_tuple_byteSlotAtPut(context, arguments[0], sysbvm_tuple_anySize_decode(arguments[1]), sysbvm_tuple_anySize_decode(arguments[2]));
+    sysbvm_tuple_byteSlotAtPut(context, arguments[0], sysbvm_tuple_anySize_decode(arguments[1]), (uint8_t)sysbvm_tuple_anySize_decode(arguments[2]));
     return SYSBVM_VOID_TUPLE;
 }
 

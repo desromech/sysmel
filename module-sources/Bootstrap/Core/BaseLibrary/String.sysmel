@@ -7,7 +7,7 @@ Char8 extend: {
 
     public method asUppercase => Char8 := {
         if: ('a'c8 <= self) && (self <= 'z'c8)
-        then: self + 'A'c8 - 'z'c8
+        then: self + 'A'c8 - 'a'c8
         else: self
     }.
 }.

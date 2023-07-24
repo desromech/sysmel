@@ -37,7 +37,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_filesystem_getWorkingDirectory(sysbvm_context_t
     int resultStringSize = resultStringBufferSize - 1;
 
     sysbvm_tuple_t result = sysbvm_string_createEmptyWithSize(context, resultStringSize);
-    WideCharToMultiByte(CP_UTF8, 0, buffer, -1, SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(result)->bytes, resultStringSize, NULL, NULL);
+    WideCharToMultiByte(CP_UTF8, 0, buffer, -1, (LPSTR)SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(result)->bytes, resultStringSize, NULL, NULL);
     free(buffer);
 
     return result;
@@ -77,6 +77,7 @@ SYSBVM_API void sysbvm_filesystem_setWorkingDirectory(sysbvm_tuple_t path)
 
 SYSBVM_API sysbvm_tuple_t sysbvm_filesystem_absolute(sysbvm_context_t *context, sysbvm_tuple_t path)
 {
+    (void)context;
     if(!sysbvm_tuple_isBytes(path) || sysbvm_filesystem_isAbsolute(path))
         return path;
 

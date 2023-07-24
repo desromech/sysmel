@@ -5430,9 +5430,9 @@ static sysbvm_tuple_t sysbvm_dependentFunctionType_getOrCreateDependentApplicati
     if(sysbvm_type_isReferenceType(analyzedType))
     {
         analyzedType = ((sysbvm_referenceType_t*)analyzedType)->super.baseType;
-        sysbvm_tuple_t method = sysbvm_type_lookupSelector(context, sysbvm_tuple_getType(context, analyzedType), context->roots.getOrCreateDependentApplicationValueForNodeSelector);
-        if(method)
-            return sysbvm_function_apply2(context, method, analyzedType, node);
+        sysbvm_tuple_t baseTypeMethod = sysbvm_type_lookupSelector(context, sysbvm_tuple_getType(context, analyzedType), context->roots.getOrCreateDependentApplicationValueForNodeSelector);
+        if(baseTypeMethod)
+            return sysbvm_function_apply2(context, baseTypeMethod, analyzedType, node);
     }
 
     // If the node is a subtype of metatype, and this type is defined then return the type.

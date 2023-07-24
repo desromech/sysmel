@@ -166,12 +166,12 @@ static sysbvm_tuple_t sysbvm_integer_normalize(sysbvm_context_t *context, sysbvm
         if(isNegative)
         {
             if(valueUInt64 <= (uint64_t)-SYSBVM_IMMEDIATE_INT_MIN)
-                return sysbvm_tuple_integer_encodeSmall(-(int64_t)valueUInt64);
+                return (sysbvm_tuple_t)sysbvm_tuple_integer_encodeSmall(-(sysbvm_stuple_t)valueUInt64);
         }
         else
         {
             if(valueUInt64 <= SYSBVM_IMMEDIATE_INT_MAX)
-                return sysbvm_tuple_integer_encodeSmall((int64_t)valueUInt64);
+                return (sysbvm_tuple_t)sysbvm_tuple_integer_encodeSmall((sysbvm_stuple_t)valueUInt64);
         }
     }
 
@@ -223,7 +223,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_tuple_integer_encodeBigUInt32(sysbvm_context_t 
 SYSBVM_API sysbvm_tuple_t sysbvm_tuple_integer_encodeBigInt64(sysbvm_context_t *context, int64_t value)
 {
     if(SYSBVM_IMMEDIATE_INT_MIN <= value && value <= SYSBVM_IMMEDIATE_INT_MAX)
-        return sysbvm_tuple_integer_encodeSmall(value);
+        return sysbvm_tuple_integer_encodeSmall((sysbvm_stuple_t)value);
 
     uint64_t positiveValue = value >= 0 ? (uint64_t)value : (uint64_t)(-value);
 
@@ -245,7 +245,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_tuple_integer_encodeBigInt64(sysbvm_context_t *
 SYSBVM_API sysbvm_tuple_t sysbvm_tuple_integer_encodeBigUInt64(sysbvm_context_t *context, uint64_t value)
 {
     if(value <= SYSBVM_IMMEDIATE_INT_MAX)
-        return sysbvm_tuple_integer_encodeSmall(value);
+        return sysbvm_tuple_integer_encodeSmall((sysbvm_stuple_t)value);
 
     if(value <= UINT32_MAX)
     {
@@ -534,6 +534,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_integer_multiply(sysbvm_context_t *context, sys
 
 SYSBVM_API sysbvm_tuple_t sysbvm_integer_divide(sysbvm_context_t *context, sysbvm_tuple_t left, sysbvm_tuple_t right)
 {
+    (void)context;
     if(sysbvm_tuple_isImmediate(left) && sysbvm_tuple_isImmediate(right))
     {
         sysbvm_stuple_t leftValue = sysbvm_tuple_integer_decodeSmall(left);
@@ -546,6 +547,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_integer_divide(sysbvm_context_t *context, sysbv
 
 SYSBVM_API sysbvm_tuple_t sysbvm_integer_remainder(sysbvm_context_t *context, sysbvm_tuple_t left, sysbvm_tuple_t right)
 {
+    (void)context;
     if(sysbvm_tuple_isImmediate(left) && sysbvm_tuple_isImmediate(right))
     {
         sysbvm_stuple_t leftValue = sysbvm_tuple_integer_decodeSmall(left);
@@ -709,9 +711,9 @@ SYSBVM_API sysbvm_tuple_t sysbvm_integer_toHexString(sysbvm_context_t *context, 
             uint32_t nibble = (word >> (j*4)) & 0xF;
             uint8_t nibbleCharacter = 0;
             if(nibble < 10)
-                nibbleCharacter = '0' + nibble;
+                nibbleCharacter = (uint8_t) ('0' + nibble);
             else
-                nibbleCharacter = 'A' + nibble - 10;
+                nibbleCharacter = (uint8_t) ('A' + nibble - 10);
 
             resultBytes[nibbleCount - nibbleIndex - 1] = nibbleCharacter;
         }

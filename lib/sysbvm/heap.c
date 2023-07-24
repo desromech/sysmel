@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define SYSBVM_HEAP_MIN_CHUNK_SIZE (256<<20)
+#define SYSBVM_HEAP_MIN_CHUNK_SIZE (256ull<<20)
 #define SYSBVM_HEAP_FAST_GROWTH_THRESHOLD (SYSBVM_HEAP_MIN_CHUNK_SIZE*16ull)
 
 #define SYSBVM_HEAP_CODE_ZONE_SIZE (16<<20)
@@ -425,7 +425,7 @@ void sysbvm_heapIterator_compactionAdvance(sysbvm_heapIterator_t *iterator, size
             if(newOffset == iterator->chunk->capacity)
             {
                 if(commitNewSize)
-                    iterator->chunk->size = iterator->offset;
+                    iterator->chunk->size = (uint32_t)iterator->offset;
 
                 iterator->chunk = iterator->chunk->nextChunk;
                 iterator->offset = iterator->chunk ? uintptrAlignedTo(sizeof(sysbvm_heap_chunk_t), 16) : 0;
@@ -438,7 +438,7 @@ void sysbvm_heapIterator_compactionAdvance(sysbvm_heapIterator_t *iterator, size
         }
 
         if(commitNewSize)
-            iterator->chunk->size = iterator->offset;
+            iterator->chunk->size = (uint32_t)iterator->offset;
 
         iterator->chunk = iterator->chunk->nextChunk;
         iterator->offset = uintptrAlignedTo(sizeof(sysbvm_heap_chunk_t), 16);
@@ -453,13 +453,13 @@ void sysbvm_heapIterator_compactionFinish(sysbvm_heapIterator_t *iterator, bool 
         return;
 
     if(commitNewSize && iterator->chunk)
-        iterator->chunk->size = iterator->offset;
+        iterator->chunk->size = (uint32_t)iterator->offset;
 
     if(commitNewSize)
     {
         // Reset the size of the remaining chunks.
         for(sysbvm_heap_chunk_t *chunk = iterator->chunk->nextChunk; chunk; chunk = chunk->nextChunk)
-            chunk->size = uintptrAlignedTo(sizeof(sysbvm_heap_chunk_t), 16);
+            chunk->size = (uint32_t)uintptrAlignedTo(sizeof(sysbvm_heap_chunk_t), 16);
     }
 
     iterator->chunk = NULL;
@@ -486,7 +486,7 @@ static void sysbvm_heap_computeNextCollectionThreshold(sysbvm_heap_t *heap)
     }
 
     if(heap->nextGCSizeThreshold < SYSBVM_HEAP_FAST_GROWTH_THRESHOLD - ChunkThreshold)
-        heap->nextGCSizeThreshold = SYSBVM_HEAP_FAST_GROWTH_THRESHOLD - ChunkThreshold;
+        heap->nextGCSizeThreshold = (size_t)(SYSBVM_HEAP_FAST_GROWTH_THRESHOLD - ChunkThreshold);
 }
 
 void sysbvm_heap_computeCompactionForwardingPointers(sysbvm_heap_t *heap)

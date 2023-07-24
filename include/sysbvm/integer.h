@@ -10,7 +10,7 @@ typedef struct sysbvm_context_s sysbvm_context_t;
 typedef struct sysbvm_integer_s
 {
     sysbvm_tuple_header_t header;
-    uint32_t words[];
+    uint32_t words[1];
 } sysbvm_integer_t;
 
 SYSBVM_INLINE uint32_t sysbvm_uint32_highBit(uint32_t word)

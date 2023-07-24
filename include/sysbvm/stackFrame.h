@@ -92,7 +92,7 @@ typedef struct sysbvm_stackFrameBytecodeFunctionJitActivationRecord_s
     sysbvm_tuple_t callArgumentVector[SYSBVM_BYTECODE_FUNCTION_MAX_CALL_ARGUMENTS];
 
     size_t inlineLocalVectorSize;
-    sysbvm_tuple_t inlineLocalVector[];
+    sysbvm_tuple_t inlineLocalVector[1];
 } sysbvm_stackFrameBytecodeFunctionJitActivationRecord_t;
 
 typedef struct sysbvm_stackFrameBreakTargetRecord_s
@@ -139,9 +139,10 @@ typedef struct sysbvm_stackFrameCleanupRecord_s
 } sysbvm_stackFrameCleanupRecord_t;
 
 #define SYSBVM_STACKFRAME_PUSH_GC_ROOTS(recordName, gcStackFrameRoots) \
-    sysbvm_stackFrameGCRootsRecord_t recordName = { \
-        NULL, SYSBVM_STACK_FRAME_RECORD_TYPE_GC_ROOTS, sizeof(gcStackFrameRoots) / sizeof(sysbvm_tuple_t), (sysbvm_tuple_t*)(&gcStackFrameRoots) \
-    }; \
+    sysbvm_stackFrameGCRootsRecord_t recordName = {0}; \
+    recordName.type = SYSBVM_STACK_FRAME_RECORD_TYPE_GC_ROOTS; \
+    recordName.rootCount = sizeof(gcStackFrameRoots) / sizeof(sysbvm_tuple_t); \
+    recordName.roots = (sysbvm_tuple_t*)(&gcStackFrameRoots); \
     sysbvm_stackFrame_pushRecord((sysbvm_stackFrameRecord_t*)&recordName)
 
 #define SYSBVM_STACKFRAME_POP_GC_ROOTS(recordName) \

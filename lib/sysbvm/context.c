@@ -133,12 +133,12 @@ SYSBVM_API sysbvm_tuple_t sysbvm_context_createIntrinsicClass(sysbvm_context_t *
     va_start(valist, supertype);
     for(size_t i = 0; i < slotNameCount; ++i)
     {
-        sysbvm_tuple_t name = sysbvm_symbol_internWithCString(context, va_arg(valist, const char *));
+        sysbvm_tuple_t slotName = sysbvm_symbol_internWithCString(context, va_arg(valist, const char *));
         sysbvm_tuple_t flags = sysbvm_tuple_bitflags_encode(va_arg(valist, int));
         sysbvm_tuple_t slotType = va_arg(valist, sysbvm_tuple_t);
         if(!slotType)
             slotType = context->roots.anyValueType;
-        sysbvm_array_atPut(slots, i, sysbvm_typeSlot_create(context, type, name, flags, slotType, i, supertypeTotalSlotCount + i));
+        sysbvm_array_atPut(slots, i, sysbvm_typeSlot_create(context, type, slotName, flags, slotType, i, supertypeTotalSlotCount + i));
     }
 
     va_end(valist);
@@ -195,12 +195,12 @@ SYSBVM_API sysbvm_tuple_t sysbvm_context_createIntrinsicType(sysbvm_context_t *c
     va_start(valist, supertype);
     for(size_t i = 0; i < slotNameCount; ++i)
     {
-        sysbvm_tuple_t name = sysbvm_symbol_internWithCString(context, va_arg(valist, const char *));
+        sysbvm_tuple_t slotName = sysbvm_symbol_internWithCString(context, va_arg(valist, const char *));
         sysbvm_tuple_t flags = sysbvm_tuple_bitflags_encode(va_arg(valist, int));
         sysbvm_tuple_t slotType = va_arg(valist, sysbvm_tuple_t);
         if(!slotType)
             slotType = context->roots.anyValueType;
-        sysbvm_array_atPut(slots, i, sysbvm_typeSlot_create(context, type, name, flags, slotType, i, supertypeTotalSlotCount + i));
+        sysbvm_array_atPut(slots, i, sysbvm_typeSlot_create(context, type, slotName, flags, slotType, i, supertypeTotalSlotCount + i));
     }
 
     va_end(valist);
@@ -242,12 +242,12 @@ static void sysbvm_context_setIntrinsicTypeMetadata(sysbvm_context_t *context, s
     va_start(valist, supertype);
     for(size_t i = 0; i < slotNameCount; ++i)
     {
-        sysbvm_tuple_t name = sysbvm_symbol_internWithCString(context, va_arg(valist, const char *));
+        sysbvm_tuple_t slotName = sysbvm_symbol_internWithCString(context, va_arg(valist, const char *));
         sysbvm_tuple_t flags = sysbvm_tuple_bitflags_encode(va_arg(valist, int));
         sysbvm_tuple_t slotType = va_arg(valist, sysbvm_tuple_t);
         if(!slotType)
             slotType = context->roots.anyValueType;
-        sysbvm_array_atPut(slots, i, sysbvm_typeSlot_create(context, type, name, flags, slotType, i, supertypeTotalSlotCount + i));
+        sysbvm_array_atPut(slots, i, sysbvm_typeSlot_create(context, type, slotName, flags, slotType, i, supertypeTotalSlotCount + i));
     }
 
     va_end(valist);
@@ -1378,7 +1378,13 @@ SYSBVM_API void sysbvm_context_destroy(sysbvm_context_t *context)
 
 SYSBVM_API sysbvm_context_t *sysbvm_context_loadImageFromFileNamed(const char *filename)
 {
+#ifdef _WIN32
+    FILE *inputFile = NULL;
+    if(fopen_s(&inputFile, filename, "rb"))
+        return NULL;
+#else
     FILE *inputFile = fopen(filename, "rb");
+#endif
     if(!inputFile)
         return NULL;
 
@@ -1411,7 +1417,13 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_loadImageFromFileNamed(const char *f
 SYSBVM_API void sysbvm_context_saveImageToFileNamed(sysbvm_context_t *context, const char *filename)
 {
     sysbvm_gc_collect(context);
+#ifdef _WIN32
+    FILE *outputFile = NULL;
+    if(fopen_s(&outputFile, filename, "wb"))
+        return;
+#else
     FILE *outputFile = fopen(filename, "wb");
+#endif
     fwrite("TVIM", 4, 1, outputFile);
     fwrite(&context->targetWordSize, sizeof(context->targetWordSize), 1, outputFile);
     fwrite(&context->identityHashSeed, sizeof(context->identityHashSeed), 1, outputFile);

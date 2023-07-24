@@ -11,7 +11,13 @@
 SYSBVM_API sysbvm_tuple_t sysbvm_io_readWholeFileNamedAsString(sysbvm_context_t *context, sysbvm_tuple_t filename)
 {
     char *inputFileName = sysbvm_tuple_bytesToCString(filename);
+#ifdef _WIN32
+    FILE *inputFile = NULL;
+    if(fopen_s(&inputFile, inputFileName, "rb"))
+        return SYSBVM_NULL_TUPLE;
+#else
     FILE *inputFile = fopen(inputFileName, "rb");
+#endif
     if(!inputFile)
         return SYSBVM_NULL_TUPLE;
     sysbvm_tuple_bytesToCStringFree(inputFileName);
@@ -35,7 +41,13 @@ SYSBVM_API sysbvm_tuple_t sysbvm_io_readWholeFileNamedAsString(sysbvm_context_t 
 SYSBVM_API sysbvm_tuple_t sysbvm_io_readWholeFileNamedAsByteArray(sysbvm_context_t *context, sysbvm_tuple_t filename)
 {
     char *inputFileName = sysbvm_tuple_bytesToCString(filename);
+#ifdef _WIN32
+    FILE *inputFile = NULL;
+    if(fopen_s(&inputFile, inputFileName, "rb"))
+        return SYSBVM_NULL_TUPLE;
+#else
     FILE *inputFile = fopen(inputFileName, "rb");
+#endif
     if(!inputFile)
         return SYSBVM_NULL_TUPLE;
     sysbvm_tuple_bytesToCStringFree(inputFileName);
@@ -59,7 +71,13 @@ SYSBVM_API sysbvm_tuple_t sysbvm_io_readWholeFileNamedAsByteArray(sysbvm_context
 SYSBVM_API bool sysbvm_io_writeWholeFileNamedWithByteArray(sysbvm_tuple_t filename, sysbvm_tuple_t content)
 {
     char *outputFileName = sysbvm_tuple_bytesToCString(filename);
+#ifdef _WIN32
+    FILE *outputFile = NULL;
+    if(fopen_s(&outputFile, outputFileName, "wb"))
+        return false;
+#else
     FILE *outputFile = fopen(outputFileName, "wb");
+#endif
     if(!outputFile)
         return false;
     sysbvm_tuple_bytesToCStringFree(outputFileName);

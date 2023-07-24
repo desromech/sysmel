@@ -12,6 +12,7 @@ public class AsmInstructionOperand superclass: Object.
 public class AsmRegister superclass: AsmInstructionOperand.
 
 public abstract class AsmCompilationTarget superclass: Object; definition: {
+    public field platformDescription => PlatformDescription.
     public field operatingSystemName => Symbol.
     public field executable => Boolean.
     public field objectFileWriter => AsmObjectFileWriter.
@@ -52,6 +53,14 @@ public abstract class AsmCompilationTarget superclass: Object; definition: {
 
     public abstract method padCodeSectionData: (data: ByteArray) at: (writeOffset: Size) size: (size: Size) unreachable: (unreachable: Boolean) ::=> Void
         := self subclassResponsibility.
+
+    public method setupForPlatform: (thePlatformDescription: PlatformDescription) ::=> Void := {
+        platformDescription := thePlatformDescription.
+
+        let osNameString := platformDescription osName asString.
+        let setForOSNameSelector := ("setFor" -- (osNameString first: 1sz) asUppercase -- osNameString allButFirst) asSymbol.
+        self perform: setForOSNameSelector.
+    }.
 }.
 
 public abstract class AsmCallFrameInformationInstruction superclass: Object; definition: {

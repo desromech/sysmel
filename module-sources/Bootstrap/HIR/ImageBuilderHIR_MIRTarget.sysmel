@@ -54,12 +54,29 @@ MIRCompilationTarget definition: {
         := self asHIRCompilationTarget asImageBuilderTarget.
 }.
 
+AsmCompilationTarget definition: {
+    public abstract method asImageBuilderTarget => ImageBuilderHIRTarget
+        := self subclassResponsibility.
+}.
+
 AsmX86CompilationTarget definition: {
-    public method asImageBuilderTarget => ImageBuilderHIRTarget
+    public override method asImageBuilderTarget => ImageBuilderHIRTarget
         := self asMirCompilationTarget asHIRCompilationTarget asImageBuilderTarget.
 }.
 
 AsmX86_64CompilationTarget definition: {
-    public method asImageBuilderTarget => ImageBuilderHIRTarget
+    public override method asImageBuilderTarget => ImageBuilderHIRTarget
         := self asMirCompilationTarget asHIRCompilationTarget asImageBuilderTarget.
+}.
+
+PlatformDescription definition: {
+    public method asAsmCompilationTarget => AsmCompilationTarget := {
+        let target => AsmCompilationTarget := AsmCompilationTarget perform: architectureName.
+        target
+            setupForPlatform: self;
+            yourself
+    }.
+
+    public method asImageBuilderTarget => ImageBuilderHIRTarget
+        := self asAsmCompilationTarget asImageBuilderTarget.
 }.

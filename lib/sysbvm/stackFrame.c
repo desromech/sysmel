@@ -398,7 +398,13 @@ SYSBVM_API void sysbvm_stackFrame_dumpStackGCRootsToFile(FILE *file)
 
 SYSBVM_API void sysbvm_stackFrame_dumpStackGCRootsToFileNamed(const char *filename)
 {
+#ifdef _WIN32
+    FILE *file = NULL;
+    if(fopen_s(&file, filename, "wb"))
+        return;
+#else
     FILE *file = fopen(filename, "wb");
+#endif
     sysbvm_stackFrame_iterateGCRootsInStackWith(sysbvm_stackFrame_getActiveRecord(), file,  sysbvm_stackFrame_dumpStackGCRoots_iteration);
     fclose(file);
 }

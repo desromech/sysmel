@@ -9,6 +9,11 @@
 #include <stdio.h>
 #include <math.h>
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4127)
+#endif
+
 SYSBVM_API float sysbvm_tuple_float32_decode(sysbvm_tuple_t tuple)
 {
     if(sysbvm_tuple_isNonNullPointer(tuple))
@@ -852,3 +857,7 @@ void sysbvm_float_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.float64Type, "asIEEEFloat64Encoding", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_float64_primitive_asIEEEFloat64Encoding);
     sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.uint64Type, "asIEEEFloat64Decoded", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_PURE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_float64_primitive_asIEEEFloat64Decoded);
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif

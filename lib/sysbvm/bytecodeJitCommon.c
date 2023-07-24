@@ -265,7 +265,7 @@ static void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functionByt
     while(pc < instructionsSize)
     {
         jit.pcDestinations[pc] = jit.instructions.size;
-        sysbvm_jit_storePC(&jit, (int32_t)pc);
+        sysbvm_jit_storePC(&jit, (uint16_t)pc);
 
         uint8_t opcode = instructions[pc++];
 
