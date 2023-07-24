@@ -19,7 +19,7 @@ SYSMEL_PAL_EXTERN_C void* sysmel_pal_malloc(size_t size)
 
 SYSMEL_PAL_EXTERN_C void sysmel_pal_free(void *pointer)
 {
-    return free(pointer);
+    free(pointer);
 }
 
 #ifdef USE_BOEHM_GC

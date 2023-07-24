@@ -1,0 +1,3 @@
+#!/bin/sh
+##BUILD_SUPPORT_FLAGS="-DUSE_BOEHM_GC"
+##BUILD_LD_FLAGS="-lgc"

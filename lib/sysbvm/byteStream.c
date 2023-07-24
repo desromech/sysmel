@@ -13,7 +13,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_byteStream_create(sysbvm_context_t *context)
     return (sysbvm_tuple_t)result;
 }
 
-static void sysbvm_orderedCollection_increaseCapacityToAtLeast(sysbvm_context_t *context, sysbvm_tuple_t byteStream, size_t requiredCapacity)
+static void sysbvm_byteStream_increaseCapacityToAtLeast(sysbvm_context_t *context, sysbvm_tuple_t byteStream, size_t requiredCapacity)
 {
     sysbvm_byteStream_t *byteStreamObject = (sysbvm_byteStream_t*)byteStream;
     size_t size = sysbvm_tuple_size_decode(byteStreamObject->size);
@@ -40,7 +40,7 @@ SYSBVM_API void sysbvm_byteStream_nextPut(sysbvm_context_t *context, sysbvm_tupl
     size_t capacity = sysbvm_tuple_getSizeInBytes(byteStreamObject->storage);
     size_t requiredCapacity = size + 1;
     if(requiredCapacity > capacity)
-        sysbvm_orderedCollection_increaseCapacityToAtLeast(context, byteStream, requiredCapacity);
+        sysbvm_byteStream_increaseCapacityToAtLeast(context, byteStream, requiredCapacity);
 
     sysbvm_object_tuple_t *storage = (sysbvm_object_tuple_t*)byteStreamObject->storage;
     storage->bytes[size] = value;
@@ -58,7 +58,7 @@ SYSBVM_API void sysbvm_byteStream_nextPutStringWithSize(sysbvm_context_t *contex
     size_t capacity = sysbvm_tuple_getSizeInBytes(byteStreamObject->storage);
     size_t requiredCapacity = size + stringSize;
     if(requiredCapacity > capacity)
-        sysbvm_orderedCollection_increaseCapacityToAtLeast(context, byteStream, requiredCapacity);
+        sysbvm_byteStream_increaseCapacityToAtLeast(context, byteStream, requiredCapacity);
 
     sysbvm_object_tuple_t *storage = (sysbvm_object_tuple_t*)byteStreamObject->storage;
     memcpy(storage->bytes + size, string, stringSize);
