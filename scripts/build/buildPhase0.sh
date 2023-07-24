@@ -1,7 +1,7 @@
 #!/bin/sh
 set -ex
 
-. ./buildCommon.sh
+. $(dirname $(readlink -f "$0"))/buildCommon.sh
 
-build/dist/sysbvmi -nogc module-sources/Bootstrap/main.sysmel module-sources/CLI-Interpreter/main.sysmel -e 'CLISysmelInterpreter buildNativeInterpreterImage saveTo: "phase0.o"'
-gcc -o phase0 phase0.o build-support/support-x86_64.o $BUILD_LD_FLAGS
+$SYSBVMI -nogc module-sources/Bootstrap/main.sysmel module-sources/CLI-Interpreter/main.sysmel -e "CLISysmelInterpreter buildNativeInterpreterImage saveTo: \"$OUT_DIR/phase0.o\""
+$CC -o $OUT_DIR/phase0 $OUT_DIR/phase0.o $OUT_DIR/sysmel-pal.o $BUILD_LD_FLAGS

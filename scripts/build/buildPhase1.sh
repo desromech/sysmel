@@ -1,7 +1,7 @@
 #!/bin/sh
 set -ex
 
-. ./buildCommon.sh
+. $(dirname $(readlink -f "$0"))/buildCommon.sh
 
-./fullPhase0 -e 'CLISysmelInterpreter buildNativeInterpreterImage saveTo: "phase1.o"'
-gcc -o phase1 phase1.o build-support/support-x86_64.o $BUILD_LD_FLAGS
+$OUT_DIR/fullPhase0 -e "CLISysmelInterpreter buildNativeInterpreterImage saveTo: \"$OUT_DIR/phase1.o\""
+$CC -o $OUT_DIR/phase1 $OUT_DIR/phase1.o $OUT_DIR/sysmel-pal.o $BUILD_LD_FLAGS
