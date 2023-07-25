@@ -128,6 +128,9 @@ public final class AsmX86_64CompilationTarget superclass: AsmAbstractX86Compilat
 
     public override method convertCoffRelocationTypeOf: (relocation: AsmObjectCodeRelocation) ::=> UInt16
         := relocation x86_64::coffRelocationType.
+
+    public override method convertMachORelocation64: (relocation: AsmObjectCodeRelocation) in: (machoRelocation: MachO::RelocationInfo) section: (section: AsmObjectCodeSection) ::=> Boolean
+        := relocation x86_64::convertMachORelocation64: machoRelocation inSection: section.
 }.
 
 AsmCompilationTarget extend: {
@@ -1398,6 +1401,9 @@ AsmObjectCodeRelocation extend: {
 
     public abstract method x86_64::coffRelocationType => UInt16
         := self subclassResponsibility.
+
+    public abstract method x86_64::convertMachORelocation64: (machoRelocation: MachO::RelocationInfo) inSection: (section: AsmObjectCodeSection) ::=> Boolean
+        := self subclassResponsibility.
 }.
 
 AsmObjectCodeRelocationRelativeInt32 extend: {
@@ -1419,6 +1425,16 @@ AsmObjectCodeRelocationRelativeInt32 extend: {
 
     public override method x86_64::coffRelocationType => UInt16
         := Coff::RelocationType::AMD64::Rel32.
+
+    public override method x86_64::convertMachORelocation64: (machoRelocation: MachO::RelocationInfo) inSection: (section: AsmObjectCodeSection)  ::=> Boolean := {
+        section data int32At: offset put: (section data int32At: offset) + 4i32.
+        machoRelocation
+            isPCRelative: true;
+            type: MachO::X86_64Relocation::Signed;
+            length: 2u8.
+        true
+    }.
+
 }.
 
 AsmObjectCodeRelocationRelativeInt32AtPLT extend: {
@@ -1428,6 +1444,15 @@ AsmObjectCodeRelocationRelativeInt32AtPLT extend: {
             symbol: (symbolTable indexOfSymbol: symbol) type: Elf::X86_64::Rel::PLT32;
             addend: addend asInt64 + symbol privateAddend;
             yourself.
+
+    public override method x86_64::convertMachORelocation64: (machoRelocation: MachO::RelocationInfo) inSection: (section: AsmObjectCodeSection)  ::=> Boolean := {
+        section data int32At: offset put: (section data int32At: offset) + 4i32.
+        machoRelocation
+            isPCRelative: true;
+            type: MachO::X86_64Relocation::Branch;
+            length: 2u8.
+        true
+    }.
 }.
 
 AsmObjectCodeRelocationRelativeInt32AtGOT extend: {
@@ -1437,6 +1462,15 @@ AsmObjectCodeRelocationRelativeInt32AtGOT extend: {
             symbol: (symbolTable indexOfSymbol: symbol) type: Elf::X86_64::Rel::GOTPCREL;
             addend: addend asInt64 + symbol privateAddend;
             yourself.
+
+    public override method x86_64::convertMachORelocation64: (machoRelocation: MachO::RelocationInfo) inSection: (section: AsmObjectCodeSection)  ::=> Boolean := {
+        section data int32At: offset put: (section data int32At: offset) + 4i32.
+        machoRelocation
+            isPCRelative: true;
+            type: MachO::X86_64Relocation::GOT;
+            length: 2u8.
+        true
+    }.
 }.
 
 AsmObjectCodeRelocationAbsoluteInt32 extend: {
@@ -1445,6 +1479,14 @@ AsmObjectCodeRelocationAbsoluteInt32 extend: {
 
     public override method x86_64::coffRelocationType => UInt16
         := Coff::RelocationType::AMD64::Addr32.
+
+    public override method x86_64::convertMachORelocation64: (machoRelocation: MachO::RelocationInfo) inSection: (section: AsmObjectCodeSection) ::=> Boolean := {
+        machoRelocation
+            isPCRelative: false;
+            type: MachO::X86_64Relocation::Unsigned;
+            length: 2u8.
+        true
+    }.
 }.
 
 AsmObjectCodeRelocationAbsoluteInt64 extend: {
@@ -1457,6 +1499,14 @@ AsmObjectCodeRelocationAbsoluteInt64 extend: {
 
     public override method x86_64::coffRelocationType => UInt16
         := Coff::RelocationType::AMD64::Addr64.
+
+    public override method x86_64::convertMachORelocation64: (machoRelocation: MachO::RelocationInfo) inSection: (section: AsmObjectCodeSection) ::=> Boolean := {
+        machoRelocation
+            isPCRelative: false;
+            type: MachO::X86_64Relocation::Unsigned;
+            length: 3u8.
+        true
+    }.
 }.
 
 AsmObjectCodeRelocationSectionRelativeInt64 extend: {
@@ -1469,6 +1519,9 @@ AsmObjectCodeRelocationSectionRelativeInt64 extend: {
 
     public override method x86_64::coffRelocationType => UInt16
         := Coff::RelocationType::AMD64::Secrel.
+
+    public override method x86_64::convertMachORelocation64: (machoRelocation: MachO::RelocationInfo) inSection: (section: AsmObjectCodeSection) ::=> Boolean
+        := false.
 }.
 
 let instructionDefinitionTable := #(

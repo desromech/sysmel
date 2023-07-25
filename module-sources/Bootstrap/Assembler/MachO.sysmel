@@ -49,8 +49,8 @@ public global MachO::GenericRelocation::LocalSectionDiff := 4u8.
 public global MachO::GenericRelocation::TLV := 5u8.
 
 public global MachO::X86_64Relocation::Unsigned := 0u8. ## for absolute addresses
-public global MachO::X86_64Relocation::Signed := 1u8. ## for absolute addresses
-public global MachO::X86_64Relocation::Branch := 2u8. ## for absolute addresses
+public global MachO::X86_64Relocation::Signed := 1u8. ## for signed 32-bit displacement
+public global MachO::X86_64Relocation::Branch := 2u8. ## a CALL/JMP instruction with 32-bit displacemente
 public global MachO::X86_64Relocation::GOTLoad := 3u8. ## a MOVQ load of a GOT entry
 public global MachO::X86_64Relocation::GOT := 4u8. ## other GOT references
 public global MachO::X86_64Relocation::Subtractor := 5u8. ## must be followed by a X86_64_RELOC_UNSIGNED
@@ -214,6 +214,34 @@ public final class MachO::NList64 superclass: ByteSerializableObject; definition
 public final class MachO::RelocationInfo superclass: ByteSerializableObject; definition: {
     public field address => UInt32.
     public field encodedValue => UInt32.
+
+    public method symbolIndex: (symbolIndex: UInt32) ::=> Void := {
+        encodedValue := (encodedValue & 16rFF00_0000 u32) | symbolIndex
+    }.
+
+    public method length: (length: UInt8) ::=> Void := {
+        encodedValue := (encodedValue & (3u32 << 25u32) bitInvert) | (length asUInt32 << 25u32)
+    }.
+
+    public method type: (type: UInt8) ::=> Void := {
+        encodedValue := (encodedValue & 16r0FFF_FFFF u32) | (type asUInt32 << 28u32)
+    }.
+
+    public method isPCRelative: (isPCRelative: Boolean) ::=> Void := {
+        isPCRelative ifTrue: {
+            encodedValue := encodedValue | (1u32 << 24u32)
+        } ifFalse: {
+            encodedValue := encodedValue & (1u32 << 24u32) bitInvert
+        }
+    }.
+
+    public method isExtern: (isExtern: Boolean) ::=> Void := {
+        isExtern ifTrue: {
+            encodedValue := encodedValue | (1u32 << 27u32)
+        } ifFalse: {
+            encodedValue := encodedValue & (1u32 << 27u32) bitInvert
+        }
+    }.
 }.
 
 public final class MachO::RelocationTable64 superclass: Object; definition: {
@@ -272,7 +300,7 @@ public final class MachO::SymbolTable64 superclass: Object; definition: {
 
     public method addSymbol: (symbol: AsmSymbol) ::=> Void := {
         symbol isPrivate ifTrue: (return: void).
-        
+
         let machoSymbol := MachO::NList64 new
             value: symbol value;
             yourself.
@@ -422,17 +450,23 @@ public final class AsmObjectMachO64FileWriter superclass: AsmObjectFileWriter; d
                 relocationTables add: table.
 
                 relocations do: {:(AsmObjectCodeRelocation)eachRelocation :: Void |
-                    eachRelocation isSectionRelative ifTrue: {
-                        eachRelocation applyAddendInTargetSection: eachSection.
-                        return: void.
-                    }.
+                    let symbol := eachRelocation symbol.
+                    let extraAddend := symbol isPrivate ifTrue: (symbol value asInt64) ifFalse: (0i64).
+                    let isExtern := symbol isPrivate not.
 
-                    let symbolIndex := symbolTable indexOfRelocationSymbol: eachRelocation symbol.
+                    ## Apply the implicit addend.
+                    eachRelocation applyAddendInTargetSection: eachSection withExtraAddend: extraAddend.
+
+                    let symbolIndex := symbolTable indexOfRelocationSymbol: symbol.
                     let relocation := MachO::RelocationInfo new
                         address: eachRelocation offset asUInt32;
+                        symbolIndex: symbolIndex asUInt32;
+                        isExtern: isExtern;
                         yourself.
 
-                    table relocations add: relocation.
+                    (compilationTarget convertMachORelocation64: eachRelocation in: relocation section: eachSection) ifTrue: {
+                        table relocations add: relocation
+                    }.
 
                     table 
                 }
@@ -544,4 +578,7 @@ AsmCompilationTarget extend: {
         objectFileWriter := AsmObjectMachO64FileWriter new.
         self
     }.
+
+    public abstract method convertMachORelocation64: (relocation: AsmObjectCodeRelocation) in: (machoRelocation: MachO::RelocationInfo) section: (section: AsmObjectCodeSection) ::=> Boolean
+        := self subclassResponsibility.
 }.
