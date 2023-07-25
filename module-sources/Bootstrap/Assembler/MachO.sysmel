@@ -24,6 +24,23 @@ public global MachO::VMProt::Read := 1i32.
 public global MachO::VMProt::Write := 2i32.
 public global MachO::VMProt::Execute := 4i32.
 
+public global MachO::Symbol::Type::Undef := 0u8.
+public global MachO::Symbol::Type::External := 16r1 u8.
+public global MachO::Symbol::Type::Abs := 16r2 u8.
+public global MachO::Symbol::Type::Section := 16re u8.
+public global MachO::Symbol::Type::PreboundUndefined := 16rc u8.
+public global MachO::Symbol::Type::Indirect := 16ra u8.
+
+public global MachO::Symbol::ReferenceType := 16r7 u16.
+public global MachO::Symbol::ReferenceFlag::UndefinedNonLazy := 16r0 u16.
+public global MachO::Symbol::ReferenceFlag::UndefinedLazy := 16r1 u16.
+public global MachO::Symbol::ReferenceFlag::Defined := 16r2 u16.
+public global MachO::Symbol::ReferenceFlag::PrivateDefined := 16r3 u16.
+public global MachO::Symbol::ReferenceFlag::PrivateUndefinedNonLazy := 16r4 u16.
+public global MachO::Symbol::ReferenceFlag::PrivateUndefinedLazy := 16r5 u16.
+
+public global MachO::Symbol::NoSection := 0u8.
+
 public final class MachO::Header32 superclass: ByteSerializableObject; definition: {
     public field magic => UInt32.
     public field cputype => Int32.
@@ -104,21 +121,16 @@ public final class MachO::SegmentLoadCommand64 superclass: MachO::LoadCommand; d
 }.
 
 public final class MachO::SymbolTableLoadCommand superclass: MachO::LoadCommand; definition: {
-}.
+    public field symbolTableOffset => UInt32.
+    public field symbolTableSize => UInt32.
+    public field stringTableOffset => UInt32.
+    public field stringTableSize => UInt32.
 
-public class MachO::Section32 superclass: ByteSerializableObject; definition: {
-    public field sectionName => Char8[16sz].
-    public field segmentName => Char8[16sz].
-
-    public field address => UInt32.
-    public field size => UInt32.
-    public field offset => UInt32.
-    public field align => UInt32.
-    public field relocationsOffset => UInt32.
-    public field numberOfRelocations => UInt32.
-    public field flags => UInt32.
-    public field reserved1 => UInt32.
-    public field reserved2 => UInt32.
+    public override method initialize => Void := {
+        super initialize.
+        commandType := 16r2 u32.
+        commandSize := self class validInstanceSize asUInt32.
+    }.
 }.
 
 public class MachO::Section64 superclass: ByteSerializableObject; definition: {
@@ -165,6 +177,85 @@ public class MachO::Section64 superclass: ByteSerializableObject; definition: {
     }.
 }.
 
+public class MachO::NList superclass: ByteSerializableObject; definition: {
+    public field stringIndex => UInt32.
+    public field type => UInt8.
+    public field section => UInt8.
+    public field description => UInt16.
+    public field value => UInt32.
+}.
+
+public class MachO::NList64 superclass: ByteSerializableObject; definition: {
+    public field stringIndex => UInt32.
+    public field type => UInt8.
+    public field section => UInt8.
+    public field description => UInt16.
+    public field value => UInt64.
+}.
+
+public final class MachO::SymbolTable64 superclass: Object; definition: {
+    public field stringTable => AsmObjectCodeCStringTable.
+
+    public field sectionTable => OrderedCollection.
+    public field sectionIndexDictionary => Dictionary.
+
+    public field localSymbols => OrderedCollection.
+    public field externalSymbols => OrderedCollection.
+    public field undefinedSymbols => OrderedCollection.
+
+    public override method initialize => Void := {
+        sectionTable := OrderedCollection new.
+        sectionIndexDictionary := Dictionary new.
+
+        localSymbols := OrderedCollection new.
+        externalSymbols := OrderedCollection new.
+        undefinedSymbols := OrderedCollection new.
+    }.
+
+    public method addSection: (section: AsmObjectCodeSection) withMachoSection: (machoSection: MachO::Section64) ::=> Void := {
+        sectionTable add: machoSection.
+        sectionIndexDictionary at: section put: sectionTable size.
+    }.
+
+    public method addSymbol: (symbol: AsmSymbol) ::=> Void := {
+        let machoSymbol := MachO::NList64 new
+            value: symbol value;
+            yourself.
+
+        symbol name isNotNil && symbol isPrivate not ifTrue: {
+            machoSymbol stringIndex: (stringTable addString: symbol name asString) asUInt32
+        }.
+
+        symbol section ifNil: {
+            machoSymbol
+                type: MachO::Symbol::Type::Undef;
+                section: MachO::Symbol::NoSection.
+            undefinedSymbols add: machoSymbol
+        } ifNotNil: {
+            let sectionIndex => Size := sectionIndexDictionary at: symbol section.
+            let sectionHeader => MachO::Section64 := sectionTable at: sectionIndex - 1sz.
+            machoSymbol
+                value: symbol value + sectionHeader address;
+                section: sectionIndex asUInt8.
+
+            symbol isPrivate ifTrue: {
+                machoSymbol
+                    type: MachO::Symbol::Type::Section;
+                    description: MachO::Symbol::ReferenceFlag::PrivateDefined.
+                localSymbols add: machoSymbol
+            } ifFalse: {
+                machoSymbol
+                    type: MachO::Symbol::Type::Section | MachO::Symbol::Type::External;
+                    description: MachO::Symbol::ReferenceFlag::Defined.
+                externalSymbols add: machoSymbol
+            }.
+        }
+    }.
+
+    public method size => Size
+        := localSymbols size + externalSymbols size + undefinedSymbols size.
+}.
+
 public final class AsmObjectMachO32FileWriter superclass: AsmObjectFileWriter; definition: {
     public override method encodeObjectCode: (objectCode: AsmObjectCode) ::=> ByteArray := {
         let compilationTarget := objectCode compilationTarget.
@@ -195,6 +286,11 @@ public final class AsmObjectMachO64FileWriter superclass: AsmObjectFileWriter; d
             numberOfSections: objectCode sections size asUInt32;
             yourself.
 
+        let stringTable := AsmObjectCodeCStringTable new.
+        let symbolTable := MachO::SymbolTable64 new
+            stringTable: stringTable;
+            yourself.
+
         let baseAddress mutable := 0u64.
         objectCode sections do: {:(AsmObjectCodeSection)eachSection :: Void |
             let sectionHeader := MachO::Section64 new
@@ -220,16 +316,25 @@ public final class AsmObjectMachO64FileWriter superclass: AsmObjectFileWriter; d
 
             sectionHeaders add: sectionHeader.
             sectionDataElements add: eachSection.
+            symbolTable addSection: eachSection withMachoSection: sectionHeader.
 
             baseAddress := baseAddress + eachSection size asUInt64.
         }.
+
+        ## Convert the symbols.
+        objectCode symbols do: {:(AsmSymbol)eachSymbol :: Void |
+            symbolTable addSymbol: eachSymbol
+        }.
+
+        stringTable finish.
+        let symbolTableCommand := MachO::SymbolTableLoadCommand new.
 
         let header := MachO::Header64 new
             magic: MachO::Magic64;
             cputype: compilationTarget machoCPUType;
             cpusubtype: compilationTarget machoCPUSubtype;
             filetype: MachO::Filetype::Object;
-            numberOfCommands: 1u32;
+            numberOfCommands: 2u32;
             yourself.
         
         let commandsStartLabel := ByteStreamEncodingLabel new.
@@ -241,6 +346,8 @@ public final class AsmObjectMachO64FileWriter superclass: AsmObjectFileWriter; d
         let objectStartLabel := ByteStreamEncodingLabel new.
         let objectEndLabel := ByteStreamEncodingLabel new.
 
+        let symbolTableLabel := ByteStreamEncodingLabel new.
+
         let fileLayout := OrderedCollection new.
         fileLayout
             add: header;
@@ -250,13 +357,19 @@ public final class AsmObjectMachO64FileWriter superclass: AsmObjectFileWriter; d
             add: objectSegment;
             addAll: sectionHeaders;
             add: objectCommandEndLabel;
-            
+
+            add: symbolTableCommand;            
             add: commandsEndLabel;
             
             add: objectStartLabel;
             addAll: objectCode sections;
             add: objectEndLabel;
-            
+
+            add: symbolTableLabel;
+            addAll: symbolTable localSymbols;
+            addAll: symbolTable externalSymbols;
+            addAll: symbolTable undefinedSymbols;
+            add: stringTable;
             computeOffsetsOfEncodedElementsInByteStream.
 
         sectionDataElements doWithIndex: {:dataElement :(Size)index :: Void |
@@ -265,6 +378,12 @@ public final class AsmObjectMachO64FileWriter superclass: AsmObjectFileWriter; d
                     offset: dataElement offsetOfEncodedElementInByteStream asUInt32
             }.
         }.
+
+        symbolTableCommand
+            symbolTableOffset: symbolTableLabel offsetOfEncodedElementInByteStream asUInt32;
+            symbolTableSize: symbolTable size asUInt32;
+            stringTableOffset: stringTable offsetOfEncodedElementInByteStream asUInt32;
+            stringTableSize: stringTable size asUInt32.
 
         objectSegment
             commandSize: (objectCommandEndLabel offsetOfEncodedElementInByteStream - objectCommandStartLabel offsetOfEncodedElementInByteStream) asUInt32;
