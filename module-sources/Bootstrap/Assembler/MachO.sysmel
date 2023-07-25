@@ -41,6 +41,24 @@ public global MachO::Symbol::ReferenceFlag::PrivateUndefinedLazy := 16r5 u16.
 
 public global MachO::Symbol::NoSection := 0u8.
 
+public global MachO::GenericRelocation::Vanilla := 0u8.
+public global MachO::GenericRelocation::Pair := 1u8.
+public global MachO::GenericRelocation::SectionDiff := 2u8.
+public global MachO::GenericRelocation::PbLaPtr := 3u8.
+public global MachO::GenericRelocation::LocalSectionDiff := 4u8.
+public global MachO::GenericRelocation::TLV := 5u8.
+
+public global MachO::X86_64Relocation::Unsigned := 0u8. ## for absolute addresses
+public global MachO::X86_64Relocation::Signed := 1u8. ## for absolute addresses
+public global MachO::X86_64Relocation::Branch := 2u8. ## for absolute addresses
+public global MachO::X86_64Relocation::GOTLoad := 3u8. ## a MOVQ load of a GOT entry
+public global MachO::X86_64Relocation::GOT := 4u8. ## other GOT references
+public global MachO::X86_64Relocation::Subtractor := 5u8. ## must be followed by a X86_64_RELOC_UNSIGNED
+public global MachO::X86_64Relocation::Signed1 := 6u8. ## for signed 32-bit displacement with a -1 addend
+public global MachO::X86_64Relocation::Signed2 := 7u8. ## for signed 32-bit displacement with a -2 addend
+public global MachO::X86_64Relocation::Signed4 := 8u8. ## for signed 32-bit displacement with a -4 addend
+public global MachO::X86_64Relocation::TLV := 9u8. ## Thread local vector
+
 public final class MachO::Header32 superclass: ByteSerializableObject; definition: {
     public field magic => UInt32.
     public field cputype => Int32.
@@ -177,7 +195,7 @@ public class MachO::Section64 superclass: ByteSerializableObject; definition: {
     }.
 }.
 
-public class MachO::NList superclass: ByteSerializableObject; definition: {
+public final class MachO::NList superclass: ByteSerializableObject; definition: {
     public field stringIndex => UInt32.
     public field type => UInt8.
     public field section => UInt8.
@@ -185,12 +203,28 @@ public class MachO::NList superclass: ByteSerializableObject; definition: {
     public field value => UInt32.
 }.
 
-public class MachO::NList64 superclass: ByteSerializableObject; definition: {
+public final class MachO::NList64 superclass: ByteSerializableObject; definition: {
     public field stringIndex => UInt32.
     public field type => UInt8.
     public field section => UInt8.
     public field description => UInt16.
     public field value => UInt64.
+}.
+
+public final class MachO::RelocationInfo superclass: ByteSerializableObject; definition: {
+    public field address => UInt32.
+    public field encodedValue => UInt32.
+}.
+
+public final class MachO::RelocationTable64 superclass: Object; definition: {
+    public field sectionHeader => MachO::Section64.
+    public field startLabel => ByteStreamEncodingLabel.
+    public field relocations => OrderedCollection.
+
+    public override method initialize => Void := {
+        startLabel := ByteStreamEncodingLabel new.
+        relocations := OrderedCollection new.
+    }.
 }.
 
 public final class MachO::SymbolTable64 superclass: Object; definition: {
@@ -200,24 +234,45 @@ public final class MachO::SymbolTable64 superclass: Object; definition: {
     public field sectionIndexDictionary => Dictionary.
 
     public field localSymbols => OrderedCollection.
+    public field localSourceSymbols => OrderedCollection.
+
     public field externalSymbols => OrderedCollection.
+    public field externalSourceSymbols => OrderedCollection.
+
     public field undefinedSymbols => OrderedCollection.
+    public field undefinedSourceSymbols => OrderedCollection.
+
+    public field symbolIndexTable => Dictionary.
 
     public override method initialize => Void := {
         sectionTable := OrderedCollection new.
         sectionIndexDictionary := Dictionary new.
 
         localSymbols := OrderedCollection new.
+        localSourceSymbols := OrderedCollection new.
         externalSymbols := OrderedCollection new.
+        externalSourceSymbols := OrderedCollection new.
         undefinedSymbols := OrderedCollection new.
+        undefinedSourceSymbols := OrderedCollection new.
     }.
 
     public method addSection: (section: AsmObjectCodeSection) withMachoSection: (machoSection: MachO::Section64) ::=> Void := {
         sectionTable add: machoSection.
         sectionIndexDictionary at: section put: sectionTable size.
+
+        let machoSymbol := MachO::NList64 new
+            value: machoSection address;
+            section: sectionTable size asUInt8;
+            type: MachO::Symbol::Type::Section;
+            description: MachO::Symbol::ReferenceFlag::PrivateDefined;
+            yourself.
+        localSymbols add: machoSymbol.
+        localSourceSymbols add: nil.
     }.
 
     public method addSymbol: (symbol: AsmSymbol) ::=> Void := {
+        symbol isPrivate ifTrue: (return: void).
+        
         let machoSymbol := MachO::NList64 new
             value: symbol value;
             yourself.
@@ -230,7 +285,8 @@ public final class MachO::SymbolTable64 superclass: Object; definition: {
             machoSymbol
                 type: MachO::Symbol::Type::Undef;
                 section: MachO::Symbol::NoSection.
-            undefinedSymbols add: machoSymbol
+            undefinedSymbols add: machoSymbol.
+            undefinedSourceSymbols add: symbol.
         } ifNotNil: {
             let sectionIndex => Size := sectionIndexDictionary at: symbol section.
             let sectionHeader => MachO::Section64 := sectionTable at: sectionIndex - 1sz.
@@ -242,13 +298,40 @@ public final class MachO::SymbolTable64 superclass: Object; definition: {
                 machoSymbol
                     type: MachO::Symbol::Type::Section;
                     description: MachO::Symbol::ReferenceFlag::PrivateDefined.
-                localSymbols add: machoSymbol
+                localSymbols add: machoSymbol.
+                localSourceSymbols add: symbol.
             } ifFalse: {
                 machoSymbol
                     type: MachO::Symbol::Type::Section | MachO::Symbol::Type::External;
                     description: MachO::Symbol::ReferenceFlag::Defined.
-                externalSymbols add: machoSymbol
+                externalSymbols add: machoSymbol.
+                externalSourceSymbols add: symbol
             }.
+        }
+    }.
+
+    public method buildSymbolIndexTable => Void := {
+        let count mutable := 0sz.
+
+        symbolIndexTable := Dictionary new.
+        let block := {:(AsmSymbol)symbol :: Void |
+            symbol ifNotNil: {
+                symbolIndexTable at: symbol put: count.
+            }.
+
+            count := count + 1sz.
+        }.
+
+        localSourceSymbols do: block.
+        externalSourceSymbols do: block.
+        undefinedSourceSymbols do: block.
+    }.
+
+    public method indexOfRelocationSymbol: (symbol: AsmSymbol) ::=> Size := {
+        symbol isPrivate ifTrue: {
+            (sectionIndexDictionary at: symbol section) downCastTo: Size
+        } ifFalse: {
+            (symbolIndexTable at: symbol) downCastTo: Size
         }
     }.
 
@@ -325,6 +408,36 @@ public final class AsmObjectMachO64FileWriter superclass: AsmObjectFileWriter; d
         objectCode symbols do: {:(AsmSymbol)eachSymbol :: Void |
             symbolTable addSymbol: eachSymbol
         }.
+        symbolTable buildSymbolIndexTable.
+
+        ## Convert the relocations.
+        let relocationTables := OrderedCollection new.
+        objectCode sections doWithIndex: {:(AsmObjectCodeSection)eachSection :(Size)sectionIndex :: Void |
+            let machoSectionHeader => MachO::Section64 := sectionHeaders at: sectionIndex.
+            let relocations := eachSection relocations.
+            relocations size > 0sz ifTrue: {
+                let table := MachO::RelocationTable64 new
+                    sectionHeader: machoSectionHeader;
+                    yourself.
+                relocationTables add: table.
+
+                relocations do: {:(AsmObjectCodeRelocation)eachRelocation :: Void |
+                    eachRelocation isSectionRelative ifTrue: {
+                        eachRelocation applyAddendInTargetSection: eachSection.
+                        return: void.
+                    }.
+
+                    let symbolIndex := symbolTable indexOfRelocationSymbol: eachRelocation symbol.
+                    let relocation := MachO::RelocationInfo new
+                        address: eachRelocation offset asUInt32;
+                        yourself.
+
+                    table relocations add: relocation.
+
+                    table 
+                }
+            }.
+        }.
 
         stringTable finish.
         let symbolTableCommand := MachO::SymbolTableLoadCommand new.
@@ -369,8 +482,21 @@ public final class AsmObjectMachO64FileWriter superclass: AsmObjectFileWriter; d
             addAll: symbolTable localSymbols;
             addAll: symbolTable externalSymbols;
             addAll: symbolTable undefinedSymbols;
-            add: stringTable;
+            add: stringTable.
+
+        relocationTables do: {:(MachO::RelocationTable64)table :: Void |
+            fileLayout
+                add: table startLabel;
+                addAll: table relocations
+        }.
+
+        fileLayout
             computeOffsetsOfEncodedElementsInByteStream.
+        relocationTables do: {:(MachO::RelocationTable64)table :: Void |
+            table sectionHeader
+                relocationsOffset: table startLabel offsetOfEncodedElementInByteStream asUInt32;
+                numberOfRelocations: table relocations size asUInt32
+        }.
 
         sectionDataElements doWithIndex: {:dataElement :(Size)index :: Void |
             dataElement ifNotNil: {

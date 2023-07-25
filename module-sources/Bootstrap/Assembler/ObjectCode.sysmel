@@ -674,6 +674,8 @@ AsmObjectCodeRelocation definition: {
     public field symbol => AsmSymbol.
     public field offset => Size.
 
+    public virtual method isSectionRelative => Boolean := false.
+
     public abstract method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) withExtraAddend: (extraAddend: Int64) ::=> Void
         := self subclassResponsibility.
 
@@ -713,12 +715,16 @@ public final class AsmObjectCodeRelocationAbsoluteInt64 superclass: AsmObjectCod
 public final class AsmObjectCodeRelocationSectionRelativeInt32 superclass: AsmObjectCodeRelocation; definition: {
     public field addend => Int32.
 
+    public override method isSectionRelative => Boolean := true.
+
     public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) withExtraAddend: (extraAddend: Int64) ::=> Void
         := targetSection data int32At: offset put: addend + extraAddend asInt32.
 }.
 
 public final class AsmObjectCodeRelocationSectionRelativeInt64 superclass: AsmObjectCodeRelocation; definition: {
     public field addend => Int64.
+
+    public override method isSectionRelative => Boolean := true.
 
     public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) withExtraAddend: (extraAddend: Int64) ::=> Void
         := targetSection data int64At: offset put: addend + extraAddend.
