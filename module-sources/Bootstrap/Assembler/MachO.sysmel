@@ -367,6 +367,44 @@ public final class MachO::SymbolTable64 superclass: Object; definition: {
         := localSymbols size + externalSymbols size + undefinedSymbols size.
 }.
 
+public final class MachO::DySymbolTableLoadCommand superclass: MachO::LoadCommand; definition: {
+    public field ilocalsym => Int32.
+    public field nlocalsym => Int32.
+    public field iextdefsym => Int32.
+    public field nextdefsym => Int32.
+    public field iundefsym => Int32.
+    public field nundefsym => Int32.
+    public field tocoff => Int32.
+    public field ntoc => Int32.
+    public field modtaboff => Int32.
+    public field nmodtab => Int32.
+    public field extrefsymoff => Int32.
+    public field nextrefsyms => Int32.
+    public field indirectsymoff => Int32.
+    public field nindirectsyms => Int32.
+    public field extreloff => Int32.
+    public field nextrel => Int32.
+    public field locreloff => Int32.
+    public field nlocrel => Int32.
+
+    public override method initialize => Void := {
+        super initialize.
+        commandType := 11u32.
+        commandSize := self class validInstanceSize asUInt32.
+    }.
+
+    public method setupForSymbolTable64: (symbolTable: MachO::SymbolTable64) ::=> Void := {
+        ilocalsym := 0i32.
+        nlocalsym := symbolTable localSymbols size asInt32.
+        
+        iextdefsym := nlocalsym.
+        nextdefsym := symbolTable externalSymbols size asInt32.
+        
+        iundefsym := nlocalsym + nextdefsym.
+        nundefsym := symbolTable undefinedSymbols size asInt32.
+    }.
+}.
+
 public final class AsmObjectMachO32FileWriter superclass: AsmObjectFileWriter; definition: {
     public override method encodeObjectCode: (objectCode: AsmObjectCode) ::=> ByteArray := {
         let compilationTarget := objectCode compilationTarget.
@@ -475,13 +513,16 @@ public final class AsmObjectMachO64FileWriter superclass: AsmObjectFileWriter; d
 
         stringTable finish.
         let symbolTableCommand := MachO::SymbolTableLoadCommand new.
+        let dySymbolTableCommand := MachO::DySymbolTableLoadCommand new
+            setupForSymbolTable64: symbolTable;
+            yourself.
 
         let header := MachO::Header64 new
             magic: MachO::Magic64;
             cputype: compilationTarget machoCPUType;
             cpusubtype: compilationTarget machoCPUSubtype;
             filetype: MachO::Filetype::Object;
-            numberOfCommands: 2u32;
+            numberOfCommands: 3u32;
             yourself.
         
         let commandsStartLabel := ByteStreamEncodingLabel new.
@@ -505,7 +546,8 @@ public final class AsmObjectMachO64FileWriter superclass: AsmObjectFileWriter; d
             addAll: sectionHeaders;
             add: objectCommandEndLabel;
 
-            add: symbolTableCommand;            
+            add: symbolTableCommand;
+            add: dySymbolTableCommand;
             add: commandsEndLabel;
             
             add: objectStartLabel;
