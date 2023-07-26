@@ -71,8 +71,8 @@ typedef intptr_t sysbvm_stuple_t;
 #define SYSBVM_IMMEDIATE_UINT_MIN ((sysbvm_tuple_t)0)
 #define SYSBVM_IMMEDIATE_UINT_MAX ( ((sysbvm_tuple_t)1 << SYSBVM_IMMEDIATE_BIT_COUNT) - 1 )
 
-#define SYSBVM_IMMEDIATE_INT_MIN ( -((sysbvm_stuple_t)1 << (SYSBVM_IMMEDIATE_BIT_COUNT - 1)) )
-#define SYSBVM_IMMEDIATE_INT_MAX ( ((sysbvm_stuple_t)1 << (SYSBVM_IMMEDIATE_BIT_COUNT - 1)) - 1 )
+#define SYSBVM_IMMEDIATE_INT_MIN ( -((sysbvm_stuple_t)1 << (sysbvm_stuple_t)(SYSBVM_IMMEDIATE_BIT_COUNT - 1)) )
+#define SYSBVM_IMMEDIATE_INT_MAX ( ((sysbvm_stuple_t)1 << (sysbvm_stuple_t)(SYSBVM_IMMEDIATE_BIT_COUNT - 1)) - 1 )
 
 /**
  * The different immediate pointer tags.

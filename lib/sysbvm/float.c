@@ -704,7 +704,7 @@ static sysbvm_tuple_t sysbvm_float64_primitive_asIEEEFloat64Decoded(sysbvm_conte
     if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
 
     uint64_t uint64Value = sysbvm_tuple_uint64_decode(arguments[0]);
-    float floatValue = 0;
+    double floatValue = 0;
     memcpy(&floatValue, &uint64Value, 8);
 
     return sysbvm_tuple_float64_encode(context, floatValue);
