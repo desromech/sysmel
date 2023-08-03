@@ -1227,15 +1227,17 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
                 cfiStackSizeAdvance: frameSize asInt64
         }.
 
-        stackFrameLayout framePointerAnchorIsAtBottom ifTrue: {
-            stackFrameLayout frameOrStackPointerAnchorOffset > 0u64 ifTrue: {
-                codegen textSection
-                    x86::lea: X86::RBP src: X86::RSP x86::qword + stackFrameLayout frameOrStackPointerAnchorOffset asAsmImmediate;
-                    cfiSaveFramePointer: X86::RBP offset: stackFrameLayout frameOrStackPointerAnchorOffset asInt64.
-            } ifFalse: {
-                codegen textSection
-                    x86::mov: X86::RBP src: X86::RSP;
-                    cfiSaveFramePointer: X86::RBP.
+        stackFrameLayout hasRequiredConstruction ifTrue: {
+            stackFrameLayout framePointerAnchorIsAtBottom ifTrue: {
+                stackFrameLayout frameOrStackPointerAnchorOffset > 0u64 ifTrue: {
+                    codegen textSection
+                        x86::lea: X86::RBP src: X86::RSP x86::qword + stackFrameLayout frameOrStackPointerAnchorOffset asAsmImmediate;
+                        cfiSaveFramePointer: X86::RBP offset: stackFrameLayout frameOrStackPointerAnchorOffset asInt64.
+                } ifFalse: {
+                    codegen textSection
+                        x86::mov: X86::RBP src: X86::RSP;
+                        cfiSaveFramePointer: X86::RBP.
+                }.
             }.
         }.
 

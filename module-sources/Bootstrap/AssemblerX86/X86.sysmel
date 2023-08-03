@@ -2180,4 +2180,28 @@ AsmStreamBuilder extend: {
             ifTrue: (self x86::direct::mov: destination src: source)
             ifFalse: (nil)        
     }.
+
+    public method x86::movaps: (destination: AsmInstructionOperand) src: (source: AsmInstructionOperand) ::=> AsmX86InstructionWithTwoOperands := {
+        destination ~= source
+            ifTrue: (self x86::direct::movaps: destination src: source)
+            ifFalse: (nil)        
+    }.
+
+    public method x86::movapd: (destination: AsmInstructionOperand) src: (source: AsmInstructionOperand) ::=> AsmX86InstructionWithTwoOperands := {
+        destination ~= source
+            ifTrue: (self x86::direct::movapd: destination src: source)
+            ifFalse: (nil)        
+    }.
+
+    public method x86::movss: (destination: AsmInstructionOperand) src: (source: AsmInstructionOperand) ::=> AsmX86InstructionWithTwoOperands := {
+        destination ~= source
+            ifTrue: (self x86::direct::movss: destination src: source)
+            ifFalse: (nil)        
+    }.
+
+    public method x86::movsd: (destination: AsmInstructionOperand) src: (source: AsmInstructionOperand) ::=> AsmX86InstructionWithTwoOperands := {
+        destination ~= source
+            ifTrue: (self x86::direct::movsd: destination src: source)
+            ifFalse: (nil)        
+    }.
 }.
