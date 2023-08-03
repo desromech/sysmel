@@ -9,6 +9,9 @@ AsmStreamBuilder extend: {
 public abstract class MIRAsmCompilationTarget superclass: MIRCompilationTarget; definition: {
     public field asmCompilationTarget => AsmCompilationTarget.
 
+    public method hasPositionIndependentCode => Boolean
+        := asmCompilationTarget hasPositionIndependentCode.
+
     public override method passesReturnPointerThroughStack => Boolean
         := asmCompilationTarget passesReturnPointerThroughStack.
 
@@ -834,8 +837,15 @@ MIRImportedProgramEntity definition: {
         moduleGenerator targetModule addImportedSymbol: symbol
     }.
 
-    public override method asm::immediateCall32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate
-        := (codegen symbolForProgramEntity: self) dword makeAtPLT; yourself.
+    public override method asm::immediateCall32For: (codegen: MIRAsmCodeGenerator) ::=> AsmImmediate := {
+        codegen target hasPositionIndependentCode ifTrue: {
+            (codegen symbolForProgramEntity: self) dword
+                makeAtPLT;
+                yourself.
+        } ifFalse: {
+            (codegen symbolForProgramEntity: self) dword
+        }.
+    }.
 }.
 
 MIRBasicBlock definition: {

@@ -89,6 +89,9 @@ public final class AsmX86CompilationTarget superclass: AsmAbstractX86Compilation
 }.
 
 public final class AsmX86_64CompilationTarget superclass: AsmAbstractX86CompilationTarget; definition: {
+    public override method hasPositionIndependentCode => Boolean
+        := self isWindows not.
+
     public override method passesReturnPointerThroughStack => Boolean
         := true.
 

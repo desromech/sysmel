@@ -297,8 +297,17 @@ public final class AsmObjectCoffFileWriter superclass: AsmObjectFileWriter; defi
                 let relocationTableLabel := ByteStreamEncodingLabel new.
                 relocationTables add: relocationTableLabel.
                 sectionRelocationPointers add: relocationTableLabel.
-                self assert: relocations size < 16rffff sz.
-                sectionHeader numberOfRelocations: relocations size asUInt16.
+                relocations size < 16rffff sz ifTrue: {
+                    sectionHeader numberOfRelocations: relocations size asUInt16.
+                } ifFalse: {
+                    sectionHeader
+                        characteristics: sectionHeader characteristics | Coff::ImageSection::LinkNumberOfRelocOverflow;
+                        numberOfRelocations: 16rffff u16.
+
+                    relocationTables add: (Coff::Relocation new
+                        virtualAddress: relocations size asUInt32 + 1u32;
+                        yourself)
+                }.
 
                 relocations do: {:(AsmObjectCodeRelocation)eachRelocation :: Void |
                     let symbol := eachRelocation symbol.
