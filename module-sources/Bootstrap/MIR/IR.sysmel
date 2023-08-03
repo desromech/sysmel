@@ -555,6 +555,18 @@ public final class MIRGlobalVariable superclass: MIRVariable; definition: {
 
 public final class MIRValuePointer superclass: MIRValue; definition: {
     public field value => MIRValue.
+    public field type => Type.
+    public field size => UInt64.
+    public field alignment => UInt64.
+
+    public override method physicalLocationClass => MIRPhysicalLocation class
+        := MIRPhysicalIntegerRegister.
+
+    public method initializeWithType: (newType: Type) compilationTarget: (compilationTarget: MIRCompilationTarget) ::=> Void := {
+        type := newType.
+        size := compilationTarget pointerSize.
+        alignment := compilationTarget pointerAlignment.
+    }.
 
     public override method isValuePointer => Boolean := true.
     public override method isCaptureValueOrPointer => Boolean := value isCaptureValue.
@@ -572,17 +584,19 @@ public final class MIRValuePointer superclass: MIRValue; definition: {
 }.
 
 MIRVariable definition: {
-    public method asValuePointer => MIRValuePointer
+    public method asValuePointerWithType: (type: Type) compilationTarget: (compilationTarget: MIRCompilationTarget) ::=> MIRValuePointer
         := MIRValuePointer new
             value: self;
+            initializeWithType: type compilationTarget: compilationTarget;
             registerInUsedValues;
             yourself.
 }.
 
 MIRLocalValue definition: {
-    public method asValuePointer => MIRValuePointer
+    public method asValuePointerWithType: (type: Type) compilationTarget: (compilationTarget: MIRCompilationTarget) ::=> MIRValuePointer
         := MIRValuePointer new
             value: self;
+            initializeWithType: type compilationTarget: compilationTarget;
             registerInUsedValues;
             yourself.
 }.

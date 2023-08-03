@@ -191,7 +191,7 @@ public class HIRPromoteAllocaPass superclass: HIRFunctionDefinitionPass; definit
         function instructionsDo: {:(HIRInstruction)each :: Void |
             each isAllocaInstruction ifTrue: {
                 let alloca := each downCastTo: HIRAllocaInstruction.
-                alloca isLocalOnlyAlloca && alloca valueType isLiteralConstant ifTrue: {
+                alloca isLocalOnlyVariableAlloca && alloca valueType isLiteralConstant ifTrue: {
                     allocaInstructions add: each
                 }
             }

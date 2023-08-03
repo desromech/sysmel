@@ -79,6 +79,9 @@ HIRValue definition: {
         users ifNotNil: {:users | users do: aBlock }
     }.
 
+    public virtual method isEscapingValue: (usedValueToTest: HIRValue) ::=> Boolean
+        := false.
+
     public virtual method replaceWith: (replacement: HIRValue) ::=> Void := {
         self == replacement ifTrue: (return: void).
         
@@ -1484,6 +1487,11 @@ HIRInstruction definition: {
             user isMakeClosureInstruction && ((user downCastTo: HIRMakeClosureInstruction) captures includes: self)
         }).
 
+    public method isEscapedValue => Boolean
+        := users isNotNil && (users anySatisfy: {:(HIRValue)user :: Boolean |
+            user isEscapingValue: self
+        }).
+
     public override method postCopy => Void := {
         super postCopy.
         parent := nil.
@@ -1517,7 +1525,7 @@ public final class HIRAllocaInstruction superclass: HIRInstruction; definition: 
     public override method isAllocaInstruction => Boolean := true.
     public override method hasSideEffects => Boolean := false.
 
-    public method isLocalOnlyAlloca => Boolean
+    public method isLocalOnlyVariableAlloca => Boolean
         := users isNil || (users allSatisfy: {:(HIRValue)each :: Boolean | each isLoadStoreOrDebugBindingInstruction }).
 
     public override method fullPrintOn: (stream: Stream) ::=> Void
@@ -1825,6 +1833,9 @@ public final class HIRReferenceElementAtInstruction superclass: HIRInstruction; 
         stream print: self; nextPutAll: " := reference "; print: self reference; nextPutAll: " elementAt "; print: self index
     }.
 
+    public override method isEscapingValue: (usedValueToTest: HIRValue) ::=> Boolean
+        := (reference == usedValueToTest) && self isEscapedValue.
+
     public override method usedValuesDo: aBlock ::=> Void := {
         aBlock(self reference).
         aBlock(self index).
@@ -1851,6 +1862,9 @@ public final class HIRPointerElementAtInstruction superclass: HIRInstruction; de
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := pointer "; print: self pointer; nextPutAll: " elementAt "; print: self index
     }.
+
+    public override method isEscapingValue: (usedValueToTest: HIRValue) ::=> Boolean
+        := (pointer == usedValueToTest) && self isEscapedValue.
 
     public override method usedValuesDo: aBlock ::=> Void := {
         aBlock(self pointer).
@@ -1907,6 +1921,9 @@ public final class HIRTypeSlotReferenceAtInstruction superclass: HIRInstruction;
         aBlock(self tuple).
     }.
 
+    public override method isEscapingValue: (usedValueToTest: HIRValue) ::=> Boolean
+        := (tuple == usedValueToTest) && self isEscapedValue.
+
     public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
         if: self tuple = replacedValue then: (self tuple: replacement).
     }.
@@ -1933,6 +1950,9 @@ public final class HIRTypeSlotAtPutInstruction superclass: HIRInstruction; defin
         aBlock(self tuple).
         aBlock(self value).
     }.
+
+    public override method isEscapingValue: (usedValueToTest: HIRValue) ::=> Boolean
+        := usedValueToTest == value.
 
     public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
         if: self tuple = replacedValue then: (self tuple: replacement).
@@ -1987,6 +2007,9 @@ public final class HIRMakeAssociationInstruction superclass: HIRInstruction; def
         aBlock(self value).
     }.
 
+    public override method isEscapingValue: (usedValueToTest: HIRValue) ::=> Boolean
+        := (usedValueToTest == key) || (usedValueToTest == value).
+        
     public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
         if: self key = replacedValue then: (self key: replacement).
         if: self value = replacedValue then: (self value: replacement).
@@ -2010,6 +2033,9 @@ public final class HIRMakeArrayInstruction superclass: HIRInstruction; definitio
             stream nextPutAll: " "; print: element
         }
     }.
+
+    public override method isEscapingValue: (usedValueToTest: HIRValue) ::=> Boolean
+        := elements includes: usedValueToTest.
 
     public override method postCopy => Void := {
         super postCopy.
@@ -2079,6 +2105,9 @@ public final class HIRMakeClosureInstruction superclass: HIRInstruction; definit
             stream nextPutAll: ", "; print: capture
         }
     }.
+
+    public override method isEscapingValue: (usedValueToTest: HIRValue) ::=> Boolean
+        := captures includes: usedValueToTest.
 
     public override method postCopy => Void := {
         super postCopy.
@@ -2184,6 +2213,9 @@ HIRPhiInstruction definition: {
             aBlock(blockAndValue key, blockAndValue value)
         }
     }.
+
+    public override method isEscapingValue: (usedValueToTest: HIRValue) ::=> Boolean
+        := (usedValueToTest == self) || (self isEscapedValue).
 
     public override method postCopy => Void := {
         super postCopy.

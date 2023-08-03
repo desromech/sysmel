@@ -324,6 +324,80 @@ ASTDownCastNode extend: {
 }.
 
 let primitiveFunctionGenerators := #{
+    #basicAllocate : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+        let typeNode => ASTNode := self arguments first.
+        typeNode isLiteralNode && (typeNode analyzedType isSubtypeOf: Type) ifFalse: {return: nil}.
+
+        let type => Type := (typeNode downCastTo: ASTLiteralNode) value.
+        type isValueType ifFalse: {return: nil}.
+        
+        self analyzedType == type ifTrue: {
+            context builder literal: type defaultValue type: self analyzedType
+        } ifFalse: {
+            context builder alloca: (context builder literal: type) type: self analyzedType
+        }
+    }.
+
+    #basicNew : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+        let typeNode => ASTNode := self arguments first.
+        typeNode isLiteralNode && (typeNode analyzedType isSubtypeOf: Type) ifFalse: {return: nil}.
+
+        let type => Type := (typeNode downCastTo: ASTLiteralNode) value.
+        type isValueType ifFalse: {return: nil}.
+        
+        self analyzedType == type ifTrue: {
+            context builder literal: type defaultValue type: self analyzedType
+        } ifFalse: {
+            let result := context builder alloca: (context builder literal: type) type: self analyzedType.
+
+            ## Basic initialize.
+            type needsNonDefaultBasicInitialization ifTrue: {
+                let basicInitializeMethod := type validBasicInitializeMethod.
+                basicInitializeMethod ifNotNil: {
+                    context builder call: (context moduleCompilationContext translateFunction: basicInitializeMethod withBuilder: context builder)
+                        arguments: (Array with: result)
+                        resultType: Void.
+                }
+            }.
+
+            result.
+        }
+    }.
+
+    #new : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+        let typeNode => ASTNode := self arguments first.
+        typeNode isLiteralNode && (typeNode analyzedType isSubtypeOf: Type) ifFalse: {return: nil}.
+
+        let type => Type := (typeNode downCastTo: ASTLiteralNode) value.
+        type isValueType ifFalse: {return: nil}.
+        
+        self analyzedType == type ifTrue: {
+            context builder literal: type defaultValue type: self analyzedType
+        } ifFalse: {
+            let result := context builder alloca: (context builder literal: type) type: self analyzedType.
+
+            ## Basic initialize.
+            type needsNonDefaultBasicInitialization ifTrue: {
+                let basicInitializeMethod := type validBasicInitializeMethod.
+                basicInitializeMethod ifNotNil: {
+                    context builder call: (context moduleCompilationContext translateFunction: basicInitializeMethod withBuilder: context builder)
+                        arguments: (Array with: result)
+                        resultType: Void.
+                }
+            }.
+
+            ## Initialize.
+            let initializeMethod := type lookupSelector: #initialize.
+            initializeMethod isNotNil && (initializeMethod ~~ (AnyValue >> #initialize)) ifTrue: {
+                context builder call: (context moduleCompilationContext translateFunction: initializeMethod withBuilder: context builder)
+                    arguments: (Array with: result)
+                    resultType: Void.
+            }.
+
+            result.
+        }
+    }.
+
     #PointerType::reinterpretCastTo: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
         let pointer := self arguments first generateHIRValueWith: context.
         let targetType := self arguments second generateHIRValueWith: context.
@@ -406,7 +480,6 @@ let primitiveFunctionGenerators := #{
         self arguments first generateHIRValueWith: context
     }.
     #RawTuple::typeSlotAt: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
-
         self arguments second isLiteralNode ifTrue: {
             let tuple := self arguments first generateHIRValueWith: context.
             let typeSlot => TypeSlot := self arguments second value.

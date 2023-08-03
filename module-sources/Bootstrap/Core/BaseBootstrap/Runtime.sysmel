@@ -1931,7 +1931,10 @@ Type
         }.
         self slotsWithBasicInitialization
     };
-    ensureAnalysisOfMethodWithSelector: #validSlotsWithBasicInitialization.
+    ensureAnalysisOfMethodWithSelector: #validSlotsWithBasicInitialization;
+    withSelector: #needsNonDefaultBasicInitialization addMethod: {:(Type)self :: Boolean |
+        self validSlotsWithBasicInitialization anySatisfy: {:(TypeSlot)typeSlot :: Boolean | typeSlot initialValueBlock ~~ nil }
+    } makeVirtual.
 
 {
     let: #createBasicInitializeMethod with: {:(Type)self :: Void |

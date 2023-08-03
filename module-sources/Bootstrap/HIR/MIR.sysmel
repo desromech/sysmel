@@ -1003,8 +1003,11 @@ ValueType extend: {
     public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder storeStruct: value into: pointer constantOffset: constantOffset.
 
-    #*public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := codegen translateStructureConstant: constant value.*#
+    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+        := codegen translateStructureConstant: constant value.
+
+    public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+        := codegen translateStructureConstant: constant type defaultValue.
 
     public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := self subclassResponsibility.
@@ -1028,6 +1031,9 @@ PointerLikeType extend: {
             storage __type__ translateHIRLiteralConstant: constant pointerType: self storage: storage base: base offset: offset intoMirWith: codegen
         }
     }.
+
+    public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+        := codegen compilationTarget pointerSize = 4sz ifTrue: 0u32 asMirConstant ifFalse: 0u64 asMirConstant.
 
     public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         boxedValue isConstantZero ifTrue: {
@@ -1689,10 +1695,10 @@ HIRAllocaInstruction extend: {
         let resultPointerType := self type downCastTo: PointerLikeType.
         let valueType := resultPointerType baseType.
 
-        self isLocalOnlyAlloca ifTrue: {
+        self isEscapedValue ifFalse: {
             let allocaStorage := codegen functionBuilder newTemporary: self name withType: valueType.
-            allocaStorage asValuePointer
-        } ifFalse: {
+            allocaStorage asValuePointerWithType: self type compilationTarget: codegen compilationTarget
+        } ifTrue: {
             let requiredAllocaSize := valueType  valueSize.
             codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::allocaGC)
                 with: (codegen blockBuilder pointerConstantWith: requiredAllocaSize)
