@@ -1032,7 +1032,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.astLiteralNodeType = sysbvm_context_createIntrinsicClass(context, "ASTLiteralNode", context->roots.astNodeType,
         "value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
         NULL);
-    context->roots.astLocalDefinitionNodeType = sysbvm_context_createIntrinsicClass(context, "ASTLocalDefinitionNode", context->roots.astNodeType,
+    context->roots.astVariableDefinitionNodeType = sysbvm_context_createIntrinsicClass(context, "ASTVariableDefinitionNode", context->roots.astNodeType,
         "nameExpression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "typeExpression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "valueExpression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,

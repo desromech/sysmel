@@ -377,7 +377,7 @@ LetMetaBuilder
         self continueExpansion
     };
     withSelector: #finishExpansionWithEnvironment: addMethod: {:self :(Environment)environment :: ASTNode |
-        ASTLocalDefinitionNode new
+        ASTVariableDefinitionNode new
             sourcePosition: self sourcePosition;
             nameExpression: self name;
             typeExpression: self typeExpression;
@@ -395,7 +395,7 @@ LetMetaBuilder publicSubclass: #GlobalMetaBuilder slots: (
 GlobalMetaBuilder
     withSelector: #finishExpansionWithEnvironment: addMethod: {:self :(Environment)environment :: ASTNode |
         let: #name with: self name.
-        let: #localDefinitionNode with: (ASTLocalDefinitionNode new
+        let: #localDefinitionNode with: (ASTVariableDefinitionNode new
             sourcePosition: self sourcePosition;
             nameExpression: self name;
             typeExpression: self typeExpression;

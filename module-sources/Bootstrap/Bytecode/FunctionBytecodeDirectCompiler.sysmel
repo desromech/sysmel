@@ -153,7 +153,7 @@ ASTLiteralNode extend: {
         := compiler assembler literal: self value.
 }.
 
-ASTLocalDefinitionNode extend: {
+ASTVariableDefinitionNode extend: {
     public override method doCompileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand := {
         let value := self valueExpression compileBytecodesDirectlyWith: compiler.
 

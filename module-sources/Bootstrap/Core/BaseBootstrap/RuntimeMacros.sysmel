@@ -17,8 +17,8 @@ MacroContext
             value: value;
             yourself
     };
-    withSelector: #let:with: addMethod: {:(MacroContext)self :(ASTNode)nameExpression :(ASTNode)valueExpression :: ASTLocalDefinitionNode|
-        ASTLocalDefinitionNode new
+    withSelector: #let:with: addMethod: {:(MacroContext)self :(ASTNode)nameExpression :(ASTNode)valueExpression :: ASTVariableDefinitionNode|
+        ASTVariableDefinitionNode new
             sourcePosition: self sourcePosition;
             nameExpression: nameExpression;
             valueExpression: valueExpression;
@@ -110,7 +110,7 @@ let: #parseLambdaSignatureArguments with: {:(Array)argumentsSExpression :: Array
 
 (define) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)nameOrLambdaSignature :(Array)valueOrBodyNodes... :: ASTNode |
     nameOrLambdaSignature isIdentifierReferenceNode ifTrue: {
-        return: (ASTLocalDefinitionNode new
+        return: (ASTVariableDefinitionNode new
             sourcePosition: macroContext sourcePosition;
             nameExpression: (nameOrLambdaSignature downCastTo: ASTIdentifierReferenceNode) asLiteralNode;
             valueExpression: (valueOrBodyNodes isEmpty 
@@ -155,7 +155,7 @@ let: #parseLambdaSignatureArguments with: {:(Array)argumentsSExpression :: Array
 
 (defineMacro) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)nameOrLambdaSignature :(Array)valueOrBodyNodes... :: ASTNode |
     nameOrLambdaSignature isIdentifierReferenceNode ifTrue: {
-        return: (ASTLocalDefinitionNode new
+        return: (ASTVariableDefinitionNode new
             sourcePosition: macroContext sourcePosition;
             nameExpression: (nameOrLambdaSignature downCastTo: ASTIdentifierReferenceNode) asLiteralNode;
             valueExpression: (valueOrBodyNodes isEmpty 
@@ -242,16 +242,16 @@ let: #parseLambdaSignatureArguments with: {:(Array)argumentsSExpression :: Array
         yourself.
 } makeMacro withEagerAnalysis.
 
-(let:with:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)nameExpression :(ASTNode)valueExpression :: ASTLocalDefinitionNode |
-    ASTLocalDefinitionNode new
+(let:with:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)nameExpression :(ASTNode)valueExpression :: ASTVariableDefinitionNode |
+    ASTVariableDefinitionNode new
         sourcePosition: macroContext sourcePosition;
         nameExpression: nameExpression;
         valueExpression: valueExpression;
         yourself.
 } makeMacro withEagerAnalysis.
 
-(let:mutableWith:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)nameExpression :(ASTNode)valueExpression :: ASTLocalDefinitionNode |
-    ASTLocalDefinitionNode new
+(let:mutableWith:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)nameExpression :(ASTNode)valueExpression :: ASTVariableDefinitionNode |
+    ASTVariableDefinitionNode new
         sourcePosition: macroContext sourcePosition;
         nameExpression: nameExpression;
         valueExpression: valueExpression;
@@ -259,8 +259,8 @@ let: #parseLambdaSignatureArguments with: {:(Array)argumentsSExpression :: Array
         yourself.
 } makeMacro withEagerAnalysis.
 
-(let:type:with:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)nameExpression :(ASTNode)typeExpression :(ASTNode)valueExpression :: ASTLocalDefinitionNode |
-    ASTLocalDefinitionNode new
+(let:type:with:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)nameExpression :(ASTNode)typeExpression :(ASTNode)valueExpression :: ASTVariableDefinitionNode |
+    ASTVariableDefinitionNode new
         sourcePosition: macroContext sourcePosition;
         nameExpression: nameExpression;
         typeExpression: typeExpression;
@@ -268,8 +268,8 @@ let: #parseLambdaSignatureArguments with: {:(Array)argumentsSExpression :: Array
         yourself.
 } makeMacro withEagerAnalysis.
 
-(let:type:mutableWith:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)nameExpression :(ASTNode)typeExpression :(ASTNode)valueExpression :: ASTLocalDefinitionNode |
-    ASTLocalDefinitionNode new
+(let:type:mutableWith:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)nameExpression :(ASTNode)typeExpression :(ASTNode)valueExpression :: ASTVariableDefinitionNode |
+    ASTVariableDefinitionNode new
         sourcePosition: macroContext sourcePosition;
         nameExpression: nameExpression;
         typeExpression: typeExpression;
@@ -278,8 +278,8 @@ let: #parseLambdaSignatureArguments with: {:(Array)argumentsSExpression :: Array
         yourself.
 } makeMacro withEagerAnalysis.
 
-(macroLet:with:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)nameExpression :(ASTNode)valueExpression :: ASTLocalDefinitionNode |
-    ASTLocalDefinitionNode new
+(macroLet:with:) adoptDefinitionOf: {:(MacroContext)macroContext :(ASTNode)nameExpression :(ASTNode)valueExpression :: ASTVariableDefinitionNode |
+    ASTVariableDefinitionNode new
         sourcePosition: macroContext sourcePosition;
         nameExpression: nameExpression;
         valueExpression: valueExpression;
@@ -388,7 +388,7 @@ ASTLambdaNode
 
         let: #localDeclarationNodes with: (self arguments collectWithIndex: {:(ASTArgumentNode)argumentNode :(Size)argumentIndex |
             let: #argumentValueNode with: (arguments at: argumentIndex).
-            ASTLocalDefinitionNode new
+            ASTVariableDefinitionNode new
                 sourcePosition: argumentNode sourcePosition;
                 nameExpression: argumentNode name;
                 typeExpression: argumentNode type;

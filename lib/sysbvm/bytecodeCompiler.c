@@ -1298,7 +1298,7 @@ static sysbvm_tuple_t sysbvm_astLiteralNode_primitiveCompileIntoBytecode(sysbvm_
     return sysbvm_bytecodeCompiler_addLiteral(context, *compiler, (*literalNode)->value);
 }
 
-static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_primitiveCompileIntoBytecode(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveCompileIntoBytecode(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
@@ -1306,7 +1306,7 @@ static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_primitiveCompileIntoBytecode
     sysbvm_tuple_t *node = &arguments[0];
     sysbvm_tuple_t *compiler = &arguments[1];
 
-    sysbvm_astLocalDefinitionNode_t **localDefinitionNode = (sysbvm_astLocalDefinitionNode_t**)node;
+    sysbvm_astVariableDefinitionNode_t **localDefinitionNode = (sysbvm_astVariableDefinitionNode_t**)node;
 
     sysbvm_tuple_t value = (*localDefinitionNode)->valueExpression
         ? sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*localDefinitionNode)->valueExpression)
@@ -1729,7 +1729,7 @@ void sysbvm_bytecodeCompiler_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_astLambdaNode_primitiveCompileIntoBytecode, "ASTLambdaNode::compileIntoBytecodeWith:");
     sysbvm_primitiveTable_registerFunction(sysbvm_astLexicalBlockNode_primitiveCompileIntoBytecode, "ASTLexicalBlockNode::compileIntoBytecodeWith:");
     sysbvm_primitiveTable_registerFunction(sysbvm_astLiteralNode_primitiveCompileIntoBytecode, "ASTLiteralNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astLocalDefinitionNode_primitiveCompileIntoBytecode, "ASTLocalDefinitionNode::compileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astVariableDefinitionNode_primitiveCompileIntoBytecode, "ASTVariableDefinitionNode::compileIntoBytecodeWith:");
     sysbvm_primitiveTable_registerFunction(sysbvm_astMakeArrayNode_primitiveCompileIntoBytecode, "ASTMakeArrayNode::compileIntoBytecodeWith:");
     sysbvm_primitiveTable_registerFunction(sysbvm_astMakeAssociationNode_primitiveCompileIntoBytecode, "ASTMakeAssociationNode::compileIntoBytecodeWith:");
     sysbvm_primitiveTable_registerFunction(sysbvm_astMakeByteArrayNode_primitiveCompileIntoBytecode, "ASTMakeByteArrayNode::compileIntoBytecodeWith:");
@@ -1757,7 +1757,7 @@ void sysbvm_bytecodeCompiler_setupPrimitives(sysbvm_context_t *context)
     sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astLambdaNodeType, &sysbvm_astLambdaNode_primitiveCompileIntoBytecode);
     sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astLexicalBlockNodeType, &sysbvm_astLexicalBlockNode_primitiveCompileIntoBytecode);
     sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astLiteralNodeType, &sysbvm_astLiteralNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astLocalDefinitionNodeType, &sysbvm_astLocalDefinitionNode_primitiveCompileIntoBytecode);
+    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astVariableDefinitionNodeType, &sysbvm_astVariableDefinitionNode_primitiveCompileIntoBytecode);
     sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astMakeArrayNodeType, &sysbvm_astMakeArrayNode_primitiveCompileIntoBytecode);
     sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astMakeAssociationNodeType, &sysbvm_astMakeAssociationNode_primitiveCompileIntoBytecode);
     sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astMakeByteArrayNodeType, &sysbvm_astMakeByteArrayNode_primitiveCompileIntoBytecode);

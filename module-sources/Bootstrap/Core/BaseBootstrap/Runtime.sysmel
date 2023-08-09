@@ -2015,7 +2015,7 @@ Type
     createBasicInitializeMethod(ASTIfNode).
     createBasicInitializeMethod(ASTLambdaNode).
     createBasicInitializeMethod(ASTFunctionApplicationNode).
-    createBasicInitializeMethod(ASTLocalDefinitionNode).
+    createBasicInitializeMethod(ASTVariableDefinitionNode).
     createBasicInitializeMethod(ASTLiteralNode).
     createBasicInitializeMethod(ASTSequenceNode).
     createBasicInitializeMethod(ASTTupleSlotNamedAtPutNode).

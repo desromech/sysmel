@@ -263,7 +263,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t astLambdaNodeType;
     sysbvm_tuple_t astLexicalBlockNodeType;
     sysbvm_tuple_t astLiteralNodeType;
-    sysbvm_tuple_t astLocalDefinitionNodeType;
+    sysbvm_tuple_t astVariableDefinitionNodeType;
     sysbvm_tuple_t astIdentifierReferenceNodeType;
     sysbvm_tuple_t astIfNodeType;
     sysbvm_tuple_t astMakeAssociationNodeType;

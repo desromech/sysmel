@@ -1552,7 +1552,7 @@ static sysbvm_tuple_t sysbvm_astLiteralNode_primitiveEvaluate(sysbvm_context_t *
     return ((sysbvm_astLiteralNode_t*)node)->value;
 }
 
-static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_letWithPrimitiveMacro(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_letWithPrimitiveMacro(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -1563,10 +1563,10 @@ static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_letWithPrimitiveMacro(sysbvm
     sysbvm_tuple_t *value = &arguments[2];
 
     sysbvm_tuple_t sourcePosition = sysbvm_macroContext_getSourcePosition(*macroContext);
-    return sysbvm_astLocalDefinitionNode_create(context, sourcePosition, *name, SYSBVM_NULL_TUPLE, *value, false);
+    return sysbvm_astVariableDefinitionNode_create(context, sourcePosition, *name, SYSBVM_NULL_TUPLE, *value, false);
 }
 
-static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_letTypeWithPrimitiveMacro(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_letTypeWithPrimitiveMacro(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -1578,10 +1578,10 @@ static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_letTypeWithPrimitiveMacro(sy
     sysbvm_tuple_t *value = &arguments[3];
 
     sysbvm_tuple_t sourcePosition = sysbvm_macroContext_getSourcePosition(*macroContext);
-    return sysbvm_astLocalDefinitionNode_create(context, sourcePosition, *name, *type, *value, false);
+    return sysbvm_astVariableDefinitionNode_create(context, sourcePosition, *name, *type, *value, false);
 }
 
-static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_letMutableWithPrimitiveMacro(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_letMutableWithPrimitiveMacro(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -1592,10 +1592,10 @@ static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_letMutableWithPrimitiveMacro
     sysbvm_tuple_t *value = &arguments[2];
 
     sysbvm_tuple_t sourcePosition = sysbvm_macroContext_getSourcePosition(*macroContext);
-    return sysbvm_astLocalDefinitionNode_create(context, sourcePosition, *name, SYSBVM_NULL_TUPLE, *value, true);
+    return sysbvm_astVariableDefinitionNode_create(context, sourcePosition, *name, SYSBVM_NULL_TUPLE, *value, true);
 }
 
-static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_letTypeMutableWithPrimitiveMacro(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_letTypeMutableWithPrimitiveMacro(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -1607,10 +1607,10 @@ static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_letTypeMutableWithPrimitiveM
     sysbvm_tuple_t *value = &arguments[3];
 
     sysbvm_tuple_t sourcePosition = sysbvm_macroContext_getSourcePosition(*macroContext);
-    return sysbvm_astLocalDefinitionNode_create(context, sourcePosition, *name, *type, *value, true);
+    return sysbvm_astVariableDefinitionNode_create(context, sourcePosition, *name, *type, *value, true);
 }
 
-static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_macroLetWithPrimitiveMacro(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_macroLetWithPrimitiveMacro(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -1621,10 +1621,10 @@ static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_macroLetWithPrimitiveMacro(s
     sysbvm_tuple_t *value = &arguments[2];
 
     sysbvm_tuple_t sourcePosition = sysbvm_macroContext_getSourcePosition(*macroContext);
-    return sysbvm_astLocalDefinitionNode_createMacro(context, sourcePosition, *name, SYSBVM_NULL_TUPLE, *value);
+    return sysbvm_astVariableDefinitionNode_createMacro(context, sourcePosition, *name, SYSBVM_NULL_TUPLE, *value);
 }
 
-static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_primitiveMacro(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveMacro(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -1686,12 +1686,12 @@ static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_primitiveMacro(sysbvm_contex
     }
 
     gcFrame.nameExpression = sysbvm_astLiteralNode_create(context, sysbvm_astNode_getSourcePosition(gcFrame.nameNode), sysbvm_astIdentifierReferenceNode_getValue(gcFrame.nameNode));
-    gcFrame.result = sysbvm_astLocalDefinitionNode_create(context, gcFrame.sourcePosition, gcFrame.nameExpression, SYSBVM_NULL_TUPLE, gcFrame.valueNode, false);
+    gcFrame.result = sysbvm_astVariableDefinitionNode_create(context, gcFrame.sourcePosition, gcFrame.nameExpression, SYSBVM_NULL_TUPLE, gcFrame.valueNode, false);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
 }
 
-static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_primitiveDefineMacro(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveDefineMacro(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
     (void)closure;
@@ -1745,12 +1745,12 @@ static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_primitiveDefineMacro(sysbvm_
     }
 
     gcFrame.nameExpression = sysbvm_astLiteralNode_create(context, sysbvm_astNode_getSourcePosition(gcFrame.nameNode), sysbvm_astIdentifierReferenceNode_getValue(gcFrame.nameNode));
-    gcFrame.result = sysbvm_astLocalDefinitionNode_create(context, gcFrame.sourcePosition, gcFrame.nameExpression, SYSBVM_NULL_TUPLE, gcFrame.valueNode, false);
+    gcFrame.result = sysbvm_astVariableDefinitionNode_create(context, gcFrame.sourcePosition, gcFrame.nameExpression, SYSBVM_NULL_TUPLE, gcFrame.valueNode, false);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
 }
 
-static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_primitiveAnalyze(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveAnalyze(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
@@ -1759,7 +1759,7 @@ static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_primitiveAnalyze(sysbvm_cont
     sysbvm_tuple_t *environment = &arguments[1];
 
     struct {
-        sysbvm_astLocalDefinitionNode_t *localDefinitionNode;
+        sysbvm_astVariableDefinitionNode_t *localDefinitionNode;
         sysbvm_tuple_t analyzedNameExpression;
         sysbvm_tuple_t analyzedTypeExpression;
         sysbvm_tuple_t analyzedValueExpression;
@@ -1770,7 +1770,7 @@ static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_primitiveAnalyze(sysbvm_cont
         sysbvm_tuple_t value;
     } gcFrame = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
-    gcFrame.localDefinitionNode = (sysbvm_astLocalDefinitionNode_t*)sysbvm_context_shallowCopy(context, *node);
+    gcFrame.localDefinitionNode = (sysbvm_astVariableDefinitionNode_t*)sysbvm_context_shallowCopy(context, *node);
 
     SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.localDefinitionNode->super.sourcePosition);
     gcFrame.localDefinitionNode->super.analyzerToken = sysbvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
@@ -1847,7 +1847,7 @@ static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_primitiveAnalyze(sysbvm_cont
     return (sysbvm_tuple_t)gcFrame.localDefinitionNode;
 }
 
-static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_primitiveEvaluate(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveEvaluate(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
@@ -1862,7 +1862,7 @@ static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_primitiveEvaluate(sysbvm_con
         .value = SYSBVM_NULL_TUPLE
     };
 
-    sysbvm_astLocalDefinitionNode_t **localDefinitionNode = (sysbvm_astLocalDefinitionNode_t**)node;
+    sysbvm_astVariableDefinitionNode_t **localDefinitionNode = (sysbvm_astVariableDefinitionNode_t**)node;
 
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
     SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*localDefinitionNode)->super.sourcePosition);
@@ -1880,7 +1880,7 @@ static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_primitiveEvaluate(sysbvm_con
     return gcFrame.value;
 }
 
-static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_primitiveAnalyzeAndEvaluate(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveAnalyzeAndEvaluate(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)closure;
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
@@ -1897,7 +1897,7 @@ static sysbvm_tuple_t sysbvm_astLocalDefinitionNode_primitiveAnalyzeAndEvaluate(
     };
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    sysbvm_astLocalDefinitionNode_t **localDefinitionNode = (sysbvm_astLocalDefinitionNode_t**)node;
+    sysbvm_astVariableDefinitionNode_t **localDefinitionNode = (sysbvm_astVariableDefinitionNode_t**)node;
     SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*localDefinitionNode)->super.sourcePosition);
 
     gcFrame.name = sysbvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*localDefinitionNode)->nameExpression, *environment);
@@ -3322,8 +3322,8 @@ static sysbvm_tuple_t sysbvm_astMessageChainNode_primitiveAnalyze(sysbvm_context
             gcFrame.receiverSourcePosition = sysbvm_astNode_getSourcePosition(gcFrame.analyzedReceiver);
             gcFrame.expansionReceiverSymbol = sysbvm_generatedSymbol_create(context, sysbvm_symbol_internWithCString(context, "<messageChainReceiver>"), gcFrame.receiverSourcePosition);
 
-            gcFrame.expansionReceiverExpression = sysbvm_astLocalDefinitionNode_create(context, gcFrame.receiverSourcePosition, sysbvm_astLiteralNode_create(context, gcFrame.receiverSourcePosition, gcFrame.expansionReceiverSymbol), SYSBVM_NULL_TUPLE, gcFrame.analyzedReceiver, false);
-            sysbvm_astLocalDefinitionNode_t *receiverLocalDefinition = (sysbvm_astLocalDefinitionNode_t *)gcFrame.expansionReceiverExpression;
+            gcFrame.expansionReceiverExpression = sysbvm_astVariableDefinitionNode_create(context, gcFrame.receiverSourcePosition, sysbvm_astLiteralNode_create(context, gcFrame.receiverSourcePosition, gcFrame.expansionReceiverSymbol), SYSBVM_NULL_TUPLE, gcFrame.analyzedReceiver, false);
+            sysbvm_astVariableDefinitionNode_t *receiverLocalDefinition = (sysbvm_astVariableDefinitionNode_t *)gcFrame.expansionReceiverExpression;
             receiverLocalDefinition->super.analyzedType = gcFrame.receiverType;
             receiverLocalDefinition->super.analyzerToken = sysbvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
             receiverLocalDefinition->binding = sysbvm_analysisEnvironment_setNewSymbolLocalBinding(context, *environment, gcFrame.receiverSourcePosition, gcFrame.expansionReceiverSymbol, gcFrame.receiverType);
@@ -5859,16 +5859,16 @@ void sysbvm_astInterpreter_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_astLambdaNode_primitiveEvaluate, "ASTLambdaNode::evaluateWithEnvironment:");
     sysbvm_primitiveTable_registerFunction(sysbvm_astLambdaNode_primitiveAnalyzeAndEvaluate, "ASTLambdaNode::analyzeWithEnvironment:");
 
-    sysbvm_primitiveTable_registerFunction(sysbvm_astLocalDefinitionNode_primitiveMacro, "ASTLocalDefinitionNode::macro:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astLocalDefinitionNode_primitiveDefineMacro, "ASTLocalDefinitionNode::defineMacro");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astLocalDefinitionNode_letWithPrimitiveMacro, "ASTLocalDefinitionNode::let:with:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astLocalDefinitionNode_letTypeWithPrimitiveMacro, "ASTLocalDefinitionNode::let:type:with:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astLocalDefinitionNode_letMutableWithPrimitiveMacro, "ASTLocalDefinitionNode::let:mutableWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astLocalDefinitionNode_letTypeMutableWithPrimitiveMacro, "ASTLocalDefinitionNode::let:type:mutableWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astLocalDefinitionNode_macroLetWithPrimitiveMacro, "ASTLocalDefinitionNode::macroLet:with:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astLocalDefinitionNode_primitiveAnalyze, "ASTLocalDefinitionNode::analyzeWithEnvironment:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astLocalDefinitionNode_primitiveEvaluate, "ASTLocalDefinitionNode::evaluateWithEnvironment:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astLocalDefinitionNode_primitiveAnalyzeAndEvaluate, "ASTLocalDefinitionNode::analyzeAndEvaluateWithEnvironment:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astVariableDefinitionNode_primitiveMacro, "ASTVariableDefinitionNode::macro:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astVariableDefinitionNode_primitiveDefineMacro, "ASTVariableDefinitionNode::defineMacro");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astVariableDefinitionNode_letWithPrimitiveMacro, "ASTVariableDefinitionNode::let:with:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astVariableDefinitionNode_letTypeWithPrimitiveMacro, "ASTVariableDefinitionNode::let:type:with:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astVariableDefinitionNode_letMutableWithPrimitiveMacro, "ASTVariableDefinitionNode::let:mutableWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astVariableDefinitionNode_letTypeMutableWithPrimitiveMacro, "ASTVariableDefinitionNode::let:type:mutableWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astVariableDefinitionNode_macroLetWithPrimitiveMacro, "ASTVariableDefinitionNode::macroLet:with:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astVariableDefinitionNode_primitiveAnalyze, "ASTVariableDefinitionNode::analyzeWithEnvironment:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astVariableDefinitionNode_primitiveEvaluate, "ASTVariableDefinitionNode::evaluateWithEnvironment:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astVariableDefinitionNode_primitiveAnalyzeAndEvaluate, "ASTVariableDefinitionNode::analyzeAndEvaluateWithEnvironment:");
 
     sysbvm_primitiveTable_registerFunction(sysbvm_astTupleWithLookupStartingFromNode_primitiveMacro, "ASTTupleWithLookupStartingFromNode::macro");
     sysbvm_primitiveTable_registerFunction(sysbvm_astTupleWithLookupStartingFromNode_primitiveAnalyze, "ASTTupleWithLookupStartingFromNode::analyzeWithEnvironment:");
@@ -6068,17 +6068,17 @@ void sysbvm_astInterpreter_setupASTInterpreter(sysbvm_context_t *context)
         sysbvm_astLambdaNode_primitiveAnalyzeAndEvaluate
     );
 
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "define", 3, SYSBVM_FUNCTION_FLAGS_MACRO | SYSBVM_FUNCTION_FLAGS_VARIADIC, NULL, sysbvm_astLocalDefinitionNode_primitiveMacro);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "defineMacro", 3, SYSBVM_FUNCTION_FLAGS_MACRO | SYSBVM_FUNCTION_FLAGS_VARIADIC, NULL, sysbvm_astLocalDefinitionNode_primitiveDefineMacro);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "let:with:", 3, SYSBVM_FUNCTION_FLAGS_MACRO, NULL, sysbvm_astLocalDefinitionNode_letWithPrimitiveMacro);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "let:type:with:", 4, SYSBVM_FUNCTION_FLAGS_MACRO, NULL, sysbvm_astLocalDefinitionNode_letTypeWithPrimitiveMacro);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "let:mutableWith:", 3, SYSBVM_FUNCTION_FLAGS_MACRO, NULL, sysbvm_astLocalDefinitionNode_letMutableWithPrimitiveMacro);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "let:type:mutableWith:", 4, SYSBVM_FUNCTION_FLAGS_MACRO, NULL, sysbvm_astLocalDefinitionNode_letTypeMutableWithPrimitiveMacro);
-    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "macroLet:with:", 3, SYSBVM_FUNCTION_FLAGS_MACRO, NULL, sysbvm_astLocalDefinitionNode_macroLetWithPrimitiveMacro);
-    sysbvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astLocalDefinitionNodeType,
-        sysbvm_astLocalDefinitionNode_primitiveAnalyze,
-        sysbvm_astLocalDefinitionNode_primitiveEvaluate,
-        sysbvm_astLocalDefinitionNode_primitiveAnalyzeAndEvaluate
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "define", 3, SYSBVM_FUNCTION_FLAGS_MACRO | SYSBVM_FUNCTION_FLAGS_VARIADIC, NULL, sysbvm_astVariableDefinitionNode_primitiveMacro);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "defineMacro", 3, SYSBVM_FUNCTION_FLAGS_MACRO | SYSBVM_FUNCTION_FLAGS_VARIADIC, NULL, sysbvm_astVariableDefinitionNode_primitiveDefineMacro);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "let:with:", 3, SYSBVM_FUNCTION_FLAGS_MACRO, NULL, sysbvm_astVariableDefinitionNode_letWithPrimitiveMacro);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "let:type:with:", 4, SYSBVM_FUNCTION_FLAGS_MACRO, NULL, sysbvm_astVariableDefinitionNode_letTypeWithPrimitiveMacro);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "let:mutableWith:", 3, SYSBVM_FUNCTION_FLAGS_MACRO, NULL, sysbvm_astVariableDefinitionNode_letMutableWithPrimitiveMacro);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "let:type:mutableWith:", 4, SYSBVM_FUNCTION_FLAGS_MACRO, NULL, sysbvm_astVariableDefinitionNode_letTypeMutableWithPrimitiveMacro);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "macroLet:with:", 3, SYSBVM_FUNCTION_FLAGS_MACRO, NULL, sysbvm_astVariableDefinitionNode_macroLetWithPrimitiveMacro);
+    sysbvm_astInterpreter_setupNodeInterpretationFunctions(context, context->roots.astVariableDefinitionNodeType,
+        sysbvm_astVariableDefinitionNode_primitiveAnalyze,
+        sysbvm_astVariableDefinitionNode_primitiveEvaluate,
+        sysbvm_astVariableDefinitionNode_primitiveAnalyzeAndEvaluate
     );
 
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "tuple:withLookupStartingFrom:", 3, SYSBVM_FUNCTION_FLAGS_MACRO, NULL, sysbvm_astTupleWithLookupStartingFromNode_primitiveMacro);

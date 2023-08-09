@@ -74,9 +74,9 @@ SYSBVM_API bool sysbvm_astNode_isLiteralNode(sysbvm_context_t *context, sysbvm_t
     return sysbvm_tuple_isKindOf(context, tuple, context->roots.astLiteralNodeType);
 }
 
-SYSBVM_API bool sysbvm_astNode_isLocalDefinitionNode(sysbvm_context_t *context, sysbvm_tuple_t tuple)
+SYSBVM_API bool sysbvm_astNode_isVariableDefinitionNode(sysbvm_context_t *context, sysbvm_tuple_t tuple)
 {
-    return sysbvm_tuple_isKindOf(context, tuple, context->roots.astLocalDefinitionNodeType);
+    return sysbvm_tuple_isKindOf(context, tuple, context->roots.astVariableDefinitionNodeType);
 }
 
 SYSBVM_API bool sysbvm_astNode_isMakeAssociationNode(sysbvm_context_t *context, sysbvm_tuple_t tuple)
@@ -413,9 +413,9 @@ SYSBVM_API sysbvm_tuple_t sysbvm_astLiteralNode_getValue(sysbvm_tuple_t node)
     return ((sysbvm_astLiteralNode_t*)node)->value;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_astLocalDefinitionNode_create(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t nameExpression, sysbvm_tuple_t typeExpression, sysbvm_tuple_t valueExpression, bool isMutable)
+SYSBVM_API sysbvm_tuple_t sysbvm_astVariableDefinitionNode_create(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t nameExpression, sysbvm_tuple_t typeExpression, sysbvm_tuple_t valueExpression, bool isMutable)
 {
-    sysbvm_astLocalDefinitionNode_t *result = (sysbvm_astLocalDefinitionNode_t*)sysbvm_context_allocatePointerTuple(context, context->roots.astLocalDefinitionNodeType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_astLocalDefinitionNode_t));
+    sysbvm_astVariableDefinitionNode_t *result = (sysbvm_astVariableDefinitionNode_t*)sysbvm_context_allocatePointerTuple(context, context->roots.astVariableDefinitionNodeType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_astVariableDefinitionNode_t));
     result->super.sourcePosition = sourcePosition;
     result->nameExpression = nameExpression;
     result->typeExpression = typeExpression;
@@ -425,9 +425,9 @@ SYSBVM_API sysbvm_tuple_t sysbvm_astLocalDefinitionNode_create(sysbvm_context_t 
     return (sysbvm_tuple_t)result;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_astLocalDefinitionNode_createMacro(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t nameExpression, sysbvm_tuple_t typeExpression, sysbvm_tuple_t valueExpression)
+SYSBVM_API sysbvm_tuple_t sysbvm_astVariableDefinitionNode_createMacro(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t nameExpression, sysbvm_tuple_t typeExpression, sysbvm_tuple_t valueExpression)
 {
-    sysbvm_astLocalDefinitionNode_t *result = (sysbvm_astLocalDefinitionNode_t*)sysbvm_context_allocatePointerTuple(context, context->roots.astLocalDefinitionNodeType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_astLocalDefinitionNode_t));
+    sysbvm_astVariableDefinitionNode_t *result = (sysbvm_astVariableDefinitionNode_t*)sysbvm_context_allocatePointerTuple(context, context->roots.astVariableDefinitionNodeType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_astVariableDefinitionNode_t));
     result->super.sourcePosition = sourcePosition;
     result->nameExpression = nameExpression;
     result->typeExpression = typeExpression;
@@ -437,22 +437,22 @@ SYSBVM_API sysbvm_tuple_t sysbvm_astLocalDefinitionNode_createMacro(sysbvm_conte
     return (sysbvm_tuple_t)result;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_astLocalDefinitionNode_getNameExpression(sysbvm_tuple_t node)
+SYSBVM_API sysbvm_tuple_t sysbvm_astVariableDefinitionNode_getNameExpression(sysbvm_tuple_t node)
 {
     if(!sysbvm_tuple_isNonNullPointer(node)) return 0;
-    return ((sysbvm_astLocalDefinitionNode_t*)node)->nameExpression;
+    return ((sysbvm_astVariableDefinitionNode_t*)node)->nameExpression;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_astLocalDefinitionNode_getTypeExpression(sysbvm_tuple_t node)
+SYSBVM_API sysbvm_tuple_t sysbvm_astVariableDefinitionNode_getTypeExpression(sysbvm_tuple_t node)
 {
     if(!sysbvm_tuple_isNonNullPointer(node)) return 0;
-    return ((sysbvm_astLocalDefinitionNode_t*)node)->typeExpression;
+    return ((sysbvm_astVariableDefinitionNode_t*)node)->typeExpression;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_astLocalDefinitionNode_getValueExpression(sysbvm_tuple_t node)
+SYSBVM_API sysbvm_tuple_t sysbvm_astVariableDefinitionNode_getValueExpression(sysbvm_tuple_t node)
 {
     if(!sysbvm_tuple_isNonNullPointer(node)) return 0;
-    return ((sysbvm_astLocalDefinitionNode_t*)node)->valueExpression;
+    return ((sysbvm_astVariableDefinitionNode_t*)node)->valueExpression;
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_astMakeAssociationNode_create(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t key, sysbvm_tuple_t value)

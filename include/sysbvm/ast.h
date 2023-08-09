@@ -104,7 +104,7 @@ typedef struct sysbvm_astLiteralNode_s
     sysbvm_tuple_t value;
 } sysbvm_astLiteralNode_t;
 
-typedef struct sysbvm_astLocalDefinitionNode_s
+typedef struct sysbvm_astVariableDefinitionNode_s
 {
     sysbvm_astNode_t super;
     sysbvm_tuple_t nameExpression;
@@ -114,7 +114,7 @@ typedef struct sysbvm_astLocalDefinitionNode_s
     sysbvm_tuple_t isMacroSymbol;
     sysbvm_tuple_t isMutable;
     sysbvm_tuple_t analyzedValueType;
-} sysbvm_astLocalDefinitionNode_t;
+} sysbvm_astVariableDefinitionNode_t;
 
 typedef struct sysbvm_astIdentifierReferenceNode_s
 {
@@ -362,7 +362,7 @@ SYSBVM_API bool sysbvm_astNode_isLiteralNode(sysbvm_context_t *context, sysbvm_t
 /**
  * Is this a local definition node?
  */ 
-SYSBVM_API bool sysbvm_astNode_isLocalDefinitionNode(sysbvm_context_t *context, sysbvm_tuple_t tuple);
+SYSBVM_API bool sysbvm_astNode_isVariableDefinitionNode(sysbvm_context_t *context, sysbvm_tuple_t tuple);
 
 /**
  * Is this a make association node?
@@ -673,27 +673,27 @@ SYSBVM_API sysbvm_tuple_t sysbvm_astLiteralNode_getValue(sysbvm_tuple_t node);
 /**
  * Creates a local definition node.
  */ 
-SYSBVM_API sysbvm_tuple_t sysbvm_astLocalDefinitionNode_create(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t nameExpression, sysbvm_tuple_t typeExpression, sysbvm_tuple_t valueExpression, bool isMutable);
+SYSBVM_API sysbvm_tuple_t sysbvm_astVariableDefinitionNode_create(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t nameExpression, sysbvm_tuple_t typeExpression, sysbvm_tuple_t valueExpression, bool isMutable);
 
 /**
  * Creates a local definition node for a macro symbol.
  */ 
-SYSBVM_API sysbvm_tuple_t sysbvm_astLocalDefinitionNode_createMacro(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t nameExpression, sysbvm_tuple_t typeExpression, sysbvm_tuple_t valueExpression);
+SYSBVM_API sysbvm_tuple_t sysbvm_astVariableDefinitionNode_createMacro(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t nameExpression, sysbvm_tuple_t typeExpression, sysbvm_tuple_t valueExpression);
 
 /**
  * Gets the value from a local definition node.
  */ 
-SYSBVM_API sysbvm_tuple_t sysbvm_astLocalDefinitionNode_getNameExpression(sysbvm_tuple_t node);
+SYSBVM_API sysbvm_tuple_t sysbvm_astVariableDefinitionNode_getNameExpression(sysbvm_tuple_t node);
 
 /**
  * Gets the type from a local definition node.
  */ 
-SYSBVM_API sysbvm_tuple_t sysbvm_astLocalDefinitionNode_getTypeExpression(sysbvm_tuple_t node);
+SYSBVM_API sysbvm_tuple_t sysbvm_astVariableDefinitionNode_getTypeExpression(sysbvm_tuple_t node);
 
 /**
  * Gets the value from a local definition node.
  */ 
-SYSBVM_API sysbvm_tuple_t sysbvm_astLocalDefinitionNode_getValueExpression(sysbvm_tuple_t node);
+SYSBVM_API sysbvm_tuple_t sysbvm_astVariableDefinitionNode_getValueExpression(sysbvm_tuple_t node);
 
 /**
  * Creates a make association node.

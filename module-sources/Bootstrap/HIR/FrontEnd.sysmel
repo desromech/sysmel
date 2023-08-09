@@ -597,7 +597,7 @@ ASTLambdaNode extend: {
     }.
 }.
 
-ASTLocalDefinitionNode extend: {
+ASTVariableDefinitionNode extend: {
     public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
         let builder := context builder.
 

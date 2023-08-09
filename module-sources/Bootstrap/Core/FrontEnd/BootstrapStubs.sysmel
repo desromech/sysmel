@@ -58,7 +58,7 @@ ASTLiteralNode definition: {
         := self primitiveFailed.
 }.
 
-ASTLocalDefinitionNode definition: {
+ASTVariableDefinitionNode definition: {
     public override eager method compileIntoBytecodeWith: (compiler: BootstrapBytecodeCompiler) ::=> Void
         := self primitiveFailed.
 }.

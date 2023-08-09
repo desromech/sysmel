@@ -358,7 +358,7 @@ ASTLexicalBlockNode definition: {
     }.
 }.
 
-ASTLocalDefinitionNode definition: {
+ASTVariableDefinitionNode definition: {
     public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
         let name := self nameExpression ifNotNil: (self nameExpression analyzeAndEvaluateWithEnvironment: environment).
         self isMacroSymbol ifTrue: {
@@ -828,7 +828,7 @@ ASTMessageChainNode definition: {
             value: #"<messageChainReceiver>";
             yourself.
 
-        let expansionReceiverExpression := ASTLocalDefinitionNode new
+        let expansionReceiverExpression := ASTVariableDefinitionNode new
             sourcePosition: self sourcePosition;
             nameExpression: (ASTLiteralNode new
                 sourcePosition: self sourcePosition;

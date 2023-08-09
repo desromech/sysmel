@@ -31,7 +31,7 @@ ASTNode
     withSelector: #isLambdaNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isLexicalBlockNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isLiteralNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
-    withSelector: #isLocalDefinitionNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
+    withSelector: #isVariableDefinitionNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isIdentifierReferenceNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isIfNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
     withSelector: #isMakeAssociationNode addMethod: {:(ASTNode)self :: Boolean | false } makeVirtual;
@@ -279,18 +279,18 @@ ASTLiteralNode
             nextPutAll: " value: "; fullPrint: self value
     } makeOverride.
 
-ASTLocalDefinitionNode
-    withSelector: #isLocalDefinitionNode addMethod: {:(ASTNode)self :: Boolean | true } makeOverride;
+ASTVariableDefinitionNode
+    withSelector: #isVariableDefinitionNode addMethod: {:(ASTNode)self :: Boolean | true } makeOverride;
 
-    withSelector: #childrenDo: addMethod: {:(ASTLocalDefinitionNode)self :aBlock :: Void |
+    withSelector: #childrenDo: addMethod: {:(ASTVariableDefinitionNode)self :aBlock :: Void |
         if: (self nameExpression isNotNil) then: aBlock(self nameExpression).
         if: (self valueExpression isNotNil) then: aBlock(self valueExpression).
     } makeOverride;
-    withSelector: #transformWith: addMethod: {:(ASTLocalDefinitionNode)self :aBlock :: Void |
+    withSelector: #transformWith: addMethod: {:(ASTVariableDefinitionNode)self :aBlock :: Void |
         if: (self nameExpression isNotNil) then: (self nameExpression: aBlock(self nameExpression)).
         if: (self valueExpression isNotNil) then: (self valueExpression: aBlock(self valueExpression)).
     } makeOverride;
-    withSelector: #fullPrintOn: addMethod: {:(ASTLocalDefinitionNode)self :(Stream)stream :: Void |
+    withSelector: #fullPrintOn: addMethod: {:(ASTVariableDefinitionNode)self :(Stream)stream :: Void |
         stream print: self class; 
             nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
             nextPutAll: " nameExpression: ("; fullPrint: self nameExpression;
