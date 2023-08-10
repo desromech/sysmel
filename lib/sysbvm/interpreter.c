@@ -1759,7 +1759,7 @@ static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveAnalyze(sysbvm_c
     sysbvm_tuple_t *environment = &arguments[1];
 
     struct {
-        sysbvm_astVariableDefinitionNode_t *localDefinitionNode;
+        sysbvm_astVariableDefinitionNode_t *variableDefinitionNode;
         sysbvm_tuple_t analyzedNameExpression;
         sysbvm_tuple_t analyzedTypeExpression;
         sysbvm_tuple_t analyzedValueExpression;
@@ -1770,48 +1770,48 @@ static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveAnalyze(sysbvm_c
         sysbvm_tuple_t value;
     } gcFrame = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
-    gcFrame.localDefinitionNode = (sysbvm_astVariableDefinitionNode_t*)sysbvm_context_shallowCopy(context, *node);
+    gcFrame.variableDefinitionNode = (sysbvm_astVariableDefinitionNode_t*)sysbvm_context_shallowCopy(context, *node);
 
-    SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.localDefinitionNode->super.sourcePosition);
-    gcFrame.localDefinitionNode->super.analyzerToken = sysbvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
+    SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.variableDefinitionNode->super.sourcePosition);
+    gcFrame.variableDefinitionNode->super.analyzerToken = sysbvm_analysisAndEvaluationEnvironment_ensureValidAnalyzerToken(context, *environment);
 
-    gcFrame.analyzedNameExpression = sysbvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.localDefinitionNode->nameExpression, context->roots.symbolType, *environment);
-    gcFrame.localDefinitionNode->nameExpression = gcFrame.analyzedNameExpression;
+    gcFrame.analyzedNameExpression = sysbvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.variableDefinitionNode->nameExpression, context->roots.symbolType, *environment);
+    gcFrame.variableDefinitionNode->nameExpression = gcFrame.analyzedNameExpression;
 
-    if(sysbvm_tuple_boolean_decode(gcFrame.localDefinitionNode->isMacroSymbol))
+    if(sysbvm_tuple_boolean_decode(gcFrame.variableDefinitionNode->isMacroSymbol))
     {
-        sysbvm_environment_setNewMacroValueBinding(context, *environment, gcFrame.localDefinitionNode->super.sourcePosition, gcFrame.name, gcFrame.localDefinitionNode->valueExpression);
+        sysbvm_environment_setNewMacroValueBinding(context, *environment, gcFrame.variableDefinitionNode->super.sourcePosition, gcFrame.name, gcFrame.variableDefinitionNode->valueExpression);
         SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
         SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-        return sysbvm_astLiteralNode_create(context, gcFrame.localDefinitionNode->super.sourcePosition, SYSBVM_VOID_TUPLE);
+        return sysbvm_astLiteralNode_create(context, gcFrame.variableDefinitionNode->super.sourcePosition, SYSBVM_VOID_TUPLE);
     }
 
-    if(gcFrame.localDefinitionNode->typeExpression)
+    if(gcFrame.variableDefinitionNode->typeExpression)
     {
-        gcFrame.analyzedTypeExpression = sysbvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.localDefinitionNode->typeExpression, context->roots.typeType, *environment);
+        gcFrame.analyzedTypeExpression = sysbvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.variableDefinitionNode->typeExpression, context->roots.typeType, *environment);
 
         if(sysbvm_astNode_isLiteralNode(context, gcFrame.analyzedTypeExpression))
             gcFrame.type = sysbvm_astLiteralNode_getValue(gcFrame.analyzedTypeExpression);
     }
 
-    gcFrame.analyzedValueExpression = sysbvm_interpreter_analyzeASTWithExpectedTypeExpressionWithEnvironmentAt(context, gcFrame.localDefinitionNode->valueExpression, gcFrame.analyzedTypeExpression, *environment, gcFrame.localDefinitionNode->super.sourcePosition, &gcFrame.type);
-    gcFrame.localDefinitionNode->valueExpression = gcFrame.analyzedValueExpression;
+    gcFrame.analyzedValueExpression = sysbvm_interpreter_analyzeASTWithExpectedTypeExpressionWithEnvironmentAt(context, gcFrame.variableDefinitionNode->valueExpression, gcFrame.analyzedTypeExpression, *environment, gcFrame.variableDefinitionNode->super.sourcePosition, &gcFrame.type);
+    gcFrame.variableDefinitionNode->valueExpression = gcFrame.analyzedValueExpression;
 
     // Fallback to the type of the analyzed value.
-    if(!gcFrame.type && !gcFrame.localDefinitionNode->typeExpression)
+    if(!gcFrame.type && !gcFrame.variableDefinitionNode->typeExpression)
         gcFrame.type = sysbvm_astNode_getAnalyzedType(gcFrame.analyzedValueExpression);
-    gcFrame.localDefinitionNode->analyzedValueType = gcFrame.type;
+    gcFrame.variableDefinitionNode->analyzedValueType = gcFrame.type;
 
-    bool isMutable = sysbvm_tuple_boolean_decode(gcFrame.localDefinitionNode->isMutable);
+    bool isMutable = sysbvm_tuple_boolean_decode(gcFrame.variableDefinitionNode->isMutable);
     if(isMutable)
         gcFrame.type = sysbvm_type_createFunctionLocalReferenceType(context, gcFrame.type);
 
-    gcFrame.localDefinitionNode->typeExpression = SYSBVM_NULL_TUPLE;
-    gcFrame.localDefinitionNode->super.analyzedType = gcFrame.type;
+    gcFrame.variableDefinitionNode->typeExpression = SYSBVM_NULL_TUPLE;
+    gcFrame.variableDefinitionNode->super.analyzedType = gcFrame.type;
     if(!gcFrame.analyzedNameExpression)
     {
         if(!gcFrame.analyzedValueExpression)
-            gcFrame.analyzedValueExpression = sysbvm_astLiteralNode_create(context, gcFrame.localDefinitionNode->super.sourcePosition, SYSBVM_NULL_TUPLE);
+            gcFrame.analyzedValueExpression = sysbvm_astLiteralNode_create(context, gcFrame.variableDefinitionNode->super.sourcePosition, SYSBVM_NULL_TUPLE);
 
         SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
         SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -1827,9 +1827,9 @@ static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveAnalyze(sysbvm_c
     {
         if(gcFrame.analyzedValueExpression)
             gcFrame.value = sysbvm_astLiteralNode_getValue(gcFrame.analyzedValueExpression);
-        gcFrame.analyzedValueExpression = sysbvm_astLiteralNode_create(context, gcFrame.localDefinitionNode->super.sourcePosition, gcFrame.value);
-        gcFrame.localBinding = sysbvm_analysisEnvironment_setNewValueBinding(context, *environment, gcFrame.localDefinitionNode->super.sourcePosition, gcFrame.name, gcFrame.value);
-        gcFrame.localDefinitionNode->binding = gcFrame.localBinding;
+        gcFrame.analyzedValueExpression = sysbvm_astLiteralNode_create(context, gcFrame.variableDefinitionNode->super.sourcePosition, gcFrame.value);
+        gcFrame.localBinding = sysbvm_analysisEnvironment_setNewValueBinding(context, *environment, gcFrame.variableDefinitionNode->super.sourcePosition, gcFrame.name, gcFrame.value);
+        gcFrame.variableDefinitionNode->binding = gcFrame.localBinding;
 
         // Replace the node by its literal value.
         SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
@@ -1838,13 +1838,13 @@ static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveAnalyze(sysbvm_c
     }
     else
     {
-        gcFrame.localBinding = sysbvm_analysisEnvironment_setNewSymbolLocalBinding(context, *environment, gcFrame.localDefinitionNode->super.sourcePosition, gcFrame.name, gcFrame.type);
-        gcFrame.localDefinitionNode->binding = gcFrame.localBinding;
+        gcFrame.localBinding = sysbvm_analysisEnvironment_setNewSymbolLocalBinding(context, *environment, gcFrame.variableDefinitionNode->super.sourcePosition, gcFrame.name, gcFrame.type);
+        gcFrame.variableDefinitionNode->binding = gcFrame.localBinding;
     }
 
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-    return (sysbvm_tuple_t)gcFrame.localDefinitionNode;
+    return (sysbvm_tuple_t)gcFrame.variableDefinitionNode;
 }
 
 static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveEvaluate(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -1862,19 +1862,19 @@ static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveEvaluate(sysbvm_
         .value = SYSBVM_NULL_TUPLE
     };
 
-    sysbvm_astVariableDefinitionNode_t **localDefinitionNode = (sysbvm_astVariableDefinitionNode_t**)node;
+    sysbvm_astVariableDefinitionNode_t **variableDefinitionNode = (sysbvm_astVariableDefinitionNode_t**)node;
 
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
-    SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*localDefinitionNode)->super.sourcePosition);
+    SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*variableDefinitionNode)->super.sourcePosition);
 
-    if((*localDefinitionNode)->valueExpression)
-        gcFrame.value = sysbvm_interpreter_evaluateASTWithEnvironment(context, (*localDefinitionNode)->valueExpression, *environment);
+    if((*variableDefinitionNode)->valueExpression)
+        gcFrame.value = sysbvm_interpreter_evaluateASTWithEnvironment(context, (*variableDefinitionNode)->valueExpression, *environment);
 
-    bool isMutable = sysbvm_tuple_boolean_decode((*localDefinitionNode)->isMutable);
+    bool isMutable = sysbvm_tuple_boolean_decode((*variableDefinitionNode)->isMutable);
     if(isMutable)
-        gcFrame.value = sysbvm_referenceType_withBoxForValue(context, (*localDefinitionNode)->super.analyzedType, gcFrame.value);
+        gcFrame.value = sysbvm_referenceType_withBoxForValue(context, (*variableDefinitionNode)->super.analyzedType, gcFrame.value);
 
-    sysbvm_functionActivationEnvironment_setBindingActivationValue(context, *environment, (*localDefinitionNode)->binding, gcFrame.value, (*localDefinitionNode)->super.sourcePosition);
+    sysbvm_functionActivationEnvironment_setBindingActivationValue(context, *environment, (*variableDefinitionNode)->binding, gcFrame.value, (*variableDefinitionNode)->super.sourcePosition);
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.value;
@@ -1897,26 +1897,26 @@ static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveAnalyzeAndEvalua
     };
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    sysbvm_astVariableDefinitionNode_t **localDefinitionNode = (sysbvm_astVariableDefinitionNode_t**)node;
-    SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*localDefinitionNode)->super.sourcePosition);
+    sysbvm_astVariableDefinitionNode_t **variableDefinitionNode = (sysbvm_astVariableDefinitionNode_t**)node;
+    SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*variableDefinitionNode)->super.sourcePosition);
 
-    gcFrame.name = sysbvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*localDefinitionNode)->nameExpression, *environment);
-    if(sysbvm_tuple_boolean_decode((*localDefinitionNode)->isMacroSymbol))
+    gcFrame.name = sysbvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*variableDefinitionNode)->nameExpression, *environment);
+    if(sysbvm_tuple_boolean_decode((*variableDefinitionNode)->isMacroSymbol))
     {
-        sysbvm_environment_setNewMacroValueBinding(context, *environment, (*localDefinitionNode)->super.sourcePosition, gcFrame.name, (*localDefinitionNode)->valueExpression);
+        sysbvm_environment_setNewMacroValueBinding(context, *environment, (*variableDefinitionNode)->super.sourcePosition, gcFrame.name, (*variableDefinitionNode)->valueExpression);
         SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
         SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
         return SYSBVM_VOID_TUPLE;
     }
 
-    if((*localDefinitionNode)->typeExpression)
-        gcFrame.type = sysbvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*localDefinitionNode)->typeExpression, *environment);
-    if((*localDefinitionNode)->valueExpression)
-        gcFrame.value = sysbvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*localDefinitionNode)->valueExpression, *environment);
+    if((*variableDefinitionNode)->typeExpression)
+        gcFrame.type = sysbvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*variableDefinitionNode)->typeExpression, *environment);
+    if((*variableDefinitionNode)->valueExpression)
+        gcFrame.value = sysbvm_interpreter_analyzeAndEvaluateASTWithEnvironment(context, (*variableDefinitionNode)->valueExpression, *environment);
     if(gcFrame.type)
         gcFrame.value = sysbvm_type_coerceValue(context, gcFrame.type, gcFrame.value);
 
-    bool isMutable = sysbvm_tuple_boolean_decode((*localDefinitionNode)->isMutable);
+    bool isMutable = sysbvm_tuple_boolean_decode((*variableDefinitionNode)->isMutable);
     if(isMutable)
     {
         if(!gcFrame.type)
@@ -1925,7 +1925,7 @@ static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveAnalyzeAndEvalua
         gcFrame.value = sysbvm_referenceType_withBoxForValue(context, gcFrame.type, gcFrame.value);
     }
 
-    sysbvm_environment_setNewSymbolBindingWithValueAtSourcePosition(context, *environment, gcFrame.name, gcFrame.value, (*localDefinitionNode)->super.sourcePosition);
+    sysbvm_environment_setNewSymbolBindingWithValueAtSourcePosition(context, *environment, gcFrame.name, gcFrame.value, (*variableDefinitionNode)->super.sourcePosition);
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.value;

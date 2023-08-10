@@ -1306,26 +1306,26 @@ static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveCompileIntoBytec
     sysbvm_tuple_t *node = &arguments[0];
     sysbvm_tuple_t *compiler = &arguments[1];
 
-    sysbvm_astVariableDefinitionNode_t **localDefinitionNode = (sysbvm_astVariableDefinitionNode_t**)node;
+    sysbvm_astVariableDefinitionNode_t **variableDefinitionNode = (sysbvm_astVariableDefinitionNode_t**)node;
 
-    sysbvm_tuple_t value = (*localDefinitionNode)->valueExpression
-        ? sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*localDefinitionNode)->valueExpression)
+    sysbvm_tuple_t value = (*variableDefinitionNode)->valueExpression
+        ? sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*variableDefinitionNode)->valueExpression)
         : sysbvm_bytecodeCompiler_addLiteral(context, *compiler, SYSBVM_NULL_TUPLE);
 
-    bool isMutable = sysbvm_tuple_boolean_decode((*localDefinitionNode)->isMutable);
+    bool isMutable = sysbvm_tuple_boolean_decode((*variableDefinitionNode)->isMutable);
     if(isMutable)
     {
         sysbvm_tuple_t localVariable = sysbvm_bytecodeCompiler_newTemporary(context, *compiler);
         sysbvm_bytecodeCompiler_allocaWithValue(context, *compiler, localVariable,
-            sysbvm_bytecodeCompiler_addLiteral(context, *compiler, (*localDefinitionNode)->super.analyzedType),
+            sysbvm_bytecodeCompiler_addLiteral(context, *compiler, (*variableDefinitionNode)->super.analyzedType),
             value);
         
-        sysbvm_bytecodeCompiler_setBindingValue(context, *compiler, (*localDefinitionNode)->binding, localVariable);
+        sysbvm_bytecodeCompiler_setBindingValue(context, *compiler, (*variableDefinitionNode)->binding, localVariable);
         return localVariable;
     }
     else
     {
-        sysbvm_bytecodeCompiler_setBindingValue(context, *compiler, (*localDefinitionNode)->binding, value);
+        sysbvm_bytecodeCompiler_setBindingValue(context, *compiler, (*variableDefinitionNode)->binding, value);
         return value;
     }
 }

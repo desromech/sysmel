@@ -395,18 +395,19 @@ LetMetaBuilder publicSubclass: #GlobalMetaBuilder slots: (
 GlobalMetaBuilder
     withSelector: #finishExpansionWithEnvironment: addMethod: {:self :(Environment)environment :: ASTNode |
         let: #name with: self name.
-        let: #localDefinitionNode with: (ASTVariableDefinitionNode new
+        let: #variableDefinitionNode with: (ASTVariableDefinitionNode new
             sourcePosition: self sourcePosition;
             nameExpression: self name;
             typeExpression: self typeExpression;
             valueExpression: self initialValue;
             isMutable: self isMutable;
+            isPublic: self isPublic;
             yourself).
 
         if: self isPublic then: {
-            ``(public: `,name with: `,localDefinitionNode)
+            ``(public: `,name with: `,variableDefinitionNode)
         } else: {
-            localDefinitionNode
+            variableDefinitionNode
         }
     } makeOverride.
 
