@@ -374,7 +374,14 @@ ASTVariableDefinitionNode definition: {
             ifTrue: ((type ifNil: value __type__) refForFunction untypedWithBoxForValue: value)
             ifFalse: value.
 
-        environment setNewSymbol: name valueBinding: mutableValue at: self sourcePosition.
+        self isPublic ifTrue: {
+            let ownerSymbolBinding := environment lookSymbolRecursively: #__OwnerProgramEntity__.
+            let ownerProgramEntity => ProgramEntity := ownerSymbolBinding evaluateInEnvironment: environment.
+            ownerProgramEntity setNewPublicSymbol: name valueBinding: mutableValue at: self sourcePosition.
+        } ifFalse: {
+            environment setNewSymbol: name valueBinding: mutableValue at: self sourcePosition.
+        }.
+
         mutableValue
     }.
 

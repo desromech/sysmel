@@ -368,14 +368,14 @@ SYSBVM_API void sysbvm_environment_setSymbolBindingWithValue(sysbvm_context_t *c
     sysbvm_identityDictionary_add(context, environmentObject->symbolTable, binding);
 }
 
-SYSBVM_API void sysbvm_environment_setNewSymbolBindingWithValueAtSourcePosition(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t symbol, sysbvm_tuple_t value, sysbvm_tuple_t sourcePosition)
+SYSBVM_API sysbvm_tuple_t sysbvm_environment_setNewSymbolBindingWithValueAtSourcePosition(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t symbol, sysbvm_tuple_t value, sysbvm_tuple_t sourcePosition)
 {
     if(!sysbvm_tuple_isNonNullPointer(environment))
-        return;
-
+        sysbvm_error("Expected an environment.");
 
     sysbvm_tuple_t binding = sysbvm_symbolValueBinding_create(context, sourcePosition, symbol, value);
     sysbvm_environment_setNewBinding(context, environment, binding);
+    return binding;
 }
 
 SYSBVM_API void sysbvm_environment_setNewSymbolBindingWithValue(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t symbol, sysbvm_tuple_t value)

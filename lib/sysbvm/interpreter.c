@@ -1892,6 +1892,9 @@ static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveAnalyzeAndEvalua
         sysbvm_tuple_t name;
         sysbvm_tuple_t type;
         sysbvm_tuple_t value;
+        sysbvm_tuple_t binding;
+        sysbvm_tuple_t ownerProgramEntitySymbol;
+        sysbvm_tuple_t ownerProgramEntity;
     } gcFrame = {
         .value = SYSBVM_NULL_TUPLE
     };
@@ -1925,7 +1928,30 @@ static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveAnalyzeAndEvalua
         gcFrame.value = sysbvm_referenceType_withBoxForValue(context, gcFrame.type, gcFrame.value);
     }
 
-    sysbvm_environment_setNewSymbolBindingWithValueAtSourcePosition(context, *environment, gcFrame.name, gcFrame.value, (*variableDefinitionNode)->super.sourcePosition);
+    bool isPublic = sysbvm_tuple_boolean_decode((*variableDefinitionNode)->isPublic);
+    if(isPublic)
+    {
+        if(!sysbvm_environment_lookSymbolRecursively(context, *environment, sysbvm_symbol_internWithCString(context, "__OwnerProgramEntity__"), &gcFrame.ownerProgramEntitySymbol))
+            sysbvm_error("Failed to find __OwnerProgramEntity__");
+        if(!sysbvm_symbolBinding_isValue(context, gcFrame.ownerProgramEntitySymbol))
+            sysbvm_error("Expected a symbol value binding for __OwnerProgramEntity__");
+
+        gcFrame.ownerProgramEntity = sysbvm_symbolValueBinding_getValue(gcFrame.ownerProgramEntitySymbol);
+        if(sysbvm_tuple_isKindOf(context, gcFrame.ownerProgramEntity, context->roots.environmentType))
+            gcFrame.binding = sysbvm_environment_setNewSymbolBindingWithValueAtSourcePosition(context, gcFrame.ownerProgramEntity, gcFrame.name, gcFrame.value, (*variableDefinitionNode)->super.sourcePosition);
+        else
+            sysbvm_error("TODO: Set public symbol in non-environment owner.");
+    }
+    else
+    {
+        gcFrame.binding = sysbvm_environment_setNewSymbolBindingWithValueAtSourcePosition(context, *environment, gcFrame.name, gcFrame.value, (*variableDefinitionNode)->super.sourcePosition);
+    }
+
+    if(isMutable && gcFrame.binding)
+    {
+        // Store a copy of the binding itself.
+    }
+
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.value;

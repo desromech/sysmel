@@ -337,7 +337,7 @@ SYSBVM_API void sysbvm_environment_setNewSymbolBindingWithValue(sysbvm_context_t
 /**
  * Sets a new symbol binding with value in the environment.
  */ 
-SYSBVM_API void sysbvm_environment_setNewSymbolBindingWithValueAtSourcePosition(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t symbol, sysbvm_tuple_t value, sysbvm_tuple_t sourcePosition);
+SYSBVM_API sysbvm_tuple_t sysbvm_environment_setNewSymbolBindingWithValueAtSourcePosition(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t symbol, sysbvm_tuple_t value, sysbvm_tuple_t sourcePosition);
 
 /**
  * Sets a symbol binding with value in the environment.

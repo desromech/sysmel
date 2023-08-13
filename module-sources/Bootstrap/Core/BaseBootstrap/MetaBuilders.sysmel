@@ -404,11 +404,7 @@ GlobalMetaBuilder
             isPublic: self isPublic;
             yourself).
 
-        if: self isPublic then: {
-            ``(public: `,name with: `,variableDefinitionNode)
-        } else: {
-            variableDefinitionNode
-        }
+        variableDefinitionNode
     } makeOverride.
 
 VariableMetaBuilder publicSubclass: #FieldMetaBuilder slots: (
