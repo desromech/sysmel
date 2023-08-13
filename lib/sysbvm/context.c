@@ -1040,6 +1040,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "isMacroSymbol", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "isMutable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "isPublic", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        "isThreadLocal", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "analyzedValueType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         NULL);
     context->roots.astIdentifierReferenceNodeType = sysbvm_context_createIntrinsicClass(context, "ASTIdentifierReferenceNode", context->roots.astNodeType,
