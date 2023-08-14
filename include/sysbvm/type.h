@@ -7,6 +7,18 @@
 
 typedef struct sysbvm_context_s sysbvm_context_t;
 
+typedef struct sysbvm_valueBox_s
+{
+    sysbvm_tuple_header_t header;
+    sysbvm_tuple_t value;
+} sysbvm_valueBox_t;
+
+typedef struct sysbvm_variableValueBox_s
+{
+    sysbvm_valueBox_t super;
+    sysbvm_tuple_t binding;
+} sysbvm_variableValueBox_t;
+
 typedef struct sysbvm_type_tuple_s
 {
     sysbvm_programEntity_t super;
@@ -331,7 +343,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_valueBox_with(sysbvm_context_t *context, sysbvm
 /**
  * Creates a binding value box with the given value.
  */
-SYSBVM_API sysbvm_tuple_t sysbvm_bindingValueBox_with(sysbvm_context_t *context, sysbvm_tuple_t boxedValue);
+SYSBVM_API sysbvm_tuple_t sysbvm_variableValueBox_with(sysbvm_context_t *context, sysbvm_tuple_t boxedValue);
 
 /**
  * Creates a pointer like with the specified storage

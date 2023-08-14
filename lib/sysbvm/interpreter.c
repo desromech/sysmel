@@ -1891,6 +1891,7 @@ static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveAnalyzeAndEvalua
     struct {
         sysbvm_tuple_t name;
         sysbvm_tuple_t type;
+        sysbvm_variableValueBox_t *valueBox;
         sysbvm_tuple_t value;
         sysbvm_tuple_t binding;
         sysbvm_tuple_t ownerProgramEntitySymbol;
@@ -1925,7 +1926,8 @@ static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveAnalyzeAndEvalua
         if(!gcFrame.type)
             gcFrame.type = sysbvm_tuple_getType(context, gcFrame.value);
         gcFrame.type = sysbvm_type_createFunctionLocalReferenceType(context, gcFrame.type);
-        gcFrame.value = sysbvm_referenceType_withBoxForValue(context, gcFrame.type, gcFrame.value);
+        gcFrame.valueBox = (sysbvm_variableValueBox_t*)sysbvm_variableValueBox_with(context, gcFrame.value);
+        gcFrame.value = sysbvm_referenceType_withStorage(context, gcFrame.type, (sysbvm_tuple_t)gcFrame.valueBox);
     }
 
     bool isPublic = sysbvm_tuple_boolean_decode((*variableDefinitionNode)->isPublic);
@@ -1947,9 +1949,10 @@ static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveAnalyzeAndEvalua
         gcFrame.binding = sysbvm_environment_setNewSymbolBindingWithValueAtSourcePosition(context, *environment, gcFrame.name, gcFrame.value, (*variableDefinitionNode)->super.sourcePosition);
     }
 
-    if(isMutable && gcFrame.binding)
+    if(isMutable && gcFrame.binding && gcFrame.valueBox)
     {
-        // Store a copy of the binding itself.
+        // Store a copy of the binding itself in the value box.
+        gcFrame.valueBox->binding = gcFrame.binding;
     }
 
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);

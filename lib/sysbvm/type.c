@@ -579,15 +579,15 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createFunctionLocalReferenceType(sysbvm_co
 
 SYSBVM_API sysbvm_tuple_t sysbvm_valueBox_with(sysbvm_context_t *context, sysbvm_tuple_t boxedValue)
 {
-    sysbvm_object_tuple_t *box = sysbvm_context_allocatePointerTuple(context, context->roots.valueBoxType, 1);
-    box->pointers[0] = boxedValue;
+    sysbvm_valueBox_t *box = (sysbvm_valueBox_t*)sysbvm_context_allocatePointerTuple(context, context->roots.valueBoxType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_valueBox_t));
+    box->value = boxedValue;
     return (sysbvm_tuple_t)box;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bindingValueBox_with(sysbvm_context_t *context, sysbvm_tuple_t boxedValue)
+SYSBVM_API sysbvm_tuple_t sysbvm_variableValueBox_with(sysbvm_context_t *context, sysbvm_tuple_t boxedValue)
 {
-    sysbvm_object_tuple_t *box = sysbvm_context_allocatePointerTuple(context, context->roots.bindingValueBoxType, 2);
-    box->pointers[0] = boxedValue;
+    sysbvm_variableValueBox_t *box = (sysbvm_variableValueBox_t*)sysbvm_context_allocatePointerTuple(context, context->roots.variableValueBoxType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_variableValueBox_t));
+    box->super.value = boxedValue;
     return (sysbvm_tuple_t)box;
 }
 
