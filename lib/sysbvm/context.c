@@ -942,7 +942,9 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.valueBoxType = sysbvm_context_createIntrinsicClass(context, "ValueBox", SYSBVM_NULL_TUPLE,
         "value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.untypedType,
         NULL);
-    sysbvm_typeAndMetatype_setFlags(context, context->roots.valueBoxType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);
+    context->roots.bindingValueBoxType = sysbvm_context_createIntrinsicClass(context, "BindingValueBox", context->roots.valueBoxType,
+        "binding", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolBindingType,
+        NULL);
     context->roots.defaultAnalysisQueueValueBox = (sysbvm_tuple_t)sysbvm_context_allocatePointerTuple(context, context->roots.valueBoxType, 1);
     sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "__DefaultAnalysisQueueValueBox__"), context->roots.defaultAnalysisQueueValueBox);
 

@@ -329,6 +329,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createFunctionLocalReferenceType(sysbvm_co
 SYSBVM_API sysbvm_tuple_t sysbvm_valueBox_with(sysbvm_context_t *context, sysbvm_tuple_t boxedValue);
 
 /**
+ * Creates a binding value box with the given value.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_bindingValueBox_with(sysbvm_context_t *context, sysbvm_tuple_t boxedValue);
+
+/**
  * Creates a pointer like with the specified storage
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_pointerLikeType_withStorage(sysbvm_context_t *context, sysbvm_tuple_t referenceType, sysbvm_tuple_t storage);

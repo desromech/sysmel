@@ -192,6 +192,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t typeSlotType;
     sysbvm_tuple_t undefinedObjectType;
     sysbvm_tuple_t valueBoxType;
+    sysbvm_tuple_t bindingValueBoxType;
     sysbvm_tuple_t valueType;
     sysbvm_tuple_t valueMetatypeType;
     sysbvm_tuple_t voidType;

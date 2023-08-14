@@ -584,6 +584,13 @@ SYSBVM_API sysbvm_tuple_t sysbvm_valueBox_with(sysbvm_context_t *context, sysbvm
     return (sysbvm_tuple_t)box;
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_bindingValueBox_with(sysbvm_context_t *context, sysbvm_tuple_t boxedValue)
+{
+    sysbvm_object_tuple_t *box = sysbvm_context_allocatePointerTuple(context, context->roots.bindingValueBoxType, 2);
+    box->pointers[0] = boxedValue;
+    return (sysbvm_tuple_t)box;
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_pointerLikeType_withStorage(sysbvm_context_t *context, sysbvm_tuple_t pointerLikeType, sysbvm_tuple_t storage)
 {
     sysbvm_object_tuple_t *reference = sysbvm_context_allocatePointerTuple(context, pointerLikeType, 1);
