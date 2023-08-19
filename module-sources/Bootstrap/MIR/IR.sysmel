@@ -36,6 +36,7 @@ public abstract class MIRPhysicalLocationMemory superclass: MIRPhysicalLocation;
 public abstract class MIRSpecificPhysicalMemoryLocation superclass: MIRPhysicalLocation; definition: {
     public field isCallArgument => Boolean.
     public field isStructure => Boolean.
+    public field isPointer => Boolean.
     public field offset => Int64.
     public field scratchRegisters => Array.
 
@@ -396,6 +397,7 @@ MIRLocalValue definition: {
     public field hasValidStackSegmentOffset => Boolean.
     public field stackSegment => UInt8.
     public field stackSegmentOffset => UInt64.
+    public field stackValueIsPointer => Boolean.
 
     public field hasValidStackAnchorOffset => Boolean.
     public field offset => Int64. ## Offset from frame pointer or stack pointer.
@@ -511,6 +513,7 @@ public final class MIRLocalVariable superclass: MIRLocalValue; definition: {
 
 public final class MIRArgumentValue superclass: MIRLocalValue; definition: {
     public field passingRegister => MIRPhysicalLocation.
+    public field isResultPointer => Boolean.
 
     public override method isArgumentVariable => Boolean := true.
 

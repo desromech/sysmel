@@ -722,6 +722,10 @@ public final class MIRX86CompilationTarget superclass: MIRAsmCompilationTarget; 
     public override method emitMoveRegister: (register: MIRPhysicalLocation) intoValue: (value: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         value x86::moveFromRegister: register with: codegen
     }.
+
+    public override method emitMoveRegister: (register: MIRPhysicalLocation) intoValueStackPointer: (value: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        value x86::moveStackPointerFromRegister: register with: codegen
+    }.
 }.
 
 public global X86_64::SysV::IntegerArgumentRegisters := (
@@ -1061,71 +1065,77 @@ public final class MIRWinX64CallingConvention superclass: MIRX86_64CallingConven
     public override method preferredRegisterForCaptureVectorPointer => MIRPhysicalIntegerRegister
         := nil.
 
+    public method isValuePassedDirectly: (value: MIRValue) ::=> Boolean := {
+        let valueSize := value size.
+        value isFloatingPoint ifTrue: {
+            (valueSize = 4sz) || (valueSize = 8sz)
+        } ifFalse: {
+            (valueSize = 1sz) || (valueSize = 2sz) || (valueSize = 4sz) || (valueSize = 8sz)
+        }
+    }.
+
     public override method registerConstraintsOfCall: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
-        let registerArguments := OrderedCollection new.
-        let stackArguments := OrderedCollection new.
+        let argumentCount := instruction operands size - 1sz.
+        let stackSize := argumentCount * 8sz max: 32sz.
+        let stackAlignment := 16sz.
+
         let hasStackIntegerArgument mutable := false.
-        let hasStackFloatOrVectorArgument mutable := false.
-        let hasStructureArgument mutable := false.
-        let structureSizeThreshold := 8u64.
+        let hasStackFloatArgument mutable := false.
 
-        let stackArgumentAlignment := 8u64.
-        let stackSize mutable := 0u64.
-        let stackAlignment mutable := 16u64.
+        5sz until: instruction operands size do: {:(Size)operandIndex :: Void |
+            let argument := instruction operands at: operandIndex.
+            let argumentIndex := operandIndex - 1sz.
+            let isPassedDirectly := self isValuePassedDirectly: argument.
 
-        let registerAssignmentState := MIRWinX64RegisterAssignmentState new.
-        1sz until: instruction operands size do: {:(Size)operandIndex :: Void |
-            let operand => MIRValue := instruction operands at: operandIndex.
-            let register := registerAssignmentState assignRegisterToValue: operand.
-            register ifNotNil: {
-                registerArguments add: operandIndex; add: register
-            } ifNil: {
-                let operandAlignment := operand alignment max: stackArgumentAlignment.
-                let operandSize := operand size alignedTo: operandAlignment.
-                let argumentOffset := stackSize alignedTo: operandAlignment.
-
-                stackSize := argumentOffset + operandSize.
-                stackAlignment := stackAlignment max: operandAlignment.
-                
-                (operand isFloatingPoint || operand isVector) ifTrue: {
-                    hasStackFloatOrVectorArgument := true
-                } ifFalse: {
-                    hasStackIntegerArgument := true
-                }.
-
-                stackArguments add: operandIndex; add: argumentOffset
+            argument isFloatingPoint && isPassedDirectly ifTrue: {
+                hasStackFloatArgument := true
+            } ifFalse: {
+                hasStackIntegerArgument := true
             }
         }.
-
-        stackSize := (stackSize max: 32u64) alignedTo: stackAlignment.
         allocator addRequiredCalloutSize: stackSize withAlignment: stackAlignment.
 
-        instruction scratchRegisterCount: 2sz.
-        registerArguments pairsDo: {:(Size)operandIndex :register :: Void |
-            allocator allocateRegister: register forInstruction: instruction operandAt: operandIndex
-        }.
+        1sz until: instruction operands size do: {:(Size)operandIndex :: Void |
+            let argument := instruction operands at: operandIndex.
+            let argumentIndex := operandIndex - 1sz.
+            let isPassedDirectly := self isValuePassedDirectly: argument.
+            let isFloatArgument := argument isFloatingPoint && isPassedDirectly.
 
-        hasStackIntegerArgument ifTrue: {
-            allocator allocateIntegerRegisterForInstruction: instruction scratchAt: 0sz
-        }.
+            let stackOffset := argumentIndex * 8sz.
 
-        hasStackFloatOrVectorArgument ifTrue: {
-            allocator allocateVectorRegisterForInstruction: instruction scratchAt: 1sz
-        }.
+            argumentIndex < 4sz ifTrue: {
+                let register := isFloatArgument
+                    ifTrue: (X86_64::Win64::VectorArgumentRegisters at: argumentIndex)
+                    ifFalse: (X86_64::Win64::IntegerArgumentRegisters at: argumentIndex).
 
-        stackArguments pairsDo: {:(Size)operandIndex :(UInt64)stackOffset :: Void |
-            let operand => MIRValue := instruction operands at: operandIndex.
-            (operand isFloatingPoint || operand isVector) ifTrue: {
-                allocator allocateSpecificCallStackPointerOffset: stackOffset asInt64 forInstruction: instruction operandAt: operandIndex scratchRegister: instruction scratchRegisters fourth
-            } ifFalse: {
-                operand size <= structureSizeThreshold ifTrue: {
-                    allocator allocateSpecificCallStackPointerOffset: stackOffset asInt64 forInstruction: instruction operandAt: operandIndex scratchRegister: instruction scratchRegisters first
+                isPassedDirectly ifTrue: {
+                    allocator allocateRegister: register forInstruction: instruction operandAt: operandIndex
                 } ifFalse: {
-                    error("TODO: Pass value pointer.")
+                    allocator allocateRegister: register forInstruction: instruction operandPointerAt: operandIndex
+                }.
+            } ifFalse: {
+                argumentIndex = 4sz ifTrue: {
+                    instruction scratchRegisterCount: 2sz.
+                    hasStackIntegerArgument ifTrue: {
+                        allocator allocateIntegerRegisterForInstruction: instruction scratchAt: 0sz
+                    }.
+                    hasStackFloatArgument ifTrue: {
+                        allocator allocateVectorRegisterForInstruction: instruction scratchAt: 1sz
+                    }   
+                }.
+
+                isFloatArgument ifTrue: {
+                    allocator allocateSpecificCallStackPointerOffset: stackOffset asInt64 forInstruction: instruction operandAt: operandIndex scratchRegister: instruction scratchRegisters second
+                } ifFalse: {
+                    isPassedDirectly ifTrue: {
+                        allocator allocateSpecificCallStackPointerOffset: stackOffset asInt64 forInstruction: instruction operandAt: operandIndex scratchRegister: instruction scratchRegisters first
+                    } ifFalse: {
+                        allocator allocateSpecificCallStackPointerOffset: stackOffset asInt64 forInstruction: instruction operandPointerAt: operandIndex scratchRegister: instruction scratchRegisters first
+                    }
                 }
             }.
         }.
-                
+
         allocator allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz.
         allocator
             allocateCaptureVectorPointerRegisterForInstruction: instruction;
@@ -1136,30 +1146,33 @@ public final class MIRWinX64CallingConvention superclass: MIRX86_64CallingConven
         := X86_64::Win64::CallPreservedRegister.
 
     public override method computeArgumentPassingLayoutOf: (function: MIRFunction) ::=> Void := {
-        let registerAssignmentState := MIRWinX64RegisterAssignmentState new.
         let stackSize mutable := 0u64.
-        let stackArgumentAlignment := 8u64.
 
-        function arguments do: {:(MIRArgumentValue)argument :: Void |
-            let register := registerAssignmentState assignRegisterToValue: argument.
-            register ifNotNil: {
+        function arguments doWithIndex: {:(MIRArgumentValue)argument :(Size)index :: Void |
+            let isPassedDirectly := self isValuePassedDirectly: argument.
+
+            index < 4sz ifTrue: {
+                let register := argument isFloatingPoint && isPassedDirectly
+                    ifTrue: (X86_64::Win64::VectorArgumentRegisters at: index)
+                    ifFalse: (X86_64::Win64::IntegerArgumentRegisters at: index).
                 argument passingRegister: register
             }.
 
-            let argumentAlignment := argument alignment max: stackArgumentAlignment.
-            let argumentSize := argument size alignedTo: argumentAlignment.
-            let argumentOffset := stackSize alignedTo: argumentAlignment.
+            ## All arguments have a fixed size of 8 in the stack.
+            let argumentSize := 8sz.
+            let argumentOffset := index * argumentSize.
 
             argument
                 stackSegment: MIRStackFrameSegment::ArgumentPassingZone;
                 stackSegmentOffset: stackSize;
+                stackValueIsPointer: isPassedDirectly not;
                 hasValidStackSegmentOffset: true.
             stackSize := argumentOffset + argumentSize
         }.
 
         function
-            argumentPassingStackAlignment: (stackArgumentAlignment max: 16u64);
-            argumentPassingStackSize: ((stackSize alignedTo: stackArgumentAlignment) max: 32u64)
+            argumentPassingStackAlignment: 16u64;
+            argumentPassingStackSize: (stackSize max: 32u64)
     }.
 
     public override method framePointerAnchorIsAtBottom => Boolean := true.
@@ -1316,6 +1329,10 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
         value x86_64::moveFromRegister: register with: codegen
     }.
 
+    public override method emitMoveRegister: (register: MIRPhysicalLocation) intoValueStackPointer: (value: MIRValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        value x86_64::moveStackPointerFromRegister: register with: codegen
+    }.
+
     public override method emitLoadCaptureVectorPointerFromClosure: (closurePointer: MIRPhysicalLocation) intoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         let closurePointerRegister := (closurePointer x86::int64For: codegen) downCastTo: AsmX86IntRegister.
         let reg := (register x86::int64For: codegen) downCastTo: AsmX86IntRegister.
@@ -1345,6 +1362,9 @@ MIRValue extend: {
     public abstract method x86::moveFromRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self subclassResponsibility.
 
+    public abstract method x86::moveStackPointerFromRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
+        := self subclassResponsibility.
+
     public abstract method x86::pushWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self subclassResponsibility.
 
@@ -1362,6 +1382,9 @@ MIRValue extend: {
 
     public virtual method x86_64::moveFromRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self x86::moveFromRegister: register with: codegen.
+
+    public virtual method x86_64::moveStackPointerFromRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
+        := self x86::moveStackPointerFromRegister: register with: codegen.
 
     public virtual method x86_64::pushWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
         := self subclassResponsibility.
@@ -1460,21 +1483,31 @@ MIRLocalValue extend: {
         let coalescedRegister := self coalescedAssignedRegister.
         let targetPointer := memoryLocation x86_64::pointerWithCodegen: codegen.
         coalescedRegister ifNotNil: {
-            coalescedRegister x86::storeValue: self inPointer: targetPointer isCallArgument: memoryLocation isCallArgument with: codegen
-        } ifNil: {
-            memoryLocation isStructure ifTrue: {
-                codegen textSection
-                    x86::lea: X86::EDI src: (memoryLocation x86::pointerWithCodegen: codegen);
-                    x86::lea: X86::ESI src: (self x86::pointerWithCodegen: codegen);
-                    x86::mov: X86::ECX src: self size asAsmImmediate;
-                    x86::rep; x86::movsb
-            } ifFalse: {
-                let scratchRegister := memoryLocation firstScratchRegister.
-                scratchRegister
-                    x86::loadFromVariable: self with: codegen;
-                    x86::storeValue: self inPointer: targetPointer isCallArgument: memoryLocation isCallArgument with: codegen
-            }.
-        }
+            self assert: memoryLocation isPointer not.
+            coalescedRegister x86::storeValue: self inPointer: targetPointer isCallArgument: memoryLocation isCallArgument with: codegen.
+            return: void.
+        }.
+
+        memoryLocation isStructure ifTrue: {
+            codegen textSection
+                x86::lea: X86::EDI src: (memoryLocation x86::pointerWithCodegen: codegen);
+                x86::lea: X86::ESI src: (self x86::pointerWithCodegen: codegen);
+                x86::mov: X86::ECX src: self size asAsmImmediate;
+                x86::rep; x86::movsb.
+            return: void.
+        }.
+
+        let scratchRegister := memoryLocation firstScratchRegister.
+        memoryLocation isPointer ifTrue: {
+            codegen textSection
+                x86::lea: (scratchRegister x86::int64For: codegen) src: (self x86::pointerWithCodegen: codegen);
+                x86::mov: (memoryLocation x86::pointerWithCodegen: codegen) src: (scratchRegister x86::int64For: codegen).
+            return: void.
+        }.
+
+        scratchRegister
+            x86::loadFromVariable: self with: codegen;
+            x86::storeValue: self inPointer: targetPointer isCallArgument: memoryLocation isCallArgument with: codegen
     }.
 
     public override method x86::unspillIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
@@ -1497,6 +1530,19 @@ MIRLocalValue extend: {
         codegen textSection x86::lea: (register x86::int32For: codegen) src: (self x86::pointerWithCodegen: codegen)
     }.
 
+    public override method x86::moveStackPointerFromRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        let coalescedRegister := self coalescedAssignedRegister.
+        coalescedRegister ifNotNil: {
+            error("TODO: Load coalesced register from stack pointer.").
+            ##coalescedRegister x86::loadFromRegister: coalescedRegister with: codegen.
+            needsSpilling ifTrue: {
+                codegen textSection x86::mov: (self x86::pointerWithCodegen: codegen) src: (register x86::int32For: codegen)
+            }.
+        } ifNil: {
+            codegen textSection x86::mov: (self x86::pointerWithCodegen: codegen) src: (register x86::int32For: codegen)
+        }.
+    }.
+
     public override method x86_64::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         let coalescedRegister := self coalescedAssignedRegister.
         coalescedRegister ifNotNil: {
@@ -1510,21 +1556,31 @@ MIRLocalValue extend: {
         let coalescedRegister := self coalescedAssignedRegister.
         let targetPointer := memoryLocation x86_64::pointerWithCodegen: codegen.
         coalescedRegister ifNotNil: {
-            coalescedRegister x86_64::storeValue: self inPointer: targetPointer isCallArgument: memoryLocation isCallArgument with: codegen
-        } ifNil: {
-            memoryLocation isStructure ifTrue: {
-                codegen textSection
-                    x86::lea: X86::RDI src: (memoryLocation x86::pointerWithCodegen: codegen);
-                    x86::lea: X86::RSI src: (self x86::pointerWithCodegen: codegen);
-                    x86::mov: X86::RCX src: self size asAsmImmediate;
-                    x86::rep; x86::movsb
-            } ifFalse: {
-                let scratchRegister := memoryLocation firstScratchRegister.
-                scratchRegister
-                    x86_64::loadFromVariable: self with: codegen;
-                    x86_64::storeValue: self inPointer: targetPointer isCallArgument: memoryLocation isCallArgument with: codegen
-            }.
-        }
+            self assert: memoryLocation isPointer not.
+            coalescedRegister x86_64::storeValue: self inPointer: targetPointer isCallArgument: memoryLocation isCallArgument with: codegen.
+            return: void
+        }.
+
+        memoryLocation isStructure ifTrue: {
+            codegen textSection
+                x86::lea: X86::RDI src: (memoryLocation x86_64::pointerWithCodegen: codegen);
+                x86::lea: X86::RSI src: (self x86_64::pointerWithCodegen: codegen);
+                x86::mov: X86::RCX src: self size asAsmImmediate;
+                x86::rep; x86::movsb.
+            return: void
+        }.
+
+        let scratchRegister := memoryLocation firstScratchRegister.
+        memoryLocation isPointer ifTrue: {
+            codegen textSection
+                x86::lea: (scratchRegister x86::int64For: codegen) src: (self x86_64::pointerWithCodegen: codegen);
+                x86::mov: (memoryLocation x86::pointerWithCodegen: codegen) src: (scratchRegister x86::int64For: codegen).
+            return: void
+        }.
+
+        scratchRegister
+            x86_64::loadFromVariable: self with: codegen;
+            x86_64::storeValue: self inPointer: targetPointer isCallArgument: memoryLocation isCallArgument with: codegen
     }.
 
     public override method x86_64::unspillIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
@@ -1545,6 +1601,19 @@ MIRLocalValue extend: {
 
     public override method x86_64::movePointerIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::lea: (register x86::int64For: codegen) src: (self x86_64::pointerWithCodegen: codegen)
+    }.
+
+    public override method x86_64::moveStackPointerFromRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        let coalescedRegister := self coalescedAssignedRegister.
+        coalescedRegister ifNotNil: {
+            error("TODO: Load coalesced register from stack pointer.").
+            ##coalescedRegister x86::loadFromRegister: coalescedRegister with: codegen.
+            needsSpilling ifTrue: {
+                codegen textSection x86::mov: (self x86_64::pointerWithCodegen: codegen) src: (register x86::int64For: codegen)
+            }.
+        } ifNil: {
+            codegen textSection x86::mov: (self x86_64::pointerWithCodegen: codegen) src: (register x86::int64For: codegen)
+        }.
     }.
 }.
 

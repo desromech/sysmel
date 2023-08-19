@@ -221,6 +221,17 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
             yourself)
     }.
 
+    public virtual method allocateSpecificCallStackPointerOffset: (stackOffset: Int64) forInstruction: (instruction: MIRInstruction) operandPointerAt: (operandIndex: Size) scratchRegister: (scratchRegister: MIRPhysicalLocation) ::=> Void := {
+        let operand => MIRValue := instruction operands at: operandIndex.
+        operand markCoalescedMemoryCopyRequired.
+        instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationSpecificStackPointerOffset new
+            isCallArgument: true;
+            isPointer: true;
+            offset: stackOffset;
+            scratchRegisters: (Array with: scratchRegister);
+            yourself)
+    }.
+    
     public virtual method allocateSpecificCallStackPointerOffset: (stackOffset: Int64) forInstruction: (instruction: MIRInstruction) structureOperandAt: (operandIndex: Size) ::=> Void := {
         instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationSpecificStackPointerOffset new
             isCallArgument: true;

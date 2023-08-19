@@ -323,6 +323,9 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         public abstract method emitMoveRegister: (register: MIRPhysicalLocation) intoValue: (value: MIRValue) with: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
+        public abstract method emitMoveRegister: (register: MIRPhysicalLocation) intoValueStackPointer: (value: MIRValue) with: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
         public abstract method emitLoadCaptureVectorPointerFromClosure: (closurePointer: MIRPhysicalLocation) intoRegister: (register: MIRPhysicalLocation) with: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
     }.
@@ -438,7 +441,11 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         function arguments do: {:(MIRArgumentValue)eachArgument :: Void |
             let passingRegister := eachArgument passingRegister.
             passingRegister isNotNil && eachArgument needsStackAllocation ifTrue: {
-                self emitMoveRegister: passingRegister intoValue: eachArgument
+                eachArgument stackValueIsPointer ifTrue: {
+                    self emitMoveRegister: passingRegister intoValueStackPointer: eachArgument
+                } ifFalse: {
+                    self emitMoveRegister: passingRegister intoValue: eachArgument
+                }.
             }.
         }.
     }.
@@ -616,6 +623,12 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
     public method emitMoveRegister: (location: MIRPhysicalLocation) intoValue: (value: MIRValue) ::=> Void := {
         location isRegister ifTrue: {
             moduleGenerator target emitMoveRegister: location intoValue: value with: self.
+        }
+    }.
+
+    public method emitMoveRegister: (location: MIRPhysicalLocation) intoValueStackPointer: (value: MIRValue) ::=> Void := {
+        location isRegister ifTrue: {
+            moduleGenerator target emitMoveRegister: location intoValueStackPointer: value with: self.
         }
     }.
 

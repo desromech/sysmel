@@ -159,7 +159,7 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
     }.
 
     public override method allocateRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) operandPointerAt: (operandIndex: Size) ::=> Void := {
-        let operand => MIRLocalValue := instruction operands at: operandIndex.
+        let operand => MIRValue := instruction operands at: operandIndex.
         operand markCoalescedMemoryCopyRequired.
         instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationRegisterWithPointer new register: register; yourself).
         self spillIfNeededAndAllocateRegister: register withValuePointer: operand
