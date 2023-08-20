@@ -127,6 +127,8 @@ typedef struct sysbvm_symbolValueBinding_s
 {
     sysbvm_symbolBinding_t super;
     sysbvm_tuple_t value;
+    sysbvm_tuple_t isMutable;
+    sysbvm_tuple_t isThreadLocal;
 } sysbvm_symbolValueBinding_t;
 
 /**
@@ -226,7 +228,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_symbolMacroValueBinding_create(sysbvm_context_t
  */
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_symbolMacroValueBinding_getExpansion(sysbvm_tuple_t binding)
 {
-    if(!sysbvm_tuple_isNonNullPointer(binding) || sysbvm_tuple_getSizeInSlots(binding) < SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_symbolValueBinding_t)) return SYSBVM_NULL_TUPLE;
+    if(!sysbvm_tuple_isNonNullPointer(binding) || sysbvm_tuple_getSizeInSlots(binding) < SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_symbolMacroValueBinding_t)) return SYSBVM_NULL_TUPLE;
     return ((sysbvm_symbolMacroValueBinding_t*)binding)->expansion;
 }
 
@@ -234,6 +236,11 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_symbolMacroValueBinding_getExpansion(sysbvm_
  * Creates a symbol value binding.
  */ 
 SYSBVM_API sysbvm_tuple_t sysbvm_symbolValueBinding_create(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t name, sysbvm_tuple_t value);
+
+/**
+ * Creates a symbol value binding with the specified flags.
+ */ 
+SYSBVM_API sysbvm_tuple_t sysbvm_symbolValueBinding_createWithFlags(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t name, sysbvm_tuple_t value, bool isMutable, bool isThreadLocal);
 
 /**
  * Gets the value from the symbol value binding.
@@ -338,6 +345,11 @@ SYSBVM_API void sysbvm_environment_setNewSymbolBindingWithValue(sysbvm_context_t
  * Sets a new symbol binding with value in the environment.
  */ 
 SYSBVM_API sysbvm_tuple_t sysbvm_environment_setNewSymbolBindingWithValueAtSourcePosition(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t symbol, sysbvm_tuple_t value, sysbvm_tuple_t sourcePosition);
+
+/**
+ * Sets a new symbol binding with value and flags in the environment.
+ */ 
+SYSBVM_API sysbvm_tuple_t sysbvm_environment_setNewSymbolBindingWithValueAndFlagsAtSourcePosition(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t symbol, sysbvm_tuple_t value, bool isMutable, bool isThreadLocal, sysbvm_tuple_t sourcePosition);
 
 /**
  * Sets a symbol binding with value in the environment.

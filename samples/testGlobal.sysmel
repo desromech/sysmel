@@ -1,0 +1,8 @@
+let myMutableGlobal mutable := 42i32.
+
+public function increment() => Int32
+    := myMutableGlobal := myMutableGlobal + 1i32.
+
+printLine(increment()).
+printLine(increment()).
+printLine(increment()).

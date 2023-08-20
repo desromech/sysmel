@@ -90,19 +90,24 @@ Environment definition: {
         binding.
     }.
 
-    public eager method setNewSymbol: (name: Symbol) valueBinding: (value: Untyped) at: (sourcePosition: SourcePosition) ::=> SymbolBinding := {
+    public eager method setNewSymbol: (name: Symbol) valueBinding: (value: Untyped) isMutable: (isMutable: Boolean) isThreadLocal: (isThreadLocal: Boolean) at: (sourcePosition: SourcePosition) ::=> SymbolBinding := {
         let binding := SymbolValueBinding new
             name: name;
             value: value;
             type: RawTuple::type(value);
+            isMutable: isMutable;
+            isThreadLocal: isThreadLocal;
             sourcePosition: sourcePosition;
             yourself.
         self setNewBinding: binding.
         binding.
     }.
 
-    public override method setNewPublicSymbol: (name: Symbol) valueBinding: (value: Untyped) at: (sourcePosition: SourcePosition) ::=> SymbolBinding
-        := self setNewSymbol: name valueBinding: value at: sourcePosition.
+    public eager method setNewSymbol: (name: Symbol) valueBinding: (value: Untyped) at: (sourcePosition: SourcePosition) ::=> SymbolBinding
+        := self setNewSymbol: name valueBinding: value isMutable: false isThreadLocal: false at: sourcePosition.
+
+    public override method setNewPublicSymbol: (name: Symbol) valueBinding: (value: Untyped) isMutable: (isMutable: Boolean) isThreadLocal: (isThreadLocal: Boolean) at: (sourcePosition: SourcePosition) ::=> SymbolBinding
+        := self setNewSymbol: name valueBinding: value isMutable: isMutable isThreadLocal: isThreadLocal at: sourcePosition.
 
     public virtual eager method lookLocalSymbolTable: (symbol: Symbol) ::=> SymbolBinding
         := symbolTable ifNotNil: (symbolTable associationAtOrNil: symbol).

@@ -13,8 +13,17 @@ SymbolValueBinding definition: {
     public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) at: (sourcePosition: SourcePosition) ::=> Untyped
         := self __slotNamedAt__: #value.
 
-    public override eager method analyzeIdentifierReference: (node: ASTIdentifierReferenceNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
-        := environment newLiteral: (self __slotNamedAt__: #value) at: node sourcePosition.
+    public override eager method analyzeIdentifierReference: (node: ASTIdentifierReferenceNode) withEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        self isMutable ifTrue: {
+            node copy
+                analyzerToken: environment validAnalyzerToken;
+                analyzedType: self type;
+                binding: self;
+                yourself
+        } ifFalse: {
+            environment newLiteral: (self __slotNamedAt__: #value) at: node sourcePosition
+        }
+    }.
 
     public override method evaluateWithActivationEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
         := self __slotNamedAt__: #value.
@@ -377,9 +386,9 @@ ASTVariableDefinitionNode definition: {
         self isPublic ifTrue: {
             let ownerSymbolBinding := environment lookSymbolRecursively: #__OwnerProgramEntity__.
             let ownerProgramEntity => ProgramEntity := ownerSymbolBinding evaluateInEnvironment: environment.
-            ownerProgramEntity setNewPublicSymbol: name valueBinding: mutableValue at: self sourcePosition.
+            ownerProgramEntity setNewPublicSymbol: name valueBinding: mutableValue isMutable: self isMutable isThreadLocal: self isThreadLocal at: self sourcePosition.
         } ifFalse: {
-            environment setNewSymbol: name valueBinding: mutableValue at: self sourcePosition.
+            environment setNewSymbol: name valueBinding: mutableValue isMutable: self isMutable isThreadLocal: self isThreadLocal at: self sourcePosition.
         }.
 
         mutableValue

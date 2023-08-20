@@ -217,6 +217,9 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_getBindingValue(sysbvm_context
         return reference;
     }
 
+    if(sysbvm_symbolBinding_isValue(context, binding))
+        return sysbvm_bytecodeCompiler_addLiteral(context, compiler, sysbvm_symbolValueBinding_getValue(binding));
+
     sysbvm_tuple_t value = SYSBVM_NULL_TUPLE;
     sysbvm_bytecodeCompiler_t *compilerObject = (sysbvm_bytecodeCompiler_t*)compiler;
     if(!sysbvm_identityDictionary_find(compilerObject->bindingDictionary, binding, &value))

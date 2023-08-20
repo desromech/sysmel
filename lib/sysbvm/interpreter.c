@@ -1921,6 +1921,7 @@ static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveAnalyzeAndEvalua
         gcFrame.value = sysbvm_type_coerceValue(context, gcFrame.type, gcFrame.value);
 
     bool isMutable = sysbvm_tuple_boolean_decode((*variableDefinitionNode)->isMutable);
+    bool isThreadLocal = sysbvm_tuple_boolean_decode((*variableDefinitionNode)->isThreadLocal);
     if(isMutable)
     {
         if(!gcFrame.type)
@@ -1940,20 +1941,18 @@ static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveAnalyzeAndEvalua
 
         gcFrame.ownerProgramEntity = sysbvm_symbolValueBinding_getValue(gcFrame.ownerProgramEntitySymbol);
         if(sysbvm_tuple_isKindOf(context, gcFrame.ownerProgramEntity, context->roots.environmentType))
-            gcFrame.binding = sysbvm_environment_setNewSymbolBindingWithValueAtSourcePosition(context, gcFrame.ownerProgramEntity, gcFrame.name, gcFrame.value, (*variableDefinitionNode)->super.sourcePosition);
+            gcFrame.binding = sysbvm_environment_setNewSymbolBindingWithValueAndFlagsAtSourcePosition(context, gcFrame.ownerProgramEntity, gcFrame.name, gcFrame.value, isMutable, isThreadLocal, (*variableDefinitionNode)->super.sourcePosition);
         else
             sysbvm_error("TODO: Set public symbol in non-environment owner.");
     }
     else
     {
-        gcFrame.binding = sysbvm_environment_setNewSymbolBindingWithValueAtSourcePosition(context, *environment, gcFrame.name, gcFrame.value, (*variableDefinitionNode)->super.sourcePosition);
+        gcFrame.binding = sysbvm_environment_setNewSymbolBindingWithValueAndFlagsAtSourcePosition(context, *environment, gcFrame.name, gcFrame.value, isMutable, isThreadLocal, (*variableDefinitionNode)->super.sourcePosition);
     }
 
+    // Store a copy of the binding itself in the value box.
     if(isMutable && gcFrame.binding && gcFrame.valueBox)
-    {
-        // Store a copy of the binding itself in the value box.
         gcFrame.valueBox->binding = gcFrame.binding;
-    }
 
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -1986,9 +1985,14 @@ static sysbvm_tuple_t sysbvm_astIdentifierReferenceNode_primitiveAnalyze(sysbvm_
     {
         if(sysbvm_symbolBinding_isValue(context, gcFrame.binding))
         {
-            SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-            SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
-            return sysbvm_astLiteralNode_create(context, (*referenceNode)->super.sourcePosition, sysbvm_symbolValueBinding_getValue(gcFrame.binding));
+            // Preserve the references into mutable bindings.
+            bool isMutable = sysbvm_tuple_boolean_decode(((sysbvm_symbolValueBinding_t*)gcFrame.binding)->isMutable);
+            if(!isMutable)
+            {
+                SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+                SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
+                return sysbvm_astLiteralNode_create(context, (*referenceNode)->super.sourcePosition, sysbvm_symbolValueBinding_getValue(gcFrame.binding));
+            }
         }
         else if(sysbvm_symbolBinding_isMacroValue(context, gcFrame.binding))
         {

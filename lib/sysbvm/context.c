@@ -694,7 +694,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.environmentType, "Environment", SYSBVM_NULL_TUPLE,
         "parent", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
         "analysisQueue", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.analysisQueueType,
-        "symbolTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
+        "symbolTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.identityDictionaryType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.namespaceType, "Namespace", SYSBVM_NULL_TUPLE,
         NULL);
@@ -756,10 +756,12 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolLocalBindingType, "SymbolLocalBinding", SYSBVM_NULL_TUPLE,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolMacroValueBindingType, "SymbolMacroValueBinding", SYSBVM_NULL_TUPLE,
-        "expansion", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
+        "expansion", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolValueBindingType, "SymbolValueBinding", SYSBVM_NULL_TUPLE,
-        "value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
+        "value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.untypedType,
+        "isMutable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        "isThreadLocal", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionType, "Function", SYSBVM_NULL_TUPLE,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
@@ -1032,7 +1034,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "bodyEnvironment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
         NULL);
     context->roots.astLiteralNodeType = sysbvm_context_createIntrinsicClass(context, "ASTLiteralNode", context->roots.astNodeType,
-        "value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
+        "value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.untypedType,
         NULL);
     context->roots.astVariableDefinitionNodeType = sysbvm_context_createIntrinsicClass(context, "ASTVariableDefinitionNode", context->roots.astNodeType,
         "nameExpression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
