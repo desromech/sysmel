@@ -8,8 +8,8 @@ TypeSlot
     withSelector: #isReadonly addMethod: {:(TypeSlot)self :: Boolean |
         self hasAnyFlags: TypeSlotFlags::ReadOnly
     } withEagerAnalysis;
-    withSelector: #getterSelector addMethod: {:(TypeSlot)self :: Symbol | self __slotNamedAt__: #name };
-    withSelector: #setterSelector addMethod: {:(TypeSlot)self :: Symbol | ((self __slotNamedAt__: #name) asString -- ":") asSymbol };
+    withSelector: #getterSelector addMethod: {:(TypeSlot)self :: Symbol | self name };
+    withSelector: #setterSelector addMethod: {:(TypeSlot)self :: Symbol | (self name asString -- ":") asSymbol };
     withSelector: #generateGetterWithReceiver:on: addMethod: {:(TypeSlot)self :(Type)ReceiverType :(Type)ownerType :: Void |
         let: #SlotType with: (self __slotNamedAt__: #type).
         ownerType withSelector: self getterSelector addMaybeVirtualMethod: ({:(ReceiverType)receiver :: SlotType |

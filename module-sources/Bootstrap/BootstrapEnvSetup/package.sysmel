@@ -5,6 +5,7 @@ loadSourceNamed: "PrimitiveFunctionTypeDefinitions.sysmel".
 loadSourceNamed: "SourcePosition.sysmel".
 loadSourceNamed: "MethodDefinition.sysmel".
 loadSourceNamed: "Function.sysmel".
+loadSourceNamed: "ProgramEntity.sysmel".
 loadSourceNamed: "Type.sysmel".
 loadSourceNamed: "TypeSlot.sysmel".
 loadSourceNamed: "PointerLikeType.sysmel".

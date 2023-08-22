@@ -83,6 +83,7 @@ typedef struct sysbvm_symbolBinding_s
 {
     sysbvm_tuple_header_t header;
     sysbvm_tuple_t name;
+    sysbvm_tuple_t owner;
     sysbvm_tuple_t sourcePosition;
     sysbvm_tuple_t type;
 } sysbvm_symbolBinding_t;

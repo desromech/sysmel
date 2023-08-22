@@ -348,9 +348,11 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_type_setFlags(context, context->roots.typeType, SYSBVM_TYPE_FLAGS_NULLABLE);
 
     context->roots.objectType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.anyValueType);
-    context->roots.programEntityType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.lookupKeyType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.programEntityType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.lookupKeyType);
     sysbvm_type_setSupertype(context->roots.typeType, context->roots.programEntityType);
-    sysbvm_type_setSupertype(sysbvm_tuple_getType(context, context->roots.programEntityType), sysbvm_tuple_getType(context, context->roots.objectType));
+    sysbvm_type_setSupertype(sysbvm_tuple_getType(context, context->roots.lookupKeyType), sysbvm_tuple_getType(context, context->roots.objectType));
+    sysbvm_type_setSupertype(sysbvm_tuple_getType(context, context->roots.programEntityType), sysbvm_tuple_getType(context, context->roots.lookupKeyType));
 
     context->roots.metatypeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.typeType);
 
@@ -365,6 +367,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
 
     sysbvm_tuple_setType((sysbvm_object_tuple_t*)sysbvm_tuple_getType(context, context->roots.objectType), context->roots.metaclassType);
     sysbvm_type_setSupertype(sysbvm_tuple_getType(context, context->roots.objectType), context->roots.classType);
+
+    sysbvm_tuple_setType((sysbvm_object_tuple_t*)sysbvm_tuple_getType(context, context->roots.lookupKeyType), context->roots.metaclassType);
 
     sysbvm_tuple_setType((sysbvm_object_tuple_t*)sysbvm_tuple_getType(context, context->roots.programEntityType), context->roots.metaclassType);
 
@@ -388,9 +392,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.dependentFunctionTypeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.functionTypeType);
     context->roots.simpleFunctionTypeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.functionTypeType);
 
-    context->roots.lookupKeyType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
-
-    context->roots.symbolBindingType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.lookupKeyType);
+    context->roots.symbolBindingType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.programEntityType);
     context->roots.symbolAnalysisBindingType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolBindingType);
     context->roots.symbolArgumentBindingType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolAnalysisBindingType);
     context->roots.symbolCaptureBindingType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.symbolAnalysisBindingType);
@@ -617,8 +619,10 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.untypedType, "Untyped", SYSBVM_NULL_TUPLE, NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.anyValueType, "AnyValue", SYSBVM_NULL_TUPLE, NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.objectType, "Object", SYSBVM_NULL_TUPLE, NULL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.lookupKeyType, "LookupKey", SYSBVM_NULL_TUPLE,
+        "key", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.untypedType,
+        NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.programEntityType, "ProgramEntity", SYSBVM_NULL_TUPLE,
-        "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_RTTI_EXCLUDED, context->roots.symbolType,
         "owner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.programEntityType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.typeType, "Type", SYSBVM_NULL_TUPLE,
@@ -730,10 +734,6 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "returnTypeExpression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     context->roots.localAnalysisEnvironmentType = sysbvm_context_createIntrinsicClass(context, "LocalAnalysisEnvironment", context->roots.analysisEnvironmentType,
-        NULL);
-
-    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.lookupKeyType, "LookupKey", SYSBVM_NULL_TUPLE,
-        "key", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.untypedType,
         NULL);
 
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolBindingType, "SymbolBinding", SYSBVM_NULL_TUPLE,

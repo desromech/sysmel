@@ -10,7 +10,7 @@ let: #from:until:do: with: {:(Size)start :(Size)stop :aBlock :: Void |
 
 ## Generate the accessors for the bootstrap types.
 let: #makeTypeAccessors with: {:(Type)type :: Void |
-    let: #typeName with: (type __slotNamedAt__: #name) asString.
+    let: #typeName with: (type __slotNamedAt__: #key) asString.
 
     let: #slots with: (type __slotNamedAt__: #slots).
     let: #slotCount with: RawTuple::size(slots).

@@ -90,7 +90,7 @@ ProgramEntity definition: {
             stream nextPut: '.'c8
         }.
 
-        name ifNotNil: (stream string: name)
+        self name ifNotNil: (stream string: self name)
     }.
 
     public method qualifiedName => String := {

@@ -2365,7 +2365,7 @@ TypeSlot extend: {
             let member := Dwarf::DebugInfoEntry tag: Dwarf::DW_TAG_member.
             ownerDie addChild: member.
             debugGenerator setProgramEntity: self die: member.
-            self name ifNotNil: (member name: name asString).
+            self name ifNotNil: (member name: self name asString).
             member type: (debugGenerator getOrCreateDieForType: self type).
             let ownerType := owner downCastTo: Type.
             member dataMemberLocation: ((ownerType dwarf::computeMemberBaseOffsetWith: debugGenerator) + self validOffset) asUInt64.
@@ -2493,7 +2493,7 @@ Metatype extend: {
         := thisType ifNotNil: thisType ifNil: owner.
 
     public override method dwarf::name => String
-        := name isNil && thisType isNotNil ifTrue: ("__Meta__") ifFalse: (super dwarf::name).
+        := self name isNil && thisType isNotNil ifTrue: ("__Meta__") ifFalse: (super dwarf::name).
 }.
 
 Namespace extend: {
