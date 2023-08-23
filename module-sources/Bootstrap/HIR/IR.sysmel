@@ -3,6 +3,7 @@ public abstract class HIRCompilationTarget superclass: Object.
 public class HIRValue superclass: Object.
 public class HIRConstant superclass: HIRValue.
 public class HIRGlobalValue superclass: HIRConstant.
+public class HIRGlobalVariable superclass: HIRGlobalValue.
 public class HIRFunction superclass: HIRGlobalValue.
 public class HIRFunctionDefinition superclass: HIRGlobalValue.
 public class HIRFunctionLocalValue superclass: HIRValue.
@@ -191,7 +192,7 @@ public final class HIRLiteralConstant superclass: HIRConstant; definition: {
     public override method printOn: (stream: Stream) ::=> Void := {
         let value := self __slotNamedAt__: #value.
         let valueType := RawTuple::type(value).
-        RawTuple::isBytes(value) || valueType isValueType ifTrue: {
+        (RawTuple::isBytes(value) || valueType isValueType) && valueType isReferenceLikeType not ifTrue: {
             stream nextPutAll: (isBoxed ifTrue: "BoxedLiteral" ifFalse: "Literal("); print: valueType; nextPutAll: " => "; print: value; nextPut: ')'c8
         } ifFalse: {
             (valueType isSubtypeOf: ProgramEntity) ifTrue: {
@@ -207,6 +208,30 @@ HIRGlobalValue definition: {
     public field name => Symbol.
 
     public virtual method sourceObject := nil.
+}.
+
+HIRGlobalVariable definition: {
+    public field valueType => Type.
+    public field sourceBinding => SymbolBinding.
+    public field referenceValue => Untyped.
+    public field initialValue => HIRValue.
+    public field isReadOnly => Boolean.
+    public field isThreadLocal => Boolean.
+
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream print: type; nextPutAll: " @".
+        name ifNil: {
+            stream print: sourcePosition.
+        } ifNotNil: {:name :: Void |
+            stream print: name
+        }
+    }.  
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream print: self.
+        isReadOnly ifTrue: (stream nextPutAll: " readonly").
+        isThreadLocal ifTrue: (stream nextPutAll: " threadLocal").
+    }.
 }.
 
 HIRFunction definition: {
@@ -2685,7 +2710,7 @@ HIRInstructionBuilder definition: {
             type: Void;
             yourself).
 
-    public method literal: value type: (type: Type) ::=> HIRLiteralConstant
+    public method literal: (value: Untyped) type: (type: Type) ::=> HIRLiteralConstant
         := HIRLiteralConstant new
             sourcePosition: self sourcePosition;
             sourceASTNode: self sourceASTNode;
@@ -2694,8 +2719,8 @@ HIRInstructionBuilder definition: {
             type: type;
             yourself.
 
-    public method literal: value ::=> HIRLiteralConstant
-        := self literal: value type: value __type__.
+    public method literal: (value: Untyped) ::=> HIRLiteralConstant
+        := self literal: value type: RawTuple::type(value).
 
     public method load: (storage: HIRValue) type: (type: Type) ::=> HIRLoadInstruction
         := self addInstruction: (HIRLoadInstruction new

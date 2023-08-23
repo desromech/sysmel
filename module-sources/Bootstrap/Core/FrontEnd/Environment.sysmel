@@ -22,6 +22,11 @@ SymbolBinding definition: {
 SymbolValueBinding definition: {
     public eager abstract method evaluateInEnvironment: (environment: Environment) ::=> Untyped
         := self __slotNamedAt__: #value.
+
+    public method valueType => Type
+        := isMutable && type isReferenceType
+            ifTrue: (type downCastTo: ReferenceType) baseType
+            ifFalse: type.
 }.
 
 SymbolAnalysisBinding definition: {

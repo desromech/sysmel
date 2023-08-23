@@ -759,6 +759,7 @@ public final class MIRGlobalDataAsmCodeGenerator superclass: MIRAsmCodeGenerator
     public field dataStream => AsmStreamBuilder.
 
     public method generateGlobalVariable: (globalToGenerate: MIRGlobalVariable) withSymbol: (symbol: AsmSymbol) ::=> Void := {
+        printLine("generateGlobalVariable: ", globalToGenerate).
         asmVariable := moduleGenerator targetModule newProgramEntity.
         asmVariable
             debugSourcePosition: globalToGenerate debugSourcePosition;

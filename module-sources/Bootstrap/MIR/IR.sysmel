@@ -112,6 +112,13 @@ Type extend: {
     public virtual method valueAlignmentForMirTarget: (target: MIRCompilationTarget) ::=> Size
         := target pointerAlignment.
 
+    ## FIXME: Implement these two methods properly.
+    public virtual method instanceSizeForMirTarget: (target: MIRCompilationTarget) ::=> Size
+        := self instanceSize.
+
+    public virtual method instanceAlignmentForMirTarget: (target: MIRCompilationTarget) ::=> Size
+        := self instanceAlignment.
+
     public virtual method valueMirPhysicalLocationClass => MIRPhysicalLocation class
         := MIRPhysicalIntegerRegister.
 
@@ -195,7 +202,6 @@ MIRValue definition: {
     public virtual method isBasicBlock => Boolean := false.
 
     public virtual method isVariable => Boolean := false.
-    public virtual method isLocalValueOrVariable => Boolean := false.
 
     public virtual method isLocalValue => Boolean := false.
     public virtual method isArgumentVariable => Boolean := false.
@@ -230,6 +236,7 @@ MIRValue definition: {
     public virtual method isRelativeImmediate32 => Boolean := false.
 
     public virtual method isImmediateU8 => Boolean := false.
+    public virtual method isThreadLocal => Boolean := false.
 
     public virtual method getConstantValue64 => Int64
         := self error: "Not an immediate 64 constant".
@@ -368,21 +375,6 @@ public final class MIRImportedFunction superclass: MIRImportedProgramEntity; def
     }.
 }.
 
-public abstract class MIRVariable superclass: MIRProgramEntity; definition: {
-    public field type => Type.
-    public field size => UInt64.
-    public field alignment => UInt64.
-    public field physicalLocationClass => MIRPhysicalLocation class.
-    public field isSignedExtended => Boolean.
-    public field isGCRoot => Boolean.
-
-    public override method isVariable => Boolean := true.
-    public override method isLocalValueOrVariable => Boolean := true.
-
-    public override method isFloatingPoint => Boolean := type asDecayedType isPrimitiveFloatType.
-    public override method isVector => Boolean := type asDecayedType isPrimitiveVectorType.
-}.
-
 MIRLocalValue definition: {
     public field name => Symbol.
     public field index => UInt32.
@@ -491,7 +483,6 @@ MIRLocalValue definition: {
     }.
 
     public override method isLocalValue => Boolean := true.
-    public override method isLocalValueOrVariable => Boolean := true.
 
     public override method isFloatingPoint => Boolean := type asDecayedType isPrimitiveFloatType.
     public override method isVector => Boolean := type asDecayedType isPrimitiveVectorType.
@@ -542,8 +533,45 @@ public final class MIRTemporaryVariable superclass: MIRLocalVariable; definition
     }.
 }.
 
-public final class MIRGlobalVariable superclass: MIRVariable; definition: {
+public final class MIRGlobalVariable superclass: MIRProgramEntity; definition: {
+    public field type => Type.
+    public field valueSize => UInt64.
+    public field valueAlignment => UInt64.
+    public field isSignedExtended => Boolean.
+    public field isValueInstance => Boolean.
+    public field isGCRoot => Boolean.
+    public field isReadOnly => Boolean.
+    public field isThreadLocal => Boolean.
+
+    public override method isVariable => Boolean := true.
     public override method isGlobalVariable => Boolean := true.
+
+    public override method physicalLocationClass => MIRPhysicalLocation class := MIRPhysicalIntegerRegister.
+
+    __Meta__ definition: {
+        public method withName: (name: Symbol) type: (type: Type) isValueInstance: (isValueInstance: Boolean) compilationTarget: (compilationTarget: MIRCompilationTarget) ::=> self
+            := self new
+                name: name;
+                initializeWithType: type isValueInstance: isValueInstance compilationTarget: compilationTarget;
+                yourself.
+
+        public method withType: (type: Type) isValueInstance: (isValueInstance: Boolean) compilationTarget: (compilationTarget: MIRCompilationTarget) ::=> self
+            := self new initializeWithType: type isValueInstance: isValueInstance compilationTarget: compilationTarget; yourself.
+    }.
+    
+    public method initializeWithType: (newType: Type) isValueInstance: (newIsValueInstance: Boolean)  compilationTarget: (compilationTarget: MIRCompilationTarget) ::=> Void := {
+        self assert: newType isNotNil.
+        type := newType.
+        isValueInstance := newIsValueInstance.
+        isValueInstance ifTrue: {
+            valueSize := (type instanceSizeForMirTarget: compilationTarget) asUInt64.
+            valueAlignment := (type instanceAlignmentForMirTarget: compilationTarget) asUInt64.
+        } ifFalse: {
+            valueSize := (type valueSizeForMirTarget: compilationTarget) asUInt64.
+            valueAlignment := (type valueAlignmentForMirTarget: compilationTarget) asUInt64.            
+        }.
+        isGCRoot := type isGarbageCollectedPointerType.
+    }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "global".
@@ -584,15 +612,6 @@ public final class MIRValuePointer superclass: MIRValue; definition: {
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: " address".
     }.
-}.
-
-MIRVariable definition: {
-    public method asValuePointerWithType: (type: Type) compilationTarget: (compilationTarget: MIRCompilationTarget) ::=> MIRValuePointer
-        := MIRValuePointer new
-            value: self;
-            initializeWithType: type compilationTarget: compilationTarget;
-            registerInUsedValues;
-            yourself.
 }.
 
 MIRLocalValue definition: {

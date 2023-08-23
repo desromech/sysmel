@@ -1048,8 +1048,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "analyzedValueType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         NULL);
     context->roots.astIdentifierReferenceNodeType = sysbvm_context_createIntrinsicClass(context, "ASTIdentifierReferenceNode", context->roots.astNodeType,
-        "value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
-        "binding", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
+        "value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
+        "binding", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolBindingType,
         NULL);
     context->roots.astIfNodeType = sysbvm_context_createIntrinsicClass(context, "ASTIfNode", context->roots.astNodeType,
         "conditionExpression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,

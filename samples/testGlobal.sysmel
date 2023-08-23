@@ -6,3 +6,16 @@ public function increment() => Int32
 printLine(increment()).
 printLine(increment()).
 printLine(increment()).
+
+let hirModule := HIRModuleCompilationContext forDefaultTarget
+    exclusiveCompilationMode: true;
+    compileFunctionsWithDefinitions: (increment,);
+    finish.
+
+printLine(hirModule fullPrintString).
+
+let mirModule := hirModule asMIRModuleFor: AsmCompilationTarget x86_64 useElf useDwarf asMirCompilationTarget.
+printLine(mirModule fullPrintString).
+
+let lirModule := mirModule asTargetIR.
+printLine(lirModule fullPrintString).

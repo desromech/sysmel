@@ -126,6 +126,23 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
         value translateIntoMirValueWith: self
     }.
 
+    public method compileGlobalVariable: (globalVariable: HIRGlobalVariable) ::=> MIRGlobalVariable := {
+        let mirGlobalVariable := (MIRGlobalVariable withName: globalVariable name type: globalVariable valueType isValueInstance: false compilationTarget: compilationTarget)
+            isReadOnly: globalVariable isReadOnly;
+            isThreadLocal: globalVariable isThreadLocal;
+            yourself.
+        targetModule addProgramEntity: mirGlobalVariable.
+        globalValueDictionary at: globalVariable put: mirGlobalVariable.
+
+        mirGlobalVariable
+    }.
+
+    public method translateGlobalVariable: (globalVariable: HIRGlobalVariable) ::=> MIRValue := {
+        globalValueDictionary at: globalVariable ifAbsentPut: {|
+            self compileGlobalVariable: globalVariable
+        }.
+    }.
+
     public method translateFunction: (function: HIRFunction) ::=> MIRValue
         := globalValueDictionary at: function ifAbsentPut: {|
             self compileFunction: function
@@ -137,10 +154,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
         }.
 
     public method compileFunction: (function: HIRFunction) ::=> MIRValue := {
-        let functionObject := MIRGlobalVariable new
-            type: Function;
-            name: function name;
-            yourself.
+        let functionObject := MIRGlobalVariable withName: function name type: Function isValueInstance: true compilationTarget: compilationTarget.
         targetModule addProgramEntity: functionObject.
         globalValueDictionary at: function put: functionObject.
 
@@ -148,10 +162,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
     }.
 
     public method compileFunctionDefinition: (functionDefinition: HIRFunctionDefinition) ::=> MIRValue := {
-        let functionDefinitionObject := MIRGlobalVariable new
-            type: FunctionDefinition;
-            name: functionDefinition name;
-            yourself.
+        let functionDefinitionObject := MIRGlobalVariable withName: functionDefinition name type: FunctionDefinition isValueInstance: true compilationTarget: compilationTarget.
         targetModule addProgramEntity: functionDefinitionObject.
         globalValueDictionary at: functionDefinition put: functionDefinitionObject.
 
@@ -1662,6 +1673,15 @@ HIRUndefinedConstant extend: {
 
 HIRGlobalValue extend: {
     public virtual method compileDirectMirTranslationWith: (codegen: HIRModuleMIRCodeGenerator) ::=> Void := {}.
+}.
+
+HIRGlobalVariable extend: {
+    public override method translateIntoMirValueWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+        := codegen translateGlobalVariable: self.
+
+    public override method compileDirectMirTranslationWith: (codegen: HIRModuleMIRCodeGenerator) ::=> Void := {
+        codegen translateGlobalVariable: self.
+    }.
 }.
 
 HIRFunction extend: {

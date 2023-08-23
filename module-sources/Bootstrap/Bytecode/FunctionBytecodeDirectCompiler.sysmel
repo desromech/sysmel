@@ -171,8 +171,13 @@ ASTVariableDefinitionNode extend: {
     }.
 }.
 
+SymbolBinding extend: {
+    public abstract method compileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand
+        := self subclassResponsibility.
+}.
+
 SymbolAnalysisBinding extend: {
-    public method compileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand
+    public override method compileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerOperand
         := compiler getValueForLocalBinding: self.
 }.
 

@@ -62,7 +62,7 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
     public virtual method allocateRegisterOrDirectPointerForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
         let operand => MIRValue := instruction operands at: operandIndex.
         self allocateRegisterForInstruction: instruction operandAt: operandIndex.
-        operand isLocalValueOrVariable ifTrue: {
+        operand isLocalValue ifTrue: {
             instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationValuePointerOrAssignedRegister for: operand)
         }.
     }.
@@ -70,7 +70,7 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
     public virtual method allocateRegister8OrDirectPointerForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
         let operand => MIRValue := instruction operands at: operandIndex.
         self allocateRegister8ForInstruction: instruction operandAt: operandIndex.
-        operand isLocalValueOrVariable ifTrue: {
+        operand isLocalValue ifTrue: {
             instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationValuePointerOrAssignedRegister for: operand)
         }
     }.
@@ -164,7 +164,10 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
             operand isValuePointer ifTrue: {
                 instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationValuePointer for: (operand downCastTo: MIRValuePointer) value)
             } ifFalse: {
-                self allocateRegisterForInstruction: instruction operandAt: operandIndex
+                self allocateRegisterForInstruction: instruction operandAt: operandIndex.
+                operand isProgramEntity ifTrue: {
+                    instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationValuePointer for: operand)
+                }
             }
         }
     }.

@@ -1400,8 +1400,16 @@ MIRValue extend: {
 }.
 
 MIRProgramEntity extend: {
+    public override method x86::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress := {
+        AsmX86RegisterAddress size: 1u8 displacement: (codegen symbolForProgramEntity: self) dword
+    }.
+
+    public override method x86_64::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress := {
+        AsmX86RegisterAddress size: 1u8 displacement: (codegen symbolForProgramEntity: self) dword
+    }.
+
     public override method x86::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        codegen textSection x86::mov: (register x86::int32For: codegen) src: (codegen symbolForProgramEntity: self) dword
+        codegen textSection x86::lea: (register x86::int32For: codegen) src: (codegen symbolForProgramEntity: self) dword
     }.
 
     public override method x86::moveIntoSpecificMemoryLocation: (memoryLocation: MIRSpecificPhysicalMemoryLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
@@ -1412,7 +1420,7 @@ MIRProgramEntity extend: {
     }.
 
     public override method x86::movePointerIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        codegen textSection x86::mov: (register x86::int32For: codegen) src: (codegen symbolForProgramEntity: self) dword
+        codegen textSection x86::lea: (register x86::int32For: codegen) src: (codegen symbolForProgramEntity: self) dword
     }.
 
     public override method x86_64::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
@@ -1428,32 +1436,6 @@ MIRProgramEntity extend: {
 
     public override method x86_64::movePointerIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         codegen textSection x86::lea: (register x86::int64For: codegen) src: (codegen symbolForProgramEntity: self) x86::qwordPtr
-    }.
-}.
-
-MIRVariable extend: {
-    public override method x86::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        register x86::loadFromVariable: self with: codegen
-    }.
-
-    public override method x86::moveFromRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        register x86::storeInVariable: self with: codegen
-    }.
-
-    public override method x86::movePointerIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        codegen textSection x86::lea: (register x86::int32For: codegen) src: (self x86::pointerWithCodegen: codegen)
-    }.
-
-    public override method x86_64::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        register x86_64::loadFromVariable: self with: codegen
-    }.
-
-    public override method x86_64::moveFromRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        register x86_64::storeInVariable: self with: codegen
-    }.
-
-    public override method x86_64::movePointerIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        codegen textSection x86::lea: (register x86::int64For: codegen) src: (self x86_64::pointerWithCodegen: codegen)
     }.
 }.
 

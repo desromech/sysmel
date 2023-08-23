@@ -136,7 +136,7 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
         translatedValueDictionary at: function put: translatedValue.
 
         function definition ifNotNil: {
-            translatedValue definition: (self translateFunctionDefinition: function definition).
+            translatedValue definition: ((self translateFunctionDefinition: function definition) downCastTo: HIRFunctionDefinition).
         }.
         
         translatedValue
@@ -161,7 +161,7 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
     public method translateFunction: (function: Function) ::=> HIRValue
         := self translateFunction: function withBuilder: nil.
 
-    public method translateFunctionDefinition: (functionDefinition: FunctionDefinition) withBuilder: (builder: HIRInstructionBuilder) ::=> HIRFunctionDefinition := {
+    public method translateFunctionDefinition: (functionDefinition: FunctionDefinition) withBuilder: (builder: HIRInstructionBuilder) ::=> HIRValue := {
         functionDefinition ensureAnalysis.
         translatedValueDictionary at: functionDefinition ifAbsent: { :: HIRValue |
             let importedValue := self findValueInUsedModule: functionDefinition.
@@ -180,8 +180,37 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
         }
     }.
 
-    public method translateFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> HIRFunctionDefinition
+    public method translateFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> HIRValue
         := self translateFunctionDefinition: functionDefinition withBuilder: nil.
+
+    public method declareGlobalVariableForSymbolValueBinding: (binding: SymbolValueBinding) ::=> HIRGlobalVariable := {
+        let translatedValue := HIRGlobalVariable new
+            sourceBinding: binding;
+            referenceValue: binding value;
+            name: binding programEntityQualifiedNameSymbol;
+            type: binding type;
+            valueType: binding valueType;
+            isThreadLocal: binding isThreadLocal;
+            yourself.
+
+        hirModule addGlobalValue: translatedValue.
+        translatedValueDictionary at: binding put: translatedValue.
+
+        translatedValue
+    }.
+
+    public method getOrCreateGlobalVariableForSymbolValueBinding: (binding: SymbolValueBinding) ::=> HIRGlobalVariable := {
+        self assert: binding isMutable.
+        translatedValueDictionary at: binding ifAbsent: { :: HIRGlobalVariable |
+            let importedValue := self findValueInUsedModule: binding.
+            importedValue ifNotNil: {
+                translatedValueDictionary at: binding put: importedValue.
+                importedValue downCastTo: HIRGlobalVariable
+            } ifNil: {
+                self declareGlobalVariableForSymbolValueBinding: binding
+            }
+        }.
+    }.
 
     public method finish => HIRModule := {
         hirModule
@@ -622,9 +651,24 @@ ASTVariableDefinitionNode extend: {
     }.
 }.
 
+SymbolBinding extend: {
+    public abstract method generateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+        := self subclassResponsibility.
+}.
+
 SymbolAnalysisBinding extend: {
-    public virtual method generateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+    public override method generateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
         := context getValueForLocalBinding: self.
+}.
+
+SymbolValueBinding extend: {
+    public override method generateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+        isMutable ifTrue: {
+            context moduleCompilationContext getOrCreateGlobalVariableForSymbolValueBinding: self
+        } ifFalse: {
+            context builder literal: (self __slotNamedAt__: #value)
+        }
+    }.
 }.
 
 SymbolTupleSlotBinding extend: {
