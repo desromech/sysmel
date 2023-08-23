@@ -755,11 +755,12 @@ MIRInstructionSurroundingOperation definition: {
 
 public final class MIRGlobalDataAsmCodeGenerator superclass: MIRAsmCodeGenerator; definition: {
     public field moduleGenerator => MIRModuleAsmCodeGenerator.
+    public field isThreadLocal => Boolean.
+    public field hasInitialValue => Boolean.
     public field asmVariable => AsmProgramEntity.
     public field dataStream => AsmStreamBuilder.
 
     public method generateGlobalVariable: (globalToGenerate: MIRGlobalVariable) withSymbol: (symbol: AsmSymbol) ::=> Void := {
-        printLine("generateGlobalVariable: ", globalToGenerate).
         asmVariable := moduleGenerator targetModule newProgramEntity.
         asmVariable
             debugSourcePosition: globalToGenerate debugSourcePosition;
@@ -768,15 +769,37 @@ public final class MIRGlobalDataAsmCodeGenerator superclass: MIRAsmCodeGenerator
             sourceProgramEntity: globalToGenerate sourceProgramEntity;
             contentSymbol: symbol. 
 
+        isThreadLocal := globalToGenerate isThreadLocal.
+        hasInitialValue := globalToGenerate initialValue isNotNil.
+
         dataStream := asmVariable newStreamBuilder.
         self selectDataSection.
-        dataStream label: symbol.
+        dataStream
+            align: globalToGenerate valueAlignment;
+            label: symbol.
+        hasInitialValue ifTrue: {
+            error("TODO: generateGlobalVariable initial value")
+        } ifFalse: {
+            dataStream reserveBytes: globalToGenerate valueSize
+        }.
 
         dataStream endLabel: symbol.
     }.
 
     public method selectDataSection => Void := {
-        dataStream dataSection.
+        isThreadLocal ifTrue: {
+            hasInitialValue ifTrue: {
+                dataStream tdataSection.
+            } ifFalse: {
+                dataStream tbssSection.
+            }.
+        } ifFalse: {
+            hasInitialValue ifTrue: {
+                dataStream dataSection.
+            } ifFalse: {
+                dataStream bssSection.
+            }.
+        }.
     }
 }.
 

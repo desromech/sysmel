@@ -85,6 +85,8 @@ AsmInstructionOperand definition: {
 
     public virtual method isImmediateUnsigned32 => Boolean := false.
 
+    public virtual method isAbsoluteOffset => Boolean := false.
+
     public virtual method asImmediateSigned8Value => Int8 := self error: "Not an immediate signed 8".
     public virtual method asImmediateSigned32Value => Int32 := self error: "Not an immediate signed 8".
     public virtual method asImmediateUnsigned32Value => Int32 := self error: "Not an immediate unsigned 8".
@@ -156,6 +158,7 @@ public global AsmSymbol::RelocationMode::None := 0u8.
 public global AsmSymbol::RelocationMode::GOT := 1u8.
 public global AsmSymbol::RelocationMode::PLT := 2u8.
 public global AsmSymbol::RelocationMode::SectionRelative := 3u8.
+public global AsmSymbol::RelocationMode::TPOff := 4u8.
 
 AsmImmediateSymbolWithAddend definition: {
     public field symbol => AsmSymbol.
@@ -168,6 +171,9 @@ AsmImmediateSymbolWithAddend definition: {
     public override method isImmediateSigned8 => Boolean := size = 1sz.
     public override method isImmediateSigned32 => Boolean := size = 2sz.
     public override method isImmediateSigned64 => Boolean := size = 4sz.
+
+    public override method isAbsoluteOffset => Boolean
+        := self isTPOff.
 
     public method asConstantExpression => AsmConstantExpression
         := AsmConstantExpressionSymbolValue new
@@ -198,12 +204,22 @@ AsmImmediateSymbolWithAddend definition: {
     public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
         self assert: (requiredSize = 4sz) || (requiredSize = 8sz).
         requiredSize = 4sz ifTrue: {
+            self isTPOff ifTrue: {
             codeStream
-                recordRelocation: (AsmObjectCodeRelocationAbsoluteInt32 new
+                recordRelocation: (AsmObjectCodeRelocationTPOffset32 new
                     symbol: symbol;
                     addend: addend asInt32;
-                    yourself);
-                nextPutUInt32: 0u32
+                    yourself).
+            } ifFalse: {
+                codeStream
+                    recordRelocation: (AsmObjectCodeRelocationAbsoluteInt32 new
+                        symbol: symbol;
+                        addend: addend asInt32;
+                        yourself).
+
+            }.
+
+            codeStream nextPutUInt32: 0u32
         }.
         requiredSize = 8sz ifTrue: {
             codeStream
@@ -264,6 +280,13 @@ AsmImmediateSymbolWithAddend definition: {
 
     public method makeSectionRelative => Void :={
         relocationMode := AsmSymbol::RelocationMode::SectionRelative
+    }.
+
+    public method isTPOff => Boolean
+        := relocationMode = AsmSymbol::RelocationMode::TPOff.
+
+    public method makeTPOff => Void :={
+        relocationMode := AsmSymbol::RelocationMode::TPOff
     }.
 
     public override method matchesStreamElement: (streamElement: AsmStreamElement) ::=> Boolean := {
@@ -1016,6 +1039,7 @@ public final class AsmSectionDirective superclass: AsmStreamElement; definition:
     public field loaded => Boolean.
     public field debugging => Boolean.
     public field nobits => Boolean.
+    public field tls => Boolean.
 
     public override method isSectionDirective => Boolean := false.
     public override method isFormattedWithIndentation => Boolean := false.
@@ -1034,7 +1058,8 @@ public final class AsmSectionDirective superclass: AsmStreamElement; definition:
             addWriteable: writeable;
             addReadable: readable;
             addLoaded: loaded;
-            addNoBits: nobits
+            addNoBits: nobits;
+            addTLS: tls
     }.
 }.
 
@@ -1571,6 +1596,28 @@ public final class AsmStreamBuilder superclass: Object; definition: {
             readable: true;
             writeable: true;
             nobits: true;
+            yourself).
+
+    public method tdataSection ::=> AsmSectionDirective
+        := self addElement: (AsmSectionDirective new
+            name: #".tdata";
+            machoSectionName: #__tdata;
+            machoSegmentName: #__DATA;
+            loaded: true;
+            readable: true;
+            writeable: true;
+            tls: true;
+            yourself).
+
+    public method tbssSection ::=> AsmSectionDirective
+        := self addElement: (AsmSectionDirective new
+            name: #".tbss";
+            machoSectionName: #__tbss;
+            machoSegmentName: #__TDATA;
+            readable: true;
+            writeable: true;
+            nobits: true;
+            tls: true;
             yourself).
 
     public method byte: (value: UInt8) ::=> AsmByteDirective

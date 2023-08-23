@@ -542,6 +542,7 @@ public final class MIRGlobalVariable superclass: MIRProgramEntity; definition: {
     public field isGCRoot => Boolean.
     public field isReadOnly => Boolean.
     public field isThreadLocal => Boolean.
+    public field initialValue => MIRValue.
 
     public override method isVariable => Boolean := true.
     public override method isGlobalVariable => Boolean := true.

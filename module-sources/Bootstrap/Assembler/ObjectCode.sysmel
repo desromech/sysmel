@@ -118,6 +118,7 @@ AsmObjectCodeSection definition: {
     public field readable => Boolean.
     public field loaded => Boolean.
     public field nobits => Boolean.
+    public field tls => Boolean.
 
     public field relocations => Array.
     public field frameDescriptions => Array.
@@ -187,6 +188,10 @@ AsmObjectCodeSection definition: {
 
     public method addNoBits: (flag: Boolean) ::=> Boolean := {
         nobits := nobits || flag
+    }.
+
+    public method addTLS: (flag: Boolean) ::=> Boolean := {
+        tls := tls || flag
     }.
 
     public method nextPut: (value: UInt8) ::=> Void := {
@@ -696,6 +701,13 @@ public final class AsmObjectCodeRelocationAbsoluteInt16 superclass: AsmObjectCod
 
     public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) withExtraAddend: (extraAddend: Int64) ::=> Void
         := targetSection data int16At: offset put: addend + extraAddend asInt16.
+}.
+
+public final class AsmObjectCodeRelocationTPOffset32 superclass: AsmObjectCodeRelocation; definition: {
+    public field addend => Int32.
+
+    public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) withExtraAddend: (extraAddend: Int64) ::=> Void
+        := targetSection data int32At: offset put: addend + extraAddend asInt32.
 }.
 
 public final class AsmObjectCodeRelocationAbsoluteInt32 superclass: AsmObjectCodeRelocation; definition: {

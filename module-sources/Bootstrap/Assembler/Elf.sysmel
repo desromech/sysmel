@@ -49,9 +49,14 @@ public global Elf::SectionHeaderType::Rel := 9u32.
 public global Elf::SectionHeaderType::Shlib := 10u32.
 public global Elf::SectionHeaderType::Dynsym := 11u32.
 
-public global Elf::SectionHeaderFlag::Write := 1u32.
-public global Elf::SectionHeaderFlag::Alloc := 2u32.
-public global Elf::SectionHeaderFlag::ExecInstr := 4u32.
+public global Elf::SectionHeaderFlag::Write := 16r01 u32.
+public global Elf::SectionHeaderFlag::Alloc := 16r02 u32.
+public global Elf::SectionHeaderFlag::ExecInstr := 16r04 u32.
+public global Elf::SectionHeaderFlag::Merge := 16r10 u32.
+public global Elf::SectionHeaderFlag::Strings := 16r20 u32.
+public global Elf::SectionHeaderFlag::InfoLink := 16r40 u32.
+public global Elf::SectionHeaderFlag::Group := 16r200 u32.
+public global Elf::SectionHeaderFlag::TLS := 16r400 u32.
 
 public global Elf::SymbolTableBind::Local := 0u8.
 public global Elf::SymbolTableBind::Global := 1u8.
@@ -85,6 +90,7 @@ public global Elf::X86_64::Rel::A16 := 12u32.
 public global Elf::X86_64::Rel::PC16 := 13u32.
 public global Elf::X86_64::Rel::A8 := 14u32.
 public global Elf::X86_64::Rel::PC8 := 15u32.
+public global Elf::X86_64::Rel::TPOff32 := 23u32.
 
 public final class Elf32::Header superclass: ByteSerializableObject; definition: {
     public field ident => UInt8[Elf::Ident::NIdent].
@@ -406,6 +412,7 @@ AsmObjectCodeSection extend: {
         readable ifTrue: (elfFlags := elfFlags | Elf::SectionHeaderFlag::Alloc).
         writeable ifTrue: (elfFlags := elfFlags | Elf::SectionHeaderFlag::Write).
         executable ifTrue: (elfFlags := elfFlags | Elf::SectionHeaderFlag::ExecInstr).
+        tls ifTrue: (elfFlags := elfFlags | Elf::SectionHeaderFlag::TLS).
         elfFlags
     }.
 }.

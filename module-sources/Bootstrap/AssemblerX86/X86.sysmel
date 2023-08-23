@@ -184,6 +184,9 @@ public class AsmX86Register superclass: AsmRegister; definition: {
     public field dwarf::value64 => UInt32.
 
     __Meta__ definition: {
+        public method name: (name: Symbol) value: (value: UInt8) ::=> self
+            := self new name: name; value: value; yourself.
+
         public method name: (name: Symbol) value: (value: UInt8) dwarf32: (dwarf32: UInt32) dwarf64: (dwarf64: UInt32) ::=> self
             := self new name: name; value: value; dwarf::value32: dwarf32; dwarf::value64: dwarf64; yourself.
 
@@ -227,6 +230,13 @@ public class AsmX86Register superclass: AsmRegister; definition: {
             yourself.
 }.
 
+public class AsmX86SegmentRegister superclass: AsmX86Register; definition: {
+}.
+
+AsmInstructionOperand extend: {
+    public virtual method x86::segment => AsmX86SegmentRegister := nil.
+}.
+
 AsmX86RegisterAddress definition: {
     public field scaleShift => UInt8.
     public field size => UInt8.
@@ -234,6 +244,7 @@ AsmX86RegisterAddress definition: {
     public field base => AsmX86Register.
     public field index => AsmX86Register.
     public field displacement => AsmImmediate.
+    public field segment => AsmX86SegmentRegister.
 
     __Meta__ definition: {
         public method size: (size: UInt8) displacement: (displacement: AsmImmediate) ::=> self
@@ -242,11 +253,26 @@ AsmX86RegisterAddress definition: {
                 displacement: displacement;
                 yourself.
 
+        public method size: (size: UInt8) displacement: (displacement: AsmImmediate) segment: (segment: AsmX86SegmentRegister) ::=> self
+            := self new
+                size: size;
+                displacement: displacement;
+                segment: segment;
+                yourself.
+
         public method base: (base: AsmX86Register) size: (size: UInt8) displacement: (displacement: AsmImmediate) ::=> self
             := self new
                 base: base;
                 size: size;
                 displacement: displacement;
+                yourself.
+
+        public method base: (base: AsmX86Register) size: (size: UInt8) displacement: (displacement: AsmImmediate) segment: (segment: AsmX86SegmentRegister) ::=> self
+            := self new
+                base: base;
+                size: size;
+                displacement: displacement;
+                segment: segment;
                 yourself.
     }.
 
@@ -258,6 +284,9 @@ AsmX86RegisterAddress definition: {
 
     public override method x86::rexIndexBit => UInt8
         := index ifNil: 0u8 ifNotNil: index x86::rexRegBit.
+
+    public override method x86::segment => AsmX86SegmentRegister
+        := segment.
 
     __Meta__ definition: {
         public method base: (base: AsmX86Register) size: (size: UInt8) ::=> self
@@ -282,8 +311,9 @@ AsmX86RegisterAddress definition: {
         scale = 8u8 ifTrue: (scaleShift := 3u8).
     }.
 
-    public method needsSibByte => Boolean
-        := (base isNotNil && (base x86::valueLow = #* ESP *# 4u8)) || index isNotNil.
+    public method needsSibByteInLongMode: (longMode: Boolean) ::=> Boolean
+        := (base isNotNil && (base x86::valueLow = #* ESP *# 4u8)) || index isNotNil
+            || (base isNil && index isNil && longMode && self hasAbsoluteDisplacement).
 
     public method hasSmallDisplacement => Boolean
         := displacement isNil || displacement isImmediateSigned8.
@@ -294,10 +324,13 @@ AsmX86RegisterAddress definition: {
     public method hasNoDisplacement => Boolean
         := displacement isNil || displacement isImmediateValue0.
 
+    public method hasAbsoluteDisplacement => Boolean
+        := displacement isNotNil && displacement isAbsoluteOffset.
+
     public override method x86::encodeModRMWithRegOpcode: (opcode: UInt8) immediateSize: (immediateSize: Size)
         longMode: (longMode: Boolean) into: (codeStream: AsmObjectCodeStream) ::=> Void := {
 
-        let needsSib := self needsSibByte.
+        let needsSib := self needsSibByteInLongMode: longMode.
         let sibByte mutable := 0u8.
 
         needsSib ifTrue: {
@@ -311,7 +344,7 @@ AsmX86RegisterAddress definition: {
         let modBaseValue mutable := 0u8.
         let mod mutable := 0u8.
 
-        needsSib && (base x86::valueLow = #* EBP *# 5u8) ifTrue: {
+        needsSib && base isNotNil && (base x86::valueLow = #* EBP *# 5u8) ifTrue: {
             hasDisplacement := true.
             hasSmallDisplacement := self hasSmallDisplacement.
             mod := hasSmallDisplacement ifTrue: 1u8 ifFalse: 2u8
@@ -322,7 +355,9 @@ AsmX86RegisterAddress definition: {
                 hasDisplacement := true.
                 hasSmallDisplacement := self hasSmallDisplacement.
                 mod := hasSmallDisplacement ifTrue: 1u8 ifFalse: 2u8.
-                base isNil && hasSmallDisplacement not && needsSib not ifTrue: (mod := 0u8)
+                base isNil && index isNil && hasSmallDisplacement not ifTrue: {
+                    mod := 0u8
+                }
             }
         }.
 
@@ -349,7 +384,7 @@ AsmX86RegisterAddress definition: {
                     codeStream nextPutInt8: displacement asImmediateSigned8Value
                 }.
             } ifFalse: {
-                (mod = 0u8) && longMode ifTrue: {
+                (mod = 0u8) && longMode && self hasAbsoluteDisplacement not ifTrue: {
                     codeStream nextPutIPRelativeI32: displacement extraOffset: immediateSize asInt32 + 4i32
                 } ifFalse: {
                     codeStream nextPutImmediate32: displacement
@@ -385,7 +420,11 @@ AsmX86RegisterAddress definition: {
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: ((sizeNameTable atOrNil: size) ifNil: "struct"); nextPutAll: " [".
+        stream nextPutAll: ((sizeNameTable atOrNil: size) ifNil: "struct"); space.
+        segment ifNotNil: {
+            stream print: segment; nextPut: ':'c8
+        }.
+        stream nextPut: '['c8.
         let hasPrevious mutable := false.
         base ifNotNil: {
             stream print: base.
@@ -496,6 +535,13 @@ public global X86::AH := AsmX86Int8Register name: #AH value: 4u8 dwarf32: 0u32 d
 public global X86::CH := AsmX86Int8Register name: #CH value: 5u8 dwarf32: 1u32 dwarf64: 1u32.
 public global X86::DH := AsmX86Int8Register name: #DH value: 6u8 dwarf32: 2u32 dwarf64: 2u32.
 public global X86::BH := AsmX86Int8Register name: #BH value: 7u8 dwarf32: 3u32 dwarf64: 3u32.
+
+public global X86::CS := AsmX86SegmentRegister name: #CS value: 16r2E u8.
+public global X86::SS := AsmX86SegmentRegister name: #SS value: 16r36 u8.
+public global X86::DS := AsmX86SegmentRegister name: #DS value: 16r3E u8.
+public global X86::ES := AsmX86SegmentRegister name: #ES value: 16r26 u8.
+public global X86::FS := AsmX86SegmentRegister name: #FS value: 16r64 u8.
+public global X86::GS := AsmX86SegmentRegister name: #GS value: 16r65 u8.
 
 public global X86::RAXB := AsmX86Int8RexRegister name: #RAXB value: 0u8  dwarf32: 0u32 dwarf64: 0u32.
 public global X86::RCXB := AsmX86Int8RexRegister name: #RCXB value: 1u8  dwarf32: 1u32 dwarf64: 1u32.
@@ -700,6 +746,13 @@ AsmObjectCodeStream definition: {
 
     public method nextPutX86Opcode: (opcode: UInt8) plusRegister: (register: AsmInstructionOperand) ::=> Void := {
         self nextPut: opcode + register x86::valueLow
+    }.
+
+    public method nextPutX86SegmentOverride: (rm: AsmInstructionOperand) ::=> Void := {
+        let segment := rm x86::segment.
+        segment ifNotNil: {
+            self nextPut: segment value
+        }
     }.
 
     public method nextPutX86ModRM: (rm: AsmInstructionOperand) reg: (register: AsmInstructionOperand) immediateSize: (immediateSize: Size) ::=> Void := {
@@ -998,6 +1051,7 @@ let instructionTemplateTable := #{
             let operandSize := registerAddress size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86RexSize: operandSize rm: registerAddress;
                 nextPutAll: templ opcode;
                 nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode immediateSize: 1sz;
@@ -1017,6 +1071,7 @@ let instructionTemplateTable := #{
             let operandSize := registerAddress size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86SizeOverride: operandSize;
                 nextPutX86RexSize: operandSize rm: registerAddress;
                 nextPutAll: templ opcode;
@@ -1036,6 +1091,7 @@ let instructionTemplateTable := #{
             let operandSize := registerAddress size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86SizeOverride: operandSize;
                 nextPutX86RexSize: operandSize rm: registerAddress;
                 nextPutAll: templ opcode;
@@ -1055,6 +1111,7 @@ let instructionTemplateTable := #{
             let operandSize := registerAddress size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86SizeOverride: operandSize;
                 nextPutX86RexSize: operandSize rm: registerAddress;
                 nextPutAll: templ opcode;
@@ -1074,6 +1131,7 @@ let instructionTemplateTable := #{
             let operandSize := registerAddress size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86SizeOverride: operandSize;
                 nextPutX86RexSize: operandSize rm: registerAddress;
                 nextPutAll: templ opcode;
@@ -1092,6 +1150,7 @@ let instructionTemplateTable := #{
             let operandSize := registerAddress size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86SizeOverride: operandSize;
                 nextPutX86RexSize: operandSize rm: registerAddress;
                 nextPutAll: templ opcode;
@@ -1110,6 +1169,7 @@ let instructionTemplateTable := #{
             let operandSize := registerAddress size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86SizeOverride: operandSize;
                 nextPutX86RexSize: operandSize rm: registerAddress;
                 nextPutAll: templ opcode;
@@ -1128,6 +1188,7 @@ let instructionTemplateTable := #{
             let operandSize := registerAddress size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86SizeOverride: operandSize;
                 nextPutX86RexSize: operandSize rm: registerAddress;
                 nextPutAll: templ opcode;
@@ -1145,6 +1206,7 @@ let instructionTemplateTable := #{
             let operandSize := registerAddress size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86RexSize: operandSize rm: registerAddress;
                 nextPutAll: templ opcode;
                 nextPutX86ModRM: registerAddress regOpcode: templ registerOpcode.
@@ -1160,6 +1222,7 @@ let instructionTemplateTable := #{
             let operandSize := registerAddress size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86SizeOverride: operandSize;
                 nextPutX86RexSize: operandSize rm: registerAddress;
                 nextPutAll: templ opcode;
@@ -1180,6 +1243,7 @@ let instructionTemplateTable := #{
             let operandSize := registerAddress size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86SizeOverride: operandSize;
                 nextPutX86RexSize: operandSize rm: registerAddress;
                 nextPutAll: templ opcode;
@@ -1202,6 +1266,7 @@ let instructionTemplateTable := #{
             let operandSize := register size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86RexSize: operandSize rm: registerAddress reg: register;
                 nextPutAll: templ opcode;
                 nextPutX86ModRM: registerAddress reg: register
@@ -1220,6 +1285,7 @@ let instructionTemplateTable := #{
             let operandSize := register size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86SizeOverride: operandSize;
                 nextPutX86RexSize: operandSize rm: registerAddress reg: register;
                 nextPutAll: templ opcode;
@@ -1241,6 +1307,7 @@ let instructionTemplateTable := #{
             let operandSize := register size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86RexSize: operandSize rm: registerAddress reg: register;
                 nextPutAll: templ opcode;
                 nextPutX86ModRM: registerAddress reg: register
@@ -1260,6 +1327,7 @@ let instructionTemplateTable := #{
             let wordSize := register size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86SizeOverride: wordSize;
                 nextPutX86RexSizeWithBytes: wordSize rm: registerAddress reg: register;
                 nextPutAll: templ opcode;
@@ -1279,6 +1347,7 @@ let instructionTemplateTable := #{
             let operandSize := register size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86SizeOverride: operandSize;
                 nextPutX86RexSize: operandSize rm: registerAddress reg: register;
                 nextPutAll: templ opcode;
@@ -1296,6 +1365,7 @@ let instructionTemplateTable := #{
             let operandSize := registerAddress size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86SizeOverride: operandSize;
                 nextPutX86RexRM: registerAddress;
                 nextPutAll: templ opcode;
@@ -1314,6 +1384,7 @@ let instructionTemplateTable := #{
             let registerAddress := instruction secondOperand.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86RexRM: registerAddress reg: register;
                 nextPutAll: templ opcode;
                 nextPutX86ModRM: registerAddress reg: register
@@ -1330,6 +1401,7 @@ let instructionTemplateTable := #{
             let registerAddress := instruction firstOperand.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86RexRM: registerAddress reg: register;
                 nextPutAll: templ opcode;
                 nextPutX86ModRM: registerAddress reg: register
@@ -1348,6 +1420,7 @@ let instructionTemplateTable := #{
             let operandSize := registerAddress size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86SizeOverride: operandSize;
                 nextPutX86RexSize: operandSize rm: registerAddress reg: register;
                 nextPutAll: templ opcode;
@@ -1366,6 +1439,7 @@ let instructionTemplateTable := #{
             let operandSize := registerAddress size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86SizeOverride: operandSize;
                 nextPutX86RexSize: operandSize rm: registerAddress reg: register;
                 nextPutAll: templ opcode;
@@ -1384,6 +1458,7 @@ let instructionTemplateTable := #{
             let operandSize := register size.
             stream 
                 nextPutAll: templ mandatoryPrefix;
+                nextPutX86SegmentOverride: registerAddress;
                 nextPutX86SizeOverride: operandSize;
                 nextPutX86RexSize: operandSize rm: registerAddress reg: register;
                 nextPutAll: templ opcode;
@@ -1474,6 +1549,15 @@ AsmObjectCodeRelocationRelativeInt32AtGOT extend: {
             length: 2u8.
         true
     }.
+}.
+
+AsmObjectCodeRelocationTPOffset32 extend: {
+    public override method convertIntoX86_64RelaWithSymbolTable: (symbolTable: Elf64::SymbolTable) ::=> Elf64::Rela
+        := Elf64::Rela new
+            offset: offset asUInt64;
+            symbol: (symbolTable indexOfSymbol: symbol) type: Elf::X86_64::Rel::TPOff32;
+            addend: addend asInt64 + symbol privateAddend;
+            yourself.
 }.
 
 AsmObjectCodeRelocationAbsoluteInt32 extend: {

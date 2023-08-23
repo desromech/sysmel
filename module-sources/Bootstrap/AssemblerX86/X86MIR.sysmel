@@ -1401,11 +1401,29 @@ MIRValue extend: {
 
 MIRProgramEntity extend: {
     public override method x86::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress := {
-        AsmX86RegisterAddress size: 1u8 displacement: (codegen symbolForProgramEntity: self) dword
+        self isThreadLocal ifTrue: {
+            AsmX86RegisterAddress
+                size: 1u8
+                displacement: ((codegen symbolForProgramEntity: self) dword
+                    makeTPOff;
+                    yourself)
+                segment: X86::GS
+        } ifFalse: {
+            AsmX86RegisterAddress size: 1u8 displacement: (codegen symbolForProgramEntity: self) dword
+        }
     }.
 
     public override method x86_64::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress := {
-        AsmX86RegisterAddress size: 1u8 displacement: (codegen symbolForProgramEntity: self) dword
+        self isThreadLocal ifTrue: {
+            AsmX86RegisterAddress
+                size: 1u8
+                displacement: ((codegen symbolForProgramEntity: self) dword
+                    makeTPOff;
+                    yourself)
+                segment: X86::FS
+        } ifFalse: {
+            AsmX86RegisterAddress size: 1u8 displacement: (codegen symbolForProgramEntity: self) dword
+        }.
     }.
 
     public override method x86::moveIntoRegister: (register: MIRPhysicalLocation) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
