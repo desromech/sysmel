@@ -20,8 +20,9 @@ AnyValue definition: {
 Type definition: {
     public virtual method canEncodeValueInBytes => Boolean := false.
 
-    public abstract method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void
-        := self subclassResponsibility.
+    public virtual method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
+        ## By default do nothing.
+    }.
 
     public virtual method encodeValueIn: (valueOwner: Untyped) atTypeSlot: (typeSlot: TypeSlot) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
         self encodeValue: (RawTuple::typeSlotAt:)(valueOwner, typeSlot) inBytes: bytes atOffset: offset
@@ -104,6 +105,28 @@ FixedArrayType definition: {
         }.
 
         result
+    }.
+}.
+
+PointerLikeType definition: {
+    public override method encodeValue: (value: Untyped) inBytes: (bytes: ByteArray) atOffset: (offset: Size) ::=> Void := {
+        RawTuple::isBytes(value) ifTrue: {
+            ObjectModel::isLogical() ifTrue: {
+                let pointerSize := self validInstanceSize.
+                let i mutable := 0sz.
+                while: (i < pointerSize) do: {
+                    bytes uint8At: offset + i put: (RawTuple::byteSlotAt:)(value, i)
+                } continueWith: (i := i + 1sz)
+            } ifFalse: {
+                memcpy(
+                    (bytes __rawContentsBytePointer__ + offset asIntPointer) reinterpretCastTo: Void pointer,
+                    value __rawContentsPointer__ reinterpretCastTo: Void const pointer,
+                    self validInstanceSize
+                ).
+            }
+        } ifFalse: {
+            ## Ignored for now
+        }.
     }.
 }.
 

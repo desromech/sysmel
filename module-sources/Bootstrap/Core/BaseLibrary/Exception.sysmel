@@ -1,3 +1,41 @@
+ExceptionSetjmpBuffer definition: {
+    public method longjmp => Unwinds := {
+        <primitive: #Exception::longjmp>
+        printLine("TODO: ExceptionSetjmpBuffer longjmp").
+        sysmel_pal_abort().
+    }.
+}.
+
+ExceptionStackRecord __type__ definition: {
+    public method unwindUntil: (targetRecord: ExceptionStackRecord pointer) ::=> Void := {
+        let currentPosition mutable := ExceptionStackRecord::LastActive.
+        while: (currentPosition isNotNil && (currentPosition ~~ targetRecord)) do: {
+            let record := currentPosition.
+            currentPosition := currentPosition _ previous.
+            ExceptionStackRecord::LastActive := currentPosition.
+
+            record _ isCleanUp ifTrue: {
+                let cleanUpRecord := record reinterpretCastTo: ExceptionCleanUpActionStackRecord pointer.
+                cleanUpRecord _ cleanUpAction()
+            }
+        }.
+    }.
+
+    public method findHandlerRecordFor: (exception: Exception) ::=> ExceptionOnDoStackRecord pointer := {
+        let currentPosition mutable := ExceptionStackRecord::LastActive.
+        while: (currentPosition isNotNil) do: {
+            currentPosition _ isOnDo ifTrue: {
+                let onDoRecord := currentPosition reinterpretCastTo: ExceptionOnDoStackRecord pointer.
+                (onDoRecord _ exceptionFilter handlesException: exception) ifTrue: {
+                    return: onDoRecord
+                }
+            }
+        } continueWith: (currentPosition := currentPosition _ previous).
+
+        nil
+    }.
+}.
+
 Exception definition: {
     __Meta__ definition: {
         public method signal ::=> Unwinds
@@ -8,8 +46,17 @@ Exception definition: {
     }.
 
     public method signal => Unwinds := {
-        printLine("Exception: ", self).
-        sysmel_pal_abort().
+        let handlerRecord := ExceptionStackRecord findHandlerRecordFor: self.
+        handlerRecord ifNil: {
+            printLine("Exception: ", self).
+            sysmel_pal_abort().
+        } ifNotNil: {
+            handlerRecord _ exceptionResult: handlerRecord _ exceptionBlock(self).
+            ExceptionStackRecord unwindUntil: handlerRecord.
+            
+            ExceptionStackRecord::LastActive := handlerRecord _ previous.
+            handlerRecord _ setjmpBuffer longjmp
+        }.
     }.
 }.
 

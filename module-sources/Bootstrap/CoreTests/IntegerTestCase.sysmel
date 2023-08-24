@@ -55,4 +55,14 @@ public class IntegerTestCase superclass: TestCase; definition: {
         self assert: (self quote: 2) * (self quote: 1) equals: 2.
         self assert: (self quote: 1) * (self quote: 2) equals: 2.
     }.
+
+    public method testAssertFailure => Void := {
+        ## Neutral element
+        self assert: false
+    }.
+
+    public method testError => Void := {
+        ## Neutral element
+        self assert: false
+    }.
 }.

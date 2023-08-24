@@ -1,4 +1,55 @@
+public struct ExceptionSetjmpBuffer definition: {
+    public field data => UIntPointer[16sz].
+
+    __Meta__ definition: {
+        public override method minimalAlignment => Size
+            := 16sz
+    }.
+
+    public method setjmp => Boolean := {
+        <primitive: #Exception::setjmp>
+        false
+    }.
+}.
+
+public global ExceptionStackRecord::Kind::CleanUp := 0uptr.
+public global ExceptionStackRecord::Kind::OnDo := 1uptr.
+
+public struct ExceptionStackRecord definition: {
+    public field previous => ExceptionStackRecord pointer.
+    public field kind => UIntPointer.
+
+    public method isCleanUp => Boolean
+        := kind = ExceptionStackRecord::Kind::CleanUp.
+
+    public method isOnDo => Boolean
+        := kind = ExceptionStackRecord::Kind::OnDo.
+}.
+
+public threadLocal ExceptionStackRecord::LastActive mutable => ExceptionStackRecord pointer := nil.
+
+public struct ExceptionCleanUpActionStackRecord supertype: ExceptionStackRecord; definition: {
+    public field cleanUpAction => (() => Void).
+}.
+
+public struct ExceptionOnDoStackRecord supertype: ExceptionStackRecord; definition: {
+    public field exceptionFilter => AnyValue.
+    public field exceptionBlock => AnyValue.
+    public field exceptionResult => AnyValue.
+    public field setjmpBuffer => ExceptionSetjmpBuffer.
+}.
+
+AnyValue definition: {
+    public virtual method handlesException: (exception: Exception) ::=> Boolean
+        := false.
+}.
+
 Exception definition: {
+    __Meta__ definition: {
+        public override method handlesException: (exception: Exception) ::=> Boolean
+            := exception isKindOf: self.
+    }.
+
     public virtual eager method defaultMessageText => String
         := "an " -- self class printString.
 
@@ -15,12 +66,46 @@ Exception definition: {
 
 (Function::ensure:) adoptDefinitionOf: {:body :(() => Void)cleanUp :: AnyValue |
     <primitive: #Function::ensure: >
+
+    ## Make the clean up stack record.
+    let stackRecord mutable := ExceptionCleanUpActionStackRecord basicAllocate.
+    stackRecord
+        previous: ExceptionStackRecord::LastActive;
+        kind: ExceptionStackRecord::Kind::CleanUp;
+        cleanUpAction: cleanUp.
+    ExceptionStackRecord::LastActive := stackRecord address.
+
+    ## Evaluate the body.
     let result := body().
+    
+    ## Remove the clean up stack record.
+    ExceptionStackRecord::LastActive := stackRecord previous.
+
+    ## Execute the clean up action.
     cleanUp().
-    result.
+
+    ## Return the result.
+    result
 }.
 
 (Function::on:do:) adoptDefinitionOf: {:body :exceptionFilter :exceptionBlock :: AnyValue |
     <primitive: #Function::on:do: >
-    body()
+
+    ## Make the clean up stack record.
+    let stackRecord mutable := ExceptionOnDoStackRecord basicAllocate.
+    stackRecord
+        previous: ExceptionStackRecord::LastActive;
+        kind: ExceptionStackRecord::Kind::OnDo;
+        exceptionFilter: exceptionFilter;
+        exceptionBlock: exceptionBlock.
+    ExceptionStackRecord::LastActive := stackRecord address.
+
+    ## Perform setjmp
+    stackRecord setjmpBuffer setjmp ifFalse: {
+        let result := body().
+        ExceptionStackRecord::LastActive := stackRecord previous.
+        result
+    } ifTrue: {
+        stackRecord exceptionResult
+    }.
 }.

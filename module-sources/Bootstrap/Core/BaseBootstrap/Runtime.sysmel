@@ -407,6 +407,49 @@ UndefinedObject class
         else: error("Cannot coerce nil into non-nullable type " -- targetType printString)
     } makeOverride.
 
+Type
+    withSelector: #isPointedReinterpretableInto: addMethod: {:(Type)self :(Type)targetType :: Boolean |
+        self isDirectSubtypeOf: targetType
+    }.
+
+PointerType
+    withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(ReferenceLikeType)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
+        if: (self isSubtypeOf: targetType)
+        then: astNode
+        else: {
+            let: #sourcePosition with: astNode sourcePosition.
+            let: #analyzerToken with: environment analyzerToken.
+
+            if: targetType isPointerType then: {
+                let: #targetPointerType with: (tuple: targetType downCastTo: PointerType).
+                if: (self baseType isPointedReinterpretableInto: targetPointerType baseType) then: {
+                    ASTFunctionApplicationNode new
+                        sourcePosition: astNode sourcePosition;
+                        functionExpression: (ASTLiteralNode new
+                            sourcePosition: astNode sourcePosition;
+                            value: (PointerType::reinterpretCastTo:);
+                            analyzedType: (PointerType::reinterpretCastTo:) __type__;
+                            analyzerToken: analyzerToken;
+                            yourself);
+                        arguments: (astNode, (ASTLiteralNode new
+                            sourcePosition: astNode sourcePosition;
+                            value: targetType;
+                            analyzedType: targetType __type__;
+                            analyzerToken: analyzerToken;
+                            yourself));
+                        analyzedType: targetType;
+                        analyzerToken: analyzerToken;
+                        applicationFlags: 0bflgs;
+                        yourself
+                } else: {
+                    error((("Cannot perform coercion from " -- self printString) -- " into ") -- targetType printString)
+                }
+            } else: {
+                error((("Cannot perform coercion from " -- self printString) -- " into ") -- targetType printString)
+            }
+        }.
+    } makeOverride withEagerAnalysis.
+
 ReferenceLikeType
     withSelector: #isReferenceLikeType addMethod: {:(ReferenceType)self :: Boolean | true } makeOverride makePure;
     withSelector: #asDecayedType addMethod: {:(ReferenceLikeType)self :: Type |
@@ -419,11 +462,34 @@ ReferenceLikeType
         if: (self isSubtypeOf: targetType)
         then: astNode
         else: {
+            let: #sourcePosition with: astNode sourcePosition.
+            let: #analyzerToken with: environment analyzerToken.
+
             if: targetType isReferenceLikeType then: {
-                error("TODO: Implement coercion between two reference types.")
+                let: #targetReferenceLikeType with: (tuple: targetType downCastTo: ReferenceLikeType).
+                if: (self baseType isPointedReinterpretableInto: targetReferenceLikeType baseType) then: {
+                    ASTFunctionApplicationNode new
+                        sourcePosition: astNode sourcePosition;
+                        functionExpression: (ASTLiteralNode new
+                            sourcePosition: astNode sourcePosition;
+                            value: (PointerType::reinterpretCastTo:);
+                            analyzedType: (PointerType::reinterpretCastTo:) __type__;
+                            analyzerToken: analyzerToken;
+                            yourself);
+                        arguments: (astNode, (ASTLiteralNode new
+                            sourcePosition: astNode sourcePosition;
+                            value: targetType;
+                            analyzedType: targetType __type__;
+                            analyzerToken: analyzerToken;
+                            yourself));
+                        analyzedType: targetType;
+                        analyzerToken: analyzerToken;
+                        applicationFlags: 0bflgs;
+                        yourself
+                } else: {
+                    error((("Cannot perform coercion from " -- self printString) -- " into ") -- targetType printString)
+                }
             } else: {
-                let: #sourcePosition with: astNode sourcePosition.
-                let: #analyzerToken with: environment analyzerToken.
                 let: #loadValueFunction with: self loadValueFunction.
                 let: #baseType with: self baseType.
 
@@ -2765,9 +2831,15 @@ TypeSlot
     } makeFinal.
 
 Type
+    withSelector: #minimalSize addMethod: {:(Type)self :: Size |
+        0sz
+    } makeVirtual;
+    withSelector: #minimalAlignment addMethod: {:(Type)self :: Size |
+        1sz
+    } makeVirtual;
     withSelector: #computeLayout replaceMethod: {:(Type)self :: Void |
         self instanceSize: 0sz.
-        self instanceAlignment: 1sz.
+        self instanceAlignment: self minimalAlignment.
 
         let: #supertype with: self supertype.
         if: supertype ~~ nil then: {
@@ -2786,7 +2858,7 @@ Type
             self instanceSize: slotOffset + slotSize.
         }.
 
-        self instanceSize: (self instanceSize alignedTo: self instanceAlignment).
+        self instanceSize: ((self instanceSize max: self minimalSize) alignedTo: self instanceAlignment).
     } makeVirtual;
     withSelector: #validInstanceSize addMethod: {:(Type)self :: Size |
         if: self instanceAlignment = 0sz then: (self ensureLayoutIsComputed).

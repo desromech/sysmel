@@ -1072,7 +1072,7 @@ PointerType definition: {
         := baseType analyzeAndTypeCheckFunctionApplicationNode: node withEnvironment: environment.
 }.
 
-ReferenceType definition: {
+ReferenceLikeType definition: {
     public override eager method messageSendNodeStaticLookupDirectSelector: (selector: Symbol) ::=> MessageSendNodeStaticLookupResult
         := (super messageSendNodeStaticLookupDirectSelector: selector) ifNil: (baseType messageSendNodeStaticLookupDirectSelector: selector).
 

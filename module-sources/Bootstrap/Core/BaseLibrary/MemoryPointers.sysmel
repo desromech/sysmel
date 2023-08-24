@@ -9,11 +9,29 @@ Type extend: {
 
 ValueType extend: {
     public override method loadValueFromPointer: (pointer: Void const pointer) ::=> Untyped := {
-        self subclassResponsibility
+        ObjectModel::isLogical() ifTrue: {
+            self subclassResponsibility
+        } ifFalse: {
+            let result := self basicAllocate.
+            memcpy(
+                result __rawContentsBytePointer__ reinterpretCastTo: Void pointer,
+                pointer reinterpretCastTo: Void const pointer,
+                self validInstanceSize
+            ).
+            result
+        }.
     }.
 
     public override method storeValue: (value: Untyped) inPointer: (pointer: Void pointer) ::=> Void := {
-        self subclassResponsibility
+        ObjectModel::isLogical() ifTrue: {
+            self subclassResponsibility
+        } ifFalse: {
+            memcpy(
+                pointer reinterpretCastTo: Void pointer,
+                value __rawContentsBytePointer__ reinterpretCastTo: Void const pointer,
+                self validInstanceSize
+            ).
+        }.
     }.
 }.
 
