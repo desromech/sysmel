@@ -666,7 +666,7 @@ public final class MIRSX86CDeclCallingConvention superclass: MIRSX86StackBasedCa
         := MIR::X86::AllocableVectorRegisters.
 
     public override method preferredRegisterForCaptureVectorPointer => MIRPhysicalLocationRegister
-        := MIR::X86_64::R10.
+        := nil.
 }.
 
 public global MIR::X86::CDeclCallingConvention := MIRSX86CDeclCallingConvention new.
@@ -879,6 +879,9 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRX86_64CallingCo
 
     public override method preferredRegisterForCaptureVectorPointer => MIRPhysicalIntegerRegister
         := nil.
+
+    public override method preferredRegisterForGotPointer => MIRPhysicalIntegerRegister
+        := MIR::X86_64::R15.
 
     public override method registerConstraintsOfCall: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
         let registerArguments := OrderedCollection new.
@@ -1214,6 +1217,70 @@ public final class MIRWinX64CallingConvention superclass: MIRX86_64CallingConven
     }.
 
     public override method framePointerAnchorIsAtBottom => Boolean := true.
+
+    public override method asm::allocateExceptionLongjmpRegistersFor: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
+        allocator allocateRegister: MIR::X86_64::RCX forInstruction: instruction operandAt: 0sz.
+    }.
+
+    public override method asm::generateExceptionLongjmpRegistersFor: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection
+            x86::mov: X86::RAX src: X86::RCX x86::qword;
+            x86::mov: X86::RSP src: X86::RCX x86::qword + 16r08 i8 asAsmImmediate;
+            x86::mov: X86::RBX src: X86::RCX x86::qword + 16r10 i8 asAsmImmediate;
+            x86::mov: X86::RBP src: X86::RCX x86::qword + 16r18 i8 asAsmImmediate;
+            x86::mov: X86::RDI src: X86::RCX x86::qword + 16r20 i8 asAsmImmediate;
+            x86::mov: X86::RSI src: X86::RCX x86::qword + 16r28 i8 asAsmImmediate;
+            x86::mov: X86::R12 src: X86::RCX x86::qword + 16r30 i8 asAsmImmediate;
+            x86::mov: X86::R13 src: X86::RCX x86::qword + 16r38 i8 asAsmImmediate;
+            x86::mov: X86::R14 src: X86::RCX x86::qword + 16r40 i8 asAsmImmediate;
+            x86::mov: X86::R15 src: X86::RCX x86::qword + 16r48 i8 asAsmImmediate;
+
+            x86::movaps:  X86::XMM6 src: X86::RCX x86::oword + 16r50 i8 asAsmImmediate;
+            x86::movaps:  X86::XMM7 src: X86::RCX x86::oword + 16r60 i8 asAsmImmediate;
+            x86::movaps:  X86::XMM8 src: X86::RCX x86::oword + 16r70 i8 asAsmImmediate;
+            x86::movaps:  X86::XMM9 src: X86::RCX x86::oword + 16r80 i8 asAsmImmediate;
+            x86::movaps: X86::XMM10 src: X86::RCX x86::oword + 16r90 i8 asAsmImmediate;
+            x86::movaps: X86::XMM11 src: X86::RCX x86::oword + 16rA0 i8 asAsmImmediate;
+            x86::movaps: X86::XMM12 src: X86::RCX x86::oword + 16rB0 i8 asAsmImmediate;
+            x86::movaps: X86::XMM14 src: X86::RCX x86::oword + 16rC0 i8 asAsmImmediate;
+            x86::movaps: X86::XMM15 src: X86::RCX x86::oword + 16rD0 i8 asAsmImmediate;
+
+            x86::mov: X86::RSP x86::qword src: X86::RAX;
+            x86::mov: X86::EAX src: 1i8 asAsmImmediate;
+            x86::ret
+    }.
+
+    public override method asm::allocateExceptionSetjmpRegistersFor: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
+        allocator allocateRegister: MIR::X86_64::RCX forInstruction: instruction operandAt: 0sz.
+    }.
+
+    public override method asm::generateExceptionSetjmpRegistersFor: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection
+            x86::mov: X86::RAX src: X86::RSP x86::qword;
+            x86::mov: X86::RCX x86::qword src: X86::RAX;
+            x86::mov: X86::RCX x86::qword + 16r08 i8 asAsmImmediate src: X86::RSP;
+            x86::mov: X86::RCX x86::qword + 16r10 i8 asAsmImmediate src: X86::RBX;
+            x86::mov: X86::RCX x86::qword + 16r18 i8 asAsmImmediate src: X86::RBP;
+            x86::mov: X86::RCX x86::qword + 16r20 i8 asAsmImmediate src: X86::RDI;
+            x86::mov: X86::RCX x86::qword + 16r28 i8 asAsmImmediate src: X86::RSI;
+            x86::mov: X86::RCX x86::qword + 16r30 i8 asAsmImmediate src: X86::R12;
+            x86::mov: X86::RCX x86::qword + 16r38 i8 asAsmImmediate src: X86::R13;
+            x86::mov: X86::RCX x86::qword + 16r40 i8 asAsmImmediate src: X86::R14;
+            x86::mov: X86::RCX x86::qword + 16r48 i8 asAsmImmediate src: X86::R15;
+
+            x86::movaps: X86::RCX x86::oword + 16r50 i8 asAsmImmediate src: X86::XMM6;
+            x86::movaps: X86::RCX x86::oword + 16r60 i8 asAsmImmediate src: X86::XMM7;
+            x86::movaps: X86::RCX x86::oword + 16r70 i8 asAsmImmediate src: X86::XMM8;
+            x86::movaps: X86::RCX x86::oword + 16r80 i8 asAsmImmediate src: X86::XMM9;
+            x86::movaps: X86::RCX x86::oword + 16r90 i8 asAsmImmediate src: X86::XMM10;
+            x86::movaps: X86::RCX x86::oword + 16rA0 i8 asAsmImmediate src: X86::XMM11;
+            x86::movaps: X86::RCX x86::oword + 16rB0 i8 asAsmImmediate src: X86::XMM12;
+            x86::movaps: X86::RCX x86::oword + 16rC0 i8 asAsmImmediate src: X86::XMM14;
+            x86::movaps: X86::RCX x86::oword + 16rD0 i8 asAsmImmediate src: X86::XMM15;
+
+            x86::xor: X86::RAX with: X86::RAX;
+            x86::ret
+    }.
 }.
 
 public global MIR::X86_64::SysVCallingConvention := MIRSysVX86_64CallingConvention new.
@@ -1376,6 +1443,23 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
         let reg := (register x86::int64For: codegen) downCastTo: AsmX86IntRegister.
         codegen textSection x86::mov: reg src: closurePointerRegister x86::qword + codegen closureCaptureVectorMemberOffset asInt32 asAsmImmediate
     }.
+
+    public override method emitLoadThreadLocalSegmentPointerRegisters: (tlsPointerValue: MIRThreadLocalSegmentPointerValue) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        asmCompilationTarget isWindows ifTrue: {
+            let indexRegister := (tlsPointerValue segmentIndexRegister x86::int32For: codegen) downCastTo: AsmX86IntRegister.
+            let pointerVectorRegister := (tlsPointerValue segmentPointerVectorRegister x86::int64For: codegen) downCastTo: AsmX86IntRegister.
+            let loadRegister := (tlsPointerValue loadRegister x86::int64For: codegen) downCastTo: AsmX86IntRegister.
+
+            codegen textSection
+                x86::mov: indexRegister src: codegen moduleGenerator tlsIndexSymbol x86::qwordPtr;
+                x86::mov: pointerVectorRegister src: (AsmX86RegisterAddress size: 8u8 displacement: 88i8 asAsmImmediate segment: X86::GS);
+                x86::mov: loadRegister src: pointerVectorRegister x86::qword + (indexRegister * 8u8)
+
+        } ifFalse: {
+            self error: "TODO: load the tls pointer register in linux"
+        }
+
+    }.
 }.
 
 MIRValue extend: {
@@ -1440,12 +1524,21 @@ MIRValue extend: {
 MIRProgramEntity extend: {
     public override method x86::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress := {
         self isThreadLocal ifTrue: {
-            AsmX86RegisterAddress
-                size: 1u8
-                displacement: ((codegen symbolForProgramEntity: self) dword
-                    makeTPOff;
-                    yourself)
-                segment: X86::GS
+            codegen asmTarget isWindows ifTrue: {
+                AsmX86RegisterAddress
+                    base: ((codegen validThreadLocalSegmentPointerRegister x86::int64For: codegen) downCastTo: AsmX86Register)
+                    size: 1u8
+                    displacement: ((codegen symbolForProgramEntity: self) dword
+                        makeSectionRelative;
+                        yourself)
+            } ifFalse: {
+                AsmX86RegisterAddress
+                    size: 1u8
+                    displacement: ((codegen symbolForProgramEntity: self) dword
+                        makeTPOff;
+                        yourself)
+                    segment: X86::GS
+            }.
         } ifFalse: {
             AsmX86RegisterAddress size: 1u8 displacement: (codegen symbolForProgramEntity: self) dword
         }
@@ -1453,12 +1546,21 @@ MIRProgramEntity extend: {
 
     public override method x86_64::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress := {
         self isThreadLocal ifTrue: {
-            AsmX86RegisterAddress
-                size: 1u8
-                displacement: ((codegen symbolForProgramEntity: self) dword
-                    makeTPOff;
-                    yourself)
-                segment: X86::FS
+            codegen asmTarget isWindows ifTrue: {
+                AsmX86RegisterAddress
+                    base: ((codegen validThreadLocalSegmentPointerRegister x86::int64For: codegen) downCastTo: AsmX86Register)
+                    size: 1u8
+                    displacement: ((codegen symbolForProgramEntity: self) dword
+                        makeSectionRelative;
+                        yourself)
+            } ifFalse: {
+                AsmX86RegisterAddress
+                    size: 1u8
+                    displacement: ((codegen symbolForProgramEntity: self) dword
+                        makeTPOff;
+                        yourself)
+                    segment: X86::FS
+            }.
         } ifFalse: {
             AsmX86RegisterAddress size: 1u8 displacement: (codegen symbolForProgramEntity: self) dword
         }.
@@ -1674,7 +1776,7 @@ MIRCaptureVariable extend: {
 
     public override method x86_64::pointerWithCodegen: (codegen: MIRFunctionAsmCodeGenerator) ::=> AsmX86RegisterAddress
         := AsmX86RegisterAddress
-            base: ((codegen validCaptureVectorPointerRegister x86::int32For: codegen) downCastTo: AsmX86Register)
+            base: ((codegen validCaptureVectorPointerRegister x86::int64For: codegen) downCastTo: AsmX86Register)
             size: self size asUInt8
             displacement: (codegen captureVectorDataOffset asInt32 + self offset asInt32) asAsmImmediate.
 }.

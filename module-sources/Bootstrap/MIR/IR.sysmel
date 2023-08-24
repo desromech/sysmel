@@ -499,6 +499,16 @@ public final class MIRCaptureVectorPointerValue superclass: MIRSpecialLocalValue
     public field loadRegister => MIRPhysicalLocation.
 }.
 
+public final class MIRThreadLocalSegmentPointerValue superclass: MIRSpecialLocalValue; definition: {
+    public field segmentIndexRegister => MIRPhysicalLocation.
+    public field segmentPointerVectorRegister => MIRPhysicalLocation.
+    public field loadRegister => MIRPhysicalLocation.
+}.
+
+public final class MIRGotPointerValue superclass: MIRSpecialLocalValue; definition: {
+    public field loadRegister => MIRPhysicalLocation.
+}.
+
 public final class MIRLocalVariable superclass: MIRLocalValue; definition: {
 }.
 
@@ -1009,6 +1019,12 @@ MIRInstruction definition: {
     public field captureVectorPointerValue => MIRCaptureVectorPointerValue.
     public field captureVectorPointerRegister => MIRPhysicalLocation.
 
+    public field gotPointerValue => MIRThreadLocalSegmentPointerValue.
+    public field gotPointerRegister => MIRPhysicalLocation.
+
+    public field threadLocalSegmentPointerValue => MIRThreadLocalSegmentPointerValue.
+    public field threadLocalSegmentPointerRegister => MIRPhysicalLocation.
+
     public field callingConvention => MIRCallingConvention.
     public field targetPhi => MIRInstruction.
 
@@ -1104,6 +1120,9 @@ MIRInstruction definition: {
 
     public method usesCapture => Boolean
         := operands anySatisfy: {:(MIRValue)operand :: Boolean | operand isCaptureValueOrPointer }.
+
+    public method usesThreadLocalSegmentPointer => Boolean
+        := operands anySatisfy: {:(MIRValue)operand :: Boolean | operand isThreadLocal }.
 
     public method phiIncomingBlocksAndValuesDoReplacingValues: (aBlock: (MIRBasicBlock, MIRValue) => MIRValue) ::=> Void := {
         self assert: self isPhiInstruction.
@@ -1362,6 +1381,9 @@ MIRFunction definition: {
     public field captureVectorSize => UInt64.
     public field captureVectorAlignment => UInt64.
 
+    public field threadLocalSegmentPointerValue => MIRThreadLocalSegmentPointerValue.
+    public field gotPointerValue => MIRGotPointerValue.
+
     public field argumentPassingStackAlignment => UInt64.
     public field argumentPassingStackSize => UInt64.
 
@@ -1535,6 +1557,8 @@ MIRFunction definition: {
 
     public inline method allLocalValuesDo: (aBlock: (MIRLocalValue) => Void) ::=> Void := {
         arguments do: aBlock.
+        gotPointerValue ifNotNil: aBlock(gotPointerValue).
+        threadLocalSegmentPointerValue ifNotNil: aBlock(threadLocalSegmentPointerValue).
         captureVectorPointerValue ifNotNil: aBlock(captureVectorPointerValue).
         captures do: aBlock.
         temporaries do: aBlock.
@@ -1594,6 +1618,23 @@ MIRFunction definition: {
         }.
     }.
 
+    public method ensureThreadLocalSegmentPointerValue => Void := {
+        self compilationTarget usesThreadLocalSegmentPointer ifFalse: {
+            return: void
+        }.
+
+        self instructionsDo: {:(MIRInstruction)each :: Void |
+            each usesThreadLocalSegmentPointer ifTrue: {
+                threadLocalSegmentPointerValue ifNil: {
+                    threadLocalSegmentPointerValue := MIRThreadLocalSegmentPointerValue withType: AnyValue compilationTarget: compilationTarget
+                }.
+
+                each threadLocalSegmentPointerValue: threadLocalSegmentPointerValue.
+                threadLocalSegmentPointerValue registerUser: each
+            }.
+        }.
+    }.
+
     public method enumerateLocals => Void := {
         let index mutable := 0u32.
         self allLocalValuesDo: {:(MIRLocalValue)each :: Void |
@@ -1630,6 +1671,7 @@ MIRFunction definition: {
         }.
 
         self ensureCaptureVectorPointerValue.
+        self ensureThreadLocalSegmentPointerValue.
 
         self enumerateLocals.
         self allLocalValuesDo: {:(MIRLocalValue)eachLocal :: Void |
@@ -2411,6 +2453,12 @@ MIRCallingConvention definition: {
     public virtual method preferredRegisterForCaptureVectorPointer => MIRPhysicalIntegerRegister
         := nil.
 
+    public virtual method preferredRegisterForGotPointer => MIRPhysicalIntegerRegister
+        := nil.
+
+    public virtual method preferredRegisterForThreadLocalSegmentPointer => MIRPhysicalIntegerRegister
+        := nil.
+
     public virtual method framePointerAnchorIsAtBottom => Boolean ## Required by the Win64 calling convention.
         := false.
 }.
@@ -2454,4 +2502,7 @@ MIRCompilationTarget definition: {
 
     public virtual method objectModel => ObjectModelVariant
         := self pointerSize = 4sz ifTrue: ObjectModelVariant32 uniqueInstance ifFalse: ObjectModelVariant64 uniqueInstance.
+
+    public abstract method usesThreadLocalSegmentPointer => Boolean
+        := self subclassResponsibility.
 }.

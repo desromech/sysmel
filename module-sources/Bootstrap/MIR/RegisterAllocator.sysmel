@@ -248,6 +248,12 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
     public abstract method allocateCaptureVectorPointerRegisterForInstruction: (instruction: MIRInstruction) ::=> Void
         := self subclassResponsibility.
 
+    public abstract method allocateGotPointerRegisterForInstruction: (instruction: MIRInstruction) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method allocateThreadLocalSegmentPointerRegisterForInstruction: (instruction: MIRInstruction) ::=> Void
+        := self subclassResponsibility.
+
     public abstract method allocateIntegerRegisterForValue: (value: MIRValue) ::=> MIRPhysicalLocation
         := self subclassResponsibility.
 

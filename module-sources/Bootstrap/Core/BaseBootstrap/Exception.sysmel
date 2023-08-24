@@ -1,5 +1,5 @@
 public struct ExceptionSetjmpBuffer definition: {
-    public field data => UIntPointer[16sz].
+    public field data => UIntPointer[32sz].
 
     __Meta__ definition: {
         public override method minimalAlignment => Size

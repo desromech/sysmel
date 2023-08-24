@@ -48,6 +48,9 @@ public abstract class AsmAbstractX86CompilationTarget superclass: AsmCompilation
             }.
         }.
     }.
+
+    public override method usesThreadLocalSegmentPointer => Boolean
+        := self isWindows.
 }.
 
 public final class AsmX86CompilationTarget superclass: AsmAbstractX86CompilationTarget; definition: {
@@ -316,7 +319,7 @@ AsmX86RegisterAddress definition: {
             || (base isNil && index isNil && longMode && self hasAbsoluteDisplacement).
 
     public method hasSmallDisplacement => Boolean
-        := displacement isNil || displacement isImmediateSigned8.
+        := (displacement isNil || displacement isImmediateSigned8) && self hasAbsoluteDisplacement not.
 
     public method hasDisplacement => Boolean
         := displacement isNotNil && displacement isImmediateValue0 not.
@@ -1574,6 +1577,14 @@ AsmObjectCodeRelocationAbsoluteInt32 extend: {
             length: 2u8.
         true
     }.
+}.
+
+AsmObjectCodeRelocationSectionRelativeInt32 extend: {
+    public override method x86::coffRelocationType => UInt16
+        := Coff::RelocationType::I386::Secrel.
+
+    public override method x86_64::coffRelocationType => UInt16
+        := Coff::RelocationType::AMD64::Secrel.
 }.
 
 AsmObjectCodeRelocationAbsoluteInt64 extend: {

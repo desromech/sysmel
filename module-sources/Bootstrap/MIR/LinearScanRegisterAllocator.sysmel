@@ -3,6 +3,8 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
     protected field floatRegisterFile => MIRRegisterAllocationFile.
     protected field vectorRegisterFile => MIRRegisterAllocationFile.
     protected field captureVectorPointerValue => MIRCaptureVectorPointerValue.
+    protected field gotPointerValue => MIRGotPointerValue.
+    protected field threadLocalSegmentPointerValue => MIRThreadLocalSegmentPointerValue.
     protected field functionArguments => Array.
 
     protected field performsCallouts => Boolean.
@@ -33,6 +35,8 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
         ## Compute the live intervals.
         function normalizeAndComputeLiveIntervals.
         captureVectorPointerValue := function captureVectorPointerValue.
+        gotPointerValue := function gotPointerValue.
+        threadLocalSegmentPointerValue := function threadLocalSegmentPointerValue.
 
         ## Reset the register allocation state.
         function allLocalValuesDo: {:(MIRLocalValue)eachValue :: Void |
@@ -50,6 +54,30 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
             }.
         }.
 
+        gotPointerValue ifNotNil: {
+            let preferredRegister := function callingConvention preferredRegisterForGotPointer.
+            preferredRegister ifNotNil: {
+                gotPointerValue loadRegister: preferredRegister.
+                integerRegisterFile spillIfNeededAndAllocateRegister: preferredRegister withResultValue: gotPointerValue.
+            } ifNil: {
+                gotPointerValue loadRegister: (integerRegisterFile allocateForResultValue: gotPointerValue trySharingWith: nil).
+            }.
+        }.
+        
+        threadLocalSegmentPointerValue ifNotNil: {
+            self beginValueAtIndex: threadLocalSegmentPointerValue index.
+            let preferredRegister := function callingConvention preferredRegisterForThreadLocalSegmentPointer,
+            preferredRegister ifNotNil: {
+                threadLocalSegmentPointerValue loadRegister: preferredRegister.
+                integerRegisterFile spillIfNeededAndAllocateRegister: preferredRegister withResultValue: threadLocalSegmentPointerValue.
+            } ifNil: {
+                threadLocalSegmentPointerValue loadRegister: (integerRegisterFile allocateForResultValue: threadLocalSegmentPointerValue trySharingWith: nil).
+            }.
+    
+            threadLocalSegmentPointerValue segmentIndexRegister: threadLocalSegmentPointerValue loadRegister.
+            threadLocalSegmentPointerValue segmentPointerVectorRegister: (integerRegisterFile allocateForValue: nil).
+        }.
+        
         captureVectorPointerValue ifNotNil: {
             self beginValueAtIndex: captureVectorPointerValue index.
             self assert: captureVectorPointerValue closure isNotNil.
@@ -98,7 +126,9 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
         }.
 
         instruction operation computeRegisterConstraintsOf: instruction with: self.
-        self allocateCaptureVectorPointerRegisterForInstruction: instruction
+        self allocateCaptureVectorPointerRegisterForInstruction: instruction.
+        self allocateGotPointerRegisterForInstruction: instruction.
+        self allocateThreadLocalSegmentPointerRegisterForInstruction: instruction.
     }.
 
     public method beginValueAtIndex: (deadPoint: UInt32) ::=> Void := {
@@ -116,6 +146,18 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
     public override method allocateCaptureVectorPointerRegisterForInstruction: (instruction: MIRInstruction) ::=> Void := {
         instruction captureVectorPointerValue isNotNil && instruction captureVectorPointerRegister isNil ifTrue: {
             instruction captureVectorPointerRegister: (integerRegisterFile allocateForValue: instruction captureVectorPointerValue)
+        }.
+    }.
+
+    public override method allocateGotPointerRegisterForInstruction: (instruction: MIRInstruction) ::=> Void := {
+        instruction gotPointerValue isNotNil && instruction gotPointerRegister isNil ifTrue: {
+            instruction gotPointerRegister: (integerRegisterFile allocateForValue: instruction gotPointerValue)
+        }.
+    }.
+
+    public override method allocateThreadLocalSegmentPointerRegisterForInstruction: (instruction: MIRInstruction) ::=> Void := {
+        instruction threadLocalSegmentPointerValue isNotNil && instruction threadLocalSegmentPointerRegister isNil ifTrue: {
+            instruction threadLocalSegmentPointerRegister: (integerRegisterFile allocateForValue: instruction threadLocalSegmentPointerValue)
         }.
     }.
 

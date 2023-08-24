@@ -51,6 +51,9 @@ public abstract class AsmCompilationTarget superclass: Object; definition: {
     public virtual method functionEntryPointAlignment => Size
         := self indirectBranchTargetAlignment.
 
+    public virtual method usesThreadLocalSegmentPointer => Boolean
+        := false.
+
     public abstract method padCodeSectionData: (data: ByteArray) at: (writeOffset: Size) size: (size: Size) unreachable: (unreachable: Boolean) ::=> Void
         := self subclassResponsibility.
 

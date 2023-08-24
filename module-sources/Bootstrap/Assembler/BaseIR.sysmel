@@ -173,7 +173,7 @@ AsmImmediateSymbolWithAddend definition: {
     public override method isImmediateSigned64 => Boolean := size = 4sz.
 
     public override method isAbsoluteOffset => Boolean
-        := self isTPOff.
+        := self isTPOff || self isSectionRelative.
 
     public method asConstantExpression => AsmConstantExpression
         := AsmConstantExpressionSymbolValue new
@@ -205,29 +205,45 @@ AsmImmediateSymbolWithAddend definition: {
         self assert: (requiredSize = 4sz) || (requiredSize = 8sz).
         requiredSize = 4sz ifTrue: {
             self isTPOff ifTrue: {
-            codeStream
-                recordRelocation: (AsmObjectCodeRelocationTPOffset32 new
-                    symbol: symbol;
-                    addend: addend asInt32;
-                    yourself).
-            } ifFalse: {
                 codeStream
-                    recordRelocation: (AsmObjectCodeRelocationAbsoluteInt32 new
+                    recordRelocation: (AsmObjectCodeRelocationTPOffset32 new
                         symbol: symbol;
                         addend: addend asInt32;
                         yourself).
-
+            } ifFalse: {
+                self isSectionRelative ifTrue: {
+                    codeStream
+                        recordRelocation: (AsmObjectCodeRelocationSectionRelativeInt32 new
+                            symbol: symbol;
+                            addend: addend asInt32;
+                            yourself)
+                } ifFalse: {
+                    codeStream
+                        recordRelocation: (AsmObjectCodeRelocationAbsoluteInt32 new
+                            symbol: symbol;
+                            addend: addend asInt32;
+                            yourself)
+                }
             }.
 
             codeStream nextPutUInt32: 0u32
         }.
         requiredSize = 8sz ifTrue: {
-            codeStream
-                recordRelocation: (AsmObjectCodeRelocationAbsoluteInt64 new
-                    symbol: symbol;
-                    addend: addend asInt64;
-                    yourself);
-                nextPutUInt64: 0u64
+            self isSectionRelative ifTrue: {
+                codeStream
+                    recordRelocation: (AsmObjectCodeRelocationSectionRelativeInt64 new
+                        symbol: symbol;
+                        addend: addend asInt64;
+                        yourself);
+                    nextPutUInt64: 0u64
+            } ifFalse: {
+                codeStream
+                    recordRelocation: (AsmObjectCodeRelocationAbsoluteInt64 new
+                        symbol: symbol;
+                        addend: addend asInt64;
+                        yourself);
+                    nextPutUInt64: 0u64
+            }.
         }.
     }.
 
@@ -328,6 +344,7 @@ AsmSymbol extend: {
 
 public class AsmImmediateConstant superclass: AsmImmediate; definition: {
     public method isImmediateConstant => Boolean := true.
+    public override method isAbsoluteOffset => Boolean := true.
 }.
 
 AsmConstantExpression definition: {
@@ -1596,6 +1613,15 @@ public final class AsmStreamBuilder superclass: Object; definition: {
             readable: true;
             writeable: true;
             nobits: true;
+            yourself).
+
+    public method tlsSection ::=> AsmSectionDirective
+        := self addElement: (AsmSectionDirective new
+            name: #".tls$";
+            loaded: true;
+            readable: true;
+            writeable: true;
+            tls: true;
             yourself).
 
     public method tdataSection ::=> AsmSectionDirective

@@ -27,6 +27,9 @@ public abstract class MIRAsmCompilationTarget superclass: MIRCompilationTarget; 
     public override method stackFrameAlignment => Size
         := asmCompilationTarget stackFrameAlignment.
 
+    public override method usesThreadLocalSegmentPointer => Boolean
+        := asmCompilationTarget usesThreadLocalSegmentPointer.
+
     public override method generateTargetIRForMIRModule: (module: MIRModule) ::=> AnyValue := {
         let codeGenerator := MIRModuleAsmCodeGenerator new
             target: self;
@@ -68,6 +71,9 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
 
     protected field picTableDictionary => Dictionary.
     protected field picTableSymbol => AsmSymbol.
+
+    protected field tlsIndexSymbol => AsmSymbol.
+    protected field tlsArraySymbol => AsmSymbol.
 
     public override method initialize => Void := {
         programEntitySymbolMap := Dictionary new.
@@ -185,6 +191,26 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
             endLabel: self picTableSymbol
     }.
 
+    public method tlsIndexSymbol ::=> AsmSymbol
+        := tlsIndexSymbol ifNil: {
+            tlsIndexSymbol := AsmSymbol new
+                name: #_tls_index;
+                makePublic;
+                yourself.
+            targetModule addImportedSymbol: tlsIndexSymbol.
+            tlsIndexSymbol
+        }.
+
+    public method tlsArraySymbol ::=> AsmSymbol
+        := tlsArraySymbol ifNil: {
+            tlsArraySymbol := AsmSymbol new
+                name: #_tls_array;
+                makePublic;
+                yourself.
+            targetModule addImportedSymbol: tlsArraySymbol.
+            tlsArraySymbol
+        }.
+
     public method buildStringLiterals => Void := {
         stringTableList size = 0sz ifTrue: (return: void).
 
@@ -216,6 +242,9 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
     public field stackFrameLayout => MIRStackFrameLayout.
     private field constantSymbolDictionary => Dictionary.
 
+    public method asmTarget => AsmCompilationTarget
+        := moduleGenerator asmTarget.
+
     protected field textSection => AsmStreamBuilder.
     public method textSection => AsmStreamBuilder
         := textSection ifNil: (textSection := asmFunction newStreamBuilder
@@ -231,8 +260,22 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
     protected field captureVectorPointerRegister => MIRPhysicalLocation.
 
     public method validCaptureVectorPointerRegister => MIRPhysicalLocation := {
-        captureVectorPointerRegister ifNil: (self error: "Cannot use unloaded capture vector pointer register").
+        captureVectorPointerRegister ifNil: (self error: "Cannot use unloaded capture vector pointer register.").
         captureVectorPointerRegister
+    }.
+
+    protected field gotPointerRegister => MIRPhysicalLocation.
+
+    public method validGotPointerRegister => MIRPhysicalLocation := {
+        gotPointerRegister ifNil: (self error: "Cannot use unloaded got pointer register.").
+        gotPointerRegister
+    }.
+
+    protected field threadLocalSegmentPointerRegister => MIRPhysicalLocation.
+
+    public method validThreadLocalSegmentPointerRegister => MIRPhysicalLocation := {
+        threadLocalSegmentPointerRegister ifNil: (self error: "Cannot use unloaded thread local data segment pointer register.").
+        threadLocalSegmentPointerRegister
     }.
 
     public field closureArgument => MIRArgumentValue.
@@ -327,6 +370,12 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
             := self subclassResponsibility.
 
         public abstract method emitLoadCaptureVectorPointerFromClosure: (closurePointer: MIRPhysicalLocation) intoRegister: (register: MIRPhysicalLocation) with: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
+        public abstract method emitLoadGotPointerValueIntoRegister: (register: MIRPhysicalLocation) with: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
+        public abstract method emitLoadThreadLocalSegmentPointerRegisters: (tlsPointerValue: MIRThreadLocalSegmentPointerValue) with: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
     }.
 
@@ -478,6 +527,22 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         }.
 
         function arguments do: unspillValue.
+
+        function gotPointerValue ifNotNil: {
+            let gotPointerValue := function gotPointerValue.
+            moduleGenerator target emitLoadGotPointerValueIntoRegister: gotPointerValue loadRegister with: self.
+            self emitMoveRegister: gotPointerValue loadRegister intoValue: gotPointerValue.
+        }.
+
+        function threadLocalSegmentPointerValue ifNotNil: {
+            let threadLocalSegmentPointerValue := function threadLocalSegmentPointerValue.
+            moduleGenerator target emitLoadThreadLocalSegmentPointerRegisters: threadLocalSegmentPointerValue with: self.
+            self emitMoveRegister: threadLocalSegmentPointerValue loadRegister intoValue: threadLocalSegmentPointerValue.
+        }.
+
+        gotPointerRegister := nil.
+        threadLocalSegmentPointerRegister := nil.
+
         function captureVectorPointerValue ifNotNil: {
             let captureVectorPointer := function captureVectorPointerValue.
             self emitMoveValue: function arguments first intoLocation: captureVectorPointer closureRegister.
@@ -485,6 +550,7 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
             self emitMoveRegister: captureVectorPointer loadRegister intoValue: captureVectorPointer.
             captureVectorPointerRegister := captureVectorPointer loadRegister.
         }.
+
         function captures do: unspillValue.
         captureVectorPointerRegister := nil.
     }.
@@ -541,6 +607,14 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         captureVectorPointerRegister ifNotNil: {
             self emitMoveValue: instruction captureVectorPointerValue intoLocation: captureVectorPointerRegister.
         }.
+        gotPointerRegister := instruction gotPointerRegister.
+        gotPointerRegister ifNotNil: {
+            self emitMoveValue: instruction gotPointerValue intoLocation: gotPointerRegister.
+        }.
+        threadLocalSegmentPointerRegister := instruction threadLocalSegmentPointerRegister.
+        threadLocalSegmentPointerRegister ifNotNil: {
+            self emitMoveValue: instruction threadLocalSegmentPointerValue intoLocation: threadLocalSegmentPointerRegister.
+        }.
         instruction resultRegister isNotNil && instruction resultRegister isRegisterWithPointer ifTrue: {
             self emitMoveValue: instruction intoLocation: instruction resultRegister
         }.
@@ -555,6 +629,8 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         }.
 
         captureVectorPointerRegister := nil.
+        gotPointerRegister := nil.
+        threadLocalSegmentPointerRegister := nil.
     }.
 
     public method generatePhiMoves => Void := {
@@ -800,10 +876,14 @@ public final class MIRGlobalDataAsmCodeGenerator superclass: MIRAsmCodeGenerator
 
     public method selectDataSection => Void := {
         isThreadLocal ifTrue: {
-            hasInitialValue ifTrue: {
-                dataStream tdataSection.
+            moduleGenerator asmTarget isWindows ifTrue: {
+                dataStream tlsSection
             } ifFalse: {
-                dataStream tbssSection.
+                hasInitialValue ifTrue: {
+                    dataStream tdataSection.
+                } ifFalse: {
+                    dataStream tbssSection.
+                }
             }.
         } ifFalse: {
             hasInitialValue ifTrue: {

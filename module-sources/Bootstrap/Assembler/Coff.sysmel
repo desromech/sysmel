@@ -35,7 +35,7 @@ public global Coff::ImageSection::LinkNumberOfRelocOverflow := 16r0100_0000 u32.
 public global Coff::ImageSection::MemShared := 16r1000_0000 u32.
 public global Coff::ImageSection::MemExecute := 16r2000_0000 u32.
 public global Coff::ImageSection::MemRead := 16r4000_0000 u32.
-public global Coff::ImageSection::MemWrite := 16r4000_0000 u32.
+public global Coff::ImageSection::MemWrite := 16r8000_0000 u32.
 
 public global Coff::ImageSection::AlignMap := #{
     1sz    : Coff::ImageSection::Align1Bytes.
