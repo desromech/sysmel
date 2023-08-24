@@ -17,6 +17,7 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
 
     public override method allocateRegistersIn: (function: MIRFunction) withTarget: (target: MIRCompilationTarget) ::=> Void := {
         compilationTarget := target.
+        callingConvention := function callingConvention.
         performsCallouts := false.
         maxCalloutSize := 0u64.
         maxCalloutAlignment := 1u64.

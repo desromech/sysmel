@@ -9,7 +9,7 @@ printLine(increment()).
 
 let hirModule := HIRModuleCompilationContext forDefaultTarget
     exclusiveCompilationMode: true;
-    compileFunctionsWithDefinitions: (increment,);
+    compileFunctionsWithDefinitions: (increment, ExceptionSetjmpBuffer >> #setjmp, ExceptionSetjmpBuffer >> #longjmp);
     finish.
 
 printLine(hirModule fullPrintString).

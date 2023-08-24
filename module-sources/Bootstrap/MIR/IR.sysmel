@@ -1195,6 +1195,9 @@ public global MIR::Operation::ReturnFloat64 := MIROperation terminatorNamed: #re
 public global MIR::Operation::ReturnStruct := MIROperation terminatorNamed: #returnStruct.
 public global MIR::Operation::ReturnVoid := MIROperation terminatorNamed: #returnVoid.
 
+public global MIR::Operation::ExceptionSetjmp := MIROperation terminatorNamed: #exceptionSetjmp.
+public global MIR::Operation::ExceptionLongjmp := MIROperation terminatorNamed: #exceptionLongjmp.
+
 public global MIR::Operation::Trap := MIROperation named: #trap.
 public global MIR::Operation::UnreachableTrap := MIROperation terminatorNamed: #unreachableTrap.
 
@@ -2000,7 +2003,7 @@ public final class MIRBlockBuilder superclass: Object; definition: {
     }.
 
     public method loadStruct: (pointer: MIRValue) constantOffset: (constantOffset: Int64) type: (type: Type) ::=> MIRInstruction
-        := self operation: MIR::Operation::LoadStruct with: pointer with: (self constantOffsetImmediateFor: constantOffset) type: Type.
+        := self operation: MIR::Operation::LoadStruct with: pointer with: (self constantOffsetImmediateFor: constantOffset) type: type.
 
     public method pointerConstantWith: (value: UInt64) ::=> MIRValue
         := self has64BitsPointers
@@ -2036,6 +2039,12 @@ public final class MIRBlockBuilder superclass: Object; definition: {
 
     public method memset: (destination: MIRValue) value: (value: MIRValue) size: (size: MIRValue) ::=> MIRInstruction
         := self operation: MIR::Operation::Memset with: destination with: value with: size.
+
+    public method exceptionSetjmp: (jmpbuffer: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::ExceptionSetjmp with: jmpbuffer.
+
+    public method exceptionLongjmp: (jmpbuffer: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::ExceptionLongjmp with: jmpbuffer.
 
     public method loadEffectiveAddress: (basePointer: MIRValue) index: (indexValue: MIRValue) constantScale: (constantScale: Int64) type: (type: Type) ::=> MIRValue := {
         constantScale = 0i64 ifTrue: {

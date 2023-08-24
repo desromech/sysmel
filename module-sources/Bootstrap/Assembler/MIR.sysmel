@@ -357,6 +357,18 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
 
         public abstract method asm::generateCallVoid: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
+
+        public abstract method asm::allocateExceptionLongjmpRegistersFor: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void
+            := self subclassResponsibility.
+
+        public abstract method asm::generateExceptionLongjmpRegistersFor: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
+        public abstract method asm::allocateExceptionSetjmpRegistersFor: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void
+            := self subclassResponsibility.
+
+        public abstract method asm::generateExceptionSetjmpRegistersFor: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
     }.
 
     public method computeArgumentPassingLayout => Void := {

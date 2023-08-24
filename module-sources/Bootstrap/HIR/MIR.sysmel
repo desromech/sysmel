@@ -1809,6 +1809,15 @@ public global HIRMirPrimitiveCallGenerationTable := #{
         codegen blockBuilder memset: (codegen translateValue: arguments first) value: (codegen translateValue: arguments second) size: (codegen translateValue: arguments third).
     }.
 
+    #Exception::setjmp : {:(Array)arguments :(Type)type :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: MIRValue |
+        codegen blockBuilder exceptionSetjmp: (codegen translateValue: arguments first).
+        0u8 asMirConstant.
+    }.
+
+    #Exception::longjmp : {:(Array)arguments :(Type)type :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: MIRValue |
+        codegen blockBuilder exceptionLongjmp: (codegen translateValue: arguments first).
+    }.
+
     ## Boolean primitives
     #Boolean::not : translateUnaryPrimitiveInto(MIR::Operation::BooleanNot).
     #Boolean::xor: : translateBinaryPrimitiveInto(MIR::Operation::BooleanXor).
@@ -2327,11 +2336,14 @@ HIRFunctionDefinitionMIRCodeGenerator extend: {
 
     public method compileCall: (calledFunction: HIRValue) withArguments: (arguments: Array) unchecked: (isUnchecked: Boolean) type: (resultType: Type) ::=> MIRValue := {
         ## Attempt to use the primitive generator first.
-        let primitiveGenerator type: (Array, Type, HIRFunctionDefinitionMIRCodeGenerator) => MIRValue := HIRMirPrimitiveCallGenerationTable atOrNil: calledFunction primitiveName.
-        primitiveGenerator ifNotNil: {
-            let primitiveValue := primitiveGenerator(arguments, resultType, self).
-            primitiveValue ifNotNil: {
-                return: primitiveValue
+        let primitiveName := calledFunction primitiveName.
+        (#(Exception::setjmp Exception::longjmp) includes: primitiveName) ifFalse: {
+            let primitiveGenerator type: (Array, Type, HIRFunctionDefinitionMIRCodeGenerator) => MIRValue := HIRMirPrimitiveCallGenerationTable atOrNil: primitiveName.
+            primitiveGenerator ifNotNil: {
+                let primitiveValue := primitiveGenerator(arguments, resultType, self).
+                primitiveValue ifNotNil: {
+                    return: primitiveValue
+                }
             }
         }.
 

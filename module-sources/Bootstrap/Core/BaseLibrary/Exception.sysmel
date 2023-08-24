@@ -55,10 +55,17 @@ Exception definition: {
             ExceptionStackRecord unwindUntil: handlerRecord.
             
             ExceptionStackRecord::LastActive := handlerRecord _ previous.
-            handlerRecord _ setjmpBuffer longjmp
+            (handlerRecord _ __slotNamedReferenceAt__: #setjmpBuffer) longjmp
         }.
     }.
 }.
+
+Object
+    withSelector: #assert: replaceMethod: {:(Object)self :(Boolean)condition :: Void |
+        condition ifFalse: {
+            AssertionFailure signal: "Assertion failure."
+        }
+    } withEagerAnalysis.
 
 error adoptDefinitionOf: {:(String)message :: Unwinds |
     Error signal: message.

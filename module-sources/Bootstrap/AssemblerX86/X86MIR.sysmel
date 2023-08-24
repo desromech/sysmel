@@ -1002,6 +1002,44 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRX86_64CallingCo
             argumentPassingStackAlignment: stackArgumentAlignment;
             argumentPassingStackSize: (stackSize alignedTo: stackArgumentAlignment)
     }.
+
+    public override method asm::allocateExceptionLongjmpRegistersFor: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
+        allocator allocateRegister: MIR::X86_64::RDI forInstruction: instruction operandAt: 0sz.
+    }.
+
+    public override method asm::generateExceptionLongjmpRegistersFor: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection
+            x86::mov: X86::RAX src: X86::RDI x86::qword;
+            x86::mov: X86::RSP src: X86::RDI x86::qword +  8i8 asAsmImmediate;
+            x86::mov: X86::RBX src: X86::RDI x86::qword + 16i8 asAsmImmediate;
+            x86::mov: X86::RBP src: X86::RDI x86::qword + 24i8 asAsmImmediate;
+            x86::mov: X86::R12 src: X86::RDI x86::qword + 32i8 asAsmImmediate;
+            x86::mov: X86::R13 src: X86::RDI x86::qword + 40i8 asAsmImmediate;
+            x86::mov: X86::R14 src: X86::RDI x86::qword + 48i8 asAsmImmediate;
+            x86::mov: X86::R15 src: X86::RDI x86::qword + 56i8 asAsmImmediate;
+            x86::mov: X86::RSP x86::qword src: X86::RAX;
+            x86::mov: X86::EAX src: 1i8 asAsmImmediate;
+            x86::ret
+    }.
+
+    public override method asm::allocateExceptionSetjmpRegistersFor: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
+        allocator allocateRegister: MIR::X86_64::RDI forInstruction: instruction operandAt: 0sz.
+    }.
+
+    public override method asm::generateExceptionSetjmpRegistersFor: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen textSection
+            x86::mov: X86::RAX src: X86::RSP x86::qword;
+            x86::mov: X86::RDI x86::qword src: X86::RAX;
+            x86::mov: X86::RDI x86::qword +  8i8 asAsmImmediate src: X86::RSP;
+            x86::mov: X86::RDI x86::qword + 16i8 asAsmImmediate src: X86::RBX;
+            x86::mov: X86::RDI x86::qword + 24i8 asAsmImmediate src: X86::RBP;
+            x86::mov: X86::RDI x86::qword + 32i8 asAsmImmediate src: X86::R12;
+            x86::mov: X86::RDI x86::qword + 40i8 asAsmImmediate src: X86::R13;
+            x86::mov: X86::RDI x86::qword + 48i8 asAsmImmediate src: X86::R14;
+            x86::mov: X86::RDI x86::qword + 56i8 asAsmImmediate src: X86::R15;
+            x86::xor: X86::RAX with: X86::RAX;
+            x86::ret
+    }.
 }.
 
 public global X86_64::Win64::IntegerArgumentRegisters := (
@@ -5002,6 +5040,22 @@ MIR::Operation::UnreachableTrap
     forTargets: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void | };
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection x86::ud2
+    }.
+
+MIR::Operation::ExceptionSetjmp
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+        allocator callingConvention asm::allocateExceptionSetjmpRegistersFor: instruction with: allocator
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen function callingConvention asm::generateExceptionSetjmpRegistersFor: instruction with: codegen
+    }.
+
+MIR::Operation::ExceptionLongjmp
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+        allocator callingConvention asm::allocateExceptionLongjmpRegistersFor: instruction with: allocator
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen function callingConvention asm::generateExceptionLongjmpRegistersFor: instruction with: codegen
     }.
 
 AsmX86CompilationTarget extend: {

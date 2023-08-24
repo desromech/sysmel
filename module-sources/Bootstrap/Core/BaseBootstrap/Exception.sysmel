@@ -101,7 +101,8 @@ Exception definition: {
     ExceptionStackRecord::LastActive := stackRecord address.
 
     ## Perform setjmp
-    stackRecord setjmpBuffer setjmp ifFalse: {
+    ## FIXME: Avoid this explicit __slotNamedReferenceAt__:
+    (stackRecord __slotNamedReferenceAt__: #setjmpBuffer) setjmp ifFalse: {
         let result := body().
         ExceptionStackRecord::LastActive := stackRecord previous.
         result

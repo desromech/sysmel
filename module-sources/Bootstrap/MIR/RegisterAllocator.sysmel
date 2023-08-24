@@ -1,6 +1,7 @@
    
 public abstract class MIRRegisterAllocator superclass: Object; definition: {
     public field compilationTarget => MIRCompilationTarget.
+    public field callingConvention => MIRCallingConvention.
 
     public abstract method addRequiredCalloutSize: (calloutSize: UInt64) withAlignment: (calloutAlignment: UInt64) ::=> Void
         := self subclassResponsibility.

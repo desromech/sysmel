@@ -63,6 +63,6 @@ public class IntegerTestCase superclass: TestCase; definition: {
 
     public method testError => Void := {
         ## Neutral element
-        self assert: false
+        self error: "Test error."
     }.
 }.
