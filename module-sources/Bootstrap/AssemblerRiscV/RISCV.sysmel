@@ -1,0 +1,91 @@
+public final class AsmRiscV64CompilationTarget superclass: AsmCompilationTarget; definition: {
+    public override method elfMachine => UInt16
+        := Elf::Machine::RISCV.
+
+    public override method elfFlags => UInt32
+        := Elf::Flags::RISCV::FloatAbiDouble.
+
+    public override method coffMachine => UInt16
+        := Coff::ImageFileMachine::RISCV64.
+
+    public override method pointerSize => Size
+        := 8sz.
+
+    public override method uintPointerType => Type
+        := UInt64.
+
+    public override method padCodeSectionData: (data: ByteArray) at: (offset: Size) size: (size: Size) unreachable: (unreachable: Boolean) ::=> Void := {
+        self assert: (offset % 4sz) == 0sz.
+        self assert: (size % 4sz) == 0sz.
+
+        let writeOffset mutable := offset.
+        let endWriteOffset := offset + size.
+        while: (writeOffset < endWriteOffset) do: (
+            data uint32At: writeOffset put: 0u32
+        ) continueWith: (writeOffset := writeOffset + 4sz)
+    }.
+}.
+
+AsmCompilationTarget extend: {
+    __Meta__ extend: {
+        public method riscv64 => AsmRiscV64CompilationTarget
+            := AsmRiscV64CompilationTarget new.
+    }.
+}.
+
+public abstract class AsmRiscVRegister superclass: AsmRegister; definition: {
+    public field name => Symbol.
+    public field value => UInt8.
+
+    __Meta__ definition: {
+        public method name: (name: Symbol) value: (value: UInt8) ::=> self
+            := self new name: name; value: value; yourself.
+    }.
+
+    public method value32 => UInt32 := value asUInt32.
+
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream string: name
+    }.
+}.
+
+public final class AsmRiscVInt64Register superclass: AsmARM64Register; definition: {
+    public override method size => Size := 8sz.
+}.
+
+
+public global RISCV64::X0  := AsmRiscVInt64Register name: #X0  value: 0u8.
+public global RISCV64::X1  := AsmRiscVInt64Register name: #X1  value: 1u8.
+public global RISCV64::X2  := AsmRiscVInt64Register name: #X2  value: 2u8.
+public global RISCV64::X3  := AsmRiscVInt64Register name: #X3  value: 3u8.
+public global RISCV64::X4  := AsmRiscVInt64Register name: #X4  value: 4u8.
+public global RISCV64::X5  := AsmRiscVInt64Register name: #X5  value: 5u8.
+public global RISCV64::X6  := AsmRiscVInt64Register name: #X6  value: 6u8.
+public global RISCV64::X7  := AsmRiscVInt64Register name: #X7  value: 7u8.
+public global RISCV64::X8  := AsmRiscVInt64Register name: #X8  value: 8u8.
+public global RISCV64::X9  := AsmRiscVInt64Register name: #X9  value: 9u8.
+public global RISCV64::X10 := AsmRiscVInt64Register name: #X10 value: 10u8.
+public global RISCV64::X11 := AsmRiscVInt64Register name: #X11 value: 11u8.
+public global RISCV64::X12 := AsmRiscVInt64Register name: #X12 value: 12u8.
+public global RISCV64::X13 := AsmRiscVInt64Register name: #X13 value: 13u8.
+public global RISCV64::X14 := AsmRiscVInt64Register name: #X14 value: 14u8.
+public global RISCV64::X15 := AsmRiscVInt64Register name: #X15 value: 15u8.
+public global RISCV64::X16 := AsmRiscVInt64Register name: #X16 value: 16u8.
+public global RISCV64::X17 := AsmRiscVInt64Register name: #X17 value: 17u8.
+public global RISCV64::X18 := AsmRiscVInt64Register name: #X18 value: 18u8.
+public global RISCV64::X19 := AsmRiscVInt64Register name: #X19 value: 19u8.
+public global RISCV64::X20 := AsmRiscVInt64Register name: #X20 value: 20u8.
+public global RISCV64::X21 := AsmRiscVInt64Register name: #X21 value: 21u8.
+public global RISCV64::X22 := AsmRiscVInt64Register name: #X22 value: 22u8.
+public global RISCV64::X23 := AsmRiscVInt64Register name: #X23 value: 23u8.
+public global RISCV64::X24 := AsmRiscVInt64Register name: #X24 value: 24u8.
+public global RISCV64::X25 := AsmRiscVInt64Register name: #X25 value: 25u8.
+public global RISCV64::X26 := AsmRiscVInt64Register name: #X26 value: 26u8.
+public global RISCV64::X27 := AsmRiscVInt64Register name: #X27 value: 27u8.
+public global RISCV64::X28 := AsmRiscVInt64Register name: #X28 value: 28u8.
+public global RISCV64::X29 := AsmRiscVInt64Register name: #X29 value: 29u8.
+public global RISCV64::X30 := AsmRiscVInt64Register name: #X30 value: 30u8.
+public global RISCV64::X31 := AsmRiscVInt64Register name: #X31 value: 31u8.
+
+AsmStreamBuilder extend: {
+}.

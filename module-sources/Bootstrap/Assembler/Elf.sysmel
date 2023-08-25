@@ -35,6 +35,18 @@ public global Elf::CurrentVersion := 1u32.
 public global Elf::Machine::I386 := 3u16.
 public global Elf::Machine::ARM := 40u16.
 public global Elf::Machine::X86_64 := 62u16.
+public global Elf::Machine::AARCH64 := 183u16.
+public global Elf::Machine::RISCV := 243u16.
+
+public global Elf::Flags::RISCV::RVC := 16r0001 u32.
+
+public global Elf::Flags::RISCV::FloatAbiSoft := 16r0000 u32.
+public global Elf::Flags::RISCV::FloatAbiSingle := 16r0002 u32.
+public global Elf::Flags::RISCV::FloatAbiDouble := 16r0004 u32.
+public global Elf::Flags::RISCV::FloatAbiQuad := 16r0006 u32.
+
+public global Elf::Flags::RISCV::RVE := 16r0008 u32.
+public global Elf::Flags::RISCV::TSO := 16r0010 u32.
 
 public global Elf::SectionHeaderType::Null := 0u32.
 public global Elf::SectionHeaderType::Progbits := 1u32.
@@ -424,6 +436,7 @@ public final class AsmObjectElf32FileWriter superclass: AsmObjectFileWriter; def
         let header := Elf32::Header new
             type: Elf::Type::Rel;
             machine: compilationTarget elfMachine;
+            flags: compilationTarget elfFlags;
             yourself.
 
         let fileLayout := OrderedCollection new.
@@ -596,6 +609,7 @@ public final class AsmObjectElf64FileWriter superclass: AsmObjectFileWriter; def
         let header := Elf64::Header new
             type: Elf::Type::Rel;
             machine: compilationTarget elfMachine;
+            flags: compilationTarget elfFlags;
             yourself.
 
         let fileLayout := OrderedCollection new.
@@ -771,8 +785,11 @@ AsmCompilationTarget extend: {
     public virtual method usesElfRelStyleRelocations => Boolean
         := false.
 
-    public abstract method elfMachine => UInt16
+    public virtual method elfMachine => UInt16
         := 0u16.
+
+    public virtual method elfFlags => UInt32
+        := 0u32.
 
     public method usesElfRelaStyleRelocations => Boolean
         := self usesElfRelStyleRelocations not.

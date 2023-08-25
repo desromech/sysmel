@@ -1,6 +1,3 @@
-AsmInstructionOperand extend: {
-}.
-
 let ARM::Bkpt := 2r1110_00010010_0000_0000_0000_0111_0000 u32.
 
 public final class AsmARMCompilationTarget superclass: AsmCompilationTarget; definition: {

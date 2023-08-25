@@ -100,4 +100,30 @@ let codeArmMachO := AsmStream for: AsmCompilationTarget armv6k useMachO buildWit
 printLine(codeArmElf fullPrintString).
 codeArmElf assemble writeObjectToFileNamed: "test.arm.elf32".
 codeArmCoff assemble writeObjectToFileNamed: "test.arm.coff".
-codeArmCoff assemble writeObjectToFileNamed: "test.arm.macho32".
+codeArmMachO assemble writeObjectToFileNamed: "test.arm.macho32".
+
+let codeArm64Block := {:(AsmStreamBuilder)builder :: Void |
+    builder
+        textSection;
+        align: 16sz unreachable: true;
+        blockNamed: ((builder symbolNamed: #main) makeFunction; makePublic; yourself) with: {:(AsmStreamBuilder)builder :: Void |
+        }.
+}.
+let codeArm64Elf := AsmStream for: AsmCompilationTarget arm64 useElf buildWith: codeArm64Block.
+let codeArm64Coff := AsmStream for: AsmCompilationTarget arm64 useCoff buildWith: codeArm64Block.
+let codeArm64MachO := AsmStream for: AsmCompilationTarget arm64 useMachO buildWith: codeArm64Block.
+printLine(codeArm64Elf fullPrintString).
+codeArm64Elf assemble writeObjectToFileNamed: "test.arm64.elf64".
+codeArm64Coff assemble writeObjectToFileNamed: "test.arm64.coff".
+codeArm64MachO assemble writeObjectToFileNamed: "test.arm64.macho64".
+
+let codeRiscV64Block := {:(AsmStreamBuilder)builder :: Void |
+    builder
+        textSection;
+        align: 16sz unreachable: true;
+        blockNamed: ((builder symbolNamed: #main) makeFunction; makePublic; yourself) with: {:(AsmStreamBuilder)builder :: Void |
+        }.
+}.
+let codeRiscV64Elf := AsmStream for: AsmCompilationTarget riscv64 useElf buildWith: codeRiscV64Block.
+printLine(codeRiscV64Elf fullPrintString).
+codeRiscV64Elf assemble writeObjectToFileNamed: "test.riscv64.elf64".

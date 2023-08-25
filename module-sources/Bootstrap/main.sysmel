@@ -14,7 +14,8 @@ loadPackageNamed: "MIRTests".
 loadPackageNamed: "Assembler".
 loadPackageNamed: "AssemblerX86".
 loadPackageNamed: "AssemblerArm".
-loadPackageNamed: "AssemblerAArch64".
+loadPackageNamed: "AssemblerArm64".
+loadPackageNamed: "AssemblerRiscV".
 loadPackageNamed: "HIR".
 
 printLine("Bootstrap package loading finished.").
