@@ -95,7 +95,8 @@ public global ARM64::X27 := AsmARM64Int64Register name: #X27 value: 27u8.
 public global ARM64::X28 := AsmARM64Int64Register name: #X28 value: 28u8.
 public global ARM64::X29 := AsmARM64Int64Register name: #X29 value: 29u8.
 public global ARM64::X30 := AsmARM64Int64Register name: #X30 value: 30u8.
-public global ARM64::X31 := AsmARM64Int64Register name: #X31 value: 31u8.
+public global ARM64::XZR := AsmARM64Int64Register name: #XZR value: 31u8.
+public global ARM64::SP := AsmARM64Int64Register name: #XZR value: 31u8.
 
 public global ARM64::W0  := AsmARM64Int32Register name: #W0  value: 0u8.
 public global ARM64::W1  := AsmARM64Int32Register name: #W1  value: 1u8.
@@ -128,7 +129,8 @@ public global ARM64::W27 := AsmARM64Int32Register name: #W27 value: 27u8.
 public global ARM64::W28 := AsmARM64Int32Register name: #W28 value: 28u8.
 public global ARM64::W29 := AsmARM64Int32Register name: #W29 value: 29u8.
 public global ARM64::W30 := AsmARM64Int32Register name: #W30 value: 30u8.
-public global ARM64::W31 := AsmARM64Int32Register name: #W31 value: 31u8.
+public global ARM64::WZR := AsmARM64Int32Register name: #WZR value: 31u8.
+public global ARM64::WSP := AsmARM64Int32Register name: #WSP value: 31u8.
 
 public class AsmARM64Instruction superclass: AsmStreamElement; definition: {
     public field mnemonic => Symbol.
