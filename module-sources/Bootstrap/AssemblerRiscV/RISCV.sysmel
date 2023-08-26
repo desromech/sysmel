@@ -50,7 +50,7 @@ public final class AsmRiscV64CompilationTarget superclass: AsmCompilationTarget;
         while: (writeOffset < endWriteOffset) do: (
             data uint32At: writeOffset put: (unreachable
                 ifTrue: 2r000000000001_00000_000_00000_1110011 u32 #* ebreak *#
-                ifFalse: 2r0110011 u32 #* add X0, X0, X0 *#
+                ifFalse: 16r13 u32 #* nop *#
             )
         ) continueWith: (writeOffset := writeOffset + 4sz)
     }.
@@ -691,6 +691,6 @@ instructionDefinitionTable do: {:(Array)instructionSetSpec :: Void |
 }.
 
 AsmStreamBuilder extend: {
-    public method riscv::nop => AsmRiscVRInstruction
-        := self riscv::add: RISCV::Zero value: RISCV::Zero with: RISCV::Zero.
+    public method riscv::nop => AsmRiscVIInstruction
+        := self riscv::addi: RISCV::Zero value: RISCV::Zero with: 0i8 asAsmImmediate.
 }.

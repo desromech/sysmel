@@ -123,6 +123,7 @@ let codeRiscV64Block := {:(AsmStreamBuilder)builder :: Void |
         align: 16sz unreachable: true;
         blockNamed: ((builder symbolNamed: #main) makeFunction; makePublic; yourself) with: {:(AsmStreamBuilder)builder :: Void |
             builder
+                riscv::nop;
                 riscv::add: RISCV::A0 value: RISCV::A1 with: RISCV::A2
         }.
 }.
