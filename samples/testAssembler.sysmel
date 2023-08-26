@@ -122,7 +122,8 @@ let codeRiscV64Block := {:(AsmStreamBuilder)builder :: Void |
         textSection;
         align: 16sz unreachable: true;
         blockNamed: ((builder symbolNamed: #main) makeFunction; makePublic; yourself) with: {:(AsmStreamBuilder)builder :: Void |
-            builder riscv::nop
+            builder
+                riscv::add: RISCV::A0 value: RISCV::A1 with: RISCV::A2
         }.
 }.
 let codeRiscV64Elf := AsmStream for: AsmCompilationTarget riscv64 useElf buildWith: codeRiscV64Block.

@@ -569,7 +569,7 @@ let instructionDefinitionTable := #(
             Ri 2r0010011 2r001 2r0000000)
         (srli srli:value:with:
             Ri 2r0010011 2r101 2r0000000)
-        (srai slli:value:with:
+        (srai srai:value:with:
             Ri 2r0010011 2r101 2r0100000)
 
         (add add:value:with:
@@ -597,6 +597,67 @@ let instructionDefinitionTable := #(
             Op32 2r000000000000_00000_000_00000_1110011)
         (ebreak ebreak
             Op32 2r000000000001_00000_000_00000_1110011)
+    )
+
+    (rv64i
+        (lwu lwu:base:offset:
+            I 2r0000011 2r110)
+        (ld ld:base:offset:
+            I 2r0000011 2r011)
+        (sd sd:base:offset:
+            I 2r0100011 2r011)
+
+        (addiw addiw:value:with:
+            I 2r0011011 2r000)
+        (slliw slliw:value:with:
+            Ri 2r0011011 2r001 2r0000000)
+        (srliw srliw:value:with:
+            Ri 2r0011011 2r101 2r0000000)
+        (sraiw sraiw:value:with:
+            Ri 2r0011011 2r101 2r0100000)
+
+        (addw add:value:with:
+            R 2r0111011 2r000 2r0000000)
+        (subw sub:value:with:
+            R 2r0111011 2r000 2r0100000)
+        (sllw sll:value:with:
+            R 2r0111011 2r001 2r0000000)
+        (srlw srl:value:with:
+            R 2r0111011 2r101 2r0000000)
+        (sraw srl:value:with:
+            R 2r0111011 2r101 2r0100000)
+    )
+
+    (rv32m
+        (mul mul:value:with:
+            R 2r0110011 2r000 2r0000001)
+        (mulh mulh:value:with:
+            R 2r0110011 2r001 2r0000001)
+        (mulhsu mulhsu:value:with:
+            R 2r0110011 2r010 2r0000001)
+        (mulhu mulhu:value:with:
+            R 2r0110011 2r011 2r0000001)
+        (div div:value:with:
+            R 2r0110011 2r100 2r0000001)
+        (divu divu:value:with:
+            R 2r0110011 2r101 2r0000001)
+        (rem rem:value:with:
+            R 2r0110011 2r110 2r0000001)
+        (remu remu:value:with:
+            R 2r0110011 2r111 2r0000001)
+    )
+
+    (rv64m
+        (mulw mulw:value:with:
+            R 2r0111011 2r000 2r0000001)
+        (divw divw:value:with:
+            R 2r0111011 2r100 2r0000001)
+        (divuw divuw:value:with:
+            R 2r0111011 2r101 2r0000001)
+        (remw remw:value:with:
+            R 2r0111011 2r110 2r0000001)
+        (remuw remuw:value:with:
+            R 2r0111011 2r111 2r0000001)
     )
 ).
 
