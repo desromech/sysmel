@@ -942,6 +942,9 @@ Function
     withSelector: #isWithoutSourceDebugging addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::WithoutSourceDebugging
     } makeFinal makeAlwaysInline;
+    withSelector: #isNoGC addMethod: {:(Function)self :: Boolean |
+        self hasAnyFlag: FunctionFlags::NoGC
+    } makeFinal makeAlwaysInline;
     withSelector: #hasOverrideDispatch addMethod: {:(Function)self :: Boolean |
         self hasAnyFlag: FunctionFlags::Override
     } makeFinal makeAlwaysInline withEagerAnalysis;
@@ -997,6 +1000,9 @@ FunctionDefinition
     } makeFinal makeAlwaysInline;
     withSelector: #isWithoutSourceDebugging addMethod: {:(FunctionDefinition)self :: Boolean |
         self hasAnyFlag: FunctionFlags::WithoutSourceDebugging
+    } makeFinal makeAlwaysInline;
+    withSelector: #isNoGC addMethod: {:(FunctionDefinition)self :: Boolean |
+        self hasAnyFlag: FunctionFlags::NoGC
     } makeFinal makeAlwaysInline.
 
 ValueBox

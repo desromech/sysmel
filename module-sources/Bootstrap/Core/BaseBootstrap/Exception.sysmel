@@ -6,7 +6,7 @@ public struct ExceptionSetjmpBuffer definition: {
             := 16sz
     }.
 
-    public method setjmp => Boolean := {
+    public nogc method setjmp => Boolean := {
         <primitive: #Exception::setjmp>
         false
     }.
@@ -36,6 +36,7 @@ public struct ExceptionOnDoStackRecord supertype: ExceptionStackRecord; definiti
     public field exceptionFilter => AnyValue.
     public field exceptionBlock => AnyValue.
     public field exceptionResult => AnyValue.
+    public field gcStackFrameRecord => GCStackFrameRecord pointer.
     public field setjmpBuffer => ExceptionSetjmpBuffer.
 }.
 
@@ -102,6 +103,7 @@ Exception definition: {
 
     ## Perform setjmp
     ## FIXME: Avoid this explicit __slotNamedReferenceAt__:
+    stackRecord gcStackFrameRecord: GCStackFrameRecord::LastActive.
     (stackRecord __slotNamedReferenceAt__: #setjmpBuffer) setjmp ifFalse: {
         let result := body().
         ExceptionStackRecord::LastActive := stackRecord previous.

@@ -54,6 +54,25 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
             }.
         }.
 
+        captureVectorPointerValue ifNotNil: {
+            self beginValueAtIndex: captureVectorPointerValue index.
+            self assert: captureVectorPointerValue closure isNotNil.
+            let preferredRegister := function callingConvention preferredRegisterForCaptureVectorPointer,
+            preferredRegister ifNotNil: {
+                captureVectorPointerValue loadRegister: preferredRegister.
+                integerRegisterFile spillIfNeededAndAllocateRegister: preferredRegister withResultValue: captureVectorPointerValue.
+                captureVectorPointerValue closureRegister: (integerRegisterFile allocateForValue: captureVectorPointerValue closure).
+            } ifNil: {
+                captureVectorPointerValue closureRegister: (integerRegisterFile allocateForValue: captureVectorPointerValue closure).
+                captureVectorPointerValue loadRegister: (integerRegisterFile allocateForResultValue: captureVectorPointerValue trySharingWith: captureVectorPointerValue closure).
+            }.
+        }.
+
+        function captures do: {:(MIRCaptureVariable)eachCapture :: Void |
+            self beginValueAtIndex: eachCapture index.
+            self allocateRegisterForOperand: eachCapture.
+        }.
+
         gotPointerValue ifNotNil: {
             let preferredRegister := function callingConvention preferredRegisterForGotPointer.
             preferredRegister ifNotNil: {
@@ -78,25 +97,6 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
             threadLocalSegmentPointerValue segmentPointerVectorRegister: (integerRegisterFile allocateForValue: nil).
         }.
         
-        captureVectorPointerValue ifNotNil: {
-            self beginValueAtIndex: captureVectorPointerValue index.
-            self assert: captureVectorPointerValue closure isNotNil.
-            let preferredRegister := function callingConvention preferredRegisterForCaptureVectorPointer,
-            preferredRegister ifNotNil: {
-                captureVectorPointerValue loadRegister: preferredRegister.
-                integerRegisterFile spillIfNeededAndAllocateRegister: preferredRegister withResultValue: captureVectorPointerValue.
-                captureVectorPointerValue closureRegister: (integerRegisterFile allocateForValue: captureVectorPointerValue closure).
-            } ifNil: {
-                captureVectorPointerValue closureRegister: (integerRegisterFile allocateForValue: captureVectorPointerValue closure).
-                captureVectorPointerValue loadRegister: (integerRegisterFile allocateForResultValue: captureVectorPointerValue trySharingWith: captureVectorPointerValue closure).
-            }.
-        }.
-
-        function captures do: {:(MIRCaptureVariable)eachCapture :: Void |
-            self beginValueAtIndex: eachCapture index.
-            self allocateRegisterForOperand: eachCapture.
-        }.
-
         function temporaries do: {:(MIRTemporaryVariable)eachTemporary :: Void |
             self beginValueAtIndex: eachTemporary index.
             self allocateRegisterForOperand: eachTemporary.

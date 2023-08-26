@@ -79,6 +79,8 @@ public global Elf::SymbolTableType::Object := 1u8.
 public global Elf::SymbolTableType::Func := 2u8.
 public global Elf::SymbolTableType::Section := 3u8.
 public global Elf::SymbolTableType::File := 4u8.
+public global Elf::SymbolTableType::Common := 5u8.
+public global Elf::SymbolTableType::TLS := 6u8.
 
 public global Elf::Type::None := 0u16.
 public global Elf::Type::Rel := 1u16.
@@ -276,6 +278,7 @@ let elfSymbolTypeMap := #{
     AsmSymbol::Type::None : Elf::SymbolTableType::Notype.
     AsmSymbol::Type::Function : Elf::SymbolTableType::Func.
     AsmSymbol::Type::Variable : Elf::SymbolTableType::Notype.
+    AsmSymbol::Type::TLS : Elf::SymbolTableType::TLS.
 }.
 
 public final class Elf32::SymbolTable superclass: Object; definition: {

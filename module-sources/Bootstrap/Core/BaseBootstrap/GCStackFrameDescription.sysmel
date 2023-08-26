@@ -1,0 +1,9 @@
+public struct GCStackFrameDescriptor definition: {
+}.
+
+public struct GCStackFrameRecord definition: {
+    public field previous => GCStackFrameRecord pointer.
+    public field descriptor => GCStackFrameDescriptor pointer.
+}.
+
+public threadLocal GCStackFrameRecord::LastActive mutable => GCStackFrameRecord pointer := nil.

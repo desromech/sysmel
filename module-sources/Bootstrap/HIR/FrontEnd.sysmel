@@ -103,6 +103,7 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
             importedSymbols: functionDefinition importedSymbols asArray;
             primitiveName: functionDefinition analyzedPrimitiveName;
             sourcePosition: functionDefinition sourcePosition;
+            isNoGC: functionDefinition isNoGC;
             arguments: (functionDefinition analyzedArgumentNodes collect: {:(ASTArgumentNode)argumentNode :: HIRFunctionArgument |
                 self generateArgumentForNode: argumentNode
             }) asArray;

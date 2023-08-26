@@ -310,6 +310,7 @@ HIRFunctionDefinition definition: {
     public field calledFunctionDefinitions => Array.
     public field traversalColor => UInt8.
     public field hasRecursiveCalls => Boolean.
+    public field isNoGC => Boolean.
 
     public override method isFunctionDefinition => Boolean := true.
     public override method evaluateAsHIRFunctionDefinitionOrNil => HIRFunctionDefinition := self.

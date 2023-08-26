@@ -88,4 +88,8 @@ Function
     withSelector: #makeWithoutSourceDebugging addMethod: {:(Function)self :: Function |
         self addFlags: FunctionFlags::WithoutSourceDebugging.
         self
+    } withEagerAnalysis;
+    withSelector: #makeNoGC addMethod: {:(Function)self :: Function |
+        self addFlags: FunctionFlags::NoGC.
+        self
     } withEagerAnalysis.

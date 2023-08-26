@@ -1,5 +1,5 @@
 ExceptionSetjmpBuffer definition: {
-    public method longjmp => Unwinds := {
+    public nogc method longjmp => Unwinds := {
         <primitive: #Exception::longjmp>
         printLine("TODO: ExceptionSetjmpBuffer longjmp").
         sysmel_pal_abort().
@@ -55,6 +55,7 @@ Exception definition: {
             ExceptionStackRecord unwindUntil: handlerRecord.
             
             ExceptionStackRecord::LastActive := handlerRecord _ previous.
+            GCStackFrameRecord::LastActive := handlerRecord _ gcStackFrameRecord.
             (handlerRecord _ __slotNamedReferenceAt__: #setjmpBuffer) longjmp
         }.
     }.

@@ -714,6 +714,7 @@ void sysbvm_function_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::NeverInline", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_NEVER_INLINE));
 
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::WithoutSourceDebugging", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_WITHOUT_SOURCE_DEBUGGING));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::NoGC", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_NOGC));
 
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::TargetDefinedPrimitive", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_TARGET_DEFINED_PRIMITIVE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionFlags::BootstrapPrimitiveKeptFlags", sysbvm_tuple_bitflags_encode(SYSBVM_FUNCTION_FLAGS_BOOTSTRAP_PRIMITIVE_KEPT_FLAGS));

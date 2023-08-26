@@ -19,12 +19,19 @@ public final class MIRStackFrameSegment superclass: Object; definition: {
     public field framePointerOffset => UInt64.
     public field returnPointerOffset => UInt64.
     public field offsetFromFrameOrStackPointer => Int64.
+    public field hasGCRoots => Boolean.
     public field values => OrderedCollection.
 
     public override method initialize => Void := {
         values := OrderedCollection new.
         alignment := 1u64.
     }.
+
+    public method isEmpty => Boolean
+        := size = 0u64.
+
+    public method isNotEmpty => Boolean
+        := size ~= 0u64.
 
     public method addReturnPointer: (pointerSize: UInt64) ::=> Void := {
         size := size alignedTo: pointerSize.
@@ -42,6 +49,12 @@ public final class MIRStackFrameSegment superclass: Object; definition: {
         alignment := alignment max: pointerSize.
     }.
 
+    public method addGCMetadataRecordWithPointerSize: (pointerSize: UInt64) ::=> Void := {
+        self assert: size = 0u64.
+        size := pointerSize * 2u64.
+        alignment := alignment max: pointerSize
+    }.
+
     public method addPreservedRegisters: (registers: Array) pointerSize: (pointerSize: UInt64) ::=> Void := {
         registers isNotEmpty ifTrue: {
             size := (size alignedTo: pointerSize) + (registers size * pointerSize).
@@ -51,7 +64,8 @@ public final class MIRStackFrameSegment superclass: Object; definition: {
 
     public method addValueWithValidSegmentOffset: (value: MIRLocalValue) ::=> Void := {
         self assert: value hasValidStackSegmentOffset.
-        values add: value
+        values add: value.
+        hasGCRoots := hasGCRoots || value isGCRoot.
     }.
 
     public method addLocalValue: (value: MIRLocalValue) ::=> Void := {
@@ -63,6 +77,7 @@ public final class MIRStackFrameSegment superclass: Object; definition: {
             hasValidStackSegmentOffset: true.
         size := offset + value size.
         alignment := alignment max: value alignment.
+        hasGCRoots := hasGCRoots || value isGCRoot.
 
         values add: value
     }.
@@ -73,11 +88,11 @@ public final class MIRStackFrameSegment superclass: Object; definition: {
     }.
 
     public method computeOffsetsOfValuesUsingAnchorOffset: (anchorOffset: UInt64) ::=> Void := {
-        let displacement := offset asInt64 - anchorOffset asInt64.
+        offsetFromFrameOrStackPointer := offset asInt64 - anchorOffset asInt64.
         values do: {:(MIRLocalValue)eachLocalValue :: Void |
             self assert: eachLocalValue hasValidStackSegmentOffset.
             eachLocalValue
-                offset: eachLocalValue stackSegmentOffset asInt64 + displacement;
+                offset: offsetFromFrameOrStackPointer + eachLocalValue stackSegmentOffset asInt64;
                 hasValidStackAnchorOffset: true.
         }.
     }.
@@ -96,6 +111,8 @@ public final class MIRStackFrameLayout superclass: Object; definition: {
 
     public field stackFrameAlignment => UInt64.
     public field stackFrameSize => UInt64.
+
+    public field isNoGC => Boolean.
 
     public method allocateSegments => Void := {
         segments := Array new: MIRStackFrameSegment::Count asSize.
@@ -123,9 +140,14 @@ public final class MIRStackFrameLayout superclass: Object; definition: {
         }
     }.
 
+    public method hasGCTraversedData => Boolean
+        := self temporaryGCZone isNotEmpty || self temporaryGCFatPointerZone isNotEmpty || self temporaryNonGCZone isNotEmpty ||
+            self argumentPassingZone hasGCRoots.
+
     public method buildLayoutForFunction: (function: MIRFunction) withTarget: (target: MIRCompilationTarget) ::=> Void := {
         compilationTarget := target.
         framePointerAnchorIsAtBottom := function callingConvention framePointerAnchorIsAtBottom.
+        isNoGC := function isNoGC.
 
         self allocateSegments.
 
@@ -192,6 +214,10 @@ public final class MIRStackFrameLayout superclass: Object; definition: {
         self temporaryNonGCZone addLocalValue: coalescedLocalValue
     }.
 
+    public method allocateGCMetadataZone => Void := {
+        self frameMetadata addGCMetadataRecordWithPointerSize: compilationTarget pointerSize
+    }.
+
     public method finishConstructingSegmentStructure => Void := {
         self computeSegmentsLayout.
 
@@ -199,6 +225,10 @@ public final class MIRStackFrameLayout superclass: Object; definition: {
 
         ## Store the frame pointer.
         hasRequiredConstruction ifTrue: {
+            isNoGC ifFalse: {
+                self allocateGCMetadataZone.
+            }.
+
             hasFramePointer := true.
             self callPreservedZone addFramePointer: compilationTarget pointerSize.
         }.

@@ -1369,6 +1369,7 @@ MIRFunction definition: {
     public field arguments => Array.
     public field captures => Array.
     public field temporaries => OrderedCollection.
+    public field isNoGC => Boolean.
 
     public field touchedCallPreservedRegisters => Array.
 
@@ -1557,10 +1558,11 @@ MIRFunction definition: {
 
     public inline method allLocalValuesDo: (aBlock: (MIRLocalValue) => Void) ::=> Void := {
         arguments do: aBlock.
-        gotPointerValue ifNotNil: aBlock(gotPointerValue).
-        threadLocalSegmentPointerValue ifNotNil: aBlock(threadLocalSegmentPointerValue).
         captureVectorPointerValue ifNotNil: aBlock(captureVectorPointerValue).
         captures do: aBlock.
+        gotPointerValue ifNotNil: aBlock(gotPointerValue).
+        threadLocalSegmentPointerValue ifNotNil: aBlock(threadLocalSegmentPointerValue).
+
         temporaries do: aBlock.
         self basicBlocksDo: {:(MIRBasicBlock)eachBasicBlock :: Void |
             aBlock(eachBasicBlock).
@@ -2396,14 +2398,19 @@ public final class MIRModule superclass: MIRProgramEntity; definition: {
     public field programEntities => OrderedCollection.
     public field baseObjectTracer => ImageTracer.
     public field functionDefinitionPatches => OrderedCollection.
+    public field sourceProgramEntityDictionary => IdentityDictionary.
 
     public override method initialize => Void := {
         super initialize.
         programEntities := OrderedCollection new.
         functionDefinitionPatches := OrderedCollection new.
+        sourceProgramEntityDictionary := IdentityDictionary new.
     }.
 
     public method addProgramEntity: (programEntity: MIRProgramEntity) ::=> Void := {
+        programEntity sourceProgramEntity ifNotNil: {
+            sourceProgramEntityDictionary at: programEntity sourceProgramEntity put: programEntity 
+        }.
         programEntities add: programEntity
     }.
 

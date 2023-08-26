@@ -1363,12 +1363,83 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
         
         codegen
             emitSpillRegisterArgumentsInStackFrame;
+            emitStackFrameClear;
+            emitGCStackFrameRecordLink;
             emitUnspillEntryValuesFromStackFrame
+    }.
+
+    public override method emitStackFrameClearWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        let stackFrameLayout := codegen stackFrameLayout.
+        stackFrameLayout hasRequiredConstruction ifFalse: {
+            return: void
+        }.
+    }.
+
+    public override method emitGCStackFrameRecordLinkWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        let stackFrameLayout := codegen stackFrameLayout.
+        stackFrameLayout hasRequiredConstruction && stackFrameLayout frameMetadata isNotEmpty ifFalse: {
+            return: void
+        }.
+
+        let gcStackFrameRecordLastActiveSymbol := codegen moduleGenerator gcStackFrameRecordLastActiveSymbol.
+        gcStackFrameRecordLastActiveSymbol ifNil: {
+            return: void
+        }.
+
+        ## Metadata address.
+        let metadataOffset := stackFrameLayout frameMetadata offsetFromFrameOrStackPointer asInt32.
+
+        ## Store a pointer onto the frame descriptor.
+        codegen textSection
+            x86::lea: X86::RAX src: (codegen symbolForGCStackFrameDescriptorFor: stackFrameLayout) x86::qwordPtr;
+            x86::mov: X86::RBP x86::qword + (metadataOffset + 8i32) asAsmImmediate src: X86::RAX.
+
+        asmCompilationTarget isWindows ifTrue: {
+            error("TODO: tls")
+        } ifFalse: {
+            let lastActiveSymbolPointer := AsmX86RegisterAddress size: 8u8
+                displacement: (gcStackFrameRecordLastActiveSymbol dword makeTPOff; yourself)
+                segment: X86::FS.
+
+            codegen textSection
+                x86::mov: X86::RAX src: lastActiveSymbolPointer;
+                x86::mov: X86::RBP x86::qword + metadataOffset asAsmImmediate src: X86::RAX;
+                x86::lea: X86::RAX src: X86::RBP x86::qword + metadataOffset asAsmImmediate;
+                x86::mov: lastActiveSymbolPointer src: X86::RAX.
+        }.
+    }.
+
+    public override method emitGCStackFrameRecordUnlinkWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        let stackFrameLayout := codegen stackFrameLayout.
+        stackFrameLayout hasRequiredConstruction && stackFrameLayout frameMetadata isNotEmpty ifFalse: {
+            return: void
+        }.
+
+        let gcStackFrameRecordLastActiveSymbol := codegen moduleGenerator gcStackFrameRecordLastActiveSymbol.
+        gcStackFrameRecordLastActiveSymbol ifNil: {
+            return: void
+        }.
+
+        ## Metadata address.
+        let metadataOffset := stackFrameLayout frameMetadata offsetFromFrameOrStackPointer asInt32.
+
+        asmCompilationTarget isWindows ifTrue: {
+            error("TODO: tls")
+        } ifFalse: {
+            let lastActiveSymbolPointer := AsmX86RegisterAddress size: 8u8
+                displacement: (gcStackFrameRecordLastActiveSymbol dword makeTPOff; yourself)
+                segment: X86::FS.
+            codegen textSection
+                x86::mov: X86::R11 src: X86::RBP x86::qword + metadataOffset asAsmImmediate;
+                x86::mov: lastActiveSymbolPointer src: X86::R11.
+        }
     }.
 
     public override method emitFunctionEpilogueWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         let stackFrameLayout := codegen stackFrameLayout.
         stackFrameLayout hasRequiredConstruction ifTrue: {
+            codegen emitGCStackFrameRecordUnlink.
+            
             let preservedRegisters := codegen function touchedCallPreservedRegisters.
             stackFrameLayout framePointerAnchorIsAtBottom ifTrue: {
                 let restoreSize := stackFrameLayout callPreservedZone offset - stackFrameLayout frameOrStackPointerAnchorOffset.

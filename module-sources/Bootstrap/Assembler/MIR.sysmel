@@ -59,6 +59,7 @@ public abstract class MIRAsmCodeGenerator superclass: Object; definition: {
 }.
 
 public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; definition: {
+    public field sourceModule => MIRModule.
     public field targetModule => AsmProgramEntity.
     protected field asmTarget => AsmCompilationTarget.
     public field programEntitySymbolMap => Dictionary.
@@ -71,6 +72,8 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
 
     protected field picTableDictionary => Dictionary.
     protected field picTableSymbol => AsmSymbol.
+
+    protected field gcStackFrameRecordLastActiveSymbol => AsmSymbol.
 
     protected field tlsIndexSymbol => AsmSymbol.
     protected field tlsArraySymbol => AsmSymbol.
@@ -122,6 +125,7 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
 
     public method compileModule: (module: MIRModule) ::=> Void := {
         ## Use the module image base object trace for constructing the object heap.
+        sourceModule := module.
         objectHeap baseObjectTracer: module baseObjectTracer.
 
         targetModule contentSymbol ifNil: {
@@ -189,6 +193,24 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
             label: self picTableSymbol;
             reserveBytes: picTableDictionary size * ObjectModel::PolymorphicInlineCache instanceSize;
             endLabel: self picTableSymbol
+    }.
+
+    public method gcStackFrameRecordLastActiveSymbol => AsmSymbol := {
+        gcStackFrameRecordLastActiveSymbol ifNil: {
+            let recordVariable => MIRProgramEntity := (sourceModule sourceProgramEntityDictionary atOrNil: (__Global__ lookLocalSymbol: #GCStackFrameRecord::LastActive)).
+            recordVariable ifNotNil: {
+                gcStackFrameRecordLastActiveSymbol := self compileProgramEntity: recordVariable.
+            } ifNil: {
+                gcStackFrameRecordLastActiveSymbol := AsmSymbol new
+                    name: #__sysmel_gcStackFrameRecordLastActive;
+                    makePublic;
+                    makeTLS;
+                    yourself.
+                targetModule addImportedSymbol: gcStackFrameRecordLastActiveSymbol
+            }.
+
+            gcStackFrameRecordLastActiveSymbol
+        }
     }.
 
     public method tlsIndexSymbol ::=> AsmSymbol
@@ -345,6 +367,15 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         public abstract method emitStackFrameConstructionWith: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
+        public abstract method emitStackFrameClearWith: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
+        public abstract method emitGCStackFrameRecordLinkWith: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
+        public abstract method emitGCStackFrameRecordUnlinkWith: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
         public abstract method emitFunctionEpilogueWith: (generator: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
         
@@ -469,6 +500,18 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         moduleGenerator target emitStackFrameConstructionWith: self
     }.
 
+    public method emitStackFrameClear => Void := {
+        moduleGenerator target emitStackFrameClearWith: self
+    }.
+
+    public method emitGCStackFrameRecordLink => Void := {
+        moduleGenerator target emitGCStackFrameRecordLinkWith: self
+    }.
+
+    public method emitGCStackFrameRecordUnlink => Void := {
+        moduleGenerator target emitGCStackFrameRecordUnlinkWith: self
+    }.
+
     protected field captureVectorPointerStackMapLocation => AsmStackMapLocation.
     
     public override method captureVectorPointerStackMapLocation => AsmStackMapLocation := captureVectorPointerStackMapLocation.
@@ -528,6 +571,17 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
 
         function arguments do: unspillValue.
 
+        function captureVectorPointerValue ifNotNil: {
+            let captureVectorPointer := function captureVectorPointerValue.
+            self emitMoveValue: function arguments first intoLocation: captureVectorPointer closureRegister.
+            moduleGenerator target emitLoadCaptureVectorPointerFromClosure: captureVectorPointer closureRegister intoRegister: captureVectorPointer loadRegister with: self.
+            self emitMoveRegister: captureVectorPointer loadRegister intoValue: captureVectorPointer.
+            captureVectorPointerRegister := captureVectorPointer loadRegister.
+        }.
+
+        function captures do: unspillValue.
+        captureVectorPointerRegister := nil.
+
         function gotPointerValue ifNotNil: {
             let gotPointerValue := function gotPointerValue.
             moduleGenerator target emitLoadGotPointerValueIntoRegister: gotPointerValue loadRegister with: self.
@@ -542,17 +596,6 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
 
         gotPointerRegister := nil.
         threadLocalSegmentPointerRegister := nil.
-
-        function captureVectorPointerValue ifNotNil: {
-            let captureVectorPointer := function captureVectorPointerValue.
-            self emitMoveValue: function arguments first intoLocation: captureVectorPointer closureRegister.
-            moduleGenerator target emitLoadCaptureVectorPointerFromClosure: captureVectorPointer closureRegister intoRegister: captureVectorPointer loadRegister with: self.
-            self emitMoveRegister: captureVectorPointer loadRegister intoValue: captureVectorPointer.
-            captureVectorPointerRegister := captureVectorPointer loadRegister.
-        }.
-
-        function captures do: unspillValue.
-        captureVectorPointerRegister := nil.
     }.
 
     protected field firstPhiMoveInstruction => MIRInstruction.
@@ -833,6 +876,15 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
             self rodataSection align: 8sz; label: symbol; double: constant.
             symbol
         }.
+
+    public method symbolForGCStackFrameDescriptorFor: (stackFrameLayout: MIRStackFrameLayout) ::=> AsmSymbol := {
+        let symbol := AsmSymbol new
+                name: #gcStackFrameDescriptor;
+                yourself.
+        self rodataSection align: 8sz; label: symbol.
+        ## TODO: Build the content of the stack frame descriptor.
+        symbol
+    }.
 }.
 
 MIRInstructionSurroundingOperation definition: {
@@ -947,6 +999,7 @@ MIRProgramEntity definition: {
             self isWeak ifTrue: (symbol makeWeak).
             self isPrivate ifTrue: (symbol makePrivate).
         }.
+        self isThreadLocal ifTrue: (symbol makeTLS).
         
         symbol
     }.

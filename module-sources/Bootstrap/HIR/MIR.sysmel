@@ -128,6 +128,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
 
     public method compileGlobalVariable: (globalVariable: HIRGlobalVariable) ::=> MIRGlobalVariable := {
         let mirGlobalVariable := (MIRGlobalVariable withName: globalVariable name type: globalVariable valueType isValueInstance: false compilationTarget: compilationTarget)
+            sourceProgramEntity: globalVariable sourceBinding;
             isReadOnly: globalVariable isReadOnly;
             isThreadLocal: globalVariable isThreadLocal;
             yourself.
@@ -180,6 +181,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
                 debugSourceNode: functionDefinition sourceASTNode;
                 debugSourceEnvironment: functionDefinition sourceEnvironment;
                 sourceProgramEntity: functionDefinition sourceObject;
+                isNoGC: functionDefinition isNoGC;
                 yourself.
             targetModule addProgramEntity: entryPoint.
             capturelessUncheckedEntryPointDictionary at: functionDefinition put: entryPoint.
@@ -212,6 +214,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
             debugSourceNode: functionDefinition sourceASTNode;
             debugSourceEnvironment: functionDefinition sourceEnvironment;
             sourceProgramEntity: functionDefinition sourceObject;
+            isNoGC: functionDefinition isNoGC;
             yourself.
         targetModule addProgramEntity: entryPoint.
         uncheckedEntryPointDictionary at: functionDefinition put: entryPoint.
@@ -240,6 +243,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
             debugSourceNode: functionDefinition sourceASTNode;
             debugSourceEnvironment: functionDefinition sourceEnvironment;
             sourceProgramEntity: functionDefinition sourceObject;
+            isNoGC: functionDefinition isNoGC;
             yourself.
         targetModule addProgramEntity: entryPoint.
         checkedEntryPointDictionary at: functionDefinition put: entryPoint.

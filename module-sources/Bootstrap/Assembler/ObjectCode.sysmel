@@ -550,6 +550,7 @@ public global AsmSymbol::Visibility::Weak := 3u8.
 public global AsmSymbol::Type::None := 0u8.
 public global AsmSymbol::Type::Function := 1u8.
 public global AsmSymbol::Type::Variable := 2u8.
+public global AsmSymbol::Type::TLS := 3u8.
 
 AsmSymbol definition: {
     public field name => Symbol.
@@ -593,6 +594,13 @@ AsmSymbol definition: {
 
     public method isFunction => Boolean
         := type = AsmSymbol::Type::Function.
+
+    public method makeTLS => Void := {
+        type := AsmSymbol::Type::TLS.
+    }.
+
+    public method isTLS => Boolean
+        := type = AsmSymbol::Type::TLS.
 
     public override method printOn: (stream: Stream) ::=> Void := {
         self isPrivate ifTrue: (stream nextPut: '.'c8).
