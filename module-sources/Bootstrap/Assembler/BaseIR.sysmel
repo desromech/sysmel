@@ -124,6 +124,12 @@ AsmInstructionOperand definition: {
     public abstract method nextPutIPRelativeI32WithExtraOffset: (extraOffset: Int32) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void
         := self subclassResponsibility.
 
+    public virtual method evaluateImmediateUInt32 => UInt32
+        := self error: "Not a valid immediate".
+
+    public virtual method evaluateImmediateInt32 => Int32
+        := self error: "Not a valid immediate".
+
     public abstract method size => Size := self subclassResponsibility.
 }.
 
