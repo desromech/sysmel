@@ -1,4 +1,37 @@
+## FIXME: Use an enum here.
+public global GCRootEntryType::None := 0u8.
+public global GCRootEntryType::Pointer := 1u8.
+public global GCRootEntryType::FatPointer := 2u8.
+public global GCRootEntryType::Object := 3u8.
+public global GCRootEntryType := UInt8.
+
+Type definition: {
+    public virtual method gcRootEntryType => GCRootEntryType
+        := GCRootEntryType::Pointer.
+}.
+
+ValueType definition: {
+    public override method gcRootEntryType => GCRootEntryType
+        := GCRootEntryType::None.
+}.
+
 public struct GCStackFrameDescriptor definition: {
+    public field temporaryGCZoneOffset => Int32.
+    public field temporaryGCZoneEntryCount => UInt32.
+
+    public field temporaryGCFatPointerZoneOffset => Int32.
+    public field temporaryGCFatPointerZoneEntryCount => UInt32.
+
+    public field gcObjectAllocationZoneOffset => Int32.
+    public field gcObjectAllocationZoneEntryCount => UInt32.
+
+    public field argumentPassingZoneOffset => Int32.
+    public field argumentPassingZoneEntryCount => UInt32.
+}.
+
+public struct GCStackFrameGCObjectAllocationDescriptor definition: {
+    public field offset => UInt32.
+    public field size => UInt32.
 }.
 
 public struct GCStackFrameRecord definition: {

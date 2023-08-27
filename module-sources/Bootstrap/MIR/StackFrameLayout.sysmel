@@ -1,6 +1,6 @@
 public global MIRStackFrameSegment::ArgumentPassingZone := 0u8.
 public global MIRStackFrameSegment::CallPreservedZone := 1u8.
-public global MIRStackFrameSegment::ObjectAllocationZone := 2u8.
+public global MIRStackFrameSegment::GCObjectAllocationZone := 2u8.
 public global MIRStackFrameSegment::TemporaryGCZone := 3u8.
 public global MIRStackFrameSegment::TemporaryGCFatPointerZone := 4u8.
 public global MIRStackFrameSegment::TemporaryNonGCZone := 5u8.
@@ -125,7 +125,7 @@ public final class MIRStackFrameLayout superclass: Object; definition: {
 
     public method argumentPassingZone => MIRStackFrameSegment := segments first.
     public method callPreservedZone => MIRStackFrameSegment := segments second.
-    public method objectAllocationZone => MIRStackFrameSegment := segments third.
+    public method gcObjectAllocationZone => MIRStackFrameSegment := segments third.
     public method temporaryGCZone => MIRStackFrameSegment := segments fourth.
     public method temporaryGCFatPointerZone => MIRStackFrameSegment := segments fifth.
     public method temporaryNonGCZone => MIRStackFrameSegment := segments sixth.

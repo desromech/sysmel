@@ -881,8 +881,42 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         let symbol := AsmSymbol new
                 name: #gcStackFrameDescriptor;
                 yourself.
-        self rodataSection align: 8sz; label: symbol.
-        ## TODO: Build the content of the stack frame descriptor.
+        
+        let metadataOffset := stackFrameLayout frameMetadata offset.
+
+        self rodataSection
+            align: target pointerSize asSize;
+            label: symbol;
+
+            sdword: (stackFrameLayout temporaryGCZone offset - metadataOffset) asInt32; ## temporaryGCZoneOffset
+            dword: stackFrameLayout temporaryGCZone values size asUInt32; ## temporaryGCZoneEntryCount
+
+            sdword: (stackFrameLayout temporaryGCFatPointerZone offset - metadataOffset) asInt32; ## temporaryGCFatPointerZoneOffset
+            dword: stackFrameLayout temporaryGCFatPointerZone values size asUInt32; ## temporaryGCFatPointerZoneEntryCount
+
+            sdword: (stackFrameLayout gcObjectAllocationZone offset - metadataOffset) asInt32; ## gcObjectAllocationZoneOffset
+            dword: stackFrameLayout gcObjectAllocationZone values size asUInt32; ## gcObjectAllocationZoneEntryCount
+
+            sdword: (stackFrameLayout argumentPassingZone offset - metadataOffset) asInt32; ## argumentPassingZoneOffset
+            dword: stackFrameLayout argumentPassingZone values size asUInt32. ## argumentPassingZoneEntryCount
+
+        ## Object allocation zone layout.
+        stackFrameLayout gcObjectAllocationZone values do: {:(MIRLocalValue)stackAllocatedObject :: Void |
+            self assert: stackAllocatedObject isValueInstance.
+            self assert: stackAllocatedObject hasValidStackSegmentOffset.
+            self rodataSection
+                dword: stackAllocatedObject stackSegmentOffset asUInt32;
+                dword: stackAllocatedObject size asUInt32.
+        }.
+
+        ## Argument passign zone layout.
+        stackFrameLayout argumentPassingZone values do: {:(MIRArgumentValue)argument :: Void |
+            self assert: argument hasValidStackSegmentOffset.
+
+            let argumentDescriptor := (argument stackSegmentOffset asInt16 << 2i16) | argument gcRootEntryType asInt16.
+            self rodataSection sword: argumentDescriptor
+        }.
+
         symbol
     }.
 }.

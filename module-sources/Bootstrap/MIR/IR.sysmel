@@ -384,7 +384,8 @@ MIRLocalValue definition: {
     public field alignment => UInt64.
     public field physicalLocationClass => MIRPhysicalLocation class.
     public field isSignedExtended => Boolean.
-    public field isGCRoot => Boolean.
+    public field isValueInstance => Boolean.
+    public field gcRootEntryType => GCRootEntryType.
 
     public field hasValidStackSegmentOffset => Boolean.
     public field stackSegment => UInt8.
@@ -418,10 +419,13 @@ MIRLocalValue definition: {
         type := newType.
         size := (type valueSizeForMirTarget: compilationTarget) asUInt64.
         alignment := (type valueAlignmentForMirTarget: compilationTarget) asUInt64.
-        isGCRoot := type isGarbageCollectedPointerType.
+        gcRootEntryType := type gcRootEntryType.
         physicalLocationClass := type valueMirPhysicalLocationClass.
         coalescedParent := self.
     }.
+
+    public method isGCRoot => Boolean
+        := gcRootEntryType ~= GCRootEntryType::None.
 
     public override method coalescedAssignedRegister => MIRPhysicalLocation
         := self validCoalescedValue assignedRegister.
@@ -549,7 +553,7 @@ public final class MIRGlobalVariable superclass: MIRProgramEntity; definition: {
     public field valueAlignment => UInt64.
     public field isSignedExtended => Boolean.
     public field isValueInstance => Boolean.
-    public field isGCRoot => Boolean.
+    public field gcRootEntryType => GCRootEntryType.
     public field isReadOnly => Boolean.
     public field isThreadLocal => Boolean.
     public field initialValue => MIRValue.
@@ -581,7 +585,7 @@ public final class MIRGlobalVariable superclass: MIRProgramEntity; definition: {
             valueSize := (type valueSizeForMirTarget: compilationTarget) asUInt64.
             valueAlignment := (type valueAlignmentForMirTarget: compilationTarget) asUInt64.            
         }.
-        isGCRoot := type isGarbageCollectedPointerType.
+        gcRootEntryType := type gcRootEntryType.
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
