@@ -12,6 +12,11 @@ typedef struct sysbvm_heap_s sysbvm_heap_t;
 
 typedef sysbvm_tuple_t (*sysbvm_functionEntryPoint_t)(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments);
 
+#define SYSBVM_GC_TYPE_DEFAULT 0
+#define SYSBVM_GC_TYPE_MOVING 1
+#define SYSBVM_GC_TYPE_NON_MOVING 2
+#define SYSBVM_GC_TYPE_DISABLED 3
+
 typedef struct sysbvm_contextCreationOptions_s
 {
     uint32_t targetWordSize;
@@ -37,7 +42,7 @@ typedef struct sysbvm_contextCreationOptions_s
     const char *targetDebugInformationFormatName;
     const char *targetExceptionHandlingTableFormatName;
     bool nojit;
-    bool nogc;
+    int gcType;
 } sysbvm_contextCreationOptions_t;
 
 /**

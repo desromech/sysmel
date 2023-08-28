@@ -165,7 +165,11 @@ int main(int argc, const char *argv[])
             else if(!strcmp(argv[i], "-nojit"))
                 contextOptions.nojit = true;
             else if(!strcmp(argv[i], "-nogc"))
-                contextOptions.nogc = true;
+                contextOptions.gcType = SYSBVM_GC_TYPE_DISABLED;
+            else if(!strcmp(argv[i], "-moving-gc"))
+                contextOptions.gcType = SYSBVM_GC_TYPE_MOVING;
+            else if(!strcmp(argv[i], "-non-moving-gc"))
+                contextOptions.gcType = SYSBVM_GC_TYPE_NON_MOVING;
         }
 
         context = sysbvm_context_createWithOptions(&contextOptions);

@@ -84,20 +84,27 @@ void sysbvm_gc_debugStackValidationHook(void)
 
 static void sysbvm_gc_performCycle(sysbvm_context_t *context)
 {
-    // LISP 2 moving collection algorithm.
     // Phase 1: marking phase
     sysbvm_gc_iterateRoots(context, context, sysbvm_gc_markPointer);
     sysbvm_gc_markUntilStackIsEmpty(context);
 
-    // Phase 2: Compute the forwarding pointers.
-    sysbvm_heap_computeCompactionForwardingPointers(&context->heap);
+    // If we use the moving GC, compute and apply the forwarding pointers, according to the LISP 2 collection algorithm.
+    if(context->heap.useMallocForHeap)
+    {
+        sysbvm_heap_replaceWeakReferencesWithTombstones(&context->heap);
+    }
+    else
+    {
+        // Phase 2: Compute the forwarding pointers.
+        sysbvm_heap_computeCompactionForwardingPointers(&context->heap);
 
-    // Phase 3: Relocate pointers.
-    sysbvm_gc_iterateRoots(context, context, sysbvm_gc_applyForwardingPointer);
-    sysbvm_heap_applyForwardingPointers(&context->heap);
+        // Phase 3: Relocate pointers.
+        sysbvm_gc_iterateRoots(context, context, sysbvm_gc_applyForwardingPointer);
+        sysbvm_heap_applyForwardingPointers(&context->heap);
+    }
 
     // Phase 4: Sweep
-    sysbvm_heap_compact(&context->heap);
+    sysbvm_heap_sweepOrCompact(&context->heap);
 
     // Phase 5: Swap the GC colors.
     sysbvm_heap_swapGCColors(&context->heap);

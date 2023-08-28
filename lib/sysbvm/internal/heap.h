@@ -6,6 +6,20 @@
 #include "sysbvm/heap.h"
 #include <stdio.h>
 
+typedef struct sysbvm_heap_mallocObjectHeader_s
+{
+    union
+    {
+        struct
+        {
+            struct sysbvm_heap_mallocObjectHeader_s *next;
+            uint32_t size;
+        };
+
+        uint32_t words[4];
+    };
+} sysbvm_heap_mallocObjectHeader_t;
+
 typedef struct sysbvm_heap_chunk_s
 {
     uint32_t capacity;
@@ -17,7 +31,12 @@ struct sysbvm_heap_s
 {
     sysbvm_heap_chunk_t *firstChunk;
     sysbvm_heap_chunk_t *lastChunk;
+
+    sysbvm_heap_mallocObjectHeader_t *firstMallocObject;
+    sysbvm_heap_mallocObjectHeader_t *lastMallocObject;
+
     bool shouldAttemptToCollect;
+    bool useMallocForHeap;
 
     size_t totalSize;
     size_t totalCapacity;
@@ -73,8 +92,9 @@ void sysbvm_heap_lockCodeZone(sysbvm_heap_t *heap, void *codePointer, size_t siz
 void sysbvm_heap_unlockCodeZone(sysbvm_heap_t *heap, void *codePointer, size_t size);
 
 void sysbvm_heap_computeCompactionForwardingPointers(sysbvm_heap_t *heap);
+void sysbvm_heap_replaceWeakReferencesWithTombstones(sysbvm_heap_t *heap);
 void sysbvm_heap_applyForwardingPointers(sysbvm_heap_t *heap);
-void sysbvm_heap_compact(sysbvm_heap_t *heap);
+void sysbvm_heap_sweepOrCompact(sysbvm_heap_t *heap);
 void sysbvm_heap_swapGCColors(sysbvm_heap_t *heap);
 
 void sysbvm_heap_dumpToFile(sysbvm_heap_t *heap, FILE *file);

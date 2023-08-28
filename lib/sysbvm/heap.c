@@ -4,8 +4,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#define SYSBVM_HEAP_MIN_CHUNK_SIZE (256ull<<20)
-#define SYSBVM_HEAP_FAST_GROWTH_THRESHOLD (SYSBVM_HEAP_MIN_CHUNK_SIZE*16ull)
+#define SYSBVM_HEAP_MIN_CHUNK_SIZE (2<<20)
+#define SYSBVM_HEAP_STARTUP_HEAP_SIZE (SYSBVM_HEAP_MIN_CHUNK_SIZE*4)
+#define SYSBVM_HEAP_COLLECTION_GAMMA_FACTOR 3
 
 #define SYSBVM_HEAP_CODE_ZONE_SIZE (16<<20)
 
@@ -192,19 +193,44 @@ static void sysbvm_heap_checkForGCThreshold(sysbvm_heap_t *heap)
 
 static sysbvm_object_tuple_t *sysbvm_heap_allocateTupleWithRawSize(sysbvm_heap_t *heap, size_t allocationSize, size_t allocationAlignment)
 {
-    sysbvm_heap_chunk_t *allocationChunk = sysbvm_heap_findOrAllocateChunkWithRequiredCapacity(heap, allocationSize, allocationAlignment);
-    if(!allocationChunk)
-        return 0;
+    SYSBVM_ASSERT(allocationSize >= sizeof(sysbvm_object_tuple_t));
+    sysbvm_object_tuple_t *result = NULL;
 
-    size_t allocationOffset = uintptrAlignedTo(allocationChunk->size, allocationAlignment);
-    size_t newChunkSize = allocationOffset + allocationSize;
-    size_t chunkSizeDelta = newChunkSize - allocationChunk->size;
-    allocationChunk->size = (uint32_t)newChunkSize;
-    heap->totalSize += chunkSizeDelta;
-    SYSBVM_ASSERT(allocationChunk->size <= allocationChunk->capacity);
-    sysbvm_object_tuple_t *result = (sysbvm_object_tuple_t*)((uintptr_t)allocationChunk + allocationOffset);
+    if(heap->useMallocForHeap)
+    {
+        size_t allocationWithHeaderSize = sizeof(sysbvm_heap_mallocObjectHeader_t) + allocationSize;
+        sysbvm_heap_mallocObjectHeader_t *resultHeader = malloc(allocationWithHeaderSize);
+        resultHeader->next = NULL;
+        resultHeader->size = allocationWithHeaderSize;
+        if(heap->firstMallocObject)
+        {
+            heap->lastMallocObject->next = resultHeader;
+            heap->lastMallocObject = resultHeader;
+        }
+        else
+        {
+            heap->firstMallocObject = heap->lastMallocObject = resultHeader;
+        }
+
+        result = (sysbvm_object_tuple_t *)((uintptr_t)resultHeader + 16);
+        heap->totalSize += allocationWithHeaderSize;
+    }
+    else
+    {
+        sysbvm_heap_chunk_t *allocationChunk = sysbvm_heap_findOrAllocateChunkWithRequiredCapacity(heap, allocationSize, allocationAlignment);
+        if(!allocationChunk)
+            return 0;
+
+        size_t allocationOffset = uintptrAlignedTo(allocationChunk->size, allocationAlignment);
+        size_t newChunkSize = allocationOffset + allocationSize;
+        size_t chunkSizeDelta = newChunkSize - allocationChunk->size;
+        allocationChunk->size = (uint32_t)newChunkSize;
+        heap->totalSize += chunkSizeDelta;
+        SYSBVM_ASSERT(allocationChunk->size <= allocationChunk->capacity);
+        result = (sysbvm_object_tuple_t*)((uintptr_t)allocationChunk + allocationOffset);
+    }
+
     memset(result, 0, allocationSize);
-
     sysbvm_heap_checkForGCThreshold(heap);
     return result;
 }
@@ -307,12 +333,24 @@ void sysbvm_heap_initialize(sysbvm_heap_t *heap)
 
 void sysbvm_heap_destroy(sysbvm_heap_t *heap)
 {
-    sysbvm_heap_chunk_t *position = heap->firstChunk;
-    while(position)
     {
-        sysbvm_heap_chunk_t *chunkToFree = position;
-        position = position->nextChunk;
-        sysbvm_heap_freeSystemMemory(chunkToFree, chunkToFree->capacity);
+        sysbvm_heap_chunk_t *position = heap->firstChunk;
+        while(position)
+        {
+            sysbvm_heap_chunk_t *chunkToFree = position;
+            position = position->nextChunk;
+            sysbvm_heap_freeSystemMemory(chunkToFree, chunkToFree->capacity);
+        }
+    }
+
+    {
+        sysbvm_heap_mallocObjectHeader_t *position = heap->firstMallocObject;
+        while(position)
+        {
+            sysbvm_heap_mallocObjectHeader_t *objectToFree = position;
+            position = position->next;
+            free(objectToFree);
+        }
     }
 
     if(heap->codeZone)
@@ -470,23 +508,10 @@ static void sysbvm_heap_computeNextCollectionThreshold(sysbvm_heap_t *heap)
 {
     heap->shouldAttemptToCollect = false;
 
-    const size_t ChunkThreshold = SYSBVM_HEAP_MIN_CHUNK_SIZE * 5 / 100;
-    const size_t NextChunkAllocateThreshold = SYSBVM_HEAP_MIN_CHUNK_SIZE * 50 / 100;
-    if(heap->totalCapacity == 0)
-    {
-        heap->nextGCSizeThreshold = SYSBVM_HEAP_MIN_CHUNK_SIZE - ChunkThreshold;
-    }
-    else
-    {
-        size_t capacityDelta = heap->totalCapacity - heap->totalSize;
-        if(capacityDelta < NextChunkAllocateThreshold)
-            heap->nextGCSizeThreshold = heap->totalCapacity + SYSBVM_HEAP_MIN_CHUNK_SIZE - ChunkThreshold;
-        else
-            heap->nextGCSizeThreshold = heap->totalCapacity - ChunkThreshold;
-    }
-
-    if(heap->nextGCSizeThreshold < SYSBVM_HEAP_FAST_GROWTH_THRESHOLD - ChunkThreshold)
-        heap->nextGCSizeThreshold = (size_t)(SYSBVM_HEAP_FAST_GROWTH_THRESHOLD - ChunkThreshold);
+    size_t liveDataSize = heap->totalSize;
+    if(liveDataSize < SYSBVM_HEAP_STARTUP_HEAP_SIZE)
+        liveDataSize = SYSBVM_HEAP_STARTUP_HEAP_SIZE;
+    heap->nextGCSizeThreshold = liveDataSize * SYSBVM_HEAP_COLLECTION_GAMMA_FACTOR;
 }
 
 void sysbvm_heap_computeCompactionForwardingPointers(sysbvm_heap_t *heap)
@@ -517,6 +542,38 @@ void sysbvm_heap_computeCompactionForwardingPointers(sysbvm_heap_t *heap)
     }
 }
 
+void sysbvm_heap_replaceWeakReferencesWithTombstones(sysbvm_heap_t *heap)
+{
+    SYSBVM_ASSERT(heap->useMallocForHeap);
+    sysbvm_heap_mallocObjectHeader_t *objectHeader = heap->firstMallocObject;
+    while(objectHeader)
+    {
+        sysbvm_object_tuple_t *object = (sysbvm_object_tuple_t*)(objectHeader + 1);
+        if((object->header.typePointerAndFlags & SYSBVM_TUPLE_TYPE_GC_COLOR_MASK) == heap->gcBlackColor)
+        {
+            // Only check the slots of weak objects.
+            if((object->header.typePointerAndFlags & SYSBVM_TUPLE_TYPE_WEAK_OBJECT_BIT) != 0)   
+            {
+                size_t slotCount = object->header.objectSize / sizeof(sysbvm_tuple_t);
+                sysbvm_tuple_t *slots = object->pointers;
+
+                for(size_t i = 0; i < slotCount; ++i)
+                {
+                    if(sysbvm_tuple_isNonNullPointer(slots[i]))
+                    {
+                        sysbvm_object_tuple_t *slotPointedObject = SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(slots[i]);
+                        if((slotPointedObject->header.typePointerAndFlags & SYSBVM_TUPLE_TYPE_GC_COLOR_MASK) != heap->gcBlackColor)
+                        {
+                            slots[i] = SYSBVM_TOMBSTONE_TUPLE;
+                        }
+                    }
+                }
+            }
+        }
+
+        objectHeader = objectHeader->next;
+    }
+}
 void sysbvm_heap_applyForwardingPointers(sysbvm_heap_t *heap)
 {
     sysbvm_heapIterator_t heapIterator = {0};
@@ -550,7 +607,7 @@ void sysbvm_heap_applyForwardingPointers(sysbvm_heap_t *heap)
     }
 }
 
-void sysbvm_heap_compact(sysbvm_heap_t *heap)
+static void sysbvm_heap_compact(sysbvm_heap_t *heap)
 {
     sysbvm_heapIterator_t compactedIterator = {0};
     sysbvm_heapIterator_t heapIterator = {0};
@@ -583,6 +640,48 @@ void sysbvm_heap_compact(sysbvm_heap_t *heap)
         heap->totalSize += chunk->size;
         heap->totalCapacity += chunk->capacity;
     }
+}
+
+static void sysbvm_heap_sweep(sysbvm_heap_t *heap)
+{
+    sysbvm_heap_mallocObjectHeader_t *position = heap->firstMallocObject;
+    heap->firstMallocObject = heap->lastMallocObject = NULL;
+
+    while(position)
+    {
+        sysbvm_heap_mallocObjectHeader_t *next = position->next;
+        position->next = NULL;
+
+        sysbvm_object_tuple_t *object = (sysbvm_object_tuple_t*) (position + 1);
+        if((object->header.typePointerAndFlags & SYSBVM_TUPLE_TYPE_GC_COLOR_MASK) == heap->gcBlackColor)
+        {
+            if(heap->firstMallocObject)
+            {
+                heap->lastMallocObject->next = position;
+                heap->lastMallocObject = position;
+            }
+            else
+            {
+                heap->firstMallocObject = heap->lastMallocObject;
+            }
+        }
+        else
+        {
+            SYSBVM_ASSERT(heap->totalSize >= position->size);
+            heap->totalSize -= position->size;
+            free(position);
+        }
+
+        position = next;
+    }
+}
+
+void sysbvm_heap_sweepOrCompact(sysbvm_heap_t *heap)
+{
+    if(heap->useMallocForHeap)
+        sysbvm_heap_sweep(heap);
+    else
+        sysbvm_heap_compact(heap);
 
     sysbvm_heap_computeNextCollectionThreshold(heap);
 }
