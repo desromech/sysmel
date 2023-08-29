@@ -662,7 +662,7 @@ static void sysbvm_heap_sweep(sysbvm_heap_t *heap)
             }
             else
             {
-                heap->firstMallocObject = heap->lastMallocObject;
+                heap->firstMallocObject = heap->lastMallocObject = position;
             }
         }
         else
