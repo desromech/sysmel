@@ -216,6 +216,7 @@ HIRGlobalVariable definition: {
     public field referenceValue => Untyped.
     public field initialValue => HIRValue.
     public field isReadOnly => Boolean.
+    public field isExternal => Boolean.
     public field isThreadLocal => Boolean.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -230,6 +231,7 @@ HIRGlobalVariable definition: {
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self.
         isReadOnly ifTrue: (stream nextPutAll: " readonly").
+        isExternal ifTrue: (stream nextPutAll: " external").
         isThreadLocal ifTrue: (stream nextPutAll: " threadLocal").
     }.
 }.

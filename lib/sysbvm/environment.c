@@ -108,7 +108,7 @@ SYSBVM_API bool sysbvm_symbolBinding_isTupleSlotBinding(sysbvm_context_t *contex
 SYSBVM_API sysbvm_tuple_t sysbvm_symbolArgumentBinding_create(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t name, sysbvm_tuple_t type, sysbvm_tuple_t ownerFunction, size_t vectorIndex)
 {
     sysbvm_symbolArgumentBinding_t *result = (sysbvm_symbolArgumentBinding_t*)sysbvm_context_allocatePointerTuple(context, context->roots.symbolArgumentBindingType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_symbolArgumentBinding_t));
-    result->super.super.name = name;
+    result->super.super.super.name = name;
     result->super.super.sourcePosition = sourcePosition;
     result->super.super.type = type;
     result->super.ownerFunction = ownerFunction;
@@ -119,7 +119,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_symbolArgumentBinding_create(sysbvm_context_t *
 SYSBVM_API sysbvm_tuple_t sysbvm_symbolLocalBinding_create(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t name, sysbvm_tuple_t type, sysbvm_tuple_t ownerFunction, size_t vectorIndex)
 {
     sysbvm_symbolLocalBinding_t *result = (sysbvm_symbolLocalBinding_t*)sysbvm_context_allocatePointerTuple(context, context->roots.symbolLocalBindingType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_symbolLocalBinding_t));
-    result->super.super.name = name;
+    result->super.super.super.name = name;
     result->super.super.sourcePosition = sourcePosition;
     result->super.super.type = type;
     result->super.ownerFunction = ownerFunction;
@@ -136,7 +136,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_symbolCaptureBinding_create(sysbvm_context_t *c
 
     sysbvm_symbolCaptureBinding_t *result = (sysbvm_symbolCaptureBinding_t*)sysbvm_context_allocatePointerTuple(context, context->roots.symbolCaptureBindingType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_symbolCaptureBinding_t));
     result->super.super.sourcePosition = capturedBindingObject->sourcePosition;
-    result->super.super.name = capturedBindingObject->name;
+    result->super.super.super.name = capturedBindingObject->super.name;
     result->super.super.type = capturedBindingObject->type;
     result->super.ownerFunction = ownerFunction;
     result->super.vectorIndex = sysbvm_tuple_size_encode(context, vectorIndex);
@@ -147,28 +147,29 @@ SYSBVM_API sysbvm_tuple_t sysbvm_symbolCaptureBinding_create(sysbvm_context_t *c
 SYSBVM_API sysbvm_tuple_t sysbvm_symbolMacroValueBinding_create(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t name, sysbvm_tuple_t expansion)
 {
     sysbvm_symbolMacroValueBinding_t *result = (sysbvm_symbolMacroValueBinding_t*)sysbvm_context_allocatePointerTuple(context, context->roots.symbolMacroValueBindingType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_symbolMacroValueBinding_t));
-    result->super.name = name;
+    result->super.super.name = name;
     result->super.sourcePosition = sourcePosition;
     result->super.type = sysbvm_tuple_getType(context, expansion);
     result->expansion = expansion;
     return (sysbvm_tuple_t)result;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_symbolValueBinding_createWithFlags(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t name, sysbvm_tuple_t value, bool isMutable, bool isThreadLocal)
+SYSBVM_API sysbvm_tuple_t sysbvm_symbolValueBinding_createWithFlags(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t name, sysbvm_tuple_t value, bool isMutable, bool isExternal, bool isThreadLocal)
 {
     sysbvm_symbolValueBinding_t *result = (sysbvm_symbolValueBinding_t*)sysbvm_context_allocatePointerTuple(context, context->roots.symbolValueBindingType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_symbolValueBinding_t));
-    result->super.name = name;
+    result->super.super.name = name;
     result->super.sourcePosition = sourcePosition;
     result->super.type = sysbvm_tuple_getType(context, value);
     result->value = value;
     result->isMutable = sysbvm_tuple_boolean_encode(isMutable);
+    result->isExternal = sysbvm_tuple_boolean_encode(isExternal);
     result->isThreadLocal = sysbvm_tuple_boolean_encode(isThreadLocal);
     return (sysbvm_tuple_t)result;
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_symbolValueBinding_create(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t name, sysbvm_tuple_t value)
 {
-    return sysbvm_symbolValueBinding_createWithFlags(context, sourcePosition, name, value, false, false);
+    return sysbvm_symbolValueBinding_createWithFlags(context, sourcePosition, name, value, false, false, false);
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_symbolTupleSlotBinding_create(sysbvm_context_t *context, sysbvm_tuple_t tupleBinding, sysbvm_tuple_t typeSlot)
@@ -385,12 +386,12 @@ SYSBVM_API sysbvm_tuple_t sysbvm_environment_setNewSymbolBindingWithValueAtSourc
     return binding;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_environment_setNewSymbolBindingWithValueAndFlagsAtSourcePosition(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t symbol, sysbvm_tuple_t value, bool isMutable, bool isThreadLocal, sysbvm_tuple_t sourcePosition)
+SYSBVM_API sysbvm_tuple_t sysbvm_environment_setNewSymbolBindingWithValueAndFlagsAtSourcePosition(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t symbol, sysbvm_tuple_t value, bool isMutable, bool isExternal, bool isThreadLocal, sysbvm_tuple_t sourcePosition)
 {
     if(!sysbvm_tuple_isNonNullPointer(environment))
         sysbvm_error("Expected an environment.");
 
-    sysbvm_tuple_t binding = sysbvm_symbolValueBinding_createWithFlags(context, sourcePosition, symbol, value, isMutable, isThreadLocal);
+    sysbvm_tuple_t binding = sysbvm_symbolValueBinding_createWithFlags(context, sourcePosition, symbol, value, isMutable, isExternal, isThreadLocal);
     sysbvm_environment_setNewBinding(context, environment, binding);
     return binding;
 }
@@ -615,7 +616,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionAnalysisEnvironment_getOrCreateCaptureF
 {
     sysbvm_tuple_t capturedBinding;
     sysbvm_symbolBinding_t *sourceBindingObject = (sysbvm_symbolBinding_t*)sourceBinding;
-    sysbvm_tuple_t capturedBindingKey = sourceBindingObject->name ? sourceBindingObject->name : sourceBinding;
+    sysbvm_tuple_t capturedBindingKey = sourceBindingObject->super.name ? sourceBindingObject->super.name : sourceBinding;
     if(sysbvm_identityDictionary_find(environment->captureBindingTable, capturedBindingKey, &capturedBinding))
         return capturedBinding;
 

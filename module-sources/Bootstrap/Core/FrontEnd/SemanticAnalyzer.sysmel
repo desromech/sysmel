@@ -376,7 +376,7 @@ ASTVariableDefinitionNode definition: {
         }.
 
         let type => Type := self typeExpression ifNotNil: (self typeExpression analyzeAndEvaluateWithEnvironment: environment).
-        let value := self valueExpression ifNotNil: (self valueExpression analyzeAndEvaluateWithEnvironment: environment).
+        let value := self valueExpression ifNil: type defaultValue ifNotNil: (self valueExpression analyzeAndEvaluateWithEnvironment: environment).
         let coercedValue := type ifNil: value ifNotNil: (type coerceValue: value).
 
         let mutableValue := self isMutable
@@ -386,9 +386,9 @@ ASTVariableDefinitionNode definition: {
         self isPublic ifTrue: {
             let ownerSymbolBinding := environment lookSymbolRecursively: #__OwnerProgramEntity__.
             let ownerProgramEntity => ProgramEntity := ownerSymbolBinding evaluateInEnvironment: environment.
-            ownerProgramEntity setNewPublicSymbol: name valueBinding: mutableValue isMutable: self isMutable isThreadLocal: self isThreadLocal at: self sourcePosition.
+            ownerProgramEntity setNewPublicSymbol: name valueBinding: mutableValue isMutable: self isMutable isExternal: self isExternal isThreadLocal: self isThreadLocal at: self sourcePosition.
         } ifFalse: {
-            environment setNewSymbol: name valueBinding: mutableValue isMutable: self isMutable isThreadLocal: self isThreadLocal at: self sourcePosition.
+            environment setNewSymbol: name valueBinding: mutableValue isMutable: self isMutable isExternal: self isExternal isThreadLocal: self isThreadLocal at: self sourcePosition.
         }.
 
         mutableValue

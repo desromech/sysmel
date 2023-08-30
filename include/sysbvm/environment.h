@@ -81,9 +81,7 @@ typedef struct sysbvm_localAnalysisEnvironment_s
 
 typedef struct sysbvm_symbolBinding_s
 {
-    sysbvm_tuple_header_t header;
-    sysbvm_tuple_t name;
-    sysbvm_tuple_t owner;
+    sysbvm_programEntity_t super;
     sysbvm_tuple_t sourcePosition;
     sysbvm_tuple_t type;
 } sysbvm_symbolBinding_t;
@@ -129,6 +127,7 @@ typedef struct sysbvm_symbolValueBinding_s
     sysbvm_symbolBinding_t super;
     sysbvm_tuple_t value;
     sysbvm_tuple_t isMutable;
+    sysbvm_tuple_t isExternal;
     sysbvm_tuple_t isThreadLocal;
 } sysbvm_symbolValueBinding_t;
 
@@ -183,7 +182,7 @@ SYSBVM_API bool sysbvm_symbolBinding_isAnalysisBinding(sysbvm_context_t *context
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_symbolBinding_getName(sysbvm_tuple_t binding)
 {
     if(!sysbvm_tuple_isNonNullPointer(binding)) return SYSBVM_NULL_TUPLE;
-    return ((sysbvm_symbolBinding_t*)binding)->name;
+    return ((sysbvm_symbolBinding_t*)binding)->super.name;
 }
 
 /**
@@ -241,7 +240,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_symbolValueBinding_create(sysbvm_context_t *con
 /**
  * Creates a symbol value binding with the specified flags.
  */ 
-SYSBVM_API sysbvm_tuple_t sysbvm_symbolValueBinding_createWithFlags(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t name, sysbvm_tuple_t value, bool isMutable, bool isThreadLocal);
+SYSBVM_API sysbvm_tuple_t sysbvm_symbolValueBinding_createWithFlags(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t name, sysbvm_tuple_t value, bool isMutable, bool isExternal, bool isThreadLocal);
 
 /**
  * Gets the value from the symbol value binding.
@@ -350,7 +349,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_environment_setNewSymbolBindingWithValueAtSourc
 /**
  * Sets a new symbol binding with value and flags in the environment.
  */ 
-SYSBVM_API sysbvm_tuple_t sysbvm_environment_setNewSymbolBindingWithValueAndFlagsAtSourcePosition(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t symbol, sysbvm_tuple_t value, bool isMutable, bool isThreadLocal, sysbvm_tuple_t sourcePosition);
+SYSBVM_API sysbvm_tuple_t sysbvm_environment_setNewSymbolBindingWithValueAndFlagsAtSourcePosition(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t symbol, sysbvm_tuple_t value, bool isMutable, bool isExternal, bool isThreadLocal, sysbvm_tuple_t sourcePosition);
 
 /**
  * Sets a symbol binding with value in the environment.

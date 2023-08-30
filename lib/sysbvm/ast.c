@@ -423,6 +423,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_astVariableDefinitionNode_create(sysbvm_context
     result->isMacroSymbol = SYSBVM_FALSE_TUPLE;
     result->isMutable = sysbvm_tuple_boolean_encode(isMutable);
     result->isPublic = SYSBVM_FALSE_TUPLE;
+    result->isExternal = SYSBVM_FALSE_TUPLE;
     result->isThreadLocal = SYSBVM_FALSE_TUPLE;
     return (sysbvm_tuple_t)result;
 }
@@ -436,6 +437,9 @@ SYSBVM_API sysbvm_tuple_t sysbvm_astVariableDefinitionNode_createMacro(sysbvm_co
     result->valueExpression = valueExpression;
     result->isMacroSymbol = SYSBVM_TRUE_TUPLE;
     result->isMutable = SYSBVM_FALSE_TUPLE;
+    result->isPublic = SYSBVM_FALSE_TUPLE;
+    result->isExternal = SYSBVM_FALSE_TUPLE;
+    result->isThreadLocal = SYSBVM_FALSE_TUPLE;
     return (sysbvm_tuple_t)result;
 }
 

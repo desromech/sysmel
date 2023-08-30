@@ -1921,6 +1921,7 @@ static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveAnalyzeAndEvalua
         gcFrame.value = sysbvm_type_coerceValue(context, gcFrame.type, gcFrame.value);
 
     bool isMutable = sysbvm_tuple_boolean_decode((*variableDefinitionNode)->isMutable);
+    bool isExternal = sysbvm_tuple_boolean_decode((*variableDefinitionNode)->isExternal);
     bool isThreadLocal = sysbvm_tuple_boolean_decode((*variableDefinitionNode)->isThreadLocal);
     if(isMutable)
     {
@@ -1941,13 +1942,13 @@ static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveAnalyzeAndEvalua
 
         gcFrame.ownerProgramEntity = sysbvm_symbolValueBinding_getValue(gcFrame.ownerProgramEntitySymbol);
         if(sysbvm_tuple_isKindOf(context, gcFrame.ownerProgramEntity, context->roots.environmentType))
-            gcFrame.binding = sysbvm_environment_setNewSymbolBindingWithValueAndFlagsAtSourcePosition(context, gcFrame.ownerProgramEntity, gcFrame.name, gcFrame.value, isMutable, isThreadLocal, (*variableDefinitionNode)->super.sourcePosition);
+            gcFrame.binding = sysbvm_environment_setNewSymbolBindingWithValueAndFlagsAtSourcePosition(context, gcFrame.ownerProgramEntity, gcFrame.name, gcFrame.value, isMutable, isExternal, isThreadLocal, (*variableDefinitionNode)->super.sourcePosition);
         else
             sysbvm_error("TODO: Set public symbol in non-environment owner.");
     }
     else
     {
-        gcFrame.binding = sysbvm_environment_setNewSymbolBindingWithValueAndFlagsAtSourcePosition(context, *environment, gcFrame.name, gcFrame.value, isMutable, isThreadLocal, (*variableDefinitionNode)->super.sourcePosition);
+        gcFrame.binding = sysbvm_environment_setNewSymbolBindingWithValueAndFlagsAtSourcePosition(context, *environment, gcFrame.name, gcFrame.value, isMutable, isExternal, isThreadLocal, (*variableDefinitionNode)->super.sourcePosition);
     }
 
     // Store a copy of the binding itself in the value box.

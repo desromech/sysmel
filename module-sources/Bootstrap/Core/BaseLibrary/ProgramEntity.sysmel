@@ -73,15 +73,26 @@ public final class FunctionUncheckedEntryPointSymbol superclass: Symbol; definit
     }.
 }.
 
+public global ProgramEntity::NextSerialToken mutable => UInt32 := 0u32.
+
 ProgramEntity definition: {
     public virtual method programEntityKindName => Symbol
         := self class name.
+
+    public method validSerialToken => UInt32 := {
+        self serialToken ifNil: {
+            self serialToken: ProgramEntity::NextSerialToken.
+            ProgramEntity::NextSerialToken := ProgramEntity::NextSerialToken + 1u32.
+        }.
+
+        self serialToken
+    }.
 
     public method printQualifiedSymbolNameOn: (stream: Stream) ::=> Void := {
         self printQualifiedNameOn: stream.
         stream nextPutAll: ".S"; string: self programEntityKindName.
         stream nextPut: '_'c8.
-        self identityHash asUInt32 printHexOn: stream.
+        self validSerialToken printHexOn: stream.
     }.
 
     public virtual method printQualifiedNameOn: (stream: Stream) ::=> Void := {

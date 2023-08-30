@@ -624,6 +624,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.programEntityType, "ProgramEntity", SYSBVM_NULL_TUPLE,
         "owner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.programEntityType,
+        "serialToken", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anyValueType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.typeType, "Type", SYSBVM_NULL_TUPLE,
         "supertype", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_RTTI_EXCLUDED, context->roots.typeType,
@@ -761,6 +762,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolValueBindingType, "SymbolValueBinding", SYSBVM_NULL_TUPLE,
         "value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.untypedType,
         "isMutable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        "isExternal", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "isThreadLocal", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionType, "Function", SYSBVM_NULL_TUPLE,
@@ -1044,6 +1046,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "isMacroSymbol", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "isMutable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "isPublic", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        "isExternal", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "isThreadLocal", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "analyzedValueType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         NULL);

@@ -147,11 +147,11 @@ public final struct ObjectModel::TupleHeader32 definition: {
         identityHashAndFlags := (identityHashAndFlags & ObjectModel::ObjectType::Mask bitInvert) | (objectType << ObjectModel::ObjectType::Shift)
     }.
 
-    public inline method gcColor => UInt32
-        := (identityHashAndFlags & ObjectModel::GCColor::Mask) >> ObjectModel::GCColor::Shift.
+    public inline method gcColor => UInt8
+        := ((identityHashAndFlags & ObjectModel::GCColor::Mask) >> ObjectModel::GCColor::Shift) asUInt8.
 
-    public inline method gcColor: (gcColor: UInt32) ::=> Void := {
-        identityHashAndFlags := (identityHashAndFlags & ObjectModel::GCColor::Mask bitInvert) | (gcColor << ObjectModel::GCColor::Shift)
+    public inline method gcColor: (gcColor: UInt8) ::=> Void := {
+        identityHashAndFlags := (identityHashAndFlags & ObjectModel::GCColor::Mask bitInvert) | (gcColor asUInt32 << ObjectModel::GCColor::Shift)
     }.
 
     public inline method isBytes => Boolean
@@ -199,11 +199,11 @@ public final struct ObjectModel::TupleHeader64 definition: {
         identityHashAndFlags := (identityHashAndFlags & ObjectModel::ObjectType::Mask bitInvert) | (objectType << ObjectModel::ObjectType::Shift)
     }.
 
-    public inline method gcColor => UInt32
-        := (identityHashAndFlags & ObjectModel::GCColor::Mask) >> ObjectModel::GCColor::Shift.
+    public inline method gcColor => UInt8
+        := ((identityHashAndFlags & ObjectModel::GCColor::Mask) >> ObjectModel::GCColor::Shift) asUInt8.
 
-    public inline method gcColor: (gcColor: UInt32) ::=> Void := {
-        identityHashAndFlags := (identityHashAndFlags & ObjectModel::GCColor::Mask bitInvert) | (gcColor << ObjectModel::GCColor::Shift)
+    public inline method gcColor: (gcColor: UInt8) ::=> Void := {
+        identityHashAndFlags := (identityHashAndFlags & ObjectModel::GCColor::Mask bitInvert) | (gcColor asUInt32 << ObjectModel::GCColor::Shift)
     }.
 
     public inline method isBytes => Boolean
@@ -888,30 +888,32 @@ RawTuple::byteSize adoptDefinitionOf: {:(Untyped)self :: Size |
     let variableDataSize := isBytes ifTrue: variableSize ifFalse: variableSize * ObjectModel::PointerSize.
     let contentSize := instanceSize + variableDataSize.
     let allocationSize := ObjectModel::TupleHeaderSize + contentSize.
-    let allocationPointer := sysmel_pal_gcalloc(allocationSize).
+    let allocationPointer := GarbageCollector::allocate(allocationSize).
     memset(allocationPointer, 0i8, allocationSize).
 
     let objectHeader := allocationPointer reinterpretCastTo: ObjectModel::TupleHeader pointer.
     objectHeader _
         type: type;
+        gcColor: GarbageCollector::AllocationInitialColor;
         objectType: (isBytes ifTrue: ObjectModel::ObjectType::Bytes ifFalse: ObjectModel::ObjectType::Complex);
         identityHashValue: ObjectModelState current newIdentityHash;
         objectSize: contentSize asUInt32.
 
     allocationPointer reinterpretCastTo: Untyped.
-} withEagerAnalysis.
+} makeNoGC withEagerAnalysis.
 
 RawTuple::new adoptDefinitionOf: {:(Size)slotCount :: Untyped |
     <primitive: #RawTuple::new>
     let contentSize := slotCount * ObjectModel::PointerSize.
 
     let allocationSize := ObjectModel::TupleHeaderSize + contentSize.
-    let allocationPointer := sysmel_pal_gcalloc(allocationSize).
+    let allocationPointer := GarbageCollector::allocate(allocationSize).
     memset(allocationPointer, 0i8, allocationSize).
 
     let objectHeader := allocationPointer reinterpretCastTo: ObjectModel::TupleHeader pointer.
     objectHeader _
         type: Untyped;
+        gcColor: GarbageCollector::AllocationInitialColor;
         identityHashValue: ObjectModelState current newIdentityHash;
         objectSize: contentSize asUInt32.
 
@@ -923,12 +925,13 @@ RawTuple::byteNew adoptDefinitionOf: {:(Size)slotCount :: Untyped |
     let contentSize := slotCount.
 
     let allocationSize := ObjectModel::TupleHeaderSize + contentSize.
-    let allocationPointer := sysmel_pal_gcalloc(allocationSize).
+    let allocationPointer := GarbageCollector::allocate(allocationSize).
     memset(allocationPointer, 0i8, allocationSize).
 
     let objectHeader := allocationPointer reinterpretCastTo: ObjectModel::TupleHeader pointer.
     objectHeader _
         type: Untyped;
+        gcColor: GarbageCollector::AllocationInitialColor;
         identityHashValue: ObjectModelState current newIdentityHash;
         objectType: ObjectModel::ObjectType::Bytes;
         objectSize: contentSize asUInt32.
@@ -942,10 +945,11 @@ RawTuple::shallowCopy adoptDefinitionOf: {:(Untyped)sourceObject :: Untyped |
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
         let sourceObjectSize := ObjectModel::TupleHeaderSize + (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ objectSize asSize.
 
-        let allocationPointer := sysmel_pal_gcalloc(sourceObjectSize).
+        let allocationPointer := GarbageCollector::allocate(sourceObjectSize).
         memcpy(allocationPointer, (pointerValue reinterpretCastTo: Void const pointer), sourceObjectSize).
 
         (allocationPointer reinterpretCastTo: ObjectModel::TupleHeader pointer) _
+            gcColor: GarbageCollector::AllocationInitialColor;
             identityHashValue: ObjectModelState current newIdentityHash.
 
         allocationPointer reinterpretCastTo: Untyped
@@ -1019,12 +1023,13 @@ public inline function ObjectModel::isFunction(value: Untyped) => Boolean := {
 ## Boxing methods.
 public function ObjectModel::allocateBoxForValueOfTypeWithSize(type: Type, contentSize: Size) => ObjectModel::TupleHeader pointer := {
     let allocationSize := ObjectModel::TupleHeaderSize + contentSize.
-    let allocationPointer := sysmel_pal_gcalloc(allocationSize).
+    let allocationPointer := GarbageCollector::allocate(allocationSize).
     memset(allocationPointer, 0i8, allocationSize).
 
     let objectHeader := allocationPointer reinterpretCastTo: ObjectModel::TupleHeader pointer.
     objectHeader _
         type: type;
+        gcColor: GarbageCollector::AllocationInitialColor;
         identityHashValue: ObjectModelState current newIdentityHash;
         objectType: ObjectModel::ObjectType::Bytes;
         objectSize: contentSize asUInt32.
@@ -1621,11 +1626,16 @@ public function ObjectModel::makeClosureWithCaptureVector(functionDefinition: Fu
 }.
 
 public function ObjectModel::allocaGC(size: Size, elementType: Type) => Void pointer := {
-    let result := sysmel_pal_gcalloc(size).
+    ## FIXME: Generate a fat pointer here.
+    let result := sysmel_pal_malloc(size).
     memset(result, 0i8, size).
     result
 }.
 
+public nogc function ObjectModel::clearDeadWeakReferencesOf(objectHeader: ObjectModel::TupleHeader pointer) => Void := {
+    
+
+}.
 
 public function ObjectModel::fetchUncheckedEntryPointOrInterpreterTrampoline(function: Function, interpreterTrampoline: UIntPointer) => UIntPointer := {
     let result := function definition uncheckedEntryPoint asUIntPointer.

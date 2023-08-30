@@ -236,6 +236,7 @@ MIRValue definition: {
     public virtual method isRelativeImmediate32 => Boolean := false.
 
     public virtual method isImmediateU8 => Boolean := false.
+    public virtual method isExternal => Boolean := false.
     public virtual method isThreadLocal => Boolean := false.
 
     public virtual method getConstantValue64 => Int64
@@ -549,12 +550,17 @@ public final class MIRTemporaryVariable superclass: MIRLocalVariable; definition
 
 public final class MIRGlobalVariable superclass: MIRProgramEntity; definition: {
     public field type => Type.
+    public field size => UInt64.
+    public field alignment => UInt64.
+
+    public field valueType => Type.
     public field valueSize => UInt64.
     public field valueAlignment => UInt64.
     public field isSignedExtended => Boolean.
     public field isValueInstance => Boolean.
     public field gcRootEntryType => GCRootEntryType.
     public field isReadOnly => Boolean.
+    public field isExternal => Boolean.
     public field isThreadLocal => Boolean.
     public field initialValue => MIRValue.
 
@@ -564,33 +570,39 @@ public final class MIRGlobalVariable superclass: MIRProgramEntity; definition: {
     public override method physicalLocationClass => MIRPhysicalLocation class := MIRPhysicalIntegerRegister.
 
     __Meta__ definition: {
-        public method withName: (name: Symbol) type: (type: Type) isValueInstance: (isValueInstance: Boolean) compilationTarget: (compilationTarget: MIRCompilationTarget) ::=> self
+        public method withName: (name: Symbol) type: (type: Type) valueType: (valueType: Type) isValueInstance: (isValueInstance: Boolean) compilationTarget: (compilationTarget: MIRCompilationTarget) ::=> self
             := self new
                 name: name;
-                initializeWithType: type isValueInstance: isValueInstance compilationTarget: compilationTarget;
+                initializeWithType: type valueType: valueType isValueInstance: isValueInstance compilationTarget: compilationTarget;
                 yourself.
 
-        public method withType: (type: Type) isValueInstance: (isValueInstance: Boolean) compilationTarget: (compilationTarget: MIRCompilationTarget) ::=> self
-            := self new initializeWithType: type isValueInstance: isValueInstance compilationTarget: compilationTarget; yourself.
+        public method withType: (type: Type) valueType: (valueType: Type) isValueInstance: (isValueInstance: Boolean) compilationTarget: (compilationTarget: MIRCompilationTarget) ::=> self
+            := self new initializeWithType: type valueType: valueType isValueInstance: isValueInstance compilationTarget: compilationTarget; yourself.
     }.
     
-    public method initializeWithType: (newType: Type) isValueInstance: (newIsValueInstance: Boolean)  compilationTarget: (compilationTarget: MIRCompilationTarget) ::=> Void := {
+    public method initializeWithType: (newType: Type) valueType: (newValueType: Type) isValueInstance: (newIsValueInstance: Boolean)  compilationTarget: (compilationTarget: MIRCompilationTarget) ::=> Void := {
         self assert: newType isNotNil.
         type := newType.
+        size := (type valueSizeForMirTarget: compilationTarget) asUInt64.
+        alignment := (type valueAlignmentForMirTarget: compilationTarget) asUInt64.            
+
         isValueInstance := newIsValueInstance.
+        valueType := newValueType.
         isValueInstance ifTrue: {
-            valueSize := (type instanceSizeForMirTarget: compilationTarget) asUInt64.
-            valueAlignment := (type instanceAlignmentForMirTarget: compilationTarget) asUInt64.
+            valueSize := (valueType instanceSizeForMirTarget: compilationTarget) asUInt64.
+            valueAlignment := (valueType instanceAlignmentForMirTarget: compilationTarget) asUInt64.
         } ifFalse: {
-            valueSize := (type valueSizeForMirTarget: compilationTarget) asUInt64.
-            valueAlignment := (type valueAlignmentForMirTarget: compilationTarget) asUInt64.            
+            valueSize := (valueType valueSizeForMirTarget: compilationTarget) asUInt64.
+            valueAlignment := (valueType valueAlignmentForMirTarget: compilationTarget) asUInt64.            
         }.
-        gcRootEntryType := type gcRootEntryType.
+        gcRootEntryType := valueType gcRootEntryType.
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPutAll: "global".
         name ifNotNil: (stream space; string: name).
+        isExternal ifTrue: (stream nextPutAll: " external").
+        isThreadLocal ifTrue: (stream nextPutAll: " threadLocal").
     }.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {

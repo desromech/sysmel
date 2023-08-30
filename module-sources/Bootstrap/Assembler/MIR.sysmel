@@ -126,7 +126,9 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
     public method compileModule: (module: MIRModule) ::=> Void := {
         ## Use the module image base object trace for constructing the object heap.
         sourceModule := module.
-        objectHeap baseObjectTracer: module baseObjectTracer.
+        objectHeap
+            baseObjectTracer: module baseObjectTracer;
+            setSpecialSymbolsWithMirModuleGenerator: self.
 
         targetModule contentSymbol ifNil: {
             let compileUnitSymbol := AsmSymbol new name: #compileUnit; makePrivate; yourself.
@@ -169,7 +171,7 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
         := objectHeap offsetOfGCRootObjectTableEntryFor: object.
 
     public method gcRootObjectTableSymbol ::=> AsmSymbol
-        := objectHeap rootObjectTableSymbol.
+        := objectHeap objectPointerTableStartSymbol.
 
     public method picTableSymbol ::=> AsmSymbol
         := picTableSymbol ifNil: { picTableSymbol := AsmSymbol new
@@ -195,21 +197,31 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
             endLabel: self picTableSymbol
     }.
 
+    public method getSymbolForSourceProgramEntityOrNil: (sourceProgramEntity: ProgramEntity) ::=> AsmSymbol := {
+        let mirProgramEntity => MIRProgramEntity := (sourceModule sourceProgramEntityDictionary atOrNil: sourceProgramEntity).
+        mirProgramEntity ifNotNil: {
+            self compileProgramEntity: mirProgramEntity.
+        }
+    }.
+
+    public method getSymbolForSourceProgramEntity: (sourceProgramEntity: ProgramEntity) orCreateTLSNamed: (name: Symbol) ::=> AsmSymbol := {
+        let mirProgramEntity => MIRProgramEntity := (sourceModule sourceProgramEntityDictionary atOrNil: sourceProgramEntity).
+        mirProgramEntity ifNotNil: {
+            self compileProgramEntity: mirProgramEntity.
+        } ifNil: {
+            let result := AsmSymbol new
+                name: name;
+                makePublic;
+                makeTLS;
+                yourself.
+            targetModule addImportedSymbol: result.
+            result
+        }
+    }.
+
     public method gcStackFrameRecordLastActiveSymbol => AsmSymbol := {
         gcStackFrameRecordLastActiveSymbol ifNil: {
-            let recordVariable => MIRProgramEntity := (sourceModule sourceProgramEntityDictionary atOrNil: (__Global__ lookLocalSymbol: #GCStackFrameRecord::LastActive)).
-            recordVariable ifNotNil: {
-                gcStackFrameRecordLastActiveSymbol := self compileProgramEntity: recordVariable.
-            } ifNil: {
-                gcStackFrameRecordLastActiveSymbol := AsmSymbol new
-                    name: #__sysmel_gcStackFrameRecordLastActive;
-                    makePublic;
-                    makeTLS;
-                    yourself.
-                targetModule addImportedSymbol: gcStackFrameRecordLastActiveSymbol
-            }.
-
-            gcStackFrameRecordLastActiveSymbol
+            gcStackFrameRecordLastActiveSymbol := self getSymbolForSourceProgramEntity: (__Global__ lookLocalSymbol: #GCStackFrameRecord::LastActive) orCreateTLSNamed: #__sysmel_gcStackFrameRecordLastActive
         }
     }.
 
@@ -250,6 +262,19 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
                 string: string nullTerminated: nullTerminated;
                 endLabel: symbol.
         }
+    }.
+}.
+
+AsmObjectHeap extend: {
+    public method setSpecialSymbolsWithMirModuleGenerator: (codegen: MIRModuleAsmCodeGenerator) ::=> Void := {
+        objectPointerTableStartSymbol := codegen getSymbolForSourceProgramEntityOrNil: (__Global__ lookLocalSymbol: #GarbageCollector::StaticRootPointerTableStart).
+        objectPointerTableEndSymbol := codegen getSymbolForSourceProgramEntityOrNil: (__Global__ lookLocalSymbol: #GarbageCollector::StaticRootPointerTableEnd).
+
+        objectFatPointerTableStartSymbol := codegen getSymbolForSourceProgramEntityOrNil: (__Global__ lookLocalSymbol: #GarbageCollector::StaticRootFatPointerTableStart).
+        objectFatPointerTableEndSymbol := codegen getSymbolForSourceProgramEntityOrNil: (__Global__ lookLocalSymbol: #GarbageCollector::StaticRootFatPointerTableEnd).
+
+        objectSectionStartSymbol := codegen getSymbolForSourceProgramEntityOrNil: (__Global__ lookLocalSymbol: #GarbageCollector::StaticObjectSegmentStart).
+        objectSectionEndSymbol := codegen getSymbolForSourceProgramEntityOrNil: (__Global__ lookLocalSymbol: #GarbageCollector::StaticObjectSegmentEnd).
     }.
 }.
 
@@ -935,6 +960,11 @@ public final class MIRGlobalDataAsmCodeGenerator superclass: MIRAsmCodeGenerator
     public field dataStream => AsmStreamBuilder.
 
     public method generateGlobalVariable: (globalToGenerate: MIRGlobalVariable) withSymbol: (symbol: AsmSymbol) ::=> Void := {
+        globalToGenerate isExternal ifTrue: {
+            moduleGenerator targetModule addImportedSymbol: symbol.
+            return: void
+        }.
+
         asmVariable := moduleGenerator targetModule newProgramEntity.
         asmVariable
             debugSourcePosition: globalToGenerate debugSourcePosition;

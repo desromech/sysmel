@@ -114,6 +114,7 @@ typedef struct sysbvm_astVariableDefinitionNode_s
     sysbvm_tuple_t isMacroSymbol;
     sysbvm_tuple_t isMutable;
     sysbvm_tuple_t isPublic;
+    sysbvm_tuple_t isExternal;
     sysbvm_tuple_t isThreadLocal;
     sysbvm_tuple_t analyzedValueType;
 } sysbvm_astVariableDefinitionNode_t;

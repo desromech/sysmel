@@ -15,6 +15,7 @@ loadSourceNamed: "MethodDictionary.sysmel".
 loadSourceNamed: "StringMemoryFunctions.sysmel".
 loadSourceNamed: "Interval.sysmel".
 loadSourceNamed: "MemoryPointers.sysmel".
+loadSourceNamed: "GarbageCollector.sysmel".
 loadSourceNamed: "ObjectModel.sysmel".
 loadSourceNamed: "Function.sysmel".
 

@@ -390,6 +390,7 @@ public: #let with: (MetaBuilderFactory for: LetMetaBuilder).
 
 LetMetaBuilder publicSubclass: #GlobalMetaBuilder slots: (
     TypeSlot publicNamed: #isPublic type: Boolean ,
+    TypeSlot publicNamed: #isExternal type: Boolean ,
     TypeSlot publicNamed: #isThreadLocal type: Boolean ,
 ).
 
@@ -403,6 +404,7 @@ GlobalMetaBuilder
             valueExpression: self initialValue;
             isMutable: self isMutable;
             isPublic: self isPublic;
+            isExternal: self isExternal;
             isThreadLocal: self isThreadLocal;
             yourself).
 
@@ -773,6 +775,7 @@ MacroMetaBuilder publicSubclass: #FlagMetaBuilder slots: (
     TypeSlot publicNamed: #typeFlags type: Bitflags ,
     TypeSlot publicNamed: #fieldFlags type: Bitflags ,
     TypeSlot publicNamed: #isPublic type: Boolean ,
+    TypeSlot publicNamed: #isExternal type: Boolean ,
     TypeSlot publicNamed: #isThreadLocal type: Boolean ,
     TypeSlot publicNamed: #isEager type: Boolean ,
 ).
@@ -887,6 +890,11 @@ FlagMetaBuilder
         self isEager: true.
         self continueExpansion
     };
+    withSelector: #external addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self isExternal: true.
+        self continueExpansion
+    };
     withSelector: #method addMethod: {:self :: ASTNode |
         <metaBuilder>
         self delegateToMetaBuilder: (MethodMetaBuilder new
@@ -919,6 +927,7 @@ FlagMetaBuilder
         <metaBuilder>
         self delegateToMetaBuilder: (GlobalMetaBuilder new
             isPublic: self isPublic;
+            isExternal: self isExternal;
             isThreadLocal: true;
             yourself)
     };
@@ -926,6 +935,7 @@ FlagMetaBuilder
         <metaBuilder>
         self delegateToMetaBuilder: (GlobalMetaBuilder new
             isPublic: self isPublic;
+            isExternal: self isExternal;
             yourself)
     };
     withSelector: #template addMethod: {:self :: ASTNode |

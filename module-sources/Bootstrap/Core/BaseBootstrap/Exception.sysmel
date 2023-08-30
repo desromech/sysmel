@@ -98,12 +98,12 @@ Exception definition: {
         previous: ExceptionStackRecord::LastActive;
         kind: ExceptionStackRecord::Kind::OnDo;
         exceptionFilter: exceptionFilter;
-        exceptionBlock: exceptionBlock.
+        exceptionBlock: exceptionBlock;
+        gcStackFrameRecord: GCStackFrameRecord::LastActive.
     ExceptionStackRecord::LastActive := stackRecord address.
 
     ## Perform setjmp
     ## FIXME: Avoid this explicit __slotNamedReferenceAt__:
-    stackRecord gcStackFrameRecord: GCStackFrameRecord::LastActive.
     (stackRecord __slotNamedReferenceAt__: #setjmpBuffer) setjmp ifFalse: {
         let result := body().
         ExceptionStackRecord::LastActive := stackRecord previous.

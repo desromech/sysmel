@@ -191,6 +191,7 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
             name: binding programEntityQualifiedNameSymbol;
             type: binding type;
             valueType: binding valueType;
+            isExternal: binding isExternal;
             isThreadLocal: binding isThreadLocal;
             yourself.
 

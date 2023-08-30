@@ -127,9 +127,10 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
     }.
 
     public method compileGlobalVariable: (globalVariable: HIRGlobalVariable) ::=> MIRGlobalVariable := {
-        let mirGlobalVariable := (MIRGlobalVariable withName: globalVariable name type: globalVariable valueType isValueInstance: false compilationTarget: compilationTarget)
+        let mirGlobalVariable := (MIRGlobalVariable withName: globalVariable name type: globalVariable type valueType: globalVariable valueType isValueInstance: false compilationTarget: compilationTarget)
             sourceProgramEntity: globalVariable sourceBinding;
             isReadOnly: globalVariable isReadOnly;
+            isExternal: globalVariable isExternal;
             isThreadLocal: globalVariable isThreadLocal;
             yourself.
         targetModule addProgramEntity: mirGlobalVariable.
@@ -155,7 +156,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
         }.
 
     public method compileFunction: (function: HIRFunction) ::=> MIRValue := {
-        let functionObject := MIRGlobalVariable withName: function name type: Function isValueInstance: true compilationTarget: compilationTarget.
+        let functionObject := MIRGlobalVariable withName: function name type: Function valueType: Function isValueInstance: true compilationTarget: compilationTarget.
         targetModule addProgramEntity: functionObject.
         globalValueDictionary at: function put: functionObject.
 
@@ -163,7 +164,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
     }.
 
     public method compileFunctionDefinition: (functionDefinition: HIRFunctionDefinition) ::=> MIRValue := {
-        let functionDefinitionObject := MIRGlobalVariable withName: functionDefinition name type: FunctionDefinition isValueInstance: true compilationTarget: compilationTarget.
+        let functionDefinitionObject := MIRGlobalVariable withName: functionDefinition name type: FunctionDefinition valueType: FunctionDefinition isValueInstance: true compilationTarget: compilationTarget.
         targetModule addProgramEntity: functionDefinitionObject.
         globalValueDictionary at: functionDefinition put: functionDefinitionObject.
 

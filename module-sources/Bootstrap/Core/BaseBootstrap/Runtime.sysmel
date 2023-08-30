@@ -786,7 +786,7 @@ ProgramEntity
 Type
     withSelector: #coerceValue:intoType: addMethod: {:(Type)self :(Untyped)value :(Type)targetType :: Untyped |
         error((("Cannot coerce value " -- value printString) -- " into the expected target type ") -- targetType printString)
-    };
+    } makeVirtual;
 
     withSelector: #coerceValue: addMethod: {:(Type)self :(Untyped)value :: Untyped |
         let: #valueType with: RawTuple::type(value).
@@ -796,6 +796,15 @@ Type
     } makeVirtual;
     withSelector: #printAnonymousNameOn: addMethod: {:(Type)self :(Stream)stream :: Void |
         stream nextPutAll: "a Type"
+    } makeOverride.
+
+UndefinedObject class
+    withSelector: #coerceValue:intoType: addMethod: {:(Type)self :(Untyped)value :(Type)targetType :: Untyped |
+        if: targetType isNullable then: {
+            nil
+        } else: {
+            error((("Cannot coerce value " -- value printString) -- " into the expected target type ") -- targetType printString)
+        }
     } makeOverride.
 
 Void class

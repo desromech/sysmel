@@ -14,7 +14,7 @@ public final class AsmObjectHeapRootTableEntryObjectPointer32 superclass: AsmObj
     public override method writeIn: (asmHeap: AsmObjectHeap) rootTableOffset: (offset: Size) ::=> Void := {
         let objectOffset := asmHeap offsetForRootTableElementWithIndex: index.
         asmHeap serializedRootTableRelocations add: (AsmObjectCodeRelocationAbsoluteInt32 new
-            symbol: asmHeap objectSectionSymbol;
+            symbol: asmHeap objectSectionStartSymbol;
             offset: offset;
             addend: objectOffset asInt32;
             yourself)
@@ -25,7 +25,7 @@ public final class AsmObjectHeapRootTableEntryObjectPointer64 superclass: AsmObj
     public override method writeIn: (asmHeap: AsmObjectHeap) rootTableOffset: (offset: Size) ::=> Void := {
         let objectOffset := asmHeap offsetForRootTableElementWithIndex: index.
         asmHeap serializedRootTableRelocations add: (AsmObjectCodeRelocationAbsoluteInt64 new
-            symbol: asmHeap objectSectionSymbol;
+            symbol: asmHeap objectSectionStartSymbol;
             offset: offset;
             addend: objectOffset asInt64;
             yourself)
@@ -52,7 +52,7 @@ AsmObjectHeap definition: {
     public field compilationTarget => AsmCompilationTarget.
     public field hasFullRTTI => Boolean.
 
-    protected field objectSectionSymbol => AsmSymbol.
+    protected field objectSectionStartSymbol => AsmSymbol.
     protected field objectSectionEndSymbol => AsmSymbol.
     public field tracer => ImageTracer.
     public field objectTrace => ImageObjectTrace.
@@ -64,7 +64,12 @@ AsmObjectHeap definition: {
     public field serializedRootTable => ByteArray.
     public field serializedRootTableRelocations => OrderedCollection.
 
-    protected field rootObjectTableSymbol => AsmSymbol.
+    protected field objectPointerTableStartSymbol => AsmSymbol.
+    protected field objectPointerTableEndSymbol => AsmSymbol.
+
+    protected field objectFatPointerTableStartSymbol => AsmSymbol.
+    protected field objectFatPointerTableEndSymbol => AsmSymbol.
+
     public field rootObjectList => OrderedCollection.
     public field rootTableEntries => OrderedCollection.
     protected field rootOffsetTable => IdentityDictionary.
@@ -98,7 +103,8 @@ AsmObjectHeap definition: {
             serializeObjects;
             serializeRootTable;
             buildGCObjectDataSectionIn: targetModule;
-            buildGCObjectRootTableIn: targetModule.
+            buildGCPointerTableIn: targetModule;
+            buildGCFatPointerTableIn: targetModule.
     }.
 
     public method serializeObjects => Void := {
@@ -154,55 +160,90 @@ AsmObjectHeap definition: {
         }.
     }.
 
-    public method rootObjectTableSymbol ::=> AsmSymbol := {
-        rootObjectTableSymbol ifNil: (rootObjectTableSymbol := AsmSymbol new
-            name: #rootObjectTable;
-            makePrivate;
+    public method objectPointerTableStartSymbol ::=> AsmSymbol := {
+        objectPointerTableStartSymbol ifNil: (objectPointerTableStartSymbol := AsmSymbol new
+            name: #__sysmel_objectPointerTableStart;
+            makePublic;
             yourself)
     }.
 
-    public method objectSectionSymbol ::=> AsmSymbol := {
-        objectSectionSymbol ifNil: (objectSectionSymbol := AsmSymbol new
-            name: #objectSection;
-            makePrivate;
+    public method objectPointerTableEndSymbol ::=> AsmSymbol := {
+        objectPointerTableEndSymbol ifNil: (objectPointerTableEndSymbol := AsmSymbol new
+            name: #__sysmel_objectPointerTableEnd;
+            makePublic;
+            yourself)
+    }.
+
+    public method objectFatPointerTableStartSymbol ::=> AsmSymbol := {
+        objectFatPointerTableStartSymbol ifNil: (objectPointerTableStartSymbol := AsmSymbol new
+            name: #__sysmel_objectFatPointerTableStart;
+            makePublic;
+            yourself)
+    }.
+
+    public method objectFatPointerTableEndSymbol ::=> AsmSymbol := {
+        objectFatPointerTableEndSymbol ifNil: (objectFatPointerTableEndSymbol := AsmSymbol new
+            name: #__sysmel_objectPointerTableEnd;
+            makePublic;
+            yourself)
+    }.
+
+    public method objectSectionStartSymbol ::=> AsmSymbol := {
+        objectSectionStartSymbol ifNil: (objectSectionStartSymbol := AsmSymbol new
+            name: #__sysmel_objectSectionStart;
+            makePublic;
             yourself)
     }.
 
     public method objectSectionEndSymbol ::=> AsmSymbol := {
         objectSectionEndSymbol ifNil: (objectSectionEndSymbol := AsmSymbol new
-            name: #objectSectionEnd;
-            makePrivate;
+            name: #__sysmel_objectSectionEnd;
+            makePublic;
             yourself)
     }.
 
     public method buildGCObjectDataSectionIn: (targetModule: AsmProgramEntity) ::=> Void := {
-        objectTrace objectList isEmpty ifTrue: (return: void).
+        objectTrace objectList isEmpty && objectSectionStartSymbol isNil ifTrue: (return: void).
 
         let objectDataProgramEntity := targetModule newProgramEntity.
         let objectSection := objectDataProgramEntity newStreamBuilder
             dataSection;
             align: 16sz;
-            label: self objectSectionSymbol;
+            label: self objectSectionStartSymbol;
             addElement: (AsmObjectSectionDirective new
                 heap: self;
                 yourself);
-            endLabel: self objectSectionSymbol;
+            endLabel: self objectSectionStartSymbol;
             label: self objectSectionEndSymbol;
             endLabel: self objectSectionEndSymbol.
     }.
 
-    public method buildGCObjectRootTableIn: (targetModule: AsmProgramEntity) ::=> Void := {
-        rootObjectTableSymbol ifNil: (return: void).
+    public method buildGCPointerTableIn: (targetModule: AsmProgramEntity) ::=> Void := {
+        objectPointerTableStartSymbol ifNil: (return: void).
 
-        let rootTableProgramEntity := targetModule newProgramEntity.
-        let rootTableSection := rootTableProgramEntity newStreamBuilder
+        let pointerTableProgramEntity := targetModule newProgramEntity.
+        let pointerTableSection := pointerTableProgramEntity newStreamBuilder
             dataSection;
             align: compilationTarget pointerAlignment;
-            label: rootObjectTableSymbol;
+            label: objectPointerTableStartSymbol;
             addElement: (AsmRootObjectPointerTableDirective new
                 heap: self;
                 yourself);
-            endLabel: rootObjectTableSymbol
+            endLabel: objectPointerTableStartSymbol;
+            label: self objectPointerTableEndSymbol
+    }.
+
+
+    public method buildGCFatPointerTableIn: (targetModule: AsmProgramEntity) ::=> Void := {
+        objectFatPointerTableStartSymbol ifNil: (return: void).
+
+        let fatPointerTableProgramEntity := targetModule newProgramEntity.
+        let fatPointerTableSection := fatPointerTableProgramEntity newStreamBuilder
+            dataSection;
+            align: compilationTarget pointerAlignment;
+            label: objectFatPointerTableStartSymbol;
+            endLabel: objectFatPointerTableStartSymbol;
+            label: self objectFatPointerTableEndSymbol
     }.
 
     public method writeReference32: (value: Untyped) at: (offset: Size) extraAddend: (extraAddend: UInt32) ::=> Void := {
@@ -215,7 +256,7 @@ AsmObjectHeap definition: {
                 let objectIndex => UInt32 := objectTrace objectIndexDictionary at: value.
                 let objectOffset => UInt64 := objectOffsetList at: objectIndex asSize.
                 serializedObjectDataRelocations add: (AsmObjectCodeRelocationAbsoluteInt32 new
-                    symbol: self objectSectionSymbol;
+                    symbol: self objectSectionStartSymbol;
                     offset: offset;
                     addend: objectOffset asInt32 + extraAddend asInt32;
                     yourself)
@@ -237,7 +278,7 @@ AsmObjectHeap definition: {
                 let objectIndex => UInt32 := objectTrace objectIndexDictionary untypedAt: value.
                 let objectOffset => Size := objectOffsetList at: objectIndex asSize.
                 serializedObjectDataRelocations add: (AsmObjectCodeRelocationAbsoluteInt64 new
-                    symbol: self objectSectionSymbol;
+                    symbol: self objectSectionStartSymbol;
                     offset: offset;
                     addend: objectOffset asInt64 + extraAddend asInt64;
                     yourself)
@@ -255,7 +296,7 @@ AsmObjectHeap definition: {
                 let objectIndex => UInt32 := objectTrace objectIndexDictionary untypedAt: value.
                 let objectOffset => Size := objectOffsetList at: objectIndex asSize.
                 serializedObjectDataRelocations add: (AsmObjectCodeRelocationAbsoluteInt64 new
-                    symbol: self objectSectionSymbol;
+                    symbol: self objectSectionStartSymbol;
                     offset: offset;
                     addend: objectOffset asInt64;
                     yourself)
