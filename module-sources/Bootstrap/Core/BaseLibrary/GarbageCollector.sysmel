@@ -19,7 +19,7 @@ public struct GarbageCollector::PointerStack definition: {
 
     let PointerSize := UIntPointer valueSize.
 
-    private inline method increaseCapacity => Void := {
+    private inline nogc method increaseCapacity => Void := {
         let newCapacity := capacity * 2sz max: 1sz<<20sz.
         let newData := sysmel_pal_malloc(newCapacity * PointerSize) reinterpretCastTo: UIntPointer pointer.
         capacity > 0sz ifTrue: {
@@ -31,7 +31,7 @@ public struct GarbageCollector::PointerStack definition: {
         data := newData.
     }.
 
-    public method push: (element: UIntPointer) ::=> Void := {
+    public inline nogc method push: (element: UIntPointer) ::=> Void := {
         size < capacity ifFalse: {
             self increaseCapacity.
         }.
@@ -40,13 +40,13 @@ public struct GarbageCollector::PointerStack definition: {
         size := size + 1sz
     }.
 
-    public inline method isEmpty => Boolean
+    public inline nogc method isEmpty => Boolean
         := size = 0sz.
 
-    public inline method isNotEmpty => Boolean
+    public inline nogc method isNotEmpty => Boolean
         := size ~= 0sz.
 
-    public method pop ::=> UIntPointer := {
+    public inline nogc method pop ::=> UIntPointer := {
         self isNotEmpty ifFalse: {
             sysmel_pal_abort()
         }.
@@ -189,6 +189,10 @@ private nogc function GarbageCollector::markContentOfObject(objectPointer: UIntP
     }.
 
     let header := objectPointer reinterpretCastTo: ObjectModel::TupleHeader pointer.
+    header _ gcColor = GarbageCollector::GrayColor ifFalse: {
+        return: void
+    }.
+    
     GarbageCollector::markPointerValue(header _ typePointer).
 
     let objectType := header _ objectType.
@@ -326,6 +330,10 @@ private nogc function GarbageCollector::sweepAllocatedObjects() => Void := {
             GarbageCollector::CurrentHeapSize := GarbageCollector::CurrentHeapSize - position _ size asSize.
             sysmel_pal_free(position reinterpretCastTo: Void pointer)
         } ifFalse: {
+            objectHeader _ gcColor = GarbageCollector::BlackColor ifFalse: {
+                sysmel_pal_abort()
+            }.
+
             objectHeader _ gcColor: GarbageCollector::WhiteColor.
 
             GarbageCollector::FirstAllocatedObject ifNotNil: {

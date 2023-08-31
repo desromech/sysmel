@@ -239,6 +239,8 @@ MIRValue definition: {
     public virtual method isExternal => Boolean := false.
     public virtual method isThreadLocal => Boolean := false.
 
+    public virtual method isNoGC => Boolean := false.
+
     public virtual method getConstantValue64 => Int64
         := self error: "Not an immediate 64 constant".
 

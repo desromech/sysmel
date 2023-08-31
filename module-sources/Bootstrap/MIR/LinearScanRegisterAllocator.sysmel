@@ -10,6 +10,7 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
     protected field performsCallouts => Boolean.
     protected field maxCalloutSize => UInt64.
     protected field maxCalloutAlignment => UInt64.
+    protected field isNoGC => Boolean.
 
     public override method addRequiredCalloutSize: (calloutSize: UInt64) withAlignment: (calloutAlignment: UInt64) ::=> Void := {
         performsCallouts := true.
@@ -37,6 +38,7 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
         captureVectorPointerValue := function captureVectorPointerValue.
         gotPointerValue := function gotPointerValue.
         threadLocalSegmentPointerValue := function threadLocalSegmentPointerValue.
+        isNoGC := function isNoGC.
 
         ## Reset the register allocation state.
         function allLocalValuesDo: {:(MIRLocalValue)eachValue :: Void |
@@ -279,8 +281,9 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
     }.
 
     public override method spillGCRootsForCalling: (calledFunction: MIRValue) ::=> Void := {
-        ## TODO: Avoid spilling if not required.
-        integerRegisterFile spillGCRoots
+        isNoGC || calledFunction isNoGC ifFalse: {
+            integerRegisterFile spillGCRoots
+        }.
     }.
 
     public override method spillIfNeededAndAllocateIntegerRegister: (register: MIRPhysicalIntegerRegister) withValue: (value: MIRValue) ::=> Void := {

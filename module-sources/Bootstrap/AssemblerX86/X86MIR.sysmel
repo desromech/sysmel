@@ -1397,6 +1397,10 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
     }.
 
     public override method emitGCStackFrameRecordLinkWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen function isNoGC ifTrue: {
+            return: void
+        }.
+
         let stackFrameLayout := codegen stackFrameLayout.
         stackFrameLayout hasRequiredConstruction && stackFrameLayout frameMetadata isNotEmpty ifFalse: {
             return: void
@@ -1431,6 +1435,10 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
     }.
 
     public override method emitGCStackFrameRecordUnlinkWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
+        codegen function isNoGC ifTrue: {
+            return: void
+        }.
+        
         let stackFrameLayout := codegen stackFrameLayout.
         stackFrameLayout hasRequiredConstruction && stackFrameLayout frameMetadata isNotEmpty ifFalse: {
             return: void
