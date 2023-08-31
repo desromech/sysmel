@@ -910,7 +910,7 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         let metadataOffset := stackFrameLayout frameMetadata offset.
 
         self rodataSection
-            align: target pointerSize asSize;
+            align: 4sz;
             label: symbol;
 
             sdword: (stackFrameLayout temporaryGCZone offset - metadataOffset) asInt32; ## temporaryGCZoneOffset

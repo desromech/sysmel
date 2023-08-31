@@ -140,9 +140,11 @@ public final class MIRStackFrameLayout superclass: Object; definition: {
         }
     }.
 
+    public method hasGCDataThatShouldBeInitialized => Boolean
+        := self temporaryGCZone isNotEmpty || self temporaryGCFatPointerZone isNotEmpty || self temporaryNonGCZone isNotEmpty.
+
     public method hasGCTraversedData => Boolean
-        := self temporaryGCZone isNotEmpty || self temporaryGCFatPointerZone isNotEmpty || self temporaryNonGCZone isNotEmpty ||
-            self argumentPassingZone hasGCRoots.
+        := self hasGCDataThatShouldBeInitialized ||  self argumentPassingZone hasGCRoots.
 
     public method buildLayoutForFunction: (function: MIRFunction) withTarget: (target: MIRCompilationTarget) ::=> Void := {
         compilationTarget := target.
@@ -210,8 +212,21 @@ public final class MIRStackFrameLayout superclass: Object; definition: {
         let coalescedLocalValue := localValue validCoalescedValue.
         coalescedLocalValue needsStackAllocation ifFalse: (return: void).
 
-        ## TODO: Select the most adequate segment for the value.
-        self temporaryNonGCZone addLocalValue: coalescedLocalValue
+        ## Select the stack segment.
+        localValue stackSegment: MIRStackFrameSegment::TemporaryNonGCZone.
+        localValue gcRootEntryType = GCRootEntryType::Pointer ifTrue: {
+            localValue stackSegment: MIRStackFrameSegment::TemporaryGCZone.
+        }.
+        localValue gcRootEntryType = GCRootEntryType::FatPointer ifTrue: {
+            localValue stackSegment: MIRStackFrameSegment::TemporaryGCFatPointerZone.
+        }.
+        localValue gcRootEntryType = GCRootEntryType::Object ifTrue: {
+            localValue stackSegment: MIRStackFrameSegment::GCObjectAllocationZone.
+        }.
+
+        ## Add the local value into its corresponding stack segment.
+        let segment => MIRStackFrameSegment := segments at: localValue stackSegment asSize.
+        segment addLocalValue: coalescedLocalValue
     }.
 
     public method allocateGCMetadataZone => Void := {

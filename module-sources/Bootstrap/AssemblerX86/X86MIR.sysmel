@@ -1362,17 +1362,34 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
         codegen textSection cfiEndPrologue.
         
         codegen
-            emitSpillRegisterArgumentsInStackFrame;
             emitStackFrameClear;
+            emitSpillRegisterArgumentsInStackFrame;
             emitGCStackFrameRecordLink;
             emitUnspillEntryValuesFromStackFrame
     }.
 
     public override method emitStackFrameClearWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         let stackFrameLayout := codegen stackFrameLayout.
-        stackFrameLayout hasRequiredConstruction ifFalse: {
+        stackFrameLayout hasRequiredConstruction || stackFrameLayout hasGCDataThatShouldBeInitialized ifFalse: {
             return: void
         }.
+
+        codegen textSection x86::xor: X86::RAX with: X86::RAX.
+
+        let clearSegment := {:(MIRStackFrameSegment)segment :: Void |
+            let pointerCount := segment alignedSize asUInt32 / 8u32.
+            let framePointerBaseOffset := (segment offset - stackFrameLayout frameOrStackPointerAnchorOffset) asInt32.
+
+            let i mutable := 0u32,
+            while: (i < pointerCount) do: {
+                let pointerOffset := (pointerCount - i - 1u32) asInt32 * 8i32.
+                codegen textSection x86::mov: X86::RBP x86::qword + (framePointerBaseOffset + pointerOffset) asAsmImmediate src: X86::RAX.
+            } continueWith: (i := i + 1u32).
+        }.
+
+        clearSegment(stackFrameLayout gcObjectAllocationZone).
+        clearSegment(stackFrameLayout temporaryGCZone).
+        clearSegment(stackFrameLayout temporaryGCFatPointerZone).
     }.
 
     public override method emitGCStackFrameRecordLinkWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {

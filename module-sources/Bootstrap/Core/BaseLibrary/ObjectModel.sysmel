@@ -1632,11 +1632,6 @@ public function ObjectModel::allocaGC(size: Size, elementType: Type) => Void poi
     result
 }.
 
-public nogc function ObjectModel::clearDeadWeakReferencesOf(objectHeader: ObjectModel::TupleHeader pointer) => Void := {
-    
-
-}.
-
 public function ObjectModel::fetchUncheckedEntryPointOrInterpreterTrampoline(function: Function, interpreterTrampoline: UIntPointer) => UIntPointer := {
     let result := function definition uncheckedEntryPoint asUIntPointer.
     result = 0uptr ifTrue: {

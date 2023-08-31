@@ -44,7 +44,7 @@ public struct GarbageCollector::PointerStack definition: {
         := size = 0sz.
 
     public inline method isNotEmpty => Boolean
-        := size = 0sz.
+        := size ~= 0sz.
 
     public method pop ::=> UIntPointer := {
         self isNotEmpty ifFalse: {
@@ -184,7 +184,53 @@ private nogc function GarbageCollector::markStackPointers(lastStackFrameRecord: 
 }.
 
 private nogc function GarbageCollector::markContentOfObject(objectPointer: UIntPointer) => Void := {
+    ObjectModel::isNonNullPointerValue(objectPointer) ifFalse: {
+        return: void
+    }.
 
+    let header := objectPointer reinterpretCastTo: ObjectModel::TupleHeader pointer.
+    GarbageCollector::markPointerValue(header _ typePointer).
+
+    let objectType := header _ objectType.
+    objectType = ObjectModel::ObjectType::Bytes ifTrue: {
+        header _ gcColor: GarbageCollector::BlackColor.
+        return: void
+    }.
+
+    let type := header _ type.
+    let fixedSlots := type allValidSlots.
+    let fixedInstanceSize := type instanceSize.
+
+    {
+        let fixedSlotCount := fixedSlots size.
+        let i mutable := 0sz.
+        while: (i < fixedSlotCount) do: {
+            let typeSlot := tuple: (fixedSlots __uncheckedSlotAt__: i) uncheckedDownCastTo: TypeSlot.
+            ## FIXME: Avoid this virtual call here.
+            typeSlot type isValueType ifFalse: {
+                let slotPointer := objectPointer + ObjectModel::TupleHeaderSize + typeSlot offset reinterpretCastTo: UIntPointer pointer.
+                GarbageCollector::markPointerValue(slotPointer _)
+            }
+        } continueWith: (i := i + 1sz)
+    }.
+
+    let isWeak := objectType = ObjectModel::ObjectType::WeakPointers.
+    isWeak ifTrue: {
+        header _ gcColor: GarbageCollector::BlackColor.
+        return: void
+    }.
+
+    {
+        let variableDataSize := header _ objectSize asSize - fixedInstanceSize.
+        let variableSlotCount := variableDataSize / ObjectModel::PointerSize.
+        let variableSlotsPointer := objectPointer + ObjectModel::TupleHeaderSize + fixedInstanceSize reinterpretCastTo: UIntPointer pointer.
+        let i mutable := 0sz.
+        while: (i < variableSlotCount) do: {
+            GarbageCollector::markPointerValue(variableSlotsPointer[i asIntPointer])
+        } continueWith: (i := i + 1sz)
+    }.
+    
+    header _ gcColor: GarbageCollector::BlackColor.
 }.
 
 private nogc function GarbageCollector::mark() => Void := {
@@ -214,14 +260,57 @@ private nogc function GarbageCollector::mark() => Void := {
     }
 }.
 
+private nogc function GarbageCollector::clearDeadWeakReferencesOf(objectPointer: UIntPointer) => Void := {
+    let header := objectPointer reinterpretCastTo: ObjectModel::TupleHeader pointer.
+    header _ isWeak ifFalse: {
+        return: void
+    }.
+
+    let type := header _ type.
+    let fixedInstanceSize := type instanceSize.
+
+    let variableDataSize := header _ objectSize asSize - fixedInstanceSize.
+    let variableSlotCount := variableDataSize / ObjectModel::PointerSize.
+    let variableSlotsPointer := objectPointer + ObjectModel::TupleHeaderSize + fixedInstanceSize reinterpretCastTo: UIntPointer pointer.
+    let i mutable := 0sz.
+    while: (i < variableSlotCount) do: {
+        let slotValue := variableSlotsPointer[i asIntPointer].
+        ObjectModel::isNonNullPointerValue(slotValue) ifTrue: {
+            let slotValueHeader := slotValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
+            slotValueHeader _ gcColor = GarbageCollector::WhiteColor ifTrue: {
+                variableSlotsPointer[i asIntPointer] := ObjectModel::ImmediateTrivialConstant::Tombstone asUIntPointer
+            }
+        }.
+    } continueWith: (i := i + 1sz)
+}.
+
 private nogc function GarbageCollector::clearDeadWeakReferences() => Void := {
+    ## Traverse the static object segment.
+    {
+        let segmentStartAddress := GarbageCollector::StaticObjectSegmentStart address reinterpretCastTo: UIntPointer.
+        let segmentEndAddress := GarbageCollector::StaticObjectSegmentEnd address reinterpretCastTo: UIntPointer.
+        let ObjectAlignment := 16uptr.
+
+        let position mutable := segmentStartAddress alignedTo: ObjectAlignment.
+        while: (position < segmentEndAddress) do: {
+            let objectHeader := position reinterpretCastTo: ObjectModel::TupleHeader pointer.
+            let objectSize := ObjectModel::TupleHeaderSize + objectHeader _ objectSize asUIntPointer.
+            objectHeader _ gcColor = GarbageCollector::WhiteColor ifFalse: {
+                GarbageCollector::clearDeadWeakReferencesOf(objectHeader reinterpretCastTo: UIntPointer)
+            }.
+
+            position := position + objectSize alignedTo: ObjectAlignment
+        }.
+    }.
+
+    ## Traverse
     let position mutable := GarbageCollector::FirstAllocatedObject.
     while: (position isNotNil) do: {
         let objectHeader := position + 1iptr reinterpretCastTo: ObjectModel::TupleHeader pointer.
-        objectHeader _ gcColor ~= GarbageCollector::WhiteColor ifFalse: {
-            ObjectModel::clearDeadWeakReferencesOf(objectHeader)
+        objectHeader _ gcColor = GarbageCollector::WhiteColor ifFalse: {
+            GarbageCollector::clearDeadWeakReferencesOf(objectHeader reinterpretCastTo: UIntPointer)
         }.
-    } continueWith: (position := position _ next)
+    } continueWith: (position := position _ next).
 }.
 
 private nogc function GarbageCollector::sweepAllocatedObjects() => Void := {
