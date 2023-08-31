@@ -7,7 +7,7 @@ CLISysmelInterpreter definition: {
                 withoutInProcessDebugInformation;
                 useDefaultTypeTables;
                 addProgramEntity: __Global__;
-                addNativeEntryPoint: CLISysmelInterpreter::nativeMain;
+                addNativeEntryPoint: CLISysmelInterpreter::nativeRuntimeMain;
                 build.
 
         public method buildNativeInterpreterImage ::=> ImageBuilderTargetImage
@@ -20,7 +20,7 @@ CLISysmelInterpreter definition: {
                 withoutInProcessDebugInformation;
                 useDefaultTypeTables;
                 addProgramEntity: __Global__;
-                addNativeEntryPoint: CLISysmelInterpreter::nativeMain;
+                addNativeEntryPoint: CLISysmelInterpreter::nativeRuntimeMain;
                 build.
 
         public method buildFullNativeInterpreterImage ::=> ImageBuilderTargetImage

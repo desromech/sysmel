@@ -62,5 +62,12 @@ public function CLISysmelInterpreter::nativeMain(argc: Int32, argv: Char8 const 
         arguments at: i asSize put: (String fromCString: argv[i asIntPointer]).
     } continueWith: (i := i + 1i32).
 
-    CLISysmelInterpreter new main: arguments
+    CLISysmelInterpreter new main: arguments.
+}.
+
+public function CLISysmelInterpreter::nativeRuntimeMain(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
+    GarbageCollector::initialize().
+    let result := CLISysmelInterpreter::nativeMain(argc, argv).
+    GarbageCollector::shutdown().
+    result
 }.

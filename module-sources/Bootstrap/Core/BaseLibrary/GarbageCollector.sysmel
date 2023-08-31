@@ -100,8 +100,23 @@ public nogc function GarbageCollector::allocate(size: Size) => Void pointer := {
     object + 1iptr reinterpretCastTo: Void pointer
 }.
 
-private nogc function GarbageCollector::initialize() => Void := {
-    GarbageCollector::NextCollectionThreshold := GarbageCollector::MinimalCollectionThreshold
+private global GarbageCollector::IsInitialized mutable => Boolean := false.
+
+public nogc function GarbageCollector::initialize() => Void := {
+    GarbageCollector::IsInitialized ifTrue: {
+        return: void
+    }.
+
+    GarbageCollector::NextCollectionThreshold := GarbageCollector::MinimalCollectionThreshold.
+    GarbageCollector::IsInitialized := true.
+}.
+
+public nogc function GarbageCollector::shutdown() => Void := {
+    GarbageCollector::IsInitialized ifFalse: {
+        return: void
+    }.
+
+    GarbageCollector::collect().
 }.
 
 private nogc function GarbageCollector::markPointerValue(pointer: UIntPointer) => Void := {
