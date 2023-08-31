@@ -287,6 +287,12 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
     public abstract method spillIntegerRegistersExceptFor: (registers: Array) ::=> Void
         := self subclassResponsibility.
 
+    public abstract method spillFloatRegistersExceptFor: (registers: Array) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method spillVectorRegistersExceptFor: (registers: Array) ::=> Void
+        := self subclassResponsibility.
+
     public abstract method spillGCRootsForCalling: (calledFunction: MIRValue) ::=> Void
         := self subclassResponsibility.
 

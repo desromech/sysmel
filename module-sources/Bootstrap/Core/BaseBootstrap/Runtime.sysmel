@@ -2672,7 +2672,7 @@ Function
         let: #endTime with: Time::Timestamp::microsecondsNow().
         endTime - startTime
     };
-    withSelector: #printTimeToRunInMicrosecondsWithTitle: addMethod: {:(Function)self :(String)title |
+    withSelector: #printTimeToRunInMillisecondsWithTitle: addMethod: {:(Function)self :(String)title |
         printLine(title, "...").
         let: #startTime with: Time::Timestamp::microsecondsNow().
         let: #result with: self().

@@ -744,6 +744,8 @@ public global X86_64::SysV::CallPreservedRegister := (
     MIR::X86_64::RBX, MIR::X86_64::RSP, MIR::X86_64::RBP, MIR::X86_64::R12, MIR::X86_64::R13, MIR::X86_64::R14, MIR::X86_64::R15
 ).
 
+public global X86_64::SysV::CallPreservedVectorRegister := ().
+
 public final class MIRSysVX86_64RegisterAssignmentState superclass: Object; definition: {
     public field usedIntegerRegisterCount => Size.
     public field usedVectorRegisterCount => Size.
@@ -975,11 +977,15 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRX86_64CallingCo
         allocator allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz.
         allocator
             allocateCaptureVectorPointerRegisterForInstruction: instruction;
-            spillIntegerRegistersExceptFor: X86_64::SysV::CallPreservedRegister
+            spillIntegerRegistersExceptFor: X86_64::SysV::CallPreservedRegister;
+            spillVectorRegistersExceptFor: X86_64::SysV::CallPreservedVectorRegister
     }.
 
     public override method integerCallPreservedRegisters => Array
         := X86_64::SysV::CallPreservedRegister.
+
+    public override method vectorCallPreservedRegisters => Array
+        := X86_64::SysV::CallPreservedVectorRegister.
 
     public override method computeArgumentPassingLayoutOf: (function: MIRFunction) ::=> Void := {
         let registerAssignmentState := MIRSysVX86_64RegisterAssignmentState new.
@@ -1057,7 +1063,10 @@ public global X86_64::Win64::VectorArgumentRegisters := (
 
 public global X86_64::Win64::CallPreservedRegister := (
     MIR::X86_64::RBX, MIR::X86_64::RSP, MIR::X86_64::RBP, MIR::X86_64::RDI, MIR::X86_64::RSI,
-    MIR::X86_64::R12, MIR::X86_64::R13, MIR::X86_64::R14, MIR::X86_64::R15,
+    MIR::X86_64::R12, MIR::X86_64::R13, MIR::X86_64::R14, MIR::X86_64::R15
+).
+
+public global X86_64::Win64::CallPreservedVectorRegister := (
     MIR::X86::XMM6, MIR::X86::XMM7, MIR::X86_64::XMM8, MIR::X86_64::XMM9, MIR::X86_64::XMM10, MIR::X86_64::XMM11, MIR::X86_64::XMM12,
     MIR::X86_64::XMM13, MIR::X86_64::XMM14, MIR::X86_64::XMM15 
 ).
@@ -1184,11 +1193,15 @@ public final class MIRWinX64CallingConvention superclass: MIRX86_64CallingConven
         allocator allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz.
         allocator
             allocateCaptureVectorPointerRegisterForInstruction: instruction;
-            spillIntegerRegistersExceptFor: X86_64::SysV::CallPreservedRegister
+            spillIntegerRegistersExceptFor: X86_64::Win64::CallPreservedRegister;
+            spillVectorRegistersExceptFor: X86_64::Win64::CallPreservedVectorRegister
     }.
 
     public override method integerCallPreservedRegisters => Array
         := X86_64::Win64::CallPreservedRegister.
+
+    public override method vectorCallPreservedRegisters => Array
+        := X86_64::Win64::CallPreservedVectorRegister.
 
     public override method computeArgumentPassingLayoutOf: (function: MIRFunction) ::=> Void := {
         let stackSize mutable := 0u64.

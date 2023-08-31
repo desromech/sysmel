@@ -202,20 +202,27 @@ private nogc function GarbageCollector::markContentOfObject(objectPointer: UIntP
     }.
 
     let type := header _ type.
-    let fixedSlots := type allValidSlots.
-    let fixedInstanceSize := type instanceSize.
-
     {
-        let fixedSlotCount := fixedSlots size.
-        let i mutable := 0sz.
-        while: (i < fixedSlotCount) do: {
-            let typeSlot := tuple: (fixedSlots __uncheckedSlotAt__: i) uncheckedDownCastTo: TypeSlot.
-            ## FIXME: Avoid this virtual call here.
-            typeSlot type isValueType ifFalse: {
-                let slotPointer := objectPointer + ObjectModel::TupleHeaderSize + typeSlot offset reinterpretCastTo: UIntPointer pointer.
-                GarbageCollector::markPointerValue(slotPointer _)
-            }
-        } continueWith: (i := i + 1sz)
+        let currentType mutable := type.
+        while: (currentType isNotNil) do: {
+            let slots := currentType slots.
+            slots ifNil: {
+                printLine(currentType, " does not have slots ").
+                sysmel_pal_abort().
+            }.
+
+            let slotCount := slots size.
+
+            let i mutable := 0sz.
+            while: (i < slotCount) do: {
+                let typeSlot := tuple: (slots __uncheckedSlotAt__: i) uncheckedDownCastTo: TypeSlot.
+                ## FIXME: Avoid this virtual call here.
+                typeSlot type isValueType ifFalse: {
+                    let slotPointer := objectPointer + ObjectModel::TupleHeaderSize + typeSlot offset reinterpretCastTo: UIntPointer pointer.
+                    GarbageCollector::markPointerValue(slotPointer _)
+                }
+            } continueWith: (i := i + 1sz)
+        } continueWith: (currentType := currentType supertype).
     }.
 
     let isWeak := objectType = ObjectModel::ObjectType::WeakPointers.
@@ -223,6 +230,10 @@ private nogc function GarbageCollector::markContentOfObject(objectPointer: UIntP
         header _ gcColor: GarbageCollector::BlackColor.
         return: void
     }.
+
+    let fixedInstanceSize := type
+        ifNil: (0sz)
+        ifNotNil: (type instanceSize).
 
     {
         let variableDataSize := header _ objectSize asSize - fixedInstanceSize.
@@ -235,6 +246,7 @@ private nogc function GarbageCollector::markContentOfObject(objectPointer: UIntP
     }.
     
     header _ gcColor: GarbageCollector::BlackColor.
+
 }.
 
 private nogc function GarbageCollector::mark() => Void := {
@@ -373,11 +385,11 @@ private nogc function GarbageCollector::sweep() => Void := {
 }.
 
 public nogc function GarbageCollector::collect() => Void := {
-    "Garbage collection cycle\n" writeOntoStderr.
+    ##"Garbage collection cycle\n" writeOntoStderr.
     GarbageCollector::mark().
     GarbageCollector::clearDeadWeakReferences().
     GarbageCollector::sweep().
-    GarbageCollector::NextCollectionThreshold := GarbageCollector::CurrentHeapSize * GarbageCollector::GammaFactor max: GarbageCollector::NextCollectionThreshold.
+    GarbageCollector::NextCollectionThreshold := GarbageCollector::CurrentHeapSize * GarbageCollector::GammaFactor max: GarbageCollector::MinimalCollectionThreshold.
 }.
 
 public nogc function GarbageCollector::safepoint() => Void := {
@@ -391,5 +403,5 @@ public nogc function GarbageCollector::safepoint() => Void := {
     }.
 
     ## For now disable the automatic garbage collection.
-    ##GarbageCollector::collect().
+    GarbageCollector::collect().
 }.

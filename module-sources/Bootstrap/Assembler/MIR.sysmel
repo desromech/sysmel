@@ -164,7 +164,7 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
         
         {|
             objectHeap buildIn: targetModule.
-        } printTimeToRunInMicrosecondsWithTitle: "Assembler object heap"
+        } printTimeToRunInMillisecondsWithTitle: "Assembler object heap"
     }.
 
     public method offsetOfGCRootObjectTableEntryFor: (object: Untyped) ::=> Size

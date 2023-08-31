@@ -1964,26 +1964,26 @@ public final class AsmProgramEntity superclass: Object; definition: {
 
         {|
             self prepareToAssemble.
-        } printTimeToRunInMicrosecondsWithTitle: "Assembler preparation".
+        } printTimeToRunInMillisecondsWithTitle: "Assembler preparation".
 
         {|
             self assembleFirstPassWith: objectCodeBuilder.
-        } printTimeToRunInMicrosecondsWithTitle: "Assembler first pass".
+        } printTimeToRunInMillisecondsWithTitle: "Assembler first pass".
 
         objectCodeBuilder allocateMemoryForWriting.
         {|
             self assembleSecondPassWith: objectCodeBuilder.
-        } printTimeToRunInMicrosecondsWithTitle: "Assembler second pass pass".
+        } printTimeToRunInMillisecondsWithTitle: "Assembler second pass pass".
 
         objectCodeBuilder finishDebugAndUnwindInfo.
         debugInformationGenerator ifNotNil: {
             {|
                 debugInformationGenerator generateDebugLineInformationForModule: self objectCodeBuilder: objectCodeBuilder
-            } printTimeToRunInMicrosecondsWithTitle: "Debug line information generation".
+            } printTimeToRunInMillisecondsWithTitle: "Debug line information generation".
             
             {|
                 debugInformationGenerator generateCallFrameInformationForModule: self objectCodeBuilder: objectCodeBuilder
-            } printTimeToRunInMicrosecondsWithTitle: "Debug call frame information generation".
+            } printTimeToRunInMillisecondsWithTitle: "Debug call frame information generation".
         }.
 
         objectCodeBuilder finish
@@ -1993,7 +1993,7 @@ public final class AsmProgramEntity superclass: Object; definition: {
         let assembledCode := self assemble.
         {|
             assembledCode writeObjectToFileNamed: objectFileName
-        } printTimeToRunInMicrosecondsWithTitle: "Writing object file " -- objectFileName
+        } printTimeToRunInMillisecondsWithTitle: "Writing object file " -- objectFileName
     }
 }.
 

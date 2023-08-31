@@ -651,7 +651,7 @@ public final class AsmObjectElf64FileWriter superclass: AsmObjectFileWriter; def
         objectCode symbols do: {:(AsmSymbol)eachSymbol :: Void |
             symbolTable addSymbol: eachSymbol
         }.
-        } printTimeToRunInMicrosecondsWithTitle: "Elf symbol table conversion".
+        } printTimeToRunInMillisecondsWithTitle: "Elf symbol table conversion".
 
         ## Emit the relocations.
         let relSectionHeaders := OrderedCollection new.
@@ -706,7 +706,7 @@ public final class AsmObjectElf64FileWriter superclass: AsmObjectFileWriter; def
 
             }.
         }.
-        } printTimeToRunInMicrosecondsWithTitle: "Elf relocations".
+        } printTimeToRunInMillisecondsWithTitle: "Elf relocations".
 
         ## Symbol table.
         {
@@ -780,7 +780,7 @@ public final class AsmObjectElf64FileWriter superclass: AsmObjectFileWriter; def
 
         {|
         fileLayout encodedElementsInByteArray
-        } printTimeToRunInMicrosecondsWithTitle: "Elf encode as byte array"
+        } printTimeToRunInMillisecondsWithTitle: "Elf encode as byte array"
     }.
 }.
 

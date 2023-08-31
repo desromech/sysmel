@@ -9,16 +9,16 @@ public class ImageBuilderHIR_MIRImage superclass: ImageBuilderHIRImage; definiti
             let tacTextIR := mirModule fullPrintString.
             ##printLine(tacTextIR).
             IO::writeWholeFileNamedWithString(filename -- ".mir", tacTextIR)
-        } printTimeToRunInMicrosecondsWithTitle: "MIR text IR".
+        } printTimeToRunInMillisecondsWithTitle: "MIR text IR".
 
         {|
             let targetTextIR := targetIR fullPrintString.
             ##printLine(targetTextIR).
             IO::writeWholeFileNamedWithString(filename -- ".s", targetTextIR)
-        } printTimeToRunInMicrosecondsWithTitle: "Assembly text IR".
+        } printTimeToRunInMillisecondsWithTitle: "Assembly text IR".
 
         {|
             targetIR writeObjectToFileNamed: filename
-        } printTimeToRunInMicrosecondsWithTitle: "Object file generation".
+        } printTimeToRunInMillisecondsWithTitle: "Object file generation".
     }.
 }.

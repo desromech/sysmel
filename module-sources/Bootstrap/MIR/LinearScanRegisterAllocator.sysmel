@@ -280,6 +280,14 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
         integerRegisterFile spillRegistersIfNeededExceptFor: registers
     }.
 
+    public override method spillFloatRegistersExceptFor: (registers: Array) ::=> Void := {
+        floatRegisterFile spillRegistersIfNeededExceptFor: registers
+    }.
+
+    public override method spillVectorRegistersExceptFor: (registers: Array) ::=> Void := {
+        vectorRegisterFile spillRegistersIfNeededExceptFor: registers
+    }.
+
     public override method spillGCRootsForCalling: (calledFunction: MIRValue) ::=> Void := {
         isNoGC || calledFunction isNoGC ifFalse: {
             integerRegisterFile spillGCRoots

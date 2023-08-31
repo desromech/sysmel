@@ -9,32 +9,32 @@ public class ImageBuilderHIR_MIRTarget superclass: ImageBuilderHIRTarget; defini
                     compileFunctions: builder tracer tracedFunctions definitions: builder tracer tracedFunctionDefinitions;
                     exportMainEntryPointFunction: builder entryPointFunction;
                     finish).
-        } printTimeToRunInMicrosecondsWithTitle: "HIR Module".
+        } printTimeToRunInMillisecondsWithTitle: "HIR Module".
 
         {|
             hirImage hirModule performStandardOptimizations
-        } printTimeToRunInMicrosecondsWithTitle: "HIR optimization".
+        } printTimeToRunInMillisecondsWithTitle: "HIR optimization".
 
         {|
             hirImage mirModule: (HIRModuleMIRCodeGenerator new
                 initializeWithTarget: ssaMirCompilation mirCompilationTarget;
                 compileHIRModule: hirImage hirModule patchingFunctions: builder tracer requiredTracedReflectiveFunctions definitions: builder tracer requiredTracedReflectiveFunctionDefinitions;
                 finish).
-        } printTimeToRunInMicrosecondsWithTitle: "MIR Module".
+        } printTimeToRunInMillisecondsWithTitle: "MIR Module".
 
         {|
             hirImage mirModule performStandardOptimizations
-        } printTimeToRunInMicrosecondsWithTitle: "MIR optimization".
+        } printTimeToRunInMillisecondsWithTitle: "MIR optimization".
 
         {|
             hirImage targetIR: (hirImage mirModule
                     baseObjectTracer: builder tracer;
                     asTargetIR).
-        } printTimeToRunInMicrosecondsWithTitle: "Assembly code".
+        } printTimeToRunInMillisecondsWithTitle: "Assembly code".
 
         {|
             hirImage targetIR performStandardOptimizations
-        } printTimeToRunInMicrosecondsWithTitle: "Assembly code optimizations".
+        } printTimeToRunInMillisecondsWithTitle: "Assembly code optimizations".
 
         printLine("Image data generated").
         hirImage

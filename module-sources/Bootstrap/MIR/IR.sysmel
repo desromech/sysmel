@@ -2466,6 +2466,12 @@ MIRCallingConvention definition: {
     public abstract method integerCallPreservedRegisters => Array
         := self subclassResponsibility.
 
+    public abstract method floatCallPreservedRegisters => Array
+        := self subclassResponsibility.
+
+    public abstract method vectorCallPreservedRegisters => Array
+        := self subclassResponsibility.
+
     public abstract method allocableIntegerRegisters => Array
         := self subclassResponsibility.
 
