@@ -278,6 +278,11 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
         integerRegisterFile spillRegistersIfNeededExceptFor: registers
     }.
 
+    public override method spillGCRootsForCalling: (calledFunction: MIRValue) ::=> Void := {
+        ## TODO: Avoid spilling if not required.
+        integerRegisterFile spillGCRoots
+    }.
+
     public override method spillIfNeededAndAllocateIntegerRegister: (register: MIRPhysicalIntegerRegister) withValue: (value: MIRValue) ::=> Void := {
         integerRegisterFile spillIfNeededAndAllocateRegister: register withValue: value
     }.

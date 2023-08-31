@@ -287,6 +287,9 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
     public abstract method spillIntegerRegistersExceptFor: (registers: Array) ::=> Void
         := self subclassResponsibility.
 
+    public abstract method spillGCRootsForCalling: (calledFunction: MIRValue) ::=> Void
+        := self subclassResponsibility.
+
     public method spillIfNeededAndAllocateRegister: (register: MIRPhysicalLocation) withValue: (value: MIRValue) ::=> Void := {
         register makeActiveWithValue: value inRegisterAllocator: self
     }.

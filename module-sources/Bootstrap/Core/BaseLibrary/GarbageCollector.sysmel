@@ -365,6 +365,7 @@ private nogc function GarbageCollector::sweep() => Void := {
 }.
 
 public nogc function GarbageCollector::collect() => Void := {
+    "Garbage collection cycle\n" writeOntoStderr.
     GarbageCollector::mark().
     GarbageCollector::clearDeadWeakReferences().
     GarbageCollector::sweep().

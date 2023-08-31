@@ -43,4 +43,10 @@ MIRLiveInterval definition: {
         register := nil.
         isSpilled := true.
     }.
+
+    public method markMemoryCopyRequired => Void := {
+        value ifNotNil: {
+            value markCoalescedMemoryCopyRequired
+        }
+    }.
 }.

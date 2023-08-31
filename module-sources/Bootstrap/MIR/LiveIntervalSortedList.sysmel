@@ -124,4 +124,12 @@ public final class MIRLiveIntervalSortedList definition: {
 
         nil
     }.
+
+    public method spillGCRootsThatSurvive: (spillPointIndex: UInt32) ::=> Void := {
+        elements do: {:(MIRLiveInterval)interval :: Void |
+            interval end > spillPointIndex ifTrue: {
+                interval markMemoryCopyRequired
+            }
+        }
+    }.
 }.

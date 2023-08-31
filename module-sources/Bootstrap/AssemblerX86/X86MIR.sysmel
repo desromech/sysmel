@@ -884,6 +884,8 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRX86_64CallingCo
         := MIR::X86_64::R15.
 
     public override method registerConstraintsOfCall: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
+        allocator spillGCRootsForCalling: instruction operands first.
+        
         let registerArguments := OrderedCollection new.
         let stackArguments := OrderedCollection new.
         let hasStackIntegerArgument mutable := false.
@@ -1116,6 +1118,8 @@ public final class MIRWinX64CallingConvention superclass: MIRX86_64CallingConven
     }.
 
     public override method registerConstraintsOfCall: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
+        allocator spillGCRootsForCalling: instruction operands first.
+
         let argumentCount := instruction operands size - 1sz.
         let stackSize := argumentCount * 8sz max: 32sz.
         let stackAlignment := 16sz.

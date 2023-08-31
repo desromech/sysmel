@@ -52,6 +52,10 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
             }
     }.
 
+    public method spillGCRoots => Void := {
+        activeIntervals spillGCRootsThatSurvive: currentValueIndex
+    }.
+
     public method spillIfNeededAndAllocateRegister: (usedRegister: MIRPhysicalLocation) ::=> Void
         := self spillIfNeededAndAllocateRegister: usedRegister withValue: nil.
 
