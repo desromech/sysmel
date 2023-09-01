@@ -380,7 +380,7 @@ ASTVariableDefinitionNode definition: {
         let coercedValue := type ifNil: value ifNotNil: (type coerceValue: value).
 
         let mutableValue := self isMutable
-            ifTrue: ((type ifNil: value __type__) refForFunction untypedWithBoxForValue: value)
+            ifTrue: ((type ifNil: value __type__) memberRef untypedWithBoxForValue: value)
             ifFalse: value.
 
         self isPublic ifTrue: {
@@ -420,7 +420,7 @@ ASTVariableDefinitionNode definition: {
 
         let evaluatedValueType := nodeWithCanonicalType canonicalType.
         let evaluatedType := result isMutable
-            ifTrue: (evaluatedValueType refForFunction)
+            ifTrue: (evaluatedValueType memberRef)
             ifFalse: (evaluatedValueType).
 
         result nameExpression ifNil: {

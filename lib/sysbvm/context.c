@@ -675,6 +675,11 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.anyReferenceType, "AnyReference", SYSBVM_NULL_TUPLE, NULL);
 
     context->roots.addressSpaceType = sysbvm_context_createIntrinsicClass(context, "AddressSpace", SYSBVM_NULL_TUPLE, NULL);
+    context->roots.genericAddressSpaceType = sysbvm_context_createIntrinsicClass(context, "GenericAddressSpace", context->roots.addressSpaceType, NULL);
+    sysbvm_type_setFlags(context, context->roots.genericAddressSpaceType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_EMPTY_TRIVIAL_SINGLETON);
+    context->roots.memberAddressSpaceType = sysbvm_context_createIntrinsicClass(context, "MemberAddressSpace", context->roots.addressSpaceType, NULL);
+    sysbvm_type_setFlags(context, context->roots.memberAddressSpaceType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_EMPTY_TRIVIAL_SINGLETON);
+
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.pointerLikeType, "PointerLikeType", SYSBVM_NULL_TUPLE,
         "baseType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_RTTI_EXCLUDED, context->roots.typeType,
         "addressSpace", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.addressSpaceType,
@@ -878,9 +883,9 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.weakArrayType, "WeakArray", SYSBVM_NULL_TUPLE, NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.weakOrderedCollectionType, "WeakOrderedCollection", SYSBVM_NULL_TUPLE, NULL);
-    sysbvm_typeAndMetatype_setFlags(context, context->roots.arrayType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);
+    sysbvm_typeAndMetatype_setFlags(context, context->roots.arrayType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL | SYSBVM_TYPE_FLAGS_EMPTY_TRIVIAL_SINGLETON, SYSBVM_TYPE_FLAGS_FINAL);
     sysbvm_typeAndMetatype_setFlags(context, context->roots.orderedCollectionType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_NONE);
-    sysbvm_typeAndMetatype_setFlags(context, context->roots.weakArrayType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL | SYSBVM_TYPE_FLAGS_WEAK, SYSBVM_TYPE_FLAGS_FINAL);
+    sysbvm_typeAndMetatype_setFlags(context, context->roots.weakArrayType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL | SYSBVM_TYPE_FLAGS_WEAK | SYSBVM_TYPE_FLAGS_EMPTY_TRIVIAL_SINGLETON, SYSBVM_TYPE_FLAGS_FINAL);
     sysbvm_typeAndMetatype_setFlags(context, context->roots.weakOrderedCollectionType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);
 
     // Create other root basic types.
@@ -898,7 +903,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         NULL);
     sysbvm_typeAndMetatype_setFlags(context, context->roots.associationType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);
     context->roots.byteArrayType = sysbvm_context_createIntrinsicClass(context, "ByteArray", context->roots.arrayedCollectionType, NULL);
-    sysbvm_typeAndMetatype_setFlags(context, context->roots.byteArrayType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_BYTES | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);
+    sysbvm_typeAndMetatype_setFlags(context, context->roots.byteArrayType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_BYTES | SYSBVM_TYPE_FLAGS_FINAL | SYSBVM_TYPE_FLAGS_EMPTY_TRIVIAL_SINGLETON, SYSBVM_TYPE_FLAGS_FINAL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.dictionaryType, "Dictionary", SYSBVM_NULL_TUPLE,
         "size", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "storage", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,

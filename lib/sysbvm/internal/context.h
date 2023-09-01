@@ -98,9 +98,6 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t analyzeAndEvaluateUnexpandedApplicationNodeOfWithEnvironmentSelector;
     sysbvm_tuple_t analyzeUnexpandedApplicationNodeWithEnvironmentSelector;
 
-    sysbvm_tuple_t genericAddressSpaceName;
-    sysbvm_tuple_t functionLocalAddressSpaceName;
-
     sysbvm_tuple_t coerceValueSelector;
     sysbvm_tuple_t coerceASTNodeWithEnvironmentSelector;
     sysbvm_tuple_t analyzeAndTypeCheckFunctionApplicationNodeWithEnvironmentSelector;
@@ -143,6 +140,8 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t simpleFunctionTypeType;
     sysbvm_tuple_t functionTypeType;
     sysbvm_tuple_t generatedSymbolType;
+    sysbvm_tuple_t genericAddressSpaceType;
+    sysbvm_tuple_t memberAddressSpaceType;
     sysbvm_tuple_t hashedCollectionType;
     sysbvm_tuple_t hashtableEmptyType;
     sysbvm_tuple_t identityDictionaryType;

@@ -103,14 +103,25 @@ Type
     } makeVirtual withEagerAnalysis;
     withSelector: #basicNew addMethod: {:(Type)self :: self |
         <primitive: #basicNew>
-        let: #result with: self basicAllocate.
-        let: #basicInitializeMethod with: self validBasicInitializeMethod.
-        if: basicInitializeMethod ~~ nil then: basicInitializeMethod(result).
-        result
+        if: (Untyped::~~)(self __slotNamedAt__: #emptyTrivialSingleton, nil) then: {
+            self __slotNamedAt__: #emptyTrivialSingleton
+        } else: {
+            let: #result with: self basicAllocate.
+            let: #basicInitializeMethod with: self validBasicInitializeMethod.
+            if: basicInitializeMethod ~~ nil then: basicInitializeMethod(result).
+            if: self isEmptyTrivialSingleton then: {
+                self __slotNamedAt__: #emptyTrivialSingleton put: result
+            }.
+            result
+        }.
     } makeVirtual withEagerAnalysis;
     withSelector: #new addMethod: {:(Type)self :: self |
         <primitive: #new>
-        self basicNew initialize; yourself
+        if: (Untyped::~~)(self __slotNamedAt__: #emptyTrivialSingleton, nil) then: {
+            self __slotNamedAt__: #emptyTrivialSingleton
+        } else: {
+            self basicNew initialize; yourself
+        }
     } withEagerAnalysis.
 
 ASTDownCastNode __type__
@@ -369,17 +380,32 @@ Type
         result
     } makeVirtual withEagerAnalysis;
     withSelector: #basicNew: addMethod: {:(Type)self :(Size)variableSlotCount :: self |
-        let: #result with: (self basicAllocate: variableSlotCount).
-        let: #basicInitializeMethod with: self validBasicInitializeMethod.
-        if: basicInitializeMethod ~~ nil then: basicInitializeMethod(result).
-        result
+        if: (if: variableSlotCount = 0sz then: (Untyped::~~)(self __slotNamedAt__: #emptyTrivialSingleton, nil) else: false) then: {
+            self __slotNamedAt__: #emptyTrivialSingleton
+        } else: {
+            let: #result with: (self basicAllocate: variableSlotCount).
+            let: #basicInitializeMethod with: self validBasicInitializeMethod.
+            if: basicInitializeMethod ~~ nil then: basicInitializeMethod(result).
+            if: (if: variableSlotCount = 0sz then: self isEmptyTrivialSingleton else: false) then: {
+                self __slotNamedAt__: #emptyTrivialSingleton put: result
+            }.
+            result
+        }
     } makeVirtual withEagerAnalysis;
     withSelector: #new replaceMethod: {:(Type)self :: self |
         <primitive: #new>
-        self basicNew initialize; yourself
+        if: (Untyped::~~)(self __slotNamedAt__: #emptyTrivialSingleton, nil) then: {
+            self __slotNamedAt__: #emptyTrivialSingleton
+        } else: {
+            self basicNew initialize; yourself
+        }
     } makeVirtual withEagerAnalysis;
     withSelector: #new: addMethod: {:(Type)self :(Size)variableSlotCount :: self |
-        (self basicNew: variableSlotCount) initialize; yourself
+        if: (if: variableSlotCount = 0sz then: (Untyped::~~)(self __slotNamedAt__: #emptyTrivialSingleton, nil) else: false) then: {
+            self __slotNamedAt__: #emptyTrivialSingleton
+        } else: {
+            (self basicNew: variableSlotCount) initialize; yourself
+        }
     } makeVirtual withEagerAnalysis;
     withSelector: #localSlotNamed: addMethod: {:(Type)self :(Symbol)name |
         let: #slotDictionary with: self slotDictionary.
@@ -2291,27 +2317,42 @@ Metaclass
         else: (stream nextPutAll: "a "; print: self __type__)
     } makeOverride.
 
+AddressSpace
+    withSelector: #uniqueInstance addClassMethod: {:(AddressSpace class)self :: self |
+        if: (Untyped::==)(self __slotNamedAt__: #emptyTrivialSingleton, nil) then: {
+            self __slotNamedAt__: #emptyTrivialSingleton put: self basicAllocate
+        }.
+
+        self __slotNamedAt__: #emptyTrivialSingleton
+    }.
+    
 Type
-    withSelector: #refFor: addMethod: {:(Type)self :addressSpace :: ReferenceType |
+    withSelector: #refFor: addMethod: {:(Type)self :(AddressSpace)addressSpace :: ReferenceType |
         ReferenceTypeTemplate(self, addressSpace)
     } makeVirtual makePure;
     withSelector: #ref addMethod: {:(Type)self :: ReferenceType |
-        self refFor: nil
+        self refFor: GenericAddressSpace uniqueInstance
     } makeVirtual makePure;
-    withSelector: #refForFunction addMethod: {:(Type)self :: ReferenceType |
-        self refFor: nil
+    withSelector: #memberRef addMethod: {:(Type)self :: ReferenceType |
+        self refFor: MemberAddressSpace uniqueInstance
     } makePure;
-    withSelector: #tempRefFor: addMethod: {:(Type)self :addressSpace :: ReferenceLikeType |
+    withSelector: #tempRefFor: addMethod: {:(Type)self :(AddressSpace)addressSpace :: ReferenceLikeType |
         TemporaryReferenceTypeTemplate(self, addressSpace)
     } makeVirtual makePure;
     withSelector: #tempRef addMethod: {:(Type)self :: ReferenceLikeType |
-        self tempRefFor: nil
+        self tempRefFor: GenericAddressSpace uniqueInstance
     } makeVirtual makePure;
-    withSelector: #pointerFor: addMethod: {:(Type)self :addressSpace :: PointerType |
+    withSelector: #memberTempRef addMethod: {:(Type)self :: ReferenceLikeType |
+        self tempRefFor: MemberAddressSpace uniqueInstance
+    } makeVirtual makePure;
+    withSelector: #pointerFor: addMethod: {:(Type)self :(AddressSpace)addressSpace :: PointerType |
         PointerTypeTemplate(self, addressSpace)
     } makePure;
     withSelector: #pointer addMethod: {:(Type)self :: PointerType |
-        self pointerFor: nil
+        self pointerFor: GenericAddressSpace uniqueInstance
+    } makePure;
+    withSelector: #memberPointer addMethod: {:(Type)self :: PointerType |
+        self pointerFor: MemberAddressSpace uniqueInstance
     } makePure;
     withSelector: #const addMethod: {:(Type)self :: Type |
         self
@@ -2320,11 +2361,27 @@ Type
         self
     } makePure.
 
+AddressSpace
+    withSelector: #prettyPointerSuffix addMethod: {:(AddressSpace)self :: String | nil} makeVirtual;
+    withSelector: #prettyReferenceSuffix addMethod: {:(AddressSpace)self :: String | nil} makeVirtual;
+    withSelector: #prettyTempReferenceSuffix addMethod: {:(AddressSpace)self :: String | nil} makeVirtual.
+
+GenericAddressSpace
+    withSelector: #prettyPointerSuffix addMethod: {:(AddressSpace)self :: String | "pointer" } makeOverride;
+    withSelector: #prettyReferenceSuffix addMethod: {:(AddressSpace)self :: String | "ref" } makeOverride;
+    withSelector: #prettyTempReferenceSuffix addMethod: {:(AddressSpace)self :: String | "tempRef" } makeOverride.
+
+MemberAddressSpace
+    withSelector: #prettyPointerSuffix addMethod: {:(AddressSpace)self :: String | "memberPointer" } makeOverride;
+    withSelector: #prettyReferenceSuffix addMethod: {:(AddressSpace)self :: String | "memberRef" } makeOverride;
+    withSelector: #prettyTempReferenceSuffix addMethod: {:(AddressSpace)self :: String | "memberTempRef" } makeOverride.
+
 PointerType
     withSelector: #printOn: addMethod: {:(PointerType)self :(Stream)stream :: Void |
         stream print: self baseType.
-        if: self addressSpace == nil then: {
-            stream nextPutAll: " pointer"
+        let: #suffix with: self addressSpace prettyPointerSuffix.
+        if: suffix ~~ nil then: {
+            stream space; string: suffix
         } else: {
             stream nextPutAll: " pointerFor: "; print: self addressSpace
         }.
@@ -2333,8 +2390,10 @@ PointerType
 ReferenceType
     withSelector: #printOn: addMethod: {:(ReferenceType)self :(Stream)stream :: Void |
         stream print: self baseType.
-        if: self addressSpace == nil then: {
-            stream nextPutAll: " ref"
+        let: #suffix with: self addressSpace prettyReferenceSuffix.
+
+        if: suffix ~~ nil then: {
+            stream space; string: suffix
         } else: {
             stream nextPutAll: " refFor: "; print: self addressSpace
         }.
@@ -2355,8 +2414,10 @@ ReferenceType
 TemporaryReferenceType
     withSelector: #printOn: addMethod: {:(TemporaryReferenceType)self :(Stream)stream :: Void |
         stream print: self baseType.
-        if: self addressSpace == nil then: {
-            stream nextPutAll: " tempRef"
+        let: #suffix with: self addressSpace prettyTempReferenceSuffix.
+
+        if: suffix ~~ nil then: {
+            stream space; string: suffix
         } else: {
             stream nextPutAll: " tempRefFor: "; print: self addressSpace
         }.

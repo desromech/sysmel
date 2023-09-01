@@ -22,7 +22,10 @@ Type
     } makeFinal makeAlwaysInline  makeFinal withEagerAnalysis;
     withSelector: #isPointerType addMethod: {:(Type)self :: Boolean |
         self hasAnyFlag: TypeFlags::PointerValue.
-    } makeFinal withEagerAnalysis;
+    } makeFinal makeAlwaysInline  makeFinal withEagerAnalysis;
+    withSelector: #isEmptyTrivialSingleton addMethod: {:(Type)self :: Boolean |
+        self hasAnyFlag: TypeFlags::EmptyTrivialSingleton.
+    } makeFinal makeAlwaysInline  makeFinal withEagerAnalysis;
     withSelector: #asCanonicalPendingInstanceType addMethod: {:(Type)self :: Type |
         AnyValue
     } makePure makeVirtual withEagerAnalysis;

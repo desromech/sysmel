@@ -315,6 +315,24 @@ SYSBVM_API sysbvm_tuple_t sysbvm_sequenceTuple_createForFunctionDefinition(sysbv
     return sysbvm_sequenceTuple_create(context, ((sysbvm_functionDefinition_t*)functionDefinition)->analyzedCaptureVectorType);
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_genericAddressSpace_uniqueInstance(sysbvm_context_t *context)
+{
+    sysbvm_type_tuple_t *type = (sysbvm_type_tuple_t*)context->roots.genericAddressSpaceType;
+    if(!type->emptyTrivialSingleton)
+        type->emptyTrivialSingleton = (sysbvm_tuple_t)sysbvm_context_allocatePointerTuple(context, context->roots.genericAddressSpaceType, 0);
+
+    return type->emptyTrivialSingleton;
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_memberAddressSpace_uniqueInstance(sysbvm_context_t *context)
+{
+    sysbvm_type_tuple_t *type = (sysbvm_type_tuple_t*)context->roots.memberAddressSpaceType;
+    if(!type->emptyTrivialSingleton)
+        type->emptyTrivialSingleton = (sysbvm_tuple_t)sysbvm_context_allocatePointerTuple(context, context->roots.memberAddressSpaceType, 0);
+
+    return type->emptyTrivialSingleton;
+}
+
 static sysbvm_tuple_t sysbvm_function_copy(sysbvm_context_t *context, sysbvm_tuple_t function)
 {
     sysbvm_tuple_t copy = sysbvm_context_shallowCopy(context, function);
@@ -435,6 +453,9 @@ static sysbvm_tuple_t sysbvm_type_doCreatePointerType(sysbvm_context_t *context,
     };
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
+    if(!gcFrame.addressSpace)
+        sysbvm_error("Expected a valid address space for pointer type.");
+
     gcFrame.result = (sysbvm_pointerType_t*)sysbvm_context_allocatePointerTuple(context, context->roots.pointerType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_pointerType_t));
     sysbvm_association_setValue(templateResult_, (sysbvm_tuple_t)gcFrame.result);
     gcFrame.result->super.super.super.flags = sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_POINTER_TYPE_FLAGS);
@@ -490,6 +511,9 @@ static sysbvm_tuple_t sysbvm_type_doCreateReferenceType(sysbvm_context_t *contex
     };
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
+    if(!gcFrame.addressSpace)
+        sysbvm_error("Expected a valid address space for pointer type.");
+
     gcFrame.result = (sysbvm_referenceType_t*)sysbvm_context_allocatePointerTuple(context, context->roots.referenceType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_referenceType_t));
     sysbvm_association_setValue(templateResult_, (sysbvm_tuple_t)gcFrame.result);
     gcFrame.result->super.super.super.flags = sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_REFERENCE_TYPE_FLAGS);
@@ -541,6 +565,9 @@ static sysbvm_tuple_t sysbvm_type_doCreateTemporaryReferenceType(sysbvm_context_
     };
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
+    if(!gcFrame.addressSpace)
+        sysbvm_error("Expected a valid address space for pointer type.");
+
     gcFrame.result = (sysbvm_temporaryReferenceType_t*)sysbvm_context_allocatePointerTuple(context, context->roots.temporaryReferenceType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_temporaryReferenceType_t));
     sysbvm_association_setValue(templateResult_, (sysbvm_tuple_t)gcFrame.result);
     gcFrame.result->super.super.super.flags = sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_TEMPORARY_REFERENCE_TYPE_FLAGS);
@@ -578,7 +605,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createTemporaryReferenceType(sysbvm_contex
 }
 SYSBVM_API sysbvm_tuple_t sysbvm_type_createFunctionLocalReferenceType(sysbvm_context_t *context, sysbvm_tuple_t baseType)
 {
-    return sysbvm_type_createReferenceType(context, baseType, SYSBVM_NULL_TUPLE);
+    return sysbvm_type_createReferenceType(context, baseType, sysbvm_memberAddressSpace_uniqueInstance(context));
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_valueBox_with(sysbvm_context_t *context, sysbvm_tuple_t boxedValue)
@@ -1219,7 +1246,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_decay(sysbvm_context_t *context, sysbvm_tu
 SYSBVM_API sysbvm_tuple_t sysbvm_type_getCanonicalPendingInstanceType(sysbvm_context_t *context, sysbvm_tuple_t type)
 {
     if(sysbvm_type_isDirectSubtypeOf(type, context->roots.referenceType))
-        return sysbvm_type_createReferenceType(context, context->roots.anyValueType, SYSBVM_NULL_TUPLE);
+        return sysbvm_type_createReferenceType(context, context->roots.anyValueType, ((sysbvm_pointerLikeType_t*)type)->addressSpace);
     if(sysbvm_type_isDirectSubtypeOf(type, context->roots.metatypeType))
     {
         sysbvm_tuple_t thisType = ((sysbvm_metatype_t*)type)->thisType;
@@ -1570,6 +1597,7 @@ void sysbvm_type_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::TemporaryReferenceValue", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_TEMPORARY_REFERENCE_VALUE));
 
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::Function", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_FUNCTION));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::EmptyTrivialSingleton", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_EMPTY_TRIVIAL_SINGLETON));
 
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::PointerLikeValue", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_POINTER_LIKE_VALUE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::ClassDefaultFlags", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_CLASS_DEFAULT_FLAGS));

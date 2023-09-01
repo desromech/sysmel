@@ -66,6 +66,7 @@ typedef enum sysbvm_typeFlags_e
     SYSBVM_TYPE_FLAGS_TEMPORARY_REFERENCE_VALUE = 1<<11,
 
     SYSBVM_TYPE_FLAGS_FUNCTION = 1<<12,
+    SYSBVM_TYPE_FLAGS_EMPTY_TRIVIAL_SINGLETON = 1<<13,
 
     SYSBVM_TYPE_FLAGS_POINTER_LIKE_VALUE = SYSBVM_TYPE_FLAGS_TEMPORARY_REFERENCE_VALUE | SYSBVM_TYPE_FLAGS_POINTER_VALUE | SYSBVM_TYPE_FLAGS_REFERENCE_VALUE,
 
@@ -231,6 +232,16 @@ SYSBVM_INLINE size_t sysbvm_typeSlot_getIndex(sysbvm_tuple_t typeSlot)
  * Gets a valid reference type corresponding to the specified type slot.
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_typeSlot_getValidReferenceType(sysbvm_context_t *context, sysbvm_tuple_t typeSlot);
+
+/**
+ * Gets the generic address space singleton.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_genericAddressSpace_uniqueInstance(sysbvm_context_t *context);
+
+/**
+ * Gets the member address space singleton.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_memberAddressSpace_uniqueInstance(sysbvm_context_t *context);
 
 /**
  * Creates an anonymous type.
