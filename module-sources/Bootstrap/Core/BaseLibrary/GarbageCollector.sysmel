@@ -231,8 +231,10 @@ private nogc function GarbageCollector::markContentOfObject(objectPointer: UIntP
             let i mutable := 0sz.
             while: (i < slotCount) do: {
                 let typeSlot := tuple: (slots __uncheckedSlotAt__: i) uncheckedDownCastTo: TypeSlot.
-                ## FIXME: Avoid this virtual call here.
-                typeSlot type isValueType ifFalse: {
+                let slotType := typeSlot type.
+                slotType isNotNil && slotType isValueType ifTrue: {
+                    ## TODO: Traverse the inline members for GC pointers.
+                } ifFalse: {
                     let slotPointer := objectPointer + ObjectModel::TupleHeaderSize + typeSlot offset reinterpretCastTo: UIntPointer pointer.
                     GarbageCollector::markPointerValue(slotPointer _)
                 }

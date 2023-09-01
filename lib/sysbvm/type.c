@@ -1563,6 +1563,8 @@ void sysbvm_type_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::Abstract", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_ABSTRACT));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::Dynamic", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_DYNAMIC));
 
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::Value", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_VALUE));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::FatPointerValue", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_FAT_POINTER_VALUE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::PointerValue", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_POINTER_VALUE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::ReferenceValue", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_REFERENCE_VALUE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::TemporaryReferenceValue", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_TEMPORARY_REFERENCE_VALUE));
@@ -1577,6 +1579,7 @@ void sysbvm_type_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::ReferenceTypeFlags", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_REFERENCE_TYPE_FLAGS));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::TemporaryReferenceTypeFlags", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_TEMPORARY_REFERENCE_TYPE_FLAGS));
 
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::ValueTypeDefaultFlags", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_VALUE_TYPE_DEFAULT_FLAGS));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::PrimitiveValueTypeDefaultFlags", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_PRIMITIVE_VALUE_TYPE_DEFAULT_FLAGS));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "TypeFlags::PrimitiveValueMetatypeDefaultFlags", sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_PRIMITIVE_VALUE_TYPE_METATYPE_FLAGS));
 

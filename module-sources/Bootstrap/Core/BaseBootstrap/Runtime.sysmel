@@ -261,6 +261,10 @@ Type
     withSelector: #isFunction addMethod: {:(Type)self :: Boolean |
         self hasAnyFlag: TypeFlags::Function.
     } makeFinal makeAlwaysInline withEagerAnalysis;
+    withSelector: #makeValue addMethod: {:(Type)self :: Type |
+        self addFlags: TypeFlags::Value.
+        self
+    } withEagerAnalysis;
 
     withSelector: #defaultValue addMethod: {:(Type)self :: self |
         if: self isNullable
@@ -2892,7 +2896,6 @@ Type
     withSelector: #alignedValueSize addMethod: {:(Type)self :: Size |
         self valueSize alignedTo: self valueAlignment
     } makeFinal;
-    withSelector: #isValueType addMethod: {:(Type)self :: Boolean | false } makeVirtual;
     withSelector: #isPrimitiveNumberType addMethod: {:(Type)self :: Boolean | false } makeVirtual;
     withSelector: #isPrimitiveCharacterType addMethod: {:(Type)self :: Boolean | false } makeVirtual;
     withSelector: #isPrimitiveFloatType addMethod: {:(Type)self :: Boolean | false } makeVirtual;
@@ -3000,7 +3003,6 @@ ValueType
     withSelector: #valueAlignment addMethod: {:(ValueType)self :: Size |
         self validInstanceAlignment
     } makeOverride;
-    withSelector: #isValueType addMethod: {:(Type)self :: Boolean | true } makeOverride;
     withSelector: #decayReferenceLikeForReceiverType: addMethod: {:(Type)self :(ReferenceLikeType)reference :: Type | reference } makeOverride.
 
 PrimitiveValueType

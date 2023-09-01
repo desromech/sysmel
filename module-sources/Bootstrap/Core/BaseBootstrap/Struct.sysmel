@@ -1,4 +1,4 @@
-public global TypeFlags::StructDefaultFlags := TypeFlags::None.
+public global TypeFlags::StructDefaultFlags := TypeFlags::Value.
 
 public class StructType superclass: ValueType; definition: {
     public field isPacked => Boolean.

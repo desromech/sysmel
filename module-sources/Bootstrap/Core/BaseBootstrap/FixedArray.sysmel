@@ -9,6 +9,7 @@ public class FixedArrayType superclass: ValueType; definition: {
         self
             supertype: AnyValue;
             slots: #();
+            flags: TypeFlags::Value;
             totalSlotCount: 0sz;
             generatePublicAccessors;
             createBasicInitializeMethod.

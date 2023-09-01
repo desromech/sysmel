@@ -11,6 +11,12 @@ Type
     withSelector: #isWeak addMethod: {:(Type)self :: Boolean |
         self hasAnyFlag: TypeFlags::Weak.
     } makeFinal makeAlwaysInline  makeFinal withEagerAnalysis;
+    withSelector: #isValueType addMethod: {:(Type)self :: Boolean |
+        self hasAnyFlag: TypeFlags::Value.
+    } makeFinal makeAlwaysInline  makeFinal withEagerAnalysis;
+    withSelector: #isFatPointerValue addMethod: {:(Type)self :: Boolean |
+        self hasAnyFlag: TypeFlags::FatPointerValue.
+    } makeFinal makeAlwaysInline  makeFinal withEagerAnalysis;
     withSelector: #isPointerLikeType addMethod: {:(Type)self :: Boolean |
         self hasAnyFlag: (TypeFlags::PointerValue | TypeFlags::ReferenceValue) | TypeFlags::TemporaryReferenceValue.
     } makeFinal makeAlwaysInline  makeFinal withEagerAnalysis;

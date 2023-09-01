@@ -1,4 +1,4 @@
-public global TypeFlags::EnumDefaultFlags := TypeFlags::None.
+public global TypeFlags::EnumDefaultFlags := TypeFlags::Value.
 
 public class EnumType superclass: ValueType; definition: {
     public field valueType => Type.
