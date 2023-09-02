@@ -175,6 +175,12 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
         }
     }.
 
+    public override method allocateRegisterPairForInstructionResult: (instruction: MIRInstruction) trySharingWithOperandAt: (operandIndex: Size) ::=> Void := {
+        instruction hasValidType ifTrue: {
+            instruction resultRegister: (instruction physicalLocationClass allocateRegisterPairForResultValue: instruction trySharingWith: (instruction operands at: operandIndex) with: self).
+        }
+    }.
+
     public override method allocateRegister8ForInstructionResult: (instruction: MIRInstruction) trySharingWithOperandAt: (operandIndex: Size) ::=> Void := {
         instruction hasValidType ifTrue: {
             instruction resultRegister: (self allocateIntegerRegister8ForResultValue: instruction trySharingWith: (instruction operands at: operandIndex)).
@@ -192,6 +198,12 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
         self spillIfNeededAndAllocateRegister: register withResultValue: instruction.
     }.
 
+    public override method allocateRegister: (first: MIRPhysicalLocationRegister) with: (second: MIRPhysicalLocationRegister) forInstructionResult: (instruction: MIRInstruction) ::=> Void := {
+        let sequence := MIRPhysicalLocationRegisterPair with: first with: second.
+        instruction resultRegister: sequence.
+        self spillIfNeededAndAllocateRegisterSequence: sequence withResultValue: instruction.
+    }.
+
     public override method allocateRegister: (register: MIRPhysicalLocation) forInstructionResultPointer: (instruction: MIRInstruction) ::=> Void := {
         instruction resultRegister: (MIRPhysicalLocationRegisterWithPointer new register: register; yourself).
         instruction markCoalescedMemoryCopyRequired.
@@ -201,6 +213,12 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
     public override method allocateRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
         instruction operandRegisters at: operandIndex put: register.
         self spillIfNeededAndAllocateRegister: register withValue: (instruction operands at: operandIndex)
+    }.
+
+    public override method allocateRegister: (first: MIRPhysicalLocationRegister) with: (second: MIRPhysicalLocationRegister) forInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        let sequence := MIRPhysicalLocationRegisterPair with: first with: second.
+        instruction operandRegisters at: operandIndex put: sequence.
+        self spillIfNeededAndAllocateRegisterSequence: sequence withValue: (instruction operands at: operandIndex)
     }.
 
     public override method allocateRegister: (register: MIRPhysicalLocation) forInstruction: (instruction: MIRInstruction) operandPointerAt: (operandIndex: Size) ::=> Void := {
@@ -246,6 +264,11 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
         instruction operandRegisters at: operandIndex put: (self allocateRegisterForOperand: operand).
     }.
     
+    public override method allocateRegisterPairForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        let operand => MIRValue := instruction operands at: operandIndex.
+        instruction operandRegisters at: operandIndex put: (self allocateRegisterPairForOperand: operand).
+    }.
+
     public override method allocateRegister8ForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
         let operand => MIRValue  := instruction operands at: operandIndex.
         instruction operandRegisters at: operandIndex put: (self allocateRegister8ForOperand: operand).
@@ -253,6 +276,10 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
 
     public method allocateRegisterForOperand: (operand: MIRValue) ::=> MIRPhysicalLocation := {
         operand physicalLocationClass allocateRegisterForValue: operand with: self
+    }.
+
+    public method allocateRegisterPairForOperand: (operand: MIRValue) ::=> MIRPhysicalLocation := {
+        operand physicalLocationClass allocateRegisterPairForValue: operand with: self
     }.
 
     public method allocateRegister8ForOperand: (operand: MIRValue) ::=> MIRPhysicalLocation
@@ -266,6 +293,12 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
 
     public override method allocateIntegerRegisterForResultValue: (value: MIRLocalValue) trySharingWith: (sharingValue: MIRValue)  ::=> MIRPhysicalLocation
         := integerRegisterFile allocateForResultValue: value trySharingWith: sharingValue.
+
+    public override method allocateIntegerRegisterPairForValue: (value: MIRValue) ::=> MIRPhysicalLocation
+        := integerRegisterFile allocatePairForValue: value.
+
+    public override method allocateIntegerRegisterPairForResultValue: (value: MIRLocalValue) trySharingWith: (sharingValue: MIRValue)  ::=> MIRPhysicalLocation
+        := integerRegisterFile allocatePairForResultValue: value trySharingWith: sharingValue.
 
     public override method allocateIntegerRegisterForResultValuePointer: (value: MIRLocalValue) ::=> MIRPhysicalLocation
         := integerRegisterFile allocateForResultValuePointer: value.
@@ -306,11 +339,25 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
         integerRegisterFile spillIfNeededAndAllocateRegister: register withResultValue: value
     }.
 
+    public override method spillIfNeededAndAllocateIntegerRegisterSequence: (sequence: MIRPhysicalLocationRegisterSequence) withValue: (value: MIRValue) ::=> Void := {
+        integerRegisterFile spillIfNeededAndAllocateRegisterSequence: sequence withValue: value
+    }.
+
+    public override method spillIfNeededAndAllocateIntegerRegisterSequence: (sequence: MIRPhysicalLocationRegisterSequence) withResultValue: (value: MIRValue) ::=> Void := {
+        integerRegisterFile spillIfNeededAndAllocateRegisterSequence: sequence withResultValue: value
+    }.
+
     public override method allocateFloatRegisterForValue: (value: MIRValue) ::=> MIRPhysicalLocation
         := floatRegisterFile allocateForValue: value.
 
     public override method allocateFloatRegisterForResultValue: (value: MIRLocalValue) trySharingWith: (sharingValue: MIRValue) ::=> MIRPhysicalLocation
         := floatRegisterFile allocateForResultValue: value trySharingWith: sharingValue.
+
+    public override method allocateFloatRegisterPairForValue: (value: MIRValue) ::=> MIRPhysicalLocation
+        := floatRegisterFile allocatePairForValue: value.
+
+    public override method allocateFloatRegisterPairForResultValue: (value: MIRLocalValue) trySharingWith: (sharingValue: MIRValue) ::=> MIRPhysicalLocation
+        := floatRegisterFile allocatePairForResultValue: value trySharingWith: sharingValue.
 
     public override method spillIfNeededAndAllocateFloatRegister: (register: MIRPhysicalFloatRegister) withValue: (value: MIRValue) ::=> Void := {
         floatRegisterFile spillIfNeededAndAllocateRegister: register withValue: value
@@ -325,6 +372,12 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
 
     public override method allocateVectorRegisterForResultValue: (value: MIRLocalValue) trySharingWith: (sharingValue: MIRValue) ::=> MIRPhysicalLocation
         := vectorRegisterFile allocateForResultValue: value trySharingWith: sharingValue.
+
+    public override method allocateVectorRegisterPairForValue: (value: MIRValue) ::=> MIRPhysicalLocation
+        := vectorRegisterFile allocatePairForValue: value.
+
+    public override method allocateVectorRegisterPairForResultValue: (value: MIRLocalValue) trySharingWith: (sharingValue: MIRValue) ::=> MIRPhysicalLocation
+        := vectorRegisterFile allocatePairForResultValue: value trySharingWith: sharingValue.
 
     public override method spillIfNeededAndAllocateVectorRegister: (register: MIRPhysicalVectorRegister) withValue: (value: MIRValue) ::=> Void := {
         vectorRegisterFile spillIfNeededAndAllocateRegister: register withValue: value

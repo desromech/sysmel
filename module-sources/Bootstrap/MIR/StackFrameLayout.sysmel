@@ -240,7 +240,7 @@ public final class MIRStackFrameLayout superclass: Object; definition: {
 
         ## Store the frame pointer.
         hasRequiredConstruction ifTrue: {
-            isNoGC ifFalse: {
+            isNoGC not && self hasGCTraversedData ifTrue: {
                 self allocateGCMetadataZone.
             }.
 

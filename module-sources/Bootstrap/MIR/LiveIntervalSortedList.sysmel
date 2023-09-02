@@ -117,7 +117,7 @@ public final class MIRLiveIntervalSortedList definition: {
         let i mutable := 0sz.
         while: (i < elements size) do: {
             let interval => MIRLiveInterval := elements at: i.
-            interval register == register ifTrue: {
+            (interval includesRegister: register) ifTrue: {
                 return: interval
             }.
         } continueWith: (i := i + 1sz).

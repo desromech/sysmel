@@ -451,6 +451,9 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         public abstract method asm::generateCallPointer: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
+        public abstract method asm::generateCallFatPointer: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
+            := self subclassResponsibility.
+
         public abstract method asm::generateCallFloat32: (instruction: MIRInstruction) with: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void
             := self subclassResponsibility.
 
@@ -760,7 +763,7 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
 
     public method emitMoveValue: (value: MIRValue) intoLocation: (location: MIRPhysicalLocation) ::=> Void := {
         ## FIXME: Use a double dispatch here.
-        location isRegister ifTrue: {
+        location isRegisterOrSequence ifTrue: {
             moduleGenerator target emitMoveValue: value intoLocation: location with: self.
         }.
         location isRegisterWithPointer ifTrue: {
@@ -772,18 +775,18 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
     }.
 
     public method emitUnspillValue: (value: MIRValue) intoLocation: (location: MIRPhysicalLocation) ::=> Void := {
-        self assert: location isRegister.
+        self assert: location isRegisterOrSequence.
         moduleGenerator target emitUnspillValue: value intoLocation: location with: self.
     }.
 
     public method emitMoveRegister: (location: MIRPhysicalLocation) intoValue: (value: MIRValue) ::=> Void := {
-        location isRegister ifTrue: {
+        location isRegisterOrSequence ifTrue: {
             moduleGenerator target emitMoveRegister: location intoValue: value with: self.
         }
     }.
 
     public method emitMoveRegister: (location: MIRPhysicalLocation) intoValueStackPointer: (value: MIRValue) ::=> Void := {
-        location isRegister ifTrue: {
+        location isRegisterOrSequence ifTrue: {
             moduleGenerator target emitMoveRegister: location intoValueStackPointer: value with: self.
         }
     }.

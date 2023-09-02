@@ -1,6 +1,6 @@
 MIRLiveInterval definition: {
     public field value => MIRLocalValue.
-    public field register => MIRPhysicalLocation.
+    public field registerOrSequence => MIRPhysicalLocation.
     public field isSpilled => Boolean.
     public field start => UInt32.
     public field end => UInt32.
@@ -40,7 +40,7 @@ MIRLiveInterval definition: {
                 markCoalescedMemoryCopyRequired
         }.
         
-        register := nil.
+        registerOrSequence := nil.
         isSpilled := true.
     }.
 
@@ -49,4 +49,19 @@ MIRLiveInterval definition: {
             value markCoalescedMemoryCopyRequired
         }
     }.
+
+    public method addRegistersOnto: (aCollection: OrderedCollection) ::=> Void := {
+        registerOrSequence ifNotNil: {
+            registerOrSequence addRegistersOnto: aCollection
+        }.
+    }.
+
+    public method includesRegister: (register: MIRPhysicalLocation) ::=> Boolean
+        := registerOrSequence isNotNil && (registerOrSequence includesRegister: register).
+
+    public method includesRegisterInList: (register: Array) ::=> Boolean
+        := registerOrSequence isNotNil && (registerOrSequence includesRegisterInList: register).
+
+    public method includesRegisterOfSequence: (registerSequenceToTest: MIRPhysicalLocationRegisterSequence) ::=> Boolean
+        := registerOrSequence isNotNil && (registerOrSequence includesRegisterOfSequence: registerSequenceToTest).
 }.

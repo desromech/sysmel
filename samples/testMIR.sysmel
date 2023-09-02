@@ -1,6 +1,7 @@
 let module := MIRModule new
-    compilationTarget: AsmCompilationTarget x86_64 useElf asTacCompilationTarget;
+    compilationTarget: AsmCompilationTarget x86_64 useElf asMirCompilationTarget;
     yourself.
+#*
 let addFunction := module build: #add function: {:(MIRFunctionBuilder)functionBuilder :: Void |
     let function := functionBuilder function.
     let x := function newArgument: #x withType: Int32.
@@ -36,7 +37,29 @@ let doubleAddFunction := module build: #doubleAdd function: {:(MIRFunctionBuilde
 
 module build: #main function: {:(MIRFunctionBuilder)functionBuilder :: Void |
     functionBuilder basicBlock: #entry build: {:(MIRBlockBuilder)mir :: Void |
-        mir returnInt32: (mir callInt32: addFunction arguments: (42i32 asTacConstant, -5i32 asTacConstant) type: Int32)
+        mir returnInt32: (mir callInt32: addFunction arguments: (42i32 asMirConstant, -5i32 asMirConstant) type: Int32)
+    }
+}.
+*#
+
+struct FatPointer definition: {
+    __Meta__ definition: {
+        public override method valueMirPhysicalLocationClass => MIRPhysicalLocation class
+            := MIRPhysicalIntegerRegister.
+    }.
+
+    public field pointer => UIntPointer.
+    public field basePointer => UIntPointer.
+}.
+
+let fatPointerAdd := module build: #fatPointerAdd function: {:(MIRFunctionBuilder)functionBuilder :: Void |
+    let function := functionBuilder function.
+    let x := function newArgument: #a withType: FatPointer.
+    let y := function newArgument: #b withType: UIntPointer.
+    function arguments: (x, y).
+
+    functionBuilder basicBlock: #entry build: {:(MIRBlockBuilder)mir :: Void |
+        mir returnFatPointer: (mir fatPointerAddOffset: x with: y type: FatPointer)
     }
 }.
 
