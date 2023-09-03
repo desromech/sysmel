@@ -71,7 +71,7 @@ MetaBuilder
             result := receiver analyzeAndEvaluateMessageSendNode: (messageChainMessageNode asMessageSendNodeWithReceiver: selfReceiver) withEnvironment: environment
         }.
 
-        result
+        result __refLoad__
     } makeVirtual;
     withSelector: #analyzeMessageChainNode:withEnvironment: addClassMethod: {:self :messageChainNode :(Environment)environment |
         let: #selfReceiver with: messageChainNode receiver.

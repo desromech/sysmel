@@ -1927,7 +1927,7 @@ static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveAnalyzeAndEvalua
     {
         if(!gcFrame.type)
             gcFrame.type = sysbvm_tuple_getType(context, gcFrame.value);
-        gcFrame.type = sysbvm_type_createMemberReferenceType(context, gcFrame.type);
+        gcFrame.type = sysbvm_type_createGenericReferenceType(context, gcFrame.type);
         gcFrame.valueBox = (sysbvm_variableValueBox_t*)sysbvm_variableValueBox_with(context, gcFrame.value);
         gcFrame.value = sysbvm_referenceType_withStorage(context, gcFrame.type, (sysbvm_tuple_t)gcFrame.valueBox);
     }

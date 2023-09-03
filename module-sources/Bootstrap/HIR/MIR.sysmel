@@ -44,6 +44,9 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
     public field uncheckedInterpreterTrampolinesDictionary => Dictionary.
     public field boxingApplicationTrampolinesDictionary => Dictionary.
 
+    public field nullPointerConstant => MIRConstant.
+    public field nullFatPointerConstant => MIRConstant.
+
     public method initializeWithTarget: (theCompilationTarget: MIRCompilationTarget) ::=> Void := {
         compilationTarget := theCompilationTarget.
         targetModule := MIRModule new
@@ -416,6 +419,12 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
             type: compilationTarget uintPointerType;
             nullTerminated: true;
             yourself.
+
+    public method nullPointerConstant => MIRConstant
+        := nullPointerConstant ifNil: (nullPointerConstant := compilationTarget pointerSize = 4sz ifTrue: 0u32 asMirConstant ifFalse: 0u64 asMirConstant).
+
+    public method nullFatPointerConstant => MIRConstant
+        := nullFatPointerConstant ifNil: (nullFatPointerConstant := compilationTarget pointerSize = 4sz ifTrue: MIRConstantUInt32x2 new ifFalse: MIRConstantUInt64x2 new).
 }.
 
 public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeGenerator; definition: {
@@ -437,6 +446,12 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
 
     public method compilationTarget => MIRCompilationTarget
         := moduleCodeGenerator compilationTarget.
+
+    public method nullPointerConstant => MIRConstant
+        := moduleCodeGenerator nullPointerConstant.
+
+    public method nullFatPointerConstant => MIRConstant
+        := moduleCodeGenerator nullFatPointerConstant.
 
     public method compileHIRFunctionDefinition: (ssaFunctionDefinition: HIRFunctionDefinition) intoCapturelessEntryPoint: (entryPoint: MIRFunction) ::=> Void := {
         self ssaFunctionDefinition: ssaFunctionDefinition.
@@ -1055,11 +1070,11 @@ AddressSpace extend: {
     }.
 
     public virtual method pointerType: (pointerType: PointerLikeType) translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := codegen compilationTarget pointerSize = 4sz ifTrue: 0u32 asMirConstant ifFalse: 0u64 asMirConstant.
+        := codegen nullPointerConstant.
 
     public virtual method pointerType: (pointerType: PointerLikeType) emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         boxedValue isConstantZero ifTrue: {
-            return: (codegen compilationTarget pointerSize = 4sz ifTrue: 0u32 asMirConstant ifFalse: 0u64 asMirConstant)
+            return: codegen nullPointerConstant
         }.
 
         codegen blockBuilder
@@ -1116,12 +1131,11 @@ MemberAddressSpace extend: {
     }.
 
     public override method pointerType: (pointerType: PointerLikeType) translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := self error: "TODO: Translate Member pointer undefined constant.".
+        := codegen nullFatPointerConstant.
 
     public override method pointerType: (pointerType: PointerLikeType) emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         boxedValue isConstantZero ifTrue: {
-            self error: "TODO: emitMirCheckAndUnbox zero constant.".
-            return: (codegen compilationTarget pointerSize = 4sz ifTrue: 0u32 asMirConstant ifFalse: 0u64 asMirConstant)
+            return: codegen nullFatPointerConstant.
         }.
 
         codegen blockBuilder
@@ -1136,8 +1150,8 @@ MemberAddressSpace extend: {
 
     public override method pointerType: (pointerType: PointerLikeType) emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
         := codegen blockBuilder
-            callFatPointer: (codegen translateRuntimeFunction: ObjectModel::boxFatPointer)
-            with: (codegen moduleCodeGenerator translateGenericObjectPointer: pointerType) with: unboxedValue type: pointerType.
+            callPointer: (codegen translateRuntimeFunction: ObjectModel::boxFatPointer)
+            with: (codegen moduleCodeGenerator translateGenericObjectPointer: pointerType) with: unboxedValue type: AnyValue.
 
     public override method pointerType: (pointerType: PointerLikeType) emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder callFatPointer: function convention: callingConvention arguments: arguments type: pointerType.
@@ -1195,7 +1209,11 @@ PointerLikeType extend: {
 
 FixedArrayType definition: {
     public override method emitMirReference: (reference: MIRValue) elementPointerAt: (elementIndex: MIRValue) type: (type: Type) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue := {
-        builder loadEffectiveAddress: reference index: elementIndex constantScale: elementType alignedValueSize asInt64 type: type
+        reference type validAddressSpace isFatPointer ifTrue: {
+            builder loadFatEffectiveAddress: reference index: elementIndex constantScale: elementType alignedValueSize asInt64 type: type
+        } ifFalse: {
+            builder loadEffectiveAddress: reference index: elementIndex constantScale: elementType alignedValueSize asInt64 type: type
+        }.
     }.
 }.
 
@@ -1823,17 +1841,12 @@ HIRInstruction extend: {
 
 HIRAllocaInstruction extend: {
     public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
-        let resultPointerType := self type downCastTo: PointerLikeType.
-        let valueType := resultPointerType baseType.
-
         self isEscapedValue ifFalse: {
             let allocaStorage := codegen functionBuilder newTemporary: self name withType: valueType.
             allocaStorage asValuePointerWithType: self type compilationTarget: codegen compilationTarget
         } ifTrue: {
-            let requiredAllocaSize := valueType  valueSize.
-            codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::allocaGC)
-                with: (codegen blockBuilder pointerConstantWith: requiredAllocaSize)
-                with: (codegen translateValue: self valueType)
+            codegen blockBuilder callFatPointer: (codegen translateRuntimeFunction: ObjectModel::allocaGC)
+                with: (codegen moduleCodeGenerator translateGenericObjectPointer: self valueType)
                 type: self type
         }
     }.
@@ -1885,9 +1898,14 @@ public global HIRMirPrimitiveCallGenerationTable := #{
         let rightType => Type  := arguments second type.
         let hasUndefined := (leftType == UndefinedObject) || (rightType == UndefinedObject).
         let hasPointer := leftType isPointerType || rightType isPointerType.
+        let hasFatPointer := leftType validAddressSpace isFatPointer || rightType validAddressSpace isFatPointer.
 
         (hasUndefined && hasPointer) || (leftType isPointerType && rightType isPointerType) ifTrue: {
-            codegen blockBuilder pointerEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second)
+            hasFatPointer ifTrue: {
+                codegen blockBuilder fatPointerEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second)
+            } ifFalse: {
+                codegen blockBuilder pointerEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second)
+            }
         } ifFalse: {
             leftType == rightType && leftType isValueType ifTrue: {
                 leftType emitMirEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second) withBlockBuilder: codegen blockBuilder
@@ -1902,9 +1920,14 @@ public global HIRMirPrimitiveCallGenerationTable := #{
         let rightType => Type  := arguments second type.
         let hasUndefined := (leftType == UndefinedObject) || (rightType == UndefinedObject).
         let hasPointer := leftType isPointerType || rightType isPointerType.
+        let hasFatPointer := leftType validAddressSpace isFatPointer || rightType validAddressSpace isFatPointer.
 
         (hasUndefined && hasPointer) || (leftType isPointerType && rightType isPointerType) ifTrue: {
-            codegen blockBuilder pointerNotEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second)
+            hasFatPointer ifTrue: {
+                codegen blockBuilder fatPointerNotEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second)
+            } ifFalse: {
+                codegen blockBuilder pointerNotEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second)
+            }
         } ifFalse: {
             leftType == rightType && leftType isValueType ifTrue: {
                 leftType emitMirNotEquals: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second) withBlockBuilder: codegen blockBuilder
@@ -2535,7 +2558,7 @@ HIRAddressSpaceCastInstruction extend: {
                 type emitMirMove: resultValue withBlockBuilder: codegen blockBuilder.
             } ifFalse: {
                 sourceValueSize < destinationValueSize ifTrue: {
-                    self error: "TODO: Generic -> Fat".
+                    codegen blockBuilder fatPointerConstruct: resultValue with: codegen nullPointerConstant type: self type
                 } ifFalse: { ##sourceValueSize > destinationValueSize
                     codegen blockBuilder fatPointerExtractFirst: resultValue type: self type
                 }
@@ -2592,7 +2615,13 @@ HIRDownCastInstruction extend: {
 
 HIRLoadInstruction extend: {
     public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
-        self type emitMirLoadFromPointer: (codegen translateValue: self storage) constantOffset: 0i64 withBlockBuilder: codegen blockBuilder
+        let pointerValue := codegen translateValue: self storage.
+        self storage type validAddressSpace isFatPointer ifTrue: {
+            let nativePointerValue := codegen blockBuilder fatPointerExtractFirst: pointerValue type: Void pointer.
+            self type emitMirLoadFromPointer: nativePointerValue constantOffset: 0i64 withBlockBuilder: codegen blockBuilder
+        } ifFalse: {
+            self type emitMirLoadFromPointer: pointerValue constantOffset: 0i64 withBlockBuilder: codegen blockBuilder
+        }.
     }.
 }.
 
@@ -2762,7 +2791,14 @@ HIRStoreInstruction extend: {
         let valueToStore := codegen translateValue: self value withExpectedType: baseType.
         self assert: valueToStore isNotNil.
 
-        baseType emitMirStore: valueToStore intoPointer: (codegen translateValue: self storage) constantOffset: 0i64 withBlockBuilder: codegen blockBuilder
+        let pointerValue := codegen translateValue: self storage.
+        pointerType validAddressSpace isFatPointer ifTrue: {
+            ## TODO: Emit a write barrier, if required.
+            let nativePointerValue := codegen blockBuilder fatPointerExtractFirst: pointerValue type: Void pointer.
+            baseType emitMirStore: valueToStore intoPointer: nativePointerValue constantOffset: 0i64 withBlockBuilder: codegen blockBuilder
+        } ifFalse: {
+            baseType emitMirStore: valueToStore intoPointer: pointerValue constantOffset: 0i64 withBlockBuilder: codegen blockBuilder
+        }.
     }.
 }.
 
@@ -2777,7 +2813,11 @@ HIRPointerElementAtInstruction extend: {
         let pointerValue := codegen translateValue: self pointer.
         let indexValue := codegen translateValue: self index.
         let elementSize := (self pointer type downCastTo: PointerLikeType) baseType alignedValueSize.
-        codegen blockBuilder loadEffectiveAddress: pointerValue index: indexValue constantScale: elementSize asInt64 type: self type
+        self pointer type validAddressSpace isFatPointer ifTrue: {
+            codegen blockBuilder loadFatEffectiveAddress: pointerValue index: indexValue constantScale: elementSize asInt64 type: self type
+        } ifFalse: {
+            codegen blockBuilder loadEffectiveAddress: pointerValue index: indexValue constantScale: elementSize asInt64 type: self type
+        }.
     }.
 }.
 
@@ -2794,7 +2834,13 @@ HIRTypeSlotReferenceAtInstruction extend: {
     public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         let pointerValue := codegen translateValue: self tuple.
         let headerSize := (self tuple type ifNil: AnyValue) objectHeaderSizeForObjectModel: codegen compilationTarget objectModel.
-        codegen blockBuilder pointerAdd: pointerValue constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 type: self type
+
+        self type validAddressSpace isFatPointer ifTrue: {
+            let memberPointer := codegen blockBuilder pointerAdd: pointerValue constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 type: Void pointer.
+            codegen blockBuilder fatPointerConstruct: memberPointer with: pointerValue type: self type.
+        } ifFalse: {
+            codegen blockBuilder pointerAdd: pointerValue constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 type: self type.
+        }
     }.
 }.
 
@@ -2810,6 +2856,7 @@ HIRTypeSlotAtPutInstruction extend: {
         let headerSize := (self tuple type ifNil: AnyValue) objectHeaderSizeForObjectModel: codegen compilationTarget objectModel.
         let slotValueType := typeSlot type.
         let valueToStore := codegen translateValue: self value withExpectedType: slotValueType.
+        ## TODO: Add a write barrier, if required.
         slotValueType emitMirStore: valueToStore intoPointer: (codegen translateValue: self tuple) constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 withBlockBuilder: codegen blockBuilder
     }.
 }.

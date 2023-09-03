@@ -17,7 +17,7 @@ public final class HIRAllocaPromotionState definition: {
 
     public method promote: (allocaToPromote: HIRAllocaInstruction) ::=> Void := {
         alloca := allocaToPromote.
-        valueType := (alloca valueType downCastTo: HIRLiteralConstant) value.
+        valueType := alloca valueType.
         self assert: valueType isNotNil.
 
         stores := OrderedCollection new.
@@ -191,7 +191,7 @@ public class HIRPromoteAllocaPass superclass: HIRFunctionDefinitionPass; definit
         function instructionsDo: {:(HIRInstruction)each :: Void |
             each isAllocaInstruction ifTrue: {
                 let alloca := each downCastTo: HIRAllocaInstruction.
-                alloca isLocalOnlyVariableAlloca && alloca valueType isLiteralConstant ifTrue: {
+                alloca isLocalOnlyVariableAlloca ifTrue: {
                     allocaInstructions add: each
                 }
             }

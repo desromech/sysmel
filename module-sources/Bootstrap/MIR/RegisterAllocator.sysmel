@@ -181,11 +181,11 @@ public abstract class MIRRegisterAllocator superclass: Object; definition: {
             instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationImmediate for: operand)
         } ifFalse: {
             operand isValuePointer ifTrue: {
-                instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationValuePointer for: (operand downCastTo: MIRValuePointer) value isFatPointer: operand type validAddressSpace isMember)
+                instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationValuePointer for: (operand downCastTo: MIRValuePointer) value isFatPointer: operand type validAddressSpace isFatPointer)
             } ifFalse: {
                 self allocateRegisterForInstruction: instruction operandAt: operandIndex.
                 operand isProgramEntity ifTrue: {
-                    instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationValuePointer for: operand isFatPointer: operand type validAddressSpace isMember)
+                    instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationValuePointer for: operand isFatPointer: operand type validAddressSpace isFatPointer)
                 }
             }
         }

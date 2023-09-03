@@ -1548,7 +1548,7 @@ HIRInstruction definition: {
 }.
 
 public final class HIRAllocaInstruction superclass: HIRInstruction; definition: {
-    public field valueType => HIRValue.
+    public field valueType => Type.
 
     public override method isAllocaInstruction => Boolean := true.
     public override method hasSideEffects => Boolean := false.
@@ -1558,18 +1558,6 @@ public final class HIRAllocaInstruction superclass: HIRInstruction; definition: 
 
     public override method fullPrintOn: (stream: Stream) ::=> Void
         := stream print: self; nextPutAll: " := alloca: "; print: self valueType.
-
-    public override method usedValuesDo: aBlock ::=> Void := {
-        aBlock(self valueType)
-    }.
-
-    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
-        if: self valueType = replacedValue then: (self valueType: replacement)
-    }.
-
-    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
-        replacementDictionary at: self valueType ifPresent: {:(HIRValue)replacement :: Void | self valueType: replacement}.
-    }.
 }.
 
 public final class HIRBranchInstruction superclass: HIRInstruction; definition: {
@@ -2633,7 +2621,7 @@ HIRInstructionBuilder definition: {
         result
     }.
 
-    public method alloca: (valueType: HIRValue) type: (type: Type) ::=> HIRAllocaInstruction
+    public method alloca: (valueType: Type) type: (type: Type) ::=> HIRAllocaInstruction
         := self addInstruction: (HIRAllocaInstruction new
             valueType: valueType;
             type: type;

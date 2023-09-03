@@ -345,7 +345,12 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createReferenceType(sysbvm_context_t *cont
 SYSBVM_API sysbvm_tuple_t sysbvm_type_createTemporaryReferenceType(sysbvm_context_t *context, sysbvm_tuple_t baseType, sysbvm_tuple_t addressSpace);
 
 /**
- * Creates a function local reference type.
+ * Creates a generic reference type.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_type_createGenericReferenceType(sysbvm_context_t *context, sysbvm_tuple_t baseType);
+
+/**
+ * Creates a member reference type.
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_type_createMemberReferenceType(sysbvm_context_t *context, sysbvm_tuple_t baseType);
 

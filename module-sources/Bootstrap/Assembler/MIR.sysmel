@@ -1247,7 +1247,7 @@ MIRConstantInt64 definition: {
 
 MIRPhysicalLocation definition: {
     public virtual method asm::canonicalRegister => AsmRegister
-        := self error: "Not a register location.".
+        := self error: self printString -- " is not a register location.".
 
     public virtual method makeStackMapLocation => AsmStackMapLocation
         := nil.
@@ -1287,7 +1287,7 @@ MIRCaptureVariable definition: {
     public override method asm::makeStackMapLocationWith: (codegen: MIRAsmCodeGenerator) ::=> AsmStackMapLocation := {
         let coalescedAssignedRegister := self coalescedAssignedRegister.
         coalescedAssignedRegister ifNotNil: {
-            AsmStackMapLocationRegister new register: (coalescedAssignedRegister asm::canonicalRegister); yourself
+            coalescedAssignedRegister makeStackMapLocation
         } ifNil: {
             let captureVectorPointerLocation := codegen captureVectorPointerStackMapLocation.
             captureVectorPointerLocation ifNotNil: {

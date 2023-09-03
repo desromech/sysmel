@@ -1685,10 +1685,11 @@ public function ObjectModel::makeClosureWithCaptureVector(functionDefinition: Fu
         yourself.
 }.
 
-public function ObjectModel::allocaGC(size: Size, elementType: Type) => Void pointer := {
+public function ObjectModel::allocaGC(valueType: Type) => Void memberPointer := {
     ## FIXME: Generate a fat pointer here.
-    let result := sysmel_pal_malloc(size).
-    memset(result, 0i8, size).
+    let valueSize := valueType valueSize.
+    let result := sysmel_pal_malloc(valueSize).
+    memset(result, 0i8, valueSize).
     result
 }.
 

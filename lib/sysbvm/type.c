@@ -611,6 +611,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createTemporaryReferenceType(sysbvm_contex
     return sysbvm_function_apply2(context, context->roots.temporaryReferenceTypeTemplate, baseType, addressSpace);
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_type_createGenericReferenceType(sysbvm_context_t *context, sysbvm_tuple_t baseType)
+{
+    return sysbvm_type_createReferenceType(context, baseType, sysbvm_genericAddressSpace_uniqueInstance(context));
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_type_createMemberReferenceType(sysbvm_context_t *context, sysbvm_tuple_t baseType)
 {
     return sysbvm_type_createReferenceType(context, baseType, sysbvm_memberAddressSpace_uniqueInstance(context));

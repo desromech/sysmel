@@ -1,3 +1,11 @@
+public struct TestStruct definition: {
+    public field intField => Int32.
+    public field floatField => Float32.
+
+    public nogc method sum => Float32
+        := intField asFloat32 + floatField.
+}.
+
 public threadLocal myMutableGlobal mutable := 42i32.
 
 public function increment() => Int32
@@ -7,15 +15,20 @@ printLine(increment()).
 printLine(increment()).
 printLine(increment()).
 
+public nogc function makeStruct() => Int32 := {
+    let s mutable := TestStruct basicNew.
+    s sum asInt32
+}.
+
 let hirModule := HIRModuleCompilationContext forDefaultTarget
     exclusiveCompilationMode: true;
-    compileFunctionsWithDefinitions: (increment,); ##(increment, ExceptionSetjmpBuffer >> #setjmp, ExceptionSetjmpBuffer >> #longjmp);
+    compileFunctionsWithDefinitions: (increment,); ##(makeStruct, TestStruct >> #sum); ##(increment, ExceptionSetjmpBuffer >> #setjmp, ExceptionSetjmpBuffer >> #longjmp);
     finish.
 
 printLine(hirModule fullPrintString).
 
-##let mirModule := hirModule asMIRModuleFor: AsmCompilationTarget x86_64 setForLinux asMirCompilationTarget.
-let mirModule := hirModule asMIRModuleFor: AsmCompilationTarget x86_64 setForWindows asMirCompilationTarget.
+let mirModule := hirModule asMIRModuleFor: AsmCompilationTarget x86_64 setForLinux asMirCompilationTarget.
+##let mirModule := hirModule asMIRModuleFor: AsmCompilationTarget x86_64 setForWindows asMirCompilationTarget.
 printLine(mirModule fullPrintString).
 
 let lirModule := mirModule asTargetIR.

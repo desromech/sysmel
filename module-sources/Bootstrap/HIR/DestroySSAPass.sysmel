@@ -24,7 +24,7 @@ public class HIRDestroySSAFunctionPass superclass: HIRFunctionDefinitionPass; de
                 let valueType := phi type.
                 let pointerType := valueType memberPointer.
                 
-                let temporary := allocaBuilder alloca: (allocaBuilder literal: valueType) type: pointerType.
+                let temporary := allocaBuilder alloca: valueType type: pointerType.
                 phi incomingBlocksAndValuesDo: {:(HIRBasicBlock)incomingBlock :(HIRValue)incomingValue :: Void |
                     storeBuilder
                         beginInsertingInBasicBlock: incomingBlock;

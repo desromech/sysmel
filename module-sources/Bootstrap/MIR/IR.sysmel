@@ -168,6 +168,10 @@ public final class MIRPhysicalLocationRegisterPair superclass: MIRPhysicalLocati
 
     public override method includesRegisterOfSequence: (registerSequence: MIRPhysicalLocationRegisterSequence) ::=> Boolean
         := (registerSequence includesRegister: firstComponent) || (registerSequence includesRegister: secondComponent).
+
+    public override method printOn: (aStream: Stream) ::=> Void := {
+        aStream nextPut: '('c8; print: firstComponent; nextPutAll: ", "; print: secondComponent; nextPut: ')'c8
+    }.
 }.
 
 public class MIRPhysicalLocationImmediate superclass: MIRPhysicalLocation; definition: {
@@ -317,8 +321,10 @@ MIRValue definition: {
     public virtual method isConstantUInt16 => Boolean := false.
     public virtual method isConstantInt32 => Boolean := false.
     public virtual method isConstantUInt32 => Boolean := false.
+    public virtual method isConstantUInt32x2 => Boolean := false.
     public virtual method isConstantInt64 => Boolean := false.
     public virtual method isConstantUInt64 => Boolean := false.
+    public virtual method isConstantUInt64x2 => Boolean := false.
     public virtual method isConstantFloat => Boolean := false.
     public virtual method isConstantFloat32 => Boolean := false.
     public virtual method isConstantFloat64 => Boolean := false.
@@ -734,7 +740,7 @@ public final class MIRValuePointer superclass: MIRValue; definition: {
         := MIRPhysicalIntegerRegister.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream print: value; nextPutAll: (type validAddressSpace isMember ifTrue: " fatAddress" ifFalse: " address").
+        stream print: value; nextPutAll: (type validAddressSpace isFatPointer ifTrue: " fatAddress" ifFalse: " address").
     }.
 }.
 
@@ -975,6 +981,22 @@ public final class MIRConstantUInt32 superclass: MIRConstantInteger; definition:
     }
 }.
 
+public final class MIRConstantUInt32x2 superclass: MIRConstantInteger; definition: {
+    public field first => UInt32.
+    public field second => UInt32.
+
+    public override method isConstantUInt32x2 => Boolean := true.
+    public override method isConstantZero => Boolean := (first = 0u32) && (second = 0u32).
+
+    public override method type => Type := UInt32.
+    public override method size => UInt64 := 8u64.
+    public override method alignment => UInt64 := 4u64.
+
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: "u32x2("; print: first; nextPutAll: ", "; print: second; nextPut: ')'c8
+    }.
+}.
+
 public final class MIRConstantInt64 superclass: MIRConstantInteger; definition: {
     public field value => Int64.
 
@@ -1025,6 +1047,22 @@ public final class MIRConstantUInt64 superclass: MIRConstantInteger; definition:
     UInt64 extend: {
         public method asMirConstant => MIRConstantUInt64
             := MIRConstantUInt64 new value: self; yourself
+    }.
+}.
+
+public final class MIRConstantUInt64x2 superclass: MIRConstantInteger; definition: {
+    public field first => UInt64.
+    public field second => UInt64.
+
+    public override method isConstantUInt64x2 => Boolean := true.
+    public override method isConstantZero => Boolean := (first = 0u64) && (second = 0u64).
+
+    public override method type => Type := UInt64.
+    public override method alignment => UInt64 := 16u64.
+    public override method size => UInt64 := 8u64.
+
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: "u64x2("; print: first; nextPutAll: ", "; print: second; nextPut: ')'c8
     }.
 }.
 

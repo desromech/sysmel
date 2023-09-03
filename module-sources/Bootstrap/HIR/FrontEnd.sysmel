@@ -365,7 +365,7 @@ let primitiveFunctionGenerators := #{
         self analyzedType == type ifTrue: {
             context builder literal: type defaultValue type: self analyzedType
         } ifFalse: {
-            context builder alloca: (context builder literal: type) type: self analyzedType
+            context builder alloca: type type: self analyzedType
         }
     }.
 
@@ -379,7 +379,7 @@ let primitiveFunctionGenerators := #{
         self analyzedType == type ifTrue: {
             context builder literal: type defaultValue type: self analyzedType
         } ifFalse: {
-            let result := context builder alloca: (context builder literal: type) type: self analyzedType.
+            let result := context builder alloca: type type: self analyzedType.
 
             ## Basic initialize.
             type needsNonDefaultBasicInitialization ifTrue: {
@@ -405,7 +405,7 @@ let primitiveFunctionGenerators := #{
         self analyzedType == type ifTrue: {
             context builder literal: type defaultValue type: self analyzedType
         } ifFalse: {
-            let result := context builder alloca: (context builder literal: type) type: self analyzedType.
+            let result := context builder alloca: type type: self analyzedType.
 
             ## Basic initialize.
             type needsNonDefaultBasicInitialization ifTrue: {
@@ -462,7 +462,7 @@ let primitiveFunctionGenerators := #{
         self analyzedType isTemporaryReferenceType ifTrue: {
             let valueType := (self analyzedType downCastTo: ReferenceLikeType) baseType.
             self assert: valueType isNotNil.
-            let temporary := context builder alloca: (context builder literal: valueType) type: self analyzedType.
+            let temporary := context builder alloca: valueType type: self analyzedType.
             context builder store: (context builder load: reference type: valueType) in: temporary.
             temporary
         } ifFalse: {
@@ -636,8 +636,14 @@ ASTVariableDefinitionNode extend: {
 
         self isMutable ifTrue: {
             self assert: self analyzedValueType isNotNil.
-            let localVariable := builder alloca: (builder literal: self analyzedValueType) type: self analyzedType.
-            builder store: value in: localVariable.
+            let localVariable := value type isReferenceLikeType ifTrue: {
+                builder pointerOrIntegerReinterpretCast: value into: (builder literal: self analyzedValueType) type: self analyzedType
+            } ifFalse: {
+                let allocatedStorage := builder alloca: self analyzedValueType type: self analyzedType.
+                builder store: value in: allocatedStorage.
+                allocatedStorage
+            }.
+            
             context setValue: localVariable forBinding: self binding.
             self binding hasValidNameForDebugging ifTrue: {
                 context builder setDebugValue: localVariable forBinding: self binding.

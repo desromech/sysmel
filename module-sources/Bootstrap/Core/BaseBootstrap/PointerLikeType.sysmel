@@ -13,12 +13,12 @@ PointerLikeType definition: {
 
 AddressSpace definition: {
     public virtual method componentCount => Size := 1sz.
-    public virtual method isMember => Boolean := false.
+    public virtual method isFatPointer => Boolean := false.
 }.
 
 MemberAddressSpace definition: {
     public override method componentCount => Size := 2sz.
-    public override method isMember => Boolean := true.
+    public override method isFatPointer => Boolean := true.
 }.
 
 PointerType definition: {
