@@ -91,6 +91,7 @@ public global ObjectModel::Flags::NeedsFinalization := 1u32 << (ObjectModel::Fla
 public global ObjectModel::Flags::DummyValue := 1u32 << (ObjectModel::Flags::Shift + 2u32).
 
 public global ObjectModel::PointerSize := UIntPointer valueSize.
+public global ObjectModel::FatPointerSize := ObjectModel::PointerSize * 2sz.
 
 if: ObjectModel::PointerSize = 4sz then: {
     public global ObjectModel::Immediate::Bits      := ObjectModel32::Immediate::Bits.
@@ -1138,12 +1139,22 @@ public function ObjectModel::boxFloat64(value: Float64) => AnyValue := {
     box reinterpretCastTo: AnyValue
 }.
 
-public function ObjectModel::boxPointer(pointerType: Type, value: UIntPointer) => AnyValue := {
-    value = 0uptr ifTrue: {
+public function ObjectModel::boxPointer(pointerType: Type, value: Void pointer) => AnyValue := {
+    value == nil ifTrue: {
         nil
     } ifFalse: {
         let box := ObjectModel::allocateBoxForValueOfTypeWithSize(pointerType, ObjectModel::PointerSize).
-        (box + 1iptr reinterpretCastTo: UIntPointer pointer) store: value.
+        (box + 1iptr reinterpretCastTo: Void pointer pointer) store: value.
+        box reinterpretCastTo: AnyValue
+    }.
+}.
+
+public function ObjectModel::boxFatPointer(pointerType: Type, value: Void memberPointer) => AnyValue := {
+    value == nil ifTrue: {
+        nil
+    } ifFalse: {
+        let box := ObjectModel::allocateBoxForValueOfTypeWithSize(pointerType, ObjectModel::FatPointerSize).
+        (box + 1iptr reinterpretCastTo: Void memberPointer pointer) store: value.
         box reinterpretCastTo: AnyValue
     }.
 }.
@@ -1286,19 +1297,41 @@ public function ObjectModel::unboxFloat64(value: Untyped) => Float64 := {
     }.
 }.
 
-public function ObjectModel::unboxPointer(value: Untyped) => UIntPointer := {
+public function ObjectModel::unboxPointer(value: Untyped) => Void pointer := {
     Untyped::==(value, nil) ifTrue: {
-        0uptr
+        nil
     } ifFalse: {
         let valueType := RawTuple::type(value).
         let objectHeader := ObjectModel::getTuplePointerUIntValue(value) reinterpretCastTo: ObjectModel::TupleHeader pointer.
 
         valueType isPointerLikeType ifFalse: {
-            return: (objectHeader + 1iptr reinterpretCastTo: UIntPointer)
+            return: (objectHeader + 1iptr reinterpretCastTo: Void pointer)
         }.
 
         objectHeader _ isBytes ifTrue: {
-            (objectHeader + 1iptr reinterpretCastTo: UIntPointer pointer) load
+            (objectHeader + 1iptr reinterpretCastTo: Void pointer pointer) load
+        } ifFalse: {
+            let slotCount := objectHeader _ slotCount.
+            let slots := objectHeader + 1iptr reinterpretCastTo: AnyValue pointer.
+            error("TODO: Unbox object oriented pointer.").
+        }
+    }.
+}.
+
+public function ObjectModel::unboxFatPointer(value: Untyped) => Void memberPointer := {
+    Untyped::==(value, nil) ifTrue: {
+        nil
+    } ifFalse: {
+        let valueType := RawTuple::type(value).
+        let objectHeader := ObjectModel::getTuplePointerUIntValue(value) reinterpretCastTo: ObjectModel::TupleHeader pointer.
+
+        valueType isPointerLikeType ifFalse: {
+            error("TODO: Construct unboxing fat pointer.").
+            ##return: (objectHeader + 1iptr reinterpretCastTo: UIntPointer)
+        }.
+
+        objectHeader _ isBytes ifTrue: {
+            (objectHeader + 1iptr reinterpretCastTo: Void memberPointer pointer) load
         } ifFalse: {
             let slotCount := objectHeader _ slotCount.
             let slots := objectHeader + 1iptr reinterpretCastTo: AnyValue pointer.
@@ -1579,6 +1612,33 @@ public function ObjectModel::checkAndUnboxPointer(pointerType: PointerLikeType, 
 
         objectHeader _ isBytes ifTrue: {
             (objectHeader + 1iptr reinterpretCastTo: UIntPointer pointer) load
+        } ifFalse: {
+            let slotCount := objectHeader _ slotCount.
+            let slots := objectHeader + 1iptr reinterpretCastTo: AnyValue pointer.
+            error("TODO: Unbox object oriented pointer.").
+        }.
+    }.
+}.
+
+public function ObjectModel::checkAndUnboxFatPointer(pointerType: PointerLikeType, value: Untyped) => Void memberPointer := {
+    Untyped::==(value, nil) ifTrue: {
+        nil
+    } ifFalse: {
+        let valueType := RawTuple::type(value).
+        let objectHeader := ObjectModel::getTuplePointerUIntValue(value) reinterpretCastTo: ObjectModel::TupleHeader pointer.
+
+        valueType == pointerType ifFalse: {
+            ## Am I a box for the requested base type?
+            (valueType isDirectSubtypeOf: pointerType baseType) ifTrue: {
+                error("TODO: Make fat pointer for boxed value type").
+                ##return: (objectHeader + 1iptr reinterpretCastTo: Void pointer) 
+            }.
+
+            error("Expected a pointer with a specific type.").
+        }.
+
+        objectHeader _ isBytes ifTrue: {
+            (objectHeader + 1iptr reinterpretCastTo: Void memberPointer pointer) load
         } ifFalse: {
             let slotCount := objectHeader _ slotCount.
             let slots := objectHeader + 1iptr reinterpretCastTo: AnyValue pointer.

@@ -30,11 +30,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_typeSlot_create(sysbvm_context_t *context, sysb
 SYSBVM_API sysbvm_tuple_t sysbvm_typeSlot_getValidReferenceType(sysbvm_context_t *context, sysbvm_tuple_t typeSlot)
 {
     if(!sysbvm_tuple_isNonNullPointer(typeSlot))
-        return sysbvm_type_createFunctionLocalReferenceType(context, context->roots.anyValueType);
+        return sysbvm_type_createMemberReferenceType(context, context->roots.anyValueType);
 
     sysbvm_typeSlot_t *typeSlotObject = (sysbvm_typeSlot_t*)typeSlot;
     if(!typeSlotObject->referenceType)
-        typeSlotObject->referenceType = sysbvm_type_createFunctionLocalReferenceType(context, typeSlotObject->type);
+        typeSlotObject->referenceType = sysbvm_type_createMemberReferenceType(context, typeSlotObject->type);
 
     return typeSlotObject->referenceType;
 }
@@ -434,6 +434,13 @@ static sysbvm_tuple_t sysbvm_pointerLikeType_createAddition(sysbvm_context_t *co
     return gcFrame.function;
 }
 
+static size_t sysbvm_addressSpace_getComponentCount(sysbvm_context_t *context, sysbvm_tuple_t addressSpace)
+{
+    if(sysbvm_tuple_isKindOf(context, addressSpace, context->roots.memberAddressSpaceType))
+        return 2;
+    return 1;
+}
+
 static sysbvm_tuple_t sysbvm_type_doCreatePointerType(sysbvm_context_t *context, sysbvm_tuple_t templateResult_, sysbvm_tuple_t baseType_, sysbvm_tuple_t addressSpace_)
 {
     struct {
@@ -463,7 +470,7 @@ static sysbvm_tuple_t sysbvm_type_doCreatePointerType(sysbvm_context_t *context,
     gcFrame.result->super.super.super.slots = sysbvm_array_create(context, 0);
     gcFrame.result->super.super.super.supertype = context->roots.anyPointerType;
     gcFrame.result->super.super.super.instanceAlignment = sysbvm_tuple_size_encode(context, context->targetWordSize);
-    gcFrame.result->super.super.super.instanceSize = sysbvm_tuple_size_encode(context, context->targetWordSize);
+    gcFrame.result->super.super.super.instanceSize = sysbvm_tuple_size_encode(context, context->targetWordSize * sysbvm_addressSpace_getComponentCount(context, gcFrame.addressSpace));
     gcFrame.result->super.baseType = gcFrame.baseType;
     gcFrame.result->super.addressSpace = gcFrame.addressSpace;
 
@@ -521,7 +528,7 @@ static sysbvm_tuple_t sysbvm_type_doCreateReferenceType(sysbvm_context_t *contex
     gcFrame.result->super.super.super.slots = sysbvm_array_create(context, 0);
     gcFrame.result->super.super.super.supertype = context->roots.anyReferenceType;
     gcFrame.result->super.super.super.instanceAlignment = sysbvm_tuple_size_encode(context, context->targetWordSize);
-    gcFrame.result->super.super.super.instanceSize = sysbvm_tuple_size_encode(context, context->targetWordSize);
+    gcFrame.result->super.super.super.instanceSize = sysbvm_tuple_size_encode(context, context->targetWordSize * sysbvm_addressSpace_getComponentCount(context, gcFrame.addressSpace));
     gcFrame.result->super.baseType = gcFrame.baseType;
     gcFrame.result->super.addressSpace = gcFrame.addressSpace;
 
@@ -575,7 +582,7 @@ static sysbvm_tuple_t sysbvm_type_doCreateTemporaryReferenceType(sysbvm_context_
     gcFrame.result->super.super.super.slots = sysbvm_array_create(context, 0);
     gcFrame.result->super.super.super.supertype = context->roots.anyReferenceType;
     gcFrame.result->super.super.super.instanceAlignment = sysbvm_tuple_size_encode(context, context->targetWordSize);
-    gcFrame.result->super.super.super.instanceSize = sysbvm_tuple_size_encode(context, context->targetWordSize);
+    gcFrame.result->super.super.super.instanceSize = sysbvm_tuple_size_encode(context, context->targetWordSize * sysbvm_addressSpace_getComponentCount(context, gcFrame.addressSpace));
     gcFrame.result->super.baseType = gcFrame.baseType;
     gcFrame.result->super.addressSpace = gcFrame.addressSpace;
 
@@ -603,7 +610,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createTemporaryReferenceType(sysbvm_contex
 {
     return sysbvm_function_apply2(context, context->roots.temporaryReferenceTypeTemplate, baseType, addressSpace);
 }
-SYSBVM_API sysbvm_tuple_t sysbvm_type_createFunctionLocalReferenceType(sysbvm_context_t *context, sysbvm_tuple_t baseType)
+
+SYSBVM_API sysbvm_tuple_t sysbvm_type_createMemberReferenceType(sysbvm_context_t *context, sysbvm_tuple_t baseType)
 {
     return sysbvm_type_createReferenceType(context, baseType, sysbvm_memberAddressSpace_uniqueInstance(context));
 }

@@ -902,6 +902,9 @@ Type extend: {
     public virtual method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder returnPointer: value.
 
+    public virtual method emitMirMove: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder movePointer: value type: self.
+
     public virtual method emitMirUnboxingCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         let result := codegen blockBuilder callPointer: function convention: callingConvention arguments: arguments type: self.
 
@@ -1013,6 +1016,9 @@ ValueType extend: {
     public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder returnStruct: value.
 
+    public override method emitMirMove: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder moveStruct: value type: self.
+
     public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder loadStruct: pointer constantOffset: constantOffset type: self.
 
@@ -1032,8 +1038,8 @@ ValueType extend: {
         := self subclassResponsibility.
 }.
 
-PointerLikeType extend: {
-    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue := {
+AddressSpace extend: {
+    public virtual method pointerType: (pointerType: PointerLikeType) translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue := {
         let value => Untyped := constant value.
         let isBytes := RawTuple::isBytes(value).
         let pointerSize => Size := RawTuple::size(value).
@@ -1044,47 +1050,147 @@ PointerLikeType extend: {
             let storage := (if: pointerSize >= 1sz then: (RawTuple::slotAt:)(value, 0sz) else: nil).
             let base := (if: pointerSize >= 2sz then: (RawTuple::slotAt:)(value, 1sz) else: nil).
             let offset := (if: pointerSize >= 3sz then: (RawTuple::slotAt:)(value, 2sz) else: 0iptr).
-            storage __type__ translateHIRLiteralConstant: constant pointerType: self storage: storage base: base offset: offset intoMirWith: codegen
+            storage __type__ translateHIRLiteralConstant: constant pointerType: pointerType storage: storage base: base offset: offset intoMirWith: codegen
         }
     }.
 
-    public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+    public virtual method pointerType: (pointerType: PointerLikeType) translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := codegen compilationTarget pointerSize = 4sz ifTrue: 0u32 asMirConstant ifFalse: 0u64 asMirConstant.
 
-    public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
+    public virtual method pointerType: (pointerType: PointerLikeType) emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         boxedValue isConstantZero ifTrue: {
             return: (codegen compilationTarget pointerSize = 4sz ifTrue: 0u32 asMirConstant ifFalse: 0u64 asMirConstant)
         }.
 
         codegen blockBuilder
             callPointer: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxPointer)
-            with: (codegen moduleCodeGenerator translateGenericObjectPointer: self) with: boxedValue type: self.
+            with: (codegen moduleCodeGenerator translateGenericObjectPointer: pointerType) with: boxedValue type: pointerType.
     }.
 
-    public override method emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+    public virtual method pointerType: (pointerType: PointerLikeType) emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
         := codegen blockBuilder
             callPointer: (codegen translateRuntimeFunction: ObjectModel::unboxPointer)
-            with: boxedValue type: self.
+            with: boxedValue type: pointerType.
 
-    public override method emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+    public virtual method pointerType: (pointerType: PointerLikeType) emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
         := codegen blockBuilder
             callPointer: (codegen translateRuntimeFunction: ObjectModel::boxPointer)
-            with: (codegen moduleCodeGenerator translateGenericObjectPointer: self) with: unboxedValue type: self.
+            with: (codegen moduleCodeGenerator translateGenericObjectPointer: pointerType) with: unboxedValue type: pointerType.
 
-    public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder callPointer: function convention: callingConvention arguments: arguments type: self.
+    public virtual method pointerType: (pointerType: PointerLikeType) emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder callPointer: function convention: callingConvention arguments: arguments type: pointerType.
 
-    public override method emitMirPhiWithBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder phiPointer: self.
+    public virtual method pointerType: (pointerType: PointerLikeType) emitMirPhiWithBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder phiPointer: pointerType.
 
-    public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+    public virtual method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder returnPointer: value.
 
-    public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder loadPointer: pointer constantOffset: constantOffset type: self.
+    public virtual method pointerType: (pointerType: PointerLikeType) emitMirMove: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder movePointer: value type: pointerType.
+
+    public virtual method pointerType: (pointerType: PointerLikeType) emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder loadPointer: pointer constantOffset: constantOffset type: pointerType.
+
+    public virtual method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder storePointer: value into: pointer constantOffset: constantOffset.
+}.
+
+MemberAddressSpace extend: {
+    public override method pointerType: (pointerType: PointerLikeType) translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue := {
+        let value => Untyped := constant value.
+        let isBytes := RawTuple::isBytes(value).
+        let pointerSize => Size := RawTuple::size(value).
+
+        if: isBytes then: {
+            self error: "TODO: Translate pointer integer value."
+        } else: {
+            self error: "TODO: Translate Member pointer literal constant."
+            #*
+            let storage := (if: pointerSize >= 1sz then: (RawTuple::slotAt:)(value, 0sz) else: nil).
+            let base := (if: pointerSize >= 2sz then: (RawTuple::slotAt:)(value, 1sz) else: nil).
+            let offset := (if: pointerSize >= 3sz then: (RawTuple::slotAt:)(value, 2sz) else: 0iptr).
+            storage __type__ translateHIRLiteralConstant: constant pointerType: self storage: storage base: base offset: offset intoMirWith: codegen
+            *#
+        }
+    }.
+
+    public override method pointerType: (pointerType: PointerLikeType) translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+        := self error: "TODO: Translate Member pointer undefined constant.".
+
+    public override method pointerType: (pointerType: PointerLikeType) emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
+        boxedValue isConstantZero ifTrue: {
+            self error: "TODO: emitMirCheckAndUnbox zero constant.".
+            return: (codegen compilationTarget pointerSize = 4sz ifTrue: 0u32 asMirConstant ifFalse: 0u64 asMirConstant)
+        }.
+
+        codegen blockBuilder
+            callFatPointer: (codegen translateRuntimeFunction: ObjectModel::checkAndUnboxFatPointer)
+            with: (codegen moduleCodeGenerator translateGenericObjectPointer: pointerType) with: boxedValue type: pointerType.
+    }.
+
+    public override method pointerType: (pointerType: PointerLikeType) emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder
+            callFatPointer: (codegen translateRuntimeFunction: ObjectModel::unboxFatPointer)
+            with: boxedValue type: pointerType.
+
+    public override method pointerType: (pointerType: PointerLikeType) emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder
+            callFatPointer: (codegen translateRuntimeFunction: ObjectModel::boxFatPointer)
+            with: (codegen moduleCodeGenerator translateGenericObjectPointer: pointerType) with: unboxedValue type: pointerType.
+
+    public override method pointerType: (pointerType: PointerLikeType) emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder callFatPointer: function convention: callingConvention arguments: arguments type: pointerType.
+
+    public override method pointerType: (pointerType: PointerLikeType) emitMirPhiWithBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder phiFatPointer: pointerType.
+
+    public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder returnFatPointer: value.
+
+    public override method pointerType: (pointerType: PointerLikeType) emitMirMove: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder moveFatPointer: value type: pointerType.
+
+    public override method pointerType: (pointerType: PointerLikeType) emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder loadFatPointer: pointer constantOffset: constantOffset type: pointerType.
 
     public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder storePointer: value into: pointer constantOffset: constantOffset.
+        := builder storeFatPointer: value into: pointer constantOffset: constantOffset.
+}.
+
+PointerLikeType extend: {
+    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+        := addressSpace pointerType: self translateHIRLiteralConstant: constant intoMirWith: codegen.
+
+    public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+        := addressSpace pointerType: self translateUndefinedConstant: constant intoMirWith: codegen.
+
+    public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := addressSpace pointerType: self emitMirCheckAndUnbox: boxedValue withHIRCodeGenerator: codegen.
+
+    public override method emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := addressSpace pointerType: self emitMirUncheckedUnbox: boxedValue withHIRCodeGenerator: codegen.
+
+    public override method emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := addressSpace pointerType: self emitMirBox: unboxedValue withHIRCodeGenerator: codegen.
+
+    public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := addressSpace pointerType: self emitMirCall: function convention: callingConvention withArguments: arguments withBlockBuilder: builder.
+
+    public override method emitMirPhiWithBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := addressSpace pointerType: self emitMirPhiWithBlockBuilder: builder.
+
+    public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := addressSpace emitMirReturn: value withBlockBuilder: builder.
+
+    public override method emitMirMove: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := addressSpace pointerType: self emitMirMove: value withBlockBuilder: builder.
+
+    public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := addressSpace pointerType: self emitMirLoadFromPointer: pointer constantOffset: constantOffset withBlockBuilder: builder.
+
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := addressSpace emitMirStore: value intoPointer: pointer constantOffset: constantOffset withBlockBuilder: builder.
 }.
 
 FixedArrayType definition: {
@@ -2417,6 +2523,29 @@ HIRCallInstruction extend: {
     }.
 }.
 
+HIRAddressSpaceCastInstruction extend: {
+    public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
+        let resultValue := codegen translateValue: self value.
+        let valueType := resultValue type.
+
+        valueType ~~ type ifTrue: {
+            let sourceValueSize := valueType valueSize.
+            let destinationValueSize := self type valueSize.
+            sourceValueSize = destinationValueSize ifTrue: {
+                type emitMirMove: resultValue withBlockBuilder: codegen blockBuilder.
+            } ifFalse: {
+                sourceValueSize < destinationValueSize ifTrue: {
+                    self error: "TODO: Generic -> Fat".
+                } ifFalse: { ##sourceValueSize > destinationValueSize
+                    codegen blockBuilder fatPointerExtractFirst: resultValue type: self type
+                }
+            }
+        } ifFalse: {
+            resultValue
+        }
+    }.
+}.
+
 HIRBitcastInstruction extend: {
     public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
         let resultValue := codegen translateValue: self value.
@@ -2425,8 +2554,7 @@ HIRBitcastInstruction extend: {
         valueType ~~ type ifTrue: {
             self assert: valueType valueSize = self type valueSize.
             self assert: valueType isPrimitiveFloatType not && self type isPrimitiveFloatType not.
-            ## FIXME: Support bitcast between non-pointer types.
-            codegen blockBuilder movePointer: resultValue type: self type
+            type emitMirMove: resultValue withBlockBuilder: codegen blockBuilder.
         } ifFalse: {
             resultValue
         }

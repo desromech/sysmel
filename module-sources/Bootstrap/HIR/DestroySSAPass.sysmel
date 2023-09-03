@@ -22,7 +22,7 @@ public class HIRDestroySSAFunctionPass superclass: HIRFunctionDefinitionPass; de
                 allocaBuilder useSourceInformationOfValue: phi.
 
                 let valueType := phi type.
-                let pointerType := PointerTypeTemplate(valueType, nil).
+                let pointerType := valueType memberPointer.
                 
                 let temporary := allocaBuilder alloca: (allocaBuilder literal: valueType) type: pointerType.
                 phi incomingBlocksAndValuesDo: {:(HIRBasicBlock)incomingBlock :(HIRValue)incomingValue :: Void |

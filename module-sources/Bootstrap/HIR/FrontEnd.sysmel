@@ -432,23 +432,23 @@ let primitiveFunctionGenerators := #{
     #PointerType::reinterpretCastTo: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
         let pointer := self arguments first generateHIRValueWith: context.
         let targetType := self arguments second generateHIRValueWith: context.
-        context builder bitcast: pointer into: targetType type: self analyzedType
+        context builder pointerOrIntegerReinterpretCast: pointer into: targetType type: self analyzedType
     }.
     #UIntPointer::reinterpretCastTo: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
         let pointer := self arguments first generateHIRValueWith: context.
         let targetType := self arguments second generateHIRValueWith: context.
-        context builder bitcast: pointer into: targetType type: self analyzedType
+        context builder pointerOrIntegerReinterpretCast: pointer into: targetType type: self analyzedType
     }.
     #IntPointer::reinterpretCastTo: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
         let pointer := self arguments first generateHIRValueWith: context.
         let targetType := self arguments second generateHIRValueWith: context.
-        context builder bitcast: pointer into: targetType type: self analyzedType
+        context builder pointerOrIntegerReinterpretCast: pointer into: targetType type: self analyzedType
     }.
 
     #PointerLikeType::reinterpretCast : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
         let pointer := self arguments first generateHIRValueWith: context.
         let targetType := self analyzedType.
-        context builder bitcast: pointer into: (context builder literal: targetType) type: targetType
+        context builder pointerOrIntegerReinterpretCast: pointer into: (context builder literal: targetType) type: targetType
     }.
 
     #PointerLikeType::at: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |

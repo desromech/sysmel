@@ -1677,6 +1677,32 @@ public final class HIRCallInstruction superclass: HIRInstruction; definition: {
     }.
 }.
 
+public final class HIRAddressSpaceCastInstruction superclass: HIRInstruction; definition: {
+    public field value => HIRValue.
+    public field targetType => HIRValue.
+
+    public override method hasSideEffects => Boolean := false.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void
+        := stream print: self; nextPutAll: " := addressSpaceCast: "; print: self value;
+            space; print: self targetType.
+
+    public override method usedValuesDo: aBlock ::=> Void := {
+        aBlock(self value).
+        aBlock(self targetType).
+    }.
+
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        if: self value = replacedValue then: (self value: replacement).
+        if: self targetType = replacedValue then: (self targetType: replacement).
+    }.
+
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+        replacementDictionary at: self value ifPresent: {:(HIRValue)replacement :: Void | self value: replacement}.
+        replacementDictionary at: self targetType ifPresent: {:(HIRValue)replacement :: Void | self targetType: replacement}.
+    }.
+}.
+
 public final class HIRBitcastInstruction superclass: HIRInstruction; definition: {
     public field value => HIRValue.
     public field targetType => HIRValue.
@@ -2632,6 +2658,19 @@ HIRInstructionBuilder definition: {
     public method call: (receiver: HIRValue) arguments: (arguments: Array) ::=> HIRCallInstruction
         := self call: receiver arguments: arguments resultType: nil.
 
+    public method addressSpaceCast: (value: HIRValue) into: (targetType: HIRValue) type: (type: Type) ::=> HIRValue := {
+        (targetType == nil) || (targetType isLiteralConstant && (value type == targetType evaluateAsConstantType)) ifTrue: {
+            value
+        } ifFalse: {
+            self addInstruction: (HIRAddressSpaceCastInstruction new
+                value: value;
+                targetType: targetType;
+                type: type;
+                registerInUsedValues;
+                yourself)
+        }.
+    }.
+
     public method bitcast: (value: HIRValue) into: (targetType: HIRValue) type: (type: Type) ::=> HIRValue := {
         (targetType == nil) || (targetType isLiteralConstant && (value type == targetType evaluateAsConstantType)) ifTrue: {
             value
@@ -2642,6 +2681,30 @@ HIRInstructionBuilder definition: {
                 type: type;
                 registerInUsedValues;
                 yourself)
+        }.
+    }.
+
+    public method pointerOrIntegerReinterpretCast: (value: HIRValue) into: (targetType: HIRValue) type: (type: Type) ::=> HIRValue := {
+        (targetType == nil) || (targetType isLiteralConstant && (value type == targetType evaluateAsConstantType)) ifTrue: {
+            value
+        } ifFalse: {
+            let sourceAddressSpace := value type validAddressSpace.
+            let destinationAddressSpace := type validAddressSpace.
+            sourceAddressSpace ~~ destinationAddressSpace ifTrue: {
+                self addInstruction: (HIRAddressSpaceCastInstruction new
+                    value: value;
+                    targetType: targetType;
+                    type: type;
+                    registerInUsedValues;
+                    yourself)
+            } ifFalse: {
+                self addInstruction: (HIRBitcastInstruction new
+                    value: value;
+                    targetType: targetType;
+                    type: type;
+                    registerInUsedValues;
+                    yourself)
+            }
         }.
     }.
 

@@ -1,3 +1,4 @@
+#*
 printLine(128i32 asInt8 asInt32 = 128i32).
 
 public function MySelect(condition: Boolean, a: Int32, b: Int32) => Int32
@@ -33,16 +34,21 @@ public function MySum(N: Int32, alpha: Int32) => Int32 := {
 
 public function SumManyArgs(arg0: Int32, arg1: Int32, arg2: Int32, arg3: Int32, arg4: Int32, arg5: Int32, arg6: Int32, arg7: Int32, arg8: Int32, arg9: Int32, arg10: Int32) => Int32
     := arg0 + arg1 + arg2 + arg3 + arg4 + arg5 + arg6 + arg7 + arg8 + arg9 + arg10.
+*#
 
 public struct TestStruct definition: {
     public field intField => Int32.
     public field floatField => Float32.
 
-    public method sum => Float32
+    public nogc method sum => Float32
         := intField asFloat32 + floatField.
 }.
 
-public function NoRttiImageMain(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
+public nogc function incrementRef(variable: Int32 memberRef) ::=> Void := {
+    ##variable := variable + 1i32.
+}.
+
+public nogc function NoRttiImageMain(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
     ##sleb128Size(42i64).
     ##sleb128Size(-42i64).
     ##MySelect(false, 1i32, 2i32).
@@ -50,8 +56,11 @@ public function NoRttiImageMain(argc: Int32, argv: Char8 const pointer pointer) 
     ##memset(nil, 0i8, 32sz).
     ##0i32
     ##SumManyArgs(argc + 0i32, argc + 1i32, argc + 2i32, argc + 3i32, argc + 4i32, argc + 5i32, argc + 6i32, argc + 7i32, argc + 8i32, argc + 9i32, argc + 10i32).
-    let s mutable := TestStruct new.
-    s sum asInt32
+    ##let s mutable := TestStruct basicAllocate.
+    ##s sum asInt32
+    let var mutable := 41i32.
+    incrementRef(var).
+    var
 }.
 
 #*public function NoRttiImageMain(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
@@ -96,6 +105,7 @@ ImageBuilder new
     build;
     saveTo: "testNoRTTI.x86_64.elf".
 
+#*
 ImageBuilder new
     target: AsmCompilationTarget x86_64 setForWindows asImageBuilderTarget;
     beNoRTTI;
@@ -113,3 +123,4 @@ ImageBuilder new
     addNativeEntryPoint: NoRttiImageMain;
     build;
     saveTo: "testNoRTTI.x86_64.macho".
+*#

@@ -232,7 +232,7 @@ printLine(#{#test : 42}).
 ##printLine(#(-5 3 4 8 5 -7 0 5 2 1 42 90 -80) sorted).
 
 ## Min
-printLine(min asHIRModule runPasses: (HIRDestroyHIRFunctionPass,); fullPrintString).
+printLine(min asHIRModule runPasses: (HIRDestroySSAFunctionPass,); fullPrintString).
 
-printLine(doWhile asHIRModule runPasses: (HIRDestroyHIRFunctionPass,); fullPrintString).
+printLine(doWhile asHIRModule runPasses: (HIRDestroySSAFunctionPass,); fullPrintString).
 

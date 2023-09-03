@@ -1247,14 +1247,27 @@ MIRConstantInt64 definition: {
 
 MIRPhysicalLocation definition: {
     public virtual method asm::canonicalRegister => AsmRegister
-        := self error: "Not a register location."
+        := self error: "Not a register location.".
+
+    public virtual method makeStackMapLocation => AsmStackMapLocation
+        := nil.
+}.
+
+MIRPhysicalLocationRegister definition: {
+    public override method makeStackMapLocation => AsmStackMapLocation
+        := AsmStackMapLocationRegister new register: (self asm::canonicalRegister); yourself
+}.
+
+MIRPhysicalLocationRegisterPair definition: {
+    public override method makeStackMapLocation => AsmStackMapLocation
+        := AsmStackMapLocationRegister new register: (firstComponent asm::canonicalRegister); yourself
 }.
 
 MIRLocalValue definition: {
     public override method asm::makeStackMapLocationWith: (codegen: MIRAsmCodeGenerator) ::=> AsmStackMapLocation := {
         let coalescedAssignedRegister := self coalescedAssignedRegister.
         coalescedAssignedRegister ifNotNil: {
-            AsmStackMapLocationRegister new register: (coalescedAssignedRegister asm::canonicalRegister); yourself
+            coalescedAssignedRegister makeStackMapLocation
         } ifNil: {
             self needsStackAllocation ifTrue: {
                 AsmStackMapLocationFrameOffset new offset: offset; yourself

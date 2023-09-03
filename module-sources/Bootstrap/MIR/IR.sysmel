@@ -192,10 +192,11 @@ public class MIRPhysicalLocationValuePointerOrAssignedRegister superclass: MIRPh
 
 public class MIRPhysicalLocationValuePointer superclass: MIRPhysicalLocation; definition: {
     public field value => MIRValue.
+    public field isFatPointer => Boolean.
 
     __Meta__ definition: {
-        public method for: (value: MIRValue) ::=> self
-            := self new value: value; yourself
+        public method for: (value: MIRValue) isFatPointer: (isFatPointer: Boolean) ::=> self
+            := self new value: value; isFatPointer: isFatPointer; yourself
     }.
 }.
 
@@ -718,8 +719,8 @@ public final class MIRValuePointer superclass: MIRValue; definition: {
 
     public method initializeWithType: (newType: Type) compilationTarget: (compilationTarget: MIRCompilationTarget) ::=> Void := {
         type := newType.
-        size := compilationTarget pointerSize.
-        alignment := compilationTarget pointerAlignment.
+        size := type valueSize.
+        alignment := type valueAlignment.
     }.
 
     public override method isValuePointer => Boolean := true.
@@ -733,7 +734,7 @@ public final class MIRValuePointer superclass: MIRValue; definition: {
         := MIRPhysicalIntegerRegister.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream print: value; nextPutAll: " address".
+        stream print: value; nextPutAll: (type validAddressSpace isMember ifTrue: " fatAddress" ifFalse: " address").
     }.
 }.
 

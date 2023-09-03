@@ -347,7 +347,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createTemporaryReferenceType(sysbvm_contex
 /**
  * Creates a function local reference type.
  */
-SYSBVM_API sysbvm_tuple_t sysbvm_type_createFunctionLocalReferenceType(sysbvm_context_t *context, sysbvm_tuple_t baseType);
+SYSBVM_API sysbvm_tuple_t sysbvm_type_createMemberReferenceType(sysbvm_context_t *context, sysbvm_tuple_t baseType);
 
 /**
  * Creates a value box with the given value.

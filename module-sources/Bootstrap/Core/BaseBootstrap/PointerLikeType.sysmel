@@ -1,15 +1,34 @@
+Type definition: {
+    public virtual method validAddressSpace => AddressSpace
+        := GenericAddressSpace uniqueInstance.
+}.
+
 PointerLikeType definition: {
+    public override method validAddressSpace => AddressSpace
+        := addressSpace.
+
     public override method createBasicInitializeMethod => Void := {
-    }
+    }.
+}.
+
+AddressSpace definition: {
+    public virtual method componentCount => Size := 1sz.
+    public virtual method isMember => Boolean := false.
+}.
+
+MemberAddressSpace definition: {
+    public override method componentCount => Size := 2sz.
+    public override method isMember => Boolean := true.
 }.
 
 PointerType definition: {
+
     public method initializeWithBaseType: (theBaseType: Type) addressSpace: (theAddressSpace: AddressSpace) ::=> Void := {
         flags := TypeFlags::PointerTypeFlags.
         totalSlotCount := 0sz.
         supertype := AnyPointer.
         instanceAlignment := UIntPointer valueAlignment.
-        instanceSize := UIntPointer valueSize.
+        instanceSize := UIntPointer valueSize * addressSpace componentCount.
 
         baseType := theBaseType.
         addressSpace := theAddressSpace.
@@ -44,7 +63,7 @@ ReferenceType definition: {
         totalSlotCount := 0sz.
         supertype := AnyPointer.
         instanceAlignment := UIntPointer valueAlignment.
-        instanceSize := UIntPointer valueSize.
+        instanceSize := UIntPointer valueSize * addressSpace componentCount.
 
         baseType := theBaseType.
         addressSpace := theAddressSpace.
@@ -75,7 +94,7 @@ TemporaryReferenceType definition: {
         totalSlotCount := 0sz.
         supertype := AnyPointer.
         instanceAlignment := UIntPointer valueAlignment.
-        instanceSize := UIntPointer valueSize.
+        instanceSize := UIntPointer valueSize * addressSpace componentCount.
 
         baseType := theBaseType.
         addressSpace := theAddressSpace.

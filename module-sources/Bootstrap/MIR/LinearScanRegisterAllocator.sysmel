@@ -175,6 +175,12 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
         }
     }.
 
+    public override method allocateRegisterPairForInstructionResult: (instruction: MIRInstruction) ::=> Void := {
+        instruction hasValidType ifTrue: {
+            instruction resultRegister: (instruction physicalLocationClass allocateRegisterPairForResultValue: instruction trySharingWith: nil with: self).
+        }
+    }.
+
     public override method allocateRegisterPairForInstructionResult: (instruction: MIRInstruction) trySharingWithOperandAt: (operandIndex: Size) ::=> Void := {
         instruction hasValidType ifTrue: {
             instruction resultRegister: (instruction physicalLocationClass allocateRegisterPairForResultValue: instruction trySharingWith: (instruction operands at: operandIndex) with: self).
