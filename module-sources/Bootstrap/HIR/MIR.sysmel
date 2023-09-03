@@ -1230,6 +1230,9 @@ Char8 __type__ extend: {
     public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder callInt8: function convention: callingConvention arguments: arguments type: self.
 
+    public override method emitMirMove: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder moveUInt8: value.
+
     public override method emitMirPhiWithBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder phiUInt8.
 
@@ -1267,6 +1270,9 @@ Int8 __type__ extend: {
 
     public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder callInt8: function convention: callingConvention arguments: arguments type: self.
+
+    public override method emitMirMove: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder moveInt8: value.
 
     public override method emitMirPhiWithBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder phiInt8.
@@ -1306,6 +1312,9 @@ UInt8 __type__ extend: {
     public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder callInt8: function convention: callingConvention arguments: arguments type: self.
 
+    public override method emitMirMove: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder moveUInt8: value.
+
     public override method emitMirPhiWithBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder phiUInt8.
 
@@ -1343,6 +1352,9 @@ Boolean __type__ extend: {
 
     public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder callInt8: function convention: callingConvention arguments: arguments type: self.
+
+    public override method emitMirMove: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder moveUInt8: value.
 
     public override method emitMirPhiWithBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder phiUInt8.
@@ -1390,6 +1402,9 @@ Char16 __type__ extend: {
     public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder callInt16: function convention: callingConvention arguments: arguments type: self.
 
+    public override method emitMirMove: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder moveUInt16: value.
+
     public override method emitMirPhiWithBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder phiUInt16.
 
@@ -1427,6 +1442,9 @@ Int16 __type__ extend: {
 
     public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder callInt16: function convention: callingConvention arguments: arguments type: self.
+
+    public override method emitMirMove: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder moveInt16: value.
 
     public override method emitMirPhiWithBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder phiInt16.
@@ -1466,6 +1484,9 @@ UInt16 __type__ extend: {
     public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder callInt16: function convention: callingConvention arguments: arguments type: self.
 
+    public override method emitMirMove: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder moveUInt16: value.
+
     public override method emitMirPhiWithBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder phiUInt16.
 
@@ -1503,6 +1524,9 @@ Char32 __type__ extend: {
 
     public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder callInt32: function convention: callingConvention arguments: arguments type: self.
+
+    public override method emitMirMove: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder moveUInt32: value.
 
     public override method emitMirPhiWithBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder phiUInt32.
@@ -1542,6 +1566,9 @@ Int32 __type__ extend: {
     public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder callInt32: function convention: callingConvention arguments: arguments type: self.
 
+    public override method emitMirMove: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder moveInt32: value.
+
     public override method emitMirPhiWithBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder phiInt32.
 
@@ -1579,6 +1606,9 @@ UInt32 __type__ extend: {
 
     public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder callInt32: function convention: callingConvention arguments: arguments type: self.
+
+    public override method emitMirMove: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder moveUInt32: value.
 
     public override method emitMirPhiWithBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder phiUInt32.
@@ -1618,6 +1648,9 @@ Int64 __type__ extend: {
     public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder callInt64: function convention: callingConvention arguments: arguments type: self.
 
+    public override method emitMirMove: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder moveInt64: value.
+
     public override method emitMirPhiWithBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder phiInt64.
 
@@ -1655,6 +1688,9 @@ UInt64 __type__ extend: {
 
     public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder callInt64: function convention: callingConvention arguments: arguments type: self.
+
+    public override method emitMirMove: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder moveUInt64: value.
 
     public override method emitMirPhiWithBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder phiUInt64.
@@ -1694,6 +1730,9 @@ Float32 __type__ extend: {
     public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder callFloat32: function convention: callingConvention arguments: arguments.
 
+    public override method emitMirMove: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder moveFloat32: value.
+
     public override method emitMirPhiWithBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder phiFloat32.
 
@@ -1727,6 +1766,9 @@ Float64 __type__ extend: {
 
     public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder callFloat64: function convention: callingConvention arguments: arguments.
+
+    public override method emitMirMove: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := builder moveFloat64: value.
 
     public override method emitMirPhiWithBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder phiFloat64.
@@ -1763,6 +1805,9 @@ Void __type__ extend: {
         builder callVoid: function convention: callingConvention arguments: arguments.
         void asMirConstant
     }.
+
+    public override method emitMirMove: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+        := void asMirConstant.
 
     public override method emitMirPhiWithBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := void asMirConstant.
