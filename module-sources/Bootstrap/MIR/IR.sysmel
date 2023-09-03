@@ -2191,9 +2191,6 @@ public final class MIRBlockBuilder superclass: Object; definition: {
         }
     }.
 
-    public method fatPointerMul: (index: MIRValue) constantScale: (constantScale: Int64) type: (type: Type) ::=> MIRInstruction
-        := self fatPointerMulOffset: index with: (self constantOffsetImmediateFor: constantScale) type: type.
-
     public method fatPointerAdd: (pointer: MIRValue) constantOffset: (constantOffset: Int64) type: (type: Type) ::=> MIRValue := {
         constantOffset = 0i64 ifTrue: {
             pointer
@@ -2428,7 +2425,8 @@ public final class MIRFunctionBuilder superclass: Object; definition: {
     Float32ToFloat64 Float32ToUInt8 Float32ToInt8 Float32ToUInt16 Float32ToInt16 Float32ToUInt32 Float32ToInt32 Float32ToUInt64 Float32ToInt64
     Float64ToFloat32 Float64ToUInt8 Float64ToInt8 Float64ToUInt16 Float64ToInt16 Float64ToUInt32 Float64ToInt32 Float64ToUInt64 Float64ToInt64
     Float32ToIEEEUInt32 Float64ToIEEEUInt64 IEEEUInt32ToFloat32 IEEEUInt64ToFloat64
-    
+
+    FatPointerExtractFirst FatPointerExtractSecond
 ) do: {:(Symbol)operationName :: Void |
     let operationNameString := operationName asString.
     let lowerOperationNameString := operationNameString first asLowercase asString -- operationNameString allButFirst.
@@ -2446,7 +2444,7 @@ public final class MIRFunctionBuilder superclass: Object; definition: {
 #(
     Int8Add Int16Add Int32Add Int64Add PointerAdd FatPointerAdd FatPointerAddOffset
     Int8Sub Int16Sub Int32Sub Int64Sub PointerSub FatPointerSub FatPointerSubOffset
-    Int8Mul Int16Mul Int32Mul Int64Mul PointerMul FatPointerMul FatPointerMulOffset
+    Int8Mul Int16Mul Int32Mul Int64Mul PointerMul
     Int8SDiv Int16SDiv Int32SDiv Int64SDiv
     Int8UDiv Int16UDiv Int32UDiv Int64UDiv
     Int8SRem Int16SRem Int32SRem Int64SRem
@@ -2467,6 +2465,8 @@ public final class MIRFunctionBuilder superclass: Object; definition: {
     Float32Div Float64Div
 
     Float32UnorderedCompare Float64UnorderedCompare
+
+    FatPointerConstruct
 ) do: {:(Symbol)operationName :: Void |
     let operationNameString := operationName asString.
     let lowerOperationNameString := operationNameString first asLowercase asString -- operationNameString allButFirst.
@@ -2496,6 +2496,11 @@ let ComparisonOperationToBranchMap := Dictionary new.
     UInt8LessOrEquals UInt16LessOrEquals UInt32LessOrEquals UInt64LessOrEquals
     UInt8GreaterThan UInt16GreaterThan UInt32GreaterThan UInt64GreaterThan
     UInt8GreaterOrEquals UInt16GreaterOrEquals UInt32GreaterOrEquals UInt64GreaterOrEquals
+
+    PointerLessThan FatPointerLessThan
+    PointerLessOrEquals FatPointerLessOrEquals
+    PointerGreaterThan FatPointerGreaterThan
+    PointerGreaterOrEquals FatPointerGreaterOrEquals
 
     Float32UnorderedEquals Float64UnorderedEquals
     Float32UnorderedNotEquals Float64UnorderedNotEquals

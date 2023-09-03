@@ -2593,15 +2593,61 @@ MIR::Operation::PointerSub
             x86::sub: (instruction resultRegister x86::int64For: codegen) with: (instruction secondOperandRegister x86::immediateS32OrInt64For: codegen)
     }.
 
+MIR::Operation::FatPointerAdd
+    forTarget: #x86 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegisterPairForInstructionResult: instruction andOperandAt: 0sz;
+            allocateRegisterPairForInstruction: instruction operandAt: 1sz
+    };
+    forTarget: #x86 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::add: (instruction resultRegister firstComponent x86::int32For: codegen) with: (instruction secondOperandRegister firstComponent x86::int32For: codegen)
+    };
+    forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegisterPairForInstruction: instruction operandAt: 0sz;
+            allocateRegisterPairForInstruction: instruction operandAt: 1sz;
+            allocateRegisterPairForInstructionResult: instruction trySharingWithOperandAt: 0sz
+    };
+    forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister firstComponent x86::int64For: codegen) src: (instruction firstOperandRegister firstComponent x86::int64For: codegen);
+            x86::mov: (instruction resultRegister secondComponent x86::int64For: codegen) src: (instruction firstOperandRegister secondComponent x86::int64For: codegen);
+            x86::add: (instruction resultRegister firstComponent x86::int64For: codegen) with: (instruction secondOperandRegister firstComponent x86::int64For: codegen)
+    }.
+
+MIR::Operation::FatPointerSub
+    forTarget: #x86 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegisterPairForInstructionResult: instruction andOperandAt: 0sz;
+            allocateRegisterPairForInstruction: instruction operandAt: 1sz
+    };
+    forTarget: #x86 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::sub: (instruction resultRegister firstComponent x86::int32For: codegen) with: (instruction secondOperandRegister firstComponent x86::int32For: codegen)
+    };
+    forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegisterPairForInstruction: instruction operandAt: 0sz;
+            allocateRegisterPairForInstruction: instruction operandAt: 1sz;
+            allocateRegisterPairForInstructionResult: instruction trySharingWithOperandAt: 0sz
+    };
+    forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister firstComponent x86::int64For: codegen) src: (instruction firstOperandRegister firstComponent x86::int64For: codegen);
+            x86::mov: (instruction resultRegister secondComponent x86::int64For: codegen) src: (instruction firstOperandRegister secondComponent x86::int64For: codegen);
+            x86::sub: (instruction resultRegister firstComponent x86::int64For: codegen) with: (instruction secondOperandRegister firstComponent x86::int64For: codegen)
+    }.
+
 MIR::Operation::FatPointerAddOffset
     forTarget: #x86 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
             allocateRegisterPairForInstructionResult: instruction andOperandAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
-    forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+    forTarget: #x86 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
-            x86::add: (instruction resultRegister firstComponent x86::int64For: codegen) with: (instruction secondOperandRegister x86::int64For: codegen)
+            x86::add: (instruction resultRegister firstComponent x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen)
     };
     forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
@@ -2622,9 +2668,9 @@ MIR::Operation::FatPointerSubOffset
             allocateRegisterPairForInstructionResult: instruction andOperandAt: 0sz;
             allocateRegisterForInstruction: instruction operandAt: 1sz
     };
-    forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+    forTarget: #x86 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
-            x86::sub: (instruction resultRegister firstComponent x86::int64For: codegen) with: (instruction secondOperandRegister x86::int64For: codegen)
+            x86::sub: (instruction resultRegister firstComponent x86::int32For: codegen) with: (instruction secondOperandRegister x86::int32For: codegen)
     };
     forTarget: #x86_64 registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
@@ -2637,6 +2683,54 @@ MIR::Operation::FatPointerSubOffset
             x86::mov: (instruction resultRegister firstComponent x86::int64For: codegen) src: (instruction firstOperandRegister firstComponent x86::int64For: codegen);
             x86::mov: (instruction resultRegister secondComponent x86::int64For: codegen) src: (instruction firstOperandRegister secondComponent x86::int64For: codegen);
             x86::sub: (instruction resultRegister firstComponent x86::int64For: codegen) with: (instruction secondOperandRegister x86::int64For: codegen)
+    }.
+
+MIR::Operation::FatPointerConstruct
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegisterForInstruction: instruction operandAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 1sz;
+            allocateRegisterPairForInstructionResult: instruction.
+    };
+    forTargets: #x86 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister firstComponent x86::int32For: codegen) src: (instruction firstOperandRegister x86::int32For: codegen);
+            x86::mov: (instruction resultRegister secondComponent x86::int32For: codegen) src: (instruction secondOperandRegister x86::int32For: codegen)
+    };
+    forTargets: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister firstComponent x86::int64For: codegen) src: (instruction firstOperandRegister x86::int64For: codegen);
+            x86::mov: (instruction resultRegister secondComponent x86::int64For: codegen) src: (instruction secondOperandRegister x86::int64For: codegen)
+    }.
+
+MIR::Operation::FatPointerExtractFirst
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegisterPairForInstruction: instruction operandAt: 0sz;
+            allocateRegisterForInstructionResult: instruction.
+    };
+    forTarget: #x86 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister firstComponent x86::int32For: codegen)
+    };
+    forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister firstComponent x86::int64For: codegen)
+    }.
+
+MIR::Operation::FatPointerExtractSecond
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegisterPairForInstruction: instruction operandAt: 0sz;
+            allocateRegisterForInstructionResult: instruction.
+    };
+    forTarget: #x86 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int32For: codegen) src: (instruction firstOperandRegister secondComponent x86::int32For: codegen)
+    };
+    forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection
+            x86::mov: (instruction resultRegister x86::int64For: codegen) src: (instruction firstOperandRegister secondComponent x86::int64For: codegen)
     }.
 
 let x86::integerMul32RegisterConstraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
