@@ -1997,6 +1997,10 @@ public global HIRMirPrimitiveCallGenerationTable := #{
         codegen blockBuilder exceptionLongjmp: (codegen translateValue: arguments first).
     }.
 
+    #FatPointer::construct : {:(Array)arguments :(Type)type :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: MIRValue |
+        codegen blockBuilder fatPointerConstruct: (codegen translateValue: arguments first) with: (codegen translateValue: arguments second) type: type
+    }.
+
     ## Boolean primitives
     #Boolean::not : translateUnaryPrimitiveInto(MIR::Operation::BooleanNot).
     #Boolean::xor: : translateBinaryPrimitiveInto(MIR::Operation::BooleanXor).

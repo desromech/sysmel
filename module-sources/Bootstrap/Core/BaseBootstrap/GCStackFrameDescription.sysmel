@@ -15,6 +15,21 @@ ValueType definition: {
         := GCRootEntryType::None.
 }.
 
+AddressSpace definition: {
+    public virtual method gcRootEntryType => GCRootEntryType
+        := GCRootEntryType::None.
+}.
+
+MemberAddressSpace definition: {
+    public override method gcRootEntryType => GCRootEntryType
+        := GCRootEntryType::FatPointer.
+}.
+
+PointerLikeType definition: {
+    public override method gcRootEntryType => GCRootEntryType
+        := addressSpace gcRootEntryType.
+}.
+
 public struct GCStackFrameDescriptor definition: {
     public field temporaryGCZoneOffset => Int32.
     public field temporaryGCZoneEntryCount => UInt32.

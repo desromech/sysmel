@@ -568,6 +568,11 @@ public global ObjectModel::getTupleHeaderPointerOf := {:(Untyped)object :: Objec
     nil
 }.
 
+public global ObjectModel::FatPointer::construct := {:(Void pointer)memberPointer :(Void pointer)objectPointer :: Void memberPointer |
+    <primitive: #FatPointer::construct>
+    nil
+}.
+
 (PointerType::reinterpretCastTo:) adoptDefinitionOf: {:(AnyPointer)self :(Type)targetPointerType :: targetPointerType |
     <primitive: #PointerType::reinterpretCastTo>
     <targetDefinedPrimitive>
@@ -1326,8 +1331,7 @@ public function ObjectModel::unboxFatPointer(value: Untyped) => Void memberPoint
         let objectHeader := ObjectModel::getTuplePointerUIntValue(value) reinterpretCastTo: ObjectModel::TupleHeader pointer.
 
         valueType isPointerLikeType ifFalse: {
-            error("TODO: Construct unboxing fat pointer.").
-            ##return: (objectHeader + 1iptr reinterpretCastTo: UIntPointer)
+            return: ObjectModel::FatPointer::construct(objectHeader + 1iptr reinterpretCastTo: Void pointer, objectHeader reinterpretCastTo: Void pointer)
         }.
 
         objectHeader _ isBytes ifTrue: {
@@ -1630,8 +1634,7 @@ public function ObjectModel::checkAndUnboxFatPointer(pointerType: PointerLikeTyp
         valueType == pointerType ifFalse: {
             ## Am I a box for the requested base type?
             (valueType isDirectSubtypeOf: pointerType baseType) ifTrue: {
-                error("TODO: Make fat pointer for boxed value type").
-                ##return: (objectHeader + 1iptr reinterpretCastTo: Void pointer) 
+                return: ObjectModel::FatPointer::construct(objectHeader + 1iptr reinterpretCastTo: Void pointer, objectHeader reinterpretCastTo: Void pointer)
             }.
 
             error("Expected a pointer with a specific type.").
@@ -1686,11 +1689,15 @@ public function ObjectModel::makeClosureWithCaptureVector(functionDefinition: Fu
 }.
 
 public function ObjectModel::allocaGC(valueType: Type) => Void memberPointer := {
-    ## FIXME: Generate a fat pointer here.
-    let valueSize := valueType valueSize.
-    let result := sysmel_pal_malloc(valueSize).
-    memset(result, 0i8, valueSize).
-    result
+    let containerType => Type := valueType isValueType
+        ifTrue: valueType
+        ifFalse: ValueBox.
+
+    let container => Untyped := containerType basicAllocate.
+    let containerHeader := ObjectModel::getTupleHeaderPointerOf(container).
+    let firstMember := containerHeader + 1iptr reinterpretCastTo: Void pointer.
+
+    ObjectModel::FatPointer::construct(firstMember, containerHeader reinterpretCastTo: Void pointer)
 }.
 
 public function ObjectModel::fetchUncheckedEntryPointOrInterpreterTrampoline(function: Function, interpreterTrampoline: UIntPointer) => UIntPointer := {
