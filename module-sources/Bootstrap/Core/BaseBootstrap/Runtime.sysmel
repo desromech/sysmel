@@ -52,6 +52,7 @@ AnyValue
     basicInitializeMethod: {:(AnyValue)self :: Void | void } makeVirtual withEagerAnalysis;
     withSelector: #basicInitialize addMethod: AnyValue basicInitializeMethod;
     withSelector: #initialize addMethod: {:(AnyValue)self :: Void | } makeVirtual withEagerAnalysis;
+    withSelector: #finalize addMethod: {:(AnyValue)self :: Void | } makeVirtual withEagerAnalysis;
     withSelector: #yourself addMethod: {:(AnyValue)self :: self __type__ |
         <primitive: #yourself>
         <targetDefinedPrimitive>

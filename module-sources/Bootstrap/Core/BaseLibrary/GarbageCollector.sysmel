@@ -12,12 +12,21 @@ if: Size valueSize = 8sz then: {
     }.
 }.
 
-public struct GarbageCollector::PointerStack definition: {
+public final struct GarbageCollector::PointerStack definition: {
     private field capacity => Size.
     private field size => Size.
     private field data => UIntPointer pointer.
 
     let PointerSize := UIntPointer valueSize.
+
+    public override nogc method finalize => Void := {
+        capacity > 0sz ifTrue: {
+            sysmel_pal_free(data reinterpretCastTo: Void pointer).
+            data := nil.
+            capacity := 0sz.
+            size := 0sz.
+        }.
+    }.
 
     private inline nogc method increaseCapacity => Void := {
         let newCapacity := capacity * 2sz max: 1sz<<20sz.
@@ -117,6 +126,8 @@ public nogc function GarbageCollector::shutdown() => Void := {
     }.
 
     GarbageCollector::collect().
+    GarbageCollector::MarkingStack finalize.
+    GarbageCollector::IsInitialized := false.
 }.
 
 private nogc function GarbageCollector::markPointerValue(pointer: UIntPointer) => Void := {
