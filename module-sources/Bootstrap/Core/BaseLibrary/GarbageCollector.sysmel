@@ -66,8 +66,8 @@ public final struct GarbageCollector::PointerStack definition: {
 }.
 
 public global GarbageCollector::ObjectHeaderSize := 16sz.
-public global GarbageCollector::MinimalCollectionThreshold := 4sz << 20sz.
 public global GarbageCollector::GammaFactor := 3sz.
+public global GarbageCollector::MinimalCollectionThreshold := 4sz << 20sz.
 public global GarbageCollector::CurrentHeapSize mutable => Size := 0sz.
 public global GarbageCollector::NextCollectionThreshold mutable => Size := 0sz.
 public global GarbageCollector::FirstAllocatedObject mutable => GarbageCollector::ObjectHeader pointer := nil.
@@ -88,6 +88,9 @@ public external global GarbageCollector::StaticRootFatPointerTableEnd mutable =>
 
 public external global GarbageCollector::StaticObjectSegmentStart mutable => UIntPointer.
 public external global GarbageCollector::StaticObjectSegmentEnd mutable => UIntPointer.
+
+public nogc function GarbageCollector::staticObjectSegmentSize() => Size
+    := (GarbageCollector::StaticObjectSegmentEnd address reinterpretCastTo: UIntPointer) - (GarbageCollector::StaticObjectSegmentStart address reinterpretCastTo: UIntPointer).
 
 public nogc function GarbageCollector::allocate(size: Size) => Void pointer := {
     GarbageCollector::safepoint().
@@ -116,7 +119,7 @@ public nogc function GarbageCollector::initialize() => Void := {
         return: void
     }.
 
-    GarbageCollector::NextCollectionThreshold := GarbageCollector::MinimalCollectionThreshold.
+    GarbageCollector::NextCollectionThreshold := (GarbageCollector::CurrentHeapSize + GarbageCollector::staticObjectSegmentSize()) * GarbageCollector::GammaFactor max: GarbageCollector::MinimalCollectionThreshold.
     GarbageCollector::IsInitialized := true.
 }.
 
@@ -417,7 +420,7 @@ public nogc function GarbageCollector::collect() => Void := {
     GarbageCollector::mark().
     GarbageCollector::clearDeadWeakReferences().
     GarbageCollector::sweep().
-    GarbageCollector::NextCollectionThreshold := GarbageCollector::CurrentHeapSize * GarbageCollector::GammaFactor max: GarbageCollector::MinimalCollectionThreshold.
+    GarbageCollector::NextCollectionThreshold := (GarbageCollector::CurrentHeapSize + GarbageCollector::staticObjectSegmentSize()) * GarbageCollector::GammaFactor max: GarbageCollector::MinimalCollectionThreshold.
 }.
 
 public nogc function GarbageCollector::safepoint() => Void := {
