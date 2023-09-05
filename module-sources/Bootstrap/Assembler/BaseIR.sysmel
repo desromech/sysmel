@@ -1546,6 +1546,12 @@ public final class AsmStreamBuilder superclass: Object; definition: {
             yourself
     }.
 
+    public method newPrivateSymbolNamed: (name: Symbol) ::=> AsmSymbol
+        := AsmSymbol new
+            name: name;
+            makePrivate;
+            yourself.
+
     public method label: (symbol: AsmSymbol) ::=> AsmLabel
         := self addElement: (AsmLabel new
             symbol: symbol;

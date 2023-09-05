@@ -4604,11 +4604,17 @@ MIR::Operation::DirtyMarkWriteBarrer
 MIR::Operation::DirtyMarkWriteBarrerIfNotNil
     forTargets: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegisterOrImmediate32PointerForInstruction: instruction operandAt: 0sz;
+            allocateRegisterForInstruction: instruction operandAt: 0sz;
             allocateImmediate32ForInstruction: instruction operandAt: 1sz
     };
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
-        codegen textSection x86::lock; x86::or: (instruction firstOperandRegister x86::int32PointerWithOffset: instruction secondOperandRegister for: codegen) with: ObjectModel::Flags::Dirty asAsmImmediate
+        let register := instruction firstOperandRegister x86::int32For: codegen.
+        let writeBarrierEnd := codegen textSection newPrivateSymbolNamed: #writeBarrierEnd.
+        codegen textSection
+            x86::test: register with: register;
+            x86::jnz: writeBarrierEnd byte;
+            x86::lock; x86::or: (instruction firstOperandRegister x86::int32PointerWithOffset: instruction secondOperandRegister for: codegen) with: ObjectModel::Flags::Dirty asAsmImmediate;
+            label: writeBarrierEnd
     }.
 
 let x86::storePointerRegisterContraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
