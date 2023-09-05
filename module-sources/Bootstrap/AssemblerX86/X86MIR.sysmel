@@ -4598,7 +4598,17 @@ MIR::Operation::DirtyMarkWriteBarrer
             allocateImmediate32ForInstruction: instruction operandAt: 1sz
     };
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
-        ##codegen textSection x86::lock; x86::or: (instruction firstOperandRegister x86::int32PointerWithOffset: instruction secondOperandRegister for: codegen) with: ObjectModel::Flags::Dirty asAsmImmediate
+        codegen textSection x86::lock; x86::or: (instruction firstOperandRegister x86::int32PointerWithOffset: instruction secondOperandRegister for: codegen) with: ObjectModel::Flags::Dirty asAsmImmediate
+    }.
+
+MIR::Operation::DirtyMarkWriteBarrerIfNotNil
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegisterOrImmediate32PointerForInstruction: instruction operandAt: 0sz;
+            allocateImmediate32ForInstruction: instruction operandAt: 1sz
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        codegen textSection x86::lock; x86::or: (instruction firstOperandRegister x86::int32PointerWithOffset: instruction secondOperandRegister for: codegen) with: ObjectModel::Flags::Dirty asAsmImmediate
     }.
 
 let x86::storePointerRegisterContraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
@@ -4651,12 +4661,12 @@ MIR::Operation::StoreFatPointer
     forTarget: #x86 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
             x86::mov: (instruction secondOperandRegister x86::int32PointerWithOffset: instruction thirdOperandRegister for: codegen) src: (instruction firstOperandRegister firstComponent x86::int32For: codegen);
-            x86::mov: (instruction secondOperandRegister x86::int32PointerWithOffset: instruction thirdOperandRegister offset: 4i32 for: codegen) src: (instruction firstOperandRegister firstComponent x86::int32For: codegen)
+            x86::mov: (instruction secondOperandRegister x86::int32PointerWithOffset: instruction thirdOperandRegister offset: 4i32 for: codegen) src: (instruction firstOperandRegister secondComponent x86::int32For: codegen)
     };
     forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
             x86::mov: (instruction secondOperandRegister x86::int64PointerWithOffset: instruction thirdOperandRegister for: codegen) src: (instruction firstOperandRegister firstComponent x86::int64For: codegen);
-            x86::mov: (instruction secondOperandRegister x86::int64PointerWithOffset: instruction thirdOperandRegister offset: 8i32 for: codegen) src: (instruction firstOperandRegister firstComponent x86::int64For: codegen)
+            x86::mov: (instruction secondOperandRegister x86::int64PointerWithOffset: instruction thirdOperandRegister offset: 8i32 for: codegen) src: (instruction firstOperandRegister secondComponent x86::int64For: codegen)
     }.
 
 MIR::Operation::StoreStruct
