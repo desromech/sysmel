@@ -4591,6 +4591,16 @@ MIR::Operation::LoadStruct
             x86::rep; x86::movsb
     }.
 
+MIR::Operation::DirtyMarkWriteBarrer
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+        allocator
+            allocateRegisterOrImmediate32PointerForInstruction: instruction operandAt: 0sz;
+            allocateImmediate32ForInstruction: instruction operandAt: 1sz
+    };
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        ##codegen textSection x86::lock; x86::or: (instruction firstOperandRegister x86::int32PointerWithOffset: instruction secondOperandRegister for: codegen) with: ObjectModel::Flags::Dirty asAsmImmediate
+    }.
+
 let x86::storePointerRegisterContraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
         allocateRegisterOrImmediate32ForInstruction: instruction operandAt: 0sz;

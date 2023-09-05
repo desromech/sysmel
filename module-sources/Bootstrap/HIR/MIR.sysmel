@@ -606,7 +606,7 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
                 uncheckedArguments doWithIndex: {:(MIRValue)unboxedArgument :(Size)index :: Void |
                     let argumentType => Type := argumentTypes at: index.
                     let boxedArgument := argumentType emitMirBox: unboxedArgument withHIRCodeGenerator: self.
-                    asm storePointer: boxedArgument into: boxedArgumentVector constantOffset: headerSize + (index asInt64 * pointerSize)
+                    self storePointer: boxedArgument into: boxedArgumentVector constantOffset: headerSize + (index asInt64 * pointerSize) in: boxedArgumentVector
                 }.
 
                 ## Call the interpreter.
@@ -846,6 +846,23 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
         }.
     }.
 
+    public method emitObjectWriteBarrier: (object: MIRValue) ::=> Void := {
+        mirFunction isNoGC ifFalse: {
+            object ifNotNil: {
+                blockBuilder dirtyMarkWriteBarrer: object constantOffset: ObjectModel::FlagsOffset asInt64
+            }
+        }.
+    }.
+
+    public method storePointer: (value: MIRValue) into: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) ::=> MIRInstruction := {
+        self emitObjectWriteBarrier: object.
+        blockBuilder storePointer: value into: pointer constantOffset: constantOffset
+    }.
+
+    public method storeFatPointer: (value: MIRValue) into: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) ::=> MIRInstruction := {
+        self emitObjectWriteBarrier: object.
+        blockBuilder storeFatPointer: value into: pointer constantOffset: constantOffset
+    }.
 }.
 
 MIRFunctionBuilder extend: {
@@ -953,8 +970,8 @@ Type extend: {
     public virtual method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder loadPointer: pointer constantOffset: constantOffset type: self.
 
-    public virtual method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder storePointer: value into: pointer constantOffset: constantOffset.
+    public virtual method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen storePointer: value into: pointer constantOffset: constantOffset in: object.
 
     public virtual method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder pointerEquals: left with: right.
@@ -1037,8 +1054,8 @@ ValueType extend: {
     public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder loadStruct: pointer constantOffset: constantOffset type: self.
 
-    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder storeStruct: value into: pointer constantOffset: constantOffset.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder storeStruct: value into: pointer constantOffset: constantOffset.
 
     public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := codegen translateStructureConstant: constant value.
@@ -1107,8 +1124,8 @@ AddressSpace extend: {
     public virtual method pointerType: (pointerType: PointerLikeType) emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder loadPointer: pointer constantOffset: constantOffset type: pointerType.
 
-    public virtual method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder storePointer: value into: pointer constantOffset: constantOffset.
+    public virtual method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen storePointer: value into: pointer constantOffset: constantOffset in: object.
 }.
 
 MemberAddressSpace extend: {
@@ -1168,8 +1185,8 @@ MemberAddressSpace extend: {
     public override method pointerType: (pointerType: PointerLikeType) emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder loadFatPointer: pointer constantOffset: constantOffset type: pointerType.
 
-    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder storeFatPointer: value into: pointer constantOffset: constantOffset.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen storeFatPointer: value into: pointer constantOffset: constantOffset in: object.
 }.
 
 PointerLikeType extend: {
@@ -1203,8 +1220,8 @@ PointerLikeType extend: {
     public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := addressSpace pointerType: self emitMirLoadFromPointer: pointer constantOffset: constantOffset withBlockBuilder: builder.
 
-    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := addressSpace emitMirStore: value intoPointer: pointer constantOffset: constantOffset withBlockBuilder: builder.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := addressSpace emitMirStore: value intoPointer: pointer constantOffset: constantOffset in: object with: codegen.
 }.
 
 FixedArrayType definition: {
@@ -1242,8 +1259,8 @@ Char8 __type__ extend: {
     public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder loadUInt8: pointer constantOffset: constantOffset.
 
-    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder storeInt8: value into: pointer constantOffset: constantOffset.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder storeInt8: value into: pointer constantOffset: constantOffset.
 
     public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder int8Equals: left with: right.
@@ -1283,8 +1300,8 @@ Int8 __type__ extend: {
     public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder loadInt8: pointer constantOffset: constantOffset.
 
-    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder storeInt8: value into: pointer constantOffset: constantOffset.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder storeInt8: value into: pointer constantOffset: constantOffset.
 
     public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder int8Equals: left with: right.
@@ -1324,8 +1341,8 @@ UInt8 __type__ extend: {
     public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder loadUInt8: pointer constantOffset: constantOffset.
 
-    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder storeInt8: value into: pointer constantOffset: constantOffset.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder storeInt8: value into: pointer constantOffset: constantOffset.
 
     public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder int8Equals: left with: right.
@@ -1365,8 +1382,8 @@ Boolean __type__ extend: {
     public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder loadUInt8: pointer constantOffset: constantOffset.
 
-    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder storeInt8: value into: pointer constantOffset: constantOffset.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder storeInt8: value into: pointer constantOffset: constantOffset.
 
     public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder int8Equals: left with: right.
@@ -1414,8 +1431,8 @@ Char16 __type__ extend: {
     public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder loadUInt16: pointer constantOffset: constantOffset.
 
-    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder storeInt16: value into: pointer constantOffset: constantOffset.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder storeInt16: value into: pointer constantOffset: constantOffset.
 
     public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder int16Equals: left with: right.
@@ -1455,8 +1472,8 @@ Int16 __type__ extend: {
     public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder loadInt16: pointer constantOffset: constantOffset.
 
-    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder storeInt16: value into: pointer constantOffset: constantOffset.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder storeInt16: value into: pointer constantOffset: constantOffset.
 
     public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder int16Equals: left with: right.
@@ -1496,8 +1513,8 @@ UInt16 __type__ extend: {
     public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder loadUInt16: pointer constantOffset: constantOffset.
 
-    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder storeInt16: value into: pointer constantOffset: constantOffset.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder storeInt16: value into: pointer constantOffset: constantOffset.
 
     public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder int16Equals: left with: right.
@@ -1537,8 +1554,8 @@ Char32 __type__ extend: {
     public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder loadUInt32: pointer constantOffset: constantOffset.
 
-    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder storeInt32: value into: pointer constantOffset: constantOffset.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder storeInt32: value into: pointer constantOffset: constantOffset.
 
     public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder int32Equals: left with: right.
@@ -1578,8 +1595,8 @@ Int32 __type__ extend: {
     public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder loadInt32: pointer constantOffset: constantOffset.
 
-    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder storeInt32: value into: pointer constantOffset: constantOffset.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder storeInt32: value into: pointer constantOffset: constantOffset.
 
     public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder int32Equals: left with: right.
@@ -1619,8 +1636,8 @@ UInt32 __type__ extend: {
     public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder loadUInt32: pointer constantOffset: constantOffset.
 
-    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder storeInt32: value into: pointer constantOffset: constantOffset.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder storeInt32: value into: pointer constantOffset: constantOffset.
 
     public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder int32Equals: left with: right.
@@ -1660,8 +1677,8 @@ Int64 __type__ extend: {
     public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder loadInt64: pointer constantOffset: constantOffset.
 
-    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder storeInt64: value into: pointer constantOffset: constantOffset.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder storeInt64: value into: pointer constantOffset: constantOffset.
 
     public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder int64Equals: left with: right.
@@ -1701,8 +1718,8 @@ UInt64 __type__ extend: {
     public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder loadUInt64: pointer constantOffset: constantOffset.
 
-    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder storeInt64: value into: pointer constantOffset: constantOffset.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder storeInt64: value into: pointer constantOffset: constantOffset.
 
     public override method emitMirEquals: (left: MIRValue) with: (right: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder int64Equals: left with: right.
@@ -1742,8 +1759,8 @@ Float32 __type__ extend: {
     public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder loadFloat32: pointer constantOffset: constantOffset.
 
-    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder storeFloat32: value into: pointer constantOffset: constantOffset.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder storeFloat32: value into: pointer constantOffset: constantOffset.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := 0.0f32 asMirConstant.
@@ -1779,8 +1796,8 @@ Float64 __type__ extend: {
     public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder loadFloat64: pointer constantOffset: constantOffset.
 
-    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := builder storeFloat64: value into: pointer constantOffset: constantOffset.
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
+        := codegen blockBuilder storeFloat64: value into: pointer constantOffset: constantOffset.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := 0.0 asMirConstant.
@@ -1818,7 +1835,7 @@ Void __type__ extend: {
     public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Float64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := void asMirConstant.
 
-    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Float64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
+    public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
         := void asMirConstant.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
@@ -2685,7 +2702,7 @@ HIRMakeArrayInstruction extend: {
 
         self elements doWithIndex: {:(HIRValue)eachElement :(Size)eachElementIndex :: Void |
             let eachElementValue := codegen translateBoxedValue: eachElement.
-            codegen blockBuilder storePointer: eachElementValue into: array constantOffset: headerSize + (eachElementIndex asInt64 * pointerSize)
+            codegen storePointer: eachElementValue into: array constantOffset: headerSize + (eachElementIndex asInt64 * pointerSize) in: array
         }.
 
         array
@@ -2736,7 +2753,8 @@ HIRMakeClosureInstruction extend: {
             eachCapture type
                 emitMirStore: (codegen translateValue: eachCapture)
                 intoPointer: captureVector constantOffset: headerSize asInt64 + captureVectorSlot validOffset asInt64
-                withBlockBuilder: codegen blockBuilder
+                in: captureVector
+                with: codegen
         }.
 
         ## Create the closure.
@@ -2842,11 +2860,11 @@ HIRStoreInstruction extend: {
 
         let pointerValue := codegen translateValue: self storage.
         pointerType validAddressSpace isFatPointer ifTrue: {
-            ## TODO: Emit a write barrier, if required.
             let nativePointerValue := codegen blockBuilder fatPointerExtractFirst: pointerValue type: Void pointer.
-            baseType emitMirStore: valueToStore intoPointer: nativePointerValue constantOffset: 0i64 withBlockBuilder: codegen blockBuilder
+            let object := codegen blockBuilder fatPointerExtractSecond: pointerValue type: Void pointer.
+            baseType emitMirStore: valueToStore intoPointer: nativePointerValue constantOffset: 0i64 in: object with: codegen
         } ifFalse: {
-            baseType emitMirStore: valueToStore intoPointer: pointerValue constantOffset: 0i64 withBlockBuilder: codegen blockBuilder
+            baseType emitMirStore: valueToStore intoPointer: pointerValue constantOffset: 0i64 in: nil with: codegen
         }.
     }.
 }.
@@ -2905,8 +2923,8 @@ HIRTypeSlotAtPutInstruction extend: {
         let headerSize := (self tuple type ifNil: AnyValue) objectHeaderSizeForObjectModel: codegen compilationTarget objectModel.
         let slotValueType := typeSlot type.
         let valueToStore := codegen translateValue: self value withExpectedType: slotValueType.
-        ## TODO: Add a write barrier, if required.
-        slotValueType emitMirStore: valueToStore intoPointer: (codegen translateValue: self tuple) constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 withBlockBuilder: codegen blockBuilder
+        let tuple := codegen translateValue: self tuple.
+        slotValueType emitMirStore: valueToStore intoPointer: tuple constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 in: tuple with: codegen
     }.
 }.
 
