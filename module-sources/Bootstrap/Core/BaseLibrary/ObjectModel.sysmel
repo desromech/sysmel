@@ -85,17 +85,12 @@ public global ObjectModel::GCColor::Shift := ObjectModel::ObjectType::Shift + Ob
 public global ObjectModel::GCColor::Bits := 2u32.
 public global ObjectModel::GCColor::Mask := ((1u32 << ObjectModel::GCColor::Bits) - 1u32) << ObjectModel::GCColor::Shift.
 
-public global ObjectModel::GCAge::Shift := ObjectModel::GCColor::Shift + ObjectModel::GCColor::Bits.
-public global ObjectModel::GCAge::Bits := 2u32.
-public global ObjectModel::GCAge::Mask := ((1u32 << ObjectModel::GCAge::Bits) - 1u32) << ObjectModel::GCAge::Shift.
-
-public global ObjectModel::GCYoungAge := 3u8.
-
-public global ObjectModel::Flags::Shift := ObjectModel::GCAge::Shift + ObjectModel::GCAge::Bits.
+public global ObjectModel::Flags::Shift := ObjectModel::GCColor::Shift + ObjectModel::GCColor::Bits.
 public global ObjectModel::Flags::Dirty := 1u32 << ObjectModel::Flags::Shift.
-public global ObjectModel::Flags::Immutable := 1u32 << (ObjectModel::Flags::Shift + 1u32).
-public global ObjectModel::Flags::NeedsFinalization := 1u32 << (ObjectModel::Flags::Shift + 2u32).
-public global ObjectModel::Flags::DummyValue := 1u32 << (ObjectModel::Flags::Shift + 3u32).
+public global ObjectModel::Flags::Young := 1u32 << (ObjectModel::Flags::Shift + 1u32).
+public global ObjectModel::Flags::Immutable := 1u32 << (ObjectModel::Flags::Shift + 2u32).
+public global ObjectModel::Flags::NeedsFinalization := 1u32 << (ObjectModel::Flags::Shift + 3u32).
+public global ObjectModel::Flags::DummyValue := 1u32 << (ObjectModel::Flags::Shift + 4u32).
 
 public global ObjectModel::PointerSize := UIntPointer valueSize.
 public global ObjectModel::FatPointerSize := ObjectModel::PointerSize * 2sz.
@@ -164,13 +159,6 @@ public final struct ObjectModel::TupleHeader32 definition: {
         identityHashAndFlags := (identityHashAndFlags & ObjectModel::GCColor::Mask bitInvert) | (gcColor asUInt32 << ObjectModel::GCColor::Shift)
     }.
 
-    public inline method gcAge => UInt8
-        := ((identityHashAndFlags & ObjectModel::GCAge::Mask) >> ObjectModel::GCAge::Shift) asUInt8.
-
-    public inline method gcAge: (gcColor: UInt8) ::=> Void := {
-        identityHashAndFlags := (identityHashAndFlags & ObjectModel::GCAge::Mask bitInvert) | (gcColor asUInt32 << ObjectModel::GCAge::Shift)
-    }.
-
     public inline method isBytes => Boolean
         := self objectType = ObjectModel::ObjectType::Bytes.
 
@@ -187,6 +175,20 @@ public final struct ObjectModel::TupleHeader32 definition: {
     public inline method clearDirty => Void := {
         identityHashAndFlags := identityHashAndFlags & ObjectModel::Flags::Dirty bitInvert
     }.
+
+    public inline method isYoung => Boolean
+        := (identityHashAndFlags & ObjectModel::Flags::Young) ~= 0u32.
+
+    public inline method markYoung => Void := {
+        identityHashAndFlags := identityHashAndFlags | ObjectModel::Flags::Young
+    }.
+
+    public inline method clearYoung => Void := {
+        identityHashAndFlags := identityHashAndFlags & ObjectModel::Flags::Young bitInvert
+    }.
+
+    public inline method isYoungOrDirty => Boolean
+        := (identityHashAndFlags & (ObjectModel::Flags::Dirty | ObjectModel::Flags::Young)) ~= 0u32.
 
     public inline method isDummyValue => Boolean
         := (identityHashAndFlags & ObjectModel::Flags::DummyValue) ~= 0u32.
@@ -234,18 +236,36 @@ public final struct ObjectModel::TupleHeader64 definition: {
         identityHashAndFlags := (identityHashAndFlags & ObjectModel::GCColor::Mask bitInvert) | (gcColor asUInt32 << ObjectModel::GCColor::Shift)
     }.
 
-    public inline method gcAge => UInt8
-        := ((identityHashAndFlags & ObjectModel::GCAge::Mask) >> ObjectModel::GCAge::Shift) asUInt8.
-
-    public inline method gcAge: (gcColor: UInt8) ::=> Void := {
-        identityHashAndFlags := (identityHashAndFlags & ObjectModel::GCAge::Mask bitInvert) | (gcColor asUInt32 << ObjectModel::GCAge::Shift)
-    }.
-
     public inline method isBytes => Boolean
         := self objectType = ObjectModel::ObjectType::Bytes.
 
     public inline method isWeak => Boolean
         := self objectType = ObjectModel::ObjectType::WeakPointers.
+
+    public inline method isDirty => Boolean
+        := (identityHashAndFlags & ObjectModel::Flags::Dirty) ~= 0u32.
+
+    public inline method markDirty => Void := {
+        identityHashAndFlags := identityHashAndFlags | ObjectModel::Flags::Dirty
+    }.
+
+    public inline method clearDirty => Void := {
+        identityHashAndFlags := identityHashAndFlags & ObjectModel::Flags::Dirty bitInvert
+    }.
+
+    public inline method isYoung => Boolean
+        := (identityHashAndFlags & ObjectModel::Flags::Young) ~= 0u32.
+
+    public inline method markYoung => Void := {
+        identityHashAndFlags := identityHashAndFlags | ObjectModel::Flags::Young
+    }.
+
+    public inline method clearYoung => Void := {
+        identityHashAndFlags := identityHashAndFlags & ObjectModel::Flags::Young bitInvert
+    }.
+
+    public inline method isYoungOrDirty => Boolean
+        := (identityHashAndFlags & (ObjectModel::Flags::Dirty | ObjectModel::Flags::Young)) ~= 0u32.
 
     public inline method isDummyValue => Boolean
         := (identityHashAndFlags & ObjectModel::Flags::DummyValue) ~= 0u32.
@@ -935,7 +955,7 @@ RawTuple::byteSize adoptDefinitionOf: {:(Untyped)self :: Size |
     objectHeader _
         type: type;
         gcColor: GarbageCollector::AllocationInitialColor;
-        gcAge: ObjectModel::GCYoungAge;
+        markYoung;
         objectType: (isBytes ifTrue: ObjectModel::ObjectType::Bytes ifFalse: ObjectModel::ObjectType::Complex);
         identityHashValue: ObjectModelState current newIdentityHash;
         objectSize: contentSize asUInt32.
@@ -955,7 +975,7 @@ RawTuple::new adoptDefinitionOf: {:(Size)slotCount :: Untyped |
     objectHeader _
         type: Untyped;
         gcColor: GarbageCollector::AllocationInitialColor;
-        gcAge: ObjectModel::GCYoungAge;
+        markYoung;
         identityHashValue: ObjectModelState current newIdentityHash;
         objectSize: contentSize asUInt32.
 
@@ -974,7 +994,7 @@ RawTuple::byteNew adoptDefinitionOf: {:(Size)slotCount :: Untyped |
     objectHeader _
         type: Untyped;
         gcColor: GarbageCollector::AllocationInitialColor;
-        gcAge: ObjectModel::GCYoungAge;
+        markYoung;
         identityHashValue: ObjectModelState current newIdentityHash;
         objectType: ObjectModel::ObjectType::Bytes;
         objectSize: contentSize asUInt32.
@@ -993,7 +1013,7 @@ RawTuple::shallowCopy adoptDefinitionOf: {:(Untyped)sourceObject :: Untyped |
 
         (allocationPointer reinterpretCastTo: ObjectModel::TupleHeader pointer) _
             gcColor: GarbageCollector::AllocationInitialColor;
-            gcAge: ObjectModel::GCYoungAge;
+            markYoung;
             identityHashValue: ObjectModelState current newIdentityHash.
 
         allocationPointer reinterpretCastTo: Untyped
@@ -1074,7 +1094,7 @@ public function ObjectModel::allocateBoxForValueOfTypeWithSize(type: Type, conte
     objectHeader _
         type: type;
         gcColor: GarbageCollector::AllocationInitialColor;
-        gcAge: ObjectModel::GCYoungAge;
+        markYoung;
         identityHashValue: ObjectModelState current newIdentityHash;
         objectType: ObjectModel::ObjectType::Bytes;
         objectSize: contentSize asUInt32.

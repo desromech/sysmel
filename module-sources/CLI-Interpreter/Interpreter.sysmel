@@ -68,6 +68,7 @@ public function CLISysmelInterpreter::nativeMain(argc: Int32, argv: Char8 const 
 public function CLISysmelInterpreter::nativeRuntimeMain(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
     GarbageCollector::initialize().
     let result := CLISysmelInterpreter::nativeMain(argc, argv).
+    AnalysisQueue current waitPendingAnalysis.
     GarbageCollector::shutdown().
     result
 }.
