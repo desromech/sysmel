@@ -2022,7 +2022,7 @@ TypeSlot
         self offset.
     };
     withSelector: #validReferenceType addMethod: {:(TypeSlot)self :: Type |
-        if: self referenceType == nil then: (self referenceType: self type ref).
+        if: self referenceType == nil then: (self referenceType: self type memberRef).
         self referenceType
     }.
 

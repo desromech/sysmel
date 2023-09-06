@@ -2913,14 +2913,26 @@ HIRReferenceElementAtInstruction extend: {
 
 HIRTypeSlotReferenceAtInstruction extend: {
     public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
-        let pointerValue := codegen translateValue: self tuple.
+        let tuplePointer := codegen translateValue: self tuple.
         let headerSize := (self tuple type ifNil: AnyValue) objectHeaderSizeForObjectModel: codegen compilationTarget objectModel.
 
         self type validAddressSpace isFatPointer ifTrue: {
-            let memberPointer := codegen blockBuilder pointerAdd: pointerValue constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 type: Void pointer.
-            codegen blockBuilder fatPointerConstruct: memberPointer with: pointerValue type: self type.
+            tuplePointer type isValueType ifTrue: {
+                tuplePointer type validAddressSpace isFatPointer ifTrue: {
+                    codegen blockBuilder fatPointerAdd: tuplePointer constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 type: self type
+                } ifFalse: {
+                    let memberPointer := codegen blockBuilder pointerAdd: tuplePointer constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 type: Void pointer.
+                    codegen blockBuilder fatPointerConstruct: memberPointer with: codegen nullPointerConstant type: self type.
+                }
+            } ifFalse: {
+                let memberPointer := codegen blockBuilder pointerAdd: tuplePointer constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 type: Void pointer.
+                codegen blockBuilder fatPointerConstruct: memberPointer with: tuplePointer type: self type.
+            }
         } ifFalse: {
-            codegen blockBuilder pointerAdd: pointerValue constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 type: self type.
+            let nativeTuplePointer := tuplePointer type validAddressSpace isFatPointer
+                ifTrue: (codegen blockBuilder fatPointerExtractFirst: tuplePointer type: Void pointer)
+                ifFalse: (tuplePointer).
+            codegen blockBuilder pointerAdd: nativeTuplePointer constantOffset: headerSize asInt64 + self typeSlot validOffset asInt64 type: self type.
         }
     }.
 }.

@@ -627,6 +627,12 @@ public global ObjectModel::FatPointer::construct := {:(Void pointer)memberPointe
     nil
 }.
 
+public global ObjectModel::SlotFatPointer::construct := {:(Untyped pointer)memberPointer :(ObjectModel::TupleHeader pointer)header :: Untyped memberPointer |
+    <primitive: #FatPointer::construct>
+    nil
+}.
+
+
 (PointerType::reinterpretCastTo:) adoptDefinitionOf: {:(AnyPointer)self :(Type)targetPointerType :: targetPointerType |
     <primitive: #PointerType::reinterpretCastTo>
     <targetDefinedPrimitive>
@@ -785,7 +791,8 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
     ObjectModel::isNonNullPointerValue(pointerValue) ifFalse: error("Cannot set the type of an immediate value.").
 
     let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
-    header _ type: newType
+    ## Use a fat pointer for generating a write barrier.
+    ObjectModel::SlotFatPointer::construct(header reinterpretCastTo: Untyped pointer, header) store: newType
 } withEagerAnalysis.
 
 (RawTuple::refSlotAt:) adoptDefinitionOf: {:(Untyped)self :(Size)index :: Untyped |
@@ -816,7 +823,7 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
                 index < fixedSlotCount ifTrue: {
                     let typeSlot => TypeSlot := type allValidSlots at: index.
                     let slotPointerValue := pointerValue + ObjectModel::TupleHeaderSize + typeSlot offset.
-                    (typeSlot type ifNil: Untyped) loadValueFromPointer: (slotPointerValue reinterpretCastTo: Void const pointer)
+                    (typeSlot type ifNil: Untyped) loadValueFromPointer: ObjectModel::FatPointer::construct(slotPointerValue reinterpretCastTo: Void const pointer, header reinterpretCastTo: Void pointer)
                 } ifFalse: {
                     let baseOffset := type instanceSize.
                     let contents := pointerValue + ObjectModel::TupleHeaderSize + baseOffset reinterpretCastTo: Untyped pointer.
@@ -854,11 +861,12 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
                 index < fixedSlotCount ifTrue: {
                     let typeSlot => TypeSlot := type allValidSlots at: index.
                     let slotPointerValue := pointerValue + ObjectModel::TupleHeaderSize + typeSlot offset.
-                    (typeSlot type ifNil: Untyped) storeValue: value inPointer: (slotPointerValue reinterpretCastTo: Void pointer)
+                    (typeSlot type ifNil: Untyped) storeValue: value inPointer: ObjectModel::FatPointer::construct(slotPointerValue reinterpretCastTo: Void pointer, header reinterpretCastTo: Void pointer)
                 } ifFalse: {
                     let baseOffset := type instanceSize.
                     let contents := pointerValue + ObjectModel::TupleHeaderSize + baseOffset reinterpretCastTo: Untyped pointer.
-                    contents[(index - fixedSlotCount) asIntPointer] := value
+                    ## Use a fat pointer for generating a write barrier.
+                    ObjectModel::SlotFatPointer::construct(contents + (index - fixedSlotCount) asIntPointer, header) store: value
                 }
             }
         }
@@ -878,7 +886,9 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
     let contents := header + 1iptr reinterpretCastTo: Untyped pointer.
-    contents[index asIntPointer] := value
+
+    ## Use a fat pointer for generating a write barrier.
+    ObjectModel::SlotFatPointer::construct(contents + index asIntPointer, header) store: value.
 } makeFinal makeAlwaysInline makeWithoutSourceDebugging withEagerAnalysis.
 
 (RawTuple::byteSlotAt:) adoptDefinitionOf: {:(Untyped)self :(Size)index :: UInt8 |
@@ -1027,14 +1037,16 @@ RawTuple::nextInstanceWithSameType adoptDefinitionOf: {:(Untyped)iterator :: Unt
 
 (RawTuple::typeSlotAt:) adoptDefinitionOf: {:(Untyped)self :(TypeSlot)typeSlot :: Untyped |
     <primitive: #RawTuple::typeSlotAt:>
-    let slotPointerValue := ObjectModel::getTuplePointerUIntValue(self) + ObjectModel::TupleHeaderSize + typeSlot offset.
-    (typeSlot type ifNil: Untyped) loadValueFromPointer: (slotPointerValue reinterpretCastTo: Void const pointer)
+    let header := ObjectModel::getTuplePointerUIntValue(self).
+    let slotPointerValue := header + ObjectModel::TupleHeaderSize + typeSlot offset.
+    (typeSlot type ifNil: Untyped) loadValueFromPointer: ObjectModel::FatPointer::construct(slotPointerValue reinterpretCastTo: Void const pointer, header reinterpretCastTo: Void pointer)
 } withEagerAnalysis.
 
 (RawTuple::typeSlotAt:put:) adoptDefinitionOf: {:(Untyped)self :(TypeSlot)typeSlot :(Untyped)value :: Void |
     <primitive: #RawTuple::typeSlotAt:put:>
-    let slotPointerValue := ObjectModel::getTuplePointerUIntValue(self) + ObjectModel::TupleHeaderSize + typeSlot offset.
-    (typeSlot type ifNil: Untyped) storeValue: value inPointer: (slotPointerValue reinterpretCastTo: Void pointer)
+    let header := ObjectModel::getTuplePointerUIntValue(self).
+    let slotPointerValue := header + ObjectModel::TupleHeaderSize + typeSlot offset.
+    (typeSlot type ifNil: Untyped) storeValue: value inPointer: ObjectModel::FatPointer::construct(slotPointerValue reinterpretCastTo: Void pointer, header reinterpretCastTo: Void pointer)
 } withEagerAnalysis.
 
 (RawTuple::refTypeSlotAt:) adoptDefinitionOf: {:(Untyped)self :(TypeSlot)typeSlot :: Untyped |
