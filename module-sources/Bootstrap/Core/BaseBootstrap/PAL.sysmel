@@ -1,4 +1,53 @@
 public struct SysmelPAL::File definition: {}.
+
+public final struct SysmelPAL::Thread definition: {
+    public field reserved => UInt64.
+}.
+
+public final struct SysmelPAL::Mutex definition: {
+    public field reserved => UInt64[8sz].
+
+    public override nogc inline method initialize => Void := {
+        sysmel_pal_mutex_initialize(self address)
+    }.
+
+    public override nogc inline method finalize => Void := {
+        sysmel_pal_mutex_finalize(self address)
+    }.
+
+    public inline nogc method lock => Void := {
+        sysmel_pal_mutex_lock(self address)
+    }.
+
+    public inline nogc method unlock => Void := {
+        sysmel_pal_mutex_unlock(self address)
+    }.
+}.
+
+public final struct SysmelPAL::Condition definition: {
+    public field reserved => UInt64[8sz].
+
+    public override nogc inline method initialize => Void := {
+        sysmel_pal_condition_initialize(self address)
+    }.
+
+    public override nogc inline method finalize => Void := {
+        sysmel_pal_condition_finalize(self address)
+    }.
+
+    public inline nogc method wait: (mutex: SysmelPAL::Mutex pointer) ::=> Void := {
+        sysmel_pal_condition_wait(self address, mutex)
+    }.
+
+    public inline nogc method signal => Void := {
+        sysmel_pal_condition_signal(self address)
+    }.
+
+    public inline nogc method broadcast => Void := {
+        sysmel_pal_condition_broadcast(self address)
+    }.
+}.
+
 public global SysmelPAL::FileHandle := SysmelPAL::File pointer.
 
 public global SysmelPAL::FileOpenFlags::ReadOnly := 1u32 << 0u32.
@@ -47,3 +96,14 @@ public externC function sysmel_pal_float64ToString(value: Float64) => Char8 poin
 
 public externC function sysmel_pal_microsecondsNow() => Int64.
 public externC function sysmel_pal_nanosecondsNow() => Int64.
+
+public externC function sysmel_pal_mutex_initialize(handle: SysmelPAL::Mutex pointer) => Void.
+public externC function sysmel_pal_mutex_finalize(handle: SysmelPAL::Mutex pointer) => Void.
+public externC function sysmel_pal_mutex_lock(handle: SysmelPAL::Mutex pointer) => Void.
+public externC function sysmel_pal_mutex_unlock(handle: SysmelPAL::Mutex pointer) => Void.
+
+public externC function sysmel_pal_condition_initialize(handle: SysmelPAL::Condition pointer) => Void.
+public externC function sysmel_pal_condition_finalize(handle: SysmelPAL::Condition pointer) => Void.
+public externC function sysmel_pal_condition_wait(handle: SysmelPAL::Condition pointer, mutex: SysmelPAL::Mutex pointer) => Void.
+public externC function sysmel_pal_condition_signal(handle: SysmelPAL::Condition pointer) => Void.
+public externC function sysmel_pal_condition_broadcast(handle: SysmelPAL::Condition pointer) => Void.

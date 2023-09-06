@@ -66,22 +66,23 @@ public final struct GarbageCollector::PointerStack definition: {
 }.
 
 public global GarbageCollector::ObjectHeaderSize := 16sz.
-public global GarbageCollector::GammaFactor := 3sz.
-public global GarbageCollector::NurseryFraction := 4sz.
-public global GarbageCollector::MinimalCollectionThreshold := 4sz << 20sz.
 
-public global GarbageCollector::CurrentHeapSize mutable => Size := 0sz.
-public global GarbageCollector::CurrentYoungHeapSize mutable => Size := 0sz.
-public global GarbageCollector::NextCollectionThreshold mutable => Size := 0sz.
-public global GarbageCollector::NextYoungCollectionThreshold mutable => Size := 0sz.
+private global GarbageCollector::GammaFactor := 3sz.
+private global GarbageCollector::NurseryFraction := 4sz.
+private global GarbageCollector::MinimalCollectionThreshold := 4sz << 20sz.
 
-public global GarbageCollector::IsCollectingYoungGeneration mutable => Boolean := false.
+private global GarbageCollector::CurrentHeapSize mutable => Size := 0sz.
+private global GarbageCollector::CurrentYoungHeapSize mutable => Size := 0sz.
+private global GarbageCollector::NextCollectionThreshold mutable => Size := 0sz.
+private global GarbageCollector::NextYoungCollectionThreshold mutable => Size := 0sz.
 
-public global GarbageCollector::FirstYoungAllocatedObject mutable => GarbageCollector::ObjectHeader pointer := nil.
-public global GarbageCollector::LastYoungAllocatedObject mutable => GarbageCollector::ObjectHeader pointer := nil.
+private global GarbageCollector::IsCollectingYoungGeneration mutable => Boolean := false.
 
-public global GarbageCollector::FirstAllocatedObject mutable => GarbageCollector::ObjectHeader pointer := nil.
-public global GarbageCollector::LastAllocatedObject mutable => GarbageCollector::ObjectHeader pointer := nil.
+private global GarbageCollector::FirstYoungAllocatedObject mutable => GarbageCollector::ObjectHeader pointer := nil.
+private global GarbageCollector::LastYoungAllocatedObject mutable => GarbageCollector::ObjectHeader pointer := nil.
+
+private global GarbageCollector::FirstAllocatedObject mutable => GarbageCollector::ObjectHeader pointer := nil.
+private global GarbageCollector::LastAllocatedObject mutable => GarbageCollector::ObjectHeader pointer := nil.
 
 private global GarbageCollector::MarkingStack mutable := GarbageCollector::PointerStack basicNew.
 

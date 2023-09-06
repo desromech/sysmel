@@ -9,6 +9,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
+#include <pthread.h>
+#include <assert.h>
 
 SYSMEL_PAL_EXTERN_C sysmel_pal_filehandle_t sysmel_pal_getStdinFileHandle(void)
 {
@@ -118,4 +120,59 @@ SYSMEL_PAL_EXTERN_C int64_t sysmel_pal_nanosecondsNow(void)
     struct timespec ts = {};
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (int64_t)ts.tv_sec * (int64_t)1000000000 + (int64_t)ts.tv_nsec;
+}
+
+SYSMEL_PAL_EXTERN_C void sysmel_pal_mutex_initialize(sysmel_pal_mutex_t *handle)
+{
+    assert(sizeof(pthread_mutex_t) <= sizeof(sysmel_pal_mutex_t));
+    pthread_mutex_init((pthread_mutex_t*)handle, NULL);
+}
+
+SYSMEL_PAL_EXTERN_C void sysmel_pal_mutex_finalize(sysmel_pal_mutex_t *handle)
+{
+    assert(sizeof(pthread_mutex_t) <= sizeof(sysmel_pal_mutex_t));
+    pthread_mutex_destroy((pthread_mutex_t*)handle);
+}
+
+SYSMEL_PAL_EXTERN_C void sysmel_pal_mutex_lock(sysmel_pal_mutex_t *handle)
+{
+    assert(sizeof(pthread_mutex_t) <= sizeof(sysmel_pal_mutex_t));
+    pthread_mutex_lock((pthread_mutex_t*)handle);
+}
+
+SYSMEL_PAL_EXTERN_C void sysmel_pal_mutex_unlock(sysmel_pal_mutex_t *handle)
+{
+    assert(sizeof(pthread_mutex_t) <= sizeof(sysmel_pal_mutex_t));
+    pthread_mutex_unlock((pthread_mutex_t*)handle);
+}
+
+SYSMEL_PAL_EXTERN_C void sysmel_pal_condition_initialize(sysmel_pal_condition_t *handle)
+{
+    assert(sizeof(pthread_cond_t) <= sizeof(sysmel_pal_condition_t));
+    pthread_cond_init((pthread_cond_t*)handle, NULL);
+}
+
+SYSMEL_PAL_EXTERN_C void sysmel_pal_condition_finalize(sysmel_pal_condition_t *handle)
+{
+    assert(sizeof(pthread_cond_t) <= sizeof(sysmel_pal_condition_t));
+    pthread_cond_destroy((pthread_cond_t*)handle);
+}
+
+SYSMEL_PAL_EXTERN_C void sysmel_pal_condition_wait(sysmel_pal_condition_t *handle, sysmel_pal_mutex_t *mutex)
+{
+    assert(sizeof(pthread_cond_t) <= sizeof(sysmel_pal_condition_t));
+    assert(sizeof(pthread_mutex_t) <= sizeof(sysmel_pal_mutex_t));
+    pthread_cond_wait((pthread_cond_t*)handle, (pthread_mutex_t*)mutex);
+}
+
+SYSMEL_PAL_EXTERN_C void sysmel_pal_condition_signal(sysmel_pal_condition_t *handle)
+{
+    assert(sizeof(pthread_cond_t) <= sizeof(sysmel_pal_condition_t));
+    pthread_cond_signal((pthread_cond_t*)handle);
+}
+
+SYSMEL_PAL_EXTERN_C void sysmel_pal_condition_broadcast(sysmel_pal_condition_t *handle)
+{
+    assert(sizeof(pthread_cond_t) <= sizeof(sysmel_pal_condition_t));
+    pthread_cond_broadcast((pthread_cond_t*)handle);
 }

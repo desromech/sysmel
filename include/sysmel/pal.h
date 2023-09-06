@@ -25,6 +25,21 @@
 
 typedef struct sysmel_pal_file_s *sysmel_pal_filehandle_t;
 
+typedef struct sysmel_pal_thread_s
+{
+    uint64_t reserved;
+} sysmel_pal_thread_t;
+
+typedef struct sysmel_pal_mutex_s
+{
+    uint64_t reserved[8];
+} sysmel_pal_mutex_t;
+
+typedef struct sysmel_pal_condition_s
+{
+    uint64_t reserved[8];
+} sysmel_pal_condition_t;
+
 SYSMEL_PAL_EXTERN_C void sysmel_pal_abort(void);
 
 SYSMEL_PAL_EXTERN_C void* sysmel_pal_malloc(size_t size);
@@ -53,5 +68,16 @@ SYSMEL_PAL_EXTERN_C char *sysmel_pal_float64ToString(double value);
 
 SYSMEL_PAL_EXTERN_C int64_t sysmel_pal_microsecondsNow(void);
 SYSMEL_PAL_EXTERN_C int64_t sysmel_pal_nanosecondsNow(void);
+
+SYSMEL_PAL_EXTERN_C void sysmel_pal_mutex_initialize(sysmel_pal_mutex_t *handle);
+SYSMEL_PAL_EXTERN_C void sysmel_pal_mutex_finalize(sysmel_pal_mutex_t *handle);
+SYSMEL_PAL_EXTERN_C void sysmel_pal_mutex_lock(sysmel_pal_mutex_t *handle);
+SYSMEL_PAL_EXTERN_C void sysmel_pal_mutex_unlock(sysmel_pal_mutex_t *handle);
+
+SYSMEL_PAL_EXTERN_C void sysmel_pal_condition_initialize(sysmel_pal_condition_t *handle);
+SYSMEL_PAL_EXTERN_C void sysmel_pal_condition_finalize(sysmel_pal_condition_t *handle);
+SYSMEL_PAL_EXTERN_C void sysmel_pal_condition_wait(sysmel_pal_condition_t *handle, sysmel_pal_mutex_t *mutex);
+SYSMEL_PAL_EXTERN_C void sysmel_pal_condition_signal(sysmel_pal_condition_t *handle);
+SYSMEL_PAL_EXTERN_C void sysmel_pal_condition_broadcast(sysmel_pal_condition_t *handle);
 
 #endif //SYSMEL_PAL_H
