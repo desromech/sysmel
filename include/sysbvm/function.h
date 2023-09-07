@@ -80,6 +80,7 @@ typedef struct sysbvm_functionDefinition_s
     sysbvm_programEntity_t super;
     
     sysbvm_tuple_t flags;
+    sysbvm_tuple_t callingConventionName;
     sysbvm_tuple_t argumentCount;
     sysbvm_tuple_t sourcePosition;
 
@@ -131,7 +132,7 @@ typedef struct sysbvm_functionCallFrameStack_s
 /**
  * Creates a function definition.
  */
-SYSBVM_API sysbvm_tuple_t sysbvm_functionDefinition_create(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t flags, sysbvm_tuple_t argumentCount, sysbvm_tuple_t definitionEnvironment, sysbvm_tuple_t argumentNodes, sysbvm_tuple_t resultTypeNode, sysbvm_tuple_t body);
+SYSBVM_API sysbvm_tuple_t sysbvm_functionDefinition_create(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t flags, sysbvm_tuple_t callingConventionName, sysbvm_tuple_t argumentCount, sysbvm_tuple_t definitionEnvironment, sysbvm_tuple_t argumentNodes, sysbvm_tuple_t resultTypeNode, sysbvm_tuple_t body);
 
 /**
  * Creates a primitive function tuple.

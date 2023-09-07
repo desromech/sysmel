@@ -1,12 +1,13 @@
 public global MIRStackFrameSegment::ArgumentPassingZone := 0u8.
 public global MIRStackFrameSegment::CallPreservedZone := 1u8.
-public global MIRStackFrameSegment::GCObjectAllocationZone := 2u8.
-public global MIRStackFrameSegment::TemporaryGCZone := 3u8.
-public global MIRStackFrameSegment::TemporaryGCFatPointerZone := 4u8.
-public global MIRStackFrameSegment::TemporaryNonGCZone := 5u8.
-public global MIRStackFrameSegment::FrameMetadata := 6u8.
-public global MIRStackFrameSegment::CallArgumentPassingZone := 7u8.
-public global MIRStackFrameSegment::Count := 8u8.
+public global MIRStackFrameSegment::CallVectorPreservedZone := 2u8.
+public global MIRStackFrameSegment::GCObjectAllocationZone := 3u8.
+public global MIRStackFrameSegment::TemporaryGCZone := 4u8.
+public global MIRStackFrameSegment::TemporaryGCFatPointerZone := 5u8.
+public global MIRStackFrameSegment::TemporaryNonGCZone := 6u8.
+public global MIRStackFrameSegment::FrameMetadata := 7u8.
+public global MIRStackFrameSegment::CallArgumentPassingZone := 8u8.
+public global MIRStackFrameSegment::Count := 9u8.
 
 public final class MIRStackFrameSegment superclass: Object; definition: {
     public field paddingGoesBelow => Boolean.
@@ -59,6 +60,13 @@ public final class MIRStackFrameSegment superclass: Object; definition: {
         registers isNotEmpty ifTrue: {
             size := (size alignedTo: pointerSize) + (registers size * pointerSize).
             alignment := alignment max: pointerSize.
+        }
+    }.
+
+    public method addPreservedVectorRegisters: (registers: Array) vectorSize: (vectorSize: UInt64) ::=> Void := {
+        registers isNotEmpty ifTrue: {
+            size := (size alignedTo: vectorSize) + (registers size * vectorSize).
+            alignment := alignment max: vectorSize.
         }
     }.
 
@@ -125,12 +133,13 @@ public final class MIRStackFrameLayout superclass: Object; definition: {
 
     public method argumentPassingZone => MIRStackFrameSegment := segments first.
     public method callPreservedZone => MIRStackFrameSegment := segments second.
-    public method gcObjectAllocationZone => MIRStackFrameSegment := segments third.
-    public method temporaryGCZone => MIRStackFrameSegment := segments fourth.
-    public method temporaryGCFatPointerZone => MIRStackFrameSegment := segments fifth.
-    public method temporaryNonGCZone => MIRStackFrameSegment := segments sixth.
-    public method frameMetadata => MIRStackFrameSegment := segments seventh.
-    public method callArgumentPassingZone => MIRStackFrameSegment := segments eighth.
+    public method callVectorPreservedZone => MIRStackFrameSegment := segments third.
+    public method gcObjectAllocationZone => MIRStackFrameSegment := segments fourth.
+    public method temporaryGCZone => MIRStackFrameSegment := segments fifth.
+    public method temporaryGCFatPointerZone => MIRStackFrameSegment := segments sixth.
+    public method temporaryNonGCZone => MIRStackFrameSegment := segments seventh.
+    public method frameMetadata => MIRStackFrameSegment := segments eighth.
+    public method callArgumentPassingZone => MIRStackFrameSegment := segments ninth.
 
     public method frameAllocationSize => UInt64 := {
         hasRequiredConstruction ifTrue: {
@@ -161,6 +170,9 @@ public final class MIRStackFrameLayout superclass: Object; definition: {
             paddingGoesBelow: true;
             alignment: compilationTarget stackFrameAlignment;
             addPreservedRegisters: function touchedCallPreservedRegisters pointerSize: compilationTarget pointerSize.
+        self callVectorPreservedZone
+            alignment: (compilationTarget stackFrameAlignment max: compilationTarget callPreservedVectorAlignment);
+            addPreservedVectorRegisters: function touchedCallPreservedVectorRegisters vectorSize: compilationTarget callPreservedVectorSize.
 
         hasRequiredConstruction := function performsCallouts.
         self callArgumentPassingZone
@@ -184,7 +196,7 @@ public final class MIRStackFrameLayout superclass: Object; definition: {
             self assignLocationToLocalValue: eachInstruction.
         }.
 
-        self finishConstructingSegmentStructure
+        self finishConstructingSegmentStructure.
     }.
 
     public method assignNextLocationToLocalValue: (localValue: MIRLocalValue) ::=> Void := {

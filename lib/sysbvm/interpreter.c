@@ -1386,7 +1386,7 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveAnalyze(sysbvm_context_t *co
 
     gcFrame.argumentCount = sysbvm_tuple_size_encode(context, lambdaArgumentCount);
     gcFrame.functionDefinition = (sysbvm_functionDefinition_t *)sysbvm_functionDefinition_create(context,
-        gcFrame.lambdaNode->super.sourcePosition, gcFrame.lambdaNode->flags,
+        gcFrame.lambdaNode->super.sourcePosition, gcFrame.lambdaNode->flags, gcFrame.lambdaNode->callingConventionName,
         gcFrame.argumentCount, *environment,
         gcFrame.lambdaNode->arguments, gcFrame.lambdaNode->resultType, gcFrame.lambdaNode->body
     );
@@ -1486,7 +1486,7 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveAnalyzeAndEvaluate(sysbvm_co
 
     gcFrame.argumentCount = sysbvm_tuple_size_encode(context,  lambdaArgumentCount);
     gcFrame.functionDefinition = (sysbvm_functionDefinition_t*)sysbvm_functionDefinition_create(context,
-        (*lambdaNode)->super.sourcePosition, (*lambdaNode)->flags,
+        (*lambdaNode)->super.sourcePosition, (*lambdaNode)->flags, (*lambdaNode)->callingConventionName,
         gcFrame.argumentCount, *environment,
         (*lambdaNode)->arguments, (*lambdaNode)->resultType, (*lambdaNode)->body
     );

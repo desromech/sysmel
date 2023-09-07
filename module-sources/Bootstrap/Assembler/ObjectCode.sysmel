@@ -33,6 +33,12 @@ public abstract class AsmCompilationTarget superclass: Object; definition: {
     public abstract method uintPointerType => Type
         := self subclassResponsibility.
 
+    public abstract method callPreservedVectorSize => Size
+        := self subclassResponsibility.
+
+    public abstract method callPreservedVectorAlignment => Size
+        := self subclassResponsibility.
+
     public virtual method objectModel => ObjectModelVariant
         := self pointerSize = 4sz ifTrue: ObjectModelVariant32 uniqueInstance ifFalse: ObjectModelVariant64 uniqueInstance.
 

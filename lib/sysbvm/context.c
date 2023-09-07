@@ -783,6 +783,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionDefinitionType, "FunctionDefinition", SYSBVM_NULL_TUPLE,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
+        "callingConventionName", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.symbolType,
         "argumentCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.sourcePositionType,
 
@@ -1029,6 +1030,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.astLambdaNodeType = sysbvm_context_createIntrinsicClass(context, "ASTLambdaNode", context->roots.astNodeType,
         "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
+        "callingConventionName", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
         "arguments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "resultType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "body", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,

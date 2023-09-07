@@ -33,6 +33,7 @@ HIRValue definition: {
     public virtual method isFunction => Boolean := false.
     public virtual method isFunctionDefinition => Boolean := false.
     public virtual method isFunctionLocalValue => Boolean := false.
+
     public virtual method isBasicBlock => Boolean := false.
     
     public virtual method isInstruction => Boolean := false.
@@ -63,6 +64,7 @@ HIRValue definition: {
     public virtual method isPureFunction => Boolean := false.
 
     public virtual method primitiveName => Symbol := nil.
+    public virtual method callingConventionNameOrNil => Symbol := nil.
     public virtual method evaluateAsHIRFunctionDefinitionOrNil => HIRFunctionDefinition := nil.
     public virtual method evaluateCaptureValueListOrNil => Array := nil.
     public abstract method evaluateAsConstantType => Type :=
@@ -260,8 +262,12 @@ HIRFunction definition: {
     public override method isCaptureless => Boolean := captures isEmpty.
     public method isTargetDefinedPrimitive => Boolean := sourceObject isNotNil && sourceObject isTargetDefinedPrimitive.
 
+    public override method callingConventionNameOrNil => Symbol
+        := definition ifNil: nil ifNotNil: definition callingConventionNameOrNil.
+
     public override method evaluateAsHIRFunctionDefinitionOrNil => HIRFunctionDefinition
         := definition.
+
     public override method evaluateCaptureValueListOrNil => Array
         := captures.
 
@@ -305,6 +311,7 @@ HIRFunctionDefinition definition: {
     public field functionType => FunctionType.
     public field importedSymbols => Array.
     public field primitiveName => Symbol.
+    public field callingConvention => Symbol.
 
     public field firstBasicBlock => HIRBasicBlock.
     public field lastBasicBlock => HIRBasicBlock.
@@ -315,8 +322,8 @@ HIRFunctionDefinition definition: {
     public field isNoGC => Boolean.
 
     public override method isFunctionDefinition => Boolean := true.
+    public override method callingConventionNameOrNil => Symbol := callingConvention.
     public override method evaluateAsHIRFunctionDefinitionOrNil => HIRFunctionDefinition := self.
-
     public method isTargetDefinedPrimitive => Boolean := sourceObject isNotNil && sourceObject isTargetDefinedPrimitive.
 
     public method requiresArgumentExpansionDuringApplication => Boolean
@@ -1612,6 +1619,7 @@ public final class HIRCallInstruction superclass: HIRInstruction; definition: {
     public field calledFunction => HIRValue.
     public field arguments => Array.
     public field isUnchecked => Boolean.
+    public field callingConvention => Symbol.
     
     public override method isCallInstruction => Boolean := true.
     public override method hasSideEffects => Boolean := calledFunction isPureFunction not.
@@ -2135,6 +2143,9 @@ public final class HIRMakeClosureInstruction superclass: HIRInstruction; definit
     public override method isMakeClosureInstruction => Boolean := true.
     public override method hasSideEffects => Boolean := false.
 
+    public override method callingConventionNameOrNil => Symbol
+        := functionDefinition callingConventionNameOrNil.
+
     public override method evaluateAsHIRFunctionDefinitionOrNil => HIRFunctionDefinition
         := functionDefinition evaluateAsHIRFunctionDefinitionOrNil.
 
@@ -2635,13 +2646,17 @@ HIRInstructionBuilder definition: {
             registerInUsedValues;
             yourself).
 
-    public method call: (calledFunction: HIRValue) arguments: (arguments: Array) resultType: (resultType: Type) ::=> HIRCallInstruction
+    public method call: (calledFunction: HIRValue) callingConvention: (callingConvention: Symbol) arguments: (arguments: Array) resultType: (resultType: Type) ::=> HIRCallInstruction
         := self addInstruction: (HIRCallInstruction new
             calledFunction: calledFunction;
+            callingConvention: callingConvention;
             arguments: arguments;
             type: resultType;
             registerInUsedValues;
             yourself).
+
+    public method call: (calledFunction: HIRValue) arguments: (arguments: Array) resultType: (resultType: Type) ::=> HIRCallInstruction
+        := self call: calledFunction callingConvention: calledFunction callingConventionNameOrNil arguments: arguments resultType: resultType.
 
     public method call: (receiver: HIRValue) arguments: (arguments: Array) ::=> HIRCallInstruction
         := self call: receiver arguments: arguments resultType: nil.

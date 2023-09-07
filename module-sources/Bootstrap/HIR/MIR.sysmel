@@ -179,7 +179,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
         importedSymbols isEmpty ifTrue: {
             let entryPoint := MIRFunction new
                 compilationTarget: compilationTarget;
-                callingConvention: compilationTarget defaultCallingConvention;
+                callingConvention: (compilationTarget callingConventionNamed: functionDefinition callingConvention);
                 name: functionDefinition name asCapturelessUncheckedEntryPointNameSymbol;
                 debugSourcePosition: functionDefinition sourcePosition;
                 debugSourceNode: functionDefinition sourceASTNode;
@@ -199,7 +199,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
             let importedEntity := MIRImportedFunction new
                 name: importedSymbols first;
                 compilationTarget: compilationTarget;
-                callingConvention: compilationTarget defaultCallingConvention;
+                callingConvention: (compilationTarget callingConventionNamed: functionDefinition callingConvention);
                 alternativeSymbols: importedSymbols;
                 yourself.
             targetModule addProgramEntity: importedEntity.
@@ -212,7 +212,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
     public method compileUncheckedFunctionEntryPoint: (functionDefinition: HIRFunctionDefinition) ::=> MIRProgramEntity := {
         let entryPoint := MIRFunction new
             compilationTarget: compilationTarget;
-            callingConvention: compilationTarget defaultCallingConvention;
+            callingConvention: (compilationTarget callingConventionNamed: functionDefinition callingConvention);
             name: functionDefinition name asUncheckedEntryPointNameSymbol;
             debugSourcePosition: functionDefinition sourcePosition;
             debugSourceNode: functionDefinition sourceASTNode;
@@ -373,7 +373,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
                     let importedRuntimeFunction := MIRImportedFunction new
                         name: function definition capturelessUncheckedEntryPointNameSymbol;
                         compilationTarget: compilationTarget;
-                        callingConvention: compilationTarget defaultCallingConvention;
+                        callingConvention: (compilationTarget callingConventionNamed: function definition callingConventionName);
                         yourself.
                     targetModule addProgramEntity: importedRuntimeFunction.
                     importedRuntimeFunction
@@ -497,7 +497,7 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
                 let callArguments := (Array with: closure) -- arguments.
 
                 let canonicalResultType := ssaFunction definition functionType canonicalResultType.
-                let result := canonicalResultType emitMirCall: uncheckedEntryPoint convention: moduleCodeGenerator compilationTarget defaultCallingConvention
+                let result := canonicalResultType emitMirCall: uncheckedEntryPoint convention: (moduleCodeGenerator compilationTarget callingConventionNamed: ssaFunction callingConventionNameOrNil)
                     withArguments: callArguments withBlockBuilder: asm.
 
                 canonicalResultType emitMirReturn: result withBlockBuilder: asm
@@ -859,6 +859,9 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
         }
     }.
 
+    public method generationalRememberFunction => MIRValue
+        := self translateRuntimeFunction: GarbageCollector::rememberPointer.
+
     public method emitObjectWriteBarrier: (object: MIRValue) value: (value: MIRValue) ::=> Void := {
         mirFunction isNoGC ifTrue: {return: void}.
         object ifNil: {return: void}.
@@ -868,10 +871,10 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
         valueType isValueType ifTrue: {
             valueType validAddressSpace isFatPointer ifTrue: {
                 let valueOwner := blockBuilder fatPointerExtractSecond: value type: Void pointer.
-                blockBuilder generationalWriteBarrer: object constantOffset: ObjectModel::FlagsOffset asInt64 value: valueOwner
+                blockBuilder generationalWriteBarrer: object constantOffset: ObjectModel::FlagsOffset asInt64 value: valueOwner rememberFunction: self generationalRememberFunction
             }
         } ifFalse: {
-            blockBuilder generationalWriteBarrer: object constantOffset: ObjectModel::FlagsOffset asInt64 value: value
+            blockBuilder generationalWriteBarrer: object constantOffset: ObjectModel::FlagsOffset asInt64 value: value rememberFunction: self generationalRememberFunction
         }.
     }.
 
@@ -2573,7 +2576,7 @@ HIRFunctionDefinitionMIRCodeGenerator extend: {
             let entryPoint := self translateValue: calledFunction.
             let mirArguments := arguments collect: {:(HIRValue)eachArgument :: MIRValue | self translateValue: eachArgument}.
             return: (resultType
-                emitMirCall: entryPoint convention: self mirFunction compilationTarget defaultCallingConvention
+                emitMirCall: entryPoint convention: (self mirFunction compilationTarget callingConventionNamed: calledFunction callingConventionNameOrNil)
                 withArguments: mirArguments
                 withBlockBuilder: self blockBuilder)
         }.
@@ -2589,7 +2592,7 @@ HIRFunctionDefinitionMIRCodeGenerator extend: {
                 }.
 
                 canonicalResultType
-                    emitMirCall: entryPoint convention: self mirFunction compilationTarget defaultCallingConvention
+                    emitMirCall: entryPoint convention: (self mirFunction compilationTarget callingConventionNamed: calledFunction callingConventionNameOrNil)
                     withArguments: mirArguments
                     withBlockBuilder: self blockBuilder
 
@@ -2601,7 +2604,7 @@ HIRFunctionDefinitionMIRCodeGenerator extend: {
                 }.
 
                 canonicalResultType
-                    emitMirCall: entryPoint convention: self mirFunction compilationTarget defaultCallingConvention
+                    emitMirCall: entryPoint convention: (self mirFunction compilationTarget callingConventionNamed: calledFunction callingConventionNameOrNil)
                     withArguments: (Array with: mirCalledFunction) -- mirArguments
                     withBlockBuilder: self blockBuilder
             }.
@@ -2617,7 +2620,7 @@ HIRFunctionDefinitionMIRCodeGenerator extend: {
             let mirArguments := arguments collect: {:(HIRValue)eachArgument :: MIRValue | self translateBoxedValue: eachArgument}.
             entryPoint ifNotNil: {
                 resultType
-                    emitMirUnboxingCall: entryPoint convention: self mirFunction compilationTarget defaultCallingConvention
+                    emitMirUnboxingCall: entryPoint convention: (self mirFunction compilationTarget callingConventionNamed: calledFunction callingConventionNameOrNil)
                     withArguments: (Array with: mirCalledFunction) -- mirArguments
                     withHIRCodeGenerator: self.
             } ifNil: {

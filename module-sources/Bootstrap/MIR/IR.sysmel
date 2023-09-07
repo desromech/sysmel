@@ -1531,6 +1531,7 @@ MIRFunction definition: {
     public field isNoGC => Boolean.
 
     public field touchedCallPreservedRegisters => Array.
+    public field touchedCallPreservedVectorRegisters => Array.
 
     public field firstBasicBlock => MIRBasicBlock.
     public field lastBasicBlock => MIRBasicBlock.
@@ -1887,7 +1888,7 @@ MIRFunction definition: {
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: "function".
+        stream nextPutAll: "function "; print: callingConvention.
         name ifNotNil: (stream space; string: name).
     }.
 
@@ -2275,8 +2276,8 @@ public final class MIRBlockBuilder superclass: Object; definition: {
     public method storeStruct: (value: MIRValue) into: (pointer: MIRValue) constantOffset: (constantOffset: Int64) ::=> MIRInstruction
         := self operation: MIR::Operation::StoreStruct with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
 
-    public method generationalWriteBarrer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) value: (storedValue: MIRValue) ::=> MIRInstruction
-        := self operation: MIR::Operation::GenerationalWriteBarrer with: pointer with: (self constantOffsetImmediateFor: constantOffset) with: storedValue.
+    public method generationalWriteBarrer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) value: (storedValue: MIRValue) rememberFunction: (rememberFunction: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::GenerationalWriteBarrer with: pointer with: (self constantOffsetImmediateFor: constantOffset) with: storedValue with: rememberFunction.
 
     public method memcpy: (destination: MIRValue) source: (source: MIRValue) size: (size: MIRValue) ::=> MIRInstruction
         := self operation: MIR::Operation::Memcpy with: destination with: source with: size.
@@ -2739,10 +2740,19 @@ MIRCompilationTarget definition: {
     public abstract method usesVectorRegistersForFloatOperations => Boolean
         := self subclassResponsibility.
 
+    public abstract method callPreservedVectorSize => Size
+        := self subclassResponsibility.
+
+    public abstract method callPreservedVectorAlignment => Size
+        := self subclassResponsibility.
+
     public abstract method generateTargetIRForMIRModule: (module: MIRModule) ::=> AnyValue
         := self subclassResponsibility.
 
     public abstract method defaultCallingConvention => MIRCallingConvention
+        := self subclassResponsibility.
+
+    public abstract method callingConventionNamed: (conventionName: Symbol) ::=> MIRCallingConvention
         := self subclassResponsibility.
 
     public virtual method objectModel => ObjectModelVariant

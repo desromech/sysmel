@@ -754,6 +754,25 @@ public abstract class MIRSX86StackBasedCallingConvention superclass: MIRCallingC
 }.
 
 public final class MIRSX86CDeclCallingConvention superclass: MIRSX86StackBasedCallingConvention; definition: {
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream string: "cdecl"
+    }.
+
+    public override method allocableIntegerRegisters => Array
+        := MIR::X86::AllocableIntegerRegisters.
+
+    public override method allocableVectorRegisters => Array
+        := MIR::X86::AllocableVectorRegisters.
+
+    public override method preferredRegisterForCaptureVectorPointer => MIRPhysicalLocationRegister
+        := nil.
+}.
+
+public final class MIRSX86StdcallCallingConvention superclass: MIRSX86StackBasedCallingConvention; definition: {
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream string: "stdcall"
+    }.
+
     public override method allocableIntegerRegisters => Array
         := MIR::X86::AllocableIntegerRegisters.
 
@@ -765,6 +784,7 @@ public final class MIRSX86CDeclCallingConvention superclass: MIRSX86StackBasedCa
 }.
 
 public global MIR::X86::CDeclCallingConvention := MIRSX86CDeclCallingConvention new.
+public global MIR::X86::StdcallCallingConvention := MIRSX86CDeclCallingConvention new.
 
 public final class MIRX86CompilationTarget superclass: MIRAsmCompilationTarget; definition: {
     public override method name => Symbol
@@ -840,6 +860,13 @@ public global X86_64::SysV::CallPreservedRegister := (
 ).
 
 public global X86_64::SysV::CallPreservedVectorRegister := ().
+
+public global X86_64::SysV::CallTouchedVectorRegister := MIR::X86_64::VectorRegisters.
+public global X86_64::SysV::CallTouchedRegister => Array := (
+    MIR::X86_64::RAX, MIR::X86_64::RCX, MIR::X86_64::RDX,
+    MIR::X86_64::RSI, MIR::X86_64::RDI,
+    MIR::X86_64::R8, MIR::X86_64::R9, MIR::X86_64::R10, MIR::X86_64::R11,
+).
 
 public final class MIRSysVX86_64RegisterAssignmentState superclass: Object; definition: {
     public field usedIntegerRegisterCount => Size.
@@ -1010,7 +1037,145 @@ public abstract class MIRX86_64CallingConvention superclass: MIRCallingConventio
     }.
 }.
 
+public global X86_64::HotCC::CallPreservedVectorRegister := #().
+public global X86_64::HotCC::CallPreservedRegister => Array := (
+    MIR::X86_64::RCX, MIR::X86_64::RBX,
+    MIR::X86_64::RSP, MIR::X86_64::RBP, MIR::X86_64::RSI, MIR::X86_64::RDI,
+    MIR::X86_64::R8, MIR::X86_64::R9, MIR::X86_64::R10, MIR::X86_64::R11,
+    MIR::X86_64::R12, MIR::X86_64::R13, MIR::X86_64::R14, MIR::X86_64::R15
+).
+
+public global X86_64::HotCC::CallTouchedVectorRegister := #().
+public global X86_64::HotCC::CallTouchedRegister => Array := (
+    MIR::X86_64::RAX, MIR::X86_64::RDX,
+).
+
+public final class MIRX86_64HotCallingConvention superclass: MIRX86_64CallingConvention; definition: {
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream string: "hotcc"
+    }.
+
+    public override method allocableIntegerRegisters => Array
+        := MIR::X86_64::SysV::AllocableIntegerRegisters.
+
+    public override method allocableVectorRegisters => Array
+        := MIR::X86_64::SysV::AllocableVectorRegisters.
+
+    public override method preferredRegisterForCaptureVectorPointer => MIRPhysicalIntegerRegister
+        := nil.
+
+    public override method preferredRegisterForGotPointer => MIRPhysicalIntegerRegister
+        := MIR::X86_64::R15.
+
+    public override method registerConstraintsOfCall: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
+        self assert: instruction operands size <= 3sz.
+
+        instruction operands size >= 2sz ifTrue: {
+            allocator allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 1sz.
+            instruction operands size >= 3sz ifTrue: {
+                allocator allocateRegister: MIR::X86_64::RDX forInstruction: instruction operandAt: 2sz
+            }.
+        }.
+
+        allocator
+            allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz;
+            allocateCaptureVectorPointerRegisterForInstruction: instruction;
+            spillIntegerRegistersExceptFor: X86_64::HotCC::CallPreservedRegister;
+            spillVectorRegistersExceptFor: X86_64::HotCC::CallPreservedVectorRegister;
+            touchIntegerRegisters: X86_64::HotCC::CallTouchedRegister;
+            touchVectorRegisters: X86_64::HotCC::CallTouchedVectorRegister
+    }.
+
+    public override method integerCallPreservedRegisters => Array
+        := X86_64::HotCC::CallPreservedRegister.
+
+    public override method vectorCallPreservedRegisters => Array
+        := X86_64::HotCC::CallPreservedVectorRegister.
+
+    public override method computeArgumentPassingLayoutOf: (function: MIRFunction) ::=> Void := {
+        self assert: function arguments size <= 2sz.
+
+        function arguments size >= 1sz ifTrue: {
+            function arguments first passingRegister: MIR::X86_64::RAX.
+            function arguments size >= 2sz ifTrue: {
+                function arguments second passingRegister: MIR::X86_64::RDX.
+            }.
+        }.
+    }.
+}.
+
+public global X86_64::ColdCC::CallPreservedVectorRegister := MIR::X86_64::VectorRegisters.
+public global X86_64::ColdCC::CallPreservedRegister => Array := (
+    MIR::X86_64::RCX, MIR::X86_64::RBX,
+    MIR::X86_64::RSP, MIR::X86_64::RBP, MIR::X86_64::RSI, MIR::X86_64::RDI,
+    MIR::X86_64::R8, MIR::X86_64::R9, MIR::X86_64::R10, MIR::X86_64::R11,
+    MIR::X86_64::R12, MIR::X86_64::R13, MIR::X86_64::R14, MIR::X86_64::R15
+).
+
+public global X86_64::ColdCC::CallTouchedVectorRegister := #().
+public global X86_64::ColdCC::CallTouchedRegister => Array := (
+    MIR::X86_64::RAX, MIR::X86_64::RDX,
+).
+
+public final class MIRX86_64ColdCallingConvention superclass: MIRX86_64CallingConvention; definition: {
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream string: "coldcc"
+    }.
+
+    public override method allocableIntegerRegisters => Array
+        := MIR::X86_64::SysV::AllocableIntegerRegisters.
+
+    public override method allocableVectorRegisters => Array
+        := MIR::X86_64::SysV::AllocableVectorRegisters.
+
+    public override method preferredRegisterForCaptureVectorPointer => MIRPhysicalIntegerRegister
+        := nil.
+
+    public override method preferredRegisterForGotPointer => MIRPhysicalIntegerRegister
+        := MIR::X86_64::R15.
+
+    public override method registerConstraintsOfCall: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
+        self assert: instruction operands size <= 3sz.
+
+        instruction operands size >= 2sz ifTrue: {
+            allocator allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 1sz.
+            instruction operands size >= 3sz ifTrue: {
+                allocator allocateRegister: MIR::X86_64::RDX forInstruction: instruction operandAt: 2sz
+            }.
+        }.
+
+        allocator
+            allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz;
+            allocateCaptureVectorPointerRegisterForInstruction: instruction;
+            spillIntegerRegistersExceptFor: X86_64::ColdCC::CallPreservedRegister;
+            spillVectorRegistersExceptFor: X86_64::ColdCC::CallPreservedVectorRegister;
+            touchIntegerRegisters: X86_64::ColdCC::CallTouchedRegister;
+            touchVectorRegisters: X86_64::ColdCC::CallTouchedVectorRegister
+    }.
+
+    public override method integerCallPreservedRegisters => Array
+        := X86_64::ColdCC::CallPreservedRegister.
+
+    public override method vectorCallPreservedRegisters => Array
+        := X86_64::ColdCC::CallPreservedVectorRegister.
+
+    public override method computeArgumentPassingLayoutOf: (function: MIRFunction) ::=> Void := {
+        self assert: function arguments size <= 2sz.
+
+        function arguments size >= 1sz ifTrue: {
+            function arguments first passingRegister: MIR::X86_64::RAX.
+            function arguments size >= 2sz ifTrue: {
+                function arguments second passingRegister: MIR::X86_64::RDX.
+            }.
+        }.
+    }.
+}.
+
 public final class MIRSysVX86_64CallingConvention superclass: MIRX86_64CallingConvention; definition: {
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream string: "sysv"
+    }.
+
     public override method allocableIntegerRegisters => Array
         := MIR::X86_64::SysV::AllocableIntegerRegisters.
 
@@ -1116,7 +1281,9 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRX86_64CallingCo
         allocator
             allocateCaptureVectorPointerRegisterForInstruction: instruction;
             spillIntegerRegistersExceptFor: X86_64::SysV::CallPreservedRegister;
-            spillVectorRegistersExceptFor: X86_64::SysV::CallPreservedVectorRegister
+            spillVectorRegistersExceptFor: X86_64::SysV::CallPreservedVectorRegister;
+            touchIntegerRegisters: X86_64::SysV::CallTouchedRegister;
+            touchVectorRegisters: X86_64::SysV::CallTouchedVectorRegister
     }.
 
     public override method integerCallPreservedRegisters => Array
@@ -1209,6 +1376,15 @@ public global X86_64::Win64::CallPreservedVectorRegister := (
     MIR::X86_64::XMM13, MIR::X86_64::XMM14, MIR::X86_64::XMM15 
 ).
 
+public global X86_64::Win64::CallTouchedVectorRegister := (
+    MIR::X86::XMM0, MIR::X86::XMM1, MIR::X86::XMM2, MIR::X86::XMM3, MIR::X86::XMM4, MIR::X86::XMM5
+).
+
+public global X86_64::Win64::CallTouchedRegister => Array := (
+    MIR::X86_64::RAX, MIR::X86_64::RCX, MIR::X86_64::RDX,
+    MIR::X86_64::R8, MIR::X86_64::R9, MIR::X86_64::R10, MIR::X86_64::R11
+).
+
 public final class MIRWinX64RegisterAssignmentState superclass: Object; definition: {
     public field usedRegisterCount => Size.
 
@@ -1246,6 +1422,10 @@ public final class MIRWinX64RegisterAssignmentState superclass: Object; definiti
 }.
 
 public final class MIRWinX64CallingConvention superclass: MIRX86_64CallingConvention; definition: {
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream string: "win64"
+    }.
+
     public override method allocableIntegerRegisters => Array
         := MIR::X86_64::Win64::AllocableIntegerRegisters.
 
@@ -1332,7 +1512,9 @@ public final class MIRWinX64CallingConvention superclass: MIRX86_64CallingConven
         allocator
             allocateCaptureVectorPointerRegisterForInstruction: instruction;
             spillIntegerRegistersExceptFor: X86_64::Win64::CallPreservedRegister;
-            spillVectorRegistersExceptFor: X86_64::Win64::CallPreservedVectorRegister
+            spillVectorRegistersExceptFor: X86_64::Win64::CallPreservedVectorRegister;
+            touchIntegerRegisters: X86_64::Win64::CallTouchedRegister;
+            touchVectorRegisters: X86_64::Win64::CallTouchedVectorRegister
     }.
 
     public override method integerCallPreservedRegisters => Array
@@ -1438,6 +1620,8 @@ public final class MIRWinX64CallingConvention superclass: MIRX86_64CallingConven
     }.
 }.
 
+public global MIR::X86_64::HotCallingConvention := MIRX86_64HotCallingConvention new.
+public global MIR::X86_64::ColdCallingConvention := MIRX86_64ColdCallingConvention new.
 public global MIR::X86_64::SysVCallingConvention := MIRSysVX86_64CallingConvention new.
 public global MIR::X86_64::Win64CallingConvention := MIRWinX64CallingConvention new.
 
@@ -1459,6 +1643,17 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
             ifTrue: MIR::X86_64::Win64CallingConvention
             ifFalse: MIR::X86_64::SysVCallingConvention.
 
+    public override method callingConventionNamed: (conventionName: Symbol) ::=> MIRCallingConvention := {
+        conventionName == #coldcc ifTrue: {
+            return: MIR::X86_64::ColdCallingConvention
+        }.
+        conventionName == #hotcc ifTrue: {
+            return: MIR::X86_64::HotCallingConvention
+        }.
+
+        self defaultCallingConvention
+    }.
+
     public override method emitFunctionPrologueWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         asmCompilationTarget isWindows ifFalse: {
             codegen textSection x86::endbr64
@@ -1477,12 +1672,10 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
             }.
 
             codegen function touchedCallPreservedRegisters do: {:(MIRPhysicalLocation)each :: Void |
-                each isIntegerRegister ifTrue: {
-                    let reg := (each x86::int64For: codegen) downCastTo: AsmRegister.
-                    codegen textSection
-                        x86::push: reg;
-                        cfiPushRegister: reg.
-                }.
+                let reg := (each x86::int64For: codegen) downCastTo: AsmRegister.
+                codegen textSection
+                    x86::push: reg;
+                    cfiPushRegister: reg.
             }.
         }.
     }.
@@ -1498,6 +1691,14 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
             codegen textSection
                 x86::sub: X86::RSP with: frameSize asInt32 asAsmImmediate;
                 cfiStackSizeAdvance: frameSize asInt64
+        }.
+
+        let vectorPreservedRegistersSegmentOffset := stackFrameLayout callVectorPreservedZone offset asInt32.
+        codegen function touchedCallPreservedVectorRegisters doWithIndex: {:(MIRPhysicalLocation)each :(Size)i :: Void |
+            let reg := (each x86::vector128For: codegen) downCastTo: AsmRegister.
+            let offset := (i*16sz) asInt32 + vectorPreservedRegistersSegmentOffset.
+            codegen textSection
+                x86::movaps: X86::RSP x86::oword + offset asAsmImmediate src: reg
         }.
 
         stackFrameLayout hasRequiredConstruction ifTrue: {
@@ -1525,7 +1726,7 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
 
     public override method emitStackFrameClearWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         let stackFrameLayout := codegen stackFrameLayout.
-        stackFrameLayout hasRequiredConstruction || stackFrameLayout hasGCDataThatShouldBeInitialized ifFalse: {
+        stackFrameLayout hasRequiredConstruction && stackFrameLayout hasGCDataThatShouldBeInitialized ifFalse: {
             return: void
         }.
 
@@ -1620,6 +1821,14 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
         stackFrameLayout hasRequiredConstruction ifTrue: {
             codegen emitGCStackFrameRecordUnlink.
             
+            let vectorPreservedRegistersSegmentOffset := stackFrameLayout callVectorPreservedZone offset asInt32.
+            codegen function touchedCallPreservedVectorRegisters doWithIndex: {:(MIRPhysicalLocation)each :(Size)i :: Void |
+                let reg := (each x86::vector128For: codegen) downCastTo: AsmRegister.
+                let offset := (i*16sz) asInt32 + vectorPreservedRegistersSegmentOffset.
+                codegen textSection
+                    x86::movaps: reg src: X86::RSP x86::oword + offset asAsmImmediate
+            }.
+
             let preservedRegisters := codegen function touchedCallPreservedRegisters.
             stackFrameLayout framePointerAnchorIsAtBottom ifTrue: {
                 let restoreSize := stackFrameLayout callPreservedZone offset - stackFrameLayout frameOrStackPointerAnchorOffset.
@@ -4596,7 +4805,8 @@ MIR::Operation::GenerationalWriteBarrer
         allocator
             allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateImmediate32ForInstruction: instruction operandAt: 1sz;
-            allocateRegisterForInstruction: instruction operandAt: 2sz
+            allocateRegister: MIR::X86_64::RDX forInstruction: instruction operandAt: 2sz;
+            allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 3sz
     };
     forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         let objectRegister := instruction firstOperandRegister x86::int64For: codegen.
@@ -4628,7 +4838,7 @@ MIR::Operation::GenerationalWriteBarrer
             ## Mark the dirty object.
             x86::lock; x86::or: objectFlagPointer with: ObjectModel::Flags::Dirty asAsmImmediate;
 
-            ## TODO: remember the dirty object.
+            x86::call: (instruction fourthOperandRegister x86::relCall32OrInt32For: codegen);
 
             label: writeBarrierEnd
     }.

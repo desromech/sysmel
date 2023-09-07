@@ -20,9 +20,29 @@ public nogc function makeStruct() => Int32 := {
     s sum asInt32
 }.
 
+public coldcc nogc function coldCCCalled(arg0: UIntPointer, arg1: UIntPointer) => Void := {
+    increment()
+}.
+
+public nogc function coldCCCaller() => Void := {
+    coldCCCalled(42uptr, 43uptr)
+}.
+
+public hotcc nogc function hotCCCalled(arg0: UIntPointer, arg1: UIntPointer) => Void := {
+    increment()
+}.
+
+public hotcc nogc function hotCCCallingCold(arg0: UIntPointer, arg1: UIntPointer) => Void := {
+    coldCCCalled(arg0, arg1)
+}.
+
+public nogc function hotCCCaller() => Void := {
+    hotCCCalled(42uptr, 43uptr)
+}.
+
 let hirModule := HIRModuleCompilationContext forDefaultTarget
     exclusiveCompilationMode: true;
-    compileFunctionsWithDefinitions: (increment,); ##(makeStruct, TestStruct >> #sum); ##(increment, ExceptionSetjmpBuffer >> #setjmp, ExceptionSetjmpBuffer >> #longjmp);
+    compileFunctionsWithDefinitions: (hotCCCaller, hotCCCalled, hotCCCallingCold, coldCCCaller, coldCCCalled, increment);##(increment,); ##(makeStruct, TestStruct >> #sum); ##(increment, ExceptionSetjmpBuffer >> #setjmp, ExceptionSetjmpBuffer >> #longjmp);
     finish.
 
 printLine(hirModule fullPrintString).

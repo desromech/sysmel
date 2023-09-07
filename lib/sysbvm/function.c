@@ -69,11 +69,12 @@ static bool sysbvm_primitiveTable_findEntryFor(sysbvm_functionEntryPoint_t primi
     return false;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_functionDefinition_create(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t flags, sysbvm_tuple_t argumentCount, sysbvm_tuple_t definitionEnvironment, sysbvm_tuple_t argumentNodes, sysbvm_tuple_t resultTypeNode, sysbvm_tuple_t body)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionDefinition_create(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t flags, sysbvm_tuple_t callingConventionName, sysbvm_tuple_t argumentCount, sysbvm_tuple_t definitionEnvironment, sysbvm_tuple_t argumentNodes, sysbvm_tuple_t resultTypeNode, sysbvm_tuple_t body)
 {
     sysbvm_functionDefinition_t *result = (sysbvm_functionDefinition_t*)sysbvm_context_allocatePointerTuple(context, context->roots.functionDefinitionType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_functionDefinition_t));
     result->sourcePosition = sourcePosition;
     result->flags = flags;
+    result->callingConventionName = callingConventionName;
     result->argumentCount = argumentCount; 
     result->definitionEnvironment = definitionEnvironment;
     result->definitionArgumentNodes = argumentNodes;

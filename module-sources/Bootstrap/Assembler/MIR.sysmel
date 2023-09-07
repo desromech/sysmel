@@ -27,6 +27,12 @@ public abstract class MIRAsmCompilationTarget superclass: MIRCompilationTarget; 
     public override method stackFrameAlignment => Size
         := asmCompilationTarget stackFrameAlignment.
 
+    public override method callPreservedVectorSize => Size
+        := asmCompilationTarget callPreservedVectorSize.
+
+    public override method callPreservedVectorAlignment => Size
+        := asmCompilationTarget callPreservedVectorAlignment.
+
     public override method usesThreadLocalSegmentPointer => Boolean
         := asmCompilationTarget usesThreadLocalSegmentPointer.
 

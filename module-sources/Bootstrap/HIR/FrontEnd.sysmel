@@ -104,6 +104,7 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
             primitiveName: functionDefinition analyzedPrimitiveName;
             sourcePosition: functionDefinition sourcePosition;
             isNoGC: functionDefinition isNoGC;
+            callingConvention: functionDefinition callingConventionName;
             arguments: (functionDefinition analyzedArgumentNodes collect: {:(ASTArgumentNode)argumentNode :: HIRFunctionArgument |
                 self generateArgumentForNode: argumentNode
             }) asArray;

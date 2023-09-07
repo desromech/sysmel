@@ -504,6 +504,7 @@ ASTUnexpandedApplicationNode
 
 NamedMetaBuilder publicSubclass: #FunctionMetaBuilder slots: (
     TypeSlot publicNamed: #functionFlags type: Bitflags ,
+    TypeSlot publicNamed: #callingConvention type: Symbol ,
     TypeSlot publicNamed: #isEager type: Boolean ,
     TypeSlot publicNamed: #isMacro type: Boolean ,
     TypeSlot publicNamed: #isPublic type: Boolean ,
@@ -572,6 +573,7 @@ FunctionMetaBuilder
         ASTLambdaNode new
             sourcePosition: self sourcePosition;
             flags: self functionFlags;
+            callingConventionName: self callingConvention;
             name: self name;
             arguments: self arguments;
             body: self expansionBody;
@@ -628,6 +630,7 @@ TemplateMetaBuilder
 
 MacroMetaBuilder publicSubclass: #MethodMetaBuilder slots: (
     TypeSlot publicNamed: #methodFlags type: Bitflags ,
+    TypeSlot publicNamed: #callingConvention type: Symbol ,
     TypeSlot publicNamed: #isMacro type: Boolean ,
     TypeSlot publicNamed: #isFallbackMethod type: Boolean ,
     TypeSlot publicNamed: #isEager type: Boolean ,
@@ -718,6 +721,7 @@ MethodMetaBuilder
         let: #methodNode with: (ASTLambdaNode new
             sourcePosition: self sourcePosition;
             flags: self methodFlags;
+            callingConventionName: self callingConvention;
             arguments: arguments;
             body: self bodyWithInjectedCode;
             resultType: self resultType;
@@ -772,6 +776,7 @@ MacroMethodMetaBuilder
 
 MacroMetaBuilder publicSubclass: #FlagMetaBuilder slots: (
     TypeSlot publicNamed: #methodFlags type: Bitflags ,
+    TypeSlot publicNamed: #callingConvention type: Symbol ,
     TypeSlot publicNamed: #typeFlags type: Bitflags ,
     TypeSlot publicNamed: #fieldFlags type: Bitflags ,
     TypeSlot publicNamed: #isPublic type: Boolean ,
@@ -860,6 +865,36 @@ FlagMetaBuilder
         self addMethodFlags: FunctionFlags::DLLExport.
         self continueExpansion
     };
+    withSelector: #cdecl addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self callingConvention: #cdecl.
+        self continueExpansion
+    };
+    withSelector: #stdcall addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self callingConvention: #stdcall.
+        self continueExpansion
+    };
+    withSelector: #apicall addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self callingConvention: #apicall.
+        self continueExpansion
+    };
+    withSelector: #thiscall addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self callingConvention: #thiscall.
+        self continueExpansion
+    };
+    withSelector: #coldcc addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self callingConvention: #coldcc.
+        self continueExpansion
+    };
+    withSelector: #hotcc addMethod: {:self :: ASTNode |
+        <metaBuilder>
+        self callingConvention: #hotcc.
+        self continueExpansion
+    };
     withSelector: #inline addMethod: {:self :: ASTNode |
         <metaBuilder>
         self addMethodFlags: FunctionFlags::Inline.
@@ -899,6 +934,7 @@ FlagMetaBuilder
         <metaBuilder>
         self delegateToMetaBuilder: (MethodMetaBuilder new
             addMethodFlags: self methodFlags;
+            callingConvention: self callingConvention;
             isEager: self isEager;
             yourself)
     };
@@ -919,6 +955,7 @@ FlagMetaBuilder
         <metaBuilder>
         self delegateToMetaBuilder: (FunctionMetaBuilder new
             addFunctionFlags: self methodFlags;
+            callingConvention: self callingConvention;
             isPublic: self isPublic;
             isEager: self isEager;
             yourself)

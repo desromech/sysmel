@@ -115,7 +115,8 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
             performsCallouts: performsCallouts;
             maxCalloutSize: maxCalloutSize;
             maxCalloutAlignment: maxCalloutAlignment;
-            touchedCallPreservedRegisters: (function callingConvention integerCallPreservedRegisters select: {:(MIRPhysicalLocation)register | integerRegisterFile usesRegister: register }) asArray
+            touchedCallPreservedRegisters: (function callingConvention integerCallPreservedRegisters select: {:(MIRPhysicalLocation)register | integerRegisterFile usesRegister: register }) asArray;
+            touchedCallPreservedVectorRegisters: (function callingConvention vectorCallPreservedRegisters select: {:(MIRPhysicalLocation)register | vectorRegisterFile usesRegister: register }) asArray
     }.
 
     public method allocateRegistersInBasicBlock: (basicBlock: MIRBasicBlock) ::=> Void := {
@@ -336,6 +337,18 @@ public final class MIRLinearScanRegisterAllocator superclass: MIRRegisterAllocat
 
     public override method spillVectorRegistersExceptFor: (registers: Array) ::=> Void := {
         vectorRegisterFile spillRegistersIfNeededExceptFor: registers
+    }.
+
+    public override method touchIntegerRegisters: (registers: Array) ::=> Void := {
+        integerRegisterFile touchRegisters: registers
+    }.
+
+    public override method touchFloatRegisters: (registers: Array) ::=> Void := {
+        floatRegisterFile touchRegisters: registers
+    }.
+
+    public override method touchVectorRegisters: (registers: Array) ::=> Void := {
+        vectorRegisterFile touchRegisters: registers
     }.
 
     public override method spillGCRootsForCalling: (calledFunction: MIRValue) ::=> Void := {

@@ -251,6 +251,7 @@ ASTLambdaNode definition: {
         := FunctionDefinition new
             sourcePosition: self sourcePosition;
             flags: self flags;
+            callingConventionName: self callingConventionName;
             argumentCount: self argumentCount;
             definitionEnvironment: environment;
             definitionArgumentNodes: self arguments;

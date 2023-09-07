@@ -568,7 +568,11 @@ public nogc function GarbageCollector::collectMost() => Void := {
     GarbageCollector::fullCollect().
 }.
 
-public nogc function GarbageCollector::rememberPointer(pointer: UIntPointer) => Void := {
+public coldcc nogc function GarbageCollector::increaseRememberSetCapacity() => Void := {
+
+}.
+
+public hotcc nogc function GarbageCollector::rememberPointer(object: UIntPointer) => Void := {
 
 }.
 

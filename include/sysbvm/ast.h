@@ -83,6 +83,7 @@ typedef struct sysbvm_astLambdaNode_s
     sysbvm_astNode_t super;
     sysbvm_tuple_t name;
     sysbvm_tuple_t flags;
+    sysbvm_tuple_t callingConventionName;
     sysbvm_tuple_t arguments;
     sysbvm_tuple_t resultType;
     sysbvm_tuple_t body;

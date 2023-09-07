@@ -22,6 +22,10 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
     public method usesRegister: (register: MIRPhysicalLocation) ::=> Boolean
         := usedRegisterSet includes: register.
 
+    public method touchRegisters: (registers: Array) ::=> Void := {
+        usedRegisterSet addAll: registers
+    }.
+
     public method beginValueAtIndex: (valueIndex: UInt32) ::=> Void := {
         currentValueIndex := valueIndex.
         self expireOldLiveIntervals.
