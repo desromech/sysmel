@@ -4594,7 +4594,7 @@ MIR::Operation::LoadStruct
 MIR::Operation::GenerationalWriteBarrer
     forTargets: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
-            allocateRegisterForInstruction: instruction operandAt: 0sz;
+            allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
             allocateImmediate32ForInstruction: instruction operandAt: 1sz;
             allocateRegisterForInstruction: instruction operandAt: 2sz
     };
@@ -4611,6 +4611,10 @@ MIR::Operation::GenerationalWriteBarrer
             x86::test: objectRegister with: objectRegister;
             x86::jz: writeBarrierEndDestination;
 
+            ## Old and not remembered object
+            x86::test: objectFlagPointer with: (ObjectModel::Flags::Dirty | ObjectModel::Flags::Young) asAsmImmediate;
+            x86::jnz: writeBarrierEndDestination;
+
             ## Not nil pointer value
             x86::test: valueRegister with: valueRegister;
             x86::jz: writeBarrierEndDestination;
@@ -4620,10 +4624,6 @@ MIR::Operation::GenerationalWriteBarrer
             ## Young value
             x86::test: valueFlagRegister with: ObjectModel::Flags::Young asAsmImmediate;
             x86::jz: writeBarrierEndDestination;
-
-            ## Old and not remembered object
-            x86::test: objectFlagPointer with: (ObjectModel::Flags::Dirty | ObjectModel::Flags::Young) asAsmImmediate;
-            x86::jnz: writeBarrierEndDestination;
 
             ## Mark the dirty object.
             x86::lock; x86::or: objectFlagPointer with: ObjectModel::Flags::Dirty asAsmImmediate;

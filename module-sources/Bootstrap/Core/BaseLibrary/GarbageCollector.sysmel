@@ -582,6 +582,6 @@ public nogc function GarbageCollector::safepoint() => Void := {
         return: void.
     }.
 
-    GarbageCollector::collect().
+    ##GarbageCollector::collect().
     ##GarbageCollector::collectMost()
 }.
