@@ -4591,29 +4591,45 @@ MIR::Operation::LoadStruct
             x86::rep; x86::movsb
     }.
 
-MIR::Operation::DirtyMarkWriteBarrer
-    forTargets: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
-        allocator
-            allocateRegisterOrImmediate32PointerForInstruction: instruction operandAt: 0sz;
-            allocateImmediate32ForInstruction: instruction operandAt: 1sz
-    };
-    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
-        codegen textSection x86::lock; x86::or: (instruction firstOperandRegister x86::int32PointerWithOffset: instruction secondOperandRegister for: codegen) with: ObjectModel::Flags::Dirty asAsmImmediate
-    }.
-
-MIR::Operation::DirtyMarkWriteBarrerIfNotNil
+MIR::Operation::GenerationalWriteBarrer
     forTargets: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
             allocateRegisterForInstruction: instruction operandAt: 0sz;
-            allocateImmediate32ForInstruction: instruction operandAt: 1sz
+            allocateImmediate32ForInstruction: instruction operandAt: 1sz;
+            allocateRegisterForInstruction: instruction operandAt: 2sz
     };
-    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
-        let register := instruction firstOperandRegister x86::int32For: codegen.
+    forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        let objectRegister := instruction firstOperandRegister x86::int64For: codegen.
+        let objectFlagPointer := instruction firstOperandRegister x86::int32PointerWithOffset: instruction secondOperandRegister for: codegen.
+        let valueRegister := instruction thirdOperandRegister x86::int64For: codegen.
+        let valueFlagRegister := instruction thirdOperandRegister x86::int32PointerWithOffset: instruction secondOperandRegister for: codegen.
         let writeBarrierEnd := codegen textSection newPrivateSymbolNamed: #writeBarrierEnd.
+        let writeBarrierEndDestination := writeBarrierEnd byte.
+
         codegen textSection
-            x86::test: register with: register;
-            x86::jnz: writeBarrierEnd byte;
-            x86::lock; x86::or: (instruction firstOperandRegister x86::int32PointerWithOffset: instruction secondOperandRegister for: codegen) with: ObjectModel::Flags::Dirty asAsmImmediate;
+            ## Not nil object
+            x86::test: objectRegister with: objectRegister;
+            x86::jz: writeBarrierEndDestination;
+
+            ## Not nil pointer value
+            x86::test: valueRegister with: valueRegister;
+            x86::jz: writeBarrierEndDestination;
+            x86::test: valueRegister with: ObjectModel::Tag::Mask asInt8 asAsmImmediate;
+            x86::jnz: writeBarrierEndDestination;
+
+            ## Young value
+            x86::test: valueFlagRegister with: ObjectModel::Flags::Young asAsmImmediate;
+            x86::jz: writeBarrierEndDestination;
+
+            ## Old and not remembered object
+            x86::test: objectFlagPointer with: (ObjectModel::Flags::Dirty | ObjectModel::Flags::Young) asAsmImmediate;
+            x86::jnz: writeBarrierEndDestination;
+
+            ## Mark the dirty object.
+            x86::lock; x86::or: objectFlagPointer with: ObjectModel::Flags::Dirty asAsmImmediate;
+
+            ## TODO: remember the dirty object.
+
             label: writeBarrierEnd
     }.
 

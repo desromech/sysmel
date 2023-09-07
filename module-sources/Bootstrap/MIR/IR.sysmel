@@ -1346,8 +1346,7 @@ public global MIR::Operation::StoreFloat32 := MIROperation named: #storeFloat32.
 public global MIR::Operation::StoreFloat64 := MIROperation named: #storeFloat64.
 public global MIR::Operation::StoreStruct := MIROperation named: #storeStruct.
 
-public global MIR::Operation::DirtyMarkWriteBarrer := MIROperation named: #dirtyMarkWriteBarrer.
-public global MIR::Operation::DirtyMarkWriteBarrerIfNotNil := MIROperation named: #dirtyMarkWriteBarrerIfNotNil.
+public global MIR::Operation::GenerationalWriteBarrer := MIROperation named: #generationalWriteBarrer.
 
 public global MIR::Operation::Memcpy := MIROperation named: #memcpy.
 public global MIR::Operation::Memset := MIROperation named: #memset.
@@ -2276,11 +2275,8 @@ public final class MIRBlockBuilder superclass: Object; definition: {
     public method storeStruct: (value: MIRValue) into: (pointer: MIRValue) constantOffset: (constantOffset: Int64) ::=> MIRInstruction
         := self operation: MIR::Operation::StoreStruct with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
 
-    public method dirtyMarkWriteBarrer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) ::=> MIRInstruction
-        := self operation: MIR::Operation::DirtyMarkWriteBarrer with: pointer with: (self constantOffsetImmediateFor: constantOffset).
-
-    public method dirtyMarkWriteBarrerIfNotNil: (pointer: MIRValue) constantOffset: (constantOffset: Int64) ::=> MIRInstruction
-        := self operation: MIR::Operation::DirtyMarkWriteBarrerIfNotNil with: pointer with: (self constantOffsetImmediateFor: constantOffset).
+    public method generationalWriteBarrer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) value: (storedValue: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::GenerationalWriteBarrer with: pointer with: (self constantOffsetImmediateFor: constantOffset) with: storedValue.
 
     public method memcpy: (destination: MIRValue) source: (source: MIRValue) size: (size: MIRValue) ::=> MIRInstruction
         := self operation: MIR::Operation::Memcpy with: destination with: source with: size.

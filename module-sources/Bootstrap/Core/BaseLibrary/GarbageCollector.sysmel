@@ -568,6 +568,9 @@ public nogc function GarbageCollector::collectMost() => Void := {
     GarbageCollector::fullCollect().
 }.
 
+public nogc function GarbageCollector::rememberPointer(pointer: UIntPointer) => Void := {
+
+}.
 
 public nogc function GarbageCollector::safepoint() => Void := {
     GarbageCollector::CurrentYoungHeapSize >= GarbageCollector::NextYoungCollectionThreshold ifFalse: {
