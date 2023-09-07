@@ -199,6 +199,9 @@ AsmImmediateSymbolWithAddend definition: {
     public override method sumSigned32WithInt32: (next: Int32) ::=> AsmImmediate
         := self + next asInt64.
 
+    public override method sumSigned32With: (other: AsmImmediate) ::=> AsmImmediate
+        := other sumSigned32WithSymbolWithAddend: self.
+
     public override method sumSigned32WithSymbolWithAddend: (next: AsmImmediateSymbolWithAddend) ::=> AsmImmediate
         := self error: "Cannot sum two symbols.".
 

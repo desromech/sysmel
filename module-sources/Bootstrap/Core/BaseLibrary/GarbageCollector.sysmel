@@ -12,10 +12,10 @@ if: Size valueSize = 8sz then: {
     }.
 }.
 
-public final struct GarbageCollector::PointerStack definition: {
+public final struct GarbageCollector::PointerList definition: {
     private field capacity => Size.
-    private field size => Size.
-    private field data => UIntPointer pointer.
+    public field size => Size.
+    public field data => UIntPointer pointer.
 
     let PointerSize := UIntPointer valueSize.
 
@@ -28,8 +28,8 @@ public final struct GarbageCollector::PointerStack definition: {
         }.
     }.
 
-    private inline nogc method increaseCapacity => Void := {
-        let newCapacity := capacity * 2sz max: 1sz<<20sz.
+    public nogc method increaseCapacity => Void := {
+        let newCapacity := capacity * 2sz max: 64sz<<10sz.
         let newData := sysmel_pal_malloc(newCapacity * PointerSize) reinterpretCastTo: UIntPointer pointer.
         capacity > 0sz ifTrue: {
             memcpy(newData reinterpretCastTo: Void pointer, data reinterpretCastTo: Void pointer, size * PointerSize).
@@ -38,6 +38,11 @@ public final struct GarbageCollector::PointerStack definition: {
 
         capacity := newCapacity.
         data := newData.
+    }.
+
+    public inline nogc method pushNoCheck: (element: UIntPointer) ::=> Void := {
+        data[size asIntPointer] := element.
+        size := size + 1sz
     }.
 
     public inline nogc method push: (element: UIntPointer) ::=> Void := {
@@ -49,11 +54,18 @@ public final struct GarbageCollector::PointerStack definition: {
         size := size + 1sz
     }.
 
+    public inline nogc method isFull => Boolean
+        := size >= capacity.
+
     public inline nogc method isEmpty => Boolean
         := size = 0sz.
 
     public inline nogc method isNotEmpty => Boolean
         := size ~= 0sz.
+
+    public inline nogc method clear ::=> Void := {
+        size := 0sz.
+    }.
 
     public inline nogc method pop ::=> UIntPointer := {
         self isNotEmpty ifFalse: {
@@ -84,7 +96,8 @@ private global GarbageCollector::LastYoungAllocatedObject mutable => GarbageColl
 private global GarbageCollector::FirstAllocatedObject mutable => GarbageCollector::ObjectHeader pointer := nil.
 private global GarbageCollector::LastAllocatedObject mutable => GarbageCollector::ObjectHeader pointer := nil.
 
-private global GarbageCollector::MarkingStack mutable := GarbageCollector::PointerStack basicNew.
+private global GarbageCollector::MarkingStack mutable := GarbageCollector::PointerList basicNew.
+private global GarbageCollector::RememberedSet mutable := GarbageCollector::PointerList basicNew.
 
 public global GarbageCollector::WhiteColor := 0u8.
 public global GarbageCollector::GrayColor := 1u8.
@@ -159,7 +172,7 @@ public nogc function GarbageCollector::shutdown() => Void := {
     GarbageCollector::IsInitialized := false.
 }.
 
-private nogc function GarbageCollector::markPointerValue(pointer: UIntPointer) => Void := {
+public nogc function GarbageCollector::markPointerValue(pointer: UIntPointer) => Void := {
     ObjectModel::isNonNullPointerValue(pointer) ifFalse: {
         return: void
     }.
@@ -173,7 +186,7 @@ private nogc function GarbageCollector::markPointerValue(pointer: UIntPointer) =
     }.
 }.
 
-private nogc function GarbageCollector::markStackFrameContent(stackFrame: GCStackFrameRecord pointer) => Void := {
+public nogc function GarbageCollector::markStackFrameContent(stackFrame: GCStackFrameRecord pointer) => Void := {
     let descriptor := stackFrame _ descriptor.
     let framePointer := stackFrame reinterpretCastTo: UIntPointer.
 
@@ -233,14 +246,14 @@ private nogc function GarbageCollector::markStackFrameContent(stackFrame: GCStac
     }.
 }.
 
-private nogc function GarbageCollector::markStackPointers(lastStackFrameRecord: GCStackFrameRecord pointer) => Void := {
+public nogc function GarbageCollector::markStackPointers(lastStackFrameRecord: GCStackFrameRecord pointer) => Void := {
     let position mutable := lastStackFrameRecord.
     while: (position isNotNil) do: {
         GarbageCollector::markStackFrameContent(position)
     } continueWith: (position := position _ previous).
 }.
 
-private nogc function GarbageCollector::markContentOfObject(objectPointer: UIntPointer) => Void := {
+public nogc function GarbageCollector::markContentOfObject(objectPointer: UIntPointer) => Void := {
     ObjectModel::isNonNullPointerValue(objectPointer) ifFalse: {
         return: void
     }.
@@ -308,7 +321,7 @@ private nogc function GarbageCollector::markContentOfObject(objectPointer: UIntP
     header _ gcColor: GarbageCollector::BlackColor.
 }.
 
-private nogc function GarbageCollector::mark() => Void := {
+public nogc function GarbageCollector::mark() => Void := {
     ## Mark the static root pointer table.
     {
         let position mutable := GarbageCollector::StaticRootPointerTableStart address.
@@ -327,32 +340,12 @@ private nogc function GarbageCollector::mark() => Void := {
     }.
 
     GarbageCollector::IsCollectingYoungGeneration ifTrue: {
-        ## Traverse the static object segment.
-        {
-            let segmentStartAddress := GarbageCollector::StaticObjectSegmentStart address reinterpretCastTo: UIntPointer.
-            let segmentEndAddress := GarbageCollector::StaticObjectSegmentEnd address reinterpretCastTo: UIntPointer.
-            let ObjectAlignment := 16uptr.
-
-            let position mutable := segmentStartAddress alignedTo: ObjectAlignment.
-            while: (position < segmentEndAddress) do: {
-                let objectHeader := position reinterpretCastTo: ObjectModel::TupleHeader pointer.
-                let objectSize := ObjectModel::TupleHeaderSize + objectHeader _ objectSize asUIntPointer.
-                objectHeader _ isDirty ifTrue: {
-                    GarbageCollector::markPointerValue(objectHeader reinterpretCastTo: UIntPointer)
-                }.
-
-                position := position + objectSize alignedTo: ObjectAlignment
-            }.
-        }.
-
-        ## Traverse old allocated objects
-        let position mutable := GarbageCollector::FirstAllocatedObject.
-        while: (position isNotNil) do: {
-            let objectHeader := position + 1iptr reinterpretCastTo: ObjectModel::TupleHeader pointer.
-            objectHeader _ isDirty ifTrue: {
-                GarbageCollector::markPointerValue(objectHeader reinterpretCastTo: UIntPointer)
-            }.
-        } continueWith: (position := position _ next).
+        let i mutable := 0sz.
+        let setSize := GarbageCollector::RememberedSet size.
+        let setElements := GarbageCollector::RememberedSet data.
+        while: (i < setSize) do: {
+            GarbageCollector::markPointerValue(setElements[i asIntPointer]).
+        } continueWith: (i := i + 1sz)
     }.
 
     ## Mark the stack pointers.
@@ -369,7 +362,7 @@ private inline nogc function GarbageCollector::isDeadObjectPointer(objectPointer
     (header _ gcColor = GarbageCollector::WhiteColor) && (GarbageCollector::IsCollectingYoungGeneration not || header _ isYoung).
 }.
 
-private nogc function GarbageCollector::clearDeadWeakReferencesOf(objectPointer: UIntPointer) => Void := {
+public nogc function GarbageCollector::clearDeadWeakReferencesOf(objectPointer: UIntPointer) => Void := {
     let header := objectPointer reinterpretCastTo: ObjectModel::TupleHeader pointer.
     header _ isWeak ifFalse: {
         return: void
@@ -392,49 +385,62 @@ private nogc function GarbageCollector::clearDeadWeakReferencesOf(objectPointer:
     } continueWith: (i := i + 1sz)
 }.
 
-private nogc function GarbageCollector::clearDeadWeakReferences() => Void := {
-    ## Traverse the static object segment.
-    {
-        let segmentStartAddress := GarbageCollector::StaticObjectSegmentStart address reinterpretCastTo: UIntPointer.
-        let segmentEndAddress := GarbageCollector::StaticObjectSegmentEnd address reinterpretCastTo: UIntPointer.
-        let ObjectAlignment := 16uptr.
+public nogc function GarbageCollector::clearDeadWeakReferences() => Void := {
+    GarbageCollector::IsCollectingYoungGeneration ifTrue: {
+        let i mutable := 0sz.
+        let setSize := GarbageCollector::RememberedSet size.
+        let setElements := GarbageCollector::RememberedSet data.
+        while: (i < setSize) do: {
+            let objectHeader := setElements[i asIntPointer] reinterpretCastTo: ObjectModel::TupleHeader pointer.
+            objectHeader _ isDirty ifTrue: {
+                GarbageCollector::clearDeadWeakReferencesOf(objectHeader reinterpretCastTo: UIntPointer).
+                objectHeader _ clearDirty
+            }.
+        } continueWith: (i := i + 1sz).
+    } ifFalse: {
 
-        let position mutable := segmentStartAddress alignedTo: ObjectAlignment.
-        while: (position < segmentEndAddress) do: {
-            let objectHeader := position reinterpretCastTo: ObjectModel::TupleHeader pointer.
-            let objectSize := ObjectModel::TupleHeaderSize + objectHeader _ objectSize asUIntPointer.
-            GarbageCollector::IsCollectingYoungGeneration || (objectHeader _ gcColor ~= GarbageCollector::WhiteColor) ifTrue: {
+        ## Traverse the static object segment.
+        {
+            let segmentStartAddress := GarbageCollector::StaticObjectSegmentStart address reinterpretCastTo: UIntPointer.
+            let segmentEndAddress := GarbageCollector::StaticObjectSegmentEnd address reinterpretCastTo: UIntPointer.
+            let ObjectAlignment := 16uptr.
+
+            let position mutable := segmentStartAddress alignedTo: ObjectAlignment.
+            while: (position < segmentEndAddress) do: {
+                let objectHeader := position reinterpretCastTo: ObjectModel::TupleHeader pointer.
+                let objectSize := ObjectModel::TupleHeaderSize + objectHeader _ objectSize asUIntPointer.
+                (objectHeader _ gcColor ~= GarbageCollector::WhiteColor) ifTrue: {
+                    GarbageCollector::clearDeadWeakReferencesOf(objectHeader reinterpretCastTo: UIntPointer)
+                }.
+
+                position := position + objectSize alignedTo: ObjectAlignment
+            }.
+        }.
+
+        ## Traverse old generation
+        let position mutable := GarbageCollector::FirstAllocatedObject.
+        while: (position isNotNil) do: {
+            let objectHeader := position + 1iptr reinterpretCastTo: ObjectModel::TupleHeader pointer.
+            (objectHeader _ gcColor ~= GarbageCollector::WhiteColor) ifTrue: {
                 GarbageCollector::clearDeadWeakReferencesOf(objectHeader reinterpretCastTo: UIntPointer)
             }.
-            objectHeader _ clearDirty.
 
-            position := position + objectSize alignedTo: ObjectAlignment
-        }.
+        } continueWith: (position := position _ next).
     }.
 
-    ## Traverse old generation
-    let position mutable := GarbageCollector::FirstAllocatedObject.
-    while: (position isNotNil) do: {
-        let objectHeader := position + 1iptr reinterpretCastTo: ObjectModel::TupleHeader pointer.
-        GarbageCollector::IsCollectingYoungGeneration || (objectHeader _ gcColor ~= GarbageCollector::WhiteColor) ifTrue: {
-            GarbageCollector::clearDeadWeakReferencesOf(objectHeader reinterpretCastTo: UIntPointer)
-        }.
-        objectHeader _ clearDirty.
-
-    } continueWith: (position := position _ next).
-
     ## Traverse young generation
-    position := GarbageCollector::FirstYoungAllocatedObject.
-    while: (position isNotNil) do: {
-        let objectHeader := position + 1iptr reinterpretCastTo: ObjectModel::TupleHeader pointer.
-        objectHeader _ gcColor ~= GarbageCollector::WhiteColor ifTrue: {
-            GarbageCollector::clearDeadWeakReferencesOf(objectHeader reinterpretCastTo: UIntPointer)
-        }.
-        objectHeader _ clearDirty.
-    } continueWith: (position := position _ next).
+    {
+        let position mutable := GarbageCollector::FirstYoungAllocatedObject.
+        while: (position isNotNil) do: {
+            let objectHeader := position + 1iptr reinterpretCastTo: ObjectModel::TupleHeader pointer.
+            objectHeader _ gcColor ~= GarbageCollector::WhiteColor ifTrue: {
+                GarbageCollector::clearDeadWeakReferencesOf(objectHeader reinterpretCastTo: UIntPointer)
+            }.
+        } continueWith: (position := position _ next).
+    }.
 }.
 
-private nogc function GarbageCollector::sweepYoungAllocatedObjects() => Void := {
+public nogc function GarbageCollector::sweepYoungAllocatedObjects() => Void := {
     let position mutable := GarbageCollector::FirstYoungAllocatedObject.
     GarbageCollector::FirstYoungAllocatedObject := GarbageCollector::LastYoungAllocatedObject := nil.
 
@@ -454,7 +460,7 @@ private nogc function GarbageCollector::sweepYoungAllocatedObjects() => Void := 
                 sysmel_pal_abort()
             }.
 
-            objectHeader _ gcColor: GarbageCollector::WhiteColor.
+            objectHeader _ gcColor: GarbageCollector::WhiteColor; clearDirty.
 
             ## Tenuring.
             objectHeader _ clearYoung.
@@ -465,16 +471,17 @@ private nogc function GarbageCollector::sweepYoungAllocatedObjects() => Void := 
     }.
 }.
 
-private nogc function GarbageCollector::resetOldAllocatedObjectsColor() => Void := {
-    let position mutable := GarbageCollector::FirstAllocatedObject.
-
-    while: (position isNotNil) do: {
-        let objectHeader := position + 1iptr reinterpretCastTo: ObjectModel::TupleHeader pointer.
-        objectHeader _ gcColor: GarbageCollector::WhiteColor.
-    } continueWith: (position := position _ next)
+public nogc function GarbageCollector::resetRememberedObjectsColor() => Void := {
+    let i mutable := 0sz.
+    let setSize := GarbageCollector::RememberedSet size.
+    let setElements := GarbageCollector::RememberedSet data.
+    while: (i < setSize) do: {
+        let objectHeader := setElements[i asIntPointer] reinterpretCastTo: ObjectModel::TupleHeader pointer.
+        objectHeader _ gcColor: GarbageCollector::WhiteColor; clearDirty.
+    } continueWith: (i := i + 1sz).
 }.
 
-private nogc function GarbageCollector::sweepOldAllocatedObjects() => Void := {
+public nogc function GarbageCollector::sweepOldAllocatedObjects() => Void := {
     let position mutable := GarbageCollector::FirstAllocatedObject.
     GarbageCollector::FirstAllocatedObject := GarbageCollector::LastAllocatedObject := nil.
 
@@ -491,7 +498,7 @@ private nogc function GarbageCollector::sweepOldAllocatedObjects() => Void := {
                 sysmel_pal_abort()
             }.
 
-            objectHeader _ gcColor: GarbageCollector::WhiteColor.
+            objectHeader _ gcColor: GarbageCollector::WhiteColor; clearDirty.
             GarbageCollector::addOldAllocatedObject(position).
         }.
 
@@ -499,17 +506,18 @@ private nogc function GarbageCollector::sweepOldAllocatedObjects() => Void := {
     }.
 }.
 
-private nogc function GarbageCollector::sweepAllocatedObjects() => Void := {
+public nogc function GarbageCollector::sweepAllocatedObjects() => Void := {
     GarbageCollector::IsCollectingYoungGeneration ifTrue: {
-        GarbageCollector::resetOldAllocatedObjectsColor()
+        GarbageCollector::resetRememberedObjectsColor()
     } ifFalse: {
         GarbageCollector::sweepOldAllocatedObjects()
     }.
 
     GarbageCollector::sweepYoungAllocatedObjects().
+    GarbageCollector::RememberedSet clear
 }.
 
-private nogc function GarbageCollector::sweepStaticObjectSegment() => Void := {
+public nogc function GarbageCollector::sweepStaticObjectSegment() => Void := {
     let segmentStartAddress := GarbageCollector::StaticObjectSegmentStart address reinterpretCastTo: UIntPointer.
     let segmentEndAddress := GarbageCollector::StaticObjectSegmentEnd address reinterpretCastTo: UIntPointer.
     let ObjectAlignment := 16uptr.
@@ -524,10 +532,10 @@ private nogc function GarbageCollector::sweepStaticObjectSegment() => Void := {
     }.
 }.
 
-private nogc function GarbageCollector::sweepStackObjects() => Void := {
+public nogc function GarbageCollector::sweepStackObjects() => Void := {
 }.
 
-private nogc function GarbageCollector::sweep() => Void := {
+public nogc function GarbageCollector::sweep() => Void := {
     GarbageCollector::sweepAllocatedObjects().
     GarbageCollector::sweepStaticObjectSegment().
     GarbageCollector::sweepStackObjects().
@@ -569,11 +577,15 @@ public nogc function GarbageCollector::collectMost() => Void := {
 }.
 
 public coldcc nogc function GarbageCollector::increaseRememberSetCapacity() => Void := {
-
+    GarbageCollector::RememberedSet increaseCapacity
 }.
 
 public hotcc nogc function GarbageCollector::rememberPointer(object: UIntPointer) => Void := {
+    GarbageCollector::RememberedSet isFull ifTrue: {
+        GarbageCollector::increaseRememberSetCapacity()
+    }.
 
+    GarbageCollector::RememberedSet pushNoCheck: object
 }.
 
 public nogc function GarbageCollector::safepoint() => Void := {
@@ -586,6 +598,5 @@ public nogc function GarbageCollector::safepoint() => Void := {
         return: void.
     }.
 
-    ##GarbageCollector::collect().
-    ##GarbageCollector::collectMost()
+    GarbageCollector::collect().
 }.

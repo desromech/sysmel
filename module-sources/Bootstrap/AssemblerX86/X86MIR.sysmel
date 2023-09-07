@@ -1039,16 +1039,14 @@ public abstract class MIRX86_64CallingConvention superclass: MIRCallingConventio
 
 public global X86_64::HotCC::CallPreservedVectorRegister := #().
 public global X86_64::HotCC::CallPreservedRegister => Array := (
-    MIR::X86_64::RCX, MIR::X86_64::RBX,
+    MIR::X86_64::RAX, MIR::X86_64::RCX, MIR::X86_64::RDX, MIR::X86_64::RBX,
     MIR::X86_64::RSP, MIR::X86_64::RBP, MIR::X86_64::RSI, MIR::X86_64::RDI,
     MIR::X86_64::R8, MIR::X86_64::R9, MIR::X86_64::R10, MIR::X86_64::R11,
     MIR::X86_64::R12, MIR::X86_64::R13, MIR::X86_64::R14, MIR::X86_64::R15
 ).
 
 public global X86_64::HotCC::CallTouchedVectorRegister := #().
-public global X86_64::HotCC::CallTouchedRegister => Array := (
-    MIR::X86_64::RAX, MIR::X86_64::RDX,
-).
+public global X86_64::HotCC::CallTouchedRegister => Array := #().
 
 public final class MIRX86_64HotCallingConvention superclass: MIRX86_64CallingConvention; definition: {
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -1078,6 +1076,7 @@ public final class MIRX86_64HotCallingConvention superclass: MIRX86_64CallingCon
         }.
 
         allocator
+            addRequiredCalloutSize: 0sz withAlignment: 16sz;
             allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz;
             allocateCaptureVectorPointerRegisterForInstruction: instruction;
             spillIntegerRegistersExceptFor: X86_64::HotCC::CallPreservedRegister;
@@ -1144,7 +1143,9 @@ public final class MIRX86_64ColdCallingConvention superclass: MIRX86_64CallingCo
             }.
         }.
 
+
         allocator
+            addRequiredCalloutSize: 0sz withAlignment: 16sz;
             allocateRegisterOrRelativeImmediate32ForInstruction: instruction operandAt: 0sz;
             allocateCaptureVectorPointerRegisterForInstruction: instruction;
             spillIntegerRegistersExceptFor: X86_64::ColdCC::CallPreservedRegister;
@@ -1726,7 +1727,11 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
 
     public override method emitStackFrameClearWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
         let stackFrameLayout := codegen stackFrameLayout.
-        stackFrameLayout hasRequiredConstruction && stackFrameLayout hasGCDataThatShouldBeInitialized ifFalse: {
+        stackFrameLayout hasRequiredConstruction || stackFrameLayout hasGCDataThatShouldBeInitialized ifFalse: {
+            return: void
+        }.
+
+        codegen function isNoGC ifTrue: {
             return: void
         }.
 
