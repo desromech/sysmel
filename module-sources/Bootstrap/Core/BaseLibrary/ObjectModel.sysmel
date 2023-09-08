@@ -70,10 +70,20 @@ public global ObjectModel::ImmediateTrivialTypeTable := (
     False, True, Void, HashtableEmpty, ObjectTombstone, PendingMemoizationValue
 ).
 
-public global ObjectModel::IdentityHash::Bits := 22u32.
-public global ObjectModel::IdentityHash::Mask := (1u32 << ObjectModel::IdentityHash::Bits) - 1u32.
+public global ObjectModel::GCColor::Shift := 0u32.
+public global ObjectModel::GCColor::Bits := 2u32.
+public global ObjectModel::GCColor::Mask := ((1u32 << ObjectModel::GCColor::Bits) - 1u32) << ObjectModel::GCColor::Shift.
 
-public global ObjectModel::ObjectType::Shift := ObjectModel::IdentityHash::Bits.
+public global ObjectModel::Flags::Shift := ObjectModel::GCColor::Bits.
+public global ObjectModel::Flags::Bits := 6u32.
+public global ObjectModel::Flags::Dirty := 1u32 << ObjectModel::Flags::Shift.
+public global ObjectModel::Flags::Young := 1u32 << (ObjectModel::Flags::Shift + 1u32).
+public global ObjectModel::Flags::Reserved := 1u32 << (ObjectModel::Flags::Shift + 2u32).
+public global ObjectModel::Flags::Immutable := 1u32 << (ObjectModel::Flags::Shift + 3u32).
+public global ObjectModel::Flags::NeedsFinalization := 1u32 << (ObjectModel::Flags::Shift + 4u32).
+public global ObjectModel::Flags::DummyValue := 1u32 << (ObjectModel::Flags::Shift + 5u32).
+
+public global ObjectModel::ObjectType::Shift := ObjectModel::Flags::Shift + ObjectModel::Flags::Bits.
 public global ObjectModel::ObjectType::Bits := 2u32.
 public global ObjectModel::ObjectType::Mask := ((1u32 << ObjectModel::ObjectType::Bits) - 1u32) << ObjectModel::ObjectType::Shift.
 public global ObjectModel::ObjectType::Pointers := 0u32.
@@ -81,16 +91,9 @@ public global ObjectModel::ObjectType::WeakPointers := 1u32.
 public global ObjectModel::ObjectType::Bytes := 2u32.
 public global ObjectModel::ObjectType::Complex := 3u32.
 
-public global ObjectModel::GCColor::Shift := ObjectModel::ObjectType::Shift + ObjectModel::ObjectType::Bits.
-public global ObjectModel::GCColor::Bits := 2u32.
-public global ObjectModel::GCColor::Mask := ((1u32 << ObjectModel::GCColor::Bits) - 1u32) << ObjectModel::GCColor::Shift.
-
-public global ObjectModel::Flags::Shift := ObjectModel::GCColor::Shift + ObjectModel::GCColor::Bits.
-public global ObjectModel::Flags::Dirty := 1u32 << ObjectModel::Flags::Shift.
-public global ObjectModel::Flags::Young := 1u32 << (ObjectModel::Flags::Shift + 1u32).
-public global ObjectModel::Flags::Immutable := 1u32 << (ObjectModel::Flags::Shift + 2u32).
-public global ObjectModel::Flags::NeedsFinalization := 1u32 << (ObjectModel::Flags::Shift + 3u32).
-public global ObjectModel::Flags::DummyValue := 1u32 << (ObjectModel::Flags::Shift + 4u32).
+public global ObjectModel::IdentityHash::Shift := 10u32.
+public global ObjectModel::IdentityHash::Bits := 22u32.
+public global ObjectModel::IdentityHash::Mask := ((1u32 << ObjectModel::IdentityHash::Bits) - 1u32) << ObjectModel::IdentityHash::Shift.
 
 public global ObjectModel::PointerSize := UIntPointer valueSize.
 public global ObjectModel::FatPointerSize := ObjectModel::PointerSize * 2sz.
@@ -200,10 +203,10 @@ public final struct ObjectModel::TupleHeader32 definition: {
     }.
 
     public inline method identityHashValue ::=> UInt32
-        := identityHashAndFlags & ObjectModel::IdentityHash::Mask.
+        := (identityHashAndFlags & ObjectModel::IdentityHash::Mask) >> ObjectModel::IdentityHash::Shift.
 
     public inline method identityHashValue: (identityHash: UInt32) ::=> Void := {
-        identityHashAndFlags := (identityHash & ObjectModel::IdentityHash::Mask) | (identityHashAndFlags & ObjectModel::IdentityHash::Mask bitInvert)
+        identityHashAndFlags := (identityHashAndFlags & ObjectModel::IdentityHash::Mask bitInvert) | ((identityHash << ObjectModel::IdentityHash::Shift) & ObjectModel::IdentityHash::Mask)
     }.
 
     public method slotCount => UInt32
@@ -277,10 +280,10 @@ public final struct ObjectModel::TupleHeader64 definition: {
     }.
 
     public inline method identityHashValue ::=> UInt32
-        := identityHashAndFlags & ObjectModel::IdentityHash::Mask.
+        := (identityHashAndFlags & ObjectModel::IdentityHash::Mask) >> ObjectModel::IdentityHash::Shift.
 
     public inline method identityHashValue: (identityHash: UInt32) ::=> Void := {
-        identityHashAndFlags := (identityHash & ObjectModel::IdentityHash::Mask) | (identityHashAndFlags & ObjectModel::IdentityHash::Mask bitInvert)
+        identityHashAndFlags := (identityHashAndFlags & ObjectModel::IdentityHash::Mask bitInvert) | ((identityHash << ObjectModel::IdentityHash::Shift) & ObjectModel::IdentityHash::Mask)
     }.
 
     public inline method slotCount => UInt32
