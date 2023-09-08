@@ -68,9 +68,6 @@ typedef intptr_t sysbvm_stuple_t;
 #define SYSBVM_IMMEDIATE_BIT_COUNT (SYSBVM_TUPLE_BIT_COUNT - SYSBVM_TUPLE_TAG_BIT_COUNT)
 #define SYSBVM_TUPLE_IMMEDIATE_VALUE_BIT_MASK (((sysbvm_tuple_t)1 << SYSBVM_IMMEDIATE_BIT_COUNT) - 1)
 
-#define SYSBVM_IMMEDIATE_UINT_MIN ((sysbvm_tuple_t)0)
-#define SYSBVM_IMMEDIATE_UINT_MAX ( ((sysbvm_tuple_t)1 << SYSBVM_IMMEDIATE_BIT_COUNT) - 1 )
-
 #define SYSBVM_IMMEDIATE_INT_MIN ( -((sysbvm_stuple_t)1 << (sysbvm_stuple_t)(SYSBVM_IMMEDIATE_BIT_COUNT - 1)) )
 #define SYSBVM_IMMEDIATE_INT_MAX ( ((sysbvm_stuple_t)1 << (sysbvm_stuple_t)(SYSBVM_IMMEDIATE_BIT_COUNT - 1)) - 1 )
 
@@ -83,29 +80,26 @@ typedef enum sysbvm_tuple_tag_e
     SYSBVM_TUPLE_TAG_NIL = 0,
 
     SYSBVM_TUPLE_TAG_INTEGER = 1,
-    SYSBVM_TUPLE_TAG_INT8 = 2,
-    SYSBVM_TUPLE_TAG_INT16 = 3,
-    SYSBVM_TUPLE_TAG_INT32 = 4,
-    SYSBVM_TUPLE_TAG_INT64 = 5,
 
-    SYSBVM_TUPLE_TAG_CHAR8 = 6,
-    SYSBVM_TUPLE_TAG_UINT8 = 7,
+    SYSBVM_TUPLE_TAG_CHAR8 = 2,
+    SYSBVM_TUPLE_TAG_UINT8 = 3,
+    SYSBVM_TUPLE_TAG_INT8 = 4,
 
-    SYSBVM_TUPLE_TAG_CHAR16 = 8,
-    SYSBVM_TUPLE_TAG_UINT16 = 9,
+    SYSBVM_TUPLE_TAG_CHAR16 = 5,
+    SYSBVM_TUPLE_TAG_UINT16 = 6,
+    SYSBVM_TUPLE_TAG_INT16 = 7,
 
-    SYSBVM_TUPLE_TAG_CHAR32 = 10,
-    SYSBVM_TUPLE_TAG_UINT32 = 11,
+    SYSBVM_TUPLE_TAG_CHAR32 = 8,
+    SYSBVM_TUPLE_TAG_UINT32 = 9,
+    SYSBVM_TUPLE_TAG_INT32 = 10,
 
-    SYSBVM_TUPLE_TAG_UINT64 = 12,
+    SYSBVM_TUPLE_TAG_UINT64 = 11,
+    SYSBVM_TUPLE_TAG_INT64 = 12,
 
     SYSBVM_TUPLE_TAG_FLOAT32 = 13,
     SYSBVM_TUPLE_TAG_FLOAT64 = 14,
 
     SYSBVM_TUPLE_TAG_TRIVIAL = 15,
-
-    SYSBVM_TUPLE_TAG_SIGNED_START = SYSBVM_TUPLE_TAG_INTEGER,
-    SYSBVM_TUPLE_TAG_SIGNED_END = SYSBVM_TUPLE_TAG_INT64,
 
     SYSBVM_TUPLE_TAG_COUNT = 16
 } sysbvm_tuple_tag_t;
@@ -421,7 +415,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_tuple_integer_encodeBigUInt64(sysbvm_context_t 
  */
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_integer_encodeUInt32(sysbvm_context_t *context, uint32_t value)
 {
-    if(sizeof(uint32_t) < sizeof(sysbvm_stuple_t) || (value <= SYSBVM_IMMEDIATE_INT_MAX))
+    int32_t svalue = (int32_t)value;
+    if(sizeof(uint32_t) < sizeof(sysbvm_stuple_t) || (SYSBVM_IMMEDIATE_INT_MIN <= svalue && svalue <= SYSBVM_IMMEDIATE_INT_MAX))
         return sysbvm_tuple_integer_encodeSmall((sysbvm_stuple_t)value);
     else
         return sysbvm_tuple_integer_encodeBigUInt32(context, value);
@@ -458,7 +453,8 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_integer_encodeInt64(sysbvm_context_t *
  */
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_integer_encodeUInt64(sysbvm_context_t *context, uint64_t value)
 {
-    if(sizeof(uint64_t) < sizeof(sysbvm_stuple_t) || value <= SYSBVM_IMMEDIATE_INT_MAX)
+    int64_t svalue = (int64_t)value;
+    if(sizeof(uint64_t) < sizeof(sysbvm_stuple_t) || (SYSBVM_IMMEDIATE_INT_MIN <= svalue && svalue <= SYSBVM_IMMEDIATE_INT_MAX))
         return sysbvm_tuple_integer_encodeSmall((sysbvm_stuple_t)value);
     else
         return sysbvm_tuple_integer_encodeBigUInt64(context, value);
@@ -491,7 +487,7 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_integer_encodeSize(sysbvm_context_t *c
  */
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_char8_encode(sysbvm_char8_t value)
 {
-    return (((sysbvm_tuple_t)value) << SYSBVM_TUPLE_TAG_BIT_COUNT) | SYSBVM_TUPLE_TAG_CHAR8;
+    return ((sysbvm_stuple_t)value << SYSBVM_TUPLE_TAG_BIT_COUNT) | SYSBVM_TUPLE_TAG_CHAR8;
 }
 
 /**
@@ -499,7 +495,7 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_char8_encode(sysbvm_char8_t value)
  */
 SYSBVM_INLINE sysbvm_char8_t sysbvm_tuple_char8_decode(sysbvm_tuple_t tuple)
 {
-    return (sysbvm_char8_t)(tuple >> SYSBVM_TUPLE_TAG_BIT_COUNT);
+    return (sysbvm_char8_t)((sysbvm_stuple_t)tuple >> SYSBVM_TUPLE_TAG_BIT_COUNT);
 }
 
 /**
@@ -507,7 +503,7 @@ SYSBVM_INLINE sysbvm_char8_t sysbvm_tuple_char8_decode(sysbvm_tuple_t tuple)
  */
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_uint8_encode(uint8_t value)
 {
-    return ((sysbvm_tuple_t)value << SYSBVM_TUPLE_TAG_BIT_COUNT) | SYSBVM_TUPLE_TAG_UINT8;
+    return ((sysbvm_stuple_t)value << SYSBVM_TUPLE_TAG_BIT_COUNT) | SYSBVM_TUPLE_TAG_UINT8;
 }
 
 /**
@@ -515,7 +511,7 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_uint8_encode(uint8_t value)
  */
 SYSBVM_INLINE uint8_t sysbvm_tuple_uint8_decode(sysbvm_tuple_t tuple)
 {
-    return (uint8_t) (tuple >> SYSBVM_TUPLE_TAG_BIT_COUNT);
+    return (uint8_t) ((sysbvm_stuple_t)tuple >> SYSBVM_TUPLE_TAG_BIT_COUNT);
 }
 
 /**
@@ -539,7 +535,7 @@ SYSBVM_INLINE int8_t sysbvm_tuple_int8_decode(sysbvm_tuple_t tuple)
  */
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_char16_encode(sysbvm_char16_t value)
 {
-    return (((sysbvm_tuple_t)value) << SYSBVM_TUPLE_TAG_BIT_COUNT) | SYSBVM_TUPLE_TAG_CHAR16;
+    return (((sysbvm_stuple_t)value) << SYSBVM_TUPLE_TAG_BIT_COUNT) | SYSBVM_TUPLE_TAG_CHAR16;
 }
 
 /**
@@ -547,7 +543,7 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_char16_encode(sysbvm_char16_t value)
  */
 SYSBVM_INLINE sysbvm_char16_t sysbvm_tuple_char16_decode(sysbvm_tuple_t tuple)
 {
-    return (sysbvm_char16_t)(tuple >> SYSBVM_TUPLE_TAG_BIT_COUNT);
+    return (sysbvm_char16_t)((sysbvm_stuple_t)tuple >> SYSBVM_TUPLE_TAG_BIT_COUNT);
 }
 
 /**
@@ -555,7 +551,7 @@ SYSBVM_INLINE sysbvm_char16_t sysbvm_tuple_char16_decode(sysbvm_tuple_t tuple)
  */
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_uint16_encode(uint16_t value)
 {
-    return ((sysbvm_tuple_t)value << SYSBVM_TUPLE_TAG_BIT_COUNT) | SYSBVM_TUPLE_TAG_UINT16;
+    return ((sysbvm_stuple_t)value << SYSBVM_TUPLE_TAG_BIT_COUNT) | SYSBVM_TUPLE_TAG_UINT16;
 }
 
 /**
@@ -563,7 +559,7 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_uint16_encode(uint16_t value)
  */
 SYSBVM_INLINE uint16_t sysbvm_tuple_uint16_decode(sysbvm_tuple_t tuple)
 {
-    return (uint16_t) (tuple >> SYSBVM_TUPLE_TAG_BIT_COUNT);
+    return (uint16_t) ((sysbvm_stuple_t)tuple >> SYSBVM_TUPLE_TAG_BIT_COUNT);
 }
 
 /**
@@ -587,7 +583,7 @@ SYSBVM_INLINE int16_t sysbvm_tuple_int16_decode(sysbvm_tuple_t tuple)
  */
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_char32_encodeSmall(sysbvm_char32_t value)
 {
-    return (((sysbvm_tuple_t)value) << SYSBVM_TUPLE_TAG_BIT_COUNT) | SYSBVM_TUPLE_TAG_CHAR32;
+    return (((sysbvm_stuple_t)value) << SYSBVM_TUPLE_TAG_BIT_COUNT) | SYSBVM_TUPLE_TAG_CHAR32;
 }
 
 /**
@@ -600,7 +596,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_tuple_char32_encodeBig(sysbvm_context_t *contex
  */
 SYSBVM_INLINE sysbvm_char32_t sysbvm_tuple_char32_decodeSmall(sysbvm_tuple_t tuple)
 {
-    return (sysbvm_char32_t)(tuple >> SYSBVM_TUPLE_TAG_BIT_COUNT);
+    return (sysbvm_char32_t)((sysbvm_stuple_t)tuple >> SYSBVM_TUPLE_TAG_BIT_COUNT);
 }
 
 /**
@@ -618,7 +614,7 @@ SYSBVM_INLINE sysbvm_char32_t sysbvm_tuple_char32_decode(sysbvm_tuple_t tuple)
  */
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_uint32_encodeSmall(uint32_t value)
 {
-    return ((sysbvm_tuple_t)value << SYSBVM_TUPLE_TAG_BIT_COUNT) | SYSBVM_TUPLE_TAG_UINT32;
+    return ((sysbvm_stuple_t)value << SYSBVM_TUPLE_TAG_BIT_COUNT) | SYSBVM_TUPLE_TAG_UINT32;
 }
 
 /*
@@ -631,7 +627,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_tuple_uint32_encodeBig(sysbvm_context_t *contex
  */
 SYSBVM_INLINE uint32_t sysbvm_tuple_uint32_decodeSmall(sysbvm_tuple_t tuple)
 {
-    return (uint32_t) (tuple >> SYSBVM_TUPLE_TAG_BIT_COUNT);
+    return (uint32_t) ((sysbvm_stuple_t)tuple >> SYSBVM_TUPLE_TAG_BIT_COUNT);
 }
 
 /*
@@ -685,7 +681,8 @@ SYSBVM_INLINE int32_t sysbvm_tuple_int32_decode(sysbvm_tuple_t tuple)
  */
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_char32_encode(sysbvm_context_t *context, sysbvm_char32_t value)
 {
-    if(sizeof(sysbvm_char32_t) < sizeof(sysbvm_tuple_t) || value <= SYSBVM_IMMEDIATE_UINT_MAX)
+    int32_t svalue = (int32_t)value;
+    if(sizeof(sysbvm_char32_t) < sizeof(sysbvm_tuple_t) || (SYSBVM_IMMEDIATE_INT_MIN <= svalue && svalue <= SYSBVM_IMMEDIATE_INT_MAX))
         return sysbvm_tuple_char32_encodeSmall(value);
     else
         return sysbvm_tuple_char32_encodeBig(context, value);
@@ -696,7 +693,8 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_char32_encode(sysbvm_context_t *contex
  */
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_uint32_encode(sysbvm_context_t *context, uint32_t value)
 {
-    if(sizeof(uint32_t) < sizeof(sysbvm_tuple_t) || value <= SYSBVM_IMMEDIATE_UINT_MAX)
+    int32_t svalue = (int32_t)value;
+    if(sizeof(uint32_t) < sizeof(sysbvm_tuple_t) || (SYSBVM_IMMEDIATE_INT_MIN <= svalue && svalue <= SYSBVM_IMMEDIATE_INT_MAX))
         return sysbvm_tuple_uint32_encodeSmall(value);
     else
         return sysbvm_tuple_uint32_encodeBig(context, value);
@@ -722,7 +720,7 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_int32_encode(sysbvm_context_t *context
  */
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_uint64_encodeSmall(uint64_t value)
 {
-    return ((sysbvm_tuple_t)value << SYSBVM_TUPLE_TAG_BIT_COUNT) | SYSBVM_TUPLE_TAG_UINT64;
+    return ((sysbvm_stuple_t)value << SYSBVM_TUPLE_TAG_BIT_COUNT) | SYSBVM_TUPLE_TAG_UINT64;
 }
 
 /*
@@ -735,7 +733,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_tuple_uint64_encodeBig(sysbvm_context_t *contex
  */
 SYSBVM_INLINE uint64_t sysbvm_tuple_uint64_decodeSmall(sysbvm_tuple_t tuple)
 {
-    return (uint64_t) (tuple >> SYSBVM_TUPLE_TAG_BIT_COUNT);
+    return (uint64_t) ((sysbvm_stuple_t)tuple >> SYSBVM_TUPLE_TAG_BIT_COUNT);
 }
 
 /*
@@ -784,7 +782,8 @@ SYSBVM_INLINE int64_t sysbvm_tuple_int64_decode(sysbvm_tuple_t tuple)
  */
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_uint64_encode(sysbvm_context_t *context, uint64_t value)
 {
-    if(value <= SYSBVM_IMMEDIATE_UINT_MAX)
+    int64_t svalue = (int64_t)value;
+    if(SYSBVM_IMMEDIATE_INT_MIN <= svalue && svalue <= SYSBVM_IMMEDIATE_INT_MAX)
         return sysbvm_tuple_uint64_encodeSmall(value);
     else
         return sysbvm_tuple_uint64_encodeBig(context, value);

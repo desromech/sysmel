@@ -6,24 +6,21 @@ public global ObjectModel::Tag::Pointer := 0u8.
 public global ObjectModel::Tag::Nil := 0u8.
 
 public global ObjectModel::Tag::Integer := 1u8.
-public global ObjectModel::Tag::Int8 := 2u8.
-public global ObjectModel::Tag::Int16 := 3u8.
-public global ObjectModel::Tag::Int32 := 4u8.
-public global ObjectModel::Tag::Int64 := 5u8.
 
-public global ObjectModel::Tag::SignedIntegerFirst := ObjectModel::Tag::Integer.
-public global ObjectModel::Tag::SignedIntegerLast := ObjectModel::Tag::Int64.
+public global ObjectModel::Tag::Char8 := 2u8.
+public global ObjectModel::Tag::UInt8 := 3u8.
+public global ObjectModel::Tag::Int8 := 4u8.
 
-public global ObjectModel::Tag::Char8 := 6u8.
-public global ObjectModel::Tag::UInt8 := 7u8.
+public global ObjectModel::Tag::Char16 := 5u8.
+public global ObjectModel::Tag::UInt16 := 6u8.
+public global ObjectModel::Tag::Int16 := 7u8.
 
-public global ObjectModel::Tag::Char16 := 8u8.
-public global ObjectModel::Tag::UInt16 := 9u8.
+public global ObjectModel::Tag::Char32 := 8u8.
+public global ObjectModel::Tag::UInt32 := 9u8.
+public global ObjectModel::Tag::Int32 := 10u8.
 
-public global ObjectModel::Tag::Char32 := 10u8.
-public global ObjectModel::Tag::UInt32 := 11u8.
-
-public global ObjectModel::Tag::UInt64 := 12u8.
+public global ObjectModel::Tag::UInt64 := 11u8.
+public global ObjectModel::Tag::Int64 := 12u8.
 
 public global ObjectModel::Tag::Float32 := 13u8.
 public global ObjectModel::Tag::Float64 := 14u8.
@@ -32,23 +29,22 @@ public global ObjectModel::Tag::Trivial := 15u8.
 
 public global ObjectModel::ImmediateTagTypeTable := (
     UndefinedObject,
-    SmallInteger, Int8, Int16, Int32, Int64,
-    Char8, UInt8,
-    Char16, UInt16,
-    Char32, UInt32,
-    UInt64, Float32, Float64,
+    SmallInteger,
+    
+    Char8, UInt8, Int8,
+    Char16, UInt16, Int16,
+    Char32, UInt32, Int32,
+    UInt64, Int64,
+    
+    Float32, Float64,
     nil
 ).
 
 public global ObjectModel32::Immediate::Bits := 32u32 - ObjectModel::Tag::Bits asUInt32.
-public global ObjectModel32::Immediate::UInt::Min := 0u32.
-public global ObjectModel32::Immediate::UInt::Max := (1u32 << ObjectModel32::Immediate::Bits) - 1u32.
 public global ObjectModel32::Immediate::Int::Min := (1i32 << (ObjectModel32::Immediate::Bits - 1u32) asInt32) negated.
 public global ObjectModel32::Immediate::Int::Max := (1i32 << (ObjectModel32::Immediate::Bits - 1u32) asInt32) - 1i32.
 
 public global ObjectModel64::Immediate::Bits := 64u64 - ObjectModel::Tag::Bits asUInt64.
-public global ObjectModel64::Immediate::UInt::Min := 0u64.
-public global ObjectModel64::Immediate::UInt::Max := (1u64 << ObjectModel64::Immediate::Bits) - 1u64.
 public global ObjectModel64::Immediate::Int::Min := (1i64 << (ObjectModel64::Immediate::Bits - 1u64) asInt64) negated.
 public global ObjectModel64::Immediate::Int::Max := (1i64 << (ObjectModel64::Immediate::Bits - 1u64) asInt64) - 1i64.
 
@@ -102,14 +98,10 @@ public global ObjectModel::FlagsOffset := 8i32.
 
 if: ObjectModel::PointerSize = 4sz then: {
     public global ObjectModel::Immediate::Bits      := ObjectModel32::Immediate::Bits.
-    public global ObjectModel::Immediate::UInt::Min := ObjectModel32::Immediate::UInt::Min.
-    public global ObjectModel::Immediate::UInt::Max := ObjectModel32::Immediate::UInt::Max.
     public global ObjectModel::Immediate::Int::Min  := ObjectModel32::Immediate::Int::Min.
     public global ObjectModel::Immediate::Int::Max  := ObjectModel32::Immediate::Int::Max.
 } else: {
     public global ObjectModel::Immediate::Bits      := ObjectModel64::Immediate::Bits.
-    public global ObjectModel::Immediate::UInt::Min := ObjectModel64::Immediate::UInt::Min.
-    public global ObjectModel::Immediate::UInt::Max := ObjectModel64::Immediate::UInt::Max.
     public global ObjectModel::Immediate::Int::Min  := ObjectModel64::Immediate::Int::Min.
     public global ObjectModel::Immediate::Int::Max  := ObjectModel64::Immediate::Int::Max.
 }.
@@ -405,72 +397,74 @@ Char8 __type__ extend: {
     public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := true.
     public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := true.
 
-    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Char8 asUInt32.
-    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Char8 asUInt64.
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asChar8 asInt32 << ObjectModel::Tag::Bits asInt32) asUInt32 | ObjectModel::Tag::Char8 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asChar8 asInt64 << ObjectModel::Tag::Bits asInt64) asUInt64 | ObjectModel::Tag::Char8 asUInt64.
 }.
 
 UInt8 __type__ extend: {
     public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := true.
     public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := true.
 
-    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::UInt8 asUInt32.
-    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::UInt8 asUInt64.
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt8 asInt32 << ObjectModel::Tag::Bits asInt32) asUInt32 | ObjectModel::Tag::UInt8 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt8 asInt64 << ObjectModel::Tag::Bits asInt64) asUInt64 | ObjectModel::Tag::UInt8 asUInt64.
 }.
 
 Int8 __type__ extend: {
     public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := true.
     public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := true.
 
-    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Int8 asUInt32.
-    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Int8 asUInt64.
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asInt8 asInt32 << ObjectModel::Tag::Bits asInt32) asUInt32 | ObjectModel::Tag::Int8 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asInt8 asInt64 << ObjectModel::Tag::Bits asInt64) asUInt64 | ObjectModel::Tag::Int8 asUInt64.
 }.
 
 Char16 __type__ extend: {
     public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := true.
     public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := true.
 
-    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Char16 asUInt32.
-    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Char16 asUInt64.
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asChar16 asInt32 << ObjectModel::Tag::Bits asInt32) asUInt32 | ObjectModel::Tag::Char16 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asChar16 asInt64 << ObjectModel::Tag::Bits asInt64) asUInt64 | ObjectModel::Tag::Char16 asUInt64.
 }.
 
 UInt16 __type__ extend: {
     public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := true.
     public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := true.
 
-    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::UInt16 asUInt32.
-    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::UInt16 asUInt64.
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt16 asInt32 << ObjectModel::Tag::Bits asInt32) asUInt32 | ObjectModel::Tag::UInt16 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt16 asInt64 << ObjectModel::Tag::Bits asInt64) asUInt64 | ObjectModel::Tag::UInt16 asUInt64.
 }.
 
 Int16 __type__ extend: {
     public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := true.
     public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := true.
 
-    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Int16 asUInt32.
-    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Int16 asUInt64.
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asInt16 asInt32 << ObjectModel::Tag::Bits asInt32) asUInt32 | ObjectModel::Tag::Int16 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asInt16 asInt64 << ObjectModel::Tag::Bits asInt64) asUInt64 | ObjectModel::Tag::Int16 asUInt64.
 }.
 
 Char32 __type__ extend: {
     public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := {
         let value => Char32 := reference.
-        (ObjectModel32::Immediate::UInt::Min asChar32 <= value) && (value <= ObjectModel32::Immediate::UInt::Max asChar32)
+        let svalue := value asInt32.
+        (ObjectModel32::Immediate::Int::Min <= svalue) && (svalue <= ObjectModel32::Immediate::Int::Max)
     }.
 
     public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := true.
 
-    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Char32 asUInt32.
-    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Char32 asUInt64.
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asChar32 asInt32 << ObjectModel::Tag::Bits asInt32) asUInt32 | ObjectModel::Tag::Char32 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asChar32 asInt64 << ObjectModel::Tag::Bits asInt64) asUInt64 | ObjectModel::Tag::Char32 asUInt64.
 }.
 
 UInt32 __type__ extend: {
     public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := {
         let value => UInt32 := reference.
-        (ObjectModel32::Immediate::UInt::Min <= value) && (value <= ObjectModel32::Immediate::UInt::Max)
+        let svalue := value asInt32.
+        (ObjectModel32::Immediate::Int::Min <= svalue) && (svalue <= ObjectModel32::Immediate::Int::Max)
     }.
 
     public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := true.
 
-    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::UInt32 asUInt32.
-    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::UInt32 asUInt64.
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 asInt32 << ObjectModel::Tag::Bits asInt32) asUInt32 | ObjectModel::Tag::UInt32 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt32 asInt64 << ObjectModel::Tag::Bits asInt64) asUInt64 | ObjectModel::Tag::UInt32 asUInt64.
 }.
 
 Int32 __type__ extend: {
@@ -481,23 +475,25 @@ Int32 __type__ extend: {
 
     public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := true.
 
-    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Int32 asUInt32.
-    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Int32 asUInt64.
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asInt32 asInt32 << ObjectModel::Tag::Bits asInt32) asUInt32 | ObjectModel::Tag::Int32 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asInt32 asInt64 << ObjectModel::Tag::Bits asInt64) asUInt64 | ObjectModel::Tag::Int32 asUInt64.
 }.
 
 UInt64 __type__ extend: {
     public override method isImmediateReference32: (reference: Untyped) ::=> Boolean := {
         let value => UInt64 := reference.
-        (ObjectModel32::Immediate::UInt::Min asUInt64 <= value) && (value <= ObjectModel32::Immediate::UInt::Max asUInt64)
+        let svalue := value asInt64.
+        (ObjectModel64::Immediate::Int::Min asInt64 <= svalue) && (svalue <= ObjectModel64::Immediate::Int::Max asInt64)
     }.
 
     public override method isImmediateReference64: (reference: Untyped) ::=> Boolean := {
         let value => UInt64 := reference.
-        (ObjectModel64::Immediate::UInt::Min <= value) && (value <= ObjectModel64::Immediate::UInt::Max)
+        let svalue := value asInt64.
+        (ObjectModel64::Immediate::Int::Min <= svalue) && (svalue <= ObjectModel64::Immediate::Int::Max)
     }.
 
-    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::UInt64 asUInt32.
-    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::UInt64 asUInt64.
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt64 asInt32 << ObjectModel::Tag::Bits asInt32) asUInt32 | ObjectModel::Tag::UInt64 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 asInt64 << ObjectModel::Tag::Bits asInt64) asUInt64 | ObjectModel::Tag::UInt64 asUInt64.
 }.
 
 Int64 __type__ extend: {
@@ -511,8 +507,8 @@ Int64 __type__ extend: {
         (ObjectModel64::Immediate::Int::Min <= value) && (value <= ObjectModel64::Immediate::Int::Max)
     }.
 
-    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Int64 asUInt32.
-    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Int64 asUInt64.
+    public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := (reference asInt64 asInt32 << ObjectModel::Tag::Bits asInt32) asUInt32 | ObjectModel::Tag::Int64 asUInt32.
+    public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (reference asInt64 << ObjectModel::Tag::Bits asInt64) asUInt64 | ObjectModel::Tag::Int64 asUInt64.
 }.
 
 Integer __type__ extend: {
@@ -528,12 +524,12 @@ Integer __type__ extend: {
 
     public override method encodeImmediateReference32: (reference: Untyped) ::=> UInt32 := {
         let value => Integer := reference.
-        (value asUInt32 << ObjectModel::Tag::Bits asUInt32) | ObjectModel::Tag::Integer asUInt32.
+        (value asInt32 << ObjectModel::Tag::Bits asInt32) asUInt32 | ObjectModel::Tag::Integer asUInt32.
     }.
 
     public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := {
         let value => Integer := reference.
-        (value asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Integer asUInt64.
+        (value asInt64 << ObjectModel::Tag::Bits asInt64) asUInt64 | ObjectModel::Tag::Integer asUInt64.
     }.
 }.
 
@@ -668,7 +664,7 @@ identityHash adoptDefinitionOf: {:(AnyValue)self :: Size |
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
         (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ identityHashValue asSize
     } ifFalse: {
-        pointerValue asSize identityHashMultiply
+        pointerValue asUIntPointer identityHashMultiply
     }
 } makePure makeFinal makeAlwaysInline makeWithoutSourceDebugging withEagerAnalysis.
 
@@ -678,7 +674,7 @@ Untyped::identityHash adoptDefinitionOf: {:(Untyped)self :: Size |
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
         (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ identityHashValue asSize
     } ifFalse: {
-        pointerValue asSize identityHashMultiply
+        pointerValue asUIntPointer identityHashMultiply
     }
 } makePure makeFinal makeAlwaysInline makeWithoutSourceDebugging withEagerAnalysis.
 
@@ -837,10 +833,7 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
     } ifFalse: {
         let shiftAmount := (index asUIntPointer * 8uptr) + ObjectModel::Tag::Bits asUIntPointer.
         let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
-        let isSigned := (ObjectModel::Tag::SignedIntegerFirst asUIntPointer <= tag) && (tag <= ObjectModel::Tag::SignedIntegerLast asUIntPointer).
-        let byteValue := isSigned
-            ifTrue: (pointerValue asIntPointer >> shiftAmount asIntPointer) asUInt8
-            ifFalse: (pointerValue >> shiftAmount) asUInt8.
+        let byteValue := (pointerValue asIntPointer >> shiftAmount asIntPointer) asUInt8.
 
         (byteValue asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::UInt8 asUIntPointer reinterpretCastTo: Untyped
     }
@@ -906,10 +899,7 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
     } ifFalse: {
         let shiftAmount := (index asUIntPointer * 8uptr) + ObjectModel::Tag::Bits asUIntPointer.
         let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
-        let isSigned := (ObjectModel::Tag::SignedIntegerFirst asUIntPointer <= tag) && (tag <= ObjectModel::Tag::SignedIntegerLast asUIntPointer).
-        isSigned
-            ifTrue: (pointerValue asIntPointer >> shiftAmount asIntPointer) asUInt8
-            ifFalse: (pointerValue >> shiftAmount) asUInt8
+        (pointerValue asIntPointer >> shiftAmount asIntPointer) asUInt8
     }
 } withEagerAnalysis.
 
@@ -1117,10 +1107,10 @@ public function ObjectModel::allocateBoxForValueOfTypeWithSize(type: Type, conte
 }.
 
 public function ObjectModel::boxChar8(value: Char8) => AnyValue
-    := (value asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::Char8 asUIntPointer reinterpretCastTo: AnyValue.
+    := (value asIntPointer << ObjectModel::Tag::Bits asIntPointer) | ObjectModel::Tag::Char8 asIntPointer reinterpretCastTo: AnyValue.
 
 public function ObjectModel::boxUInt8(value: UInt8) => AnyValue
-    := (value asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::UInt8 asUIntPointer reinterpretCastTo: AnyValue.
+    := (value asIntPointer << ObjectModel::Tag::Bits asIntPointer) | ObjectModel::Tag::UInt8 asIntPointer reinterpretCastTo: AnyValue.
 
 public function ObjectModel::boxInt8(value: Int8) => AnyValue
     := (value asIntPointer << ObjectModel::Tag::Bits asIntPointer) | ObjectModel::Tag::Int8 asIntPointer reinterpretCastTo: AnyValue.
@@ -1132,18 +1122,19 @@ public function ObjectModel::boxBoolean(value: Boolean) => AnyValue := {
 }.
 
 public function ObjectModel::boxChar16(value: Char16) => AnyValue
-    := (value asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::Char16 asUIntPointer reinterpretCastTo: AnyValue.
+    := (value asIntPointer << ObjectModel::Tag::Bits asIntPointer) | ObjectModel::Tag::Char16 asIntPointer reinterpretCastTo: AnyValue.
 
 public function ObjectModel::boxUInt16(value: UInt16) => AnyValue
-    := (value asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::UInt16 asUIntPointer reinterpretCastTo: AnyValue.
+    := (value asIntPointer << ObjectModel::Tag::Bits asIntPointer) | ObjectModel::Tag::UInt16 asIntPointer reinterpretCastTo: AnyValue.
 
 public function ObjectModel::boxInt16(value: Int16) => AnyValue
     := (value asIntPointer << ObjectModel::Tag::Bits asIntPointer) | ObjectModel::Tag::Int16 asIntPointer reinterpretCastTo: AnyValue.
 
 if: ObjectModel::PointerSize = 4sz then: {
     public function ObjectModel::boxChar32(value: Char32) => AnyValue := {
-        value <= ObjectModel::Immediate::UInt::Max asChar32 ifTrue: {
-            (value asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::Char32 asUIntPointer reinterpretCastTo: AnyValue.
+        let svalue := value asInt32.
+        (ObjectModel::Immediate::Int::Min asInt32 <= svalue) && (svalue <= ObjectModel::Immediate::Int::Max asInt32) ifTrue: {
+            (value asIntPointer << ObjectModel::Tag::Bits asIntPointer) | ObjectModel::Tag::Char32 asIntPointer reinterpretCastTo: AnyValue.
         } ifFalse: {
             let box := ObjectModel::allocateBoxForValueOfTypeWithSize(Char32, 4sz).
             (box + 1iptr reinterpretCastTo: Char32 pointer) store: value.
@@ -1152,8 +1143,9 @@ if: ObjectModel::PointerSize = 4sz then: {
     }.
 
     public function ObjectModel::boxUInt32(value: UInt32) => AnyValue := {
-        value <= ObjectModel::Immediate::UInt::Max asUInt32 ifTrue: {
-            (value asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::UInt32 asUIntPointer reinterpretCastTo: AnyValue.
+        let svalue := value asInt32.
+        (ObjectModel::Immediate::Int::Min asInt32 <= svalue) && (svalue <= ObjectModel::Immediate::Int::Max asInt32) ifTrue: {
+            (value asIntPointer << ObjectModel::Tag::Bits asIntPointer) | ObjectModel::Tag::UInt32 asIntPointer reinterpretCastTo: AnyValue.
         } ifFalse: {
             let box := ObjectModel::allocateBoxForValueOfTypeWithSize(UInt32, 4sz).
             (box + 1iptr reinterpretCastTo: UInt32 pointer) store: value.
@@ -1178,10 +1170,10 @@ if: ObjectModel::PointerSize = 4sz then: {
     }.
 } else: {
     public function ObjectModel::boxChar32(value: Char32) => AnyValue
-        := (value asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::Char32 asUIntPointer reinterpretCastTo: AnyValue.
+        := (value asIntPointer << ObjectModel::Tag::Bits asIntPointer) | ObjectModel::Tag::Char32 asIntPointer reinterpretCastTo: AnyValue.
 
     public function ObjectModel::boxUInt32(value: UInt32) => AnyValue
-        := (value asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::UInt32 asUIntPointer reinterpretCastTo: AnyValue.
+        := (value asIntPointer << ObjectModel::Tag::Bits asIntPointer) | ObjectModel::Tag::UInt32 asIntPointer reinterpretCastTo: AnyValue.
 
     public function ObjectModel::boxInt32(value: Int32) => AnyValue
         := (value asIntPointer << ObjectModel::Tag::Bits asIntPointer) | ObjectModel::Tag::Int32 asIntPointer reinterpretCastTo: AnyValue.
@@ -1193,8 +1185,9 @@ if: ObjectModel::PointerSize = 4sz then: {
 }.
 
 public function ObjectModel::boxUInt64(value: UInt64) => AnyValue := {
-    value <= ObjectModel::Immediate::UInt::Max asUInt64 ifTrue: {
-        (value asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::UInt64 asUIntPointer reinterpretCastTo: AnyValue.
+    let svalue := value asInt64.
+    (ObjectModel::Immediate::Int::Min asInt64 <= svalue) && (svalue <= ObjectModel::Immediate::Int::Max asInt64) ifTrue: {
+        (value asIntPointer << ObjectModel::Tag::Bits asIntPointer) | ObjectModel::Tag::UInt64 asIntPointer reinterpretCastTo: AnyValue.
     } ifFalse: {
         let box := ObjectModel::allocateBoxForValueOfTypeWithSize(UInt64, 8sz).
         (box + 1iptr reinterpretCastTo: UInt64 pointer) store: value.
@@ -1240,13 +1233,13 @@ public function ObjectModel::boxFatPointer(pointerType: Type, value: Void member
 
 ## Unboxing methods.
 public function ObjectModel::unboxChar8(value: Untyped) => Char8 := {
-    let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
-    (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asChar8
+    let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+    (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asChar8
 }.
 
 public function ObjectModel::unboxUInt8(value: Untyped) => UInt8 := {
-    let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
-    (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt8
+    let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+    (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asUInt8
 }.
 
 public function ObjectModel::unboxInt8(value: Untyped) => Int8 := {
@@ -1260,28 +1253,25 @@ public function ObjectModel::unboxBoolean(value: Untyped) => Boolean := {
 }.
 
 public function ObjectModel::unboxChar16(value: Untyped) => Char16 := {
-    let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
-    let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
-    (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asChar16
+    let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+    (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asChar16
 }.
 
 public function ObjectModel::unboxUInt16(value: Untyped) => UInt16 := {
-    let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
-    let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
-    (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt16
+    let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+    (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asUInt16
 }.
 
 public function ObjectModel::unboxInt16(value: Untyped) => Int16 := {
     let pointerValue := ObjectModel::getTuplePointerIntValue(value).
-    let tag := pointerValue & ObjectModel::Tag::Mask asIntPointer.
     (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asInt16
 }.
 
 if: ObjectModel::PointerSize = 4sz then: {
     public function ObjectModel::unboxChar32(value: Untyped) => Char32 := {
-        let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
-        let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
-        (tag ~= 0uptr) || (pointerValue = 0uptr) ifTrue: {
+        let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+        let tag := pointerValue & ObjectModel::Tag::Mask asIntPointer.
+        (tag ~= iuptr) || (pointerValue = iuptr) ifTrue: {
             (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asChar32
         } ifFalse: {
             let objectHeader := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
@@ -1290,9 +1280,9 @@ if: ObjectModel::PointerSize = 4sz then: {
     }.
 
     public function ObjectModel::unboxUInt32(value: Untyped) => UInt32 := {
-        let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
-        let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
-        (tag ~= 0uptr) || (pointerValue = 0uptr) ifTrue: {
+        let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+        let tag := pointerValue & ObjectModel::Tag::Mask asIntPointer.
+        (tag ~= 0iptr) || (pointerValue = iuptr) ifTrue: {
             (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt32
         } ifFalse: {
             let objectHeader := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
@@ -1303,7 +1293,7 @@ if: ObjectModel::PointerSize = 4sz then: {
     public function ObjectModel::unboxInt32(value: Untyped) => Int32 := {
         let pointerValue := ObjectModel::getTuplePointerIntValue(value).
         let tag := pointerValue & ObjectModel::Tag::Mask asIntPointer.
-        (tag ~= 0uptr) || (pointerValue = 0uptr) ifTrue: {
+        (tag ~= 0iptr) || (pointerValue = 0iptr) ifTrue: {
             (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asUInt32
         } ifFalse: {
             let objectHeader := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
@@ -1323,13 +1313,13 @@ if: ObjectModel::PointerSize = 4sz then: {
     }.
 } else: {
     public function ObjectModel::unboxChar32(value: Untyped) => Char32 := {
-        let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
-        (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asChar32
+        let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+        (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asChar32
     }.
 
     public function ObjectModel::unboxUInt32(value: Untyped) => UInt32 := {
-        let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
-        (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt32
+        let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+        (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asUInt32
     }.
 
     public function ObjectModel::unboxInt32(value: Untyped) => Int32 := {
@@ -1344,10 +1334,10 @@ if: ObjectModel::PointerSize = 4sz then: {
 }.
 
 public function ObjectModel::unboxUInt64(value: Untyped) => UInt64 := {
-    let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
-    let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
-    (tag ~= 0uptr) || (pointerValue = 0uptr) ifTrue: {
-        (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt64
+    let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+    let tag := pointerValue & ObjectModel::Tag::Mask asIntPointer.
+    (tag ~= 0iptr) || (pointerValue = 0iptr) ifTrue: {
+        (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asUInt64
     } ifFalse: {
         let objectHeader := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
         (objectHeader + 1iptr reinterpretCastTo: UInt64 pointer) load
@@ -1419,23 +1409,23 @@ public function ObjectModel::unboxFatPointer(value: Untyped) => Void memberPoint
 }.
 
 public function ObjectModel::checkAndUnboxChar8(value: Untyped) => Char8 := {
-    let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
-    let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
-    tag = ObjectModel::Tag::Char8 asUIntPointer ifFalse: {
+    let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+    let tag := pointerValue & ObjectModel::Tag::Mask asIntPointer.
+    tag = ObjectModel::Tag::Char8 asIntPointer ifFalse: {
         error("Expected a Char8 value.").
     }.
 
-    (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asChar8
+    (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asChar8
 }.
 
 public function ObjectModel::checkAndUnboxUInt8(value: Untyped) => UInt8 := {
-    let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
-    let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
-    tag = ObjectModel::Tag::UInt8 asUIntPointer ifFalse: {
+    let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+    let tag := pointerValue & ObjectModel::Tag::Mask asIntPointer.
+    tag = ObjectModel::Tag::UInt8 asIntPointer ifFalse: {
         error("Expected an UInt8 value.").
     }.
 
-    (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt8
+    (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asUInt8
 }.
 
 public function ObjectModel::checkAndUnboxInt8(value: Untyped) => Int8 := {
@@ -1461,23 +1451,23 @@ public function ObjectModel::checkAndUnboxBoolean(value: Untyped) => Boolean := 
 }.
 
 public function ObjectModel::checkAndUnboxChar16(value: Untyped) => Char16 := {
-    let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
-    let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
-    tag = ObjectModel::Tag::Char16 asUIntPointer ifFalse: {
+    let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+    let tag := pointerValue & ObjectModel::Tag::Mask asIntPointer.
+    tag = ObjectModel::Tag::Char16 asIntPointer ifFalse: {
         error("Expected a Char16 value.").
     }.
 
-    (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asChar16
+    (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asChar16
 }.
 
 public function ObjectModel::checkAndUnboxUInt16(value: Untyped) => UInt16 := {
-    let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
-    let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
-    tag = ObjectModel::Tag::UInt16 asUIntPointer ifFalse: {
+    let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+    let tag := pointerValue & ObjectModel::Tag::Mask asIntPointer.
+    tag = ObjectModel::Tag::UInt16 asIntPointer ifFalse: {
         error("Expected an UInt16 value.").
     }.
 
-    (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt16
+    (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asUInt16
 }.
 
 public function ObjectModel::checkAndUnboxInt16(value: Untyped) => Int16 := {
@@ -1492,10 +1482,10 @@ public function ObjectModel::checkAndUnboxInt16(value: Untyped) => Int16 := {
 
 if: ObjectModel::PointerSize = 4sz then: {
     public function ObjectModel::checkAndUnboxChar32(value: Untyped) => Char32 := {
-        let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
-        let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
-        tag = ObjectModel::Tag::Char32 asUIntPointer ifTrue: {
-            (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asChar32
+        let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+        let tag := pointerValue & ObjectModel::Tag::Mask asIntPointer.
+        tag = ObjectModel::Tag::Char32 asIntPointer ifTrue: {
+            (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asChar32
         } ifFalse: {
             pointerValue = 0uptr ifTrue: {
                 error("Expected an Char32 boxed value instead of nil.").
@@ -1512,10 +1502,10 @@ if: ObjectModel::PointerSize = 4sz then: {
     }.
 
     public function ObjectModel::checkAndUnboxUInt32(value: Untyped) => UInt32 := {
-        let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
-        let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
-        tag = ObjectModel::Tag::UInt32 asUIntPointer ifTrue: {
-            (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt32
+        let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+        let tag := pointerValue & ObjectModel::Tag::Mask asIntPointer.
+        tag = ObjectModel::Tag::UInt32 asIntPointer ifTrue: {
+            (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asUInt32
         } ifFalse: {
             pointerValue = 0uptr ifTrue: {
                 error("Expected an UInt32 boxed value instead of nil.").
@@ -1572,23 +1562,23 @@ if: ObjectModel::PointerSize = 4sz then: {
     }.
 } else: {
     public function ObjectModel::checkAndUnboxChar32(value: Untyped) => Char32 := {
-        let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
-        let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
-        tag = ObjectModel::Tag::Char32 asUIntPointer ifFalse: {
+        let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+        let tag := pointerValue & ObjectModel::Tag::Mask asIntPointer.
+        tag = ObjectModel::Tag::Char32 asIntPointer ifFalse: {
             error("Expected a Char32 value.").
         }.
 
-        (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asChar32
+        (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asChar32
     }.
 
     public function ObjectModel::checkAndUnboxUInt32(value: Untyped) => UInt32 := {
-        let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
-        let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
-        tag = ObjectModel::Tag::UInt32 asUIntPointer ifFalse: {
+        let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+        let tag := pointerValue & ObjectModel::Tag::Mask asIntPointer.
+        tag = ObjectModel::Tag::UInt32 asIntPointer ifFalse: {
             error("Expected an UInt32 value.").
         }.
 
-        (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt32
+        (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asUInt32
     }.
 
     public function ObjectModel::checkAndUnboxInt32(value: Untyped) => Int32 := {
@@ -1613,12 +1603,12 @@ if: ObjectModel::PointerSize = 4sz then: {
 }.
 
 public function ObjectModel::checkAndUnboxUInt64(value: Untyped) => UInt64 := {
-    let pointerValue := ObjectModel::getTuplePointerUIntValue(value).
-    let tag := pointerValue & ObjectModel::Tag::Mask asUIntPointer.
-    tag = ObjectModel::Tag::UInt64 asUIntPointer ifTrue: {
-        (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt64
+    let pointerValue := ObjectModel::getTuplePointerIntValue(value).
+    let tag := pointerValue & ObjectModel::Tag::Mask asIntPointer.
+    tag = ObjectModel::Tag::UInt64 asIntPointer ifTrue: {
+        (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asUInt64
     } ifFalse: {
-        pointerValue = 0uptr ifTrue: {
+        pointerValue = 0iptr ifTrue: {
             error("Expected an UInt64 boxed value instead of nil.").
         }.
 

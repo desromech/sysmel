@@ -2,7 +2,7 @@ if: ObjectModel::PointerSize = 4sz then: {
     UInt32 definition: {
         public pure final eager method asInteger ::=> Integer := {
             <primitive: #UInt32::asInteger>
-            self <= ObjectModel::Immediate::UInt::Max asUInt32 ifTrue: {
+            self <= ObjectModel::Immediate::Int::Max asUInt32 ifTrue: {
                 (self asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::UInt32 asUIntPointer reinterpretCastTo: Integer.
             } ifFalse: {
                 let box := ObjectModel::allocateBoxForValueOfTypeWithSize(LargePositiveInteger, 4sz).
@@ -43,7 +43,7 @@ if: ObjectModel::PointerSize = 4sz then: {
 UInt64 definition: {
     public pure final eager method asInteger ::=> Integer := {
         <primitive: #UInt64::asInteger>
-        self <= ObjectModel::Immediate::UInt::Max asUInt64 ifTrue: {
+        self <= ObjectModel::Immediate::Int::Max asUInt64 ifTrue: {
             (self asUIntPointer << ObjectModel::Tag::Bits asUIntPointer) | ObjectModel::Tag::UInt64 asUIntPointer reinterpretCastTo: Integer.
         } ifFalse: {
             let box := ObjectModel::allocateBoxForValueOfTypeWithSize(LargePositiveInteger, 8sz).

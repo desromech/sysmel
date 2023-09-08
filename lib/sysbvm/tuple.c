@@ -158,17 +158,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_tuple_slotAt(sysbvm_context_t *context, sysbvm_
     {
         if(slotIndex < sizeof(sysbvm_tuple_t))
         {
-            sysbvm_tuple_t tag = tuple & SYSBVM_TUPLE_TAG_BIT_MASK;
-            if(SYSBVM_TUPLE_TAG_SIGNED_START <= tag && tag <= SYSBVM_TUPLE_TAG_SIGNED_END)
-            {
-                sysbvm_tuple_t byteValue = ( ((sysbvm_stuple_t)tuple) >> (SYSBVM_TUPLE_TAG_BIT_COUNT + slotIndex*8)) & 0xFF;
-                return sysbvm_tuple_uint8_encode((uint8_t)byteValue);
-            }
-            else
-            {
-                sysbvm_tuple_t byteValue = (tuple >> (SYSBVM_TUPLE_TAG_BIT_COUNT + slotIndex*8)) & 0xFF;
-                return sysbvm_tuple_uint8_encode((uint8_t)byteValue);
-            }
+            sysbvm_tuple_t byteValue = ( ((sysbvm_stuple_t)tuple) >> (SYSBVM_TUPLE_TAG_BIT_COUNT + slotIndex*8)) & 0xFF;
+            return sysbvm_tuple_uint8_encode((uint8_t)byteValue);
         }
 
         return SYSBVM_NULL_TUPLE;
@@ -208,17 +199,8 @@ SYSBVM_API uint8_t sysbvm_tuple_byteSlotAt(sysbvm_context_t *context, sysbvm_tup
     {
         if(slotIndex < sizeof(sysbvm_tuple_t))
         {
-            sysbvm_tuple_t tag = tuple & SYSBVM_TUPLE_TAG_BIT_MASK;
-            if(SYSBVM_TUPLE_TAG_SIGNED_START <= tag && tag <= SYSBVM_TUPLE_TAG_SIGNED_END)
-            {
-                sysbvm_tuple_t byteValue = ( ((sysbvm_stuple_t)tuple) >> (SYSBVM_TUPLE_TAG_BIT_COUNT + slotIndex*8)) & 0xFF;
-                return (uint8_t)byteValue;
-            }
-            else
-            {
-                sysbvm_tuple_t byteValue = (tuple >> (SYSBVM_TUPLE_TAG_BIT_COUNT + slotIndex*8)) & 0xFF;
-                return (uint8_t)byteValue;
-            }
+            sysbvm_tuple_t byteValue = ( ((sysbvm_stuple_t)tuple) >> (SYSBVM_TUPLE_TAG_BIT_COUNT + slotIndex*8)) & 0xFF;
+            return (uint8_t)byteValue;
         }
 
         return 0;
