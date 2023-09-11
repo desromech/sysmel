@@ -1023,7 +1023,8 @@ public final class MIRGlobalDataAsmCodeGenerator superclass: MIRAsmCodeGenerator
 
 MIROperation extend: {
     public method forTarget: (target: Symbol) generateWith: (codeGenerationBlock: (MIRInstruction, MIRFunctionAsmCodeGenerator) => Void) ::=> Void := {
-        perTargetCodeGenerators at: target put: codeGenerationBlock
+        let targetSpecific => MIROperationTargetSpecific := self perform: target.
+        targetSpecific codeGenerator: codeGenerationBlock
     }.
     
     public method forTargets: (targets: Array) generateWith: (codeGenerationBlock: (MIRInstruction, MIRFunctionAsmCodeGenerator) => Void) ::=> Void := {
@@ -1033,10 +1034,13 @@ MIROperation extend: {
     }.
 
     public method generate: (instruction: MIRInstruction) for: (target: MIRAsmCompilationTarget) with: (functionGenerator: MIRFunctionAsmCodeGenerator) ::=> Void := {
-        let targetName := target name.
-        (perTargetCodeGenerators at: targetName ifAbsent: {|
-            self error: "Missing code generation for MIR operation '" -- name printString -- "' in " -- targetName asString -- "."
-        }) (instruction, functionGenerator).
+        let targetSpecific := target getTargetSpecificBlockFor: self.
+        targetSpecific isNil || targetSpecific codeGenerator isNil ifTrue: {
+            self error: "Missing code generation for MIR operation '" -- name printString -- "' in " -- target name asString -- "."
+        }.
+        
+        let codegen => ((MIRInstruction, MIRFunctionAsmCodeGenerator) => Void) := targetSpecific codeGenerator.
+        codegen(instruction, functionGenerator).
     }.
 }.
 

@@ -7,6 +7,8 @@ public abstract class MIRLocalValue superclass: MIRValue.
 public abstract class MIRInstruction superclass: MIRLocalValue.
 public final class MIRLiveInterval superclass: Object.
 
+public abstract class MIRRegisterAllocator superclass: Object.
+
 public abstract class MIRPhysicalLocation superclass: Object; definition: {
     __Meta__ definition: {
         public virtual method isRegister => Boolean := false.
@@ -1114,14 +1116,23 @@ public final class MIRConstantFloat64 superclass: MIRConstantFloatingPoint; defi
     }.
 }.
 
+public final class MIROperationTargetSpecific superclass: Object; definition: {
+    public field registerConstraints => ((MIRInstruction, MIRRegisterAllocator) => Void).
+    public field codeGenerator => AnyValue.
+}.
+
 public final class MIROperation superclass: Object; definition: {
     public field name => Symbol.
     public field phiMoveOperation => MIROperation.
     public field isTerminator => Boolean.
     public field isDebug => Boolean.
 
-    protected field perTargetCodeGenerators => IdentityDictionary.
-    protected field perTargetRegisterConstraints => IdentityDictionary.
+    public field x86 => MIROperationTargetSpecific.
+    public field x86_64 => MIROperationTargetSpecific.
+    public field arm => MIROperationTargetSpecific.
+    public field arm64 => MIROperationTargetSpecific.
+    public field riscv32 => MIROperationTargetSpecific.
+    public field riscv64 => MIROperationTargetSpecific.
 
     public method isPhi => Boolean
         := phiMoveOperation ~~ nil.
@@ -1141,8 +1152,12 @@ public final class MIROperation superclass: Object; definition: {
     }.
 
     public override method initialize => Void := {
-        perTargetCodeGenerators := IdentityDictionary new.
-        perTargetRegisterConstraints := IdentityDictionary new.
+        x86 := MIROperationTargetSpecific new.
+        x86_64 := MIROperationTargetSpecific new.
+        arm := MIROperationTargetSpecific new.
+        arm64 := MIROperationTargetSpecific new.
+        riscv32 := MIROperationTargetSpecific new.
+        riscv64 := MIROperationTargetSpecific new.
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -2711,6 +2726,9 @@ MIRCallingConvention definition: {
 
 MIRCompilationTarget definition: {
     public abstract method name => Symbol
+        := self subclassResponsibility.
+
+    public abstract method getTargetSpecificBlockFor: (operation: MIROperation) ::=> MIROperationTargetSpecific
         := self subclassResponsibility.
 
     public virtual method passesReturnPointerThroughStack => Boolean

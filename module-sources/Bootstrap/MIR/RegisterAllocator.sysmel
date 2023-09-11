@@ -1,5 +1,5 @@
    
-public abstract class MIRRegisterAllocator superclass: Object; definition: {
+MIRRegisterAllocator definition: {
     public field compilationTarget => MIRCompilationTarget.
     public field callingConvention => MIRCallingConvention.
 
@@ -542,7 +542,8 @@ MIRPhysicalVectorRegister extend: {
 
 MIROperation extend: {
     public method forTarget: (target: Symbol) registerConstraintsWith: (registerAssignmentBlock: (MIRInstruction, MIRRegisterAllocator) => Void) ::=> Void := {
-        perTargetRegisterConstraints at: target put: registerAssignmentBlock
+        let targetSpecific => MIROperationTargetSpecific := self perform: target.
+        targetSpecific registerConstraints: registerAssignmentBlock
     }.
 
     public method forTargets: (targets: Array) registerConstraintsWith: (registerAssignmentBlock: (MIRInstruction, MIRRegisterAllocator) => Void) ::=> Void := {
@@ -552,11 +553,12 @@ MIROperation extend: {
     }.
 
     public method computeRegisterConstraintsOf: (instruction: MIRInstruction) with: (registerAllocator: MIRRegisterAllocator) ::=> Void := {
-        let targetName := registerAllocator compilationTarget name.
-        (perTargetRegisterConstraints at: targetName
-            ifAbsent: {:: Void |
-            self error: "Missing register constraints for MIR operation '" -- name printString -- "' in " -- targetName asString -- "."
-        }) (instruction, registerAllocator)
+        let targetSpecific := registerAllocator compilationTarget getTargetSpecificBlockFor: self.
+        targetSpecific isNil || targetSpecific registerConstraints isNil ifTrue: {
+            self error: "Missing register constraints for MIR operation '" -- name printString -- "' in " -- registerAllocator compilationTarget name asString -- "."
+        }.
+
+        targetSpecific registerConstraints(instruction, registerAllocator)
     }.
 }.
 

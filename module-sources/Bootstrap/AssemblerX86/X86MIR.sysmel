@@ -790,6 +790,9 @@ public final class MIRX86CompilationTarget superclass: MIRAsmCompilationTarget; 
     public override method name => Symbol
         := #x86.
 
+    public override method getTargetSpecificBlockFor: (operation: MIROperation) ::=> MIROperationTargetSpecific
+        := operation x86.
+
     public override method allIntegerRegisters => Array
         := MIR::X86::IntegerRegisters.
 
@@ -1629,6 +1632,9 @@ public global MIR::X86_64::Win64CallingConvention := MIRWinX64CallingConvention 
 public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarget; definition: {
     public override method name => Symbol
         := #x86_64.
+
+    public override method getTargetSpecificBlockFor: (operation: MIROperation) ::=> MIROperationTargetSpecific
+        := operation x86_64.
 
     public override method allIntegerRegisters => Array
         := MIR::X86_64::IntegerRegisters.
@@ -4704,8 +4710,8 @@ MIR::Operation::PhiFatPointer
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |}.
 
 MIR::Operation::PhiStruct
-    forTarget: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |};
-    forTarget: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |}.
+    forTargets: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |};
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |}.
 
 let x86::loadPointerRegisterContraints := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
     allocator
