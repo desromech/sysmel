@@ -1708,7 +1708,7 @@ MIRFunction definition: {
             next: nil
     }.
     
-    public method basicBlocksDo: (aBlock: (MIRBasicBlock) => Void) ::=> Void := {
+    public inline method basicBlocksDo: (aBlock: (MIRBasicBlock) => Void) ::=> Void := {
         let position mutable := firstBasicBlock.
         while: (position isNotNil) do: {
             let nextPosition := position next.
@@ -2646,13 +2646,13 @@ public final class MIRModule superclass: MIRProgramEntity; definition: {
     public field programEntities => OrderedCollection.
     public field baseObjectTracer => ImageTracer.
     public field functionDefinitionPatches => OrderedCollection.
-    public field sourceProgramEntityDictionary => IdentityDictionary.
+    public field sourceProgramEntityDictionary => MethodDictionary.
 
     public override method initialize => Void := {
         super initialize.
         programEntities := OrderedCollection new.
         functionDefinitionPatches := OrderedCollection new.
-        sourceProgramEntityDictionary := IdentityDictionary new.
+        sourceProgramEntityDictionary := MethodDictionary new.
     }.
 
     public method addProgramEntity: (programEntity: MIRProgramEntity) ::=> Void := {

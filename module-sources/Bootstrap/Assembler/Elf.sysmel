@@ -287,14 +287,14 @@ public final class Elf32::SymbolTable superclass: Object; definition: {
     public field publicSymbols => OrderedCollection.
     protected field privateSymbolDictionary => Dictionary.
     protected field publicSymbolDictionary => Dictionary.
-    protected field sectionIndexTable => IdentityDictionary.
+    protected field sectionIndexTable => MethodDictionary.
 
     public override method initialize => Void := {
         publicSymbols := OrderedCollection new.
         privateSymbols := OrderedCollection new.
         privateSymbolDictionary := Dictionary new.
         publicSymbolDictionary := Dictionary new.
-        sectionIndexTable := IdentityDictionary new.
+        sectionIndexTable := MethodDictionary new.
         privateSymbols add: Elf32::Symbol new.
     }.
 
@@ -355,14 +355,14 @@ public final class Elf64::SymbolTable superclass: Object; definition: {
     public field publicSymbols => OrderedCollection.
     protected field privateSymbolDictionary => Dictionary.
     protected field publicSymbolDictionary => Dictionary.
-    protected field sectionIndexTable => IdentityDictionary.
+    protected field sectionIndexTable => MethodDictionary.
 
     public override method initialize => Void := {
         publicSymbols := OrderedCollection new.
         privateSymbols := OrderedCollection new.
         privateSymbolDictionary := Dictionary new.
         publicSymbolDictionary := Dictionary new.
-        sectionIndexTable := IdentityDictionary new.
+        sectionIndexTable := MethodDictionary new.
         privateSymbols add: Elf64::Symbol new.
     }.
 

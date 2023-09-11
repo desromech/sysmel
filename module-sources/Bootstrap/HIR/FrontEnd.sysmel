@@ -4,7 +4,7 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
     public field usedModules => OrderedCollection.
     public field exclusiveCompilationMode => Boolean.
 
-    protected field translatedValueDictionary => IdentityDictionary.
+    protected field translatedValueDictionary => MethodDictionary.
 
     __Meta__ extend: {
         public method forTarget: (compilationTarget: HIRCompilationTarget) ::=> self
@@ -19,7 +19,7 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
     public method initializeWithTarget: (theCompilationTarget: HIRCompilationTarget) ::=> Void := {
         compilationTarget := theCompilationTarget.
         hirModule := HIRModule new.
-        translatedValueDictionary := IdentityDictionary new.
+        translatedValueDictionary := MethodDictionary new.
         usedModules := OrderedCollection new.
     }.
 
@@ -240,7 +240,7 @@ HIRFunctionCompilationContext definition: {
     public field functionDefinition => FunctionDefinition.
     public field ssaFunction => HIRFunctionDefinition.
     public field builder => HIRInstructionBuilder.
-    protected field bindingDictionary => IdentityDictionary.
+    protected field bindingDictionary => MethodDictionary.
 
     public field breakDestination => HIRBasicBlock.
     public field continueDestination => HIRBasicBlock.
@@ -250,7 +250,7 @@ HIRFunctionCompilationContext definition: {
 
     public override method initialize => Void := {
         super initialize.
-        bindingDictionary := IdentityDictionary new.
+        bindingDictionary := MethodDictionary new.
     }.
 
     public method setValue: (value: HIRValue) forBinding: (binding: SymbolBinding) ::=> Void := {

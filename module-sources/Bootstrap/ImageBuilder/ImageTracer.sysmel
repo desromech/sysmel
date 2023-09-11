@@ -15,19 +15,19 @@ public class ImageTracer superclass: Object; definition: {
     public field tracedFunctionDefinitions => OrderedCollection.
 
     public field strategy => ImageTracerStrategy.
-    public field patchDictionary => IdentityDictionary.
+    public field patchDictionary => MethodDictionary.
     public field vtableSet => ImageBuilderVirtualTableSetSource.
 
-    private field isMetatypeCache => IdentityDictionary.
+    private field isMetatypeCache => MethodDictionary.
 
     public override method initialize => Void := {
         super initialize.
         rootObjects := OrderedCollection new.
         rootObjectSet := IdentitySet new.
-        patchDictionary := IdentityDictionary new.
+        patchDictionary := MethodDictionary new.
         strategy := ImageTracerStrategy new.
         vtableSet := ImageBuilderVirtualTableSetSource new.
-        isMetatypeCache := IdentityDictionary new.
+        isMetatypeCache := MethodDictionary new.
 
         self beComplete.
     }.

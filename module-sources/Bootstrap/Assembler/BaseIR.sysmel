@@ -2123,7 +2123,7 @@ AsmStackMap definition: {
     public field frameBase => AsmStackMapLocation.
     public field captureBase => AsmStackMapLocation.
 
-    public field bindingDictionary => IdentityDictionary.
+    public field bindingDictionary => MethodDictionary.
     public field bindings => OrderedCollection.
     public field arguments => OrderedCollection.
     public field captures => OrderedCollection.
@@ -2131,7 +2131,7 @@ AsmStackMap definition: {
 
     public override method initialize => Void := {
         super initialize.
-        bindingDictionary := IdentityDictionary new.
+        bindingDictionary := MethodDictionary new.
         bindings := OrderedCollection new.
         arguments := OrderedCollection new.
         captures := OrderedCollection new.

@@ -32,15 +32,15 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
     public field compilationTarget => MIRCompilationTarget.
     public field hirModule => HIRModule.
     public field targetModule => MIRModule.
-    public field globalValueDictionary => IdentityDictionary.
+    public field globalValueDictionary => MethodDictionary.
 
-    public field runtimeFunctionDictionary => IdentityDictionary.
+    public field runtimeFunctionDictionary => MethodDictionary.
     public field importRuntimeFunction => Boolean.
     private field runtimeFunctionCompilerFrontend => HIRModuleCompilationContext.
 
-    public field capturelessUncheckedEntryPointDictionary => IdentityDictionary.
-    public field uncheckedEntryPointDictionary => IdentityDictionary.
-    public field checkedEntryPointDictionary => IdentityDictionary.
+    public field capturelessUncheckedEntryPointDictionary => MethodDictionary.
+    public field uncheckedEntryPointDictionary => MethodDictionary.
+    public field checkedEntryPointDictionary => MethodDictionary.
     public field uncheckedInterpreterTrampolinesDictionary => Dictionary.
     public field boxingApplicationTrampolinesDictionary => Dictionary.
 
@@ -52,11 +52,11 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
         targetModule := MIRModule new
             compilationTarget: compilationTarget;
             yourself.
-        globalValueDictionary := IdentityDictionary new.
-        runtimeFunctionDictionary := IdentityDictionary new.
-        capturelessUncheckedEntryPointDictionary := IdentityDictionary new.
-        uncheckedEntryPointDictionary := IdentityDictionary new.
-        checkedEntryPointDictionary := IdentityDictionary new.
+        globalValueDictionary := MethodDictionary new.
+        runtimeFunctionDictionary := MethodDictionary new.
+        capturelessUncheckedEntryPointDictionary := MethodDictionary new.
+        uncheckedEntryPointDictionary := MethodDictionary new.
+        checkedEntryPointDictionary := MethodDictionary new.
         uncheckedInterpreterTrampolinesDictionary := Dictionary new.
         boxingApplicationTrampolinesDictionary := Dictionary new.
     }.
@@ -451,12 +451,12 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
     public field functionBuilder => MIRFunctionBuilder.
     public field blockBuilder => MIRBlockBuilder.
     protected field isCapturelessEntryPoint => Boolean.
-    protected field valueDictionary => IdentityDictionary.
+    protected field valueDictionary => MethodDictionary.
     public field functionArgument => MIRValue.
-    protected field boxedValueDictionary => IdentityDictionary.
+    protected field boxedValueDictionary => MethodDictionary.
 
     public override method initialize => Void := {
-        valueDictionary := IdentityDictionary new.
+        valueDictionary := MethodDictionary new.
     }.
 
     public method compilationTarget => MIRCompilationTarget
@@ -783,7 +783,7 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
             block: mirBlock;
             function: mirFunction;
             yourself.
-        boxedValueDictionary := nil.
+        boxedValueDictionary ifNotNil: {boxedValueDictionary removeAll}.
         ssaBasicBlock instructionsDo: {:(HIRInstruction)eachInstruction :: Void |
             functionBuilder useDebugInfoOfHIRValue: eachInstruction.
             blockBuilder useDebugInfoOfHIRValue: eachInstruction.
@@ -799,7 +799,7 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
         }.
     
     public method translateBoxedValue: (value: HIRValue) ::=> MIRValue := {
-        boxedValueDictionary ifNil: (boxedValueDictionary := IdentityDictionary new).
+        boxedValueDictionary ifNil: (boxedValueDictionary := MethodDictionary new).
         boxedValueDictionary at: value ifAbsentPut: {:: MIRValue |
             value isLiteralConstant ifTrue: {
                 self translateValue: (value downCastTo: HIRLiteralConstant) asBoxedLiteralConstant

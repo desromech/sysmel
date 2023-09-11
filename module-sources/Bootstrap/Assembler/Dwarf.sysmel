@@ -1144,7 +1144,7 @@ Dwarf::AsmWriter definition: {
     public field stringTableDictionary => Dictionary.
     public field abbreviationsDictionary => PluggableDictionary.
     public field abbreviations => OrderedCollection.
-    public field debugInformationEntrySymbolDictionary => IdentityDictionary.
+    public field debugInformationEntrySymbolDictionary => MethodDictionary.
 
     public field debugLineStream => AsmStreamBuilder.
     public field debugAbbreviationsStream => AsmStreamBuilder.
@@ -1157,7 +1157,7 @@ Dwarf::AsmWriter definition: {
         version := 4u8.
         stringTable := OrderedCollection new.
         stringTableDictionary := Dictionary new.
-        debugInformationEntrySymbolDictionary := IdentityDictionary new.
+        debugInformationEntrySymbolDictionary := MethodDictionary new.
         abbreviationsDictionary := PluggableDictionary new
             hashFunction: {:(AnyValue)key :: Size | (key downCastTo: Dwarf::DebugInfoEntry) abbreviationHash };
             equalsFunction: {:(AnyValue)a :(AnyValue)b :: Boolean | (a downCastTo: Dwarf::DebugInfoEntry) abbreviationEquals: (b downCastTo: Dwarf::DebugInfoEntry)};

@@ -11,7 +11,7 @@ ASTNode definition: {
 
 FunctionBytecodeDirectCompiler definition: {
     public field assembler => FunctionBytecodeAssembler.
-    public field bindingDictionary => IdentityDictionary.
+    public field bindingDictionary => MethodDictionary.
 
     public field breakLabel => FunctionBytecodeAssemblerLabel.
     public field continueLabel => FunctionBytecodeAssemblerLabel.
@@ -26,7 +26,7 @@ FunctionBytecodeDirectCompiler definition: {
 
     public override method initialize => Void := {
         self assembler: FunctionBytecodeAssembler new.
-        self bindingDictionary: IdentityDictionary new.
+        self bindingDictionary: MethodDictionary new.
     }.
 
     public method generateArgumentForNode: (argumentNode: ASTArgumentNode) index: (index: Size) ::=> FunctionBytecodeAssemblerOperand := {

@@ -2563,11 +2563,11 @@ public final class HIRUnreachableInstruction superclass: HIRInstruction; definit
 public final class HIRModule superclass: Object; definition: {
     public field globalValues => OrderedCollection.
     public field virtualTableSetSource => VirtualTableSetSource.
-    private field globalValueDictionary => IdentityDictionary.
+    private field globalValueDictionary => MethodDictionary.
 
     public override method initialize => Void := {
         globalValues := OrderedCollection new.
-        globalValueDictionary := IdentityDictionary new.
+        globalValueDictionary := MethodDictionary new.
     }.
 
     public method addGlobalValue: (globalValue: HIRGlobalValue) ::=> Void := {

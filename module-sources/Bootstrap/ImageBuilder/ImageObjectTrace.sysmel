@@ -1,15 +1,15 @@
 public class ImageObjectTrace superclass: Object; definition: {
     public field objectList => OrderedCollection.
-    public field objectIndexDictionary => IdentityDictionary.
+    public field objectIndexDictionary => MethodDictionary.
     public field vtableSet => ImageBuilderVirtualTableSetSource.
-    public field patchDictionary => IdentityDictionary.
+    public field patchDictionary => MethodDictionary.
 
     public override method initialize => Void := {
         super initialize.
 
         objectList := OrderedCollection new.
-        objectIndexDictionary := IdentityDictionary new.
-        patchDictionary := IdentityDictionary new.
+        objectIndexDictionary := MethodDictionary new.
+        patchDictionary := MethodDictionary new.
         vtableSet := ImageBuilderVirtualTableSetSource new.
     }.
 
