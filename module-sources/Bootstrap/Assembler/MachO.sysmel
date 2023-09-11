@@ -270,7 +270,7 @@ public final class MachO::SymbolTable64 superclass: Object; definition: {
     public field undefinedSymbols => OrderedCollection.
     public field undefinedSourceSymbols => OrderedCollection.
 
-    public field symbolIndexTable => Dictionary.
+    public field symbolIndexTable => MethodDictionary.
 
     public override method initialize => Void := {
         sectionTable := OrderedCollection new.
@@ -341,7 +341,7 @@ public final class MachO::SymbolTable64 superclass: Object; definition: {
     public method buildSymbolIndexTable => Void := {
         let count mutable := 0sz.
 
-        symbolIndexTable := Dictionary new.
+        symbolIndexTable := MethodDictionary new.
         let block := {:(AsmSymbol)symbol :: Void |
             symbol ifNotNil: {
                 symbolIndexTable at: symbol put: count.

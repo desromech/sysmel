@@ -201,13 +201,13 @@ public final class Coff::SymbolTable superclass: Object; definition: {
     public field symbols => OrderedCollection.
     protected field sectionIndexTable => MethodDictionary.
     protected field sectionSymbolTable => MethodDictionary.
-    protected field symbolDictionary => Dictionary.
+    protected field symbolDictionary => MethodDictionary.
 
     public override method initialize => Void := {
         symbols := OrderedCollection new.
         sectionIndexTable := MethodDictionary new.
         sectionSymbolTable := MethodDictionary new.
-        symbolDictionary := Dictionary new.
+        symbolDictionary := MethodDictionary new.
     }.
 
     public method addSection: (section: AsmObjectCodeSection) index: (sectionIndex: Size) ::=> Void := {

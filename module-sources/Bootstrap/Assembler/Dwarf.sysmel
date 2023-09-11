@@ -2154,14 +2154,14 @@ public final class Dwarf::ObjectDebugInformationGenerator superclass: AsmObjectD
     public field debugInfoProgramEntity => AsmProgramEntity.
     public field debugInfoWriter => Dwarf::AsmWriter.
 
-    public field programEntityDieDictionary => Dictionary.
-    public field typeDieDictionary => Dictionary.
+    public field programEntityDieDictionary => MethodDictionary.
+    public field typeDieDictionary => MethodDictionary.
     public field lineWriter => Dwarf::DebugLineWriter.
 
     public override method initialize => Void := {
         super initialize.
-        programEntityDieDictionary := Dictionary new.
-        typeDieDictionary := Dictionary new.
+        programEntityDieDictionary := MethodDictionary new.
+        typeDieDictionary := MethodDictionary new.
         lineWriter := Dwarf::DebugLineWriter new.
     }.
 
