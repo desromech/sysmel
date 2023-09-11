@@ -50,7 +50,7 @@ public final class HIRInlinerState definition: {
     }.
 
     public method inlineFunctionContent: (functionDefinition: HIRFunctionDefinition) ::=> Void := {
-        (functionDefinition calledFunctionDefinitions anySatisfy: {:(HIRFunctionDefinition)calledFunction :: Boolean | calledFunction shouldBeInlinedIn: functionDefinition }) ifFalse: {
+        (functionDefinition calledFunctions anySatisfy: {:(HIRValue)calledFunction :: Boolean | calledFunction shouldBeInlinedIn: functionDefinition }) ifFalse: {
             return: void
         }.
 
@@ -91,8 +91,9 @@ public final class HIRInlinerState definition: {
     }.
 
     public method inlineCallInstruction: (call: HIRCallInstruction) in: (functionDefinition: HIRFunctionDefinition)::=> HIRInstruction := {
-        let calledFunctionDefinition := call calledFunction evaluateAsHIRFunctionDefinitionOrNil.
-        calledFunctionDefinition isNotNil && (calledFunctionDefinition shouldBeInlinedIn: functionDefinition) ifFalse: {
+        let calledFunction := call calledFunction.
+        let calledFunctionDefinition := calledFunction evaluateAsHIRFunctionDefinitionOrNil.
+        calledFunctionDefinition isNotNil && (calledFunction shouldBeInlinedIn: functionDefinition) ifFalse: {
             return: call
         }.
 

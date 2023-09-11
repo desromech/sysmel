@@ -82,6 +82,14 @@ HIRValue definition: {
         users ifNotNil: {:users | users do: aBlock }
     }.
 
+    public method deleteAllDebugUsers => Void := {
+        users ifNotNil: {
+            users copy do: {:(HIRSetDebugValueForBindingInstruction)user :: Void |
+                user deleteFromParent
+            }
+        }
+    }.
+
     public virtual method isEscapingValue: (usedValueToTest: HIRValue) ::=> Boolean
         := false.
 
@@ -141,6 +149,12 @@ HIRValue definition: {
         self sourceASTNode: value sourceASTNode.
         self sourceEnvironment: value sourceEnvironment.
     }.
+
+    public virtual method shouldBeInlinedIn: (callerFunction: HIRFunctionDefinition) ::=> Boolean
+        := false.
+
+    public method hasOnlyDebugUsers => Boolean
+        := users isNil || (users allSatisfy: {:(HIRValue)user :: Boolean | user isSetDebugValueForBindingInstruction}).
 }.
 
 HIRConstant definition: {
@@ -271,6 +285,9 @@ HIRFunction definition: {
     public override method evaluateCaptureValueListOrNil => Array
         := captures.
 
+    public override method shouldBeInlinedIn: (callerFunction: HIRFunctionDefinition) ::=> Boolean
+        := definition ifNil: false ifNotNil: (definition shouldBeInlinedIn: callerFunction).
+
     public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: '@'c8.
         name ifNil: {
@@ -316,6 +333,7 @@ HIRFunctionDefinition definition: {
     public field firstBasicBlock => HIRBasicBlock.
     public field lastBasicBlock => HIRBasicBlock.
 
+    public field calledFunctions => Array.
     public field calledFunctionDefinitions => Array.
     public field traversalColor => UInt8.
     public field hasRecursiveCalls => Boolean.
@@ -640,12 +658,14 @@ HIRFunctionDefinition definition: {
         self removeBasicBlock: basicBlock.
     }.
 
-    public method computeCalledFunctionDefinitionsInto: (set: OrderedInsertionIdentitySet) ::=> Void := {
+    public method computeCalledFunctions: (functionsSet: OrderedInsertionIdentitySet) definitionsInto: (set: OrderedInsertionIdentitySet) ::=> Void := {
         self instructionsDo: {:(HIRInstruction)instruction :: Void |
             instruction isCallInstruction ifTrue: {
                 let call := instruction downCastTo: HIRCallInstruction.
-                let functionDefinition := call calledFunction evaluateAsHIRFunctionDefinitionOrNil.
+                let calledFunction := call calledFunction.
+                let functionDefinition := calledFunction evaluateAsHIRFunctionDefinitionOrNil.
                 functionDefinition ifNotNil: {
+                    functionsSet add: calledFunction.
                     set add: functionDefinition
                 }
             }
@@ -653,19 +673,32 @@ HIRFunctionDefinition definition: {
     }.
 
     public method computeCalledFunctionDefinitions => Void := {
+        let functionSet := OrderedInsertionIdentitySet new.
         let set := OrderedInsertionIdentitySet new.
-        self computeCalledFunctionDefinitionsInto: set.
-        calledFunctionDefinitions := set asArray
+
+        self computeCalledFunctions: functionSet definitionsInto: set.
+        calledFunctions := functionSet asArray.
+        calledFunctionDefinitions := set asArray.
     }.
 
     public method computeNewCalledFunctionDefinitions => Void := {
+        let functionSet := OrderedInsertionIdentitySet new.
+        functionSet addAll: calledFunctions.
+
         let set := OrderedInsertionIdentitySet new.
         set addAll: calledFunctionDefinitions.
-        self computeCalledFunctionDefinitionsInto: set.
-        calledFunctionDefinitions := set asArray
+
+        self computeCalledFunctions: functionSet definitionsInto: set.
+        calledFunctions := functionSet asArray.
+        calledFunctionDefinitions := set asArray.
     }.
 
-    public method shouldBeInlinedIn: (callerFunction: HIRFunctionDefinition) ::=> Boolean
+    public method shouldBeInlinedAsInternalClosureIn: (callerFunction: HIRFunctionDefinition) ::=> Boolean
+        := hasRecursiveCalls not && firstBasicBlock isNotNil
+            && sourceObject isNotNil
+            && sourceObject isNeverInline not.
+
+    public override method shouldBeInlinedIn: (callerFunction: HIRFunctionDefinition) ::=> Boolean
         := hasRecursiveCalls not && firstBasicBlock isNotNil
             && sourceObject isNotNil
             && sourceObject isNeverInline not
@@ -796,7 +829,7 @@ HIRFunctionDefinition definition: {
                 addDebugValue(inlineArguments at: index, argument sourceBinding)
             }.
             captures doWithIndex: {:(HIRFunctionCapture)capture :(Size)index :: Void |
-                addDebugValue(inlineArguments at: index, capture sourceBinding)
+                addDebugValue(inlineCaptures at: index, capture sourceBinding)
             }.
         }.
 
@@ -2151,6 +2184,11 @@ public final class HIRMakeClosureInstruction superclass: HIRInstruction; definit
 
     public override method evaluateCaptureValueListOrNil => Array
         := captures.
+
+    public override method shouldBeInlinedIn: (callerFunction: HIRFunctionDefinition) ::=> Boolean := {
+        let hirFunctionDefinition := functionDefinition evaluateAsHIRFunctionDefinitionOrNil.
+        hirFunctionDefinition ifNil: false ifNotNil: (hirFunctionDefinition shouldBeInlinedAsInternalClosureIn: callerFunction)
+    }.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := makeClosure "; print: self functionDefinition.

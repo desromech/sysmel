@@ -297,7 +297,7 @@ HIRFunctionCompilationContext definition: {
         := bindingDictionary at: localBinding.
 
     public method functionDefinitionValueFor: (functionDefinition: FunctionDefinition) ::=> HIRValue
-        := self builder literal: functionDefinition.
+        := (moduleCompilationContext translateFunctionDefinition: functionDefinition) ifNil: (self builder literal: functionDefinition).
 
     public method withBreakDestination: (breakDestination: HIRBasicBlock) continueDestination: (continueDestination: HIRBasicBlock) do: aBlock := {
         let oldBreakDestination := self breakDestination.

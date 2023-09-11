@@ -2811,7 +2811,7 @@ HIRMakeDictionaryInstruction extend: {
             type: Dictionary.
 
         let addFunction := codegen translateRuntimeFunction: ObjectModel::Dictionary::add.
-        self elements do: {:(HIRValue)eachElement :(Size)eachElementIndex :: Void |
+        self elements doWithIndex: {:(HIRValue)eachElement :(Size)eachElementIndex :: Void |
             let eachElementValue := codegen translateValue: eachElement.
             codegen blockBuilder callVoid: addFunction with: dictionary with: eachElementValue
         }.
