@@ -148,7 +148,7 @@ MethodDictionary definition: {
         }
     }.
 
-    public final method untypedAt: (key: Untyped) ifAbsentPut: ifAbsentBlock := {
+    public final inline method untypedAt: (key: Untyped) ifAbsentPut: ifAbsentBlock := {
         self ensureStorage.
 
         let entryIndex := (self scanFor: key) asSize.
@@ -163,10 +163,10 @@ MethodDictionary definition: {
         }
     }.
 
-    public final method at: key ifAbsentPut: ifAbsentBlock
+    public final inline method at: key ifAbsentPut: ifAbsentBlock
         := self untypedAt: key ifAbsentPut: ifAbsentBlock.
 
-    public final method at: key ifAbsent: ifAbsentBlock := {
+    public final inline method at: key ifAbsent: ifAbsentBlock := {
         self ensureStorage.
 
         let entryIndex := (self scanFor: key) asSize.

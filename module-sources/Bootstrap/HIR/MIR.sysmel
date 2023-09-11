@@ -381,7 +381,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
     }.
 
     public method translateRuntimeFunction: (function: Function) ::=> MIRProgramEntity := {
-        runtimeFunctionDictionary at: function ifAbsentPut: {:MIRProgramEntity |
+        runtimeFunctionDictionary at: function ifAbsentPut: {:: MIRProgramEntity |
             let ssaRuntimeFunction := hirModule getGlobalValueOrNilFor: function.
             ssaRuntimeFunction ifNotNil: {
                 self translateCapturelessUncheckedFunctionEntryPoint: ssaRuntimeFunction
