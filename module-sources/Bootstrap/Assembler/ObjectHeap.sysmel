@@ -325,6 +325,7 @@ Type extend: {
 TypeSlot extend: {
     public method writeReference64OrValueOf: (object: Untyped) inAsmHeap: (heap: AsmObjectHeap) at: (objectBaseOffset: Size) ::=> Void := {
         self isJitSpecific ifTrue: {return: void}.
+        self isTargetGenerated ifTrue: {return: void}.
 
         let slotValue => Untyped := (RawTuple::typeSlotAt:)(object, self).
 
@@ -354,15 +355,27 @@ ObjectModelVariant64 extend: {
     public method saveLayoutDataOfObject: (object: Untyped) inAsmHeap: (heap: AsmObjectHeap) at: (offset: Size) ::=> Size := {
         let type => Type := RawTuple::type(object).
         let patch => ImageObjectTracePatch := heap objectTrace patchDictionary untypedAtOrNil: object.
+        let vtableLayout => VirtualTableLayout := heap objectTrace vtableSet getVirtualTableLayoutOrNilOf: object.
+        let vtable => VirtualTable := heap objectTrace vtableSet getVirtualTableOrNilOf: object.
         type ifNil: {
             0sz
         } ifNotNil: {
             type allSlotsDo: {:(TypeSlot)eachSlot :: Void |
                 patch ifNotNil: {
-                    patch writeSlot: eachSlot reference64OrValueOf: object inAsmHeap: heap at: offset
-                } ifNil: {
-                    eachSlot writeReference64OrValueOf: object inAsmHeap: heap at: offset
-                }
+                    patch writeSlot: eachSlot reference64OrValueOf: object inAsmHeap: heap at: offset.
+                    return: void.
+                }.
+
+                vtableLayout isNotNil && (eachSlot name == #virtualTableLayout) ifTrue: {
+                    heap writeReference64: vtableLayout at: offset + eachSlot offset.
+                    return: void
+                }.
+                vtable isNotNil && (eachSlot name == #virtualTable) ifTrue: {
+                    heap writeReference64: vtable at: offset + eachSlot offset.
+                    return: void
+                }.
+
+                eachSlot writeReference64OrValueOf: object inAsmHeap: heap at: offset
             }.
             type totalSlotCount
         }

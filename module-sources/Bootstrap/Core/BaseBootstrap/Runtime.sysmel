@@ -10,8 +10,15 @@ Type
     withSelector: #computeLayout addMethod: {:(Type)self :: Void |
         void
     } makeVirtual;
+    withSelector: #computeVirtualTableLayout addMethod: {:(Type)self :: Void |
+        void
+    } makeVirtual;
     withSelector: #ensureLayoutIsComputed addMethod: {:(Type)self :: Void |
         if: self instanceAlignment = 0sz then: (self computeLayout).
+        void
+    } makeFinal;
+    withSelector: #ensureVirtualTableLayoutIsComputed addMethod: {:(Type)self :: Void |
+        if: self virtualTableLayout == nil then: (self computeVirtualTableLayout).
         void
     } makeFinal;
     withSelector: #ensureAnalysis addMethod: {:(Type)self :: Void |
@@ -169,6 +176,9 @@ TypeSlot
     } withEagerAnalysis;
     withSelector: #isJitSpecific addMethod: {:(TypeSlot)self :: Boolean |
         self hasAnyFlags: TypeSlotFlags::JitSpecific
+    } withEagerAnalysis;
+    withSelector: #isTargetGenerated addMethod: {:(TypeSlot)self :: Boolean |
+        self hasAnyFlags: TypeSlotFlags::TargetGenerated
     } withEagerAnalysis.
 
 Array
@@ -195,6 +205,17 @@ Array
             aBlock(self at: i, i)
         } continueWith: (i := i + 1sz)
     } makeVirtual makeFinal.
+
+VirtualTable
+    withSelector: #at: addMethod: {:(VirtualTable)self :(Size)index |
+        self __uncheckedSlotAt__: index + 1sz
+    } makeFinal makeAlwaysInline withEagerAnalysis;
+    withSelector: #at:put: addMethod: {:(VirtualTable)self :(Size)index :value :: Void |
+        self __uncheckedSlotAt__: index + 1sz put: value
+    } makeFinal makeAlwaysInline withEagerAnalysis;
+    withSelector: #size addMethod: {:(VirtualTable)self :: Size |
+        self __uncheckedPointersSize__ - 1sz
+    } makeFinal makeAlwaysInline withEagerAnalysis.
 
 Type
     withSelector: #coerceASTNode:into:withEnvironment: addMethod: {:(Type)self :(ASTNode)astNode :(Type)targetType :(AnalysisAndEvaluationEnvironment)environment :: ASTNode |
@@ -1207,7 +1228,7 @@ Dictionary
         let: #storage with: self storage.
         let: #entry with: (storage at: entryIndex).
         if: entry ~~ nil then: entry key = key else: false
-    };
+    } makeVirtual;
     withSelector: #at:ifPresent: addMethod: {:(Dictionary)self :key :ifPresentBlock :: Void |
         self ensureStorage.
         let: #entryIndex with: (self scanFor: key) asSize.
@@ -1246,6 +1267,25 @@ IdentityDictionary
             value
         } else: {
             entry value
+        }
+    };
+    withSelector: #includesKey: addMethod: {:(IdentityDictionary)self :(AnyValue)key :: Boolean |
+        self ensureStorage.
+        let: #entryIndex with: (self scanFor: key) asSize.
+        let: #storage with: self storage.
+        let: #entry with: (storage at: entryIndex).
+        if: entry ~~ nil then: entry key == key else: false
+    } makeOverride.
+
+MethodDictionary
+    withSelector: #includesKey: addMethod: {:(MethodDictionary)self :(AnyValue)key :: Boolean |
+        let: #storage with: self storage.
+        if: storage ~~ nil then: {
+            let: #entryIndex with: (self scanFor: key) asSize.
+            let: #entryKey with: (storage at: entryIndex * 2sz).
+            entryKey == key
+        } else: {
+            false
         }
     }.
 
@@ -1719,7 +1759,10 @@ OrderedCollection
         } continueWith: (i := i + 1sz).
 
         self size: newSize
-    }.
+    };
+    withSelector: #postCopy addMethod: {:(OrderedCollection)self :: Void |
+        self storage: self storage copy
+    } makeOverride.
 
 Dictionary
     withSelector: #new: addClassMethod: {:(Dictionary class)self :(Size)initialCapacity :: self |
@@ -1728,10 +1771,25 @@ Dictionary
     withSelector: #initializeWithCapacity: addMethod: {:(Dictionary)self :(Size)initialCapacity :: Void |
         let: #requiredStorageCapacity with: initialCapacity * 130sz / 100sz.
         self storage: (Array new: requiredStorageCapacity).
-    }.
+    };
+    withSelector: #postCopy addMethod: {:(OrderedCollection)self :: Void |
+        if: self storage ~~ nil then: {
+            self storage: (self storage collect: {:(LookupKey)assoc :: LookupKey | assoc copy})
+        }.
+    } makeOverride.
+
+MethodDictionary
+    withSelector: #postCopy addMethod: {:(OrderedCollection)self :: Void |
+        self storage: self storage copy
+    } makeOverride.
+
+Set
+    withSelector: #postCopy addMethod: {:(Set)self :: Void |
+        self storage: self storage copy
+    } makeOverride.
 
 WeakOrderedCollection
-    withSelector: #arrayType addClassMethod: {:(OrderedCollection class)self :: Array class |
+    withSelector: #arrayType addClassMethod: {:(WeakOrderedCollection class)self :: Array class |
         WeakArray
     } makeOverride.
     
@@ -2949,6 +3007,10 @@ Type
         if: self instanceAlignment = 0sz then: (self ensureLayoutIsComputed).
         self instanceAlignment
     } makeFinal;
+    withSelector: #validVirtualTable addMethod: {:(Type)self :: VirtualTable |
+        if: self virtualTable == nil then: (self ensureVirtualTableLayoutIsComputed).
+        self virtualTable
+    } makeFinal;
     withSelector: #valueAlignment addMethod: {:(Type)self :: Size |
         UIntPointer instanceAlignment
     } makeVirtual;
@@ -2994,6 +3056,7 @@ Type
         self allValidSlots.
         self validBasicInitializeMethod.
         self ensureLayoutIsComputed.
+        self ensureVirtualTableLayoutIsComputed.
     } makeVirtual withEagerAnalysis;
 
     ## Non recursive versions, more efficient with our current compiler.
@@ -3090,6 +3153,70 @@ Environment
     withSelector: #withSelector:addFallbackMethod: addMethod: {:(Environment)self :(Symbol)symbol :method :: Void |
         self setSymbol: symbol value: method
     }.
+
+VirtualTableLayout
+    withSelector: #buildFor: addMethod: {:(VirtualTableLayout)self :(Type)newType :: Void |
+        self type: newType.
+        
+        let: #supertype with: newType supertype.
+        if: supertype ~~ nil then: {
+            supertype ensureVirtualTableLayoutIsComputed.
+            self setSupertypeLayout: supertype virtualTableLayout.
+        } else: {
+            self setSupertypeLayout: nil.
+        }.
+
+        let: #virtualMethodSelectorList with: self type virtualMethodSelectorList.
+        if: virtualMethodSelectorList ~~ nil then: {
+            self addSelectors: virtualMethodSelectorList
+        }.
+    };
+    withSelector: #setSupertypeLayout: addMethod: {:(VirtualTableLayout)self :(VirtualTableLayout)newSupertypeLayout :: Void |
+        self supertypeLayout: newSupertypeLayout.
+        if: newSupertypeLayout ~~ nil then: {
+            self selectorToIndexTable: newSupertypeLayout selectorToIndexTable copy.
+            self indexToSelectorTable: newSupertypeLayout indexToSelectorTable copy.
+        } else: {
+            self selectorToIndexTable: MethodDictionary new.
+            self indexToSelectorTable: OrderedCollection new.
+        }.
+    };
+    withSelector: #addSelector: addMethod: {:(VirtualTableLayout)self :(Symbol)selector :: Void |
+        let: #selectorToIndexTable with: self selectorToIndexTable.
+        (selectorToIndexTable includesKey: selector) ifFalse: {
+            let: #index with: selectorToIndexTable size.
+            selectorToIndexTable at: selector put: index.
+            self indexToSelectorTable add: selector
+        }.
+    };
+    withSelector: #addSelectors: addMethod: {:(VirtualTableLayout)self :(Collection)selectors :: Void |
+        selectors do: {:(Symbol)eachSelector :: Void |
+            self addSelector: eachSelector
+        }
+    };
+    withSelector: #buildVirtualTableFor: addMethod: {:(VirtualTableLayout)self :(Type)targetType :: VirtualTable |
+        let: #indexToSelectorTable with: self indexToSelectorTable.
+        let: #entryCount with: indexToSelectorTable size.
+        let: #virtualTable with: (VirtualTable basicAllocate: entryCount).
+        virtualTable type: targetType.
+
+        indexToSelectorTable doWithIndex: {:(Symbol)selector :(Size)index :: Void |
+            let: #method with: (targetType lookupSelector: selector).
+            self assert: method isNotNil.
+            virtualTable at: index put: method
+        }.
+
+        virtualTable
+    }.
+
+Type
+    withSelector: #computeVirtualTableLayout replaceMethod: {:(Type)self :: Void |
+        let: #virtualTableLayout with: VirtualTableLayout new.
+        self virtualTableLayout: virtualTableLayout.
+        virtualTableLayout buildFor: self.
+
+        self virtualTable: (virtualTableLayout buildVirtualTableFor: self)
+    } makeVirtual.
 
 BootstrapEnv::IntrinsicTypes do: {:(Type)each :: Void |
     each ensureAnalysis

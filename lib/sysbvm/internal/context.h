@@ -195,6 +195,8 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t valueType;
     sysbvm_tuple_t valueMetatypeType;
     sysbvm_tuple_t voidType;
+    sysbvm_tuple_t virtualTableLayoutType;
+    sysbvm_tuple_t virtualTableType;
     sysbvm_tuple_t weakArrayType;
     sysbvm_tuple_t weakOrderedCollectionType;
     sysbvm_tuple_t weakSetType;

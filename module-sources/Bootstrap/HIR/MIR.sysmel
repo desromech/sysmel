@@ -312,6 +312,23 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
         mirValue
     }.
 
+    public method getVirtualTableIndexValueForSelector: (selector: Symbol) type: (type: Type) ::=> MIRValue := {
+        selector isNotNil && type isNotNil ifTrue: {
+            let vtableLayout := hirModule virtualTableSetSource getVirtualTableLayoutOrNilOf: type.
+            vtableLayout ifNotNil: {
+                let vtableIndexOrNil := vtableLayout selectorToIndexTable atOrNil: selector.
+                vtableIndexOrNil ifNotNil: {
+                    let vtableIndex := vtableIndexOrNil downCastTo: Size.
+                    compilationTarget pointerSize = 4sz
+                        ifTrue: vtableIndex asUInt32 asMirConstant
+                        ifFalse: vtableIndex asUInt64 asMirConstant
+                }
+            }.
+        } ifFalse: {
+            nil
+        }
+    }.
+
     public method shouldCompileFunctionDefinition: (definition: HIRFunctionDefinition) ::=> Boolean
         := definition ~~ nil.
 
@@ -2811,16 +2828,30 @@ HIRSendInstruction extend: {
         let mirReceiverLookupType := self receiverLookupType ifNotNil: (codegen translateBoxedValue: self receiverLookupType).
         let mirSelector := codegen translateBoxedValue: self selector.
 
+        let vtableIndex := codegen moduleCodeGenerator getVirtualTableIndexValueForSelector: self boundSelector type: self boundType.
+
         isUnchecked ifTrue: {
             ## Perform the lookup.
-            let foundMethod := mirReceiverLookupType ifNil: {
-                codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::lookupValidMethodWithReceiverAndInlineCache)
-                    with: MIRPolymorphicInlineCache new with: mirReceiver with: mirSelector
-                    type: UIntPointer.
-            } ifNotNil: {
-                codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::lookupValidMethodWithReceiverTypeAndInlineCache)
-                    with: MIRPolymorphicInlineCache new with: mirReceiver with: mirReceiverLookupType with: mirSelector
-                    type: UIntPointer.
+            let foundMethod := vtableIndex ifNotNil: {
+                mirReceiverLookupType ifNil: {
+                    codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::lookupMethodWithReceiverAndVirtualTableIndex)
+                        with: mirReceiver with: vtableIndex
+                        type: UIntPointer.
+                } ifNotNil: {
+                    codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::lookupMethodWithReceiverTypeAndVirtualTableIndex)
+                        with: mirReceiverLookupType with: vtableIndex
+                        type: UIntPointer.
+                }
+            } ifNil: {
+                mirReceiverLookupType ifNil: {
+                    codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::lookupValidMethodWithReceiverAndInlineCache)
+                        with: MIRPolymorphicInlineCache new with: mirReceiver with: mirSelector
+                        type: UIntPointer.
+                } ifNotNil: {
+                    codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::lookupValidMethodWithReceiverTypeAndInlineCache)
+                        with: MIRPolymorphicInlineCache new with: mirReceiver with: mirReceiverLookupType with: mirSelector
+                        type: UIntPointer.
+                }
             }.
 
             ## Get the trampoline for the conversion case.

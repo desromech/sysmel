@@ -1,6 +1,7 @@
 public class ImageObjectTrace superclass: Object; definition: {
     public field objectList => OrderedCollection.
     public field objectIndexDictionary => IdentityDictionary.
+    public field vtableSet => ImageBuilderVirtualTableSetSource.
     public field patchDictionary => IdentityDictionary.
 
     public override method initialize => Void := {
@@ -9,6 +10,7 @@ public class ImageObjectTrace superclass: Object; definition: {
         objectList := OrderedCollection new.
         objectIndexDictionary := IdentityDictionary new.
         patchDictionary := IdentityDictionary new.
+        vtableSet := ImageBuilderVirtualTableSetSource new.
     }.
 
     public method addObject: (object: Untyped) patch: (patch: ImageObjectTracePatch) ::=> Void := {

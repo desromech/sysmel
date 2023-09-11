@@ -2374,6 +2374,8 @@ public final class HIRSendInstruction superclass: HIRInstruction; definition: {
     public field selector => HIRValue.
     public field arguments => Array.
     public field isUnchecked => Boolean.
+    public field boundType => Type.
+    public field boundSelector => Symbol.
 
     public override method isSendInstruction => Boolean := true.
 
@@ -2522,6 +2524,7 @@ public final class HIRUnreachableInstruction superclass: HIRInstruction; definit
 
 public final class HIRModule superclass: Object; definition: {
     public field globalValues => OrderedCollection.
+    public field virtualTableSetSource => VirtualTableSetSource.
     private field globalValueDictionary => IdentityDictionary.
 
     public override method initialize => Void := {

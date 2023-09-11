@@ -12,7 +12,8 @@ public class FixedArrayType superclass: ValueType; definition: {
             flags: TypeFlags::Value;
             totalSlotCount: 0sz;
             generatePublicAccessors;
-            createBasicInitializeMethod.
+            createBasicInitializeMethod;
+            ensureVirtualTableLayoutIsComputed
     }.
 
     public override method generatePublicAccessors => Void := {

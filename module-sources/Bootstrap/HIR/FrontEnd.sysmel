@@ -23,6 +23,10 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
         usedModules := OrderedCollection new.
     }.
 
+    public method virtualTableSetSource: (virtualTableSetSource: VirtualTableSetSource) ::=> Void := {
+        hirModule virtualTableSetSource: virtualTableSetSource
+    }.
+
     public method addUsedModule: (usedModule: HIRModule) ::=> Void := {
         usedModules add: usedModule.
     }.
@@ -930,6 +934,12 @@ ASTMessageSendNode extend: {
             selector: (self selector generateHIRValueWith: context)
             arguments: (self arguments collect: {:(ASTNode)each :: HIRValue | each generateHIRValueWith: context }) asArray
             resultType: self analyzedType.
+
+        self boundMethodOwner isNotNil && self selector isLiteralNode ifTrue: {
+            sendInstruction
+                boundSelector: (self selector downCastTo: ASTLiteralNode) value;
+                boundType: self boundMethodOwner
+        }.
 
         sendInstruction isUnchecked: self isNoTypechecked.
 

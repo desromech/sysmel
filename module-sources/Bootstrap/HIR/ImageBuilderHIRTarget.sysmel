@@ -19,6 +19,7 @@ public class ImageBuilderHIRTarget superclass: ImageBuilderTarget; definition: {
         hirImage
             hirModule: ((HIRModuleCompilationContext forTarget: compilationTarget)
                 exclusiveCompilationMode: true;
+                virtualTableSetSource: builder tracer vtableSet;
                 compileFunctions: builder tracer tracedFunctions definitions: builder tracer tracedFunctionDefinitions;
                 exportMainEntryPointFunction: builder entryPointFunction;
                 finish);

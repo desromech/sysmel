@@ -83,6 +83,11 @@ Type validMethodDictionary at: #checkConstraintsForAddingMethod:withSelector: pu
 }.
 (Type validMethodDictionary at: #checkConstraintsForAddingMethod:withSelector:) recordBindingWithOwner: Type andName: #checkConstraintsForAddingMethod:withSelector:.
 
+Type validMethodDictionary at: #updateVirtualTableEntryFor:with: put: {:(Type)self :(Symbol)selector :newMethod :: Void|
+    
+}.
+(Type validMethodDictionary at: #updateVirtualTableEntryFor:with:) recordBindingWithOwner: Type andName: #updateVirtualTableEntryFor:with:.
+
 Type validMethodDictionary at: #withSelector:addMethod: put: {:(Type)self :(Symbol)selector :newMethod |
     let: #methodDict with: self validMethodDictionary.
     let: #existentMethod with: (methodDict atOrNil: selector).
@@ -91,7 +96,8 @@ Type validMethodDictionary at: #withSelector:addMethod: put: {:(Type)self :(Symb
     if: (if: existentMethod ~~ nil then: existentMethod isBootstrapPrimitive else: false) then: {
         existentMethod adoptDefinitionOf: newMethod.
     } else: {
-        methodDict at: selector put: newMethod
+        methodDict at: selector put: newMethod.
+        self updateVirtualTableEntryFor: selector with: newMethod
     }.
 
     newMethod recordBindingWithOwner: self andName: selector.
@@ -152,6 +158,7 @@ Type
         let: #existent with: (methodDictionary atOrNil: selector).
         if: existent == nil then: {
             methodDictionary at: selector put: newMethod.
+            self updateVirtualTableEntryFor: selector with: newMethod.
             self flushLookupSelector: selector.
             newMethod recordBindingWithOwner: self andName: selector
         } else: {

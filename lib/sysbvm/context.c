@@ -431,6 +431,9 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.weakArrayType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayType);
     context->roots.weakOrderedCollectionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.orderedCollectionType);
 
+    context->roots.virtualTableLayoutType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.virtualTableType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
+
     context->roots.internedSymbolSet = sysbvm_identitySet_create(context);
     context->roots.sessionToken = sysbvm_tuple_systemHandle_encode(context, 1);
 
@@ -644,8 +647,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "methodDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.methodDictionaryType,
         "fallbackMethodDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.methodDictionaryType,
         "virtualMethodSelectorList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.orderedCollectionType,
-        "virtualTableSelectorDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_TARGET_GENERATED, context->roots.orderedCollectionType,
-        "virtualTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_TARGET_GENERATED, context->roots.arrayType,
+        "virtualTableLayout", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_TARGET_GENERATED | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.virtualTableLayoutType,
+        "virtualTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_TARGET_GENERATED, context->roots.virtualTableType,
 
         "pendingSlots", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, SYSBVM_NULL_TUPLE,
         "subtypes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, SYSBVM_NULL_TUPLE,
@@ -889,6 +892,16 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_typeAndMetatype_setFlags(context, context->roots.weakArrayType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL | SYSBVM_TYPE_FLAGS_WEAK | SYSBVM_TYPE_FLAGS_EMPTY_TRIVIAL_SINGLETON, SYSBVM_TYPE_FLAGS_FINAL);
     sysbvm_typeAndMetatype_setFlags(context, context->roots.weakOrderedCollectionType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);
 
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.virtualTableType, "VirtualTable", SYSBVM_NULL_TUPLE,
+        "type", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
+        NULL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.virtualTableLayoutType, "VirtualTableLayout", SYSBVM_NULL_TUPLE,
+        "supertypeLayout", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.virtualTableLayoutType,
+        "type", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
+        "selectorToIndexTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.methodDictionaryType,
+        "indexToSelectorTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
+        NULL);
+
     // Create other root basic types.
     context->roots.arraySliceType = sysbvm_context_createIntrinsicClass(context, "ArraySlice", context->roots.sequenceableCollectionType,
         "elements", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, SYSBVM_NULL_TUPLE,
@@ -1088,6 +1101,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "arguments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "isDynamic", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "boundMethod", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anyValueType,
+        "boundMethodOwner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
         "applicationFlags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
         NULL);
     context->roots.astMessageChainNodeType = sysbvm_context_createIntrinsicClass(context, "ASTMessageChainNode", context->roots.astNodeType,

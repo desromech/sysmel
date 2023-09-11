@@ -18,6 +18,9 @@ loadSourceNamed: "MemoryPointers.sysmel".
 loadSourceNamed: "GarbageCollector.sysmel".
 loadSourceNamed: "ObjectModel.sysmel".
 loadSourceNamed: "Function.sysmel".
+loadSourceNamed: "VirtualTableSetSource.sysmel".
+loadSourceNamed: "ImageBuilderVirtualTableSetSource.sysmel".
+loadSourceNamed: "CurrentImageVirtualTableSetSource.sysmel".
 
 loadSourceNamed: "ByteStream.sysmel".
 loadSourceNamed: "Exception.sysmel".

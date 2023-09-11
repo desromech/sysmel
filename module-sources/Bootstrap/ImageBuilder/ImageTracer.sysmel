@@ -15,8 +15,10 @@ public class ImageTracer superclass: Object; definition: {
     public field tracedFunctionDefinitions => OrderedCollection.
 
     public field strategy => ImageTracerStrategy.
-
     public field patchDictionary => IdentityDictionary.
+    public field vtableSet => ImageBuilderVirtualTableSetSource.
+
+    private field isMetatypeCache => IdentityDictionary.
 
     public override method initialize => Void := {
         super initialize.
@@ -24,9 +26,14 @@ public class ImageTracer superclass: Object; definition: {
         rootObjectSet := IdentitySet new.
         patchDictionary := IdentityDictionary new.
         strategy := ImageTracerStrategy new.
+        vtableSet := ImageBuilderVirtualTableSetSource new.
+        isMetatypeCache := IdentityDictionary new.
 
         self beComplete.
     }.
+
+    public method isMetatype: (type: Type) ::=> Boolean
+        := isMetatypeCache at: type ifAbsentPut: {:: Boolean | type isSubtypeOf: Type}.
 
     public method beComplete => Void := {
         strategy := ImageTracerStrategy new.
@@ -94,6 +101,7 @@ public class ImageTracer superclass: Object; definition: {
         keepingInProcessDebugInformation not && typeSlot isDebugInformation ifTrue: {return: false}.
         needsBytecode not && typeSlot isBytecode ifTrue: {return: false}.
         typeSlot isJitSpecific ifTrue: {return: true}.
+        typeSlot isTargetGenerated ifTrue: {return: true}.
 
         strategy shouldEmitTypeSlot: typeSlot
     }.
@@ -105,6 +113,7 @@ public class ImageTracer superclass: Object; definition: {
     public method traceObjectSet => Void := {
         objectTrace := ImageObjectTrace new
             patchDictionary: patchDictionary copy;
+            vtableSet: vtableSet;
             yourself.
         tracedProgramEntities := OrderedCollection new.
         tracedFunctions := OrderedCollection new.

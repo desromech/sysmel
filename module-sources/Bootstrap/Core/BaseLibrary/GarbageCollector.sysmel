@@ -169,6 +169,7 @@ public nogc function GarbageCollector::shutdown() => Void := {
 
     GarbageCollector::fullCollect().
     GarbageCollector::MarkingStack finalize.
+    GarbageCollector::RememberedSet finalize.
     GarbageCollector::IsInitialized := false.
 }.
 

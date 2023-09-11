@@ -952,6 +952,7 @@ RawTuple::byteSize adoptDefinitionOf: {:(Untyped)self :: Size |
     let contentSize := instanceSize + variableDataSize.
     let allocationSize := ObjectModel::TupleHeaderSize + contentSize.
     let allocationPointer := GarbageCollector::allocate(allocationSize).
+    type ensureVirtualTableLayoutIsComputed.
     memset(allocationPointer, 0i8, allocationSize).
 
     let objectHeader := allocationPointer reinterpretCastTo: ObjectModel::TupleHeader pointer.
@@ -1920,7 +1921,13 @@ public inline function ObjectModel::lookupValidMethodWithReceiverTypeAndInlineCa
 
 public inline function ObjectModel::lookupValidMethodWithReceiverAndInlineCache(inlineCache: ObjectModel::PolymorphicInlineCache pointer, receiver: Untyped, selector: Symbol) => AnyValue
     := ObjectModel::lookupValidMethodWithReceiverTypeAndInlineCache(inlineCache, receiver, RawTuple::type(receiver), selector).
-    
+
+public inline function ObjectModel::lookupMethodWithReceiverTypeAndVirtualTableIndex(receiverType: Type, virtualTableIndex: UIntPointer) => AnyValue
+    := receiverType virtualTable __uncheckedSlotAt__: virtualTableIndex + 1sz.
+
+public inline function ObjectModel::lookupMethodWithReceiverAndVirtualTableIndex(receiver: Untyped, virtualTableIndex: UIntPointer) => AnyValue
+    := ObjectModel::lookupMethodWithReceiverTypeAndVirtualTableIndex(RawTuple::type(receiver), virtualTableIndex).
+
 (0sz until: 16sz) macroDo: {:ArgumentCount |
     let argumentNames := (0sz until: ArgumentCount) collect: {:(Size)each | ("arg" -- each asString) asSymbol}.
     let argumentNodes := argumentNames collect: {:(Symbol)eachName | eachName asMacroArgumentWithType: Untyped asMacroLiteral}.

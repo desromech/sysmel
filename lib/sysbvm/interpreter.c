@@ -3826,6 +3826,7 @@ static sysbvm_tuple_t sysbvm_astMessageSendNode_primitiveAnalyze(sysbvm_context_
     if(gcFrame.method)
     {
         gcFrame.sendNode->boundMethod = gcFrame.method;
+        gcFrame.sendNode->boundMethodOwner = gcFrame.methodOwner;
         gcFrame.methodType = sysbvm_tuple_getType(context, gcFrame.method);
 
         gcFrame.analysisFunction = sysbvm_type_getAnalyzeAndTypeCheckMessageSendNodeWithEnvironment(context, sysbvm_tuple_getType(context, gcFrame.methodType));

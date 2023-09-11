@@ -27,6 +27,7 @@ SequenceTupleType definition: {
         flags := supertype flags.
 
         self ensureLayoutIsComputed.
+        self ensureVirtualTableLayoutIsComputed.
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {

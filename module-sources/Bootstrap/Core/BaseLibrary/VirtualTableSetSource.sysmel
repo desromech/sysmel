@@ -1,0 +1,13 @@
+public abstract class VirtualTableSetSource definition: {
+    public abstract method getVirtualTableLayoutFor: (type: Type) ::=> VirtualTableLayout
+        := self subclassResponsibility.
+
+    public abstract method getVirtualTableFor: (type: Type) ::=> VirtualTable
+        := self subclassResponsibility.
+
+    public abstract method getVirtualTableLayoutOrNilOf: (type: Untyped) ::=> VirtualTableLayout
+        := self subclassResponsibility.
+
+    public abstract method getVirtualTableOrNilOf: (type: Untyped) ::=> VirtualTable
+        := self subclassResponsibility
+}.

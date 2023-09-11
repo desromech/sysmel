@@ -1,0 +1,12 @@
+public final class CurrentImageVirtualTableSetSource superclass: VirtualTableSetSource; definition: {
+    __Meta__ definition: {
+        public method uniqueInstance => self
+            := emptyTrivialSingleton ifNil: (emptyTrivialSingleton := self basicAllocate).
+    }.
+
+    public override method getVirtualTableLayoutFor: (type: Type) ::=> VirtualTableLayout
+        := type ensureVirtualTableLayoutIsComputed; virtualTableLayout.
+
+    public override method getVirtualTableFor: (type: Type) ::=> VirtualTable
+        := type ensureVirtualTableLayoutIsComputed; virtualTable.
+}.

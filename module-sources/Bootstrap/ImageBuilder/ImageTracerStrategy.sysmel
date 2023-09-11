@@ -17,8 +17,11 @@ ImageTracerStrategy definition: {
     public virtual method shouldEmitTypeSlot: (typeSlot: TypeSlot) ::=> Boolean
         := true.
 
-    public virtual method traceType: (type: Type) with: (tracer: ImageTracer) ::=> Void
-        := tracer enqueueObjectTrace: type.
+    public virtual method traceType: (type: Type) with: (tracer: ImageTracer) ::=> Void := {
+        tracer enqueueObjectTrace: type.
+        tracer enqueueObjectTrace: (tracer vtableSet getVirtualTableLayoutFor: type).
+        tracer enqueueObjectTrace: (tracer vtableSet getVirtualTableFor: type).
+    }.
 
     public virtual method traceReferencesOf: (object: Untyped) with: (tracer: ImageTracer) ::=> Void := {
         (RawTuple::type(object) ifNil: Untyped) imageTracer::traceReferencesOf: object with: tracer
@@ -77,10 +80,6 @@ Type extend: {
 
         let slotCount => Size := RawTuple::size(object).
         let i mutable := startSlotIndex.
-        (startSlotIndex > 0sz) && (startSlotIndex < slotCount) ifTrue: {
-            printLine("Fixed variable.")
-        }.
-
         while: (i < slotCount) do: {
             tracer enqueueObjectTrace: (RawTuple::slotAt:)(object, i)
         } continueWith: (i := i + 1sz).
@@ -89,6 +88,8 @@ Type extend: {
     public virtual method imageTracer::ordinaryTraceReferencesOf: (object: Untyped) with: (tracer: ImageTracer) ::=> Void := {
         tracer traceType: self.
         RawTuple::isDummyValue(object) || RawTuple::isBytes(object) ifTrue: {return: void}.
+
+        (tracer isMetatype: self) ifTrue: (tracer traceType: object).
 
         self allValidSlots do: {:(TypeSlot)eachSlot :: Void |
             (tracer shouldEmitTypeSlot: eachSlot) ifTrue: {
