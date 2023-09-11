@@ -32,15 +32,15 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
     public field compilationTarget => MIRCompilationTarget.
     public field hirModule => HIRModule.
     public field targetModule => MIRModule.
-    public field globalValueDictionary => Dictionary.
+    public field globalValueDictionary => IdentityDictionary.
 
-    public field runtimeFunctionDictionary => Dictionary.
+    public field runtimeFunctionDictionary => IdentityDictionary.
     public field importRuntimeFunction => Boolean.
     private field runtimeFunctionCompilerFrontend => HIRModuleCompilationContext.
 
-    public field capturelessUncheckedEntryPointDictionary => Dictionary.
-    public field uncheckedEntryPointDictionary => Dictionary.
-    public field checkedEntryPointDictionary => Dictionary.
+    public field capturelessUncheckedEntryPointDictionary => IdentityDictionary.
+    public field uncheckedEntryPointDictionary => IdentityDictionary.
+    public field checkedEntryPointDictionary => IdentityDictionary.
     public field uncheckedInterpreterTrampolinesDictionary => Dictionary.
     public field boxingApplicationTrampolinesDictionary => Dictionary.
 
@@ -52,11 +52,11 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
         targetModule := MIRModule new
             compilationTarget: compilationTarget;
             yourself.
-        globalValueDictionary := Dictionary new.
-        runtimeFunctionDictionary := Dictionary new.
-        capturelessUncheckedEntryPointDictionary := Dictionary new.
-        uncheckedEntryPointDictionary := Dictionary new.
-        checkedEntryPointDictionary := Dictionary new.
+        globalValueDictionary := IdentityDictionary new.
+        runtimeFunctionDictionary := IdentityDictionary new.
+        capturelessUncheckedEntryPointDictionary := IdentityDictionary new.
+        uncheckedEntryPointDictionary := IdentityDictionary new.
+        checkedEntryPointDictionary := IdentityDictionary new.
         uncheckedInterpreterTrampolinesDictionary := Dictionary new.
         boxingApplicationTrampolinesDictionary := Dictionary new.
     }.
@@ -338,7 +338,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
             self error: "Cannot generate captureless unchecked entry point for function without a definition " -- value printString
         }.
 
-        capturelessUncheckedEntryPointDictionary at: functionDefinition ifAbsent: {:: MIRProgramEntity |
+        (capturelessUncheckedEntryPointDictionary atOrNil: functionDefinition) ifNil: {
             self compileCapturelessUncheckedFunctionEntryPoint: functionDefinition
         }
     }.
@@ -451,14 +451,12 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
     public field functionBuilder => MIRFunctionBuilder.
     public field blockBuilder => MIRBlockBuilder.
     protected field isCapturelessEntryPoint => Boolean.
-    protected field valueDictionary => Dictionary.
-    public field localOnlyAllocaDictionary => Dictionary.
+    protected field valueDictionary => IdentityDictionary.
     public field functionArgument => MIRValue.
-    protected field boxedValueDictionary => Dictionary.
+    protected field boxedValueDictionary => IdentityDictionary.
 
     public override method initialize => Void := {
-        valueDictionary := Dictionary new.
-        localOnlyAllocaDictionary := Dictionary new.
+        valueDictionary := IdentityDictionary new.
     }.
 
     public method compilationTarget => MIRCompilationTarget
@@ -801,7 +799,7 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
         }.
     
     public method translateBoxedValue: (value: HIRValue) ::=> MIRValue := {
-        boxedValueDictionary ifNil: (boxedValueDictionary := Dictionary new).
+        boxedValueDictionary ifNil: (boxedValueDictionary := IdentityDictionary new).
         boxedValueDictionary at: value ifAbsentPut: {:: MIRValue |
             value isLiteralConstant ifTrue: {
                 self translateValue: (value downCastTo: HIRLiteralConstant) asBoxedLiteralConstant

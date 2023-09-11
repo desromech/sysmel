@@ -948,11 +948,12 @@ RawTuple::byteSize adoptDefinitionOf: {:(Untyped)self :: Size |
     :(Type)type :(Size)instanceSize :(Size)instanceAlignment :(Size)slotCount :(Size)variableSize :(Boolean)isBytes :(Boolean)isWeak :: Untyped |
     <primitive: #RawTuple::basicAllocateWithType:instanceSize:alignment:slotCount:variableSize:isBytes:isWeak:>
     ##let allocationAlignment := instanceAlignment max: ObjectModel::MinimalAlignment asSize.
+    type ensureVirtualTableLayoutIsComputed.
+
     let variableDataSize := isBytes ifTrue: variableSize ifFalse: variableSize * ObjectModel::PointerSize.
     let contentSize := instanceSize + variableDataSize.
     let allocationSize := ObjectModel::TupleHeaderSize + contentSize.
     let allocationPointer := GarbageCollector::allocate(allocationSize).
-    type ensureVirtualTableLayoutIsComputed.
     memset(allocationPointer, 0i8, allocationSize).
 
     let objectHeader := allocationPointer reinterpretCastTo: ObjectModel::TupleHeader pointer.

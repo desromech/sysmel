@@ -40,7 +40,7 @@ String extend: {
         let size := self size.
         let i mutable := 0sz.
         while: (i < size) do: {
-            result := result hashConcatenate: (self at: i) asSize
+            result := result hashConcatenate: (self __uncheckedByteSlotAt__: i) asSize
         } continueWith: (i := i + 1sz).
 
         result
@@ -57,7 +57,7 @@ String extend: {
 
         let i mutable := 0sz.
         while: (i < size) do: {
-            (self at: i) = (otherString at: i) ifFalse: {
+            (self __uncheckedByteSlotAt__: i) = (otherString __uncheckedByteSlotAt__: i) ifFalse: {
                 return: false
             }
         } continueWith: (i := i + 1sz).
@@ -73,7 +73,7 @@ String extend: {
 
         let i mutable := 0sz.
         while: (i < size) do: {
-            (self at: i) = (other at: i) ifFalse: {
+            (self __uncheckedByteSlotAt__: i) = (other __uncheckedByteSlotAt__: i) ifFalse: {
                 return: false
             }
         } continueWith: (i := i + 1sz).
@@ -85,7 +85,7 @@ String extend: {
         let minSize := self size min: other size.
         let i mutable := 0sz.
         while: (i < minSize) do: {
-            let d := (self at: i) asInt32 - (other at: i) asInt32.
+            let d := (self __uncheckedByteSlotAt__: i) asInt32 - (other __uncheckedByteSlotAt__: i) asInt32.
             d ~= 0i32 ifTrue: {return: d}
         } continueWith: (i := i + 1sz).
 
@@ -139,7 +139,7 @@ String extend: {
         ## First pass: compute the result size.
         let i mutable := 0sz.
         while: (i < size) do: {
-            let c := self at: i.
+            let c := (self __uncheckedByteSlotAt__: i) asChar8.
             c = '\\'c8 ifTrue: {
                 i := i + 1sz.
             }.
@@ -152,27 +152,27 @@ String extend: {
         let destIndex mutable := 0sz.
         i := 0sz.
         while: (i < size) do: {
-            let c := self at: i.
+            let c := (self __uncheckedByteSlotAt__: i) asChar8.
             c = '\\'c8 ifTrue: {
                 i := i + 1sz.
                 if: i < size then: {
-                    let escapeCharacter := self at: i.
+                    let escapeCharacter := (self __uncheckedByteSlotAt__: i) asChar8.
                     escapeCharacter = 'n'c8 ifTrue: {
-                        result at: destIndex put: '\n'c8
+                        result __uncheckedByteSlotAt__: destIndex put: '\n'u8
                     } ifFalse: {
                         escapeCharacter = 'r'c8 ifTrue: {
-                            result at: destIndex put: '\r'c8
+                            result __uncheckedByteSlotAt__: destIndex put: '\r'u8
                         } ifFalse: {
                             escapeCharacter = 't'c8 ifTrue: {
-                                result at: destIndex put: '\t'c8
+                                result __uncheckedByteSlotAt__: destIndex put: '\t'u8
                             } ifFalse: {
-                                result at: destIndex put: escapeCharacter
+                                result __uncheckedByteSlotAt__: destIndex put: escapeCharacter asUInt8
                             }.
                         }.
                     }.
                 }.
             } ifFalse: {
-                result at: destIndex put: c.
+                result __uncheckedByteSlotAt__: destIndex put: c asUInt8.
             }.
 
             destIndex := destIndex + 1sz
@@ -213,13 +213,13 @@ Char8 extend: {
         := String with: self.
 
     public final method printCEscapedOn: (stream: Stream) ::=> Void := {
-        self = '\n'c8 ifTrue: {stream nextPutAll: "\\n". return: void}.
-        self = '\r'c8 ifTrue: {stream nextPutAll: "\\r". return: void}.
-        self = '\t'c8 ifTrue: {stream nextPutAll: "\\t". return: void}.
-        self = '\\'c8 ifTrue: {stream nextPutAll: "\\\\". return: void}.
+        self = '\n'c8 ifTrue: {stream string: "\\n". return: void}.
+        self = '\r'c8 ifTrue: {stream string: "\\r". return: void}.
+        self = '\t'c8 ifTrue: {stream string: "\\t". return: void}.
+        self = '\\'c8 ifTrue: {stream string: "\\\\". return: void}.
 
         (self < ' 'c8) || (self >= 128c8) ifTrue: {
-            stream nextPutAll: "x".
+            stream string: "x".
             self asUInt8 printHexOn: stream.
         } ifFalse: {
             stream nextPut: self
@@ -239,13 +239,13 @@ Char8 extend: {
 
 Char16 extend: {
     public final method printCEscapedOn: (stream: Stream) ::=> Void := {
-        self = '\n'c16 ifTrue: {stream nextPutAll: "\\n". return: void}.
-        self = '\r'c16 ifTrue: {stream nextPutAll: "\\r". return: void}.
-        self = '\t'c16 ifTrue: {stream nextPutAll: "\\t". return: void}.
-        self = '\\'c16 ifTrue: {stream nextPutAll: "\\\\". return: void}.
+        self = '\n'c16 ifTrue: {stream string: "\\n". return: void}.
+        self = '\r'c16 ifTrue: {stream string: "\\r". return: void}.
+        self = '\t'c16 ifTrue: {stream string: "\\t". return: void}.
+        self = '\\'c16 ifTrue: {stream string: "\\\\". return: void}.
 
         (self < ' 'c16) || (self >= 128c16) ifTrue: {
-            stream nextPutAll: "u".
+            stream string: "u".
             self asUInt16 printHexOn: stream.
         } ifFalse: {
             stream nextPut: self asChar8
@@ -261,13 +261,13 @@ Char16 extend: {
 
 Char32 extend: {
     public final method printCEscapedOn: (stream: Stream) ::=> Void := {
-        self = '\n'c32 ifTrue: {stream nextPutAll: "\\n". return: void}.
-        self = '\r'c32 ifTrue: {stream nextPutAll: "\\r". return: void}.
-        self = '\t'c32 ifTrue: {stream nextPutAll: "\\t". return: void}.
-        self = '\\'c32 ifTrue: {stream nextPutAll: "\\\\". return: void}.
+        self = '\n'c32 ifTrue: {stream string: "\\n". return: void}.
+        self = '\r'c32 ifTrue: {stream string: "\\r". return: void}.
+        self = '\t'c32 ifTrue: {stream string: "\\t". return: void}.
+        self = '\\'c32 ifTrue: {stream string: "\\\\". return: void}.
 
         (self < ' 'c32) || (self >= 128c32) ifTrue: {
-            stream nextPutAll: "U".
+            stream string: "U".
             self asUInt32 printHexOn: stream.
         } ifFalse: {
             stream nextPut: self asChar8

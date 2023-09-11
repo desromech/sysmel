@@ -1,5 +1,5 @@
 Dictionary definition: {
-    public virtual eager method scanFor: (key: Untyped) ::=> IntPointer := {
+    public virtual eager method scanFor: key ::=> IntPointer := {
         storage ifNil: { return: -1iptr }.
 
         let capacity := storage size.

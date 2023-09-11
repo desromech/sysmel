@@ -259,7 +259,7 @@ public final class MachO::SymbolTable64 superclass: Object; definition: {
     public field stringTable => AsmObjectCodeCStringTable.
 
     public field sectionTable => OrderedCollection.
-    public field sectionIndexDictionary => Dictionary.
+    public field sectionIndexDictionary => IdentityDictionary.
 
     public field localSymbols => OrderedCollection.
     public field localSourceSymbols => OrderedCollection.
@@ -274,7 +274,7 @@ public final class MachO::SymbolTable64 superclass: Object; definition: {
 
     public override method initialize => Void := {
         sectionTable := OrderedCollection new.
-        sectionIndexDictionary := Dictionary new.
+        sectionIndexDictionary := IdentityDictionary new.
 
         localSymbols := OrderedCollection new.
         localSourceSymbols := OrderedCollection new.

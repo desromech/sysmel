@@ -1142,7 +1142,7 @@ Dwarf::AsmWriter definition: {
     public field version => UInt8.
     public field stringTable => OrderedCollection.
     public field stringTableDictionary => Dictionary.
-    public field abbreviationsDictionary => Dictionary.
+    public field abbreviationsDictionary => PluggableDictionary.
     public field abbreviations => OrderedCollection.
     public field debugInformationEntrySymbolDictionary => IdentityDictionary.
 

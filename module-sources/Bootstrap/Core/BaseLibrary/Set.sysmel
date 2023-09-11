@@ -1,5 +1,5 @@
 Set definition: {
-    public eager method scanFor: (key: Untyped) hashFunction: hashFunction equalsFunction: equalsFunction ::=> IntPointer := {
+    public eager method scanFor: key hashFunction: hashFunction equalsFunction: equalsFunction ::=> IntPointer := {
         storage ifNil: { return: -1iptr }.
 
         let capacity := storage size.
@@ -25,7 +25,7 @@ Set definition: {
         -1iptr
     }.
 
-    public virtual eager method scanFor: (key: Untyped) ::=> IntPointer := {
+    public virtual eager method scanFor: key ::=> IntPointer := {
         storage ifNil: { return: -1iptr }.
 
         let capacity := storage size.
@@ -82,7 +82,7 @@ Set definition: {
         }
     }.
 
-    public virtual eager method untypedAdd: (element: Untyped) ::=> Void := {
+    public virtual eager method add: element ::=> Void := {
         let index mutable := self scanFor: element.
         index < 0iptr ifTrue: {
             self increaseCapacity.
@@ -98,16 +98,10 @@ Set definition: {
         }
     }.
 
-    public virtual eager method untypedIncludes: (element: Untyped) ::=> Boolean := {
+    public virtual eager method includes: element ::=> Boolean := {
         let index := self scanFor: element.
         (index >= 0iptr) && (element = (storage untypedAt: index asSize))
     }.
-
-    public virtual eager method add: element ::=> Void
-        := self untypedAdd: element.
-
-    public virtual eager method includes: element ::=> Boolean
-        := self untypedIncludes: element.
 
     public method atOrNil: element withHashFunction: hashFunction equalsFunction: equalsFunction := {
         let index := self scanFor: element hashFunction: hashFunction equalsFunction: equalsFunction.

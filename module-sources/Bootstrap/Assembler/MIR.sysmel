@@ -68,15 +68,15 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
     public field sourceModule => MIRModule.
     public field targetModule => AsmProgramEntity.
     protected field asmTarget => AsmCompilationTarget.
-    public field programEntitySymbolMap => Dictionary.
-    public field compiledProgramEntitySymbolMap => Dictionary.
+    public field programEntitySymbolMap => IdentityDictionary.
+    public field compiledProgramEntitySymbolMap => IdentityDictionary.
 
     protected field stringTableList => OrderedCollection.
     protected field stringTableDictionary => Dictionary.
 
     protected field objectHeap => AsmObjectHeap.
 
-    protected field picTableDictionary => Dictionary.
+    protected field picTableDictionary => IdentityDictionary.
     protected field picTableSymbol => AsmSymbol.
 
     protected field gcStackFrameRecordLastActiveSymbol => AsmSymbol.
@@ -85,8 +85,8 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
     protected field tlsArraySymbol => AsmSymbol.
 
     public override method initialize => Void := {
-        programEntitySymbolMap := Dictionary new.
-        compiledProgramEntitySymbolMap := Dictionary new.
+        programEntitySymbolMap := IdentityDictionary new.
+        compiledProgramEntitySymbolMap := IdentityDictionary new.
         objectHeap := AsmObjectHeap new.
         stringTableList := OrderedCollection new.
         stringTableDictionary := Dictionary new.
@@ -118,12 +118,13 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
     }.
 
     public method compileProgramEntity: (programEntity: MIRProgramEntity) ::=> AsmSymbol := {
-        compiledProgramEntitySymbolMap at: programEntity ifAbsent: {:: AsmSymbol |
+        let existentSymbol => AsmSymbol := compiledProgramEntitySymbolMap atOrNil: programEntity.
+        existentSymbol ifNil: {
             let symbol := self symbolForProgramEntity: programEntity.
             compiledProgramEntitySymbolMap at: programEntity put: symbol.
             programEntity generateAssemblyWith: self symbol: symbol.
             symbol
-        }
+        }.
     }.
 
     public method imageObjectTrace => ImageObjectTrace

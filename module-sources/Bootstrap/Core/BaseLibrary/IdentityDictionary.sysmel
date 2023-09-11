@@ -1,5 +1,5 @@
 IdentityDictionary definition: {
-    public override eager method scanFor: (key: Untyped) ::=> IntPointer := {
+    public final eager method untypedScanFor: (key: Untyped) ::=> IntPointer := {
         storage ifNil: { return: -1iptr }.
 
         let capacity := storage size.
@@ -23,6 +23,9 @@ IdentityDictionary definition: {
 
         -1iptr
     }.
+
+    public override eager method scanFor: key ::=> IntPointer
+        := self untypedScanFor: key.
 
     public override eager method add: association ::=> Void
         := super add: association.

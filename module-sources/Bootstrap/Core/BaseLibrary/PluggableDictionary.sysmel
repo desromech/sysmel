@@ -7,7 +7,7 @@ public class PluggableDictionary superclass: Dictionary; definition: {
         equalsFunction := {:a :b :: Boolean | a = b}.
     }.
 
-    public override method scanFor: (key: Untyped) ::=> IntPointer := {
+    public override method scanFor: key ::=> IntPointer := {
         storage ifNil: { return: -1iptr }.
 
         let capacity := storage size.

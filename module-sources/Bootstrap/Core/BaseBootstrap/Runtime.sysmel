@@ -20,7 +20,7 @@ Type
     withSelector: #ensureVirtualTableLayoutIsComputed addMethod: {:(Type)self :: Void |
         if: self virtualTableLayout == nil then: (self computeVirtualTableLayout).
         void
-    } makeFinal;
+    } makeInline makeFinal;
     withSelector: #ensureAnalysis addMethod: {:(Type)self :: Void |
         void
     } makeOverride withEagerAnalysis;
