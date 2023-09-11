@@ -3173,20 +3173,40 @@ VirtualTableLayout
     };
     withSelector: #setSupertypeLayout: addMethod: {:(VirtualTableLayout)self :(VirtualTableLayout)newSupertypeLayout :: Void |
         self supertypeLayout: newSupertypeLayout.
+
         if: newSupertypeLayout ~~ nil then: {
-            self selectorToIndexTable: newSupertypeLayout selectorToIndexTable copy.
-            self indexToSelectorTable: newSupertypeLayout indexToSelectorTable copy.
+            self baseIndex: newSupertypeLayout size
         } else: {
-            self selectorToIndexTable: MethodDictionary new.
-            self indexToSelectorTable: OrderedCollection new.
+            self baseIndex: 0sz
+        }.
+
+        self size: self baseIndex.
+    };
+    withSelector: #includesSelectorRecursively: addMethod: {:(VirtualTableLayout)self :(Symbol)selector :: Boolean |
+        let: #selectorToIndexTable with: self selectorToIndexTable.
+        selectorToIndexTable isNotNil && (selectorToIndexTable includesKey: selector) ifTrue: {
+            true
+        } ifFalse: {
+            let: #supertypeLayout with: self supertypeLayout.
+            if: supertypeLayout ~~ nil then: {
+                supertypeLayout includesSelectorRecursively: selector
+            } else: {
+                false
+            }
         }.
     };
     withSelector: #addSelector: addMethod: {:(VirtualTableLayout)self :(Symbol)selector :: Void |
-        let: #selectorToIndexTable with: self selectorToIndexTable.
-        (selectorToIndexTable includesKey: selector) ifFalse: {
-            let: #index with: selectorToIndexTable size.
-            selectorToIndexTable at: selector put: index.
-            self indexToSelectorTable add: selector
+        (self includesSelectorRecursively: selector) ifFalse: {
+            if: self selectorToIndexTable == nil then: {
+                self selectorToIndexTable: MethodDictionary new.
+                self newSelectors: OrderedCollection new.
+            }.
+
+            let: #index with: self selectorToIndexTable size.
+            self selectorToIndexTable at: selector put: index.
+            self newSelectors add: selector.
+
+            self size: self size + 1sz
         }.
     };
     withSelector: #addSelectors: addMethod: {:(VirtualTableLayout)self :(Collection)selectors :: Void |
@@ -3194,19 +3214,43 @@ VirtualTableLayout
             self addSelector: eachSelector
         }
     };
-    withSelector: #buildVirtualTableFor: addMethod: {:(VirtualTableLayout)self :(Type)targetType :: VirtualTable |
-        let: #indexToSelectorTable with: self indexToSelectorTable.
-        let: #entryCount with: indexToSelectorTable size.
-        let: #virtualTable with: (VirtualTable basicAllocate: entryCount).
-        virtualTable type: targetType.
-
-        indexToSelectorTable doWithIndex: {:(Symbol)selector :(Size)index :: Void |
-            let: #method with: (targetType lookupSelector: selector).
-            self assert: method isNotNil.
-            virtualTable at: index put: method
+    withSelector: #buildVirtualTableFor:on: addMethod: {:(VirtualTableLayout)self :(Type)targetType :(VirtualTable)virtualTable :: Void |
+        let: #newSelectors with: self newSelectors.
+        let: #baseIndex with: self baseIndex.
+        if: newSelectors ~~ nil then: {
+            newSelectors doWithIndex: {:(Symbol)selector :(Size)index :: Void |
+                let: #method with: (targetType lookupSelector: selector).
+                self assert: method isNotNil.
+                virtualTable at: baseIndex + index put: method
+            }.
         }.
 
+        let: #supertypeLayout with: self supertypeLayout.
+        if: supertypeLayout ~~ nil then: {
+            supertypeLayout buildVirtualTableFor: targetType on: virtualTable
+        }.
+    };
+    withSelector: #buildVirtualTableFor: addMethod: {:(VirtualTableLayout)self :(Type)targetType :: VirtualTable |
+        let: #virtualTable with: (VirtualTable basicAllocate: self size).
+        virtualTable type: targetType.
+        self buildVirtualTableFor: targetType on: virtualTable.
         virtualTable
+    };
+    withSelector: #indexOfSelectorOrNil: addMethod: {:(VirtualTableLayout)self :(Symbol)selector :: AnyValue |
+        let: #selectorToIndexTable with: self selectorToIndexTable.
+        if: selectorToIndexTable ~~ nil then: {
+            let: #found with: (selectorToIndexTable atOrNil: selector).
+            if: found ~~ nil then: {
+                return: self baseIndex + found
+            }
+        }.
+
+        let: #supertypeLayout with: self supertypeLayout.
+        if: supertypeLayout ~~ nil then: {
+            supertypeLayout indexOfSelectorOrNil: selector
+        } else: {
+            nil
+        }
     }.
 
 Type

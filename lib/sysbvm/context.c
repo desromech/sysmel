@@ -898,8 +898,10 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.virtualTableLayoutType, "VirtualTableLayout", SYSBVM_NULL_TUPLE,
         "supertypeLayout", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.virtualTableLayoutType,
         "type", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.typeType,
+        "size", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "baseIndex", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "selectorToIndexTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.methodDictionaryType,
-        "indexToSelectorTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
+        "newSelectors", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
         NULL);
 
     // Create other root basic types.

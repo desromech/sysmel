@@ -316,7 +316,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
         selector isNotNil && type isNotNil ifTrue: {
             let vtableLayout := hirModule virtualTableSetSource getVirtualTableLayoutOrNilOf: type.
             vtableLayout ifNotNil: {
-                let vtableIndexOrNil := vtableLayout selectorToIndexTable atOrNil: selector.
+                let vtableIndexOrNil := vtableLayout indexOfSelectorOrNil: selector.
                 vtableIndexOrNil ifNotNil: {
                     let vtableIndex := vtableIndexOrNil downCastTo: Size.
                     compilationTarget pointerSize = 4sz
