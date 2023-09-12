@@ -1312,8 +1312,6 @@ MIRInstruction definition: {
     }.
 }.
 
-public abstract class MIRInstructionSurroundingOperation superclass: Object.
-
 public global MIR::Operation::Branch := MIROperation terminatorNamed: #branch.
 public global MIR::Operation::ConditionalBranch := MIROperation terminatorNamed: #condBranch.
 

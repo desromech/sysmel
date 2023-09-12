@@ -1,0 +1,7 @@
+Collection definition: {
+    public virtual method addAllIntoSet: (set: Set) ::=> Void := {
+        self do: {:element :: Void |
+            set add: element
+        }
+    }.
+}.

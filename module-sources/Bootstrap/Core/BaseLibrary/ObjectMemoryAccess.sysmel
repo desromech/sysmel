@@ -1,0 +1,43 @@
+public final struct ObjectModel::TupleHeader32 definition: {
+    public field typePointer => UInt32.
+    public field padding => UInt32.
+    public field identityHashAndFlags => UInt32.
+    public field objectSize => UInt32.
+}.
+
+public final struct ObjectModel::TupleHeader64 definition: {
+    public field typePointer => UInt64.
+    public field identityHashAndFlags => UInt32.
+    public field objectSize => UInt32.
+}.
+
+public global ObjectModel::PointerSize := UIntPointer valueSize.
+public global ObjectModel::FatPointerSize := ObjectModel::PointerSize * 2sz.
+
+public global ObjectModel::TupleHeader := if: ObjectModel::PointerSize = 4sz
+    then: ObjectModel::TupleHeader32
+    else: ObjectModel::TupleHeader64.
+public global ObjectModel::TupleHeaderSize := ObjectModel::TupleHeader valueSize.
+
+public global ObjectModel::getTuplePointerUIntValue := {:(Untyped)object :: UIntPointer |
+    <primitive: #PointerLikeType::reinterpretCast>
+    0uptr
+}.
+
+public global ObjectModel::getTuplePointerIntValue := {:(Untyped)object :: IntPointer |
+    <primitive: #PointerLikeType::reinterpretCast>
+    0iptr
+}.
+
+public global ObjectModel::getTupleHeaderPointerOf := {:(Untyped)object :: ObjectModel::TupleHeader pointer |
+    <primitive: #PointerLikeType::reinterpretCast>
+    nil
+}.
+
+Untyped extend: {
+    public final inline method __rawContentsPointer__ => Void pointer
+        := ObjectModel::getTupleHeaderPointerOf(self) + 1iptr reinterpretCastTo: Void pointer.
+
+    public final inline method __rawContentsBytePointer__ => UInt8 pointer
+        := ObjectModel::getTupleHeaderPointerOf(self) + 1iptr reinterpretCastTo: UInt8 pointer.
+}.

@@ -111,21 +111,23 @@ public class ImageTracer superclass: Object; definition: {
     }.
 
     public method traceObjectSet => Void := {
-        objectTrace := ImageObjectTrace new
-            patchDictionary: patchDictionary copy;
-            vtableSet: vtableSet;
-            yourself.
-        tracedProgramEntities := OrderedCollection new.
-        tracedFunctions := OrderedCollection new.
-        tracedFunctionDefinitions := OrderedCollection new.
+        {|
+            objectTrace := ImageObjectTrace new
+                patchDictionary: patchDictionary copy;
+                vtableSet: vtableSet;
+                yourself.
+            tracedProgramEntities := OrderedCollection new.
+            tracedFunctions := OrderedCollection new.
+            tracedFunctionDefinitions := OrderedCollection new.
 
-        rootObjects do: {:(Untyped)each :: Void |
-            self enqueueObjectTrace: each
-        }.
+            rootObjects do: {:(Untyped)each :: Void |
+                self enqueueObjectTrace: each
+            }.
 
-        objectTrace objectList do: {:(Untyped)each :: Void |
-            strategy traceReferencesOf: each with: self
-        }
+            objectTrace objectList do: {:(Untyped)each :: Void |
+                strategy traceReferencesOf: each with: self
+            }.
+        } printTimeToRunInMillisecondsWithTitle: "Trace Object set".
     }.
 
     public method emitTraceReport => Void := {

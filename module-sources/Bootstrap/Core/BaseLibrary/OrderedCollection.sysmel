@@ -4,7 +4,7 @@ OrderedCollection definition: {
     public eager method capacity => Size
         := storage ifNil: 0sz ifNotNil: storage size.
 
-    public method ensureCapacityForAtLeast: (additionalRequiredCapacity: Size) ::=> Void := {
+    public eager method ensureCapacityForAtLeast: (additionalRequiredCapacity: Size) ::=> Void := {
         let requiredCapacity := size + additionalRequiredCapacity.
         requiredCapacity <= self capacity ifTrue: {return: void}.
 
@@ -44,14 +44,6 @@ OrderedCollection definition: {
 
     public eager method add: element ::=> Void
         := self untypedAdd: element.
-
-    public eager method addAll: (elements: Collection) ::=> Void := {
-        self ensureCapacityForAtLeast: elements size.
-        elements do: {:each :: Void |
-            storage at: size put: each.
-            size := size + 1sz
-        }
-    }.
 
     public override eager method asArray ::=> Array
         := storage isNil || (size = 0sz)

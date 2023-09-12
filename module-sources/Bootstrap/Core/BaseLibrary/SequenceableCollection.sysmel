@@ -30,7 +30,24 @@ SequenceableCollection definition: {
     public virtual pure method withoutSuffix: (suffix: SequenceableCollection) ::=> self species
         := self allButLast: ((self endsWith: suffix) ifTrue: suffix size ifFalse: 0sz).
 
-    public method reverseDo: aBlock ::=> Void := {
+    public override method addAllIntoOrderedCollection: (orderedCollection: OrderedCollection) ::=> Void :=  {
+        orderedCollection ensureCapacityForAtLeast: self size.
+        let size := self size.
+        let i mutable := 0sz.
+        while: (i < size) do: {
+            orderedCollection add: (self at: i)
+        } continueWith: (i := i + 1sz).
+    }.
+
+    public override method addAllIntoSet: (set: Set) ::=> Void :=  {
+        let size := self size.
+        let i mutable := 0sz.
+        while: (i < size) do: {
+            set add: (self at: i)
+        } continueWith: (i := i + 1sz).
+    }.
+
+    public inline method reverseDo: aBlock ::=> Void := {
         let i mutable := 0sz,
         let size := self size.
         while: (i < size) do: {

@@ -116,7 +116,7 @@ Set definition: {
     }.
 
     public method addAll: (collection: Collection) ::=> Void := {
-        collection do: {:each :: Void | self add: each}
+        collection addAllIntoSet: self
     }.
 
     public method fixCollisionsFrom: (start: Size) ::=> Void := {

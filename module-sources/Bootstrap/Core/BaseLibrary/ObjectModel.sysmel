@@ -91,9 +91,6 @@ public global ObjectModel::IdentityHash::Shift := 10u32.
 public global ObjectModel::IdentityHash::Bits := 22u32.
 public global ObjectModel::IdentityHash::Mask := ((1u32 << ObjectModel::IdentityHash::Bits) - 1u32) << ObjectModel::IdentityHash::Shift.
 
-public global ObjectModel::PointerSize := UIntPointer valueSize.
-public global ObjectModel::FatPointerSize := ObjectModel::PointerSize * 2sz.
-
 public global ObjectModel::FlagsOffset := 8i32.
 
 if: ObjectModel::PointerSize = 4sz then: {
@@ -127,12 +124,7 @@ public class ObjectModelState definition: {
     }.
 }.
 
-public final struct ObjectModel::TupleHeader32 definition: {
-    public field typePointer => UInt32.
-    public field padding => UInt32.
-    public field identityHashAndFlags => UInt32.
-    public field objectSize => UInt32.
-
+ObjectModel::TupleHeader32 definition: {
     public inline method type => Type
         := typePointer asUIntPointer reinterpretCastTo: Type.
 
@@ -205,11 +197,7 @@ public final struct ObjectModel::TupleHeader32 definition: {
         := objectSize >> 2u32.
 }.
 
-public final struct ObjectModel::TupleHeader64 definition: {
-    public field typePointer => UInt64.
-    public field identityHashAndFlags => UInt32.
-    public field objectSize => UInt32.
-
+ObjectModel::TupleHeader64 definition: {
     public inline method type => Type
         := typePointer asUIntPointer reinterpretCastTo: Type.
 
@@ -598,28 +586,8 @@ PendingMemoizationValue __type__ extend: {
     public override method encodeImmediateReference64: (reference: Untyped) ::=> UInt64 := (ObjectModel::ImmediateTrivialIndex::PendingMemoizationValue asUInt64 << ObjectModel::Tag::Bits asUInt64) | ObjectModel::Tag::Trivial asUInt64.
 }.
 
-public global ObjectModel::TupleHeader := if: ObjectModel::PointerSize = 4sz
-    then: ObjectModel::TupleHeader32
-    else: ObjectModel::TupleHeader64.
-public global ObjectModel::TupleHeaderSize := ObjectModel::TupleHeader valueSize.
-
 public inline function ObjectModel::isNonNullPointerValue(value: UIntPointer) => Boolean
     := (value ~= 0uptr) && ((value & 15uptr) = 0uptr).
-
-public global ObjectModel::getTuplePointerUIntValue := {:(Untyped)object :: UIntPointer |
-    <primitive: #PointerLikeType::reinterpretCast>
-    0uptr
-}.
-
-public global ObjectModel::getTuplePointerIntValue := {:(Untyped)object :: IntPointer |
-    <primitive: #PointerLikeType::reinterpretCast>
-    0iptr
-}.
-
-public global ObjectModel::getTupleHeaderPointerOf := {:(Untyped)object :: ObjectModel::TupleHeader pointer |
-    <primitive: #PointerLikeType::reinterpretCast>
-    nil
-}.
 
 public global ObjectModel::FatPointer::construct := {:(Void pointer)memberPointer :(Void pointer)objectPointer :: Void memberPointer |
     <primitive: #FatPointer::construct>
@@ -648,14 +616,6 @@ public global ObjectModel::SlotFatPointer::construct := {:(Untyped pointer)membe
     <primitive: #IntPointer::reinterpretCastTo>
     <targetDefinedPrimitive>
     nil
-}.
-
-Untyped extend: {
-    public final inline method __rawContentsPointer__ => Void pointer
-        := ObjectModel::getTupleHeaderPointerOf(self) + 1iptr reinterpretCastTo: Void pointer.
-
-    public final inline method __rawContentsBytePointer__ => UInt8 pointer
-        := ObjectModel::getTupleHeaderPointerOf(self) + 1iptr reinterpretCastTo: UInt8 pointer.
 }.
 
 identityHash adoptDefinitionOf: {:(AnyValue)self :: Size |

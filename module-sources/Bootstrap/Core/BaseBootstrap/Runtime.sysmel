@@ -1149,6 +1149,11 @@ Collection
         }.
 
         array
+    } makeVirtual;
+    withSelector: #addAllIntoOrderedCollection: addMethod: {:(Collection)self :(OrderedCollection)orderedCollection :: Void |
+        self do: {:element :: Void |
+            orderedCollection add: element
+        }
     } makeVirtual.
 
 SequenceableCollection
@@ -1492,15 +1497,7 @@ SequenceableCollection
         while: i < self size do: {
             aBlock(self at: i, self at: i + 1sz)
         } continueWith: (i := i + 2sz)
-    };
-    withSelector: #reverseDo: addMethod: {:(SequenceableCollection)self :aBlock :: Void |
-        let: #i mutableWith: 0sz.
-        let: #size with: self size.
-
-        while: i < self size do: (
-            aBlock(self at: size - i - 1sz)
-        ) continueWith: (i := i + 1sz)
-    };
+    } makeInline;
     withSelector: #-- addMethod: {:(SequenceableCollection)self :(SequenceableCollection)other :: self species |
         let: #size with: self size.
         let: #otherSize with: other size.
@@ -1709,10 +1706,8 @@ OrderedCollection
         let: #storage with: self storage.
         if: storage == nil then: 0sz else: storage size
     };
-    withSelector: #addAll: addMethod: {:(OrderedCollection)self :(Collection)elements |
-        elements do: {:each :: Void |
-            self add: each
-        }
+    withSelector: #addAll: addMethod: {:(OrderedCollection)self :(Collection)elements :: Void|
+        elements addAllIntoOrderedCollection: self
     };
     withSelector: #at: addMethod: {:(OrderedCollection)self :(Size)index |
         if: index < self size then: {
@@ -2789,13 +2784,13 @@ Function
         self().
         let: #endTime with: Time::Timestamp::nanosecondsNow().
         endTime - startTime
-    };
+    } makeInline;
     withSelector: #timeToRunInMicroseconds addMethod: {:(Function)self :: Int64 |
         let: #startTime with: Time::Timestamp::microsecondsNow().
         self().
         let: #endTime with: Time::Timestamp::microsecondsNow().
         endTime - startTime
-    };
+    } makeInline;
     withSelector: #printTimeToRunInMillisecondsWithTitle: addMethod: {:(Function)self :(String)title |
         printLine(title, "...").
         let: #startTime with: Time::Timestamp::microsecondsNow().
@@ -2803,7 +2798,7 @@ Function
         let: #endTime with: Time::Timestamp::microsecondsNow().
         printLine(title, " took ", (endTime - startTime) asFloat32 * 0.001f32,  " ms").
         result
-    }.
+    } makeInline.
 
 SourcePosition
     withSelector: #printOn: addMethod: {:(SourcePosition)self :(Stream)stream :: Void |
@@ -3148,6 +3143,9 @@ Environment
         self setSymbol: symbol value: method
     };
     withSelector: #withSelector:addMethod: addMethod: {:(Environment)self :(Symbol)symbol :method :: Void |
+        self setSymbol: symbol value: method
+    };
+    withSelector: #withSelector:addOrReplaceMethod: addMethod: {:(Environment)self :(Symbol)symbol :method :: Void |
         self setSymbol: symbol value: method
     };
     withSelector: #withSelector:addFallbackMethod: addMethod: {:(Environment)self :(Symbol)symbol :method :: Void |

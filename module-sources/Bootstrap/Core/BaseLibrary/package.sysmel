@@ -1,3 +1,7 @@
+loadSourceNamed: "StringMemoryFunctions.sysmel".
+loadSourceNamed: "ObjectMemoryAccess.sysmel".
+
+loadSourceNamed: "Collection.sysmel".
 loadSourceNamed: "Array.sysmel".
 loadSourceNamed: "ByteArray.sysmel".
 loadSourceNamed: "ByteSerialization.sysmel".
@@ -12,7 +16,6 @@ loadSourceNamed: "PluggableDictionary.sysmel".
 loadSourceNamed: "IdentityDictionary.sysmel".
 loadSourceNamed: "WeakValueDictionary.sysmel".
 loadSourceNamed: "MethodDictionary.sysmel".
-loadSourceNamed: "StringMemoryFunctions.sysmel".
 loadSourceNamed: "Interval.sysmel".
 loadSourceNamed: "MemoryPointers.sysmel".
 loadSourceNamed: "GarbageCollector.sysmel".

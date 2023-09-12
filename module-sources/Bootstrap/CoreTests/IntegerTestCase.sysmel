@@ -54,15 +54,119 @@ public class IntegerTestCase superclass: TestCase; definition: {
         self assert: (self quote: 1) * (self quote: 1) equals: 1.
         self assert: (self quote: 2) * (self quote: 1) equals: 2.
         self assert: (self quote: 1) * (self quote: 2) equals: 2.
+        self assert: (self quote: 3) * (self quote: 1) equals: 3.
+        self assert: (self quote: 1) * (self quote: 3) equals: 3.
+        self assert: (self quote: -2) * (self quote: 1) equals: -2.
+        self assert: (self quote: 1) * (self quote: -2) equals: -2.
+        self assert: (self quote: -3) * (self quote: 1) equals: -3.
+        self assert: (self quote: 1) * (self quote: -3) equals: -3.
+
+        ## Absorbing element
+        self assert: (self quote: 0) * (self quote: 1) equals: 0.
+        self assert: (self quote: 1) * (self quote: 0) equals: 0.
+        self assert: (self quote: 0) * (self quote: -1) equals: 0.
+        self assert: (self quote: -1) * (self quote: 0) equals: 0.
+
+        ## Negation
+        self assert: (self quote: 1) * (self quote: -1) equals: -1.
+        self assert: (self quote: -1) * (self quote: 1) equals: -1.
+        self assert: (self quote: 2) * (self quote: -1) equals: -2.
+        self assert: (self quote: -1) * (self quote: 2) equals: -2.
+
+        ## Simple multiplications.
+        self assert: (self quote: 2) * (self quote: 3) equals: 6.
+        self assert: (self quote: 7) * (self quote: 7) equals: 49.
     }.
 
-    public method testAssertFailure => Void := {
+    public method testDivision => Void := {
         ## Neutral element
-        self assert: false
+        self assert: (self quote: 2) // (self quote: 1) equals: 2.
+        self assert: (self quote: 3) // (self quote: 1) equals: 3.
+        self assert: (self quote: -2) // (self quote: 1) equals: -2.
+        self assert: (self quote: -3) // (self quote: 1) equals: -3.
+
+        ## Division from zero
+        self assert: (self quote: 0) // (self quote: 1) equals: 0.
+        self assert: (self quote: 0) // (self quote: -1) equals: 0.
+        self assert: (self quote: 0) // (self quote: 2) equals: 0.
+        self assert: (self quote: 0) // (self quote: -2) equals: 0.
+
+        ## Negation
+        self assert: (self quote: -1) // (self quote: -1) equals: 1.
+        self assert: (self quote: -1) // (self quote: 1) equals: -1.
+        self assert: (self quote: 1) // (self quote: -1) equals: -1.
+        self assert: (self quote: 2) // (self quote: -1) equals: -2.
+
+        ## Simple divisions
+        self assert: (self quote: 6) // (self quote: 2) equals: 3.
+        self assert: (self quote: 6) // (self quote: 3) equals: 2.
+        self assert: (self quote: 49) // (self quote: 7) equals: 7.
     }.
 
-    public method testError => Void := {
-        ## Neutral element
-        self error: "Test error."
+    public method testFactorial => Void := {
+        self assert: (self quote: 0) factorial equals: 1.
+        self assert: (self quote: 1) factorial equals: 1.
+        self assert: (self quote: 2) factorial equals: 2.
+        self assert: (self quote: 3) factorial equals: 6.
+        self assert: (self quote: 4) factorial equals: 24.
+        self assert: (self quote: 5) factorial equals: 120.
+        self assert: (self quote: 6) factorial equals: 720.
+        self assert: (self quote: 7) factorial equals: 5040.
+        self assert: (self quote: 8) factorial equals: 40320.
+        self assert: (self quote: 9) factorial equals: 362880.
+        self assert: (self quote: 10) factorial equals: 3628800.
+
+        #*
+        self assert: (self quote: 20) factorial equals: 2432902008176640000.
+        self assert: (self quote: 30) factorial equals: 265252859812191058636308480000000.
+        self assert: (self quote: 40) factorial equals: 815915283247897734345611269596115894272000000000.
+        self assert: (self quote: 50) factorial equals: 30414093201713378043612608166064768844377641568960512000000000000.
+        self assert: (self quote: 100) factorial equals: 93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000.
+        *#
+    }.
+
+    #*
+    public method testAsHexString => Void := {
+        self assert: (self quote: 0) asHexString equals: "0".
+        self assert: (self quote: -1) asHexString equals: "-1".
+        self assert: (self quote: 10) asHexString equals: "A".
+        self assert: (self quote: 42) asHexString equals: "2A".
+        self assert: (self quote: 123456) asHexString equals: "1E240".
+
+        self assert: (self quote: 20) factorial asHexString equals: "21C3677C82B40000".
+        self assert: (self quote: 30) factorial asHexString equals: "D13F6370F96865DF5DD54000000".
+        self assert: (self quote: 40) factorial asHexString equals: "8EEAE81B84C7F27E080FDE64FF05254000000000".
+        self assert: (self quote: 50) factorial asHexString equals: "49EEBC961ED279B02B1EF4F28D19A84F5973A1D2C7800000000000".
+        self assert: (self quote: 100) factorial asHexString equals: "1B30964EC395DC24069528D54BBDA40D16E966EF9A70EB21B5B2943A321CDF10391745570CCA9420C6ECB3B72ED2EE8B02EA2735C61A000000000000000000000000".
+        self assert: (self quote: 200) factorial asHexString equals: "29A857090114875BA4DB6CD48EB197FFCAF0730BC388499A8C0E87E9854C253EEB306EF59E33ECC0F352847EAAE8691E58A9BEB434E84A9D68FBAB85E3270936F66CD32B2009B4948A51C096C970FD7F3E208773A39A9BD13A95CA25CE6EDF52F45A0A019B4431524593E57012C03AD01E8372C59E8A8ADF4C076D40B09CB04C48AEC2A0000000000000000000000000000000000000000000000000".
+    }.
+    *#
+
+    public method testAsString => Void := {
+        self assert: (self quote: 0) asString equals: "0".
+        self assert: (self quote: -1) asString equals: "-1".
+        self assert: (self quote: 10) asString equals: "10".
+        self assert: (self quote: 42) asString equals: "42".
+        self assert: (self quote: 123456) asString equals: "123456".
+
+        self assert: (self quote: 0) factorial asString equals: "1".
+        self assert: (self quote: 1) factorial asString equals: "1".
+        self assert: (self quote: 2) factorial asString equals: "2".
+        self assert: (self quote: 3) factorial asString equals: "6".
+        self assert: (self quote: 4) factorial asString equals: "24".
+        self assert: (self quote: 5) factorial asString equals: "120".
+        self assert: (self quote: 6) factorial asString equals: "720".
+        self assert: (self quote: 7) factorial asString equals: "5040".
+        self assert: (self quote: 8) factorial asString equals: "40320".
+        self assert: (self quote: 9) factorial asString equals: "362880".
+        self assert: (self quote: 10) factorial asString equals: "3628800".
+
+        #*
+        self assert: (self quote: 20) factorial asString equals: "2432902008176640000".
+        self assert: (self quote: 30) factorial asString equals: "265252859812191058636308480000000".
+        self assert: (self quote: 40) factorial asString equals: "815915283247897734345611269596115894272000000000".
+        self assert: (self quote: 50) factorial asString equals: "30414093201713378043612608166064768844377641568960512000000000000".
+        self assert: (self quote: 100) factorial asString equals: "93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000".
+        *#
     }.
 }.

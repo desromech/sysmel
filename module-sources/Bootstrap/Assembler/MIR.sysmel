@@ -956,12 +956,6 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
     }.
 }.
 
-MIRInstructionSurroundingOperation definition: {
-    public virtual method emitAssemblyWith: (codegen: MIRFunctionAsmCodeGenerator) ::=> Void := {
-
-    }.
-}.
-
 public final class MIRGlobalDataAsmCodeGenerator superclass: MIRAsmCodeGenerator; definition: {
     public field moduleGenerator => MIRModuleAsmCodeGenerator.
     public field isThreadLocal => Boolean.
@@ -1033,13 +1027,14 @@ MIROperation extend: {
         }
     }.
 
+    let CodegenFunctionType := (MIRInstruction, MIRFunctionAsmCodeGenerator) => Void.
     public method generate: (instruction: MIRInstruction) for: (target: MIRAsmCompilationTarget) with: (functionGenerator: MIRFunctionAsmCodeGenerator) ::=> Void := {
         let targetSpecific := target getTargetSpecificBlockFor: self.
         targetSpecific isNil || targetSpecific codeGenerator isNil ifTrue: {
             self error: "Missing code generation for MIR operation '" -- name printString -- "' in " -- target name asString -- "."
         }.
         
-        let codegen => ((MIRInstruction, MIRFunctionAsmCodeGenerator) => Void) := targetSpecific codeGenerator.
+        let codegen => CodegenFunctionType := targetSpecific codeGenerator.
         codegen(instruction, functionGenerator).
     }.
 }.
