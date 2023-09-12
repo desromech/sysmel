@@ -36,11 +36,11 @@ static sysbvm_tuple_t sysbvm_sourceCode_ensureLineStartIndexTableIsBuilt(sysbvm_
     size_t sourceCodeTextSize = sysbvm_tuple_getSizeInBytes(sourceCodeObject->text);
     uint8_t *sourceCodeData = SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(sourceCodeObject->text)->bytes;
 
-    sysbvm_orderedCollection_add(context, orderedCollection, sysbvm_tuple_size_encode(context, 0));
+    sysbvm_orderedCollection_add(context, orderedCollection, sysbvm_tuple_uint32_encode(context, 0));
     for(size_t i = 0; i < sourceCodeTextSize; ++i)
     {
         if(sourceCodeData[i] == '\n')
-            sysbvm_orderedCollection_add(context, orderedCollection, sysbvm_tuple_size_encode(context, i + 1));
+            sysbvm_orderedCollection_add(context, orderedCollection, sysbvm_tuple_uint32_encode(context, i + 1));
     }
 
     sourceCodeObject->lineStartIndexTable = sysbvm_orderedCollection_asArray(context, orderedCollection);
@@ -54,7 +54,7 @@ SYSBVM_API void sysbvm_sourceCode_computeLineAndColumnForIndex(sysbvm_context_t 
 
     // Perform a binary search.
     size_t indexTableSize = sysbvm_array_getSize(indexTable);
-    size_t indexValue = sysbvm_tuple_size_decode(index);
+    size_t indexValue = sysbvm_tuple_uint32_decode(index);
 
     size_t left = 0;
     size_t right = indexTableSize;
@@ -63,7 +63,7 @@ SYSBVM_API void sysbvm_sourceCode_computeLineAndColumnForIndex(sysbvm_context_t 
     while(left < right)
     {
         size_t middle = left + (right - left) / 2;
-        size_t middleIndex = sysbvm_tuple_size_decode(sysbvm_array_at(indexTable, middle));
+        size_t middleIndex = sysbvm_tuple_uint32_decode(sysbvm_array_at(indexTable, middle));
         if(middleIndex <= indexValue)
         {
             bestSoFar = middle;
@@ -80,8 +80,8 @@ SYSBVM_API void sysbvm_sourceCode_computeLineAndColumnForIndex(sysbvm_context_t 
     size_t column = indexValue - bestIndexSoFar + 1;
 
     // Emit the result.
-    *outLine = sysbvm_tuple_size_encode(context, line);
-    *outColumn = sysbvm_tuple_size_encode(context, column);
+    *outLine = sysbvm_tuple_uint32_encode(context, line);
+    *outColumn = sysbvm_tuple_uint32_encode(context, column);
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_sourceCode_getText(sysbvm_tuple_t sourceCode)

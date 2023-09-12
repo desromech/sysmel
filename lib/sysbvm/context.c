@@ -988,12 +988,12 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         NULL);
     context->roots.sourcePositionType = sysbvm_context_createIntrinsicClass(context, "SourcePosition", SYSBVM_NULL_TUPLE,
         "sourceCode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sourceCodeType,
-        "startIndex", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
-        "startLine", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
-        "startColumn", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
-        "endIndex", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
-        "endLine", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
-        "endColumn", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "startIndex", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
+        "startLine", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
+        "startColumn", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
+        "endIndex", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
+        "endLine", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
+        "endColumn", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
         NULL);
     context->roots.tokenType = sysbvm_context_createIntrinsicClass(context, "SysmelToken", SYSBVM_NULL_TUPLE,
         "kind", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint8Type,

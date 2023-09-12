@@ -58,13 +58,13 @@ public class MonadicParserState definition: {
         := position >= sourceCollection size.
 
     public virtual method sourcePositionFrom: (startIndex: Size) until: (endIndex: Size) ::=> SourcePosition
-        := SourcePosition for: sourceCode startIndex: startIndex endIndex: endIndex.
+        := SourcePosition for: sourceCode startIndex: startIndex asUInt32 endIndex: endIndex asUInt32.
 
     public virtual method sourcePositionUntilEnd => SourcePosition
-        := SourcePosition for: sourceCode startIndex: position endIndex: sourceCollection size.
+        := SourcePosition for: sourceCode startIndex: position asUInt32 endIndex: sourceCollection size asUInt32.
 
     public virtual method sourcePositionAtEnd => SourcePosition
-        := SourcePosition for: sourceCode startIndex: sourceCollection size endIndex: sourceCollection size.
+        := SourcePosition for: sourceCode startIndex: sourceCollection size asUInt32 endIndex: sourceCollection size asUInt32.
 }.
 
 public abstract class MonadicParserResult superclass: Object; definition: {

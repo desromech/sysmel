@@ -16,33 +16,33 @@ SourceCode definition: {
         lineStartIndexTable ifNotNil: {return: void}.
 
         let table := OrderedCollection new.
-        table add: 0sz.
+        table add: 0u32.
 
-        let textSize := text size.
-        let i mutable := 0sz.
+        let textSize := text size asUInt32.
+        let i mutable := 0u32.
         while: (i < textSize) do: {
-            let c := text at: i.
+            let c := text at: i asSize.
             c = '\n'c8 ifTrue: {
-                table add: i + 1sz
+                table add: i + 1u32
             }
-        } continueWith: (i := i + 1sz).
+        } continueWith: (i := i + 1u32).
 
         lineStartIndexTable := table asArray.
     }.
 
-    public method findLineIndexForSourceIndex: (sourceCodeIndex: Size) ::=> Size := {
+    public method findLineIndexForSourceIndex: (sourceCodeIndex: UInt32) ::=> UInt32 := {
         self ensureLineStartIndexTableIsBuilt.
 
-        let left mutable := 0sz.
-        let right mutable := lineStartIndexTable size.
+        let left mutable := 0u32.
+        let right mutable := lineStartIndexTable size asUInt32.
 
-        let bestSoFar mutable := 0sz.
+        let bestSoFar mutable := 0u32.
         while: (left < right) do: {
-            let middle := left + ((right - left) / 2sz).
-            let middleIndex := lineStartIndexTable at: middle.
+            let middle := left + ((right - left) / 2u32).
+            let middleIndex := lineStartIndexTable at: middle asSize.
             middleIndex <= sourceCodeIndex ifTrue: {
                 bestSoFar := middle.
-                left := middle + 1sz
+                left := middle + 1u32
             } ifFalse: {
                 right := middle
             }
@@ -55,28 +55,28 @@ SourceCode definition: {
         ## Start.
         {
             let lineIndex := self findLineIndexForSourceIndex: sourcePosition startIndex.
-            let lineSourceIndex := lineStartIndexTable at: lineIndex.
+            let lineSourceIndex => UInt32 := lineStartIndexTable at: lineIndex asSize.
 
             sourcePosition
-                startLine: lineIndex + 1sz;
-                startColumn: sourcePosition startIndex - lineSourceIndex + 1sz
+                startLine: lineIndex + 1u32;
+                startColumn: sourcePosition startIndex - lineSourceIndex + 1u32
         }.
 
         ## End
         {
             let lineIndex := self findLineIndexForSourceIndex: sourcePosition endIndex.
-            let lineSourceIndex := lineStartIndexTable at: lineIndex.
+            let lineSourceIndex => UInt32 := lineStartIndexTable at: lineIndex asSize.
 
             sourcePosition
-                endLine: lineIndex + 1sz;
-                endColumn: sourcePosition endIndex - lineSourceIndex + 1sz
+                endLine: lineIndex + 1u32;
+                endColumn: sourcePosition endIndex - lineSourceIndex + 1u32
         }.
     }.
 }.
 
 SourcePosition definition: {
     __Meta__ definition: {
-        public method for: (sourceCode: SourceCode) startIndex: (startIndex: Size) endIndex: (endIndex: Size) ::=> self
+        public method for: (sourceCode: SourceCode) startIndex: (startIndex: UInt32) endIndex: (endIndex: UInt32) ::=> self
             := self new
                 sourceCode: sourceCode;
                 startIndex: startIndex;

@@ -19,7 +19,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_sourcePosition_create(sysbvm_context_t *context
 
 SYSBVM_API sysbvm_tuple_t sysbvm_sourcePosition_createWithIndices(sysbvm_context_t *context, sysbvm_tuple_t sourceCode, size_t startIndex, size_t endIndex)
 {
-    return sysbvm_sourcePosition_create(context, sourceCode, sysbvm_tuple_size_encode(context, startIndex), sysbvm_tuple_size_encode(context, endIndex));
+    return sysbvm_sourcePosition_create(context, sourceCode, sysbvm_tuple_uint32_encode(context, startIndex), sysbvm_tuple_uint32_encode(context, endIndex));
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_sourcePosition_createWithUnion(sysbvm_context_t *context, sysbvm_tuple_t startSourcePosition, sysbvm_tuple_t endSourcePosition)
@@ -34,10 +34,10 @@ SYSBVM_API void sysbvm_sourcePosition_dump(sysbvm_tuple_t sourcePosition)
     if(!sysbvm_tuple_isNonNullPointer(sourcePosition)) return;
 
     sysbvm_sourcePosition_t *sourcePositionObject = (sysbvm_sourcePosition_t*)sourcePosition;
-    sysbvm_size_t startLine = sysbvm_tuple_size_decode(sourcePositionObject->startLine);
-    sysbvm_size_t startColumn = sysbvm_tuple_size_decode(sourcePositionObject->startColumn);
-    sysbvm_size_t endLine = sysbvm_tuple_size_decode(sourcePositionObject->endLine);
-    sysbvm_size_t endColumn = sysbvm_tuple_size_decode(sourcePositionObject->endColumn);
+    sysbvm_size_t startLine = sysbvm_tuple_uint32_decode(sourcePositionObject->startLine);
+    sysbvm_size_t startColumn = sysbvm_tuple_uint32_decode(sourcePositionObject->startColumn);
+    sysbvm_size_t endLine = sysbvm_tuple_uint32_decode(sourcePositionObject->endLine);
+    sysbvm_size_t endColumn = sysbvm_tuple_uint32_decode(sourcePositionObject->endColumn);
     
     if(sysbvm_tuple_isNonNullPointer(sourcePositionObject->sourceCode))
     {

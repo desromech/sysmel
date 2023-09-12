@@ -298,33 +298,33 @@ public class SysmelTokenMonadicParser superclass: MonadicParser; definition: {
 }.
 
 public class SysmelTokenMonadicParserState superclass: MonadicParserState; definition: {
-    public method sourceIndexForTokenStart: (tokenIndex: Size) ::=> Size := {
+    public method sourceIndexForTokenStart: (tokenIndex: Size) ::=> UInt32 := {
         tokenIndex < sourceCollection size ifTrue: {
             let token => SysmelToken := sourceCollection at: tokenIndex.
             token sourcePosition startIndex
         } ifFalse: {
-            sourceCollection size
+            sourceCollection size asUInt32
         }
     }.
 
-    public method sourceIndexForTokenEnd: (tokenIndex: Size) ::=> Size := {
+    public method sourceIndexForTokenEnd: (tokenIndex: Size) ::=> UInt32 := {
         tokenIndex < sourceCollection size ifTrue: {
             let token => SysmelToken := sourceCollection at: tokenIndex.
             token sourcePosition endIndex
         } ifFalse: {
-            sourceCollection size
+            sourceCollection size asUInt32
         }
     }.
 
     public override method sourcePositionFrom: (startIndex: Size) until: (endIndex: Size) ::=> SourcePosition
-        := SourcePosition for: sourceCode startIndex: (self sourceIndexForTokenStart: startIndex) endIndex: (self sourceIndexForTokenEnd: endIndex).
+        := SourcePosition for: sourceCode startIndex: (self sourceIndexForTokenStart: startIndex) asUInt32 endIndex: (self sourceIndexForTokenEnd: endIndex) asUInt32.
 
     public override method sourcePositionUntilEnd => SourcePosition
-        := SourcePosition for: sourceCode startIndex: (self sourceIndexForTokenStart: position) endIndex: sourceCollection size.
+        := SourcePosition for: sourceCode startIndex: (self sourceIndexForTokenStart: position) asUInt32 endIndex: sourceCollection size asUInt32.
 
     public override method sourcePositionAtEnd => SourcePosition := {
         let endIndex := sourceCode text size.
-        SourcePosition for: sourceCode startIndex: endIndex endIndex: endIndex
+        SourcePosition for: sourceCode startIndex: endIndex asUInt32 endIndex: endIndex asUInt32
     }.
 }.
 
