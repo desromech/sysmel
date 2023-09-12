@@ -183,8 +183,44 @@ String extend: {
 
     public pure override final method asString => String := self.
 
-    public pure override final method -- (other: SequenceableCollection) ::=> String
-        := super -- other.
+    public pure override final method -- (other: SequenceableCollection) ::=> String := {
+        other class == String ifFalse: {
+            return: super -- other
+        }.
+
+        let otherString := other uncheckedDownCastTo: String.
+        let mySize := self size.
+        mySize = 0sz ifTrue: {
+            return: otherString
+        }.
+
+        let otherSize := otherString size.
+        otherSize = 0sz ifTrue: {
+            return: self
+        }.
+
+        let result := String basicAllocate: mySize + otherSize.
+        ObjectModel::isLogical() ifTrue: {
+            {
+                let i mutable := 0sz.
+                while: i < mySize do: {
+                    result __uncheckedByteSlotAt__: i put: (self __uncheckedByteSlotAt__: i)
+                } continueWith: (i := i + 1sz).
+            }.
+
+            {
+                let i mutable := 0sz.
+                while: i < otherSize do: {
+                    result __uncheckedByteSlotAt__: mySize + i put: (otherString __uncheckedByteSlotAt__: i)
+                } continueWith: (i := i + 1sz).
+            }.
+        } ifFalse: {
+            memcpy(result __rawContentsPointer__, self __rawContentsPointer__, mySize).
+            memcpy((result __rawContentsBytePointer__ + mySize asIntPointer) reinterpretCastTo: Void pointer, otherString __rawContentsPointer__, otherSize).
+        }.
+
+        result
+    }.
 
     public pure final method asSymbol => StringSymbol := {
         <primitive: #String::asSymbol>

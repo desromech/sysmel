@@ -1501,6 +1501,18 @@ SequenceableCollection
     withSelector: #-- addMethod: {:(SequenceableCollection)self :(SequenceableCollection)other :: self species |
         let: #size with: self size.
         let: #otherSize with: other size.
+        if: otherSize = 0sz then: {
+            if: self class == self species then: {
+                return: self
+            }
+        }.
+
+        if: size = 0sz then: {
+            if: other class == self species then: {
+                return: other
+            }
+        }.
+
         let: #result with: (self species new: size + otherSize ).
 
         {
