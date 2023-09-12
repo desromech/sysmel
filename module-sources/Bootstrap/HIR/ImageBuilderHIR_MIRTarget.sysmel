@@ -1,5 +1,11 @@
 public class ImageBuilderHIR_MIRTarget superclass: ImageBuilderHIRTarget; definition: {
     public override method buildTargetImageWith: (builder: ImageBuilder) ::=> ImageBuilderTargetImage := {
+        {|
+            let traceHistogram := builder tracer objectTrace buildHistogram.
+            IO::writeWholeFileNamedWithString("ObjectTraceHistogram.csv", traceHistogram fullPrintString)
+        } printTimeToRunInMillisecondsWithTitle: "Trace histogram".
+
+
         let hirImage := ImageBuilderHIR_MIRImage new.
         
         let ssaMirCompilation := compilationTarget downCastTo: HIRMIRCompilationTarget.

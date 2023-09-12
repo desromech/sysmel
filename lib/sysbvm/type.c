@@ -1258,8 +1258,13 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_decay(sysbvm_context_t *context, sysbvm_tu
 
 SYSBVM_API sysbvm_tuple_t sysbvm_type_getCanonicalPendingInstanceType(sysbvm_context_t *context, sysbvm_tuple_t type)
 {
-    if(sysbvm_type_isDirectSubtypeOf(type, context->roots.referenceType))
-        return sysbvm_type_createReferenceType(context, context->roots.anyValueType, ((sysbvm_pointerLikeType_t*)type)->addressSpace);
+    // FIXME: Check the validity of this condition.
+    if(sysbvm_tuple_isKindOf(context, type, context->roots.referenceType))
+    {
+        sysbvm_pointerLikeType_t *pointerLikeType = (sysbvm_pointerLikeType_t*)type;
+        return sysbvm_type_createReferenceType(context, sysbvm_type_getCanonicalPendingInstanceType(context, pointerLikeType->baseType), pointerLikeType->addressSpace);
+    }
+
     if(sysbvm_type_isDirectSubtypeOf(type, context->roots.metatypeType))
     {
         sysbvm_tuple_t thisType = ((sysbvm_metatype_t*)type)->thisType;

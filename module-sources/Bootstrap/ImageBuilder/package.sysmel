@@ -1,3 +1,5 @@
+loadSourceNamed: "ImageObjectTraceHistogramEntry.sysmel".
+loadSourceNamed: "ImageObjectTraceHistogram.sysmel".
 loadSourceNamed: "ImageObjectTracePatch.sysmel".
 loadSourceNamed: "ImageObjectTrace.sysmel".
 loadSourceNamed: "ImageTracer.sysmel".

@@ -1,0 +1,26 @@
+public class ImageObjectTraceHistogram superclass: Object; definition: {
+    public field entryList => OrderedCollection.
+    public field entryDictionary => MethodDictionary.
+
+    public override method initialize => Void := {
+        entryList := OrderedCollection new.
+        entryDictionary := MethodDictionary new.
+    }.
+
+    public method getEntryForType: (type: Type) ::=> ImageObjectTraceHistogramEntry
+        := entryDictionary at: type ifAbsentPut: {:: ImageObjectTraceHistogramEntry |
+            let newEntry := ImageObjectTraceHistogramEntry new
+                type: type;
+                yourself.
+            entryList add: newEntry.
+            newEntry
+        }.
+
+    public override method printOn: (stream: Stream) ::=> Void := {
+        stream string: "Type;Instance Count;Instance Data Size"; lf.
+        entryList do: {:(ImageObjectTraceHistogramEntry)each :: Void |
+            each printOn: stream.
+            stream lf.
+        }
+    }
+}.

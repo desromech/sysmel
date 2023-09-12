@@ -42,4 +42,16 @@ public class ImageObjectTrace superclass: Object; definition: {
             absentBlock()
         }
     }.
+
+    public method buildHistogram => ImageObjectTraceHistogram := {
+        let result := ImageObjectTraceHistogram new.
+        let i mutable := 0sz.
+        let objectCount := objectList size.
+        while: i < objectCount do: {
+            let object := objectList untypedAt: i.
+            (result getEntryForType: RawTuple::type(object)) countObject: object
+        } continueWith: (i := i + 1sz).
+
+        result
+    }.
 }.
