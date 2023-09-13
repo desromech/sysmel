@@ -18,7 +18,7 @@ SequenceableCollection definition: {
 
         let i mutable := 0sz.
         while: (i < suffixSize) do: {
-            if: (self at: size - i - 1sz) ~= (suffix at: i) then: {return: false}
+            if: (self at: size - suffixSize + i) ~= (suffix at: i) then: {return: false}
         } continueWith: (i := i + 1sz).
 
         true

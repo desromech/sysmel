@@ -1150,10 +1150,15 @@ public final class MIROperationTargetSpecific superclass: Object; definition: {
 public final class MIROperation superclass: Object; definition: {
     public field name => Symbol.
     public field phiMoveOperation => MIROperation.
-    public field isTerminator => Boolean.
+    public field isAssociative => Boolean.
+    public field isCall => Boolean.
     public field isDebug => Boolean.
-    public field isPure => Boolean.
+    public field isCommutative => Boolean.
+    public field isLoad => Boolean.
     public field isMove => Boolean.
+    public field isPure => Boolean.
+    public field isStore => Boolean.
+    public field isTerminator => Boolean.
 
     public field x86 => MIROperationTargetSpecific.
     public field x86_64 => MIROperationTargetSpecific.
@@ -1173,6 +1178,18 @@ public final class MIROperation superclass: Object; definition: {
 
         public method pureNamed: (name: Symbol) ::=> self
             := self new name: name; isPure: true; yourself.
+
+        public method callNamed: (name: Symbol) ::=> self
+            := self new name: name; isCall: true; yourself.
+
+        public method loadNamed: (name: Symbol) ::=> self
+            := self new name: name; isLoad: true; yourself.
+
+        public method storeNamed: (name: Symbol) ::=> self
+            := self new name: name; isStore: true; yourself.
+
+        public method loadStoreNamed: (name: Symbol) ::=> self
+            := self new name: name; isLoad: true; isStore: true; yourself.
 
         public method moveNamed: (name: Symbol) ::=> self
             := self new name: name; isPure: true; isMove: true; yourself.
@@ -1412,45 +1429,45 @@ public global MIR::Operation::PhiFloat32    := MIROperation phiNamed: #phiFloat3
 public global MIR::Operation::PhiFloat64    := MIROperation phiNamed: #phiFloat64 moveOperation: MIR::Operation::MoveFloat64.
 public global MIR::Operation::PhiStruct     := MIROperation phiNamed: #phiStruct moveOperation: MIR::Operation::MoveStruct.
 
-public global MIR::Operation::LoadInt8       := MIROperation pureNamed: #loadInt8.
-public global MIR::Operation::LoadInt16      := MIROperation pureNamed: #loadInt16.
-public global MIR::Operation::LoadInt32      := MIROperation pureNamed: #loadInt32.
-public global MIR::Operation::LoadInt64      := MIROperation pureNamed: #loadInt64.
-public global MIR::Operation::LoadUInt8      := MIROperation pureNamed: #loadUInt8.
-public global MIR::Operation::LoadUInt16     := MIROperation pureNamed: #loadUInt16.
-public global MIR::Operation::LoadUInt32     := MIROperation pureNamed: #loadUInt32.
-public global MIR::Operation::LoadUInt64     := MIROperation pureNamed: #loadUInt64.
-public global MIR::Operation::LoadPointer    := MIROperation pureNamed: #loadPointer.
-public global MIR::Operation::LoadFatPointer := MIROperation pureNamed: #loadFatPointer.
-public global MIR::Operation::LoadFloat32    := MIROperation pureNamed: #loadFloat32.
-public global MIR::Operation::LoadFloat64    := MIROperation pureNamed: #loadFloat64.
-public global MIR::Operation::LoadStruct     := MIROperation pureNamed: #loadStruct.
+public global MIR::Operation::LoadInt8       := MIROperation loadNamed: #loadInt8.
+public global MIR::Operation::LoadInt16      := MIROperation loadNamed: #loadInt16.
+public global MIR::Operation::LoadInt32      := MIROperation loadNamed: #loadInt32.
+public global MIR::Operation::LoadInt64      := MIROperation loadNamed: #loadInt64.
+public global MIR::Operation::LoadUInt8      := MIROperation loadNamed: #loadUInt8.
+public global MIR::Operation::LoadUInt16     := MIROperation loadNamed: #loadUInt16.
+public global MIR::Operation::LoadUInt32     := MIROperation loadNamed: #loadUInt32.
+public global MIR::Operation::LoadUInt64     := MIROperation loadNamed: #loadUInt64.
+public global MIR::Operation::LoadPointer    := MIROperation loadNamed: #loadPointer.
+public global MIR::Operation::LoadFatPointer := MIROperation loadNamed: #loadFatPointer.
+public global MIR::Operation::LoadFloat32    := MIROperation loadNamed: #loadFloat32.
+public global MIR::Operation::LoadFloat64    := MIROperation loadNamed: #loadFloat64.
+public global MIR::Operation::LoadStruct     := MIROperation loadNamed: #loadStruct.
 
-public global MIR::Operation::StoreInt8       := MIROperation named: #storeInt8.
-public global MIR::Operation::StoreInt16      := MIROperation named: #storeInt16.
-public global MIR::Operation::StoreInt32      := MIROperation named: #storeInt32.
-public global MIR::Operation::StoreInt64      := MIROperation named: #storeInt64.
-public global MIR::Operation::StorePointer    := MIROperation named: #storePointer.
-public global MIR::Operation::StoreFatPointer := MIROperation named: #storeFatPointer.
-public global MIR::Operation::StoreFloat32    := MIROperation named: #storeFloat32.
-public global MIR::Operation::StoreFloat64    := MIROperation named: #storeFloat64.
-public global MIR::Operation::StoreStruct     := MIROperation named: #storeStruct.
+public global MIR::Operation::StoreInt8       := MIROperation storeNamed: #storeInt8.
+public global MIR::Operation::StoreInt16      := MIROperation storeNamed: #storeInt16.
+public global MIR::Operation::StoreInt32      := MIROperation storeNamed: #storeInt32.
+public global MIR::Operation::StoreInt64      := MIROperation storeNamed: #storeInt64.
+public global MIR::Operation::StorePointer    := MIROperation storeNamed: #storePointer.
+public global MIR::Operation::StoreFatPointer := MIROperation storeNamed: #storeFatPointer.
+public global MIR::Operation::StoreFloat32    := MIROperation storeNamed: #storeFloat32.
+public global MIR::Operation::StoreFloat64    := MIROperation storeNamed: #storeFloat64.
+public global MIR::Operation::StoreStruct     := MIROperation storeNamed: #storeStruct.
 
 public global MIR::Operation::GenerationalWriteBarrier := MIROperation named: #generationalWriteBarrier.
 
-public global MIR::Operation::Memcpy := MIROperation named: #memcpy.
-public global MIR::Operation::Memset := MIROperation named: #memset.
+public global MIR::Operation::Memcpy := MIROperation loadStoreNamed: #memcpy.
+public global MIR::Operation::Memset := MIROperation loadStoreNamed: #memset.
 
-public global MIR::Operation::CallInt8       := MIROperation named: #callInt8.
-public global MIR::Operation::CallInt16      := MIROperation named: #callInt16.
-public global MIR::Operation::CallInt32      := MIROperation named: #callInt32.
-public global MIR::Operation::CallInt64      := MIROperation named: #callInt64.
-public global MIR::Operation::CallPointer    := MIROperation named: #callPointer.
-public global MIR::Operation::CallFatPointer := MIROperation named: #callFatPointer.
-public global MIR::Operation::CallFloat32    := MIROperation named: #callFloat32.
-public global MIR::Operation::CallFloat64    := MIROperation named: #callFloat64.
-public global MIR::Operation::CallStruct     := MIROperation named: #callStruct.
-public global MIR::Operation::CallVoid       := MIROperation named: #callVoid.
+public global MIR::Operation::CallInt8       := MIROperation callNamed: #callInt8.
+public global MIR::Operation::CallInt16      := MIROperation callNamed: #callInt16.
+public global MIR::Operation::CallInt32      := MIROperation callNamed: #callInt32.
+public global MIR::Operation::CallInt64      := MIROperation callNamed: #callInt64.
+public global MIR::Operation::CallPointer    := MIROperation callNamed: #callPointer.
+public global MIR::Operation::CallFatPointer := MIROperation callNamed: #callFatPointer.
+public global MIR::Operation::CallFloat32    := MIROperation callNamed: #callFloat32.
+public global MIR::Operation::CallFloat64    := MIROperation callNamed: #callFloat64.
+public global MIR::Operation::CallStruct     := MIROperation callNamed: #callStruct.
+public global MIR::Operation::CallVoid       := MIROperation callNamed: #callVoid.
 
 public global MIR::Operation::ReturnInt8       := MIROperation terminatorNamed: #returnInt8.
 public global MIR::Operation::ReturnInt16      := MIROperation terminatorNamed: #returnInt16.
@@ -2569,7 +2586,7 @@ public final class MIRFunctionBuilder superclass: Object; definition: {
 }.
 
 #(
-    BooleanNot BooleanXor
+    BooleanNot
     Int8BitNot Int16BitNot Int32BitNot Int64BitNot
     Int8Negate Int16Negate Int32Negate Int64Negate
     Int8LowBit Int16LowBit Int32LowBit Int64LowBit
@@ -2624,7 +2641,7 @@ public final class MIRFunctionBuilder superclass: Object; definition: {
 
     Int8BitAnd Int16BitAnd Int32BitAnd Int64BitAnd
     Int8BitOr Int16BitOr Int32BitOr Int64BitOr
-    Int8BitXor Int16BitXor Int32BitXor Int64BitXor
+    Int8BitXor Int16BitXor Int32BitXor Int64BitXor BooleanXor
     Int8ArithmeticShiftRight Int16ArithmeticShiftRight Int32ArithmeticShiftRight Int64ArithmeticShiftRight
     Int8LogicalShiftLeft Int16LogicalShiftLeft Int32LogicalShiftLeft Int64LogicalShiftLeft
     Int8LogicalShiftRight Int16LogicalShiftRight Int32LogicalShiftRight Int64LogicalShiftRight
@@ -2644,6 +2661,11 @@ public final class MIRFunctionBuilder superclass: Object; definition: {
     let lowerOperationNameString := operationNameString first asLowercase asString -- operationNameString allButFirst.
     let lowerOperationName := lowerOperationNameString asSymbol.
     let operation := MIROperation pureNamed: lowerOperationName.
+    operation isCommutative: (#("Add" "Mul" "And" "Or" "Xor") anySatisfy: {:(String)suffix :: Boolean |
+        operationNameString endsWith: suffix
+    }).
+    operation isAssociative: operation isCommutative && (operationNameString beginsWith: "Float") not.
+
     let globalName := ("MIR::Operation::" -- operationNameString) asSymbol.
 
     MIRBlockBuilder
