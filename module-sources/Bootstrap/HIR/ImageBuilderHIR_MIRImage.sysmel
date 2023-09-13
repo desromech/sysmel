@@ -19,7 +19,7 @@ public class ImageBuilderHIR_MIRImage superclass: ImageBuilderHIRImage; definiti
     public override method saveTo: (filename: String) ::=> Boolean := {
         (super saveTo: filename) ifFalse: {return: false}.
 
-        self emitStatisticsFor: filename.
+        ##self emitStatisticsFor: filename.
 
         {|
             let tacTextIR := mirModule fullPrintString.

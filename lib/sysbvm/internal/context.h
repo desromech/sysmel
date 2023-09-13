@@ -108,6 +108,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t untypedType;
     sysbvm_tuple_t anyValueType;
     sysbvm_tuple_t anyReferenceType;
+    sysbvm_tuple_t anyTemporaryReferenceType;
     sysbvm_tuple_t anyPointerType;
 
     sysbvm_tuple_t anySequenceTupleType;
@@ -139,6 +140,8 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t dependentFunctionTypeType;
     sysbvm_tuple_t simpleFunctionTypeType;
     sysbvm_tuple_t functionTypeType;
+    sysbvm_tuple_t gcLayoutBuilderType;
+    sysbvm_tuple_t gcLayoutType;
     sysbvm_tuple_t generatedSymbolType;
     sysbvm_tuple_t genericAddressSpaceType;
     sysbvm_tuple_t memberAddressSpaceType;

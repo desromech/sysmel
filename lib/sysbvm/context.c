@@ -431,6 +431,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.weakArrayType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayType);
     context->roots.weakOrderedCollectionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.orderedCollectionType);
 
+    context->roots.gcLayoutBuilderType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.gcLayoutType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
     context->roots.virtualTableLayoutType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.virtualTableType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
 
@@ -541,6 +543,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.anyPointerType = sysbvm_type_createAnonymous(context);
     context->roots.anyReferenceType = sysbvm_type_createAnonymous(context);
     sysbvm_type_setSupertype(context->roots.anyReferenceType, context->roots.untypedType);
+    context->roots.anyTemporaryReferenceType = sysbvm_type_createAnonymous(context);
+    sysbvm_type_setSupertype(context->roots.anyTemporaryReferenceType, context->roots.untypedType);
 
     context->roots.pointerLikeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.primitiveValueType);
     context->roots.pointerType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.pointerLikeType);
@@ -649,6 +653,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "virtualMethodSelectorList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.orderedCollectionType,
         "virtualTableLayout", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_TARGET_GENERATED | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.virtualTableLayoutType,
         "virtualTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_TARGET_GENERATED, context->roots.virtualTableType,
+        "gcLayout", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.gcLayoutType,
+        "variableDataGCLayout", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.gcLayoutType,
 
         "pendingSlots", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, SYSBVM_NULL_TUPLE,
         "subtypes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, SYSBVM_NULL_TUPLE,
@@ -676,6 +682,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.anyPointerType, "AnyPointer", SYSBVM_NULL_TUPLE, NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.anyReferenceType, "AnyReference", SYSBVM_NULL_TUPLE, NULL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.anyTemporaryReferenceType, "AnyTemporaryReference", SYSBVM_NULL_TUPLE, NULL);
 
     context->roots.addressSpaceType = sysbvm_context_createIntrinsicClass(context, "AddressSpace", SYSBVM_NULL_TUPLE, NULL);
     context->roots.genericAddressSpaceType = sysbvm_context_createIntrinsicClass(context, "GenericAddressSpace", context->roots.addressSpaceType, NULL);
@@ -918,8 +925,23 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         //"value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_WEAK, SYSBVM_NULL_TUPLE,
         NULL);
     sysbvm_typeAndMetatype_setFlags(context, context->roots.associationType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);
+
     context->roots.byteArrayType = sysbvm_context_createIntrinsicClass(context, "ByteArray", context->roots.arrayedCollectionType, NULL);
     sysbvm_typeAndMetatype_setFlags(context, context->roots.byteArrayType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_BYTES | SYSBVM_TYPE_FLAGS_FINAL | SYSBVM_TYPE_FLAGS_EMPTY_TRIVIAL_SINGLETON, SYSBVM_TYPE_FLAGS_FINAL);
+
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.gcLayoutType, "GCLayout", SYSBVM_NULL_TUPLE,
+        NULL
+    );
+    sysbvm_typeAndMetatype_setFlags(context, context->roots.gcLayoutType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_BYTES | SYSBVM_TYPE_FLAGS_FINAL | SYSBVM_TYPE_FLAGS_EMPTY_TRIVIAL_SINGLETON, SYSBVM_TYPE_FLAGS_FINAL);
+
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.gcLayoutBuilderType, "GCLayoutBuilder", SYSBVM_NULL_TUPLE,
+        "repetitions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
+        "strong", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
+        "weak", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
+        "fat", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
+        NULL
+    );
+
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.dictionaryType, "Dictionary", SYSBVM_NULL_TUPLE,
         "size", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "storage", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,

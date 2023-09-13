@@ -580,7 +580,7 @@ static sysbvm_tuple_t sysbvm_type_doCreateTemporaryReferenceType(sysbvm_context_
     gcFrame.result->super.super.super.flags = sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_TEMPORARY_REFERENCE_TYPE_FLAGS);
     gcFrame.result->super.super.super.totalSlotCount = sysbvm_tuple_size_encode(context, 0);
     gcFrame.result->super.super.super.slots = sysbvm_array_create(context, 0);
-    gcFrame.result->super.super.super.supertype = context->roots.anyReferenceType;
+    gcFrame.result->super.super.super.supertype = context->roots.anyTemporaryReferenceType;
     gcFrame.result->super.super.super.instanceAlignment = sysbvm_tuple_size_encode(context, context->targetWordSize);
     gcFrame.result->super.super.super.instanceSize = sysbvm_tuple_size_encode(context, context->targetWordSize * sysbvm_addressSpace_getComponentCount(context, gcFrame.addressSpace));
     gcFrame.result->super.baseType = gcFrame.baseType;

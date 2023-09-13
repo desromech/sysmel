@@ -29,6 +29,7 @@ PointerType definition: {
         supertype := AnyPointer.
         instanceAlignment := UIntPointer valueAlignment.
         instanceSize := UIntPointer valueSize * addressSpace componentCount.
+        gcLayout := supertype ensureLayoutIsComputed; gcLayout.
 
         baseType := theBaseType.
         addressSpace := theAddressSpace.
@@ -61,9 +62,10 @@ ReferenceType definition: {
     public method initializeWithBaseType: (theBaseType: Type) addressSpace: (theAddressSpace: AddressSpace) ::=> Void := {
         flags := TypeFlags::ReferenceTypeFlags.
         totalSlotCount := 0sz.
-        supertype := AnyPointer.
+        supertype := AnyReference.
         instanceAlignment := UIntPointer valueAlignment.
         instanceSize := UIntPointer valueSize * addressSpace componentCount.
+        gcLayout := supertype ensureLayoutIsComputed; gcLayout.
 
         baseType := theBaseType.
         addressSpace := theAddressSpace.
@@ -92,9 +94,10 @@ TemporaryReferenceType definition: {
     public method initializeWithBaseType: (theBaseType: Type) addressSpace: (theAddressSpace: AddressSpace) ::=> Void := {
         flags := TypeFlags::TemporaryReferenceTypeFlags.
         totalSlotCount := 0sz.
-        supertype := AnyPointer.
+        supertype := AnyTemporaryReference.
         instanceAlignment := UIntPointer valueAlignment.
         instanceSize := UIntPointer valueSize * addressSpace componentCount.
+        gcLayout := supertype ensureLayoutIsComputed; gcLayout.
 
         baseType := theBaseType.
         addressSpace := theAddressSpace.

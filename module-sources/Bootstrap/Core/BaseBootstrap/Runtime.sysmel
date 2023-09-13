@@ -10,11 +10,15 @@ Type
     withSelector: #computeLayout addMethod: {:(Type)self :: Void |
         void
     } makeVirtual;
+    withSelector: #computeGCLayout addMethod: {:(Type)self :: Void |
+        void
+    } makeVirtual;
     withSelector: #computeVirtualTableLayout addMethod: {:(Type)self :: Void |
         void
     } makeVirtual;
     withSelector: #ensureLayoutIsComputed addMethod: {:(Type)self :: Void |
         if: self instanceAlignment = 0sz then: (self computeLayout).
+        if: self gcLayout == nil then: (self computeGCLayout).
         void
     } makeFinal;
     withSelector: #ensureVirtualTableLayoutIsComputed addMethod: {:(Type)self :: Void |
@@ -2964,6 +2968,59 @@ TypeSlot
         self type valueAlignment
     } makeFinal.
 
+GCLayout
+    withSelector: #repetitions:strong:weak:fat: addClassMethod: {:(GCLayout class)self :(UInt32)repetitions :(Size)strongCount :(Size)weakCount :(Size)fatCount :: self |
+        let: #result with: (self basicAllocate: (((4sz + strongCount) + weakCount) + fatCount) * 4sz).
+        result
+            uint32At: 0sz put: repetitions;
+            uint32At: 4sz put: strongCount asUInt32;
+            uint32At: 8sz put: weakCount asUInt32;
+            uint32At: 12sz put: fatCount asUInt32.
+        result
+    };
+    withSelector: #uint32At:put: addMethod: {:(GCLayout)self :(Size)index :(UInt32)value :: Void |
+        (index + 4sz) > self __byteSize__ ifTrue: (self errorSubscriptBounds: index).
+        self
+            __uncheckedByteSlotAt__: index put: value asUInt8;
+            __uncheckedByteSlotAt__: index + 1sz put: (value >> 8u32) asUInt8;
+            __uncheckedByteSlotAt__: index + 2sz put: (value >> 16u32) asUInt8;
+            __uncheckedByteSlotAt__: index + 3sz put: (value >> 24u32) asUInt8.
+    } makeFinal makeAlwaysInline;
+    withSelector: #at:put: addMethod: {:(GCLayout)self :(Size)index :(UInt32)value :: Void |
+        self uint32At: (index *4sz) + 16sz put: value 
+    } makeOverride makeFinal makeAlwaysInline.
+
+GCLayoutBuilder
+    withSelector: #initialize addMethod: {:(GCLayoutBuilder)self :: Void |
+        self repetitions: 1u32.
+        self strong: OrderedCollection new.
+        self weak: OrderedCollection new.
+        self fat: OrderedCollection new.
+    } makeOverride;
+    withSelector: #addStrong: addMethod: {:(GCLayoutBuilder)self :(Size)offset :: Void |
+        self strong add: offset asUInt32
+    };
+    withSelector: #addWeak: addMethod: {:(GCLayoutBuilder)self :(Size)offset :: Void |
+        self weak add: offset asUInt32
+    };
+    withSelector: #addFat: addMethod: {:(GCLayoutBuilder)self :(Size)offset :: Void |
+        self fat add: offset asUInt32
+    };
+    withSelector: #finish addMethod: {:(GCLayoutBuilder)self :: GCLayout |
+        let: #layout with: (GCLayout repetitions: self repetitions strong: self strong size weak: self weak size fat: self fat size).
+        let: #destIndex mutableWith: 0sz.
+        let: #block with: {:(UInt32)offset :: Void |
+            layout at: destIndex put: offset.
+            destIndex := destIndex + 1sz
+        }.
+
+        self strong do: block.
+        self weak do: block.
+        self fat do: block.
+
+        layout.
+    }.
+
 Type
     withSelector: #minimalSize addMethod: {:(Type)self :: Size |
         0sz
@@ -2994,6 +3051,33 @@ Type
 
         self instanceSize: ((self instanceSize max: self minimalSize) alignedTo: self instanceAlignment).
     } makeVirtual;
+
+    withSelector: #addValueOntoGCLayoutBuilder:offset: addMethod: {:(Type)self :(GCLayoutBuilder)builder :(Size)offset :: Void |
+        builder addStrong: offset
+    } makeVirtual;
+    withSelector: #addSlotsOntoGCLayoutBuilder:offset: addMethod: {:(Type)self :(GCLayoutBuilder)builder :(Size)offset :: Void |
+        let: #supertype with: self supertype.
+        if: supertype ~~ nil then: {
+            supertype addSlotsOntoGCLayoutBuilder: builder offset: offset
+        }.
+
+        self validSlots do: {:(TypeSlot)eachSlot :: Void |
+            eachSlot type addValueOntoGCLayoutBuilder: builder offset: offset + eachSlot offset
+        }.
+    };
+    withSelector: #computeGCLayout replaceMethod: {:(Type)self :: Void |
+        if: self validSlots isEmpty then: {
+            if: self supertype ~~ nil then: {
+                self gcLayout: self supertype gcLayout.
+                self assert: self gcLayout ~~ nil.
+                return: void.
+            }
+        }.
+
+        let: #builder with: GCLayoutBuilder new.
+        self addSlotsOntoGCLayoutBuilder: builder offset: 0sz.
+        self gcLayout: builder finish
+    } makeVirtual;
     withSelector: #validInstanceSize addMethod: {:(Type)self :: Size |
         if: self instanceAlignment = 0sz then: (self ensureLayoutIsComputed).
         self instanceSize
@@ -3022,6 +3106,25 @@ Type
     withSelector: #isPrimitiveUnsignedIntegerType addMethod: {:(Type)self :: Boolean | false } makeVirtual;
     withSelector: #isPrimitiveSignedIntegerType addMethod: {:(Type)self :: Boolean | false } makeVirtual;
     withSelector: #isPrimitiveVectorType addMethod: {:(Type)self :: Boolean | false } makeVirtual.
+
+ValueType
+    withSelector: #addValueOntoGCLayoutBuilder:offset: addMethod: {:(ValueType)self :(GCLayoutBuilder)builder :(Size)offset :: Void |
+        self addSlotsOntoGCLayoutBuilder: builder offset: offset
+    } makeOverride.
+
+AddressSpace
+    withSelector: #addValueOntoGCLayoutBuilder:offset: addMethod: {:(AddressSpace)self :(GCLayoutBuilder)builder :(Size)offset :: Void |
+    } makeVirtual.
+
+MemberAddressSpace
+    withSelector: #addValueOntoGCLayoutBuilder:offset: addMethod: {:(MemberAddressSpace)self :(GCLayoutBuilder)builder :(Size)offset :: Void |
+        builder addFat: offset
+    } makeOverride.
+
+PointerLikeType
+    withSelector: #addValueOntoGCLayoutBuilder:offset: addMethod: {:(PointerLikeType)self :(GCLayoutBuilder)builder :(Size)offset :: Void |
+        self addressSpace addValueOntoGCLayoutBuilder: builder offset: offset
+    } makeOverride.
 
 PrimitiveNumber __type__ withSelector: #isPrimitiveNumberType addMethod: {:(Type)self :: Boolean | true } makeOverride.
 PrimitiveCharacter __type__ withSelector: #isPrimitiveCharacterType addMethod: {:(Type)self :: Boolean | true } makeOverride.
@@ -3094,6 +3197,9 @@ PointerLikeType
     withSelector: #computeLayout addMethod: {:(PointerLikeType)self :: Void |
         self instanceSize: UIntPointer valueSize.
         self instanceAlignment: UIntPointer valueAlignment.
+    } makeOverride;
+    withSelector: #computeGCLayout addMethod: {:(PointerLikeType)self :: Void |
+        self gcLayout: self supertype gcLayout
     } makeOverride;
     withSelector: #withStorage: addMethod: {:(PointerLikeType)self :storage :: self |
         let: #result with: (RawTuple::new(1sz)).

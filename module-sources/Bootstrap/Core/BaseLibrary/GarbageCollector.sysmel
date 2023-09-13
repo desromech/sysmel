@@ -12,6 +12,13 @@ if: Size valueSize = 8sz then: {
     }.
 }.
 
+public struct GarbageCollector::LayoutHeader definition: {
+    public field repetitions => UInt32.
+    public field strongCount => UInt32.
+    public field weakCount => UInt32.
+    public field fatCount => UInt32.
+}.
+
 public final struct GarbageCollector::PointerList definition: {
     private field capacity => Size.
     public field size => Size.
@@ -269,6 +276,24 @@ public nogc function GarbageCollector::markStackPointers(lastStackFrameRecord: G
     } continueWith: (position := position _ previous).
 }.
 
+Type definition: {
+    public nogc method validGCLayoutForMarking => GCLayout := {
+        gcLayout ifNil: {
+            slots ifNil: {
+                "Type is missing slots during GC." writeOntoStderr.
+                sysmel_pal_abort()
+            }.
+
+            slots isNotEmpty ifTrue: {
+                "Type with non-empty slots is missing layout during GC." writeOntoStderr.
+                sysmel_pal_abort()
+            }.
+
+            gcLayout := supertype validGCLayoutForMarking
+        }
+    }
+}.
+
 public nogc function GarbageCollector::markContentOfObject(objectPointer: UIntPointer) => Void := {
     ObjectModel::isNonNullPointerValue(objectPointer) ifFalse: {
         return: void
@@ -290,6 +315,40 @@ public nogc function GarbageCollector::markContentOfObject(objectPointer: UIntPo
 
     let type := header _ type.
     {
+        let layoutHeader := type validGCLayoutForMarking __rawContentsPointer__ reinterpretCastTo: GarbageCollector::LayoutHeader pointer.
+        let layoutOffsets := layoutHeader + 1iptr reinterpretCastTo: UInt32 pointer.
+
+        let offsetIndex mutable := 0iptr.
+
+        ## Strong references
+        {
+            let i mutable := 0u32.
+            while: (i < layoutHeader _ strongCount) do: {
+                let offset := layoutOffsets[offsetIndex] asSize.
+                let slotPointer := objectPointer + ObjectModel::TupleHeaderSize + offset reinterpretCastTo: UIntPointer pointer.
+                GarbageCollector::markPointerValue(slotPointer _).
+                i := i + 1u32.
+                offsetIndex := offsetIndex + 1iptr
+            }
+        }.
+
+        ## Ignore the weak references.
+        offsetIndex := offsetIndex + layoutHeader _ weakCount asIntPointer.
+
+        ## Fat pointers
+        {
+            let i mutable := 0u32.
+            while: (i < layoutHeader _ fatCount) do: {
+                let offset := layoutOffsets[offsetIndex] asSize.
+                let slotPointer := objectPointer + ObjectModel::TupleHeaderSize + offset reinterpretCastTo: UIntPointer pointer.
+                GarbageCollector::markPointerValue(slotPointer[1iptr]).
+                i := i + 1u32.
+                offsetIndex := offsetIndex + 1iptr
+            }
+        }.
+    }.
+
+    #*{
         let currentType mutable := type.
         while: (currentType isNotNil) do: {
             let slots := currentType slots.
@@ -313,6 +372,7 @@ public nogc function GarbageCollector::markContentOfObject(objectPointer: UIntPo
             } continueWith: (i := i + 1sz)
         } continueWith: (currentType := currentType supertype).
     }.
+    *#
 
     let isWeak := objectType = ObjectModel::ObjectType::WeakPointers.
     isWeak ifTrue: {
@@ -386,6 +446,27 @@ public nogc function GarbageCollector::clearDeadWeakReferencesOf(objectPointer: 
 
     let type := header _ type.
     let fixedInstanceSize := type instanceSize.
+    {
+        let layoutHeader := type validGCLayoutForMarking __rawContentsPointer__ reinterpretCastTo: GarbageCollector::LayoutHeader pointer.
+        let layoutOffsets := layoutHeader + 1iptr reinterpretCastTo: UInt32 pointer.
+
+        let offsetIndex mutable := layoutHeader _ strongCount asIntPointer.
+
+        let i mutable := 0u32.
+        while: (i < layoutHeader _ weakCount) do: {
+            let offset := layoutOffsets[offsetIndex] asSize.
+            let slotPointer := objectPointer + ObjectModel::TupleHeaderSize + offset reinterpretCastTo: UIntPointer pointer.
+            let slotValue := slotPointer _.
+            ObjectModel::isNonNullPointerValue(slotValue) ifTrue: {
+                GarbageCollector::isDeadObjectPointer(slotValue) ifTrue: {
+                    slotPointer _ := ObjectModel::ImmediateTrivialConstant::Tombstone asUIntPointer
+                }
+            }.
+
+            i := i + 1u32.
+            offsetIndex := offsetIndex + 1iptr
+        }
+    }.
 
     let variableDataSize := header _ objectSize asSize - fixedInstanceSize.
     let variableSlotCount := variableDataSize / ObjectModel::PointerSize.

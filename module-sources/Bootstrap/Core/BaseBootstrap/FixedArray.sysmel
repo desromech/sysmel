@@ -82,6 +82,10 @@ public class FixedArrayType superclass: ValueType; definition: {
         instanceAlignment := elementType valueAlignment.
     }.
 
+    public override method computeGCLayout => Void := {
+        ## TODO: Use the repetition count.
+        gcLayout := supertype gcLayout
+    }.
 
 }.
 

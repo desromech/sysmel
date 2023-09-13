@@ -42,6 +42,8 @@ typedef struct sysbvm_type_tuple_s
     sysbvm_tuple_t virtualMethodSelectorList;
     sysbvm_tuple_t virtualTableSelectorDictionary;
     sysbvm_tuple_t virtualTable;
+    sysbvm_tuple_t gcLayout;
+    sysbvm_tuple_t variableDataGCLayout;
 
     sysbvm_tuple_t pendingSlots;
     sysbvm_tuple_t subtypes;
