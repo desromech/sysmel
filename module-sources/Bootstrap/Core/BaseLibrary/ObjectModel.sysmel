@@ -623,13 +623,7 @@ identityHash adoptDefinitionOf: {:(AnyValue)self :: Size |
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
         let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
-        let typeHash := ObjectModel::isNonNullPointerValue(header _ typePointer) ifTrue: {
-            (header _ typePointer reinterpretCastTo: ObjectModel::TupleHeader pointer) _ identityHashValue asSize
-        } ifFalse: {
-            0sz
-        }.
-        
-        header _ identityHashValue asSize identityHashConcatenatedTypeHash: typeHash
+        (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ identityHashValue asSize
     } ifFalse: {
         pointerValue asUIntPointer hashMultiply
     }
@@ -640,13 +634,7 @@ Untyped::identityHash adoptDefinitionOf: {:(Untyped)self :: Size |
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
         let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
-        let typeHash := ObjectModel::isNonNullPointerValue(header _ typePointer) ifTrue: {
-            (header _ typePointer reinterpretCastTo: ObjectModel::TupleHeader pointer) _ identityHashValue asSize
-        } ifFalse: {
-            0sz
-        }.
-        
-        header _ identityHashValue asSize identityHashConcatenatedTypeHash: typeHash
+        (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ identityHashValue asSize
     } ifFalse: {
         pointerValue asUIntPointer hashMultiply
     }

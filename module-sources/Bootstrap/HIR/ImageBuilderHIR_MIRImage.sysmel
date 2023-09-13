@@ -2,22 +2,24 @@ public class ImageBuilderHIR_MIRImage superclass: ImageBuilderHIRImage; definiti
     public field mirModule => MIRModule.
     public field targetIR.
     
+    public method emitStatisticsFor: (filename: String) ::=> Void := {
+        {|
+            let tracer := ImageTracer new.
+            tracer addRootObject: self;
+                objectModel: ObjectModelVariant64 uniqueInstance;
+                needsBytecode: false;
+                keepingInProcessDebugInformation: false;
+                traceObjectSet.
+
+            let traceHistogram := tracer objectTrace buildHistogram.
+            IO::writeWholeFileNamedWithString(filename -- ".csv", traceHistogram fullPrintString)
+        } printTimeToRunInMillisecondsWithTitle: "Result statistics gathering".
+    }.
+
     public override method saveTo: (filename: String) ::=> Boolean := {
         (super saveTo: filename) ifFalse: {return: false}.
 
-        ObjectModel::isLogical() ifFalse: {
-            {|
-                let tracer := ImageTracer new.
-                tracer addRootObject: self;
-                    objectModel: ObjectModelVariant64 uniqueInstance;
-                    needsBytecode: false;
-                    keepingInProcessDebugInformation: false;
-                    traceObjectSet.
-
-                let traceHistogram := tracer objectTrace buildHistogram.
-                IO::writeWholeFileNamedWithString(filename -- ".csv", traceHistogram fullPrintString)
-            } printTimeToRunInMillisecondsWithTitle: "Result statistics gathering".
-        }.
+        self emitStatisticsFor: filename.
 
         {|
             let tacTextIR := mirModule fullPrintString.
