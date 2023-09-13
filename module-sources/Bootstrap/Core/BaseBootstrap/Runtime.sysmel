@@ -3268,11 +3268,25 @@ VirtualTableLayout
 
 Type
     withSelector: #computeVirtualTableLayout replaceMethod: {:(Type)self :: Void |
-        let: #virtualTableLayout with: VirtualTableLayout new.
-        self virtualTableLayout: virtualTableLayout.
-        virtualTableLayout buildFor: self.
+        {
+            let: #virtualTableLayout with: VirtualTableLayout new.
+            virtualTableLayout buildFor: self.
 
-        self virtualTable: (virtualTableLayout buildVirtualTableFor: self)
+            if: virtualTableLayout newSelectors isNil && self supertype isNotNil then: {
+                self virtualTableLayout: self supertype virtualTableLayout.
+            } else: {
+                self virtualTableLayout: virtualTableLayout.
+            }
+        }.
+
+        {
+            let: #layout with: self virtualTableLayout.
+            if: ((layout type == self) || self virtualMethodSelectorList isNotNil) || self supertype isNil then: {
+                self virtualTable: (layout buildVirtualTableFor: self)
+            } else: {
+                self virtualTable: self supertype virtualTable
+            }
+        }.
     } makeVirtual.
 
 BootstrapEnv::IntrinsicTypes do: {:(Type)each :: Void |

@@ -8,9 +8,8 @@ public final class ImageBuilderVirtualTableSetSource superclass: VirtualTableSet
     }.
 
     public override method getVirtualTableLayoutFor: (type: Type) ::=> VirtualTableLayout := {
-        virtualTableLayouts at: type ifAbsent: {:: VirtualTableLayout |
+        virtualTableLayouts at: type ifAbsentPut: {:: VirtualTableLayout |
             let newLayout := VirtualTableLayout new.
-            virtualTableLayouts at: type put: newLayout.
 
             let supertype := type supertype.
             newLayout setSupertypeLayout: (supertype ifNotNil: { self getVirtualTableLayoutFor: supertype }).
@@ -20,14 +19,22 @@ public final class ImageBuilderVirtualTableSetSource superclass: VirtualTableSet
                 newLayout addSelectors: virtualMethodSelectorList
             }.
 
-            newLayout
+            newLayout newSelectors isNil && supertype isNotNil ifTrue: {
+                newLayout supertypeLayout
+            } ifFalse: {
+                newLayout
+            }
         }
     }.
 
     public override method getVirtualTableFor: (type: Type) ::=> VirtualTable := {
         virtualTables at: type ifAbsentPut: {:: VirtualTable |
             let layout := self getVirtualTableLayoutFor: type.
-            layout buildVirtualTableFor: type
+            (layout type == type) || type virtualMethodSelectorList isNotNil || type supertype isNil ifTrue: {
+                layout buildVirtualTableFor: type
+            } ifFalse: {
+                self getVirtualTableFor: type supertype
+            }
         }
     }.
 
