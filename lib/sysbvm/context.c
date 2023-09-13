@@ -980,7 +980,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValue(context, sysbvm_symbol_internWithCString(context, "IntPointer"), context->roots.intptrType);
 
     context->roots.sourceCodeType = sysbvm_context_createIntrinsicClass(context, "SourceCode", SYSBVM_NULL_TUPLE,
-        "text", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_CACHE, context->roots.stringType,
+        "text", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.stringType,
         "directory", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,
         "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,
         "language", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringSymbolType,

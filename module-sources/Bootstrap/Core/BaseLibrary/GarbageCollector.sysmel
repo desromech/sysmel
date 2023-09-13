@@ -111,6 +111,10 @@ public external global GarbageCollector::StaticRootPointerTableEnd mutable => UI
 public external global GarbageCollector::StaticRootFatPointerTableStart mutable => UIntPointer.
 public external global GarbageCollector::StaticRootFatPointerTableEnd mutable => UIntPointer.
 
+## Set the static object segment virtual load address at the 2 MB mark.
+## TODO: Implement manual relocation of the static object segment to save on object file relocation annotations.
+public global GarbageCollector::StaticObjectSegmentLoadAddress => UIntPointer := 16r0020_0000.
+
 public external global GarbageCollector::StaticObjectSegmentStart mutable => UIntPointer.
 public external global GarbageCollector::StaticObjectSegmentEnd mutable => UIntPointer.
 
