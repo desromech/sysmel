@@ -7,6 +7,7 @@ primitiveFailedError __type__: (SimpleFunctionTypeTemplate((), 0bflgs, Unwinds))
 
 (RawTuple::type) __type__: (SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Type)).
 (RawTuple::type:) __type__: (SimpleFunctionTypeTemplate((Untyped, Type), 0bflgs, Void)).
+(RawTuple::pointerIdentityHash) __type__: (SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Size)).
 (RawTuple::storedIdentityHash) __type__: (SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Size)).
 (RawTuple::isBytes) __type__: (SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Boolean)).
 (RawTuple::isWeak) __type__: (SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Boolean)).

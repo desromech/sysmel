@@ -1,10 +1,10 @@
 public final class ImageBuilderVirtualTableSetSource superclass: VirtualTableSetSource; definition: {
-    private field virtualTableLayouts => MethodDictionary.
-    private field virtualTables => MethodDictionary.
+    private field virtualTableLayouts => ObjectPointerDictionary.
+    private field virtualTables => ObjectPointerDictionary.
 
     public override method initialize => Void := {
-        virtualTableLayouts := MethodDictionary new.
-        virtualTables := MethodDictionary new.
+        virtualTableLayouts := ObjectPointerDictionary new.
+        virtualTables := ObjectPointerDictionary new.
     }.
 
     public override method getVirtualTableLayoutFor: (type: Type) ::=> VirtualTableLayout := {

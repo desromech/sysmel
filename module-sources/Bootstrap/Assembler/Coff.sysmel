@@ -199,15 +199,15 @@ public final class Coff::Relocation superclass: ByteSerializablePackedObject; de
 
 public final class Coff::SymbolTable superclass: Object; definition: {
     public field symbols => OrderedCollection.
-    protected field sectionIndexTable => MethodDictionary.
-    protected field sectionSymbolTable => MethodDictionary.
-    protected field symbolDictionary => MethodDictionary.
+    protected field sectionIndexTable => ObjectPointerDictionary.
+    protected field sectionSymbolTable => ObjectPointerDictionary.
+    protected field symbolDictionary => ObjectPointerDictionary.
 
     public override method initialize => Void := {
         symbols := OrderedCollection new.
-        sectionIndexTable := MethodDictionary new.
-        sectionSymbolTable := MethodDictionary new.
-        symbolDictionary := MethodDictionary new.
+        sectionIndexTable := ObjectPointerDictionary new.
+        sectionSymbolTable := ObjectPointerDictionary new.
+        symbolDictionary := ObjectPointerDictionary new.
     }.
 
     public method addSection: (section: AsmObjectCodeSection) index: (sectionIndex: Size) ::=> Void := {

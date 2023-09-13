@@ -1084,7 +1084,7 @@ HIRBasicBlock definition: {
     }.
 
     public method computeDominanceFrontier => Void := {
-        let set := IdentitySet new.
+        let set := ObjectPointerSet new.
         let list := OrderedCollection new.
         self successors do: {:(HIRBasicBlock)succ :: Void |
             succ immediateDominator ~~ self ifTrue: {
@@ -2605,11 +2605,11 @@ public final class HIRUnreachableInstruction superclass: HIRInstruction; definit
 public final class HIRModule superclass: Object; definition: {
     public field globalValues => OrderedCollection.
     public field virtualTableSetSource => VirtualTableSetSource.
-    private field globalValueDictionary => MethodDictionary.
+    private field globalValueDictionary => ObjectPointerDictionary.
 
     public override method initialize => Void := {
         globalValues := OrderedCollection new.
-        globalValueDictionary := MethodDictionary new.
+        globalValueDictionary := ObjectPointerDictionary new.
     }.
 
     public method addGlobalValue: (globalValue: HIRGlobalValue) ::=> Void := {

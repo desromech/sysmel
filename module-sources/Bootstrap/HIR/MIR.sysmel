@@ -32,15 +32,15 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
     public field compilationTarget => MIRCompilationTarget.
     public field hirModule => HIRModule.
     public field targetModule => MIRModule.
-    public field globalValueDictionary => MethodDictionary.
+    public field globalValueDictionary => ObjectPointerDictionary.
 
-    public field runtimeFunctionDictionary => MethodDictionary.
+    public field runtimeFunctionDictionary => ObjectPointerDictionary.
     public field importRuntimeFunction => Boolean.
     private field runtimeFunctionCompilerFrontend => HIRModuleCompilationContext.
 
-    public field capturelessUncheckedEntryPointDictionary => MethodDictionary.
-    public field uncheckedEntryPointDictionary => MethodDictionary.
-    public field checkedEntryPointDictionary => MethodDictionary.
+    public field capturelessUncheckedEntryPointDictionary => ObjectPointerDictionary.
+    public field uncheckedEntryPointDictionary => ObjectPointerDictionary.
+    public field checkedEntryPointDictionary => ObjectPointerDictionary.
     public field uncheckedInterpreterTrampolinesDictionary => Dictionary.
     public field boxingApplicationTrampolinesDictionary => Dictionary.
 
@@ -52,11 +52,11 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
         targetModule := MIRModule new
             compilationTarget: compilationTarget;
             yourself.
-        globalValueDictionary := MethodDictionary new.
-        runtimeFunctionDictionary := MethodDictionary new.
-        capturelessUncheckedEntryPointDictionary := MethodDictionary new.
-        uncheckedEntryPointDictionary := MethodDictionary new.
-        checkedEntryPointDictionary := MethodDictionary new.
+        globalValueDictionary := ObjectPointerDictionary new.
+        runtimeFunctionDictionary := ObjectPointerDictionary new.
+        capturelessUncheckedEntryPointDictionary := ObjectPointerDictionary new.
+        uncheckedEntryPointDictionary := ObjectPointerDictionary new.
+        checkedEntryPointDictionary := ObjectPointerDictionary new.
         uncheckedInterpreterTrampolinesDictionary := Dictionary new.
         boxingApplicationTrampolinesDictionary := Dictionary new.
     }.
@@ -451,12 +451,12 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
     public field functionBuilder => MIRFunctionBuilder.
     public field blockBuilder => MIRBlockBuilder.
     protected field isCapturelessEntryPoint => Boolean.
-    protected field valueDictionary => MethodDictionary.
+    protected field valueDictionary => ObjectPointerDictionary.
     public field functionArgument => MIRValue.
-    protected field boxedValueDictionary => MethodDictionary.
+    protected field boxedValueDictionary => ObjectPointerDictionary.
 
     public override method initialize => Void := {
-        valueDictionary := MethodDictionary new.
+        valueDictionary := ObjectPointerDictionary new.
     }.
 
     public method compilationTarget => MIRCompilationTarget
@@ -799,7 +799,7 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
         }.
     
     public method translateBoxedValue: (value: HIRValue) ::=> MIRValue := {
-        boxedValueDictionary ifNil: (boxedValueDictionary := MethodDictionary new).
+        boxedValueDictionary ifNil: (boxedValueDictionary := ObjectPointerDictionary new).
         boxedValueDictionary at: value ifAbsentPut: {:: MIRValue |
             value isLiteralConstant ifTrue: {
                 self translateValue: (value downCastTo: HIRLiteralConstant) asBoxedLiteralConstant

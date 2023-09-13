@@ -1,5 +1,5 @@
 public final class MIRRegisterAllocationFile superclass: Object; definition: {
-    public field usedRegisterSet => IdentitySet.
+    public field usedRegisterSet => ObjectPointerSet.
     public field availableRegisters => OrderedCollection.
     public field activeScratchRegisters => OrderedCollection.
 
@@ -15,7 +15,7 @@ public final class MIRRegisterAllocationFile superclass: Object; definition: {
         activeIntervals := MIRLiveIntervalSortedList new.
         availableRegisters := OrderedCollection new.
         allocatableRegisterList reverseDo: {:each :: Void | availableRegisters add: each}.
-        usedRegisterSet := IdentitySet new.
+        usedRegisterSet := ObjectPointerSet new.
         activeScratchRegisters := OrderedCollection new.
     }.
 

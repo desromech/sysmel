@@ -285,16 +285,16 @@ public final class Elf32::SymbolTable superclass: Object; definition: {
     public field stringTable => AsmObjectCodeCStringTable.
     public field privateSymbols => OrderedCollection.
     public field publicSymbols => OrderedCollection.
-    protected field privateSymbolDictionary => MethodDictionary.
-    protected field publicSymbolDictionary => MethodDictionary.
-    protected field sectionIndexTable => MethodDictionary.
+    protected field privateSymbolDictionary => ObjectPointerDictionary.
+    protected field publicSymbolDictionary => ObjectPointerDictionary.
+    protected field sectionIndexTable => ObjectPointerDictionary.
 
     public override method initialize => Void := {
         publicSymbols := OrderedCollection new.
         privateSymbols := OrderedCollection new.
-        privateSymbolDictionary := MethodDictionary new.
-        publicSymbolDictionary := MethodDictionary new.
-        sectionIndexTable := MethodDictionary new.
+        privateSymbolDictionary := ObjectPointerDictionary new.
+        publicSymbolDictionary := ObjectPointerDictionary new.
+        sectionIndexTable := ObjectPointerDictionary new.
         privateSymbols add: Elf32::Symbol new.
     }.
 
@@ -353,16 +353,16 @@ public final class Elf64::SymbolTable superclass: Object; definition: {
     public field stringTable => AsmObjectCodeCStringTable.
     public field privateSymbols => OrderedCollection.
     public field publicSymbols => OrderedCollection.
-    protected field privateSymbolDictionary => MethodDictionary.
-    protected field publicSymbolDictionary => MethodDictionary.
-    protected field sectionIndexTable => MethodDictionary.
+    protected field privateSymbolDictionary => ObjectPointerDictionary.
+    protected field publicSymbolDictionary => ObjectPointerDictionary.
+    protected field sectionIndexTable => ObjectPointerDictionary.
 
     public override method initialize => Void := {
         publicSymbols := OrderedCollection new.
         privateSymbols := OrderedCollection new.
-        privateSymbolDictionary := MethodDictionary new.
-        publicSymbolDictionary := MethodDictionary new.
-        sectionIndexTable := MethodDictionary new.
+        privateSymbolDictionary := ObjectPointerDictionary new.
+        publicSymbolDictionary := ObjectPointerDictionary new.
+        sectionIndexTable := ObjectPointerDictionary new.
         privateSymbols add: Elf64::Symbol new.
     }.
 

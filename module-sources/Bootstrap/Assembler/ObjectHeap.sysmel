@@ -73,12 +73,12 @@ AsmObjectHeap definition: {
 
     public field rootObjectList => OrderedCollection.
     public field rootTableEntries => OrderedCollection.
-    protected field rootOffsetTable => MethodDictionary.
+    protected field rootOffsetTable => ObjectPointerDictionary.
 
     public override method initialize => Void := {
         rootObjectList := OrderedCollection new.
         rootTableEntries := OrderedCollection new.
-        rootOffsetTable := MethodDictionary new.
+        rootOffsetTable := ObjectPointerDictionary new.
         self baseObjectTracer: nil.
     }.
 

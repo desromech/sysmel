@@ -40,11 +40,11 @@ Metaclass definition: {
 
 public class ImageObjectTraceHistogram superclass: Object; definition: {
     public field entryList => OrderedCollection.
-    public field entryDictionary => MethodDictionary.
+    public field entryDictionary => ObjectPointerDictionary.
 
     public override method initialize => Void := {
         entryList := OrderedCollection new.
-        entryDictionary := MethodDictionary new.
+        entryDictionary := ObjectPointerDictionary new.
     }.
 
     public method getEntryForType: (type: Type) ::=> ImageObjectTraceHistogramEntry

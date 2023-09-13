@@ -1,0 +1,191 @@
+public final class ObjectPointerDictionary superclass: HashedCollection; definition: {
+    public field size => Size.
+    public field storage => Array.
+
+    public method capacity => Size
+        := self storage size / 2sz.
+
+    public method scanFor: (key: Untyped) ::=> IntPointer := {
+        let storage := self __slotNamedAt__: #storage.
+        storage ifNil: { return: -1iptr }.
+
+        let capacity := storage size / 2sz.
+        let naturalIndex := RawTuple::pointerIdentityHash(key) % capacity.
+
+        let i mutable := naturalIndex.
+        while: (i < capacity) do: {
+            let storageKey := storage __uncheckedSlotAt__: i*2sz.
+            if: (Untyped::==)(key, storageKey) || (Untyped::==)(__hashtableEmptyElement__, storageKey) then: {
+                return: i asIntPointer
+            }
+        } continueWith: (i := i + 1sz).
+
+        i := 0sz.
+        while: (i < naturalIndex) do: {
+            let storageKey := storage __uncheckedSlotAt__: i*2sz.
+            if: (Untyped::==)(key, storageKey) || (Untyped::==)(__hashtableEmptyElement__, storageKey) then: {
+                return: i asIntPointer
+            }
+        } continueWith: (i := i + 1sz).
+
+        -1iptr
+    }.
+
+    public method addNoCheckKey: (key: Untyped) value: value ::=> Void := {
+        let myStorage := storage.
+        let index := (self scanFor: key) asSize *2sz.
+        myStorage __uncheckedSlotAt__: index put: key.
+        myStorage __uncheckedSlotAt__: index + 1sz put: value.
+    }.
+
+    public method increaseCapacity => Void := {
+        let oldCapacity := self capacity.
+        let newCapacity := oldCapacity * 2sz max: 8sz.
+        let oldStorage := storage.
+        let oldStoragePairCount := oldCapacity*2sz.
+
+        let newCapacityPairCount := newCapacity*2sz.
+        let newStorage := Array basicAllocate: newCapacityPairCount.
+        storage := newStorage.
+        let i mutable := 0sz.
+        while: (i < newCapacityPairCount) do: {
+            newStorage __uncheckedSlotAt__: i put: __hashtableEmptyElement__.
+        } continueWith: (i := i + 2sz).
+
+        i := 0sz.
+        while: (i < oldStoragePairCount) do: {
+            let oldKey := oldStorage __uncheckedSlotAt__: i.
+            (Untyped::==)(__hashtableEmptyElement__, oldKey) ifFalse: {
+                let oldValue := oldStorage __uncheckedSlotAt__: i + 1sz.
+                self addNoCheckKey: oldKey value: oldValue.
+            }
+        } continueWith: (i := i + 2sz)
+    }.
+
+    public method checkCapacityIncreaseCondition => Void := {
+        let capacityThreshold := self capacity * 4sz / 5sz.
+        self size >= capacityThreshold ifTrue: {
+            self increaseCapacity
+        }
+    }.
+
+    public method untypedAt: (key: Untyped) := {
+        let index := self scanFor: key.
+        index >= 0iptr ifTrue: {
+            let myStorage := storage.
+            let methodIndex := index asSize*2sz.
+            let storageKey := myStorage __uncheckedSlotAt__: methodIndex.
+            (Untyped::==)(storageKey, __hashtableEmptyElement__) ifTrue: {
+                self error: "Key not found in method dictionary."
+            }.
+
+            myStorage at: methodIndex + 1sz
+        } ifFalse: {
+            self error: "Key not found in method dictionary."
+        }
+    }.
+
+    public method at: key := {
+        self untypedAt: key
+    }.
+
+    public method untypedAt: (key: Untyped) put: value ::=> Void := {
+        let index mutable := self scanFor: key.
+        index < 0iptr ifTrue: {
+            self increaseCapacity.
+            index := self scanFor: key.
+        }.
+
+        let methodIndex := index asSize *2sz.
+        let myStorage := storage.
+        let isNewKey := (myStorage __uncheckedSlotAt__: methodIndex) == __hashtableEmptyElement__.
+        myStorage
+            __uncheckedSlotAt__: methodIndex put: key;
+            __uncheckedSlotAt__: methodIndex + 1sz put: value.
+
+        isNewKey ifTrue: {
+            size := size + 1sz.
+            self checkCapacityIncreaseCondition
+        }.
+    }.
+
+    public method at: key put: value ::=> Void
+        := self untypedAt: key put: value.
+
+    public method untypedAtOrNil: (key: Untyped) := {
+        let index := self scanFor: key.
+        index >= 0iptr ifTrue: {
+            let myStorage := storage.
+            let methodIndex := index asSize*2sz.
+            let storageKey := myStorage __uncheckedSlotAt__: methodIndex.
+            (Untyped::==)(storageKey, __hashtableEmptyElement__) ifFalse: {
+                myStorage at: methodIndex + 1sz
+            } ifTrue: {
+                nil
+            }
+        } ifFalse: {
+            nil
+        }
+    }.
+
+    public method untypedIncludesKey: (key: Untyped) ::=> Boolean := {
+        let index := self scanFor: key.
+        index >= 0iptr ifTrue: {
+            let myStorage := storage.
+            let methodIndex := index asSize*2sz.
+            let storageKey := myStorage __uncheckedSlotAt__: methodIndex.
+            (Untyped::~~)(storageKey, __hashtableEmptyElement__)
+        } ifFalse: {
+            false
+        }
+    }.
+
+    public method includesKey: key ::=> Boolean
+        := self untypedIncludesKey: key.
+
+    public method atOrNil: key
+        := self untypedAtOrNil: key.
+
+    public method ensureStorage := {
+        storage ifNil: {
+            self increaseCapacity
+        }
+    }.
+
+    public inline method untypedAt: (key: Untyped) ifAbsentPut: ifAbsentBlock := {
+        self ensureStorage.
+
+        let entryIndex := (self scanFor: key) asSize.
+        let myStorage := storage.
+        let entry := myStorage __uncheckedSlotAt__: entryIndex * 2sz.
+        (Untyped::==)(entry, __hashtableEmptyElement__) ifTrue: {
+            let value := ifAbsentBlock().
+            self at: key put: value.
+            value
+        } ifFalse: {
+            myStorage __uncheckedSlotAt__: entryIndex *2sz + 1sz
+        }
+    }.
+
+    public inline method at: key ifAbsentPut: ifAbsentBlock
+        := self untypedAt: key ifAbsentPut: ifAbsentBlock.
+
+    public inline method at: key ifAbsent: ifAbsentBlock := {
+        self ensureStorage.
+
+        let entryIndex := (self scanFor: key) asSize.
+        let entry := storage at: entryIndex * 2sz.
+        entry == __hashtableEmptyElement__ ifTrue: {
+            ifAbsentBlock()
+        } ifFalse: {
+            storage at: entryIndex *2sz + 1sz
+        }
+    }.
+
+    public method removeAll => Void := {
+        storage ifNotNil: {
+            storage atAllPut: __hashtableEmptyElement__.
+            size := 0sz.
+        }
+    }
+}.

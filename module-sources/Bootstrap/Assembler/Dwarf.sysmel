@@ -1144,7 +1144,7 @@ Dwarf::AsmWriter definition: {
     public field stringTableDictionary => Dictionary.
     public field abbreviationsDictionary => PluggableDictionary.
     public field abbreviations => OrderedCollection.
-    public field debugInformationEntrySymbolDictionary => MethodDictionary.
+    public field debugInformationEntrySymbolDictionary => ObjectPointerDictionary.
 
     public field debugLineStream => AsmStreamBuilder.
     public field debugAbbreviationsStream => AsmStreamBuilder.
@@ -1157,7 +1157,7 @@ Dwarf::AsmWriter definition: {
         version := 4u8.
         stringTable := OrderedCollection new.
         stringTableDictionary := Dictionary new.
-        debugInformationEntrySymbolDictionary := MethodDictionary new.
+        debugInformationEntrySymbolDictionary := ObjectPointerDictionary new.
         abbreviationsDictionary := PluggableDictionary new
             hashFunction: {:(AnyValue)key :: Size | (key downCastTo: Dwarf::DebugInfoEntry) abbreviationHash };
             equalsFunction: {:(AnyValue)a :(AnyValue)b :: Boolean | (a downCastTo: Dwarf::DebugInfoEntry) abbreviationEquals: (b downCastTo: Dwarf::DebugInfoEntry)};
@@ -2154,14 +2154,14 @@ public final class Dwarf::ObjectDebugInformationGenerator superclass: AsmObjectD
     public field debugInfoProgramEntity => AsmProgramEntity.
     public field debugInfoWriter => Dwarf::AsmWriter.
 
-    public field programEntityDieDictionary => MethodDictionary.
-    public field typeDieDictionary => MethodDictionary.
+    public field programEntityDieDictionary => ObjectPointerDictionary.
+    public field typeDieDictionary => ObjectPointerDictionary.
     public field lineWriter => Dwarf::DebugLineWriter.
 
     public override method initialize => Void := {
         super initialize.
-        programEntityDieDictionary := MethodDictionary new.
-        typeDieDictionary := MethodDictionary new.
+        programEntityDieDictionary := ObjectPointerDictionary new.
+        typeDieDictionary := ObjectPointerDictionary new.
         lineWriter := Dwarf::DebugLineWriter new.
     }.
 

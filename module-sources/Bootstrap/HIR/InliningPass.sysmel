@@ -15,10 +15,10 @@ public class HIRInliningPass superclass: HIRTransformationPass; definition: {
 
 public final class HIRInlinerState definition: {
     public field functionPasses => Array.
-    public field seenFunctionSet => IdentitySet .
+    public field seenFunctionSet => ObjectPointerSet .
 
     public override method initialize => Void := {
-        seenFunctionSet := IdentitySet new.
+        seenFunctionSet := ObjectPointerSet new.
     }.
 
     public method processFunction: (functionDefinition: HIRFunctionDefinition) ::=> Void := {

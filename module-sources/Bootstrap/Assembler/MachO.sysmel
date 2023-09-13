@@ -259,7 +259,7 @@ public final class MachO::SymbolTable64 superclass: Object; definition: {
     public field stringTable => AsmObjectCodeCStringTable.
 
     public field sectionTable => OrderedCollection.
-    public field sectionIndexDictionary => MethodDictionary.
+    public field sectionIndexDictionary => ObjectPointerDictionary.
 
     public field localSymbols => OrderedCollection.
     public field localSourceSymbols => OrderedCollection.
@@ -270,11 +270,11 @@ public final class MachO::SymbolTable64 superclass: Object; definition: {
     public field undefinedSymbols => OrderedCollection.
     public field undefinedSourceSymbols => OrderedCollection.
 
-    public field symbolIndexTable => MethodDictionary.
+    public field symbolIndexTable => ObjectPointerDictionary.
 
     public override method initialize => Void := {
         sectionTable := OrderedCollection new.
-        sectionIndexDictionary := MethodDictionary new.
+        sectionIndexDictionary := ObjectPointerDictionary new.
 
         localSymbols := OrderedCollection new.
         localSourceSymbols := OrderedCollection new.
@@ -341,7 +341,7 @@ public final class MachO::SymbolTable64 superclass: Object; definition: {
     public method buildSymbolIndexTable => Void := {
         let count mutable := 0sz.
 
-        symbolIndexTable := MethodDictionary new.
+        symbolIndexTable := ObjectPointerDictionary new.
         let block := {:(AsmSymbol)symbol :: Void |
             symbol ifNotNil: {
                 symbolIndexTable at: symbol put: count.

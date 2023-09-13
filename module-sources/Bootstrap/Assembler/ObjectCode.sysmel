@@ -627,13 +627,13 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
     public field sections => OrderedCollection.
     public field sectionNameTable => Dictionary.
     public field symbols => OrderedCollection.
-    public field symbolSet => IdentitySet.
+    public field symbolSet => ObjectPointerSet.
 
     public override method initialize => Void := {
         sections := OrderedCollection new.
         sectionNameTable := Dictionary new.
         symbols := OrderedCollection new.
-        symbolSet := IdentitySet new.
+        symbolSet := ObjectPointerSet new.
     }.
 
     public method addImportedSymbols: (importedSymbols: Collection) ::=> Void := {

@@ -10,7 +10,7 @@ public final class HIRAllocaPromotionState definition: {
 
     public field definitionBlockSet => OrderedInsertionIdentitySet.
 
-    public field blockPhiDictionary => MethodDictionary.
+    public field blockPhiDictionary => ObjectPointerDictionary.
     public field phiSet => OrderedInsertionIdentitySet.
 
     public field undefinedConstant => HIRUndefinedConstant.
@@ -54,7 +54,7 @@ public final class HIRAllocaPromotionState definition: {
         stores do: addBlockForDefinition.
 
         ## Add the phi nodes.
-        blockPhiDictionary := MethodDictionary new.
+        blockPhiDictionary := ObjectPointerDictionary new.
         phiSet := OrderedInsertionIdentitySet new.
 
         let pendingWork := OrderedInsertionIdentitySet new.

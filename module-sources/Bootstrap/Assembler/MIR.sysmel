@@ -68,15 +68,15 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
     public field sourceModule => MIRModule.
     public field targetModule => AsmProgramEntity.
     protected field asmTarget => AsmCompilationTarget.
-    public field programEntitySymbolMap => MethodDictionary.
-    public field compiledProgramEntitySymbolMap => MethodDictionary.
+    public field programEntitySymbolMap => ObjectPointerDictionary.
+    public field compiledProgramEntitySymbolMap => ObjectPointerDictionary.
 
     protected field stringTableList => OrderedCollection.
     protected field stringTableDictionary => Dictionary.
 
     protected field objectHeap => AsmObjectHeap.
 
-    protected field picTableDictionary => MethodDictionary.
+    protected field picTableDictionary => ObjectPointerDictionary.
     protected field picTableSymbol => AsmSymbol.
 
     protected field gcStackFrameRecordLastActiveSymbol => AsmSymbol.
@@ -85,12 +85,12 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
     protected field tlsArraySymbol => AsmSymbol.
 
     public override method initialize => Void := {
-        programEntitySymbolMap := MethodDictionary new.
-        compiledProgramEntitySymbolMap := MethodDictionary new.
+        programEntitySymbolMap := ObjectPointerDictionary new.
+        compiledProgramEntitySymbolMap := ObjectPointerDictionary new.
         objectHeap := AsmObjectHeap new.
         stringTableList := OrderedCollection new.
         stringTableDictionary := Dictionary new.
-        picTableDictionary := MethodDictionary new. 
+        picTableDictionary := ObjectPointerDictionary new. 
     }.
 
     public method asmTarget => AsmCompilationTarget := asmTarget.
@@ -290,7 +290,7 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
     public field function => MIRFunction.
     public field asmFunction => AsmProgramEntity.
     public field stackMap => AsmStackMap.
-    private field basicBlockSymbolDictionary => MethodDictionary.
+    private field basicBlockSymbolDictionary => ObjectPointerDictionary.
 
     public field registerAllocator => MIRRegisterAllocator.
     public field stackFrameLayout => MIRStackFrameLayout.
@@ -514,7 +514,7 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
             buildStackFrameLayout.
 
         ## Generate a private label per basic block.
-        basicBlockSymbolDictionary := MethodDictionary new.
+        basicBlockSymbolDictionary := ObjectPointerDictionary new.
         function basicBlocksDo: {:(MIRBasicBlock)basicBlock :: Void |
             basicBlockSymbolDictionary at: basicBlock put: (AsmSymbol new
                 name: basicBlock name;

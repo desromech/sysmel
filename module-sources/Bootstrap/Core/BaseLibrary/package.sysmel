@@ -16,6 +16,8 @@ loadSourceNamed: "PluggableDictionary.sysmel".
 loadSourceNamed: "IdentityDictionary.sysmel".
 loadSourceNamed: "WeakValueDictionary.sysmel".
 loadSourceNamed: "MethodDictionary.sysmel".
+loadSourceNamed: "ObjectPointerDictionary.sysmel".
+loadSourceNamed: "ObjectPointerSet.sysmel".
 loadSourceNamed: "Interval.sysmel".
 loadSourceNamed: "MemoryPointers.sysmel".
 loadSourceNamed: "GarbageCollector.sysmel".

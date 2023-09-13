@@ -662,6 +662,11 @@ RawTuple::storedIdentityHash adoptDefinitionOf: {:(Untyped)self :: Size |
     }
 } makePure makeFinal makeAlwaysInline makeWithoutSourceDebugging withEagerAnalysis.
 
+RawTuple::pointerIdentityHash adoptDefinitionOf: {:(Untyped)self :: Size |
+    <primitive: #RawTuple::pointerIdentityHash >
+    ObjectModel::getTuplePointerUIntValue(self) hashMultiply
+} makePure makeFinal makeAlwaysInline makeWithoutSourceDebugging withEagerAnalysis.
+
 (RawTuple::identityHash:) adoptDefinitionOf: {:(Untyped)self :(Size)newHash :: Void |
     <primitive: #RawTuple::isBytes>
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).

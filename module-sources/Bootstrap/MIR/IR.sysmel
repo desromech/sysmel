@@ -35,7 +35,7 @@ public abstract class MIRPhysicalLocation superclass: Object; definition: {
     public virtual method addRegistersOnto: (aCollection: OrderedCollection) ::=> Void
         := self error: "Not a register or register sequence.".
 
-    public virtual method addRegistersOntoSet: (set: IdentitySet) ::=> Void
+    public virtual method addRegistersOntoSet: (set: ObjectPointerSet) ::=> Void
         := self error: "Not a register or register sequence.".
 
     public virtual method includesRegister: (register: MIRPhysicalLocation) ::=> Boolean
@@ -91,7 +91,7 @@ public abstract class MIRPhysicalLocationRegister superclass: MIRPhysicalLocatio
         aCollection add: self
     }.
 
-    public override method addRegistersOntoSet: (set: IdentitySet) ::=> Void := {
+    public override method addRegistersOntoSet: (set: ObjectPointerSet) ::=> Void := {
         set add: self.
     }.
 
@@ -152,7 +152,7 @@ public final class MIRPhysicalLocationRegisterPair superclass: MIRPhysicalLocati
         list add: secondComponent.
     }.
 
-    public override method addRegistersOntoSet: (set: IdentitySet) ::=> Void := {
+    public override method addRegistersOntoSet: (set: ObjectPointerSet) ::=> Void := {
         set add: firstComponent.
         set add: secondComponent.
     }.
@@ -2740,13 +2740,13 @@ public final class MIRModule superclass: MIRProgramEntity; definition: {
     public field programEntities => OrderedCollection.
     public field baseObjectTracer => ImageTracer.
     public field functionDefinitionPatches => OrderedCollection.
-    public field sourceProgramEntityDictionary => MethodDictionary.
+    public field sourceProgramEntityDictionary => ObjectPointerDictionary.
 
     public override method initialize => Void := {
         super initialize.
         programEntities := OrderedCollection new.
         functionDefinitionPatches := OrderedCollection new.
-        sourceProgramEntityDictionary := MethodDictionary new.
+        sourceProgramEntityDictionary := ObjectPointerDictionary new.
     }.
 
     public method addProgramEntity: (programEntity: MIRProgramEntity) ::=> Void := {
