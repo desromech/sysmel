@@ -5,6 +5,19 @@ public class ImageBuilderHIR_MIRImage superclass: ImageBuilderHIRImage; definiti
     public override method saveTo: (filename: String) ::=> Boolean := {
         (super saveTo: filename) ifFalse: {return: false}.
 
+        #*{|
+            let tracer := ImageTracer new.
+            tracer addRootObject: self;
+                objectModel: ObjectModelVariant64 uniqueInstance;
+                needsBytecode: false;
+                keepingInProcessDebugInformation: false;
+                traceObjectSet.
+
+            let traceHistogram := tracer objectTrace buildHistogram.
+            IO::writeWholeFileNamedWithString(filename -- ".csv", traceHistogram fullPrintString)
+        } printTimeToRunInMillisecondsWithTitle: "Result statistics gathering".
+        *#
+
         {|
             let tacTextIR := mirModule fullPrintString.
             ##printLine(tacTextIR).
