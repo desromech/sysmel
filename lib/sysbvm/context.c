@@ -1470,8 +1470,8 @@ sysbvm_heap_t *sysbvm_context_getHeap(sysbvm_context_t *context)
 
 static size_t sysbvm_context_generateIdentityHash(sysbvm_context_t *context)
 {
-    context->identityHashSeed = sysbvm_identityHashMultiply(context->identityHashSeed) + 12345;
-    return context->identityHashSeed & SYSBVM_IDENTITY_HASH_BIT_MASK;
+    context->identityHashSeed = sysbvm_hashMultiply(context->identityHashSeed) + 12345;
+    return context->identityHashSeed & SYSBVM_HASH_BIT_MASK;
 }
 
 sysbvm_object_tuple_t *sysbvm_context_allocateByteTuple(sysbvm_context_t *context, sysbvm_tuple_t type, size_t byteSize)

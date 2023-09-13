@@ -13,7 +13,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_identitySet_create(sysbvm_context_t *context)
     return (sysbvm_tuple_t)result;
 }
 
-SYSBVM_API bool sysbvm_identitySet_findWithExplicitHash(sysbvm_tuple_t set, void *element, sysbvm_identitySet_explicitHashFunction_t hashFunction, sysbvm_identitySet_explicitEqualsFunction_t equalsFunction, sysbvm_tuple_t *outFoundElement)
+SYSBVM_API bool sysbvm_identitySet_findWithExplicitHash(sysbvm_context_t *context, sysbvm_tuple_t set, void *element, sysbvm_identitySet_explicitHashFunction_t hashFunction, sysbvm_identitySet_explicitEqualsFunction_t equalsFunction, sysbvm_tuple_t *outFoundElement)
 {
     *outFoundElement = SYSBVM_NULL_TUPLE;
     if(!sysbvm_tuple_isNonNullPointer(set))
@@ -25,7 +25,7 @@ SYSBVM_API bool sysbvm_identitySet_findWithExplicitHash(sysbvm_tuple_t set, void
         return false;
 
     sysbvm_array_t *storage = (sysbvm_array_t*)setObject->storage;
-    size_t hashIndex = hashFunction(element) % capacity;
+    size_t hashIndex = hashFunction(context, element) % capacity;
     for(size_t i = hashIndex; i < capacity; ++i)
     {
         sysbvm_tuple_t setElement = storage->elements[i];

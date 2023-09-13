@@ -69,7 +69,7 @@ SYSBVM_API void sysbvm_analysisQueue_waitPendingAnalysis(sysbvm_context_t *conte
     };
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    while((gcFrame.entry = (sysbvm_analysisQueueEntry_t*)gcFrame.queue->firstEntry) != SYSBVM_NULL_TUPLE)
+    while((gcFrame.entry = (sysbvm_analysisQueueEntry_t*)gcFrame.queue->firstEntry) != NULL)
     {
         gcFrame.queue->firstEntry = gcFrame.entry->nextEntry;
         if(!gcFrame.queue->firstEntry)

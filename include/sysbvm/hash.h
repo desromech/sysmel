@@ -12,8 +12,8 @@
 #define SYSBVM_HASH_BIT_COUNT (sizeof(uintptr_t)*8 - 4)
 #define SYSBVM_HASH_BIT_MASK (((uintptr_t)1 << SYSBVM_HASH_BIT_COUNT) - 1)
 
-#define SYSBVM_IDENTITY_HASH_BIT_COUNT 22
-#define SYSBVM_IDENTITY_HASH_BIT_MASK ((1 << SYSBVM_IDENTITY_HASH_BIT_COUNT) - 1)
+#define SYSBVM_STORED_IDENTITY_HASH_BIT_COUNT 22
+#define SYSBVM_STORED_IDENTITY_HASH_BIT_MASK ((1 << SYSBVM_STORED_IDENTITY_HASH_BIT_COUNT) - 1)
 
 SYSBVM_INLINE size_t sysbvm_hashMultiply(size_t hash)
 {
@@ -23,11 +23,6 @@ SYSBVM_INLINE size_t sysbvm_hashMultiply(size_t hash)
 SYSBVM_INLINE size_t sysbvm_hashConcatenate(size_t previousHash, size_t nextHash)
 {
     return (sysbvm_hashMultiply(previousHash) + nextHash) & SYSBVM_HASH_BIT_MASK;
-}
-
-SYSBVM_INLINE size_t sysbvm_identityHashMultiply(size_t hash)
-{
-    return (hash * SYSBVM_HASH_MULTIPLICATION_CONSTANT) & SYSBVM_IDENTITY_HASH_BIT_MASK;
 }
 
 #endif //SYSBVM_HASH_H

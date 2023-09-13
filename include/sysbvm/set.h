@@ -16,7 +16,7 @@ typedef struct sysbvm_set_s
 
 typedef sysbvm_set_t sysbvm_identitySet_t;
 
-typedef size_t (*sysbvm_identitySet_explicitHashFunction_t)(void *element);
+typedef size_t (*sysbvm_identitySet_explicitHashFunction_t)(sysbvm_context_t *context, void *element);
 typedef bool (*sysbvm_identitySet_explicitEqualsFunction_t)(void *element, sysbvm_tuple_t setElement);
 
 /**
@@ -27,7 +27,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_identitySet_create(sysbvm_context_t *context);
 /**
  * Inserts an element in the set.
  */ 
-SYSBVM_API bool sysbvm_identitySet_findWithExplicitHash(sysbvm_tuple_t set, void *element, sysbvm_identitySet_explicitHashFunction_t hashFunction, sysbvm_identitySet_explicitEqualsFunction_t equalsFunction, sysbvm_tuple_t *outFoundElement);
+SYSBVM_API bool sysbvm_identitySet_findWithExplicitHash(sysbvm_context_t *context, sysbvm_tuple_t set, void *element, sysbvm_identitySet_explicitHashFunction_t hashFunction, sysbvm_identitySet_explicitEqualsFunction_t equalsFunction, sysbvm_tuple_t *outFoundElement);
 
 /**
  * Inserts an element in the set.

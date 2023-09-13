@@ -13,7 +13,7 @@ typedef struct sysbvm_stringSlice_s
     size_t size;
 } sysbvm_stringSlice_t;
 
-static size_t sysbvm_stringSlice_hashFunction(void *element);
+static size_t sysbvm_stringSliceSymbol_hashFunction(sysbvm_context_t *context, void *element);
 
 bool sysbvm_stringSlice_equalsFunction(void *element, sysbvm_tuple_t setElement)
 {
@@ -133,7 +133,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_symbol_internWithString(sysbvm_context_t *conte
         };
 
         sysbvm_tuple_t existent;
-        if(sysbvm_identitySet_findWithExplicitHash(context->roots.internedSymbolSet, &stringSlice, sysbvm_stringSlice_hashFunction, sysbvm_stringSlice_equalsFunction, &existent))
+        if(sysbvm_identitySet_findWithExplicitHash(context, context->roots.internedSymbolSet, &stringSlice, sysbvm_stringSliceSymbol_hashFunction, sysbvm_stringSlice_equalsFunction, &existent))
             return existent;
     }
 
@@ -167,10 +167,12 @@ SYSBVM_API size_t sysbvm_string_computeHashWithBytes(size_t size, const uint8_t 
     return result;
 }
 
-static size_t sysbvm_stringSlice_hashFunction(void *element)
+static size_t sysbvm_stringSliceSymbol_hashFunction(sysbvm_context_t *context, void *element)
 {
     sysbvm_stringSlice_t *stringSlice = (sysbvm_stringSlice_t*)element;
-    return sysbvm_string_computeHashWithBytes(stringSlice->size, (const uint8_t *)stringSlice->elements);
+    size_t symbolHash = (SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(context->roots.stringSymbolType)->header.identityHashAndFlags >> SYSBVM_TUPLE_TAG_BIT_COUNT) & SYSBVM_STORED_IDENTITY_HASH_BIT_MASK;
+    size_t hash = sysbvm_string_computeHashWithBytes(stringSlice->size, (const uint8_t *)stringSlice->elements);
+    return (hash | (symbolHash << SYSBVM_STORED_IDENTITY_HASH_BIT_COUNT)) & SYSBVM_HASH_BIT_MASK;
 }
 
 SYSBVM_API size_t sysbvm_string_hash(sysbvm_tuple_t string)

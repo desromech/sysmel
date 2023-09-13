@@ -115,7 +115,7 @@ public class ObjectModelState definition: {
     }.
 
     public final inline method newIdentityHash => UInt32
-        := identityHashSeed := identityHashSeed identityHashMultiply.
+        := identityHashSeed := identityHashSeed hashMultiply.
 
     let uniqueInstance := SelfType new.
     __Meta__ definition: {
@@ -622,9 +622,16 @@ identityHash adoptDefinitionOf: {:(AnyValue)self :: Size |
     <primitive: #identityHash >
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
-        (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ identityHashValue asSize
+        let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
+        let typeHash := ObjectModel::isNonNullPointerValue(header _ typePointer) ifTrue: {
+            (header _ typePointer reinterpretCastTo: ObjectModel::TupleHeader pointer) _ identityHashValue asSize
+        } ifFalse: {
+            0sz
+        }.
+        
+        header _ identityHashValue asSize identityHashConcatenatedTypeHash: typeHash
     } ifFalse: {
-        pointerValue asUIntPointer identityHashMultiply
+        pointerValue asUIntPointer hashMultiply
     }
 } makePure makeFinal makeAlwaysInline makeWithoutSourceDebugging withEagerAnalysis.
 
@@ -632,9 +639,16 @@ Untyped::identityHash adoptDefinitionOf: {:(Untyped)self :: Size |
     <primitive: #identityHash >
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     ObjectModel::isNonNullPointerValue(pointerValue) ifTrue: {
-        (pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer) _ identityHashValue asSize
+        let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
+        let typeHash := ObjectModel::isNonNullPointerValue(header _ typePointer) ifTrue: {
+            (header _ typePointer reinterpretCastTo: ObjectModel::TupleHeader pointer) _ identityHashValue asSize
+        } ifFalse: {
+            0sz
+        }.
+        
+        header _ identityHashValue asSize identityHashConcatenatedTypeHash: typeHash
     } ifFalse: {
-        pointerValue asUIntPointer identityHashMultiply
+        pointerValue asUIntPointer hashMultiply
     }
 } makePure makeFinal makeAlwaysInline makeWithoutSourceDebugging withEagerAnalysis.
 

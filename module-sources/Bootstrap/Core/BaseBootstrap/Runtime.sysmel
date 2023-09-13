@@ -2679,14 +2679,14 @@ SimpleFunctionType
 let: #UInt32HashMultiplicationConstant with: 1103515245u32.
 let: #UInt32HashBitCount with: 32u32 - 4u32.
 let: #UInt32HashBitMask with: (1u32 << UInt32HashBitCount) - 1u32.
-let: #UInt32IdentityHashBitCount with: 22u32.
-let: #UInt32IdentityHashBitMask with: (1u32 << UInt32IdentityHashBitCount) - 1u32.
+let: #UInt32StoredIdentityHashBitCount with: 22u32.
+let: #UInt32StoredIdentityHashBitMask with: (1u32 << UInt32StoredIdentityHashBitCount) - 1u32.
 
 let: #UInt64HashMultiplicationConstant with: 1103515245u64.
 let: #UInt64HashBitCount with: 64u64 - 4u64.
 let: #UInt64HashBitMask with: (1u64 << UInt64HashBitCount) - 1u64.
-let: #UInt64IdentityHashBitCount with: 22u64.
-let: #UInt64IdentityHashBitMask with: (1u64 << UInt64IdentityHashBitCount) - 1u64.
+let: #UInt64StoredIdentityHashBitCount with: 22u64.
+let: #UInt64StoredIdentityHashBitMask with: (1u64 << UInt64StoredIdentityHashBitCount) - 1u64.
 
 UInt32
     withSelector: #hashMultiply addMethod: {:(UInt32)self :: UInt32 |
@@ -2695,14 +2695,8 @@ UInt32
     withSelector: #hashConcatenate: addMethod: {:(UInt32)self :(UInt32)next :: UInt32 |
         (self hashMultiply + next) & UInt32HashBitMask
     } makePure makeFinal makeAlwaysInline withEagerAnalysis;
-    withSelector: #identityHashMasked addMethod: {:(UInt32)self :: UInt32 |
-        self & UInt32IdentityHashBitMask
-    } makePure makeFinal makeAlwaysInline withEagerAnalysis;
-    withSelector: #identityHashMultiply addMethod: {:(UInt32)self :: UInt32 |
-        (self * UInt32HashMultiplicationConstant) & UInt32IdentityHashBitMask
-    } makePure makeFinal makeAlwaysInline withEagerAnalysis;
-    withSelector: #identityHashConcatenate: addMethod: {:(UInt32)self :(UInt32)next :: UInt32 |
-        (self identityHashMultiply + next) & UInt32IdentityHashBitMask
+    withSelector: #identityHashConcatenatedTypeHash: addMethod: {:(UInt32)self :(UInt32)typeHash :: UInt32 |
+        ((self & UInt32StoredIdentityHashBitMask) | ((typeHash & UInt32StoredIdentityHashBitMask) << UInt32StoredIdentityHashBitCount)) & UInt32StoredIdentityHashBitMask
     } makePure makeFinal makeAlwaysInline withEagerAnalysis.
 
 UInt64
@@ -2712,14 +2706,8 @@ UInt64
     withSelector: #hashConcatenate: addMethod: {:(UInt64)self :(UInt64)next :: UInt64 |
         (self hashMultiply + next) & UInt64HashBitMask
     } makePure makeFinal makeAlwaysInline withEagerAnalysis;
-    withSelector: #identityHashMasked addMethod: {:(UInt64)self :: UInt64 |
-        self & UInt64IdentityHashBitMask
-    } makePure makeFinal makeAlwaysInline withEagerAnalysis;
-    withSelector: #identityHashMultiply addMethod: {:(UInt64)self :: UInt64 |
-        (self * UInt64HashMultiplicationConstant) & UInt64IdentityHashBitMask
-    } makePure makeFinal makeAlwaysInline withEagerAnalysis;
-    withSelector: #identityHashConcatenate: addMethod: {:(UInt64)self :(UInt64)next :: UInt64 |
-        (self identityHashMultiply + next) & UInt64IdentityHashBitMask
+    withSelector: #identityHashConcatenatedTypeHash: addMethod: {:(UInt64)self :(UInt64)typeHash :: UInt64 |
+        ((self & UInt64StoredIdentityHashBitMask)| ((typeHash & UInt64StoredIdentityHashBitMask) << UInt64StoredIdentityHashBitCount)) & UInt64StoredIdentityHashBitMask
     } makePure makeFinal makeAlwaysInline withEagerAnalysis.
 
 FunctionDefinition
