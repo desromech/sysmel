@@ -1193,7 +1193,7 @@ public final class MIRSysVX86_64CallingConvention superclass: MIRX86_64CallingCo
         := MIR::X86_64::R15.
 
     public override method registerConstraintsOfCall: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
-        allocator spillGCRootsForCalling: instruction operands first.
+        allocator spillGCRootsForCalling: instruction firstOperand.
         
         let registerArguments := OrderedCollection new.
         let stackArguments := OrderedCollection new.
@@ -1449,7 +1449,7 @@ public final class MIRWinX64CallingConvention superclass: MIRX86_64CallingConven
     }.
 
     public override method registerConstraintsOfCall: (instruction: MIRInstruction) with: (allocator: MIRRegisterAllocator) ::=> Void := {
-        allocator spillGCRootsForCalling: instruction operands first.
+        allocator spillGCRootsForCalling: instruction firstOperand.
 
         let argumentCount := instruction operands size - 1sz.
         let stackSize := argumentCount * 8sz max: 32sz.
@@ -4668,7 +4668,7 @@ MIR::Operation::MoveStruct
     };
     forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
-            x86::mov: X86::RCX src: instruction operands first size asUInt64 asAsmImmediate;
+            x86::mov: X86::RCX src: instruction firstOperand size asUInt64 asAsmImmediate;
             x86::rep; x86::movsb
     }.
 
@@ -4806,12 +4806,12 @@ MIR::Operation::LoadStruct
     };
     forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
-            x86::mov: X86::RCX src: instruction operands first size asUInt64 asAsmImmediate;
+            x86::mov: X86::RCX src: instruction firstOperand size asUInt64 asAsmImmediate;
             x86::add: X86::RSI with: (instruction secondOperandRegister x86::immediate32For: codegen);
             x86::rep; x86::movsb
     }.
 
-MIR::Operation::GenerationalWriteBarrer
+MIR::Operation::GenerationalWriteBarrier
     forTargets: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
         allocator
             allocateRegister: MIR::X86_64::RAX forInstruction: instruction operandAt: 0sz;
@@ -4923,7 +4923,7 @@ MIR::Operation::StoreStruct
     };
     forTarget: #x86_64 generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
         codegen textSection
-            x86::mov: X86::RCX src: instruction operands first size asUInt64 asAsmImmediate;
+            x86::mov: X86::RCX src: instruction firstOperand size asUInt64 asAsmImmediate;
             x86::add: X86::RDI with: (instruction thirdOperandRegister x86::immediate32For: codegen);
             x86::rep; x86::movsb
     }.

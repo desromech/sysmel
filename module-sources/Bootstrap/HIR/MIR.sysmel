@@ -886,10 +886,10 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
         valueType isValueType ifTrue: {
             valueType validAddressSpace isFatPointer ifTrue: {
                 let valueOwner := blockBuilder fatPointerExtractSecond: value type: Void pointer.
-                blockBuilder generationalWriteBarrer: object constantOffset: ObjectModel::FlagsOffset asInt64 value: valueOwner rememberFunction: self generationalRememberFunction
+                blockBuilder generationalWriteBarrier: object constantOffset: ObjectModel::FlagsOffset asInt64 value: valueOwner rememberFunction: self generationalRememberFunction
             }
         } ifFalse: {
-            blockBuilder generationalWriteBarrer: object constantOffset: ObjectModel::FlagsOffset asInt64 value: value rememberFunction: self generationalRememberFunction
+            blockBuilder generationalWriteBarrier: object constantOffset: ObjectModel::FlagsOffset asInt64 value: value rememberFunction: self generationalRememberFunction
         }.
     }.
 

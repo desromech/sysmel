@@ -57,6 +57,8 @@ HIRValue definition: {
     public virtual method isSetDebugValueForBindingInstruction => Boolean := false.
     public virtual method isStoreInstruction => Boolean := false.
     public virtual method isTypeSlotAtInstruction => Boolean := false.
+    public virtual method isTypeSlotReferenceAtInstruction => Boolean := false.
+    public virtual method isTypeSlotAtPutInstruction => Boolean := false.
     public virtual method isTerminatorInstruction => Boolean := false.
     public virtual method isUnreachableInstruction => Boolean := false.
 
@@ -1968,9 +1970,10 @@ public final class HIRPointerElementAtInstruction superclass: HIRInstruction; de
 public final class HIRTypeSlotAtInstruction superclass: HIRInstruction; definition: {
     public field tuple => HIRValue.
     public field typeSlot => TypeSlot.
+    public field isVolatile => Boolean.
 
     public override method isTypeSlotAtInstruction => Boolean := true.
-    public override method hasSideEffects => Boolean := false.
+    public override method hasSideEffects => Boolean := isVolatile not.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := typedSlotOf "; print: self tuple; nextPutAll: " at "; print: self typeSlot
@@ -1993,7 +1996,7 @@ public final class HIRTypeSlotReferenceAtInstruction superclass: HIRInstruction;
     public field tuple => HIRValue.
     public field typeSlot => TypeSlot.
 
-    public override method isTypeSlotAtInstruction => Boolean := true.
+    public override method isTypeSlotReferenceAtInstruction => Boolean := true.
     public override method hasSideEffects => Boolean := false.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
@@ -2020,8 +2023,9 @@ public final class HIRTypeSlotAtPutInstruction superclass: HIRInstruction; defin
     public field tuple => HIRValue.
     public field value => HIRValue.
     public field typeSlot => TypeSlot.
+    public field isVolatile => Boolean.
 
-    public override method isTypeSlotAtInstruction => Boolean := true.
+    public override method isTypeSlotAtPutInstruction => Boolean := true.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " typedSlotOf "; print: self tuple;
@@ -2055,6 +2059,25 @@ public final class HIRLoadInstruction superclass: HIRInstruction; definition: {
     public override method isLoadInstruction => Boolean := true.
     public override method isLoadStoreOrDebugBindingInstruction => Boolean := true.
     public override method hasSideEffects => Boolean := isVolatile not.
+
+    public override method evaluateConstantFolding => HIRValue := {
+        storage isTypeSlotReferenceAtInstruction ifTrue: {
+            let typeSlotReference := storage downCastTo: HIRTypeSlotReferenceAtInstruction.
+
+            let typeSlotAt := HIRTypeSlotAtInstruction new
+                useSourceInformationOfValue: self;
+                tuple: typeSlotReference tuple;
+                typeSlot: typeSlotReference typeSlot;
+                isVolatile: isVolatile;
+                type: type;
+                registerInUsedValues;
+                yourself.
+            parent addInstruction: typeSlotAt after: self.
+            return: typeSlotAt.
+        }.
+
+        self
+    }.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: " := load "; print: self storage
@@ -2526,6 +2549,25 @@ public final class HIRStoreInstruction superclass: HIRInstruction; definition: {
     public override method initialize => Void := {
         super initialize.
         type := Void
+    }.
+
+    public override method evaluateConstantFolding => HIRValue := {
+        storage isTypeSlotReferenceAtInstruction ifTrue: {
+            let typeSlotReference := storage downCastTo: HIRTypeSlotReferenceAtInstruction.
+
+            let typeSlotAtPut := HIRTypeSlotAtPutInstruction new
+                useSourceInformationOfValue: self;
+                tuple: typeSlotReference tuple;
+                typeSlot: typeSlotReference typeSlot;
+                value: value;
+                isVolatile: isVolatile;
+                registerInUsedValues;
+                yourself.
+            parent addInstruction: typeSlotAtPut after: self.
+            return: typeSlotAtPut.
+        }.
+
+        self
     }.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {

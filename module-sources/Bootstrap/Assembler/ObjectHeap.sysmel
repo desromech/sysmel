@@ -1,9 +1,10 @@
 public final class AsmObjectHeap.
+public global AsmObjectHeap::OmitInternalRelocations := GarbageCollector::StaticObjectSegmentMustBeRelocatedAtLoadTime.
+public global AsmObjectHeap::BaseLoadAddress := GarbageCollector::StaticObjectSegmentLoadAddress.
 
 public abstract class AsmObjectHeapRootTableEntry superclass: Object; definition: {
     public abstract method writeIn: (asmHeap: AsmObjectHeap) rootTableOffset: (offset: Size) ::=> Void
         := self subclassResponsibility.
-
 }.
 
 public abstract class AsmObjectHeapRootTableEntryObjectPointer superclass: AsmObjectHeapRootTableEntry; definition: {
@@ -246,7 +247,7 @@ AsmObjectHeap definition: {
             label: self objectFatPointerTableEndSymbol
     }.
 
-    public method writeReference32: (value: Untyped) at: (offset: Size) extraAddend: (extraAddend: UInt32) ::=> Void := {
+    public method writeReference32: (value: Untyped) at: (offset: Size) ::=> Void := {
         let objectModel := compilationTarget objectModel.
         (objectModel isImmediateReference: value) ifTrue: {
             let immediateValue := RawTuple::type(value) encodeImmediateReference32: value.
@@ -255,20 +256,20 @@ AsmObjectHeap definition: {
             (objectTrace objectIndexDictionary untypedIncludesKey: value) ifTrue: {
                 let objectIndex => UInt32 := objectTrace objectIndexDictionary at: value.
                 let objectOffset => UInt64 := objectOffsetList at: objectIndex asSize.
-                serializedObjectDataRelocations add: (AsmObjectCodeRelocationAbsoluteInt32 new
-                    symbol: self objectSectionStartSymbol;
-                    offset: offset;
-                    addend: objectOffset asInt32 + extraAddend asInt32;
-                    yourself)
+                AsmObjectHeap::OmitInternalRelocations ifTrue: {
+                    serializedObjectData uint32At: offset put: AsmObjectHeap::BaseLoadAddress asUInt32 + objectOffset asUInt32
+                } ifFalse: {
+                    serializedObjectDataRelocations add: (AsmObjectCodeRelocationAbsoluteInt32 new
+                        symbol: self objectSectionStartSymbol;
+                        offset: offset;
+                        addend: objectOffset asInt32;
+                        yourself)
+                }.
             }
         }
     }.
 
     public method writeReference64: (value: Untyped) at: (offset: Size) ::=> Void := {
-        self writeReference64: value at: offset extraAddend: 0u64
-    }.
-
-    public method writeReference64: (value: Untyped) at: (offset: Size) extraAddend: (extraAddend: UInt64) ::=> Void := {
         let objectModel := compilationTarget objectModel.
         (objectModel isImmediateReference: value) ifTrue: {
             let immediateValue := RawTuple::type(value) encodeImmediateReference64: value.
@@ -277,11 +278,15 @@ AsmObjectHeap definition: {
             (objectTrace objectIndexDictionary untypedIncludesKey: value) ifTrue: {
                 let objectIndex => UInt32 := objectTrace objectIndexDictionary untypedAt: value.
                 let objectOffset => Size := objectOffsetList at: objectIndex asSize.
-                serializedObjectDataRelocations add: (AsmObjectCodeRelocationAbsoluteInt64 new
-                    symbol: self objectSectionStartSymbol;
-                    offset: offset;
-                    addend: objectOffset asInt64 + extraAddend asInt64;
-                    yourself)
+                AsmObjectHeap::OmitInternalRelocations ifTrue: {
+                    serializedObjectData uint64At: offset put: AsmObjectHeap::BaseLoadAddress asUInt64 + objectOffset asUInt64
+                } ifFalse: {
+                    serializedObjectDataRelocations add: (AsmObjectCodeRelocationAbsoluteInt64 new
+                        symbol: self objectSectionStartSymbol;
+                        offset: offset;
+                        addend: objectOffset asInt64;
+                        yourself)
+                }.
             }
         }
     }.
@@ -295,11 +300,15 @@ AsmObjectHeap definition: {
             (objectTrace objectIndexDictionary untypedIncludesKey: value) ifTrue: {
                 let objectIndex => UInt32 := objectTrace objectIndexDictionary untypedAt: value.
                 let objectOffset => Size := objectOffsetList at: objectIndex asSize.
-                serializedObjectDataRelocations add: (AsmObjectCodeRelocationAbsoluteInt64 new
-                    symbol: self objectSectionStartSymbol;
-                    offset: offset;
-                    addend: objectOffset asInt64;
-                    yourself)
+                AsmObjectHeap::OmitInternalRelocations ifTrue: {
+                    serializedObjectData uint64At: offset put: AsmObjectHeap::BaseLoadAddress asUInt64 + objectOffset asUInt64
+                } ifFalse: {
+                    serializedObjectDataRelocations add: (AsmObjectCodeRelocationAbsoluteInt64 new
+                        symbol: self objectSectionStartSymbol;
+                        offset: offset;
+                        addend: objectOffset asInt64;
+                        yourself)
+                }
             } ifFalse: {
                 let immediateValue := ObjectTombstone encodeImmediateReference64: __tombstone__.
                 serializedObjectData uint64At: offset put: immediateValue
@@ -311,10 +320,6 @@ AsmObjectHeap definition: {
             symbol: symbol;
             offset: offset;
             yourself)
-    }.
-
-    public method writeReference64: (value: Untyped) at: (offset: Size) ::=> Void := {
-        self writeReference64: value at: offset extraAddend: 0u64
     }.
 }.
 

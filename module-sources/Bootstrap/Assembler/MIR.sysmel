@@ -743,7 +743,7 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         self assert: (debugInstruction operation = MIR::Operation::DebugSetBindingValue)
             || (debugInstruction operation = MIR::Operation::DebugSetMutableBindingValue)
             || (debugInstruction operation = MIR::Operation::DebugSetMutableBindingSpecificValue).
-        let value := debugInstruction operands first.
+        let value := debugInstruction firstOperand.
         let binding := debugInstruction sourceBinding.
 
         let location := value asm::makeStackMapLocationWith: self.

@@ -113,7 +113,8 @@ public external global GarbageCollector::StaticRootFatPointerTableEnd mutable =>
 
 ## Set the static object segment virtual load address at the 2 MB mark.
 ## TODO: Implement manual relocation of the static object segment to save on object file relocation annotations.
-public global GarbageCollector::StaticObjectSegmentLoadAddress => UIntPointer := 16r0020_0000.
+public global GarbageCollector::StaticObjectSegmentMustBeRelocatedAtLoadTime := false.
+public global GarbageCollector::StaticObjectSegmentLoadAddress => UIntPointer := 16r0020_0000 uptr.
 
 public external global GarbageCollector::StaticObjectSegmentStart mutable => UIntPointer.
 public external global GarbageCollector::StaticObjectSegmentEnd mutable => UIntPointer.
@@ -156,8 +157,18 @@ private inline nogc function GarbageCollector::addOldAllocatedObject(object: Gar
 
 private global GarbageCollector::IsInitialized mutable => Boolean := false.
 
+public nogc function GarbageCollector::relocateStaticObjectSegment() => Void := {
+    "TODO: relocateStaticObjectSegment" writeOntoStderr.
+    sysmel_pal_abort().
+}.
+
 public nogc function GarbageCollector::initialize() => Void := {
     GarbageCollector::IsInitialized ifTrue: {
+        return: void
+    }.
+
+    GarbageCollector::StaticObjectSegmentMustBeRelocatedAtLoadTime ifTrue: {
+        GarbageCollector::relocateStaticObjectSegment().
         return: void
     }.
 

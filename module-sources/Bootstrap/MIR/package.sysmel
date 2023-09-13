@@ -1,4 +1,5 @@
 loadSourceNamed: "IR.sysmel".
+loadSourceNamed: "ConstantPropagation.sysmel".
 loadSourceNamed: "StackFrameLayout.sysmel".
 loadSourceNamed: "LiveInterval.sysmel".
 loadSourceNamed: "LiveIntervalSortedList.sysmel".

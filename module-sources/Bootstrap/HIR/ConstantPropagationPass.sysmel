@@ -6,7 +6,7 @@ public class HIRConstantPropagationPass superclass: HIRFunctionDefinitionPass; d
             instruction parent ifNil: (return: void).
 
             ## Dead code removal.
-            instruction hasOnlyDebugUsers && instruction hasSideEffects not ifTrue: {
+            instruction hasSideEffects not && instruction hasOnlyDebugUsers ifTrue: {
                 instruction deleteAllDebugUsers.
                 instruction usedValuesDo: {:(HIRValue)eachUsedValue :: Void |
                     eachUsedValue isInstruction && eachUsedValue hasSideEffects not ifTrue: {
@@ -29,6 +29,12 @@ public class HIRConstantPropagationPass superclass: HIRFunctionDefinitionPass; d
 
                     instruction parent replaceSuccessorsWith: newSuccessors.
                     pendingWork addAll: oldSuccesors; addAll: newSuccessors
+                }.
+
+                instruction usedValuesDo: {:(HIRValue)eachUsedValue :: Void |
+                    eachUsedValue isInstruction ifTrue: {
+                        pendingWork add: eachUsedValue
+                    }
                 }.
 
                 instruction usersDo: {:(HIRValue)eachUser :: Void |

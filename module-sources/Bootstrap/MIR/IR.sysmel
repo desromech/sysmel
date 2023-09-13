@@ -344,6 +344,10 @@ MIRValue definition: {
 
     public virtual method isNoGC => Boolean := false.
 
+    public virtual method isDebug => Boolean := false.
+    public virtual method isTerminator => Boolean := false.
+    public virtual method isPure => Boolean := false.
+
     public virtual method getConstantValue64 => Int64
         := self error: "Not an immediate 64 constant".
 
@@ -358,6 +362,7 @@ MIRValue definition: {
     }.
 
     public virtual method usedValuesDo: (aBlock: (MIRValue) => Void) ::=> Void := {}.
+    public virtual method replaceUsedValue: (usedValue: MIRValue) with: (replacement: MIRValue) ::=> Void := {}.
 
     public method usersDo: (aBlock: (MIRValue) => Void) ::=> Void := {
         users ifNotNil: {:users | users do: aBlock }
@@ -371,6 +376,21 @@ MIRValue definition: {
                 self registerUser: newUser
             }.
         }
+    }.
+
+    public virtual method replaceWith: (replacement: MIRValue) ::=> Void := {
+        self == replacement ifTrue: (return: void).
+        
+        users ifNotNil: {
+            users do: {:(MIRValue)user :: Void |
+                user replaceUsedValue: self with: replacement.
+                replacement registerUser: user
+            }.
+        }.
+
+        self usedValuesDo: {:(MIRValue)usedValue :: Void |
+            usedValue unregisterUser: self
+        }.
     }.
 
     public method registerInUsedValues => Void := {
@@ -736,6 +756,12 @@ public final class MIRValuePointer superclass: MIRValue; definition: {
 
     public override method usedValuesDo: (aBlock: (MIRValue) => Void) ::=> Void := {
         aBlock(value)
+    }.
+
+    public override method replaceUsedValue: (usedValue: MIRValue) with: (replacement: MIRValue) ::=> Void := {
+        value == usedValue ifTrue: {
+            value := replacement
+        }
     }.
 
     public override method physicalLocationClass => MIRPhysicalLocation class
@@ -1126,6 +1152,8 @@ public final class MIROperation superclass: Object; definition: {
     public field phiMoveOperation => MIROperation.
     public field isTerminator => Boolean.
     public field isDebug => Boolean.
+    public field isPure => Boolean.
+    public field isMove => Boolean.
 
     public field x86 => MIROperationTargetSpecific.
     public field x86_64 => MIROperationTargetSpecific.
@@ -1134,12 +1162,20 @@ public final class MIROperation superclass: Object; definition: {
     public field riscv32 => MIROperationTargetSpecific.
     public field riscv64 => MIROperationTargetSpecific.
 
+    public field constantFoldingRules => Array.
+
     public method isPhi => Boolean
         := phiMoveOperation ~~ nil.
 
     __Meta__ definition: {
         public method named: (name: Symbol) ::=> self
             := self new name: name; yourself.
+
+        public method pureNamed: (name: Symbol) ::=> self
+            := self new name: name; isPure: true; yourself.
+
+        public method moveNamed: (name: Symbol) ::=> self
+            := self new name: name; isPure: true; isMove: true; yourself.
 
         public method phiNamed: (name: Symbol) moveOperation: (moveOperation: MIROperation) ::=> self
             := self new name: name; phiMoveOperation: moveOperation; yourself.
@@ -1158,6 +1194,7 @@ public final class MIROperation superclass: Object; definition: {
         arm64 := MIROperationTargetSpecific new.
         riscv32 := MIROperationTargetSpecific new.
         riscv64 := MIROperationTargetSpecific new.
+        constantFoldingRules := #().
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -1168,6 +1205,11 @@ public final class MIROperation superclass: Object; definition: {
 Void extend: {
     public method asMirConstant => MIRConstant
         := 0u8 asMirConstant.
+}.
+
+MIRValue definition: {
+    public virtual method isInstructionWithOperation: (operation: MIROperation) ::=> Boolean
+        := false.
 }.
 
 MIRInstruction definition: {
@@ -1199,6 +1241,11 @@ MIRInstruction definition: {
         operands := #().
     }.
 
+    public method firstOperand => MIRValue := operands first.
+    public method secondOperand => MIRValue := operands second.
+    public method thirdOperand => MIRValue := operands third.
+    public method fourthOperand => MIRValue := operands fourth.
+
     public method firstOperandRegister => MIRPhysicalLocation := operandRegisters first.
     public method secondOperandRegister => MIRPhysicalLocation := operandRegisters second.
     public method thirdOperandRegister => MIRPhysicalLocation := operandRegisters third.
@@ -1207,10 +1254,15 @@ MIRInstruction definition: {
     public method firstScratchRegister => MIRPhysicalLocation := scratchRegisters first.
     public method secondScratchRegister => MIRPhysicalLocation := scratchRegisters first.
 
-    public method isTerminator => Boolean := operation isTerminator.
-    public method isDebug => Boolean := operation isDebug.
+    public override method isTerminator => Boolean := operation isTerminator.
+    public override method isDebug => Boolean := operation isDebug.
+    public override method isPure => Boolean := operation isPure.
+
     public override method isInstruction => Boolean := true.
     public override method isPhiInstruction => Boolean := operation isPhi.
+
+    public override method isInstructionWithOperation: (operationToTest: MIROperation) ::=> Boolean
+        := operation == operationToTest.
 
     public method scratchRegisterCount: (count: Size) ::=> Void := {
         scratchRegisters := Array new: count
@@ -1262,6 +1314,31 @@ MIRInstruction definition: {
     public override method usedValuesDo: (aBlock: (MIRValue) => Void) ::=> Void := {
         operands do: aBlock
     }.
+
+    public override method replaceUsedValue: (usedValue: MIRValue) with: (replacement: MIRValue) ::=> Void := {
+        operands replaceAll: usedValue with: replacement
+    }.
+
+    public override method replaceWith: (replacement: MIRValue) ::=> Void := {
+        self == replacement ifTrue: (return: void).
+
+        super replaceWith: replacement.
+        parentBlock ifNotNil: {parentBlock removeInstruction: self }
+    }.
+
+    public method hasOnlyDebugUsers => Boolean
+        := users isNil || (users allSatisfy: {:(MIRValue)user :: Boolean | user isDebug}).
+
+    public method deleteAllDebugUsers => Void := {
+        users ifNotNil: {
+            users copy do: {:(MIRInstruction)user :: Void |
+                user deleteFromParent
+            }
+        }
+    }.
+
+    public method deleteFromParent => Void
+        := parentBlock deleteInstruction: self.
 
     public override method computeLiveInterval => Void := {
         super computeLiveInterval.
@@ -1315,76 +1392,76 @@ MIRInstruction definition: {
 public global MIR::Operation::Branch := MIROperation terminatorNamed: #branch.
 public global MIR::Operation::ConditionalBranch := MIROperation terminatorNamed: #condBranch.
 
-public global MIR::Operation::MoveInt8 := MIROperation named: #moveInt8.
-public global MIR::Operation::MoveInt16 := MIROperation named: #moveInt16.
-public global MIR::Operation::MoveInt32 := MIROperation named: #moveInt32.
-public global MIR::Operation::MoveInt64 := MIROperation named: #moveInt64.
-public global MIR::Operation::MovePointer := MIROperation named: #movePointer.
-public global MIR::Operation::MoveFatPointer := MIROperation named: #moveFatPointer.
-public global MIR::Operation::MoveFloat32 := MIROperation named: #moveFloat32.
-public global MIR::Operation::MoveFloat64 := MIROperation named: #moveFloat64.
-public global MIR::Operation::MoveStruct := MIROperation named: #moveStruct.
+public global MIR::Operation::MoveInt8       := MIROperation moveNamed: #moveInt8.
+public global MIR::Operation::MoveInt16      := MIROperation moveNamed: #moveInt16.
+public global MIR::Operation::MoveInt32      := MIROperation moveNamed: #moveInt32.
+public global MIR::Operation::MoveInt64      := MIROperation moveNamed: #moveInt64.
+public global MIR::Operation::MovePointer    := MIROperation moveNamed: #movePointer.
+public global MIR::Operation::MoveFatPointer := MIROperation moveNamed: #moveFatPointer.
+public global MIR::Operation::MoveFloat32    := MIROperation moveNamed: #moveFloat32.
+public global MIR::Operation::MoveFloat64    := MIROperation moveNamed: #moveFloat64.
+public global MIR::Operation::MoveStruct     := MIROperation moveNamed: #moveStruct.
 
-public global MIR::Operation::PhiInt8 := MIROperation phiNamed: #phiInt8 moveOperation: MIR::Operation::MoveInt8.
-public global MIR::Operation::PhiInt16 := MIROperation phiNamed: #phiInt16 moveOperation: MIR::Operation::MoveInt16.
-public global MIR::Operation::PhiInt32 := MIROperation phiNamed: #phiInt32 moveOperation: MIR::Operation::MoveInt32.
-public global MIR::Operation::PhiInt64 := MIROperation phiNamed: #phiInt64 moveOperation: MIR::Operation::MoveInt64.
-public global MIR::Operation::PhiPointer := MIROperation phiNamed: #phiPointer moveOperation: MIR::Operation::MovePointer.
+public global MIR::Operation::PhiInt8       := MIROperation phiNamed: #phiInt8 moveOperation: MIR::Operation::MoveInt8.
+public global MIR::Operation::PhiInt16      := MIROperation phiNamed: #phiInt16 moveOperation: MIR::Operation::MoveInt16.
+public global MIR::Operation::PhiInt32      := MIROperation phiNamed: #phiInt32 moveOperation: MIR::Operation::MoveInt32.
+public global MIR::Operation::PhiInt64      := MIROperation phiNamed: #phiInt64 moveOperation: MIR::Operation::MoveInt64.
+public global MIR::Operation::PhiPointer    := MIROperation phiNamed: #phiPointer moveOperation: MIR::Operation::MovePointer.
 public global MIR::Operation::PhiFatPointer := MIROperation phiNamed: #phiFatPointer moveOperation: MIR::Operation::MoveFatPointer.
-public global MIR::Operation::PhiFloat32 := MIROperation phiNamed: #phiFloat32 moveOperation: MIR::Operation::MoveFloat32.
-public global MIR::Operation::PhiFloat64 := MIROperation phiNamed: #phiFloat64 moveOperation: MIR::Operation::MoveFloat64.
-public global MIR::Operation::PhiStruct := MIROperation phiNamed: #phiStruct moveOperation: MIR::Operation::MoveStruct.
+public global MIR::Operation::PhiFloat32    := MIROperation phiNamed: #phiFloat32 moveOperation: MIR::Operation::MoveFloat32.
+public global MIR::Operation::PhiFloat64    := MIROperation phiNamed: #phiFloat64 moveOperation: MIR::Operation::MoveFloat64.
+public global MIR::Operation::PhiStruct     := MIROperation phiNamed: #phiStruct moveOperation: MIR::Operation::MoveStruct.
 
-public global MIR::Operation::LoadInt8 := MIROperation named: #loadInt8.
-public global MIR::Operation::LoadInt16 := MIROperation named: #loadInt16.
-public global MIR::Operation::LoadInt32 := MIROperation named: #loadInt32.
-public global MIR::Operation::LoadInt64 := MIROperation named: #loadInt64.
-public global MIR::Operation::LoadUInt8 := MIROperation named: #loadUInt8.
-public global MIR::Operation::LoadUInt16 := MIROperation named: #loadUInt16.
-public global MIR::Operation::LoadUInt32 := MIROperation named: #loadUInt32.
-public global MIR::Operation::LoadUInt64 := MIROperation named: #loadUInt64.
-public global MIR::Operation::LoadPointer := MIROperation named: #loadPointer.
-public global MIR::Operation::LoadFatPointer := MIROperation named: #loadFatPointer.
-public global MIR::Operation::LoadFloat32 := MIROperation named: #loadFloat32.
-public global MIR::Operation::LoadFloat64 := MIROperation named: #loadFloat64.
-public global MIR::Operation::LoadStruct := MIROperation named: #loadStruct.
+public global MIR::Operation::LoadInt8       := MIROperation pureNamed: #loadInt8.
+public global MIR::Operation::LoadInt16      := MIROperation pureNamed: #loadInt16.
+public global MIR::Operation::LoadInt32      := MIROperation pureNamed: #loadInt32.
+public global MIR::Operation::LoadInt64      := MIROperation pureNamed: #loadInt64.
+public global MIR::Operation::LoadUInt8      := MIROperation pureNamed: #loadUInt8.
+public global MIR::Operation::LoadUInt16     := MIROperation pureNamed: #loadUInt16.
+public global MIR::Operation::LoadUInt32     := MIROperation pureNamed: #loadUInt32.
+public global MIR::Operation::LoadUInt64     := MIROperation pureNamed: #loadUInt64.
+public global MIR::Operation::LoadPointer    := MIROperation pureNamed: #loadPointer.
+public global MIR::Operation::LoadFatPointer := MIROperation pureNamed: #loadFatPointer.
+public global MIR::Operation::LoadFloat32    := MIROperation pureNamed: #loadFloat32.
+public global MIR::Operation::LoadFloat64    := MIROperation pureNamed: #loadFloat64.
+public global MIR::Operation::LoadStruct     := MIROperation pureNamed: #loadStruct.
 
-public global MIR::Operation::StoreInt8 := MIROperation named: #storeInt8.
-public global MIR::Operation::StoreInt16 := MIROperation named: #storeInt16.
-public global MIR::Operation::StoreInt32 := MIROperation named: #storeInt32.
-public global MIR::Operation::StoreInt64 := MIROperation named: #storeInt64.
-public global MIR::Operation::StorePointer := MIROperation named: #storePointer.
+public global MIR::Operation::StoreInt8       := MIROperation named: #storeInt8.
+public global MIR::Operation::StoreInt16      := MIROperation named: #storeInt16.
+public global MIR::Operation::StoreInt32      := MIROperation named: #storeInt32.
+public global MIR::Operation::StoreInt64      := MIROperation named: #storeInt64.
+public global MIR::Operation::StorePointer    := MIROperation named: #storePointer.
 public global MIR::Operation::StoreFatPointer := MIROperation named: #storeFatPointer.
-public global MIR::Operation::StoreFloat32 := MIROperation named: #storeFloat32.
-public global MIR::Operation::StoreFloat64 := MIROperation named: #storeFloat64.
-public global MIR::Operation::StoreStruct := MIROperation named: #storeStruct.
+public global MIR::Operation::StoreFloat32    := MIROperation named: #storeFloat32.
+public global MIR::Operation::StoreFloat64    := MIROperation named: #storeFloat64.
+public global MIR::Operation::StoreStruct     := MIROperation named: #storeStruct.
 
-public global MIR::Operation::GenerationalWriteBarrer := MIROperation named: #generationalWriteBarrer.
+public global MIR::Operation::GenerationalWriteBarrier := MIROperation named: #generationalWriteBarrier.
 
 public global MIR::Operation::Memcpy := MIROperation named: #memcpy.
 public global MIR::Operation::Memset := MIROperation named: #memset.
 
-public global MIR::Operation::CallInt8 := MIROperation named: #callInt8.
-public global MIR::Operation::CallInt16 := MIROperation named: #callInt16.
-public global MIR::Operation::CallInt32 := MIROperation named: #callInt32.
-public global MIR::Operation::CallInt64 := MIROperation named: #callInt64.
-public global MIR::Operation::CallPointer := MIROperation named: #callPointer.
+public global MIR::Operation::CallInt8       := MIROperation named: #callInt8.
+public global MIR::Operation::CallInt16      := MIROperation named: #callInt16.
+public global MIR::Operation::CallInt32      := MIROperation named: #callInt32.
+public global MIR::Operation::CallInt64      := MIROperation named: #callInt64.
+public global MIR::Operation::CallPointer    := MIROperation named: #callPointer.
 public global MIR::Operation::CallFatPointer := MIROperation named: #callFatPointer.
-public global MIR::Operation::CallFloat32 := MIROperation named: #callFloat32.
-public global MIR::Operation::CallFloat64 := MIROperation named: #callFloat64.
-public global MIR::Operation::CallStruct := MIROperation named: #callStruct.
-public global MIR::Operation::CallVoid := MIROperation named: #callVoid.
+public global MIR::Operation::CallFloat32    := MIROperation named: #callFloat32.
+public global MIR::Operation::CallFloat64    := MIROperation named: #callFloat64.
+public global MIR::Operation::CallStruct     := MIROperation named: #callStruct.
+public global MIR::Operation::CallVoid       := MIROperation named: #callVoid.
 
-public global MIR::Operation::ReturnInt8 := MIROperation terminatorNamed: #returnInt8.
-public global MIR::Operation::ReturnInt16 := MIROperation terminatorNamed: #returnInt16.
-public global MIR::Operation::ReturnInt32 := MIROperation terminatorNamed: #returnInt32.
-public global MIR::Operation::ReturnInt64 := MIROperation terminatorNamed: #returnInt64.
-public global MIR::Operation::ReturnPointer := MIROperation terminatorNamed: #returnPointer.
+public global MIR::Operation::ReturnInt8       := MIROperation terminatorNamed: #returnInt8.
+public global MIR::Operation::ReturnInt16      := MIROperation terminatorNamed: #returnInt16.
+public global MIR::Operation::ReturnInt32      := MIROperation terminatorNamed: #returnInt32.
+public global MIR::Operation::ReturnInt64      := MIROperation terminatorNamed: #returnInt64.
+public global MIR::Operation::ReturnPointer    := MIROperation terminatorNamed: #returnPointer.
 public global MIR::Operation::ReturnFatPointer := MIROperation terminatorNamed: #returnFatPointer.
-public global MIR::Operation::ReturnFloat32 := MIROperation terminatorNamed: #returnFloat32.
-public global MIR::Operation::ReturnFloat64 := MIROperation terminatorNamed: #returnFloat64.
-public global MIR::Operation::ReturnStruct := MIROperation terminatorNamed: #returnStruct.
-public global MIR::Operation::ReturnVoid := MIROperation terminatorNamed: #returnVoid.
+public global MIR::Operation::ReturnFloat32    := MIROperation terminatorNamed: #returnFloat32.
+public global MIR::Operation::ReturnFloat64    := MIROperation terminatorNamed: #returnFloat64.
+public global MIR::Operation::ReturnStruct     := MIROperation terminatorNamed: #returnStruct.
+public global MIR::Operation::ReturnVoid       := MIROperation terminatorNamed: #returnVoid.
 
 public global MIR::Operation::ExceptionSetjmp := MIROperation terminatorNamed: #exceptionSetjmp.
 public global MIR::Operation::ExceptionLongjmp := MIROperation terminatorNamed: #exceptionLongjmp.
@@ -1508,6 +1585,36 @@ MIRBasicBlock definition: {
         self addInstruction: instruction before: nil
     }.
 
+    public method removeInstruction: (instruction: MIRInstruction) ::=> Void := {
+        self assert: instruction parentBlock == self.
+
+        let previousInstruction := instruction previous.
+        let nextInstruction := instruction next.
+
+        previousInstruction ifNotNil: {
+            previousInstruction next: nextInstruction
+        } ifNil: {
+            firstInstruction := nextInstruction
+        }.
+
+        nextInstruction ifNotNil: {
+            nextInstruction previous: previousInstruction
+        } ifNil: {
+            lastInstruction := previousInstruction
+        }.
+
+        instruction
+            parentBlock: nil;
+            previous: nil;
+            next: nil
+    }.
+
+    public method deleteInstruction: (instruction: MIRInstruction) ::=> Void := {
+        self assert: instruction userCount = 0sz.
+        self removeInstruction: instruction.
+        instruction unregisterFromUsedValues
+    }.
+
     public inline method instructionsDo: (aBlock: (MIRInstruction => Void)) ::=> Void := {
         let position mutable := firstInstruction.
         while: (position isNotNil) do: {
@@ -1515,6 +1622,13 @@ MIRBasicBlock definition: {
             aBlock(position).
             position := nextPosition
         }
+    }.
+
+    public override method replaceWith: (replacement: MIRValue) ::=> Void := {
+        self == replacement ifTrue: (return: void).
+
+        super replaceWith: replacement.
+        self parent ifNotNil: {:parent :: Void | parent removeBasicBlock: self }
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
@@ -2289,8 +2403,8 @@ public final class MIRBlockBuilder superclass: Object; definition: {
     public method storeStruct: (value: MIRValue) into: (pointer: MIRValue) constantOffset: (constantOffset: Int64) ::=> MIRInstruction
         := self operation: MIR::Operation::StoreStruct with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
 
-    public method generationalWriteBarrer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) value: (storedValue: MIRValue) rememberFunction: (rememberFunction: MIRValue) ::=> MIRInstruction
-        := self operation: MIR::Operation::GenerationalWriteBarrer with: pointer with: (self constantOffsetImmediateFor: constantOffset) with: storedValue with: rememberFunction.
+    public method generationalWriteBarrier: (pointer: MIRValue) constantOffset: (constantOffset: Int64) value: (storedValue: MIRValue) rememberFunction: (rememberFunction: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::GenerationalWriteBarrier with: pointer with: (self constantOffsetImmediateFor: constantOffset) with: storedValue with: rememberFunction.
 
     public method memcpy: (destination: MIRValue) source: (source: MIRValue) size: (size: MIRValue) ::=> MIRInstruction
         := self operation: MIR::Operation::Memcpy with: destination with: source with: size.
@@ -2489,7 +2603,7 @@ public final class MIRFunctionBuilder superclass: Object; definition: {
     let operationNameString := operationName asString.
     let lowerOperationNameString := operationNameString first asLowercase asString -- operationNameString allButFirst.
     let lowerOperationName := lowerOperationNameString asSymbol.
-    let operation := MIROperation named: lowerOperationName.
+    let operation := MIROperation pureNamed: lowerOperationName.
     let globalName := ("MIR::Operation::" -- operationNameString) asSymbol.
 
     MIRBlockBuilder
@@ -2529,7 +2643,7 @@ public final class MIRFunctionBuilder superclass: Object; definition: {
     let operationNameString := operationName asString.
     let lowerOperationNameString := operationNameString first asLowercase asString -- operationNameString allButFirst.
     let lowerOperationName := lowerOperationNameString asSymbol.
-    let operation := MIROperation named: lowerOperationName.
+    let operation := MIROperation pureNamed: lowerOperationName.
     let globalName := ("MIR::Operation::" -- operationNameString) asSymbol.
 
     MIRBlockBuilder
@@ -2539,7 +2653,7 @@ public final class MIRFunctionBuilder superclass: Object; definition: {
     __OwnerProgramEntity__ setPublicSymbol: globalName value: operation
 }.
 
-let ComparisonOperationToBranchMap := Dictionary new.
+public global MIR::ComparisonOperationToBranchMap := Dictionary new.
 
 #(
     Int8Equals Int16Equals Int32Equals Int64Equals PointerEquals FatPointerEquals
@@ -2573,7 +2687,7 @@ let ComparisonOperationToBranchMap := Dictionary new.
     let branchOperationNameString := operationNameString -- "Branch".
     let lowerBranchOperationNameString := branchOperationNameString first asLowercase asString -- branchOperationNameString allButFirst.
 
-    let operation := MIROperation named: lowerOperationNameString asSymbol.
+    let operation := MIROperation pureNamed: lowerOperationNameString asSymbol.
     let globalName := ("MIR::Operation::" -- operationNameString) asSymbol.
 
     let branchOperation := MIROperation terminatorNamed: lowerBranchOperationNameString asSymbol.
@@ -2587,50 +2701,10 @@ let ComparisonOperationToBranchMap := Dictionary new.
             self operation: branchOperation with: left with: right with: trueDestination with: falseDestination.
         } makeFinal recompileAndOptimize.
 
-    ComparisonOperationToBranchMap at: operation put: branchOperation.
+    MIR::ComparisonOperationToBranchMap at: operation put: branchOperation.
     __OwnerProgramEntity__
         setPublicSymbol: globalName value: operation;
         setPublicSymbol: branchGlobalName value: branchOperation
-}.
-
-MIRFunction definition: {
-    public override method performStandardOptimizations => Void := {
-        self fuseComparisonAndBranches
-    }.
-
-    public method fuseComparisonAndBranches => Void := {
-        self basicBlocksDo: {:(MIRBasicBlock)eachBasicBlock :: Void |
-            let position mutable := eachBasicBlock firstInstruction.
-            while: position isNotNil do: {
-                let nextPosition mutable := position next.
-                nextPosition isNotNil &&
-                (nextPosition operation == MIR::Operation::ConditionalBranch) &&
-                (nextPosition operands first == position) && 
-                (position userCount = 1sz) ifTrue: {
-                    let positionOperation := position operation.
-                    let comparisonAndBranchOperation => MIROperation := ComparisonOperationToBranchMap atOrNil: positionOperation.
-                    comparisonAndBranchOperation ifNotNil: {
-                        position unregisterFromUsedValues.
-                        nextPosition unregisterFromUsedValues.
-                        position
-                            initializeWithType: Void compilationTarget: self compilationTarget;
-                            operation: comparisonAndBranchOperation;
-                            unregisterFromUsedValues;
-                            operands: position operands -- nextPosition operands allButFirst;
-                            registerInUsedValues;
-                            next: nextPosition next.
-                        eachBasicBlock lastInstruction == nextPosition ifTrue: {
-                            eachBasicBlock lastInstruction: position
-                        }.
-
-                        nextPosition := nextPosition next
-                    }.
-                }.
-
-                position := nextPosition.
-            }
-        }
-    }.
 }.
 
 public final class MIRFunctionDefinitionPatch superclass: Object; definition: {
