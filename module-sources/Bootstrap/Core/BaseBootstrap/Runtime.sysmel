@@ -179,6 +179,9 @@ TypeSlot
     } withEagerAnalysis;
     withSelector: #isTargetGenerated addMethod: {:(TypeSlot)self :: Boolean |
         self hasAnyFlags: TypeSlotFlags::TargetGenerated
+    } withEagerAnalysis;
+    withSelector: #isCache addMethod: {:(TypeSlot)self :: Boolean |
+        self hasAnyFlags: TypeSlotFlags::Cache
     } withEagerAnalysis.
 
 Array

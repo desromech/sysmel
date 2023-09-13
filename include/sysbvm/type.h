@@ -200,6 +200,7 @@ typedef enum sysbvm_typeSlotFlags_e
     SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION = 1<<6,
     SYSBVM_TYPE_SLOT_FLAG_JIT_SPECIFIC = 1<<7,
     SYSBVM_TYPE_SLOT_FLAG_TARGET_GENERATED = 1<<8,
+    SYSBVM_TYPE_SLOT_FLAG_CACHE = 1<<9,
 } sysbvm_typeSlotFlags_t;
 
 typedef struct sysbvm_inlineLookupCacheEntry_s sysbvm_inlineLookupCacheEntry_t;

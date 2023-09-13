@@ -6,15 +6,9 @@ let: #printString with: {:(SourcePosition)self :: String |
         sourceDirectory FileSystem::joinPath: sourceName
     }).
 
-    let: #startLine with: (self __slotNamedAt__: #startLine).
-    let: #startColumn with: (self __slotNamedAt__: #startColumn).
-
-    let: #endLine with: (self __slotNamedAt__: #endLine).
-    let: #endColumn with: (self __slotNamedAt__: #endColumn).
-
     ((sourcePath -- ":")
-        -- ((startLine asString -- ".") -- startColumn asString))
-        -- ("-" -- ((endLine asString -- ".") -- endColumn asString))
+        -- ((self startLine asString -- ".") -- self startColumn asString))
+        -- ("-" -- ((self endLine asString -- ".") -- self endColumn asString))
 }.
 
 printString __slotNamedAt__: #flags put: FunctionFlags::Override.

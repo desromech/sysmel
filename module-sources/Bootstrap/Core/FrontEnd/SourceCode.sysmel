@@ -51,26 +51,13 @@ SourceCode definition: {
         bestSoFar
     }.
 
-    public method computeLineInfoForSourcePosition: (sourcePosition: SourcePosition) ::=> Void := {
-        ## Start.
-        {
-            let lineIndex := self findLineIndexForSourceIndex: sourcePosition startIndex.
+    public method lineNumberAtIndex: (index: UInt32) ::=> UInt32
+        := (self findLineIndexForSourceIndex: index) + 1u32.
+
+    public method columnNumberAtIndex: (index: UInt32) ::=> UInt32 := {
+            let lineIndex := self findLineIndexForSourceIndex: index.
             let lineSourceIndex => UInt32 := lineStartIndexTable at: lineIndex asSize.
-
-            sourcePosition
-                startLine: lineIndex + 1u32;
-                startColumn: sourcePosition startIndex - lineSourceIndex + 1u32
-        }.
-
-        ## End
-        {
-            let lineIndex := self findLineIndexForSourceIndex: sourcePosition endIndex.
-            let lineSourceIndex => UInt32 := lineStartIndexTable at: lineIndex asSize.
-
-            sourcePosition
-                endLine: lineIndex + 1u32;
-                endColumn: sourcePosition endIndex - lineSourceIndex + 1u32
-        }.
+            index - lineSourceIndex + 1u32
     }.
 }.
 
@@ -81,7 +68,6 @@ SourcePosition definition: {
                 sourceCode: sourceCode;
                 startIndex: startIndex;
                 endIndex: endIndex;
-                computeLineAndColumnInfo;
                 yourself.
     }.
 
@@ -95,11 +81,17 @@ SourcePosition definition: {
         (self sourceCode == otherSourcePosition sourceCode) && (self startIndex = otherSourcePosition startIndex) && (self endIndex = otherSourcePosition endIndex)
     }.
 
-    public method computeLineAndColumnInfo => Void := {
-        sourceCode ifNotNil: {
-            sourceCode computeLineInfoForSourcePosition: self.
-        }
-    }.
+    public eager method startLine => UInt32
+        := sourceCode lineNumberAtIndex: startIndex.
+
+    public eager method startColumn => UInt32
+        := sourceCode columnNumberAtIndex: startIndex.
+
+    public eager method endLine => UInt32
+        := sourceCode lineNumberAtIndex: endIndex.
+
+    public eager method endColumn => UInt32
+        := sourceCode columnNumberAtIndex: endIndex.
 
     public method makeUnionWith: (next: SourcePosition) ::=> SourcePosition := {
         sourceCode == next sourceCode ifTrue: {

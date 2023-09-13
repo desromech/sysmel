@@ -11,9 +11,6 @@ SYSBVM_API sysbvm_tuple_t sysbvm_sourcePosition_create(sysbvm_context_t *context
     result->sourceCode = sourceCode;
     result->startIndex = startIndex;
     result->endIndex = endIndex;
-
-    sysbvm_sourceCode_computeLineAndColumnForIndex(context, sourceCode, startIndex, &result->startLine, &result->startColumn);
-    sysbvm_sourceCode_computeLineAndColumnForIndex(context, sourceCode, endIndex, &result->endLine, &result->endColumn);
     return (sysbvm_tuple_t)result;
 }
 
@@ -29,25 +26,27 @@ SYSBVM_API sysbvm_tuple_t sysbvm_sourcePosition_createWithUnion(sysbvm_context_t
     return sysbvm_sourcePosition_create(context, start->sourceCode, start->startIndex, end->endIndex);
 }
 
-SYSBVM_API void sysbvm_sourcePosition_dump(sysbvm_tuple_t sourcePosition)
+SYSBVM_API void sysbvm_sourcePosition_dump(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition)
 {
     if(!sysbvm_tuple_isNonNullPointer(sourcePosition)) return;
 
     sysbvm_sourcePosition_t *sourcePositionObject = (sysbvm_sourcePosition_t*)sourcePosition;
-    sysbvm_size_t startLine = sysbvm_tuple_uint32_decode(sourcePositionObject->startLine);
-    sysbvm_size_t startColumn = sysbvm_tuple_uint32_decode(sourcePositionObject->startColumn);
-    sysbvm_size_t endLine = sysbvm_tuple_uint32_decode(sourcePositionObject->endLine);
-    sysbvm_size_t endColumn = sysbvm_tuple_uint32_decode(sourcePositionObject->endColumn);
+    uint32_t startLine = 0;
+    uint32_t startColumn = 0;
+    uint32_t endLine = 0;
+    uint32_t endColumn = 0;
+    sysbvm_sourceCode_computeLineAndColumnForIndex(context, sourcePositionObject->sourceCode, sourcePositionObject->startIndex, &startLine, &startColumn);
+    sysbvm_sourceCode_computeLineAndColumnForIndex(context, sourcePositionObject->sourceCode, sourcePositionObject->endIndex, &endLine, &endColumn);
     
     if(sysbvm_tuple_isNonNullPointer(sourcePositionObject->sourceCode))
     {
         sysbvm_sourceCode_t *sourceCode = (sysbvm_sourceCode_t*)sourcePositionObject->sourceCode;
         printf(SYSBVM_STRING_PRINTF_FORMAT ":%d.%d-%d.%d\n", SYSBVM_STRING_PRINTF_ARG(sourceCode->name),
-            (int)startLine, (int)startColumn, (int)endLine, (int)endColumn);
+            startLine, startColumn, endLine, endColumn);
     }
     else
     {
-        printf("unknown:%d.%d-%d.%d\n", (int)startLine, (int)startColumn, (int)endLine, (int)endColumn);
+        printf("unknown:%d.%d-%d.%d\n", startLine, startColumn, endLine, endColumn);
     }
 }
 
@@ -71,7 +70,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_sourcePosition_primitive_equals(sysbvm_context_
     (void)context;
     (void)closure;
     (void)argumentCount;
-    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(1, argumentCount);
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     if(sysbvm_tuple_getType(context, arguments[0]) != sysbvm_tuple_getType(context, arguments[1]))
         return SYSBVM_FALSE_TUPLE;
@@ -86,14 +85,74 @@ SYSBVM_API sysbvm_tuple_t sysbvm_sourcePosition_primitive_equals(sysbvm_context_
     );
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_sourcePosition_primitive_startLine(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    (void)argumentCount;
+    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
+
+    sysbvm_sourcePosition_t *sourcePosition = (sysbvm_sourcePosition_t*)arguments[0];
+    uint32_t startLine = 0;
+    sysbvm_sourceCode_computeLineAndColumnForIndex(context, sourcePosition->sourceCode, sourcePosition->startIndex, &startLine, NULL);
+    return sysbvm_tuple_uint32_encode(context, startLine);
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_sourcePosition_primitive_startColumn(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    (void)argumentCount;
+    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
+
+    sysbvm_sourcePosition_t *sourcePosition = (sysbvm_sourcePosition_t*)arguments[0];
+    uint32_t startColumn = 0;
+    sysbvm_sourceCode_computeLineAndColumnForIndex(context, sourcePosition->sourceCode, sourcePosition->startIndex, NULL, &startColumn);
+    return sysbvm_tuple_uint32_encode(context, startColumn);
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_sourcePosition_primitive_endLine(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    (void)argumentCount;
+    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
+
+    sysbvm_sourcePosition_t *sourcePosition = (sysbvm_sourcePosition_t*)arguments[0];
+    uint32_t endLine = 0;
+    sysbvm_sourceCode_computeLineAndColumnForIndex(context, sourcePosition->sourceCode, sourcePosition->endIndex, &endLine, NULL);
+    return sysbvm_tuple_uint32_encode(context, endLine);
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_sourcePosition_primitive_endColumn(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    (void)argumentCount;
+    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
+
+    sysbvm_sourcePosition_t *sourcePosition = (sysbvm_sourcePosition_t*)arguments[0];
+    uint32_t endColumn = 0;
+    sysbvm_sourceCode_computeLineAndColumnForIndex(context, sourcePosition->sourceCode, sourcePosition->endIndex, NULL, &endColumn);
+    return sysbvm_tuple_uint32_encode(context, endColumn);
+}
+
 void sysbvm_sourcePosition_registerPrimitives(void)
 {
     sysbvm_primitiveTable_registerFunction(sysbvm_sourcePosition_primitive_hash, "SourcePosition::hash");
     sysbvm_primitiveTable_registerFunction(sysbvm_sourcePosition_primitive_equals, "SourcePosition::=");
+    sysbvm_primitiveTable_registerFunction(sysbvm_sourcePosition_primitive_startLine, "SourcePosition::startLine");
+    sysbvm_primitiveTable_registerFunction(sysbvm_sourcePosition_primitive_startColumn, "SourcePosition::startColumn");
+    sysbvm_primitiveTable_registerFunction(sysbvm_sourcePosition_primitive_endLine, "SourcePosition::endLine");
+    sysbvm_primitiveTable_registerFunction(sysbvm_sourcePosition_primitive_endColumn, "SourcePosition::endColumn");
 }
 
 void sysbvm_sourcePosition_setupPrimitives(sysbvm_context_t *context)
 {
     sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.sourcePositionType, "hash", 1, SYSBVM_FUNCTION_FLAGS_OVERRIDE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_sourcePosition_primitive_hash);
     sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.sourcePositionType, "=", 2, SYSBVM_FUNCTION_FLAGS_OVERRIDE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_sourcePosition_primitive_equals);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.sourcePositionType, "startLine", 1, SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_sourcePosition_primitive_startLine);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.sourcePositionType, "startColumn", 1, SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_sourcePosition_primitive_startColumn);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.sourcePositionType, "endLine", 1, SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_sourcePosition_primitive_endLine);
+    sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.sourcePositionType, "endColumn", 1, SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_sourcePosition_primitive_endColumn);
 }

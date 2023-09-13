@@ -100,8 +100,9 @@ public class ImageTracer superclass: Object; definition: {
     public method shouldEmitTypeSlot: (typeSlot: TypeSlot) ::=> Boolean := {
         keepingInProcessDebugInformation not && typeSlot isDebugInformation ifTrue: {return: false}.
         needsBytecode not && typeSlot isBytecode ifTrue: {return: false}.
-        typeSlot isJitSpecific ifTrue: {return: true}.
-        typeSlot isTargetGenerated ifTrue: {return: true}.
+        typeSlot isJitSpecific ifTrue: {return: false}.
+        typeSlot isTargetGenerated ifTrue: {return: false}.
+        typeSlot isCache ifTrue: {return: false}.
 
         strategy shouldEmitTypeSlot: typeSlot
     }.

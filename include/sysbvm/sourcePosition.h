@@ -13,12 +13,7 @@ typedef struct sysbvm_sourcePosition_s
     sysbvm_tuple_t sourceCode;
 
     sysbvm_tuple_t startIndex;
-    sysbvm_tuple_t startLine;
-    sysbvm_tuple_t startColumn;
-
     sysbvm_tuple_t endIndex;
-    sysbvm_tuple_t endLine;
-    sysbvm_tuple_t endColumn;
 } sysbvm_sourcePosition_t;
 
 /**
@@ -39,7 +34,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_sourcePosition_createWithUnion(sysbvm_context_t
 /**
  * Dumps a source position.
  */ 
-SYSBVM_API void sysbvm_sourcePosition_dump(sysbvm_tuple_t sourcePosition);
+SYSBVM_API void sysbvm_sourcePosition_dump(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition);
 
 
 #endif //SYSBVM_SOURCE_POSITION_H

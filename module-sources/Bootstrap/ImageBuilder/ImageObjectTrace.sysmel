@@ -49,7 +49,7 @@ public class ImageObjectTrace superclass: Object; definition: {
         let objectCount := objectList size.
         while: i < objectCount do: {
             let object := objectList untypedAt: i.
-            (result getEntryForType: RawTuple::type(object)) countObject: object
+            (result getEntryForType: RawTuple::type(object) asImageObjectTraceHistogramCanonicalType) countObject: object
         } continueWith: (i := i + 1sz).
 
         result

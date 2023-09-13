@@ -72,6 +72,11 @@ methodWithSelectorAt(MethodDictionary, #at:) __type__: (SimpleFunctionTypeTempla
 methodWithSelectorAt(MethodDictionary, #atOrNil:) __type__: (SimpleFunctionTypeTemplate((MethodDictionary, AnyValue), 0bflgs, AnyValue)).
 methodWithSelectorAt(MethodDictionary, #at:put:) __type__: (SimpleFunctionTypeTemplate((MethodDictionary, AnyValue, AnyValue), 0bflgs, Void)).
 
+methodWithSelectorAt(SourcePosition, #startLine) __type__: (SimpleFunctionTypeTemplate((SourcePosition,), 0bflgs, UInt32)).
+methodWithSelectorAt(SourcePosition, #startColumn) __type__: (SimpleFunctionTypeTemplate((SourcePosition,), 0bflgs, UInt32)).
+methodWithSelectorAt(SourcePosition, #endLine) __type__: (SimpleFunctionTypeTemplate((SourcePosition,), 0bflgs, UInt32)).
+methodWithSelectorAt(SourcePosition, #endColumn) __type__: (SimpleFunctionTypeTemplate((SourcePosition,), 0bflgs, UInt32)).
+
 methodWithSelectorAt(Type, #flushMacroLookupSelector:) __type__: (SimpleFunctionTypeTemplate((Type,Symbol), 0bflgs, Void)).
 methodWithSelectorAt(Type, #flushLookupSelector:) __type__: (SimpleFunctionTypeTemplate((Type,Symbol), 0bflgs, Void)).
 methodWithSelectorAt(Type, #flushFallbackLookupSelector:) __type__: (SimpleFunctionTypeTemplate((Type,Symbol), 0bflgs, Void)).

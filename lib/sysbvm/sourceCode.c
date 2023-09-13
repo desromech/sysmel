@@ -47,7 +47,7 @@ static sysbvm_tuple_t sysbvm_sourceCode_ensureLineStartIndexTableIsBuilt(sysbvm_
     return sourceCodeObject->lineStartIndexTable;
 }
 
-SYSBVM_API void sysbvm_sourceCode_computeLineAndColumnForIndex(sysbvm_context_t *context, sysbvm_tuple_t sourceCode, sysbvm_tuple_t index, sysbvm_tuple_t *outLine, sysbvm_tuple_t *outColumn)
+SYSBVM_API void sysbvm_sourceCode_computeLineAndColumnForIndex(sysbvm_context_t *context, sysbvm_tuple_t sourceCode, sysbvm_tuple_t index, uint32_t *outLine, uint32_t *outColumn)
 {
     // Make sure the line start index table is built.
     sysbvm_tuple_t indexTable = sysbvm_sourceCode_ensureLineStartIndexTableIsBuilt(context, sourceCode);
@@ -80,8 +80,10 @@ SYSBVM_API void sysbvm_sourceCode_computeLineAndColumnForIndex(sysbvm_context_t 
     size_t column = indexValue - bestIndexSoFar + 1;
 
     // Emit the result.
-    *outLine = sysbvm_tuple_uint32_encode(context, line);
-    *outColumn = sysbvm_tuple_uint32_encode(context, column);
+    if(outLine)
+        *outLine = line;
+    if(outColumn)
+        *outColumn = column;
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_sourceCode_getText(sysbvm_tuple_t sourceCode)

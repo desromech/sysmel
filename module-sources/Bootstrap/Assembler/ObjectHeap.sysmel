@@ -326,6 +326,7 @@ TypeSlot extend: {
     public method writeReference64OrValueOf: (object: Untyped) inAsmHeap: (heap: AsmObjectHeap) at: (objectBaseOffset: Size) ::=> Void := {
         self isJitSpecific ifTrue: {return: void}.
         self isTargetGenerated ifTrue: {return: void}.
+        self isCache ifTrue: {return: void}.
 
         let slotValue => Untyped := (RawTuple::typeSlotAt:)(object, self).
 

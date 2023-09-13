@@ -35,7 +35,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_sourceCode_inferLanguageFromSourceName(sysbvm_c
 /**
  * Gets the corresponding line and column for the specified index.
  */
-SYSBVM_API void sysbvm_sourceCode_computeLineAndColumnForIndex(sysbvm_context_t *context, sysbvm_tuple_t sourceCode, sysbvm_tuple_t index, sysbvm_tuple_t *outLine, sysbvm_tuple_t *outColumn);
+SYSBVM_API void sysbvm_sourceCode_computeLineAndColumnForIndex(sysbvm_context_t *context, sysbvm_tuple_t sourceCode, sysbvm_tuple_t index, uint32_t *outLine, uint32_t *outColumn);
 
 /**
  * Gets the source code text.
