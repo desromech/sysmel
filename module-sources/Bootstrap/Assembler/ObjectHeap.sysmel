@@ -406,7 +406,7 @@ ObjectModelVariant64 extend: {
                 ifFalse: (isWeak ifTrue: ObjectModel::ObjectType::WeakPointers
                 ifFalse: ObjectModel::ObjectType::Pointers));
             isDummyValue: isDummyValue;
-            identityHashValue: Untyped::identityHash(object) asUInt32;
+            identityHashValue: RawTuple::storedIdentityHash(object) asUInt32;
             objectSize: (self computeSizeOfObjectInstanceContent: object) asUInt32.
 
         type ifNotNil: {

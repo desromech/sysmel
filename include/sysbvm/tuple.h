@@ -954,12 +954,10 @@ SYSBVM_INLINE size_t sysbvm_tuple_identityHash(sysbvm_tuple_t tuple)
     if(sysbvm_tuple_isNonNullPointer(tuple))
     {
         sysbvm_object_tuple_t *object = (sysbvm_object_tuple_t*)tuple;
-        sysbvm_tuple_t typePointer = object->header.typePointerAndFlags & SYSBVM_TUPLE_TYPE_FLAGS_MASK;
+        sysbvm_tuple_t typePointer = object->header.typePointerAndFlags & SYSBVM_TUPLE_TYPE_POINTER_MASK;
         size_t typeHashBits = sysbvm_tuple_isNonNullPointer(typePointer) ? (SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(typePointer)->header.identityHashAndFlags >> SYSBVM_TUPLE_TAG_BIT_COUNT) : 0;
-        return (
-            ((object->header.identityHashAndFlags >> SYSBVM_TUPLE_TAG_BIT_COUNT) & SYSBVM_STORED_IDENTITY_HASH_BIT_MASK)
-            | (typeHashBits << SYSBVM_STORED_IDENTITY_HASH_BIT_COUNT)
-        ) & SYSBVM_HASH_BIT_MASK;
+        size_t identityHashBits = object->header.identityHashAndFlags >> SYSBVM_TUPLE_TAG_BIT_COUNT;
+        return sysbvm_identityHashConcatenateWithTypeHash(identityHashBits, typeHashBits);
     }
     else
     {

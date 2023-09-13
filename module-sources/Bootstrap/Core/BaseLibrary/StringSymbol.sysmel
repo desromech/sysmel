@@ -1,5 +1,5 @@
 let InternedSymbolSet := BootstrapEnv::InternedSymbolSet.
-let hashFunction := {:(String)string :: Size | string hash identityHashConcatenatedTypeHash: StringSymbol identityHash }.
+let hashFunction := {:(String)string :: Size | string hash identityHashConcatenatedTypeHash: RawTuple::storedIdentityHash(StringSymbol)}.
 let equalsFunction := {:(String)string :(StringSymbol)symbol :: Boolean |
     string equalsStringSymbol: symbol
 }.
@@ -11,7 +11,7 @@ StringSymbol extend: {
             existent ifNotNil: {return: existent}.
 
             let newSymbol => AnyValue := string shallowCopy.
-            (RawTuple::identityHash:)(newSymbol, hashFunction(string)).
+            (RawTuple::identityHash:)(newSymbol, string hash).
             (RawTuple::type:)(newSymbol, StringSymbol).
 
             InternedSymbolSet add: newSymbol.

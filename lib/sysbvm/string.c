@@ -170,9 +170,9 @@ SYSBVM_API size_t sysbvm_string_computeHashWithBytes(size_t size, const uint8_t 
 static size_t sysbvm_stringSliceSymbol_hashFunction(sysbvm_context_t *context, void *element)
 {
     sysbvm_stringSlice_t *stringSlice = (sysbvm_stringSlice_t*)element;
-    size_t symbolHash = (SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(context->roots.stringSymbolType)->header.identityHashAndFlags >> SYSBVM_TUPLE_TAG_BIT_COUNT) & SYSBVM_STORED_IDENTITY_HASH_BIT_MASK;
+    size_t symbolHash = SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(context->roots.stringSymbolType)->header.identityHashAndFlags >> SYSBVM_TUPLE_TAG_BIT_COUNT;
     size_t hash = sysbvm_string_computeHashWithBytes(stringSlice->size, (const uint8_t *)stringSlice->elements);
-    return (hash | (symbolHash << SYSBVM_STORED_IDENTITY_HASH_BIT_COUNT)) & SYSBVM_HASH_BIT_MASK;
+    return sysbvm_identityHashConcatenateWithTypeHash(hash, symbolHash);
 }
 
 SYSBVM_API size_t sysbvm_string_hash(sysbvm_tuple_t string)
