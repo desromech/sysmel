@@ -409,10 +409,6 @@ ObjectModelVariant64 extend: {
             identityHashValue: RawTuple::storedIdentityHash(object) asUInt32;
             objectSize: (self computeSizeOfObjectInstanceContent: object) asUInt32.
 
-        type ifNotNil: {
-            heap writeReference64: type at: offset.
-        }.
-
         ObjectModel::isLogical() ifTrue: {
             header encodeInBytes: destination atOffset: offset.
         } ifFalse: {
@@ -421,6 +417,10 @@ ObjectModelVariant64 extend: {
                 header address reinterpretCastTo: Void pointer,
                 ObjectModel::TupleHeader64 valueSize
             )
+        }.
+
+        type ifNotNil: {
+            heap writeReference64: type at: offset.
         }.
 
         isDummyValue ifTrue: {return: void}.

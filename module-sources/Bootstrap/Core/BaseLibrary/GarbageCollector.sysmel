@@ -120,7 +120,7 @@ public external global GarbageCollector::StaticRootFatPointerTableEnd mutable =>
 
 ## Set the static object segment virtual load address at the 2 MB mark.
 ## TODO: Implement manual relocation of the static object segment to save on object file relocation annotations.
-public global GarbageCollector::StaticObjectSegmentMustBeRelocatedAtLoadTime := false.
+public global GarbageCollector::StaticObjectSegmentMustBeRelocatedAtLoadTime := true.
 public global GarbageCollector::StaticObjectSegmentLoadAddress => UIntPointer := 16r0020_0000 uptr.
 
 public external global GarbageCollector::StaticObjectSegmentStart mutable => UIntPointer.
@@ -163,10 +163,150 @@ private inline nogc function GarbageCollector::addOldAllocatedObject(object: Gar
 }.
 
 private global GarbageCollector::IsInitialized mutable => Boolean := false.
+private global GarbageCollector::RelocatedStaticObjectSegmentEnd mutable => UIntPointer := 0uptr.
+private global GarbageCollector::RelocatedStaticObjectSegmentDifference mutable => UIntPointer := 0uptr.
+
+public nogc function GarbageCollector::relocatePointerValue(pointerValue: UIntPointer) => UIntPointer
+    := ObjectModel::isNonNullPointerValue(pointerValue)
+        ifTrue: pointerValue + GarbageCollector::RelocatedStaticObjectSegmentDifference
+        ifFalse: pointerValue.
+
+public nogc function GarbageCollector::loadMaybeRelocatedPointer(pointerSlot: UIntPointer pointer) => UIntPointer := {
+    let pointerSlotAddress := pointerSlot reinterpretCastTo: UIntPointer.
+    pointerSlotAddress < GarbageCollector::RelocatedStaticObjectSegmentEnd ifTrue: {
+        pointerSlot _
+    } ifFalse: {
+        GarbageCollector::relocatePointerValue(pointerSlot _)
+    }
+}.
+
+public nogc function GarbageCollector::loadMaybeRelocatedValidGCLayout(type: Type) => GCLayout := {
+    let currentType mutable := type.
+
+    while: currentType isNotNil do: {
+        let gcLayout := GarbageCollector::loadMaybeRelocatedPointer((currentType __slotNamedReferenceAt__: #gcLayout) address reinterpretCastTo: UIntPointer pointer)
+            reinterpretCastTo: GCLayout.
+        gcLayout ifNotNil: {
+            return: gcLayout
+        }.
+
+        gcLayout ifNotNil: {
+            return: gcLayout
+        }.
+
+        let slots := GarbageCollector::loadMaybeRelocatedPointer((currentType __slotNamedReferenceAt__: #slots) address reinterpretCastTo: UIntPointer pointer)
+            reinterpretCastTo: Array.
+        slots ifNil: {
+            "Type is missing slots during load time relocation.\n" writeOntoStderr.
+            sysmel_pal_abort()
+        }.
+
+        slots isNotEmpty ifTrue: {
+            "Type is missing slots during load time relocation.\n" writeOntoStderr.
+            sysmel_pal_abort()
+        }.
+    } continueWith: (currentType := currentType supertype).
+
+    "Missing required GC layout for load time relocation.\n" writeOntoStderr.
+    sysmel_pal_abort().
+}.
+
+public nogc function GarbageCollector::relocateStaticObject(objectHeader: ObjectModel::TupleHeader pointer) => Void := {
+    let objectPointer := objectHeader reinterpretCastTo: UIntPointer.
+    let relocatedTypePointerValue := GarbageCollector::relocatePointerValue(objectHeader _ typePointer).
+    let type => Type := relocatedTypePointerValue reinterpretCastTo: Type.
+    let layout => GCLayout := type ifNotNil: (GarbageCollector::loadMaybeRelocatedValidGCLayout(type)).
+
+    ## Type pointer.
+    objectHeader _ typePointer: relocatedTypePointerValue.
+
+    ## Ignore byte data.
+    objectHeader _ isBytes ifTrue: {
+        return: void
+    }.
+
+    ## Traverse the type gc layout.
+    type ifNotNil: {
+        let layoutHeader := layout __rawContentsPointer__ reinterpretCastTo: GarbageCollector::LayoutHeader pointer.
+        let layoutOffsets := layoutHeader + 1iptr reinterpretCastTo: UInt32 pointer.
+
+        let offsetIndex mutable := 0iptr.
+
+        ## Strong references
+        {
+            let i mutable := 0u32.
+            while: (i < layoutHeader _ strongCount) do: {
+                let offset := layoutOffsets[offsetIndex] asSize.
+                let slotPointer := objectPointer + ObjectModel::TupleHeaderSize + offset reinterpretCastTo: UIntPointer pointer.
+                slotPointer _ := GarbageCollector::relocatePointerValue(slotPointer _).
+                i := i + 1u32.
+                offsetIndex := offsetIndex + 1iptr
+            }
+        }.
+
+        ## Weak references
+        {
+            let i mutable := 0u32.
+            while: (i < layoutHeader _ weakCount) do: {
+                let offset := layoutOffsets[offsetIndex] asSize.
+                let slotPointer := objectPointer + ObjectModel::TupleHeaderSize + offset reinterpretCastTo: UIntPointer pointer.
+                slotPointer _ := GarbageCollector::relocatePointerValue(slotPointer _).
+                i := i + 1u32.
+                offsetIndex := offsetIndex + 1iptr
+            }
+        }.
+
+        ## Fat pointers
+        {
+            let i mutable := 0u32.
+            while: (i < layoutHeader _ fatCount) do: {
+                let offset := layoutOffsets[offsetIndex] asSize.
+                let slotPointer := objectPointer + ObjectModel::TupleHeaderSize + offset reinterpretCastTo: UIntPointer pointer.
+                ObjectModel::isNonNullPointerValue(slotPointer[1iptr]) ifTrue: {
+                    slotPointer[0iptr] := slotPointer[0iptr] + GarbageCollector::RelocatedStaticObjectSegmentDifference.
+                    slotPointer[1iptr] := slotPointer[1iptr] + GarbageCollector::RelocatedStaticObjectSegmentDifference.
+                }.
+
+                i := i + 1u32.
+                offsetIndex := offsetIndex + 1iptr
+            }
+        }.
+    }.
+
+    ## Relocate variable pointer data.
+    let fixedInstanceSize := type
+        ifNil: (0sz)
+        ifNotNil: (type instanceSize).
+
+    {
+        let variableDataSize := objectHeader _ objectSize asSize - fixedInstanceSize.
+        let variableSlotCount := variableDataSize / ObjectModel::PointerSize.
+        let variableSlotsPointer := objectPointer + ObjectModel::TupleHeaderSize + fixedInstanceSize reinterpretCastTo: UIntPointer pointer.
+        let i mutable := 0sz.
+        while: (i < variableSlotCount) do: {
+            variableSlotsPointer[i asIntPointer] := GarbageCollector::relocatePointerValue(variableSlotsPointer[i asIntPointer])
+        } continueWith: (i := i + 1sz)
+    }.
+}.
 
 public nogc function GarbageCollector::relocateStaticObjectSegment() => Void := {
-    "TODO: relocateStaticObjectSegment" writeOntoStderr.
-    sysmel_pal_abort().
+    let segmentStartAddress := GarbageCollector::StaticObjectSegmentStart address reinterpretCastTo: UIntPointer.
+    let segmentEndAddress := GarbageCollector::StaticObjectSegmentEnd address reinterpretCastTo: UIntPointer.
+    GarbageCollector::RelocatedStaticObjectSegmentDifference := segmentStartAddress - GarbageCollector::StaticObjectSegmentLoadAddress.
+
+    let ObjectAlignment := 16uptr.
+
+    let position mutable := segmentStartAddress alignedTo: ObjectAlignment.
+    while: (position < segmentEndAddress) do: {
+        GarbageCollector::RelocatedStaticObjectSegmentEnd := position.
+
+        let objectHeader := position reinterpretCastTo: ObjectModel::TupleHeader pointer.
+        let objectSize := ObjectModel::TupleHeaderSize + objectHeader _ objectSize asUIntPointer.
+
+        GarbageCollector::relocateStaticObject(objectHeader).
+
+        position := position + objectSize alignedTo: ObjectAlignment
+    }.
 }.
 
 public nogc function GarbageCollector::initialize() => Void := {
@@ -176,7 +316,6 @@ public nogc function GarbageCollector::initialize() => Void := {
 
     GarbageCollector::StaticObjectSegmentMustBeRelocatedAtLoadTime ifTrue: {
         GarbageCollector::relocateStaticObjectSegment().
-        return: void
     }.
 
     GarbageCollector::NextCollectionThreshold := (GarbageCollector::CurrentHeapSize + GarbageCollector::staticObjectSegmentSize()) * GarbageCollector::GammaFactor max: GarbageCollector::MinimalCollectionThreshold.
@@ -278,19 +417,31 @@ public nogc function GarbageCollector::markStackPointers(lastStackFrameRecord: G
 
 Type definition: {
     public nogc method validGCLayoutForMarking => GCLayout := {
-        gcLayout ifNil: {
-            slots ifNil: {
-                "Type is missing slots during GC." writeOntoStderr.
+        gcLayout ifNotNil: {
+            return: gcLayout
+        }.
+
+        let position mutable := self.
+        while: position isNotNil do: {
+            gcLayout := position gcLayout.
+            gcLayout ifNotNil: {
+                return: gcLayout
+            }.
+
+            let positionSlots := position slots.
+            positionSlots ifNil: {
+                "Type is missing slots during GC.\n" writeOntoStderr.
                 sysmel_pal_abort()
             }.
 
-            slots isNotEmpty ifTrue: {
-                "Type with non-empty slots is missing layout during GC." writeOntoStderr.
+            positionSlots isNotEmpty ifTrue: {
+                "Type with non-empty slots is missing layout during GC.\n" writeOntoStderr.
                 sysmel_pal_abort()
             }.
+        } continueWith: (position := position supertype).
 
-            gcLayout := supertype validGCLayoutForMarking
-        }
+        "Type is missing gc layout.\n" writeOntoStderr.
+        sysmel_pal_abort()
     }
 }.
 
@@ -314,7 +465,7 @@ public nogc function GarbageCollector::markContentOfObject(objectPointer: UIntPo
     }.
 
     let type := header _ type.
-    {
+    type ifNotNil: {
         let layoutHeader := type validGCLayoutForMarking __rawContentsPointer__ reinterpretCastTo: GarbageCollector::LayoutHeader pointer.
         let layoutOffsets := layoutHeader + 1iptr reinterpretCastTo: UInt32 pointer.
 
@@ -347,32 +498,6 @@ public nogc function GarbageCollector::markContentOfObject(objectPointer: UIntPo
             }
         }.
     }.
-
-    #*{
-        let currentType mutable := type.
-        while: (currentType isNotNil) do: {
-            let slots := currentType slots.
-            slots ifNil: {
-                printLine(currentType, " does not have slots ").
-                sysmel_pal_abort().
-            }.
-
-            let slotCount := slots size.
-
-            let i mutable := 0sz.
-            while: (i < slotCount) do: {
-                let typeSlot := tuple: (slots __uncheckedSlotAt__: i) uncheckedDownCastTo: TypeSlot.
-                let slotType := typeSlot type.
-                slotType isNotNil && slotType isValueType ifTrue: {
-                    ## TODO: Traverse the inline members for GC pointers.
-                } ifFalse: {
-                    let slotPointer := objectPointer + ObjectModel::TupleHeaderSize + typeSlot offset reinterpretCastTo: UIntPointer pointer.
-                    GarbageCollector::markPointerValue(slotPointer _)
-                }
-            } continueWith: (i := i + 1sz)
-        } continueWith: (currentType := currentType supertype).
-    }.
-    *#
 
     let isWeak := objectType = ObjectModel::ObjectType::WeakPointers.
     isWeak ifTrue: {
@@ -446,7 +571,7 @@ public nogc function GarbageCollector::clearDeadWeakReferencesOf(objectPointer: 
 
     let type := header _ type.
     let fixedInstanceSize := type instanceSize.
-    {
+    type ifNotNil: {
         let layoutHeader := type validGCLayoutForMarking __rawContentsPointer__ reinterpretCastTo: GarbageCollector::LayoutHeader pointer.
         let layoutOffsets := layoutHeader + 1iptr reinterpretCastTo: UInt32 pointer.
 
