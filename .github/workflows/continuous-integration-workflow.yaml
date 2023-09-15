@@ -25,4 +25,4 @@ jobs:
               run: ./scripts/build/buildAll.sh
 
             - name: CI Tests
-              run: ./build-bootstrap/linux/x64/fullPhase2 -p "TestCase runWithAllSubclasses"
+              run: ./build-bootstrap/linux/x64/phase2 -p "TestCase runWithAllSubclasses"

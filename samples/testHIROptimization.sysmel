@@ -1,4 +1,4 @@
-#*
+
 {
 function returnVar() => Int32 := {
     let var mutable => Int32 := 1i32.
@@ -18,7 +18,6 @@ HIRPromoteAllocaPass runInModule: module.
 HIRConstantPropagationPass runInModule: module.
 printLine(module fullPrintString).
 }.
-*#
 
 #*
 {
@@ -145,7 +144,7 @@ printLine(module fullPrintString).
 }
 *#
 
-{
+#*{
 let module := HIRModuleCompilationContext forDefaultTarget
     exclusiveCompilationMode: true;
     compileFunctionsWithDefinitions: (RawTuple::type,);
@@ -157,3 +156,4 @@ module performStandardOptimizations.
 
 printLine(module fullPrintString).
 }
+*#
