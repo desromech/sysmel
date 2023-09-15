@@ -1301,7 +1301,7 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_createWithOptions(sysbvm_contextCrea
     context->identityHashSeed = 1;
     context->jitEnabled = sysbvm_context_default_jitEnabled && !contextOptions->nojit;
     context->gcDisabled = contextOptions->gcType == SYSBVM_GC_TYPE_DISABLED;
-    context->heap.useMallocForHeap = contextOptions->gcType == SYSBVM_GC_TYPE_DEFAULT || contextOptions->gcType == SYSBVM_GC_TYPE_NON_MOVING;
+    context->heap.useMallocForHeap = contextOptions->gcType == SYSBVM_GC_TYPE_DEFAULT || contextOptions->gcType == SYSBVM_GC_TYPE_NON_MOVING  || contextOptions->gcType == SYSBVM_GC_TYPE_DISABLED;
     sysbvm_dynarray_initialize(&context->markingStack, sizeof(sysbvm_tuple_t), 1<<20);
 
     sysbvm_heap_initialize(&context->heap);
