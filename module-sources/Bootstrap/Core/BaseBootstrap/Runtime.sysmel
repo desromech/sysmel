@@ -941,15 +941,32 @@ Class
 
 FunctionDefinition
     withSelector: #hasPragmaNamed: addMethod: {:(FunctionDefinition)self :selector :: Boolean |
-        let: #analyzedPragmas with: self analyzedPragmas.
-        let: #definitionBodyNode with: self definitionBodyNode.
-        if: analyzedPragmas ~~ nil
-        then: (analyzedPragmas anySatisfy: {:(Pragma)pragma :: Boolean | selector == pragma selector })
-        else: (
-            if: definitionBodyNode ~~ nil
-            then: (definitionBodyNode hasPragmaNamed: selector)
-            else: false
-        )
+        let: #pragmas with: self pragmas.
+        if: pragmas ~~ nil then: {
+            if: (pragmas anySatisfy: {:(Pragma)pragma :: Boolean | selector == pragma selector }) then: {
+                return: true
+            }
+        }.
+        
+        let: #sourceDefinition with: self sourceDefinition.
+        if: sourceDefinition ~~ nil then: {
+            sourceDefinition bodyNode hasPragmaNamed: selector
+        } else: {
+            return: false
+        }
+    };
+    withSelector: #sourcePosition addMethod: {:(FunctionDefinition)self :: SourcePosition |
+        let: #sourceAnalyzedDefinition with: self sourceAnalyzedDefinition.
+        if: sourceAnalyzedDefinition ~~ nil then: {
+            return: sourceAnalyzedDefinition sourcePosition
+        }.
+
+        let: #sourceDefinition with: self sourceDefinition.
+        if: sourceDefinition ~~ nil then: {
+            return: sourceDefinition sourcePosition
+        }.
+
+        nil
     }.
 
 Function
@@ -2141,6 +2158,7 @@ Type
         let: #defaultValueSlots with: (slots select: {:(TypeSlot)each :: Boolean | each initialValueBlock == nil}).
         let: #defaultValueSlotInitialization with: (ASTSequenceNode new
             expressions: (defaultValueSlots collect: makeTypeSlotNode) asArray;
+            pragmas: #();
             yourself).
 
         let: #initialValueSlots with: (slots select: {:(TypeSlot)each :: Boolean | each initialValueBlock ~~ nil}).
@@ -2170,6 +2188,7 @@ Type
                         yourself);
                     trueExpression: defaultValueSlotInitialization;
                     yourself)) -- initialValueSlotInitialization;
+                    pragmas: #();
                 yourself);
             flags: (if: self supertype ~~ nil
                 then: FunctionFlags::Override

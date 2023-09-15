@@ -255,8 +255,10 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionActivationEnvironment_create(sysbvm_con
         sysbvm_error("Expected a function with a definition.");
 
     sysbvm_functionDefinition_t *functionDefinitionObject = (sysbvm_functionDefinition_t*)functionObject->definition;
-    if(!functionDefinitionObject->analysisEnvironment)
-        sysbvm_error("Expected a function with an analyzed definition.");
+    if(!functionDefinitionObject->sourceAnalyzedDefinition)
+        sysbvm_error("Expected an analyzed source definition");
+
+    sysbvm_functionSourceAnalyzedDefinition_t *sourceAnalyzedDefinition = (sysbvm_functionSourceAnalyzedDefinition_t*)functionDefinitionObject->sourceAnalyzedDefinition;
 
     sysbvm_functionActivationEnvironment_t *result = (sysbvm_functionActivationEnvironment_t*)sysbvm_context_allocatePointerTuple(context, context->roots.functionActivationEnvironmentType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_functionActivationEnvironment_t));
     result->super.super.parent = parent;
@@ -264,8 +266,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionActivationEnvironment_create(sysbvm_con
     result->functionDefinition = functionObject->definition;
     result->captureVector = functionObject->captureVector;
     
-    size_t argumentCount = sysbvm_array_getSize(functionDefinitionObject->analyzedArguments);
-    size_t localCount = sysbvm_array_getSize(functionDefinitionObject->analyzedLocals);
+    size_t argumentCount = sysbvm_array_getSize(sourceAnalyzedDefinition->arguments);
+    size_t localCount = sysbvm_array_getSize(sourceAnalyzedDefinition->locals);
     result->argumentVectorSize = sysbvm_tuple_size_encode(context, argumentCount);
     result->valueVector = sysbvm_array_create(context, argumentCount + localCount);
     return (sysbvm_tuple_t)result;

@@ -71,15 +71,18 @@ static bool sysbvm_primitiveTable_findEntryFor(sysbvm_functionEntryPoint_t primi
 
 SYSBVM_API sysbvm_tuple_t sysbvm_functionDefinition_create(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t flags, sysbvm_tuple_t callingConventionName, sysbvm_tuple_t argumentCount, sysbvm_tuple_t definitionEnvironment, sysbvm_tuple_t argumentNodes, sysbvm_tuple_t resultTypeNode, sysbvm_tuple_t body)
 {
+    sysbvm_functionSourceDefinition_t *sourceDefinition = (sysbvm_functionSourceDefinition_t*)sysbvm_context_allocatePointerTuple(context, context->roots.functionSourceDefinitionType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_functionSourceDefinition_t));
+    sourceDefinition->sourcePosition = sourcePosition;
+    sourceDefinition->environment = definitionEnvironment;
+    sourceDefinition->argumentNodes = argumentNodes;
+    sourceDefinition->resultTypeNode = resultTypeNode;
+    sourceDefinition->bodyNode = body;
+
     sysbvm_functionDefinition_t *result = (sysbvm_functionDefinition_t*)sysbvm_context_allocatePointerTuple(context, context->roots.functionDefinitionType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_functionDefinition_t));
-    result->sourcePosition = sourcePosition;
     result->flags = flags;
     result->callingConventionName = callingConventionName;
     result->argumentCount = argumentCount; 
-    result->definitionEnvironment = definitionEnvironment;
-    result->definitionArgumentNodes = argumentNodes;
-    result->definitionResultTypeNode = resultTypeNode;
-    result->definitionBodyNode = body;
+    result->sourceDefinition = (sysbvm_tuple_t)sourceDefinition;
     result->boxDescriptor = sysbvm_tuple_uintptr_encode(context, 0);
     result->checkedEntryPoint = sysbvm_tuple_systemHandle_encode(context, 0);
     result->uncheckedEntryPoint = sysbvm_tuple_systemHandle_encode(context, 0);
@@ -110,17 +113,17 @@ SYSBVM_API sysbvm_tuple_t sysbvm_function_createClosureWithCaptureVector(sysbvm_
         sysbvm_error("An actual function definition is required here.");
 
     sysbvm_functionDefinition_t *functionDefinitionObject = (sysbvm_functionDefinition_t*)functionDefinition;
-    SYSBVM_ASSERT(functionDefinitionObject->analyzedType);
-    SYSBVM_ASSERT(functionDefinitionObject->analyzedCaptureVectorType);
-    if(!sysbvm_tuple_isKindOf(context, captureVector, functionDefinitionObject->analyzedCaptureVectorType))
+    SYSBVM_ASSERT(functionDefinitionObject->type);
+    SYSBVM_ASSERT(functionDefinitionObject->captureVectorType);
+    if(!sysbvm_tuple_isKindOf(context, captureVector, functionDefinitionObject->captureVectorType))
         sysbvm_error("Function capture vector does not have the required type.");
 
-    sysbvm_function_t *result = (sysbvm_function_t*)sysbvm_context_allocatePointerTuple(context, functionDefinitionObject->analyzedType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_function_t));
+    sysbvm_function_t *result = (sysbvm_function_t*)sysbvm_context_allocatePointerTuple(context, functionDefinitionObject->type, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_function_t));
     result->flags = functionDefinitionObject->flags;
     result->argumentCount = functionDefinitionObject->argumentCount; 
     result->captureVector = captureVector;
     result->definition = functionDefinition;
-    result->primitiveName = functionDefinitionObject->analyzedPrimitiveName;
+    result->primitiveName = functionDefinitionObject->primitiveName;
     result->primitiveTableIndex = sysbvm_tuple_uint32_encode(context, 0);
     return (sysbvm_tuple_t)result;
 }
@@ -141,7 +144,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_function_createClosureWithCaptureEnvironment(sy
         sysbvm_error("An actual function definition is required here.");
 
     sysbvm_functionDefinition_t *functionDefinitionObject = (sysbvm_functionDefinition_t*)functionDefinition;
-    sysbvm_tuple_t functionType = functionDefinitionObject->analyzedType ? functionDefinitionObject->analyzedType : context->roots.functionType;
+    sysbvm_tuple_t functionType = functionDefinitionObject->type ? functionDefinitionObject->type : context->roots.functionType;
 
     sysbvm_function_t *result = (sysbvm_function_t*)sysbvm_context_allocatePointerTuple(context, functionType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_function_t));
     result->flags = functionDefinitionObject->flags;

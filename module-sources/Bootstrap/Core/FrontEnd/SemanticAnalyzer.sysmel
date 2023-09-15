@@ -249,14 +249,16 @@ ASTLambdaNode definition: {
 
     public eager method makeFunctionDefinitionWithName: (name: Symbol) environment: (environment: Environment) ::=> FunctionDefinition
         := FunctionDefinition new
-            sourcePosition: self sourcePosition;
             flags: self flags;
             callingConventionName: self callingConventionName;
             argumentCount: self argumentCount;
-            definitionEnvironment: environment;
-            definitionArgumentNodes: self arguments;
-            definitionResultTypeNode: self resultType;
-            definitionBodyNode: self body;
+            sourceDefinition: (FunctionSourceDefinition new
+                sourcePosition: self sourcePosition;
+                environment: environment;
+                argumentNodes: self arguments;
+                resultTypeNode: self resultType;
+                bodyNode: self body;
+                yourself);
             yourself.
 
     public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
@@ -266,20 +268,20 @@ ASTLambdaNode definition: {
 
         let result := self hasLazyAnalysis == false ifTrue: {
             functionDefinition ensureAnalysis.
-            let captureVector => AnySequenceTuple := functionDefinition analyzedCaptureVectorType basicAllocate.
+            let captureVector => AnySequenceTuple := functionDefinition captureVectorType basicAllocate.
             
-            functionDefinition analyzedCaptures doWithIndex: {:(SymbolCaptureBinding)eachCapture :(Size)index :: Void |
+            functionDefinition sourceAnalyzedDefinition captures doWithIndex: {:(SymbolCaptureBinding)eachCapture :(Size)index :: Void |
                 captureVector at: index put: (environment evaluateSymbolBinding: eachCapture sourceBinding)
             }.
 
             let closure => Function := Function new.
-            closure __type__: functionDefinition analyzedType.
+            closure __type__: functionDefinition type.
             closure setupWithFunctionDefinition: functionDefinition captureVector: captureVector.
             closure.
         } ifFalse: {
             functionDefinition ensureTypeAnalysis.
             let closure => Function := Function new.
-            closure __type__: functionDefinition analyzedType.
+            closure __type__: functionDefinition type.
             closure setupWithFunctionDefinition: functionDefinition captureEnvironment: environment.
             environment enqueuePendingAnalysis: closure.
             closure
@@ -316,12 +318,12 @@ ASTLambdaNode definition: {
 
         ## Analyze the function definition.
         functionDefinition ensureAnalysis.
-        result analyzedType: functionDefinition analyzedType.
+        result analyzedType: functionDefinition type.
 
         ## Optimize the captureless lambdas.
-        functionDefinition analyzedCaptures isEmpty ifTrue: {
-            let capturelessClosure => Function := functionDefinition analyzedType new.
-            capturelessClosure setupWithFunctionDefinition: functionDefinition captureVector: functionDefinition analyzedCaptureVectorType basicAllocate.
+        functionDefinition sourceAnalyzedDefinition captures isEmpty ifTrue: {
+            let capturelessClosure => Function := functionDefinition type new.
+            capturelessClosure setupWithFunctionDefinition: functionDefinition captureVector: functionDefinition captureVectorType basicAllocate.
             name ifNotNil: {
                 environment setNewSymbol: name valueBinding: capturelessClosure at: self sourcePosition
             }.
@@ -338,12 +340,12 @@ ASTLambdaNode definition: {
 
     public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         let functionDefinition := self functionDefinition.
-        let captureVector => AnySequenceTuple := functionDefinition analyzedCaptureVectorType basicAllocate.
-        functionDefinition analyzedCaptures doWithIndex: {:(SymbolCaptureBinding)eachCapture :(Size)index :: Untyped |
+        let captureVector => AnySequenceTuple := functionDefinition captureVectorType basicAllocate.
+        functionDefinition sourceAnalyzedDefinition captures doWithIndex: {:(SymbolCaptureBinding)eachCapture :(Size)index :: Untyped |
             captureVector at: index put: (eachCapture sourceBinding evaluateWithActivationEnvironment: environment)
         }.
 
-        let closure => Function := functionDefinition analyzedType new.
+        let closure => Function := functionDefinition type new.
         closure setupWithFunctionDefinition: functionDefinition captureVector: captureVector.
         self binding ifNotNil: {
             environment setBinding: self binding activationValue: closure
@@ -1351,43 +1353,50 @@ DependentFunctionType definition: {
 
 FunctionDefinition definition: {
     public eager method ensureTypeAnalysis => Void := {
-        definitionArgumentNodes ifNil: {return: void}.
-        analyzedType ifNotNil: {return: void}.
+        sourceDefinition argumentNodes ifNil: {return: void}.
+        type ifNotNil: {return: void}.
 
-        analysisEnvironment := FunctionAnalysisEnvironment parent: definitionEnvironment.
-        analysisEnvironment functionDefinition: self.
-
-        analyzedArgumentNodes := definitionArgumentNodes collect: {:(ASTNode)each :: ASTNode |
-            analysisEnvironment analyzeIfNeeded: each
+        sourceAnalyzedDefinition ifNil: {
+            sourceAnalyzedDefinition := FunctionSourceAnalyzedDefinition new.
         }.
 
-        definitionResultTypeNode ifNotNil: {
-            analyzedResultTypeNode := analysisEnvironment analyze: definitionResultTypeNode withExpectedType: Type
+        sourceAnalyzedDefinition environment: (FunctionAnalysisEnvironment parent: sourceDefinition environment).
+        sourceAnalyzedDefinition environment functionDefinition: self.
+
+        sourceAnalyzedDefinition argumentNodes: (sourceDefinition argumentNodes collect: {:(ASTNode)each :: ASTNode |
+            sourceAnalyzedDefinition environment analyzeIfNeeded: each
+        }).
+
+        sourceDefinition resultTypeNode ifNotNil: {
+            sourceAnalyzedDefinition resultTypeNode:  (sourceAnalyzedDefinition environment analyze: sourceDefinition resultTypeNode withExpectedType: Type)
         }.
 
-        analyzedType := DependentFunctionType new 
-            initializeWithFunctionAnalysisEnvironment: analysisEnvironment
-                argumentNodes: analyzedArgumentNodes resultTypeNode: analyzedResultTypeNode functionFlags: flags & FunctionFlags::TypeFlags;
+        type := DependentFunctionType new 
+            initializeWithFunctionAnalysisEnvironment: sourceAnalyzedDefinition environment
+                argumentNodes: sourceAnalyzedDefinition argumentNodes resultTypeNode: sourceDefinition resultTypeNode functionFlags: flags & FunctionFlags::TypeFlags;
             canonicalize.
-        analysisEnvironment returnTypeExpression: analyzedResultTypeNode.
+        sourceAnalyzedDefinition environment returnTypeExpression: sourceAnalyzedDefinition resultTypeNode.
     }.
 
     public eager override method ensureAnalysis => Void := {
-        analyzedCaptures ifNotNil: {return: void}.
-        definitionBodyNode ifNil: {return: void}.
+        sourceDefinition ifNil: {return: void}.
+        sourceAnalyzedDefinition isNotNil && sourceAnalyzedDefinition captures isNotNil ifTrue: {return: void}.
+        
         self ensureTypeAnalysis.
 
-        analyzedBodyNode := (analysisEnvironment analyze: definitionBodyNode withExpectedTypeExpression: analyzedResultTypeNode at: sourcePosition) node.
+        sourceAnalyzedDefinition bodyNode: (sourceAnalyzedDefinition environment analyze: sourceDefinition bodyNode withExpectedTypeExpression: sourceAnalyzedDefinition resultTypeNode at: sourceAnalyzedDefinition sourcePosition) node.
 
-        analyzedCaptures := analysisEnvironment captureBindingList asArray.
-        analyzedArguments := analysisEnvironment argumentBindingList asArray.
-        analyzedLocals := analysisEnvironment localBindingList asArray.
-        analyzedPragmas := analysisEnvironment pragmaList asArray.
-        analyzedInnerFunctions := analysisEnvironment innerFunctionList asArray.
-        analyzedPrimitiveName := analysisEnvironment primitiveName.
+        sourceAnalyzedDefinition
+            captures: sourceAnalyzedDefinition environment captureBindingList asArray;
+            arguments: sourceAnalyzedDefinition environment argumentBindingList asArray;
+            locals: sourceAnalyzedDefinition environment localBindingList asArray.
 
-        let captureTypes := analyzedCaptures collect: {:(SymbolBinding)eachCaptureBinding :: Type | eachCaptureBinding type ifNil: Untyped}.
-        analyzedCaptureVectorType := SequenceTupleTypeTemplate(captureTypes).
+        pragmas := sourceAnalyzedDefinition environment pragmaList asArray.
+        innerFunctions := sourceAnalyzedDefinition environment innerFunctionList asArray.
+        primitiveName := sourceAnalyzedDefinition environment primitiveName.
+
+        let captureTypes := sourceAnalyzedDefinition captures collect: {:(SymbolBinding)eachCaptureBinding :: Type | eachCaptureBinding type ifNil: Untyped}.
+        captureVectorType := SequenceTupleTypeTemplate(captureTypes).
     }.
 }.
 

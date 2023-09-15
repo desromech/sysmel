@@ -137,6 +137,9 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t functionType;
     sysbvm_tuple_t functionBytecodeType;
     sysbvm_tuple_t functionDefinitionType;
+    sysbvm_tuple_t functionSourceDefinitionType;
+    sysbvm_tuple_t functionSourceAnalyzedDefinitionType;
+    sysbvm_tuple_t functionNativeCodeType;
     sysbvm_tuple_t dependentFunctionTypeType;
     sysbvm_tuple_t simpleFunctionTypeType;
     sysbvm_tuple_t functionTypeType;

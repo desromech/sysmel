@@ -807,6 +807,7 @@ SYSBVM_API void sysbvm_bytecodeCompiler_compileFunctionDefinition(sysbvm_context
 {
     struct {
         sysbvm_functionDefinition_t *definition;
+        sysbvm_functionSourceAnalyzedDefinition_t *sourceAnalyzedDefinition;
         sysbvm_bytecodeCompiler_t *compiler;
         sysbvm_tuple_t bodyResult;
         sysbvm_functionBytecode_t *bytecode;
@@ -829,35 +830,37 @@ SYSBVM_API void sysbvm_bytecodeCompiler_compileFunctionDefinition(sysbvm_context
 
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
+    gcFrame.sourceAnalyzedDefinition = (sysbvm_functionSourceAnalyzedDefinition_t*)gcFrame.definition->sourceAnalyzedDefinition;
+
     gcFrame.compiler = (sysbvm_bytecodeCompiler_t*)sysbvm_bytecodeCompiler_create(context);
-    gcFrame.compiler->sourceEnvironment = gcFrame.definition->analysisEnvironment;
-    gcFrame.compiler->sourcePosition = gcFrame.definition->sourcePosition;
+    gcFrame.compiler->sourceEnvironment = gcFrame.sourceAnalyzedDefinition->environment;
+    gcFrame.compiler->sourcePosition = gcFrame.sourceAnalyzedDefinition->sourcePosition;
 
     {
         // Make the argument operands.
-        size_t argumentCount = sysbvm_array_getSize(gcFrame.definition->analyzedArguments);
+        size_t argumentCount = sysbvm_array_getSize(gcFrame.sourceAnalyzedDefinition->arguments);
         sysbvm_bytecodeCompiler_setArgumentCount(context, (sysbvm_tuple_t)gcFrame.compiler, argumentCount);
         for(size_t i = 0; i < argumentCount; ++i)
         {
-            sysbvm_tuple_t binding = sysbvm_array_at(gcFrame.definition->analyzedArguments, i);
+            sysbvm_tuple_t binding = sysbvm_array_at(gcFrame.sourceAnalyzedDefinition->arguments, i);
             sysbvm_tuple_t value = sysbvm_array_at(gcFrame.compiler->arguments, i);
             sysbvm_bytecodeCompiler_setBindingValue(context, (sysbvm_tuple_t)gcFrame.compiler, binding, value);
         }
 
         // Make the binding operands.
-        size_t captureCount = sysbvm_array_getSize(gcFrame.definition->analyzedCaptures);
+        size_t captureCount = sysbvm_array_getSize(gcFrame.sourceAnalyzedDefinition->captures);
         sysbvm_bytecodeCompiler_setCaptureCount(context, (sysbvm_tuple_t)gcFrame.compiler, captureCount);
         for(size_t i = 0; i < captureCount; ++i)
         {
-            sysbvm_tuple_t binding = sysbvm_array_at(gcFrame.definition->analyzedCaptures, i);
+            sysbvm_tuple_t binding = sysbvm_array_at(gcFrame.sourceAnalyzedDefinition->captures, i);
             sysbvm_tuple_t value = sysbvm_array_at(gcFrame.compiler->captures, i);
             sysbvm_bytecodeCompiler_setBindingValue(context, (sysbvm_tuple_t)gcFrame.compiler, binding, value);
         }
     }
 
     // Compile the body.
-    gcFrame.bodyResult = gcFrame.definition->analyzedBodyNode
-        ? sysbvm_bytecodeCompiler_compileASTNode(context, (sysbvm_tuple_t)gcFrame.compiler, gcFrame.definition->analyzedBodyNode)
+    gcFrame.bodyResult = gcFrame.sourceAnalyzedDefinition->bodyNode
+        ? sysbvm_bytecodeCompiler_compileASTNode(context, (sysbvm_tuple_t)gcFrame.compiler, gcFrame.sourceAnalyzedDefinition->bodyNode)
         : sysbvm_bytecodeCompiler_addLiteral(context, (sysbvm_tuple_t)gcFrame.compiler, SYSBVM_VOID_TUPLE);
 
     if(gcFrame.bodyResult)
@@ -1256,12 +1259,14 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveCompileIntoBytecode(sysbvm_c
 
     sysbvm_functionDefinition_t *functionDefinition = (sysbvm_functionDefinition_t*)(*lambdaNode)->functionDefinition;
     sysbvm_tuple_t functionDefinitionOperand = sysbvm_bytecodeCompiler_addLiteral(context, *compiler, (sysbvm_tuple_t)functionDefinition);
-    size_t captureVectorSize = sysbvm_array_getSize(functionDefinition->analyzedCaptures);
+    sysbvm_functionSourceAnalyzedDefinition_t *sourceAnalyzedDefinition = (sysbvm_functionSourceAnalyzedDefinition_t*)functionDefinition->sourceAnalyzedDefinition;
+
+    size_t captureVectorSize = sysbvm_array_getSize(sourceAnalyzedDefinition->captures);
     sysbvm_tuple_t captureVector = sysbvm_array_create(context, captureVectorSize);
     
     for(size_t i = 0; i < captureVectorSize; ++i)
     {
-        sysbvm_tuple_t captureBinding = sysbvm_symbolCaptureBinding_getSourceBinding(sysbvm_array_at(functionDefinition->analyzedCaptures, i));
+        sysbvm_tuple_t captureBinding = sysbvm_symbolCaptureBinding_getSourceBinding(sysbvm_array_at(sourceAnalyzedDefinition->captures, i));
         sysbvm_tuple_t captureValue = sysbvm_bytecodeCompiler_getBindingValue(context, *compiler, captureBinding);
 
         sysbvm_array_atPut(captureVector, i, captureValue);

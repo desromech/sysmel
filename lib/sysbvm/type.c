@@ -312,7 +312,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_sequenceTuple_create(sysbvm_context_t *context,
 SYSBVM_API sysbvm_tuple_t sysbvm_sequenceTuple_createForFunctionDefinition(sysbvm_context_t *context, sysbvm_tuple_t functionDefinition)
 {
     if(!sysbvm_tuple_isNonNullPointer(functionDefinition)) sysbvm_error_nullArgument();
-    return sysbvm_sequenceTuple_create(context, ((sysbvm_functionDefinition_t*)functionDefinition)->analyzedCaptureVectorType);
+    return sysbvm_sequenceTuple_create(context, ((sysbvm_functionDefinition_t*)functionDefinition)->captureVectorType);
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_genericAddressSpace_uniqueInstance(sysbvm_context_t *context)

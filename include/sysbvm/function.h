@@ -75,6 +75,32 @@ typedef struct sysbvm_function_s
     sysbvm_tuple_t annotations;
 } sysbvm_function_t;
 
+typedef struct sysbvm_functionSourceDefinition_s
+{
+    sysbvm_tuple_header_t header;
+
+    sysbvm_tuple_t sourcePosition;
+    sysbvm_tuple_t environment;
+    sysbvm_tuple_t argumentNodes;
+    sysbvm_tuple_t resultTypeNode;
+    sysbvm_tuple_t bodyNode;
+} sysbvm_functionSourceDefinition_t;
+
+typedef struct sysbvm_functionSourceAnalyzedDefinition_s
+{
+    sysbvm_tuple_header_t header;
+
+    sysbvm_tuple_t sourcePosition;
+    sysbvm_tuple_t environment;
+    sysbvm_tuple_t captures;
+    sysbvm_tuple_t arguments;
+    sysbvm_tuple_t locals;
+
+    sysbvm_tuple_t argumentNodes;
+    sysbvm_tuple_t resultTypeNode;
+    sysbvm_tuple_t bodyNode;
+} sysbvm_functionSourceAnalyzedDefinition_t;
+
 typedef struct sysbvm_functionDefinition_s
 {
     sysbvm_programEntity_t super;
@@ -82,35 +108,29 @@ typedef struct sysbvm_functionDefinition_s
     sysbvm_tuple_t flags;
     sysbvm_tuple_t callingConventionName;
     sysbvm_tuple_t argumentCount;
-    sysbvm_tuple_t sourcePosition;
 
-    sysbvm_tuple_t definitionEnvironment;
-    sysbvm_tuple_t definitionArgumentNodes;
-    sysbvm_tuple_t definitionResultTypeNode;
-    sysbvm_tuple_t definitionBodyNode;
-    
-    sysbvm_tuple_t analyzedCaptureVectorType;
-    sysbvm_tuple_t analyzedType;
+    sysbvm_tuple_t captureVectorType;
+    sysbvm_tuple_t type;
+    sysbvm_tuple_t primitiveName;
+    sysbvm_tuple_t pragmas;
+    sysbvm_tuple_t innerFunctions;
+    sysbvm_tuple_t annotations;
 
-    sysbvm_tuple_t analysisEnvironment;
-    sysbvm_tuple_t analyzedCaptures;
-    sysbvm_tuple_t analyzedArguments;
-    sysbvm_tuple_t analyzedLocals;
-    sysbvm_tuple_t analyzedPragmas;
-    sysbvm_tuple_t analyzedInnerFunctions;
-    sysbvm_tuple_t analyzedPrimitiveName;
-
-    sysbvm_tuple_t analyzedArgumentNodes;
-    sysbvm_tuple_t analyzedResultTypeNode;
-    sysbvm_tuple_t analyzedBodyNode;
-
+    sysbvm_tuple_t sourceDefinition;
+    sysbvm_tuple_t sourceAnalyzedDefinition;
     sysbvm_tuple_t bytecode;
+    sysbvm_tuple_t nativeCodeDefinition;
+
     sysbvm_tuple_t boxDescriptor;
     sysbvm_tuple_t capturelessUncheckedEntryPoint;
     sysbvm_tuple_t uncheckedEntryPoint;
     sysbvm_tuple_t checkedEntryPoint;
-    sysbvm_tuple_t annotations;
 } sysbvm_functionDefinition_t;
+
+typedef struct sysbvm_functionNativeCode_s
+{
+    sysbvm_tuple_header_t header;
+} sysbvm_functionNativeCode_t;
 
 #define SYSBVM_MAX_FUNCTION_ARGUMENTS 16
 

@@ -6,7 +6,7 @@ public abstract class FunctionInterpretationStrategy definition: {
 public final class FunctionASTInterpretationStrategy superclass: FunctionInterpretationStrategy; definition: {
     public virtual method interpretFunction: (function: Function) withArguments: (arguments: Array) ::=> Untyped := {
         let activationEnvironment := function createFunctionActivationEnvironmentWithArguments: arguments.
-        function definition analyzedBodyNode evaluateWithEnvironment: activationEnvironment
+        function definition sourceAnalyzedDefinition bodyNode evaluateWithEnvironment: activationEnvironment
     }.
 }.
 
@@ -67,20 +67,24 @@ Function definition: {
             error("Cyclic analysis of function " -- self printString).
         }.
 
-        self captureEnvironment: __pendingMemoizationValue__.
-        definition ensureAnalysis.
+        { :: Void |
+            self captureEnvironment: __pendingMemoizationValue__.
+            definition ensureAnalysis.
+        } ensure: {:: Void |
+            self captureEnvironment: captureEnvironment
+        }.
 
-        let newCaptureVector => AnySequenceTuple := definition analyzedCaptureVectorType new.
-        definition analyzedCaptures doWithIndex: {:(SymbolBinding)captureBinding :(Size)index |
+        let newCaptureVector => AnySequenceTuple := definition captureVectorType new.
+        definition sourceAnalyzedDefinition captures doWithIndex: {:(SymbolBinding)captureBinding :(Size)index |
             newCaptureVector at: index put: (captureEnvironment evaluateSymbolBinding: captureBinding)
         }.
 
         captureVector := newCaptureVector.
         self captureEnvironment: nil.
         self primitiveName ifNil: {
-            self primitiveName: definition analyzedPrimitiveName
+            self primitiveName: definition primitiveName
         }.
-        (RawTuple::type:)(self, definition analyzedType).
+        (RawTuple::type:)(self, definition type).
     }.
 
     public override eager method ensureAnalysis => Void := {
@@ -162,7 +166,7 @@ Function definition: {
             function: self;
             captureVector: captureVector;
             argumentVectorSize: arguments size;
-            valueVector: arguments -- (Array new: definition analyzedLocals size);
+            valueVector: arguments -- (Array new: definition sourceAnalyzedDefinition locals size);
             yourself.
 
     public method interpretWithArgument: (arguments: Array) ::=> Untyped := {
@@ -185,11 +189,11 @@ FunctionDefinition definition: {
 
     public method allAnalyzedNodesDo: (aBlock: (ASTNode) => Void) ::=> Void := {
         self ensureAnalysis.
-        analyzedArgumentNodes do: {:(ASTNode)each :: Void |
+        sourceAnalyzedDefinition argumentNodes do: {:(ASTNode)each :: Void |
             each withAllChildrenDo: aBlock
         }.
-        analyzedBodyNode ifNotNil: (analyzedBodyNode withAllChildrenDo: aBlock).
-        analyzedResultTypeNode ifNotNil: (analyzedResultTypeNode withAllChildrenDo: aBlock).
+        sourceAnalyzedDefinition bodyNode ifNotNil: (sourceAnalyzedDefinition bodyNode withAllChildrenDo: aBlock).
+        sourceAnalyzedDefinition resultTypeNode ifNotNil: (sourceAnalyzedDefinition resultTypeNode withAllChildrenDo: aBlock).
     }.
 
     public method allLiteralDependenciesDo: (aBlock: (Untyped, Boolean) => Void) ::=> Void := {

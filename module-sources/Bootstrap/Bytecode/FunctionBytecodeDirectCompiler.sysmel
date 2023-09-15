@@ -57,15 +57,15 @@ FunctionBytecodeDirectCompiler definition: {
         functionDefinition ensureAnalysis.
 
         self assembler
-            sourcePosition: functionDefinition sourcePosition;
-            arguments: (functionDefinition analyzedArgumentNodes collectWithIndex: {:(ASTArgumentNode)argumentNode :(Size)index :: FunctionBytecodeAssemblerOperand |
+            sourcePosition: functionDefinition sourceAnalyzedDefinition sourcePosition;
+            arguments: (functionDefinition sourceAnalyzedDefinition argumentNodes collectWithIndex: {:(ASTArgumentNode)argumentNode :(Size)index :: FunctionBytecodeAssemblerOperand |
                 self generateArgumentForNode: argumentNode index: index
             }) asArray;
-            captures: (functionDefinition analyzedCaptures collectWithIndex: {:(SymbolCaptureBinding)captureBinding :(Size)index :: FunctionBytecodeAssemblerOperand |
+            captures: (functionDefinition sourceAnalyzedDefinition captures collectWithIndex: {:(SymbolCaptureBinding)captureBinding :(Size)index :: FunctionBytecodeAssemblerOperand |
                 self generateCaptureForBinding: captureBinding index: index
             }) asArray.
 
-        let resultValue := functionDefinition analyzedBodyNode compileBytecodesDirectlyWith: self.
+        let resultValue := functionDefinition sourceAnalyzedDefinition bodyNode compileBytecodesDirectlyWith: self.
         self assembler return: resultValue.
 
         self assembler optimize.
@@ -133,7 +133,7 @@ ASTLambdaNode extend: {
 
         let functionDefinitionValue := compiler functionDefinitionValueFor: functionDefinition.
 
-        let captures := functionDefinition analyzedCaptures collect: {:(SymbolCaptureBinding)capture :: FunctionBytecodeAssemblerOperand |
+        let captures := functionDefinition sourceAnalyzedDefinition captures collect: {:(SymbolCaptureBinding)capture :: FunctionBytecodeAssemblerOperand |
             compiler getValueForLocalBinding: capture sourceBinding
         }.
 

@@ -1727,7 +1727,7 @@ public function ObjectModel::makeClosureWithCaptureVector(functionDefinition: Fu
     result
         captureVector: captureVector;
         definition: functionDefinition;
-        __type__: (functionDefinition analyzedType ifNil: Function);
+        __type__: (functionDefinition type ifNil: Function);
         yourself.
 }.
 

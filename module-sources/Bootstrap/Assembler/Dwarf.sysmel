@@ -2519,13 +2519,14 @@ FunctionDefinition extend: {
         subprogram external: true.
         subprogram name: self dwarf::name.
         ##self name ifNotNil: (subprogram name: self qualifiedName).
+        let sourcePosition := self sourcePosition.
         sourcePosition ifNotNil: (debugGenerator setDie: subprogram declarationPosition: sourcePosition).
 
-        analyzedType ifNotNil: {
-            subprogram type: (debugGenerator getOrCreateDieForType: analyzedType canonicalResultType)
+        type ifNotNil: {
+            subprogram type: (debugGenerator getOrCreateDieForType: type canonicalResultType)
         }.
 
-        subprogram declaredArguments: (analyzedArguments collect: {:(SymbolArgumentBinding)binding :: Dwarf::DebugInfoEntry |
+        subprogram declaredArguments: (sourceAnalyzedDefinition arguments collect: {:(SymbolArgumentBinding)binding :: Dwarf::DebugInfoEntry |
             let argument := Dwarf::DebugInfoEntry tag: Dwarf::DW_TAG_formal_parameter.
             argument sourceBinding: binding.
             subprogram addChild: argument.

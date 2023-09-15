@@ -96,23 +96,23 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
         functionDefinition ensureAnalysis.
         ## HACK: Make sure this is properly done by the analysis section.
         functionDefinition boxDescriptor = 0uptr ifTrue: {
-            functionDefinition boxDescriptor: functionDefinition analyzedType applicationBoxDescriptor
+            functionDefinition boxDescriptor: functionDefinition type applicationBoxDescriptor
         }.
 
         let translatedValue := HIRFunctionDefinition new
             type: FunctionDefinition;
             sourceObject: functionDefinition;
             name: functionDefinition programEntityQualifiedNameSymbol;
-            functionType: functionDefinition analyzedType;
+            functionType: functionDefinition type;
             importedSymbols: functionDefinition importedSymbols asArray;
-            primitiveName: functionDefinition analyzedPrimitiveName;
+            primitiveName: functionDefinition primitiveName;
             sourcePosition: functionDefinition sourcePosition;
             isNoGC: functionDefinition isNoGC;
             callingConvention: functionDefinition callingConventionName;
-            arguments: (functionDefinition analyzedArgumentNodes collect: {:(ASTArgumentNode)argumentNode :: HIRFunctionArgument |
+            arguments: (functionDefinition sourceAnalyzedDefinition argumentNodes collect: {:(ASTArgumentNode)argumentNode :: HIRFunctionArgument |
                 self generateArgumentForNode: argumentNode
             }) asArray;
-            captures: (functionDefinition analyzedCaptures collect: {:(SymbolCaptureBinding)captureBinding :: HIRFunctionCapture |
+            captures: (functionDefinition sourceAnalyzedDefinition captures collect: {:(SymbolCaptureBinding)captureBinding :: HIRFunctionCapture |
                 self generateCaptureForBinding: captureBinding
             }) asArray;
             yourself.
@@ -275,14 +275,14 @@ HIRFunctionCompilationContext definition: {
         }.
 
         functionDefinition importedSymbols size = 0sz ifTrue: {
-            functionDefinition analyzedBodyNode ifNotNil: {:bodyNode |
+            functionDefinition sourceAnalyzedDefinition bodyNode ifNotNil: {:bodyNode |
                 self builder: (HIRInstructionBuilder new
                     sourcePosition: bodyNode sourcePosition;
                     function: ssaFunction;
                     beginBasicBlockNamed: #entry;
                     yourself).
 
-                let primitiveGenerator := primitiveFunctionContentGenerator atOrNil: functionDefinition analyzedPrimitiveName.
+                let primitiveGenerator := primitiveFunctionContentGenerator atOrNil: functionDefinition primitiveName.
                 let resultValue := primitiveGenerator ifNotNil: {
                     primitiveGenerator(self)
                 } ifNil: {
@@ -625,7 +625,7 @@ ASTLambdaNode extend: {
 
         let functionDefinitionValue := context functionDefinitionValueFor: functionDefinition.
 
-        let captures := functionDefinition analyzedCaptures collect: {:(SymbolCaptureBinding)capture :: HIRValue |
+        let captures := functionDefinition sourceAnalyzedDefinition captures collect: {:(SymbolCaptureBinding)capture :: HIRValue |
             context getValueForLocalBinding: capture sourceBinding
         }.
 

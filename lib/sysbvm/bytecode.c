@@ -409,7 +409,7 @@ SYSBVM_API void sysbvm_bytecodeInterpreter_interpretWithActivationRecord(sysbvm_
             {
                 size_t captureVectorSize = opcode & 0xF;
                 sysbvm_functionDefinition_t *functionDefinition = (sysbvm_functionDefinition_t*)operandRegisterFile[1];
-                operandRegisterFile[0] = sysbvm_sequenceTuple_create(context, functionDefinition->analyzedCaptureVectorType);
+                operandRegisterFile[0] = sysbvm_sequenceTuple_create(context, functionDefinition->captureVectorType);
                 sysbvm_tuple_t *captureVectorSlots = SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(operandRegisterFile[0])->pointers;
                 for(size_t i = 0; i < captureVectorSize; ++i)
                     captureVectorSlots[i] = operandRegisterFile[2 + i];
@@ -492,7 +492,10 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_getSourcePositionForActivat
         return actualSourcePosition;
 
     sysbvm_functionDefinition_t **functionDefinitionObject = (sysbvm_functionDefinition_t**)&activationRecord->functionDefinition;
-    return (*functionDefinitionObject)->sourcePosition;
+    if((*functionDefinitionObject)->sourceDefinition)
+        return ((sysbvm_functionSourceDefinition_t*)(*functionDefinitionObject)->sourceDefinition)->sourcePosition;
+
+    return SYSBVM_NULL_TUPLE;
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_getSourcePositionForJitActivationRecord(sysbvm_context_t *context, sysbvm_stackFrameBytecodeFunctionJitActivationRecord_t *activationRecord)
@@ -504,7 +507,10 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_getSourcePositionForJitActi
     if(actualSourcePosition)
         return actualSourcePosition;
 
-    return functionDefinitionObject->sourcePosition;
+    if(functionDefinitionObject->sourceDefinition)
+        return ((sysbvm_functionSourceDefinition_t*)functionDefinitionObject->sourceDefinition)->sourcePosition;
+
+    return SYSBVM_NULL_TUPLE;
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_activateAndApply(sysbvm_context_t *context, sysbvm_tuple_t function_, size_t argumentCount, sysbvm_tuple_t *arguments)

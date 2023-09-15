@@ -1037,9 +1037,12 @@ sysbvm_tuple_t sysbvm_interpreter_recompileAndOptimizeFunction(sysbvm_context_t 
 {
     struct {
         sysbvm_functionDefinition_t *functionDefinition;
+        sysbvm_functionSourceDefinition_t *functionSourceDefinition;
+        sysbvm_functionSourceAnalyzedDefinition_t *functionSourceAnalyzedDefinition;
         sysbvm_tuple_t optimizedFunction;
         sysbvm_tuple_t optimizedDefinitionEnvironment;
         sysbvm_functionDefinition_t *optimizedFunctionDefinition;
+        sysbvm_functionSourceDefinition_t *optimizedSourceDefinition;
         sysbvm_tuple_t captureValue;
         sysbvm_tuple_t captureBinding;
     } gcFrame = {
@@ -1047,48 +1050,48 @@ sysbvm_tuple_t sysbvm_interpreter_recompileAndOptimizeFunction(sysbvm_context_t 
     };
 
     // If the function is not yet optimized, just return it back.
-    if(!gcFrame.functionDefinition || !gcFrame.functionDefinition->analysisEnvironment)
+    if(!gcFrame.functionDefinition || !gcFrame.functionDefinition->sourceDefinition || !gcFrame.functionDefinition->sourceAnalyzedDefinition)
         return (sysbvm_tuple_t)*functionObject;
 
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    gcFrame.functionSourceDefinition = (sysbvm_functionSourceDefinition_t*)gcFrame.functionDefinition->sourceDefinition;
+    gcFrame.functionSourceAnalyzedDefinition = (sysbvm_functionSourceAnalyzedDefinition_t*)gcFrame.functionDefinition->sourceAnalyzedDefinition;
 
     gcFrame.optimizedFunctionDefinition = (sysbvm_functionDefinition_t*)sysbvm_context_shallowCopy(context, (sysbvm_tuple_t)gcFrame.functionDefinition);
     gcFrame.optimizedFunctionDefinition->super.owner = SYSBVM_NULL_TUPLE;
     gcFrame.optimizedFunctionDefinition->super.name = SYSBVM_NULL_TUPLE;
 
+    gcFrame.optimizedSourceDefinition = (sysbvm_functionSourceDefinition_t*)sysbvm_context_shallowCopy(context, (sysbvm_tuple_t)gcFrame.optimizedFunctionDefinition->sourceDefinition);
+    gcFrame.optimizedFunctionDefinition->sourceDefinition = (sysbvm_tuple_t)gcFrame.optimizedSourceDefinition;
+
     // Construct the closure environment by reading the capture vector.
-    gcFrame.optimizedDefinitionEnvironment = sysbvm_analysisAndEvaluationEnvironment_create(context, gcFrame.optimizedFunctionDefinition->definitionEnvironment);
+    gcFrame.optimizedDefinitionEnvironment = sysbvm_analysisAndEvaluationEnvironment_create(context, gcFrame.optimizedSourceDefinition->environment);
     sysbvm_analysisAndEvaluationEnvironment_clearAnalyzerToken(context, gcFrame.optimizedDefinitionEnvironment);
-    gcFrame.optimizedFunctionDefinition->definitionEnvironment = gcFrame.optimizedDefinitionEnvironment;
+    gcFrame.optimizedSourceDefinition->environment = gcFrame.optimizedDefinitionEnvironment;
 
     size_t captureCount = sysbvm_array_getSize((*functionObject)->captureVector);
     for(size_t i = 0; i < captureCount; ++i)
     {
         gcFrame.captureValue = sysbvm_array_at((*functionObject)->captureVector, i);
-        gcFrame.captureBinding = sysbvm_array_at(gcFrame.functionDefinition->analyzedCaptures, i);
+        gcFrame.captureBinding = sysbvm_array_at(gcFrame.functionSourceAnalyzedDefinition->captures, i);
         sysbvm_environment_setNewSymbolBindingWithValue(context, gcFrame.optimizedDefinitionEnvironment, sysbvm_symbolBinding_getName(gcFrame.captureBinding), gcFrame.captureValue);
     }
 
-    gcFrame.optimizedFunctionDefinition->analysisEnvironment = SYSBVM_NULL_TUPLE;
-    gcFrame.optimizedFunctionDefinition->analyzedCaptures = SYSBVM_NULL_TUPLE;
-    gcFrame.optimizedFunctionDefinition->analyzedArguments = SYSBVM_NULL_TUPLE;
-    gcFrame.optimizedFunctionDefinition->analyzedLocals = SYSBVM_NULL_TUPLE;
-    gcFrame.optimizedFunctionDefinition->analyzedPragmas = SYSBVM_NULL_TUPLE;
-    gcFrame.optimizedFunctionDefinition->analyzedInnerFunctions = SYSBVM_NULL_TUPLE;
-    gcFrame.optimizedFunctionDefinition->analyzedPrimitiveName = SYSBVM_NULL_TUPLE;
-
-    gcFrame.optimizedFunctionDefinition->analyzedArgumentNodes = SYSBVM_NULL_TUPLE;
-    gcFrame.optimizedFunctionDefinition->analyzedBodyNode = SYSBVM_NULL_TUPLE;
-    gcFrame.optimizedFunctionDefinition->analyzedResultTypeNode = SYSBVM_NULL_TUPLE;
-
-    gcFrame.optimizedFunctionDefinition->analyzedCaptureVectorType = SYSBVM_NULL_TUPLE;
-    gcFrame.optimizedFunctionDefinition->analyzedType = SYSBVM_NULL_TUPLE;
+    gcFrame.optimizedFunctionDefinition->sourceAnalyzedDefinition = SYSBVM_NULL_TUPLE;
+    gcFrame.optimizedFunctionDefinition->captureVectorType = SYSBVM_NULL_TUPLE;
+    gcFrame.optimizedFunctionDefinition->type = SYSBVM_NULL_TUPLE;
+    gcFrame.optimizedFunctionDefinition->pragmas = SYSBVM_NULL_TUPLE;
+    gcFrame.optimizedFunctionDefinition->innerFunctions = SYSBVM_NULL_TUPLE;
+    gcFrame.optimizedFunctionDefinition->primitiveName = SYSBVM_NULL_TUPLE;
+    gcFrame.optimizedFunctionDefinition->annotations = SYSBVM_NULL_TUPLE;
 
     gcFrame.optimizedFunctionDefinition->bytecode = SYSBVM_NULL_TUPLE;
+    gcFrame.optimizedFunctionDefinition->nativeCodeDefinition = SYSBVM_NULL_TUPLE;
 
     sysbvm_functionDefinition_ensureAnalysis(context, &gcFrame.optimizedFunctionDefinition);
-    SYSBVM_ASSERT(sysbvm_array_getSize(gcFrame.optimizedFunctionDefinition->analyzedCaptures) == 0);
-    gcFrame.optimizedFunction = sysbvm_function_createClosureWithCaptureVector(context, (sysbvm_tuple_t)gcFrame.optimizedFunctionDefinition, sysbvm_sequenceTuple_create(context, gcFrame.optimizedFunctionDefinition->analyzedCaptureVectorType));
+    SYSBVM_ASSERT(sysbvm_array_getSize(((sysbvm_functionSourceAnalyzedDefinition_t*)gcFrame.optimizedFunctionDefinition->sourceAnalyzedDefinition)->captures) == 0);
+    gcFrame.optimizedFunction = sysbvm_function_createClosureWithCaptureVector(context, (sysbvm_tuple_t)gcFrame.optimizedFunctionDefinition, sysbvm_sequenceTuple_create(context, gcFrame.optimizedFunctionDefinition->captureVectorType));
     ((sysbvm_function_t*)gcFrame.optimizedFunction)->flags = (*functionObject)->flags;
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.optimizedFunction;
@@ -1143,6 +1146,9 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_canonicalizeFunctionType(sysbvm_context_t 
 static void sysbvm_functionDefinition_analyzeType(sysbvm_context_t *context, sysbvm_functionDefinition_t **functionDefinition)
 {
     struct {
+        sysbvm_functionSourceDefinition_t *sourceDefinition;
+        sysbvm_functionSourceAnalyzedDefinition_t *sourceAnalyzedDefinition;
+
         sysbvm_tuple_t analysisEnvironment;
         sysbvm_functionAnalysisEnvironment_t *analysisEnvironmentObject;
         sysbvm_tuple_t analyzedArgumentNode;
@@ -1153,21 +1159,31 @@ static void sysbvm_functionDefinition_analyzeType(sysbvm_context_t *context, sys
     } gcFrame = {0};
 
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
-    SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*functionDefinition)->sourcePosition);
 
-    gcFrame.analysisEnvironment = sysbvm_functionAnalysisEnvironment_create(context, (*functionDefinition)->definitionEnvironment, (sysbvm_tuple_t)*functionDefinition);
+    gcFrame.sourceDefinition = (sysbvm_functionSourceDefinition_t*)(*functionDefinition)->sourceDefinition;
+    gcFrame.sourceAnalyzedDefinition = (sysbvm_functionSourceAnalyzedDefinition_t*)(*functionDefinition)->sourceAnalyzedDefinition;
+    if(!gcFrame.sourceAnalyzedDefinition)
+    {
+        gcFrame.sourceAnalyzedDefinition = (sysbvm_functionSourceAnalyzedDefinition_t*)sysbvm_context_allocatePointerTuple(context, context->roots.functionSourceAnalyzedDefinitionType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_functionSourceAnalyzedDefinition_t));
+        gcFrame.sourceAnalyzedDefinition->sourcePosition = gcFrame.sourceDefinition->sourcePosition;
+        (*functionDefinition)->sourceAnalyzedDefinition = (sysbvm_tuple_t)gcFrame.sourceAnalyzedDefinition;
+    }
+
+    SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.sourceAnalyzedDefinition->sourcePosition);
+
+    gcFrame.analysisEnvironment = sysbvm_functionAnalysisEnvironment_create(context, gcFrame.sourceDefinition->environment, (sysbvm_tuple_t)*functionDefinition);
     gcFrame.analysisEnvironmentObject = (sysbvm_functionAnalysisEnvironment_t*)gcFrame.analysisEnvironment;
-    size_t argumentNodeCount = sysbvm_array_getSize((*functionDefinition)->definitionArgumentNodes);
+    size_t argumentNodeCount = sysbvm_array_getSize(gcFrame.sourceDefinition->argumentNodes);
     gcFrame.analyzedArgumentsNode = sysbvm_array_create(context, argumentNodeCount);
     for(size_t i = 0; i < argumentNodeCount; ++i)
     {
-        gcFrame.analyzedArgumentNode = sysbvm_array_at((*functionDefinition)->definitionArgumentNodes, i);
+        gcFrame.analyzedArgumentNode = sysbvm_array_at(gcFrame.sourceDefinition->argumentNodes, i);
         gcFrame.analyzedArgumentNode = sysbvm_interpreter_analyzeASTIfNeededWithEnvironment(context, gcFrame.analyzedArgumentNode, gcFrame.analysisEnvironment);
         sysbvm_array_atPut(gcFrame.analyzedArgumentsNode, i, gcFrame.analyzedArgumentNode);
     }
 
-    if((*functionDefinition)->definitionResultTypeNode)
-        gcFrame.analyzedResultTypeNode = sysbvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, (*functionDefinition)->definitionResultTypeNode, context->roots.typeType, gcFrame.analysisEnvironment);
+    if(gcFrame.sourceDefinition->resultTypeNode)
+        gcFrame.analyzedResultTypeNode = sysbvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.sourceDefinition->resultTypeNode, context->roots.typeType, gcFrame.analysisEnvironment);
 
     sysbvm_bitflags_t flags = sysbvm_tuple_bitflags_decode((*functionDefinition)->flags) & SYSBVM_FUNCTION_TYPE_FLAGS;
     gcFrame.analyzedType = sysbvm_type_createDependentFunctionType(context, gcFrame.analyzedArgumentsNode, flags, gcFrame.analyzedResultTypeNode,
@@ -1178,13 +1194,14 @@ static void sysbvm_functionDefinition_analyzeType(sysbvm_context_t *context, sys
     );
     gcFrame.analyzedType = sysbvm_type_canonicalizeFunctionType(context, gcFrame.analyzedType);
 
-    (*functionDefinition)->analyzedType = gcFrame.analyzedType;
-    (*functionDefinition)->analysisEnvironment = gcFrame.analysisEnvironment;
-    (*functionDefinition)->analyzedArgumentNodes = gcFrame.analyzedArgumentsNode;
-    (*functionDefinition)->analyzedResultTypeNode = gcFrame.analyzedResultTypeNode;
-    gcFrame.analysisEnvironmentObject->returnTypeExpression = (*functionDefinition)->analyzedResultTypeNode;
+    (*functionDefinition)->type = gcFrame.analyzedType;
+    gcFrame.sourceAnalyzedDefinition->environment = gcFrame.analysisEnvironment;
+    gcFrame.sourceAnalyzedDefinition->argumentNodes = gcFrame.analyzedArgumentsNode;
+    gcFrame.sourceAnalyzedDefinition->resultTypeNode = gcFrame.analyzedResultTypeNode;
+    gcFrame.analysisEnvironmentObject->returnTypeExpression = gcFrame.sourceAnalyzedDefinition->resultTypeNode;
 
     (*functionDefinition)->bytecode = SYSBVM_NULL_TUPLE;
+    (*functionDefinition)->nativeCodeDefinition = SYSBVM_NULL_TUPLE;
 
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -1195,6 +1212,8 @@ static void sysbvm_functionDefinition_analyze(sysbvm_context_t *context, sysbvm_
     sysbvm_functionDefinition_ensureTypeAnalysis(context, functionDefinition);
 
     struct {
+        sysbvm_functionSourceDefinition_t *sourceDefinition;
+        sysbvm_functionSourceAnalyzedDefinition_t *sourceAnalyzedDefinition;
         sysbvm_tuple_t analysisEnvironment;
         sysbvm_functionAnalysisEnvironment_t *analysisEnvironmentObject;
         sysbvm_tuple_t analyzedBodyNode;
@@ -1202,34 +1221,41 @@ static void sysbvm_functionDefinition_analyze(sysbvm_context_t *context, sysbvm_
     } gcFrame = {0};
 
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
-    SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*functionDefinition)->sourcePosition);
 
-    gcFrame.analysisEnvironment = (*functionDefinition)->analysisEnvironment;
+    gcFrame.sourceDefinition = (sysbvm_functionSourceDefinition_t*)(*functionDefinition)->sourceDefinition;
+    gcFrame.sourceAnalyzedDefinition = (sysbvm_functionSourceAnalyzedDefinition_t*)(*functionDefinition)->sourceAnalyzedDefinition;
+
+    SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.sourceAnalyzedDefinition->sourcePosition);
+
+    gcFrame.analysisEnvironment = gcFrame.sourceAnalyzedDefinition->environment;
     gcFrame.analysisEnvironmentObject = (sysbvm_functionAnalysisEnvironment_t*)gcFrame.analysisEnvironment;
 
-    gcFrame.analyzedBodyNode = sysbvm_interpreter_analyzeASTWithExpectedTypeExpressionWithEnvironmentAt(context, (*functionDefinition)->definitionBodyNode, (*functionDefinition)->analyzedResultTypeNode, gcFrame.analysisEnvironment, (*functionDefinition)->sourcePosition, NULL);
+    gcFrame.analyzedBodyNode = sysbvm_interpreter_analyzeASTWithExpectedTypeExpressionWithEnvironmentAt(context, gcFrame.sourceDefinition->bodyNode, gcFrame.sourceAnalyzedDefinition->resultTypeNode, gcFrame.analysisEnvironment, gcFrame.sourceAnalyzedDefinition->sourcePosition, NULL);
 
-    (*functionDefinition)->analyzedCaptures = sysbvm_orderedCollection_asArray(context, gcFrame.analysisEnvironmentObject->captureBindingList);
-    (*functionDefinition)->analyzedArguments = sysbvm_orderedCollection_asArray(context, gcFrame.analysisEnvironmentObject->argumentBindingList);
-    (*functionDefinition)->analyzedLocals = sysbvm_orderedCollection_asArray(context, gcFrame.analysisEnvironmentObject->localBindingList);
-    (*functionDefinition)->analyzedPragmas = sysbvm_orderedCollection_asArray(context, gcFrame.analysisEnvironmentObject->pragmaList);
-    (*functionDefinition)->analyzedInnerFunctions = sysbvm_orderedCollection_asArray(context, gcFrame.analysisEnvironmentObject->innerFunctionList);
-    (*functionDefinition)->analyzedPrimitiveName = gcFrame.analysisEnvironmentObject->primitiveName;
+    gcFrame.sourceAnalyzedDefinition->captures = sysbvm_orderedCollection_asArray(context, gcFrame.analysisEnvironmentObject->captureBindingList);
+    gcFrame.sourceAnalyzedDefinition->arguments = sysbvm_orderedCollection_asArray(context, gcFrame.analysisEnvironmentObject->argumentBindingList);
+    gcFrame.sourceAnalyzedDefinition->locals = sysbvm_orderedCollection_asArray(context, gcFrame.analysisEnvironmentObject->localBindingList);
 
-    (*functionDefinition)->analyzedBodyNode = gcFrame.analyzedBodyNode;
+    (*functionDefinition)->pragmas = sysbvm_orderedCollection_asArray(context, gcFrame.analysisEnvironmentObject->pragmaList);
+    (*functionDefinition)->innerFunctions = sysbvm_orderedCollection_asArray(context, gcFrame.analysisEnvironmentObject->innerFunctionList);
+    (*functionDefinition)->primitiveName = gcFrame.analysisEnvironmentObject->primitiveName;
 
-    size_t captureCount = sysbvm_array_getSize((*functionDefinition)->analyzedCaptures);
+    gcFrame.sourceAnalyzedDefinition->bodyNode = gcFrame.analyzedBodyNode;
+
+    size_t captureCount = sysbvm_array_getSize(gcFrame.sourceAnalyzedDefinition->captures);
     gcFrame.captureTypes = sysbvm_array_create(context, captureCount);
     for(size_t i = 0; i < captureCount; ++i)
     {
-        sysbvm_tuple_t captureType = sysbvm_symbolBinding_getType(sysbvm_array_at((*functionDefinition)->analyzedCaptures, i));
+        sysbvm_tuple_t captureType = sysbvm_symbolBinding_getType(sysbvm_array_at(gcFrame.sourceAnalyzedDefinition->captures, i));
         if(!captureType)
             captureType = context->roots.untypedType;
         sysbvm_array_atPut(gcFrame.captureTypes, i, captureType);
     }
-    (*functionDefinition)->analyzedCaptureVectorType = sysbvm_type_createSequenceTupleType(context, gcFrame.captureTypes);
+
+    (*functionDefinition)->captureVectorType = sysbvm_type_createSequenceTupleType(context, gcFrame.captureTypes);
 
     (*functionDefinition)->bytecode = SYSBVM_NULL_TUPLE;
+    (*functionDefinition)->nativeCodeDefinition = SYSBVM_NULL_TUPLE;
     sysbvm_bytecodeCompiler_compileFunctionDefinition(context, (*functionDefinition));
 
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
@@ -1239,11 +1265,15 @@ static void sysbvm_functionDefinition_analyze(sysbvm_context_t *context, sysbvm_
 SYSBVM_API void sysbvm_functionDefinition_ensureAnalysis(sysbvm_context_t *context, sysbvm_functionDefinition_t **functionDefinition)
 {
     // Make sure this is a valid function definition for analysis.
-    if(!sysbvm_tuple_isKindOf(context, (sysbvm_tuple_t)*functionDefinition, context->roots.functionDefinitionType) || !(*functionDefinition)->definitionArgumentNodes || !(*functionDefinition)->definitionBodyNode)
+    if(!sysbvm_tuple_isKindOf(context, (sysbvm_tuple_t)*functionDefinition, context->roots.functionDefinitionType))
+        return;
+
+    sysbvm_functionSourceDefinition_t *sourceDefinition = (sysbvm_functionSourceDefinition_t *)(*functionDefinition)->sourceDefinition;
+    if(!sourceDefinition->argumentNodes || !sourceDefinition->bodyNode)
         return;
 
     // Is it already analyzed?
-    if((*functionDefinition)->analyzedCaptures)
+    if((*functionDefinition)->sourceAnalyzedDefinition && ((sysbvm_functionSourceAnalyzedDefinition_t*)(*functionDefinition)->sourceAnalyzedDefinition)->captures)
         return;
 
     sysbvm_functionDefinition_analyze(context, functionDefinition);
@@ -1252,11 +1282,15 @@ SYSBVM_API void sysbvm_functionDefinition_ensureAnalysis(sysbvm_context_t *conte
 SYSBVM_API void sysbvm_functionDefinition_ensureTypeAnalysis(sysbvm_context_t *context, sysbvm_functionDefinition_t **functionDefinition)
 {
     // Make sure this is a valid function definition for analysis.
-    if(!sysbvm_tuple_isKindOf(context, (sysbvm_tuple_t)*functionDefinition, context->roots.functionDefinitionType) || !(*functionDefinition)->definitionArgumentNodes || !(*functionDefinition)->definitionBodyNode)
+    if(!sysbvm_tuple_isKindOf(context, (sysbvm_tuple_t)*functionDefinition, context->roots.functionDefinitionType))
+        return;
+
+    sysbvm_functionSourceDefinition_t *sourceDefinition = (sysbvm_functionSourceDefinition_t *)(*functionDefinition)->sourceDefinition;
+    if(!sourceDefinition->argumentNodes || !sourceDefinition->bodyNode)
         return;
 
     // Is it already analyzed?
-    if((*functionDefinition)->analyzedType)
+    if((*functionDefinition)->type)
         return;
 
     sysbvm_functionDefinition_analyzeType(context, functionDefinition);
@@ -1278,6 +1312,7 @@ SYSBVM_API void sysbvm_function_ensureAnalysis(sysbvm_context_t *context, sysbvm
     // Ensure the function definition analysis.
     struct {
         sysbvm_functionDefinition_t *functionDefinition;
+        sysbvm_functionSourceAnalyzedDefinition_t *sourceAnalyzedDefinition;
         sysbvm_tuple_t captureEnvironment;
         sysbvm_tuple_t captureVector;
         sysbvm_tuple_t captureBinding;
@@ -1292,11 +1327,12 @@ SYSBVM_API void sysbvm_function_ensureAnalysis(sysbvm_context_t *context, sysbvm
     sysbvm_functionDefinition_ensureAnalysis(context, &gcFrame.functionDefinition);
 
     // Create the actual capture vector.
-    size_t captureVectorSize = sysbvm_array_getSize(gcFrame.functionDefinition->analyzedCaptures);
-    gcFrame.captureVector = sysbvm_sequenceTuple_create(context, gcFrame.functionDefinition->analyzedCaptureVectorType);
+    gcFrame.sourceAnalyzedDefinition = (sysbvm_functionSourceAnalyzedDefinition_t*)gcFrame.functionDefinition->sourceAnalyzedDefinition;
+    size_t captureVectorSize = sysbvm_array_getSize(gcFrame.sourceAnalyzedDefinition->captures);
+    gcFrame.captureVector = sysbvm_sequenceTuple_create(context, gcFrame.functionDefinition->captureVectorType);
     for(size_t i = 0; i < captureVectorSize; ++i)
     {
-        gcFrame.captureBinding = sysbvm_symbolCaptureBinding_getSourceBinding(sysbvm_array_at(gcFrame.functionDefinition->analyzedCaptures, i));
+        gcFrame.captureBinding = sysbvm_symbolCaptureBinding_getSourceBinding(sysbvm_array_at(gcFrame.sourceAnalyzedDefinition->captures, i));
         gcFrame.captureValue = sysbvm_environment_evaluateSymbolBinding(context, gcFrame.captureEnvironment, gcFrame.captureBinding);
         sysbvm_array_atPut(gcFrame.captureVector, i, gcFrame.captureValue);
     }
@@ -1304,8 +1340,8 @@ SYSBVM_API void sysbvm_function_ensureAnalysis(sysbvm_context_t *context, sysbvm
     (*function)->captureVector = gcFrame.captureVector;
     (*function)->captureEnvironment = SYSBVM_NULL_TUPLE;
     if(!(*function)->primitiveName)
-        (*function)->primitiveName = gcFrame.functionDefinition->analyzedPrimitiveName;
-    sysbvm_tuple_setType((sysbvm_object_tuple_t*)*function, gcFrame.functionDefinition->analyzedType);
+        (*function)->primitiveName = gcFrame.functionDefinition->primitiveName;
+    sysbvm_tuple_setType((sysbvm_object_tuple_t*)*function, gcFrame.functionDefinition->type);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
 }
@@ -1354,6 +1390,7 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveAnalyze(sysbvm_context_t *co
         sysbvm_tuple_t argumentNode;
         sysbvm_tuple_t argumentCount;
         sysbvm_functionDefinition_t *functionDefinition;
+        sysbvm_functionSourceAnalyzedDefinition_t *sourceAnalyzedDefinition;
         sysbvm_tuple_t capturelessFunction;
         sysbvm_tuple_t capturelessLiteral;
         sysbvm_tuple_t localBinding;
@@ -1398,12 +1435,13 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveAnalyze(sysbvm_context_t *co
     // Perform the lambda analysis.
     sysbvm_functionDefinition_ensureAnalysis(context, &gcFrame.functionDefinition);
 
-    gcFrame.lambdaNode->super.analyzedType = gcFrame.functionDefinition->analyzedType;
+    gcFrame.lambdaNode->super.analyzedType = gcFrame.functionDefinition->type;
+    gcFrame.sourceAnalyzedDefinition = (sysbvm_functionSourceAnalyzedDefinition_t*)gcFrame.functionDefinition->sourceAnalyzedDefinition;
 
     // Optimize lambdas without captures by turning them onto a literal.
-    if(sysbvm_array_getSize(gcFrame.functionDefinition->analyzedCaptures) == 0)
+    if(sysbvm_array_getSize(gcFrame.sourceAnalyzedDefinition->captures) == 0)
     {
-        gcFrame.capturelessFunction = sysbvm_function_createClosureWithCaptureVector(context, (sysbvm_tuple_t)gcFrame.functionDefinition, sysbvm_sequenceTuple_create(context, gcFrame.functionDefinition->analyzedCaptureVectorType));
+        gcFrame.capturelessFunction = sysbvm_function_createClosureWithCaptureVector(context, (sysbvm_tuple_t)gcFrame.functionDefinition, sysbvm_sequenceTuple_create(context, gcFrame.functionDefinition->captureVectorType));
         gcFrame.capturelessLiteral = sysbvm_astLiteralNode_create(context, gcFrame.lambdaNode->super.sourcePosition, gcFrame.capturelessFunction);
         if(gcFrame.name)
             gcFrame.localBinding = sysbvm_analysisEnvironment_setNewValueBinding(context, *environment, gcFrame.lambdaNode->super.sourcePosition, gcFrame.name, gcFrame.capturelessFunction);
@@ -1435,11 +1473,13 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveEvaluate(sysbvm_context_t *c
     sysbvm_astLambdaNode_t **lambdaNode = (sysbvm_astLambdaNode_t**)node;
 
     sysbvm_functionDefinition_t *functionDefinition = (sysbvm_functionDefinition_t*)(*lambdaNode)->functionDefinition;
-    size_t captureVectorSize = sysbvm_array_getSize(functionDefinition->analyzedCaptures);
+    sysbvm_functionSourceAnalyzedDefinition_t *sourceAnalyzedDefinition = (sysbvm_functionSourceAnalyzedDefinition_t*)functionDefinition->sourceAnalyzedDefinition;
+
+    size_t captureVectorSize = sysbvm_array_getSize(sourceAnalyzedDefinition->captures);
     sysbvm_tuple_t captureVector = sysbvm_array_create(context, captureVectorSize);
     for(size_t i = 0; i < captureVectorSize; ++i)
     {
-        sysbvm_tuple_t captureBinding = sysbvm_symbolCaptureBinding_getSourceBinding(sysbvm_array_at(functionDefinition->analyzedCaptures, i));
+        sysbvm_tuple_t captureBinding = sysbvm_symbolCaptureBinding_getSourceBinding(sysbvm_array_at(sourceAnalyzedDefinition->captures, i));
         sysbvm_tuple_t captureValue = sysbvm_environment_evaluateSymbolBinding(context, *environment, captureBinding);
         sysbvm_array_atPut(captureVector, i, captureValue);
     }
@@ -1462,6 +1502,7 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveAnalyzeAndEvaluate(sysbvm_co
         sysbvm_tuple_t argumentNode;
         sysbvm_tuple_t argumentCount;
         sysbvm_functionDefinition_t* functionDefinition;
+        sysbvm_functionSourceAnalyzedDefinition_t* sourceAnalyzedDefinition;
         
         sysbvm_tuple_t captureVector;
         sysbvm_tuple_t captureBinding;
@@ -1495,11 +1536,12 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveAnalyzeAndEvaluate(sysbvm_co
     {
         sysbvm_functionDefinition_ensureAnalysis(context, &gcFrame.functionDefinition);
 
-        size_t captureVectorSize = sysbvm_array_getSize(gcFrame.functionDefinition->analyzedCaptures);
-        gcFrame.captureVector = sysbvm_sequenceTuple_create(context, gcFrame.functionDefinition->analyzedCaptureVectorType);
+        gcFrame.sourceAnalyzedDefinition = (sysbvm_functionSourceAnalyzedDefinition_t*)gcFrame.functionDefinition->sourceAnalyzedDefinition;
+        size_t captureVectorSize = sysbvm_array_getSize(gcFrame.sourceAnalyzedDefinition->captures);
+        gcFrame.captureVector = sysbvm_sequenceTuple_create(context, gcFrame.functionDefinition->captureVectorType);
         for(size_t i = 0; i < captureVectorSize; ++i)
         {
-            gcFrame.captureBinding = sysbvm_symbolCaptureBinding_getSourceBinding(sysbvm_array_at(gcFrame.functionDefinition->analyzedCaptures, i));
+            gcFrame.captureBinding = sysbvm_symbolCaptureBinding_getSourceBinding(sysbvm_array_at(gcFrame.sourceAnalyzedDefinition->captures, i));
             gcFrame.captureValue = sysbvm_environment_evaluateSymbolBinding(context, *environment, gcFrame.captureBinding);
             sysbvm_array_atPut(gcFrame.captureVector, i, gcFrame.captureValue);
         }
@@ -5688,10 +5730,12 @@ SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_applyClosureASTFunction(sysbvm_cont
     functionActivationRecord.functionDefinition = (*closure)->definition;
     sysbvm_functionDefinition_t **functionDefinition = (sysbvm_functionDefinition_t**)&functionActivationRecord.functionDefinition;
 
-    SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, (*functionDefinition)->sourcePosition);
+    sysbvm_functionSourceAnalyzedDefinition_t *sourceAnalyzedDefinition = (sysbvm_functionSourceAnalyzedDefinition_t*)(*functionDefinition)->sourceAnalyzedDefinition;
+
+    SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, sourceAnalyzedDefinition->sourcePosition);
     sysbvm_functionDefinition_ensureAnalysis(context, functionDefinition);
 
-    size_t expectedArgumentCount = sysbvm_array_getSize((*functionDefinition)->analyzedArgumentNodes);
+    size_t expectedArgumentCount = sysbvm_array_getSize(sourceAnalyzedDefinition->argumentNodes);
     if(argumentCount != expectedArgumentCount)
         sysbvm_error_argumentCountMismatch(expectedArgumentCount, argumentCount);
     functionActivationRecord.applicationEnvironment = sysbvm_functionActivationEnvironment_create(context, SYSBVM_NULL_TUPLE, functionActivationRecord.function);
@@ -5708,14 +5752,14 @@ SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_applyClosureASTFunction(sysbvm_cont
     {
         // FIXME: Add support for the forall arguments here.
         for(size_t i = 0; i < argumentCount; ++i)
-            sysbvm_interpreter_evaluateArgumentNodeInEnvironment(context, i, sysbvm_array_at((*functionDefinition)->analyzedArgumentNodes, i), &functionActivationRecord.applicationEnvironment, &arguments[i]);
+            sysbvm_interpreter_evaluateArgumentNodeInEnvironment(context, i, sysbvm_array_at(sourceAnalyzedDefinition->argumentNodes, i), &functionActivationRecord.applicationEnvironment, &arguments[i]);
     }
 
     // Use setjmp for implementing the #return: statement.
     if(!_setjmp(functionActivationRecord.jmpbuffer))
     {
         sysbvm_gc_safepoint(context);
-        functionActivationRecord.result = sysbvm_interpreter_evaluateASTWithEnvironment(context, (*functionDefinition)->analyzedBodyNode, functionActivationRecord.applicationEnvironment);
+        functionActivationRecord.result = sysbvm_interpreter_evaluateASTWithEnvironment(context, sourceAnalyzedDefinition->bodyNode, functionActivationRecord.applicationEnvironment);
     }
 
     sysbvm_gc_safepoint(context);
